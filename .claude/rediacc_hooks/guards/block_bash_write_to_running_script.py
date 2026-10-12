@@ -367,6 +367,12 @@ EDGE_CASES = [
     # Review 0bbd6471.4: xargs appends its feed, so a fed running script is the operand or the destination.
     ("xargs feeds the running script to cp", "echo %s | xargs cp /tmp/x.sh" % LIVE_SCRIPT),
     ("xargs feeds the running script to sed -i", "echo %s | xargs sed -i s/a/b/" % LIVE_SCRIPT),
+    # #6378e10e: perl edits in place too.
+    ("perl -pi on a running script", "perl -pi -e 's/a/b/' %s" % LIVE_SCRIPT),
+    ("perl -i -pe on a running script", "perl -i -pe 's/a/b/' %s" % LIVE_SCRIPT),
+    ("perl -i.bak on a running script", "perl -i.bak -pe 's/a/b/' %s" % LIVE_SCRIPT),
+    ("perl -pe without -i only prints", "perl -pe 's/a/b/' %s" % LIVE_SCRIPT),
+    ("gsed -i on a running script", "gsed -i 's/a/b/' %s" % LIVE_SCRIPT),
     ("xargs feeds the running script to tee", "echo %s | xargs tee" % LIVE_SCRIPT),
     ("xargs feeds the running script to truncate", "echo %s | xargs truncate -s 0" % LIVE_SCRIPT),
     (
@@ -447,10 +453,11 @@ def _verb_targets(run_, cwd):
         found = _operands(run_)
     elif base == "shfmt":
         found = _operands(run_) if any(a in ("-w", "--write") for a in args) else []
-    elif base == "sed":
-        # sed's own option parse (review 3f53e99e.2 sweep): an `i` inside an attached `-e` script is not in place.
-        in_place = shellscan.in_place_edit(run_) is not None
-        found = _operands(run_) if in_place else []
+    elif shellscan.in_place_edit(run_) is not None:
+        # EVERY IN-PLACE EDITOR, by its own option parse (#6378e10e): sed, gsed and `perl -i`/`-pi` rewrite the files they name, and `perl -pi -e ... <running>.sh` was allowed while only sed was asked. The files are `in_place_edit`'s (an attached `-e` script is not a file, review 3f53e99e.2), plus what xargs appends.
+        edit = shellscan.in_place_edit(run_)
+        fed = run_.feed.split() if run_.feed and "xargs" in run_.via else []
+        found = [*edit[1], *fed]
     elif base in ("cp", "mv"):
         found = [path for path, _into in shellscan.copy_landings(run_, cwd, ("cp", "mv"))]
     elif base == "dd":

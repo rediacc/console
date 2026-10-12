@@ -199,7 +199,7 @@ def _offending(cmd, depth=0, cwd=None):
         if in_place and any(_is_review(a, run.cwd) for a in operands):
             return "%s -i on a review file" % name
         # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
-        # `cwd` places a relative fed glob in the run's own directory (#e5b0540a); a command handed down by a program runs where that program does, unknown here, so it gets the shape reading.
+        # `cwd` places a relative fed glob in the run's own directory (#e5b0540a). Two kinds of run get the shape reading instead: a command a PROGRAM hands down (the recursion below passes no `cwd`, since it runs wherever that program does), and one a launcher starts (`find -exec`, `npx`: `shellscan._feed_directories`, review 9ed30a8a.1).
         copies = shellscan.run_copies(run, None, cwd)
         if copies is not None and any(_is_review(d, run.cwd) for d in copies[1]):
             return "%s onto the review directory" % name

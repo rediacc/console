@@ -33,9 +33,9 @@ failing loudly, because it made the line look tested when the controls were pass
 as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
 """
 
-import fnmatch
 import os
 import re
+import types
 
 from rediacc_hooks import hookio, shellscan
 from rediacc_hooks.guards import block_worktree_add as WT
@@ -128,6 +128,39 @@ EDGE_CASES = [
     ("cp onto a log glob", "cp /tmp/x agent/pr-babysit-*.md"),
     ("listing a log glob is a read", "ls agent/pr-babysit-*.md"),
     ("a log glob piped with no blank", 'cd "$D" && echo pr-babysit-*.md|xargs cp /tmp/x.md'),
+    # Review 9ed30a8a.3: a glob that meets the round-log pattern in an unknown directory, whatever sample names it would miss.
+    ("a bare md glob in an unknown directory", 'cd "$D" && truncate -s 0 *.md'),
+    (
+        "a glob that meets the log by a class",
+        'cd "$D" && echo [p]r-babysit-1?08*.md | xargs cp /tmp/x.md',
+    ),
+    ("a txt glob in an unknown directory cannot be a log", 'cd "$D" && truncate -s 0 *.txt'),
+    # #e5b0540a, live false positive (w2): a `*` in Python code is not a glob, and a program that cannot spell a log writes some other file.
+    (
+        "a heredoc that multiplies and writes through a variable",
+        "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('notes.txt')\nn = 3 * 4\np.write_text(str(n))\nEOF",
+    ),
+    (
+        "python -c repeating a string into a file",
+        "python3 -c \"import pathlib,sys; t=pathlib.Path(sys.argv[1]); t.write_text('x' * 3)\" out.txt",
+    ),
+    (
+        "a star import that writes",
+        "python3 - <<'EOF'\nfrom os import *\nf = open(name, 'w')\nf.write('x')\nEOF",
+    ),
+    # ...and a program whose literals could spell a log still fails closed.
+    (
+        "a program globbing md files writes through a variable",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')\nPY",
+    ),
+    (
+        "a program building the log name in an f-string",
+        "python3 - <<'PY'\nb = '0831-1'\nopen(f'agent/pr-babysit-{b}.md', 'w').write('')\nPY",
+    ),
+    (
+        "a program globbing txt files cannot write a log",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('docs/*.txt'):\n    open(p, 'w').write('')\nPY",
+    ),
     ("appending to a log glob", "echo x >> agent/pr-babysit-*.md"),
     ("a copy back into agent/ lands on the log", "cp /tmp/pr-babysit-0831-1.md agent/"),
     (
@@ -151,6 +184,15 @@ EDGE_CASES = [
     # Truncating shell verbs.
     ("truncating redirection", "echo x > agent/pr-babysit-0831-1.md"),
     ("sed -i", "sed -i 's/a/b/' agent/pr-babysit-0831-1.md"),
+    # #6378e10e: perl edits in place too, and a script naming the log is not the file edited.
+    ("perl -pi", "perl -pi -e 's/a/b/' agent/pr-babysit-0831-1.md"),
+    ("perl -i -pe", "perl -i -pe 's/a/b/' agent/pr-babysit-0831-1.md"),
+    ("perl -pe only prints", "perl -pe 's/a/b/' agent/pr-babysit-0831-1.md"),
+    ("gsed -i", "gsed -i 's/a/b/' agent/pr-babysit-0831-1.md"),
+    (
+        "a sed script naming the log edits another file",
+        "sed -i 's/pr-babysit-0831-1.md/x/' notes.md",
+    ),
     ("dd of=", "dd if=/dev/null of=agent/pr-babysit-0831-1.md"),
     ("mv the log away", "mv agent/pr-babysit-0831-1.md /tmp/"),
     ("cp ONTO the log", "cp /tmp/x agent/pr-babysit-0831-1.md"),
@@ -186,9 +228,99 @@ def _is_log(path):
 _EXPANDING = frozenset("*?[{~")
 _GLOB = frozenset("*?[")
 # Round-log names a glob is tried against by the prefilter: any pattern that matches one of these could spell a log.
-_LOG_PROBES = ("pr-babysit-0831-1.md", "pr-babysit-1008-1.md", "pr-babysit-x.md")
-# The prefilter's words: the command with separators, redirect and grouping marks and quotes turned into blanks, then split on blanks. An over-approximate word is all a prefilter needs; the walk reads the real ones.
-_TOKEN_BREAKS = str.maketrans(";&|<>()'\"`", " " * 10)
+_PRINTABLE = frozenset(chr(c) for c in range(32, 127))
+
+
+def _char_class(body: str) -> frozenset[str]:
+    """The characters a bracket body names (`A-Za-z0-9._-`), ranges expanded; a leading or trailing `-` is itself."""
+    out: set[str] = set()
+    k = 0
+    while k < len(body):
+        if k + 2 < len(body) and body[k + 1] == "-":
+            out.update(chr(c) for c in range(ord(body[k]), ord(body[k + 2]) + 1))
+            k += 3
+        else:
+            out.add(body[k])
+            k += 1
+    return frozenset(out)
+
+
+def _log_automaton():
+    """The round-log name as an automaton, read out of `RL` itself (review 9ed30a8a.3): `<prefix>[<class>]+<suffix>`. A change to RL that leaves that shape raises here, at import, rather than leaving the prefilter testing an old pattern."""
+    m = re.fullmatch(r"([^\[\\]+)\[([^\]]+)\]\+((?:\\.|[^\\])+)", RL)
+    if m is None:
+        raise RuntimeError("RL no longer reads as <prefix>[<class>]+<suffix>: %r" % RL)
+    prefix, body, suffix = m.group(1), _char_class(m.group(2)), re.sub(r"\\(.)", r"\1", m.group(3))
+    # States 0..len(prefix) spell the prefix; "B" is one or more body characters; ("S", i) has matched i characters of the suffix after the body.
+    edges: dict[object, list[tuple[frozenset[str], object]]] = {
+        i: [(frozenset(prefix[i]), i + 1)] for i in range(len(prefix))
+    }
+    edges[len(prefix)] = [(body, "B")]
+    edges["B"] = [(body, "B")]
+    for i in range(len(suffix)):
+        edges[("S", i)] = [(frozenset(suffix[i]), ("S", i + 1))]
+    return edges, ("S", len(suffix))
+
+
+_LOG_EDGES, _LOG_ACCEPT = _log_automaton()
+
+
+def _closure(states):
+    """`B` reaches the suffix's start without reading a character."""
+    out = set(states)
+    if "B" in out:
+        out.add(("S", 0))
+    return out
+
+
+def _glob_elements(pattern: str) -> list[frozenset[str] | None]:
+    """A glob as a list of character sets, `None` for `*`."""
+    out: list[frozenset[str] | None] = []
+    k = 0
+    while k < len(pattern):
+        ch = pattern[k]
+        if ch == "*":
+            out.append(None)
+        elif ch == "?":
+            out.append(_PRINTABLE)
+        elif ch == "\\" and k + 1 < len(pattern):
+            k += 1
+            out.append(frozenset(pattern[k]))
+        elif ch == "[" and "]" in pattern[k + 2 :]:
+            close = pattern.index("]", k + 2)
+            inner = pattern[k + 1 : close]
+            negated = inner[:1] in ("!", "^")
+            named = _char_class(inner[1:] if negated else inner)
+            out.append(_PRINTABLE - named if negated else named)
+            k = close
+        else:
+            out.append(frozenset(ch))
+        k += 1
+    return out
+
+
+def _glob_meets_log(pattern):
+    """Can the glob `pattern` (a basename) and the round-log name both match some one name? Read as the intersection of the two languages, so no sample name is involved: `*.md`, `pr-*`, `p?-babysit-*` and `[p]r-babysit-x.md` do, `notes-*.md` and `*.txt` do not."""
+    states = _closure({0})
+    for element in _glob_elements(pattern):
+        if element is None:
+            reached = set(states)
+            frontier = list(states)
+            while frontier:
+                state = frontier.pop()
+                for _chars, nxt in _LOG_EDGES.get(state, ()):
+                    for n in _closure({nxt}):
+                        if n not in reached:
+                            reached.add(n)
+                            frontier.append(n)
+            states = reached
+            continue
+        states = _closure(
+            {nxt for s in states for chars, nxt in _LOG_EDGES.get(s, ()) if chars & element}
+        )
+        if not states:
+            return False
+    return _LOG_ACCEPT in states
 
 
 def _names_log(word, directory=None):
@@ -201,27 +333,79 @@ def _names_log(word, directory=None):
     forms += [
         shellscan._glob_shape(f) for f in forms if any(ch in f.rsplit("/", 1)[-1] for ch in _GLOB)
     ]
-    return any(_is_log(f) for f in forms)
+    if any(_is_log(f) for f in forms):
+        return True
+    # A RELATIVE glob in a directory this walk cannot read fails safe: any glob that could match a round-log name counts as one (`cd "$D" && truncate -s0 *.md`), since which names it meets is the disk's answer, not ours.
+    if directory is None:
+        return any(
+            _glob_meets_log(alt.rsplit("/", 1)[-1])
+            for alt in shellscan._brace_alternatives(word)
+            if not alt.startswith("/") and any(ch in alt.rsplit("/", 1)[-1] for ch in _GLOB)
+        )
+    return False
+
+
+# The verbs whose operands `_verb_truncates` judges; the prefilter reads their words, and nothing else of the command.
+_TRUNCATING_VERBS = frozenset(("mv", "truncate", "cp", "dd", "tee"))
+
+
+def _log_stem():
+    """The fixed part every round-log name carries (`pr-babysit`), read from RL's own prefix; raises at import if RL stops starting with one."""
+    m = re.match(r"[A-Za-z]+-[A-Za-z]+", RL)
+    if m is None:
+        raise RuntimeError("RL no longer starts with a <word>-<word> stem: %r" % RL)
+    return m.group(0)
+
+
+_LOG_STEM = _log_stem()
+
+
+def _word_could_name_log(word):
+    """Could one word, as bash or a program's glob call expands it, name a round log? Its brace alternatives spell one (`RL`), or a glob in its basename meets the round-log pattern (`_glob_meets_log`)."""
+    if not any(ch in word for ch in "*?[{"):
+        return False
+    for alt in shellscan._brace_alternatives(word):
+        if re.search(RL, alt):
+            return True
+        base = alt.rsplit("/", 1)[-1]
+        if any(ch in base for ch in _GLOB) and _glob_meets_log(base):
+            return True
+    return False
+
+
+def _program_could_name_log(code):
+    """Could an interpreter program's own text spell a round-log path? It names the round-log stem (`pr-babysit`, in a literal or an f-string alike), or one of its STRING LITERALS is a glob or brace that can meet the round-log pattern (`glob.glob('agent/*.md')`). Code outside a literal is never read for globs: `3 * 4`, `from os import *` and `r']*'` are Python, not paths (#e5b0540a's false positive, reported live by w2)."""
+    if _LOG_STEM in code:
+        return True
+    # Every single- or double-quoted string literal, escapes kept (Python, shell and JS alike): an EXTRACTOR over program text the walk already chose, so it is local here rather than a module pattern a sentence could be probed against.
+    literals = re.findall(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
+    return any(_word_could_name_log(lit[1:-1]) for lit in literals)
+
+
+def _shell_words(cmd):
+    """The shell words a truncating arm judges: every redirect target, and the words (with what xargs appends) of each `mv`, `truncate`, `cp`, `dd`, `tee` and in-place editor bash runs. Interpreter program text is not among them."""
+    words = [target for _op, target in shellscan._analyse(cmd).writes]
+    for run_ in shellscan.every_run(cmd):
+        base = run_.name.rsplit("/", 1)[-1]
+        if base in _TRUNCATING_VERBS or shellscan.in_place_edit(run_) is not None:
+            words.extend(run_.argv)
+            if run_.feed and "xargs" in run_.via:
+                words.extend(run_.feed.split())
+    return words
 
 
 def _could_name_log(cmd):
-    """The prefilter: a literal round-log name, or a word holding a glob or brace that could spell one. A command with neither (nearly all of them) never reaches the walk; a glob is tried against a few log names by `fnmatch`, never against the disk."""
-    if hookio.grep_q_line(RL, cmd):
+    """The prefilter. A command passes when it names the round-log stem at all (`pr-babysit`), when one of its SHELL WORDS that a truncating arm judges holds a glob or brace that could spell a log (`_shell_words`, `_word_could_name_log`), or when an interpreter program's text could spell one (`_program_could_name_log`). A glob is put to the round-log pattern's automaton, never to the disk.
+
+    SHELL WORDS, NEVER PROGRAM TEXT (#e5b0540a, live false positive reported by w2). The first version tokenised the whole command, so a lone `*` anywhere (`3 * 4` in a Python heredoc) met the pattern, the program's write through a variable then failed closed, and every Python heredoc that wrote a file and multiplied was refused.
+    """
+    if _LOG_STEM in cmd:
         return True
     if not any(ch in cmd for ch in "*?[{"):
         return False
-    for token in cmd.translate(_TOKEN_BREAKS).split():
-        if not any(ch in token for ch in "*?[{"):
-            continue
-        for alt in shellscan._brace_alternatives(token):
-            if re.search(RL, alt):
-                return True
-            base = alt.rsplit("/", 1)[-1]
-            if any(ch in base for ch in _GLOB) and any(
-                fnmatch.fnmatchcase(probe, base) for probe in _LOG_PROBES
-            ):
-                return True
-    return False
+    if any(_word_could_name_log(w) for w in _shell_words(cmd)):
+        return True
+    return any(_program_could_name_log(code) for _family, code in WT.interpreter_programs(cmd))
 
 
 def _copy_writes_log(run_, cwd):
@@ -259,10 +443,12 @@ def _verb_truncates(run_, cwd):
         return _copy_writes_log(run_, cwd)
     elif base == "dd":
         hits = [a[3:] for a in args if a.startswith("of=")]
-    elif base == "sed":
-        # sed's own option parse (review 3f53e99e.2 sweep): an `i` inside an attached `-e` script is not in place.
-        in_place = shellscan.in_place_edit(run_) is not None
-        hits = operands if in_place else []
+    elif shellscan.in_place_edit(run_) is not None:
+        # EVERY IN-PLACE EDITOR, by its own option parse (#6378e10e): sed, gsed and `perl -i`/`-pi` rewrite the files they name, and `perl -pi -e ... <log>` was allowed while only sed was asked. The files are `in_place_edit`'s, read over the words as bash expands them (an attached `-e` script is not a file, review 3f53e99e.2), plus what xargs appends.
+        expanded = types.SimpleNamespace(name=run_.name, argv=args)
+        edit = shellscan.in_place_edit(expanded) or shellscan.in_place_edit(run_)
+        fed = run_.feed.split() if "xargs" in run_.via and run_.feed else []
+        hits = [*edit[1], *fed]
     elif base == "tee":
         hits = [] if _appends(args) else operands
     else:
@@ -294,7 +480,10 @@ def _program_truncates(code):
         hookio._here_string(code),
     ):
         candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
-    return not candidates or any(_is_log(c) for c in candidates)
+    if candidates:
+        return any(_is_log(c) for c in candidates)
+    # FAIL CLOSED ONLY WHERE THE PROGRAM COULD SPELL A LOG (#e5b0540a). An unresolvable target is `p.write_text(s[:i] + new)`, the 2026-08-19 shape, and stays refused when the program's text could name a round log (`_program_could_name_log`); a program that names nothing of the kind writes some other file, however it writes it.
+    return _program_could_name_log(code)
 
 
 def run(ev):
@@ -313,7 +502,7 @@ def run(ev):
     # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
     cwd = ev.field("cwd") or str(hookio.repo_root())
     truncating = truncating or any(_verb_truncates(r, cwd) for r in shellscan.every_run(cmd))
-    # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. NAMED RESIDUAL: a program that writes an UNNAMED target while the command merely mentions a round-log path elsewhere is still refused; that is the one over-block left standing, and it is deliberate, because it is the exact shape that destroyed the appendix.
+    # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
     truncating = truncating or any(
         _program_truncates(code) for _family, code in WT.interpreter_programs(cmd)
     )

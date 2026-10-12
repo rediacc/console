@@ -3246,6 +3246,11 @@ def _feed_directories(run, cwd):
     values = run.feed_cwds or (run.cwd,)
     directories: list[str] = []
     uncertain = False
+    # A LAUNCHED RUN (review 9ed30a8a.1): a command `find -exec` or `npx` starts is read where its launcher runs, which this walk can name, but bash's own word for where it executes is the launcher's, so its glob also gets the shape reading. One started ELSEWHERE (`find -execdir`, `npx -w`) runs in a directory this walk cannot name at all, so no directory is a candidate.
+    if run.launch is not None:
+        uncertain = True
+        if run.launch.elsewhere:
+            return [], True
     for value in values:
         resolved = _directory_of(value, cwd)
         if resolved is None:
@@ -3320,7 +3325,7 @@ def copy_landings(run, cwd, names=COPIERS, argv=None):
         return []
     sources, dests, into = copies
     base = cwd if run.cwd is None else os.path.join(cwd, run.cwd)
-    # A `cd` to a directory that is not there fails and leaves the shell where it started (review a165575f.2), so a relative destination lands under the starting directory as well.
+    # TWO CASES, ONE ANSWER (review 9ed30a8a.2). A `cd` to a directory that is not there fails and leaves the shell where it started (review a165575f.2); a `cd` whose target the walk cannot resolve (`cd "$D"`, `cd ~`) lands somewhere this walk cannot name. Either way the run's directory is not on disk here, and the starting directory is the one other place a relative destination can land, so both are candidates.
     bases = [base] if os.path.isdir(base) else [base, cwd]
     out: list[tuple[str, bool]] = []
     for base in bases:

@@ -939,11 +939,14 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 # ---- what a writer changed on disk -------------------------------------------------
 
 # The commands whose PATH OPERANDS a Bash call writes, deletes or moves (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1). A3 made 330 Bash calls against 78 Edits on 2026-09-24, and every edit the judge then asked the lead to sweep went through Bash: `sed -i` over the guards, two Python rewrites of baseline files, `git rm -r --cached` plus `rm -rf` of a directory.
-BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "sed", "tee", "truncate", "install"})
+# NO `sed` HERE: an in-place editor (sed, gsed, `perl -i`) is read by `shellscan.in_place_edit` first in `_run_operands` (#6378e10e), and a sed that edits nothing in place writes nothing, so the generic arm must never see one.
+BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "tee", "truncate", "install"})
 # `git <sub>` spellings whose operands are written.
 GIT_WRITE_SUBS = frozenset({"rm", "mv"})
 # A cheap prefilter: a command with none of these cannot write a file by any route read below, so the lexer never sees it.
-_BASH_MAYBE_WRITES = re.compile(r">|\b(?:rm|mv|cp|sed|tee|truncate|install|python3?|git)\b")
+_BASH_MAYBE_WRITES = re.compile(
+    r">|\b(?:rm|mv|cp|sed|gsed|perl|tee|truncate|install|python3?|git)\b"
+)
 # A Python body that writes, deletes or moves a file. Its presence makes every repo-path literal in the body count as written, which errs toward subtracting (Decision 2): a missed subtraction costs the lead a blocked turn, an extra one only defers the question to the writer's own tick.
 _PY_WRITES = re.compile(
     r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*['\"]"
@@ -982,32 +985,23 @@ def _target_dir(argv):
     return ""
 
 
-def _sed_files(argv):
-    """The files an IN-PLACE sed rewrites, or [] when it is not in place."""
-    in_place = any(
-        a.startswith("--in-place") or (a.startswith("-") and not a.startswith("--") and "i" in a)
-        for a in argv
-    )
-    if not in_place:
-        return []
-    scripted = any(a in ("-e", "-f") or a.startswith(("--expression", "--file")) for a in argv)
-    ops = _operands(argv, takes_value=("-e", "-f", "-l"))
-    return ops if scripted else ops[1:]
+def _run_operands(run, shellscan):
+    """The path operands one simple command writes, deletes or moves, as the lexer quote-removed them.
 
-
-def _run_operands(run):
-    """The path operands one simple command writes, deletes or moves, as the lexer quote-removed them."""
+    AN IN-PLACE EDIT IS ASKED OF `shellscan.in_place_edit` (#6378e10e), the guards' own option parse for sed, gsed and perl. The hand-rolled sed reader this replaces counted any `i` in any single-dash word, so `sed -e 's/i/x/' f` (an `i` inside an attached script) read as in place, while `perl -pi -e ... f` was never asked at all and its file never reached the fix-set.
+    """
     import posixpath  # noqa: PLC0415 -- stdlib, only on the Bash arm
 
     name = posixpath.basename(str(run.name or ""))
     argv = [str(a) for a in run.argv or []]
+    edit = shellscan.in_place_edit(run)
+    if edit is not None:
+        return [str(f) for f in edit[1]]
     if name == "git" and run.git_sub in GIT_WRITE_SUBS:
         at = argv.index(run.git_sub) if run.git_sub in argv else 0
         return _operands(argv[at + 1 :])
     if name not in BASH_WRITE_VERBS:
         return []
-    if name == "sed":
-        return _sed_files(argv)
     if name == "truncate":
         return _operands(argv, takes_value=("-s", "-r"))
     if name in ("cp", "install"):
@@ -1071,7 +1065,7 @@ def bash_write_paths(cmd, cwd, root):
         for target in run.writes or []:
             seen_writes.append(target)
             add(target, run.cwd)
-        for operand in _run_operands(run):
+        for operand in _run_operands(run, shellscan):
             add(operand, run.cwd)
         if posixpath.basename(str(run.name or "")).startswith("python"):
             argv = [str(a) for a in run.argv or []]

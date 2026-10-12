@@ -3913,6 +3913,68 @@ STATIC: list[Case] = [
         bash_json("ls agent/pr-babysit-*.md"),
         "roundlog-truncate CONTROL: listing a log glob is a read",
     ),
+    # #6378e10e: perl edits in place too (allowed at fc3f376a8 while only sed was asked).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("perl -pi -e 's/a/b/' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: perl -pi rewrites the log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("perl -pe 's/a/b/' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: perl -pe only prints the log",
+    ),
+    # Review 9ed30a8a.3: the prefilter meets the round-log pattern itself, not three sample names, and a relative glob in an unknown directory that could name a log counts as one (both allowed at fc3f376a8).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && echo pr-babysit-a*.md | xargs cp /tmp/x.md'),
+        "roundlog-truncate: a log glob no sample name fits still reaches the walk",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && truncate -s 0 *.md'),
+        "roundlog-truncate: an md glob in an unknown directory could be a log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && truncate -s 0 *.txt'),
+        "roundlog-truncate CONTROL: a txt glob cannot be a log",
+    ),
+    # #e5b0540a, live false positive reported by w2: a `*` in Python code passed the whole-command prefilter and the program's write through a variable failed closed (all three refused at 82d323de1).
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('notes.txt')\nn = 3 * 4\np.write_text(str(n))\nEOF"
+        ),
+        "roundlog-truncate CONTROL: a heredoc that multiplies and writes through a variable",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import pathlib,sys; t=pathlib.Path(sys.argv[1]); t.write_text('x' * 3)\" out.txt"
+        ),
+        "roundlog-truncate CONTROL: python -c repeating a string into a file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("python3 - <<'EOF'\nfrom os import *\nf = open(name, 'w')\nf.write('x')\nEOF"),
+        "roundlog-truncate CONTROL: a star import that writes",
+    ),
+    # ...and a program whose own text could spell a log still fails closed on an unresolvable target.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - <<'PY'\nimport glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')\nPY"
+        ),
+        "roundlog-truncate: a program globbing md files writes through a variable",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - <<'PY'\nb = '0831-1'\nopen(f'agent/pr-babysit-{b}.md', 'w').write('')\nPY"
+        ),
+        "roundlog-truncate: a program building the log name in an f-string",
+    ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(
         "check 0 guards/warn_hook_change.py",
