@@ -416,6 +416,11 @@ SHELL_CASES = [
         False,
     ),
     (
+        "a node script that never reads stdin, fed text the walk cannot expand",
+        ": '%s'; node %s <<EOF\n$(cat /tmp/zz-absent)\nEOF" % (NQ, JS_NO_STDIN),
+        True,
+    ),
+    (
         "a node script fed a marker but no write call",
         "node %s <<'EOF'\ny = 1  %s: B010\nEOF" % (JS_NO_STDIN, NQ),
         False,

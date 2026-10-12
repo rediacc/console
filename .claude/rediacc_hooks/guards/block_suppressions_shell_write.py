@@ -51,7 +51,7 @@ WRITE_CODE = re.compile(
     r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"
 )
 # A program that RUNS text it was handed (review 13505e0b.2): for one of these the stdin is program text as well as data.
-# THE RULE (648366c8.1): stdin is program text unless the source can be classified as not evaluating it. In Python, Perl and Ruby an evaluator is reached by a NAME, so a source naming none of `_RUNS_TEXT` is classified. In JavaScript it is not (`Function(...)`, `(0, eval)(...)`, `import('data:...')`, `x.constructor.constructor(...)` name nothing a list can hold), so no JavaScript program is classified and every one of `_UNCLASSIFIED` that is fed anything is read as running it.
+# THE RULE (648366c8.1): stdin is program text unless the source can be classified as not evaluating it. In Python, Perl and Ruby an evaluator is ordinarily reached by a NAME, so a source naming none of `_RUNS_TEXT` is classified. That is a reading of the plain spelling, not a proof: a name assembled at run time (`getattr(__builtins__, 'ex' + 'ec')`) is not seen, and such a program's stdin is read as data. In JavaScript the plain spellings already name nothing a list can hold (`Function(...)`, `import('data:...')`, `x.constructor.constructor(...)`), so no JavaScript program is classified and every one of `_UNCLASSIFIED` that is fed anything is read as running it.
 _UNCLASSIFIED = ("node", "deno", "bun", "tsx")
 _RUNS_TEXT = re.compile(
     r"\b(?:exec|eval|execfile|compile|instance_eval|class_eval|module_eval)\b|new\s+Function\b"
@@ -280,7 +280,7 @@ def _offending(engine, cmd, cwd):
                 literals = _python_strings(script) if name.startswith("python") else None
                 marked = code if literals is None else " ".join(argv) + "\n" + literals
             # What arrives on the program's stdin is text it can write out too (review 094dea3b.2: `python3 copy_stdin.py <<EOF` with a marker in the heredoc was not judged). It is DATA, so it is read for markers and never for write calls (7837d22e.2: a stdin line holding `open(` made a script that writes nothing a writer), and it is read as bash hands it over (7837d22e.1: `M='<marker>'; python3 gen.py <<EOF` with a body line `$M`); a part the walk cannot expand makes it unknown, which is refused. A program read FROM stdin has no other stdin, and its heredoc is already in `code`.
-            # THE ONE PROGRAM FOR WHICH STDIN IS NOT ONLY DATA (13505e0b.2) is one that runs text it is handed (`exec(sys.stdin.read())`): its stdin is then read for write calls as well, and stdin the walk cannot expand is a program this hook cannot read.
+            # STDIN IS NOT ONLY DATA for a program that runs text it is handed (`exec(sys.stdin.read())`, 13505e0b.2) and for every JavaScript program, which is never classified (`_UNCLASSIFIED`, 648366c8.1): its stdin is then read for write calls as well, and stdin the walk cannot expand is a program this hook cannot read.
             fed: str | None = ""
             program = code
             if kind in ("file", "inline") and run.feed:
