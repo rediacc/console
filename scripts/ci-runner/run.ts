@@ -2473,6 +2473,13 @@ async function selftest(): Promise<number> {
       'CONTROL: an advance that does not start at the receipt tree reaches nothing'
     );
     require_(
+      mergeDroppedVerified(
+        { ...whole, advances: [step('t', 'u'), step('z', 'w'), step('u', 'v')] },
+        onlyRun('v', ['x'], 'ok')
+      ).merged === undefined,
+      'CONTROL: a step past a break in the chain reaches nothing'
+    );
+    require_(
       mergeDroppedVerified(whole, onlyRun('', ['x'], 'ok')).merged === undefined,
       'CONTROL: an --only run whose HEAD moved (no tree) must not merge'
     );
@@ -3123,10 +3130,12 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
   if (existing === null || typeof existing !== 'object') return { why: 'no receipt to merge into' };
   const prior = existing as Partial<Receipt>;
   if (prior.whole !== true) return { why: 'the receipt on disk is not a whole-lane receipt' };
-  // The tree the receipt vouches for NOW: its own, moved along each record-only advance that starts where the one before ended. Without this a receipt advanced past a `--review-commit` could never take a dropped gate's pass, and the push guard, which does read the chain, refused for good (2026-10-13).
+  // The tree the receipt vouches for now: its own, moved along each record-only advance. A step counts only when it starts where the one before ended, and the walk stops at the first that does not.
   let vouched = prior.headTree;
-  for (const step of Array.isArray(prior.advances) ? prior.advances : [])
-    if (step.from === vouched) vouched = step.to;
+  for (const step of Array.isArray(prior.advances) ? prior.advances : []) {
+    if (step.from !== vouched) break;
+    vouched = step.to;
+  }
   if (run.tree === '' || vouched !== run.tree)
     return {
       why: `the receipt judged tree ${vouched || '(none)'}, this run ${run.tree || '(none)'}`,
