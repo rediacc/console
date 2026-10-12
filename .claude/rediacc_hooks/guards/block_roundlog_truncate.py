@@ -861,6 +861,48 @@ EDGE_CASES = [
         "ruby: a plain read of the handed log",
         'ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md',
     ),
+    # Reviews 012e1b7b.1/.2/.3: `_extent_unknown` was a delimiter LIST with holes. It is the rule now (any non-word, non-space delimiter after a quote-like word; `<<` then optional space then a quote or identifier). The first three rows are the reviewed holes, allowed at 012e1b7b2; the rest are siblings.
+    (
+        "ruby: percent on a dash delimiter",
+        'ruby -e \'x = %-"-; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: qw on a comma delimiter",
+        'perl -e \'my @q = qw,",; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: heredoc with a space before the quoted tag",
+        'perl -e \'print << "EOT";\nA"\nEOT\nmy $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: percent on an equals delimiter",
+        'ruby -e \'x = %="=; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: a typed percent on a dash delimiter",
+        'ruby -e \'x = %Q-"-; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: m on a comma delimiter holding a quote",
+        'perl -e \'print 1 if m,",; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: s on an equals delimiter holding a quote",
+        'perl -e \'my $x="z"; $x =~ s=z="=; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: a tilde heredoc body holding a quote",
+        'ruby -e \'x = <<~EOS\n  a"\nEOS\nFile.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md',
+    ),
+    # Their controls: the plain reads stay followed.
+    (
+        "perl: a plain read of the handed log",
+        "perl -e 'open(my $f, \"<\", $ARGV[0]) or die; print <$f>' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: a plain read of the handed log",
+        'ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md',
+    ),
 ]
 
 
@@ -2118,32 +2160,53 @@ def _blanked(code, family, spans):
 def _extent_unknown(code, family):
     """Does `code` hold a construct whose EXTENT `_blanked` does not know?
 
-    `_blanked` reads three things: a quoted string, a comment, a slash-delimited pattern. Anywhere a quote or a `#` is NOT one of those, it would blank from there on and hide live code from the word check (reviews 801bbb46.1/.2: perl's `$"`, and `qw#a#`). So the shapes below are not taught to it, they are refused.
-    The shapes: a punctuation variable (`$"`, `$'`, `` $` ``, `$#`, `$#array`); a quote-like operator on a delimiter of its own (`q qq qw`, `m qr` off a slash, `s tr y` off the four the pattern reader takes, ruby's `%w %q %Q %r %i`); a heredoc; a ruby character literal; a data or pod section; perl's old `'` package separator; and a pattern or substitution that itself holds a quote, a backtick or a `#`.
+    `_blanked` reads three things: a quoted string, a comment, a slash-delimited pattern. Anywhere a quote or a `#` is NOT one of those, it would blank from there on and hide live code from the word check (reviews 801bbb46.1/.2: perl's `$"`, and `qw#a#`). The shapes below are refused, not taught to it. Each is the RULE itself, never a list of delimiters (reviews 012e1b7b.1/.2/.3: every enumerated delimiter list had a hole):
+
+    - a punctuation variable (`$`, perl `@`, or ruby `$`-globals followed by a quote, a backtick or a `#`, among them `$"` `$'` `` $` `` `$#`);
+    - a quote-like operator word (perl `q qq qw qr m s tr y`, ruby `%`-forms) on ANY non-word, non-space delimiter, the one exception being the plain `/.../ ` pattern the pattern reader already handles and only when it holds no quote;
+    - a bare ruby `%` that is not plainly the modulo operator between two spaced operands;
+    - a heredoc (`<<` then optional space, optional `~` or `-`, then a quote or an identifier);
+    - a ruby character literal (`?` then a quote); a data or pod section; perl's old `'` package separator.
+    When it is ambiguous whether one of these is present, it is refused: a log is in play.
     """
     quote = r"""["'`#]"""
+    # The plain slash pattern `_blanked` DOES read: a `/` where a pattern may stand, no quote-like word before it.
+    plain_slash = r"(?:^|[(,=~!&|{;:?]|\b(?:if|unless|and|or|not|split|grep|while|return|when|until|match|scan|gsub|sub))\s*/(?![*/])"
     shapes = [
-        # a slash where a pattern can stand, with a quote or `#` before the slash that closes it
-        r"(?:^|[(,=~!&|{;:?]|\b(?:if|unless|and|or|not|split|grep|while|return|when|until|match|scan|gsub|sub))\s*(?:m|qr)?/(?![*/])(?:\\.|[^/\n\\])*"
-        + quote,
+        # a plain slash pattern that itself holds a quote or `#` before the `/` that closes it
+        plain_slash + r"(?:\\.|[^/\n\\])*" + quote,
     ]
     if family != "js":
-        shapes += [r"\$" + quote, r"<<[~-]?[\"'\w]", r"^__(?:END|DATA)__", r"^=[a-z]"]
-    if family == "perl":
+        # A variable name whose next character is a quote or `#`: perl `$" $' $\` $#`, ruby `$" $'`. A legitimate `$#array` is refused too, and that is correct: `_blanked` cannot tell it from `$#`.
         shapes += [
-            r"(?<![\w$@%&>{])(?:q|qq|qw)\s*[^\w\s=,;)]",
-            r"(?<![\w$@%&>{])(?:m|qr)\s*[^\w\s/=,;)]",
-            r"(?<![\w$@%&>{])(?:s|tr|y)\s*[^\w\s/|!,=;)]",
+            r"[$@]" + quote,
+            r"<<\s*[~-]?\s*[\"'`]",
+            r"<<[~-]?[A-Za-z_]",
+            r"^__(?:END|DATA)__",
+            r"^=[a-z]",
+        ]
+    if family == "perl":
+        # A quote-like word on ANY delimiter that is not a word or space; a plain `/` is the pattern reader's and is handled above, so it is the one delimiter excluded here.
+        shapes += [
+            r"(?<![\w$@%&>])(?:q|qq|qw|qr|m)\s*[^\w\s/]",
+            r"(?<![\w$@%&>])(?:q|qq|qw|qr|m)/(?![*/])(?:\\.|[^/\n\\])*" + quote,
+            r"(?<![\w$@%&>])(?:s|tr|y)\s*[^\w\s/]",
             r"\w'[A-Za-z_]",
         ]
-        # a substitution on a delimiter the pattern reader takes, holding a quote or `#`
+        # A substitution on `/` (the pattern reader's own delimiter) whose body holds a quote or `#`.
         if any(
             re.search(quote, m.group(0))
-            for m in re.finditer(r"\b(?:s|tr|y)([/|!,])(?:\\.|(?!\1).)*\1(?:\\.|(?!\1).)*\1", code)
+            for m in re.finditer(r"\b(?:s|tr|y)/(?:\\.|[^/\n\\])*/(?:\\.|[^/\n\\])*/", code)
         ):
             return True
     if family == "ruby":
-        shapes += [r"%[wWqQrRiIsx]?[\[({<|!/]", r"\?" + quote]
+        # A `%`-literal on ANY delimiter: `%`, an optional single type letter, then any non-word, non-space character. A bare `%` with punctuation after it is one too, UNLESS it is plainly the modulo operator (a space, then `%`, then a space).
+        shapes += [
+            r"%[a-zA-Z]?[^\w\s]",
+            r"\?" + quote,
+        ]
+        if re.search(r"(?<![ \t])%[^\w\s=]", code):
+            return True
     return any(re.search(shape, code, re.MULTILINE) for shape in shapes)
 
 
