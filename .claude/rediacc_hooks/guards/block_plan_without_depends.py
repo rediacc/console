@@ -19,6 +19,7 @@ ITS EVIDENCE. `OWN_SUITE = True` (never bash, so no golden), so the dedicated su
 FAILS OPEN, LOUDLY, when the grammar module cannot be imported (the sibling guards' convention). CI D1-D7 is the backstop.
 """
 
+import os
 import pathlib
 import re
 import sys
@@ -384,6 +385,8 @@ def run(ev):
     path = pathlib.Path(file_path)
     if not path.is_absolute():
         path = base / path
+    # Where the write LANDS (#bc7d998c, the 3f53e99e.1 sweep): `agent/plans/x/../PLAN-a.md` and a directory symlink into `agent/plans` were out of scope as typed and allowed. `realpath` resolves `.`, `..` and every symlink in the part of the path that exists; the plan's tree and name are read from the landing.
+    path = pathlib.Path(os.path.realpath(path))
     if not PLAN_RE.search(path.as_posix()):
         return hookio.ALLOW
     tree = path.parents[2]

@@ -132,6 +132,8 @@ def tree():
         p = BASE / rel
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text, encoding="utf-8")
+    # A directory symlink into agent/plans (#bc7d998c): a write through it lands in the plan folder.
+    (BASE / "linkedplans").symlink_to(BASE / "agent" / "plans", target_is_directory=True)
     return BASE
 
 
@@ -160,6 +162,14 @@ NEW = "agent/plans/PLAN-new.md"
 CASES = [
     # ---- refusals ----
     ("a Write without the field", write(NEW, plan()), True),
+    # Judged where the write LANDS (#bc7d998c): each refusal was allowed (rc 0) before.
+    (
+        "a Write without the field through a .. detour",
+        write("agent/plans/x/../PLAN-new.md", plan()),
+        True,
+    ),
+    ("a Write without the field through a symlink", write("linkedplans/PLAN-new.md", plan()), True),
+    ("a .. detour out of the plan folder", write("agent/plans/../PLAN-new.md", plan()), False),
     ("a malformed value", write(NEW, plan(dep="agent/plans/PLAN-y.md")), True),
     ("a dangling token", write(NEW, plan(dep="PLAN-nowhere.md")), True),
     ("a _removed target", write(NEW, plan(dep="PLAN-rm.md")), True),

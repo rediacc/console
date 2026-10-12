@@ -461,15 +461,43 @@ def target_repo(seg, scan, cwd):
     return repo if repo != "" else _origin_repo(cwd)
 
 
+def _line_spans(text):
+    """`(start, end)` of every line of `text`, newline excluded: the unit `_cut_through_last` reads, and what its work-count test counts."""
+    start = 0
+    while True:
+        nl = text.find("\n", start)
+        if nl < 0:
+            yield start, len(text)
+            return
+        yield start, nl
+        start = nl + 1
+
+
+def _cut_through_last(record, needle):
+    """`(text, 1)` with the first line holding `needle` cut from its start through the LAST `needle` on it and every blank after that, else `(record, 0)`.
+
+    Exactly `re.subn(".*" + needle + "[" + SPACE + "]*", "", record, count=1)` (`.` stops at a newline, the blanks do not), read once per line. The regex tried every start position and backtracked from each to the line's end, so a long line naming no `gh pr` was quadratic: 36 s for a 200,000-character segment (measured 2026-10-11).
+    """
+    for start, end in _line_spans(record):
+        at = record.rfind(needle, start, end)
+        if at >= 0:
+            # `SPACE` is regex class text (`\t` spelled as two characters), so the blanks are read by the class itself; an anchored match is linear.
+            stop = at + len(needle)
+            blanks = re.compile("[" + SPACE + "]*").match(record, stop)
+            if blanks is not None:
+                stop = blanks.end()
+            return record[:start] + record[stop:], 1
+    return record, 0
+
+
 # pr_selector <segment> <verb> The PR selector (number/url/branch) belongs to the same invocation as the verb -- read it from the segment, never from the line.
 def pr_selector(seg, verb):
     # `sed -n "s/.*gh pr ${verb}[[:space:]]*//p"`: `.*` is greedy, so on a
-    # segment naming the verb twice this cuts at the LAST one, and `-n ... p` means non-matching lines are dropped rather than passed through.
-    cut = re.compile(r".*gh pr " + verb + r"[" + SPACE + r"]*")
+    # segment naming the verb twice this cuts at the LAST one, and `-n ... p` means non-matching lines are dropped rather than passed through. `_cut_through_last` is that substitution, read in one pass per line.
     records, _ = _records(_printf_line(seg))
     kept = []
     for record in records:
-        new, count = cut.subn("", record, count=1)
+        new, count = _cut_through_last(record, "gh pr " + verb)
         if count:
             kept.append(new)
     for record in _records(_sed_out(kept, terminated=True))[0]:

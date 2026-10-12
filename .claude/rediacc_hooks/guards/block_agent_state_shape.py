@@ -30,6 +30,7 @@ else. Python's `$` additionally matches just before a trailing newline, and
 Python's `^` would too under `re.MULTILINE`. A path is not supposed to carry a newline, but a hook payload is arbitrary JSON and the degenerate cases in the differential feed exactly that kind of thing, so the anchors are written `\\A` and `\\Z` rather than `^` and `$` and the test is `re.search` rather than either of the two `grep` helpers, which split on newlines by construction.
 """
 
+import os
 import re
 
 from rediacc_hooks import hookio
@@ -65,6 +66,19 @@ MESSAGE = (
 )
 
 EDGE_CASES = [
+    # Judged where the write LANDS (#bc7d998c): each refusal was allowed before, and the control was refused.
+    (
+        "a .. detour into a session's STATE.md",
+        {"tool_input": {"file_path": "agent/x/../d1589e0b/STATE.md"}},
+    ),
+    (
+        "a docs/agent prefix that lands in agent/",
+        {"tool_input": {"file_path": "docs/agent/../../agent/d1589e0b/STATE.md"}},
+    ),
+    (
+        "a .. detour that lands in docs/agent",
+        {"tool_input": {"file_path": "agent/d1589e0b/../../docs/agent/x/STATE.md"}},
+    ),
     # The live shape as of 2026-08-18: one component below `agent`.
     ("the live one-component shape", {"tool_input": {"file_path": "agent/d1589e0b/STATE.md"}}),
     ("the same path with a leading ./", {"tool_input": {"file_path": "./agent/d1589e0b/STATE.md"}}),
@@ -102,8 +116,28 @@ EDGE_CASES = [
 ]
 
 
+# WHERE A WRITE LANDS (#bc7d998c, the 3f53e99e.1 sweep). The scope test read the path as TYPED, so `agent/x/../plans/PLAN-a.md`, `dir/zz-detour/../file` and a directory symlink into the guarded tree were out of scope and allowed (rc 0 against rc 2 for the same landing, 2026-10-11). `_landing` resolves `.`, `..` and every symlink in the part of the path that exists (`realpath`), from the event's `cwd`, else this checkout's root. The path judged is
+# relative to that root when it lands inside it, the form every pattern here was written for, and absolute otherwise; the file is read at the absolute landing. A message names what was typed, and where it lands when the two differ, so a refusal never names a path the write would not touch.
+def _landing(ev, typed):
+    """`(absolute, judged, shown)` for the typed path, or `(typed, typed, typed)` when there is none."""
+    if not typed or typed == "null":
+        return typed, typed, typed
+    try:
+        root = str(hookio.repo_root())
+        base = ev.default(("cwd",), root)
+    except RuntimeError:
+        root = base = ev.cwd
+    plain = os.path.normpath(os.path.join(base, typed))
+    landed = os.path.realpath(plain)
+    rel = os.path.relpath(landed, os.path.realpath(root))
+    judged = landed if rel == ".." or rel.startswith("../") else rel
+    shown = typed if landed == os.path.join(base, typed) else "%s (lands at %s)" % (typed, landed)
+    return landed, judged, shown
+
+
 def run(ev):
-    file_path = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    typed = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    _absolute, file_path, _shown = _landing(ev, typed)
 
     if hookio.case_glob(file_path, *DOCS_TREES):
         return hookio.ALLOW
