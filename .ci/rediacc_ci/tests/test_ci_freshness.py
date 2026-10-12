@@ -574,6 +574,29 @@ def test_a_failure_with_no_key_gets_one_from_freshness(
     ]
 
 
+def test_keys_that_do_not_account_for_the_failure_get_the_unkeyed_key_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """Review 8abc48a1.2: a check that printed a keyed finding and then crashed, or exited with something other than the finding exit code, also gets `freshness:unkeyed-failure:<artifact>`, so a carry of its one key does not carry the crash. The control is the same keyed finding on a plain exit 1, which gets nothing added."""
+    keyed = "import sys; print('::finding::lane-durations:stale:unit', file=sys.stderr); "
+    root = make_root(
+        tmp_path,
+        [
+            entry("a/crashed.json", py(keyed + "raise RuntimeError('after the key')")),
+            entry("b/odd-exit.json", py(keyed + "sys.exit(3)")),
+            entry("c/accounted.json", py(keyed + "sys.exit(1)")),
+        ],
+    )
+    assert run_main(monkeypatch, root, ["--check", "--cadence", "pr"]) == 1
+    assert _keys(capsys.readouterr().out) == [
+        "lane-durations:stale:unit",
+        "freshness:unkeyed-failure:crashed",
+        "lane-durations:stale:unit",
+        "freshness:unkeyed-failure:odd-exit",
+        "lane-durations:stale:unit",
+    ]
+
+
 def test_a_green_run_emits_no_key(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ):

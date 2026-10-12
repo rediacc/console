@@ -33,6 +33,7 @@ failing loudly, because it made the line look tested when the controls were pass
 as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
 """
 
+import functools
 import os
 import re
 import types
@@ -256,6 +257,145 @@ EDGE_CASES = [
     ),
     ("shutil.copy onto the log", "python3 -c \"shutil.copy('a.md','agent/pr-babysit-0831-1.md')\""),
     ("os.replace onto the log", "python3 -c \"os.replace('a.md','agent/pr-babysit-0831-1.md')\""),
+    # Review 4b3f59b5.1, judged per write: every row of the first block was allowed at 8abc48a14 with the log handed. The first three name another file somewhere (that used to clear the whole program); the rest write, remove or truncate through a spelling the write test did not know, or hand the log where the handed words were not read.
+    (
+        "a named md file read beside a write to argv",
+        "python3 -c \"import sys; print(open('README.md').read()); open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a name bound to another md file beside a write to argv",
+        "python3 -c \"import sys; n='notes.md'; open(sys.argv[1],'w').write(open(n).read())\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a named copy beside a write to argv",
+        "python3 -c \"import sys,shutil; shutil.copy('a.md','b.md'); open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a path object's own open('w') on argv",
+        "python3 -c \"import sys,pathlib; pathlib.Path(sys.argv[1]).open('w').write('')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "an open( whose arguments span lines",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nf = open(\n    sys.argv[1],\n    'w',\n)\nf.write('')\nPY",
+    ),
+    (
+        "os.truncate on argv",
+        'python3 -c "import sys,os; os.truncate(sys.argv[1], 0)" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "truncate() on a handle opened r+",
+        "python3 -c \"import sys; f=open(sys.argv[1],'r+'); f.truncate()\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "os.remove on argv",
+        'python3 -c "import sys,os; os.remove(sys.argv[1])" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "an imported remove on argv",
+        'python3 -c "import sys; from os import remove; remove(sys.argv[1])" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "Path.unlink on argv",
+        'python3 -c "import sys,pathlib; pathlib.Path(sys.argv[1]).unlink()" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "O_TRUNC on argv",
+        'python3 -c "import sys,os; os.open(sys.argv[1], os.O_WRONLY|os.O_TRUNC)" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "a shell command built from argv",
+        "python3 -c \"import sys,os; os.system('cp /dev/null ' + sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a subprocess handed argv",
+        "python3 -c \"import sys,subprocess; subprocess.run(['truncate','-s','0',sys.argv[1]])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "code built at run time",
+        "python3 -c \"import sys; eval('open(sys.argv[1],chr(119))')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "node truncateSync on argv",
+        "node -e \"require('fs').truncateSync(process.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    ("ruby File.write on argv", "ruby -e \"File.write(ARGV[0], '')\" agent/pr-babysit-0831-1.md"),
+    (
+        "perl open in write mode on argv",
+        "perl -e 'open(my $f, \">\", $ARGV[0]); close $f' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "the log as an option's value",
+        "python3 -c \"import sys; open(sys.argv[1].split('=')[1],'w').write('')\" --out=pr-babysit-0831-1.md",
+    ),
+    (
+        "an md glob on the program's stdin",
+        'cd "$D" && ls *.md | python3 -c "import sys; [open(l.strip(),\'w\') for l in sys.stdin]"',
+    ),
+    (
+        "a write mode held in a variable",
+        "python3 -c \"import sys; m='w'; open(sys.argv[1], m).write('')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a write mode taken from argv",
+        "python3 -c \"import sys; open(sys.argv[1], sys.argv[2]).write('')\" agent/pr-babysit-0831-1.md w",
+    ),
+    (
+        "a remover passed to map, never called in the text",
+        'python3 -c "import sys,os; list(map(os.remove, sys.argv[1:]))" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "open under another name",
+        "python3 -c \"import sys; w=open; w(sys.argv[1],'w')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a literal-bound name a loop rebinds",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\np = 'x.txt'\nfor p in sys.argv[1:]:\n    open(p, 'w').write('')\nPY",
+    ),
+    (
+        "a literal-bound name a parameter shadows",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\np = 'x.txt'\ndef w(p):\n    open(p, 'w').write('')\nw(sys.argv[1])\nPY",
+    ),
+    # Their controls, all allowed: every write goes to a named file that is not a log, or nothing replaces a file at all. The star row is review 4b3f59b5.2: inline program text is not a shell word, so `2*3` is not a glob.
+    (
+        "a named output written from the handed log",
+        "python3 -c \"import sys; open('out.txt','w').write(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a named md copy written while the handed log is printed",
+        "python3 -c \"import sys; print(open(sys.argv[1]).read()); open('copy.md','w').write('x')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a literal-bound name written from the handed log",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\np = 'x.txt'\nopen(p, 'w').write(open(sys.argv[1]).read())\nPY",
+    ),
+    (
+        "a read mode held in a variable",
+        "python3 -c \"import sys; m='r'; print(open(sys.argv[1], m).read())\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "an append to the handed log",
+        "python3 -c \"import sys; open(sys.argv[1], 'a').write('more')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "str.replace on what was read from the handed log",
+        "python3 -c \"import sys; s=open(sys.argv[1]).read().replace('a','b'); open('out.txt','w').write(s)\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "an md glob on the stdin of a program that only prints",
+        'cd "$D" && ls *.md | python3 -c "import sys; print(sys.stdin.read())"',
+    ),
+    (
+        "a star in inline code beside a named write",
+        "python3 -c \"p=2*3; open('n.txt','w').write(str(p))\"",
+    ),
+    (
+        "perl reading the handed log",
+        "perl -e 'open(my $f, \"<\", $ARGV[0]); print <$f>' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "node writing a named file from the handed log",
+        "node -e \"const fs=require('fs'); const o='out.json'; fs.writeFileSync(o, fs.readFileSync(process.argv[1]))\" agent/pr-babysit-0831-1.md",
+    ),
 ]
 
 
@@ -424,7 +564,7 @@ def _program_could_name_log(code):
 
 
 def _shell_words(cmd):
-    """The shell words a truncating arm judges: every redirect target, and the words (with what xargs appends) of each `mv`, `truncate`, `cp`, `dd`, `tee` and in-place editor bash runs. Interpreter program text is not among them."""
+    """The shell words a truncating arm judges: every redirect target, and the words (with what xargs appends) of each `mv`, `truncate`, `cp`, `dd`, `tee` and in-place editor bash runs. For an interpreter run, its arguments other than the inline program, and its stdin feed. Interpreter PROGRAM TEXT is not among them."""
     words = [target for _op, target in shellscan._analyse(cmd).writes]
     for run_ in shellscan.every_run(cmd):
         base = run_.name.rsplit("/", 1)[-1]
@@ -434,8 +574,12 @@ def _shell_words(cmd):
             or shellscan.in_place_edit(run_) is not None
             or base.startswith(shellscan.INTERPRETER_NAMES)
         ):
-            words.extend(run_.argv)
-            if run_.feed and "xargs" in run_.via:
+            interpreter = base.startswith(shellscan.INTERPRETER_NAMES)
+            # The inline program is not an operand (review 4b3f59b5.2): its text is the program arm's to read, literal by literal, and a `*` in code is not a glob.
+            program = shellscan.interpreter_program(run_, cmd)[0] if interpreter else None
+            words.extend(a for a in run_.argv if a != program)
+            # xargs turns its feed into operands, and an interpreter reads its stdin (`ls *.md | python3 -c "... sys.stdin ..."`).
+            if run_.feed and ("xargs" in run_.via or interpreter):
                 words.extend(run_.feed.split())
     return words
 
@@ -507,7 +651,14 @@ def _verb_truncates(run_, cwd):
 def _handed_words(run_, code, kind):
     """What the command line hands an interpreter run besides its program (review 1d4e1754.1): its arguments as bash expands them (the inline program itself left out), the values of the environment the command line gives it (`F=<log> python3 ...`, an earlier `export`), and the words on its stdin when the program did not come from there. A program reads any of them without naming a path in its own text (`sys.argv[1]`, `os.environ['F']`, `sys.stdin`)."""
     args = list(run_.argv if run_.xargv is None else run_.xargv)
-    words = [a for a in args if a != code and not (a.startswith("-") and len(a) > 1)]
+    # EVERY word but the program itself. An option is an operand too: `--out=<log>` hands the log as its value, and a bare `-o` is harmless to keep (review 4b3f59b5.1: dropping option-shaped words dropped `--out=<log>` with them).
+    words = []
+    for arg in args:
+        if arg == code:
+            continue
+        words.append(arg)
+        if arg.startswith("-") and "=" in arg:
+            words.append(arg.split("=", 1)[1])
     words += [v for v in run_.env.values() if isinstance(v, str)]
     if kind != "stdin" and run_.feed:
         words += run_.feed.split()
@@ -520,34 +671,241 @@ def _handed_a_log(run_, code, kind, cwd):
     return any(_names_log(w, directory) for w in _handed_words(run_, code, kind))
 
 
-def _program_truncates(code, handed=False):
-    """Does an interpreter program write a round log, or write a target it never names?
+# --------------------------------------------------------------------------- what an interpreter program writes ---------------------------------------------------------------------------
+#
+# JUDGED PER WRITE (review 4b3f59b5.1). The program arm used to collect every quoted `.md` literal in a target position and, when it found one that was not a round log, clear the whole program: `print(open('README.md').read()); open(sys.argv[1], 'w')` handed the log was allowed because `README.md` was "the target". Each write SITE is now read on its own: the expression it writes through is a path literal (harmless unless it names a log), a name bound only to path literals (the same), or anything else, which is UNRESOLVED. One unresolved write keeps a handed or spellable log in play, whatever else the program names.
+#
+# A SITE IS ANY CALL THAT REPLACES OR REMOVES A FILE, not only `open(..., 'w')`. Each row below was allowed with the log handed in argv until the row's spelling was listed (measured 2026-10-12 at 8abc48a14): a path object's own `.open('w')`, an `open(` whose arguments span lines, `truncate`, `remove`/`unlink`, `O_TRUNC`, node's `fs` calls beyond `writeFileSync`, ruby's `File.write`, a perl `open` in `>` mode, and a program that hands a command to a shell.
+#
+# STILL NOT READ, each measured allowed with the log handed (2026-10-12) and named rather than pretended away: a writer reached dynamically (`getattr(os, 'rem' + 'ove')`, `__import__('os').remove`), `Path.replace` (the method name is `str.replace` in nearly every program), a DIRECTORY handed in place of the log (`os.listdir(sys.argv[1])` over `agent`), a log name assembled from pieces that never hold the stem whole, and a path the program reads out of a file.
+@functools.lru_cache(maxsize=1)
+def _grammar():
+    """The compiled readers of PROGRAM TEXT, built once. Each is applied to an interpreter program the walk already chose and never to the command, so they are built here rather than held as module patterns."""
+    string = r"""[rRbBuUfF]{0,2}(?:'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*")"""
+    # What a method is called on: a dotted, subscripted name, with one trailing call (`pathlib.Path('x')`).
+    receiver = (
+        r"[A-Za-z_$@][\w$]*(?:\.[A-Za-z_]\w*|\[[^\]\n]*\])*(?:\((?:[^()'\"]|" + string + r")*\))?"
+    )
+    return types.SimpleNamespace(
+        string=re.compile(string),
+        receiver=re.compile(r"(" + receiver + r")\s*\.$"),
+        # A path literal wrapped once: `Path('x')` with that one argument (a second one joins a run-time part on), or `open('x', ...)`, whose later arguments are a mode.
+        wrap=re.compile(
+            r"(?:pathlib\.)?(?:Path|PurePath|PosixPath)\(\s*(?P<p>"
+            + string
+            + r")\s*\)|open\(\s*(?P<o>"
+            + string
+            + r")\s*(?:,[^()]*)?\)"
+        ),
+        # `open(` in every dialect: the builtin, a module's (`io.open`, `File.open`, `fs.openSync`), a path object's own.
+        opener=re.compile(r"(?<![\w$])open(?:Sync)?\("),
+        # Calls that replace or remove the file named by their FIRST argument. The bare names are the same calls imported (`from os import remove`).
+        first=re.compile(
+            r"(?:\bos\.(?:truncate|remove|unlink|rmdir)|\bFile\.(?:write|delete|truncate|unlink)|\b(?:fs\.)?(?:writeFileSync|writeFile|truncateSync|rmSync|unlinkSync|rmdirSync|createWriteStream)|(?<![\w.$])(?:truncate|remove|unlink))\("
+        ),
+        # Calls that replace or remove a file named by ANY argument: the copy and move family, imported bare or not.
+        every=re.compile(
+            r"(?:\bshutil\.(?:copy|copyfile|copy2|move|rmtree)|\bos\.(?:replace|rename|renames)|\b(?:fs\.)?(?:renameSync|copyFileSync)|(?<![\w.$])(?:copy|copyfile|copy2|move|rmtree|rename|replace))\("
+        ),
+        # Methods that replace or remove the path they are called ON. `.replace(` is absent: it is `str.replace` in nearly every program, and `Path.replace` is a named residual.
+        method=re.compile(r"\.(?:write_text|write_bytes|unlink|truncate|rmdir|touch|rename)\("),
+        # No readable target at all: a raw descriptor flag, a command handed to a shell, code built at run time, the perl and ruby calls written without parentheses, and a writer passed around as a value rather than called (`map(os.remove, sys.argv[1:])`, `w = open`).
+        blind=re.compile(
+            r"O_TRUNC|\bos\.system\(|\bsubprocess\.|\bexecSync\(|\bchild_process\b|\bspawnSync\(|\bsystem\(|`[^`\n]*`|\bexec\(|\beval\(|\bopen\s+(?:my\s+)?[$A-Z]\w*\s*,\s*['\"]\+?>(?!>)|(?<![\w.$])(?:unlink|rename|truncate)\s+[$@'\"]|\bFile\.(?:write|delete|truncate|unlink|open)\s+[^\s(=]|\b(?:os\.(?:remove|unlink|truncate|rename|replace)|shutil\.(?:copy|copyfile|copy2|move|rmtree))\b(?!\s*\()|[=(,]\s*open\s*[,);\n]"
+        ),
+    )
 
-    THE PYTHON ARM MUST TEST THE TARGET, NOT JUST THE IDIOM. A heredoc editing an unrelated file whose CONTENT quotes a round-log path matched every time when this was an unconditional idiom test (measured 2026-08-27, refusing an edit to a scratchpad state-body file). So the write target is resolved the way python spells one -- assigned to a name, or handed to open()/Path() -- and every quoted path inside a copy/move call counts too, since only the destination truncates and telling the two apart by position across copy/copyfile/copy2/move/replace/rename is fragile. FAIL CLOSED when no target resolves: that unidentifiable shape is `p.write_text(s[:i] + new)`, which destroyed the round history on 2026-08-19.
 
-    shutil/os MOVE AND COPY COUNT AS WRITES. Measured 2026-08-27: shutil.copy and os.replace onto a round log both returned 0 from this guard, because the arm triggered only on write_text and open(...,"w"). Each of them overwrites the file completely.
-    """
-    if not hookio.grep_q_line(
-        # `open(<anything on the line>, 'w'`: the target expression may hold its own parentheses (`open(sys.stdin.read().strip(), 'w')`, review 1d4e1754.1), which `[^)]*` stopped at. `writeFileSync` is node's whole-file write.
-        r"write_text|write_bytes|open\([^\n]*,[ \t]*(mode[ \t]*=[ \t]*)?[\"']w|writeFileSync"
-        r"|shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename)",
+# The receivers whose `.open(` takes the path as its first argument, as the builtin does; any other receiver IS the path (`Path(x).open('w')`).
+_OPEN_MODULES = frozenset(("io", "codecs", "builtins", "__builtins__", "File", "IO", "fs", "os"))
+
+
+def _call_args(code, at):
+    """The arguments of the call whose `(` is `code[at]`, split at its top-level commas; None when the call never closes (a quote this reading lost track of)."""
+    depth, quote, start, args, i = 0, None, at + 1, [], at
+    while i < len(code):
+        ch = code[i]
+        if quote:
+            if ch == "\\":
+                i += 1
+            elif ch == quote:
+                quote = None
+        elif ch in "'\"":
+            quote = ch
+        elif ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+            if depth == 0:
+                args.append(code[start:i])
+                return [a.strip() for a in args if a.strip()]
+        elif ch == "," and depth == 1:
+            args.append(code[start:i])
+            start = i + 1
+        i += 1
+    return None
+
+
+def _string_body(lit):
+    """`(prefix, body)` of one string literal."""
+    quote = min(i for i in (lit.find("'"), lit.find('"')) if i >= 0)
+    return lit[:quote].lower(), lit[quote + 1 : -1]
+
+
+def _literal_text(expr):
+    """The path a target expression spells when it is ONE string literal, alone or wrapped in `Path(...)`/`open(...)`; None for anything built at run time. An f-string with a `{}` hole is built at run time unless its fixed text already holds the round-log stem."""
+    grammar = _grammar()
+    expr = expr.strip()
+    wrapped = grammar.wrap.fullmatch(expr)
+    if wrapped:
+        lit = wrapped.group("p") or wrapped.group("o")
+    elif grammar.string.fullmatch(expr):
+        lit = expr
+    else:
+        return None
+    prefix, body = _string_body(lit)
+    if "f" in prefix and "{" in body and _LOG_STEM not in body:
+        return None
+    return body
+
+
+def _bound_literals(name, code):
+    """Every literal `name` is bound to in `code`, or None unless EVERY binding of it is a plain statement-level assignment of one literal. Not bound at all is None (`sys.argv`, a parameter), and so is a name bound any other way: a loop (`for p in sys.argv[1:]`), `with ... as p`, an import, a walrus, an augmented, tuple, chained or conditional one-line assignment, a function or lambda parameter, a `global`."""
+    q = re.escape(name)
+    plain = re.findall(
+        r"(?:^|[;\n])[ \t]*(?:(?:const|let|var)[ \t]+)?"
+        + q
+        + r"[ \t]*(?::[^=\n]+)?=(?!=)[ \t]*([^;\n]+)",
         code,
-    ):
+    )
+    if not plain:
+        return None
+    # Every `name =` anywhere, whatever precedes it: more of them than plain assignments means one sits where the plain reading does not look (`if c: p = sys.argv[1]`, `a = p = x`, `f(p=x)`).
+    if len(re.findall(r"(?<![\w.$])" + q + r"\s*(?::[^=\n()]+)?=(?!=)", code)) != len(plain):
+        return None
+    other = (
+        r"\bfor\s+[^:\n]*?\b" + q + r"\b[^:\n]*?\bin\b",
+        r"\bas\s+\(?[\w, ]*\b" + q + r"\b",
+        r"\b(?:global|nonlocal|import)\s+[^\n;]*\b" + q + r"\b",
+        r"(?<![\w.$])" + q + r"\s*(?::=|[+\-*/%|&^@]=|<<=|>>=|,[^=\n;]*=(?!=))",
+        r",\s*" + q + r"\s*=(?!=)",
+        r"\bdef\s+\w+\s*\([^)]*\b" + q + r"\b",
+        r"\blambda\b[^:\n]*\b" + q + r"\b",
+    )
+    if any(re.search(form, code) for form in other):
+        return None
+    out = []
+    for rhs in plain:
+        text = _literal_text(rhs)
+        if text is None:
+            return None
+        out.append(text)
+    return out
+
+
+def _keyword(args, name):
+    """The value of the `name=` argument among `args`, or None."""
+    for arg in args:
+        m = re.match(re.escape(name) + r"\s*=(?!=)\s*(.+)", arg, re.DOTALL)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def _positional(args, index):
+    """The `index`-th argument when it is positional, or None."""
+    if index < len(args) and not re.match(r"[A-Za-z_]\w*\s*=(?!=)", args[index]):
+        return args[index]
+    return None
+
+
+def _mode_writes(expr, code):
+    """Does an `open` mode replace the file's content? A literal one does when it holds `w`, `x`, `+` or perl's `>` (an append, `a` or `>>`, and a read do not); no mode at all is a read; a mode this reading cannot resolve to literals is taken as a write (`m = sys.argv[2]; open(p, m)`)."""
+    if expr is None:
         return False
-    candidates = []
-    for match in hookio.grep_o(
-        r"(=|open\(|Path\()[" + hookio.BLANK + r"]*[\"'][^\"']+\.md", hookio._here_string(code)
-    ):
-        candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
-    for match in hookio.grep_o(
-        r"(shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename))\([^)]*",
-        hookio._here_string(code),
-    ):
-        candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
-    if candidates:
-        return any(_is_log(c) for c in candidates)
-    # FAIL CLOSED WHERE THE PROGRAM COULD REACH A LOG (#e5b0540a, review 1d4e1754.1). An unresolvable target is `p.write_text(s[:i] + new)`, the 2026-08-19 shape. It stays refused when the program's text could name a round log (`_program_could_name_log`) or when the run was HANDED one (`handed`: an argument, an environment value, its stdin), since `open(sys.argv[1], 'w')` names no path at all. A program that neither spells nor is handed a log writes some other file, however it writes it.
-    return handed or _program_could_name_log(code)
+    if _grammar().string.fullmatch(expr):
+        modes = [_string_body(expr)[1]]
+    elif re.fullmatch(r"[A-Za-z_]\w*", expr):
+        modes = _bound_literals(expr, code)
+    else:
+        modes = None
+    if modes is None:
+        return True
+    return any(not m.startswith(">>") and any(ch in m for ch in "wx+>") for m in modes)
+
+
+def _write_sites(code):
+    """Every expression `code` writes THROUGH, one per site; None for a site whose target this reading cannot lift out."""
+    grammar = _grammar()
+    sites: list[str | None] = [None for _ in grammar.blind.finditer(code)]
+    for match in grammar.opener.finditer(code):
+        args = _call_args(code, match.end() - 1)
+        before = code[: match.start()]
+        on = None
+        if before.endswith("."):
+            found = grammar.receiver.search(before)
+            on = found.group(1) if found else ""
+        if args is None:
+            sites.append(None)
+        elif on == "os":
+            # `os.open(path, flags)`: a write unless the flags are exactly read-only.
+            if len(args) < 2 or not re.fullmatch(r"(?:os\.)?O_RDONLY", args[1]):
+                sites.append(args[0] if args else None)
+        elif on is None or on in _OPEN_MODULES:
+            if _mode_writes(_keyword(args, "mode") or _positional(args, 1), code):
+                sites.append(_keyword(args, "file") or _positional(args, 0))
+        elif _mode_writes(_keyword(args, "mode") or _positional(args, 0), code):
+            sites.append(on or None)
+    for match in grammar.first.finditer(code):
+        args = _call_args(code, match.end() - 1)
+        sites.append(args[0] if args else None)
+    for match in grammar.every.finditer(code):
+        args = _call_args(code, match.end() - 1)
+        # Every path the call names is one it may replace; a call with none readable is one unresolved site.
+        sites.extend(args or [None])
+    for match in grammar.method.finditer(code):
+        found = grammar.receiver.search(code[: match.start() + 1])
+        sites.append(found.group(1) if found else None)
+    return sites
+
+
+def _site_targets(code):
+    """`(literals, unresolved)` over every write site of `code`: the path literals its writes provably go to, and whether any write goes through something this reading cannot resolve."""
+    literals: list[str] = []
+    unresolved = False
+    for target in _write_sites(code):
+        text = None if target is None else _literal_text(target)
+        if text is not None:
+            literals.append(text)
+            continue
+        bound = None
+        if target is not None and re.fullmatch(r"[A-Za-z_]\w*", target.strip()):
+            bound = _bound_literals(target.strip(), code)
+        if bound is None:
+            unresolved = True
+        else:
+            literals.extend(bound)
+    return literals, unresolved
+
+
+def _literal_names_log(text):
+    """Does a path literal name a round log, or spell one through a glob, a brace or the stem (an f-string's fixed text)?"""
+    return _is_log(text) or _LOG_STEM in text or _word_could_name_log(text)
+
+
+def _program_truncates(code, handed=False):
+    """Does an interpreter program replace or remove a round log?
+
+    Read per write site (`_site_targets`). A write to a path literal that names a log is one. A write through something UNRESOLVED (a variable bound at run time, `sys.argv[1]`, an environment value, a command handed to a shell) is one when the program could reach a log: its own text could spell one (`_program_could_name_log`, the 2026-08-19 `p.write_text(s[:i] + new)` shape), or the run was HANDED one (`handed`: an argument, an environment value, its stdin). A program whose every write goes to a named path that is not a log writes those files and no other, whatever it reads.
+
+    shutil/os MOVE AND COPY COUNT AS WRITES on every path they name: only the destination is replaced, but telling the two apart by position across copy/copyfile/copy2/move/replace/rename is fragile (measured 2026-08-27: both returned 0 from this guard while only `write_text` and `open(..., "w")` were asked).
+    """
+    literals, unresolved = _site_targets(code)
+    if any(_literal_names_log(text) for text in literals):
+        return True
+    if unresolved:
+        return handed or _program_could_name_log(code)
+    return False
 
 
 def run(ev):
@@ -574,7 +932,12 @@ def run(ev):
     if not truncating:
         for run_ in shellscan.every_run(cmd):
             code, kind = shellscan.interpreter_program(run_, cmd, cwd)
-            if code and _handed_a_log(run_, code, kind, cwd) and _program_truncates(code, True):
+            if code is None and kind != "unjudgeable":
+                continue
+            # A script this walk cannot read (an earlier clause wrote it from a source it cannot follow) is every program at once: handed a log, it is refused.
+            if _handed_a_log(run_, code, kind, cwd) and (
+                code is None or _program_truncates(code, True)
+            ):
                 truncating = True
                 break
 

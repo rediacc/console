@@ -42,7 +42,8 @@ CHECK_BUDGET_S = 480
 REFUSED = 2
 
 
-# FINDING KEYS (review d21f5510.1). check:ci-budget-freshness printed prose only, so the one way to carry a known red past the push guard was `"findings": "*"`, which carries every failure of the gate, the next budget or cost red included. Every finding a check reports is now a `Keyed` string, and `emit_findings` prints one `::finding::<key>` line for each, so a carry names findings one by one and a new one is refused.
+# FINDING KEYS (review d21f5510.1). check:ci-budget-freshness printed prose only, so the one way to carry a known red past the push guard was `"findings": "*"`, which carries every failure of the gate, the next budget or cost red included. Every finding a check reports is now a `Keyed` string, and `emit_findings` prints one `::finding::<key>` line per DISTINCT KEY, so a carry names finding keys one by one and a new one is refused.
+# DUPLICATES COLLAPSE because the key is the unit a carry names, and several findings can share one: two stale runs of one lane are two findings with two texts and one key, since the key holds no number that would tell them apart. Printing the key twice would add nothing a carry or the push guard could act on, and the prose above the key lines still shows every finding.
 # THE KEY IS `<artifact>:<class>[:<subject>]`: the artifact's short name (`lane-durations`, `gate-costs`, `freshness`), the finding class, and the lane, gate, unit or job it is about. Never a count, a duration, a percentage, a run id or a date: those move from run to run, and a key that moves reads as a new finding every time.
 _KEY_UNSAFE = re.compile(r"[^A-Za-z0-9._:/@#-]+")
 
@@ -216,11 +217,24 @@ def run_check(argv: tuple[str, ...], root: Path, timeout: float) -> tuple[int, s
     return proc.returncode, proc.stdout or ""
 
 
+# A check reports findings by exiting 1 (`budget_report --check`, `gate_costs --check`, and the registry's own contract); any other failing exit is something else: a usage error, a signal, a crash in a wrapper.
+FINDING_RC = 1
+_TRACEBACK = "Traceback (most recent call last)"
+
+
 def _keyed_output(entry: Entry, rc: int, output: str) -> str:
-    """`output`, with a `::finding::` line appended when a FAILED check printed none: `freshness:missing:<artifact>` for a registered artifact that is not there, `freshness:unchecked:<artifact>` for a check that timed out or could not start, and `freshness:unkeyed-failure:<artifact>` for one that failed in a way its producer has no key for. A failure with no key at all would sit beside carried keys unseen."""
-    if rc == 0 or any(line.startswith(log.FINDING_PREFIX) for line in output.splitlines()):
+    """`output`, with a `::finding::` line appended when the keys a FAILED check printed do not account for its failure: `freshness:missing:<artifact>` for a registered artifact that is not there, `freshness:unchecked:<artifact>` for a check that timed out or could not start, and `freshness:unkeyed-failure:<artifact>` for one that failed in a way its producer has no key for. A failure with no key at all would sit beside carried keys unseen.
+
+    KEYS PRINTED ARE NOT PROOF THE FAILURE IS KEYED (review 8abc48a1.2). A check that printed one keyed finding and then crashed, or exited with anything but the finding exit code, failed for a reason no key names; with that one key carried, the crash would pass the push guard as a known red. So a traceback in the output, or an exit other than `FINDING_RC`, adds `freshness:unkeyed-failure:<artifact>` beside the keys the check did print.
+    """
+    if rc == 0:
         return output
-    if output.startswith("UNCHECKED:"):
+    keyed = any(line.startswith(log.FINDING_PREFIX) for line in output.splitlines())
+    if keyed:
+        if rc == FINDING_RC and _TRACEBACK not in output:
+            return output
+        kind = "unkeyed-failure"
+    elif output.startswith("UNCHECKED:"):
         kind = "unchecked"
     elif not output.startswith("%s does not exist." % entry.artifact):
         kind = "unkeyed-failure"
