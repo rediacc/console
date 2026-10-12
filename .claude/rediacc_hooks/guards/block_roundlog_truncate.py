@@ -894,15 +894,7 @@ EDGE_CASES = [
         "ruby: a tilde heredoc body holding a quote",
         'ruby -e \'x = <<~EOS\n  a"\nEOS\nFile.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md',
     ),
-    # Their controls: the plain reads stay followed.
-    (
-        "perl: a plain read of the handed log",
-        "perl -e 'open(my $f, \"<\", $ARGV[0]) or die; print <$f>' agent/pr-babysit-0831-1.md",
-    ),
-    (
-        "ruby: a plain read of the handed log",
-        'ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md',
-    ),
+    # Their controls are the two plain reads listed above (a52292e4.3).
 ]
 
 
@@ -2186,11 +2178,14 @@ def _extent_unknown(code, family):
             r"^=[a-z]",
         ]
     if family == "perl":
-        # A quote-like word on ANY delimiter that is not a word or space; a plain `/` is the pattern reader's and is handled above, so it is the one delimiter excluded here.
+        # A quote-like word on ANY delimiter that is not a word or space; a plain `/` touching the word is the pattern reader's and is handled above, so it is the one delimiter excluded here. A `/` after a space is not the pattern reader's (a52292e4.2) and is refused.
+        # What may stand before the word and make it a name (a52292e4.1): a word character, the sigils `$` and `@`, which are never operators, and the method arrow. `%`, `&` and `>` are operators too (`1 %q#a#`, `&&q#a#`, `1>q#a#`), so a word after one of them is refused, a hash named `%s` and a call spelled `&s` with it.
+        name = r"(?<![\w$@])(?<!->)"
         shapes += [
-            r"(?<![\w$@%&>])(?:q|qq|qw|qr|m)\s*[^\w\s/]",
-            r"(?<![\w$@%&>])(?:q|qq|qw|qr|m)/(?![*/])(?:\\.|[^/\n\\])*" + quote,
-            r"(?<![\w$@%&>])(?:s|tr|y)\s*[^\w\s/]",
+            name + r"(?:q|qq|qw|qr|m)\s*[^\w\s/]",
+            name + r"(?:q|qq|qw|qr|m)/(?![*/])(?:\\.|[^/\n\\])*" + quote,
+            name + r"(?:s|tr|y)\s*[^\w\s/]",
+            name + r"(?:q|qq|qw|qr|m|s|tr|y)\s+/",
             r"\w'[A-Za-z_]",
         ]
         # A substitution on `/` (the pattern reader's own delimiter) whose body holds a quote or `#`.
