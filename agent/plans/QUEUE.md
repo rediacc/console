@@ -56,9 +56,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Branch: 1008-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-retire-bash-oracles.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 336 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 410 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
 - Writers: 2 live of writer_cap 15 (session d778be9d): worker:a239d663cd52c1bfb, worker:ad0f9f274a269c9cb.
-- Leased items: 2: #05829121 (worker:ae5d3f07fbbb5a00c, d778be9d), #f32d3604 (worker:a239d663cd52c1bfb, d778be9d).
+- Leased items: 2: #05829121 (worker:ad0f9f274a269c9cb, d778be9d), #6361fc5b (worker:a239d663cd52c1bfb, d778be9d).
 - Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
