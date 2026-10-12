@@ -4407,6 +4407,47 @@ STATIC: list[Case] = [
         bash_json('ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md'),
         "roundlog-truncate CONTROL: ruby: a plain read of the handed log",
     ),
+    # Reviews 012e1b7b.1/.2/.3: the quote-like extent rule, not a delimiter list. The deny rows were allowed at 012e1b7b2.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = %-"-; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: percent on a dash delimiter",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'my @q = qw,",; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: qw on a comma delimiter",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'print << "EOT";\nA"\nEOT\nmy $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: heredoc with a space before the quoted tag",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = %Q-"-; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: a typed percent on a dash delimiter",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'open(my $f, \"<\", $ARGV[0]) or die; print <$f>' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: perl: a plain read of the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: ruby: a plain read of the handed log",
+    ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(
         "check 0 guards/warn_hook_change.py",
