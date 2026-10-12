@@ -2748,7 +2748,8 @@ def find_finding(root, branch, finding_id):
     return hits[0]
 
 
-CITE_PATH = re.compile(r"([A-Za-z0-9_./-]+\.[A-Za-z0-9]+):(\d+)")
+# Any path spelling, extension or not: `Dockerfile:83` and `Makefile:12` are files too, and the old pattern demanded a dot-extension, so evidence naming one was refused as citing nothing (2026-10-11). `_citation_ok` still requires the path to be a file holding that line, which is what keeps a clock time or a ratio from counting.
+CITE_PATH = re.compile(r"(?<![A-Za-z0-9_./-])([A-Za-z0-9_./-]*[A-Za-z_][A-Za-z0-9_./-]*):(\d+)")
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
 
 

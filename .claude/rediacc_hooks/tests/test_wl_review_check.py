@@ -555,3 +555,17 @@ def test_a_submodule_label_ignores_the_console_tip_pin(tmp_path):
     assert "stale-tip" not in reasons, reasons
     reasons, _lines = R.check_state(repo, BRANCH, label="console", expected_tip=foreign)
     assert reasons == ["stale-tip"], reasons
+
+
+def test_a_citation_may_name_an_extensionless_file(tmp_path):
+    """`Dockerfile:83` is a path:line like any other (worklist item on the refused not-a-bug mark, 2026-10-11); a line past the file's end, a missing file and a bare clock time still cite nothing."""
+    (tmp_path / "Dockerfile").write_text("FROM x\nRUN y\n", encoding="utf-8")
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "a.py").write_text("x = 1\n", encoding="utf-8")
+    assert R._citation_ok(str(tmp_path), "the consumer is Dockerfile:2, after the install")
+    assert R._citation_ok(str(tmp_path), "see pkg/a.py:1 for the binding")
+    assert not R._citation_ok(str(tmp_path), "the consumer is Dockerfile:9, past the end")
+    assert not R._citation_ok(str(tmp_path), "the consumer is Makefile:1, which is not there")
+    assert not R._citation_ok(
+        str(tmp_path), "measured at 10:35 with a ratio of 3:1 and nothing else"
+    )
