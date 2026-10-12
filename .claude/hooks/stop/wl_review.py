@@ -2751,23 +2751,27 @@ def find_finding(root, branch, finding_id):
 
 # A `path:line` citation is found WITHOUT a regular expression over the path: the evidence is cut on one class of separator characters (a single-class split cannot backtrack) and each token is read with string operations, so no input makes the scan superlinear. Any path spelling counts, extension or not: `Dockerfile:83` and `Makefile:12` are files too, and an earlier pattern that demanded a dot-extension refused evidence naming one (2026-10-11).
 CITE_SEPARATORS = re.compile(r"[^A-Za-z0-9_./:-]+")
-# A cited file is read no further than this many bytes: the check needs to know the line exists, not the file's size, and a tracked link may point at something very large. A line beyond the bound cites nothing.
+# A cited file is read no further than this many characters, in chunks, stopping at the cited line: the check needs to know the line exists, not the file's size, and a tracked link may point at something very large. A line beyond the bound cites nothing.
 CITE_READ_CAP = 8 * 1024 * 1024
+CITE_CHUNK = 64 * 1024
 # A token is cut on its colons into at most this many parts, which bounds the candidates one token can yield.
 CITE_PARTS_CAP = 8
+# What may follow a line number inside its token: nothing, a column (`:5`), a range (`-14`), or closing punctuation. Anything else means the digits were not a line number: the `80` of `http://host:80/x` is a port.
+CITE_AFTER_LINE = (":", "-", ",", ".", ")", "]")
 
 
 def _cited_paths(evidence):
     """Every (path, line) a `path:line` token of `evidence` could mean.
 
-    A colon followed by digits is a line number, and the path is any run of the parts before it, so the usual spellings all cite: `a.py:12`, a column `a.py:12:5`, a range `a.py:12-14`, and a label glued on, `Evidence:a.py:1`. `_citation_ok` keeps the candidates that are files. The path must hold a letter: `10:35` and `3:1` are a clock time and a ratio, so a file whose whole path is digits and punctuation is not citable by path:line and is cited by a sha instead.
+    A colon followed by digits is a line number when the digits end the token or are followed by a column, a range or closing punctuation, and the path is any run of the parts before it. So the usual spellings all cite: `a.py:12`, a column `a.py:12:5`, a range `a.py:12-14`, and a label glued on, `Evidence:a.py:1`. `_citation_ok` keeps the candidates that are files. The path must hold a letter: `10:35` and `3:1` are a clock time and a ratio, so a file whose whole path is digits and punctuation is not citable by path:line and is cited by a sha instead.
     """
     out = []
     for token in CITE_SEPARATORS.split(evidence):
-        parts = token.split(":", CITE_PARTS_CAP)
+        parts = token.split(":", CITE_PARTS_CAP - 1)
         for i in range(1, len(parts)):
             digits = "".join(itertools.takewhile(str.isdigit, parts[i]))
-            if not digits:
+            rest = parts[i][len(digits) :]
+            if not digits or (rest and not rest.startswith(CITE_AFTER_LINE)):
                 continue
             for j in range(i):
                 path = ":".join(parts[j:i])
@@ -2776,13 +2780,33 @@ def _cited_paths(evidence):
     return out
 
 
+def _lines_upto(handle, number, cap):
+    """(whether `handle` holds line `number` within its first `cap` characters, characters read). Read a chunk at a time and stop at the cited line, counting lines as `str.splitlines` does."""
+    count = read = 0
+    carry = ""
+    while read < cap:
+        chunk = handle.read(min(CITE_CHUNK, cap - read))
+        if not chunk:
+            break
+        read += len(chunk)
+        pieces = (carry + chunk).splitlines(keepends=True)
+        # The last piece is a whole line only if it ends in a terminator; otherwise it carries into the next chunk. A trailing `\r` carries too, since the `\n` that makes it one `\r\n` boundary may be the next chunk's first character.
+        last = pieces[-1] if pieces else ""
+        whole = len(last.splitlines()[0]) < len(last) and not last.endswith("\r") if last else False
+        carry = "" if whole or not pieces else pieces.pop()
+        count += len(pieces)
+        # A started line exists: the carry is line `count + 1` already.
+        if count + (1 if carry else 0) >= number:
+            return True, read
+    return count + (1 if carry else 0) >= number, read
+
+
 def _has_line(path, number):
-    """Whether the file at `path` holds line `number` within its first CITE_READ_CAP bytes. Lines are counted as `str.splitlines` counts them, the reading this check has always used."""
+    """Whether the file at `path` holds line `number` within its first CITE_READ_CAP characters. Lines are counted as `str.splitlines` counts them (a form feed or U+2028 ends a line too), which is how the check counted before its scan was rewritten; a line-by-line read of the handle would count only newlines."""
     if number < 1:
         return False
-    with open(path, "rb") as handle:
-        head = handle.read(CITE_READ_CAP)
-    return number <= len(head.decode("utf-8", errors="replace").splitlines())
+    with open(path, encoding="utf-8", errors="replace", newline="") as handle:
+        return _lines_upto(handle, number, CITE_READ_CAP)[0]
 
 
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
