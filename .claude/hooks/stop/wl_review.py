@@ -2754,12 +2754,16 @@ CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
 
 
 def _citation_ok(repo, evidence):
-    root = pathlib.Path(repo).resolve()
+    root = os.path.abspath(repo)
     for m in CITE_PATH.finditer(evidence):
-        # One run of path characters, so a long token cannot backtrack; the file test below is what decides. A citation is of THIS repository: an absolute path replaces the root in a pathlib join, and `..` climbs out of it, so the resolved file must sit inside the root (`/etc/hosts:1` cites nothing).
-        path = (root / m.group(1)).resolve()
-        if not path.is_relative_to(root):
+        # One run of path characters, so a long token cannot backtrack; the file test below is what decides. A token with no letter is a clock time or a ratio (`10:35`, `3:1`), never a path.
+        if not any(c.isalpha() for c in m.group(1)):
             continue
+        # A citation is of THIS repository: an absolute path replaces the root in a join, and `..` climbs out of it, so the path's LOCATION, normalised lexically, must sit inside the root (`/etc/hosts:1` cites nothing). Lexically, not through realpath: a tracked symlink whose target lies elsewhere is still a path of this repository, and it was citable before the containment test.
+        located = os.path.normpath(os.path.join(root, m.group(1)))
+        if not located.startswith(root + os.sep):
+            continue
+        path = pathlib.Path(located)
         with contextlib.suppress(OSError):
             if path.is_file() and int(m.group(2)) <= len(
                 path.read_text(encoding="utf-8", errors="replace").splitlines()
