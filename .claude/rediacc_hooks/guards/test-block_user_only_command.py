@@ -379,6 +379,18 @@ SHELL_CASES = [
     ("a tracked script unchanged since its commit", "python3 repo/unchanged.py", False),
     ("a script past the old 1 MiB cap is read whole", "python3 tools/padded.py", True),
     ("a script past the read budget is unjudgeable", "python3 tools/huge-commands.py", True),
+    # Review fc3f376a.2: a script written from a variable is judged by what bash expands it to. Each refusal was allowed (rc 0) before.
+    (
+        "a script echoed from a variable and run",
+        "V='%s: true'; echo \"import pathlib; pathlib.Path('%s').write_text('---\\\\n$V\\\\n---\\\\n')\" > tools/echoed && python3 tools/echoed"
+        % (K, C),
+        True,
+    ),
+    (
+        "a script echoed from an unknown source and run",
+        'echo "$(cat /tmp/nowhere)" > tools/commands-echoed && python3 tools/commands-echoed',
+        True,
+    ),
 ]
 
 

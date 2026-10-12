@@ -4909,7 +4909,16 @@ def _tracked_unchanged(target):
     key = (target, stat.st_mtime_ns, stat.st_size)
     if key not in _TRACKED_CACHE:
         done = subprocess.run(
-            ["git", "status", "--porcelain", "--ignored", "--", os.path.basename(target)],
+            # Literal (review fc3f376a.1): measured on git 2.53.0, a glob pathspec still reports an untracked `s[1].py` by its exact name, but it also matches an edited `s1.py` beside it, which denied the exemption to an unchanged tracked script.
+            [
+                "git",
+                "--literal-pathspecs",
+                "status",
+                "--porcelain",
+                "--ignored",
+                "--",
+                os.path.basename(target),
+            ],
             cwd=os.path.dirname(target) or ".",
             capture_output=True,
             check=False,
@@ -4939,6 +4948,29 @@ def _script_file_text(path, run_cwd, cwd):
 _TEXT_WRITERS = ("echo", "printf", "cat", "tee")
 
 
+def writer_text(run, cmd):
+    """The text a writer run (`echo`, `printf`, `tee`, or `cat` with no file operand) puts out, as bash hands it over, or None when it is not one, or when any of it is unexpanded (review fc3f376a.2).
+
+    Its words are read expanded (`xargv`: `F=x; echo "$F"` puts out `x`), never as typed: recorded verbatim, `echo "$F" > s.py` was the four characters `"$F"`, so the program it wrote ran unjudged. Its feed (a heredoc, a here-string, the words of the pipeline in front of it) is literal text, except that bash expands an UNQUOTED heredoc's body and a producer's words, so a `$` or a backtick there that is not inside a quoted heredoc leaves the text unknown. Anything the walk could not expand makes the whole text None, which a guard reads as unjudgeable.
+    """
+    base = run.name.rsplit("/", 1)[-1]
+    argv = list(run.argv)
+    if base not in _TEXT_WRITERS or (base == "cat" and any(not a.startswith("-") for a in argv)):
+        return None
+    words = run.xargv if run.xargv is not None else argv
+    if any(_UNRESOLVED in w for w in words):
+        return None
+    feed = run.feed or ""
+    if "$" in feed or "`" in feed:
+        literal = feed
+        for doc in _analyse(cmd).heredocs:
+            if doc.quoted and doc.body_start is not None and doc.body_end is not None:
+                literal = literal.replace(cmd[doc.body_start : doc.body_end], "")
+        if "$" in literal or "`" in literal:
+            return None
+    return "\n".join(f for f in [feed, " ".join(words)] if f)
+
+
 def _written_scripts(cmd, until, cwd):
     """`{absolute path: text or None}` for every file the runs of `cmd` before `until` write; None is a write whose content this walk cannot read."""
     out: dict = {}
@@ -4955,10 +4987,7 @@ def _written_scripts(cmd, until, cwd):
             break
         base = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
-        known = base in _TEXT_WRITERS and not (
-            base == "cat" and any(not a.startswith("-") for a in argv)
-        )
-        text = "\n".join(f for f in [run.feed or "", " ".join(argv)] if f) if known else None
+        text = writer_text(run, cmd)
         for target in run.writes:
             record(target, run.cwd, text)
         if base == "tee":

@@ -17,6 +17,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import shlex
 import shutil
 import subprocess
 import sys
@@ -87,6 +88,12 @@ def _world():
         subprocess.run(["git", "init", "-q", str(TRACK_REPO)], check=True)
         (TRACK_REPO / "unchanged.py").write_text(MARKER_PROGRAM, encoding="utf-8")
         (TRACK_REPO / "edited.py").write_text("print('reviewed')\n", encoding="utf-8")
+        (TRACK_REPO / "commented.py").write_text("print('reviewed')\n", encoding="utf-8")
+        # Review fc3f376a.1: a pathspec is a glob, so an untracked `s[1].py` matched a TRACKED `s1.py`, or nothing, and read as unchanged.
+        (TRACK_REPO / "s1.py").write_text("print('tracked')\n", encoding="utf-8")
+        # ... and the direction the glob really broke (measured on git 2.53.0): a tracked, unchanged `t[1].py` beside an edited `t1.py` read as changed.
+        (TRACK_REPO / "t[1].py").write_text(MARKER_PROGRAM, encoding="utf-8")
+        (TRACK_REPO / "t1.py").write_text("print('tracked')\n", encoding="utf-8")
         subprocess.run(["git", "-C", str(TRACK_REPO), "add", "."], check=True)
         subprocess.run(
             [
@@ -98,6 +105,14 @@ def _world():
             check=True,
         )
         (TRACK_REPO / "edited.py").write_text(MARKER_PROGRAM, encoding="utf-8")
+        # The live false positive (coordinator 2026-10-11): an edited tracked script whose own source carries a marker COMMENT and writes an unrelated file.
+        (TRACK_REPO / "commented.py").write_text(
+            "import os  %s: F401\nopen(%r, 'w').write('plain\\n')\n" % (NQ, str(OUTSIDE)),
+            encoding="utf-8",
+        )
+        (TRACK_REPO / "s[1].py").write_text(MARKER_PROGRAM, encoding="utf-8")
+        (TRACK_REPO / "t1.py").write_text("print('edited')\n", encoding="utf-8")
+        (TRACK_REPO / "x*.py").write_text(MARKER_PROGRAM, encoding="utf-8")
     if not PADDED.is_file():
         PADDED.write_text("#" * (2 << 20) + "\n" + MARKER_PROGRAM, encoding="utf-8")
     if not HUGE.is_file():
@@ -272,6 +287,44 @@ SHELL_CASES = [
     ),
     ("a script past the old 1 MiB cap is read whole", "python3 %s" % PADDED, True),
     ("a script past the read budget is unjudgeable", "python3 %s" % HUGE, True),
+    # Review fc3f376a.1-.2 and the live false positive. Each refusal was allowed (rc 0) before, and the control was refused.
+    (
+        "an untracked script named like a glob s[1].py",
+        "python3 '%s'" % (TRACK_REPO / "s[1].py"),
+        True,
+    ),
+    ("an untracked script named like a glob x*.py", "python3 '%s'" % (TRACK_REPO / "x*.py"), True),
+    (
+        "a tracked unchanged script named like a glob beside an edited neighbour",
+        "python3 '%s'" % (TRACK_REPO / "t[1].py"),
+        False,
+    ),
+    (
+        "an edited tracked script whose own comment is a marker",
+        "python3 %s" % (TRACK_REPO / "commented.py"),
+        False,
+    ),
+    (
+        "a script echoed from a variable and run",
+        'F=%s; echo "$F" > %s/echoed && python3 %s/echoed'
+        % (
+            shlex.quote("open(%r, 'w').write('y = 1  %s: B010')" % (str(KEPT), NQ)),
+            SCRATCH,
+            SCRATCH,
+        ),
+        True,
+    ),
+    (
+        "a marker echoed from a variable into a code file",
+        "F='y = 1  %s: B010'; echo \"$F\" >> %s" % (NQ, KEPT),
+        True,
+    ),
+    (
+        "a script echoed from an unknown source and run",
+        'echo "$(cat /tmp/nowhere)" > %s/x_noq%s_tool && python3 %s/x_noq%s_tool'
+        % (SCRATCH, "a", SCRATCH, "a"),
+        True,
+    ),
     # The interpreter's own options, parsed as it parses them (review 63ee61e3.1): each refusal was allowed (rc 0) before.
     ("python -E is a flag, not an inline program", "python3 -E %s" % MARKER_SCRIPT, True),
     ("python -I then the script", "python3 -I %s" % MARKER_SCRIPT, True),

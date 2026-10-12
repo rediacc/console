@@ -1099,6 +1099,32 @@ STATIC: list[Case] = [
         bash_json("rm -rf ./*"),
         "protected-files: a glob over the project root's own directories",
     ),
+    # Review fc3f376a.3: a glob under an unknown root still names the protected file by its trailing segments. Review fc3f376a.4: a protected path written after a substitution is `_unjudgeable`'s, pinned here. The two glob refusals were allowed (rc 0) before; the controls stay allowed.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$D"/.claude/settings*'),
+        "protected-files: a glob naming the protected file under an unknown root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm -rf "$D"/.cl*'),
+        "protected-files: a recursive glob naming the protected directory under an unknown root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$(pwd)"/.claude/settings.json'),
+        "protected-files: a protected path written after a substitution",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$D"/*'),
+        "protected-files CONTROL: a bare glob under an unknown root names no protected segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$D"/.claude/notes*'),
+        "protected-files CONTROL: a glob under an unknown root that no protected name matches",
+    ),
     # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
     case(
         "check 2 guards/block_protected_files.py",
