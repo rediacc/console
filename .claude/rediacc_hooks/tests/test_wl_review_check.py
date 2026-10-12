@@ -575,13 +575,22 @@ def test_a_citation_may_name_an_extensionless_file(tmp_path):
     assert not R._citation_ok(str(tmp_path), "the proof is %s:1, outside the tree" % outside)
     assert not R._citation_ok(str(tmp_path), "the proof is ../outside.txt:1, outside the tree")
     assert not R._citation_ok(str(tmp_path), "the proof is /etc/hosts:1, outside the tree")
-    # One run of path characters: a long token with no line number is scanned once. The shape is pinned, since a slow quadratic pattern would still answer False here.
+    # The path token is found by a single-class split and string operations, no pattern over the path, so the scan is linear by construction: the tokens are counted, which a clock cannot be.
     assert not R._citation_ok(str(tmp_path), "a" * 200000 + " and nothing cited")
-    assert R.CITE_PATH.pattern.count("+") == 2, R.CITE_PATH.pattern
-    assert "*" not in R.CITE_PATH.pattern, R.CITE_PATH.pattern
+    assert R._cited_paths("see pkg/a.py:1, Dockerfile:2. and x") == [
+        ("pkg/a.py", 1),
+        ("Dockerfile", 2),
+    ]
+    assert R._cited_paths("at 10:35, ratio 3:1, http://host:80/x") == []
+    assert len(R.CITE_SEPARATORS.split("a" * 200000 + " b:1")) == 2
     # A tracked symlink whose target lies outside is still a path of this repository.
     (tmp_path / "linked.txt").symlink_to(outside)
     assert R._citation_ok(str(tmp_path), "the link is linked.txt:1 in the tree")
     # A token with no letter is a time or a ratio, even when a file of that name exists.
     (tmp_path / "10").write_text("a\n" * 40, encoding="utf-8")
     assert not R._citation_ok(str(tmp_path), "measured at 10:35 and nothing else")
+    # A cited line is read no further than it must be: line 3 of a long file stops after three lines, and a line past the cap cites nothing.
+    (tmp_path / "long.txt").write_text("a\n" * 5000, encoding="utf-8")
+    assert R._has_line(str(tmp_path / "long.txt"), 3)
+    assert not R._has_line(str(tmp_path / "long.txt"), 5001)
+    assert not R._has_line(str(tmp_path / "long.txt"), R.CITE_LINE_CAP + 1)

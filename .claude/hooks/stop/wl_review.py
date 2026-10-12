@@ -21,6 +21,7 @@ import dataclasses
 import datetime
 import hashlib
 import importlib.util
+import itertools
 import json
 import keyword
 import os
@@ -2748,26 +2749,42 @@ def find_finding(root, branch, finding_id):
     return hits[0]
 
 
-# Any path spelling, extension or not: `Dockerfile:83` and `Makefile:12` are files too, and the old pattern demanded a dot-extension, so evidence naming one was refused as citing nothing (2026-10-11). `_citation_ok` still requires the path to be a file holding that line, which is what keeps a clock time or a ratio from counting.
-CITE_PATH = re.compile(r"(?<![A-Za-z0-9_./-])([A-Za-z0-9_./-]+):(\d+)")
+# A `path:line` citation is found WITHOUT a regular expression over the path: the evidence is cut on one class of separator characters (a single-class split cannot backtrack) and each token is read with string operations, so no input makes the scan superlinear. Any path spelling counts, extension or not: `Dockerfile:83` and `Makefile:12` are files too, and an earlier pattern that demanded a dot-extension refused evidence naming one (2026-10-11).
+CITE_SEPARATORS = re.compile(r"[^A-Za-z0-9_./:-]+")
+# A cited line is read no further than this many lines into its file: the check needs to know the line exists, not the file's size, and a tracked link may point at something very large.
+CITE_LINE_CAP = 200000
+
+
+def _cited_paths(evidence):
+    """(path, line) for each `path:line` token in `evidence`. The path half must hold a letter: `10:35` and `3:1` are a clock time and a ratio, and a file that happens to be named `10` is deliberately not citable that way (name it with its directory, `./10` holds no letter either, so such a file is cited by a sha instead)."""
+    out = []
+    for token in CITE_SEPARATORS.split(evidence):
+        path, sep, line = token.rstrip(".:,").rpartition(":")
+        if sep and line.isdigit() and any(c.isalpha() for c in path):
+            out.append((path, int(line)))
+    return out
+
+
+def _has_line(path, number):
+    """Whether the file at `path` holds line `number`, reading no more than it must."""
+    if number < 1 or number > CITE_LINE_CAP:
+        return False
+    with open(path, encoding="utf-8", errors="replace") as handle:
+        return sum(1 for _ in itertools.islice(handle, number)) == number
+
+
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
 
 
 def _citation_ok(repo, evidence):
     root = os.path.abspath(repo)
-    for m in CITE_PATH.finditer(evidence):
-        # One run of path characters, so a long token cannot backtrack; the file test below is what decides. A token with no letter is a clock time or a ratio (`10:35`, `3:1`), never a path.
-        if not any(c.isalpha() for c in m.group(1)):
-            continue
-        # A citation is of THIS repository: an absolute path replaces the root in a join, and `..` climbs out of it, so the path's LOCATION, normalised lexically, must sit inside the root (`/etc/hosts:1` cites nothing). Lexically, not through realpath: a tracked symlink whose target lies elsewhere is still a path of this repository, and it was citable before the containment test.
-        located = os.path.normpath(os.path.join(root, m.group(1)))
+    for cited, number in _cited_paths(evidence):
+        # A citation is of THIS repository: an absolute path replaces the root in a join, and `..` climbs out of it, so the path's LOCATION, normalised lexically, must sit inside the root (`/etc/hosts:1` cites nothing). Lexically, not through realpath: a tracked symlink whose target lies elsewhere is still a path of this repository.
+        located = os.path.normpath(os.path.join(root, cited))
         if not located.startswith(root + os.sep):
             continue
-        path = pathlib.Path(located)
         with contextlib.suppress(OSError):
-            if path.is_file() and int(m.group(2)) <= len(
-                path.read_text(encoding="utf-8", errors="replace").splitlines()
-            ):
+            if os.path.isfile(located) and _has_line(located, number):
                 return True
     for m in CITE_SHA.finditer(evidence):
         full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % m.group(1))
