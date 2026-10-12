@@ -2025,7 +2025,6 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-boxes',
     gate: true,
-    slow: true, // 59.4s measured in CI (lane-durations refresh b9e561ec9)
     paths: [
       'agent/plans/**',
       '.ci/config/plan-boxes.json',
