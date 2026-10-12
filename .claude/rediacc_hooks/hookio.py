@@ -514,6 +514,29 @@ def repo_root():
     raise RuntimeError(msg)
 
 
+def landing(path, cwd=None, root=None):
+    """`(absolute, judged, shown)` for the path a write tool was handed: WHERE THE WRITE LANDS, resolved as the kernel resolves it.
+
+    `realpath` over the path joined to `cwd` (else `root`, else this checkout's root), with NO lexical normalisation first: the kernel follows a symlink before it applies the `..` after it, so `out/l/../f` with `out/l` a link into a guarded directory lands inside that directory, and `normpath` would have judged it at `out/f` (review 9c6817f3.1-.4, where four guards each carried that ordering in a copy of this function). `judged` is the landing relative to `root` when it is inside it, the form the guards' patterns are written for, and absolute otherwise. `shown` is what was typed, with the landing appended when the two differ, so a refusal never names a path the write would not touch. A path the OS itself refuses (an embedded NUL, 9c6817f3.5) or an empty one is returned as typed, three times.
+    """
+    if not path or path == "null":
+        return path, path, path
+    try:
+        if root is None:
+            root = str(repo_root())
+    except RuntimeError:
+        root = cwd or os.getcwd()
+    joined = os.path.join(cwd or root, path)
+    try:
+        landed = os.path.realpath(joined)
+        rel = os.path.relpath(landed, os.path.realpath(root))
+    except ValueError:
+        return path, path, path
+    judged = landed if rel == ".." or rel.startswith("../") else rel
+    shown = path if landed == joined else "%s (lands at %s)" % (path, landed)
+    return landed, judged, shown
+
+
 def write_world_file(path, text):
     """Write a differential fixture file at a FIXED path without a torn read.
 

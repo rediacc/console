@@ -19,7 +19,6 @@ ITS EVIDENCE. `OWN_SUITE = True` (never bash, so no golden), so the dedicated su
 FAILS OPEN, LOUDLY, when the grammar module cannot be imported (the sibling guards' convention). CI D1-D7 is the backstop.
 """
 
-import os
 import pathlib
 import re
 import sys
@@ -378,15 +377,8 @@ def run(ev):
     file_path = ev.first(("tool_input", "file_path"))
     if not file_path:
         return hookio.ALLOW
-    try:
-        base = pathlib.Path(ev.default(("cwd",), str(hookio.repo_root())))
-    except RuntimeError:
-        base = pathlib.Path(ev.cwd)
-    path = pathlib.Path(file_path)
-    if not path.is_absolute():
-        path = base / path
-    # Where the write LANDS (#bc7d998c, the 3f53e99e.1 sweep): `agent/plans/x/../PLAN-a.md` and a directory symlink into `agent/plans` were out of scope as typed and allowed. `realpath` resolves `.`, `..` and every symlink in the part of the path that exists; the plan's tree and name are read from the landing.
-    path = pathlib.Path(os.path.realpath(path))
+    # Where the write LANDS (#bc7d998c, the 3f53e99e.1 sweep): `agent/plans/x/../PLAN-a.md` and a directory symlink into `agent/plans` were out of scope as typed and allowed. `hookio.landing` is the one reading every pre-edit guard shares (9c6817f3.8); the plan's tree and name are read from the landing. A path the OS refuses (an embedded NUL, 9c6817f3.5) comes back as typed and is judged by its text, so a plan-shaped one is still held to the rule rather than raising.
+    path = pathlib.Path(hookio.landing(file_path, ev.field("cwd") or None)[0])
     if not PLAN_RE.search(path.as_posix()):
         return hookio.ALLOW
     tree = path.parents[2]
