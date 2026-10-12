@@ -112,6 +112,14 @@ def world(root: pathlib.Path) -> None:
     link = root / "cmdlink"
     if not link.is_symlink():
         link.symlink_to(root / ".claude" / "commands", target_is_directory=True)
+    # A link then `..` (review 9c6817f3.1-.4 sweep): the kernel follows the link first. `out/l` points INTO the guarded directory, `esc` points OUT of it.
+    (root / ".claude" / "commands" / "sub").mkdir(exist_ok=True)
+    (root / "out").mkdir(exist_ok=True)
+    if not (root / "out" / "l").is_symlink():
+        (root / "out" / "l").symlink_to(
+            root / ".claude" / "commands" / "sub", target_is_directory=True
+        )
+        (root / ".claude" / "commands" / "esc").symlink_to(root / "out", target_is_directory=True)
 
 
 def _w(path, content):
@@ -193,6 +201,12 @@ EDIT_CASES = [
     ),
     ("Write through a ./ segment", _w("./.claude/./commands/new.md", FLAGGED), True),
     ("Write through a symlink into the commands", _w("cmdlink/new.md", FLAGGED), True),
+    ("Write through a link into the commands, then ..", _w("out/l/../new.md", FLAGGED), True),
+    (
+        "Write through a link out of the commands, then ..",
+        _w(".claude/commands/esc/../new.md", FLAGGED),
+        False,
+    ),
     (
         "Write through a .. detour out of the commands",
         _w(".claude/commands/../x/new.md", FLAGGED),

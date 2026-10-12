@@ -137,7 +137,8 @@ def _detector_output(detector, path):
 
 def run(ev):
     file_path = ev.field("tool_input", "file_path")
-    if not hookio.case_glob(file_path, *CODE_SUFFIXES):
+    # Judged where the write LANDS (`hookio.landing`, review 9c6817f3.1-.4 sweep): the suffix that decides is the file's the edit lands in, so a `.txt` link to a script is a script.
+    if not hookio.case_glob(hookio.landing(file_path, ev.field("cwd") or None)[1], *CODE_SUFFIXES):
         return hookio.ALLOW
 
     if ev.env("REDIACC_ALLOW_INLINE_PYTHON") == "1":

@@ -40,6 +40,15 @@ READER.write_text("import pathlib\nprint(pathlib.Path(%r).read_text())\n" % R, e
 # A directory symlink whose target is a review directory (review 3f53e99e.1 sweep).
 (_SCRIPTS / "agent" / "reviews" / "0930-1").mkdir(parents=True)
 (_SCRIPTS / "rl").symlink_to(_SCRIPTS / "agent" / "reviews" / "0930-1", target_is_directory=True)
+# A link then `..` (review 9c6817f3.1-.4 sweep): `out/l` points INTO the review directory, `esc` points OUT of it.
+(_SCRIPTS / "agent" / "reviews" / "0930-1" / "sub").mkdir()
+(_SCRIPTS / "out").mkdir()
+(_SCRIPTS / "out" / "l").symlink_to(
+    _SCRIPTS / "agent" / "reviews" / "0930-1" / "sub", target_is_directory=True
+)
+(_SCRIPTS / "agent" / "reviews" / "0930-1" / "esc").symlink_to(
+    _SCRIPTS / "out", target_is_directory=True
+)
 # Review b922f15c.3: a TRACKED script is exempt only while it matches HEAD. Both scripts are committed writing a review file; one is then edited after the commit.
 _REPO = _SCRIPTS / "repo"
 _REPO.mkdir()
@@ -125,6 +134,24 @@ EDIT_CASES = [
         "a symlink into the directory",
         {"tool_name": "Write", "tool_input": {"file_path": str(_SCRIPTS / "rl" / "a.md")}},
         True,
+    ),
+    (
+        "a link into the directory, then ..",
+        {
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(_SCRIPTS / "out" / "l") + "/../a.md"},
+        },
+        True,
+    ),
+    (
+        "a link out of the directory, then ..",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": str(_SCRIPTS / "agent" / "reviews" / "0930-1" / "esc") + "/../a.md"
+            },
+        },
+        False,
     ),
     (
         "a .. detour out of the directory",

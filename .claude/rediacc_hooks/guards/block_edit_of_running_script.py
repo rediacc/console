@@ -227,6 +227,8 @@ def run(ev):
     path = ev.field("tool_input", "file_path")
     if path == "":
         return hookio.ALLOW
+    # Judged where the write LANDS (`hookio.landing`, review 9c6817f3.1-.4 sweep): the script judged is the file the edit lands in, whatever name a link gives it.
+    path = hookio.landing(path, ev.field("cwd") or None)[0]
     if not hookio.case_glob(path, "*.sh"):
         return hookio.ALLOW
 

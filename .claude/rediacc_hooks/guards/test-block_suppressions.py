@@ -55,6 +55,8 @@ MARKER_PROGRAM = "import pathlib\npathlib.Path(%r).write_text('y = 1  %s: B010\\
 MARKER_JS = SCRATCH / "marker_writer.js"
 CLEAN_SCRIPT = SCRATCH / "clean_writer.py"
 ABSENT_SCRIPT = SCRATCH / "absent.py"
+# Review 094dea3b.2: a script that writes out whatever arrives on its stdin.
+STDIN_COPIER = SCRATCH / "stdin_copier.py"
 # Symlinks (review 3f53e99e.1 sweep): a directory link OUTSIDE the tree pointing at the scratch directory inside it, and a `.txt` link to a Python file.
 OUTSIDE_LINK = pathlib.Path(tempfile.mkdtemp(prefix="test-block-suppressions-link-")) / "into-repo"
 atexit.register(shutil.rmtree, str(OUTSIDE_LINK.parent), True)
@@ -77,6 +79,9 @@ def _world():
         "require('fs').writeFileSync('/tmp/x.ts', '// %s\\nlet x = 1\\n')\n" % TSI,
         encoding="utf-8",
     )
+    STDIN_COPIER.write_text(
+        "import sys\nopen(%r, 'w').write(sys.stdin.read())\n" % str(KEPT), encoding="utf-8"
+    )
     CLEAN_SCRIPT.write_text(
         "import pathlib\npathlib.Path(%r).write_text('y = 1\\n')\n" % str(OUTSIDE), encoding="utf-8"
     )
@@ -84,6 +89,12 @@ def _world():
         OUTSIDE_LINK.symlink_to(SCRATCH, target_is_directory=True)
     if not TXT_LINK.is_symlink():
         TXT_LINK.symlink_to(KEPT)
+    # A link then `..` (review 9c6817f3.1-.4 sweep): `l` outside the tree points INTO the scratch directory, `esc` inside it points OUT.
+    (SCRATCH / "sub").mkdir(exist_ok=True)
+    if not (OUTSIDE_LINK.parent / "l").is_symlink():
+        (OUTSIDE_LINK.parent / "l").symlink_to(SCRATCH / "sub", target_is_directory=True)
+    if not (SCRATCH / "esc").is_symlink():
+        (SCRATCH / "esc").symlink_to(OUTSIDE_LINK.parent, target_is_directory=True)
     if not (TRACK_REPO / ".git").is_dir():
         subprocess.run(["git", "init", "-q", str(TRACK_REPO)], check=True)
         (TRACK_REPO / "unchanged.py").write_text(MARKER_PROGRAM, encoding="utf-8")
@@ -198,6 +209,20 @@ EDIT_CASES = [
         True,
     ),
     (
+        "a link into the tree, then ..",
+        _edit(
+            str(OUTSIDE_LINK.parent / "l") + "/../" + KEPT.name,
+            "return os.sep",
+            "return os.sep  %s: B010" % NQ,
+        ),
+        True,
+    ),
+    (
+        "a link out of the tree, then ..",
+        _edit(str(SCRATCH / "esc") + "/../" + OUTSIDE.name, "x = 1", "x = 1  %s: B010" % NQ),
+        False,
+    ),
+    (
         "a .txt link to a Python file",
         _edit(TXT_LINK, "return os.sep", "return os.sep  %s: B010" % NQ),
         True,
@@ -262,6 +287,37 @@ SHELL_CASES = [
     ),
     ("a script that does not exist yet fails open", "python3 %s" % ABSENT_SCRIPT, False),
     ("python -m names a module, not a file", "python3 -m %s" % MARKER_SCRIPT.stem, False),
+    # Review 094dea3b.1-.3: what reaches a writer still counts. The stdin row was allowed (rc 0) before; the others pin.
+    (
+        "an upstream heredoc piped through tee into a code file",
+        "cat <<'EOF' | tee %s\ny = 1  %s: B010\nEOF" % (KEPT, NQ),
+        True,
+    ),
+    (
+        "an upstream echo piped through tee -a",
+        "echo 'y = 1  %s: B010' | tee -a %s" % (NQ, KEPT),
+        True,
+    ),
+    (
+        "a clean upstream heredoc piped through tee",
+        "cat <<'EOF' | tee %s\n%sEOF" % (KEPT, KEPT_TEXT),
+        False,
+    ),
+    (
+        "a by-path script copying its stdin heredoc into a code file",
+        "python3 %s <<'EOF'\ny = 1  %s: B010\nEOF" % (STDIN_COPIER, NQ),
+        True,
+    ),
+    (
+        "a by-path script copying a clean stdin heredoc",
+        "python3 %s <<'EOF'\ny = 1\nEOF" % STDIN_COPIER,
+        False,
+    ),
+    (
+        "cat with a file operand and a heredoc on stdin",
+        "cat /dev/null - > %s <<'EOF'\ny = 1  %s: B010\nEOF" % (KEPT, NQ),
+        True,
+    ),
     # Review b922f15c.1-.4: each refusal was allowed (rc 0) before.
     (
         "a script written and run in one command",
