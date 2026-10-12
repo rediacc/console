@@ -569,3 +569,11 @@ def test_a_citation_may_name_an_extensionless_file(tmp_path):
     assert not R._citation_ok(
         str(tmp_path), "measured at 10:35 with a ratio of 3:1 and nothing else"
     )
+    # A citation is of this repository: an absolute path and a `..` climb name a file outside it.
+    outside = tmp_path.parent / "outside.txt"
+    outside.write_text("x\n", encoding="utf-8")
+    assert not R._citation_ok(str(tmp_path), "the proof is %s:1, outside the tree" % outside)
+    assert not R._citation_ok(str(tmp_path), "the proof is ../outside.txt:1, outside the tree")
+    assert not R._citation_ok(str(tmp_path), "the proof is /etc/hosts:1, outside the tree")
+    # One run of path characters: a long token with no line number is scanned once.
+    assert not R._citation_ok(str(tmp_path), "a" * 200000 + " and nothing cited")
