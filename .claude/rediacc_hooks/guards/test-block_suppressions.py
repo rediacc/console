@@ -59,6 +59,10 @@ ABSENT_SCRIPT = SCRATCH / "absent.py"
 STDIN_COPIER = SCRATCH / "stdin_copier.py"
 # Review 7837d22e.2: a script that reads its stdin and writes no file.
 STDIN_READER = SCRATCH / "stdin_reader.py"
+# Review 13505e0b.2: a script that RUNS its stdin.
+STDIN_RUNNER = SCRATCH / "stdin_runner.py"
+# Review 13505e0b.1: the marker with its first character spelled as the escape `printf` prints it from.
+NQ_ESCAPED = "\\x%02x%s" % (ord(NQ[0]), NQ[1:])
 # Symlinks (review 3f53e99e.1 sweep): a directory link OUTSIDE the tree pointing at the scratch directory inside it, and a `.txt` link to a Python file.
 OUTSIDE_LINK = pathlib.Path(tempfile.mkdtemp(prefix="test-block-suppressions-link-")) / "into-repo"
 atexit.register(shutil.rmtree, str(OUTSIDE_LINK.parent), True)
@@ -85,6 +89,7 @@ def _world():
         "import sys\nopen(%r, 'w').write(sys.stdin.read())\n" % str(KEPT), encoding="utf-8"
     )
     STDIN_READER.write_text("import sys\nprint(len(sys.stdin.read()))\n", encoding="utf-8")
+    STDIN_RUNNER.write_text("import sys\nexec(sys.stdin.read())\n", encoding="utf-8")
     CLEAN_SCRIPT.write_text(
         "import pathlib\npathlib.Path(%r).write_text('y = 1\\n')\n" % str(OUTSIDE), encoding="utf-8"
     )
@@ -341,6 +346,44 @@ SHELL_CASES = [
         "an inline program copying its stdin heredoc into a code file",
         "python3 -c \"import sys; open('%s', 'w').write(sys.stdin.read())\" <<'EOF'\ny = 1  %s: B010\nEOF"
         % (KEPT, NQ),
+        True,
+    ),
+    # Review 13505e0b.1: a backslash escape is read as the character `printf` and `echo -e` print for it. The three refusals were allowed (rc 0) before.
+    (
+        "printf printing a marker from an escape into a by-path copier",
+        "printf 'y = 1  %s: B010\\n' | python3 %s" % (NQ_ESCAPED, STDIN_COPIER),
+        True,
+    ),
+    (
+        "printf printing a marker from an escape into a code file",
+        "printf 'y = 1  %s: B010\\n' >> %s" % (NQ_ESCAPED, KEPT),
+        True,
+    ),
+    (
+        "echo -e printing a marker from an escape into a code file",
+        "echo -e 'y = 1  %s: B010' >> %s" % (NQ_ESCAPED, KEPT),
+        True,
+    ),
+    (
+        "echo without -e writes the escape as typed",
+        "echo 'y = 1  %s: B010' >> %s" % (NQ_ESCAPED, KEPT),
+        False,
+    ),
+    # Review 13505e0b.2: for a program that runs its stdin, the stdin is program text. The refusal was allowed (rc 0) before.
+    (
+        "a by-path script that runs its stdin, fed a write of a marker",
+        "python3 %s <<'EOF'\nopen('%s', 'w').write('y = 1  %s: B010\\n')\nEOF"
+        % (STDIN_RUNNER, KEPT, NQ),
+        True,
+    ),
+    (
+        "a by-path script that runs its stdin, fed a program that writes nothing",
+        "python3 %s <<'EOF'\nprint('y = 1  %s: B010')\nEOF" % (STDIN_RUNNER, NQ),
+        False,
+    ),
+    (
+        "a by-path script that runs its stdin, fed text the walk cannot expand",
+        ": '%s'; python3 %s <<EOF\n$(cat /tmp/zz-absent)\nEOF" % (NQ, STDIN_RUNNER),
         True,
     ),
     # Review 7837d22e.2: stdin is data, read for markers and never for write calls. Refused (rc 2) before.

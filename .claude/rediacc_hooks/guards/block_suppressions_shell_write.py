@@ -50,6 +50,11 @@ WRITE_CODE = re.compile(
     r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|\.write\(|writeFileSync"
     r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"
 )
+# A program that RUNS text it was handed (review 13505e0b.2): for one of these the stdin is program text as well as data.
+_RUNS_TEXT = re.compile(
+    r"\b(?:exec|eval|execfile|compile|instance_eval|class_eval|module_eval)\b|new\s+Function\b"
+    r"|\brunIn(?:This|New)?Context\b|\brunpy\b|\bcode\.interact|\bInteractiveConsole\b"
+)
 _SED_SUB = re.compile(
     r"(?:^|[;\s{])s(?P<d>[^\w\s\\])(?P<pat>(?:\\.|(?!(?P=d)).)*)(?P=d)(?P<rep>(?:\\.|(?!(?P=d)).)*)(?P=d)"
 )
@@ -272,19 +277,29 @@ def _offending(engine, cmd, cwd):
                 code += "\n" + script
                 literals = _python_strings(script) if name.startswith("python") else None
                 marked = code if literals is None else " ".join(argv) + "\n" + literals
-            if WRITE_CODE.search(code):
-                # What arrives on the program's stdin is text it can write out too (review 094dea3b.2: `python3 copy_stdin.py <<EOF` with a marker in the heredoc was not judged). It is DATA, so it is read for markers and never for write calls (7837d22e.2: a stdin line holding `open(` made a script that writes nothing a writer), and it is read as bash hands it over (7837d22e.1: `M='<marker>'; python3 gen.py <<EOF` with a body line `$M`); a part the walk cannot expand makes it unknown, which is refused. A program read FROM stdin has no other stdin, and its heredoc is already in `code`.
-                if kind in ("file", "inline") and run.feed:
-                    fed = shellscan.stdin_text(run, cmd)
+            # What arrives on the program's stdin is text it can write out too (review 094dea3b.2: `python3 copy_stdin.py <<EOF` with a marker in the heredoc was not judged). It is DATA, so it is read for markers and never for write calls (7837d22e.2: a stdin line holding `open(` made a script that writes nothing a writer), and it is read as bash hands it over (7837d22e.1: `M='<marker>'; python3 gen.py <<EOF` with a body line `$M`); a part the walk cannot expand makes it unknown, which is refused. A program read FROM stdin has no other stdin, and its heredoc is already in `code`.
+            # THE ONE PROGRAM FOR WHICH STDIN IS NOT ONLY DATA (13505e0b.2) is one that runs text it is handed (`exec(sys.stdin.read())`): its stdin is then read for write calls as well, and stdin the walk cannot expand is a program this hook cannot read.
+            fed: str | None = ""
+            program = code
+            if kind in ("file", "inline") and run.feed:
+                fed = shellscan.stdin_text(run, cmd)
+                if _RUNS_TEXT.search(code):
                     if fed is None:
                         return (
-                            "a %s program that writes files, fed text this hook cannot read (%s)"
+                            "a %s program that runs its stdin, fed text this hook cannot read (%s)"
                             % (
                                 name,
                                 shellscan.UNJUDGEABLE_REASON,
                             )
                         )
-                    marked += "\n" + fed
+                    program += "\n" + fed
+            if WRITE_CODE.search(program):
+                if fed is None:
+                    return "a %s program that writes files, fed text this hook cannot read (%s)" % (
+                        name,
+                        shellscan.UNJUDGEABLE_REASON,
+                    )
+                marked += "\n" + fed
                 grew = engine.growth(
                     engine.count_any_language(""), engine.count_any_language(marked)
                 )
