@@ -17,7 +17,9 @@ Appends are deliberately allowed: `>>` and `tee -a` cannot delete a history appe
 
 JUDGED ON WHAT RUNS, NOT ON THE TEXT (worklist #0c331972). Every verb arm used to be a regex over the raw command, anchored to `(^|[;|&])`, so a separator or a `|` INSIDE a quoted sentence was a command position: `echo 'echo x | tee --output-error=warn agent/pr-babysit-0831-1.md'` was refused as a truncation. The arms now read the shell's own walk: the redirects bash performs with their operator (`>` truncates, `>>` appends), the verbs it runs (`tee`, `cp`, `mv`, `truncate`, `dd`, `sed -i`, each read off its argv, behind `sudo`, `xargs`, `sh -c` or `find -exec`), and the program texts it hands an interpreter (`block_worktree_add.interpreter_programs`). The `--roundlog` carve-out is gone with the text matching: the verb is a `worklist.py` run that writes nothing the walk can see, so it passes on its own, and the whole-line glob that exempted it also exempted `worklist.py --roundlog x; mv <log> /tmp/` (rc 0 at HEAD 306285231), a truncation riding on the verb's name.
 
-FAILS OPEN. This matches on a path shape plus a write verb; anything it does not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
+FAILS OPEN, WITH ONE EXCEPTION. This matches on a path shape plus a write verb; anything it does not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
+
+THE EXCEPTION IS AN INTERPRETER PROGRAM WITH A LOG IN PLAY, and there the burden is the program's. A log is IN PLAY for a python, node, perl or ruby run when the command line hands it one (an argument, an environment value, its stdin) or when the program's own text could spell one (the `pr-babysit` stem, or a string literal glob that meets the round-log pattern). Such a program must be one this guard can FOLLOW: made only of reads, pure calls, and writes to literal paths that are not a log. A dynamic import or dispatch, a shell-out, a write whose target is not a literal, a method on a value the reader cannot type, or simply a call it does not know, and the program is refused. THE BOUNDARY: a program that is handed no log and whose text cannot spell one is not read at all, however it is written, which is what keeps this strictness off every ordinary script.
 
 NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime is partly invisible here. A verb's operand set by an earlier statement of the same command (`F=<log>; mv $F /tmp/`) is read as bash expands it; a REDIRECT onto such a variable (`> $F`), a value from the environment, and a shell glob that expands to the log are not, because the walk keeps a redirect target unexpanded. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
 the appendix survived, and a session that bypassed it has no such line to point at.
@@ -33,10 +35,14 @@ failing loudly, because it made the line look tested when the controls were pass
 as an array subscript to shellcheck (SC1087, an error not a warning), and here the bracket opens a character class in the regex rather than an index. Python has no such ambiguity, which is why the braces are gone and the reason is not.
 """
 
+import ast
+import builtins
 import functools
 import os
 import re
+import textwrap
 import types
+from typing import NamedTuple
 
 from rediacc_hooks import hookio, shellscan
 from rediacc_hooks.guards import block_worktree_add as WT
@@ -430,7 +436,7 @@ EDGE_CASES = [
         "python3 -c \"import sys,pathlib; p=pathlib.Path('x.txt'); p.replace('y.txt'); print(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md",
     ),
     (
-        "getattr and __import__ that reach no writer",
+        "getattr and __import__ are not followed, even where they reach no writer",
         "python3 -c \"import sys,os; print(getattr(os,'sep'), __import__('json').dumps(open(sys.argv[1]).read()))\" agent/pr-babysit-0831-1.md",
     ),
     (
@@ -493,6 +499,313 @@ EDGE_CASES = [
     (
         "a Python open on an upper-case name bound to argv",
         "python3 -c \"import sys; F=sys.argv[1]; open(F, 'w').write('')\" agent/pr-babysit-0831-1.md",
+    ),
+    # Round 12, the burden inverted (reviews 97a72d29.1/.2): with a log in play a program must be one this guard can FOLLOW. The first three rows are the two reviewed shapes, allowed at 97a72d29c; every python row after them was allowed there too unless its neighbour in rounds 10 and 11 says otherwise, and the `getattr`/`__import__` row above this block is the one allow row the rule turned into a refusal.
+    (
+        "a name bound to a string and then to a Path of argv",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path\np = 'x'\np = Path(sys.argv[1])\np.replace('/tmp/x')\nPY",
+    ),
+    (
+        "__import__ with a concatenated module name",
+        "python3 -c \"import sys; __import__('o' + 's').remove(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "import_module with a concatenated module name",
+        "python3 -c \"import sys,importlib; importlib.import_module('o'+'s').remove(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a Path of argv on one branch of a name",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path\np = Path('x.txt')\nif sys.argv[2:]:\n    p = Path(sys.argv[1])\np.unlink()\nPY",
+    ),
+    (
+        "a Path class imported under another name",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path as P\nP(sys.argv[1]).replace('/tmp/x')\nPY",
+    ),
+    (
+        "a Path of argv appended to a list and indexed back",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, pathlib\nxs = []\nxs.append(pathlib.Path(sys.argv[1]))\nxs[0].unlink()\nPY",
+    ),
+    (
+        "a Path of argv stored under a key and read back",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, pathlib\nd = {}\nd['p'] = pathlib.Path(sys.argv[1])\nd['p'].write_text('')\nPY",
+    ),
+    (
+        "a Path of argv returned by a local function",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path\ndef target():\n    return Path(sys.argv[1])\ntarget().write_text('')\nPY",
+    ),
+    (
+        "a class built from the type of a path",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path\np = Path('x.txt')\ntype(p)(sys.argv[1]).unlink()\nPY",
+    ),
+    (
+        "vars() subscripted for a writer",
+        "python3 -c \"import sys,os; vars(os)['remove'](sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "globals() subscripted for a module",
+        "python3 -c \"import sys,os; globals()['os'].remove(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "exec of a string",
+        "python3 -c \"import sys; exec('import os; os.remove(sys.argv[1])')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "compile, with nothing run",
+        "python3 -c \"import sys; compile('1','x','eval')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "setattr on a module",
+        "python3 -c \"import sys,os; setattr(os,'x',1)\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "getattr that reaches no writer",
+        "python3 -c \"import sys,os; print(getattr(os.stat(sys.argv[1]),'st_size'))\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "os.popen",
+        "python3 -c \"import sys,os; os.popen('rm ' + sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "os.execvp",
+        "python3 -c \"import sys,os; os.execvp('rm', ['rm', sys.argv[1]])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "sys.modules subscripted",
+        "python3 -c \"import sys; sys.modules['os'].remove(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a subclass walk from a tuple",
+        "python3 -c \"import sys; ().__class__.__base__.__subclasses__()[0](sys.argv[1], 'w')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "functools.partial of a writer",
+        'python3 -c "import sys,functools,os; functools.partial(os.remove, sys.argv[1])()" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "a writer picked out of a dict",
+        "python3 -c \"import sys,os; d = {'f': os.remove}; d['f'](sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a writer handed to a lambda",
+        'python3 -c "import sys,os; (lambda g: g(sys.argv[1]))(os.remove)" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "a writer chosen by a conditional",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, os\nrm = os.remove if sys.argv[2:] else print\nrm(sys.argv[1])\nPY",
+    ),
+    (
+        "a module this reader does not know",
+        "python3 -c \"import sys, zipfile; zipfile.ZipFile(sys.argv[1], 'w')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "argparse.FileType in write mode",
+        "python3 -c \"import sys, argparse; a = argparse.ArgumentParser(); a.add_argument('f', type=argparse.FileType('w')); a.parse_args()\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a class",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nclass W:\n    def go(self, p):\n        open(p, 'w')\nW().go(sys.argv[1])\nPY",
+    ),
+    (
+        "a star import",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom os import *\nremove(sys.argv[1])\nPY",
+    ),
+    (
+        "text that is not python 3",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nprint 'python 2', sys.argv[1]\nPY",
+    ),
+    (
+        "a write mode defaulted in a local function",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\ndef w(p, m='w'):\n    return open(p, m)\nw(sys.argv[1])\nPY",
+    ),
+    (
+        "shutil.move of argv to a named file",
+        "python3 -c \"import sys,shutil; shutil.move(sys.argv[1], 'gone.txt')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a target joined onto a literal directory",
+        "python3 -c \"import sys,os; open(os.path.join('agent', sys.argv[1]), 'w')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a log name joined from literals",
+        "python3 -c \"import os; open(os.path.join('agent', 'pr-babysit-0831-1.md'), 'w')\"",
+    ),
+    (
+        "a log name concatenated onto a directory",
+        "python3 -c \"n = 'pr-babysit-0831-1.md'; open('agent/' + n, 'w')\"",
+    ),
+    (
+        "os.ftruncate on a descriptor of argv",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, os\nfd = os.open(sys.argv[1], os.O_RDWR)\nos.ftruncate(fd, 0)\nPY",
+    ),
+    (
+        "node: a computed member call",
+        "node -e \"const fs=require('fs'); fs['rm'+'Sync'](process.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "node: a writer held in a name",
+        "node -e \"const w=require('fs').writeFileSync; w(process.argv[1],'')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "node: a writer destructured under another name",
+        "node -e \"const {writeFileSync: w}=require('fs'); w(process.argv[1],'')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "node: require of a name that is not a literal",
+        'node -e "require(process.argv[2]).rmSync(process.argv[1])" agent/pr-babysit-0831-1.md fs',
+    ),
+    (
+        "node: a module held under a second name",
+        "node -e \"const g=require('fs'); const h=g; h.rmSync(process.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "node: a writer passed as a callback",
+        "node -e \"const fs=require('fs'); [process.argv[1]].forEach(fs.unlinkSync)\" agent/pr-babysit-0831-1.md",
+    ),
+    ("node: new Function", "node -e \"new Function('return 1')()\" agent/pr-babysit-0831-1.md"),
+    ("ruby: send", 'ruby -e "File.send(:delete, ARGV[0])" agent/pr-babysit-0831-1.md'),
+    (
+        "ruby: a constant held in a name",
+        "ruby -e \"x = IO; x.write(ARGV[0], '')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: a method object",
+        'ruby -e "ARGV.each(&File.method(:delete))" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "ruby: a library this reader does not know",
+        "ruby -e \"require 'fileutils'; FileUtils.rm(ARGV[0])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: -i edits the handed file in place",
+        "ruby -i -pe '$_.upcase!' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: -i bundled with other switches",
+        "ruby -pi.bak -e '$_.upcase!' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: a call through a name",
+        "perl -e 'my $f = \"unlink\"; &$f($ARGV[0])' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: a call through a reference",
+        "perl -e 'my $c = \\&CORE::unlink; $c->($ARGV[0])' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: a substitution that evaluates code",
+        "perl -e 's/x/unlink $ARGV[0]/e for \"x\"' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: the in-place variable",
+        "perl -e '$^I = \"\"; while (<>) { print uc }' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl: a module this reader does not know",
+        "perl -e 'use File::Copy; move($ARGV[0], \"/tmp/x\")' agent/pr-babysit-0831-1.md",
+    ),
+    # Allowed. The BOUNDARY rows are the same unfollowable programs with no log in play: handed another file, or beside a log that is only read by `cat`. The rest are followed with the log handed: reads, pure calls, and writes to literal paths that are not a log.
+    (
+        "BOUNDARY: a concatenated __import__ handed another file",
+        "python3 -c \"import sys; __import__('o' + 's').remove(sys.argv[1])\" notes.txt",
+    ),
+    (
+        "BOUNDARY: a mixed-binding Path handed another file",
+        "python3 - notes.txt <<'PY'\nimport sys\nfrom pathlib import Path\np = 'x'\np = Path(sys.argv[1])\np.replace('/tmp/x')\nPY",
+    ),
+    (
+        "BOUNDARY: a subprocess handed another file",
+        "python3 -c \"import sys,subprocess; subprocess.run(['rm', sys.argv[1]])\" notes.txt",
+    ),
+    (
+        "BOUNDARY: a class, exec and getattr handed another file",
+        "python3 - notes.txt <<'PY'\nimport sys\nclass W:\n    pass\nexec('1')\ngetattr(sys, 'argv')\nPY",
+    ),
+    (
+        "BOUNDARY: node child_process handed another file",
+        "node -e \"require('child_process').execSync('ls')\" notes.txt",
+    ),
+    (
+        "BOUNDARY: a subprocess beside a cat of the log",
+        "cat agent/pr-babysit-0831-1.md; python3 -c \"import subprocess; subprocess.run(['ls'])\"",
+    ),
+    ("BOUNDARY: ruby -i on another file", "ruby -i -pe '$_.upcase!' notes.txt"),
+    (
+        "a regex search over the handed log",
+        "python3 -c \"import sys,re; print(re.findall(r'round \\d+', open(sys.argv[1]).read()))\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "shutil.copy of the handed log to a named file",
+        "python3 -c \"import sys,shutil; shutil.copy(sys.argv[1], 'backup.txt')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a Counter over the handed log",
+        'python3 -c "import sys,collections; c=collections.Counter(open(sys.argv[1]).read().split()); print(c.most_common(3))" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "a hash of the handed log",
+        "python3 -c \"import sys,hashlib; print(hashlib.sha256(open(sys.argv[1],'rb').read()).hexdigest())\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a with block enumerating the handed log",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nwith open(sys.argv[1]) as f:\n    for i, line in enumerate(f):\n        if line.startswith('## '):\n            print(i, line.strip())\nPY",
+    ),
+    (
+        "a local function reading the path it is given",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\ndef head(path, n=5):\n    with open(path) as f:\n        return [next(f) for _ in range(n)]\nprint(''.join(head(sys.argv[1])))\nPY",
+    ),
+    (
+        "a sort by a lambda written to a named file",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, datetime\nlines = open(sys.argv[1]).read().splitlines()\nrows = sorted(lines, key=lambda l: l.lower())\nout = open('sorted.txt', 'w')\nout.write('\\n'.join(rows))\nout.close()\nprint(datetime.datetime.now().isoformat(), len(rows))\nPY",
+    ),
+    (
+        "a copy to a path joined from literals",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, os\nname = os.path.join('out', 'copy.txt')\nos.makedirs('out', exist_ok=True)\nwith open(sys.argv[1]) as src, open(name, 'w') as dst:\n    dst.write(src.read())\nPY",
+    ),
+    (
+        "a Path joined from literals written from the handed log",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path\nout = Path('out') / 'copy.txt'\nout.write_text(Path(sys.argv[1]).read_text())\nPY",
+    ),
+    (
+        "argparse reading the handed log",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport argparse\np = argparse.ArgumentParser()\np.add_argument('log')\na = p.parse_args()\nprint(open(a.log).read().count('\\n'))\nPY",
+    ),
+    (
+        "a read-only descriptor of the handed log",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, os\nfd = os.open(sys.argv[1], os.O_RDONLY)\nprint(os.read(fd, 100))\nos.close(fd)\nPY",
+    ),
+    (
+        "node: an arrow filter over the handed log",
+        "node -e \"const fs=require('fs'); const t=fs.readFileSync(process.argv[1],'utf8').split('\\n').filter(l => l.startsWith('#')); console.log(t.length)\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "node: a destructured reader",
+        "node -e \"const {readFileSync}=require('fs'); console.log(readFileSync(process.argv[1],'utf8').length)\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: gsub with a pattern over the handed log",
+        "ruby -e \"s = File.read(ARGV[0]); puts s.gsub(/a/, 'b').lines.first\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: a block writing a named file from the handed log",
+        "ruby -e \"File.open('out.txt', 'w') { |f| f.write(File.read(ARGV[0])) }\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "ruby: an option before the program that is not -i",
+        "ruby -I lib -e 'puts File.read(ARGV[0])' agent/pr-babysit-0831-1.md",
+    ),
+    ("perl: -ne with a pattern", "perl -ne 'print if /round/' agent/pr-babysit-0831-1.md"),
+    ("perl: -pe with a substitution to stdout", "perl -pe 's/a/b/g' agent/pr-babysit-0831-1.md"),
+    (
+        "perl: slurping the handed log into an array",
+        'perl -e \'open(my $f, "<", $ARGV[0]) or die; my @l = <$f>; print scalar(@l), "\\n"\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: the >| mode onto a named file is not a pipe",
+        'perl -e \'open(my $f, ">|", "out.txt"); print $f 1\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl: a two-argument open of a file named w is a read",
+        "perl -e 'open(FH, \"w\"); print <FH>' agent/pr-babysit-0831-1.md",
     ),
 ]
 
@@ -771,11 +1084,9 @@ def _handed_a_log(run_, code, kind, cwd):
 
 # --------------------------------------------------------------------------- what an interpreter program writes ---------------------------------------------------------------------------
 #
-# JUDGED PER WRITE (review 4b3f59b5.1). The program arm used to collect every quoted `.md` literal in a target position and, when it found one that was not a round log, clear the whole program: `print(open('README.md').read()); open(sys.argv[1], 'w')` handed the log was allowed because `README.md` was "the target". Each write SITE is now read on its own: the expression it writes through is a path literal (harmless unless it names a log), a name bound only to path literals (the same), or anything else, which is UNRESOLVED. One unresolved write keeps a handed or spellable log in play, whatever else the program names.
+# TWO READERS, ONE RULE. A program with a log in play (see the header) is refused unless it can be FOLLOWED. A python program is parsed and walked (`_PythonReader`); a node, perl or ruby one has its write sites read by the patterns below and every other word checked against what that language's reader knows (`_follow_words`).
 #
-# A SITE IS ANY CALL THAT REPLACES OR REMOVES A FILE, not only `open(..., 'w')`. Each row below was allowed with the log handed in argv until the row's spelling was listed (measured 2026-10-12 at 8abc48a14): a path object's own `.open('w')`, an `open(` whose arguments span lines, `truncate`, `remove`/`unlink`, `O_TRUNC`, node's `fs` calls beyond `writeFileSync`, ruby's `File.write`, a perl `open` in `>` mode, and a program that hands a command to a shell.
-#
-# STILL NOT READ, each measured allowed with the log handed (2026-10-12) and named rather than pretended away: a writer picked out of a module's namespace (`vars(os)['remove']`), a non-literal `getattr` on a module imported under another name (`import os as o`), `Path.replace` on a path class imported under another name (`from pathlib import Path as P`), a DIRECTORY handed in place of the log (`os.listdir(sys.argv[1])` over `agent`), a log name assembled from pieces that never hold the stem whole, and a path the program reads out of a file.
+# STILL NOT READ, and named rather than pretended away: a DIRECTORY handed in place of the log (`os.listdir(sys.argv[1])` over `agent`, then a write to a literal name inside it is still a literal that is not a log; a write through the listed names is unresolved and refused), a log name assembled from pieces when no log is handed and the stem is never whole in the text (the prefilter never opens such a command), and a path the program reads out of a file when no log is in play.
 @functools.lru_cache(maxsize=1)
 def _grammar():
     """The compiled readers of PROGRAM TEXT, built once. Each is applied to an interpreter program the walk already chose and never to the command, so they are built here rather than held as module patterns."""
@@ -807,24 +1118,11 @@ def _grammar():
         ),
         # Methods that replace or remove the path they are called ON. `rename` also replaces the path it is GIVEN, so its arguments are sites too.
         method=re.compile(r"\.(?:write_text|write_bytes|unlink|truncate|rmdir|touch|rename)\("),
-        # `.replace(` is `str.replace` in nearly every program, so it is a site only on a receiver that is provably a path (`_is_path`).
-        replace=re.compile(r"\.replace\("),
-        # A path object: the constructor's whole call, then only steps that keep it a path (`/ 'x'`, `.resolve()`, `.parent`). `Path(x).read_text()` is a string.
-        path=re.compile(
-            r"(?:pathlib\.)?(?:Path|PurePath|PosixPath)\((?:[^()]|\([^()]*\))*\)(?:\s*/\s*[^;\n/]+|\.(?:resolve|expanduser|absolute)\(\)|\.parent)*"
-        ),
         # perl's `open` written without parentheses: a handle, a comma, a quoted mode.
         bare_open=re.compile(r"(?<![\w$.])open\s+(?=(?:(?:my|local|our)\s+)?[$*]?\w+\s*,\s*['\"])"),
-        # A module or attribute reached by a LITERAL name is the plain spelling in disguise: `__import__('os')`, `importlib.import_module('os')`, `getattr(os, 'rem' + 'ove')`.
-        imported=re.compile(
-            r"(?:\bimportlib\.)?\b(?:__import__|import_module)\(\s*['\"]([A-Za-z_][\w.]*)['\"]\s*\)"
-        ),
-        attribute=re.compile(
-            r"\bgetattr\(\s*([A-Za-z_][\w.]*)\s*,\s*((?:['\"]\w*['\"]\s*\+?\s*)+)\)"
-        ),
-        # No readable target at all: a raw descriptor flag, a command handed to a shell, code built at run time, the perl and ruby calls written without parentheses, a writer passed around as a value rather than called (`map(os.remove, sys.argv[1:])`, `w = open`), and a writer module's attribute picked by a name that is not a literal (`getattr(os, n)`).
+        # No readable target at all: a raw descriptor flag, a command handed to a shell, code built at run time, the perl and ruby calls written without parentheses, and a writer passed around as a value rather than called.
         blind=re.compile(
-            r"O_TRUNC|\bos\.system\(|\bsubprocess\.|\bexecSync\(|\bchild_process\b|\bspawnSync\(|\bsystem\(|`[^`\n]*`|\bexec\(|\beval\(|(?<![\w.$])(?:unlink|rename|truncate)\s+[$@'\"]|\bgetattr\(\s*(?:os|shutil|fs)\s*,\s*(?!['\"])|\bFile\.(?:write|delete|truncate|unlink|open)\s+[^\s(=]|\b(?:os\.(?:remove|unlink|truncate|rename|replace)|shutil\.(?:copy|copyfile|copy2|move|rmtree))\b(?!\s*\()|[=(,]\s*open\s*[,);\n]"
+            r"O_TRUNC|\bos\.system\(|\bsubprocess\.|\bexecSync\(|\bchild_process\b|\bspawnSync\(|\bsystem\(|`[^`\n]*`|\bexec\(|\beval\(|(?<![\w.$])(?:unlink|rename|truncate)\s+[$@'\"]|\bFile\.(?:write|delete|truncate|unlink|open)\s+[^\s(=]|\b(?:os\.(?:remove|unlink|truncate|rename|replace)|shutil\.(?:copy|copyfile|copy2|move|rmtree))\b(?!\s*\()|[=(,]\s*open\s*[,);\n]"
         ),
     )
 
@@ -882,7 +1180,7 @@ def _literal_text(expr):
     return body
 
 
-def _bound_literals(name, code, read=None):
+def _bound_literals(name, code):
     """Every literal `name` is bound to in `code`, or None unless EVERY binding of it is a plain statement-level assignment of one literal. Not bound at all is None (`sys.argv`, a parameter), and so is a name bound any other way: a loop (`for p in sys.argv[1:]`), `with ... as p`, an import, a walrus, an augmented, tuple, chained or conditional one-line assignment, a function or lambda parameter, a `global`."""
     q = re.escape(name)
     plain = re.findall(
@@ -909,57 +1207,28 @@ def _bound_literals(name, code, read=None):
         return None
     out = []
     for rhs in plain:
-        text = (read or _literal_text)(rhs)
+        text = _literal_text(rhs)
         if text is None:
             return None
         out.append(text)
     return out
 
 
-def _is_path(expr, code):
-    """Is `expr` provably a path object: a `Path(...)` call, or a name whose every binding is one (`p = pathlib.Path(sys.argv[1])`)? A string is not, which is what keeps `s.replace('a', 'b')` out of the write sites."""
-    path = _grammar().path
-
-    def constructed(rhs):
-        return rhs if path.fullmatch(rhs.strip()) else None
-
-    expr = expr.strip()
-    if constructed(expr):
-        return True
-    if re.fullmatch(r"[A-Za-z_]\w*", expr):
-        return _bound_literals(expr, code, constructed) is not None
-    return False
-
-
-def _plain_spelling(code):
-    """`code` with a module or attribute reached by a literal name written the plain way, so the write sites below read `__import__('os').remove(x)` and `getattr(os, 'rem' + 'ove')(x)` as `os.remove(x)`."""
-    grammar = _grammar()
-    code = grammar.imported.sub(lambda m: m.group(1), code)
-
-    def dotted(m):
-        name = "".join(re.findall(r"\w+", m.group(2)))
-        return "%s.%s" % (m.group(1), name) if name.isidentifier() else m.group(0)
-
-    return grammar.attribute.sub(dotted, code)
-
-
 def _perl_open(args):
-    """The write sites of a perl `open`, or None when the call is not perl-shaped (the Python reading then applies). Perl puts the HANDLE first (review 8b651626.1: the handle was read as the path, so `open(my $f, ">", "out.txt")` was an unresolved write and was refused beside a handed log). The path is the third argument, or the rest of the second in the two-argument form (`open(F, ">out.txt")`). A read (`<`) and an append (`>>`) are no site; a pipe is a command, with no readable target."""
+    """The write sites of a perl `open`, or None when its arguments cannot be read. Perl puts the HANDLE first (review 8b651626.1: the handle was read as the path, so `open(my $f, ">", "out.txt")` was an unresolved write and was refused beside a handed log). The path is the third argument, or the rest of the second in the two-argument form (`open(F, ">out.txt")`). A read (`<`, or no mode at all: `open(FH, "w")` reads a file named `w`, review 97a72d29.5) and an append (`>>`) are no site; a pipe is a command, with no readable target. `>|` is not a pipe (review 97a72d29.3): it is read as the write to the named file it looks like."""
     if len(args) < 2 or not _grammar().string.fullmatch(args[1]):
         return None
-    sigil = re.fullmatch(r"(?:(?:my|local|our)\s+)?[$*]\w+", args[0]) is not None
-    if not sigil and not re.fullmatch(r"[A-Z][A-Z0-9_]*", args[0]):
+    if not re.fullmatch(r"(?:(?:my|local|our)\s+)?[$*]\w+|[A-Z][A-Z0-9_]*", args[0]):
         return None
     body = _string_body(args[1])[1].strip()
-    mode = re.match(r"\+?[<>]{1,2}", body)
-    if "|" in body[:2] or body.endswith("|"):
+    if body.startswith(("|", "-|")) or (body.endswith("|") and body[:1] not in "<>+"):
         return [None]
+    mode = re.match(r"\+?[<>]{1,2}\|?", body)
     if mode is None:
-        # A bareword handle with a Python mode is Python's `open(PATH, 'w')`; anything else here is perl's two-argument read.
-        return None if not sigil and re.fullmatch(r"[rwxabtU+]+", body) else []
-    if mode.group(0) == ">>" or not (">" in mode.group(0) or "+" in mode.group(0)):
         return []
-    interpolating = args[1].lstrip("rRbBuUfF").startswith('"')
+    if mode.group(0).startswith(">>") or not (">" in mode.group(0) or "+" in mode.group(0)):
+        return []
+    interpolating = args[1].startswith('"')
     if len(args) >= 3:
         target = args[2]
         if (
@@ -1006,63 +1275,67 @@ def _mode_writes(expr, code):
     return any(not m.startswith(">>") and any(ch in m for ch in "wx+>") for m in modes)
 
 
-def _write_sites(code):
-    """Every expression `code` writes THROUGH, one per site; None for a site whose target this reading cannot lift out."""
+def _write_sites(code, family):
+    """`(sites, spans)` for a node, perl or ruby program: every expression it writes THROUGH (None for a site whose target this reading cannot lift out), and where in `code` the callee of each call it read sits, so the word check that follows does not meet it again."""
     grammar = _grammar()
     sites: list[str | None] = [None for _ in grammar.blind.finditer(code)]
+    spans: list[tuple[int, int]] = []
     for match in grammar.opener.finditer(code):
         args = _call_args(code, match.end() - 1)
         before = code[: match.start()]
         on = None
+        start = match.start()
         if before.endswith("."):
             found = grammar.receiver.search(before)
             on = found.group(1) if found else ""
+            if found and on in _OPEN_MODULES:
+                start = found.start(1)
+        spans.append((start, match.end() - 1))
         if args is None:
             sites.append(None)
-        elif on == "os":
-            # `os.open(path, flags)`: a write unless the flags are exactly read-only.
-            if len(args) < 2 or not re.fullmatch(r"(?:os\.)?O_RDONLY", args[1]):
-                sites.append(args[0] if args else None)
-        elif on is None and _perl_open(args) is not None:
-            sites.extend(_perl_open(args))
+        elif family == "perl":
+            perl = _perl_open(args) if on is None else None
+            sites.extend([None] if perl is None else perl)
         elif on is None or on in _OPEN_MODULES:
-            if _mode_writes(_keyword(args, "mode") or _positional(args, 1), code):
-                sites.append(_keyword(args, "file") or _positional(args, 0))
+            target = _keyword(args, "file") or _positional(args, 0)
+            # A ruby `open("|cmd")` runs a command.
+            piped = target is not None and target.strip("'\"").startswith("|")
+            if piped:
+                sites.append(None)
+            elif _mode_writes(_keyword(args, "mode") or _positional(args, 1), code):
+                sites.append(target)
         elif _mode_writes(_keyword(args, "mode") or _positional(args, 0), code):
             sites.append(on or None)
     for match in grammar.first.finditer(code):
         args = _call_args(code, match.end() - 1)
         sites.append(args[0] if args else None)
+        spans.append((match.start(), match.end() - 1))
     for match in grammar.every.finditer(code):
         args = _call_args(code, match.end() - 1)
         # Every path the call names is one it may replace; a call with none readable is one unresolved site.
         sites.extend(args or [None])
+        spans.append((match.start(), match.end() - 1))
     for match in grammar.bare_open.finditer(code):
         # The statement's own words, up to where perl ends it.
         words = re.split(r";|\n|\bor\b|\|\|", code[match.end() :], maxsplit=1)[0]
         args = _call_args("(%s)" % words, 0)
         perl = _perl_open(args) if args else None
         sites.extend([None] if perl is None else perl)
+        spans.append((match.start(), match.start() + 4))
     for match in grammar.method.finditer(code):
         found = grammar.receiver.search(code[: match.start() + 1])
         sites.append(found.group(1) if found else None)
-        if match.group(0) == ".rename(":
-            sites.extend(_call_args(code, match.end() - 1) or [None])
-    for match in grammar.replace.finditer(code):
-        found = grammar.receiver.search(code[: match.start() + 1])
-        if found and _is_path(found.group(1), code):
-            # `Path.replace` removes the path it is called on and replaces the one it is given.
-            sites.append(found.group(1))
-            sites.extend(_call_args(code, match.end() - 1) or [None])
-    return sites
+        sites.extend(_call_args(code, match.end() - 1) or [None])
+        spans.append((match.start(), match.end() - 1))
+    return sites, spans
 
 
-def _site_targets(code):
-    """`(literals, unresolved)` over every write site of `code`: the path literals its writes provably go to, and whether any write goes through something this reading cannot resolve."""
+def _site_targets(code, family):
+    """`(literals, unresolved, spans)` over every write site of a node, perl or ruby program: the path literals its writes provably go to, whether any write goes through something this reading cannot resolve, and the spans of the callees read."""
     literals: list[str] = []
     unresolved = False
-    code = _plain_spelling(code)
-    for target in _write_sites(code):
+    sites, spans = _write_sites(code, family)
+    for target in sites:
         text = None if target is None else _literal_text(target)
         if text is not None:
             literals.append(text)
@@ -1074,7 +1347,832 @@ def _site_targets(code):
             unresolved = True
         else:
             literals.extend(bound)
-    return literals, unresolved
+    return literals, unresolved, spans
+
+
+# --------------------------------------------------------------------------- a python program, FOLLOWED ---------------------------------------------------------------------------
+#
+# THE BURDEN IS ON THE PROGRAM (reviews 97a72d29.1/.2, coordinator ruling round 12). Rounds 10 and 11 listed write idioms and the reviewer kept finding the next spelling (`__import__('o' + 's')`, a name bound twice). A python program in play is now PARSED (`ast`) and walked with a small set of value kinds, and it passes only when every call in it is one this reader knows: a read, a pure function, or a write whose target is a string this reader can spell. Anything else (a call it does not know, a method on a value it cannot type, a class, a decorator, a star import, text that does not parse) is NOT FOLLOWED, and a program that is not followed is refused while a log is in play.
+#
+# VALUE KINDS. `data` is a string, a number, or a container or parsed document of them: no method of a data value replaces a file, so `s.replace('a', 'b')` and `xs.remove(x)` are free. `path` is a `pathlib` object and `handle` an open file: both carry the literal strings they may name, or None when that is not known. `func` and `module` are a callable or module under its canonical dotted name, so `w = open` and `from os import remove` are followed to what they call. `unk` is everything else. A NAME HOLDS THE JOIN OF EVERY BINDING IT EVER GETS, anywhere in the program: bound once to a string and once to a path it is `unk`, and a method on `unk` is not followed.
+def _words(text: str) -> frozenset[str]:
+    """A word table, written as one line of words."""
+    return frozenset(text.split())
+
+
+class _V(NamedTuple):
+    kind: str
+    lits: frozenset[str] | None = None
+
+
+_DATA = _V("data")
+_UNK = _V("unk")
+_MAX_LITS = 16
+
+
+def _vjoin(a: _V | None, b: _V | None) -> _V | None:
+    """The least value both could be. None is "no binding seen yet" and joins as nothing."""
+    if a is None or b is None:
+        return b if a is None else a
+    if a.kind != b.kind:
+        return _UNK
+    if a.kind in ("func", "module"):
+        return a if a.lits == b.lits else _UNK
+    if a.lits is None or b.lits is None:
+        return _V(a.kind)
+    lits = a.lits | b.lits
+    return _V(a.kind, lits if len(lits) <= _MAX_LITS else None)
+
+
+def _named(kind: str, name: str) -> _V:
+    return _V(kind, frozenset((name,)))
+
+
+# Modules a bare name is taken to be when the program never imports it (a heredoc fragment), and what `import` binds.
+_PY_SUBMODULES = frozenset(("os.path", "urllib.parse", "xml.etree", "xml.etree.ElementTree"))
+# Every function of these returns data and replaces no file.
+_PY_PURE_MODULES = _words(
+    "json re math time datetime string textwrap hashlib base64 binascii difflib fnmatch statistics pprint html urllib.parse unicodedata os.path posixpath struct getopt shlex glob tomllib keyword calendar decimal fractions uuid traceback csv platform locale warnings zlib secrets numbers array"
+)
+# Functions of these hand back what they were given (a container, an iterator, a copy), so a path that goes in comes out.
+_PY_FLOW_MODULES = _words(
+    "itertools collections copy functools heapq random contextlib typing bisect"
+)
+_PY_PURE_FUNCS = _words(
+    "yaml.safe_load yaml.safe_load_all yaml.safe_dump sys.exit sys.getsizeof sys.getdefaultencoding sys.intern sys.exc_info sys.getrecursionlimit sys.setrecursionlimit codecs.encode codecs.decode io.StringIO io.BytesIO io.TextIOWrapper argparse.ArgumentParser argparse.Namespace shutil.which shutil.get_terminal_size shutil.disk_usage os.listdir os.scandir os.walk os.stat os.lstat os.getcwd os.getenv os.getpid os.cpu_count os.fspath os.access os.readlink os.makedirs os.mkdir os.close os.read os.write os.isatty os.get_terminal_size os.urandom os.fsync os.strerror os.getuid os.uname os.fstat os.lseek os.fsencode os.fsdecode"
+)
+_PY_SCALAR_BUILTINS = _words(
+    "print len str repr int float bool bytes bytearray range dir sum any all abs round ord chr hex oct bin isinstance issubclass hasattr callable format hash id divmod pow exit quit input ascii slice"
+)
+_PY_FLOW_BUILTINS = _words(
+    "list tuple set frozenset dict sorted reversed iter next enumerate zip filter map min max type"
+)
+_PY_TYPES = _words("str bytes list dict set tuple int float bool frozenset")
+# Module attributes that are values, not calls.
+_PY_HANDLES = {"sys.stdin": "<stdin>", "sys.stdout": "<stdout>", "sys.stderr": "<stderr>"}
+_PY_DATA_ATTRS = _words(
+    "sys.argv sys.platform sys.version sys.version_info sys.path sys.maxsize sys.executable os.environ os.sep os.linesep os.name os.pathsep os.curdir os.pardir os.extsep"
+)
+_PY_PATH_CTORS = _words(
+    "pathlib.Path pathlib.PurePath pathlib.PosixPath pathlib.PurePosixPath pathlib.WindowsPath"
+)
+_PY_OPENERS = frozenset(("open", "io.open", "codecs.open", "builtins.open"))
+# Calls that replace or remove a file, with the positions of the arguments they destroy. A copy destroys only where it lands; a move or a rename also removes where it came from.
+_PY_WRITERS = {
+    "os.remove": (0,),
+    "os.unlink": (0,),
+    "os.truncate": (0,),
+    "os.ftruncate": (0,),
+    "os.rmdir": (0,),
+    "os.removedirs": (0,),
+    "shutil.rmtree": (0,),
+    "os.rename": (0, 1),
+    "os.renames": (0, 1),
+    "os.replace": (0, 1),
+    "shutil.move": (0, 1),
+    "shutil.copy": (1,),
+    "shutil.copyfile": (1,),
+    "shutil.copy2": (1,),
+    "shutil.copytree": (1,),
+    "os.link": (1,),
+    "os.symlink": (1,),
+}
+_PY_PATH_SAME = frozenset(("resolve", "absolute", "expanduser"))
+_PY_PATH_DERIVED = _words("with_suffix with_name with_stem joinpath relative_to iterdir glob rglob")
+_PY_PATH_READS = _words(
+    "read_text read_bytes exists is_file is_dir is_symlink is_absolute stat lstat as_posix as_uri match samefile mkdir"
+)
+_PY_PATH_WRITES = _words("write_text write_bytes unlink touch rmdir symlink_to hardlink_to link_to")
+_PY_HANDLE_METHODS = _words(
+    "read readline readlines close seek tell fileno flush write writelines isatty readable writable seekable detach reconfigure peek readinto __enter__ __exit__"
+)
+_PY_MUTATORS = _words("append extend insert add update setdefault appendleft extendleft put push")
+_PY_IMPLICIT_MODULES = _words(
+    "os sys shutil pathlib json re io glob math time datetime collections itertools functools string textwrap subprocess codecs csv argparse"
+)
+
+
+def _is_exception(name: str) -> bool:
+    """A builtin exception class: constructing one is pure."""
+    cls = getattr(builtins, name, None)
+    return isinstance(cls, type) and issubclass(cls, BaseException)
+
+
+def _mode_replaces(mode: str) -> bool:
+    """Does one literal `open` mode replace content? `w`, `x` and `+` do; a read and an append do not."""
+    return any(ch in mode for ch in "wx+")
+
+
+class _PythonReader:
+    """One walk of a parsed python program. `sites` are the targets of its writes (the literal strings each may name, or None), `lost` is why it could not be followed."""
+
+    def __init__(self, tree: ast.AST) -> None:
+        self.tree = tree
+        self.env: dict[str, _V] = {}
+        self.defs: dict[str, ast.FunctionDef | ast.Lambda] = {}
+        self.rets: dict[str, _V] = {}
+        self.changed = False
+        self.final = False
+        self.sites: list[frozenset[str] | None] = []
+        self.lost: list[str] = []
+
+    # ---- driving ----
+    def read(self) -> None:
+        """Walk to a fixed point twice: first with an unbound name as "nothing yet" (so a use above its binding does not poison it), then with what is still unbound as `unk`."""
+        for final in (False, True):
+            self.final = final
+            for _ in range(24):
+                self.changed = False
+                self.sites, self.lost = [], []
+                self.block(getattr(self.tree, "body", []))
+                if self.lost:
+                    # What is lost stays lost: bindings only ever widen, so a later walk cannot follow it after all.
+                    return
+                if not self.changed:
+                    break
+            else:
+                self.lost.append("the walk did not settle")
+
+    def bind(self, name: str, value: _V | None) -> None:
+        new = _vjoin(self.env.get(name), value)
+        if new is not None and new != self.env.get(name):
+            self.env[name] = new
+            self.changed = True
+
+    def get(self, node: ast.AST | None) -> _V | None:
+        """`ev`, with "nothing yet" read as `unk` once the first walk has settled."""
+        value = None if node is None else self.ev(node)
+        return _UNK if value is None and self.final else value
+
+    def site(self, value: _V | None) -> None:
+        known = value is not None and value.kind in ("data", "path", "handle") and value.lits
+        self.sites.append(value.lits if value is not None and known else None)
+
+    # ---- statements ----
+    def block(self, body: list[ast.stmt]) -> None:
+        for stmt in body:
+            self.stmt(stmt)
+
+    def stmt(self, node: ast.stmt) -> None:
+        if isinstance(node, ast.Expr):
+            self.get(node.value)
+        elif isinstance(node, ast.Assign):
+            value = self.get(node.value)
+            for target in node.targets:
+                self.store(target, value)
+        elif isinstance(node, ast.AnnAssign):
+            if node.value is not None:
+                self.store(node.target, self.get(node.value))
+        elif isinstance(node, ast.AugAssign):
+            value = _vjoin(self.get(node.target), self.get(node.value))
+            self.store(node.target, None if value is None else _V(value.kind))
+        elif isinstance(node, (ast.For, ast.While, ast.If)):
+            if isinstance(node, ast.For):
+                self.store(node.target, self.elem(self.get(node.iter)))
+            else:
+                self.get(node.test)
+            self.block(node.body)
+            self.block(node.orelse)
+        elif isinstance(node, ast.With):
+            for item in node.items:
+                value = self.get(item.context_expr)
+                if item.optional_vars is not None:
+                    self.store(item.optional_vars, value)
+            self.block(node.body)
+        elif isinstance(node, ast.FunctionDef):
+            self.function(node)
+        elif isinstance(node, ast.Return):
+            # Statements are walked with the enclosing function's name on `self.scope`.
+            self.returned(self.get(node.value) if node.value is not None else _DATA)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                top = alias.name if alias.asname else alias.name.split(".")[0]
+                self.bind(alias.asname or top, _named("module", top))
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name == "*" or node.level:
+                    self.lost.append("a star or relative import")
+                    continue
+                self.bind(alias.asname or alias.name, self.member(node.module or "", alias.name))
+        elif isinstance(node, ast.Try):
+            self.block(node.body)
+            for handler in node.handlers:
+                if handler.type is not None:
+                    self.get(handler.type)
+                if handler.name:
+                    self.bind(handler.name, _DATA)
+                self.block(handler.body)
+            self.block(node.orelse)
+            self.block(node.finalbody)
+        elif isinstance(node, (ast.Raise, ast.Assert)):
+            for child in ast.iter_child_nodes(node):
+                self.get(child)
+        elif isinstance(node, ast.Delete):
+            for target in node.targets:
+                if not isinstance(target, ast.Name):
+                    self.get(target)
+        elif not isinstance(node, (ast.Pass, ast.Break, ast.Continue, ast.Global, ast.Nonlocal)):
+            self.lost.append("a %s statement" % type(node).__name__)
+
+    scope: str | None = None
+
+    def returned(self, value: _V | None) -> None:
+        key = self.scope or ""
+        new = _vjoin(self.rets.get(key), value)
+        if new is not None and new != self.rets.get(key):
+            self.rets[key] = new
+            self.changed = True
+
+    def function(self, node: ast.FunctionDef) -> None:
+        if node.decorator_list:
+            self.lost.append("a decorator")
+        self.defs[node.name] = node
+        self.bind(node.name, _named("func", "local:" + node.name))
+        args = node.args
+        named = [*args.posonlyargs, *args.args]
+        for arg, default in zip(
+            named[len(named) - len(args.defaults) :], args.defaults, strict=True
+        ):
+            self.bind(arg.arg, self.get(default))
+        for arg, kw_default in zip(args.kwonlyargs, args.kw_defaults, strict=True):
+            if kw_default is not None:
+                self.bind(arg.arg, self.get(kw_default))
+        for star in (args.vararg, args.kwarg):
+            if star is not None:
+                self.bind(star.arg, _UNK)
+        outer, self.scope = self.scope, node.name
+        self.block(node.body)
+        self.scope = outer
+
+    def root(self, node: ast.AST) -> str | None:
+        while isinstance(node, (ast.Subscript, ast.Attribute, ast.Starred)):
+            node = node.value
+        return node.id if isinstance(node, ast.Name) else None
+
+    def store(self, target: ast.AST, value: _V | None) -> None:
+        if isinstance(target, ast.Name):
+            self.bind(target.id, value)
+        elif isinstance(target, (ast.Tuple, ast.List)):
+            for elt in target.elts:
+                self.store(elt, self.elem(value))
+        elif isinstance(target, ast.Starred):
+            self.store(target.value, value)
+        elif isinstance(target, ast.Subscript):
+            self.get(target.slice)
+            name = self.root(target)
+            if name is None:
+                self.lost.append("a store into something unnamed")
+            else:
+                # What goes into a container is what comes out of it.
+                self.bind(name, value)
+        else:
+            self.lost.append("a store into an attribute")
+
+    # ---- values ----
+    def elem(self, value: _V | None) -> _V | None:
+        """What iterating or indexing `value` yields."""
+        if value is None or value.kind in ("data", "path"):
+            return value
+        return _DATA if value.kind == "handle" else _UNK
+
+    def flow(self, values: list[_V | None]) -> _V | None:
+        """What a pure container function hands back: data, unless something that is not data went in."""
+        out: _V | None = None
+        for value in values:
+            # A function value is not carried along: `callbacks` has already taken it as called.
+            if value is not None and value.kind not in ("data", "func"):
+                out = _vjoin(out, value)
+        return _DATA if out is None else out
+
+    def member(self, module: str, attr: str) -> _V:
+        """`module.attr` as a value."""
+        canon = "%s.%s" % (module, attr) if module else attr
+        if canon in _PY_SUBMODULES:
+            return _named("module", canon)
+        if canon in _PY_HANDLES:
+            return _named("handle", _PY_HANDLES[canon])
+        if canon == "os.devnull":
+            return _V("data", frozenset(("/dev/null",)))
+        if canon in _PY_DATA_ATTRS or canon.startswith("os.O_"):
+            return _DATA
+        if module in _PY_PURE_MODULES and not self.callable_named(canon):
+            return _DATA
+        return _named("func", canon)
+
+    def callable_named(self, canon: str) -> bool:
+        return canon in _PY_WRITERS or canon in _PY_OPENERS or canon in _PY_PATH_CTORS
+
+    def name(self, ident: str) -> _V | None:
+        if ident in self.env:
+            return self.env[ident]
+        if ident in _PY_IMPLICIT_MODULES:
+            return _named("module", ident)
+        if ident in ("__name__", "__file__", "__doc__"):
+            return _DATA
+        if ident in self.defs:
+            return _named("func", "local:" + ident)
+        if (
+            ident in _PY_SCALAR_BUILTINS
+            or ident in _PY_FLOW_BUILTINS
+            or ident in _PY_OPENERS
+            or ident in dir(builtins)
+        ):
+            return _named("func", ident)
+        return None
+
+    def ev(self, node: ast.AST) -> _V | None:
+        if isinstance(node, ast.Constant):
+            return _V("data", frozenset((node.value,)) if isinstance(node.value, str) else None)
+        if isinstance(node, ast.Name):
+            return self.name(node.id)
+        if isinstance(node, ast.Call):
+            return self.call(node)
+        if isinstance(node, ast.Attribute):
+            base = self.get(node.value)
+            if node.attr.startswith("_"):
+                # `().__class__.__base__.__subclasses__()` reaches every class there is from a plain tuple.
+                self.lost.append("an underscore attribute")
+                return _UNK
+            if base is None:
+                return None
+            if base.kind in ("module", "func") and base.lits:
+                return self.member(next(iter(base.lits)), node.attr)
+            if base.kind == "data":
+                return _DATA
+            if base.kind == "path":
+                return _V("path") if node.attr in ("parent", "parents") else _DATA
+            if base.kind == "handle":
+                return base if node.attr == "buffer" else _DATA
+            return _UNK
+        if isinstance(node, ast.Subscript):
+            self.get(node.slice)
+            value = self.get(node.value)
+            return _UNK if value is not None and value.kind == "handle" else self.elem(value)
+        if isinstance(node, ast.BinOp):
+            left, right = self.get(node.left), self.get(node.right)
+            if left is None or right is None:
+                return None
+            if left.kind == "path" or right.kind == "path":
+                if not isinstance(node.op, ast.Div):
+                    return _UNK
+                if left.lits and right.lits and len(left.lits) * len(right.lits) <= _MAX_LITS:
+                    return _V(
+                        "path", frozenset(os.path.join(a, b) for a in left.lits for b in right.lits)
+                    )
+                return _V("path")
+            if left.kind != "data" or right.kind != "data":
+                return _UNK
+            if isinstance(node.op, ast.Add) and left.lits and right.lits:
+                joined = frozenset(a + b for a in left.lits for b in right.lits)
+                if len(joined) <= _MAX_LITS and all(len(s) <= 512 for s in joined):
+                    return _V("data", joined)
+            return _DATA
+        if isinstance(node, (ast.BoolOp, ast.IfExp)):
+            parts = node.values if isinstance(node, ast.BoolOp) else [node.body, node.orelse]
+            if isinstance(node, ast.IfExp):
+                self.get(node.test)
+            out: _V | None = None
+            for part in parts:
+                out = _vjoin(out, self.get(part))
+            return out
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            values = [self.get(e.value if isinstance(e, ast.Starred) else e) for e in node.elts]
+            return self.display(values)
+        if isinstance(node, ast.Dict):
+            for key in node.keys:
+                if key is not None:
+                    self.get(key)
+            return self.display([self.get(v) for v in node.values])
+        if isinstance(node, (ast.ListComp, ast.SetComp, ast.GeneratorExp, ast.DictComp)):
+            for gen in node.generators:
+                self.store(gen.target, self.elem(self.get(gen.iter)))
+                for cond in gen.ifs:
+                    self.get(cond)
+            if isinstance(node, ast.DictComp):
+                self.get(node.key)
+                return self.display([self.get(node.value)])
+            return self.display([self.get(node.elt)])
+        if isinstance(node, ast.NamedExpr):
+            value = self.get(node.value)
+            self.store(node.target, value)
+            return value
+        if isinstance(node, ast.Lambda):
+            label = "lambda:%d:%d" % (node.lineno, node.col_offset)
+            self.defs[label[len("lambda:") :]] = node
+            outer, self.scope = self.scope, label
+            self.returned(self.get(node.body))
+            self.scope = outer
+            return _named("func", label)
+        if isinstance(node, ast.JoinedStr):
+            for part in node.values:
+                if isinstance(part, ast.FormattedValue):
+                    self.get(part.value)
+            return _DATA
+        if isinstance(node, (ast.Compare, ast.UnaryOp)):
+            for child in ast.iter_child_nodes(node):
+                if isinstance(child, ast.expr):
+                    self.get(child)
+            return _DATA
+        if isinstance(node, ast.Slice):
+            for bound in (node.lower, node.upper, node.step):
+                self.get(bound)
+            return _DATA
+        if isinstance(node, ast.Starred):
+            return self.get(node.value)
+        self.lost.append("a %s expression" % type(node).__name__)
+        return _UNK
+
+    def display(self, values: list[_V | None]) -> _V | None:
+        """A list, tuple, set or dict display: the join of what it holds (an empty one is data)."""
+        out: _V | None = None
+        for value in values:
+            out = _vjoin(out, value)
+        if out is None and not values:
+            return _DATA
+        return out
+
+    # ---- calls ----
+    def call(self, node: ast.Call) -> _V | None:
+        pos: list[_V | None] = []
+        dynamic = False
+        for arg in node.args:
+            if isinstance(arg, ast.Starred):
+                dynamic = True
+                self.get(arg.value)
+            else:
+                pos.append(self.get(arg))
+        kw: dict[str, _V | None] = {}
+        for keyword in node.keywords:
+            value = self.get(keyword.value)
+            if keyword.arg is None:
+                dynamic = True
+            else:
+                kw[keyword.arg] = value
+        func = node.func
+        if isinstance(func, ast.Attribute):
+            base = self.get(func.value)
+            if func.attr.startswith("_"):
+                self.lost.append("an underscore method")
+                return _UNK
+            if base is None:
+                return None
+            if base.kind in ("module", "func") and base.lits:
+                canon = "%s.%s" % (next(iter(base.lits)), func.attr)
+                return self.dispatch(canon, node, pos, kw, dynamic)
+            return self.method(base, func, pos, kw)
+        callee = self.get(func)
+        if callee is None:
+            return None
+        if callee.kind == "func" and callee.lits:
+            return self.dispatch(next(iter(callee.lits)), node, pos, kw, dynamic)
+        if callee.kind == "data":
+            # A class or function of a pure module held in a name (`loads = json.loads`).
+            self.callbacks([*pos, *kw.values()])
+            return self.flow([*pos, *kw.values()])
+        self.lost.append("a call of something this reader cannot name")
+        return _UNK
+
+    def invoke(self, func: _V, given: _V | None) -> _V | None:
+        """Call a function VALUE this reader was only handed (`map(os.remove, xs)`, a `key=`): its arguments are not known one by one, so a local one gets `given` for every parameter and any other is called with unknown arguments."""
+        if not func.lits:
+            self.lost.append("a callable this reader cannot name")
+            return _UNK
+        canon = next(iter(func.lits))
+        local = self.defs.get(canon.split(":", 1)[1]) if ":" in canon else None
+        if local is not None:
+            args = local.args
+            for arg in (*args.posonlyargs, *args.args, *args.kwonlyargs):
+                self.bind(arg.arg, given)
+            return self.rets.get(canon if canon.startswith("lambda:") else canon[6:])
+        return self.dispatch(canon, None, [], {}, True)
+
+    def callbacks(self, values: list[_V | None]) -> _V | None:
+        """Every function value among a call's arguments is taken as called by it, on what the other arguments hold."""
+        funcs = [v for v in values if v is not None and v.kind == "func"]
+        if not funcs:
+            return None
+        given = self.flow([self.elem(v) for v in values if v is not None and v.kind != "func"])
+        out: _V | None = None
+        for func in funcs:
+            out = _vjoin(out, self.invoke(func, given))
+        return out
+
+    def local(self, canon: str, pos, kw, dynamic) -> _V | None:
+        key = canon.split(":", 1)[1]
+        fn = self.defs.get(key)
+        if fn is None:
+            return None
+        args = fn.args
+        named = [*args.posonlyargs, *args.args]
+        for index, arg in enumerate(named):
+            if dynamic:
+                self.bind(arg.arg, _UNK)
+            elif index < len(pos):
+                self.bind(arg.arg, pos[index])
+        for arg in (*named, *args.kwonlyargs):
+            if arg.arg in kw:
+                self.bind(arg.arg, kw[arg.arg])
+            elif dynamic:
+                self.bind(arg.arg, _UNK)
+        return self.rets.get(canon if canon.startswith("lambda:") else key)
+
+    def opened(self, target: _V | None, mode: _V | None, has_mode: bool, dynamic: bool) -> _V:
+        """An `open`: a handle on `target`, and a write site when its mode replaces content or cannot be read."""
+        if dynamic:
+            self.sites.append(None)
+            return _V("handle")
+        known = target is not None and target.kind in ("data", "path", "handle")
+        handle = _V("handle", target.lits if target is not None and known else None)
+        if has_mode:
+            literal = mode is not None and mode.kind == "data" and mode.lits
+            if not literal or any(_mode_replaces(m) for m in (mode.lits if mode else ()) or ()):
+                self.site(target)
+        return handle
+
+    def dispatch(self, canon: str, node: ast.Call | None, pos, kw, dynamic) -> _V | None:
+        values = [*pos, *kw.values()]
+        if canon.startswith(("local:", "lambda:")):
+            return self.local(canon, pos, kw, dynamic)
+        called = self.callbacks(values)
+        if canon in _PY_PATH_CTORS:
+            if dynamic or kw or len(pos) != 1:
+                return _V("path", frozenset((".",)) if not pos and not dynamic else None)
+            only = pos[0]
+            known = only is not None and only.kind in ("data", "path") and only.lits
+            return _V("path", only.lits if only is not None and known else None)
+        if canon in ("pathlib.Path.cwd", "pathlib.Path.home"):
+            return _V("path")
+        if canon in _PY_OPENERS:
+            target = kw.get("file", pos[0] if pos else None)
+            has_mode = "mode" in kw or len(pos) > 1
+            return self.opened(
+                target, kw.get("mode", pos[1] if len(pos) > 1 else None), has_mode, dynamic
+            )
+        if canon == "os.open":
+            flags = node.args[1] if node is not None and len(node.args) > 1 else None
+            read_only = isinstance(flags, ast.Attribute) and flags.attr == "O_RDONLY"
+            if not read_only:
+                self.site(pos[0] if pos and not dynamic else None)
+            target = pos[0] if pos else None
+            known = target is not None and target.kind in ("data", "path") and target.lits
+            return _V("handle", target.lits if target is not None and known else None)
+        if canon in _PY_WRITERS:
+            for index in _PY_WRITERS[canon]:
+                self.site(pos[index] if index < len(pos) and not dynamic and not kw else None)
+            return _DATA
+        module = canon.rpartition(".")[0]
+        if canon in ("str", "os.fspath") and len(pos) == 1 and pos[0] is not None:
+            return _V("data", pos[0].lits if pos[0].kind in ("data", "path") else None)
+        if canon == "os.path.join" and not dynamic and not kw and pos:
+            parts = [p.lits if p is not None and p.kind == "data" else None for p in pos]
+            if all(p is not None and len(p) == 1 for p in parts):
+                return _V("data", frozenset((os.path.join(*(next(iter(p)) for p in parts if p)),)))
+            return _DATA
+        if (
+            canon in _PY_SCALAR_BUILTINS
+            or canon in _PY_PURE_FUNCS
+            or (module in _PY_PURE_MODULES and canon != "argparse.FileType")
+            or module in _PY_TYPES
+            or _is_exception(canon)
+        ):
+            return _DATA
+        if canon in _PY_FLOW_BUILTINS or module in _PY_FLOW_MODULES:
+            return _vjoin(self.flow(values), called)
+        self.lost.append("a call of %s" % canon)
+        return _UNK
+
+    def method(self, base: _V, func: ast.Attribute, pos, kw) -> _V | None:
+        name = func.attr
+        values = [*pos, *kw.values()]
+        self.callbacks(values)
+        if base.kind == "data":
+            other = self.flow(values)
+            if other is None or other.kind == "data":
+                return _DATA
+            if name in _PY_MUTATORS:
+                # Something that is not data went into a container: the container now holds it.
+                held = self.root(func.value)
+                if held is None:
+                    self.lost.append("a non-data value put into something unnamed")
+                else:
+                    self.bind(held, _UNK)
+            return _UNK
+        if base.kind == "path":
+            if name == "open":
+                has_mode = "mode" in kw or bool(pos)
+                return self.opened(base, kw.get("mode", pos[0] if pos else None), has_mode, False)
+            if name in _PY_PATH_SAME:
+                return base
+            if name in _PY_PATH_DERIVED:
+                return _V("path")
+            if name in _PY_PATH_READS:
+                return _DATA
+            if name in _PY_PATH_WRITES:
+                self.site(base)
+                return _DATA
+            if name in ("rename", "replace"):
+                # The path it is called on is removed and the one it is given is replaced.
+                self.site(base)
+                self.site(pos[0] if pos else None)
+                return _V("path")
+        elif base.kind == "handle":
+            if name == "truncate":
+                self.site(base)
+                return _DATA
+            if name in _PY_HANDLE_METHODS:
+                return _DATA
+        self.lost.append("a .%s() on a value this reader cannot type" % name)
+        return _UNK
+
+
+def _follow_python(code):
+    """`(literals, lost)` for a python program: every literal string its writes may land on, and whether anything in it could not be followed (an unresolved write target included)."""
+    try:
+        tree = ast.parse(textwrap.dedent(code))
+    except (SyntaxError, ValueError, RecursionError):
+        return [], True
+    reader = _PythonReader(tree)
+    try:
+        reader.read()
+    except RecursionError:
+        return [], True
+    literals = sorted({text for site in reader.sites if site for text in site})
+    return literals, bool(reader.lost) or any(not site for site in reader.sites)
+
+
+# --------------------------------------------------------------------------- a node, perl or ruby program, FOLLOWED ---------------------------------------------------------------------------
+#
+# NO PARSER, SO EVERY WORD MUST BE KNOWN. The write sites are read as before (`_site_targets`); then the strings, comments and pattern literals are blanked, the callee of each site that was read is blanked, and every word left must be a keyword, a read or pure construct of that language, or a name the program itself declares. An unread writer (`const w = fs.writeFileSync`, `File.write ARGV[0], ''`), a module this reader does not know (`require('child_process')`) and a dynamic call (`fs['rm' + 'Sync'](x)`, `$f->()`, `send`) all leave a word or a shape behind, and the program is not followed.
+_KNOWN_WORDS = {
+    "js": _words(
+        "const let var function return if else for while do of in new typeof instanceof try catch finally throw true false null undefined async await break continue switch case default void delete console log error warn info process argv env exit stdout stderr stdin write end on require fs path os util promises then JSON parse stringify Object keys values entries Array isArray from String Number Boolean parseInt parseFloat isNaN Math floor ceil round max min abs trunc Date now Set Map has get set add size split join map filter forEach reduce trim trimEnd trimStart toString slice substring substr replace replaceAll match matchAll test length push pop shift unshift includes startsWith endsWith indexOf lastIndexOf concat sort reverse find findIndex some every flat flatMap padStart padEnd toUpperCase toLowerCase charAt at localeCompare repeat readFileSync readFile readdirSync readdir existsSync statSync lstatSync accessSync mkdirSync appendFileSync readlinkSync realpathSync basename dirname extname resolve relative normalize sep isFile isDirectory mtime mtimeMs utf8 RegExp Error message"
+    ),
+    "perl": _words(
+        "my our local use strict warnings utf8 print printf say chomp chop die warn exit if elsif else unless while until for foreach last next return sub split join map grep sort reverse keys values each exists defined length substr index rindex lc uc lcfirst ucfirst sprintf scalar push pop shift unshift splice close eof binmode readline opendir readdir closedir mkdir and or not eq ne lt gt le ge cmp x qw undef wantarray ref abs int"
+    ),
+    "ruby": _words(
+        "if else elsif end do while unless until for in def return then begin rescue ensure nil true false and or not puts print p pp require json set date time ARGV ENV STDIN STDOUT STDERR ARGF each each_line each_with_index each_char map select reject lines split strip chomp chop gsub sub length size to_s to_i to_f to_a to_h to_sym to_json first last include start_with end_with empty join sort sort_by uniq count sum min max reverse keys values each_pair fetch dig push pop shift format printf sprintf exit abort upcase downcase capitalize scan match tr read readlines gets close flush lambda proc yield block_given next break redo self inspect freeze dup is_a nil key value times upto downto step abs round floor ceil zero any all none find detect inject reduce flat_map compact flatten zip take drop slice concat prepend center ljust rjust"
+    ),
+}
+_JS_FAMILIES = frozenset(("node", "deno", "bun", "tsx"))
+_JS_MODULES = frozenset(
+    ("fs", "path", "os", "util", "node:fs", "node:path", "node:os", "node:util")
+)
+
+
+def _blanked(code, family, spans):
+    """`(text, lost)`: `code` with string bodies, comments and the read sites' callees turned to spaces, and whether a string carries code this reader does not read (an interpolation, a template)."""
+    out = list(code)
+    lost = False
+    for start, end in spans:
+        out[start:end] = " " * (end - start)
+    i, n = 0, len(code)
+    while i < n:
+        ch = code[i]
+        if ch in "'\"":
+            j = i + 1
+            while j < n and code[j] != ch:
+                j += 2 if code[j] == "\\" else 1
+            body = code[i + 1 : j]
+            if ch == '"' and family != "js" and re.search(r"#\{|[@$]\{", body):
+                lost = True
+            out[i + 1 : j] = " " * (min(j, n) - i - 1)
+            i = j + 1
+        elif ch == "`":
+            lost = True
+            i += 1
+        elif family == "js" and code.startswith("//", i):
+            j = code.find("\n", i)
+            j = n if j < 0 else j
+            out[i:j] = " " * (j - i)
+            i = j
+        elif family == "js" and code.startswith("/*", i):
+            j = code.find("*/", i)
+            j = n if j < 0 else j + 2
+            out[i:j] = " " * (j - i)
+            i = j
+        elif family != "js" and ch == "#" and (i == 0 or code[i - 1] != "$"):
+            j = code.find("\n", i)
+            j = n if j < 0 else j
+            out[i:j] = " " * (j - i)
+            i = j
+        else:
+            i += 1
+    return "".join(out), lost
+
+
+def _follow_words(code, family):
+    """`(literals, lost)` for a node, perl or ruby program."""
+    literals, unresolved, spans = _site_targets(code, family)
+    text, lost = _blanked(code, family, spans)
+    lost = lost or unresolved
+
+    def blank(pattern, keep=0):
+        """Blank what `pattern` matches, keeping its first `keep` groups."""
+        nonlocal text
+        text = re.sub(
+            pattern,
+            lambda m: (
+                "".join(m.group(g) for g in range(1, keep + 1))
+                + " " * (len(m.group(0)) - sum(len(m.group(g)) for g in range(1, keep + 1)))
+            ),
+            text,
+        )
+
+    # A substitution whose replacement is CODE (`s/x/.../e`) is not read.
+    if family == "perl":
+        for match in re.finditer(
+            r"\b(?:s|tr|y)([/|!,])(?:\\.|(?!\1).)*\1(?:\\.|(?!\1).)*\1([a-z]*)", text
+        ):
+            lost = lost or "e" in match.group(2)
+        blank(r"\b(?:s|tr|y)([/|!,])(?:\\.|(?!\1).)*\1(?:\\.|(?!\1).)*\1[a-z]*")
+        # A file test (`-e $f`) and a bareword hash key (`$h{name}`).
+        blank(r"(?<![\w$])-[a-zA-Z]\b(?=\s*[$\"'])")
+        blank(r"\{\w+\}")
+    # A pattern literal, where a pattern can stand: after an operator, an opening bracket, or a word that takes one.
+    blank(
+        r"(^|[(,=~!&|{;:?]|\b(?:if|unless|and|or|not|split|grep|while|return|when|until|match|scan|gsub|sub)\b)(\s*)(?:m|qr)?/(?:\\.|[^/\n\\])+/[a-z]*",
+        2,
+    )
+    if re.search(r"\(\?\{|@\{\[", text):
+        lost = True
+    declared: set[str] = set()
+    if family == "js":
+        for names in re.findall(r"\b(?:const|let|var)\s+\{([^}]*)\}", text):
+            # A destructured member is a MEMBER first (`{writeFileSync: w}`): only the name after the colon is the program's own, and the member itself must be one this reader knows.
+            declared.update(re.findall(r":\s*([A-Za-z_]\w*)", names))
+        declared.update(
+            re.findall(r"\b(?:const|let|var|function|catch\s*\()\s*([A-Za-z_]\w*)", text)
+        )
+        declared.update(re.findall(r"\b([A-Za-z_]\w*)\s*=>", text))
+        for names in re.findall(r"\(([\w\s,]*)\)\s*=>", text) + re.findall(
+            r"\bfunction\s*\w*\s*\(([^)]*)\)", text
+        ):
+            declared.update(re.findall(r"[A-Za-z_]\w*", names))
+        # A module is used only through a dot: `fs.readFileSync(...)`. Held any other way (passed, indexed, spread) its members are out of sight.
+        aliases = {"fs", "path", "os", "util"} | set(
+            re.findall(r"\b(?:const|let|var)\s+(\w+)\s*=\s*require\(", text)
+        )
+        for match in re.finditer(r"\brequire\b(?:\(\s*(['\"])([^'\"]*)\1\s*\))?", code):
+            after = code[match.end() :].lstrip()[:1]
+            if match.group(2) not in _JS_MODULES or after not in (".", ";", ",", "", "\n"):
+                lost = True
+        for alias in aliases:
+            if re.search(
+                r"(?<![\w$.])%s\b(?!\s*(?:\.[A-Za-z_]|=\s*require\())" % re.escape(alias), text
+            ):
+                lost = True
+        if re.search(r"\]\s*\(|\{\s*\[|\[\s*['\"]", text):
+            lost = True
+    elif family == "perl":
+        declared.update(re.findall(r"\bsub\s+([A-Za-z_]\w*)", text))
+        # A call through a reference or a name, and `$^I`, which turns the `<>` loop into an in-place edit of the files handed.
+        if re.search(r"->\s*\(|&\s*[${]|\\&|\$\^I", text):
+            lost = True
+    elif family == "ruby":
+        # A constant is read only in the pairs below; held bare (`x = IO`) its writers are out of sight.
+        blank(
+            r"\b(?:File\.(?:read|readlines|foreach|exist\?|file\?|directory\?|size|basename|dirname|extname|join|expand_path|readable\?)|IO\.(?:read|readlines|foreach)|JSON\.(?:parse|generate|pretty_generate))(?![\w?!])"
+        )
+        blank(r"\$?(?:stdout|stderr|stdin|STDOUT|STDERR)\.(?:write|puts|print|flush|read)\b")
+        blank(r"(?<=[a-z0-9_)\]])\.write\b")
+        declared.update(
+            re.findall(r"(?<![\w.:$@])([a-z_]\w*)\s*(?:[-+*/|&]|\|\||&&)?=(?![=~>])", text)
+        )
+        for names in re.findall(r"\|([\w\s,]*)\|", text) + re.findall(
+            r"\bdef\s+\w+\s*\(([^)]*)\)", text
+        ):
+            declared.update(re.findall(r"[a-z_]\w*", names))
+        declared.update(re.findall(r"\b(?:def|for)\s+([a-z_]\w*)", text))
+        # A keyword label (`encoding: 'utf-8'`) and a symbol; a symbol turned into a call (`&:delete`) is a dynamic one.
+        if re.search(r"&\s*:|\.\s*\(|%x|\$-i", text):
+            lost = True
+        # `require` runs a file: only the standard readers pass.
+        for match in re.finditer(r"\brequire\b(?:\s*\(?\s*(['\"])([^'\"]*)\1)?", code):
+            if match.group(2) not in ("json", "set", "date", "time", "csv", "optparse"):
+                lost = True
+        blank(r"\b\w+:(?!:)")
+        blank(r"(?<!:):[a-z_]\w*[?!]?")
+    else:
+        return literals, True
+    for match in re.finditer(r"(?<![\w$@%])[A-Za-z_]\w*", text):
+        word = match.group(0)
+        if word in _KNOWN_WORDS[family] or word in declared:
+            continue
+        if family == "perl" and word.isupper():
+            continue
+        lost = True
+    return literals, lost
+
+
+def _follow(code, family):
+    """`(literals, lost)` by the reader for the program's language; a language with no reader is not followed."""
+    if family == "python":
+        return _follow_python(code)
+    words = "js" if family in _JS_FAMILIES else family
+    if words in _KNOWN_WORDS:
+        return _follow_words(code, words)
+    return [], True
 
 
 def _literal_names_log(text):
@@ -1082,18 +2180,37 @@ def _literal_names_log(text):
     return _is_log(text) or _LOG_STEM in text or _word_could_name_log(text)
 
 
-def _program_truncates(code, handed=False):
-    """Does an interpreter program replace or remove a round log?
+def _program_truncates(code, handed=False, family="python"):
+    """Does an interpreter program replace or remove a round log, or leave that open?
 
-    Read per write site (`_site_targets`). A write to a path literal that names a log is one. A write through something UNRESOLVED (a variable bound at run time, `sys.argv[1]`, an environment value, a command handed to a shell) is one when the program could reach a log: its own text could spell one (`_program_could_name_log`, the 2026-08-19 `p.write_text(s[:i] + new)` shape), or the run was HANDED one (`handed`: an argument, an environment value, its stdin). A program whose every write goes to a named path that is not a log writes those files and no other, whatever it reads.
+    ONLY A PROGRAM WITH A LOG IN PLAY IS READ: one the run was HANDED a log (`handed`: an argument, an environment value, its stdin), or whose own text could spell one (`_program_could_name_log`, the 2026-08-19 `p.write_text(s[:i] + new)` shape). Any other program is left alone, whatever it does.
 
-    shutil/os MOVE AND COPY COUNT AS WRITES on every path they name: only the destination is replaced, but telling the two apart by position across copy/copyfile/copy2/move/replace/rename is fragile (measured 2026-08-27: both returned 0 from this guard while only `write_text` and `open(..., "w")` were asked).
+    A program in play must be FOLLOWED (`_follow`): it is refused when a write lands on a literal that names a log, and equally when anything in it could not be followed, an unresolved write target included. A program whose every call is known, and whose every write goes to a named path that is not a log, writes those files and no other, whatever it reads.
     """
-    literals, unresolved = _site_targets(code)
-    if any(_literal_names_log(text) for text in literals):
-        return True
-    if unresolved:
-        return handed or _program_could_name_log(code)
+    if not handed and not _program_could_name_log(code):
+        return False
+    literals, lost = _follow(code, family)
+    return lost or any(_literal_names_log(text) for text in literals)
+
+
+def _ruby_in_place(run_):
+    """Does this ruby run carry `-i` (edit the files it is handed in place)? Its option words are read as ruby bundles them, up to the script or the first operand: a letter that takes an attached or a following value ends its word (`-I lib`, `-e CODE`, and an option may follow the program), and `i` in any other place is the in-place switch (`-i`, `-pi.bak`, `-ni`)."""
+    args = list(run_.argv if run_.xargv is None else run_.xargv)
+    index = 0
+    while index < len(args):
+        word = args[index]
+        if not word.startswith("-") or word in ("-", "--") or word.startswith("--"):
+            return False
+        for at, letter in enumerate(word[1:], 1):
+            if letter == "i":
+                return True
+            if letter in "xFKTW0":
+                break
+            if letter in "eIrCE":
+                if at == len(word) - 1:
+                    index += 1
+                break
+        index += 1
     return False
 
 
@@ -1115,17 +2232,22 @@ def run(ev):
     truncating = truncating or any(_verb_truncates(r, cwd) for r in shellscan.every_run(cmd))
     # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
     truncating = truncating or any(
-        _program_truncates(code) for _family, code in WT.interpreter_programs(cmd)
+        _program_truncates(code, False, family) for family, code in WT.interpreter_programs(cmd)
     )
     # The same question of each interpreter run with what the command line HANDS it (review 1d4e1754.1): a program that takes its target from argv, the environment or stdin names no path in its text.
     if not truncating:
         for run_ in shellscan.every_run(cmd):
             code, kind = shellscan.interpreter_program(run_, cmd, cwd)
+            family = WT._interpreter_name(run_.name)
+            # `ruby -i` rewrites every file it is handed, whatever the program says (measured allowed at 97a72d29c: `ruby -i -pe '$_.upcase!' <log>`). perl's `-i` is `shellscan.in_place_edit`'s, read with the verbs above.
+            if family == "ruby" and _ruby_in_place(run_) and _handed_a_log(run_, code, kind, cwd):
+                truncating = True
+                break
             if code is None and kind != "unjudgeable":
                 continue
             # A script this walk cannot read (an earlier clause wrote it from a source it cannot follow) is every program at once: handed a log, it is refused.
             if _handed_a_log(run_, code, kind, cwd) and (
-                code is None or _program_truncates(code, True)
+                code is None or _program_truncates(code, True, family)
             ):
                 truncating = True
                 break
