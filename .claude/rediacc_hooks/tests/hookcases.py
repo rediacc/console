@@ -4176,6 +4176,67 @@ STATIC: list[Case] = [
         bash_json("python3 -c \"p=2*3; open('n.txt','w').write(str(p))\""),
         "roundlog-truncate CONTROL: a star in inline code beside a named write",
     ),
+    # Review 8b651626.1: a perl open's path is its third argument, not its handle. The controls were refused at 13505e0b4; the python deny rows were allowed.
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('perl -e \'open(my $f, ">", "out.txt"); print $f 1\' agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: perl writing a named file beside the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("perl -e 'open(F, \">out.txt\"); print F 1' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: perl two-argument open onto a named file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('perl -e \'open my $f, ">", "out.txt"; print $f 1\' agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: perl open without parentheses onto a named file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; s=pathlib.Path(sys.argv[1]).read_text(); print(s.replace('a','b'))\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: str.replace on text read through a Path of the handed log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('perl -e \'open(my $f, ">", "agent/pr-babysit-0831-1.md")\''),
+        "roundlog-truncate: perl three-argument open onto the log by name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("perl -e 'open my $f, \">\", $ARGV[0]; close $f' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: perl open without parentheses onto argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; p=pathlib.Path(sys.argv[1]); p.replace('/tmp/x')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: Path.replace on a name bound to a Path of argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; pathlib.Path('x.txt').rename(sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: Path.rename of a named file onto argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; __import__('os').remove(sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: __import__('os').remove on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,os; getattr(os,'rem'+'ove')(sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: getattr on os with a concatenated literal name",
+    ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(
         "check 0 guards/warn_hook_change.py",
