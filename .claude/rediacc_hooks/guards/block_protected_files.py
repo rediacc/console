@@ -436,14 +436,32 @@ def _segments_match(pattern, path):
     )
 
 
+def _unknown_root_glob(text, recursive):
+    """A glob under an unknown root (review fc3f376a.3): its trailing segments matched against each protected path's tail, and for a recursive rm against a directory holding one. Counted only when a segment after the root carries a literal character, so `rm -rf "$(mktemp -d)"/*`, a bare glob under a root nobody can name, stays allowed while `rm "$D"/.claude/settings*` and `rm -rf "$D"/.cl*` are refused."""
+    segs = [seg for seg in text.split("/") if seg][1:]
+    if not any(ch not in "*?[]!^" and ch != _WILD for seg in segs for ch in seg):
+        return False
+    for p in PROTECTED_PATHS:
+        parts = p.split("/")
+        tails = [parts] if not text.endswith("/") else []
+        if recursive:
+            tails += [parts[:k] for k in range(1, len(parts))]
+        for tail in tails:
+            if len(segs) <= len(tail) and _segments_match(segs, tail[len(tail) - len(segs) :]):
+                return True
+    return False
+
+
 def _glob_names_protected(token, base, root, recursive):
     """True when a token holding a glob character can expand to a protected file (or, for a recursive rm, a directory holding one)."""
     # The glob characters of the text bash globs, after its substitutions: the `?` of `${T:?}` is parameter syntax, and reading it as a glob refused the documented `rm -rf "${T:?}"` from the project root. A word starting with an unevaluated part has an unknown root (`_wild_path`), so it is not resolved under the run's directory: `rm -rf "$(mktemp -d)"/*` was refused that way. A protected segment after such a root is `_unjudgeable`'s.
     text = _wildcarded(token) or token
-    if not any(ch in text for ch in _GLOB_CHARS) or text.startswith(_WILD):
+    if not any(ch in text for ch in _GLOB_CHARS):
         return False
     if _WILD in text and "/../" in "/%s/" % text:
         return False  # a `..` beside an unevaluated part is `_unjudgeable`'s
+    if text.startswith(_WILD):
+        return _unknown_root_glob(text, recursive)
     path = text if text.startswith("/") else posixpath.join(base, text)
     segs = [seg for seg in posixpath.normpath(path).split("/") if seg]
     # A trailing `/` expands to directories only (`rm -rf .claude/*/`), so it never names a protected FILE.

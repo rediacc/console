@@ -12,7 +12,7 @@ A SCRIPT BY PATH IS READ LIKE A HEREDOC (#f3f36655). `python3 scratch/edit.py` w
 
 SHAPE 3 OVER-REFUSES, and says so. A program that REMOVES markers names them too, and a static read cannot tell `s.replace(MARKER, "")` from `s.replace("", MARKER)`. The refusal names the Edit tool, which `block_suppressions.py` judges exactly (the whole file before and after). A removal script that must run in the shell spells the token with a character class (`noq[a]`), the convention both guards' sources use.
 
-EVERY HEREDOC IN THE COMMAND IS READ AS CONTENT for a redirect or `tee`, because the lexer records heredoc bodies without the command that consumes them. A command that writes a code file AND carries an unrelated heredoc naming a marker (a commit message, say) is refused; split it into two commands.
+A WRITER'S OWN TEXT IS ITS CONTENT (review fc3f376a.2): `echo`, `printf`, `tee` and a file-less `cat` write their words as bash expands them plus their own heredoc, here-string or piped words (`shellscan.writer_text`), and a text the walk cannot expand is an unknown write, refused. Any other redirect into a code file is read with EVERY heredoc in the command, because its content is not on the command line; a command that writes a code file that way AND carries an unrelated heredoc naming a marker (a commit message, say) is refused, so split it into two commands.
 
 WHAT IT DOES NOT SEE: `cp`/`mv` of a file that already carries markers, `git apply`/`patch`, a script it cannot read at hook time, and code assembled at run time. `check:ci-inline-suppressions` sees all of them, because it reads the tree rather than the command.
 
@@ -22,10 +22,12 @@ IT FAILS OPEN, LOUDLY, as its edit sibling does: a scanner that cannot be import
 """
 
 import importlib
+import io
 import os
 import pathlib
 import re
 import sys
+import tokenize
 
 from rediacc_hooks import hookio, shellscan, syspath
 
@@ -176,6 +178,20 @@ def _run_operands(run, argv):
     return ops
 
 
+def _python_strings(source):
+    """The text of every string literal in a python source, f-string parts included, or None when it does not tokenize (then the whole source is read, the safe direction)."""
+    middle = getattr(tokenize, "FSTRING_MIDDLE", None)
+    try:
+        out = [
+            tok.string
+            for tok in tokenize.generate_tokens(io.StringIO(source).readline)
+            if tok.type == tokenize.STRING or (middle is not None and tok.type == middle)
+        ]
+    except (tokenize.TokenError, SyntaxError, IndentationError):
+        return None
+    return "\n".join(out)
+
+
 def _render(engine, grew):
     return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
 
@@ -192,17 +208,24 @@ def _offending(engine, cmd, cwd):
     # What a `tee` writes is its UPSTREAM stage's output; read as every writer's arguments in the command, plus the heredocs.
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i` or an interpreter that `find -exec` or `npx -c` starts writes the same files, so the runs are `shellscan.every_run`.
     runs = shellscan.every_run(cmd)
-    piped = "\n".join(
-        bodies + [a for r in runs if r.name.rsplit("/", 1)[-1] in WRITERS for a in r.argv]
-    )
     for run in runs:
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
-        targets = [(t, "\n".join(bodies + (argv if name in WRITERS else []))) for t in run.writes]
-        if name == "tee":
-            targets += [(t, piped) for t in _operands(argv)]
-        for target, content in targets:
+        # A writer's text as bash hands it over (`shellscan.writer_text`, review fc3f376a.2): `F='... marker'; echo "$F" >> a.py` wrote the marker while its argv read `"$F"`. A pure writer whose text is unexpanded (`$(...)`, an unset variable, an unquoted heredoc's `$`) is an unknown write. `cat other.py > a.py` copies, which this guard does not see (module docstring).
+        pure = name in ("echo", "printf", "tee") or (
+            name == "cat" and not any(not a.startswith("-") for a in argv)
+        )
+        written = shellscan.writer_text(run, cmd) if pure else ""
+        # A pure writer's text carries its own heredoc or feed; any other redirect (`python3 gen.py > a.py`) is read with every heredoc in the command, as before.
+        content = (written or "") if pure else "\n".join(bodies)
+        targets = list(run.writes) + (_operands(argv) if name == "tee" else [])
+        for target in targets:
             language = _language(engine, target, content)
+            if language is not None and pure and written is None:
+                return "a write of text this hook cannot read into %s (%s)" % (
+                    target,
+                    shellscan.UNJUDGEABLE_REASON,
+                )
             if language is not None:
                 new = engine.count_markers(content, language)
                 appending = target in appends or (name == "tee" and "-a" in argv)
@@ -243,10 +266,16 @@ def _offending(engine, cmd, cwd):
                     name,
                     shellscan.UNJUDGEABLE_REASON,
                 )
+            # A script read by PATH is judged by what it can write, not by its own comments (coordinator 2026-10-11: an edited tracked test whose source carries a lint marker comment, writing fixture files, was refused): a python script's markers count only inside its string literals; its write calls are still read from the whole source.
+            marked = code
             if kind == "file":
                 code += "\n" + script
+                literals = _python_strings(script) if name.startswith("python") else None
+                marked = code if literals is None else " ".join(argv) + "\n" + literals
             if WRITE_CODE.search(code):
-                grew = engine.growth(engine.count_any_language(""), engine.count_any_language(code))
+                grew = engine.growth(
+                    engine.count_any_language(""), engine.count_any_language(marked)
+                )
                 if grew:
                     return "a %s program that writes files and names %s" % (
                         name,
