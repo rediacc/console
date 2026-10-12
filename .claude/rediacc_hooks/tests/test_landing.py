@@ -222,6 +222,8 @@ def test_printed_escapes_are_the_characters_printf_prints():
     assert _fed(r"printf '\x23 n' | cat", "cat")[0] == "printf # n"
     assert _fed(r"printf '\x23 n\n' > /tmp/zz-landing-probe", "printf")[1] == "# n\n"
     assert _fed(r"echo -e '\x23 n' > /tmp/zz-landing-probe", "echo")[1] == "-e # n"
+    # In a FEED every escape is decoded, an `echo` without `-e` included (review 648366c8.2): the feed does not record which command typed a word.
+    assert _fed(r"echo '\x23 n' | cat", "cat")[0] == "echo # n"
     # `echo` without `-e` prints the escape as typed.
     assert _fed(r"echo '\x23 n' > /tmp/zz-landing-probe", "echo")[1] == r"\x23 n"
     # A quoted heredoc is cat's input, and cat prints it untouched.

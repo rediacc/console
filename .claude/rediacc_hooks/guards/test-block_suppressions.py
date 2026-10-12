@@ -61,6 +61,17 @@ STDIN_COPIER = SCRATCH / "stdin_copier.py"
 STDIN_READER = SCRATCH / "stdin_reader.py"
 # Review 13505e0b.2: a script that RUNS its stdin.
 STDIN_RUNNER = SCRATCH / "stdin_runner.py"
+# Review 648366c8.1: JavaScript programs that run their stdin, one per spelling no list of names holds, and one that never reads it.
+_JS_STDIN = "require('fs').readFileSync(0, 'utf8')"
+JS_RUNNERS = {
+    "a bare Function call": "Function(%s)()\n" % _JS_STDIN,
+    "an indirect eval": "(0, eval)(%s)\n" % _JS_STDIN,
+    "globalThis.eval": "globalThis.eval(%s)\n" % _JS_STDIN,
+    "vm.runInThisContext": "require('vm').runInThisContext(%s)\n" % _JS_STDIN,
+    "a data: import": "import('data:text/javascript,' + encodeURIComponent(%s))\n" % _JS_STDIN,
+}
+JS_RUNNER_FILES = {label: SCRATCH / ("js_runner_%d.js" % k) for k, label in enumerate(JS_RUNNERS)}
+JS_NO_STDIN = SCRATCH / "js_no_stdin.js"
 # Review 13505e0b.1: the marker with its first character spelled as the escape `printf` prints it from.
 NQ_ESCAPED = "\\x%02x%s" % (ord(NQ[0]), NQ[1:])
 # Symlinks (review 3f53e99e.1 sweep): a directory link OUTSIDE the tree pointing at the scratch directory inside it, and a `.txt` link to a Python file.
@@ -90,6 +101,9 @@ def _world():
     )
     STDIN_READER.write_text("import sys\nprint(len(sys.stdin.read()))\n", encoding="utf-8")
     STDIN_RUNNER.write_text("import sys\nexec(sys.stdin.read())\n", encoding="utf-8")
+    for label, source in JS_RUNNERS.items():
+        JS_RUNNER_FILES[label].write_text(source, encoding="utf-8")
+    JS_NO_STDIN.write_text("console.log(1 + 1)\n", encoding="utf-8")
     CLEAN_SCRIPT.write_text(
         "import pathlib\npathlib.Path(%r).write_text('y = 1\\n')\n" % str(OUTSIDE), encoding="utf-8"
     )
@@ -385,6 +399,26 @@ SHELL_CASES = [
         "a by-path script that runs its stdin, fed text the walk cannot expand",
         ": '%s'; python3 %s <<EOF\n$(cat /tmp/zz-absent)\nEOF" % (NQ, STDIN_RUNNER),
         True,
+    ),
+    # Review 648366c8.1: a JavaScript program is never classified as not running its stdin. Each refusal was allowed (rc 0) before.
+    *[
+        (
+            "a node script running its stdin through %s" % label,
+            "node %s <<'EOF'\nrequire('fs').writeFileSync('%s', 'y = 1  %s: B010\\n')\nEOF"
+            % (path, KEPT, NQ),
+            True,
+        )
+        for label, path in JS_RUNNER_FILES.items()
+    ],
+    (
+        "a node script that never reads stdin, fed marker-free text",
+        ": '%s'; node %s <<'EOF'\nplain text\nEOF" % (NQ, JS_NO_STDIN),
+        False,
+    ),
+    (
+        "a node script fed a marker but no write call",
+        "node %s <<'EOF'\ny = 1  %s: B010\nEOF" % (JS_NO_STDIN, NQ),
+        False,
     ),
     # Review 7837d22e.2: stdin is data, read for markers and never for write calls. Refused (rc 2) before.
     (
