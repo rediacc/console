@@ -4074,6 +4074,108 @@ STATIC: list[Case] = [
         ),
         "roundlog-truncate CONTROL: a writer handed another file after the log was only read",
     ),
+    # Review 4b3f59b5.1: the program arm is judged per write. Each deny row was allowed at 8abc48a14 with the log handed.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; print(open('README.md').read()); open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a named md file read beside a write to argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; pathlib.Path(sys.argv[1]).open('w').write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a path object's own open('w') on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'python3 -c "import sys,os; os.truncate(sys.argv[1], 0)" agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: os.truncate on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('python3 -c "import sys,os; os.remove(sys.argv[1])" agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate: os.remove on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,os; os.system('cp /dev/null ' + sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a shell command built from argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "node -e \"require('fs').truncateSync(process.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: node truncateSync on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open(sys.argv[1].split('=')[1],'w').write('')\" --out=pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: the log as an option's value",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'cd "$D" && ls *.md | python3 -c "import sys; [open(l.strip(),\'w\') for l in sys.stdin]"'
+        ),
+        "roundlog-truncate: an md glob on the program's stdin",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; m='w'; open(sys.argv[1], m).write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a write mode held in a variable",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\np = 'x.txt'\nfor p in sys.argv[1:]:\n    open(p, 'w').write('')\nPY"
+        ),
+        "roundlog-truncate: a literal-bound name a loop rebinds",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open('out.txt','w').write(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: a named output written from the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; print(open(sys.argv[1]).read()); open('copy.md','w').write('x')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: a named md copy written while the handed log is printed",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; m='r'; print(open(sys.argv[1], m).read())\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: a read mode held in a variable",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open(sys.argv[1], 'a').write('more')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: an append to the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("python3 -c \"p=2*3; open('n.txt','w').write(str(p))\""),
+        "roundlog-truncate CONTROL: a star in inline code beside a named write",
+    ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(
         "check 0 guards/warn_hook_change.py",
