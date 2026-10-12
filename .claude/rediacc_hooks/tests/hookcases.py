@@ -4373,6 +4373,40 @@ STATIC: list[Case] = [
         bash_json("perl -e 'open(FH, \"w\"); print <FH>' agent/pr-babysit-0831-1.md"),
         "roundlog-truncate CONTROL: perl: a two-argument open of a file named w is a read",
     ),
+    # Reviews 801bbb46.1/.2: a construct whose extent the word reader does not know is refused, not blanked.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'local $" = ","; my $c = \\&CORE::unlink; $c->($ARGV[0])\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: the list separator variable is not a string opener",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my @x = qw#a#; my $c = \\&CORE::unlink; $c->($ARGV[0])' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like operator on a # delimiter is not a comment",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = ?"; File.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: a character literal is not a string opener",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'open(my $f, \"<\", $ARGV[0]) or die; print <$f>' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: perl: a plain read of the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: ruby: a plain read of the handed log",
+    ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(
         "check 0 guards/warn_hook_change.py",
