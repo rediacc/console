@@ -116,6 +116,47 @@ def test_block_edit_of_running_script(tmp_path):
             path_json(tmp_path / "idle-fixture.sh"),
             "running-script CONTROL: a .sh nothing is running is untouched",
         )
+        # THROUGH A LINK (review 0067b4c2.2). The file edited is the one the edit lands in, and the process table holds the name the script was started under, so both names are asked. `notes.txt` and `alias-fixture.sh` point at the running script; `running-fixture.sh` in another directory points at an idle one.
+        (tmp_path / "notes.txt").symlink_to(fixture)
+        (tmp_path / "alias-fixture.sh").symlink_to(fixture)
+        (tmp_path / "idle-real.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
+        (tmp_path / "other").mkdir()
+        (tmp_path / "other" / "idle-alias.sh").symlink_to(tmp_path / "idle-real.sh")
+        block.check(
+            "check 2 guards/block_edit_of_running_script.py",
+            path_json(tmp_path / "notes.txt"),
+            "running-script: an edit landing in the running .sh through a .txt link is refused",
+        )
+        block.check(
+            "check 2 guards/block_edit_of_running_script.py",
+            path_json(tmp_path / "alias-fixture.sh"),
+            "running-script: an edit landing in the running .sh through another .sh name is refused",
+        )
+        block.check(
+            "check 0 guards/block_edit_of_running_script.py",
+            path_json(tmp_path / "other" / "idle-alias.sh"),
+            "running-script CONTROL: a link landing in an idle .sh is untouched",
+        )
+        # The other way round: the process was STARTED through a link, so its command line carries the link's name, and the edit is typed by that same name.
+        started = tmp_path / "started-real.sh"
+        started.write_text("#!/usr/bin/env bash\nsleep %d\n" % FIXTURE_SLEEP_S, encoding="utf-8")
+        (tmp_path / "started-alias.sh").symlink_to(started)
+        via_link = subprocess.Popen(
+            ["bash", str(tmp_path / "started-alias.sh")],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+        )
+        try:
+            time.sleep(SPAWN_SETTLE_S)
+            block.check(
+                "check 2 guards/block_edit_of_running_script.py",
+                path_json(tmp_path / "started-alias.sh"),
+                "running-script: an edit through the link name a live process was started under is refused",
+            )
+        finally:
+            via_link.kill()
+            via_link.wait()
         block.check(
             "check 0 guards/block_edit_of_running_script.py",
             path_json(tmp_path / "running-fixture.ts"),

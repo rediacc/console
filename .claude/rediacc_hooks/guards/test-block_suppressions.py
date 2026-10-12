@@ -57,6 +57,8 @@ CLEAN_SCRIPT = SCRATCH / "clean_writer.py"
 ABSENT_SCRIPT = SCRATCH / "absent.py"
 # Review 094dea3b.2: a script that writes out whatever arrives on its stdin.
 STDIN_COPIER = SCRATCH / "stdin_copier.py"
+# Review 7837d22e.2: a script that reads its stdin and writes no file.
+STDIN_READER = SCRATCH / "stdin_reader.py"
 # Symlinks (review 3f53e99e.1 sweep): a directory link OUTSIDE the tree pointing at the scratch directory inside it, and a `.txt` link to a Python file.
 OUTSIDE_LINK = pathlib.Path(tempfile.mkdtemp(prefix="test-block-suppressions-link-")) / "into-repo"
 atexit.register(shutil.rmtree, str(OUTSIDE_LINK.parent), True)
@@ -82,6 +84,7 @@ def _world():
     STDIN_COPIER.write_text(
         "import sys\nopen(%r, 'w').write(sys.stdin.read())\n" % str(KEPT), encoding="utf-8"
     )
+    STDIN_READER.write_text("import sys\nprint(len(sys.stdin.read()))\n", encoding="utf-8")
     CLEAN_SCRIPT.write_text(
         "import pathlib\npathlib.Path(%r).write_text('y = 1\\n')\n" % str(OUTSIDE), encoding="utf-8"
     )
@@ -311,6 +314,39 @@ SHELL_CASES = [
     (
         "a by-path script copying a clean stdin heredoc",
         "python3 %s <<'EOF'\ny = 1\nEOF" % STDIN_COPIER,
+        False,
+    ),
+    # Review 7837d22e.1: an unquoted heredoc is read as bash hands it over. The first two were allowed (rc 0) before; the others pin.
+    (
+        "a by-path script fed a marker through a variable in an unquoted heredoc",
+        "M='y = 1  %s: B010'; python3 %s <<EOF\n$M\nEOF" % (NQ, STDIN_COPIER),
+        True,
+    ),
+    (
+        "a by-path script fed text the walk cannot expand",
+        ": '%s'; python3 %s <<EOF\n$(cat /tmp/zz-absent)\nEOF" % (NQ, STDIN_COPIER),
+        True,
+    ),
+    (
+        "an unquoted heredoc whose variable is clean, a marker assigned beside it",
+        "N='%s: B010'; M='y = 1'; python3 %s <<EOF\n$M\nEOF" % (NQ, STDIN_COPIER),
+        False,
+    ),
+    (
+        "an escaped dollar in an unquoted heredoc is the two characters",
+        "M='%s: B010'; python3 %s <<EOF\ny = '\\$M'\nEOF" % (NQ, STDIN_COPIER),
+        False,
+    ),
+    (
+        "an inline program copying its stdin heredoc into a code file",
+        "python3 -c \"import sys; open('%s', 'w').write(sys.stdin.read())\" <<'EOF'\ny = 1  %s: B010\nEOF"
+        % (KEPT, NQ),
+        True,
+    ),
+    # Review 7837d22e.2: stdin is data, read for markers and never for write calls. Refused (rc 2) before.
+    (
+        "a by-path script that writes nothing, fed a line naming open( and a marker",
+        "python3 %s <<'EOF'\nopen('a.py', 'w')  %s: B010\nEOF" % (STDIN_READER, NQ),
         False,
     ),
     (

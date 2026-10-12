@@ -437,7 +437,7 @@ def _segments_match(pattern, path):
 
 
 def _unknown_root_glob(text, recursive):
-    """A glob under an unknown root (review fc3f376a.3): its trailing segments matched against each protected path's tail, and for a recursive rm against a directory holding one. Counted only when a segment after the root carries a literal character, so `rm -rf "$(mktemp -d)"/*`, a bare glob under a root nobody can name, stays allowed while `rm "$D"/.claude/settings*` and `rm -rf "$D"/.cl*` are refused."""
+    """A glob under an unknown root (review fc3f376a.3): its trailing segments matched against each protected path's tail, and for a recursive rm against a directory holding one. Counted only when some kept segment carries a literal character, the root's own included when text is glued to it (`"$D"settings*`), so `rm -rf "$(mktemp -d)"/*`, a bare glob under a root nobody can name, stays allowed while `rm "$D"/.claude/settings*`, `rm "$D"settings*` and `rm -rf "$D"/.cl*` are refused."""
     # The root's own segment is kept: text glued to it with no slash is part of a name (`"$D"settings*` is `settings.json` when D is `.claude/`, review 094dea3b.4). A root that is a segment of its own is also tried dropped, since it may be any number of directories. A protected BASENAME straight under an unknown root (`rm "$D"/settings*`) is refused on purpose: the root may be `.claude` (094dea3b.5).
     segs = [seg for seg in text.split("/") if seg]
     if not any(ch not in "*?[]!^" and ch != _WILD for seg in segs for ch in seg):

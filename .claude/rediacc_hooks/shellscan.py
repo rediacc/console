@@ -4948,10 +4948,62 @@ def _script_file_text(path, run_cwd, cwd):
 _TEXT_WRITERS = ("echo", "printf", "cat", "tee")
 
 
+_HEREDOC_EXPANSION = re.compile(
+    r"\\\n|\\([$`\\])|\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)|\$[({0-9@*#?$!-]|`"
+)
+
+
+def _expand_heredoc(body, shell):
+    """An UNQUOTED heredoc's body as bash hands it over under the walk's shell state, or None when a part of it cannot be known here: `$NAME` and `${NAME}` are the value an earlier statement gave, `\\$`, a backslashed backtick and `\\\\` are the character, a backslash before a newline joins the lines, and a `$(...)`, a backtick, a `${...}` with an operator, a positional or special parameter, or a name only the session's environment knows is unknown."""
+    unknown: list[str] = []
+
+    def one(m):
+        if m.group(0) == "\\\n":
+            return ""
+        if m.group(1):
+            return m.group(1)
+        name = m.group(2) or m.group(3)
+        value = _var(name, shell) if name else _UNRESOLVED
+        if _UNRESOLVED in value:
+            unknown.append(m.group(0))
+        return value
+
+    out = _HEREDOC_EXPANSION.sub(one, body)
+    return None if unknown else out
+
+
+def stdin_text(run, cmd):
+    """What arrives on a run's stdin (`_Run.feed`), as bash hands it over, or None when any of it is unknown (review 7837d22e.1).
+
+    A QUOTED heredoc's body is literal. An UNQUOTED one is expanded by bash, so it is expanded here with what the walk resolved (`_expand_heredoc`): `M=x; prog <<EOF` with a body line `$M` hands over `x`, where the raw body read `$M`. A `$` or a backtick anywhere else in the feed (a here-string, the words of the stage in front) is not expanded here and leaves the text unknown.
+    """
+    feed = run.feed or ""
+    if "$" not in feed and "`" not in feed and "\\" not in feed:
+        return feed
+    kept: list[str] = []
+    rest = feed
+    for doc in _analyse(cmd).heredocs:
+        if doc.body_start is None or doc.body_end is None:
+            continue
+        body = cmd[doc.body_start : doc.body_end]
+        if not body or body not in rest:
+            continue
+        text = body if doc.quoted else _expand_heredoc(body, run.vars)
+        if text is None:
+            return None
+        rest = rest.replace(body, "\x00%d\x00" % len(kept), 1)
+        kept.append(text)
+    if "$" in rest or "`" in rest:
+        return None
+    for k, text in enumerate(kept):
+        rest = rest.replace("\x00%d\x00" % k, text, 1)
+    return rest
+
+
 def writer_text(run, cmd):
     """The text a writer run (`echo`, `printf`, `tee`, or `cat` with no file operand) puts out, as bash hands it over, or None when it is not one, or when any of it is unexpanded (review fc3f376a.2).
 
-    Its words are read expanded (`xargv`: `F=x; echo "$F"` puts out `x`), never as typed: recorded verbatim, `echo "$F" > s.py` was the four characters `"$F"`, so the program it wrote ran unjudged. Its feed (a heredoc, a here-string, the words of the pipeline in front of it) is literal text, except that bash expands an UNQUOTED heredoc's body and a producer's words, so a `$` or a backtick there that is not inside a quoted heredoc leaves the text unknown. Anything the walk could not expand makes the whole text None, which a guard reads as unjudgeable.
+    Its words are read expanded (`xargv`: `F=x; echo "$F"` puts out `x`), never as typed: recorded verbatim, `echo "$F" > s.py` was the four characters `"$F"`, so the program it wrote ran unjudged. Its feed (a heredoc, a here-string, the words of the pipeline in front of it) is read as `stdin_text` gives it: a quoted heredoc literal, an unquoted one expanded with what the walk resolved, and unknown when a `$` or a backtick is left anywhere else. Anything the walk could not expand makes the whole text None, which a guard reads as unjudgeable.
     """
     base = run.name.rsplit("/", 1)[-1]
     argv = list(run.argv)
@@ -4963,14 +5015,9 @@ def writer_text(run, cmd):
     words = run.xargv
     if any(_UNRESOLVED in w for w in words):
         return None
-    feed = run.feed or ""
-    if "$" in feed or "`" in feed:
-        literal = feed
-        for doc in _analyse(cmd).heredocs:
-            if doc.quoted and doc.body_start is not None and doc.body_end is not None:
-                literal = literal.replace(cmd[doc.body_start : doc.body_end], "")
-        if "$" in literal or "`" in literal:
-            return None
+    feed = stdin_text(run, cmd)
+    if feed is None:
+        return None
     return "\n".join(f for f in [feed, " ".join(words)] if f)
 
 
