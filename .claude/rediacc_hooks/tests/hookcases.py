@@ -4038,6 +4038,42 @@ STATIC: list[Case] = [
         ),
         "roundlog-truncate: a program building the log name in an f-string",
     ),
+    # Review 1d4e1754.1: a program HANDED the log (an argument, the environment, stdin) names no path in its text, and all three were allowed at 0067b4c27.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a program opening argv for write, handed the log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "F=agent/pr-babysit-0831-1.md python3 -c \"import os; open(os.environ['F'],'w').write('')\""
+        ),
+        "roundlog-truncate: the log handed through the environment",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "echo agent/pr-babysit-0831-1.md | python3 -c \"import sys; open(sys.stdin.read().strip(),'w').write('')\""
+        ),
+        "roundlog-truncate: the log handed on stdin",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            'python3 -c "import sys; print(open(sys.argv[1]).read())" agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate CONTROL: a program that only reads the log it is handed",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "cat agent/pr-babysit-0831-1.md; python3 -c \"import sys; open(sys.argv[1],'w').write('')\" notes.txt"
+        ),
+        "roundlog-truncate CONTROL: a writer handed another file after the log was only read",
+    ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(
         "check 0 guards/warn_hook_change.py",

@@ -3353,7 +3353,7 @@ def copy_landings(run, cwd, names=COPIERS, argv=None):
         return []
     sources, dests, into = copies
     base = cwd if run.cwd is None else os.path.join(cwd, run.cwd)
-    # TWO CASES, ONE ANSWER (review 9ed30a8a.2). A `cd` to a directory that is not there fails and leaves the shell where it started (review a165575f.2); a `cd` whose target the walk cannot resolve (`cd "$D"`, `cd ~`) lands somewhere this walk cannot name. Either way the run's directory is not on disk here, and the starting directory is the one other place a relative destination can land, so both are candidates.
+    # TWO CASES, ONE ANSWER (review 9ed30a8a.2). A `cd` to a directory that is not there fails and leaves the shell where it started (review a165575f.2); a `cd` whose target the walk cannot resolve (`cd "$D"`, `cd ~`) lands somewhere this walk cannot name. Either way the run's directory is not on disk here, and the starting directory is the one other place a relative destination can land, so both are candidates. `run.cwd` is None ONLY when no `cd` ran before this command, and then the starting directory is the one base; an unresolved `cd` leaves `run.cwd` as the unexpanded word (`$D`, `~`, `-`), which joins to a path that is not on disk and so takes this branch (review 1d4e1754.2, measured).
     bases = [base] if os.path.isdir(base) else [base, cwd]
     out: list[tuple[str, bool]] = []
     for base in bases:
