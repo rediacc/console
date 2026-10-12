@@ -148,3 +148,15 @@ def test_rejects_commit_pin_drift(gate, tmp_path):
     gate.assert_exit(1, result, "a Dockerfile commit pin drifting from the lockfile should fail")
     gate.assert_contains(result.combined, "CSIPROVISIONER_COMMIT", "error names the drifted ARG")
     gate.log_pass("a Dockerfile commit pin that drifts from the lockfile is rejected")
+
+
+def test_rejects_commit_arg_with_no_lockfile_component(gate, tmp_path):
+    """The commit comparison walked the lockfile's components, so an `ARG X_COMMIT=` whose base has no component was never compared and could drift unseen."""
+    require_submodule(gate)
+    text = DOCKERFILE.read_text(encoding="utf-8")
+    fixture = tmp_path / "Dockerfile"
+    fixture.write_text(text + "\nARG ORPHANTOOL_COMMIT=" + "1" * 40 + "\n", encoding="utf-8")
+    result = run_gate(gate, env={"EMBED_CREDITS_DOCKERFILE": str(fixture)})
+    gate.assert_exit(1, result, "a commit ARG with no lockfile component should fail")
+    gate.assert_contains(result.combined, "ORPHANTOOL_COMMIT", "error names the orphan ARG")
+    gate.log_pass("a commit ARG with no lockfile component is rejected")
