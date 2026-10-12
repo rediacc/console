@@ -396,6 +396,104 @@ EDGE_CASES = [
         "node writing a named file from the handed log",
         "node -e \"const fs=require('fs'); const o='out.json'; fs.writeFileSync(o, fs.readFileSync(process.argv[1]))\" agent/pr-babysit-0831-1.md",
     ),
+    # Review 8b651626.1: perl's `open` puts the HANDLE first, and the handle was read as the path, so every perl write to a named file was refused beside a handed log. The first six rows were refused at 13505e0b4 or pin the perl read and append beside them; the rest are the controls of the two residuals closed below.
+    (
+        "perl writing a named file beside the handed log",
+        'perl -e \'open(my $f, ">", "out.txt"); print $f 1\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl copying the handed log into a named file",
+        'perl -e \'open(my $in, "<", $ARGV[0]); open(my $f, ">", "out.txt"); print $f <$in>\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl two-argument open onto a named file",
+        "perl -e 'open(F, \">out.txt\"); print F 1' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl open without parentheses onto a named file",
+        'perl -e \'open my $f, ">", "out.txt"; print $f 1\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "perl appending to the handed log",
+        "perl -e 'open(my $f, \">>\", $ARGV[0]); print $f 1' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl two-argument read of a named file",
+        "perl -e 'open(IN, \"notes.txt\"); print <IN>' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "str.replace on text read through a Path of the handed log",
+        "python3 -c \"import sys,pathlib; s=pathlib.Path(sys.argv[1]).read_text(); print(s.replace('a','b'))\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "Path.replace between two named files while the handed log is read",
+        "python3 -c \"import sys,pathlib; p=pathlib.Path('x.txt'); p.replace('y.txt'); print(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "getattr and __import__ that reach no writer",
+        "python3 -c \"import sys,os; print(getattr(os,'sep'), __import__('json').dumps(open(sys.argv[1]).read()))\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a Python open on an upper-case name bound to a named file",
+        "python3 -c \"import sys; F='out.txt'; open(F, 'w').write(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md",
+    ),
+    # The perl forms that DO reach the log, and two residuals of the previous round taken one step: `Path.replace` and `Path.rename` on a receiver that is provably a path (their argument is replaced too), and a writer reached through a literal name (`__import__('os')`, `getattr(os, 'rem' + 'ove')`). Every python row here was allowed at 13505e0b4.
+    (
+        "perl three-argument open onto the log by name",
+        'perl -e \'open(my $f, ">", "agent/pr-babysit-0831-1.md")\'',
+    ),
+    (
+        "perl two-argument open onto the log by name",
+        "perl -e 'open(F, \">agent/pr-babysit-0831-1.md\")'",
+    ),
+    (
+        "perl two-argument open interpolating argv",
+        "perl -e 'open(F, \">$ARGV[0]\")' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl open without parentheses onto argv",
+        "perl -e 'open my $f, \">\", $ARGV[0]; close $f' agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "perl pipe open naming argv",
+        'perl -e \'open(my $f, "|-", "tee $ARGV[0]")\' agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "Path.replace on a name bound to a Path of argv",
+        "python3 -c \"import sys,pathlib; p=pathlib.Path(sys.argv[1]); p.replace('/tmp/x')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "Path.replace called on Path(argv) itself",
+        "python3 -c \"import sys; from pathlib import Path; Path(sys.argv[1]).replace('/tmp/x')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "Path.replace of a named file onto argv",
+        "python3 -c \"import sys,pathlib; pathlib.Path('x.txt').replace(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "Path.rename of a named file onto argv",
+        "python3 -c \"import sys,pathlib; pathlib.Path('x.txt').rename(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "__import__('os').remove on argv",
+        "python3 -c \"import sys; __import__('os').remove(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "import_module('shutil').rmtree on argv",
+        "python3 -c \"import sys,importlib; importlib.import_module('shutil').rmtree(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "getattr on os with a concatenated literal name",
+        "python3 -c \"import sys,os; getattr(os,'rem'+'ove')(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "getattr on os with a name that is not a literal",
+        "python3 -c \"import sys,os; n='remove'; getattr(os, n)(sys.argv[1])\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "a Python open on an upper-case name bound to argv",
+        "python3 -c \"import sys; F=sys.argv[1]; open(F, 'w').write('')\" agent/pr-babysit-0831-1.md",
+    ),
 ]
 
 
@@ -677,7 +775,7 @@ def _handed_a_log(run_, code, kind, cwd):
 #
 # A SITE IS ANY CALL THAT REPLACES OR REMOVES A FILE, not only `open(..., 'w')`. Each row below was allowed with the log handed in argv until the row's spelling was listed (measured 2026-10-12 at 8abc48a14): a path object's own `.open('w')`, an `open(` whose arguments span lines, `truncate`, `remove`/`unlink`, `O_TRUNC`, node's `fs` calls beyond `writeFileSync`, ruby's `File.write`, a perl `open` in `>` mode, and a program that hands a command to a shell.
 #
-# STILL NOT READ, each measured allowed with the log handed (2026-10-12) and named rather than pretended away: a writer reached dynamically (`getattr(os, 'rem' + 'ove')`, `__import__('os').remove`), `Path.replace` (the method name is `str.replace` in nearly every program), a DIRECTORY handed in place of the log (`os.listdir(sys.argv[1])` over `agent`), a log name assembled from pieces that never hold the stem whole, and a path the program reads out of a file.
+# STILL NOT READ, each measured allowed with the log handed (2026-10-12) and named rather than pretended away: a writer picked out of a module's namespace (`vars(os)['remove']`), a non-literal `getattr` on a module imported under another name (`import os as o`), `Path.replace` on a path class imported under another name (`from pathlib import Path as P`), a DIRECTORY handed in place of the log (`os.listdir(sys.argv[1])` over `agent`), a log name assembled from pieces that never hold the stem whole, and a path the program reads out of a file.
 @functools.lru_cache(maxsize=1)
 def _grammar():
     """The compiled readers of PROGRAM TEXT, built once. Each is applied to an interpreter program the walk already chose and never to the command, so they are built here rather than held as module patterns."""
@@ -707,11 +805,26 @@ def _grammar():
         every=re.compile(
             r"(?:\bshutil\.(?:copy|copyfile|copy2|move|rmtree)|\bos\.(?:replace|rename|renames)|\b(?:fs\.)?(?:renameSync|copyFileSync)|(?<![\w.$])(?:copy|copyfile|copy2|move|rmtree|rename|replace))\("
         ),
-        # Methods that replace or remove the path they are called ON. `.replace(` is absent: it is `str.replace` in nearly every program, and `Path.replace` is a named residual.
+        # Methods that replace or remove the path they are called ON. `rename` also replaces the path it is GIVEN, so its arguments are sites too.
         method=re.compile(r"\.(?:write_text|write_bytes|unlink|truncate|rmdir|touch|rename)\("),
-        # No readable target at all: a raw descriptor flag, a command handed to a shell, code built at run time, the perl and ruby calls written without parentheses, and a writer passed around as a value rather than called (`map(os.remove, sys.argv[1:])`, `w = open`).
+        # `.replace(` is `str.replace` in nearly every program, so it is a site only on a receiver that is provably a path (`_is_path`).
+        replace=re.compile(r"\.replace\("),
+        # A path object: the constructor's whole call, then only steps that keep it a path (`/ 'x'`, `.resolve()`, `.parent`). `Path(x).read_text()` is a string.
+        path=re.compile(
+            r"(?:pathlib\.)?(?:Path|PurePath|PosixPath)\((?:[^()]|\([^()]*\))*\)(?:\s*/\s*[^;\n/]+|\.(?:resolve|expanduser|absolute)\(\)|\.parent)*"
+        ),
+        # perl's `open` written without parentheses: a handle, a comma, a quoted mode.
+        bare_open=re.compile(r"(?<![\w$.])open\s+(?=(?:(?:my|local|our)\s+)?[$*]?\w+\s*,\s*['\"])"),
+        # A module or attribute reached by a LITERAL name is the plain spelling in disguise: `__import__('os')`, `importlib.import_module('os')`, `getattr(os, 'rem' + 'ove')`.
+        imported=re.compile(
+            r"(?:\bimportlib\.)?\b(?:__import__|import_module)\(\s*['\"]([A-Za-z_][\w.]*)['\"]\s*\)"
+        ),
+        attribute=re.compile(
+            r"\bgetattr\(\s*([A-Za-z_][\w.]*)\s*,\s*((?:['\"]\w*['\"]\s*\+?\s*)+)\)"
+        ),
+        # No readable target at all: a raw descriptor flag, a command handed to a shell, code built at run time, the perl and ruby calls written without parentheses, a writer passed around as a value rather than called (`map(os.remove, sys.argv[1:])`, `w = open`), and a writer module's attribute picked by a name that is not a literal (`getattr(os, n)`).
         blind=re.compile(
-            r"O_TRUNC|\bos\.system\(|\bsubprocess\.|\bexecSync\(|\bchild_process\b|\bspawnSync\(|\bsystem\(|`[^`\n]*`|\bexec\(|\beval\(|\bopen\s+(?:my\s+)?[$A-Z]\w*\s*,\s*['\"]\+?>(?!>)|(?<![\w.$])(?:unlink|rename|truncate)\s+[$@'\"]|\bFile\.(?:write|delete|truncate|unlink|open)\s+[^\s(=]|\b(?:os\.(?:remove|unlink|truncate|rename|replace)|shutil\.(?:copy|copyfile|copy2|move|rmtree))\b(?!\s*\()|[=(,]\s*open\s*[,);\n]"
+            r"O_TRUNC|\bos\.system\(|\bsubprocess\.|\bexecSync\(|\bchild_process\b|\bspawnSync\(|\bsystem\(|`[^`\n]*`|\bexec\(|\beval\(|(?<![\w.$])(?:unlink|rename|truncate)\s+[$@'\"]|\bgetattr\(\s*(?:os|shutil|fs)\s*,\s*(?!['\"])|\bFile\.(?:write|delete|truncate|unlink|open)\s+[^\s(=]|\b(?:os\.(?:remove|unlink|truncate|rename|replace)|shutil\.(?:copy|copyfile|copy2|move|rmtree))\b(?!\s*\()|[=(,]\s*open\s*[,);\n]"
         ),
     )
 
@@ -769,7 +882,7 @@ def _literal_text(expr):
     return body
 
 
-def _bound_literals(name, code):
+def _bound_literals(name, code, read=None):
     """Every literal `name` is bound to in `code`, or None unless EVERY binding of it is a plain statement-level assignment of one literal. Not bound at all is None (`sys.argv`, a parameter), and so is a name bound any other way: a loop (`for p in sys.argv[1:]`), `with ... as p`, an import, a walrus, an augmented, tuple, chained or conditional one-line assignment, a function or lambda parameter, a `global`."""
     q = re.escape(name)
     plain = re.findall(
@@ -796,11 +909,70 @@ def _bound_literals(name, code):
         return None
     out = []
     for rhs in plain:
-        text = _literal_text(rhs)
+        text = (read or _literal_text)(rhs)
         if text is None:
             return None
         out.append(text)
     return out
+
+
+def _is_path(expr, code):
+    """Is `expr` provably a path object: a `Path(...)` call, or a name whose every binding is one (`p = pathlib.Path(sys.argv[1])`)? A string is not, which is what keeps `s.replace('a', 'b')` out of the write sites."""
+    path = _grammar().path
+
+    def constructed(rhs):
+        return rhs if path.fullmatch(rhs.strip()) else None
+
+    expr = expr.strip()
+    if constructed(expr):
+        return True
+    if re.fullmatch(r"[A-Za-z_]\w*", expr):
+        return _bound_literals(expr, code, constructed) is not None
+    return False
+
+
+def _plain_spelling(code):
+    """`code` with a module or attribute reached by a literal name written the plain way, so the write sites below read `__import__('os').remove(x)` and `getattr(os, 'rem' + 'ove')(x)` as `os.remove(x)`."""
+    grammar = _grammar()
+    code = grammar.imported.sub(lambda m: m.group(1), code)
+
+    def dotted(m):
+        name = "".join(re.findall(r"\w+", m.group(2)))
+        return "%s.%s" % (m.group(1), name) if name.isidentifier() else m.group(0)
+
+    return grammar.attribute.sub(dotted, code)
+
+
+def _perl_open(args):
+    """The write sites of a perl `open`, or None when the call is not perl-shaped (the Python reading then applies). Perl puts the HANDLE first (review 8b651626.1: the handle was read as the path, so `open(my $f, ">", "out.txt")` was an unresolved write and was refused beside a handed log). The path is the third argument, or the rest of the second in the two-argument form (`open(F, ">out.txt")`). A read (`<`) and an append (`>>`) are no site; a pipe is a command, with no readable target."""
+    if len(args) < 2 or not _grammar().string.fullmatch(args[1]):
+        return None
+    sigil = re.fullmatch(r"(?:(?:my|local|our)\s+)?[$*]\w+", args[0]) is not None
+    if not sigil and not re.fullmatch(r"[A-Z][A-Z0-9_]*", args[0]):
+        return None
+    body = _string_body(args[1])[1].strip()
+    mode = re.match(r"\+?[<>]{1,2}", body)
+    if "|" in body[:2] or body.endswith("|"):
+        return [None]
+    if mode is None:
+        # A bareword handle with a Python mode is Python's `open(PATH, 'w')`; anything else here is perl's two-argument read.
+        return None if not sigil and re.fullmatch(r"[rwxabtU+]+", body) else []
+    if mode.group(0) == ">>" or not (">" in mode.group(0) or "+" in mode.group(0)):
+        return []
+    interpolating = args[1].lstrip("rRbBuUfF").startswith('"')
+    if len(args) >= 3:
+        target = args[2]
+        if (
+            _grammar().string.fullmatch(target)
+            and target.startswith('"')
+            and re.search(r"[$@]", target)
+        ):
+            return [None]
+        return [target]
+    rest = body[mode.end() :].strip()
+    if not rest or re.search(r"['\\]", rest) or (interpolating and re.search(r"[$@]", rest)):
+        return [None]
+    return ["'%s'" % rest]
 
 
 def _keyword(args, name):
@@ -851,6 +1023,8 @@ def _write_sites(code):
             # `os.open(path, flags)`: a write unless the flags are exactly read-only.
             if len(args) < 2 or not re.fullmatch(r"(?:os\.)?O_RDONLY", args[1]):
                 sites.append(args[0] if args else None)
+        elif on is None and _perl_open(args) is not None:
+            sites.extend(_perl_open(args))
         elif on is None or on in _OPEN_MODULES:
             if _mode_writes(_keyword(args, "mode") or _positional(args, 1), code):
                 sites.append(_keyword(args, "file") or _positional(args, 0))
@@ -863,9 +1037,23 @@ def _write_sites(code):
         args = _call_args(code, match.end() - 1)
         # Every path the call names is one it may replace; a call with none readable is one unresolved site.
         sites.extend(args or [None])
+    for match in grammar.bare_open.finditer(code):
+        # The statement's own words, up to where perl ends it.
+        words = re.split(r";|\n|\bor\b|\|\|", code[match.end() :], maxsplit=1)[0]
+        args = _call_args("(%s)" % words, 0)
+        perl = _perl_open(args) if args else None
+        sites.extend([None] if perl is None else perl)
     for match in grammar.method.finditer(code):
         found = grammar.receiver.search(code[: match.start() + 1])
         sites.append(found.group(1) if found else None)
+        if match.group(0) == ".rename(":
+            sites.extend(_call_args(code, match.end() - 1) or [None])
+    for match in grammar.replace.finditer(code):
+        found = grammar.receiver.search(code[: match.start() + 1])
+        if found and _is_path(found.group(1), code):
+            # `Path.replace` removes the path it is called on and replaces the one it is given.
+            sites.append(found.group(1))
+            sites.extend(_call_args(code, match.end() - 1) or [None])
     return sites
 
 
@@ -873,6 +1061,7 @@ def _site_targets(code):
     """`(literals, unresolved)` over every write site of `code`: the path literals its writes provably go to, and whether any write goes through something this reading cannot resolve."""
     literals: list[str] = []
     unresolved = False
+    code = _plain_spelling(code)
     for target in _write_sites(code):
         text = None if target is None else _literal_text(target)
         if text is not None:
