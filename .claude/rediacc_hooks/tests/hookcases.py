@@ -19,9 +19,9 @@ HOW A CASE NAMES ITS GUARD. By the key `check-hook-integrity.sh` inventories it 
 """
 
 import dataclasses
-import datetime
 import json
 import subprocess
+import time
 
 from rediacc_hooks.tests import corpus
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO, RENET_REPO
@@ -171,6 +171,17 @@ def case(spec: str, payload: str, label: str, needle: str | None = None) -> Case
     return Case(spec=spec, payload=payload, label=label, needle=needle)
 
 
+# Stands for the machine's LOCAL month and day in a payload, and is filled by `today_filled` at the moment the case runs. Local and not UTC, as block_stale_pr_branch_date reads its clock.
+TODAY_MARK = "@TODAY-MMDD@"
+
+
+def today_filled(text: str) -> str:
+    """`text` with `TODAY_MARK` replaced by the local MMDD read NOW, so a case built before midnight and run after it still names the day the guard sees."""
+    if TODAY_MARK not in text:
+        return text
+    return text.replace(TODAY_MARK, time.strftime("%m%d"))
+
+
 def run_guard(
     key: str, payload: str, *, want_stderr: bool, env: dict | None = None, cwd: str | None = None
 ) -> tuple[int, str]:
@@ -181,7 +192,7 @@ def run_guard(
     argv = guard_cmd(key)
     completed = subprocess.run(
         argv,
-        input=payload.encode(),
+        input=today_filled(payload).encode(),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE if want_stderr else subprocess.DEVNULL,
         env=env,
@@ -3053,11 +3064,11 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_stale_pr_branch_date.py",
         bash_json(
-            # LOCAL today, deliberately, and noqa'd on this line rather than by
-            # disabling DTZ: the guard under test reads the clock with a bare `datetime.now()` precisely so it honours TZ the way its `date +%m%d` twin does. A tz-aware `today()` here would disagree with the guard
+            # LOCAL today, deliberately: the guard under test reads the clock with a bare `datetime.now()` precisely so it honours TZ the way its `date +%m%d` twin does. A tz-aware `today()` here would disagree with the guard
             # for the hours either side of local midnight and fail this case on
             # any host off Greenwich -- which is the exact defect the guard's port notes record being measured at 00:47 CEST.
-            "gh pr create --draft --head %s-9 -t x -b y" % datetime.date.today().strftime("%m%d")  # noqa: DTZ011
+            # The date is `TODAY_MARK`, filled when the case RUNS (#0f87655f): a date frozen when this table is imported is yesterday's for every case run after a midnight the suite crosses.
+            "gh pr create --draft --head %s-9 -t x -b y" % TODAY_MARK
         ),
         "stale-pr-branch: today's MMDD allowed",
     ),
