@@ -4957,7 +4957,10 @@ def writer_text(run, cmd):
     argv = list(run.argv)
     if base not in _TEXT_WRITERS or (base == "cat" and any(not a.startswith("-") for a in argv)):
         return None
-    words = run.xargv if run.xargv is not None else argv
+    # No expanded argv means no expansion was done; the typed words are then not what bash writes, so the text is unknown, never the typed words (review 094dea3b.6). `_Walker.element` sets `xargv` on every run it builds, so this is the fail-closed answer for a run built any other way.
+    if run.xargv is None:
+        return None
+    words = run.xargv
     if any(_UNRESOLVED in w for w in words):
         return None
     feed = run.feed or ""
