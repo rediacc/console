@@ -61,6 +61,8 @@ STDIN_COPIER = SCRATCH / "stdin_copier.py"
 STDIN_READER = SCRATCH / "stdin_reader.py"
 # Review 13505e0b.2: a script that RUNS its stdin.
 STDIN_RUNNER = SCRATCH / "stdin_runner.py"
+# Review 7e7156bb.2: a script that runs its stdin under a name assembled at run time, which the name list does not see.
+STDIN_HIDDEN_RUNNER = SCRATCH / "stdin_hidden_runner.py"
 # Review 648366c8.1: JavaScript programs that run their stdin, one per spelling no list of names holds, and one that never reads it.
 _JS_STDIN = "require('fs').readFileSync(0, 'utf8')"
 JS_RUNNERS = {
@@ -101,6 +103,9 @@ def _world():
     )
     STDIN_READER.write_text("import sys\nprint(len(sys.stdin.read()))\n", encoding="utf-8")
     STDIN_RUNNER.write_text("import sys\nexec(sys.stdin.read())\n", encoding="utf-8")
+    STDIN_HIDDEN_RUNNER.write_text(
+        "import builtins, sys\ngetattr(builtins, 'ex' + 'ec')(sys.stdin.read())\n", encoding="utf-8"
+    )
     for label, source in JS_RUNNERS.items():
         JS_RUNNER_FILES[label].write_text(source, encoding="utf-8")
     JS_NO_STDIN.write_text("console.log(1 + 1)\n", encoding="utf-8")
@@ -410,6 +415,13 @@ SHELL_CASES = [
         )
         for label, path in JS_RUNNER_FILES.items()
     ],
+    # BOUNDARY (review 7e7156bb.2), the limit the guard's comment states: a python evaluator named only at run time is not seen, so the stdin is data and its write call is not read.
+    (
+        "BOUNDARY: a python script running its stdin under an assembled name, fed a write call",
+        "python3 %s <<'EOF'\nopen('%s', 'w').write('y = 1  %s: B010\\n')\nEOF"
+        % (STDIN_HIDDEN_RUNNER, KEPT, NQ),
+        False,
+    ),
     (
         "a node script that never reads stdin, fed marker-free text",
         ": '%s'; node %s <<'EOF'\nplain text\nEOF" % (NQ, JS_NO_STDIN),
