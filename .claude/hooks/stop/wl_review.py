@@ -2751,26 +2751,38 @@ def find_finding(root, branch, finding_id):
 
 # A `path:line` citation is found WITHOUT a regular expression over the path: the evidence is cut on one class of separator characters (a single-class split cannot backtrack) and each token is read with string operations, so no input makes the scan superlinear. Any path spelling counts, extension or not: `Dockerfile:83` and `Makefile:12` are files too, and an earlier pattern that demanded a dot-extension refused evidence naming one (2026-10-11).
 CITE_SEPARATORS = re.compile(r"[^A-Za-z0-9_./:-]+")
-# A cited line is read no further than this many lines into its file: the check needs to know the line exists, not the file's size, and a tracked link may point at something very large.
-CITE_LINE_CAP = 200000
+# A cited file is read no further than this many bytes: the check needs to know the line exists, not the file's size, and a tracked link may point at something very large. A line beyond the bound cites nothing.
+CITE_READ_CAP = 8 * 1024 * 1024
+# A token is cut on its colons into at most this many parts, which bounds the candidates one token can yield.
+CITE_PARTS_CAP = 8
 
 
 def _cited_paths(evidence):
-    """(path, line) for each `path:line` token in `evidence`. The path half must hold a letter: `10:35` and `3:1` are a clock time and a ratio, and a file that happens to be named `10` is deliberately not citable that way (name it with its directory, `./10` holds no letter either, so such a file is cited by a sha instead)."""
+    """Every (path, line) a `path:line` token of `evidence` could mean.
+
+    A colon followed by digits is a line number, and the path is any run of the parts before it, so the usual spellings all cite: `a.py:12`, a column `a.py:12:5`, a range `a.py:12-14`, and a label glued on, `Evidence:a.py:1`. `_citation_ok` keeps the candidates that are files. The path must hold a letter: `10:35` and `3:1` are a clock time and a ratio, so a file whose whole path is digits and punctuation is not citable by path:line and is cited by a sha instead.
+    """
     out = []
     for token in CITE_SEPARATORS.split(evidence):
-        path, sep, line = token.rstrip(".:,").rpartition(":")
-        if sep and line.isdigit() and any(c.isalpha() for c in path):
-            out.append((path, int(line)))
+        parts = token.split(":", CITE_PARTS_CAP)
+        for i in range(1, len(parts)):
+            digits = "".join(itertools.takewhile(str.isdigit, parts[i]))
+            if not digits:
+                continue
+            for j in range(i):
+                path = ":".join(parts[j:i])
+                if any(c.isalpha() for c in path):
+                    out.append((path, int(digits)))
     return out
 
 
 def _has_line(path, number):
-    """Whether the file at `path` holds line `number`, reading no more than it must."""
-    if number < 1 or number > CITE_LINE_CAP:
+    """Whether the file at `path` holds line `number` within its first CITE_READ_CAP bytes. Lines are counted as `str.splitlines` counts them, the reading this check has always used."""
+    if number < 1:
         return False
-    with open(path, encoding="utf-8", errors="replace") as handle:
-        return sum(1 for _ in itertools.islice(handle, number)) == number
+    with open(path, "rb") as handle:
+        head = handle.read(CITE_READ_CAP)
+    return number <= len(head.decode("utf-8", errors="replace").splitlines())
 
 
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
