@@ -2155,3 +2155,22 @@ def test_pr_selector_never_scans_a_line_with_a_leading_dot_star(monkeypatch):
     assert shellscan.pr_selector("x" * 2000 + " gh pr merge 42", "merge") == "42\n"
     assert shellscan.pr_selector("x" * 2000, "merge") == ""
     assert scans == []
+
+
+@pytest.mark.parametrize(
+    ("cmd", "bases"),
+    [
+        ('cd "$D" && cp a b', 2),
+        ("cd ~ && cp a b", 2),
+        ("cd - && cp a b", 2),
+        ("cd nosuch-dir && cp a b", 2),
+        ("cp a b", 1),
+    ],
+)
+def test_an_unresolved_cd_lands_under_both_bases(tmp_path, cmd, bases):
+    """Review 1d4e1754.2: `run.cwd` is None only when no `cd` ran (one base, the starting directory); an unresolved or failed `cd` leaves a path that is not on disk, and the copy is read under that path and under the starting directory."""
+    copier = next(r for r in shellscan.every_run(cmd) if r.name == "cp")
+    assert (copier.cwd is None) == (bases == 1)
+    landed = [p for p, _into in shellscan.copy_landings(copier, str(tmp_path))]
+    assert len(landed) == bases, landed
+    assert str(tmp_path / "b") in landed

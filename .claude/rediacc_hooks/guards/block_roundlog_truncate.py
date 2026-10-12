@@ -161,6 +161,47 @@ EDGE_CASES = [
         "a program globbing txt files cannot write a log",
         "python3 - <<'PY'\nimport glob\nfor p in glob.glob('docs/*.txt'):\n    open(p, 'w').write('')\nPY",
     ),
+    # Review 1d4e1754.1: a program handed the log (an argument, the environment, stdin) writes it without naming it.
+    (
+        "a program opening argv for write, handed the log",
+        "python3 -c \"import sys; open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "the log through a prefix assignment",
+        "F=agent/pr-babysit-0831-1.md python3 -c \"import os; open(os.environ['F'],'w').write('')\"",
+    ),
+    (
+        "the log through an exported variable",
+        "export F=agent/pr-babysit-0831-1.md; python3 -c \"import os; open(os.environ['F'],'w').write('')\"",
+    ),
+    (
+        "the log on stdin",
+        "echo agent/pr-babysit-0831-1.md | python3 -c \"import sys; open(sys.stdin.read().strip(),'w').write('')\"",
+    ),
+    (
+        "a stdin program handed the log as its argument",
+        "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\np = sys.argv[1]\nopen(p, 'w').write('')\nPY",
+    ),
+    (
+        "an argv glob that could be a log",
+        "cd \"$D\" && python3 -c \"import sys; open(sys.argv[1],'w').write('')\" *.md",
+    ),
+    (
+        "a program that only reads the log it is handed",
+        'python3 -c "import sys; print(open(sys.argv[1]).read())" agent/pr-babysit-0831-1.md',
+    ),
+    (
+        "a program handed the log that writes a named other file",
+        "python3 -c \"import sys; open('out.md','w').write(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "the same writer handed a txt file",
+        "python3 -c \"import sys; open(sys.argv[1],'w').write('')\" notes.txt",
+    ),
+    (
+        "a writer handed another file after the log was only read",
+        "cat agent/pr-babysit-0831-1.md; python3 -c \"import sys; open(sys.argv[1],'w').write('')\" notes.txt",
+    ),
     ("appending to a log glob", "echo x >> agent/pr-babysit-*.md"),
     ("a copy back into agent/ lands on the log", "cp /tmp/pr-babysit-0831-1.md agent/"),
     (
@@ -387,7 +428,12 @@ def _shell_words(cmd):
     words = [target for _op, target in shellscan._analyse(cmd).writes]
     for run_ in shellscan.every_run(cmd):
         base = run_.name.rsplit("/", 1)[-1]
-        if base in _TRUNCATING_VERBS or shellscan.in_place_edit(run_) is not None:
+        # An interpreter's arguments are operands too (review 1d4e1754.1): `python3 -c "open(sys.argv[1], 'w')" agent/*.md`.
+        if (
+            base in _TRUNCATING_VERBS
+            or shellscan.in_place_edit(run_) is not None
+            or base.startswith(shellscan.INTERPRETER_NAMES)
+        ):
             words.extend(run_.argv)
             if run_.feed and "xargs" in run_.via:
                 words.extend(run_.feed.split())
@@ -458,7 +504,23 @@ def _verb_truncates(run_, cwd):
     return any(_names_log(h, directory) for h in hits)
 
 
-def _program_truncates(code):
+def _handed_words(run_, code, kind):
+    """What the command line hands an interpreter run besides its program (review 1d4e1754.1): its arguments as bash expands them (the inline program itself left out), the values of the environment the command line gives it (`F=<log> python3 ...`, an earlier `export`), and the words on its stdin when the program did not come from there. A program reads any of them without naming a path in its own text (`sys.argv[1]`, `os.environ['F']`, `sys.stdin`)."""
+    args = list(run_.argv if run_.xargv is None else run_.xargv)
+    words = [a for a in args if a != code and not (a.startswith("-") and len(a) > 1)]
+    words += [v for v in run_.env.values() if isinstance(v, str)]
+    if kind != "stdin" and run_.feed:
+        words += run_.feed.split()
+    return words
+
+
+def _handed_a_log(run_, code, kind, cwd):
+    """Is this interpreter run handed something that names, or could spell, a round log?"""
+    directory = shellscan._run_directory(run_, cwd)
+    return any(_names_log(w, directory) for w in _handed_words(run_, code, kind))
+
+
+def _program_truncates(code, handed=False):
     """Does an interpreter program write a round log, or write a target it never names?
 
     THE PYTHON ARM MUST TEST THE TARGET, NOT JUST THE IDIOM. A heredoc editing an unrelated file whose CONTENT quotes a round-log path matched every time when this was an unconditional idiom test (measured 2026-08-27, refusing an edit to a scratchpad state-body file). So the write target is resolved the way python spells one -- assigned to a name, or handed to open()/Path() -- and every quoted path inside a copy/move call counts too, since only the destination truncates and telling the two apart by position across copy/copyfile/copy2/move/replace/rename is fragile. FAIL CLOSED when no target resolves: that unidentifiable shape is `p.write_text(s[:i] + new)`, which destroyed the round history on 2026-08-19.
@@ -466,7 +528,9 @@ def _program_truncates(code):
     shutil/os MOVE AND COPY COUNT AS WRITES. Measured 2026-08-27: shutil.copy and os.replace onto a round log both returned 0 from this guard, because the arm triggered only on write_text and open(...,"w"). Each of them overwrites the file completely.
     """
     if not hookio.grep_q_line(
-        r"write_text|open\([^)]*[\"']w|shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename)",
+        # `open(<anything on the line>, 'w'`: the target expression may hold its own parentheses (`open(sys.stdin.read().strip(), 'w')`, review 1d4e1754.1), which `[^)]*` stopped at. `writeFileSync` is node's whole-file write.
+        r"write_text|write_bytes|open\([^\n]*,[ \t]*(mode[ \t]*=[ \t]*)?[\"']w|writeFileSync"
+        r"|shutil\.(copy|copyfile|copy2|move)|os\.(replace|rename)",
         code,
     ):
         return False
@@ -482,8 +546,8 @@ def _program_truncates(code):
         candidates.extend(hookio.grep_o(r"[A-Za-z0-9_./-]+\.md", match))
     if candidates:
         return any(_is_log(c) for c in candidates)
-    # FAIL CLOSED ONLY WHERE THE PROGRAM COULD SPELL A LOG (#e5b0540a). An unresolvable target is `p.write_text(s[:i] + new)`, the 2026-08-19 shape, and stays refused when the program's text could name a round log (`_program_could_name_log`); a program that names nothing of the kind writes some other file, however it writes it.
-    return _program_could_name_log(code)
+    # FAIL CLOSED WHERE THE PROGRAM COULD REACH A LOG (#e5b0540a, review 1d4e1754.1). An unresolvable target is `p.write_text(s[:i] + new)`, the 2026-08-19 shape. It stays refused when the program's text could name a round log (`_program_could_name_log`) or when the run was HANDED one (`handed`: an argument, an environment value, its stdin), since `open(sys.argv[1], 'w')` names no path at all. A program that neither spells nor is handed a log writes some other file, however it writes it.
+    return handed or _program_could_name_log(code)
 
 
 def run(ev):
@@ -506,6 +570,13 @@ def run(ev):
     truncating = truncating or any(
         _program_truncates(code) for _family, code in WT.interpreter_programs(cmd)
     )
+    # The same question of each interpreter run with what the command line HANDS it (review 1d4e1754.1): a program that takes its target from argv, the environment or stdin names no path in its text.
+    if not truncating:
+        for run_ in shellscan.every_run(cmd):
+            code, kind = shellscan.interpreter_program(run_, cmd, cwd)
+            if code and _handed_a_log(run_, code, kind, cwd) and _program_truncates(code, True):
+                truncating = True
+                break
 
     if not truncating:
         return hookio.ALLOW
