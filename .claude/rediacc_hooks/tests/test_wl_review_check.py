@@ -575,5 +575,13 @@ def test_a_citation_may_name_an_extensionless_file(tmp_path):
     assert not R._citation_ok(str(tmp_path), "the proof is %s:1, outside the tree" % outside)
     assert not R._citation_ok(str(tmp_path), "the proof is ../outside.txt:1, outside the tree")
     assert not R._citation_ok(str(tmp_path), "the proof is /etc/hosts:1, outside the tree")
-    # One run of path characters: a long token with no line number is scanned once.
+    # One run of path characters: a long token with no line number is scanned once. The shape is pinned, since a slow quadratic pattern would still answer False here.
     assert not R._citation_ok(str(tmp_path), "a" * 200000 + " and nothing cited")
+    assert R.CITE_PATH.pattern.count("+") == 2, R.CITE_PATH.pattern
+    assert "*" not in R.CITE_PATH.pattern, R.CITE_PATH.pattern
+    # A tracked symlink whose target lies outside is still a path of this repository.
+    (tmp_path / "linked.txt").symlink_to(outside)
+    assert R._citation_ok(str(tmp_path), "the link is linked.txt:1 in the tree")
+    # A token with no letter is a time or a ratio, even when a file of that name exists.
+    (tmp_path / "10").write_text("a\n" * 40, encoding="utf-8")
+    assert not R._citation_ok(str(tmp_path), "measured at 10:35 and nothing else")
