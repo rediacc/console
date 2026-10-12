@@ -8,6 +8,7 @@ the dispatcher with a stub `gh` that answers `pr view` for a green PR, so the `h
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import pathlib
@@ -611,3 +612,32 @@ def test_a_cited_line_is_looked_for_only_within_the_read_bound(tmp_path, monkeyp
     monkeypatch.setattr(R, "CITE_READ_CAP", 10)
     assert R._has_line(str(target), 5)
     assert not R._has_line(str(target), 6)
+
+
+def test_a_line_number_ends_its_token_or_is_followed_by_a_column_or_range(tmp_path):
+    """A port is not a line number: `http://host:80/x` cites nothing even when a file named `host` exists, while a column, a range and closing punctuation after the digits still cite."""
+    (tmp_path / "host").write_text("a\n" * 100, encoding="utf-8")
+    assert R._cited_paths("see http://host:80/x for the page") == []
+    assert not R._citation_ok(str(tmp_path), "see http://host:80/x for the page and nothing else")
+    assert ("host", 80) in R._cited_paths("the file is host:80, and host:80:3, and host:80-90).")
+    assert R._citation_ok(str(tmp_path), "the proof sits at host:80-90 in the tree")
+
+
+def test_one_token_yields_a_bounded_number_of_candidates():
+    """A token is cut into at most CITE_PARTS_CAP parts, exactly: a line number in the ninth colon-part is past the cut, so it yields no candidate, while one in the eighth still does."""
+    assert R.CITE_PARTS_CAP == 8
+    assert R._cited_paths("a:b:c:d:e:f:g:h:7") == []
+    assert ("g", 7) in R._cited_paths("a:b:c:d:e:f:g:7")
+
+
+def test_a_cited_line_stops_the_read_at_its_chunk(monkeypatch):
+    """The read is chunked and stops at the cited line: line 1 of a large text costs one chunk, not the whole bound, and a `\\r\\n` split across two chunks is one line boundary, not two."""
+    big = io.StringIO("a\n" * 1_000_000)
+    found, read = R._lines_upto(big, 1, R.CITE_READ_CAP)
+    assert found
+    assert read <= R.CITE_CHUNK
+    # A boundary split across chunks: with a 2-character chunk, "a\r" then "\nb" is two lines, not three.
+    monkeypatch.setattr(R, "CITE_CHUNK", 2)
+    found, _read = R._lines_upto(io.StringIO("a\r\nb"), 3, 100)
+    assert not found
+    assert R._lines_upto(io.StringIO("a\r\nb"), 2, 100)[0]

@@ -444,7 +444,7 @@ def test_upgrade_refuses_half_of_the_shared_snapshotter_clone(gate, tmp_path):
 
 # ---- own-property lookups: a component named like an Object.prototype key is ABSENT -----
 #
-# Every table keyed by component name (the lockfile's components, SHA256_SOURCES, SOURCE_CONSTS, the freshness fixture) is read with `Object.hasOwn`. A bracket lookup returns the inherited function for `constructor`, `toString` and `__proto__`, which reads as a found entry. The cases below drive the exported helpers directly (a real source list never contains such a base, so the gate cannot reach them) and each fails when ITS lookup is reverted to a bracket.
+# Every table keyed by component name (the lockfile's components, SHA256_SOURCES, SOURCE_CONSTS, the freshness fixture) is read with `Object.hasOwn`. A bracket lookup returns an inherited value for each (the inherited function for `constructor` and `toString`, Object.prototype itself for `__proto__`), which reads as a found entry. The cases below drive the exported helpers directly (a real source list never contains such a base, so the gate cannot reach them) and each fails when ITS lookup is reverted to a bracket.
 
 PROTO_NAMES = ("constructor", "toString", "__proto__")
 
