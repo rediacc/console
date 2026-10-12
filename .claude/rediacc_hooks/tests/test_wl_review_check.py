@@ -605,7 +605,7 @@ def test_a_citation_may_name_an_extensionless_file(tmp_path):
 
 
 def test_a_cited_line_is_looked_for_only_within_the_read_bound(tmp_path, monkeypatch):
-    """The bound is what keeps a tracked link to a very large file cheap, so it is asserted directly: with the cap at 10 bytes a line inside it cites and one beyond it does not, though the file holds both."""
+    """The bound is what keeps a tracked link to a very large file cheap, so it is asserted directly: with the cap at 10 characters a line inside it cites and one beyond it does not, though the file holds both."""
     target = tmp_path / "long.txt"
     target.write_text("a\n" * 5000, encoding="utf-8")
     assert R._has_line(str(target), 5000)
@@ -618,6 +618,9 @@ def test_a_line_number_ends_its_token_or_is_followed_by_a_column_or_range(tmp_pa
     """A port is not a line number: `http://host:80/x` cites nothing even when a file named `host` exists, while a column, a range and closing punctuation after the digits still cite."""
     (tmp_path / "host").write_text("a\n" * 100, encoding="utf-8")
     assert R._cited_paths("see http://host:80/x for the page") == []
+    # A URL cites nothing, with a path after its port or without one.
+    assert R._cited_paths("see http://host:80 for it") == []
+    assert not R._citation_ok(str(tmp_path), "see http://host:80 for it and nothing else here")
     assert not R._citation_ok(str(tmp_path), "see http://host:80/x for the page and nothing else")
     assert ("host", 80) in R._cited_paths("the file is host:80, and host:80:3, and host:80-90).")
     assert R._citation_ok(str(tmp_path), "the proof sits at host:80-90 in the tree")
@@ -641,3 +644,14 @@ def test_a_cited_line_stops_the_read_at_its_chunk(monkeypatch):
     found, _read = R._lines_upto(io.StringIO("a\r\nb"), 3, 100)
     assert not found
     assert R._lines_upto(io.StringIO("a\r\nb"), 2, 100)[0]
+
+
+def test_a_long_unterminated_line_is_counted_once_across_chunks(monkeypatch):
+    """Only two facts cross a chunk boundary, so a line far longer than a chunk is one line however many chunks it spans, and the line after it is found."""
+    monkeypatch.setattr(R, "CITE_CHUNK", 7)
+    text = "x" * 100 + "\n" + "y" * 50
+    assert R._lines_upto(io.StringIO(text), 2, 10_000)[0]
+    assert not R._lines_upto(io.StringIO(text), 3, 10_000)[0]
+    assert not R._lines_upto(io.StringIO("x" * 100), 2, 10_000)[0]
+    # The bound is in characters: a line that starts past it is not found.
+    assert not R._lines_upto(io.StringIO(text), 2, 50)[0]
