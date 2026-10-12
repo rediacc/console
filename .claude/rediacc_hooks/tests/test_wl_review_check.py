@@ -581,7 +581,10 @@ def test_a_citation_may_name_an_extensionless_file(tmp_path):
         ("pkg/a.py", 1),
         ("Dockerfile", 2),
     ]
-    assert R._cited_paths("at 10:35, ratio 3:1, http://host:80/x") == []
+    assert R._cited_paths("at 10:35, ratio 3:1") == []
+    assert not R._citation_ok(
+        str(tmp_path), "at 10:35, ratio 3:1, http://host:80/x and nothing else"
+    )
     assert len(R.CITE_SEPARATORS.split("a" * 200000 + " b:1")) == 2
     # A tracked symlink whose target lies outside is still a path of this repository.
     (tmp_path / "linked.txt").symlink_to(outside)
@@ -589,8 +592,22 @@ def test_a_citation_may_name_an_extensionless_file(tmp_path):
     # A token with no letter is a time or a ratio, even when a file of that name exists.
     (tmp_path / "10").write_text("a\n" * 40, encoding="utf-8")
     assert not R._citation_ok(str(tmp_path), "measured at 10:35 and nothing else")
-    # A cited line is read no further than it must be: line 3 of a long file stops after three lines, and a line past the cap cites nothing.
-    (tmp_path / "long.txt").write_text("a\n" * 5000, encoding="utf-8")
-    assert R._has_line(str(tmp_path / "long.txt"), 3)
-    assert not R._has_line(str(tmp_path / "long.txt"), 5001)
-    assert not R._has_line(str(tmp_path / "long.txt"), R.CITE_LINE_CAP + 1)
+    # The usual spellings all cite: a column, a range, and a label glued on with a colon.
+    assert R._citation_ok(str(tmp_path), "see pkg/a.py:1:5 for the column")
+    assert R._citation_ok(str(tmp_path), "see Dockerfile:1-2 for the range")
+    assert R._citation_ok(str(tmp_path), "Evidence:pkg/a.py:1")
+    assert ("pkg/a.py", 1) in R._cited_paths("Evidence:pkg/a.py:1:5")
+    # Lines are counted as str.splitlines counts them (a form feed ends a line too).
+    (tmp_path / "ff.txt").write_text("a\x0cb\n", encoding="utf-8")
+    assert R._has_line(str(tmp_path / "ff.txt"), 2)
+    assert not R._has_line(str(tmp_path / "ff.txt"), 3)
+
+
+def test_a_cited_line_is_looked_for_only_within_the_read_bound(tmp_path, monkeypatch):
+    """The bound is what keeps a tracked link to a very large file cheap, so it is asserted directly: with the cap at 10 bytes a line inside it cites and one beyond it does not, though the file holds both."""
+    target = tmp_path / "long.txt"
+    target.write_text("a\n" * 5000, encoding="utf-8")
+    assert R._has_line(str(target), 5000)
+    monkeypatch.setattr(R, "CITE_READ_CAP", 10)
+    assert R._has_line(str(target), 5)
+    assert not R._has_line(str(target), 6)
