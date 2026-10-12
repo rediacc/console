@@ -4436,6 +4436,70 @@ STATIC: list[Case] = [
         ),
         "roundlog-truncate: ruby: a typed percent on a dash delimiter",
     ),
+    # Review a52292e4.4: the four rows of the round above that had only a golden record. Reviews a52292e4.1/.2: a quote-like word after an operator, and one with a space before its slash; allowed at a52292e48.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = %="=; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: percent on an equals delimiter",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'print 1 if m,",; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: m on a comma delimiter holding a quote",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'my $x="z"; $x =~ s=z="=; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: s on an equals delimiter holding a quote",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = <<~EOS\n  a"\nEOS\nFile.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: a tilde heredoc body holding a quote",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my $x = 1>q#a#; my $c = \\&CORE::unlink; $c->($ARGV[0]); print \"\"' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like word after a comparison is not a name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my $x = 1&&q#a#; my $c = \\&CORE::unlink; $c->($ARGV[0]); print \"\"' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like word after a logical and is not a name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my $x = 7 %q#2#; my $c = \\&CORE::unlink; $c->($ARGV[0]); print \"\"' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like word after a modulo is not a name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'$_ = "z"; s /z/"/; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: a substitution with a space before its slash",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'print 1 if m /"/; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: a match with a space before its slash",
+    ),
     case(
         "check 0 guards/block_roundlog_truncate.py",
         bash_json(
