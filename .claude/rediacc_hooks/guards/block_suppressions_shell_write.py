@@ -211,7 +211,7 @@ def _offending(engine, cmd, cwd):
     for run in runs:
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
-        # A writer's text as bash hands it over (`shellscan.writer_text`, review fc3f376a.2): `F='... marker'; echo "$F" >> a.py` wrote the marker while its argv read `"$F"`. A pure writer whose text is unexpanded (`$(...)`, an unset variable, an unquoted heredoc's `$`) is an unknown write. `cat other.py > a.py` copies, which this guard does not see (module docstring).
+        # A writer's text as bash hands it over (`shellscan.writer_text`, review fc3f376a.2): `F='... marker'; echo "$F" >> a.py` wrote the marker while its argv read `"$F"`. A pure writer whose text is unexpanded (`$(...)`, an unset variable, an unquoted heredoc's `$`) is an unknown write. `cat other.py > a.py` copies, which this guard does not see (module docstring). Of WRITERS, `echo` and `printf` are always pure and `cat` is pure with no file operand; a `cat` WITH one is read with every heredoc in the command, and loses only its file NAMES from the content, which it never writes (review 094dea3b.3).
         pure = name in ("echo", "printf", "tee") or (
             name == "cat" and not any(not a.startswith("-") for a in argv)
         )
@@ -272,6 +272,10 @@ def _offending(engine, cmd, cwd):
                 code += "\n" + script
                 literals = _python_strings(script) if name.startswith("python") else None
                 marked = code if literals is None else " ".join(argv) + "\n" + literals
+                # What arrives on the script's stdin is text it can write out too (review 094dea3b.2: `python3 copy_stdin.py <<EOF` with a marker in the heredoc was not judged, before or after the by-path read).
+                if run.feed:
+                    code += "\n" + run.feed
+                    marked += "\n" + run.feed
             if WRITE_CODE.search(code):
                 grew = engine.growth(
                     engine.count_any_language(""), engine.count_any_language(marked)

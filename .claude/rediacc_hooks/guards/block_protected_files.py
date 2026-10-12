@@ -438,17 +438,24 @@ def _segments_match(pattern, path):
 
 def _unknown_root_glob(text, recursive):
     """A glob under an unknown root (review fc3f376a.3): its trailing segments matched against each protected path's tail, and for a recursive rm against a directory holding one. Counted only when a segment after the root carries a literal character, so `rm -rf "$(mktemp -d)"/*`, a bare glob under a root nobody can name, stays allowed while `rm "$D"/.claude/settings*` and `rm -rf "$D"/.cl*` are refused."""
-    segs = [seg for seg in text.split("/") if seg][1:]
+    # The root's own segment is kept: text glued to it with no slash is part of a name (`"$D"settings*` is `settings.json` when D is `.claude/`, review 094dea3b.4). A root that is a segment of its own is also tried dropped, since it may be any number of directories. A protected BASENAME straight under an unknown root (`rm "$D"/settings*`) is refused on purpose: the root may be `.claude` (094dea3b.5).
+    segs = [seg for seg in text.split("/") if seg]
     if not any(ch not in "*?[]!^" and ch != _WILD for seg in segs for ch in seg):
         return False
+    shapes = [segs] + ([segs[1:]] if segs[0] == _WILD else [])
     for p in PROTECTED_PATHS:
         parts = p.split("/")
         tails = [parts] if not text.endswith("/") else []
         if recursive:
             tails += [parts[:k] for k in range(1, len(parts))]
         for tail in tails:
-            if len(segs) <= len(tail) and _segments_match(segs, tail[len(tail) - len(segs) :]):
-                return True
+            for shape in shapes:
+                if (
+                    shape
+                    and len(shape) <= len(tail)
+                    and _segments_match(shape, tail[len(tail) - len(shape) :])
+                ):
+                    return True
     return False
 
 
@@ -513,7 +520,8 @@ def _names_protected_text(word, base, root, recursive):
 def _operand_words(run_):
     """Every word an operand of `run_` could be: the quote-removed argv, the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
     words = list(run_.argv)
-    words += [w for w in (run_.xargv or []) if not shellscan.unresolved(w)]
+    # An expanded word the walk could not finish keeps its unknown part as a backtick span, which `_wildcarded` reads as "any text". The typed word alone loses the boundary bash sees: `"$D"settings*` is `$Dsettings*` after quote removal, a variable called `Dsettings` (review 094dea3b.4).
+    words += [w.replace(shellscan._UNRESOLVED, "`_`") for w in (run_.xargv or [])]
     for name, values in run_.loop_vars.items():
         ref = re.compile(r"\$\{?%s\b" % re.escape(name))
         if any(ref.search(a) for a in run_.argv):
