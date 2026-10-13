@@ -125,7 +125,7 @@ def main(argv: list[str]) -> int:
     for target in clean_targets():
         remove_path(target)
 
-    if subprocess.run(["npm", "run", BUILD_SCRIPT], check=False).returncode == 0:
+    if subprocess.run(common.launchable(["npm", "run", BUILD_SCRIPT]), check=False).returncode == 0:
         log.info("Shared packages built successfully")
     else:
         log.error("Failed to build shared packages")

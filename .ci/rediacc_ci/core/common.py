@@ -192,6 +192,17 @@ def _env(env: dict[str, str] | None) -> dict[str, str]:
     return dict(os.environ) if env is None else env
 
 
+def launchable(argv: list[str], *, os_name: str | None = None) -> list[str]:
+    """ARGV with its program resolved the way a shell would resolve it, on Windows only.
+
+    Python starts a child on Windows through CreateProcess, which finds `npm.exe` and nothing else, and npm ships as `npm.cmd`. Bash found it, so the deleted install-deps.sh worked, and the port printed `npm: command not found` on the first Windows job that missed its node_modules cache (PR 600 run 38381096702, OPS Check windows-amd64). `shutil.which` reads PATHEXT, so the resolved path names the `.cmd`. A program that is not found is left as it was, and the caller's own not-found arm reports it. Everywhere else the list is returned unchanged, so a recorded call shape stays `npm`.
+    """
+    if (os_name or os.name) != "nt" or not argv:
+        return argv
+    found = shutil.which(argv[0])
+    return [found, *argv[1:]] if found else argv
+
+
 def detect_os(system: str | None = None) -> str:
     """`detect_os` (common.sh:63-72). linux | macos | windows | unknown.
 
