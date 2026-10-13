@@ -231,10 +231,12 @@ def _cited_plan(tmp_path, cite_from) -> tuple[pathlib.Path, str, str]:
     _write(root, "agent/PLAN-main.md", "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n")
     base = _commit(root, "base")
     sha = cite_from(root)
+    # About 1 in 69 nine-character abbreviations is all digits, and the extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). The fixture's sha moves with the clock, so such a draw gets the `commit:` spelling, which is judged either way; PR 600 run on 078a550ad drew one and the gate answered VACUOUS INPUT.
+    cited = "commit:%s" % sha[:9] if sha[:9].isdigit() else sha[:9]
     _write(
         root,
         "agent/PLAN-main.md",
-        "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n\nThe release ran (%s).\n" % sha[:9],
+        "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n\nThe release ran (%s).\n" % cited,
     )
     _commit(root, "cite")
     return root, base, sha
