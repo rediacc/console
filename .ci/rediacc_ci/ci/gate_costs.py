@@ -60,6 +60,9 @@ RUNS_LISTED = 15
 # The same 25% budget_report.py's --check applies to lane-durations.json.
 DRIFT_THRESHOLD = budget_report.DRIFT_THRESHOLD
 MIN_DRIFT_CPU_S = 1.0
+# HOW MANY CAPTURES A DRIFT VERDICT NEEDS (worklist #f67c1612, the rule lane-durations.json got the same day: budget_report.MIN_DRIFT_RUNS). One capture is one runner. MEASURED 2026-10-13 over the three live captures (38382535219, 38129723990, 38041991396): 29 of the 75 gates of 1 cpu-second and up differ by more than 25% between captures, the committed file held against the newest capture alone gives 3 drift findings, and held against the oldest alone 22.
+# A window shrinks to one capture whenever a nightly capture job fails or two captures age out of the 3-day retention, so the gate went red on which captures were alive. Below this count a gate's drift is not judged and its committed figures are kept by `--refresh`; the structural findings (a gate not in the manifest, one missing from the file, one no capture measured, a changed core count) need no second capture and are judged on one.
+MIN_DRIFT_CAPTURES = 2
 CAPPED_FRACTION = 0.9
 NO_BASELINE = 3
 
@@ -113,7 +116,7 @@ def _rank(gates: dict[str, dict[str, Any]]) -> None:
 
 
 def aggregate(captures: Sequence[Capture]) -> dict[str, Any]:
-    """Per-gate medians over `captures` (newest first), plus the runner's core count and the gates no capture measured. Pure: the tests drive it with fixture reports."""
+    """Per-gate medians over `captures` (newest first), plus the runner's core count, the gates no capture measured, and `captures`: how many captures measured each gate, the evidence `MIN_DRIFT_CAPTURES` counts. Pure: the tests drive it with fixture reports."""
     samples: dict[str, dict[str, list[float]]] = {}
     newest_status: dict[str, str] = {}
     cores_seen: list[int] = []
@@ -157,7 +160,26 @@ def aggregate(captures: Sequence[Capture]) -> dict[str, Any]:
         "cores": cores,
         "gates": dict(sorted(gates.items())),
         "unmeasured": dict(sorted(unmeasured.items())),
+        "captures": {gid: len(rec["cpu"]) for gid, rec in sorted(samples.items())},
     }
+
+
+def thin_kept(agg: dict[str, Any], prior: dict[str, Any], sampled: Collection[str]) -> list[str]:
+    """The gates a refresh keeps at their committed figures: measured by fewer than `MIN_DRIFT_CAPTURES` captures, already in the file, and not diff-sampled (see `build_baseline`)."""
+    prior_gates = prior.get("gates")
+    if not isinstance(prior_gates, dict):
+        return []
+    return [
+        gid
+        for gid in thin_gates(agg)
+        if gid not in sampled and isinstance(prior_gates.get(gid), dict)
+    ]
+
+
+def thin_gates(fresh: dict[str, Any]) -> list[str]:
+    """The measured gates fewer than `MIN_DRIFT_CAPTURES` captures measured: their drift is not judged, and a refresh keeps their committed figures."""
+    counts = fresh.get("captures") or {}
+    return sorted(g for g in fresh["gates"] if int(counts.get(g) or 0) < MIN_DRIFT_CAPTURES)
 
 
 def _is_not_found(exc: ghx.GhError) -> bool:
@@ -277,6 +299,11 @@ def build_baseline(
     if lock_ids is not None:
         gates = {g: v for g, v in gates.items() if g in lock_ids}
         unmeasured = {g: v for g, v in unmeasured.items() if g in lock_ids}
+    # A gate the file already prices is rewritten only on the evidence the check judges it on (`MIN_DRIFT_CAPTURES`); a gate new to the file is written at any count. Writing one runner's figures is what the next window then disagrees with.
+    # A diff-sampled gate is the exception and is written from one capture: a capture runs it only when the captured commit's diff touches it, so one is usually all a window holds, and keeping the prior figures would freeze them.
+    for gid in thin_kept(agg, prior or {}, sampled or set()):
+        if gid in gates:
+            gates[gid] = dict(prior["gates"][gid]) if prior else gates[gid]
     carried: dict[str, str] = {}
     if prior is not None and lock_ids is not None and sampled is not None:
         carried = carry_forward(prior, agg, lock_ids, sampled)
@@ -375,12 +402,17 @@ def check_findings(
             )
         )
 
+    thin = set(thin_gates(fresh))
     for gid in sorted(set(base) & set(fresh["gates"])):
+        if gid in thin:
+            continue
         old, new = base[gid], fresh["gates"][gid]
         if max(_num(old.get("cpu_s")) or 0.0, new["cpu_s"]) < MIN_DRIFT_CPU_S:
             continue
         d = _drift(old.get("cpu_s"), new["cpu_s"])
-        if d is not None and d > DRIFT_THRESHOLD:
+        # The move itself has to be a cpu-second too: 1.24 -> 1.58 is 28% and a third of a second, which no reader of the file acts on.
+        moved = abs(new["cpu_s"] - (_num(old.get("cpu_s")) or 0.0)) >= MIN_DRIFT_CPU_S
+        if d is not None and d > DRIFT_THRESHOLD and moved:
             findings.append(
                 Keyed(
                     "gate-costs:drift:cpu_s:%s" % key_part(gid),
@@ -458,6 +490,22 @@ def refresh(
     )
     payload = json.dumps(baseline, indent=2) + "\n"
     carried = baseline["carried"]
+    kept_thin = [
+        g
+        for g in thin_kept(aggregate(captures), prior, sampled_gate_ids(entries))
+        if g in baseline["gates"]
+    ]
+    if kept_thin:
+        print(
+            "gate_costs --refresh: %d gate(s) measured by fewer than %d capture(s) KEEP their committed figures (%s%s)."
+            % (
+                len(kept_thin),
+                MIN_DRIFT_CAPTURES,
+                ", ".join(kept_thin[:3]),
+                ", ..." if len(kept_thin) > 3 else "",
+            ),
+            file=sys.stderr,
+        )
     print(
         "gate_costs --refresh: %d gate(s) measured, %d unmeasured, %d diff-sampled carried%s, from %d capture(s) on %s core(s)."
         % (
@@ -520,6 +568,7 @@ def check(
         Keyed("gate-costs:capture-unreadable", "capture unreadable: %s" % w) for w in warnings
     ]
     notes: dict[str, list[str]] = {"not_sampled": [], "pending": []}
+    fresh: dict[str, Any] = {"gates": {}, "unmeasured": {}, "captures": {}}
     if not captures:
         findings.append(
             Keyed(
@@ -549,6 +598,12 @@ def check(
             len(sampled & lock_ids),
             len(lock_ids),
         )
+    )
+    # Not judged for drift, and so counted on every green: a window of one capture judges structure only.
+    unjudged = thin_gates(fresh)
+    print(
+        "  drift judged on %d gate(s); %d measured by fewer than %d capture(s) are not judged for drift."
+        % (len(fresh["gates"]) - len(unjudged), len(unjudged), MIN_DRIFT_CAPTURES)
     )
     # Not judged, by design (module docstring, TWO KINDS OF GATE), and so printed by name every run.
     if notes["not_sampled"]:
