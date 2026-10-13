@@ -3,6 +3,7 @@
 Both were paid for on 2026-09-24: a deploy applied 21 D1 migrations and then died on an R2 bucket nothing had created, and the retry bundled from a drifted node_modules that Cloudflare refused at startup. `npm` and `npx` are stubs on PATH, so nothing here reaches the network.
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -18,11 +19,15 @@ def _stub(bin_dir, name, body):
     path.chmod(0o755)
 
 
-def _run(tmp_path, call, npm_ls_rc=0, listed=(), config=None):
+def _run(tmp_path, call, npm_ls_rc=0, listed=(), config=None, npm_ls_out=""):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
     log = tmp_path / "npx.log"
-    _stub(bin_dir, "npm", 'if [ "$1" = ls ]; then exit %d; fi\nexit 0\n' % npm_ls_rc)
+    report = tmp_path / "npm-ls.json"
+    report.write_text(npm_ls_out, encoding="utf-8")
+    _stub(
+        bin_dir, "npm", 'if [ "$1" = ls ]; then cat %s; exit %d; fi\nexit 0\n' % (report, npm_ls_rc)
+    )
     names = "".join("name:           %s\\n" % b for b in listed)
     _stub(
         bin_dir,
@@ -79,6 +84,23 @@ def test_a_jurisdictional_binding_is_refused_not_guessed(tmp_path):
 
 def test_a_drifted_install_is_refused(tmp_path):
     done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1)
+    assert done.returncode == 1
+    assert "does not match its package-lock.json" in done.stderr
+
+
+LINKED = {"resolved": "file:../../packages/shared", "dependencies": {"zod": {"missing": True}}}
+
+
+def test_a_linked_package_missing_its_dependencies_is_not_this_install_drifting(tmp_path):
+    tree = {"problems": ["missing: zod"], "dependencies": {"@rediacc/shared": LINKED}}
+    done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
+    assert done.returncode == 0, done.stderr
+
+
+def test_a_missing_dependency_beside_a_linked_package_is_still_refused(tmp_path):
+    own = {"@rediacc/shared": LINKED, "hono": {"dependencies": {"left": {"invalid": True}}}}
+    tree = {"problems": ["missing: zod", "invalid: left"], "dependencies": own}
+    done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
     assert done.returncode == 1
     assert "does not match its package-lock.json" in done.stderr
 
