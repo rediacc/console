@@ -85,6 +85,8 @@ def _isolated_store(tmp_path, monkeypatch):
     monkeypatch.chdir(fixture_root)
     # NO LLM JUDGE. This file measures stdin handling, and the judge is a paid call that runs whenever the real working tree carries uncommitted fix-shaped changes (regression-gate signals): on 2026-10-04 two writers' uncommitted files sent the late-payload case into a judge call and past its 40 s budget, while the same test on a clean tree passed in 2 s.
     monkeypatch.setenv("WORKLIST_JUDGE", "off")
+    # NOT A CI RUNNER, AS FAR AS THE HOOK KNOWS. The hook exits 0 before reading its event when GITHUB_ACTIONS is true (worklist.py, "CI NO-OP"), so on a runner every case here drove that early exit: the stdin cases passed without reading stdin, and the fixture-queue case failed on the first CI run that reached it (console run 38345377035), since nothing rendered. The no-op itself has its own case below.
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
 
 
 def drive(hook: str, mode: str, budget: float) -> str:
@@ -257,3 +259,19 @@ def test_the_hook_renders_the_fixture_queue_not_the_real_one(gate, tmp_path):
     gate.log_pass(
         "the hook re-renders the fixture root's QUEUE.md, so the real one is out of its reach"
     )
+
+
+def test_on_a_ci_runner_the_hook_is_a_no_op(gate, tmp_path, monkeypatch):
+    """The contract the fixture above steps around: under GITHUB_ACTIONS the hook exits 0 at once and renders nothing, so an unattended model in Actions is never held by a gate no person will answer."""
+    hook = _require_hook(gate)
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    fixture_queue = tmp_path / "root" / "agent" / "plans" / "QUEUE.md"
+    fixture_queue.parent.mkdir(parents=True)
+    fixture_queue.write_text(STALE_INFLIGHT, encoding="utf-8")
+    observed = drive(hook, "late", BUDGET)
+    gate.assert_contains(observed, "hung=0", "the no-op must not hang (%s)" % observed)
+    gate.assert_contains(observed, "crashed=0", "the no-op must not crash (%s)" % observed)
+    assert fixture_queue.read_text(encoding="utf-8") == STALE_INFLIGHT, (
+        "the hook rendered the queue on a CI runner, so its no-op no longer comes first"
+    )
+    gate.log_pass("under GITHUB_ACTIONS the hook exits before it renders anything")
