@@ -576,17 +576,6 @@
     },
     {
       "includes": [
-        "packages/e2e-tests/src/base/bridge-global-setup.ts",
-        "packages/e2e-tests/src/base/bridge-global-teardown.ts",
-        "packages/e2e-tests/src/reporters/TextFileReporter.ts",
-        "packages/e2e-tests/src/utils/bridge/BridgeTestRunner.ts",
-        "packages/e2e-tests/src/utils/bridge/helpers/RepositoryHelpers.ts",
-        "packages/e2e-tests/src/utils/infrastructure/InfrastructureManager.ts",
-        "packages/e2e-tests/src/utils/image/ImageTestHelper.ts",
-        "packages/e2e-tests/tests/20-image-build.test.ts",
-        "packages/e2e-tests/tests/13-postgres-fork-isolation.test.ts",
-        "packages/e2e-tests/tests/19-rustfs-operations.test.ts",
-        "packages/e2e-tests/tests/12d-full-integration-multi-machine.test.ts",
         "packages/cli/src/remote/sync/rsync.ts",
         "packages/cli/src/commands/vscode.ts",
         "packages/cli/src/services/core/output.ts"
@@ -601,10 +590,6 @@
     },
     {
       "includes": [
-        "packages/e2e-tests/tests/16-setup-installation-params.test.ts",
-        "packages/e2e-tests/tests/20-image-build.test.ts",
-        "packages/e2e-tests/tests/21-local-executor.test.ts",
-        "packages/e2e-tests/tests/22-setup-command.test.ts",
         "packages/shared/src/config-crypto/slots.ts",
         "packages/shared/src/e2e/crypto.ts",
         "packages/cli/src/remote/sftp/client.ts",

@@ -18,7 +18,7 @@ export class BackupMethods {
    * Push repository to a destination machine.
    * Uses backup_push with destinationType=machine.
    */
-  async push(repository: string, destMachine: string, datastorePath?: string): Promise<ExecResult> {
+  push(repository: string, destMachine: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'backup_push',
       repository,
@@ -32,11 +32,7 @@ export class BackupMethods {
    * Pull repository from a source machine.
    * Uses backup_pull with sourceType=machine.
    */
-  async pull(
-    repository: string,
-    sourceMachine: string,
-    datastorePath?: string
-  ): Promise<ExecResult> {
+  pull(repository: string, sourceMachine: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'backup_pull',
       repository,
@@ -50,7 +46,7 @@ export class BackupMethods {
    * Push repository with all available options.
    * Supports both machine and storage destinations.
    */
-  async pushWithOptions(
+  pushWithOptions(
     repository: string,
     options: {
       destinationType?: 'machine' | 'storage';
@@ -78,7 +74,7 @@ export class BackupMethods {
    * Pull repository with all available options.
    * Supports both machine and storage sources.
    */
-  async pullWithOptions(
+  pullWithOptions(
     repository: string,
     options: {
       sourceType?: 'machine' | 'storage';
@@ -95,45 +91,7 @@ export class BackupMethods {
     });
   }
 
-  /**
-   * Backup repository to storage.
-   * Uses backup_push with destinationType=storage.
-   * @deprecated Legacy wrapper - use pushWithOptions() directly
-   */
-  async backup(
-    repository: string,
-    datastorePath?: string,
-    storageName?: string
-  ): Promise<ExecResult> {
-    return this.testFunction({
-      function: 'backup_push',
-      repository,
-      datastorePath,
-      destinationType: 'storage',
-      to: storageName,
-    });
-  }
-
-  /**
-   * Deploy repository to a machine.
-   * Uses backup_push with destinationType=machine.
-   * @deprecated Legacy wrapper - use pushWithOptions() directly
-   */
-  async deploy(
-    repository: string,
-    destMachine: string,
-    datastorePath?: string
-  ): Promise<ExecResult> {
-    return this.testFunction({
-      function: 'backup_push',
-      repository,
-      destMachine,
-      datastorePath,
-      destinationType: 'machine',
-    });
-  }
-
-  async checkpointCreate(
+  checkpointCreate(
     repository: string,
     checkpointName: string,
     datastorePath?: string,
@@ -148,7 +106,7 @@ export class BackupMethods {
     });
   }
 
-  async checkpointRestore(
+  checkpointRestore(
     repository: string,
     checkpointName: string,
     datastorePath?: string,
@@ -171,7 +129,7 @@ export class BackupMethods {
    * - storages array (parallel backup)
    * - tag, state, checkpoint, override, grand
    */
-  async pushWithVault(vault: VaultBuilder, timeout?: number): Promise<ExecResult> {
+  pushWithVault(vault: VaultBuilder, timeout?: number): Promise<ExecResult> {
     return this.testFunctionWithVault('backup_push', vault, timeout);
   }
 
@@ -182,7 +140,7 @@ export class BackupMethods {
    * - from (source selection)
    * - grand (CoW pre-seeding)
    */
-  async pullWithVault(vault: VaultBuilder, timeout?: number): Promise<ExecResult> {
+  pullWithVault(vault: VaultBuilder, timeout?: number): Promise<ExecResult> {
     return this.testFunctionWithVault('backup_pull', vault, timeout);
   }
 }

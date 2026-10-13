@@ -16,19 +16,6 @@ export class TestHelpers {
   }
 
   /**
-   * Check if result has no shell syntax errors.
-   * @deprecated Use hasValidCommandSyntax() for syntax tests, isSuccess() for execution tests
-   */
-  hasNoSyntaxErrors(result: ExecResult): boolean {
-    const output = this.getCombinedOutput(result);
-    return (
-      !output.includes('syntax error') &&
-      !output.includes('unexpected token') &&
-      !output.includes('bash:')
-    );
-  }
-
-  /**
    * Check if command was built with valid syntax and flags.
    * Use this for "should not have shell syntax errors" tests.
    *
