@@ -468,7 +468,7 @@
           "success": "Configurazione remota disabilitata. Configurazione \"{{name}}\" salvata in locale."
         },
         "enable": {
-          "alreadyEnabled": "La configurazione \"{{name}}\" è già collegata allo storage remoto. Disabilita prima con: rdc config remote disable",
+          "alreadyEnabled": "La configurazione \"{{name}}\" è già collegata allo storage remoto e questo dispositivo riesce ad aprirla, quindi non c'è nulla da abilitare. Per scollegarla, esegui: rdc config remote disable",
           "description": "Collega questa configurazione allo storage cifrato remoto",
           "expired": "Codice dispositivo scaduto. Riprova.",
           "handoffUnreadable": "Impossibile leggere il passaggio di configurazione dal browser. Ricomincia con: rdc config remote enable",
@@ -496,6 +496,12 @@
           "passwordTokenNotEnrollable": "Questo token API non può iscrivere un config slot perché non è legato a un utente all'interno di un'organizzazione. Emetti un token personale dal tuo account nel portale web e riprova.",
           "passwordWrong": "Impossibile sbloccare la config con quella password. Verifica REDIACC_CONFIG_PASSWORD (o la password inserita) e riprova.",
           "received": "Handoff ricevuto",
+          "reenrollConfigGone": "L'archivio {{storeId}} non contiene più la configurazione remota {{configId}}, a cui è collegata la configurazione \"{{name}}\". Non è stato modificato nulla; il file locale è l'ultima copia vista da questo dispositivo.",
+          "reenrollConfigMismatch": "La configurazione \"{{name}}\" è collegata alla configurazione remota {{linkedConfig}}, ma l'iscrizione è stata approvata per la configurazione remota {{offeredConfig}}. Non è stato modificato nulla. Esegui di nuovo il comando e approvala per {{linkedConfig}}.",
+          "reenrolling": "La configurazione \"{{name}}\" è collegata allo storage remoto, ma questo dispositivo non riesce più ad aprirla. Nuova iscrizione di questo dispositivo allo stesso archivio in corso.",
+          "reenrollServerMismatch": "La configurazione \"{{name}}\" è collegata a {{linkedUrl}}, quindi questo dispositivo può essere iscritto di nuovo solo lì, non su {{requestedUrl}}. Esegui di nuovo il comando senza --api-url.",
+          "reenrollStoreMismatch": "La configurazione \"{{name}}\" è collegata all'archivio {{linkedStore}}, ma l'iscrizione è stata approvata per l'archivio {{offeredStore}}. Non è stato modificato nulla. Approvala con un account dell'organizzazione proprietaria di questa configurazione.",
+          "reenrollSuccess": "Questo dispositivo è di nuovo iscritto. La configurazione \"{{name}}\" è stata aggiornata dal server (versione {{version}}).",
           "openRelay": "Apri questo link in qualsiasi browser con accesso al portale:",
           "approveAs": "Apri questo link in qualsiasi browser con accesso come {{email}}:",
           "pairingCode": "Codice di abbinamento (digitalo nella pagina quando richiesto):  {{code}}",
@@ -511,7 +517,7 @@
         "handoffUndecryptable": "Il relay del server ha restituito un passaggio che questo dispositivo non può aprire ({{error}}): è stato sigillato con una chiave diversa da quella generata da questa esecuzione. Esegui di nuovo il comando e apri solo il link che stampa.",
         "offlineCacheWarning": "Il server di configurazione {{server}} non è raggiungibile; la configurazione \"{{config}}\" viene servita dalla cache offline (versione server {{version}}, salvata in cache {{age}} fa). Le modifiche non possono essere salvate finché il server non è raggiungibile.",
         "offlineNoCache": "Il server di configurazione {{server}} non è raggiungibile e la configurazione \"{{config}}\" non ha ancora una cache offline. Esegui \"rdc config remote refresh\" quando il server sarà raggiungibile per popolare la cache.",
-        "passkeySecretMissing": "Segreto della passkey non trovato nel keyring del sistema operativo. Autenticati di nuovo con: rdc config remote enable",
+        "passkeySecretMissing": "Questo dispositivo non possiede più la sua chiave per l'archivio di configurazione (su Linux il keyring del kernel viene svuotato a ogni riavvio). Iscrivi di nuovo questo dispositivo con: rdc config remote enable",
         "refresh": {
           "description": "Forza il recupero della configurazione dallo storage remoto",
           "notEnabled": "La configurazione remota non è abilitata.",
@@ -545,8 +551,8 @@
           "loginInvalid": "Il server degli account ha rifiutato l'accesso di questo dispositivo durante il rinnovo del token di configurazione. Esegui \"rdc subscription login\" e riprova.",
           "loginScope": "L'accesso di questo dispositivo non può rinnovare i token di configurazione: risale a prima di questa funzione, oppure il suo team non esiste più. Esegui di nuovo \"rdc subscription login\", poi riprova.",
           "loginIpMismatch": "Il token di configurazione non è stato rinnovato perché l'accesso di questo dispositivo è legato a un altro indirizzo di rete. {{error}} In alternativa esegui di nuovo \"rdc config remote enable\" per ottenere un nuovo token di configurazione per questo dispositivo.",
-          "notStoreMember": "L'account dell'accesso di questo dispositivo non è membro dell'archivio di configurazione {{storeId}}, quindi il token di configurazione non è stato rinnovato. Accedi con l'account che ha attivato questa configurazione (\"rdc subscription login\"), oppure esegui di nuovo \"rdc config remote enable\".",
-          "storeMismatch": "L'archivio di configurazione {{storeId}} non appartiene all'organizzazione dell'accesso di questo dispositivo, quindi il token di configurazione non è stato rinnovato. Accedi all'organizzazione proprietaria di questa configurazione (\"rdc subscription login\"), oppure esegui di nuovo \"rdc config remote enable\".",
+          "notStoreMember": "L'account dell'accesso di questo dispositivo non è membro dell'archivio di configurazione {{storeId}}, quindi il token di configurazione non è stato rinnovato. Accedi con l'account che ha attivato questa configurazione (\"rdc subscription login\") e riprova.",
+          "storeMismatch": "L'archivio di configurazione {{storeId}} non appartiene all'organizzazione dell'accesso di questo dispositivo, quindi il token di configurazione non è stato rinnovato. Accedi all'organizzazione proprietaria di questa configurazione (\"rdc subscription login\") e riprova.",
           "staleGeneration": "La chiave di cifratura della configurazione è stata ruotata e nessuno slot di chiave di questo account apre quella nuova, quindi il token di configurazione non è stato rinnovato. Registra di nuovo il dispositivo con: rdc config remote enable",
           "rateLimited": "Il server degli account sta limitando i rinnovi dei token di configurazione ({{error}}). Attendi un minuto ed esegui di nuovo il comando.",
           "refused": "Il server degli account non ha rinnovato il token di configurazione di questo dispositivo ({{error}}). Esegui di nuovo \"rdc config remote enable\"."

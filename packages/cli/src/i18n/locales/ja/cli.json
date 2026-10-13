@@ -468,7 +468,7 @@
           "success": "リモート設定を無効化しました。設定 \"{{name}}\" をローカルに保存しました。"
         },
         "enable": {
-          "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされています。先に無効化してください: rdc config remote disable",
+          "alreadyEnabled": "設定 \"{{name}}\" は既にリモートストレージにリンクされており、このデバイスで開けるため、有効化するものはありません。リンクを解除するには次を実行してください: rdc config remote disable",
           "description": "この設定をリモート暗号化ストレージにリンク",
           "expired": "デバイスコードの有効期限が切れました。もう一度お試しください。",
           "handoffUnreadable": "ブラウザーから受け取った設定を読み取れませんでした。次のコマンドでやり直してください: rdc config remote enable",
@@ -496,6 +496,12 @@
           "passwordTokenNotEnrollable": "このAPIトークンは組織内のユーザーに紐づいていないため、設定スロットを登録できません。Webポータルで自分のアカウントから個人用トークンを発行し、もう一度お試しください。",
           "passwordWrong": "そのパスワードでは設定のロックを解除できませんでした。REDIACC_CONFIG_PASSWORD（または入力したパスワード）を確認して、もう一度お試しください。",
           "received": "ハンドオフを受信",
+          "reenrollConfigGone": "ストア {{storeId}} には、設定 \"{{name}}\" のリンク先であるリモート設定 {{configId}} がもうありません。何も変更されていません。ローカルファイルは、このデバイスが最後に確認したコピーです。",
+          "reenrollConfigMismatch": "設定 \"{{name}}\" はリモート設定 {{linkedConfig}} にリンクされていますが、登録はリモート設定 {{offeredConfig}} に対して承認されました。何も変更されていません。コマンドをもう一度実行し、{{linkedConfig}} に対して承認してください。",
+          "reenrolling": "設定 \"{{name}}\" はリモートストレージにリンクされていますが、このデバイスでは開けなくなっています。同じストアに対してこのデバイスを再登録します。",
+          "reenrollServerMismatch": "設定 \"{{name}}\" は {{linkedUrl}} にリンクされているため、このデバイスを再登録できるのはそこだけで、{{requestedUrl}} では再登録できません。--api-url を付けずにコマンドをもう一度実行してください。",
+          "reenrollStoreMismatch": "設定 \"{{name}}\" はストア {{linkedStore}} にリンクされていますが、登録はストア {{offeredStore}} に対して承認されました。何も変更されていません。この設定を所有する組織のアカウントで承認してください。",
+          "reenrollSuccess": "このデバイスを再登録しました。設定 \"{{name}}\" をサーバーから更新しました (バージョン {{version}})。",
           "openRelay": "ポータルにサインインしている任意のブラウザーで、このリンクを開いてください:",
           "approveAs": "{{email}} でサインインしている任意のブラウザーで、このリンクを開いてください:",
           "pairingCode": "ペアリングコード（ページで求められたら入力してください）:  {{code}}",
@@ -511,7 +517,7 @@
         "handoffUndecryptable": "サーバーのリレーから、このデバイスでは開けない受け渡しデータが返されました ({{error}})。この実行で生成したものとは別の鍵で暗号化されています。コマンドをもう一度実行し、表示されたリンクだけを開いてください。",
         "offlineCacheWarning": "設定サーバー {{server}} に到達できないため、設定 \"{{config}}\" をオフラインキャッシュから提供しています（サーバーバージョン {{version}}、{{age}}前にキャッシュ済み）。サーバーに到達できるようになるまで変更は保存できません。",
         "offlineNoCache": "設定サーバー {{server}} に到達できず、設定 \"{{config}}\" にはまだオフラインキャッシュがありません。サーバーに到達できるようになったら \"rdc config remote refresh\" を実行してキャッシュを作成してください。",
-        "passkeySecretMissing": "OSキーリングにパスキーシークレットが見つかりません。再認証してください: rdc config remote enable",
+        "passkeySecretMissing": "このデバイスは設定ストレージ用のキーをもう保持していません（Linux ではカーネルキーリングが再起動のたびに空になります）。次のコマンドでこのデバイスを再登録してください: rdc config remote enable",
         "refresh": {
           "description": "リモートストレージから設定を強制再取得",
           "notEnabled": "リモート設定は有効になっていません。",
@@ -545,8 +551,8 @@
           "loginInvalid": "設定トークンの更新中に、アカウントサーバーがこのデバイスのログインを拒否しました。\"rdc subscription login\" を実行してから再試行してください。",
           "loginScope": "このデバイスのログインでは設定トークンを更新できません。この機能より前に作成されたログインか、そのチームがすでに存在しません。\"rdc subscription login\" をもう一度実行してから再試行してください。",
           "loginIpMismatch": "このデバイスのログインが別のネットワークアドレスに紐付いているため、設定トークンを更新できませんでした。{{error}} または \"rdc config remote enable\" をもう一度実行して、このデバイス用の新しい設定トークンを取得してください。",
-          "notStoreMember": "このデバイスでログインしているアカウントは設定ストア {{storeId}} のメンバーではないため、設定トークンは更新されませんでした。この設定を有効にしたアカウントでログインするか (\"rdc subscription login\")、\"rdc config remote enable\" をもう一度実行してください。",
-          "storeMismatch": "設定ストア {{storeId}} はこのデバイスでログインしている組織のものではないため、設定トークンは更新されませんでした。この設定を所有する組織にログインするか (\"rdc subscription login\")、\"rdc config remote enable\" をもう一度実行してください。",
+          "notStoreMember": "このデバイスでログインしているアカウントは設定ストア {{storeId}} のメンバーではないため、設定トークンは更新されませんでした。この設定を有効にしたアカウントでログインし (\"rdc subscription login\")、もう一度お試しください。",
+          "storeMismatch": "設定ストア {{storeId}} はこのデバイスでログインしている組織のものではないため、設定トークンは更新されませんでした。この設定を所有する組織にログインし (\"rdc subscription login\")、もう一度お試しください。",
           "staleGeneration": "設定の暗号化キーがローテーションされ、このアカウントのどのキースロットでも新しいキーを開けないため、設定トークンは更新されませんでした。次のコマンドで再登録してください: rdc config remote enable",
           "rateLimited": "アカウントサーバーが設定トークンの更新を制限しています ({{error}})。1 分ほど待ってからコマンドをもう一度実行してください。",
           "refused": "アカウントサーバーはこのデバイスの設定トークンを更新しませんでした ({{error}})。\"rdc config remote enable\" をもう一度実行してください。"

@@ -468,7 +468,7 @@
           "success": "Configuration distante désactivée. Configuration \"{{name}}\" sauvegardée localement."
         },
         "enable": {
-          "alreadyEnabled": "La configuration \"{{name}}\" est déjà liée au stockage distant. Déconnectez d'abord avec : rdc config remote disable",
+          "alreadyEnabled": "La configuration \"{{name}}\" est déjà liée au stockage distant et cet appareil peut l'ouvrir : il n'y a rien à activer. Pour la délier, exécutez : rdc config remote disable",
           "description": "Lier cette configuration au stockage distant chiffré",
           "expired": "Code d'appareil expiré. Réessayez.",
           "handoffUnreadable": "Impossible de lire la transmission de configuration envoyée par le navigateur. Recommencez avec : rdc config remote enable",
@@ -496,6 +496,12 @@
           "passwordTokenNotEnrollable": "Ce jeton API ne peut pas inscrire un config slot car il n'est pas lié à un utilisateur au sein d'une organisation. Émettez un jeton personnel depuis votre propre compte dans le portail web et réessayez.",
           "passwordWrong": "Impossible de déverrouiller la configuration avec ce mot de passe. Vérifiez REDIACC_CONFIG_PASSWORD (ou le mot de passe saisi) et réessayez.",
           "received": "Transfert reçu",
+          "reenrollConfigGone": "Le magasin {{storeId}} ne contient plus la configuration distante {{configId}}, à laquelle la configuration \"{{name}}\" est liée. Rien n'a été modifié ; le fichier local est la dernière copie vue par cet appareil.",
+          "reenrollConfigMismatch": "La configuration \"{{name}}\" est liée à la configuration distante {{linkedConfig}}, mais l'inscription a été approuvée pour la configuration distante {{offeredConfig}}. Rien n'a été modifié. Relancez la commande et approuvez-la pour {{linkedConfig}}.",
+          "reenrolling": "La configuration \"{{name}}\" est liée au stockage distant, mais cet appareil ne peut plus l'ouvrir. Réinscription de cet appareil auprès du même magasin.",
+          "reenrollServerMismatch": "La configuration \"{{name}}\" est liée à {{linkedUrl}} : cet appareil ne peut donc être réinscrit que là, pas sur {{requestedUrl}}. Relancez la commande sans --api-url.",
+          "reenrollStoreMismatch": "La configuration \"{{name}}\" est liée au magasin {{linkedStore}}, mais l'inscription a été approuvée pour le magasin {{offeredStore}}. Rien n'a été modifié. Approuvez-la avec un compte de l'organisation propriétaire de cette configuration.",
+          "reenrollSuccess": "Cet appareil est de nouveau inscrit. La configuration \"{{name}}\" a été actualisée depuis le serveur (version {{version}}).",
           "openRelay": "Ouvrez ce lien dans n'importe quel navigateur connecté au portail :",
           "approveAs": "Ouvrez ce lien dans n'importe quel navigateur connecté en tant que {{email}} :",
           "pairingCode": "Code d'appairage (saisissez-le sur la page quand elle le demande) :  {{code}}",
@@ -511,7 +517,7 @@
         "handoffUndecryptable": "Le relais du serveur a renvoyé une transmission que cet appareil ne peut pas ouvrir ({{error}}) : elle a été scellée avec une autre clé que celle générée par cette exécution. Relancez la commande et n'ouvrez que le lien qu'elle affiche.",
         "offlineCacheWarning": "Le serveur de configuration {{server}} est injoignable ; la configuration \"{{config}}\" est servie depuis le cache hors ligne (version serveur {{version}}, mise en cache il y a {{age}}). Les modifications ne peuvent pas être enregistrées tant que le serveur n'est pas joignable.",
         "offlineNoCache": "Le serveur de configuration {{server}} est injoignable et la configuration \"{{config}}\" n'a pas encore de cache hors ligne. Exécutez \"rdc config remote refresh\" une fois le serveur joignable pour alimenter le cache.",
-        "passkeySecretMissing": "Secret de passkey introuvable dans le trousseau du système. Réauthentifiez-vous avec : rdc config remote enable",
+        "passkeySecretMissing": "Cet appareil ne détient plus sa clé du stockage de configuration (sous Linux, le trousseau du noyau est vidé à chaque redémarrage). Réinscrivez cet appareil avec : rdc config remote enable",
         "refresh": {
           "description": "Forcer la récupération de la configuration depuis le stockage distant",
           "notEnabled": "La configuration distante n'est pas activée.",
@@ -545,8 +551,8 @@
           "loginInvalid": "Le serveur de comptes a refusé la connexion de cet appareil pendant le renouvellement du jeton de configuration. Exécutez \"rdc subscription login\" puis réessayez.",
           "loginScope": "La connexion de cet appareil ne peut pas renouveler les jetons de configuration : elle date d'avant cette fonction, ou son équipe n'existe plus. Exécutez à nouveau \"rdc subscription login\", puis réessayez.",
           "loginIpMismatch": "Le jeton de configuration n'a pas pu être renouvelé, car la connexion de cet appareil est liée à une autre adresse réseau. {{error}} Vous pouvez aussi exécuter à nouveau \"rdc config remote enable\" pour obtenir un nouveau jeton de configuration pour cet appareil.",
-          "notStoreMember": "Le compte de la connexion de cet appareil n'est pas membre du stockage de configuration {{storeId}}, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous avec le compte qui a activé cette configuration (\"rdc subscription login\"), ou exécutez à nouveau \"rdc config remote enable\".",
-          "storeMismatch": "Le stockage de configuration {{storeId}} n'appartient pas à l'organisation de la connexion de cet appareil, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous à l'organisation propriétaire de cette configuration (\"rdc subscription login\"), ou exécutez à nouveau \"rdc config remote enable\".",
+          "notStoreMember": "Le compte de la connexion de cet appareil n'est pas membre du stockage de configuration {{storeId}}, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous avec le compte qui a activé cette configuration (\"rdc subscription login\"), puis réessayez.",
+          "storeMismatch": "Le stockage de configuration {{storeId}} n'appartient pas à l'organisation de la connexion de cet appareil, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous à l'organisation propriétaire de cette configuration (\"rdc subscription login\"), puis réessayez.",
           "staleGeneration": "La clé de chiffrement de la configuration a été renouvelée et aucun emplacement de clé de ce compte n'ouvre la nouvelle, le jeton de configuration n'a donc pas été renouvelé. Réinscrivez l'appareil avec : rdc config remote enable",
           "rateLimited": "Le serveur de comptes limite les renouvellements de jetons de configuration ({{error}}). Attendez une minute puis relancez la commande.",
           "refused": "Le serveur de comptes n'a pas renouvelé le jeton de configuration de cet appareil ({{error}}). Exécutez à nouveau \"rdc config remote enable\"."
