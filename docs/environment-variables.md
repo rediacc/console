@@ -50,6 +50,7 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | Disables the repo-context file-write guard. Tutorial/test infra only. |
 | `REDIACC_YES` | Assume-yes prompt bypass (mirror of `--yes`). |
 | `REDIACC_NO_DAEMON` | Forces the direct execution path (no executor daemon). |
+| `REDIACC_SECRET_STORE` | `file` keeps the config-storage device key in `secure-keys.json` (mode 0600) in the state directory instead of the native secret store of the OS (kernel keyring, Keychain, DPAPI). Unset, the native store is required and the CLI refuses when it cannot be used. No other value is accepted. |
 | `REDIACC_DISABLE_AUTOUPDATE` | Disables the background auto-updater. |
 | `REDIACC_UPDATE_INTERVAL_HOURS` | Auto-update check cooldown. |
 | `REDIACC_SSH_LINGER_MS` | SSH connection-pool idle linger. |

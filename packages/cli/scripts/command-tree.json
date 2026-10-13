@@ -4092,7 +4092,20 @@
             {
               "name": "disable",
               "descriptionKey": "commands.config.remote.disable.description",
-              "options": [],
+              "options": [
+                {
+                  "flags": "--local",
+                  "descriptionKey": "commands.config.remote.disable.optionLocal",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-y, --yes",
+                  "descriptionKey": "options.yes",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
               "arguments": [],
               "subcommands": []
             },

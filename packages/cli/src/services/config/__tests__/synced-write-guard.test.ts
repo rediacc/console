@@ -45,6 +45,11 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
     count: 1,
     reason: 'remote disable: writes the pulled server copy as the new local config',
   },
+  'commands/config-remote-unlink.ts': {
+    count: 1,
+    reason:
+      'remote disable --local: writes the cached copy, minus the remote pointer, as the local config',
+  },
   'commands/config-remote-enable.ts': {
     count: 1,
     reason: 'remote enable: seeds the cache from the store',

@@ -149,6 +149,11 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
                 dbus-x11 \
                 netcat-openbsd \
                 gnome-keyring \
+                # keyutils: `rdc config remote` keeps its device secret in the kernel user
+                # keyring through keyctl, and since 2026-10-13 the CLI refuses instead of
+                # falling back to a file when keyctl is missing (REDIACC_SECRET_STORE=file is
+                # the explicit opt-in). Without it every devbox would hit that refusal.
+                keyutils \
                 clang \
                 llvm \
                 libbpf-dev \

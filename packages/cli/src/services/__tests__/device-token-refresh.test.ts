@@ -79,7 +79,8 @@ describe('device token refresh (T11)', () => {
     [403, 'store_mismatch', 'store_mismatch', 'store-1'],
     [403, 'stale_cek_generation', 'stale_cek_generation', 'rdc config remote enable'],
     [429, undefined, 'rate_limited', 'Too many'],
-    [500, undefined, 'refresh_failed', 'rdc config remote enable'],
+    // Not a new enrollment: a failed renewal says nothing about this device's credentials, and `enable` raises it as it came.
+    [500, undefined, 'refresh_failed', 'run the command again'],
   ])('maps %i %s to %s, naming the remedy', async (status, code, expected, remedy) => {
     const error = await refusedWith(refusal(status, code, 'Too many requests'));
     expect(error).toBeInstanceOf(RemoteTokenRefreshError);

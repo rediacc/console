@@ -71,6 +71,16 @@ vi.mock('../../services/core/output.js', () => {
   };
 });
 
+// The OS secure storage is never real in a test. `enable` selects it before anything else, so a device with nowhere to keep its slot secret is refused ahead of the portal ceremony (config-remote-disable-local.test.ts pins that refusal).
+vi.mock('../../utils/secure-storage.js', () => ({
+  getSecureStorage: () => ({
+    type: 'mem',
+    get: () => Promise.resolve(null),
+    set: () => Promise.resolve(),
+    delete: () => Promise.resolve(),
+  }),
+}));
+
 vi.mock('node:child_process', () => ({ execFile: mockExecFile }));
 
 vi.mock('../config-remote-enable.js', () => ({

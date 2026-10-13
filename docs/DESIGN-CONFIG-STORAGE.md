@@ -140,7 +140,7 @@ The `passkey_secret` is stored in **platform-native secure storage**, not in the
 | Linux | Kernel keyring (`keyctl`, user keyring `@u`) | Yes | No (memory) | Kernel-level isolation, per-user, no expiry set |
 | macOS | Keychain (`security`) | Yes | Yes (encrypted) | OS-level encryption, optional Touch ID |
 | Windows | DPAPI (`ProtectedData`) | Yes | Yes (encrypted) | Tied to the Windows login credentials of the user |
-| Fallback | `secure-keys.json` in the CLI state directory (0o600) | Yes | Yes | File permissions only, plaintext, selected silently |
+| Opt-in (`REDIACC_SECRET_STORE=file`) | `secure-keys.json` in the CLI state directory (0o600) | Yes | Yes | File permissions only, plaintext, never selected on its own |
 
 ```bash
 # Linux: store in the kernel user keyring, with no timeout
@@ -156,11 +156,13 @@ powershell -NoProfile -Command "[Convert]::ToBase64String(
 # outside [a-zA-Z0-9_.-] in the file name replaced by "_"
 ```
 
-The implementation is `packages/cli/src/utils/secure-storage.ts`. Four properties of it are part of this design:
+The implementation is `packages/cli/src/utils/secure-storage.ts`. Six properties of it are part of this design:
 
 - **No expiry on Linux.** The key is added to `@u` without `keyctl timeout`. It lives until it is deleted, or until the kernel discards the user keyring (the last process of the UID exits, or the machine reboots). A missing key is fatal for `deriveCek()` and the device enrolls again.
-- **The Linux read needs possession.** A process reads a key in `@u` only when its session keyring links `@u`. A login session does; a systemd service with a private keyring, and a CI runner job, do not. There `keyctl show @u` and `keyctl add` succeed and the read is refused, so the CLI selects the keyring, stores the secret, and reads back nothing.
-- **The fallback is silent.** Where `keyctl` (Linux) or `security` (macOS) cannot be run, the CLI selects the file backend and prints no warning. The secret is then plaintext in `secure-keys.json` under the state directory (`$XDG_STATE_HOME/rediacc` on Linux). Whether that downgrade may stay silent is an open decision (`reggate:f91a4d9e`). Windows has no fallback.
+- **A native backend is proven before it is used.** Selection stores, reads back and removes a throwaway key (`rdc:probe:<pid>-<random>`) through the same operations a real secret takes, once per process. "The tool runs" is not the test: `keyctl show @u` passed on a keyring that then refused every read.
+- **The Linux read needs possession.** A process reads a key in `@u` only when its session keyring links `@u`. A login session does; a systemd service with a private keyring, and a CI runner job, do not. There `keyctl add` succeeds and the read is refused, so the proof fails and the CLI refuses. The CLI does not run `keyctl link @u @s` itself: the link lands in a session keyring the whole session shares, outlives the CLI, and hands every process of that session possession of every key in `@u`, which a service manager that isolated a unit chose against. The refusal names the command.
+- **Nothing falls back on its own** (operator ruling 2026-10-13). On every platform, a native backend that fails its proof, a native tool that cannot be run (`keyctl`, `security`, `powershell`), and a platform with no native backend end the same way: `SecureStorageUnavailableError`, raised before anything is stored, naming what is missing and the opt-in. `config remote enable` checks the storage before any portal link is printed.
+- **The file backend is an opt-in, and one variable.** `REDIACC_SECRET_STORE=file` selects the file backend, and only it does: the secret is then plaintext in `secure-keys.json` under the state directory (`$XDG_STATE_HOME/rediacc` on Linux), at mode 0o600, and one notice per process on stderr says so. The variable is a choice of backend, not a permission to fall back: with it set the file backend is used even where the native one works. Any other value is refused.
 - **Keys are allowlisted.** `storageKeyId` arrives from the server, so every backend refuses a key outside `[A-Za-z0-9:_-]{1,200}` before any native tool sees it. Keys and values reach `keyctl`, `security` and PowerShell as argument or environment values, never as script text.
 
 #### The contract CI pins
@@ -169,10 +171,11 @@ The implementation is `packages/cli/src/utils/secure-storage.ts`. Four propertie
 
 | Platform | Backend selected | Pinned |
 |----------|------------------|--------|
-| Linux | `keyctl` | Storage contract; cross-process read; after a set, no file under the config, state or cache directory holds the secret; a session keyring without `@u` stores and reads back null (the behaviour of today) |
+| Linux | `keyctl` | Storage contract; cross-process read; after a set, no file under the config, state or cache directory holds the secret; selection leaves no throwaway key behind; a session keyring without `@u` is refused, naming `keyctl link @u @s` and the opt-in, with nothing stored |
 | macOS | `keychain` | Storage contract; cross-process read |
 | Windows | `dpapi` | Storage contract; cross-process read; the key file holds ciphertext, never the secret; a value or a tampered file shaped like PowerShell executes nothing |
-| Linux, `keyctl` off `PATH` | `file` | Storage contract; `secure-keys.json` at mode 0o600 holding the secret in plaintext (the behaviour of today) |
+| Linux, `keyctl` off `PATH` | none | Refused, naming `keyctl` and the opt-in; no file is written |
+| Linux, `REDIACC_SECRET_STORE=file` | `file` | Storage contract; `secure-keys.json` at mode 0o600 holding the secret in plaintext; one notice on stderr and nothing but the result on stdout; a value other than `file` is refused |
 
 The storage contract is the same on every backend: a value reads back byte-exact (base64, a leading dash, an embedded newline, quotes, `$` and backticks, unicode, 4 KB); a second set overwrites; delete then get returns null; a missing key returns null; two keys do not collide. The CLI itself only ever stores base64 text.
 
@@ -955,7 +958,8 @@ Implements the same `StoreAdapter` interface as S3, Bitwarden, Git, etc. Registe
 ### CLI (Daily Operations)
 Shipped under `rdc config remote`:
 - `rdc config remote enable`: link this config to the store (`--password` enrolls against a pre-provisioned password slot, with no browser). On a config that is already linked it enrolls this device again for the same store once the device can no longer open the config, and refuses while the enrollment still works. A re-enrollment replaces only the device-held credentials (slot secret, config token, wrapped CEK), keeps `storeId` and `configId`, pulls, and refreshes the cache; it never pushes or seeds. On Linux this is the path after every restart, because the kernel keyring that holds the slot secret is memory-only (see *Client-Side Secure Storage*).
-- `rdc config remote disable`: disconnect and write the config back to disk
+- `rdc config remote disable`: disconnect and write the config back to disk. Server-only: it pulls the newest server copy first, so a disable from a stale cache cannot lose another device's writes.
+- `rdc config remote disable --local`: unlink on this device without the server, for a config whose store copy is gone or whose account left the store. It writes the cached copy without its `remote` pointer, host-local sections included, after a confirmation that newer server data is not fetched (`--yes` in a run with no terminal), and removes this device's token file and slot secret. It refuses, with the file untouched, when the file holds no cached copy or when a master-password cache cannot be opened. `disable` and `enable` name it only from the states where the server path cannot work.
 - `rdc config remote refresh`: download and decrypt the latest config
 - `rdc config remote status`: show store info
 - `rdc config rotate-cek`: rotate the client-controlled encryption key
@@ -984,7 +988,7 @@ Config CRUD operations use rotating X-Config-Token header. Portal operations use
 }
 ```
 
-The token file contains only **references and wrapped keys**, and no plaintext secrets. The `passkey_secret` lives in platform-native secure storage indexed by `storageKeyId`. If native secure storage is unavailable (rare), the CLI falls back to a separate `secure-keys.json` file (0o600) in its state directory, never the token file, and prints no warning (see *Client-Side Secure Storage*).
+The token file contains only **references and wrapped keys**, and no plaintext secrets. The `passkey_secret` lives in platform-native secure storage indexed by `storageKeyId`. If native secure storage is unavailable, the CLI refuses and stores nothing; with `REDIACC_SECRET_STORE=file` the secret goes to a separate `secure-keys.json` file (0o600) in its state directory, never the token file (see *Client-Side Secure Storage*).
 
 ## Config Setup Portal Security
 
@@ -1021,7 +1025,7 @@ This prevents a rogue server from substituting the handoff public key in headles
 
 | Risk | Rationale |
 |------|-----------|
-| `passkey_secret` is static | Stored in native secure storage (not token file). Mitigated by rotating `serverToken` (limits damage window) and IP binding. On systems without native storage the fallback is `secure-keys.json` in the state directory, protected by file permissions (0o600) only and selected without a warning. |
+| `passkey_secret` is static | Stored in native secure storage (not token file). Mitigated by rotating `serverToken` (limits damage window) and IP binding. On systems without native storage the CLI refuses; the opt-in `REDIACC_SECRET_STORE=file` keeps it in `secure-keys.json` in the state directory, protected by file permissions (0o600) only. |
 | All config versions decryptable with same CEK | CEK compromise = full exposure by design. Rotate CEK if compromise suspected (re-encrypt all configs, re-distribute to members). |
 | `sdkMaster` rotation requires admin participation | Server can't rotate `sdkMaster` alone — the SDK layer is inside the CEK layer. An admin must pull configs (decrypt all 3 layers), server generates new `sdkMaster`, admin re-encrypts and pushes. Only needed if `sdkMaster` itself is compromised — for removed members, simply stop serving `sdk_derived` (no rotation needed). Time-windowed derivation limits captured key exposure to specific windows. |
 | The server serves the portal code | A server that ships modified JavaScript can read the CEK in the browser. Out of scope of the claim; closing it needs code the server does not serve (a signed extension or a native client). |
@@ -1035,7 +1039,7 @@ This prevents a rogue server from substituting the handoff public key in headles
 2. **Account server**: Passkey registration with PRF extension support + X25519 identity key storage + `storageKeyId` generation
 3. **Account server**: CEK handoff endpoints (admin encrypts for member's X25519 key, member accepts)
 4. **Account server**: Static config setup page with CSP + SRI
-5. **CLI**: Platform-native secure storage abstraction (`keyctl` / Keychain / DPAPI / file fallback)
+5. **CLI**: Platform-native secure storage abstraction (`keyctl` / Keychain / DPAPI / file by opt-in)
 6. **CLI**: `rediacc-store-adapter.ts` implementing `StoreAdapter` interface
 7. **CLI**: Browser-based setup flow (local loopback for passkey_secret handoff, store in native storage by `storageKeyId`)
 8. **CLI**: Device code flow with ephemeral X25519 handoff (headless mode)

@@ -463,7 +463,9 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
     relay.payload = handoff({ configId: undefined });
     server.configId = OTHER_CONFIG_ID;
 
-    expect((await refusal('enable')).message).toContain(CONFIG_ID);
+    const error = await refusal('enable');
+    expect(error.message).toContain(CONFIG_ID);
+    expect(error.message).toContain('rdc config remote disable --local');
     expect(pushSpy).not.toHaveBeenCalled();
     expect(secureMem.size).toBe(0);
   });
@@ -565,5 +567,64 @@ describe('config remote enable on a linked config: other lost and not-lost enrol
 
     expect(await refusal('enable')).toBeInstanceOf(RemoteTokenRefreshError);
     expect(relay.runs).toBe(0);
+  });
+
+  // Review 0021d122.2: the cured set is closed. A renewal that failed for a reason nobody listed says nothing about this device's credentials, and must not replace working ones.
+  it.each([
+    'refresh_failed',
+    'malformed_response',
+    'a_code_no_release_knows',
+    'rate_limited',
+    'login_invalid',
+    'login_scope',
+    'store_mismatch',
+  ])('starts no enrollment on the renewal refusal %s, and raises it as it came', async (code) => {
+    await enrolledDevice();
+    const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
+    server.failure = () => new RemoteTokenRefreshError(code, `renewal refused: ${code}`);
+    relay.payload = handoff();
+
+    const error = await refusal('enable');
+    expect(error).toBeInstanceOf(RemoteTokenRefreshError);
+    expect((error as RemoteTokenRefreshError).code).toBe(code);
+    expect(relay.runs).toBe(0);
+    expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
+    expect(await remoteTokenStorage.get(active.name)).toMatchObject({ token: 'rct_before' });
+    expect(secureMem.get(PASSKEY_KEY_ID)).toBe(SLOT_SECRET);
+  });
+
+  it.each(['stale_cek_generation', 'login_ip_mismatch'])(
+    'enrolls again on the renewal refusal %s, which a new enrollment cures',
+    async (code) => {
+      await enrolledDevice();
+      // The renewal is refused once, for the probe's pull; the enrollment's own pull then reaches the server.
+      server.failure = () => {
+        server.failure = null;
+        return new RemoteTokenRefreshError(code, `renewal refused: ${code}`);
+      };
+      relay.payload = handoff();
+
+      await rdc('enable');
+
+      expect(relay.runs).toBe(1);
+      expect(await remoteTokenStorage.get(active.name)).toMatchObject({ token: 'rct_fresh' });
+    }
+  );
+
+  // Review 0021d122.1: the credentials work and the store answers 404. No enrollment brings the config back, so the probe names the way out instead of a raw "Config not found".
+  it('names the local-only unlink when the credentials work and the store no longer holds the config', async () => {
+    await enrolledDevice();
+    const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
+    server.configId = OTHER_CONFIG_ID;
+    relay.payload = handoff();
+
+    const error = await refusal('enable');
+    expect(error.message).toContain('rdc config remote disable --local');
+    expect(error.message).toContain(CONFIG_ID);
+    expect(error.message).toContain(STORE_ID);
+    expect(error.message).not.toBe('Config not found');
+    expect(relay.runs).toBe(0);
+    expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
+    expect(secureMem.get(PASSKEY_KEY_ID)).toBe(SLOT_SECRET);
   });
 });
