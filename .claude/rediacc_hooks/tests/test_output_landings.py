@@ -167,7 +167,13 @@ UNREAD_FORMS = [
     ("_label", "cmd", "name", "want"), OPTION_FORMS, ids=[row[0] for row in OPTION_FORMS]
 )
 def test_a_listed_command_writes_through_its_own_spelling(_label, cmd, name, want):
-    assert _landings(cmd, name) == want
+    got = _landings(cmd, name)
+    if name in ("awk", "gawk", "mawk") and len(got) > len(want):
+        # A printing awk program that holds a redirect may write any operand (`_awk_may_redirect`), so after the landings the row pins, the reader lists the command's own remaining words and nothing else.
+        assert got[: len(want)] == want
+        assert all(word in cmd.split() for word, _how in got[len(want) :])
+        return
+    assert got == want
 
 
 @pytest.mark.parametrize(

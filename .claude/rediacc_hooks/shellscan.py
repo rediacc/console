@@ -3758,8 +3758,13 @@ def _whole_word_operands(spec, argv):
     return operands
 
 
-# A print or printf whose statement goes on to a `>` or a `|` followed by something that is not a string literal, or a `system(` call: the spellings by which an awk program writes somewhere its text does not name. A redirect into a literal is read from the literal itself.
-_AWK_PRINT_REDIRECT = re.compile(r"\bprintf?\b[^;}\n]*(?:>>?|\|)\s*[^\"\s>|]|\bsystem\s*\(")
+def _awk_may_redirect(word):
+    """Whether an awk program word can write somewhere its text does not name. THE RULE, NOT A PARSE (reviews 660ec7a0.1, f125e7ea.1, f125e7ea.2): a pattern that follows a print statement to its `>` was dodged twice in one round, by a `;` inside a string literal and by a target that starts with a literal. So nothing is followed: a word that holds a print or printf AND a `>` or `|` anywhere, or a `system(` call, or a `getline` beside a `|`, may redirect. A comparison inside a printing program reads the same and is refused with it (`$3 > 5 {print}`); a program that prints nothing redirects nothing (`$3 > 5`, `/a|b/{p=1} p`)."""
+    if re.search(r"\bsystem\s*\(", word):
+        return True
+    if "|" in word and re.search(r"\bgetline\b", word):
+        return True
+    return re.search(r"\bprintf?\b", word) is not None and (">" in word or "|" in word)
 
 
 def _awk_landings(argv, valued):
@@ -3788,8 +3793,8 @@ def _awk_landings(argv, valued):
         # A word that is not itself a program is an option or an assignment, and every `=` in it may open the value.
         parts = word.split("=")
         out.extend("=".join(parts[at:]) for at in range(1, len(parts)))
-    # A PROGRAM THAT WRITES CAN NAME ITS TARGET WITHOUT A LITERAL (review 660ec7a0.1): `print > ARGV[1]`, `print > FILENAME`, a variable built from either. Which operand it reaches is the program's own logic, so once a word redirects a print into something other than a literal, or calls `system`, every word that is neither an option nor a program is a landing. That refuses a program that reads one file and prints into another by name; it never allows one that writes the file it was handed. A `>` that compares and a `|` inside a pattern follow no print and are not redirects.
-    if any("FILENAME" in w or _AWK_PRINT_REDIRECT.search(w) for w in argv):
+    # A PROGRAM THAT WRITES CAN NAME ITS TARGET WITHOUT A LITERAL (`print > ARGV[1]`, `print > FILENAME`, a variable built from either), and which operand it reaches is the program's own logic. So once a word may redirect (`_awk_may_redirect`), every word that is neither an option nor a program is a landing. That refuses a printing program that also compares or pipes while it reads a protected file; it never allows one that writes the file it was handed.
+    if any("FILENAME" in w or _awk_may_redirect(w) for w in argv):
         out.extend(w for w, literals in found if literals is None and not w.startswith("-"))
     return [w for w in out if w], in_place
 
