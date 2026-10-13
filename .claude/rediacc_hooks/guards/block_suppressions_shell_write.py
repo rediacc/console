@@ -183,8 +183,9 @@ def _run_operands(run, argv):
     ):
         ops = [a for a in ops if "{}" not in a] + run.feed.split()
     elif run.feed and "xargs" in run.via:
-        # What xargs reads becomes this command's words, appended or put where the marker stands, so every fed word is an operand too: `echo a.py | xargs sed -i ...` named no file among sed's own words and was allowed.
-        ops = ops + run.feed.split()
+        # What xargs reads becomes this command's words, appended or put where the marker stands, so every fed word is an operand, alone and in the place of `{}`: `echo a.py | xargs sed -i ...` named no file among sed's own words and was allowed.
+        fed = run.feed.split()
+        ops = ops + fed + [a.replace("{}", word) for a in ops if "{}" in a for word in fed]
     return ops
 
 
