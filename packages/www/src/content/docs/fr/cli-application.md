@@ -7,7 +7,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "45817ef518e3ef75"
+sourceHash: "743a1b08b3b11067"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -228,8 +228,14 @@ rdc config remote enable [options]
 {{t:cli.commands.config.remote.disable.description}}
 
 ```bash
-rdc config remote disable
+rdc config remote disable [options]
 ```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--local` | {{t:cli.commands.config.remote.disable.optionLocal}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-config-remote-status"></a>
 #### status
