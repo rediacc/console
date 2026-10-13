@@ -405,6 +405,41 @@ SHELL_CASES = [
         ),
         False,
     ),
+    # Review 906a4d56.1 and .2: an awk option's value placed where gawk does not place it hid the program. Each refusal was allowed (rc 0) before; `-o` pretty-prints without running the program, and is refused with the rest because the reading no longer rests on which word that is.
+    ("gawk -p, then a program that redirects", "gawk -p '{print > \"%s\"}' /tmp/a" % R, True),
+    ("gawk -d, then a program that redirects", "gawk -d '{print > \"%s\"}' /tmp/a" % R, True),
+    ("gawk -o, then a program that redirects", "gawk -o '{print > \"%s\"}' /tmp/a" % R, True),
+    (
+        "gawk --profile, then a program that redirects",
+        "gawk --profile '{print > \"%s\"}' /tmp/a" % R,
+        True,
+    ),
+    ("gawk -W, then a program that redirects", "gawk -W lint '{print > \"%s\"}' /tmp/a" % R, True),
+    (
+        "mawk -W, then a program that redirects",
+        "mawk -W interactive '{print > \"%s\"}' /tmp/a" % R,
+        True,
+    ),
+    ("gawk -W dump-variables=", "gawk -W dump-variables=%s '{print}' /tmp/a" % R, True),
+    # The sweep of the class: xxd's options are whole words, tree hands `-o` a later word, and an awk writes beside its input through FILENAME.
+    ("xxd -ps, then its output operand", "xxd -ps /tmp/in %s" % R, True),
+    ("tree -Lo hands -o the second word", "tree -Lo 2 %s agent" % R, True),
+    ("awk writing beside FILENAME", "awk '{print > (FILENAME \".bak\")}' %s" % R, True),
+    ("gawk reads one", "gawk '{print $1}' %s" % R, False),
+    ("gawk -W lint reads one", "gawk -W lint '{print $1}' %s" % R, False),
+    ("gawk -d reads one", "gawk -d '{print $1}' %s" % R, False),
+    ("gawk -p with its file attached reads one", "gawk -p/tmp/prof '{print $1}' %s" % R, False),
+    ("awk splitting on a pipe reads one", "awk -F'|' '{print $2}' %s" % R, False),
+    ("awk comparing reads one", "awk '$3 > 0' %s" % R, False),
+    ("xxd -ps reads one", "xxd -ps %s" % R, False),
+    ("xxd -s -l reads one", "xxd -s 4 -l 16 %s" % R, False),
+    ("tree without -o", "tree -L 2 agent/reviews", False),
+    # A read this session ran for real: a program with a regex alternation and its own assignments, from inside the directory. A draft of this fix read what follows the program's `=` as a file and refused it.
+    (
+        "awk filtering findings from inside the directory",
+        "cd agent/reviews/1008-1 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md",
+        False,
+    ),
     (
         "a loop reading the records after a cd",
         "cd agent/reviews/1008-1 && grep -l open *.md | while read f; do head -1 $f; done",

@@ -55,7 +55,70 @@ OPTION_FORMS = [
         "awk",
         [(R, "option")],
     ),
-    ("gawk in place", "gawk -i inplace '{print}' %s" % R, "gawk", [(R, "option")]),
+    # In place, every word that is not an option may be a file gawk rewrites: the reading does not rest on which word is the program (review 906a4d56.1).
+    (
+        "gawk in place",
+        "gawk -i inplace '{print}' %s" % R,
+        "gawk",
+        [("inplace", "option"), ("{print}", "option"), (R, "option")],
+    ),
+    # Review 906a4d56.1: gawk's -o, -p and -d take a value only attached, so the word after them is the program. Each yielded nothing before.
+    ("gawk -p, then the program", "gawk -p '{print > \"%s\"}' /tmp/a" % R, "gawk", [(R, "option")]),
+    ("gawk -d, then the program", "gawk -d '{print > \"%s\"}' /tmp/a" % R, "gawk", [(R, "option")]),
+    ("gawk -o, then the program", "gawk -o '{print > \"%s\"}' /tmp/a" % R, "gawk", [(R, "option")]),
+    (
+        "gawk --profile, then the program",
+        "gawk --profile '{print > \"%s\"}' /tmp/a" % R,
+        "gawk",
+        [(R, "option")],
+    ),
+    ("gawk -d with its file attached", "gawk -d%s '{print}' /tmp/a" % R, "gawk", [(R, "option")]),
+    (
+        "gawk --dump-variables= with its file",
+        "gawk --dump-variables=%s '{print}' /tmp/a" % R,
+        "gawk",
+        [(R, "option")],
+    ),
+    (
+        "an attached value elsewhere is the only landing",
+        "gawk -p/tmp/prof '{print $1}' %s" % R,
+        "gawk",
+        [("/tmp/prof", "option")],
+    ),
+    # Review 906a4d56.2: -W takes a separate word in gawk and mawk, and hands gawk a long option.
+    (
+        "gawk -W, then the program",
+        "gawk -W lint '{print > \"%s\"}' /tmp/a" % R,
+        "gawk",
+        [(R, "option")],
+    ),
+    (
+        "mawk -W, then the program",
+        "mawk -W interactive '{print > \"%s\"}' /tmp/a" % R,
+        "mawk",
+        [(R, "option")],
+    ),
+    (
+        "gawk -W dump-variables=",
+        "gawk -W dump-variables=%s '{print}' /tmp/a" % R,
+        "gawk",
+        [(R, "option")],
+    ),
+    # The sweep of the same class: an option value placed where the tool does not place it.
+    (
+        "awk writing beside FILENAME",
+        "awk '{print > (FILENAME \".bak\")}' %s" % R,
+        "awk",
+        [(".bak", "option"), ('{print > (FILENAME ".bak")}', "option"), (R, "option")],
+    ),
+    ("xxd -ps is one flag", "xxd -ps /tmp/in %s" % R, "xxd", [(R, "option")]),
+    ("xxd -len takes the next word", "xxd -len 4 /tmp/in %s" % R, "xxd", [(R, "option")]),
+    (
+        "tree hands -o a later word",
+        "tree -Lo 2 %s agent" % R,
+        "tree",
+        [("2", "option"), (R, "option"), ("agent", "option")],
+    ),
 ]
 
 OPTION_CONTROLS = [
@@ -74,6 +137,16 @@ OPTION_CONTROLS = [
     ("awk reading", "awk -F: '{print $2}' %s" % R, "awk"),
     ("awk comparing", "awk '$3 > 0' %s" % R, "awk"),
     ("awk printing the path", "awk '{print \"%s\"}' /tmp/a" % R, "awk"),
+    ("awk printing FILENAME", "awk '{print FILENAME}' %s" % R, "awk"),
+    ("awk splitting on a pipe", "awk -F'|' '{print $2}' %s" % R, "awk"),
+    ("awk's own assignments are code", "awk '/^# /{p=0} /^# (a|b)/{p=1} p' %s" % R, "awk"),
+    ("gawk -W, then a program that reads", "gawk -W lint '{print $1}' %s" % R, "gawk"),
+    ("gawk -d, then a program that reads", "gawk -d '{print $1}' %s" % R, "gawk"),
+    ("gawk -L, then a program that reads", "gawk -L '{print $1}' %s" % R, "gawk"),
+    ("xxd -ps reading", "xxd -ps %s" % R, "xxd"),
+    ("xxd with value options reading", "xxd -s 4 -l 16 %s" % R, "xxd"),
+    ("xxd with an attached value reading", "xxd -l16 %s" % R, "xxd"),
+    ("tree without -o", "tree -L 2 agent/reviews", "tree"),
     ("a kept verdict", "rm %s" % R, "rm"),
     ("a builtin's assignment", "export P=%s" % R, "export"),
 ]
