@@ -4,7 +4,7 @@
  * Every consumer test replaces the module with `vi.mock`, so until this file existed no test ran `keyctl`, `security` or PowerShell at all. Three groups:
  *
  *   1. The key allowlist, on every platform.
- *   2. The native backend of the host OS (keyctl on Linux, Keychain on macOS, DPAPI on Windows): the storage contract, backend selection, a cross-process read, and what is left at rest.
+ *   2. The native backend of the host OS (keyctl on Linux, Keychain on macOS, DPAPI on Windows): the storage contract, backend selection, a cross-process read, what is left at rest, and that the secret is on no command line (Linux and macOS, through a recording wrapper on PATH; the Windows half is secure-storage.tools.test.ts, because a script cannot stand in for `powershell.exe` there).
  *   3. The file backend, which only `REDIACC_SECRET_STORE=file` selects (operator ruling 2026-10-13: no machine gets a disk-held secret without choosing it).
  *   4. The refusal: with no usable native backend and no opt-in, selection throws and stores nothing. `keyctl` off PATH, and a session keyring that cannot read the user keyring back.
  *
@@ -15,8 +15,9 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -27,7 +28,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getRediaccDirs } from '@rediacc/shared/paths';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -129,8 +130,8 @@ process.stderr.write(`${status} ${runNative ? `(${probe.detail})` : skipNote}\n`
 // Every native test goes through here, so the suite can prove afterwards that each one ran.
 const declaredNative: string[] = [];
 const ranNative = new Set<string>();
-function nativeIt(name: string, fn: () => Promise<void> | void, only?: NodeJS.Platform): void {
-  const applies = only === undefined || only === process.platform;
+function nativeIt(name: string, fn: () => Promise<void> | void, ...only: NodeJS.Platform[]): void {
+  const applies = only.length === 0 || only.includes(process.platform);
   if (applies) declaredNative.push(name);
   it.skipIf(!runNative || !applies)(name, async () => {
     ranNative.add(name);
@@ -156,9 +157,49 @@ function filesContaining(root: string, needles: readonly string[]): string[] {
   });
 }
 
-/** The secret as it could sit in a file: raw, and base64 of the raw bytes. */
+/** The secret as it could sit in a file or on a command line: raw, and base64 and hex of the raw bytes. */
 function atRestForms(value: string): string[] {
-  return [value, Buffer.from(value, 'utf-8').toString('base64')];
+  const bytes = Buffer.from(value, 'utf-8');
+  return [value, bytes.toString('base64'), bytes.toString('hex')];
+}
+
+/** The DPAPI file of a key, computed here and not asked of the module: SHA-256 of the key, in hex. */
+function dpapiFile(key: string): string {
+  const name = createHash('sha256').update(key, 'utf-8').digest('hex');
+  return join(getRediaccDirs().state, 'keys', `${name}.dpapi`);
+}
+
+/** The first `name` on PATH, as an absolute path. */
+function toolOnPath(name: string): string {
+  for (const dir of (process.env.PATH ?? '').split(delimiter)) {
+    if (dir !== '' && existsSync(join(dir, name))) return join(dir, name);
+  }
+  throw new Error(`${name} is not on PATH`);
+}
+
+/**
+ * A directory to put first on PATH: its `tool` writes every argument it was started with to `log`, one per line, and then becomes the real tool. What the log holds is what `ps` could have shown.
+ */
+function argvRecorder(tool: string): { bin: string; log: string } {
+  const bin = mkdtempSync(join(tmpdir(), 'rdc-sstest-argv-'));
+  const log = join(bin, 'argv.log');
+  const script = [
+    '#!/bin/sh',
+    `for arg in "$@"; do printf '%s\\n' "$arg"; done >> '${log}'`,
+    `exec '${toolOnPath(tool)}' "$@"`,
+    '',
+  ].join('\n');
+  writeFileSync(join(bin, tool), script);
+  chmodSync(join(bin, tool), 0o755);
+  return { bin, log };
+}
+
+/** The password of one Keychain item, read with the tool and not the module; null when the item is absent. */
+function keychainItem(key: string, service: string): string | null {
+  const run = spawnSync('security', ['find-generic-password', '-a', key, '-s', service, '-w'], {
+    encoding: 'utf-8',
+  });
+  return run.status === 0 ? run.stdout.replace(/\n$/, '') : null;
 }
 
 /** The per-file temporary home that holds the Linux config, state and cache directories. */
@@ -291,10 +332,13 @@ const VALUE_CLASSES: readonly (readonly [string, string])[] = [
   ['the production shape (base64 of 32 bytes)', secret()],
   ['a leading dash (base64url alphabet)', `-${secret().replaceAll('+', '-').replaceAll('/', '_')}`],
   ['an embedded newline', 'line one\nline two'],
+  ['a trailing newline, CRLF and outer spaces', '  padded\r\nvalue \n'],
+  ['only hex digits (what `security` prints for bytes it will not show)', '6c696e65206f6e650a'],
   ['single and double quotes', `it's a "quoted" value`],
   ['a dollar sign and backticks', 'cost $HOME $(id) `id` ${PATH}'],
   ['unicode', 'şifre-пароль-密码-🔑'],
   ['4 KB', randomBytes(3072).toString('base64')],
+  ['3 KB of unicode lines (two Keychain items)', 'şifre-密码-🔑\n'.repeat(160)],
 ];
 
 type Register = (name: string, fn: () => Promise<void> | void) => void;
@@ -542,50 +586,170 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
   );
 
   nativeIt(
-    'Windows: a tampered ciphertext file reads as null and executes nothing',
+    'Windows: a tampered key file reads as null and executes nothing',
     async () => {
       const storage = getSecureStorage();
       const canaryDir = mkdtempSync(join(tmpdir(), 'rdc-sstest-canary-'));
       const canary = join(canaryDir, 'pwned');
       const key = freshKey('tampered');
-      await storage.set(key, secret());
-      const file = join(getRediaccDirs().state, 'keys', `${key.replaceAll(':', '_')}.dpapi`);
-      expect(existsSync(file)).toBe(true);
-      writeFileSync(file, `'))); New-Item -ItemType File -Path '${canary}'; #`);
-      expect(await storage.get(key)).toBeNull();
-      expect(existsSync(canary)).toBe(false);
+      const value = secret();
+      await storage.set(key, value);
+      const file = dpapiFile(key);
+      const intact = readFileSync(file, 'utf-8');
+      // Control: the file this test is about to damage is the one the module reads.
+      expect(await storage.get(key)).toBe(value);
+
+      const breakout = `'))); New-Item -ItemType File -Path '${canary}'; #`;
+      // Not JSON at all, then JSON whose ciphertext is script text, then ciphertext that is base64 and not a DPAPI blob.
+      const damaged = [
+        breakout,
+        JSON.stringify({ key, blob: breakout }),
+        JSON.stringify({ key, blob: Buffer.from(breakout).toString('base64') }),
+      ];
+      for (const content of damaged) {
+        writeFileSync(file, content);
+        expect(await storage.get(key)).toBeNull();
+        expect(existsSync(canary)).toBe(false);
+      }
+      writeFileSync(file, intact);
+      expect(await storage.get(key)).toBe(value);
       rmSync(canaryDir, { recursive: true, force: true });
     },
     'win32'
   );
 
   nativeIt(
-    'Windows: the key file holds DPAPI ciphertext, never the secret or its base64',
+    'Windows: the key file holds the key and DPAPI ciphertext, never the secret, its base64 or its hex',
     async () => {
       const key = freshKey('at-rest');
       const value = secret();
       await getSecureStorage().set(key, value);
-      const keysDir = join(getRediaccDirs().state, 'keys');
-      const file = join(keysDir, `${key.replaceAll(':', '_')}.dpapi`);
+      const file = dpapiFile(key);
       expect(existsSync(file)).toBe(true);
-      expect(readFileSync(file, 'utf-8').trim()).toMatch(/^[A-Za-z0-9+/]+=*$/);
-      expect(filesContaining(keysDir, atRestForms(value))).toEqual([]);
+      const stored = JSON.parse(readFileSync(file, 'utf-8')) as { key: string; blob: string };
+      expect(stored.key).toBe(key);
+      expect(stored.blob).toMatch(/^[A-Za-z0-9+/]+=*$/);
+      // A DPAPI blob is longer than what it protects.
+      expect(Buffer.from(stored.blob, 'base64').length).toBeGreaterThan(Buffer.from(value).length);
+      expect(filesContaining(dirname(file), atRestForms(value))).toEqual([]);
     },
     'win32'
   );
 
   nativeIt(
-    'Windows, TODAY: two allowed keys that differ only in ":" against "_" share one file',
+    'Windows: keys that differ only in ":" against "_", or only in letter case, are distinct and have distinct files',
     async () => {
       const storage = getSecureStorage();
       const colon = freshKey('alias');
       const underscore = colon.replaceAll(':', '_');
+      const upper = colon.toUpperCase();
       createdKeys.add(underscore);
-      const value = secret();
-      await storage.set(colon, value);
-      expect(await storage.get(underscore)).toBe(value);
+      createdKeys.add(upper);
+      const values = new Map([colon, underscore, upper].map((key) => [key, secret()]));
+      expect(new Set([...values.keys()].map(dpapiFile)).size).toBe(3);
+      for (const [key, value] of values) await storage.set(key, value);
+      for (const [key, value] of values) expect(await storage.get(key)).toBe(value);
+      await storage.delete(colon);
+      expect(await storage.get(colon)).toBeNull();
+      expect(await storage.get(underscore)).toBe(values.get(underscore));
+      expect(await storage.get(upper)).toBe(values.get(upper));
     },
     'win32'
+  );
+
+  nativeIt(
+    'Windows: a key file copied under the name of another key does not answer for it',
+    async () => {
+      const storage = getSecureStorage();
+      const owner = freshKey('owner');
+      const other = freshKey('other');
+      await storage.set(owner, secret());
+      writeFileSync(dpapiFile(other), readFileSync(dpapiFile(owner)));
+      expect(await storage.get(other)).toBeNull();
+      rmSync(dpapiFile(other));
+    },
+    'win32'
+  );
+
+  nativeIt(
+    'macOS: an entry stored before the armour (the value as given, under `rdc-config`) still reads, and the next set replaces it',
+    async () => {
+      const storage = getSecureStorage();
+      const key = freshKey('legacy');
+      const legacy = secret();
+      // The command the earlier code ran. A throwaway value, so its place on this command line gives nothing away.
+      execFileSync('security', [
+        'add-generic-password',
+        '-a',
+        key,
+        '-s',
+        'rdc-config',
+        '-w',
+        legacy,
+        '-U',
+      ]);
+      expect(keychainItem(key, 'rdc-config')).toBe(legacy);
+      expect(await storage.get(key)).toBe(legacy);
+
+      const next = secret();
+      await storage.set(key, next);
+      expect(await storage.get(key)).toBe(next);
+      expect(keychainItem(key, 'rdc-config')).toBe(
+        `rdc-b64.1.${Buffer.from(next).toString('base64')}`
+      );
+    },
+    'darwin'
+  );
+
+  nativeIt(
+    'macOS: a long value spans several items, and a shorter set or a delete leaves none of them behind',
+    async () => {
+      const storage = getSecureStorage();
+      const key = freshKey('parts');
+      const long = randomBytes(6000).toString('base64');
+      await storage.set(key, long);
+      expect(await storage.get(key)).toBe(long);
+      expect(keychainItem(key, 'rdc-config')).toMatch(/^rdc-b64\.4\.[A-Za-z0-9+/]{3072}$/);
+      expect(keychainItem(key, 'rdc-config:3')).not.toBeNull();
+      expect(keychainItem(key, 'rdc-config:4')).toBeNull();
+
+      const short = secret();
+      await storage.set(key, short);
+      expect(await storage.get(key)).toBe(short);
+      expect(keychainItem(key, 'rdc-config:1')).toBeNull();
+
+      await storage.set(key, long);
+      await storage.delete(key);
+      expect(await storage.get(key)).toBeNull();
+      for (const service of ['rdc-config', 'rdc-config:1', 'rdc-config:2', 'rdc-config:3']) {
+        expect(keychainItem(key, service)).toBeNull();
+      }
+    },
+    'darwin'
+  );
+
+  nativeIt(
+    'Linux, macOS: the secret is on no command line of the native tool, in any encoding',
+    () => {
+      const tool = IS_LINUX ? 'keyctl' : 'security';
+      const recorder = argvRecorder(tool);
+      const key = freshKey('argv');
+      const value = secret();
+      const child = inChild('roundtrip', key, value, {
+        env: { PATH: `${recorder.bin}${delimiter}${process.env.PATH ?? ''}` },
+      });
+      const recorded = readFileSync(recorder.log, 'utf-8');
+      rmSync(recorder.bin, { recursive: true, force: true });
+
+      expect(child).toMatchObject({ type: EXPECTED_NATIVE, value, error: null });
+      // Control: the recorder saw the calls of this round trip, the write included. Without that an empty log would pass.
+      const args = recorded.split('\n');
+      expect(args).toContain(key);
+      expect(args).toContain(IS_LINUX ? 'padd' : '-i');
+      for (const form of atRestForms(value)) expect(recorded).not.toContain(form);
+    },
+    'linux',
+    'darwin'
   );
 });
 
