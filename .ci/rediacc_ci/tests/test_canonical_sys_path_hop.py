@@ -706,3 +706,41 @@ def test_every_printed_python_m_command_runs_from_the_repository_root(
         module,
         got.stderr,
     )
+
+
+_SPAWN_AFTER_CHDIR = (
+    "import os, subprocess, sys\n"
+    "import rediacc_ci\n"
+    "os.chdir(sys.argv[1])\n"
+    "sys.exit(subprocess.call([sys.executable, '-c', 'import rediacc_ci']))\n"
+)
+
+
+def test_a_relative_pythonpath_survives_a_chdir_before_a_sibling_is_spawned(tmp_path) -> None:
+    """The CLI build's failure, in small: started as `PYTHONPATH=.ci python3 -m rediacc_ci.<x>`, a module changes directory and starts a sibling module, whose import of the package must still resolve."""
+    root = paths.repo_root()
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    done = subprocess.run(
+        [sys.executable, "-c", _SPAWN_AFTER_CHDIR, str(tmp_path)],
+        cwd=root,
+        env={**env, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr[-600:]
+    # CONTROL: the same child without the package imported first keeps the relative entry and cannot find it.
+    bare = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            _SPAWN_AFTER_CHDIR.replace("import rediacc_ci\n", "", 1),
+            str(tmp_path),
+        ],
+        cwd=root,
+        env={**env, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert bare.returncode != 0
