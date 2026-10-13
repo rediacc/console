@@ -5,9 +5,12 @@ The differential files drive each port as a subprocess against its bash twin on 
 
 from __future__ import annotations
 
+import inspect
 import json
+import re
 import subprocess
 import typing
+from pathlib import Path
 
 import pytest
 
@@ -142,3 +145,86 @@ def test_the_universe_drill_builds_its_cli_commands_from_the_drills_root() -> No
     assert fake.calls == [
         (["/repo/rdc.sh", "config", "current", "-o", "json"], {"REDIACC_CONFIG": "drill-a"})
     ]
+
+
+class _FakeCheck:
+    """Stands in for the `rotation check` child: stderr lines and an exit code."""
+
+    def __init__(self, rc: int, stderr: str) -> None:
+        self.returncode = rc
+        self.stderr = iter(stderr.splitlines(keepends=True))
+
+    def __enter__(self) -> typing.Self:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+
+def _fake_check(monkeypatch: pytest.MonkeyPatch, rc: int, stderr: str) -> None:
+    def popen(*_args: object, **_kwargs: object) -> _FakeCheck:
+        return _FakeCheck(rc, stderr)
+
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", popen)
+
+
+_UNCHECKED = "! could not check 1 credential (NOT drift):\n  otlp-bench: observability query failed: ssh exit 255: Permission denied (publickey).\n"
+
+
+def test_a_rotation_check_refuses_on_could_not_check_naming_the_credential_and_cause(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The comparison must always run: an unread credential refuses the push, is worded as not-drift, and is never answered with "rotate".
+    _fake_check(monkeypatch, 2, _UNCHECKED)
+    with pytest.raises(deploy_bench.DeployError) as caught:
+        deploy_bench._rotation_check(Path("."))
+    message = str(caught.value)
+    assert "not checked, otlp-bench: observability query failed: ssh exit 255" in message
+    assert "NOT drift" in message
+    assert "rotation rotate" not in message
+    assert "drift detected" not in message
+
+
+def test_a_rotation_check_has_no_way_to_proceed_unchecked() -> None:
+    # No parameter, flag or environment name may reopen the bench exception that let an unchecked push through.
+    assert list(inspect.signature(deploy_bench._rotation_check).parameters) == ["root"]
+    assert "proceed_on_unchecked" not in inspect.getsource(deploy_bench)
+
+
+def test_a_rotation_check_passes_when_in_sync(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The control for the refusals above: exit 0 returns without raising.
+    _fake_check(monkeypatch, 0, "")
+    deploy_bench._rotation_check(Path("."))
+
+
+def test_a_rotation_check_refuses_on_drift_and_on_an_unknown_exit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _fake_check(monkeypatch, 1, "")
+    with pytest.raises(deploy_bench.DeployError, match="rotation drift detected"):
+        deploy_bench._rotation_check(Path("."))
+    _fake_check(monkeypatch, 3, "")
+    with pytest.raises(deploy_bench.DeployError, match="exit 3"):
+        deploy_bench._rotation_check(Path("."))
+
+
+def test_deploy_bench_is_the_only_caller_of_rotation_check() -> None:
+    # No production deploy path consumes `rotation check` today. Should one be added it must be listed here deliberately, and it must refuse on every non-zero exit, as this one does.
+    root = Path(__file__).resolve().parents[3]
+    pattern = re.compile(r"rotation[\"',\s]+check|rotation check")
+    callers = set()
+    for base in (".ci/rediacc_ci", "scripts", ".github/workflows"):
+        for path in (root / base).rglob("*"):
+            if path.suffix not in {".py", ".sh", ".yml", ".yaml"} or "tests" in path.parts:
+                continue
+            if pattern.search(path.read_text(errors="ignore")):
+                callers.add(str(path.relative_to(root)))
+    invokers = {c for c in callers if _invokes_rotation_check(root / c)}
+    assert invokers == {".ci/rediacc_ci/ops/deploy_bench.py"}
+
+
+def _invokes_rotation_check(path: Path) -> bool:
+    text = path.read_text(errors="ignore")
+    return bool(re.search(r"\[[^\]]*\"rotation\",\s*\"check\"", text)) or bool(
+        re.search(r"^\s*[^#\n]*run\.sh\s+rotation\s+check", text, re.MULTILINE)
+    )
