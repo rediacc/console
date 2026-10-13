@@ -123,7 +123,7 @@ import time
 
 from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls, git_isolated
-from rediacc_ci.core import gh_retry
+from rediacc_ci.core import common, gh_retry
 from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_ORIGIN, HOMEBREW_TAP_REPO, RENET_REPO
 
 GH_HOST = GH_ORIGIN.removeprefix("https://")
@@ -493,6 +493,18 @@ def submodule_initialised(root: pathlib.Path, sm_path: str) -> bool:
     return marker.is_dir() or marker.is_file()
 
 
+def require_initialised(
+    root: pathlib.Path, sm_path: str, env: dict[str, str] | None = None
+) -> bool:
+    """True when `sm_path` is checked out; otherwise `common.require_submodule`'s answer.
+
+    The job that runs this gate checks every submodule out (`submodules: true`), so a submodule missing there is a lost checkout, not a choice. It used to be a warning and a `continue`, which left the gate green having verified nothing about that submodule. Now it is the shared three-way guard: absent locally warns and returns False (the caller skips, as before), absent under `CI=true` raises `common.RefusalError` for the caller to count as an error.
+    """
+    if submodule_initialised(root, sm_path):
+        return True
+    return common.require_submodule(root / sm_path / ".git", "Submodule %s" % sm_path, env=env)
+
+
 def check_on_main(root: pathlib.Path) -> int:
     """The stronger rule that only applies on main. Returns the exit code.
 
@@ -501,8 +513,13 @@ def check_on_main(root: pathlib.Path) -> int:
     log.step("On main: asserting every submodule pointer is on the submodule's main")
     main_errors = 0
     for sm_path in SUBMODULE_ORDER:
-        if not submodule_initialised(root, sm_path):
-            log.warn("Submodule %s not initialized - cannot verify its pointer" % sm_path)
+        try:
+            present = require_initialised(root, sm_path)
+        except common.RefusalError as refusal:
+            refusal.report()
+            main_errors += 1
+            continue
+        if not present:
             continue
         sm_commit = gitlink_at(root, "HEAD", sm_path)
         if not sm_commit:
@@ -566,8 +583,13 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     for sm_path in SUBMODULE_ORDER:
-        if not submodule_initialised(root, sm_path):
-            log.warn("Submodule %s not initialized - skipping" % sm_path)
+        try:
+            present = require_initialised(root, sm_path)
+        except common.RefusalError as refusal:
+            refusal.report()
+            errors += 1
+            continue
+        if not present:
             warnings += 1
             continue
 
@@ -802,6 +824,22 @@ def selftest() -> int:
             "CONTROL: a .git FILE (a real submodule checkout) counts too",
             submodule_initialised(root, "private/renet"),
         )
+
+        # -- require_initialised: absent is a skip locally, a refusal in CI --
+        ctl.truthy(
+            "MIRROR: a checked-out submodule is present whatever CI says",
+            require_initialised(root, "private/renet", env={"CI": "true"}),
+        )
+        ctl.falsy(
+            "MIRROR: an absent submodule outside CI is a skip, not a refusal",
+            require_initialised(root, "private/account", env={}),
+        )
+        try:
+            require_initialised(root, "private/account", env={"CI": "true"})
+            refused = False
+        except common.RefusalError:
+            refused = True
+        ctl.truthy("PLANT: an absent submodule under CI=true is a refusal, never a skip", refused)
 
         # -- submodule_branch, including the detached sentinel --------------
         ctl.check(

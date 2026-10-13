@@ -112,6 +112,7 @@ FAKE_RUN_SH = """#!{py}
 import json, os, sys
 with open(os.environ["FAKE_LOG"], "a") as fh:
     fh.write(json.dumps({{"tool": "run.sh", "argv": sys.argv[1:]}}) + "\\n")
+sys.stderr.write(os.environ.get("FAKE_ROTATION_STDERR", ""))
 sys.exit(int(os.environ.get("FAKE_ROTATION_RC", "0")))
 """
 
@@ -190,7 +191,6 @@ class World:
         for rel in (
             "scripts/ops/deploy-bench.sh",
             "scripts/ops/lib/cf-auth.sh",
-            ".ci/scripts/lib/common.sh",
             ".ci/config/well-known.env",
             ".ci/config/well-known.generated.sh",
             "scripts/lib/well-known.sh",

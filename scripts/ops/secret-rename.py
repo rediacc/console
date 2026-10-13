@@ -300,7 +300,7 @@ def main() -> int:
     except (OSError, ValueError, KeyError) as exc:
         print(f"REFUSING: cannot read .ci/config/bws-secret-map.json ({exc})", file=sys.stderr)
         return 1
-    # ONLY names the cutover will actually fetch from Bitwarden. A rename whose SOURCE is not a GitHub org secret is a local-file rename with no store counterpart -- SES_AK_ID/SES_AK_SECRET live only in private/account/.env and are read by the rotation tool itself, so demanding a map entry for AWS_IAM_ADMIN_* would block the rename on creating a secret nothing fetches. Getting this
+    # ONLY names the cutover will actually fetch from Bitwarden. A rename whose SOURCE is not a GitHub org secret is a local-file rename with no store counterpart -- SES_AK_ID/SES_AK_SECRET are read by the rotation tool itself, so demanding a map entry for AWS_IAM_ADMIN_* would block the rename on creating a secret nothing fetches. Getting this
     # wrong in the strict direction is still a refusal to act, which is why it is re-derived rather than hand-listed.
     try:
         reach = json.loads((ROOT / ".ci" / "config" / "secret-reachability.json").read_text())[

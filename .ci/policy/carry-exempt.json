@@ -48,6 +48,10 @@
     {
       "id": "check:ci-renet",
       "reason": "Delegates to private/renet/.ci/ci.sh quality, which runs Go with GOTOOLCHAIN=auto and can fetch toolchains and modules, so the result can move without any tracked input changing."
+    },
+    {
+      "id": "check:ci-pr-condition-ledger",
+      "reason": "Asks GitHub whether each PR that a BLOCKER clause names has merged, so its verdict turns red when another PR merges while every tracked input stays byte-identical; a carried green would hide exactly that."
     }
   ]
 }

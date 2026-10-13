@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Both sides of the `core.devbox` port differential, in one file.
+"""The port side of the `core.devbox` differential. The bash side (`.ci/lib/devbox.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.devbox.jsonl`.
 
 WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules on whether a port kept the verdict. It needs each side to PRINT what it observed, because the thing being compared is a finding multiset and not a return value. This module is the printer, and it can print either side:
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.devbox_shadow_driver --side old --twin .ci/lib/devbox.sh --port .ci/rediacc_ci/core/devbox.py <scenario>
-        drives the BASH: sources `.ci/lib/devbox.sh` through the same prelude `.ci/rediacc_ci/setup/bridge.py` uses, and calls the twin's own functions.
-
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.devbox_shadow_driver --side new --twin .ci/lib/devbox.sh --port .ci/rediacc_ci/core/devbox.py <scenario>
-        drives the PYTHON: `rediacc_ci.core.devbox`.
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.devbox_shadow_driver --side new --port .ci/rediacc_ci/core/devbox.py <scenario>
+        drives the PYTHON: `rediacc_ci.core.devbox`. While the bash existed, `--side old --twin .ci/lib/devbox.sh` drove it through the prelude `.ci/rediacc_ci/setup/bridge.py` used, and the ledger rows under `.ci/shadow/` record both commands.
 
 RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invocation puts `.ci/rediacc_ci/core` on `sys.path[0]` and nothing on it can find `rediacc_ci`, so the file would have to open with a hand-written `sys.path.insert`. `test_canonical_sys_path_hop.py` refuses exactly that, and `PYTHONPATH=.ci` plus `-m` removes the need rather than baselining it.
 
@@ -81,7 +78,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-import tempfile
 import threading
 from typing import Any, Self, cast
 
@@ -93,50 +89,32 @@ OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
 
-# The prelude `.ci/rediacc_ci/setup/bridge.py:35-39` runs before it dispatches anything, which is the real load path for this library: `run-legacy.sh` pulls in `constants.sh`, `toolchain.sh`, `local-common.sh` and `service.sh` and defines nothing else, and `devbox.sh` is sourced on top exactly as the `setup` arm does.
-PRELUDE = r"""
-set -euo pipefail
-ROOT_DIR="$R"
-source "$ROOT_DIR/.ci/config/constants.sh"
-source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
-source "$ROOT_DIR/.ci/lib/local-common.sh"
-source "$ROOT_DIR/.ci/lib/service.sh"
-source "$ROOT_DIR/.ci/lib/devbox.sh"
+# THE RECORDING HOST'S IDENTITY, pinned for every later one. The frozen transcripts were recorded by uid 1000, gid 1000 on a host with a `/run/user/1000` it owned, and they carry all three: the state file's `uid=`/`gid=`, the derived tag `uid1000-gid1000-...`, the `HOST_UID`/`HOST_GID` build args and run env, and the lease pool `/run/user/1000/rediacc-cores`. The port read them from the running host until 2026-10-13, so the differential passed only where the suite ran as 1000:1000: GitHub's runner is uid 1001 (run 38389205702, seven tests), and a container or a user namespace has no `/run/user/<uid>` at all.
+# The port now takes its ids at construction (`Devbox(host_ids=...)`), and `test_core_devbox.py::test_the_host_ids_are_the_running_users_by_default` covers the default this pin replaces.
+GOLDEN_HOST_IDS = (1000, 1000)
+GOLDEN_RUNTIME_DIR = "/run/user/%d" % GOLDEN_HOST_IDS[0]
+# THE RECORDING HOST'S DEVICES AND SOCKET, pinned for the same reason. `devbox_up` adds `--device /dev/kvm`, `--device /dev/net/tun`, the docker socket bind and the lease pool bind only where the host has each, and the frozen `up-create` and `up-existing` transcripts carry all four. The port asked the running host until 2026-10-13, so those two scenarios failed wherever one was missing: on GitHub's runner the pool's parent `/run/user/1000` does not exist (run 38409515814), and a container has no `/dev/kvm`.
+# `test_core_devbox.py::test_up_reads_the_host_by_default` covers the defaults these pins replace.
+GOLDEN_HOST_NODES = ("/dev/kvm", "/dev/net/tun")
+GOLDEN_DOCKER_SOCKET = "/var/run/docker.sock"
 
-norm() {
-    local s="$1"
-    s="${s//$W/<work>}"
-    s="${s//$R/<repo>}"
-    s="${s//$HOME/<home>}"
-    # The release-age cutoff moves with the clock, and the two sides compute it seconds apart. The KEY stays, so a side that dropped the build-arg still diverges.
-    local cutoff='NPM_BEFORE=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z'
-    while [[ "$s" =~ $cutoff ]]; do s="${s/"${BASH_REMATCH[0]}"/NPM_BEFORE=<cutoff>}"; done
-    printf '%s' "$s"
-}
 
-emit() { printf 'obs %s\n' "$(norm "$1")"; }
+class GoldenHostDevbox(devbox.Devbox):
+    """The port as the recording host saw it: the one answer about the HOST's filesystem is the recorded one. Everything else is `Devbox`'s own, so a plant on `devbox.Devbox` still shows."""
 
-# `<file>: line <N>: $1: unbound variable` names a line INSIDE the twin. The message is the twin's real behaviour and is compared; the file-and-line stamp in front of it is not reproducible by a port and is dropped on both sides. `[^ ]*` rather than `.*` so a message that itself contained the phrase could not eat the part being compared.
-strip_loc() { printf '%s' "$1" | sed -E 's|^[^ ]*: line [0-9]+: ||; s|^(.*Still waiting for: .*) \([0-9]+s\)$|\1 (Ns)|'; }
+    def owns_runtime_dir(self, runtime: str) -> bool:
+        return runtime == GOLDEN_RUNTIME_DIR
 
-# THE ANSWER IS COMPARED AS HEX, never as text. `devbox_slugify` prints a bare newline for an empty answer, and an observation carrying that directly would be indistinguishable from an observation carrying nothing. `-v` so a run of repeated bytes is not abbreviated to `*`.
-hexfile() { LC_ALL=C od -An -v -tx1 <"$1" | LC_ALL=C tr -d ' \n'; }
+    # The recording host had all four: `/dev/kvm`, `/dev/net/tun`, a docker socket, and the lease pool under its runtime dir. `lease_dir_ready` answers for the recorded pool ONLY, and never touches the disk: pinned to uid 1000 it would otherwise `mkdir` under a real `/run/user/1000` on whichever host ran the suite.
+    def has_host_node(self, path: str) -> bool:
+        return path in GOLDEN_HOST_NODES
 
-# rc first, then stdout as hex, then stderr as text, so the two sides cannot differ on ORDER for a reason that is the harness rather than the subject. The subshell keeps a `set -u` death from taking this driver down with it, which is exactly what the `arity` scenario measures.
-probe() {
-    local name="$1"
-    shift
-    local rc l
-    # NOT `if ( set -e; "$@" ); then`, and that spelling cost a wrong measurement in the `core.account` differential before it was fixed. A command in an `if` CONDITION runs with errexit suppressed, and the suppression propagates into a subshell created there, so the inner `set -e` is INERT: the trap `docs/agent-reference/TRAPS.md` calls errexit-rearmed-in-a-tested-command.
-    set +e
-    ( set -e; "$@" ) >"$W/.probe.out" 2>"$W/.probe.err"
-    rc=$?
-    set -e
-    emit "$name rc=$rc out=$(hexfile "$W/.probe.out")"
-    # `|| [[ -n "$l" ]]` IS NOT DECORATION. A bare `while IFS= read -r l` DROPS a final line that has no trailing newline, and without it the BASH side would under-report a message the twin really printed while the Python side reported it.
-    while IFS= read -r l || [[ -n "$l" ]]; do emit "$name err| $(strip_loc "$l")"; done <"$W/.probe.err"
-}
-"""
+    def has_host_socket(self, path: str) -> bool:
+        return path == GOLDEN_DOCKER_SOCKET
+
+    def lease_dir_ready(self, path: str) -> bool:
+        return path == GOLDEN_RUNTIME_DIR + "/rediacc-cores"
+
 
 # The prefix `strip_loc` removes above, applied identically on the port side, where it is a no-op because nothing in Python emits a bash source location.
 BASH_LOCATION_RE = re.compile(r"^[^ ]*: line [0-9]+: ")
@@ -510,104 +488,19 @@ ARITY_ARGS = ("one", "two", "three", "four")
 ARITY_MAX = len(ARITY_ARGS)
 
 
-# --------------------------------------------------------------------------- the old side ---------------------------------------------------------------------------
-
-SLUG_BODY = r"""
-probe slug-noarg devbox_slugify
-i=0
-while IFS= read -r -d '' value; do
-    probe "slug-$i" devbox_slugify "$value"
-    i=$((i + 1))
-done <"$W/slug.bin"
-emit "count slug=$i"
-"""
-
-# One body for both three-argument functions: the loops are identical and only the name changes, so a second copy would be a second thing to keep in step.
-CASE_BODY = r"""
-probe %(fn)s-noargs %(fn)s
-i=0
-while IFS= read -r -d '' a; do
-    probe "%(fn)s-1-$i" %(fn)s "$a"
-    i=$((i + 1))
-done <"$W/one.bin"
-j=0
-while IFS= read -r -d '' a && IFS= read -r -d '' b; do
-    probe "%(fn)s-2-$j" %(fn)s "$a" "$b"
-    j=$((j + 1))
-done <"$W/two.bin"
-k=0
-while IFS= read -r -d '' a && IFS= read -r -d '' b && IFS= read -r -d '' c; do
-    probe "%(fn)s-3-$k" %(fn)s "$a" "$b" "$c"
-    k=$((k + 1))
-done <"$W/three.bin"
-emit "count one=$i two=$j three=$k"
-"""
-
-ARITY_BODY = r"""
-for fn in devbox_slugify devbox_slug_drift devbox_route_label; do
-    probe "$fn-0" "$fn"
-    probe "$fn-1" "$fn" one
-    probe "$fn-2" "$fn" one two
-    probe "$fn-3" "$fn" one two three
-    probe "$fn-4" "$fn" one two three four
-done
-emit "count arity=15"
-"""
-
-BASH_SCENARIOS = {
-    "slug-basic": SLUG_BODY,
-    "slug-edge": SLUG_BODY,
-    "slug-fuzz": SLUG_BODY,
-    "slug-utf8": SLUG_BODY,
-    "drift": CASE_BODY % {"fn": "devbox_slug_drift"},
-    "route-label": CASE_BODY % {"fn": "devbox_route_label"},
-    "arity": ARITY_BODY,
-}
+# The scenarios that call the three pure functions directly. The corpus for each is built in `slug_corpus`, `drift_cases` and `route_cases`.
+PURE_SCENARIOS = (
+    "arity",
+    "drift",
+    "route-label",
+    "slug-basic",
+    "slug-edge",
+    "slug-fuzz",
+    "slug-utf8",
+)
 
 # The one scenario that runs the SHELL under a multibyte locale. The twin forces `LC_ALL=C` on each stage of its own pipeline, so the answers must be identical to `slug-basic`'s; the port has no locale at all, which is what makes the comparison worth recording.
 SCENARIO_LOCALE = {"slug-utf8": "C.utf8"}
-
-
-def sandbox_env(work: pathlib.Path, repo: pathlib.Path, scenario: str) -> dict[str, str]:
-    """The environment both sides run under, built the same way for each.
-
-    Deliberately short: the subject reads no environment variable at all, and a driver that passed the caller's whole environment through would make that claim untestable. `HOME` is here only because the prelude's `norm` interpolates it, and an empty one would make that expansion an empty pattern which matches everywhere.
-    """
-    locale = SCENARIO_LOCALE.get(scenario, "C")
-    return {
-        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
-        "HOME": os.environ.get("HOME") or "/tmp",
-        "LC_ALL": locale,
-        "LANG": locale,
-        "CONSOLE_ROOT_DIR": str(repo),
-        "REDIACC_CI_ROOT": str(repo),
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "W": str(work),
-        "R": str(repo),
-    }
-
-
-def run_old(work: pathlib.Path, repo: pathlib.Path, env: dict[str, str], script_text: str) -> int:
-    """Source the twin through `bridge.py`'s own prelude and run `script_text` on top of it.
-
-    The script is written with `surrogateescape` so an argument that is not valid UTF-8 reaches bash as its own bytes, and bash's output is passed through as BYTES for the same reason. stdin is `/dev/null`, which is what the port side is handed too: `devbox_exec`'s `[[ -t 0 ]]` must see the same answer on both sides.
-    """
-    script = work / "driver.sh"
-    script.write_bytes(script_text.encode("utf-8", "surrogateescape"))
-    proc = subprocess.run(
-        ["bash", str(script)],
-        cwd=str(repo),
-        env=env,
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-        check=False,
-        timeout=1800,
-    )
-    sys.stdout.flush()
-    sys.stdout.buffer.write(proc.stdout)
-    sys.stdout.buffer.flush()
-    sys.stderr.buffer.write(proc.stderr)
-    return proc.returncode
 
 
 # --------------------------------------------------------------------------- the new side ---------------------------------------------------------------------------
@@ -1437,10 +1330,8 @@ def image_steps() -> list[Step]:
     absent = rule("docker", "image", "inspect", IMAGE, exact=True, rc=1)
     digest = ("docker", "image", "inspect", "--format")
     base = d.base_answers()
-    # The host's own ids as the base would answer them, so the no-derive arm is driven whatever uid runs this.
-    matching = d.base_ids(
-        out="vscode:x:%d:%d::/home/vscode:/bin/bash\n" % (os.geteuid(), os.getegid())
-    )
+    # The pinned host's ids as the base would answer them, so the no-derive arm is driven whatever uid runs this.
+    matching = d.base_ids(out="vscode:x:%d:%d::/home/vscode:/bin/bash\n" % GOLDEN_HOST_IDS)
     build = ("docker", "build", "-t", DERIVED_PATTERN)
     return [
         Step("present", "devbox_image_present"),
@@ -2026,7 +1917,7 @@ STUB_SCENARIOS = {
 }
 
 # Every scenario the driver offers, pure and stub-farm alike.
-SCENARIOS = sorted([*BASH_SCENARIOS, *STUB_SCENARIOS])
+SCENARIOS = sorted([*PURE_SCENARIOS, *STUB_SCENARIOS])
 
 
 # --------------------------------------------------------------------------- fixtures ---------------------------------------------------------------------------
@@ -2174,56 +2065,6 @@ def prepare_stub(
     return env, steps
 
 
-# --------------------------------------------------------------------------- the stub-farm old side ---------------------------------------------------------------------------
-
-# Put the farm in front of PATH once the prelude has been sourced, and observe one call: `probe`'s status, stdout and stderr, then the transcript in order, then the state file.
-STUB_PRELUDE = r"""
-export PATH="$FAKEBIN:$BASE_PATH"
-T="$W/stub/transcript.jsonl"
-
-sprobe() {
-    local name="$1"
-    shift
-    : >"$T"
-    probe "$name" "$@"
-    local line
-    while IFS= read -r line || [[ -n "$line" ]]; do emit "$name call| $line"; done < <("$W/stub/canonical" "$T")
-    if [[ -e "$DEVBOX_STATE_FILE" ]]; then
-        emit "$name file| $(hexfile "$DEVBOX_STATE_FILE")"
-    else
-        emit "$name file| absent"
-    fi
-}
-"""
-
-
-def stub_body(steps: list[Step]) -> str:
-    """The bash that replays `steps`: the table, the state file and the environment for each, then `sprobe`."""
-    lines = [STUB_PRELUDE]
-    for index, step in enumerate(steps):
-        lines.append('cp -- "$W/tables/%d.json" "$W/stub/table.json"' % index)
-        if step.state == ABSENT:
-            lines.append('rm -f -- "$DEVBOX_STATE_FILE"')
-        elif isinstance(step.state, bytes):
-            lines.append('cp -- "$W/states/%d" "$DEVBOX_STATE_FILE"' % index)
-        lines.extend("unset %s" % name for name in step.unset)
-        lines.extend(
-            "export %s=%s" % (name, shlex.quote(value)) for name, value in step.env.items()
-        )
-        lines.append(
-            " ".join(
-                [
-                    "sprobe",
-                    shlex.quote(step.label),
-                    step.fn,
-                    *(shlex.quote(arg) for arg in step.args),
-                ]
-            )
-        )
-    lines.append('emit "count steps=%d"' % len(steps))
-    return "\n".join(lines) + "\n"
-
-
 # --------------------------------------------------------------------------- the stub-farm new side ---------------------------------------------------------------------------
 
 
@@ -2252,8 +2093,13 @@ def run_stub_new(
             open(err_path, "wb", buffering=0) as err,
             open(os.devnull, "rb") as stdin,
         ):
-            status = devbox.Devbox(
-                current, cwd=str(repo), stdout=out, stderr=err, stdin=stdin
+            status = GoldenHostDevbox(
+                current,
+                cwd=str(repo),
+                stdout=out,
+                stderr=err,
+                stdin=stdin,
+                host_ids=GOLDEN_HOST_IDS,
             ).invoke(step.fn, step.args)
         printer.probe(
             step.label,
@@ -2276,8 +2122,9 @@ def run_stub_new(
 
 @contextlib.contextmanager
 def work_dir(scenario: str):
-    """`<tmp>/devbox-shadow/<scenario>`, emptied and held under an exclusive lock for the run. See the header for why the path is fixed."""
-    base = pathlib.Path(tempfile.gettempdir()) / "devbox-shadow"
+    """`/tmp/devbox-shadow/<scenario>`, emptied and held under an exclusive lock for the run. See the header for why the path is fixed."""
+    # A LITERAL /tmp AND NOT `tempfile.gettempdir()`. The worktree path is hashed into the container name and the port block, and the frozen transcripts in `goldens/twins/lib.devbox.jsonl` carry the answers for exactly this path; a `TMPDIR` that differs between the recording machine and CI would move every slot and fail the comparison for a reason that is the harness.
+    base = pathlib.Path("/tmp") / "devbox-shadow"
     base.mkdir(parents=True, exist_ok=True)
     with open(base / (scenario + ".lock"), "w", encoding="utf-8") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -2291,18 +2138,15 @@ def work_dir(scenario: str):
 
 
 def run_side(side: str, scenario: str, repo: pathlib.Path) -> int:
-    """Build everything, then drive one side, printing its observations to stdout."""
+    """Build everything, then drive the port, printing its observations to stdout."""
+    if side != "new":
+        raise RefusalError("the bash side is retired: its answers are the golden lib.devbox.jsonl")
     with work_dir(scenario) as work:
         if scenario in STUB_SCENARIOS:
             env, steps = prepare_stub(work, repo, scenario)
             with StubServer(work / "stub"):
-                if side == "old":
-                    return run_old(work, repo, env, "%s\n%s" % (PRELUDE, stub_body(steps)))
                 return run_stub_new(work, repo, env, steps, Printer(work, repo, env["HOME"]))
-        env = sandbox_env(work, repo, scenario)
         build_fixtures(work, scenario)
-        if side == "old":
-            return run_old(work, repo, env, "%s\n%s" % (PRELUDE, BASH_SCENARIOS[scenario]))
         return run_new(scenario, Printer(work, repo))
 
 
@@ -2310,29 +2154,26 @@ def run_side(side: str, scenario: str, repo: pathlib.Path) -> int:
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="one side of the core.devbox differential")
-    parser.add_argument("--side", choices=("old", "new"), required=True)
-    parser.add_argument("--twin", required=True, help="the bash file under comparison")
-    parser.add_argument("--port", required=True, help="the Python module under comparison")
+    parser = argparse.ArgumentParser(description="the port side of the core.devbox differential")
+    parser.add_argument("--side", choices=("new",), required=True)
+    parser.add_argument("--port", required=True, help="the Python module under test")
     parser.add_argument("scenario", choices=SCENARIOS)
     args = parser.parse_args(argv)
 
     repo = pathlib.Path.cwd().resolve()
-    for label, rel in (("twin", args.twin), ("port", args.port)):
-        if not (repo / rel).is_file():
-            sys.stderr.write(
-                "devbox_shadow_driver: the %s %s does not exist under %s. A ledger row "
-                "naming a file that is not there attests to nothing.\n" % (label, rel, repo)
-            )
-            return EXIT_CANNOT_RUN
+    if not (repo / args.port).is_file():
+        sys.stderr.write(
+            "devbox_shadow_driver: the port %s does not exist under %s. A ledger row "
+            "naming a file that is not there attests to nothing.\n" % (args.port, repo)
+        )
+        return EXIT_CANNOT_RUN
 
-    for tool in ("bash", "od", "sed", "tr", "git"):
-        if shutil.which(tool) is None:
-            sys.stderr.write(
-                "devbox_shadow_driver: %s is not installed, so the old side would fail before "
-                "it reached the twin and the comparison would prove nothing.\n" % tool
-            )
-            return EXIT_CANNOT_RUN
+    if shutil.which("git") is None:
+        sys.stderr.write(
+            "devbox_shadow_driver: git is not installed, so the fixture repositories "
+            "cannot be built and the comparison would prove nothing.\n"
+        )
+        return EXIT_CANNOT_RUN
 
     with contextlib.suppress(AttributeError, ValueError):
         cast("Any", sys.stdout).reconfigure(errors="surrogateescape")

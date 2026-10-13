@@ -111,12 +111,12 @@ REPAIRS = (
         "the SBOM refuses to ship an empty graph",
     ),
     (
-        ".ci/scripts/lib/common.sh",
+        ".ci/rediacc_ci/core/common.py",
         "r2_count_objects: list-objects-v2 failed",
         "r2_count_objects reports an unreachable bucket",
     ),
     (
-        ".ci/scripts/lib/release-state-validator.sh",
+        ".ci/rediacc_ci/core/release_state_validator.py",
         "THREE STATES, DELIBERATELY",
         "the release-state validator separates empty from unanswerable",
     ),

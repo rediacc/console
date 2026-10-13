@@ -10,7 +10,8 @@ WHAT IT CHECKS, per library in `LIBS`:
   - a `.sh` under `LIB_DIRS` missing from `LIBS` is a finding, so a new library cannot bypass the gate;
   - a `LIBS` library whose `.sh` is gone, a listed module that does not exist, and an alias whose bash function no longer exists are findings, so the tables only describe the tree that is there.
 
-THE RETIREMENT IS BUILT IN. When B1/B3 delete a library, its `LIBS` row must go in the same change. When the last row goes, zero functions are scanned, and that is a finding telling the author to retire this gate (package.json key, manifest entry, workflow step), because a gate that scans nothing passes forever.
+THE RETIREMENT IS BUILT IN, AND IT WAITS FOR THE LAST RETIRED LIBRARY. When a library is deleted, its `LIBS` row must go in the same change. When the last row goes, zero functions are scanned, and that is a finding telling the author to retire this gate (package.json key, manifest entry, workflow step), because a gate that scans nothing passes forever. Section 12 U1 removed
+`blocker-validator.sh` and `emit-advisory.sh`, so `toolchain.sh` is the one row left, and it is KEEP-BASH by ruling D2: `.ci/bootstrap.sh:87` sources it before any Python exists. Operator ruling D9 (2026-10-08) keeps this gate for as long as that library is kept, since the workflows read the Python `toolchain pairs/report` while `bootstrap.sh` reads the bash, and this gate is what keeps the two complete. The gate retires with `toolchain.sh`, not before.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first convention).
 """
@@ -25,60 +26,21 @@ from rediacc_ci import paths
 from rediacc_ci.controls import controls_first
 
 # Every .sh in these directories must be listed in LIBS.
-LIB_DIRS = (".ci/lib", ".ci/scripts/lib")
+# .ci/lib left with local-common.sh (W11-A); only .ci/scripts/lib holds bash libraries now.
+LIB_DIRS = (".ci/scripts/lib",)
 CORE_DIR = ".ci/rediacc_ci/core"
 PLAN = "agent/plans/PLAN-retire-bash-oracles.md (task G2)"
 
 # Library (repo path) -> the modules that carry its twin, relative to rediacc_ci/core. Every .sh under LIB_DIRS must appear here.
 LIBS: dict[str, tuple[str, ...]] = {
-    ".ci/lib/account.sh": ("account.py", "account_lifecycle.py"),
-    ".ci/lib/devbox.sh": ("devbox.py",),
-    ".ci/lib/local-common.sh": ("local_common.py",),
-    ".ci/lib/service.sh": ("service.py",),
-    # allowlist.py because `_blocker_py` is nothing but a forwarder to `python3 -m rediacc_ci.core.allowlist`.
-    ".ci/scripts/lib/blocker-validator.sh": ("blocker_validator.py", "allowlist.py"),
-    # ../log.py because common.sh's log_* functions are ported there and nowhere else; it was missing from this list until 2026-10-01, which left 5 ported functions baselined as unported.
-    ".ci/scripts/lib/common.sh": (
-        "common.py",
-        "ghx.py",
-        "../proc.py",
-        "../log.py",
-    ),
-    ".ci/scripts/lib/emit-advisory.sh": ("advisory.py",),
-    ".ci/scripts/lib/release-state-validator.sh": ("release_state_validator.py",),
     ".ci/scripts/lib/toolchain.sh": ("toolchain.py",),
 }
 
-# Extra name prefixes a library puts on its functions, beyond its own file stem; the twin drops them.
-PREFIXES: dict[str, tuple[str, ...]] = {
-    ".ci/scripts/lib/release-state-validator.sh": ("rsv_",),
-    ".ci/scripts/lib/blocker-validator.sh": ("blocker_",),
-}
+# Extra name prefixes a library puts on its functions, beyond its own file stem; the twin drops them. Empty since section 12 U1 deleted blocker-validator.sh, the only library with one.
+PREFIXES: dict[str, tuple[str, ...]] = {}
 
 # Library -> bash name -> "<module>:<def>", where the naming rule does not reach. The module must be one of the library's LIBS modules and must define the def; each target's docstring or comment names the bash function it ports, which is how every row below was checked (2026-10-01).
 ALIASES: dict[str, dict[str, str]] = {
-    ".ci/lib/account.sh": {
-        "account_spawn": "account_lifecycle.py:spawn_background",
-    },
-    ".ci/lib/service.sh": {
-        "_service_compose": "service.py:compose_argv",
-    },
-    ".ci/scripts/lib/blocker-validator.sh": {
-        "_blocker_emit": "blocker_validator.py:replay_frames",
-        "_blocker_py": "allowlist.py:main",
-    },
-    ".ci/scripts/lib/common.sh": {
-        # ghx.gh(attempts=3) is _gh_probe's retry; GhResult.json() is gh_json's parse-or-refuse half (ghx.py TRAP 1 and TRAP 3).
-        "_gh_probe": "ghx.py:gh",
-        "gh_retry": "ghx.py:gh",
-        "gh_json": "ghx.py:json",
-        "get_repo_root": "common.py:repo_root",
-        "log_info": "../log.py:info",
-        "log_warn": "../log.py:warn",
-        "log_error": "../log.py:error",
-        "log_step": "../log.py:step",
-        "log_debug": "../log.py:debug",
-    },
     ".ci/scripts/lib/toolchain.sh": {
         "toolchain_load": "toolchain.py:load_pins",
         # The `pairs` and `keys` verbs of toolchain.main print load_pins() in the two shapes these produce.
@@ -227,8 +189,8 @@ def scan(root: pathlib.Path) -> tuple[list[str], int, int]:
 def selftest() -> bool:
     """True when a control FAILED. Each control plants one defect in an in-memory library."""
     failed = False
-    lib = ".ci/lib/account.sh"
-    bash = "account_a() {\n:\n}\naccount_b() {\n:\n}\n"
+    lib = ".ci/lib/sample.sh"
+    bash = "sample_a() {\n:\n}\nsample_b() {\n:\n}\n"
     flat = {"m.py": "def a():\n    pass\ndef b():\n    pass\n"}
 
     def check(got: list[str], want: list[str], what: str) -> None:
@@ -239,13 +201,13 @@ def selftest() -> bool:
 
     check(unported(bash, flat, lib, {}), [], "a fully ported library read as having gaps")
     check(
-        unported(bash + "account_new() {\n:\n}\n", flat, lib, {}),
-        ["account_new"],
+        unported(bash + "sample_new() {\n:\n}\n", flat, lib, {}),
+        ["sample_new"],
         "a NEW bash function without a twin was not reported",
     )
     check(
         unported(bash, {"m.py": "def a():\n    pass\n"}, lib, {}),
-        ["account_b"],
+        ["sample_b"],
         "a removed Python def was not reported",
     )
     check(
@@ -260,35 +222,35 @@ def selftest() -> bool:
     )
     check(
         unported(bash, {"m.py": "class D:\n    def a(self):\n        pass\n"}, lib, {}),
-        ["account_b"],
+        ["sample_b"],
         "a class missing one ported METHOD read as complete",
     )
-    alias = {"account_spawn": "m.py:spawn_background"}
+    alias = {"sample_spawn": "m.py:spawn_background"}
     check(
         unported(
-            "account_spawn() {\n:\n}\n", {"m.py": "def spawn_background():\n    pass\n"}, lib, alias
+            "sample_spawn() {\n:\n}\n", {"m.py": "def spawn_background():\n    pass\n"}, lib, alias
         ),
         [],
         "a qualified alias was not honoured",
     )
     check(
         unported(
-            "account_spawn() {\n:\n}\n",
+            "sample_spawn() {\n:\n}\n",
             {"m.py": "def other():\n    pass\n", "n.py": "def spawn_background():\n    pass\n"},
             lib,
             alias,
         ),
-        ["account_spawn"],
+        ["sample_spawn"],
         "an alias resolved through a def in a DIFFERENT module",
     )
     check(
         unported(
-            "account_spawn() {\n:\n}\n",
+            "sample_spawn() {\n:\n}\n",
             {"m.py": "def spawn():\n    pass\n"},
             lib,
             alias,
         ),
-        ["account_spawn"],
+        ["sample_spawn"],
         "an aliased function fell back to the naming rule when its alias target was gone",
     )
     return failed

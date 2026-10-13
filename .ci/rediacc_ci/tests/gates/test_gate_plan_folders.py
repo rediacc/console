@@ -329,6 +329,38 @@ def test_move_leaves_a_stub_and_stamps_both_clocks(gate, tmp_path):
     gate.log_pass("--move renames, stubs, stamps First-Seen and re-keys the ledger row")
 
 
+_GONE = "# PLAN: gone\nStatus: removed\nRemoved-Why: the work was dropped by the operator\n\n- [ ] a box\n"
+_WAITER = "# PLAN: waiter\nStatus: in-progress\nDepends-On: PLAN-gone.md\nOwner: cafe0000\n\n- [ ] a box\n"
+
+
+def test_move_into_removed_is_refused_while_a_plan_depends_on_it(gate, tmp_path):
+    """PLAN-plan-dependencies T4: withdrawing a plan others wait for would leave them with a D4 and no way to start."""
+    root = _seed(
+        tmp_path,
+        {"agent/plans/PLAN-gone.md": _GONE, "agent/plans/PLAN-waiter.md": _WAITER},
+    )
+    _ledger(root, {"agent/plans/PLAN-gone.md": {"status": "removed", "open": 1, "done": 0}})
+    result = _gate(root, "--move", "agent/plans/PLAN-gone.md")
+    gate.assert_exit(1, result, "a move that strands a dependent must be refused")
+    gate.assert_contains(result.combined, "PLAN-waiter.md", "the dependent is printed")
+    gate.assert_eq(
+        (root / "agent/plans/PLAN-gone.md").read_text(encoding="utf-8"), _GONE, "nothing moved"
+    )
+    gate.log_pass("--move into _removed/ is refused and names the plan that still waits")
+
+
+def test_move_into_removed_is_allowed_with_no_dependents(gate, tmp_path):
+    """The passing twin of the case above: the same fixture without the waiting plan."""
+    root = _seed(tmp_path, {"agent/plans/PLAN-gone.md": _GONE})
+    _ledger(root, {"agent/plans/PLAN-gone.md": {"status": "removed", "open": 1, "done": 0}})
+    result = _gate(root, "--move", "agent/plans/PLAN-gone.md")
+    gate.assert_exit(0, result, "with nothing waiting the move must succeed")
+    gate.assert_eq(
+        (root / "agent/plans/_removed/PLAN-gone.md").is_file(), True, "the plan is in _removed/"
+    )
+    gate.log_pass("--move into _removed/ is allowed when no plan depends on it")
+
+
 def test_move_takes_an_untracked_plan_that_carries_its_own_clock(gate, tmp_path):
     """A plan drafted, implemented and closed before its first commit is untracked, and `git mv` refuses it with "not under version control". Found 2026-09-24; the tool now renames it plainly and runs the same stub and ledger steps."""
     root = _seed(tmp_path)

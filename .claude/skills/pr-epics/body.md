@@ -1,6 +1,6 @@
 # body: the managed block in the PR description
 
-    .ci/scripts/pr/sync-epic-block.sh <pr> <branch>
+    PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block <pr> <branch>
 
 Reads `agent/pr/<branch>.md` and rebuilds the block between
 

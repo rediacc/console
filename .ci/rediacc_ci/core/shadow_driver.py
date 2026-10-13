@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Both sides of the `core.account` port differential, in one file.
+"""The port side of the `core.account` differential. The bash side (`.ci/lib/account.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.account.jsonl`.
 
 WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules on whether a port kept the verdict. It needs each side to PRINT what it observed, because the thing being compared is a finding multiset and not a return value. This module is the printer, and it can print either side:
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.shadow_driver --side old --twin .ci/lib/account.sh --port .ci/rediacc_ci/core/account.py <scenario>
-        drives the BASH: sources `.ci/lib/account.sh` through the same prelude `.ci/legacy/run-legacy.sh` uses, and calls the twin's own functions.
-
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.shadow_driver --side new --twin .ci/lib/account.sh --port .ci/rediacc_ci/core/account.py <scenario>
-        drives the PYTHON: `rediacc_ci.core.account`.
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.shadow_driver --side new --port .ci/rediacc_ci/core/account.py <scenario>
+        drives the PYTHON: `rediacc_ci.core.account`. While the bash existed, `--side old --twin .ci/lib/account.sh` sourced it through the prelude `.ci/legacy/run-legacy.sh` used, and the ledger rows under `.ci/shadow/` record both commands.
 
 RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invocation puts `.ci/rediacc_ci/core` on `sys.path[0]` and nothing on it can find `rediacc_ci`, so the file would have to open with a hand-written `sys.path.insert` hop. `test_canonical_sys_path_hop.py` refuses exactly that, it refused this file on its first run, and `PYTHONPATH=.ci` plus `-m` removes
 the need rather than baselining it.
@@ -21,7 +18,7 @@ THE SANDBOX, AND WHY EACH SIDE BUILDS ITS OWN
 `account.sh` reads and WRITES real paths under `$CONSOLE_ROOT_DIR`: `private/account/account.db`, `.account-state`, `.devbox-state`, `.account-logs/`. A differential pointing both sides at one directory would have the first side leave the tree in the state that makes the second take a different branch, and the comparison would then be between two different programs.
 
 So each side builds its OWN temporary `CONSOLE_ROOT_DIR`: a real directory holding the writable state, with `.devcontainer`, `scripts`, `.ci/config`, `.ci/scripts`, `.ci/lib` and `.ci/rediacc_ci` SYMLINKED to the checkout this driver was invoked from.
-Symlinks rather than copies because `constants.sh` derives `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` and `account.sh` reaches back out through `$CI_LIB_DIR/../..` for `scripts/lib/env-file.sh`, so the sandbox has to have the whole shape; and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
+Symlinks rather than copies because `constants.sh` derived `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` and `account.sh` reached back out through `$CI_LIB_DIR/../..` for `scripts/lib/env-file.sh`, so the sandbox has to have the whole shape; and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
 Every path either command names is relative, so `shadow-gate`'s `reachesOutside` check passes honestly rather than by accident.
 
 The temporary directory differs between the two sides, so every observation is normalised: the sandbox root becomes `<work>` and `$HOME` becomes `<home>` before anything is printed.
@@ -79,7 +76,6 @@ import os
 import pathlib
 import shutil
 import socket
-import subprocess
 import sys
 import tempfile
 import threading
@@ -106,61 +102,14 @@ SCAN_WINDOW = account.DB_BROWSER_SCAN_SPAN + 1
 PINNED_SPAN = (LIVE_PORT, DEVBOX_STUDIO_PORT + SCAN_WINDOW - 1)
 EPHEMERAL_RANGE_FILE = pathlib.Path("/proc/sys/net/ipv4/ip_local_port_range")
 
-# What the sandbox symlinks. `.devcontainer` carries the toolchain pins `constants.sh` refuses to load without; `scripts` is here because `account.sh` sources `scripts/lib/env-file.sh` through `$CI_LIB_DIR/../..`; `.ci/scripts` because the prelude sources `toolchain.sh` and, through `local-common.sh`, `common.sh`.
+# What the sandbox symlinks. `.devcontainer` carries the toolchain pins; `scripts` and `.ci/scripts` are the trees the port's helpers resolve through. `.ci/lib` is not here: the directory was emptied when `local-common.sh` was deleted, and nothing in the port reads it.
 SANDBOX_LINKS = (
     (".devcontainer",),
     ("scripts",),
     (".ci", "config"),
     (".ci", "scripts"),
-    (".ci", "lib"),
     (".ci", "rediacc_ci"),
 )
-
-# The prelude `.ci/legacy/run-legacy.sh:41-48` runs before it sources `account.sh` at its line 405, minus `service.sh`, which `account.sh` does not touch. `local-common.sh` is here because `account_db` calls `check_node_version`, which that file defines and `account.sh` does not; the same late binding `service.py` records for `check_docker`.
-PRELUDE = r"""
-set -euo pipefail
-source "$W/.ci/config/constants.sh"
-source "$W/.ci/scripts/lib/toolchain.sh"
-source "$W/.ci/lib/local-common.sh"
-source "$W/.ci/lib/account.sh"
-
-norm() {
-    local s="$1"
-    s="${s//$W/<work>}"
-    s="${s//$HOME/<home>}"
-    printf '%s' "$s"
-}
-
-emit() { printf 'obs %s\n' "$(norm "$1")"; }
-
-# rc first, then stdout, then stderr, so the two sides cannot differ on ORDER
-# for a reason that is the harness rather than the subject. The subshell keeps a
-# twin function's `exit 1` from taking this driver down with it.
-step() {
-    local name="$1"
-    shift
-    local o e rc l
-    o="$(mktemp)"
-    e="$(mktemp)"
-    # NOT `if ( set -e; "$@" ); then`, and that spelling cost a wrong measurement before it was fixed.
-    # A command in an `if` CONDITION runs with errexit suppressed, and the suppression propagates into a subshell created there, so the inner `set -e` is INERT: the trap `docs/agent-reference/TRAPS.md` calls errexit-rearmed-in-a-tested-command. Under it the twin's `account_totp` survived the bare assignment that really kills it and printed a message it never prints in production.
-    # `set +e` around a PLAIN subshell keeps this driver alive while leaving errexit genuinely armed inside it.
-    set +e
-    ( set -e; "$@" ) >"$o" 2>"$e"
-    rc=$?
-    set -e
-    emit "rc $name=$rc"
-    while IFS= read -r l; do emit "out $name| $l"; done <"$o"
-    while IFS= read -r l; do emit "err $name| $l"; done <"$e"
-    rm -f "$o" "$e"
-}
-
-banner() {
-    local row
-    row="$(account_banner_row "$1")"
-    emit "banner| ${row// /.}"
-}
-"""
 
 
 class RefusalError(RuntimeError):
@@ -329,98 +278,8 @@ class Printer:
         self.emit("banner| %s" % row.replace(" ", "."))
 
 
-# --------------------------------------------------------------------------- the old side ---------------------------------------------------------------------------
-
-BASH_SCENARIOS = {
-    "probe": r"""
-banner "hello"
-banner ""
-banner "$(printf '%063d' 0)"
-banner "$(printf '%070d' 0)"
-banner "héllo, ünicode"
-
-step rustfs-dead account_rustfs_alive "$DEAD_PORT"
-step rustfs-live account_rustfs_alive "$LIVE_PORT"
-step wait-dead account_wait_port "$DEAD_PORT" "Thing" 0
-step wait-live account_wait_port "$LIVE_PORT" "Live" 5
-
-allocate() {
-    account_allocate_ports
-    echo "gateway=$GATEWAY_PORT vite=$VITE_PORT astro=$ASTRO_PORT"
-}
-REDIACC_DEV_PORT_BASE="$FREE_BASE" step allocate-free allocate
-REDIACC_DEV_PORT_BASE="$PINNED_BASE" step allocate-busy allocate
-""",
-    "keys": r"""
-crypto_claims() {
-    account_generate_crypto_keys
-    local name value
-    for name in ED25519_PRIV ED25519_PUB X25519_PRIV X25519_PUB; do
-        value="${!name}"
-        echo "$name len=${#value}"
-    done
-    for name in JWT_SEC API_K; do
-        value="${!name}"
-        if [[ -n "$value" && "$value" != *[!A-Za-z0-9]* && ${#value} -le 64 ]]; then
-            echo "$name shape=ok"
-        else
-            echo "$name shape=bad"
-        fi
-    done
-}
-step keys crypto_claims
-""",
-    "totp": r"""
-rm -f "$ACCOUNT_STATE_FILE"
-step no-state account_totp
-
-printf 'started=1\n' >"$ACCOUNT_STATE_FILE"
-step no-key account_totp
-
-printf 'gateway_port=\n' >"$ACCOUNT_STATE_FILE"
-step empty-value account_totp
-
-printf 'gateway_port=a=b\n' >"$ACCOUNT_STATE_FILE"
-step equals-in-value account_totp
-
-printf 'gateway_port=%s\n' "$DEAD_PORT" >"$ACCOUNT_STATE_FILE"
-step closed-port account_totp
-step closed-port-email account_totp other@rediacc.io
-""",
-    "db": r"""
-step unknown-option account_db --bogus
-step studio-then-unknown account_db --studio --bogus
-step no-database account_db
-DATABASE_PATH="$ACCOUNT_DIR/nowhere.db" step no-database-env account_db
-
-: >"$ACCOUNT_DIR/account.db"
-rm -f "$DEVBOX_STATE_FILE"
-step no-port-plain account_db
-
-printf 'base_port=%s\n' "$DEVBOX_BASE" >"$DEVBOX_STATE_FILE"
-step no-port-devbox account_db
-""",
-}
-
-
-def run_old(work: pathlib.Path, scenario: str, env: dict[str, str]) -> int:
-    """Source the twin through `run-legacy.sh`'s own prelude and call its functions."""
-    script = work / "driver.sh"
-    script.write_text(
-        'W="%s"\n%s\n%s' % (work, PRELUDE, BASH_SCENARIOS[scenario]),
-        encoding="utf-8",
-    )
-    proc = subprocess.run(
-        ["bash", str(script)],
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=300,
-    )
-    sys.stdout.write(proc.stdout)
-    sys.stderr.write(proc.stderr)
-    return proc.returncode
+# The scenarios, in the order the ledger lists them. Each is one function of `run_new`.
+SCENARIOS = ("db", "keys", "probe", "totp")
 
 
 # --------------------------------------------------------------------------- the new side ---------------------------------------------------------------------------
@@ -528,20 +387,18 @@ def run_new(scenario: str, printer: Printer, env: dict[str, str]) -> int:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="one side of the core.account differential")
-    parser.add_argument("--side", choices=("old", "new"), required=True)
-    parser.add_argument("--twin", required=True, help="the bash file under comparison")
+    parser.add_argument("--side", choices=("new",), required=True)
     parser.add_argument("--port", required=True, help="the Python module under comparison")
-    parser.add_argument("scenario", choices=sorted(BASH_SCENARIOS))
+    parser.add_argument("scenario", choices=SCENARIOS)
     args = parser.parse_args(argv)
 
     repo = pathlib.Path.cwd().resolve()
-    for label, rel in (("twin", args.twin), ("port", args.port)):
-        if not (repo / rel).is_file():
-            sys.stderr.write(
-                "shadow_driver: the %s %s does not exist under %s. A ledger row naming a "
-                "file that is not there attests to nothing.\n" % (label, rel, repo)
-            )
-            return EXIT_CANNOT_RUN
+    if not (repo / args.port).is_file():
+        sys.stderr.write(
+            "shadow_driver: the port %s does not exist under %s. A ledger row naming a "
+            "file that is not there attests to nothing.\n" % (args.port, repo)
+        )
+        return EXIT_CANNOT_RUN
 
     server = None
     held: list[socket.socket] = []
@@ -569,8 +426,6 @@ def main(argv: list[str]) -> int:
                 "DEVBOX_BASE": str(DEVBOX_STUDIO_PORT - account.DEVBOX_OFFSET_STUDIO),
             }
         )
-        if args.side == "old":
-            return run_old(work, args.scenario, env)
         return run_new(args.scenario, printer, env)
     except RefusalError as exc:
         sys.stderr.write("shadow_driver: %s\n" % exc)

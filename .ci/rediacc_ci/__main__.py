@@ -21,7 +21,9 @@ import sys
 from rediacc_ci.well_known import WEB_IMAGE_REPO
 
 # How this program is spelled in its own messages. `./run.sh <verb>` is what a person actually types for a ported verb, but a message naming run.sh would be wrong for the verbs reached directly (and for `run.sh`'s own error paths), so the module form is used and run.sh is named in the help text instead.
-PROGRAM = "python3 -m rediacc_ci"
+# Two spellings, for two jobs. `NAME` prefixes a diagnostic, the way every port prefixes its own with its module name. `PROGRAM` is the command a reader copies out of the usage line or the `--help` hint, so it carries the `PYTHONPATH=.ci` hop that makes it run from the repository root (worklist #175470e9, review finding f6733156.3).
+NAME = "rediacc_ci"
+PROGRAM = "PYTHONPATH=.ci python3 -m rediacc_ci"
 
 # Usage errors -- no verb, an unknown verb -- exit 2, matching every other argv dispatcher in this package (core/env.py:398, core/ports.py:271). 1 stays what it has always been: a real verdict from a handler that ran.
 EXIT_USAGE = 2
@@ -165,9 +167,9 @@ def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
 
     if not argv:
         # A USAGE ERROR, NOT A TRACEBACK, and not a silent 0 either. stderr, because stdout belongs to whatever the verb would have printed.
-        print("%s: no verb given." % PROGRAM, file=sys.stderr)
+        print("%s: no verb given." % NAME, file=sys.stderr)
         print(
-            "%s: run `%s --help` for the verbs this package serves." % (PROGRAM, PROGRAM),
+            "%s: run `%s --help` for the verbs this package serves." % (NAME, PROGRAM),
             file=sys.stderr,
         )
         return EXIT_USAGE
@@ -188,13 +190,13 @@ def main(argv: list[str], table: tuple[Verb, ...] | None = None) -> int:
         return _finish(front_door, unknown([verb_name]))
 
     if match is None:
-        print("%s: unknown verb: %s" % (PROGRAM, verb_name), file=sys.stderr)
+        print("%s: unknown verb: %s" % (NAME, verb_name), file=sys.stderr)
         known = names(registry)
         if known:
-            print("%s: known verbs: %s" % (PROGRAM, " ".join(known)), file=sys.stderr)
+            print("%s: known verbs: %s" % (NAME, " ".join(known)), file=sys.stderr)
         else:
             print(
-                "%s: no verbs are registered." % PROGRAM,
+                "%s: no verbs are registered." % NAME,
                 file=sys.stderr,
             )
         return EXIT_USAGE
@@ -215,7 +217,7 @@ def _finish(verb: Verb, code) -> int:
         return 0
     if not isinstance(code, int):
         print(
-            "%s: %s returned %r, which is not an exit code" % (PROGRAM, verb.name, code),
+            "%s: %s returned %r, which is not an exit code" % (NAME, verb.name, code),
             file=sys.stderr,
         )
         return 1

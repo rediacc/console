@@ -128,14 +128,14 @@ export class StorageTestHelper {
   /**
    * Create a new bucket.
    */
-  async createBucket(name: string): Promise<StorageResult> {
+  createBucket(name: string): Promise<StorageResult> {
     return this.executeRclone(`mkdir :s3:${name}`);
   }
 
   /**
    * Delete a bucket and all its contents.
    */
-  async deleteBucket(name: string): Promise<StorageResult> {
+  deleteBucket(name: string): Promise<StorageResult> {
     return this.executeRclone(`purge :s3:${name}`);
   }
 
@@ -208,7 +208,7 @@ export class StorageTestHelper {
   /**
    * Delete an object from a bucket.
    */
-  async deleteObject(bucket: string, key: string): Promise<StorageResult> {
+  deleteObject(bucket: string, key: string): Promise<StorageResult> {
     return this.executeRclone(`delete :s3:${bucket}/${key}`);
   }
 
@@ -233,7 +233,7 @@ export class StorageTestHelper {
   /**
    * Upload a file from the bridge VM to storage.
    */
-  async uploadFile(bucket: string, localPath: string, remotePath?: string): Promise<StorageResult> {
+  uploadFile(bucket: string, localPath: string, remotePath?: string): Promise<StorageResult> {
     const destination = remotePath ?? localPath.split('/').pop();
     return this.executeRclone(`copy ${localPath} :s3:${bucket}/${destination}`);
   }
@@ -241,22 +241,14 @@ export class StorageTestHelper {
   /**
    * Download a file from storage to the bridge VM.
    */
-  async downloadFile(
-    bucket: string,
-    remotePath: string,
-    localPath: string
-  ): Promise<StorageResult> {
+  downloadFile(bucket: string, remotePath: string, localPath: string): Promise<StorageResult> {
     return this.executeRclone(`copy :s3:${bucket}/${remotePath} ${localPath}`);
   }
 
   /**
    * Sync a local directory to a bucket.
    */
-  async syncToStorage(
-    localDir: string,
-    bucket: string,
-    remotePrefix?: string
-  ): Promise<StorageResult> {
+  syncToStorage(localDir: string, bucket: string, remotePrefix?: string): Promise<StorageResult> {
     const destination = remotePrefix ? `:s3:${bucket}/${remotePrefix}` : `:s3:${bucket}`;
     return this.executeRclone(`sync ${localDir} ${destination}`);
   }
@@ -264,11 +256,7 @@ export class StorageTestHelper {
   /**
    * Sync a bucket to a local directory.
    */
-  async syncFromStorage(
-    bucket: string,
-    localDir: string,
-    remotePrefix?: string
-  ): Promise<StorageResult> {
+  syncFromStorage(bucket: string, localDir: string, remotePrefix?: string): Promise<StorageResult> {
     const source = remotePrefix ? `:s3:${bucket}/${remotePrefix}` : `:s3:${bucket}`;
     return this.executeRclone(`sync ${source} ${localDir}`);
   }
@@ -276,7 +264,7 @@ export class StorageTestHelper {
   /**
    * Execute an rclone command.
    */
-  private async executeRclone(command: string): Promise<StorageResult> {
+  private executeRclone(command: string): Promise<StorageResult> {
     const fullCommand = `rclone ${command} ${this.getRcloneFlags()}`;
     return this.executeOnBridge(fullCommand);
   }

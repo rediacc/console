@@ -1,23 +1,24 @@
 """Port of `.ci/scripts/test/gates/test-blocker-validator.sh`, retired in W7 P5.
 
-Unit tests for `.ci/scripts/lib/blocker-validator.sh`: the parser that reads a `BLOCKER:`-annotated suppression list, and the quality rule that decides whether a stated reason is a reason at all.
+Unit tests for the BLOCKER library: the parser that reads a `BLOCKER:`-annotated suppression list, and the quality rule that decides whether a stated reason is a reason at all.
 
-WHY THE SUBJECT CANNOT BE REACHED WITHOUT BASH, and why that is not a shortcoming of the port. `parse_blockered_list` takes two NAMEREF arguments -- the caller declares `ALLOWED` and `BLOCKER` as associative arrays and passes their NAMES, and the function writes through `declare -n`. There is no stdout form of that result and no file it lands in. So the only honest way to observe
-it is from inside a bash process, which is exactly what every case below does: a snippet that sources the real library, calls the real function, and PRINTS what landed in the arrays. Re-implementing the parser in Python to avoid the subprocess would be testing a copy.
+THE SUBJECT IS THE PORT. The twin tested `.ci/scripts/lib/blocker-validator.sh`, which was deleted in PLAN-retire-bash-oracles section 12 U1; every case below now drives its port, `rediacc_ci.core.blocker_validator`, through the port's own CLI (`pairs`, `reason`, `verify`: one verb per bash function the twin called). A PROCESS, not an import, for the reason the bash version gave
+for its subprocess: the test observes what a caller observes, exit code included, rather than a function's return value. The bash library's byte-level answers stay frozen in `goldens/twins/lib.blocker-validator.jsonl`.
 
-`LOW_EFFORT_BLOCKER_PATTERNS` is READ OUT OF THE LIBRARY at runtime rather than retyped here. That keeps `test_validate_rejects_every_low_effort_phrase` a CORPUS-DERIVED floor: adding a banned phrase to the library adds a case here on its own, and a library whose array emptied would fail the anti-vacuity refusal below instead of passing over nothing.
+THE BANNED PHRASES ARE READ OUT OF THE CANONICAL at runtime (`python3 -m rediacc_ci.core.allowlist contract`) rather than retyped here; the bash version read its `LOW_EFFORT_BLOCKER_PATTERNS` mirror of the same list. That keeps `test_validate_rejects_every_low_effort_phrase` a CORPUS-DERIVED floor: adding a banned phrase adds a case here on its own, and a contract whose list emptied would fail the
+anti-vacuity refusal below instead of passing over nothing.
 
 WHY `test_validate_accepts_all_current_audit_entries` READS THE REAL POLICY FILES. It is the one case that is not fixture-driven, and deliberately: it asserts that every BLOCKER reason SHIPPING TODAY still passes the rule, which is what stops a tightened `BLOCKER_MIN_LENGTH` or a new banned phrase from reddening a gate somewhere else in the estate. It only READS them, so it
 declares no `tree:` claim.
 """
 
+import json
 import os
-import shlex
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-LIB = paths.from_root(".ci", "scripts", "lib", "blocker-validator.sh")
+LIB = paths.from_root(".ci", "rediacc_ci", "core", "blocker_validator.py")
 
 # The allowlists the twin walks. Relative, and resolved against the repo root.
 POLICY_FILES = (
@@ -27,29 +28,21 @@ POLICY_FILES = (
 )
 
 
-def bash_lib(gate, snippet: str) -> harness.RunResult:
-    """Source the real library in a fresh shell and run `snippet`."""
+def run_module(gate, module: str, *argv: str) -> harness.RunResult:
+    """`python3 -m <module> <argv...>` from the repo root, with `rediacc_ci` importable and nothing in the cwd shadowing it."""
     if not LIB.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(LIB))
-    bash = harness.require_tool("bash", "install bash; the subject IS a bash library")
+    python3 = harness.require_tool("python3", "install python3; the subject IS a python module")
     return harness.run(
-        [bash, "-c", 'set -uo pipefail\nsource "%s"\n%s' % (os.fspath(LIB), snippet)],
+        [python3, "-m", module, *argv],
         cwd=paths.repo_root(),
+        env={"PYTHONPATH": os.fspath(paths.ci_dir()), "PYTHONSAFEPATH": "1"},
     )
 
 
 def parse(gate, list_path) -> tuple[dict[str, str], dict[str, str]]:
-    """(ALLOWED, BLOCKER) as Python dicts, produced BY the real bash parser.
-
-    The two arrays are printed with a NUL-free but unambiguous separator and read back here. `declare -p` would have been shorter and is not used on purpose: it would need re-parsing bash's own quoting, and a subtly wrong unquoter is a second implementation of the thing under test.
-    """
-    snippet = (
-        "declare -A ALLOWED=() BLOCKER=()\n"
-        "parse_blockered_list %s ALLOWED BLOCKER\n"
-        'for k in "${!ALLOWED[@]}"; do printf "A\\t%%s\\t%%s\\n" "$k" "${ALLOWED[$k]}"; done\n'
-        'for k in "${!BLOCKER[@]}"; do printf "B\\t%%s\\t%%s\\n" "$k" "${BLOCKER[$k]}"; done\n'
-    ) % shlex.quote(str(list_path))
-    result = bash_lib(gate, snippet)
+    """(ALLOWED, BLOCKER) as Python dicts, produced BY the port's `pairs` verb: one `allowed<TAB>key<TAB>1` or `blocker<TAB>key<TAB>reason` line per cell, the two tables the bash function filled through its namerefs."""
+    result = run_module(gate, "rediacc_ci.core.blocker_validator", "pairs", os.fspath(list_path))
     if result.rc != 0:
         gate.log_fail("parse_blockered_list exited %d" % result.rc, result)
     allowed: dict[str, str] = {}
@@ -57,28 +50,38 @@ def parse(gate, list_path) -> tuple[dict[str, str], dict[str, str]]:
     for line in result.out.splitlines():
         kind, _, rest = line.partition("\t")
         key, _, value = rest.partition("\t")
-        if kind == "A":
+        if kind == "allowed":
             allowed[key] = value
-        elif kind == "B":
+        elif kind == "blocker":
             blocker[key] = value
     return allowed, blocker
 
 
-def validate(gate, ident: str, reason: str, source: str = "testfile") -> int:
-    result = bash_lib(
-        gate,
-        "validate_blocker_quality %s %s %s >/dev/null 2>&1"
-        % (shlex.quote(ident), shlex.quote(reason), shlex.quote(source)),
-    )
+def verdict(gate, result: harness.RunResult) -> int:
+    if result.rc not in (0, 1) or "Traceback (most recent call last)" in result.err:
+        gate.log_fail("the validator crashed instead of giving a verdict", result)
     return result.rc
 
 
+def validate(gate, ident: str, reason: str, source: str = "testfile") -> int:
+    """The port's verdict: 0 accepted, 1 rejected. A crash (a traceback also exits 1) or a usage error is neither, so it fails the case instead of passing as a rejection."""
+    return verdict(
+        gate, run_module(gate, "rediacc_ci.core.blocker_validator", "reason", ident, reason, source)
+    )
+
+
+def verify(gate, list_path) -> int:
+    return verdict(
+        gate, run_module(gate, "rediacc_ci.core.blocker_validator", "verify", os.fspath(list_path))
+    )
+
+
 def low_effort_patterns(gate) -> list[str]:
-    """`LOW_EFFORT_BLOCKER_PATTERNS`, read out of the library at runtime."""
-    result = bash_lib(gate, 'printf "%s\\n" "${LOW_EFFORT_BLOCKER_PATTERNS[@]}"')
+    """`LOW_EFFORT_PHRASES`, read out of the canonical's published contract at runtime."""
+    result = run_module(gate, "rediacc_ci.core.allowlist", "contract")
     if result.rc != 0:
-        gate.log_fail("could not read LOW_EFFORT_BLOCKER_PATTERNS", result)
-    return [line for line in result.out.splitlines() if line]
+        gate.log_fail("could not read the canonical contract", result)
+    return list(json.loads(result.out).get("phrases", []))
 
 
 def test_parse_empty_file(gate, tmp_path):
@@ -144,16 +147,16 @@ def test_validate_rejects_every_low_effort_phrase(gate):
     # ANTI-VACUITY, and it is the whole case: a library whose banned-phrase array emptied would make the loop below prove nothing while still exiting green.
     if not patterns:
         gate.log_fail(
-            "LOW_EFFORT_BLOCKER_PATTERNS came back EMPTY, so the loop below checked "
-            "nothing. Either the array was renamed or the library did not source; "
+            "the canonical's phrase list came back EMPTY, so the loop below checked "
+            "nothing. Either the contract changed shape or the module did not import; "
             "either way this case's green would mean nothing."
         )
     for pattern in patterns:
         if validate(gate, "testid", pattern) == 0:
-            gate.log_fail("LOW_EFFORT_BLOCKER_PATTERNS[%s] should be rejected but passed" % pattern)
+            gate.log_fail("LOW_EFFORT_PHRASES[%s] should be rejected but passed" % pattern)
     gate.log_pass(
-        "every LOW_EFFORT_BLOCKER_PATTERNS entry is rejected (%d phrase(s) read from the "
-        "library)" % len(patterns)
+        "every LOW_EFFORT_PHRASES entry is rejected (%d phrase(s) read from the canonical)"
+        % len(patterns)
     )
 
 
@@ -242,12 +245,7 @@ def test_validate_accepts_all_current_audit_entries(gate):
 
 def test_verify_all_blockers_fails_on_missing(gate, tmp_path):
     (tmp_path / "list").write_text("# no BLOCKER here\n3000001\n", encoding="utf-8")
-    snippet = (
-        "declare -A ALLOWED=() BLOCKER=()\n"
-        "parse_blockered_list %s ALLOWED BLOCKER\n"
-        "verify_all_blockers %s BLOCKER >/dev/null 2>&1\n"
-    ) % (shlex.quote(str(tmp_path / "list")), shlex.quote(str(tmp_path / "list")))
-    if bash_lib(gate, snippet).rc == 0:
+    if verify(gate, tmp_path / "list") == 0:
         gate.log_fail("verify_all_blockers should fail when BLOCKER missing")
     gate.log_pass("verify_all_blockers rejects missing BLOCKER")
 
@@ -258,11 +256,6 @@ def test_verify_all_blockers_passes_when_good(gate, tmp_path):
         "migration\n4000001\n",
         encoding="utf-8",
     )
-    snippet = (
-        "declare -A ALLOWED=() BLOCKER=()\n"
-        "parse_blockered_list %s ALLOWED BLOCKER\n"
-        "verify_all_blockers %s BLOCKER >/dev/null 2>&1\n"
-    ) % (shlex.quote(str(tmp_path / "list")), shlex.quote(str(tmp_path / "list")))
-    if bash_lib(gate, snippet).rc != 0:
+    if verify(gate, tmp_path / "list") != 0:
         gate.log_fail("verify_all_blockers should pass when BLOCKER good")
     gate.log_pass("verify_all_blockers accepts good BLOCKER")

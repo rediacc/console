@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-preview-worker-reaping.sh`, retired in W7 P5.
 
-Phase 5b of `.ci/scripts/housekeeping/cleanup-versions.sh` reaps orphaned per-PR preview Workers -- and must never reap anything else, because there is no undo.
+Phase 5b of `rediacc_ci.housekeeping.cleanup_versions` (the port that replaced `.ci/scripts/housekeeping/cleanup-versions.sh`) reaps orphaned per-PR preview Workers -- and must never reap anything else, because there is no undo.
 
 WHAT WENT WRONG, measured 2026-08-26: `Cleanup PR Preview` run 32903006150 died at the app-token step on GitHub's OWN internal DNS (internal-api.service.iad.github.net, "Name or service not known") before
 checkout, so neither of its two cleanups ran. Phase 5 backstops the Pages side;
@@ -16,12 +16,13 @@ WHAT THIS GATE CANNOT SEE: it tests the SELECTOR and the guards by reading them,
 READ-ONLY against the subject; this module writes nothing anywhere.
 """
 
+import ast
 import re
 
 from rediacc_ci import paths
-from rediacc_ci.tests.gates import harness
 
-SUT = paths.from_root(".ci", "scripts", "housekeeping", "cleanup-versions.sh")
+SUT = paths.from_root(".ci", "rediacc_ci", "housekeeping", "cleanup_versions.py")
+PHASE_OPENER = "    def cleanup_preview_workers(self) -> None:"
 
 # The selector, as the phase uses it, written ONCE. A second spelling of it here and in the subject-agreement case below is how a gate and its subject drift.
 PR_WORKER_PATTERN = "^pr-([0-9]+)$"
@@ -59,11 +60,63 @@ def source(gate) -> str:
 
 
 def phase_body(gate) -> list[str]:
-    """`cleanup_preview_workers`'s body, as lines. Empty is a REFUSAL."""
-    body = harness.block_from(source(gate), "cleanup_preview_workers() {")
+    """`cleanup_preview_workers`'s body, as lines. Empty is a REFUSAL.
+
+    A Python body has no closing brace to anchor on, so the method is closed by the first non-blank line after the opener indented no deeper than the opener itself: the next `    def `, a decorator, or the end of the class. A body that ran to end of file would let the DELETE and DRY_RUN checks match code outside the phase.
+    """
+    body = extract_body(source(gate))
     if not body:
         gate.log_fail("could not extract cleanup_preview_workers from the subject")
     return body
+
+
+def extract_body(text: str) -> list[str]:
+    """The lines of `PHASE_OPENER`'s method in `text`; empty when it is absent or the text does not parse.
+
+    Taken from the syntax tree, not from indentation: a column-0 comment or a line of a multi-line string inside the method must not end the body early (review finding cc0f8ea7.1).
+    """
+    name = PHASE_OPENER.split("def ", 1)[1].split("(", 1)[0]
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    lines = text.splitlines()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            return lines[node.lineno - 1 : node.end_lineno]
+    return []
+
+
+def test_phase_body_stops_at_the_end_of_its_class(gate):
+    """The phase as the LAST method of its class: the body must not run on into top-level code, which could satisfy the ordering checks from outside the phase."""
+    text = (
+        "class Reaper:\n"
+        + PHASE_OPENER
+        + "\n        self.go()\n\n        # tail comment\n        self.stop()\n"
+        + "\n\ndef later():\n    client.delete(DELETE)\n"
+    )
+    body = extract_body(text)
+    if any("later" in ln or "DELETE" in ln for ln in body):
+        gate.log_fail("the body ran past the end of its class: %r" % body)
+    if not any("self.stop()" in ln for ln in body):
+        gate.log_fail("the body lost its own tail: %r" % body)
+    gate.log_pass("the phase body ends where its class does")
+
+
+def test_phase_body_survives_a_column_zero_line_inside_it(gate):
+    """A column-0 comment and a column-0 line of a multi-line string inside the method do not end the body."""
+    text = (
+        "class Reaper:\n"
+        + PHASE_OPENER
+        + '\n        self.go()\n# column zero comment\n        note = """\ncolumn zero string\n"""\n'
+        + "        self.stop()\n    def other(self):\n        pass\n"
+    )
+    body = extract_body(text)
+    if not any("self.stop()" in ln for ln in body):
+        gate.log_fail("a column-0 line inside the method truncated the body: %r" % body)
+    if any("other" in ln for ln in body):
+        gate.log_fail("the body ran into the next method: %r" % body)
+    gate.log_pass("the phase body survives column-0 lines inside it")
 
 
 def first_line_with(body: list[str], needle: str) -> int:
@@ -93,7 +146,7 @@ def test_selector_matches_only_pr_numbers(gate):
 def test_selector_regex_is_the_one_in_the_subject(gate):
     if PR_WORKER_PATTERN not in source(gate):
         gate.log_fail(
-            "cleanup-versions.sh no longer uses the anchored %s selector" % PR_WORKER_PATTERN
+            "cleanup_versions.py no longer uses the anchored %s selector" % PR_WORKER_PATTERN
         )
     gate.log_pass("subject and gate agree on the selector")
 
@@ -124,27 +177,27 @@ def test_fails_closed_when_pr_list_unreadable(gate):
     """By construction: the guard must RETURN before any delete. Assert on the ORDERING, which is the property -- a warn that still falls through to a delete reads identically in a diff."""
     body = phase_body(gate)
     guard_line = first_line_with(body, "SKIPPING Worker cleanup")
-    delete_line = first_line_with(body, "cf_api DELETE")
+    delete_line = first_line_with(body, '"DELETE", "/accounts/')
     if not guard_line:
         gate.log_fail("the fail-closed guard is GONE from cleanup_preview_workers")
     if not delete_line:
         gate.log_fail("no delete call found; the phase does nothing")
     if guard_line >= delete_line:
         gate.log_fail("the fail-closed guard sits AFTER the delete, so it guards nothing")
-    window = body[guard_line - 1 : guard_line + 2]
-    if not any("return 0" in line for line in window):
+    window = body[guard_line - 1 : guard_line + 4]
+    if not any(line.strip() == "return" for line in window):
         gate.log_fail("the unreadable-PR-list branch warns but does not return")
     gate.log_pass("unreadable PR list returns before any delete")
 
 
 def test_dry_run_and_budget_are_honoured(gate):
     body = phase_body(gate)
-    if not any("DRY_RUN" in line for line in body):
-        gate.log_fail("phase ignores DRY_RUN -- a dry run would DELETE")
+    if not any("self.dry_run" in line for line in body):
+        gate.log_fail("phase ignores the dry-run flag -- a dry run would DELETE")
     if not any("deletes_budget_ok" in line for line in body):
         gate.log_fail("phase ignores MAX_DELETES_PER_RUN")
-    dry_line = first_line_with(body, "DRY_RUN")
-    delete_line = first_line_with(body, "cf_api DELETE")
+    dry_line = first_line_with(body, "self.dry_run")
+    delete_line = first_line_with(body, '"DELETE", "/accounts/')
     if not (dry_line and delete_line and dry_line < delete_line):
         gate.log_fail("the DRY_RUN check sits AFTER the delete")
     gate.log_pass("DRY_RUN and budget both precede the delete")
@@ -152,7 +205,9 @@ def test_dry_run_and_budget_are_honoured(gate):
 
 def test_phase_is_actually_invoked(gate):
     """A phase nobody calls reaps nothing."""
-    invoked = re.search(r"^[ \t]*cleanup_preview_workers[ \t]*$", source(gate), re.MULTILINE)
+    invoked = re.search(
+        r"^[ \t]*self\.cleanup_preview_workers\(\)[ \t]*$", source(gate), re.MULTILINE
+    )
     if not invoked:
         gate.log_fail("cleanup_preview_workers is defined but never invoked")
     gate.log_pass("phase is wired into the run")

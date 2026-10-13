@@ -50,7 +50,6 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "verify-edge-endpoints.sh"
 STABLE_TWIN = ROOT / ".ci" / "scripts" / "deploy" / "verify-stable-endpoints.sh"
-COMMON_LIB = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "verify_edge_endpoints.py"
 REGIONS = ROOT / "regions.json"
 
@@ -262,7 +261,6 @@ def fixture_tree(tmp_path: pathlib.Path, *, with_regions: bool) -> pathlib.Path:
     if diff.regolden_mode() == "bash":
         shutil.copy2(TWIN, tree / ".ci" / "scripts" / "deploy" / TWIN.name)
         shutil.copy2(STABLE_TWIN, tree / ".ci" / "scripts" / "deploy" / STABLE_TWIN.name)
-        shutil.copy2(COMMON_LIB, tree / ".ci" / "scripts" / "lib" / COMMON_LIB.name)
     (tree / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", tree / ".ci" / "config" / "well-known.env"
@@ -717,7 +715,7 @@ def test_version_unset_refuses_on_both_sides_reworded(tmp_path: pathlib.Path) ->
     assert new.rc == 1
     assert "VERSION" in old.err
     assert "VERSION must be set" in old.err
-    assert new.err == "verify-edge-endpoints.py: VERSION must be set\n"
+    assert new.err == "rediacc_ci.deploy.verify_edge_endpoints: VERSION must be set\n"
     assert old.out == ""
     assert new.out == ""
     assert old.log == "", "neither side may reach the network without a VERSION"
@@ -735,7 +733,13 @@ def test_a_missing_curl_refuses_identically(tmp_path: pathlib.Path) -> None:
         if found:
             (lean / tool).symlink_to(found)
     env = diff.env_for(PATH=str(lean), VERSION="1.2.3", **BUDGET)
-    old = diff.bash_streams("bash %s" % TWIN, env=env, timeout=30)
+    old = diff.twin_streams(
+        str(TWIN.relative_to(ROOT)),
+        "bash %s" % TWIN,
+        env=env,
+        timeout=30,
+        work=(tmp_path,),
+    )
     env_new = dict(env)
     env_new["PYTHONPATH"] = str(ROOT / ".ci")
     env_new["PYTHONDONTWRITEBYTECODE"] = "1"

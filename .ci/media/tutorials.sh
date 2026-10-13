@@ -18,7 +18,7 @@
 # ./run.sh invocation and requires it to arrive inside the function here that owns it.
 #
 # SOURCED, NEVER EXECUTED. Callers supply ROOT_DIR, the log_* helpers, and
-# check_node_version/ensure_deps from .ci/lib/local-common.sh. It calls into every
+# check_node_version/ensure_deps from media-entry.sh. It calls into every
 # other .ci/media module, so media-entry.sh sources this one LAST.
 
 # True if REDIACC_ALLOW_GRAND_REPO contains a `*` entry (machine-level wildcard).

@@ -33,7 +33,7 @@ from rediacc_ci.release import nightly_tested_edge
 from rediacc_ci.release.list_edge_releases import semver
 from rediacc_ci.release.nightly_tested_edge import edge_tested_by_nightly
 
-SELF = "check-soak-period.py"
+SELF = "rediacc_ci.release.check_soak_period"
 
 # The `blocked=` value written when the selected version is older than the edge R2 carries and has no channel snapshot; see the R2 note in `main`.
 R2_SNAPSHOT_BLOCK = "r2-channel-snapshot"

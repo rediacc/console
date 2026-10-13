@@ -71,8 +71,6 @@ def world(tmp_path: pathlib.Path) -> h.World:
     for rel in (
         SUBJECT,
         ".ci/scripts/lib/release-state-validator.sh",
-        ".ci/scripts/lib/blocker-validator.sh",
-        ".ci/scripts/lib/emit-advisory.sh",
         ".ci/config/well-known.env",
     ):
         if not (src / rel).is_file():  # a retired twin: only a re-freeze from bash runs it

@@ -8,6 +8,7 @@ the dispatcher with a stub `gh` that answers `pr view` for a green PR, so the `h
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import pathlib
@@ -44,8 +45,18 @@ def _git(repo, *args):
     ).stdout.strip()
 
 
+# The finding's Resolution line per `record` kind; `<kind>@<severity>` sets the severity (default high).
+RESOLUTIONS = {
+    "open": "open",
+    "resolved": "not-a-bug | f.py:2 names the second element on purpose | deadbeef 2026-10-02T00:00:00Z",
+    "deferred": "deferred #abcdef12 | deadbeef 2026-10-02T00:00:00Z",
+    "fixed": "fixed %(sha)s | deadbeef 2026-10-02T00:00:00Z",
+    "waived": "waived #abcdef12 ASKED:2026-10-02T00:00Z | deadbeef 2026-10-02T00:00:00Z",
+}
+
+
 def _world(tmp_path, record):
-    """A checkout of BRANCH one commit past origin/main. `record` is None (no review), "open" (an open high finding) or "resolved" (the same finding marked not-a-bug); a written record is committed beside the commit it reviews."""
+    """A checkout of BRANCH one commit past origin/main. `record` is None (no review), or a RESOLUTIONS kind optionally suffixed `@<severity>`: "open" (an open high finding), "resolved" (the same finding marked not-a-bug), "deferred" (a legacy deferral), "fixed" or "waived"; a written record is committed beside the commit it reviews."""
     repo = tmp_path / "repo"
     origin = tmp_path / "origin.git"
     subprocess.run(
@@ -66,16 +77,15 @@ def _world(tmp_path, record):
     if record in ("ledger", "ledger-dirty", "ledger-garbled", "ledger-empty"):
         _ledger_record(repo, sha, record)
     elif record is not None:
+        kind, _, severity = record.partition("@")
         finding = R.Finding(
             id="%s.1" % sha[:8],
-            severity="high",
+            severity=severity or "high",
             file="f.py",
             line=2,
             anchor="in-diff",
             claim="values[1] reads the second element, not the first",
-            resolution="open"
-            if record == "open"
-            else "not-a-bug | f.py:2 names the second element on purpose | deadbeef 2026-10-02T00:00:00Z",
+            resolution=RESOLUTIONS[kind] % {"sha": sha},
         )
         review = R.Review(
             sha=sha,
@@ -170,30 +180,44 @@ def test_check_refuses_a_branch_that_is_not_checked_out(tmp_path):
     assert "not-checked-out" in got.stdout, got.stdout
 
 
+def _refusals(repo, branch=BRANCH):
+    """review_refusals with the PR head the way the guard passes it: the fixture's own HEAD."""
+    return merge_guard.review_refusals(repo, branch, GH_REPO, _git(repo, "rev-parse", "HEAD"))
+
+
 def test_merge_arm_refuses_the_open_finding_and_passes_the_clean_branch(tmp_path):
-    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "a", "open"), BRANCH, GH_REPO)
+    reasons, lines = _refusals(_world(tmp_path / "a", "open"))
     assert reasons == ["blocking"], (reasons, lines)
     assert any("OPEN [high]" in line for line in lines), lines
-    reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "b", "resolved"), BRANCH, GH_REPO
-    )
+    reasons, lines = _refusals(_world(tmp_path / "b", "resolved"))
     assert reasons == [], (reasons, lines)
+
+
+def test_merge_arm_refuses_when_the_pr_head_sha_is_missing(tmp_path):
+    """Finding b18d31bd.5: an empty headRefOid once skipped the stale-tip pin and judged a possibly stale tip silently."""
+    repo = _world(tmp_path, "resolved")
+    reasons, lines = merge_guard.review_refusals(repo, BRANCH, GH_REPO, "")
+    assert reasons == ["unverifiable"], (reasons, lines)
+    assert any("headRefOid" in line for line in lines), lines
+    # CONTROL: the same clean branch with the head sha passes, so the refusal is the missing sha's doing.
+    assert _refusals(repo)[0] == []
 
 
 def test_merge_arm_fails_closed_when_the_reviewer_does_not_import(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "wl_review", None)
-    reasons, lines = merge_guard.review_refusals(tmp_path, BRANCH, GH_REPO)
+    reasons, lines = merge_guard.review_refusals(tmp_path, BRANCH, GH_REPO, "a" * 40)
     assert reasons == ["unverifiable"], (reasons, lines)
+    assert any("ImportError" in line or "could not run" in line for line in lines), lines
 
 
 def test_merge_arm_fails_closed_on_an_unreadable_head_branch(tmp_path):
-    reasons, _lines = merge_guard.review_refusals(_world(tmp_path, "resolved"), "", GH_REPO)
+    reasons, _lines = _refusals(_world(tmp_path, "resolved"), "")
     assert reasons, "an empty headRefName must refuse, never pass"
 
 
 GH_STUB = """#!/bin/sh
 case "$1 $2" in
-  "pr view") printf '%s\\n' '{"number":7,"headRefName":"0930-1","statusCheckRollup":[{"name":"CI Complete","conclusion":"SUCCESS"}],"body":"Operational-Reason: the plan gate is a separate suite"}' ;;
+  "pr view") printf '%s\\n' '{"number":7,"headRefName":"0930-1","headRefOid":"@HEAD@","statusCheckRollup":[{"name":"CI Complete","conclusion":"SUCCESS"}],"body":"Operational-Reason: the plan gate is a separate suite"}' ;;
   "api graphql") echo 0 ;;
   "auth token") echo token ;;
   *) exit 1 ;;
@@ -207,7 +231,7 @@ def test_the_guard_end_to_end_reads_the_head_branch(tmp_path, record, denied):
     stub_bin = tmp_path / "bin"
     stub_bin.mkdir()
     gh = stub_bin / "gh"
-    gh.write_text(GH_STUB, encoding="utf-8")
+    gh.write_text(GH_STUB.replace("@HEAD@", _git(repo, "rev-parse", "HEAD")), encoding="utf-8")
     gh.chmod(0o755)
     payload = json.dumps(
         {
@@ -285,11 +309,9 @@ def test_a_rebased_copy_whose_patch_id_is_in_the_ledger_counts_as_covered(tmp_pa
 
 
 def test_merge_arm_passes_the_ledger_branch_and_refuses_it_without_the_line(tmp_path):
-    reasons, lines = merge_guard.review_refusals(_world(tmp_path / "a", "ledger"), BRANCH, GH_REPO)
+    reasons, lines = _refusals(_world(tmp_path / "a", "ledger"))
     assert reasons == [], (reasons, lines)
-    reasons, lines = merge_guard.review_refusals(
-        _world(tmp_path / "b", "ledger-empty"), BRANCH, GH_REPO
-    )
+    reasons, lines = _refusals(_world(tmp_path / "b", "ledger-empty"))
     assert reasons == ["uncovered"], (reasons, lines)
 
 
@@ -347,3 +369,289 @@ def test_status_names_a_submodule_review_in_flight_while_the_console_is_clean(tm
     assert got.returncode == 0, got.stdout + got.stderr
     assert "IN FLIGHT private/sub %s" % sha[:8] in got.stdout, got.stdout
     assert "clean" not in got.stdout, got.stdout
+
+
+def test_a_pushed_branch_not_checked_out_is_judged_at_its_pushed_tip(tmp_path):
+    """2026-10-08: the operator parked 1007-1's local commits on 1008-1, and block_admin_merge then refused PR #599 as `not-checked-out`. A PR merges what was pushed, so the walk reads origin/<branch>; an unreviewed commit that exists only on the parking branch must not count."""
+    for name, record, want in (("clean", "resolved", []), ("unreviewed", None, ["uncovered"])):
+        repo = _world(tmp_path / name, record)
+        _git(repo, "push", "-q", "origin", BRANCH)
+        _git(repo, "fetch", "-q", "origin")
+        _git(repo, "checkout", "-q", "-b", "parked")
+        (repo / "later.py").write_text("x = 1\n", encoding="utf-8")
+        _git(repo, "add", "later.py")
+        _git(repo, "commit", "-q", "-m", "feat(x): parked, never pushed")
+        reasons, lines = R.check_state(repo, BRANCH, label="console")
+        assert reasons == want, (name, reasons, lines)
+
+
+def test_control_a_branch_with_no_pushed_ref_still_refuses_when_not_checked_out(tmp_path):
+    repo = _world(tmp_path, "resolved")
+    _git(repo, "checkout", "-q", "-b", "elsewhere")
+    reasons, _lines = R.check_state(repo, BRANCH, label="console")
+    assert reasons == ["not-checked-out"], reasons
+
+
+def test_an_unchecked_out_main_keeps_the_not_checked_out_refusal(tmp_path):
+    """71afd29f.1: `origin/main` always exists, so the pushed-tip stand-in must not apply to main; judged at its own pushed tip, main walks an empty range and reads as clean."""
+    repo = _world(tmp_path, "resolved")
+    reasons, _lines = R.check_state(repo, "main", label="console")
+    assert reasons == ["not-checked-out"], reasons
+
+
+# --------------------------------------------------------------------------- deferrals (agent/plans/PLAN-deferred-findings-block-merge.md L1, L5)
+
+
+@pytest.mark.parametrize("severity", ["low", "medium", "high"])
+def test_check_refuses_a_deferral_at_any_severity(tmp_path, severity):
+    """D1: a legacy deferral is a refusal whatever its severity and whatever state its item is in; no worklist fold is read."""
+    got = _check(_world(tmp_path, "deferred@%s" % severity))
+    assert got.returncode == 1, got.stdout + got.stderr
+    assert "refused (deferred)" in got.stdout, got.stdout
+    assert "DEFERRED [%s]" % severity in got.stdout, got.stdout
+    assert "worklist.py --triage <me> '" in got.stdout, got.stdout
+
+
+@pytest.mark.parametrize("kind", ["fixed", "waived", "fixed@low", "waived@low"])
+def test_control_the_same_finding_fixed_or_waived_is_clean(tmp_path, kind):
+    """CONTROL: only the Resolution line differs from the refused world above."""
+    got = _check(_world(tmp_path, kind))
+    assert got.returncode == 0, got.stdout + got.stderr
+    assert "clean" in got.stdout, got.stdout
+
+
+def test_a_deferral_refuses_whatever_its_item_state_and_a_lease_changes_no_refusal(tmp_path):
+    repo = _world(tmp_path, "deferred@low")
+    for items in (None, {}, {"abcdef12": " "}, {"abcdef12": "x"}, {"abcdef12": ">"}):
+        st = R.branch_state(repo, BRANCH, repos={"console"}, items=items)
+        assert [f.id for _p, f in st["deferred"]], (items, st)
+        assert R.push_refusals(st) == ["deferred"], (items, R.push_refusals(st))
+        assert not st["blocking"], "a deferral never reopens to open"
+        assert not st["advisory"], "a deferral never reopens to open"
+
+
+def test_merge_arm_refuses_the_deferral_and_passes_the_fixed_branch(tmp_path):
+    reasons, lines = _refusals(_world(tmp_path / "a", "deferred"))
+    assert reasons == ["deferred"], (reasons, lines)
+    assert any(line.startswith("DEFERRED [high]") for line in lines), lines
+    reasons, lines = _refusals(_world(tmp_path / "b", "fixed"))
+    assert reasons == [], (reasons, lines)
+
+
+def test_the_merge_message_names_the_deferral_and_the_status_command():
+    assert "deferred" in merge_guard.REVIEWS_MESSAGE
+    assert "wl_review.py --status" in merge_guard.REVIEWS_MESSAGE
+
+
+# --------------------------------------------------------------------------- the pushed tip (finding 71afd29f.3)
+
+
+def _parked(tmp_path, record="resolved"):
+    """BRANCH pushed and then left for a `parked` branch, so check_state judges origin/BRANCH."""
+    repo = _world(tmp_path, record)
+    _git(repo, "push", "-q", "origin", BRANCH)
+    _git(repo, "fetch", "-q", "origin")
+    _git(repo, "checkout", "-q", "-b", "parked")
+    return repo
+
+
+def test_a_pushed_tip_judgement_names_the_ref_its_sha_and_its_age(tmp_path):
+    repo = _parked(tmp_path)
+    sha = _git(repo, "rev-parse", "--short=12", "origin/%s" % BRANCH)
+    reasons, lines = R.check_state(repo, BRANCH, label="console")
+    assert reasons == [], (reasons, lines)
+    assert lines, lines
+    assert lines[0].startswith("judged at origin/%s %s" % (BRANCH, sha)), lines
+    assert "no fetch runs here" in lines[0], lines
+    assert "min ago" in lines[0], lines
+
+
+def test_control_a_checked_out_branch_prints_no_tip_line(tmp_path):
+    reasons, lines = R.check_state(_world(tmp_path, "resolved"), BRANCH, label="console")
+    assert reasons == [], reasons
+    assert not any(line.startswith("judged at") for line in lines), lines
+
+
+def test_a_stale_tracking_ref_is_refused_against_the_pr_head(tmp_path):
+    """The PR head moved on in another clone: this clone's origin/<branch> lacks it, so the walk would miss commits the PR merges."""
+    repo = _parked(tmp_path)
+    other = tmp_path / "other"
+    subprocess.run(
+        ["git", "clone", "-q", "-b", BRANCH, str(tmp_path / "origin.git"), str(other)],
+        check=True,
+        capture_output=True,
+        env=GIT_ENV,
+    )
+    (other / "later.py").write_text("y = 2\n", encoding="utf-8")
+    _git(other, "add", "later.py")
+    _git(other, "commit", "-q", "-m", "feat(x): pushed from another clone")
+    _git(other, "push", "-q", "origin", BRANCH)
+    head = _git(other, "rev-parse", "HEAD")
+    reasons, lines = R.check_state(repo, BRANCH, label="console", expected_tip=head)
+    assert reasons == ["stale-tip"], (reasons, lines)
+    assert any("git fetch origin %s" % BRANCH in line for line in lines), lines
+    # CONTROL: the same check against the tip this clone does hold passes, so the refusal is the pin's doing.
+    held = _git(repo, "rev-parse", "origin/%s" % BRANCH)
+    reasons, _lines = R.check_state(repo, BRANCH, label="console", expected_tip=held)
+    assert reasons == [], reasons
+    _git(repo, "fetch", "-q", "origin")
+    reasons, lines = R.check_state(repo, BRANCH, label="console", expected_tip=head)
+    assert reasons == ["uncovered"], (reasons, lines)
+
+
+def test_the_cli_takes_expect_tip(tmp_path):
+    repo = _world(tmp_path, "resolved")
+    got = _check(repo, "--expect-tip", "0" * 40)
+    assert got.returncode == 1, got.stdout
+    assert "refused (stale-tip)" in got.stdout, got.stdout
+    got = _check(repo, "--expect-tip", _git(repo, "rev-parse", "HEAD"))
+    assert got.returncode == 0, got.stdout + got.stderr
+
+
+def test_the_merge_guard_pins_the_walk_to_the_pr_head_oid():
+    good = json.dumps({"headRefOid": "a" * 40})
+    assert merge_guard._jq_head_oid(good) == "a" * 40
+    assert merge_guard._jq_head_oid(json.dumps({"headRefOid": "nope"})) == ""
+    assert merge_guard._jq_head_oid("") == ""
+
+
+def test_the_guard_end_to_end_refuses_a_head_oid_the_clone_lacks(tmp_path):
+    """The `gh pr view` the guard already makes carries headRefOid; a clean branch whose walked tip lacks it is refused as stale-tip."""
+    repo = _world(tmp_path, "resolved")
+    stub_bin = tmp_path / "bin"
+    stub_bin.mkdir()
+    gh = stub_bin / "gh"
+    gh.write_text(GH_STUB.replace("@HEAD@", "0" * 40), encoding="utf-8")
+    gh.chmod(0o755)
+    payload = json.dumps(
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": "gh pr merge 7 --repo %s --rebase --auto" % GH_REPO},
+            "cwd": str(repo),
+        }
+    )
+    env = dict(
+        GIT_ENV,
+        CLAUDE_PROJECT_DIR=str(repo),
+        PATH="%s%s%s" % (stub_bin, os.pathsep, os.environ.get("PATH", "")),
+    )
+    got = subprocess.run(
+        [sys.executable, str(DISPATCH), "block_admin_merge"],
+        input=payload,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        cwd=str(repo),
+    )
+    assert got.returncode != 0, got.stderr
+    assert "stale-tip" in got.stderr, got.stderr
+
+
+def test_a_submodule_label_ignores_the_console_tip_pin(tmp_path):
+    """Finding b18d31bd.4, by design: a submodule is walked at its own HEAD, so the PR head sha (a commit of ANOTHER repository) is never compared with the console's tip; the console label with the same sha is refused."""
+    repo, _sha = _submodule_world(tmp_path)
+    foreign = "0" * 40
+    reasons, _lines = R.check_state(repo, BRANCH, label="private/sub", expected_tip=foreign)
+    assert "stale-tip" not in reasons, reasons
+    reasons, _lines = R.check_state(repo, BRANCH, label="console", expected_tip=foreign)
+    assert reasons == ["stale-tip"], reasons
+
+
+def test_a_citation_may_name_an_extensionless_file(tmp_path):
+    """`Dockerfile:83` is a path:line like any other (worklist item on the refused not-a-bug mark, 2026-10-11); a line past the file's end, a missing file and a bare clock time still cite nothing."""
+    (tmp_path / "Dockerfile").write_text("FROM x\nRUN y\n", encoding="utf-8")
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "a.py").write_text("x = 1\n", encoding="utf-8")
+    assert R._citation_ok(str(tmp_path), "the consumer is Dockerfile:2, after the install")
+    assert R._citation_ok(str(tmp_path), "see pkg/a.py:1 for the binding")
+    assert not R._citation_ok(str(tmp_path), "the consumer is Dockerfile:9, past the end")
+    assert not R._citation_ok(str(tmp_path), "the consumer is Makefile:1, which is not there")
+    assert not R._citation_ok(
+        str(tmp_path), "measured at 10:35 with a ratio of 3:1 and nothing else"
+    )
+    # A citation is of this repository: an absolute path and a `..` climb name a file outside it.
+    outside = tmp_path.parent / "outside.txt"
+    outside.write_text("x\n", encoding="utf-8")
+    assert not R._citation_ok(str(tmp_path), "the proof is %s:1, outside the tree" % outside)
+    assert not R._citation_ok(str(tmp_path), "the proof is ../outside.txt:1, outside the tree")
+    assert not R._citation_ok(str(tmp_path), "the proof is /etc/hosts:1, outside the tree")
+    # The path token is found by a single-class split and string operations, no pattern over the path, so the scan is linear by construction: the tokens are counted, which a clock cannot be.
+    assert not R._citation_ok(str(tmp_path), "a" * 200000 + " and nothing cited")
+    assert R._cited_paths("see pkg/a.py:1, Dockerfile:2. and x") == [
+        ("pkg/a.py", 1),
+        ("Dockerfile", 2),
+    ]
+    assert R._cited_paths("at 10:35, ratio 3:1") == []
+    assert not R._citation_ok(
+        str(tmp_path), "at 10:35, ratio 3:1, http://host:80/x and nothing else"
+    )
+    assert len(R.CITE_SEPARATORS.split("a" * 200000 + " b:1")) == 2
+    # A tracked symlink whose target lies outside is still a path of this repository.
+    (tmp_path / "linked.txt").symlink_to(outside)
+    assert R._citation_ok(str(tmp_path), "the link is linked.txt:1 in the tree")
+    # A token with no letter is a time or a ratio, even when a file of that name exists.
+    (tmp_path / "10").write_text("a\n" * 40, encoding="utf-8")
+    assert not R._citation_ok(str(tmp_path), "measured at 10:35 and nothing else")
+    # The usual spellings all cite: a column, a range, and a label glued on with a colon.
+    assert R._citation_ok(str(tmp_path), "see pkg/a.py:1:5 for the column")
+    assert R._citation_ok(str(tmp_path), "see Dockerfile:1-2 for the range")
+    assert R._citation_ok(str(tmp_path), "Evidence:pkg/a.py:1")
+    assert ("pkg/a.py", 1) in R._cited_paths("Evidence:pkg/a.py:1:5")
+    # Lines are counted as str.splitlines counts them (a form feed ends a line too).
+    (tmp_path / "ff.txt").write_text("a\x0cb\n", encoding="utf-8")
+    assert R._has_line(str(tmp_path / "ff.txt"), 2)
+    assert not R._has_line(str(tmp_path / "ff.txt"), 3)
+
+
+def test_a_cited_line_is_looked_for_only_within_the_read_bound(tmp_path, monkeypatch):
+    """The bound is what keeps a tracked link to a very large file cheap, so it is asserted directly: with the cap at 10 characters a line inside it cites and one beyond it does not, though the file holds both."""
+    target = tmp_path / "long.txt"
+    target.write_text("a\n" * 5000, encoding="utf-8")
+    assert R._has_line(str(target), 5000)
+    monkeypatch.setattr(R, "CITE_READ_CAP", 10)
+    assert R._has_line(str(target), 5)
+    assert not R._has_line(str(target), 6)
+
+
+def test_a_line_number_ends_its_token_or_is_followed_by_a_column_or_range(tmp_path):
+    """A port is not a line number: `http://host:80/x` cites nothing even when a file named `host` exists, while a column, a range and closing punctuation after the digits still cite."""
+    (tmp_path / "host").write_text("a\n" * 100, encoding="utf-8")
+    assert R._cited_paths("see http://host:80/x for the page") == []
+    # A URL cites nothing, with a path after its port or without one.
+    assert R._cited_paths("see http://host:80 for it") == []
+    assert not R._citation_ok(str(tmp_path), "see http://host:80 for it and nothing else here")
+    assert not R._citation_ok(str(tmp_path), "see http://host:80/x for the page and nothing else")
+    assert ("host", 80) in R._cited_paths("the file is host:80, and host:80:3, and host:80-90).")
+    assert R._citation_ok(str(tmp_path), "the proof sits at host:80-90 in the tree")
+
+
+def test_one_token_yields_a_bounded_number_of_candidates():
+    """A token is cut into at most CITE_PARTS_CAP parts, exactly: a line number in the ninth colon-part is past the cut, so it yields no candidate, while one in the eighth still does."""
+    assert R.CITE_PARTS_CAP == 8
+    assert R._cited_paths("a:b:c:d:e:f:g:h:7") == []
+    assert ("g", 7) in R._cited_paths("a:b:c:d:e:f:g:7")
+
+
+def test_a_cited_line_stops_the_read_at_its_chunk(monkeypatch):
+    """The read is chunked and stops at the cited line: line 1 of a large text costs one chunk, not the whole bound, and a `\\r\\n` split across two chunks is one line boundary, not two."""
+    big = io.StringIO("a\n" * 1_000_000)
+    found, read = R._lines_upto(big, 1, R.CITE_READ_CAP)
+    assert found
+    assert read <= R.CITE_CHUNK
+    # A boundary split across chunks: with a 2-character chunk, "a\r" then "\nb" is two lines, not three.
+    monkeypatch.setattr(R, "CITE_CHUNK", 2)
+    found, _read = R._lines_upto(io.StringIO("a\r\nb"), 3, 100)
+    assert not found
+    assert R._lines_upto(io.StringIO("a\r\nb"), 2, 100)[0]
+
+
+def test_a_long_unterminated_line_is_counted_once_across_chunks(monkeypatch):
+    """Only two facts cross a chunk boundary, so a line far longer than a chunk is one line however many chunks it spans, and the line after it is found."""
+    monkeypatch.setattr(R, "CITE_CHUNK", 7)
+    text = "x" * 100 + "\n" + "y" * 50
+    assert R._lines_upto(io.StringIO(text), 2, 10_000)[0]
+    assert not R._lines_upto(io.StringIO(text), 3, 10_000)[0]
+    assert not R._lines_upto(io.StringIO("x" * 100), 2, 10_000)[0]
+    # The bound is in characters: a line that starts past it is not found.
+    assert not R._lines_upto(io.StringIO(text), 2, 50)[0]

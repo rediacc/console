@@ -1,6 +1,7 @@
 ---
 description: Distill the current session into a durable handoff - a hook-enforced agent/programs/<slug>/CHECKLIST.md, an agent/programs/<slug>/ design suite (README + numbered docs + PROMPT.md), a seeded program-state dir (MANIFEST/reports/checkpoints), and a memory pointer - then print the concise pointer prompt for a fresh session. First token of the arguments is the slug; if agent/programs/<slug>/ already exists this runs in update mode (refresh stale sections, re-verify the checklist, regenerate PROMPT.md, report the delta).
 argument-hint: "[slug] (kebab-case dir under agent/programs/; omit and one is proposed; existing dir = update mode)"
+# User-only by operator ruling 2026-10-09 ("I forgot about handoff command. let's include it into the exception list for CI & hook(s)"): the one entry in the model-invocation exception list.
 disable-model-invocation: true
 allowed-tools: Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(date:*)
 ---

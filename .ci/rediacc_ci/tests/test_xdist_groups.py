@@ -34,11 +34,21 @@ from rediacc_ci.tests.gates import test_twin_parity
 
 REAL_LOCK = xdist_groups.lock_path()
 
-# A lock shaped exactly like the real one: a list of entries whose `run` names a script under .ci/scripts/test/gates/ and which may carry `mutex` / `reads`.
+# A lock shaped exactly like the real one: a list of entries naming their implementing file in `leaves`, which may carry `mutex` / `reads`.
 FIXTURE_LOCK = [
-    {"id": "a", "run": "bash .ci/scripts/test/gates/test-writes.sh", "mutex": ["tree:repo"]},
-    {"id": "b", "run": "bash .ci/scripts/test/gates/test-scans.sh", "reads": ["tree:repo"]},
-    {"id": "c", "run": "bash .ci/scripts/test/gates/test-quiet.sh"},
+    {
+        "id": "a",
+        "run": "npm run a",
+        "leaves": ["scripts/gates/test-writes.sh"],
+        "mutex": ["tree:repo"],
+    },
+    {
+        "id": "b",
+        "run": "npm run b",
+        "leaves": ["scripts/gates/test-scans.sh"],
+        "reads": ["tree:repo"],
+    },
+    {"id": "c", "run": "npm run c", "leaves": ["scripts/gates/test-quiet.sh"]},
     {"id": "d", "run": "npx tsx scripts/check-elsewhere.ts", "mutex": ["tree:repo"]},
 ]
 
@@ -71,8 +81,8 @@ def test_a_gate_declaring_no_tree_resource_is_not_in_the_set(tmp_path) -> None:
     assert "test-quiet.sh" not in xdist_groups.real_tree_twins(lock)
 
 
-def test_a_tree_claim_outside_the_gates_directory_is_not_a_gate_test(tmp_path) -> None:
-    """CONTROL. Entry `d` claims `tree:repo` and is not a gate test at all."""
+def test_a_tree_claim_naming_no_leaf_contributes_nothing(tmp_path) -> None:
+    """CONTROL. Entry `d` claims `tree:repo` but names no implementing file in `leaves`, so there is no basename to group by."""
     lock = _write(tmp_path)
     assert "check-elsewhere.ts" not in xdist_groups.real_tree_twins(lock)
 
@@ -414,6 +424,27 @@ def test_a_hung_holder_is_named_after_the_bound(tmp_path) -> None:
         ):
             lock.enter("stuck")
     finally:
+        holder.kill()
+        holder.wait()
+
+
+def test_a_queue_of_holders_is_busy_not_hung(tmp_path) -> None:
+    """The bound is per holder name. The group stays taken for 3 s against a 2.5 s bound, and the name in the lock file is rewritten after 1.5 s, which is all a waiter can see of one run leaving and the next taking the group. The clock restarts on the new name, so the waiter gets in when the group frees, a second before its restarted bound."""
+    holder = _hold(tmp_path, "queued", 3)
+    lock_file = tmp_path / "queued.lock"
+
+    def next_holder() -> None:
+        __import__("time").sleep(1.5)
+        lock_file.write_text("pid 1\n", encoding="utf-8")
+
+    changer = __import__("threading").Thread(target=next_holder)
+    changer.start()
+    try:
+        lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=2.5)
+        lock.enter("queued")
+        lock.release()
+    finally:
+        changer.join()
         holder.kill()
         holder.wait()
 

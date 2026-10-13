@@ -21,6 +21,7 @@ import dataclasses
 import datetime
 import hashlib
 import importlib.util
+import itertools
 import json
 import keyword
 import os
@@ -32,6 +33,9 @@ import sys
 import tempfile
 import time
 
+import wl_models
+import wl_store
+
 HERE = pathlib.Path(__file__).resolve().parent
 CONSOLE_ROOT = HERE.parents[2]
 CONFIG_REL = ".ci/config/commit-review.json"
@@ -40,7 +44,6 @@ SELF = HERE / "wl_review.py"
 WORKLIST = HERE / "worklist.py"
 
 DEFAULTS = {
-    "model": "claude-haiku-4-5-20251001",
     "budget_usd": 0.3,
     "timeout_s": 240,
     "max_concurrent": 2,
@@ -78,8 +81,19 @@ RESOLUTION_RES = (
         "not-a-bug",
         re.compile(r"^not-a-bug \| (.{20,}) \| (%s|%s) (%s)$" % (ME8, ORACLE_SIGNER, ISOZ)),
     ),
+    # LEGACY: `deferred` is retired as a new resolution (agent/plans/PLAN-deferred-findings-block-merge.md D1). The parser still reads it so merged history stays well formed, and every reader of the judged branch refuses it at any severity.
     ("deferred", re.compile(r"^deferred #([0-9a-f]{6,16}) \| (%s) (%s)$" % (ME8, ISOZ))),
+    # The one escape (D3): an operator-ruled waiver, written only by the mark verb after it checks the item, its operator-only triage and the AskUserQuestion answer at the `ASKED:` minute.
+    (
+        "waived",
+        re.compile(
+            r"^waived #([0-9a-f]{6,16}) ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})Z \| (%s) (%s)$"
+            % (ME8, ISOZ)
+        ),
+    ),
 )
+RESOLUTION_BY_KIND = dict(RESOLUTION_RES)
+RESOLUTION_GRAMMAR = "open | fixed <sha40> | not-a-bug | <evidence> | waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z (legacy: deferred #<item>), each signed `| <me8> <isoZ>`"
 VERDICT_RE = re.compile(
     r"^(findings|clean|skipped \((?:gitlink-only|no-review)\)|failed \([^()\n]{1,200}\))$"
 )
@@ -198,6 +212,8 @@ def load_config(root=None):
         cfg.update({k: v for k, v in doc.items() if k in DEFAULTS})
     if cfg.get("block_at") not in SEV_RANK:
         cfg["block_at"] = "high"
+    # Not a config key: the model id is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, the one place an upgrade edits (the Stop-hook judge reads it too).
+    cfg["model"] = wl_models.haiku_model()
     return cfg
 
 
@@ -316,12 +332,12 @@ class Finding:
         return ""
 
     def deferred_item(self):
-        m = RESOLUTION_RES[3][1].match(self.resolution)
+        m = RESOLUTION_BY_KIND["deferred"].match(self.resolution)
         return m.group(1) if m else ""
 
     def oracle_refuted(self):
         """True when the existence oracle, not a person, closed this finding."""
-        m = RESOLUTION_RES[2][1].match(self.resolution)
+        m = RESOLUTION_BY_KIND["not-a-bug"].match(self.resolution)
         return bool(m and m.group(2) == ORACLE_SIGNER)
 
 
@@ -563,9 +579,7 @@ def parse(text):
         )
         if not finding.resolution_kind():
             raise MalformedReviewError(
-                "Resolution %r is not open | fixed <sha40> | not-a-bug | <evidence> | deferred #<item>, each signed `| <me8> <isoZ>`"
-                % finding.resolution[:80],
-                rn,
+                "Resolution %r is not %s" % (finding.resolution[:80], RESOLUTION_GRAMMAR), rn
             )
         review.findings.append(finding)
     if body_sig(review.findings) != review.body_sig:
@@ -961,14 +975,14 @@ def acquire_slot(cfg, sleep=time.sleep, clock=time.monotonic):
 # --------------------------------------------------------------------------- coverage (section 3.1)
 
 
-def base_range(repo, branch):
-    """The branch's own commits: `origin/main..HEAD` on main (a hotfix), else `merge-base(origin/main, HEAD)..HEAD`. "" when origin/main is unknown."""
+def base_range(repo, branch, tip="HEAD"):
+    """The branch's own commits: `origin/main..<tip>` on main (a hotfix), else `merge-base(origin/main, <tip>)..<tip>`. "" when origin/main is unknown. `tip` is HEAD unless the branch is judged at its pushed ref (check_state)."""
     if not git_out(repo, "rev-parse", "-q", "--verify", "origin/main^{commit}"):
         return ""
     if branch == "main":
-        return "origin/main..HEAD"
-    base = git_out(repo, "merge-base", "origin/main", "HEAD")
-    return "%s..HEAD" % base if base else ""
+        return "origin/main..%s" % tip
+    base = git_out(repo, "merge-base", "origin/main", tip)
+    return "%s..%s" % (base, tip) if base else ""
 
 
 def branch_commits(repo, rng, limit):
@@ -1051,13 +1065,13 @@ def patch_id(repo, sha):
     return out.split()[0] if rc == 0 and out.split() else ""
 
 
-def uncovered(root, repo, branch, cfg=None):
+def uncovered(root, repo, branch, cfg=None, tip="HEAD"):
     """Commits of the branch, newest first, that have no review record (a `.md` file or a ledger line, by sha or patch-id) and no live reviewer.
 
     Dropped before the question is asked: merge commits, commits that touch only `agent/reviews/` (no review of reviews), empty commits and commits authored before `review_epoch`.
     """
     cfg = cfg or load_config(root)
-    commits = branch_commits(repo, base_range(repo, branch), int(cfg["max_uncovered_scan"]))
+    commits = branch_commits(repo, base_range(repo, branch, tip), int(cfg["max_uncovered_scan"]))
     by_sha, by_patch = review_index(root, branch)
     out = []
     for c in commits:
@@ -1071,10 +1085,10 @@ def uncovered(root, repo, branch, cfg=None):
     return out
 
 
-def in_scope_shas(root, repo, branch, cfg=None):
+def in_scope_shas(root, repo, branch, cfg=None, tip="HEAD"):
     """Every commit of the branch the review applies to (the same filter as `uncovered`, without the coverage test)."""
     cfg = cfg or load_config(root)
-    commits = branch_commits(repo, base_range(repo, branch), int(cfg["max_uncovered_scan"]))
+    commits = branch_commits(repo, base_range(repo, branch, tip), int(cfg["max_uncovered_scan"]))
     return [
         c["sha"]
         for c in commits
@@ -2226,10 +2240,10 @@ def _untracked_or_modified(root, d):
     return names
 
 
-def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=()):
+def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(), tip="HEAD"):
     """Everything a reader needs about the branch's reviews, computed once.
 
-    `items`, when given, is {item_id: state} from the worklist fold: a `deferred #<item>` whose item is gone reopens its finding. Without it a deferral counts as resolved (the mark verb checked the item when it was written).
+    A legacy `deferred #<item>` lands in `st["deferred"]` at any severity, whatever state its item is in (agent/plans/PLAN-deferred-findings-block-merge.md D1), and push_refusals refuses it. `items`, when given, is the worklist fold as {item_id: state} or {item_id: (state, text, ...)}: a deferral whose own item, or any item whose text names the finding, is leased `[>]` is also listed in `st["deferred_in_flight"]`, which moves its Stop-hook line from the block to the note (D5) and changes no refusal.
     `repos`, when given, limits the coverage walk; default: the console plus every repo a review in the directory names.
     `extra_repos` is added to whichever set that is: `--status` and `--check` add branch_repos() so a submodule review still in flight (no file yet) is walked, without dropping a repo only a review file names.
     """
@@ -2248,7 +2262,10 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=())
         "in_flight": [],
         "uncommitted": [],
         "uncovered": [],
+        "deferred": [],
+        "deferred_in_flight": [],
     }
+    leased = _leased_items(items)
     dirty = _untracked_or_modified(root, d) if d.is_dir() else set()
     seen_repos = {"console"}
     records, st["malformed"] = dir_records(d)
@@ -2270,8 +2287,12 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=())
             )
         for f in review.findings:
             kind = f.resolution_kind()
-            reopened = kind == "deferred" and items is not None and f.deferred_item() not in items
-            if kind != "open" and not reopened:
+            if kind == "deferred":
+                st["deferred"].append((path, f))
+                if f.deferred_item() in leased or any(f.id in text for text in leased.values()):
+                    st["deferred_in_flight"].append((path, f))
+                continue
+            if kind != "open":
                 continue
             (st["blocking"] if SEV_RANK[f.severity] >= block_rank else st["advisory"]).append(
                 (path, f)
@@ -2282,12 +2303,25 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=())
             continue
         if current_branch(repo) != branch and label != "console":
             continue
-        for sha in in_scope_shas(root, repo, branch, cfg):
+        walk_tip = tip if label == "console" else "HEAD"
+        for sha in in_scope_shas(root, repo, branch, cfg, walk_tip):
             if lock_live(sha):
                 st["in_flight"].append((label, sha))
-        for sha in uncovered(root, repo, branch, cfg):
+        for sha in uncovered(root, repo, branch, cfg, walk_tip):
             st["uncovered"].append((label, sha))
     return st
+
+
+def _leased_items(items):
+    """{item_id: text} of every `[>]` item in a worklist fold given as {id: state} or {id: (state, text, ...)}; text is "" when the fold carries none."""
+    out = {}
+    for item_id, rec in (items or {}).items():
+        state, text = (
+            (rec, "") if isinstance(rec, str) else (rec[0], rec[1] if len(rec) > 1 else "")
+        )
+        if state == ">":
+            out[item_id] = text or ""
+    return out
 
 
 def branch_repos(root, branch):
@@ -2323,9 +2357,39 @@ def mark_commands(finding_id):
         "worklist.py --review-mark <me> %s fixed <sha-of-the-fix>" % finding_id,
         "worklist.py --review-mark <me> %s not-a-bug <evidence citing path:line or a sha>"
         % finding_id,
-        "worklist.py --review-mark <me> %s deferred #<worklist-item naming %s>"
+        "worklist.py --review-mark <me> %s waived #<operator-only item naming %s> ASKED:<YYYY-MM-DDTHH:MM>Z"
         % (finding_id, finding_id),
     )
+
+
+def triage_command(f):
+    """D5 step 1: one new worklist item per deferred finding, through the triage verb, so its verdict names the next step."""
+    claim = " ".join(f.claim.replace("'", "").split())[:160]
+    return "worklist.py --triage <me> '%s %s:%d: %s'" % (f.id, f.file, f.line, claim)
+
+
+# D5: the order a deferred finding is settled in. A deferral is unfinished work; nothing parks it.
+DEFERRAL_ORDER = (
+    "then by the triage verdict:",
+    "  INLINE: fix it, commit, then worklist.py --review-mark <me> <finding-id> fixed <sha-of-the-fix>",
+    "  PLAN+SUBAGENT: a Plan agent writes agent/plans/PLAN-<slug>.md, a leased writer fixes it this session, then worklist.py --review-mark <me> <finding-id> fixed <sha>",
+    "  OPERATOR-ONLY: AskUserQuestion, then worklist.py --review-mark <me> <finding-id> waived #<triage-item> ASKED:<YYYY-MM-DDTHH:MM>Z",
+    "  or, when a re-read shows no defect: worklist.py --review-mark <me> <finding-id> not-a-bug <evidence citing path:line or a sha>",
+)
+
+
+def deferral_lines(rows):
+    """The finding line and its triage command for each deferred finding, then the order once."""
+    if not rows:
+        return []
+    out = []
+    for _p, f in rows:
+        out.append(
+            "DEFERRED [%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160])
+        )
+        out.append("    " + triage_command(f))
+    out.extend("  " + line for line in DEFERRAL_ORDER)
+    return out
 
 
 def describe(st, limit=5):
@@ -2338,6 +2402,8 @@ def describe(st, limit=5):
     for _path, f in st["blocking"][:limit]:
         out.append("OPEN [%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160]))
         out.extend("    " + c for c in mark_commands(f.id))
+    # Every deferral is listed, not `limit` of them: each is a refusal on its own, and a --check that names some of them hides the rest.
+    out.extend(deferral_lines(st.get("deferred", [])))
     for label, sha in st["uncovered"][:limit]:
         out.append("UNREVIEWED %s %s: %s" % (label, sha[:8], run_command(label, sha, st["branch"])))
     for label, sha in st["in_flight"][:limit]:
@@ -2394,6 +2460,8 @@ def push_refusals(st, console_push=True):
         reasons.append("malformed")
     if st["blocking"]:
         reasons.append("blocking")
+    if st.get("deferred"):
+        reasons.append("deferred")
     if st["uncovered"]:
         reasons.append("uncovered")
     if st["in_flight"]:
@@ -2408,16 +2476,38 @@ def push_refusals(st, console_push=True):
 CHECK_COMMAND = "python3 .claude/hooks/stop/wl_review.py --check"
 
 
-def check_state(root, branch, label="console", cfg=None):
-    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at`, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
+def _ref_age(root, ref, now=None):
+    """How long ago `ref` last moved, from its reflog ("12 min ago"), or "at an unknown time" when the reflog holds no entry."""
+    out = git_out(root, "log", "-g", "-1", "--date=unix", "--format=%gd", ref)
+    m = re.search(r"@\{(\d+)\}", out or "")
+    if not m:
+        return "at an unknown time"
+    secs = max(0, int((now if now is not None else time.time()) - int(m.group(1))))
+    if secs < 3600:
+        return "%d min ago" % (secs // 60)
+    if secs < 172800:
+        return "%d h ago" % (secs // 3600)
+    return "%d days ago" % (secs // 86400)
 
-    The coverage walk reads `merge-base(origin/main, HEAD)..HEAD`, so a console branch that is not the one checked out at `root` cannot be judged here, and that case refuses rather than judging the wrong commits. `label` names the repository whose commits are walked (the console, or a submodule whose review records live in the console's directory for the same branch).
+
+def check_state(root, branch, label="console", cfg=None, expected_tip=""):
+    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at` and no deferred finding, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
+
+    THE TIP IS NAMED, AND CAN BE PINNED (finding 71afd29f.3). A branch judged at `origin/<branch>` is judged at this clone's remote-tracking ref, which no fetch refreshes here, so the output names that ref, its sha and when it last moved. `expected_tip` (the PR's `headRefOid`, which block_admin_merge already reads with its `gh pr view`; `--expect-tip <sha>` on the CLI) pins it: a walked tip that does not contain that commit refuses as `stale-tip`, so commits the PR would merge are never judged by their absence.
+
+    The coverage walk reads `merge-base(origin/main, tip)..tip`. A console branch that is not checked out at `root` is judged at its pushed tip `origin/<branch>` (a PR merges what was pushed); only a branch with no pushed ref refuses (`not-checked-out`), rather than judging the wrong commits. `main` is never judged at its pushed tip, so an unchecked-out main keeps the refusal. `label` names the repository whose commits are walked (the console, or a submodule whose review records live in the console's directory for the same branch).
     """
     if not branch:
         return ["no-branch"], [
             "no branch to judge: pass --branch, or check out the PR's head branch"
         ]
-    if label in ("console", None) and current_branch(root) != branch:
+    tip = "HEAD"
+    if label in ("console", None) and branch != "main" and current_branch(root) != branch:
+        # THE PUSHED TIP STANDS IN. A PR merges what was pushed, so a branch that is not checked out (parked work moved onto the next branch, 2026-10-08) is judged at origin/<branch>; only a branch with no pushed ref still refuses.
+        pushed = "origin/%s" % branch
+        if git_out(root, "rev-parse", "-q", "--verify", "%s^{commit}" % pushed):
+            tip = pushed
+    if label in ("console", None) and tip == "HEAD" and current_branch(root) != branch:
         return (
             ["not-checked-out"],
             [
@@ -2425,15 +2515,46 @@ def check_state(root, branch, label="console", cfg=None):
                 % (branch, root, CHECK_COMMAND, branch)
             ],
         )
+    tip_lines = []
+    if tip != "HEAD":
+        tip_lines.append(
+            "judged at %s %s: the remote-tracking ref, last moved %s; no fetch runs here (git fetch origin %s refreshes it; --expect-tip <sha> pins it to the PR head)"
+            % (
+                tip,
+                git_out(root, "rev-parse", "--short=12", tip),
+                _ref_age(root, "refs/remotes/" + tip),
+                branch,
+            )
+        )
+    # The pin applies to the console's tip only: a submodule label is walked at its own checkout's HEAD (branch_state's `walk_tip`), never at a console remote-tracking ref, and the PR head of a submodule PR is a commit of that other repository, which the console's tip cannot contain. block_admin_merge still passes it for private/* PRs; it is ignored there by design.
+    if expected_tip and label in ("console", None):
+        walked = git_out(root, "rev-parse", "-q", "--verify", "%s^{commit}" % tip)
+        if not walked or git(root, "merge-base", "--is-ancestor", expected_tip, walked)[0] != 0:
+            return (
+                ["stale-tip"],
+                [
+                    *tip_lines,
+                    "the PR head %s is not contained in the walked tip %s (%s), so commits the PR merges would go unjudged; git fetch origin %s and re-run: %s --branch %s --expect-tip %s"
+                    % (
+                        expected_tip[:12],
+                        tip,
+                        (walked or "unresolved")[:12],
+                        branch,
+                        CHECK_COMMAND,
+                        branch,
+                        expected_tip,
+                    ),
+                ],
+            )
     # label None judges every repository branch_state walks by default (the console plus each one a review names), plus branch_repos()
     # for a submodule review in flight; replacing the default with branch_repos() alone dropped a reviewed repo (efed9e0c7). The CLI's --check
     # passes it: with `{"console"}` it printed "clean" while a submodule commit's review was still in flight (2026-10-02, renet
     # 3ca4821f), which block_unverified_push then refused.
     if label is None:
-        st = branch_state(root, branch, cfg, extra_repos=branch_repos(root, branch))
+        st = branch_state(root, branch, cfg, extra_repos=branch_repos(root, branch), tip=tip)
     else:
-        st = branch_state(root, branch, cfg, repos={label})
-    return push_refusals(st), describe(st, limit=8)
+        st = branch_state(root, branch, cfg, repos={label}, tip=tip)
+    return push_refusals(st), tip_lines + describe(st, limit=8)
 
 
 def _malformed_remedy(path, err, branch):
@@ -2467,17 +2588,32 @@ def stop_texts(st, limit=5):
                 ),
             )
         )
+    parts = []
     if st["blocking"]:
         lines = []
         for _p, f in st["blocking"][:limit]:
             lines.append("[%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160]))
             lines.extend("    " + c for c in mark_commands(f.id))
-        block = (
-            "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it, or record why it is not a bug, or defer it to a worklist item that names it:\n  %s"
+        parts.append(
+            "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it fixed, record why it is not a bug, or, for an operator-only triage, waive it with the operator's ASKED: answer:\n  %s"
             % (st["branch"], len(st["blocking"]), "\n  ".join(lines))
         )
-    rest = dict(st, malformed=[], blocking=[])
+    in_flight = {f.id for _p, f in st.get("deferred_in_flight", [])}
+    waiting = [(p, f) for p, f in st.get("deferred", []) if f.id not in in_flight]
+    if waiting:
+        parts.append(
+            "DEFERRED PER-COMMIT REVIEW FINDING(S) on %s (%d). A deferral is unfinished work: push and merge refuse it at any severity (agent/plans/PLAN-deferred-findings-block-merge.md). Triage each one, then fix it this session:\n  %s"
+            % (st["branch"], len(waiting), "\n  ".join(deferral_lines(waiting)))
+        )
+    block = "\n\n".join(parts)
+    rest = dict(st, malformed=[], blocking=[], deferred=[])
     note_lines = describe(rest, limit)
+    # The wait stand-down (D5): a deferral whose triage item is leased to a writer is a note while the writer works; push and merge still refuse it.
+    note_lines += [
+        "DEFERRED [%s] %s %s:%d: its triage item is leased [>], so this waits on the writer; push and merge still refuse it"
+        % (f.severity, f.id, f.file, f.line)
+        for _p, f in st.get("deferred_in_flight", [])
+    ]
     note = (
         ("Per-commit reviews on %s:\n  %s" % (st["branch"], "\n  ".join(note_lines)))
         if note_lines
@@ -2613,17 +2749,84 @@ def find_finding(root, branch, finding_id):
     return hits[0]
 
 
-CITE_PATH = re.compile(r"([A-Za-z0-9_./-]+\.[A-Za-z0-9]+):(\d+)")
+# A `path:line` citation is found WITHOUT a regular expression over the path: the evidence is cut on one class of separator characters (a single-class split cannot backtrack) and each token is read with string operations, so no input makes the scan superlinear. Any path spelling counts, extension or not: `Dockerfile:83` and `Makefile:12` are files too, and an earlier pattern that demanded a dot-extension refused evidence naming one (2026-10-11).
+CITE_SEPARATORS = re.compile(r"[^A-Za-z0-9_./:-]+")
+# A cited file is read no further than this many CHARACTERS (not bytes: the file is read as text), in chunks, stopping at the cited line. The check needs to know the line exists, not the file's size, and a tracked link may point at something very large. A line beyond the bound cites nothing.
+CITE_READ_CAP = 8 * 1024 * 1024
+CITE_CHUNK = 64 * 1024
+# A token is cut on its colons into at most this many parts, which bounds the candidates one token can yield.
+CITE_PARTS_CAP = 8
+# What may follow a line number inside its token: nothing, a column (`:5`), a range (`-14`) or a sentence's full stop. The separators that split the evidence into tokens (a comma, a bracket, a space) never appear inside one.
+CITE_AFTER_LINE = (":", "-", ".")
+
+
+def _cited_paths(evidence):
+    """Every (path, line) a `path:line` token of `evidence` could mean.
+
+    A colon followed by digits is a line number when the digits end the token or are followed by a column, a range or a full stop, and the path is any run of the parts before it. So the usual spellings all cite: `a.py:12`, a column `a.py:12:5`, a range `a.py:12-14`, and a label glued on, `Evidence:a.py:1`. `_citation_ok` keeps the candidates that are files. A token holding `://` is a URL and cites nothing, port or not. The path must hold a letter: `10:35` and `3:1` are a clock time and a ratio, so a file whose whole path is digits and punctuation is not citable by path:line and is cited by a sha instead.
+    """
+    out = []
+    for token in CITE_SEPARATORS.split(evidence):
+        if "://" in token:
+            continue
+        parts = token.split(":", CITE_PARTS_CAP - 1)
+        for i in range(1, len(parts)):
+            digits = "".join(itertools.takewhile(str.isdigit, parts[i]))
+            rest = parts[i][len(digits) :]
+            if not digits or (rest and not rest.startswith(CITE_AFTER_LINE)):
+                continue
+            for j in range(i):
+                path = ":".join(parts[j:i])
+                if any(c.isalpha() for c in path):
+                    out.append((path, int(digits)))
+    return out
+
+
+def _lines_upto(handle, number, cap):
+    """(whether `handle` holds line `number` within its first `cap` characters, characters read). Read a chunk at a time and stop at the cited line, counting lines as `str.splitlines` does. Each chunk is split once on its own: only two facts cross a chunk boundary (a line is still open; the chunk ended in a carriage return whose line feed may follow), so a long unterminated line costs one pass, not one per chunk."""
+    count = read = 0
+    open_line = pending_cr = False
+    while read < cap:
+        chunk = handle.read(min(CITE_CHUNK, cap - read))
+        if not chunk:
+            break
+        read += len(chunk)
+        if pending_cr and chunk.startswith("\n"):
+            # The second half of a `\r\n` whose `\r` already ended a line in the chunk before.
+            chunk = chunk[1:]
+        pending_cr = chunk.endswith("\r")
+        pieces = chunk.splitlines(keepends=True)
+        if pieces:
+            last = pieces[-1]
+            whole = len(last.splitlines()[0]) < len(last)
+            count += len(pieces) if whole else len(pieces) - 1
+            open_line = not whole
+        # A started line exists: an open line is line `count + 1` already.
+        if count + (1 if open_line else 0) >= number:
+            return True, read
+    return count + (1 if open_line else 0) >= number, read
+
+
+def _has_line(path, number):
+    """Whether the file at `path` holds line `number` within its first CITE_READ_CAP characters. Lines are counted as `str.splitlines` counts them (a form feed or U+2028 ends a line too), which is how the check counted before its scan was rewritten; a line-by-line read of the handle would count only newlines."""
+    if number < 1:
+        return False
+    with open(path, encoding="utf-8", errors="replace", newline="") as handle:
+        return _lines_upto(handle, number, CITE_READ_CAP)[0]
+
+
 CITE_SHA = re.compile(r"\b([0-9a-f]{7,40})\b")
 
 
 def _citation_ok(repo, evidence):
-    for m in CITE_PATH.finditer(evidence):
-        path = pathlib.Path(repo) / m.group(1)
+    root = os.path.abspath(repo)
+    for cited, number in _cited_paths(evidence):
+        # A citation is of THIS repository: an absolute path replaces the root in a join, and `..` climbs out of it, so the path's LOCATION, normalised lexically, must sit inside the root (`/etc/hosts:1` cites nothing). Lexically, not through realpath: a tracked symlink whose target lies elsewhere is still a path of this repository.
+        located = os.path.normpath(os.path.join(root, cited))
+        if not located.startswith(root + os.sep):
+            continue
         with contextlib.suppress(OSError):
-            if path.is_file() and int(m.group(2)) <= len(
-                path.read_text(encoding="utf-8", errors="replace").splitlines()
-            ):
+            if os.path.isfile(located) and _has_line(located, number):
                 return True
     for m in CITE_SHA.finditer(evidence):
         full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % m.group(1))
@@ -2648,10 +2851,59 @@ def rebased_copy_below(repo, pid, fix):
     return ""
 
 
-def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
+WAIVE_ASKED_RE = re.compile(r"^ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z$")
+
+
+def names_token(text, token):
+    """True when `text` names `token` as a whole token: `71afd29f.1` is not named by `71afd29f.12` or `71afd29f.1.2` (a dot before or after a word character joins tokens; a sentence-ending dot does not), nor `pr:8/F1` by `pr:8/F12` (findings b18d31bd.1 and b18d31bd.2)."""
+    return re.search(r"(?<![\w.])%s(?!\w|\.\w)" % re.escape(token), text or "") is not None
+
+
+def deferral_refusal(finding):
+    """The D5 plan-and-fix order `mark deferred` answers with: a deferral is no longer a resolution."""
+    return "\n".join(
+        [
+            "deferred is retired (agent/plans/PLAN-deferred-findings-block-merge.md D1): a finding is fixed before merge, always. Triage it, then fix it this session:",
+            "  " + triage_command(finding),
+            *("  " + line for line in DEFERRAL_ORDER),
+        ]
+    )
+
+
+def _waive(finding_id, args, items, asked_ok):
+    """The `waived #<item> ASKED:<minute>Z` resolution body after checks (a)-(c) of D3; raises ValueError naming the failed one."""
+    if len(args) != 2 or not re.match(r"^#?[0-9a-f]{6,16}$", args[0]):
+        raise ValueError(
+            "waived takes a worklist item and the operator's answer: #<item> ASKED:<YYYY-MM-DDTHH:MM>Z"
+        )
+    m = WAIVE_ASKED_RE.match(args[1])
+    if not m:
+        raise ValueError("%r is not ASKED:<YYYY-MM-DDTHH:MM>Z" % args[1])
+    item, minute = args[0].lstrip("#"), m.group(1)
+    rec = (items or {}).get(item)
+    if rec is None or rec[0] == "~":
+        raise ValueError("worklist item #%s does not exist" % item)
+    text = rec[1] if len(rec) > 1 else ""
+    triage = rec[2] if len(rec) > 2 else ""
+    if not names_token(text, finding_id):
+        raise ValueError("worklist item #%s does not name %s in its text" % (item, finding_id))
+    if triage != "operator-only":
+        raise ValueError(
+            "worklist item #%s has triage verdict %r, not operator-only: only an operator-only finding is waived; fix it instead (worklist.py --triage <me> --id %s ...)"
+            % (item, triage or "none", item)
+        )
+    if asked_ok is None or not asked_ok("ASKED:%sZ" % minute):
+        raise ValueError(
+            "ASKED:%sZ matches no AskUserQuestion answer in this session's transcript within 300 s: ask the operator first (AskUserQuestion), then waive with that answer's minute"
+            % minute
+        )
+    return "waived #%s ASKED:%sZ" % (item, minute)
+
+
+def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
-    `items` is {item_id: (state, text)} from the worklist fold, needed only for `deferred`.
+    `items` is {item_id: (state, text, triage_verdict)} from the worklist fold and `asked_ok(text)` is True when an `ASKED:<minute>Z` in `text` matches an AskUserQuestion answer in the lead transcript (worklist._review_cli builds it from wl_checks._asked_in_transcript); both are needed only for `waived`. `deferred` is refused with the plan-and-fix order (agent/plans/PLAN-deferred-findings-block-merge.md D1, D5).
     """
     path, review, finding = find_finding(root, branch, finding_id)
     repo = repo_from_label(root, review.repo)
@@ -2686,7 +2938,20 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
             "--",
             finding.file,
         )
-        if finding.file not in touched and not set(renamed.splitlines()) & set(touched):
+        # A plan closed by `check_plan_folders.py --move` leaves a `Moved-To:` stub at the old path, which `--follow` cannot see through: the fix lands in the moved file.
+        # Read from the fix commit's tree, not the working tree: a stub deleted by a later commit must not unmark the fix.
+        # A stub the fix tree does not hold (retired flat-layout stub, or never committed there) is recovered from the slug alone, as every other stub reader does.
+        stub_rc, stub_text = git(repo, "show", "%s:%s" % (fix, finding.file))
+        moved = (
+            wl_store.stub_target_of_text(stub_text)
+            if stub_rc == 0
+            else wl_store.plan_stub_target(str(pathlib.Path(repo) / finding.file))
+        )
+        if (
+            finding.file not in touched
+            and not set(renamed.splitlines()) & set(touched)
+            and not (moved and moved in touched)
+        ):
             raise ValueError("%s does not touch %s" % (fix[:12], finding.file))
         resolution = "fixed %s | %s" % (fix, stamp)
     elif kind == "not-a-bug":
@@ -2699,20 +2964,11 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None):
             )
         resolution = "not-a-bug | %s | %s" % (evidence, stamp)
     elif kind == "deferred":
-        if len(args) != 1 or not re.match(r"^#?[0-9a-f]{6,16}$", args[0]):
-            raise ValueError("deferred takes one worklist item id, #<id>")
-        item = args[0].lstrip("#")
-        rec = (items or {}).get(item)
-        if rec is None:
-            raise ValueError("worklist item #%s does not exist" % item)
-        state, text = rec
-        if state not in (" ", "?", ">"):
-            raise ValueError("worklist item #%s is not open, [?] or [>] (state %r)" % (item, state))
-        if finding_id not in (text or ""):
-            raise ValueError("worklist item #%s does not name %s in its text" % (item, finding_id))
-        resolution = "deferred #%s | %s" % (item, stamp)
+        raise ValueError(deferral_refusal(finding))
+    elif kind == "waived":
+        resolution = "%s | %s" % (_waive(finding_id, args, items, asked_ok), stamp)
     else:
-        raise ValueError("the resolution is fixed, not-a-bug or deferred, not %r" % kind)
+        raise ValueError("the resolution is fixed, not-a-bug or waived, not %r" % kind)
     finding.resolution = resolution
     with _mark_lock(review.sha):
         current, err = read_review(path)
@@ -2805,10 +3061,12 @@ VERB_USAGE = """usage:
   worklist.py --review-mark <me>                                       list the branch's open findings
   worklist.py --review-mark <me> <finding-id> fixed <sha>              the fix: on the branch, after the reviewed commit, touching the file
   worklist.py --review-mark <me> <finding-id> not-a-bug <evidence...>  >= 20 chars citing an existing path:line or a sha on the branch
-  worklist.py --review-mark <me> <finding-id> deferred #<item>         an open worklist item whose text names the finding id
+  worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z
+                                                                       an operator-only triaged item naming the finding id, and the minute of the operator's AskUserQuestion answer
   worklist.py --review-commit <me>                                     commit the finished, unrecorded review files of the branch
   worklist.py --review-run <me> [<sha> [--repo <console|private/x>]]   list unreviewed commits, or review one now in the foreground
   worklist.py --prune-reviews <me> [--write]                           list (or, with --write, delete) agent/reviews/<branch>/ directories past retention
+  worklist.py --drop-foreign-reviews <me> [--write]                    list (or, with --write, delete) the branch's review records of a repository that is neither the project nor a .gitmodules checkout
 """
 
 # The archival gate owns the retention rule (`--prune-reviews` there, PLAN-per-commit-review section 9); this verb only runs it, so the rule has one home.
@@ -2829,23 +3087,114 @@ def prune_reviews(root, args):
     return res.returncode, (res.stdout + res.stderr).rstrip("\n")
 
 
-def verb(name, me, args, root, items_loader, branch=None):
-    """(rc, text) for one worklist review verb. `items_loader()` returns {item_id: (state, text)} from the worklist fold; it is called only when a deferral needs it."""
+def registered_labels(root):
+    """`console` plus every submodule path `.gitmodules` registers, checked out or not: the repositories this project's reviews may name.
+
+    FAILS CLOSED: a `.gitmodules` that exists but yields no submodule path (unreadable, malformed, or a failing `git config`) raises ValueError. Falling back to `{"console"}` would make every submodule look foreign, and `drop_foreign_reviews --write` would then delete their records (review 166c8fe1.1). A tree with no `.gitmodules`, or one that lists no submodule (`git config --get-regexp` rc 1 with no output), has the console alone.
+    """
+    labels = {"console"}
+    if not (pathlib.Path(root) / ".gitmodules").exists():
+        return labels
+    rc, out = git(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
+    for line in out.splitlines() if rc == 0 else []:
+        parts = line.split(None, 1)
+        if len(parts) == 2:
+            labels.add(parts[1].strip())
+    if len(labels) == 1 and not (rc == 1 and not out.strip()):
+        raise ValueError(
+            ".gitmodules exists but no submodule path could be read from it (git config rc=%d)" % rc
+        )
+    return labels
+
+
+def drop_foreign_reviews(root, branch, write):
+    """(rc, text): the review records of `branch` naming a repository outside the project, listed, or deleted with `write`.
+
+    A repository that merely sits inside the tree (private/growth, a separate gitignored repo) is not the project's: the review hook once reviewed its commits into agent/reviews/, which filed the operator's private documents here (operator 2026-10-08, "Remove + fix the hook"). Only such records are touched; a record of the console or a submodule is never dropped, whatever its state.
+    """
+    d = branch_dir(root, branch)
+    try:
+        members = registered_labels(root)
+    except ValueError as exc:
+        return 1, "refused: %s; nothing was listed or deleted" % exc
+    md = []
+    for path in sorted(d.glob("*.md")) if d.is_dir() else []:
+        review, _err = read_review(path)
+        if review is not None and review.repo not in members:
+            md.append((path, review.repo, review.sha))
+    ledger = d / LEDGER_NAME
+    kept, dropped = [], []
+    if ledger.is_file():
+        for line in ledger.read_text(encoding="utf-8").splitlines(True):
+            back, errors = parse_ledger(line.rstrip("\n"))
+            if not errors and len(back) == 1 and back[0].repo not in members:
+                dropped.append((back[0].repo, back[0].sha))
+            else:
+                kept.append(line)
+    rows = ["%s %s (%s)" % (path.name, repo, sha[:8]) for path, repo, sha in md]
+    rows += ["%s line %s (%s)" % (LEDGER_NAME, repo, sha[:8]) for repo, sha in dropped]
+    if not rows:
+        return 0, "no review records of a foreign repository on %s" % branch
+    head = "%d review record(s) of a repository outside the project (members: %s)" % (
+        len(rows),
+        ", ".join(sorted(members)),
+    )
+    if not write:
+        return 0, "\n".join([head + "; pass --write to delete them:", *("  " + r for r in rows)])
+    # The ledger goes first and each unlink is reported: a failure partway leaves records that the next run lists again (the ledger no longer names them), never a ledger that names records already gone with nothing said.
+    failed = []
+    try:
+        if dropped:
+            ledger.write_text("".join(kept), encoding="utf-8")
+    except OSError as exc:
+        return 1, "refused: could not rewrite %s (%s); nothing was deleted" % (LEDGER_NAME, exc)
+    for path, _repo, _sha in md:
+        try:
+            path.unlink()
+        except OSError as exc:
+            failed.append("%s (%s)" % (path.name, exc))
+    if failed:
+        return 1, "\n".join(
+            [head + "; PARTIAL, could not delete (run the verb again after fixing):"]
+            + ["  " + f for f in failed]
+        )
+    return 0, "\n".join([head + "; deleted:", *("  " + r for r in rows)])
+
+
+def verb(name, me, args, root, items_loader, branch=None, asked_ok=None):
+    """(rc, text) for one worklist review verb. `items_loader()` returns {item_id: (state, text, triage_verdict)} from the worklist fold and `asked_ok(text)` checks an `ASKED:` minute against the lead transcript; both are used only by a waiver."""
     root = pathlib.Path(root)
     if name == "--prune-reviews":
         return prune_reviews(root, args)
     branch = branch or current_branch(root)
+    if name == "--drop-foreign-reviews":
+        if any(a != "--write" for a in args):
+            return 2, VERB_USAGE
+        if not branch:
+            # Listing finds nothing to list, as --review-mark's bare form does; only a --write is refused.
+            if "--write" not in args:
+                return 0, "no review records of a foreign repository (HEAD is on no branch)"
+            return 1, "refused: HEAD is on no branch, so no review directory applies"
+        return drop_foreign_reviews(root, branch, "--write" in args)
     if name == "--review-mark":
         if not args:
             if not branch:
                 return 0, "open per-commit review findings: none (HEAD is on no branch)"
             st = branch_state(root, branch, repos=())
-            rows = st["blocking"] + st["advisory"]
+            rows = st["blocking"] + st["deferred"] + st["advisory"]
             if not rows:
                 return 0, "open per-commit review findings for %s: none" % branch
             text = ["open per-commit review findings for %s:" % branch]
             text += [
-                "  [%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:200])
+                "  %s[%s] %s %s:%d -- %s"
+                % (
+                    "DEFERRED " if f.resolution_kind() == "deferred" else "",
+                    f.severity,
+                    f.id,
+                    f.file,
+                    f.line,
+                    f.claim[:200],
+                )
                 for _p, f in rows
             ]
             return 0, "\n".join(text)
@@ -2853,9 +3202,11 @@ def verb(name, me, args, root, items_loader, branch=None):
             return 2, VERB_USAGE
         if not branch:
             return 1, "refused: HEAD is on no branch, so no review directory applies"
-        items = items_loader() if args[1] == "deferred" else None
+        items = items_loader() if args[1] == "waived" else None
         try:
-            path = mark(root, branch, args[0], args[1], args[2:], me, items=items)
+            path = mark(
+                root, branch, args[0], args[1], args[2:], me, items=items, asked_ok=asked_ok
+            )
         except ValueError as exc:
             return 1, "refused: %s" % exc
         return 0, "marked %s %s in %s; the change rides the next commit (or --review-commit)" % (
@@ -3023,7 +3374,7 @@ def ledger_migrate(root, write=False, codec=None, snapshot=None, log=print):
 USAGE = """usage:
   wl_review.py --run <sha> --branch <branch> [--repo <console|private/x>] [--root <console>]   review one commit now
   wl_review.py --status [--branch <branch>]                                                    print the branch's review state
-  wl_review.py --check [--branch <branch>]                                                     exit 1 while the branch has review refusals, 0 when clean
+  wl_review.py --check [--branch <branch>] [--expect-tip <sha>]                                exit 1 while the branch has review refusals (an open blocking or any deferred finding, or a walked tip that lacks <sha>), 0 when clean
   wl_review.py --ledger-migrate [--write]                                                      move every eligible <sha40>.md into its branch's clean.jsonl (dry run by default)
 """
 
@@ -3064,7 +3415,9 @@ def main(argv):
         return 0
     if argv[0] == "--check":
         branch = _opt(argv, "--branch") or current_branch(root)
-        reasons, lines = check_state(root, branch, label=_opt(argv, "--repo", None))
+        reasons, lines = check_state(
+            root, branch, label=_opt(argv, "--repo", None), expected_tip=_opt(argv, "--expect-tip")
+        )
         print(
             "per-commit reviews for %s: %s"
             % (

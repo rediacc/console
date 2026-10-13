@@ -3782,7 +3782,7 @@
               "title": "سحابة متعددة بالتصميم"
             },
             {
-              "description": "Move between clouds whenever you want. Open-format snapshots. No proprietary agents. Standard btrfs — available in every modern Linux kernel.",
+              "description": "انتقل بين السحابات متى شئت. النسخ المحفوظة بتنسيق مفتوح. لا وكلاء تقيّدك بهم. إنه btrfs القياسي المدمج في Linux منذ 2013.",
               "icon": "lock",
               "title": "بدون تقييد بمورد"
             }
@@ -3930,7 +3930,7 @@
           },
           "steps": [
             {
-              "description": "شغّل rdc replicate production --target secondary. مزامنة تزايدية — فقط الكتل المتغيرة تُنقل.",
+              "description": "شغّل أمراً واحداً: rdc replicate production --target secondary. تُنقل البيانات المتغيرة فقط، لا كل شيء. وبهذا تبقى العملية سريعة وقليلة التكلفة.",
               "icon": "copy",
               "title": "النسخ"
             },
@@ -4081,7 +4081,7 @@
           "quote": "أثناء انقطاع AWS us-east-1 في مارس الماضي، انتقلت خدماتنا الـ 12 الإنتاجية إلى مركز البيانات الثانوي في 22 ثانية. عملاؤنا لم يلاحظوا. منافسونا تعطلوا 6 ساعات. حصلنا على ثلاثة عقود مؤسسية جديدة ذلك الأسبوع من عملائهم."
         },
         "techDiff": {
-          "description": "يستخدم Rediacc تقنية btrfs send/receive لحساب الفروق التراكمية على مستوى نظام الملفات. بدلاً من نقل صور كاملة، فقط الكتل المتغيرة تنتقل بين المواقع. بيئة بحجم 380 GB مع 2.4 GB من التغييرات اليومية تنقل 2.4 GB — وليس 380 GB. هذا تخفيض 98% في عرض النطاق. النسخ يعمل باستمرار أو حسب الجدول.",
+          "description": "ينسخ Rediacc البيانات التي تغيّرت منذ آخر مرة فقط. لنفترض بيئة حجمها 380 GB تتغير فيها اليوم 2.4 GB. سينقل Rediacc 2.4 GB وليس 380 GB. وهذا <span class=\"sp-emphasis\">يقلل استهلاك النطاق الترددي بنسبة 98%</span>. ويمكن أن يعمل باستمرار أو وفق جدول.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5017,7 +5017,7 @@
               "title": "خدمة ذاتية، متكاملة مع Git"
             },
             {
-              "description": "ليس فقط الكود — المكدس الكامل. نظام التشغيل والحاويات وقواعد البيانات والتكوين تُستنسخ معًا. الأخطاء تُكتشف بتكلفة 1x، وليس 30-100x في الإنتاج.",
+              "description": "ليس الكود فقط. المكدس بأكمله. نظام التشغيل والحاويات وقواعد البيانات والإعدادات، تُستنسخ معاً. الأخطاء تُكتشف بتكلفة 1x، وليس 30-100x في الإنتاج.",
               "icon": "layers",
               "title": "تطبيق + قاعدة بيانات + تكوين"
             }
@@ -5034,7 +5034,7 @@
         "calculator": {
           "annualLabel": "التكلفة السنوية للفريق",
           "description": "اسحب أشرطة التمرير لتتناسب مع فريقك. الأرقام قد تفاجئك.",
-          "footnote": "بناءً على متوسط تعويض إجمالي قدره 160 ألف دولار (92 دولار/ساعة شامل التكاليف). تكلفة انتظار البيئة: الوقت المعطل × 60% تأثير على الإنتاجية. تبديل السياق: 24-50 ألف دولار/مطور/سنة. 69% من المطورين يفقدون 8+ ساعات أسبوعياً بسبب عدم الكفاءة (Atlassian 2024). المطورون ليسوا خاملين تماماً أثناء الانتظار — لكن التبعيات المتتالية تتراكم عبر السبرنتات. تقديرات متحفظة — التوفير الفعلي غالباً أعلى.",
+          "footnote": "بناءً على متوسط تعويض إجمالي قدره 160 ألف دولار (92 دولار/الساعة شاملة التكاليف). تكلفة انتظار البيئة: الوقت المعطل × تأثير إنتاجي بنسبة 60%. تبديل السياق: 24–50 ألف دولار/مطور/السنة. 69% من المطورين يفقدون 8 ساعات أسبوعياً على عدم الفعالية (Atlassian 2024). المطورون لا يكونون خاملين تماماً أثناء الانتظار، لكن التبعيات المتسلسلة تتراكم عبر السبرنتات. تقديرات محافظة، الادخار الفعلي عادة أعلى.",
           "headerTitle": "احسب تكلفة انتظار البيئات",
           "results": {
             "blockedTime": "الوقت المعطل / سبرنت",
@@ -5060,7 +5060,7 @@
         },
         "comparison": {
           "capabilityLabel": "القدرة",
-          "description": "أدوات المطورين تنسخ الكود. أدوات قواعد البيانات تنسخ البيانات. Rediacc وحده ينسخ كليهما — معاً، في 60 ثانية.",
+          "description": "أدوات المطورين تنسخ الكود. أدوات قواعد البيانات تنسخ البيانات. فقط Rediacc ينسخ كليهما معاً في 60 ثانية.",
           "features": [
             {
               "name": "استنساخ التطبيقات",
@@ -5085,7 +5085,7 @@
             {
               "name": "وقت التوفير",
               "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": ["دقائق", "دقائق", "دقائق", "دقائق", "ثوان", "<60s"]
             },
             {
               "name": "بيانات مطابقة للإنتاج",
@@ -5097,7 +5097,7 @@
         },
         "hero": {
           "ctaLabel": "ابدأ الاستنساخ",
-          "subtitle": "أنشئ نسخاً طبق الأصل من بيئة الإنتاج — التطبيق وقاعدة البيانات والإعدادات — للتطوير والاختبار. بدون تذاكر. بدون انتظار.",
+          "subtitle": "أنشئ نسخاً طبق الأصل من بيئة الإنتاج <span class=\"sp-emphasis\">خلال ثوان</span>. التطبيق وقاعدة البيانات والإعدادات. بدون تذاكر. بدون انتظار.",
           "title": "انسخ بيئة الإنتاج في 60 ثانية"
         },
         "howItWorks": {
@@ -5167,7 +5167,7 @@
             {
               "description": "يقوم المطور بتشغيل rdc ceph snapshot create production. بدون تذاكر. بدون موافقات.",
               "icon": "terminal",
-              "title": "Run"
+              "title": "شغّل"
             },
             {
               "description": "نسخة طبق الأصل من الإنتاج تعمل خلال 60 ثانية. نفس نظام التشغيل والتكوينات والبيانات.",
@@ -5177,19 +5177,19 @@
             {
               "description": "ابدأ التطوير فورًا. بدون إعداد. بدون تكوين. فقط البرمجة.",
               "icon": "code",
-              "title": "Work"
+              "title": "اعمل"
             }
           ],
           "title": "أمر واحد. ستون ثانية."
         },
         "label": "استنساخ البيئات",
         "meta": {
-          "description": "أنشئ نسخاً طبق الأصل من بيئة الإنتاج — التطبيق وقاعدة البيانات والإعدادات — للتطوير والاختبار. بدون تذاكر. بدون انتظار.",
+          "description": "أنشئ نسخاً طبق الأصل من الإنتاج مع التطبيق وقاعدة البيانات والإعدادات، للتطوير والاختبار. بدون تذاكر. بدون انتظار.",
           "keywords": "استنساخ البيئات, نسخ الإنتاج, بيئة التطوير, تجهيز فوري, نسخة btrfs, copy-on-write, بيئات مؤقتة",
-          "title": "استنساخ البيئات — انسخ بيئة الإنتاج في 60 ثانية | Rediacc"
+          "title": "استنساخ البيئة: استنسخ الإنتاج بسرعة | Rediacc"
         },
         "problem": {
-          "description": "يحتاج مطورك إلى بيئة اختبار. يرسل تذكرة. يقوم فريق العمليات بتجهيز خادم. شخص ما يقوم بإعداده. بعد ثلاثة أيام، لا يتطابق مع بيئة الإنتاج على أي حال. في هذه الأثناء، مطورك معطل منذ يوم الاثنين — وكل مقاطعة تكلف 23 دقيقة من وقت التعافي.",
+          "description": "يحتاج المطور إلى بيئة اختبار، فيرفع تذكرة. يجهّز فريق العمليات خادماً. ويتولى شخص ما إعداده. وبعد ثلاثة أيام، لا تزال البيئة لا تطابق الإنتاج. المطور عالق منذ الاثنين. وكل مقاطعة تكلّفه 23 دقيقة لاستعادة تركيزه.",
           "statCallouts": [
             {
               "number": "69%",
@@ -5206,13 +5206,13 @@
             {
               "number": "$50K/yr",
               "ref": 2,
-              "source": "Industry composite estimate",
+              "source": "تقدير مركب من الصناعة",
               "text": "خسارة لكل مطور بسبب تبديل السياق"
             }
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": ["تشغيل", "60s", "جاهز"],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -5242,63 +5242,63 @@
         "references": {
           "items": [
             {
-              "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
+              "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"69% من المطورين يفقدون 8 ساعات أو أكثر أسبوعياً بسبب عدم الفعالية.\" \"تكلفة فقدان 8 ساعات أسبوعياً لمؤسسة بـ 500 مطور تصل إلى حوالي 6.9 مليون دولار سنوياً.\"",
               "url": "https://www.atlassian.com/blog/developer/developer-experience-report-2024"
             },
             {
-              "text": "Industry composite from vendor surveys and published benchmarks. \"Context switching costs $24K–$50K per developer per year in lost productivity.\"",
+              "text": "تقدير مركب من دراسات البائعين والمقاييس المنشورة. \"تبديل السياق يكلف 24–50 ألف دولار لكل مطور سنوياً من خسائر الإنتاجية.\"",
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub Codespaces creates a dedicated VM and clones the repository into a dev container for instant cloud development.",
+              "text": "GitHub Codespaces ينشئ جهازاً افتراضياً مخصصاً وينسخ المستودع إلى حاوية تطوير للبرمجة السحابية الفورية.",
               "url": "https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace"
             },
             {
-              "text": "Coder templates are Terraform-defined blueprints for creating identical, reproducible development workspaces.",
+              "text": "قوالب Coder هي مخططات معرّفة بـ Terraform لإنشاء مساحات عمل تطوير متطابقة وقابلة للتكرار.",
               "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Vercel preview deployments create unique live URLs for every push/PR for isolated frontend review.",
+              "text": "نشرات Vercel المعاينة تنشئ عناوين URL حية فريدة لكل push أو PR لمراجعة معزولة لواجهة المستخدم الأمامية.",
               "url": "https://vercel.com/docs/deployments/preview-deployments"
             },
             {
-              "text": "Delphix Virtual Databases (VDBs) are full read-write copies from snapshots requiring only a fraction of traditional storage.",
+              "text": "Delphix Virtual Databases (VDBs) هي نسخ كاملة للقراءة والكتابة تُنشأ من اللقطات وتتطلب جزءاً صغيراً من التخزين التقليدي.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branches are copy-on-write clones sharing pages with the parent until writes diverge.",
+              "text": "فروع Neon هي نسخ copy-on-write تشارك الصفحات مع الفرع الأب إلى أن تتباعد الكتابات.",
               "url": "https://neon.com/docs/introduction/branching"
             },
             {
-              "text": "Delphix supports Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB, and CockroachDB.",
+              "text": "Delphix يدعم Oracle وSQL Server وPostgreSQL وMySQL وSAP ASE وIBM Db2 وMariaDB وCockroachDB.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Codespaces prebuilds pre-assemble source code, extensions, and dependencies for substantially faster codespace creation.",
+              "text": "بُنَى Codespaces المسبقة تُجمّع كود المصدر والإضافات والتبعيات مسبقاً لإنشاء codespace أسرع بكثير.",
               "url": "https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds"
             },
             {
-              "text": "Coder prebuilt workspaces maintain a ready-to-use pool, reducing creation time from up to 20 minutes to under a minute.",
+              "text": "مساحات عمل Coder المُنشأة مسبقاً تحافظ على تجمع جاهز للاستخدام، مما يقلل وقت الإنشاء من حد أقصى قدره 20 دقيقة إلى أقل من دقيقة واحدة.",
               "url": "https://coder.com/docs/admin/templates/extending-templates/prebuilt-workspaces"
             },
             {
-              "text": "Vercel deploys to its global edge network with apps going live within seconds of pushing code.",
+              "text": "Vercel تنشر على شبكتها العالمية الحدية حيث تصبح التطبيقات مباشرة خلال ثوانٍ من رفع الكود.",
               "url": "https://vercel.com/docs/deployments"
             },
             {
-              "text": "Delphix VDB provisioning completes in minutes rather than hours or days for traditional database copies.",
+              "text": "توفير Delphix VDB يكتمل في دقائق بدلاً من ساعات أو أيام كما هو الحال مع نسخ قاعدة البيانات التقليدية.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branch creation takes approximately 1 second regardless of database size.",
+              "text": "إنشاء فرع Neon يستغرق حوالي 1 ثانية بغض النظر عن حجم قاعدة البيانات.",
               "url": "https://neon.com/docs/get-started/workflow-primer"
             },
             {
-              "text": "Delphix creates full read-write virtual copies from production data sources for application, AI, and ML teams.",
+              "text": "Delphix ينشئ نسخاً افتراضية كاملة للقراءة والكتابة من مصادر بيانات الإنتاج لفرق التطبيقات والذكاء الاصطناعي والتعلم الآلي.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Neon branches include all parent data by default providing instant production-identical copies.",
+              "text": "فروع Neon تتضمن جميع بيانات الفرع الأب افتراضياً مما يوفر نسخاً متطابقة مع الإنتاج فوراً.",
               "url": "https://neon.com/docs/introduction/branching"
             }
           ]
@@ -5313,10 +5313,10 @@
             "beforeValue": "3 أيام",
             "improvement": "أسرع بنسبة 99.97%"
           },
-          "quote": "أنشأنا 12 بيئة اختبار مطابقة للإنتاج في أقل من 10 دقائق — كل منها بقاعدة بيانات PostgreSQL كاملة بحجم 241 GB. عمليتنا السابقة كانت تفريغ قاعدة البيانات يدوياً إلى بيئة الاختبار. استغرق الأمر 3 مهندسين ويومين لكل بيئة."
+          "quote": "أنشأنا 12 بيئة اختبار مطابقة للإنتاج تماماً في أقل من 10 دقائق، كل منها بقاعدة بيانات PostgreSQL كاملة بحجم 241 غيغابايت. عمليتنا السابقة كانت تفريغ قاعدة البيانات يدوياً إلى بيئة الاختبار المرحلية. كانت تستغرق 3 مهندسين ويومين لكل بيئة."
         },
         "techDiff": {
-          "description": "يستخدم Rediacc لقطات btrfs copy-on-write على مستوى نظام الملفات. تكتمل لقطة بيئة إنتاج بحجم 241 GB في أقل من ثانية ولا تستهلك أي مساحة تخزين إضافية مبدئياً. مع تباعد النسخة من خلال التطوير، فقط الكتل المتغيرة تستخدم مساحة جديدة. عشر نسخ من قاعدة بيانات 241 GB يمكن أن تستخدم أقل من 12 GB من التخزين الإضافي.",
+          "description": "الحيلة هنا: ينسخ Rediacc على مستوى <span class=\"sp-emphasis\">طبقة التخزين</span> وليس على مستوى الملفات. تكتمل نسخة بحجم 241 GB في أقل من ثانية ولا تستهلك تقريباً أي مساحة إضافية. ولا تأخذ مساحة جديدة لاحقاً إلا الأجزاء التي تتغير. وتتسع عشر نسخ من هذه البيئة البالغة 241 GB في أقل من 12 GB.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5348,17 +5348,17 @@
         "benefits": {
           "items": [
             {
-              "description": "اختبر التحويل بدون التأثير على الإنتاج. المحاكاة تعمل على نسخة btrfs — خدماتك الحية لا تتوقف أبدًا.",
+              "description": "اختبر الانتقال دون لمس الإنتاج. المحاكاة تعمل على نسخة فورية. الخدمات الحية لا تتوقف أبداً.",
               "icon": "shield",
               "title": "محاكاة آمنة"
             },
             {
-              "description": "شاهد بالضبط ما يحدث أثناء الاستعادة، خطوة بخطوة. كل خدمة، كل منفذ، كل فحص سلامة — مسجل بطوابع زمنية دقيقة.",
+              "description": "شاهد كل خطوة من الاستعادة بالتفصيل. كل خدمة وكل منفذ وكل فحص صحة، مسجل بطابع زمني دقيق.",
               "icon": "eye",
               "title": "رؤية كاملة"
             },
             {
-              "description": "اعرف أن خطة الكوارث الخاصة بك تعمل قبل أن تحتاجها. اختبار التحويل يتكامل مع مسار CI الخاص بك — فشل؟ تحصل على تنبيه قبل أن يهم.",
+              "description": "اعرف أن الخطة تعمل قبل أن تحتاجها. يندمج الاختبار مباشرة في مسار CI. وأي فشل ينبّهك قبل أن يصبح الأمر مهماً بوقت طويل.",
               "icon": "check-circle",
               "title": "ثقة قبل الفوضى"
             }
@@ -5510,7 +5510,7 @@
               "title": "المحاكاة"
             },
             {
-              "description": "شاهد كل خطوة في الوقت الفعلي. RTO وRPO وسلامة الخدمة — الكل يُقاس ويُسجل. يتصل بمكدس المراقبة الخاص بك.",
+              "description": "شاهد كل خطوة فوراً. RTO وRPO وسلامة الخدمة، الكل يُقاس ويُسجل. يتصل بأدوات المراقبة الخاصة بك.",
               "icon": "eye",
               "title": "المراقبة"
             },
@@ -5526,7 +5526,7 @@
         "meta": {
           "description": "شغّل محاكاة كوارث بأمان. اعرف أن استعادتك تعمل فعلاً. بدون مفاجآت عندما يكون الأمر مهماً.",
           "keywords": "اختبار الانتقال, اختبار التعافي من الكوارث, محاكاة DR, أتمتة اختبار DR, التحقق من الاستعادة, نسخة btrfs, اختبار RTO RPO",
-          "title": "اختبار الانتقال — اختبر خطة DR قبل أن تحتاجها | Rediacc"
+          "title": "اختبار الانتقال - تحقق من خطة DR | Rediacc"
         },
         "problem": {
           "description": "لديك خطة استعادة من الكوارث. لكن متى آخر مرة اختبرتها؟ معظم الفرق لم تفعل. يفترضون أنها تعمل. ثم تضرب الكارثة ويكتشفون أنها لا تعمل. خطة غير مُختبرة ليست خطة. إنها أمل.",
@@ -5582,47 +5582,47 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “فقط 13% من المنظمات تستخدم سير عمل منسق كجزء من عمليات استعادة الكوارث.” “فقط 58% من الخوادم استوفت SLA الاستعادة أثناء آخر هجوم واسع النطاق.” “فقط 32% من المنظمات تعتقد أنها يمكنها استعادة 50 عبء عمل خلال أسبوع عمل كامل.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Zerto test failovers spin up replica VMs on scratch disks in isolated bubble networks with zero production impact.",
+              "text": "اختبارات الانتقال في Zerto تشغّل نسخ VM المكررة على أقراص مؤقتة في شبكات معزولة دون أي تأثير على الإنتاج.",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup runs automated recovery verification in an isolated Virtual Lab with zero production impact.",
+              "text": "يُجري Veeam SureBackup التحقق الآلي من الاستعادة في Virtual Lab معزول دون أي تأثير على الإنتاج.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Zerto Orchestrator automates scheduled failover tests with zero production impact and generates compliance reports.",
+              "text": "يؤتمت Zerto Orchestrator اختبارات الانتقال المجدولة دون تأثير على الإنتاج وينشئ تقارير الامتثال.",
               "url": "https://www.zerto.com/the-platform/automated-disaster-recovery-testing/"
             },
             {
-              "text": "Druva DR plan testing spins up cloned resources on-demand without touching production for RTO/RPO validation.",
+              "text": "يُنشئ اختبار خطة DR في Druva موارد مستنسخة عند الطلب دون المساس بالإنتاج للتحقق من RTO/RPO.",
               "url": "https://help.druva.com/en/articles/8806108-execute-test-vs-execute-failure-of-a-dr-plan"
             },
             {
-              "text": "Veeam ONE Reporter generates detailed DR readiness and compliance reports for audit and governance.",
+              "text": "ينشئ Veeam ONE Reporter تقارير تفصيلية عن جاهزية DR والامتثال للتدقيق والحوكمة.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Zerto generates Recovery Reports after every failover test with up to 90 days of historical data for SLA validation.",
+              "text": "ينشئ Zerto تقارير الاستعادة بعد كل اختبار انتقال مع بيانات تاريخية تصل إلى 90 يوماً للتحقق من SLA.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/Recovery_Reports.htm"
             },
             {
-              "text": "Veeam SureBackup validates recoverability of cloud workloads including AWS and Azure VMs in isolated tests.",
+              "text": "يتحقق Veeam SureBackup من إمكانية استعادة أعباء العمل السحابية، بما فيها آلات AWS وAzure الافتراضية، في اختبارات معزولة.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto supports cross-cloud test failovers (on-prem to Azure, AWS to Azure) using scratch disks in isolated networks.",
+              "text": "Zerto تدعم اختبارات الانتقال بين الأنظمة السحابية (من الموقع إلى Azure, من AWS إلى Azure) باستخدام أقراص مؤقتة.",
               "url": "https://help.zerto.com/bundle/Admin.Azure.HTML.10.0_U1/page/The_Test_Failover_Process.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "يُنشر Veeam Backup & Replication داخل المنشأة على Windows Server مع تحكم كامل للعميل في البنية التحتية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "يُنشر Zerto داخل المنشأة مع Zerto Virtual Manager وأجهزة Virtual Replication Appliances لكل مضيف.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5641,10 +5641,10 @@
             },
             "improvement": "أكثر تكراراً 12 مرة · 3 فجوات حرجة اكتُشفت في أول تشغيل"
           },
-          "quote": "أجرينا أول اختبار انتقال تلقائي صباح ثلاثاء. وجد 3 فجوات حرجة — سجل DNS قديم، شهادة SSL مفقودة على الثانوي، وتأخر نسخ قاعدة البيانات 4 دقائق. الثلاثة كانوا سيسببون انقطاعاً حقيقياً. أصلحناهم في فترة بعد الظهر. الآن نختبر شهرياً وننام بشكل أفضل."
+          "quote": "أجرينا أول اختبار انتقال تلقائي صباح يوم الثلاثاء. اكتشفنا 3 فجوات حرجة: سجل DNS قديم، وشهادة SSL ناقصة على النسخة الثانوية، وتأخر في نسخ قاعدة البيانات مدته 4 دقائق. كانت الثلاثة ستسبب انقطاعاً حقيقياً. أصلحناها في فترة ما بعد الظهر. الآن نختبر شهرياً وننام براحة أكثر."
         },
         "techDiff": {
-          "description": "اختبارات DR التقليدية تتطلب توقف الإنتاج، فريق مهندسين، وأسابيع من التخطيط. Rediacc يستخدم لقطات btrfs copy-on-write لإنشاء نسخة معزولة من بنيتك التحتية بالكامل في ثوانٍ. الاختبار يعمل على النسخة — الإنتاج لا يتوقف أبداً.",
+          "description": "اختبارات DR بالطريقة القديمة تتطلب إيقاف الإنتاج وغرفة مليئة بالمهندسين وأسابيع من التخطيط. ينسخ Rediacc بيئة كاملة <span class=\"sp-emphasis\">في ثوانٍ</span>. يجري الاختبار على النسخة. ولا يتوقف الإنتاج أبداً.",
           "rediaccLabel": "اختبار DR مع Rediacc",
           "rows": [
             {
@@ -5657,11 +5657,11 @@
             },
             {
               "rediacc": "شهريًا أو عبر cron/CI — اختبر بقدر ما تنشر",
-              "traditional": "يُختبر سنويًا (إن حدث) — ربع سنوي في أفضل الأحوال"
+              "traditional": "يُختبر مرة في السنة (إن حدث)، وكل ربع سنة في أفضل الأحوال"
             },
             {
-              "rediacc": "فحوصات سلامة مؤتمتة — نجاح/فشل مع RTO/RPO دقيق",
-              "traditional": "تحقق يدوي — أحكام \"يبدو صحيحًا\""
+              "rediacc": "فحوصات مؤتمتة، نجاح أو فشل مع أرقام دقيقة (RTO/RPO)",
+              "traditional": "فحص يدوي، شخص ما يقول \"يبدو جيداً\""
             },
             {
               "rediacc": "افرع الكلاستر بالكامل خلال 46 ثانية ونفّذ تمرين الطوارئ على النسخة",
@@ -5683,7 +5683,7 @@
         "calculator": {
           "annualLabel": "التعرض السنوي",
           "description": "اسحب أشرطة التمرير لتتناسب مع بنيتك التحتية. الأرقام تتراكم بسرعة.",
-          "footnote": "الإيرادات المعرضة للخطر بناءً على متوسط تكلفة التوقف 9,000 دولار/دقيقة (Splunk/Oxford Economics 2024). عمالة الاستعادة: 6 مهندسين × ساعات الاستعادة × 200 دولار/ساعة. تكلفة السمعة مُقدرة كنسبة من التكاليف المباشرة (تقدير صناعي). مع Rediacc: اللقطات غير القابلة للتغيير تستعيد في أقل من 5 دقائق — وقت التوقف يقترب من الصفر.",
+          "footnote": "الإيرادات المعرضة للخطر محسوبة على أساس 9000 دولار/دقيقة متوسط تكلفة التوقف (Splunk/Oxford Economics 2024). تكلفة الاستعادة: 6 مهندسين × ساعات الاستعادة × 200 دولار/ساعة. خسارة السمعة مُقدرة كنسبة من التكاليف المباشرة (تقديرات الصناعة). مع Rediacc: اللقطات غير القابلة للتغيير تستعيد في أقل من 5 دقائق، لذا وقت التوقف يقترب من الصفر.",
           "headerTitle": "احسب تعرضك لبرامج الفدية",
           "results": {
             "downtime": "وقت التوقف لكل حادثة",
@@ -5709,7 +5709,7 @@
         },
         "comparison": {
           "capabilityLabel": "القدرة",
-          "description": "أدوات النسخ الاحتياطي التقليدية تعد بعدم القابلية للتغيير عبر أقفال برمجية. Rediacc يفرضها على مستوى النواة — حيث لا تصل برامج الفدية.",
+          "description": "أدوات النسخ الاحتياطي الأخرى تعد بنسخ محمية بواسطة أقفال برمجية. برامج الفدية يمكنها فتح هذه الأقفال. Rediacc يبني القفل في طبقة التخزين نفسها، حيث لا تصل برامج الفدية.",
           "features": [
             {
               "name": "نسخ احتياطية غير قابلة للتغيير",
@@ -5739,7 +5739,7 @@
             {
               "name": "وقت الاستعادة",
               "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "values": ["دقائق", "دقائق", "Hours", "Hours", "ثواني", "<5 min"]
             },
             {
               "name": "مستضاف ذاتيًا / بدون اعتماد على السحابة",
@@ -5758,7 +5758,7 @@
           "cloneVisual": {
             "arrow": {
               "icon": "lock-arrow",
-              "label": "Seal",
+              "label": "الختم",
               "time": ""
             },
             "clone": {
@@ -5820,7 +5820,7 @@
             {
               "description": "تبدأ خاصية عدم القابلية للتغيير على مستوى نظام الملفات. لا تغييرات مسموحة. لا من برامج الفدية. ولا من root.",
               "icon": "lock",
-              "title": "Lock"
+              "title": "القفل"
             },
             {
               "description": "عند وقوع الكارثة، نسختك الاحتياطية النظيفة في انتظارك. استعادة كاملة للبيئة في أقل من 5 دقائق.",
@@ -5837,7 +5837,7 @@
           "title": "نسخ احتياطية غير قابلة للتغيير | Rediacc"
         },
         "problem": {
-          "description": "المهاجمون الحديثون يجدون نسخك الاحتياطية قبل أن يشفروا ملفاتك. إذا كان يمكن تغيير نسخك الاحتياطية، فسيتم ذلك. أدوات النسخ الاحتياطي التقليدية تترك الباب مفتوحاً — و94% من ضحايا برامج الفدية استُهدفت نسخهم الاحتياطية أثناء الهجوم. تحتاج نسخاً احتياطية تُقفل لحظة إنشائها.",
+          "description": "تخيل الموقف: الساعة الثالثة صباحاً، برامج فدية ضربت نظامك للتو. النسخ الاحتياطية مشفرة أيضاً. والسبب؟ المهاجمون يبحثون عن النسخ الاحتياطية في المقام الأول. الواقع أن 94% من ضحايا برامج الفدية استُهدفت نسخهم الاحتياطية أثناء الهجوم (Sophos 2024). إذا كان بالإمكان تعديل نسخة احتياطية، فسيتم ذلك. النسخ الاحتياطية يجب أن تُقفل في الحال عند إنشائها.",
           "statCallouts": [
             {
               "number": "94%",
@@ -5863,15 +5863,15 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” مارس 2024. “94% من المنظمات التي تعرضت لهجمات فدية في السنة الماضية أكدت أن المجرمين السيبرانيين حاولوا اختراق نسخهم الاحتياطية أثناء الهجوم.”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” يوليو 2024. “بلغ متوسط تكلفة اختراق البيانات عالمياً 4.88 مليون دولار في 2024، مع تزايد تأثير الاختراقات وزيادة الضغط على فرق الأمن السيبراني.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” July 2022. “In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.”",
+              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” يوليو 2022. “في الربع الثاني، بلغ متوسط فترة التوقف 24 يوماً، بانخفاض 8% عن الربع الأول 2022.”",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
@@ -5879,75 +5879,75 @@
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Rubrik Atlas filesystem stores all backup data in proprietary append-only immutable format that cannot be modified or deleted.",
+              "text": "نظام الملفات Rubrik Atlas يخزن بيانات النسخ الاحتياطية بصيغة ملكية إضافية فقط غير قابلة للتعديل أو الحذف.",
               "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Commvault supports WORM storage lock and compliance lock on disk libraries for immutable backups.",
+              "text": "Commvault يدعم قفل تخزين WORM وقفل الامتثال على مكتبات الأقراص للنسخ الاحتياطية غير القابلة للتغيير.",
               "url": "https://documentation.commvault.com/2024e/software/configuring_worm_storage_mode_on_disk_libraries.html"
             },
             {
-              "text": "Druva's SaaS architecture stores backups in an air-gapped, immutable cloud decoupled from the customer's environment.",
+              "text": "تخزّن بنية Druva SaaS النسخ الاحتياطية في سحابة معزولة (air-gapped) وغير قابلة للتغيير ومنفصلة عن بيئة العميل.",
               "url": "https://www.druva.com/resources/solution-brief/solution-brief-druva-immutability"
             },
             {
-              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "text": "Veeam SureBackup يتحقق تلقائياً من قابلية استعادة النسخ الاحتياطية بتشغيل الآلات الافتراضية في بيئة اختبار معزولة.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Veeam Instant VM Recovery mounts backups directly on ESXi/Hyper-V hosts for near-instant VM recovery and testing.",
+              "text": "يحمّل Veeam Instant VM Recovery النسخ الاحتياطية مباشرة على مضيفات ESXi/Hyper-V لاستعادة الآلات الافتراضية واختبارها بشكل شبه فوري.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Live Mount instantly mounts backup snapshots as live VMs or file shares for testing and recovery.",
+              "text": "يحمّل Rubrik Live Mount لقطات النسخ الاحتياطية فوراً كآلات افتراضية حية أو مشاركات ملفات للاختبار والاستعادة.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery boots VMs directly from backup via NFS export for instant testing and recovery.",
+              "text": "Commvault Live Recovery يشغل الآلات الافتراضية مباشرة من النسخة الاحتياطية عبر NFS للاختبار والاستعادة الفورية.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore boots VMware VMs directly from backup cloud in under 5 minutes with live migration.",
+              "text": "يشغّل Druva Instant Restore آلات VMware الافتراضية مباشرة من سحابة النسخ الاحتياطي في أقل من 5 دقائق مع الترحيل الحي.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "يوفر النسخ المتماثل المستمر في Zerto مع الاستعادة المعتمدة على السجل RPO يقارب الصفر وRTO بمستوى الدقائق للاستعادة الفورية.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "يتيح Veeam Instant VM Recovery تحقيق RTO أقل من 5 دقائق عبر تشغيل الآلات الافتراضية مباشرة من ملفات النسخ الاحتياطي.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "يتيح Rubrik Instant Recovery الاستعادة في أقل من 5 دقائق عبر تحميل الآلات الافتراضية مباشرة من اللقطات غير القابلة للتغيير.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "يتيح Commvault Live Recovery تحقيق RTO أقل من 5 دقائق عبر تحميل الآلات الافتراضية من النسخة الاحتياطية مع Storage vMotion في الخلفية.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "يقلل Druva Instant Restore وقت التوقف عبر استعادة الآلات الافتراضية في أقل من 5 دقائق مباشرة من تخزين النسخ الاحتياطي السحابي.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "يتيح النسخ المتماثل الدائم في Zerto، مع RPO أقل من 10 ثوانٍ وRTO بمستوى الدقائق، استعادة بيئة كاملة بشكل شبه فوري.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication يُنشر على الأنظمة المحلية على Windows Server مع تحكم كامل من قبل العميل في البنية التحتية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik يُنشر كأجهزة على الأنظمة المحلية (سلسلة r6000) مع حساب وتخزين وبرنامج متكامل.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault يدعم نشراً مستضافاً ذاتياً كاملاً على الأنظمة المحلية مع مكونات CommServe و MediaAgent و Access Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "يُنشر Zerto داخل المنشأة مع Zerto Virtual Manager وأجهزة Virtual Replication Appliances لكل مضيف.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5966,22 +5966,22 @@
             },
             "improvement": "استعادة أسرع 4,800 مرة"
           },
-          "quote": "تعرضنا لهجوم برامج فدية الساعة 3:17 صباحاً يوم سبت. المهاجمون شفروا 14 خادماً بما في ذلك مستودع النسخ الاحتياطي — أو هكذا ظنوا. لقطات Rediacc غير القابلة للتغيير لم تُمس. بحلول الساعة 3:24 صباحاً استُعيدت جميع الخوادم الـ 14 من النسخ المختومة. إجمالي البيانات المفقودة: صفر بايت. إجمالي الفدية المدفوعة: صفر دولار."
+          "quote": "تعرضنا لهجوم برامج فدية الساعة 3:17 صباحاً يوم السبت. المهاجمون شفروا 14 خادماً بما فيها مستودع النسخ الاحتياطي، أو هكذا ظنوا. لقطات Rediacc غير القابلة للتعديل ظلت آمنة. بحلول الساعة 3:24 صباحاً، استُعيدت جميع الخوادم الـ 14 من النسخ المختومة. إجمالي البيانات المفقودة: صفر بايت. إجمالي الفدية المدفوعة: صفر دولار."
         },
         "techDiff": {
-          "description": "يستخدم Rediacc لقطات btrfs للقراءة فقط على مستوى نظام الملفات. بمجرد ختم اللقطة، يمنع النواة نفسها أي تعديل — ليست أقفال برمجية يمكن للبرمجيات الخبيثة تجاوزها، بل عدم قابلية للتغيير على مستوى نظام الملفات. حتى مع صلاحيات الجذر، لا تستطيع برامج الفدية تشفير أو تعديل أو حذف لقطة btrfs مختومة.",
+          "description": "ينشئ Rediacc نسخة للقراءة فقط، أي لقطة مجمّدة من الملفات في لحظة واحدة. وبمجرد ختم هذه النسخة، <span class=\"sp-emphasis\">تمنع طبقة التخزين نفسها أي تغيير</span>. وهذا ليس قفلاً برمجياً يستطيع البرنامج الخبيث كسره. حتى مع كلمة مرور المسؤول الأعلى، لا تستطيع برامج الفدية تشفير نسخة مختومة أو تعديلها أو حذفها.",
           "rediaccLabel": "Rediacc (btrfs غير قابل للتغيير)",
           "rows": [
             {
-              "rediacc": "لقطات للقراءة فقط مفروضة من النواة — لا يمكن تعديلها حتى مع root",
-              "traditional": "\"عدم قابلية للتغيير\" على مستوى البرنامج — يمكن تجاوزها بوصول المسؤول/root"
+              "rediacc": "نسخ للقراءة فقط تحميها طبقة التخزين، آمنة حتى مع كلمة مرور المسؤول الرئيسية",
+              "traditional": "أقفال برمجية يمكن تجاوزها بكلمة مرور المسؤول"
             },
             {
-              "rediacc": "اللقطات موجودة على مستوى نظام الملفات — غير مرئية للبرمجيات الخبيثة",
-              "traditional": "ملفات النسخ الاحتياطي مخزنة كملفات عادية على القرص — مرئية وقابلة للتشفير"
+              "rediacc": "النسخ موجودة في طبقة التخزين، غير مرئية للبرمجيات الخبيثة العادية",
+              "traditional": "ملفات النسخ الاحتياطي مخزنة كملفات عادية على القرص، سهلة الاكتشاف والتشفير"
             },
             {
-              "rediacc": "استنساخ يومي تلقائي + تشغيل + فحص سلامة — استعادة وتحقق فعلي",
+              "rediacc": "استنساخ يومي + تشغيل فعلي + فحص سلامة، استعادة وتحقق حقيقي",
               "traditional": "التحقق = رسالة حالة \"اكتمل النسخ الاحتياطي\" فقط"
             },
             {
@@ -6261,17 +6261,17 @@
         "benefits": {
           "items": [
             {
-              "description": "الخوادم والتكوينات وقواعد البيانات وإعدادات الشبكة — المكدس بالكامل يُستعاد كوحدة واحدة. بدون إعادة بناء، بدون إعادة تكوين، بدون تبعيات منسية.",
+              "description": "خوادم، إعدادات، قواعد بيانات، شبكة. تعود المنظومة بالكامل كوحدة واحدة. بلا إعادة بناء. بلا إعادة تكوين. بلا شيء مفقود. تستخدم Kubernetes؟ يُستنسخ الكلاستر بالكامل وينتقل بنفس الطريقة، التطبيقات والبيانات معاً.",
               "icon": "zap",
               "title": "بيئات كاملة، وليس ملفات"
             },
             {
-              "description": "ارجع إلى أي لقطة في جدولك الزمني. أمس، الأسبوع الماضي، قبل ثلاثة أشهر. اختر الحالة التي تحتاجها بالضبط — بدون تخمين أي الملفات تغيرت.",
+              "description": "ارجع إلى أي نسخة محفوظة في السجل. أمس، الأسبوع الماضي، قبل ثلاثة أشهر. اختر الحالة التي تحتاجها بالضبط، بلا تخمين أي الملفات تغيّرت.",
               "icon": "clock",
               "title": "أي نقطة زمنية"
             },
             {
-              "description": "كل استعادة يتم فحص سلامتها تلقائيًا — نقاط نهاية HTTP واتصالات قاعدة البيانات وسلامة الخدمة. ليس \"تمت استعادة الملفات\" — بل تعمل فعلًا وتستجيب.",
+              "description": "كل استعادة يتم فحص سلامتها. نقاط نهاية HTTP واتصالات قاعدة البيانات وسلامة الخدمة. ليس مجرد “ملفات مُستعادة”. تعمل بفعالية وتستجيب.",
               "icon": "check-circle",
               "title": "استعادة موثوقة"
             }
@@ -6288,7 +6288,7 @@
         "calculator": {
           "annualLabel": "تكلفة التوقف السنوية",
           "description": "اسحب أشرطة التمرير لتتناسب مع بيئتك. شاهد التكلفة الحقيقية للاستعادة على مستوى الملفات.",
-          "footnote": "استعادة على مستوى الملفات: ساعتان/خدمة للتجهيز + إعادة التكوين. الإيرادات المفقودة: ساعات التوقف × الإيرادات بالساعة. عمالة الموظفين: 2 مهندس × ساعات الاستعادة × 200 دولار/ساعة. فقدان العملاء: 20% من الإيرادات المفقودة من انتهاكات SLA. Rediacc: نسخة btrfs تستعيد البيئة الكاملة في أقل من 5 دقائق — أمر واحد، بدون إعادة بناء.",
+          "footnote": "الاستعادة على مستوى الملفات: ساعتان لكل خدمة (تجهيز + إعادة تكوين). الإيرادات المفقودة: عدد ساعات التوقف × الإيرادات بالساعة. ساعات العمل: مهندسان × ساعات الاستعادة × 200 دولار/ساعة. فقدان العملاء: 20% من الإيرادات المفقودة من انتهاكات SLA. Rediacc: نسخة btrfs تستعيد البيئة الكاملة في أقل من 5 دقائق، أمر واحد، بدون إعادة بناء.",
           "headerTitle": "احسب تعرضك لوقت التوقف",
           "results": {
             "churn": "تأثير فقدان العملاء",
@@ -6358,7 +6358,7 @@
         },
         "hero": {
           "ctaLabel": "استعد خلال دقائق",
-          "subtitle": "ليس فقط الملفات. بيئات كاملة — خوادم وإعدادات وقواعد بيانات — مُستعادة وتعمل في دقائق.",
+          "subtitle": "لا الملفات فقط. بيئات كاملة: خوادم وإعدادات وقواعد بيانات. تعود للعمل <span class=\"sp-emphasis\">في دقائق</span>.",
           "title": "استعادة كاملة للبيئة في دقائق"
         },
         "howItWorks": {
@@ -6430,7 +6430,7 @@
               "title": "الاستعادة"
             },
             {
-              "description": "فحوصات سلامة تلقائية تؤكد تشغيل كل خدمة. ليس عد ملفات — بل فحوصات HTTP وSQL ونقاط نهاية السلامة فعلية.",
+              "description": "فحوصات صحية تلقائية تؤكد كل خدمة تعمل. لا عدّ ملفات. اتصالات HTTP وSQL وفحوصات صحية حقيقية.",
               "icon": "check-circle",
               "title": "التحقق"
             }
@@ -6439,12 +6439,12 @@
         },
         "label": "الاستعادة الفورية",
         "meta": {
-          "description": "ليس فقط الملفات. بيئات كاملة — خوادم وإعدادات وقواعد بيانات — مُستعادة وتعمل في دقائق.",
+          "description": "ليست الملفات فقط. بيئات كاملة (خوادم وإعدادات وقواعد بيانات) تُستعاد وتعمل في دقائق.",
           "keywords": "استعادة فورية, استعادة البيئة الكاملة, نسخة btrfs, التعافي من الكوارث, استعادة النسخ, استعادة نقطة زمنية, فحوصات صحية, استعادة بأمر واحد",
-          "title": "الاستعادة الفورية — استعادة كاملة للبيئة في دقائق | Rediacc"
+          "title": "استعادة فورية - بيئات كاملة في دقائق | Rediacc"
         },
         "problem": {
-          "description": "استعادة الملفات الفردية تستغرق ساعات. إعادة بناء بيئات كاملة تستغرق أياماً. عندما يتعطل خادم الإنتاج، لا تحتاج فقط استعادة الملفات — تحتاج استعادة كل شيء. الخادم والإعدادات وقاعدة البيانات وإعدادات الشبكة. كل شيء.",
+          "description": "استعادة الملفات ملف بملف تستغرق ساعات. إعادة بناء البيئة الكاملة تأخذ أياماً. حين ينهار الخادم الرئيسي، الملفات وحدها لا تنقذك. يجب أن يعود كل شيء: الخادم والإعدادات وقاعدة البيانات والشبكة. كل شيء يعمل مجدداً.",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6497,59 +6497,59 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The State of Ransomware 2024,” April 2024. “The average recovery time was 3.4 weeks; recovery costs averaged $2.73 million excluding ransom payments.”",
+              "text": "Sophos, “The State of Ransomware 2024,” أبريل 2024. “متوسط وقت الاستعادة بلغ 3.4 أسابيع؛ وتكاليف الاستعادة في المتوسط 2.73 مليون دولار مستبعداً مدفوعات الفدية.”",
               "url": "https://www.sophos.com/en-us/blog/the-state-of-ransomware-2024"
             },
             {
-              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
+              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “متوسط تكلفة ساعة التوقف الواحدة يتجاوز الآن 300 ألف دولار لأكثر من 90% من الشركات المتوسطة والكبيرة.”",
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “فقط 13% من المؤسسات تستخدم سير عمل موحد كجزء من عمليات استعادة الكوارث.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "يتيح Veeam Instant VM Recovery تحقيق RTO أقل من 5 دقائق عبر تشغيل الآلات الافتراضية مباشرة من ملفات النسخ الاحتياطي.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "يتيح Rubrik Instant Recovery الاستعادة في أقل من 5 دقائق عبر تحميل الآلات الافتراضية مباشرة من اللقطات غير القابلة للتغيير.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "يتيح Commvault Live Recovery تحقيق RTO أقل من 5 دقائق عبر تحميل الآلات الافتراضية من النسخة الاحتياطية مع Storage vMotion في الخلفية.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "يقلل Druva Instant Restore وقت التوقف عبر استعادة الآلات الافتراضية في أقل من 5 دقائق مباشرة من تخزين النسخ الاحتياطي السحابي.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "text": "Veeam يدعم نقاط استعادة قائمة على اللقطات لكل آلة افتراضية مع جداول نسخ احتياطية قابلة للتخصيص وحماية البيانات المستمرة.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
             },
             {
-              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "text": "Rubrik يوفر سياسات لقطات موجهة بـ SLA مع تكرار قابل للتخصيص للاستعادة الدقيقة للنقطة الزمنية.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "text": "Commvault يدعم الاستعادة للنقطة الزمنية باستخدام اللقطات للآلات الافتراضية وخوادم الملفات وقواعد البيانات والتطبيقات.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "text": "Druva يحافظ على نقاط استعادة ساخنة وفاترة وباردة مما يتيح استعادات النقطة الزمنية للآلات الافتراضية وقواعد البيانات وتطبيقات SaaS.",
               "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication يتم نشره في الموقع على Windows Server مع تحكم كامل من العميل في البنية التحتية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik يتم نشره كأجهزة في الموقع (سلسلة r6000) مع حوسبة وتخزين وبرامج متكاملة.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "يدعم Commvault نشراً ذاتي الاستضافة بالكامل داخل المنشأة مع مكونات CommServe وMediaAgent وAccess Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ]
@@ -6568,26 +6568,26 @@
             },
             "improvement": "استعادة أسرع 270 مرة · صفر حوادث عطلة نهاية أسبوع منذ النشر"
           },
-          "quote": "تعطل خادم قاعدة البيانات الرئيسي الساعة 2:14 صباحاً يوم سبت — وحدة تحكم قرص تالفة. مع إعدادنا القديم، كان هذا سيعني عطلة نهاية أسبوع كاملة من التجهيز والاستعادة وإعادة تكوين 11 خدمة. بدلاً من ذلك، نفذت أمراً واحداً من هاتفي. بحلول الساعة 2:18 صباحاً، كل شيء عاد — MariaDB وAPI وNginx وRedis، كل شيء. نفس الإعدادات، نفس الحالة، نفس البيانات. مهندس المناوبة عاد للنوم."
+          "quote": "تعطل خادم قاعدة البيانات الأساسي الساعة 2:14 صباحاً يوم السبت بسبب وحدة تحكم قرص معطوبة. مع إعدادنا القديم، كان هذا سيعني عطلة نهاية أسبوع كاملة من التجهيز والاستعادة وإعادة تكوين 11 خدمة. بدلاً من ذلك، نفذت أمراً واحداً من هاتفي. بحلول الساعة 2:18 صباحاً، كل شيء عاد: MariaDB وAPI وNginx وRedis. نفس الإعدادات، نفس الحالة، نفس البيانات. مهندس المناوبة عاد للنوم."
         },
         "techDiff": {
-          "description": "الاستعادة التقليدية تعني تجهيز خادم جديد، تثبيت الحزم، استعادة الملفات واحداً تلو الآخر، إعادة تكوين الخدمات، والأمل أنه لم يفُت شيء. Rediacc يستخدم لقطات btrfs لاستنساخ البيئة بأكملها — الأحجام والإعدادات والحاويات وإعدادات الشبكة — في عملية ذرية واحدة.",
+          "description": "الطريقة القديمة: إعداد خادم جديد، وتثبيت الحزم، واستعادة الملفات واحداً تلو الآخر، وإعادة ضبط الخدمات. ثم الدعاء ألّا يكون قد فاتك شيء. Rediacc يعمل بطريقة مختلفة. فهو ينسخ البيئة كاملة دفعة واحدة. الأقراص والإعدادات والحاويات والشبكة، <span class=\"sp-emphasis\">كل ذلك في خطوة واحدة</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "نسخة btrfs ذرية — وحدات التخزين والتكوينات والحاويات والشبكة في عملية واحدة",
-              "traditional": "استعادة الملفات فرديًا — فقدان التكوينات والأذونات والحالة"
+              "rediacc": "نسخة فورية واحدة: وحدات التخزين والإعدادات والحاويات والشبكة، كلها معاً",
+              "traditional": "استعادة الملفات ملف بملف، احتمال فقدان الإعدادات والأذونات والحالة"
             },
             {
-              "rediacc": "نفس الخادم، نفس نقطة التحميل، نفس Docker daemon — كل شيء يُستعاد في مكانه",
+              "rediacc": "نفس الخادم، نفس نقطة التحميل، نفس Docker، كل شيء مستعاد في مكانه",
               "traditional": "توفير خادم جديد، تثبيت الحزم، إعادة التكوين يدويًا"
             },
             {
-              "rediacc": "أقل من 5 دقائق — جميع الخدمات تعمل معًا مع فحوصات سلامة تلقائية",
+              "rediacc": "أقل من 5 دقائق، جميع الخدمات تعمل معاً مع فحوصات صحة تلقائية",
               "traditional": "ساعات من العمل اليدوي — كل خدمة تُعاد بناؤها واختبارها بشكل منفصل"
             },
             {
-              "rediacc": "لقطة نقطة زمنية — الحالة الدقيقة في لحظة النسخ الاحتياطي، بدون انحراف",
+              "rediacc": "لقطة من لحظة دقيقة، الحالة الفعلية وقت النسخ، بدون انحراف",
               "traditional": "انحراف التكوين بين النسخ الاحتياطي والحالة الحالية"
             }
           ],
@@ -6999,19 +6999,19 @@
             {
               "number": "27%",
               "ref": 1,
-              "source": "تقرير Flexera لحالة السحابة 2024",
+              "source": "Flexera 2024 State of the Cloud Report",
               "text": "من الإنفاق السحابي يُهدر كل عام"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "تقرير Flexera لحالة السحابة 2025",
+              "source": "Flexera 2025 State of the Cloud Report",
               "text": "المتوسط الذي تتجاوزه الشركات في ميزانيتها السحابية"
             },
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP الأسعار 2024",
+              "source": "AWS/Azure/GCP Pricing 2024",
               "text": "رسوم لنقل البيانات للخارج، مصممة عمدًا لجعل المغادرة مكلفة"
             }
           ],
@@ -7815,7 +7815,7 @@
         },
         "comparison": {
           "capabilityLabel": "القدرة",
-          "description": "أدوات النسخ الاحتياطي التقليدية تستعيد الملفات. Rediacc يستعيد بيئات كاملة — حاويات وإعدادات وقواعد بيانات — في دقائق.",
+          "description": "أدوات النسخ الاحتياطي التقليدية تستعيد الملفات فقط. Rediacc يستعيد النظام بكامله في دقائق. الحاويات والإعدادات وقواعد البيانات تعود كلها معاً.",
           "features": [
             {
               "name": "استعادة كاملة للبيئة",
@@ -7939,7 +7939,7 @@
           "title": "الاستعادة السريعة - استجابة فورية للكوارث | Rediacc"
         },
         "problem": {
-          "description": "معظم الفرق تقضي أياماً في إعادة البناء بعد برامج الفدية. في هذه الأثناء، العملاء لا يستطيعون الوصول إليك. الإيرادات تتوقف. الثقة تنكسر. الهجوم يستمر ساعة. الاستعادة تستغرق أسبوعاً. هذا هو الضرر الحقيقي — ومتوسط استعادة برامج الفدية يستغرق 24 يوماً.",
+          "description": "الساعة 2 صباحاً. برامج الفدية قفلت الخوادم. الآن تنتظرك أيام من إعادة البناء. العملاء لا يستطيعون الوصول. الإيرادات تتوقف. الثقة تنهار. الهجوم استغرق ساعة. الاستعادة تستغرق أسبوعاً. هذا هو الضرر الحقيقي. متوسط وقت استعادة برامج الفدية هو 24 يوماً.",
           "statCallouts": [
             {
               "number": "24 days",
@@ -7965,75 +7965,75 @@
         "references": {
           "items": [
             {
-              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
+              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" يوليو 2022. \"في الربع الثاني، بلغ متوسط أيام التوقف 24 يوماً، بانخفاض 8% عن الربع الأول 2022.\"",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
-              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" June 2024. \"Each minute of downtime costs $9,000 or $540,000 per hour.\"",
+              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" يونيو 2024. \"تكلفة كل دقيقة توقف 9,000 دولار، أي 540,000 دولار في الساعة.\"",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"80% of organizations that paid were hit by ransomware a second time, with 68% saying the second attack came less than a month later and threat actors demanded a higher ransom amount.\"",
+              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"تعرض 80% من المؤسسات التي دفعت الفدية لهجوم فدية ثانٍ، وأفاد 68% أن الهجوم الثاني جاء في أقل من شهر وطلب المهاجمون فدية أعلى.\"",
               "url": "https://www.cybereason.com/blog/report-ransomware-attacks-and-the-true-cost-to-business-2022"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "تقنية Zerto للنسخ المستمر مع الاستعادة القائمة على السجلات توفر فترة استعادة بيانات قريبة من الصفر وفترة استرجاع على مستوى الدقائق للاستعادة الفورية.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery يمكّن استعادة الآلات الافتراضية في أقل من 5 دقائق بتشغيلها مباشرة من ملفات النسخ الاحتياطية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "يتيح Rubrik Instant Recovery الاستعادة في أقل من 5 دقائق عبر تحميل الآلات الافتراضية مباشرة من اللقطات غير القابلة للتغيير.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery يمكّن فترة استرجاع أقل من 5 دقائق بتحميل الآلات الافتراضية من النسخة الاحتياطية مع نقل التخزين في الخلفية.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore تقلل فترات التوقف بواسطة استعادة الآلات الافتراضية في أقل من 5 دقائق مباشرة من التخزين السحابي للنسخ الاحتياطية.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "النسخ المستمر في Zerto بفترة استعادة بيانات أقل من 10 ثوانٍ وفترة استرجاع على مستوى الدقائق يمكّن الاستعادة الكاملة والفورية للبيئة.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "text": "Veeam يدعم نقاط استعادة قائمة على لقطات لكل آلة افتراضية مع جداول نسخ احتياطي قابلة للتكوين وحماية البيانات المستمرة.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
             },
             {
-              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "text": "Rubrik يوفر سياسات لقطات مدفوعة بـ SLA مع تكرار قابل للتكوين للاستعادة من نقطة زمنية محددة.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "text": "Commvault يدعم الاستعادة من نقطة زمنية محددة باستخدام لقطات للآلات الافتراضية وخوادم الملفات وقواعد البيانات والتطبيقات.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "text": "تحتفظ Druva بنقاط استعادة ساخنة وفاترة وباردة تمكّن الاستعادة من نقاط زمنية محددة للآلات الافتراضية وقواعد البيانات وتطبيقات SaaS.",
               "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
             },
             {
-              "text": "Zerto journal stores every block-level write creating crash-consistent checkpoints every 5-10 seconds for granular recovery.",
+              "text": "سجل Zerto يخزن كل عملية كتابة على مستوى الكتلة مع إنشاء نقاط تفتيش متسقة كل 5-10 ثوانٍ للاستعادة الدقيقة.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/journal-based-recovery/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication ينتشر محلياً على Windows Server مع تحكم كامل للعميل على البنية الأساسية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "يُنشر Rubrik كأجهزة محلية (سلسلة r6000) مع حوسبة وتخزين وبرنامج متكاملة.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "يدعم Commvault نشراً ذاتي الاستضافة بالكامل داخل المنشأة مع مكونات CommServe وMediaAgent وAccess Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "ينتشر Zerto محلياً مع Zerto Virtual Manager وأجهزة Virtual Replication لكل مضيف.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8052,10 +8052,10 @@
             },
             "improvement": "استعادة أسرع 1,080 مرة"
           },
-          "quote": "انتقلنا من خطة استعادة مدتها 3 أيام إلى أقل من 4 دقائق. أثناء حادثة برامج فدية حقيقية الساعة 2 صباحاً، نفذ مهندس المناوبة أمراً واحداً وعادت جميع حاويات الإنتاج الـ 8 للعمل بحلول الساعة 2:04 صباحاً. تقدير مزودنا السابق كان 72 ساعة — فعلناها في 240 ثانية."
+          "quote": "انتقلنا من خطة استعادة مدتها 3 أيام إلى أقل من 4 دقائق. أثناء حادثة برامج فدية حقيقية الساعة 2 صباحاً، نفذ مهندس المناوبة أمراً واحداً فقط واستعادت جميع 8 حاويات الإنتاج العمل بحلول الساعة 2:04 صباحاً. توقع بائعنا السابق كان 72 ساعة، أنجزناها في 240 ثانية."
         },
         "techDiff": {
-          "description": "الاستعادة التقليدية تعيد البناء من الصفر — إعادة تثبيت نظام التشغيل، استعادة الملفات، إعادة تكوين الخدمات. Rediacc يستعيد من لقطات btrfs: نظام الملفات ينتقل ببساطة إلى الحالة المحفوظة. بدون إعادة تثبيت، بدون إعادة تكوين، بدون نقل بيانات. اللقطة موجودة بالفعل على القرص — تصبح فقط نشطة.",
+          "description": "الاستعادة القديمة تعيد بناء كل شيء من الصفر: إعادة تثبيت النظام، واستعادة الملفات، وإعداد الخدمات من جديد. أما Rediacc فيعمل بطريقة مختلفة. فهناك نسخة نظيفة <span class=\"sp-emphasis\">موجودة أصلاً على القرص</span>. نكتفي بتشغيلها. دون إعادة تثبيت، ودون إعداد، ودون نقل بطيء للبيانات.",
           "traditionalLabel": "إعادة البناء التقليدية",
           "rediaccLabel": "Rediacc (نسخ btrfs فورية)",
           "rows": [
@@ -8090,7 +8090,7 @@
         "calculator": {
           "annualLabel": "تكلفة الامتثال السنوية",
           "description": "اسحب أشرطة التمرير لتتناسب مع بيئتك. شاهد التكلفة الحقيقية لإدارة الاحتفاظ اليدوية.",
-          "footnote": "ساعات الإعداد: التدقيقات × الساعات لكل تدقيق. الفجوات: فجوة واحدة لكل 5 تيرابايت من البيانات المُدارة يدوياً (تقدير متحفظ). العقوبة: 50 ألف دولار لكل فجوة (متوسط غرامة GDPR للشركات الصغيرة والمتوسطة). العمالة: ساعات الإعداد × 200 دولار/ساعة (مهندس أول). متوسط تكلفة اختراق البيانات 4.88 مليون دولار (IBM 2024). Rediacc ينشئ تقارير جاهزة للتدقيق فوراً — ساعتان لكل تدقيق، تطبيق سياسات تلقائي.",
+          "footnote": "ساعات الإعداد = عدد التدقيقات × الساعات لكل تدقيق. الفجوات: تقدير متحفظ بفجوة واحدة لكل 5 تيرابايت من البيانات المُدارة يدوياً. العقوبات: 50 ألف دولار لكل فجوة (متوسط غرامات GDPR للشركات الصغيرة والمتوسطة). التكاليف: ساعات الإعداد × 200 دولار/ساعة (مهندس أول). متوسط تكلفة اختراق البيانات عالمياً: 4.88 مليون دولار (IBM 2024). Rediacc ينتج تقارير جاهزة للتدقيق فوراً: ساعتان لكل تدقيق وتطبيق تلقائي للسياسات.",
           "headerTitle": "احسب تعرضك للامتثال",
           "results": {
             "gaps": "فجوات الامتثال (تقدير)",
@@ -8158,7 +8158,7 @@
         },
         "hero": {
           "ctaLabel": "حدد قواعد الاحتفاظ",
-          "subtitle": "سياسات احتفاظ قابلة للتكوين تلبي متطلبات الامتثال. HIPAA وSOC2 وGDPR — مغطاة افتراضياً.",
+          "subtitle": "حدد مدة الاحتفاظ بالنسخ الاحتياطية. Rediacc يحتفظ بها لتلك المدة، ثم ينظفها. متطلبات HIPAA و SOC2 وGDPR <span class=\"sp-emphasis\">مدعومة من البداية</span>.",
           "title": "احتفظ ببياناتك طالما يتطلب القانون"
         },
         "howItWorks": {
@@ -8174,19 +8174,19 @@
               "footerRight": "جاهز للتدقيق",
               "items": [
                 {
-                  "detail": "2,555 backups",
+                  "detail": "2,555 نسخة احتياطية",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "1,825 backups",
+                  "detail": "1,825 نسخة احتياطية",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "1,095 backups",
+                  "detail": "1,095 نسخة احتياطية",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "365 backups",
+                  "detail": "365 نسخة احتياطية",
                   "name": "Internal"
                 }
               ],
@@ -8199,19 +8199,19 @@
               "footerRight": "التنظيف التلقائي: مُفعّل",
               "items": [
                 {
-                  "detail": "7 years",
+                  "detail": "7 سنوات",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "5 years",
+                  "detail": "5 سنوات",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "3 years",
+                  "detail": "3 سنوات",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "1 year",
+                  "detail": "سنة واحدة",
                   "name": "Internal"
                 }
               ],
@@ -8240,7 +8240,7 @@
         },
         "label": "الامتثال للاحتفاظ بالبيانات",
         "meta": {
-          "description": "سياسات احتفاظ قابلة للتكوين تلبي متطلبات الامتثال. HIPAA وSOC2 وGDPR — مغطاة افتراضياً.",
+          "description": "سياسات احتفاظ مرنة تلبي متطلبات الامتثال. HIPAA و SOC2 وGDPR مدعومة من البداية.",
           "keywords": "امتثال الاحتفاظ, الاحتفاظ بالبيانات, امتثال HIPAA, SOC2, GDPR, احتفاظ النسخ الاحتياطية, جاهز للتدقيق, أتمتة الامتثال",
           "title": "امتثال الاحتفاظ - تخزين بيانات قانوني | Rediacc"
         },
@@ -8271,91 +8271,91 @@
         "references": {
           "items": [
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security، “Cost of a Data Breach Report 2024,” يوليو 2024. “متوسط تكلفة اختراق البيانات عالمياً وصل إلى 4.88 مليون دولار في عام 2024.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024. “Civil money penalties up to $2,134,831 per violation category per calendar year.”",
+              "text": "وزارة الصحة والخدمات الإنسانية بالولايات المتحدة، “HIPAA Enforcement Rule,” 2024. “الغرامات المدنية تصل إلى 2,134,831 دولار لكل فئة انتهاك سنوياً.”",
               "url": "https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/index.html"
             },
             {
-              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “An aggregate total of EUR 1.2 billion in fines was issued across Europe in 2024.”",
+              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “إجمالي الغرامات الصادرة في أوروبا بلغ 1.2 مليار يورو في عام 2024.”",
               "url": "https://cms.law/en/int/publication/gdpr-enforcement-tracker-report/numbers-and-figures"
             },
             {
-              "text": "Veeam provides configurable GFS (Grandfather-Father-Son) retention policies for daily, weekly, monthly, and yearly backups.",
+              "text": "Veeam توفر سياسات احتفاظ GFS قابلة للتكوين (Grandfather-Father-Son) للنسخ الاحتياطية اليومية والأسبوعية والشهرية والسنوية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/gfs_retention_policy.html"
             },
             {
-              "text": "Rubrik SLA Domains provide automated retention with configurable local and archive retention periods.",
+              "text": "توفر Rubrik SLA Domains احتفاظاً تلقائياً بفترات احتفاظ محلية وأرشيفية قابلة للتكوين.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault provides configurable retention policies with basic, extended (GFS), and infinite retention options.",
+              "text": "Commvault توفر سياسات احتفاظ قابلة للتكوين بخيارات احتفاظ أساسية وموسّعة (GFS) واحتفاظ لا نهائي.",
               "url": "https://documentation.commvault.com/v11/commcell-console/data_retention.html"
             },
             {
-              "text": "Druva supports GFS retention policies with daily/weekly/monthly/yearly schedules plus Long-Term Retention to cold storage.",
+              "text": "Druva تدعم سياسات احتفاظ GFS مع جداول يومية وأسبوعية وشهرية وسنوية بالإضافة إلى الاحتفاظ طويل الأجل على التخزين البارد.",
               "url": "https://docs.druva.com/CloudRanger/013_Manage_Backup_Policies/About_Backup_Policies_and_Backup_Types/About_Retention_for_Backup_Policies"
             },
             {
-              "text": "Veeam Scale-out Backup Repository automates data lifecycle with performance, capacity, and archive tiers.",
+              "text": "يؤتمت Veeam Scale-out Backup Repository دورة حياة البيانات عبر مستويات الأداء والسعة والأرشيف.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/backup_repository_sobr.html"
             },
             {
-              "text": "Rubrik SLA policies automate data lifecycle management with tiering from local to archive storage.",
+              "text": "سياسات Rubrik SLA تؤتمت إدارة دورة حياة البيانات مع التدرج من التخزين المحلي إلى الأرشيفي.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault Data Aging automates data lifecycle by pruning expired backup data based on retention settings.",
+              "text": "Commvault Data Aging تؤتمت دورة حياة البيانات بحذف بيانات النسخ الاحتياطية المنتهية صلاحيتها بناءً على إعدادات الاحتفاظ.",
               "url": "https://documentation.commvault.com/v11/commcell-console/media_management_configuration_data_aging.html"
             },
             {
-              "text": "Druva automatically tiers data between S3, Glacier, and Deep Archive using ML-driven storage tiering.",
+              "text": "تصنّف Druva البيانات تلقائياً بين S3 وGlacier وDeep Archive باستخدام التصنيف المدفوع بالتعلم الآلي.",
               "url": "https://help.druva.com/en/articles/8651731-about-long-term-retention"
             },
             {
-              "text": "Veeam ONE provides built-in reporting and monitoring dashboards with compliance-ready audit reports.",
+              "text": "Veeam ONE توفر لوحات معلومات التقارير والمراقبة المدمجة مع تقارير التدقيق الجاهزة للامتثال.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Rubrik provides compliance and activity reports through its Envision reporting engine for governance needs.",
+              "text": "Rubrik توفر تقارير الامتثال والنشاط من خلال محرك التقارير Envision الخاص بها لاحتياجات الحوكمة.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault Audit Trail Report displays all user operations across Critical, High, Medium, and Low severity levels.",
+              "text": "يعرض Commvault Audit Trail Report جميع عمليات المستخدم عبر مستويات الشدة الحرجة والعالية والمتوسطة والمنخفضة.",
               "url": "https://documentation.commvault.com/saas/audit_trail_report_01.html"
             },
             {
-              "text": "Druva maintains a three-year audit trail of every admin and user activity with downloadable HTML/CSV reports.",
+              "text": "Druva تحتفظ بسجل تدقيق يمتد لثلاث سنوات لكل نشاط إداري ومستخدم مع تقارير HTML/CSV قابلة للتحميل.",
               "url": "https://docs.druva.com/Cyber_Resilience/Audit_Trails/About_Audit_Trails"
             },
             {
-              "text": "Veeam Compliance Analyzer validates backup infrastructure against security and compliance best practices.",
+              "text": "Veeam Compliance Analyzer تتحقق من البنية التحتية للنسخ الاحتياطية مقابل أفضل الممارسات الأمنية والامتثال.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/compliance_analyzer.html"
             },
             {
-              "text": "Rubrik Security Cloud enables compliance monitoring with SOC2, HIPAA, and PCI-DSS reporting templates.",
+              "text": "Rubrik Security Cloud تفعّل مراقبة الامتثال مع قوالب التقارير SOC2 و HIPAA و PCI-DSS.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault holds ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High, and IRAP certifications.",
+              "text": "Commvault تحمل شهادات ISO 27001 و SOC 2 Type II و HIPAA و PCI DSS و FedRAMP High و IRAP.",
               "url": "https://documentation.commvault.com/saas/security_and_compliance.html"
             },
             {
-              "text": "Druva holds SOC 2 Type II, HIPAA, FedRAMP ATO, and FIPS 140-2 certifications with GDPR/CCPA monitoring templates.",
+              "text": "Druva تحمل شهادات SOC 2 Type II و HIPAA و FedRAMP ATO و FIPS 140-2 مع قوالب مراقبة GDPR/CCPA.",
               "url": "https://www.druva.com/use-cases/compliance"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "يُنشر Veeam Backup & Replication داخل المنشأة على Windows Server مع سيطرة كاملة للعميل على البنية التحتية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "يُنشر Rubrik كأجهزة داخل المنشأة (سلسلة r6000) مع الحوسبة والتخزين والبرنامج المدمج.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "يدعم Commvault نشراً ذاتي الاستضافة بالكامل داخل المنشأة مع مكونات CommServe وMediaAgent وAccess Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ]
@@ -8377,16 +8377,16 @@
           "quote": "طلب مدقق SOC2 لدينا إثبات احتفاظ 3 سنوات من النسخ الاحتياطية. سابقاً، كان ذلك يعني أسبوعين من البحث في السجلات ومقارنة جداول البيانات. مع Rediacc، نفذت rdc retention report --framework soc2 وسلّمت تقريراً كاملاً في 4 دقائق. المدقق قال إنه أنظف دليل رآه."
         },
         "techDiff": {
-          "description": "إدارة الاحتفاظ التقليدية تعني تتبع تواريخ النسخ في جداول بيانات، تشغيل سكريبتات تنظيف يدوية، والأمل أنه لم يفُت شيء قبل وصول المدقق. Rediacc يستخدم إدارة دورة حياة لقطات btrfs مع تطبيق سياسات تلقائي — النسخ الاحتياطية تُحفظ وتُتحقق وتُنظف بدون تدخل بشري.",
+          "description": "الامتثال بجداول البيانات يعني تتبّع تواريخ النسخ الاحتياطية يدوياً، وتشغيل سكربتات التنظيف، والأمل ألا يفلت شيء قبل وصول المدقق. يحتفظ Rediacc بالنسخ الاحتياطية ويتحقق منها وينظّفها <span class=\"sp-emphasis\">من تلقاء نفسه</span>. دون أي خطوات بشرية.",
           "rediaccLabel": "احتفاظ Rediacc",
           "rows": [
             {
-              "rediacc": "فرض تلقائي للسياسات — دائمًا محدث",
-              "traditional": "تتبع بجداول البيانات — يصبح قديمًا بسهولة"
+              "rediacc": "فرض تلقائي للسياسات، دائماً محدث",
+              "traditional": "تتبع بجداول البيانات، يصبح قديماً بسرعة"
             },
             {
-              "rediacc": "إدارة دورة حياة تلقائية — بدون خطوات يدوية",
-              "traditional": "سكربتات تنظيف يدوية — خطر الخطأ البشري"
+              "rediacc": "تنظيف تلقائي، بدون خطوات يدوية",
+              "traditional": "سكريبتات تنظيف يدوية، عرضة للأخطاء"
             },
             {
               "rediacc": "تقارير فورية جاهزة للتدقيق عبر rdc retention report",
@@ -8512,7 +8512,7 @@
             },
             "clone": {
               "containerCount": "8 حاويات",
-              "patchInfo": "▲ apt upgrade: 47 packages · kernel 6.8.0-45",
+              "patchInfo": "▲ apt upgrade: 47 حزمة · kernel 6.8.0-45",
               "services": [
                 {
                   "name": "nginx",
@@ -8609,7 +8609,7 @@
           ],
           "timeline": {
             "newLabel": "مع Rediacc",
-            "newSteps": ["Clone", "60s", "تحديث وتحقق"],
+            "newSteps": ["استنساخ", "60s", "تحديث وتحقق"],
             "oldLabel": "الطريقة القديمة",
             "oldSteps": [
               {
@@ -8639,15 +8639,15 @@
         "references": {
           "items": [
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” مايو 2024. “استغلال الثغرات كنقطة دخول أولية ارتفع إلى ما يقارب ثلاثة أضعاف مستواه في السنة السابقة، وشكّل 14% من جميع الاختراقات.”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “The two most common causes of networking- and connectivity-related outages are configuration or change management failure (cited by 45% of respondents).”",
+              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “السببان الأكثر شيوعاً لانقطاعات الشبكات والاتصال هما فشل إدارة التكوين أو التغييرات (ذكرهما 45% من المستجيبين).”",
               "url": "https://uptimeinstitute.com/resources/research-and-reports/annual-outage-analysis-2023"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” June 2024. “Each minute of downtime costs $9,000 or $540,000 per hour.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” يونيو 2024. “كل دقيقة توقف تكلف 9,000 دولار أو 540,000 دولار في الساعة.”",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
@@ -8655,43 +8655,43 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Commvault Cleanroom Recovery creates Isolated Recovery Environments (IREs) with network isolation preventing outbound communication.",
+              "text": "ينشئ Commvault Cleanroom Recovery بيئات استعادة معزولة (IREs) مع عزل شبكي يمنع الاتصال الصادر.",
               "url": "https://documentation.commvault.com/11.42/commvault-user-guide/cleanroom_recovery_isolated_recovery_environments_ires_for_cyber_resilience.html"
             },
             {
-              "text": "Zerto test failovers run in isolated bubble networks that prevent interaction with production systems during testing.",
+              "text": "تعمل اختبارات الانتقال في Zerto داخل شبكات معزولة تمنع التفاعل مع أنظمة الإنتاج أثناء الاختبار.",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup with Virtual Lab enables automated testing of patches and updates in isolated sandbox environments.",
+              "text": "يتيح Veeam SureBackup مع Virtual Lab اختبار التصحيحات والتحديثات بشكل تلقائي في بيئات sandbox معزولة.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik Live Mount enables safe testing of patches by mounting clean snapshots in isolated environments.",
+              "text": "يتيح Rubrik Live Mount اختبار التصحيحات بأمان عن طريق تحميل لقطات نظيفة في بيئات معزولة.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Cleanroom Recovery enables testing patches in isolated cleanroom environments before applying to production.",
+              "text": "يتيح Commvault Cleanroom Recovery اختبار التصحيحات في بيئات cleanroom معزولة قبل تطبيقها على الإنتاج.",
               "url": "https://documentation.commvault.com/2024e/software/cleanroom_recovery_use_cases.html"
             },
             {
-              "text": "Zerto Orchestrator automates periodic failover tests validating VPG checkpoint health and recovery VM boot correctness.",
+              "text": "يؤتمت Zerto Orchestrator اختبارات Failover الدورية للتحقق من صحة نقاط التفتيش وإقلاع أجهزة الاسترجاع.",
               "url": "https://help.zerto.com/bundle/Orchestrator.HTML.95/page/Automated_Failover_Testing_with_the_Zerto_Orchestrator.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "يُنشر Veeam Backup & Replication داخل المنشأة على Windows Server مع تحكم كامل للعميل في البنية التحتية.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "يُنشر Rubrik كأجهزة داخل المنشأة (سلسلة r6000) مع حوسبة وتخزين وبرنامج متكامل.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault يدعم النشر الكامل المستضاف ذاتياً محلياً مع مكونات CommServe و MediaAgent و Access Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "يُنشر Zerto داخل المنشأة مع Zerto Virtual Manager وأجهزة Virtual Replication Appliances لكل مضيف.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8710,10 +8710,10 @@
             },
             "improvement": "التحقق من التصحيح أسرع 1,680 مرة"
           },
-          "quote": "كان لدينا تصحيح OpenSSL حرج الربع الماضي. عادةً كنا نجدول نافذة صيانة ونصلي. بدلاً من ذلك، استنسخنا جميع الخوادم الـ 22، طبقنا التصحيح، شغّلنا مجموعة الاختبار الكاملة، وأكدنا صفر انحدارات — كل ذلك في 18 دقيقة. صحّحنا الإنتاج في نفس اليوم بثقة تامة."
+          "quote": "كان لدينا تصحيح OpenSSL حرج الربع الماضي. عادةً كنا نجدول نافذة صيانة ونصلي. بدلاً من ذلك، استنسخنا خوادم الإنتاج الـ 22 كلها، طبقنا التصحيح، شغّلنا مجموعة الاختبارات الكاملة، وأكدنا صفر انحدارات، كل ذلك في 18 دقيقة. صحّحنا الإنتاج نفس اليوم بثقة تامة."
         },
         "techDiff": {
-          "description": "يستخدم Rediacc لقطات btrfs copy-on-write لاستنساخ بيئة الإنتاج بالكامل — نظام التشغيل والحاويات وقواعد البيانات والإعدادات — في أقل من ثانية. النسخة تعمل على شبكة معزولة مع Docker daemon خاص بها. التصحيحات المطبقة على النسخة لا تمس الإنتاج أبداً. إذا انكسرت النسخة، احذفها. إذا نجحت، طبّق نفس التصحيح على الإنتاج.",
+          "description": "ينسخ Rediacc بيئة حية كاملة <span class=\"sp-emphasis\">في ثوانٍ</span>. ويشمل ذلك نظام التشغيل والتطبيقات وقواعد البيانات وكل الإعدادات. تعمل النسخة على شبكة معزولة خاصة بها مع Docker خاص بها. التصحيحات على النسخة لا تلمس الخوادم الحقيقية أبداً. إذا تعطلت النسخة، احذفها. وإذا نجحت، طبّق التصحيح نفسه فعلياً.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9080,7 +9080,7 @@
               "title": "معالجة في نفس اليوم"
             },
             {
-              "description": "كل تصحيح يمر عبر إعادة فحص CVE وفحوصات سلامة الخدمة واختبارات الانحدار وتحقق TLS — كل ذلك على بيانات إنتاج حقيقية.",
+              "description": "كل إصلاح يمر بفحص كامل: إعادة فحص CVE وفحوصات صحة الخدمات واختبارات الانحدار و TLS، كل شيء على بيانات إنتاج حقيقية.",
               "icon": "check-circle",
               "title": "تحقق كامل"
             }
@@ -9124,7 +9124,7 @@
             "arrows": [
               {
                 "icon": "bolt",
-                "label": "47s + 2m"
+                "label": "47ث + دقيقتان"
               },
               {
                 "icon": "arrow-right-circle",
@@ -9133,34 +9133,34 @@
             ],
             "cards": [
               {
-                "footer": "CVSS 9.8 · 3 services affected",
+                "footer": "CVSS 9.8 · 3 خدمات متأثرة",
                 "items": [
-                  "OpenSSL 3.0.8 — VULN",
-                  "Keycloak :8443 — affected",
-                  "Nextcloud :443 — affected",
-                  "GitLab :443 — affected"
+                  "OpenSSL 3.0.8، ثغرة",
+                  "Keycloak :8443، متأثر",
+                  "Nextcloud :443، متأثر",
+                  "GitLab :443، متأثر"
                 ],
                 "status": "حرج",
                 "title": "CVE-2026-1234"
               },
               {
-                "footer": "2.1 GB CoW · disposable clone",
+                "footer": "2.1 GB CoW · نسخة قابلة للحذف",
                 "items": [
-                  "OpenSSL → 3.0.15 — APPLIED",
-                  "Keycloak restart — healthy",
-                  "Nextcloud restart — healthy",
-                  "247 assertions — 0 failures"
+                  "OpenSSL → 3.0.15، مُطبّق",
+                  "إعادة تشغيل Keycloak، سليم",
+                  "إعادة تشغيل Nextcloud، سليم",
+                  "247 اختبار، 0 فشل"
                 ],
                 "status": "يُختبر",
                 "title": "نسخة: اختبار التصحيح"
               },
               {
-                "footer": "Total time: 3m 41s · zero downtime",
+                "footer": "الوقت الإجمالي: 3د 41ث · توقف صفري",
                 "items": [
-                  "OpenSSL 3.0.15 — FIXED",
-                  "CVE-2026-1234 — PATCHED",
-                  "3/3 services — healthy",
-                  "0 regressions — verified"
+                  "OpenSSL 3.0.15، مُصحّح",
+                  "CVE-2026-1234، مُصحّح",
+                  "3/3 خدمات، سليمة",
+                  "0 انحدارات، مُتحقّق"
                 ],
                 "status": "مُصحح",
                 "title": "الإنتاج"
@@ -9169,7 +9169,7 @@
           },
           "steps": [
             {
-              "description": "الفحص التلقائي يحدد ثغرة — CVE أو خطأ في التكوين أو خدمة مكشوفة. مرتبة حسب الخطورة.",
+              "description": "الفحص يكتشف المشاكل: CVE أو خطأ في التكوين أو خدمة مكشوفة. مرتبة من الأخطر فالأخف.",
               "icon": "eye",
               "title": "الاكتشاف"
             },
@@ -9190,10 +9190,10 @@
         "meta": {
           "description": "اكتشف واختبر وأصلح الفجوات الأمنية على نسخ آمنة. انشر الإصلاحات في الإنتاج بثقة.",
           "keywords": "إدارة الثغرات, التحقق من التصحيحات, معالجة CVE, تصحيح مبني على النسخ, تصحيح آمن, اختبار أمني, التحقق من إصلاح الثغرات",
-          "title": "إدارة الثغرات — أصلح الثغرات قبل وصول المهاجمين | Rediacc"
+          "title": "إدارة الثغرات: إصلاحات استباقية | Rediacc"
         },
         "problem": {
-          "description": "وجدت ثغرة. الآن تحتاج تصحيحها. لكن هل سيكسر التصحيح شيئاً؟ لا تستطيع الاختبار في الإنتاج. وبيئة الاختبار متأخرة 3 أسابيع. إذن إما تسرع بالتصحيح وتأمل، أو تنتظر وتبقى مكشوفاً. لا خيار جيد — وكلاهما يكلف مالاً.",
+          "description": "تظهر ثغرة. يجب تصحيحها. لكن هل سيكسر التصحيح شيئاً؟ الإنتاج ليس مكاناً للاختبار، ونسخة الاختبار متأخرة 3 أسابيع. فإما يُستعجل الإصلاح على أمل النجاح، أو يُؤجَّل وتبقى الثغرة مكشوفة. لا خيار جيد. كلاهما يكلف مالاً.",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9246,15 +9246,15 @@
         "references": {
           "items": [
             {
-              "text": "Qualys, “TruRisk Research Report,” 2023. “On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.”",
+              "text": "Qualys، “تقرير TruRisk البحثي”، 2023. “في المتوسط، يتم تصحيح الثغرات المسلحة خلال 30.6 يوم ولكن يتم معالجتها فقط بمتوسط 57.7% من الوقت.”",
               "url": "https://www.qualys.com/forms/tru-research-report"
             },
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon، “تقرير تحقيقات خروقات البيانات 2024”، مايو 2024. “استغلال الثغرات كنقطة دخول أولية ارتفع بمعدل يقارب الثلاثة أضعاف مقارنة بالعام السابق، ليشكل 14% من جميع الخروقات.”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report,” July 2024. “The global average cost of a data breach reached USD 4.88 million in 2024.”",
+              "text": "IBM Security، “تقرير تكلفة خروقات البيانات”، يوليو 2024. “بلغ متوسط التكلفة العالمي لخرق البيانات 4.88 مليون دولار أمريكي في 2024.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
           ]
@@ -9273,10 +9273,10 @@
             },
             "improvement": "وقت التصحيح + التحقق + النشر"
           },
-          "quote": "ظهر CVE حرج بعد ظهر الجمعة. بحلول صباح السبت كنا قد استنسخنا الإنتاج، طبقنا التصحيح، تحققنا منه مقابل جميع الخدمات الأربع المتأثرة، ونشرناه — بدون توقف. عمليتنا السابقة كانت ستستغرق 3 أسابيع واجتماع إدارة تغيير."
+          "quote": "ظهر CVE حرج يوم الجمعة بعد الظهر. وفي صباح السبت، استنسخنا الإنتاج، طبقنا التصحيح، تحققنا منه على جميع الخدمات الأربع المتأثرة، ونشرناه، بدون أي توقف. العملية القديمة كانت ستستغرق 3 أسابيع واجتماع إدارة التغيير."
         },
         "techDiff": {
-          "description": "التصحيح التقليدي يتطلب بيئة اختبار تتطابق مع الإنتاج — لكن بيئة الاختبار تنحرف خلال أيام. Rediacc ينشئ لقطة btrfs copy-on-write لبنيتك التحتية الإنتاجية الفعلية في ثوانٍ، يسمح لك بتطبيق التصحيح والتحقق منه مقابل بيانات حقيقية وإعدادات حقيقية، ثم ينشر الإصلاح المُتحقق منه في الإنتاج. إذا فشل التحقق من التصحيح، تخلص من النسخة. الإنتاج يبقى كما هو.",
+          "description": "التصحيح بالطريقة القديمة يحتاج إلى نسخة تجريبية تطابق الإنتاج. لكن هذه النسخة تنحرف عن الإنتاج خلال أيام. ينشئ Rediacc نسخة فورية من بيئة الإنتاج الحقيقية <span class=\"sp-emphasis\">في ثوانٍ</span>. طبّق التصحيح على النسخة. اختبره على بيانات وإعدادات حقيقية. إن نجح، انشره في الإنتاج. وإن فشل، تخلّص من النسخة. يبقى الإنتاج كما هو دون مساس.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -9288,7 +9288,7 @@
               "traditional": "أيام إلى أسابيع (إعداد بيئة الاختبار + الاختبار)"
             },
             {
-              "rediacc": "0% — الإخفاقات تُكتشف على النسخة وتُتجاهل",
+              "rediacc": "0%، الأخطاء تُكتشف على النسخة وتُلغى",
               "traditional": "تصحيحات غير مُختبرة تخاطر باضطرابات غير مقصودة"
             },
             {
@@ -9815,7 +9815,10 @@
     "title": "كيف نضمن استمرار عملك بلا انقطاع"
   },
   "video": {
-    "playVideo": "تشغيل الفيديو"
+    "playVideo": "تشغيل الفيديو",
+    "player": {
+      "chapters": "الفصول"
+    }
   },
   "whyNow": {
     "cards": [

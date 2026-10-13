@@ -1,27 +1,28 @@
-"""Port of `.ci/scripts/test/gates/test-installmethods-args.sh`, retired in W7 P5.
+"""Port of `.ci/scripts/test/gates/test-installmethods-args.sh`, retired in W7 P5, now driving `rediacc_ci.testrun.install_methods` (the bash `test-install-methods.sh` it was written against was retired behind its golden, PLAN-retire-bash-oracles B3).
 
-`.ci/scripts/test/test-install-methods.sh` must not be able to report success without having accounted for at least one test. Reproduced live on 2026-08-07:
+`rediacc_ci.testrun.install_methods` must not be able to report success without having accounted for at least one test. Reproduced live on 2026-08-07:
 
     test-install-methods.sh --dry-run --method bogus --version 1.2.17
     -> "Results: 0 passed, 0 failed, 0 skipped (total 0)"   EXIT=0
 
-Two causes, both fixed and both pinned here. The argument parser ended with a bare `*) shift ;;` that swallowed anything it did not recognise, and METHOD was never validated, so a typo produced a run that matched no test block. And success was defined as `[[ $FAIL -eq 0 ]]`, which is also true of a run that did nothing at all.
+Two causes, both fixed and both pinned here. The argument parser of the bash script ended with a bare `*) shift ;;` that swallowed anything it did not recognise, and METHOD was never validated, so a typo produced a run that matched no test block. And success was defined as `[[ $FAIL -eq 0 ]]`, which is also true of a run that did nothing at all.
 
 The rule: every path ends VERIFIED, or in a VISIBLE skip, or in a FAILURE. An all-skipped run is deliberately still a success -- each skip is printed with its reason and counted -- but a zero-total run is not, because it says nothing.
 
-Every case drives the REAL script in `--dry-run`, so no Docker and no network. The zero-total backstop is proven to fire against a MUTATED COPY in a tempdir: mutating in place under `.ci/` is not an option in a shared tree, and the copy is why this module writes nowhere outside `tmp_path`.
+Every case drives the REAL module in `--dry-run`, so no Docker and no network. The zero-total backstop is proven to fire against a MUTATED COPY in a tempdir: mutating in place under `.ci/` is not an option in a shared tree, and the copy is why this module writes nowhere outside `tmp_path`.
 """
 
 import pathlib
-import shutil
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
+TARGET = paths.from_root(".ci", "rediacc_ci", "testrun", "install_methods.py")
 
 # The mutations. WIDEN loosens the parser so a method matching no test block is admitted, which is the pre-fix behaviour; DROP_BACKSTOP additionally deletes the zero-total refusal, i.e. the code exactly as it stood on 2026-08-07.
-WIDEN = ('VALID_METHODS="binary', 'VALID_METHODS="bogus binary')
+WIDEN = ("if cfg.method not in VALID_METHODS:", "if False:")
+BACKSTOP = ("    if total == 0:\n", "    if False:\n")
 
 
 def target(gate) -> pathlib.Path:
@@ -31,39 +32,31 @@ def target(gate) -> pathlib.Path:
     return TARGET
 
 
-def run_target(script, *args) -> harness.RunResult:
-    """Drive the script (or a copy) and merge its streams, as the twin does."""
-    return harness.run(["bash", str(script), *args], timeout=120)
+def run_target(script, *args, env: dict[str, str] | None = None) -> harness.RunResult:
+    """Drive the module (or a mutated copy of it) as a script; the copy imports `rediacc_ci` from the real tree."""
+    return harness.run(
+        [sys.executable, str(script), *args],
+        env={"PYTHONPATH": str(paths.from_root(".ci")), **(env or {})},
+        timeout=120,
+    )
 
 
 def mutate(gate, dest: pathlib.Path, *, drop_backstop: bool = False) -> pathlib.Path:
     """A copy of the subject with the parser widened, in `dest`.
 
-    The copy lives in a tempdir, so SCRIPT_DIR is pinned back at the real directory or it cannot find lib/common.sh.
+    The copy imports `rediacc_ci` through PYTHONPATH, so it needs no other file beside it.
     """
     source = target(gate).read_text(encoding="utf-8")
-    if WIDEN[0] not in source:
-        gate.log_fail(
-            "the subject no longer contains %r, so the mutation would be a no-op and "
-            "the backstop control below would prove nothing" % WIDEN[0]
-        )
-    lines = []
-    dropping = False
-    for line in source.splitlines():
-        if line.startswith("SCRIPT_DIR="):
-            lines.append('SCRIPT_DIR="%s"' % target(gate).parent)
-            continue
-        if drop_backstop:
-            if line == "if ((TOTAL == 0)); then":
-                dropping = True
-                continue
-            if dropping:
-                if line == "fi":
-                    dropping = False
-                continue
-        lines.append(line.replace(WIDEN[0], WIDEN[1], 1) if WIDEN[0] in line else line)
-    dest.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    shutil.copymode(target(gate), dest)
+    for needle, _replacement in (WIDEN, *((BACKSTOP,) if drop_backstop else ())):
+        if needle not in source:
+            gate.log_fail(
+                "the subject no longer contains %r, so the mutation would be a no-op and "
+                "the backstop control below would prove nothing" % needle
+            )
+    mutated = source.replace(WIDEN[0], WIDEN[1], 1)
+    if drop_backstop:
+        mutated = mutated.replace(BACKSTOP[0], BACKSTOP[1], 1)
+    dest.write_text(mutated, encoding="utf-8")
     return dest
 
 
@@ -172,10 +165,8 @@ def test_a_dry_run_is_never_reported_as_a_pass(gate):
 
 def test_an_all_skipped_run_is_visible_and_allowed(gate):
     """`--method verify` with no REPO_CHANNEL is a real CI condition (schedule and workflow_dispatch stage no artifacts). It must succeed, and it must SAY that it verified nothing -- the visible-skip half of the rule."""
-    result = harness.run(
-        ["bash", str(target(gate)), "--method", "verify", "--version", "1.2.17"],
-        env={"REPO_CHANNEL": ""},
-        timeout=120,
+    result = run_target(
+        target(gate), "--method", "verify", "--version", "1.2.17", env={"REPO_CHANNEL": ""}
     )
     gate.assert_exit(0, result, "an all-skipped run is a success")
     gate.assert_contains(result.combined, "SKIP: Channel Verify", "the skip must be named")

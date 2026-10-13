@@ -30,8 +30,9 @@
  *
  * Exit codes:
  *   0 - the Dockerfile agrees with the lockfile and the artifacts are current,
- *       or the renet submodule is not checked out (nothing to attribute)
- *   1 - a drifted pin or a stale generated artifact
+ *       or the renet submodule is not checked out OUTSIDE CI
+ *   1 - a drifted pin, a stale generated artifact, or the lockfile or
+ *       Dockerfile absent under CI (scripts/lib/submodule-presence.ts)
  *
  * ---- gate ----
  * step: Check embed credits consistency
@@ -44,20 +45,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generatedArtifacts, LOCKFILE, type Lockfile } from '../gen/generate-embed-credits.js';
-import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
 
 const DOCKERFILE =
-  process.env.EMBED_CREDITS_DOCKERFILE ?? path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
+  process.env.EMBED_CREDITS_DOCKERFILE ?? submodulePath('private/renet/Dockerfile');
 
 function main(): void {
-  if (!fs.existsSync(LOCKFILE) || !fs.existsSync(DOCKERFILE)) {
-    console.log(`${YELLOW}⊘ renet submodule not checked out — nothing to attribute${NC}`);
-    return;
-  }
+  if (!requireSubmodule('embed credits', [LOCKFILE, DOCKERFILE])) return;
 
   const lock = JSON.parse(fs.readFileSync(LOCKFILE, 'utf-8')) as Lockfile;
   const errors: string[] = [];
@@ -86,6 +85,43 @@ function main(): void {
         `Dockerfile ARG ${base.toUpperCase()}_VERSION='${pinned}' != lockfile '${base}' version '${c.version}'`
       );
     }
+  }
+
+  // 1a. COMMIT PINS MUST AGREE TOO. The Dockerfile asserts a git clone against `ARG <BASE>_COMMIT`, and the lockfile records the same commit for the credits and the written source offer. Only the VERSIONS were compared, so csi-provisioner 6.3.0 -> 6.4.0 moved the version in both and left the Dockerfile's commit at the old release (2026-10-11): green here, a failing `docker build`. snapshot-controller builds from the one external-snapshotter clone guarded by CSISNAPSHOTTER_COMMIT, so that ARG backs both.
+  const dockerSrc = fs.readFileSync(DOCKERFILE, 'utf-8');
+  const commitArgs = new Map<string, string>();
+  for (const m of dockerSrc.matchAll(/^ARG\s+([A-Z0-9]+)_COMMIT=(\S+)/gm)) {
+    commitArgs.set(m[1].toLowerCase(), m[2]);
+  }
+  let commitsChecked = 0;
+  for (const [base, c] of components) {
+    const lockCommit = (c as { source?: { commit?: string } }).source?.commit;
+    const argBase = base === 'snapshotcontroller' ? 'csisnapshotter' : base;
+    const dockerCommit = commitArgs.get(argBase);
+    if (lockCommit === undefined && dockerCommit === undefined) continue;
+    commitsChecked++;
+    if (lockCommit === undefined || dockerCommit === undefined) {
+      errors.push(
+        `${base}: the commit pin exists in only one of the Dockerfile (${argBase.toUpperCase()}_COMMIT=${dockerCommit ?? 'absent'}) and the lockfile (source.commit=${lockCommit ?? 'absent'})`
+      );
+    } else if (lockCommit !== dockerCommit) {
+      errors.push(
+        `Dockerfile ARG ${argBase.toUpperCase()}_COMMIT='${dockerCommit}' != lockfile '${base}' source.commit '${lockCommit}'`
+      );
+    }
+  }
+  // Every Dockerfile commit ARG must belong to a lockfile component: an ARG whose base has none is never compared above and could drift unseen. The one reasoned alias, snapshotcontroller -> CSISNAPSHOTTER_COMMIT, runs the other way (a component without its own ARG) and is handled by `argBase`.
+  for (const [argBase, dockerCommit] of commitArgs) {
+    if (!Object.hasOwn(lock.components, argBase)) {
+      errors.push(
+        `Dockerfile ARG ${argBase.toUpperCase()}_COMMIT='${dockerCommit}' has no lockfile component '${argBase}', so it is never compared; add the component or delete the ARG`
+      );
+    }
+  }
+  if (commitsChecked === 0) {
+    errors.push(
+      'no commit pin found in either the Dockerfile or the lockfile; the commit check is blind'
+    );
   }
 
   // 1b. ATTRIBUTION URLS MUST NAME THE VERSION ACTUALLY SHIPPED.

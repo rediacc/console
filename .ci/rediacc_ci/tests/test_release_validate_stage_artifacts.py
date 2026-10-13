@@ -26,7 +26,6 @@ if TYPE_CHECKING:  # pathlib appears only in `tmp_path` annotations, never at ru
     import pathlib
 
 TWIN_REL = ".ci/scripts/release/validate-stage-artifacts.sh"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 MODULE = "validate_stage_artifacts"
@@ -44,7 +43,6 @@ def _build_fixture(root: pathlib.Path, twin_root: str) -> None:
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "release").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(os.path.join(twin_root, COMMON_REL), root / COMMON_REL)
     shutil.copy2(os.path.join(twin_root, WELL_KNOWN_REL), root / WELL_KNOWN_REL)
     shutil.copy2(os.path.join(twin_root, GENERATED_REL), root / GENERATED_REL)
 

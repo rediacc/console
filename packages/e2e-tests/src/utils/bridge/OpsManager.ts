@@ -49,35 +49,35 @@ export class OpsManager extends BaseOpsManager {
   /**
    * Start RustFS S3-compatible storage on the bridge VM.
    */
-  async startRustFS(): Promise<{ success: boolean; message: string }> {
+  startRustFS(): Promise<{ success: boolean; message: string }> {
     return this.rustfsManager.start();
   }
 
   /**
    * Check if RustFS is running on the bridge VM.
    */
-  async isRustFSRunning(): Promise<boolean> {
+  isRustFSRunning(): Promise<boolean> {
     return this.rustfsManager.isRunning();
   }
 
   /**
    * Stop RustFS S3-compatible storage on the bridge VM.
    */
-  async stopRustFS(): Promise<{ success: boolean; message: string }> {
+  stopRustFS(): Promise<{ success: boolean; message: string }> {
     return this.rustfsManager.stop();
   }
 
   /**
    * Create a bucket in RustFS.
    */
-  async createRustFSBucket(bucket?: string): Promise<{ success: boolean; message: string }> {
+  createRustFSBucket(bucket?: string): Promise<{ success: boolean; message: string }> {
     return this.rustfsManager.createBucket(bucket);
   }
 
   /**
    * List contents of a RustFS bucket.
    */
-  async listRustFSBucket(
+  listRustFSBucket(
     bucket?: string
   ): Promise<{ success: boolean; contents: string; message: string }> {
     return this.rustfsManager.listBucket(bucket);
@@ -86,21 +86,21 @@ export class OpsManager extends BaseOpsManager {
   /**
    * Configure rclone on a worker VM to access RustFS.
    */
-  async configureRustFSWorker(vmId: number): Promise<{ success: boolean; message: string }> {
+  configureRustFSWorker(vmId: number): Promise<{ success: boolean; message: string }> {
     return this.rustfsManager.configureWorker(vmId);
   }
 
   /**
    * Configure rclone on all worker VMs to access RustFS.
    */
-  async configureRustFSWorkers(): Promise<{ success: boolean; message: string }> {
+  configureRustFSWorkers(): Promise<{ success: boolean; message: string }> {
     return this.rustfsManager.configureAllWorkers();
   }
 
   /**
    * Verify RustFS access from a worker VM using rclone.
    */
-  async verifyRustFSAccessFromWorker(
+  verifyRustFSAccessFromWorker(
     vmId: number,
     bucket?: string
   ): Promise<{ success: boolean; message: string }> {
@@ -154,7 +154,7 @@ export class OpsManager extends BaseOpsManager {
    * This runs the OPS provisioning scripts to set up a full Ceph cluster.
    * Should be called after VM reset and before running Ceph-related tests.
    */
-  async provisionCeph(): Promise<{ success: boolean; message: string }> {
+  provisionCeph(): Promise<{ success: boolean; message: string }> {
     return this.cephManager.provision();
   }
 }

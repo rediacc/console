@@ -38,8 +38,8 @@ Twice this repo reached this by hand and wrote it down: `shrink-only-baseline.ts
 | shape | copies | the harness that should own it |
 |---|---|---|
 | the assertion closure | **35** of 101 `check-*.ts` | none — `shrink-only-baseline.ts:181` factors the control *data*, not the loop |
-| the `test-helpers` preamble | **85** of 118 `test-*.sh` | `.ci/scripts/test/lib/test-helpers.sh` |
-| `mktemp -d` + hand-written `trap` | **28** | `with_temp_dir` (`test-helpers.sh:73`), used by 26 |
+| the `test-helpers` preamble | **85** of 118 `test-*.sh` | then `test-helpers.sh`; the bash suites are ported and it is deleted, and `.ci/rediacc_ci/tests/gates/harness.py` owns the shape |
+| `mktemp -d` + hand-written `trap` | **28** | then `with_temp_dir`; now pytest's `tmp_path` and `harness.fake_bin` (`harness.py:277`) |
 | colour constants | **28** inline, **7** redeclared | `scripts/lib/console.ts`, TTY-gated, imported by 10 |
 
 Not hypothetical: five copies inline unconditional `\x1b[…` and pipe raw escape bytes into non-TTY CI logs, while `scripts/lib/console.ts:8-15` TTY-gates them for its ten importers. Copying is sometimes right, and the answer is a **named divergence**, not a shrug: `run_gate()` is duplicated 23× with three incompatible return contracts. Say which. Never the findings report — 10

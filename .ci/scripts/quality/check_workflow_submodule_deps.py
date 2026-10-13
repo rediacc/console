@@ -20,6 +20,7 @@ selftest: true
 """
 
 import json
+import os
 import pathlib
 import re
 import sys
@@ -84,21 +85,72 @@ def package_test_files(workspace: str | None = None) -> list[pathlib.Path]:
     ]
 
 
+def named_test_files(cmd: str, workspaces: list[str], repo: pathlib.Path | None = None) -> list:
+    """The test files a runner command names outright, or [] when it names none.
+
+    `vitest run src/utils/__tests__/x.test.ts` runs that file and nothing else, so sweeping the whole workspace for it charged the job with every other test's reads (quality-secure-storage, 2026-10-13: a job that runs one file was told it reads private/renet through datastore-prune-parser.test.ts). Every named file must resolve under a workspace the job named (or any package when it named none); one that does not resolve gives [], and the caller sweeps as before, so a typo cannot shrink the sweep.
+    """
+    repo = repo or REPO
+    names = re.findall(r"(?<![\w./-])([\w./-]+\.test\.tsx?)\b", cmd)
+    if not names:
+        return []
+    found = []
+    for name in names:
+        roots = [repo / "packages" / ws for ws in workspaces] or sorted(
+            (repo / "packages").glob("*")
+        )
+        hits = [root / name for root in roots if (root / name).is_file()]
+        if not hits:
+            return []
+        found.extend(hits)
+    return found
+
+
 # Build OUTPUTS are not source. A bundler inlines the paths it read at build time, so dist/cli-bundle.cjs contains the string "private/renet/..." without the job ever opening that file. Flagging those would train a reader to ignore this gate, which is worse than not having it.
 GENERATED = re.compile(r"(^|/)(dist|build|out|coverage|node_modules|\.cache)(/|$)")
 
 
-def referenced_repo_files(text: str) -> list[pathlib.Path]:
-    """Repo-relative paths named in a command that actually exist on disk."""
-    out: list[pathlib.Path] = []
+def _referenced(text: str, repo: pathlib.Path | None = None) -> list[tuple[str, pathlib.Path]]:
+    """`(token as written, its location in the repo)` for every script path named in a command that exists on disk with its LOCATION inside the repository."""
+    root = repo or REPO
+    out: list[tuple[str, pathlib.Path]] = []
     for token in re.findall(r"[\w./-]+\.(?:sh|ts|tsx|js|mjs|cjs|py)", text):
         # NOT lstrip("./"): that strips a CHARACTER SET, so ".ci/scripts/x.sh" became "ci/scripts/x.sh", resolved to nothing, and the whole reachability walk stopped at the step text. The gate then passed a replay of the very bug it was written for.
         rel = token.removeprefix("./")
         if GENERATED.search(rel):
             continue
-        candidate = REPO / rel
-        if candidate.is_file():
-            out.append(candidate)
+        location = pathlib.Path(os.path.normpath(root / rel))
+        if location.is_relative_to(root) and location.is_file():
+            out.append((token, location))
+    return out
+
+
+def referenced_repo_files(text: str, repo: pathlib.Path | None = None) -> list[pathlib.Path]:
+    """Repo-relative paths named in a command that actually exist on disk, by their LOCATION inside the repository.
+
+    A TOKEN IS JOINED ONTO THE REPO, AND A JOIN CAN LEAVE IT. `REPO / "/tmp/x.sh"` is `/tmp/x.sh` (pathlib drops the left side for an absolute right side), and `REPO / "../x.sh"` climbs out. Either one that happened to exist on disk was walked, and its label (`relative_to(REPO)`) raised `ValueError`, crashing the gate: hookcases.py names `/tmp/rediacc-guard-bashwrite/bash-side-suite.sh`, which the hook tests leave behind (2026-10-11).
+    A file outside the repo is not a repo file a job reads, so it is not a candidate.
+
+    THE LOCATION, NOT THE TARGET (review 79a0a35c.1). Containment is judged on the lexically normalised path (`os.path.normpath`), never the resolved one: a repo-internal symlink is a file the job references by a repo path, whatever it points at, and resolving first dropped one whose target lies outside the repo. Where a symlink LEADS is judged separately (`symlinked_reads`). `repo` is the root to read against (the repository by default; the controls pass their own).
+    """
+    return [location for _token, location in _referenced(text, repo)]
+
+
+def symlinked_reads(text: str, repo: pathlib.Path | None = None) -> list[str]:
+    """The command once more for every symlinked script it names, with that symlink's TARGET written in its place (repo-relative when the target is inside the repository): `bash scripts/run.sh`, where `scripts/run.sh` links into `private/renet`, is read as `bash private/renet/...`. Scanned under the same access context as the command, so a job reaching submodule source through a link is seen (review 79a0a35c.1)."""
+    root = repo or REPO
+    resolved_root = root.resolve()
+    out: list[str] = []
+    for token, location in _referenced(text, repo):
+        target = location.resolve()
+        if target == location.absolute():
+            continue
+        shown = (
+            str(target.relative_to(resolved_root))
+            if target.is_relative_to(resolved_root)
+            else str(target)
+        )
+        out.append(text.replace(token, shown))
     return out
 
 
@@ -109,7 +161,7 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
     """
     seen_cmds: set[str] = set()
     seen_files: set[pathlib.Path] = set()
-    out: list[tuple[str, str]] = []
+    out: list[tuple[str, str, bool]] = []
     swept_tests = False
 
     # The queue carries the scannable flag with each entry. Without it a script BODY popped off the queue was relabelled "<step run:>" and scanned as though the job had typed it, which put every false positive straight back after they had just been removed.
@@ -136,6 +188,14 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
                 if key in scripts
             )
 
+        # A symlinked script is read where it LEADS as well as where it sits (`symlinked_reads`): judged under the command's own access context, and only when that command is one the job runs.
+        if scannable:
+            out.extend(
+                ("<step run: via a symlink>", via, True)
+                for via in symlinked_reads(cmd)
+                if via not in seen_cmds
+            )
+
         for path in referenced_repo_files(cmd):
             if path in seen_files:
                 continue
@@ -158,10 +218,14 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
                 {
                     m.group(1)
                     for cmd_seen in seen_cmds
-                    for m in re.finditer(r"-w\s+(?:@[\w-]+/)?([\w-]+)", cmd_seen)
+                    for m in re.finditer(
+                        r"(?:-w\s+|--workspace[=\s])(?:@[\w-]+/)?([\w-]+)", cmd_seen
+                    )
                 }
             )
-            sweep = [path for ws in (workspaces or [None]) for path in package_test_files(ws)]
+            sweep = named_test_files(cmd, workspaces) or [
+                path for ws in (workspaces or [None]) for path in package_test_files(ws)
+            ]
             for path in sweep:
                 try:
                     # SCANNED: a test runner really does execute these.
@@ -321,6 +385,54 @@ def run_controls(subs: list[str], scripts: dict[str, str]) -> list[str]:
     failures: list[str] = []
     if not subs:
         return [".gitmodules named no submodules, so the rule matches nothing and passes forever"]
+
+    # A runner command that names its files is swept as those files only, and a name that does not resolve falls back to the whole sweep.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp) / "repo"
+        (root / "packages" / "cli" / "src").mkdir(parents=True)
+        one = root / "packages" / "cli" / "src" / "one.test.ts"
+        one.write_text("// one\n")
+        if named_test_files("vitest run src/one.test.ts", ["cli"], root) != [one]:
+            failures.append("a runner command naming one test file was not narrowed to that file")
+        if named_test_files("vitest run src/missing.test.ts", ["cli"], root) != []:
+            failures.append("a named test file that does not exist still narrowed the sweep")
+        if named_test_files("vitest run", ["cli"], root) != []:
+            failures.append("a runner command naming no file was narrowed")
+
+    # A path OUTSIDE the repository is never a repo file, however it is spelled (2026-10-11: an absolute `/tmp/...sh` token that existed on disk crashed the gate). Planted outside a fake repo root that holds one real script, so the in-repo direction is asserted too.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp) / "repo"
+        (root / "scripts").mkdir(parents=True)
+        (root / "scripts" / "inside.sh").write_text("echo in\n")
+        outside = pathlib.Path(tmp) / "outside.sh"
+        outside.write_text("echo out\n")
+        named = f"bash {outside} && bash ../outside.sh && bash scripts/inside.sh"
+        got = referenced_repo_files(named, root)
+        if got != [root / "scripts" / "inside.sh"]:
+            failures.append(
+                "an absolute or `..` path outside the repo was read as a repo file, or the one "
+                f"inside was missed: {[str(g) for g in got]}"
+            )
+        # A repo-internal SYMLINK whose target lies outside the repo is a file the job references by its repo location (review 79a0a35c.1): kept, by that location.
+        (root / "scripts" / "linked.sh").symlink_to(outside)
+        got = referenced_repo_files("bash scripts/linked.sh", root)
+        if got != [root / "scripts" / "linked.sh"]:
+            failures.append(
+                "a repo symlink whose target lies outside the repo was dropped: "
+                f"{[str(g) for g in got]}"
+            )
+        # ...and where a symlink LEADS is judged too: a link into a submodule is a read of submodule source under the naming command's own access context.
+        if subs:
+            target = root / subs[0] / "tool.sh"
+            target.parent.mkdir(parents=True)
+            target.write_text("echo tool\n")
+            (root / "scripts" / "tool.sh").symlink_to(target)
+            sub_rx = re.compile(r"(?<![\w])(" + re.escape(subs[0]) + r")/[\w./-]+")
+            reads = symlinked_reads("bash scripts/tool.sh", root)
+            if not any(first_read(r, sub_rx) for r in reads):
+                failures.append(
+                    f"a repo symlink into {subs[0]} was not read as submodule source: {reads}"
+                )
 
     sub = subs[0]
     with tempfile.TemporaryDirectory() as tmp:

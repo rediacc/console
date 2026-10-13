@@ -8,8 +8,8 @@ package already owns: `rediacc_ci.core.platform`'s module docstring cites
 THE SEAM, WHICH IS THE POINT OF THE PORT AND NOT A SIDE EFFECT. `plan()` takes `system` and `machine` as arguments and defaults them to the real `uname`. Nothing below the argv layer calls `uname` itself. That is what makes the three platform arms -- linux, mac, win -- checkable from one Linux box: `--print-plan --system Darwin --machine arm64` answers what the macOS arm WOULD do,
 and a gate can hold that answer against the artefact names the deleted bash produced. In bash the same question needed a Mac, so the mac and win arms of `rdc.sh` were never once executed by anything in CI.
 
-WHAT IS DELIBERATELY NOT REIMPLEMENTED. `check_node_version`, `ensure_deps` and `ensure_packages_built` stay in `.ci/lib/local-common.sh` and are reached through one `bash -c` that sources it. They are shared with `rdc.sh`'s ordinary path, they are several hundred lines between them, and a second copy here would be the "two implementations kept in sync" failure the whole
-transformation exists to remove. One process, not three, so the sourcing cost is paid once.
+WHAT IS DELIBERATELY NOT REIMPLEMENTED. `check_node_version`, `ensure_deps` and `ensure_packages_built` are Python in `rediacc_ci.core.local_common` (the code below calls `prepare_node_deps_packages`). They are shared with `rdc.sh`'s ordinary path, they are several hundred lines between them, and a second copy here would be the "two implementations kept in sync" failure the whole
+transformation exists to remove.
 
 TWO BEHAVIOURS CHANGED ON PURPOSE, both stated here rather than discovered later:
 
@@ -26,15 +26,13 @@ WHAT IS UNCHANGED, because a port that improves things is a rewrite: the step or
 from __future__ import annotations
 
 import dataclasses
+import importlib
 import json
+import os
 import pathlib
 import platform as _host
 import subprocess
 import sys
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:  # `os` appears only in PathLike annotations, never at runtime.
-    import os
 
 from rediacc_ci import log
 from rediacc_ci.core import platform as plat
@@ -42,10 +40,10 @@ from rediacc_ci.core import platform as plat
 # The install root the CLI's own updater uses. Not derived and not configurable: `packages/cli/src/utils/platform.ts` hard-codes the same path, and a second spelling here would install somewhere the CLI does not look.
 INSTALL_SUBDIR = (".local", "share", "rediacc", "bin")
 
-# `dist/cli/rdc-<platform>-<arch><exe>`, which is where `.ci/scripts/build/build-cli-executables.sh` writes and nowhere else.
+# `dist/cli/rdc-<platform>-<arch><exe>`, which is where `rediacc_ci.build.build_cli_executables` writes and nowhere else.
 BUILD_SUBDIR = ("dist", "cli")
 
-USAGE = """usage: python3 -m rediacc_ci.native [--print-plan [--system S] [--machine M]]
+USAGE = """usage: PYTHONPATH=.ci python3 -m rediacc_ci.native [--print-plan [--system S] [--machine M]]
 
 Reached as `./rdc.sh --native`. With no arguments it builds the SEA for this host
 and installs it over ~/.local/share/rediacc/bin/rdc.
@@ -64,7 +62,7 @@ class NativeError(RuntimeError):
 class Plan:
     """Every path and name the build/install sequence needs, and no side effects.
 
-    Frozen and pure so a gate can compare three of these against a table without a Mac, a Windows box, or a build. `sea_platform` and `sea_arch` are the exact strings `build-cli-executables.sh` takes for `--platform` and `--arch`.
+    Frozen and pure so a gate can compare three of these against a table without a Mac, a Windows box, or a build. `sea_platform` and `sea_arch` are the exact strings `rediacc_ci.build.build_cli_executables` takes for `--platform` and `--arch`.
     """
 
     sea_platform: str
@@ -120,48 +118,51 @@ def plan(
     )
 
 
-def _stream(argv: list[str], cwd: str | os.PathLike[str] | None = None) -> None:
+def _stream(
+    argv: list[str],
+    cwd: str | os.PathLike[str] | None = None,
+    env: dict[str, str] | None = None,
+) -> None:
     """Run a build step with the terminal attached, and raise on failure.
 
     NOT `rediacc_ci.proc.run`, and the reason is not style. `proc.run` captures both streams and bounds the command at 60 seconds; a two-arch Go cross-compile plus an esbuild bundle plus a SEA injection is minutes of output a person watches to know it is alive. Swallowing that and killing it at 60 seconds would both be wrong.
     """
-    completed = subprocess.run(argv, cwd=None if cwd is None else str(cwd), check=False)
+    completed = subprocess.run(argv, cwd=None if cwd is None else str(cwd), env=env, check=False)
     if completed.returncode != 0:
         raise NativeError("%s exited %d" % (argv[0], completed.returncode))
 
 
-# The bash the three shared helpers are reached through, as ONE program. Written out here rather than inline so the call below reads as a call, and so the exact sequence a reviewer has to compare against `rdc.sh`'s old lines 143-145 is on consecutive lines.
-_PREPARE_PROGRAM = """
-set -euo pipefail
-source "$1/.ci/config/constants.sh"
-source "$1/.ci/lib/local-common.sh"
-check_node_version "$NODE_VERSION_MIN"
-ensure_deps
-ensure_packages_built
-"""
+def _ci_env(root: pathlib.Path) -> dict[str, str]:
+    """This process's environment with `<root>/.ci` first on PYTHONPATH.
+
+    A child that imports `rediacc_ci` by module path must find the checkout's copy, not whichever copy this process happened to be started from; the caller's own entries stay behind `.ci` (review finding 4a6641bf.4).
+    """
+    inherited = os.environ.get("PYTHONPATH", "")
+    return {
+        **os.environ,
+        "PYTHONPATH": str(root / ".ci") + (os.pathsep + inherited if inherited else ""),
+    }
 
 
 def prepare_toolchain(root: pathlib.Path) -> None:
-    """node version + deps + built packages, through the bash that already owns them.
+    """node version + deps + built packages, in this process, through `core.local_common`.
 
-    ONE bash, not three: sourcing `local-common.sh` is the expensive part and the three calls are one logical step. `set -euo pipefail` inside, so the first failure is the exit code, exactly as it was when these three lines sat in `rdc.sh` under its own `set -e`.
-
-    THE ORDER IS THE BASH ORDER. `check_node_version` first: `ensure_deps` runs npm, and npm on an unsupported node produces a worse message than the version check.
+    THE ORDER IS THE ORDER `rdc.sh` HAS: `check_node_version` first, because `ensure_deps` runs npm and npm on an unsupported node produces a worse message than the version check. The first failure stops it, exactly as the three lines did under `rdc.sh`'s `set -e`. The functions log their own refusals; the NativeError carries the exit.
     """
-    _stream(
-        [
-            "bash",
-            "-c",
-            _PREPARE_PROGRAM,
-            "rediacc_ci.native",
-            str(root),
-        ]
-    )
+    # Imported here and not at the top: `core.local_common` reads `.ci/config/well-known.env` at import, and `check:ci-rdc-native` drives this module from a COPY of the package that carries no config. `--print-plan` and the platform table must stay importable without it.
+    local_common = importlib.import_module("rediacc_ci.core.local_common")
+    env = dict(os.environ, LOCAL_ROOT_DIR=str(root))
+    try:
+        ready = local_common.prepare_node_deps_packages(env)
+    except local_common.LocalCommonError as exc:
+        raise NativeError("toolchain preparation failed (exit %d)" % exc.code) from exc
+    if not ready:
+        raise NativeError("toolchain preparation failed")
 
 
 def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     """Steps 1-3 of the sequence `rdc.sh`'s header documented, in that order."""
-    # 1. Cross-build renet for BOTH linux arches into the slots build-cli-executables.sh embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries for remote provisioning and a remote machine may be amd64 or arm64, so both must be present. Delegated to build.sh's stage_linux so the per-arch cross-compile lives in exactly one place.
+    # 1. Cross-build renet for BOTH linux arches into the slots rediacc_ci.build.build_cli_executables embeds (private/bin/renet-linux-<arch>). The SEA embeds linux renet binaries for remote provisioning and a remote machine may be amd64 or arm64, so both must be present. Delegated to build.sh's stage_linux so the per-arch cross-compile lives in exactly one place.
     log.step("Cross-building renet (both linux arches) -> private/bin")
     _stream(
         ["./build.sh", "stage_linux", str(root / "private" / "bin")], cwd=root / "private" / "renet"
@@ -171,13 +172,17 @@ def build_and_install(root: pathlib.Path, built_plan: Plan) -> None:
     log.step("Building SEA for %s/%s" % (built_plan.sea_platform, built_plan.sea_arch))
     _stream(
         [
-            "bash",
-            str(root / ".ci" / "scripts" / "build" / "build-cli-executables.sh"),
+            sys.executable,
+            "-m",
+            "rediacc_ci.build.build_cli_executables",
             "--platform",
             built_plan.sea_platform,
             "--arch",
             built_plan.sea_arch,
-        ]
+        ],
+        cwd=root,
+        # The child imports rediacc_ci by module path: .ci leads PYTHONPATH (see _ci_env).
+        env=_ci_env(root),
     )
     if not pathlib.Path(built_plan.built).is_file():
         raise NativeError("Built SEA not found at %s" % built_plan.built)

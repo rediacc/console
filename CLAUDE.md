@@ -19,11 +19,11 @@ Verified work is committed right away, in small reviewable commits on the single
 - **A verified unit** serves one stated purpose inside one epic (one `PR-TASK:` id), has had its acceptance check run with the exit code read (a named test, gate or command at `rc=0`, or the lead's spot-check of a writer's output, rule 4), and touches only paths this session owns: its own edits and the file lists its writers reported. Other sessions' uncommitted paths are theirs, and are never committed by inference.
 - **Cadence.** The unit is committed as soon as it is verified, before the next one starts. A worklist item is committed first, then ticked with `commit:<sha>`. Writers never commit: the lead commits each writer's spot-checked output as the report is accepted. Review records of an authorized commit (`agent/reviews/<branch>/`) ride the same branch: `worklist.py --review-commit <me>` commits them, and a push waits until they are committed. A unit above 20 files needs a proof line anyway (`block_unproven_bulk_transform`), which is the signal to split it.
 - **Commit form.** `git add -- <new paths>`, then `git commit -F <msg> -- <paths>` (the pathspec form `block_pathspecless_git_commit` enforces). Conventional Commits subject, the verification commands and their exit codes in the body, a `PR-TASK: <id>` trailer, no Co-Authored-By line, no amending: a mistake gets a new fix commit.
-- **Pushing is separate from committing.** Pushes are backups and CI triggers, never one per commit: at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits. Each push still needs a `ci:quick` receipt (`block_unverified_push`).
-- **One branch, one PR, and no agent path to a second.** Each repository (the console and each submodule under `private/`) holds at most one live `MMDD-N` branch and at most one open PR, whose head is that branch. `block_second_branch` refuses every spelling of a second branch (`checkout -b`, `switch -c`, `branch <new>`, a push to a new remote name, `gh pr create --head <other>`), and `block_second_open_pr` refuses a second PR. A second branch or PR is the operator's own `!` command; there is nothing to ask for.
-- **`main` moves through the PR merge, takes a commit only as a hotfix, and admits one direct push.** `/pr-merge` and `/pr-babysit` are AI-invokable (operator ruling 2026-10-02), and `main` moves by `gh pr merge <n> --rebase --auto` once every plan box is ticked, CI Complete is SUCCESS on the head and `wl_review.py --check` exits 0.
-Review Complete is a required check again (operator ruling 2026-10-03): the PR review's summary is answered with `wl_prreview.py` before a fix is pushed, a failed review run is investigated and fixed, and only an LLM outage is excused, so a timeout never lets a PR merge.
-The one direct push an agent may make is the fast-forward fallback for a PR GitHub cannot rebase, `git push origin <live branch>:main`: `block_push_to_protected_branch` admits it only as that single refspec with no force, delete or tag flag, on the live branch's pushed tip, which must be the open PR's head with `origin/main` as its ancestor, CI Complete SUCCESS on it read through `ci-trace.py`, and an `Operational-Reason:` line in the PR body (`.claude/commands/pr-merge.md` step 3).
+- **Pushing is separate from committing.** Pushes are backups and CI triggers, never one per commit: <!-- scope: pr.push-cadence -->at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits.<!-- /scope --> <!-- scope: pr.turbo-batch-end -->Under `turbo: on` with `turbo_push: batch-end` (the default) the batch is verified locally and pushed once when it completes; until then `block_turbo_early_push` refuses a push or `gh pr create` that names no operational reason, `TURBO_PUSH_REASON='<kind>: <why>'` with kind `ci-cd`, `red-fix`, `deadline` or `backup`, and a `backup` push, admitted once `backup_push_h` fires, opens no PR.<!-- /scope --> A completed batch pushes and opens its PR with no reason; the hooks decide push timing, so it is never asked. Each push still needs a `ci:quick` receipt (`block_unverified_push`).
+- **One branch, one PR, and no agent path to a second.** <!-- scope: pr.one-branch-one-pr -->Each repository (the console and each submodule under `private/`) holds at most one live `MMDD-N` branch and at most one open PR, whose head is that branch. `block_second_branch` refuses every spelling of a second branch (`checkout -b`, `switch -c`, `branch <new>`, a push to a new remote name, `gh pr create --head <other>`), and `block_second_open_pr` refuses a second PR.<!-- /scope --> A second branch or PR is the operator's own `!` command; there is nothing to ask for.
+- **`main` moves through the PR merge, takes a commit only as a hotfix, and admits one direct push.** `/pr-merge` and `/pr-babysit` are AI-invokable (operator ruling 2026-10-02), and <!-- scope: pr.merge-condition -->`main` moves by `gh pr merge <n> --rebase --auto` once every plan box is ticked (or the PR body carries an `Operational-Reason:` line, which admits the merge with boxes open), CI Complete is SUCCESS on the head, and `wl_review.py --check` and `check:ci-review-resolutions` exit 0.
+Review Complete is a required check again (operator ruling 2026-10-03): the PR review's summary is answered with `wl_prreview.py` before a fix is pushed, a failed review run is investigated and fixed, and only an LLM outage is excused, so a timeout never lets a PR merge.<!-- /scope -->
+<!-- scope: pr.ff-fallback -->The one direct push an agent may make is the fast-forward fallback for a PR GitHub cannot rebase, `git push origin <live branch>:main`: `block_push_to_protected_branch` admits it only as that single refspec with no force, delete or tag flag, on the live branch's pushed tip, which must be the open PR's head with `origin/main` as its ancestor, CI Complete SUCCESS on it read through `ci-trace.py`, and an `Operational-Reason:` line in the PR body (`.claude/commands/pr-merge.md` step 3).<!-- /scope -->
 `block_commit_on_main` refuses a commit on `main` unless its subject ends in `[hotfix]` and it carries a `Hotfix-Evidence:` trailer (the red main run, or `ASKED:<ISO minute>` when the operator called it a hotfix in this task) and touches at most 5 files; off `main` the tag is refused. A hotfix push is not the fallback shape, so the guard still refuses it and it stays the operator's `!`. The tags, the refused CI skip tokens and the git-level hooks behind them are in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md) *Commit policy*.
 
 The commit is the safety net, and the tree still holds work from other sessions and agents:
@@ -58,7 +58,7 @@ consumers. Fix the root cause; do not add migration commands, deprecation window
 - **Once a big-bang is approved, do not descope it unilaterally.** Fan out subagents if it
 is large (rule 4). Never quietly downgrade a piece to a stub, a TODO, or a "follow-up issue". If something genuinely cannot be done, say which piece and why, out loud.
 - **Track findings in the worklist, not in memory.** The Stop hook
-(`.claude/hooks/stop/worklist.py`) works one plan per PR, or with `turbo: on` a batch of queued plans, offering the merge once `batch_size` of them are finished or the queue has nothing eligible left: it blocks only on the live PR's plan set (its `Plan:` plans, the operator-added ones carried by an `Operational-Reason:`, and their unfinished prerequisites), that PR's CI and reviews, the items under that plan set's epics, and the loop's own duties (STATE.md, dead watches and leases, unread reports, raised findings, hook integrity, expired DEFAULTs). Every other open item and plan is one queued line, and after a merge the hook holds the turn until the next branch, the next `agent/plans/QUEUE.md` plan and its PR exist. An epic carries its plan (`worklist.py --epic <me> new --plan <rel> <title>`), so an item blocks only once it is attached to the PR plan's epic. A queued plan starts only when the hook names it (the `turbo-next` block, or `loop-next` after a merge), and every switch of the hook (`stop_hook`, `turbo`, `batch_size`, `writer_cap`, `commit_remind_min`, `cadence`, `agent_hint`, `agent_pushback`, `judge`) lives in `agent/plans/QUEUE.md` `## Settings`, set with `worklist.py --queue-set <me> key=value`. The store is per-REPO, not per-session, so open items survive a restart and a fresh session inherits them.
+(`.claude/hooks/stop/worklist.py`) <!-- scope: pr.one-plan-per-pr -->works one plan per PR, or with `turbo: on` a batch of queued plans, offering the merge once `batch_size` of them are finished or the queue has nothing eligible left<!-- /scope -->: it blocks only on the live PR's plan set <!-- scope: pr.plan-set -->(its `Plan:` plans, the operator-added ones carried by an `Operational-Reason:`, and their unfinished prerequisites)<!-- /scope -->, that PR's CI and reviews, the items under that plan set's epics, and the loop's own duties (STATE.md, dead watches and leases, unread reports, raised findings, hook integrity, expired DEFAULTs). Every other open item and plan is one queued line, and after a merge the hook holds the turn until the next branch, the next `agent/plans/QUEUE.md` plan and its PR exist. <!-- scope: pr.epic-carries-plan -->An epic carries its plan (`worklist.py --epic <me> new --plan <rel> <title>`), so an item blocks only once it is attached to the PR plan's epic.<!-- /scope --> A plan's `Depends-On:` reaches the items too: `--lease`, `--tick` and `--plan-tick` refuse an item whose plan still waits on an unfinished prerequisite, unless the evidence carries `DEPS-WAIVED: <reason>`. <!-- scope: pr.queued-plan-start -->A queued plan starts only when the hook names it (the `turbo-next` block, or `loop-next` after a merge)<!-- /scope -->, and every switch of the hook (<!-- scope: pr.queue-switches -->`stop_hook`, `turbo`, `turbo_push`, `batch_size`, `plan_concurrency`, `writer_cap`, `commit_remind_min`, `backup_push_h`, `cadence`, `agent_hint`, `agent_pushback`, `judge`<!-- /scope -->) lives in `agent/plans/QUEUE.md` `## Settings`, set with `worklist.py --queue-set <me> key=value`. The store is per-REPO, not per-session, so open items survive a restart and a fresh session inherits them.
 - **Use the VERBS, not the file.** Since v10 the store is an append-only JSONL
 event log, and the hook prints a `WORKLIST GUIDE` on every full stop naming the exact next command per item. Base the `## Remaining` section on that guide, not on memory: it exists because hand-written status silently ignored the tracked ages, and on its first stop it caught a watch still reported as "ongoing" that had finished 51 minutes earlier.
 
@@ -71,11 +71,13 @@ event log, and the hook prints a `WORKLIST GUIDE` on every full stop naming the 
   worklist.py --update <me> <id> <text...>      progress; resets the liveness ladder
   worklist.py --list --open [<me>]              the actionable slice (~2 KB)
   worklist.py --list                            FULL history dump (~550 KB, avoid)
-  worklist.py --review-mark <me> <id> fixed|not-a-bug|deferred <arg...>   close a per-commit review finding
+  worklist.py --review-mark <me> <id> fixed|not-a-bug|waived <arg...>   close a per-commit review finding
   worklist.py --review-commit <me>              commit the finished per-commit review files
   worklist.py --review-run <me> [<sha>]         list unreviewed commits, or review one now
   worklist.py --prune-reviews <me> [--write]    list review directories past retention; --write deletes them
   ```
+
+A per-commit review finding is fixed before merge, always: `deferred` is retired (operator ruling 2026-10-08), and the only escape is `waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z` for a finding whose triage verdict is OPERATOR-ONLY. `check:ci-review-resolutions` refuses a deferral in CI, and the hooks refuse it at push and merge.
 
 Item ids are hex but NOT fixed width: items migrated from the old markdown carry 12 characters, newly added ones 8. Never parse them assuming a length.
 - **The store is shared, so never hand-edit it.** A second session may be running
@@ -255,7 +257,7 @@ cd packages/www && npm run dev
 
 Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits; injected at build time only, never stored in source, so every `package.json` carries the `0.0.0-dev` placeholder and none is published to npm.
 
-**[docs/agent-reference/versioning.md](docs/agent-reference/versioning.md)** carries `resolve-version.sh`'s mechanics, the per-component injection table (CLI, CLI Docker, www, renet), and `bump.sh`'s two push-to-main-only call sites.
+**[docs/agent-reference/versioning.md](docs/agent-reference/versioning.md)** carries `rediacc_ci.version.resolve_version`'s mechanics, the per-component injection table (CLI, CLI Docker, www, renet), and `bump.sh`'s two push-to-main-only call sites.
 
 ## Release Channels
 
@@ -300,26 +302,25 @@ gates" against a live 312. Per-gate detail is in [docs/agent-reference/ci-gates.
 
 Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
-| Where it runs | Registered | `gate: true` | Slow | Is a gate test |
-|---|---|---|---|---|
-| (all lanes) | 367 | 352 | 70 | 5 |
-| local-only (CI never runs it) | 19 | 11 | 6 | 0 |
-| step / build-renet | 1 | 1 | 0 | 0 |
-| step / quality-branch | 9 | 9 | 4 | 0 |
-| step / quality-code | 103 | 102 | 19 | 0 |
-| step / quality-content | 45 | 45 | 5 | 0 |
-| step / quality-gate-tests | 6 | 5 | 0 | 5 |
-| step / quality-go | 17 | 17 | 2 | 0 |
-| step / quality-i18n | 40 | 38 | 4 | 0 |
-| step / quality-packages | 13 | 13 | 6 | 0 |
-| step / quality-pytest | 1 | 1 | 1 | 0 |
-| step / quality-security | 19 | 19 | 2 | 0 |
-| step / quality-static | 66 | 66 | 6 | 0 |
-| step / quality-wiring | 1 | 1 | 0 | 0 |
-| step / quality-www-build | 16 | 13 | 15 | 0 |
-| test (a gate test drives it) | 11 | 11 | 0 | 0 |
+| Where it runs | Registered | `gate: true` | Slow |
+|---|---|---|---|
+| (all lanes) | 363 | 349 | 68 |
+| local-only (CI never runs it) | 19 | 11 | 6 |
+| step / build-renet | 1 | 1 | 0 |
+| step / quality-branch | 10 | 10 | 3 |
+| step / quality-code | 104 | 103 | 19 |
+| step / quality-content | 46 | 46 | 5 |
+| step / quality-go | 18 | 18 | 2 |
+| step / quality-i18n | 40 | 38 | 4 |
+| step / quality-packages | 13 | 13 | 5 |
+| step / quality-pytest | 1 | 1 | 1 |
+| step / quality-security | 20 | 20 | 2 |
+| step / quality-static | 63 | 63 | 6 |
+| step / quality-wiring | 1 | 1 | 0 |
+| step / quality-www-build | 16 | 13 | 15 |
+| test (a gate test drives it) | 11 | 11 | 0 |
 
-16 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+15 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 

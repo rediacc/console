@@ -3,7 +3,7 @@
 WHAT THIS GATE IS FOR. On 2026-09-09 the `--native` SEA build left `rdc.sh` for `rediacc_ci.native`: 93 lines out of a 314-line file, including two hand-written `case "$(uname ...)"` blocks that `rediacc_ci.core.platform` already owned and cites by line. Two things can undo that and neither is visible in a diff review of one file.
 
   1. THE WRAPPER RE-ABSORBS LOGIC, one reasonable special case at a time, which is the
-     same failure `.ci/scripts/test/gates/test-run-sh.sh` section 7 exists to stop for
+     same failure `rediacc_ci/tests/gates/test_gate_run_sh.py` exists to stop for
      `run.sh`. A line ceiling is the only check that catches the twentieth small addition
      rather than the first big one.
   2. THE PORT DRIFTS ON AN ARM NOBODY RUNS. This is the interesting half. In bash the

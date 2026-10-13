@@ -21,9 +21,30 @@ ASSERTIONS
   F3  DISPOSITION. Every entry carries an Enforced-By and a Residue LINE. The
       disposition is either >=1 pointer or the single token JUDGMENT-ONLY, and
       JUDGMENT-ONLY requires a non-empty Residue.
+  F3c ANCHOR PLACEMENT. Every `Documented-In:` line comes AFTER `Residue:`.
+      `wl_store.trap_entries` ends the trailer at the first key it does not
+      know, so an anchor above Residue would hide the Residue from the judge.
   F4  POINTERS RESOLVE. gate: exists in the ci-runner manifest AND in
       package.json; hook: exists in the trapguard dispatcher's RULES tuple;
-      file: exists on disk, and its :line is within the file and non-blank.
+      file: exists on disk, and its :line is within the file and non-blank;
+      guard: is a stem `guards.stems()` admits.
+  F4b DOCUMENTATION ANCHORS RESOLVE (PLAN-lessons-registry). `Documented-In:`
+      is optional, 0..n per entry, one anchor per line, and never counts as
+      enforcement. Each anchor resolves under TRAP_ANCHOR_ROOT:
+        text:<path> <phrase>   the phrase (12+ characters, whitespace
+                               collapsed) is in the file. Moved or re-wrapped
+                               stays green; deleted or reworded reds, naming
+                               any other .md that now holds it.
+        doc:<path>#<heading>   a heading at any level, outside fences, matches
+                               exactly; a rename reds with the nearest heading.
+        box:<slug>#<label>@<sig8>  the labelled box in any plan folder still
+                               signs as sig8 (`check_plan_boxes.sig`), or its
+                               `(record) sig=` line does. A changed box reds
+                               as RE-SIGNED with the new sig.
+        trap:<id>              an id elsewhere in the same corpus.
+      `file:` is REFUSED in Documented-In: `file:<path>:<N>` only proves that
+      SOME non-blank line sits at N, so deleting the sentence leaves it green
+      (control C5 pins that blindness on purpose).
   F5  POINTERS ARE LIVE.
         gate: the manifest entry declares `gate: true`, i.e. `npm run ci`
               actually schedules it. This is the same claim
@@ -34,6 +55,9 @@ ASSERTIONS
               never fires, passes as covered.
         file: the file is reachable from something that runs it, in at most
               two hops from .claude/settings.json or the ci-runner manifest.
+        guard: the guard is tested in BOTH directions: a sibling
+              test-<stem>.py, or both a `check 2` and a `check 0
+              guards/<stem>.py` case in the hook suite.
   F6  SELF-CONTROL, FIRST. Every assertion above is planted against a mktemp
       fixture and required to red WITH THE MATCHING MESSAGE, and two clean
       fixtures are required to stay green. If any control misbehaves the gate
@@ -133,6 +157,8 @@ as non-blank. Carried unchanged, because narrowing it would re-decide which `fil
 STREAMS. `err()` is `log_error` (stderr, `✗ <msg>`) plus a counter; the shape line and the ratchet advisory are `log_info` (stderr, `✓ <msg>`). `rediacc_ci.log` reproduces both.
 """
 
+import difflib
+import hashlib
 import importlib.util
 import os
 import pathlib
@@ -140,11 +166,28 @@ import re
 import sys
 import tempfile
 
-from rediacc_ci import log, paths
+from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.quality import plan_lifecycle
 
 # The package whose guards rediacc_hooks/dispatch.py loads by glob (see Registry.dispatched_guards).
 GUARDS_PACKAGE_REL = ".claude/rediacc_hooks/guards"
+# The hook suite whose `check 2` / `check 0 guards/<stem>.py` cases make a `guard:` pointer two-sided.
+HOOKCASES_REL = ".claude/rediacc_hooks/tests/hookcases.py"
+
+# A `text:` phrase shorter than this matches by accident somewhere, so its green would say nothing about the lesson.
+MIN_PHRASE = 12
+
+# The anchor kinds `Documented-In:` accepts. `file:` is refused there on purpose: see `anchor_problem`.
+ANCHOR_KINDS = ("text", "doc", "box", "trap")
+
+# `box:<slug>#<label>@<sig8>`.
+BOX_ANCHOR_RE = re.compile(r"^(PLAN-[A-Za-z0-9._-]+)#([^@\s]+)@([0-9a-f]{8})$")
+# `wl_planfid.CHECKBOX_RE`, all four marks.
+BOX_LINE_RE = re.compile(r"^\s*[-*+]\s+\[[ xX?>]\]\s+(?P<body>\S.*)$")
+# `wl_planrec.RECORD_LINE_RE`'s sig half: the annotation a compacted plan keeps under each box.
+RECORD_SIG_LINE_RE = re.compile(r"^ {4}\(record\) sig=([0-9a-f]{8})\b")
+HEADING_RE = re.compile(r"^(#{1,6})[ \t]+(.*?)[ \t]*$")
 
 # The corpus and the artifacts pointers resolve against. Every one is a seam so the controls can drive the whole gate against fixtures instead of the real tree. The environment variable names are the twin's.
 SEAMS = {
@@ -159,21 +202,32 @@ SEAMS = {
     # W3-retire (PLAN-trap-enforcement.md section 7.1): the payload probe was a one-wave diagnostic, and a diagnostic registered on every tool call is a standing cost. Registrations are spelled in settings.json AND expanded from this module since the 2026-09-21 collapse, so the probe's absence is asserted in both.
     "TRAP_LIFECYCLE": (".claude", "rediacc_hooks", "lifecycle.py"),
     "TRAP_FILE_ROOT": (),
+    # Where `Documented-In:` anchors resolve. A seam of its own so the gate test can copy the anchored documents into a scratch root and mutate them there, never in the shared tree.
+    "TRAP_ANCHOR_ROOT": (),
 }
 
 # The retired probe's flag. Its presence in a registration file means the diagnostic is back on every tool call.
 PROBE_FLAG = "--probe-payload"
 
 # THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal the floor frozen in `goldens/twins/quality.check-trap-registry.jsonl` unless re-recorded with a reason.
-TRAP_FLOOR_DEFAULT = 98
+TRAP_FLOOR_DEFAULT = 109
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")
 
 
 class Entry:
-    """One `## ` heading and its three-line trailer."""
+    """One `## ` heading and its trailer: three fixed lines, then 0..n `Documented-In:` anchors."""
 
-    __slots__ = ("enforced_by", "line", "residue", "residue_seen", "title", "trap_id")
+    __slots__ = (
+        "documented_early",
+        "documented_in",
+        "enforced_by",
+        "line",
+        "residue",
+        "residue_seen",
+        "title",
+        "trap_id",
+    )
 
     def __init__(
         self,
@@ -190,9 +244,16 @@ class Entry:
         self.residue = residue
         self.residue_seen = residue_seen
         self.title = title
+        # (line number, value) per `Documented-In:` line, in file order.
+        self.documented_in: list[tuple[int, str]] = []
+        # A `Documented-In:` read BEFORE the Residue line (F3c).
+        self.documented_early = False
 
 
 FENCE_RE = re.compile(r"^[ \t]*(```+|~~~+)")
+
+# The optional trailer key, 0..n times, AFTER `Residue:`. `wl_store.trap_entries` ends the trailer at the first line it does not recognise, so a `Documented-In:` above `Residue:` would hide the Residue from the Stop hook's judge prompt (F3c).
+DOCUMENTED_IN = "Documented-In:"
 
 
 def parse_corpus(text: str) -> list[Entry]:
@@ -233,6 +294,12 @@ def parse_corpus(text: str) -> list[Entry]:
                 current.residue = line[8:].lstrip(" ")
                 current.residue_seen = True
                 continue
+            if line.startswith(DOCUMENTED_IN):
+                # Read even when misplaced, so F3c can name the misplacement rather than F3 reporting a Residue that is really there.
+                current.documented_in.append((number, line[len(DOCUMENTED_IN) :].strip()))
+                if not current.residue_seen:
+                    current.documented_early = True
+                continue
             in_trailer = False
     if current is not None:
         entries.append(current)
@@ -247,6 +314,87 @@ def read_text(path: pathlib.Path) -> str:
         return ""
 
 
+# -- the pure halves of the anchor resolvers ------------------------------------
+
+
+def collapse(text: str) -> str:
+    """Whitespace runs folded to one space, so a re-wrapped sentence still matches."""
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def norm_task(text: str) -> str:
+    """`wl_planfid._norm`, restated: lowercase, every non-alphanumeric run to one space."""
+    return re.sub(r"[^a-z0-9]+", " ", (text or "").lower()).strip()
+
+
+def box_sig(body: str) -> str:
+    """The box signature `check_plan_boxes.sig` computes, from the RAW box body.
+
+    `wl_planfid.plan_tasks` strips `*`, `_` and backticks before handing the task to `sig`, and the strip JOINS rather than spaces (`foo_bar` becomes `foobar`, where `_norm` alone would give `foo bar`), so both steps are restated here in that order. Restated, not imported: this module runs without `.claude/`, exactly as `wl_planrec.box_sig` restates it in the other direction. `test_quality_trap_registry.py` asserts the two agree on real plan boxes.
+    """
+    task = re.sub(r"[*_`]+", "", body).strip()
+    return hashlib.sha256(norm_task(task)[:120].encode("utf-8")).hexdigest()[:8]
+
+
+def box_label(body: str) -> str:
+    """A box's label: its first token, without emphasis and a trailing colon (`**G4:**` is `G4`)."""
+    first = body.split(None, 1)[0] if body.strip() else ""
+    return re.sub(r"[*`]", "", first).rstrip(":")
+
+
+def plan_boxes(text: str) -> list[tuple[str, str, str]]:
+    """(label, sig of the box text, sig of its `(record)` line or "") per box, fences skipped."""
+    out: list[tuple[str, str, str]] = []
+    lines = text.split("\n")
+    fence = ""
+    for index, line in enumerate(lines):
+        match = FENCE_RE.match(line)
+        if match:
+            char = match.group(1)[0]
+            fence = char if fence == "" else ("" if fence == char else fence)
+            continue
+        if fence != "":
+            continue
+        box = BOX_LINE_RE.match(line)
+        if not box:
+            continue
+        body = box.group("body")
+        record = ""
+        if index + 1 < len(lines):
+            rec = RECORD_SIG_LINE_RE.match(lines[index + 1])
+            if rec:
+                record = rec.group(1)
+        out.append((box_label(body), box_sig(body), record))
+    return out
+
+
+def headings(text: str) -> list[str]:
+    """Every ATX heading's text, at any level, outside fenced code blocks.
+
+    A closing `#` run is dropped only when a space precedes it, so a heading ending in `C#` keeps its last character.
+    """
+    out: list[str] = []
+    fence = ""
+    for line in text.split("\n"):
+        match = FENCE_RE.match(line)
+        if match:
+            char = match.group(1)[0]
+            fence = char if fence == "" else ("" if fence == char else fence)
+            continue
+        if fence != "":
+            continue
+        heading = HEADING_RE.match(line)
+        if heading:
+            out.append(re.sub(r"[ \t]+#+$", "", heading.group(2)))
+    return out
+
+
+def nearest(word: str, pool: list[str]) -> str:
+    """Up to three close matches from `pool`, quoted, or "none close"."""
+    close = difflib.get_close_matches(word, pool, n=3, cutoff=0.4)
+    return ", ".join("'%s'" % c for c in close) if close else "none close"
+
+
 class Registry:
     """The five artifacts a pointer resolves against, resolved once."""
 
@@ -259,7 +407,10 @@ class Registry:
         self.settings = seams["TRAP_SETTINGS"]
         self.lifecycle = seams["TRAP_LIFECYCLE"]
         self.file_root = seams["TRAP_FILE_ROOT"]
+        self.anchor_root = seams["TRAP_ANCHOR_ROOT"]
         self._live_l1: list[pathlib.Path] | None = None
+        self._stems: list[str] | None = None
+        self._markdown: list[str] | None = None
 
     # -- F4/F5 for `gate:` --------------------------------------------------
 
@@ -434,15 +585,167 @@ class Registry:
         """
         if pathlib.PurePosixPath(path).parent != pathlib.PurePosixPath(GUARDS_PACKAGE_REL):
             return []
+        return self.guard_stems()
+
+    def guard_stems(self) -> list[str]:
+        """`guards.stems()`, asked of the package itself and loaded once. [] when it cannot be loaded."""
+        if self._stems is not None:
+            return self._stems
+        self._stems = []
         init = self.file_root / GUARDS_PACKAGE_REL / "__init__.py"
         if not init.is_file():
-            return []
+            return self._stems
         spec = importlib.util.spec_from_file_location("trap_registry_guards", init)
         if spec is None or spec.loader is None:
-            return []
+            return self._stems
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        return list(module.stems())
+        self._stems = list(module.stems())
+        return self._stems
+
+    # -- F4/F5 for `guard:` -------------------------------------------------
+
+    def guard_liveness(self, stem: str) -> str:
+        """Empty when the guard is tested in BOTH directions, else the reason it is not.
+
+        Two-sided, as `hook:` is: a sibling `test-<stem>.py` (the dedicated per-guard suite, which carries its own refusing and admitting worlds), or BOTH a `check 2` and a `check 0 guards/<stem>.py` case in the hook suite. One direction alone cannot tell a guard that refuses everything from one that refuses nothing.
+        """
+        sibling = self.file_root / GUARDS_PACKAGE_REL / ("test-%s.py" % stem)
+        # A sibling suite counts only when it names the guard: an empty or stray file proves neither direction. Which directions its cases cover is the suite's own business (its DEFECT arm), not something a text read can settle.
+        # Whole-token: `_` and alphanumerics belong to a name, so `block_x_extra` does not name `block_x`.
+        if sibling.is_file() and re.search(
+            r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(stem), read_text(sibling)
+        ):
+            return ""
+        cases = read_text(self.file_root / HOOKCASES_REL)
+        fires = '"check 2 guards/%s.py"' % stem in cases
+        silent = '"check 0 guards/%s.py"' % stem in cases
+        if fires and silent:
+            return ""
+        if fires or silent:
+            return (
+                "its tests are one-sided: %s has only a `check %s` case for it and there is no "
+                "sibling test-%s.py" % (HOOKCASES_REL, "2" if fires else "0", stem)
+            )
+        return "nothing tests it: no sibling test-%s.py and no `check 2`/`check 0` case in %s" % (
+            stem,
+            HOOKCASES_REL,
+        )
+
+    # -- the Documented-In anchors ------------------------------------------
+
+    def markdown_files(self) -> list[str]:
+        """Every `.md` under the anchor root, repo-relative, for the found-elsewhere hint.
+
+        `git ls-files` (tracked plus untracked, ignored excluded) when the root is a work tree, so node_modules never arrives; a walk that prunes `.git` and `node_modules` otherwise, which is the scratch root the controls and the gate test build.
+        """
+        if self._markdown is not None:
+            return self._markdown
+        root = self.anchor_root
+        if gitx.is_work_tree(root):
+            found = gitx.ls_files("*.md", root=root, untracked=True, existing=True)
+        else:
+            found = []
+            for here, dirs, names in os.walk(root):
+                dirs[:] = sorted(d for d in dirs if d not in {".git", "node_modules"})
+                found.extend(
+                    str(pathlib.Path(here, n).relative_to(root))
+                    for n in sorted(names)
+                    if n.endswith(".md")
+                )
+        self._markdown = found
+        return found
+
+    def text_problem(self, spec: str) -> str:
+        """`text:<path> <phrase>`: empty when the phrase is in the file, else why not."""
+        path, _, phrase = spec.partition(" ")
+        phrase = collapse(phrase)
+        if phrase == "":
+            return "names no phrase. Write `text:<path> <phrase>`"
+        if len(phrase) < MIN_PHRASE:
+            return (
+                "anchors on '%s', which is under %d characters, so it would match by accident "
+                "somewhere. Anchor the distinctive clause of the lesson" % (phrase, MIN_PHRASE)
+            )
+        target = self.anchor_root / path
+        if not target.is_file():
+            return "names %s, which does not exist under %s" % (path, self.anchor_root)
+        text = read_text(target)
+        if target.resolve() == self.corpus.resolve():
+            # The registry's own `Documented-In:` lines hold every anchored phrase, so counting them would let an anchor on this file match itself after the lesson sentence is gone.
+            text = "\n".join(
+                line for line in text.splitlines() if not line.startswith(DOCUMENTED_IN)
+            )
+        if phrase in collapse(text):
+            return ""
+        skip = {target.resolve(), self.corpus.resolve()}
+        elsewhere = [
+            rel
+            for rel in self.markdown_files()
+            if (self.anchor_root / rel).resolve() not in skip
+            and phrase in collapse(read_text(self.anchor_root / rel))
+        ]
+        if elsewhere:
+            return (
+                "phrase not found in %s. It now appears in %s: repoint to `text:%s %s` if the "
+                "lesson moved there, in the same commit"
+                % (path, ", ".join(elsewhere[:3]), elsewhere[0], phrase)
+            )
+        return (
+            "phrase not found in %s: it was deleted or reworded. If the lesson still lives "
+            "there, anchor its new wording; if it is gone, the lesson is gone" % path
+        )
+
+    def doc_problem(self, spec: str) -> str:
+        """`doc:<path>#<heading>`: empty when a heading at any level matches exactly."""
+        path, sep, heading = spec.partition("#")
+        heading = heading.strip()
+        if sep == "" or heading == "":
+            return "names no heading. Write `doc:<path>#<heading text>`"
+        target = self.anchor_root / path
+        if not target.is_file():
+            return "names %s, which does not exist under %s" % (path, self.anchor_root)
+        found = headings(read_text(target))
+        if heading in found:
+            return ""
+        return "heading '%s' not found in %s (renamed?). Nearest: %s" % (
+            heading,
+            path,
+            nearest(heading, found),
+        )
+
+    def box_problem(self, spec: str) -> str:
+        """`box:<slug>#<label>@<sig8>`: empty when a box with that label still signs as sig8.
+
+        The plan is looked for in every folder a plan may sit in, so a move to `_done/` stays green. A compacted plan resolves through the `(record) sig=` line under the box, which keeps the signature the box had before compaction rewrote its text.
+        """
+        match = BOX_ANCHOR_RE.match(spec)
+        if not match:
+            return "is not `box:PLAN-<slug>#<label>@<8 hex>`"
+        slug, label, want = match.groups()
+        copies = [
+            "%s/%s.md" % (folder, slug)
+            for folder in plan_lifecycle.PLAN_DIRS
+            if (self.anchor_root / folder / ("%s.md" % slug)).is_file()
+        ]
+        if not copies:
+            return "names %s, which is in none of %s" % (slug, ", ".join(plan_lifecycle.PLAN_DIRS))
+        now: list[str] = []
+        for rel in copies:
+            for box_lbl, sig, record in plan_boxes(read_text(self.anchor_root / rel)):
+                if box_lbl != label:
+                    continue
+                if want in {sig, record}:
+                    return ""
+                now.append("%s in %s" % (sig, rel))
+        if now:
+            return (
+                "box %s RE-SIGNED: it now signs as %s, not %s. Its text changed, which is "
+                "exactly what writing evidence into a tick line does. Read the box; if the "
+                "lesson still lives there, repoint to `box:%s#%s@%s`"
+                % (label, ", ".join(now), want, slug, label, now[0].split(" ", 1)[0])
+            )
+        return "no box labelled %s in %s" % (label, ", ".join(copies))
 
 
 class Shape:
@@ -455,6 +758,37 @@ class Shape:
         self.gate = 0
         self.hook = 0
         self.file = 0
+        self.guard = 0
+        self.anchors = dict.fromkeys(ANCHOR_KINDS, 0)
+
+
+def anchor_problem(registry: Registry, anchor: str, all_ids: set[str], shape: Shape) -> str:
+    """Empty when one `Documented-In:` value resolves, else the sentence saying why not.
+
+    `file:` IS REFUSED HERE, and that is the reason this key exists. A `file:<path>:<N>` proves only that SOME non-blank line sits at N: delete the sentence and the next line moves up into its place, still green (control C5 pins that blindness on purpose). An anchor must name the TEXT of the lesson, so moving it is free and deleting it is red.
+    """
+    if anchor == "":
+        return "is empty. Name an anchor (%s)" % ", ".join("%s:" % k for k in ANCHOR_KINDS)
+    kind, sep, rest = anchor.partition(":")
+    if sep == "" or kind not in ANCHOR_KINDS:
+        if kind == "file":
+            return (
+                "uses file:, which is refused in Documented-In: a line number stays green "
+                "when the sentence on it is deleted. Use `text:<path> <phrase>`"
+            )
+        return "is an unknown anchor kind. Use %s" % ", ".join("%s:" % k for k in ANCHOR_KINDS)
+    shape.anchors[kind] += 1
+    if kind == "text":
+        return registry.text_problem(rest)
+    if kind == "doc":
+        return registry.doc_problem(rest)
+    if kind == "box":
+        return registry.box_problem(rest)
+    if rest not in all_ids:
+        return "names no Trap-Id in the corpus (dangling trap: reference). Nearest: %s" % (
+            nearest(rest, sorted(all_ids))
+        )
+    return ""
 
 
 def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
@@ -478,7 +812,10 @@ def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
         return errors
 
     seen_ids: set[str] = set()
-    for entry in parse_corpus(read_text(registry.corpus)):
+    corpus = parse_corpus(read_text(registry.corpus))
+    # `trap:` anchors are checked against the WHOLE corpus, so a reference to an entry further down is not a dangling one.
+    all_ids = {e.trap_id for e in corpus if e.trap_id}
+    for entry in corpus:
         shape.entries += 1
         where = "%s:%d" % (registry.corpus, entry.line)
 
@@ -509,10 +846,19 @@ def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
                 "%s: '%s' has no Residue line. Write 'Residue:' with nothing after it "
                 "when the instruments cover the whole trap." % (where, entry.trap_id)
             )
+        # F3c: a Documented-In above Residue ends the Stop hook's trailer read early (`wl_store.trap_entries`), so the Residue never reaches the judge prompt.
+        if entry.documented_early:
+            err(
+                "%s: '%s' has a Documented-In line before its Residue line. Move every "
+                "Documented-In below Residue: the Stop hook's parser stops at the first key it "
+                "does not know, so the Residue above would be lost to the judge prompt."
+                % (where, entry.trap_id)
+            )
         if entry.enforced_by == "":
             err(
-                "%s: '%s' has no Enforced-By. Name a pointer (gate:/hook:/file:) or "
-                "declare JUDGMENT-ONLY with a Residue." % (where, entry.trap_id)
+                "%s: '%s' has no Enforced-By. Name a pointer (gate:/hook:/file:/guard:) or "
+                "declare JUDGMENT-ONLY with a Residue. Documented-In never counts as "
+                "enforcement." % (where, entry.trap_id)
             )
             continue
         if entry.enforced_by == "JUDGMENT-ONLY":
@@ -580,12 +926,42 @@ def scan(registry: Registry, floor: int, shape: Shape, report=None) -> int:
                         "reaches within two hops of .claude/settings.json or the ci-runner "
                         "manifest. Point at something that RUNS." % (where, entry.trap_id, fspec)
                     )
+            elif ptr.startswith("guard:"):
+                shape.guard += 1
+                stem = ptr[len("guard:") :]
+                stems = registry.guard_stems()
+                if not stems:
+                    err(
+                        "%s: '%s' names guard:%s, but %s/__init__.py yields no stems, so no "
+                        "guard: pointer can be judged. The gate cannot see the guards."
+                        % (where, entry.trap_id, stem, GUARDS_PACKAGE_REL)
+                    )
+                elif stem not in stems:
+                    err(
+                        "%s: '%s' names guard:%s, which is not a guard the pre-tool dispatcher "
+                        "loads (guards.stems()). Nearest: %s."
+                        % (where, entry.trap_id, stem, nearest(stem, stems))
+                    )
+                else:
+                    why = registry.guard_liveness(stem)
+                    if why:
+                        err(
+                            "%s: '%s' names guard:%s, but %s. Add the missing direction."
+                            % (where, entry.trap_id, stem, why)
+                        )
             else:
                 err(
                     "%s: '%s' has an unknown pointer '%s'. Use gate:<check id>, "
-                    "hook:<trapguard rule>, file:<path>[:line], or JUDGMENT-ONLY."
-                    % (where, entry.trap_id, ptr)
+                    "hook:<trapguard rule>, file:<path>[:line], guard:<guard stem>, or "
+                    "JUDGMENT-ONLY." % (where, entry.trap_id, ptr)
                 )
+
+        # F4b: every Documented-In anchor resolves to the lesson's text, not merely to a place.
+        for line_no, anchor in entry.documented_in:
+            at = "%s:%d" % (registry.corpus, line_no)
+            problem = anchor_problem(registry, anchor, all_ids, shape)
+            if problem:
+                err("%s: '%s' Documented-In %s %s." % (at, entry.trap_id, anchor, problem))
 
     # W3-retire: the payload probe stays unregistered. Read from both registration files, because a hook can be wired from either.
     for reg in (registry.settings, registry.lifecycle):
@@ -684,6 +1060,106 @@ CONTROL_SETTINGS_PROBE = (
 )
 
 
+CONTROL_GUARDS_INIT = """import pathlib
+
+HERE = pathlib.Path(__file__).resolve().parent
+
+
+def stems():
+    return [
+        path.stem
+        for path in sorted(HERE.glob("*.py"))
+        if path.name.startswith(("block_", "warn_", "require_"))
+    ]
+"""
+
+CONTROL_HOOKCASES = """CASES = [
+    case("check 2 guards/block_ctl_cased.py", "{}", "fires"),
+    case("check 0 guards/block_ctl_cased.py", "{}", "silent"),
+    case("check 2 guards/block_ctl_one_sided.py", "{}", "fires only"),
+]
+"""
+
+# The original box text the `box:` controls anchor on, and the same box after a tick wrote evidence into it.
+CONTROL_BOX = "G4 The guard refuses outstanding `droppedTouched` and fails closed."
+CONTROL_BOX_TICKED = CONTROL_BOX + " Done: commit 1234567, rc=0."
+
+
+def build_anchor_fixture(files: pathlib.Path) -> str:
+    """The documents, plans and guards the anchor controls resolve against. Returns the box's sig.
+
+    Built by CONSTRUCTION, never by editing a copy of a real document, so a plant cannot silently fail to apply. Every `text:` control uses its own phrase, so one control's document can never answer for another's.
+    """
+    docs = files / "docs"
+    docs.mkdir(parents=True, exist_ok=True)
+    (docs / "lesson.md").write_text(
+        "# Lessons\n\n## The wake timer\n\nA stop that waits arms the wake-up timer as a "
+        "background call\nwith a timeout above its sleep.\n",
+        encoding="utf-8",
+    )
+    (docs / "deleted.md").write_text(
+        "# Lessons\n\nThe paragraph that held the lesson is gone.\nAnother line.\n",
+        encoding="utf-8",
+    )
+    filler = "".join("filler line %d\n" % i for i in range(30))
+    (docs / "moved.md").write_text(
+        "# Lessons\n\n" + filler + "The registry check names\nevery   env read twice over.\n",
+        encoding="utf-8",
+    )
+    (docs / "old-home.md").write_text("# Old home\n\nNothing left here.\n", encoding="utf-8")
+    (docs / "new-home.md").write_text(
+        "# New home\n\nThe receipt records a dropped slow gate.\n", encoding="utf-8"
+    )
+    (docs / "headings.md").write_text(
+        "# Top\n\n## The pre-push lane renamed\n\ntext\n\n```markdown\n## Fenced Heading\n```"
+        "\n\n" + filler + "#### Deep Moved Heading ##\n",
+        encoding="utf-8",
+    )
+
+    plans = files / "agent" / "plans"
+    (plans / "_done").mkdir(parents=True, exist_ok=True)
+    original = "# PLAN\n\n## Tasks\n\n- [ ] %s\n- [ ] G5 Another box.\n" % CONTROL_BOX
+    (plans / "PLAN-ctl-box.md").write_text(original, encoding="utf-8")
+    (plans / "PLAN-ctl-resigned.md").write_text(
+        "# PLAN\n\n## Tasks\n\n- [x] %s\n" % CONTROL_BOX_TICKED, encoding="utf-8"
+    )
+    (plans / "_done" / "PLAN-ctl-moved.md").write_text(original, encoding="utf-8")
+    sig = box_sig(CONTROL_BOX)
+    (plans / "_done" / "PLAN-ctl-compacted.md").write_text(
+        "# PLAN\n\n## Boxes\n- [x] G4 Compacted: the guard landed and was verified.\n"
+        "    (record) sig=%s done=abcdef123\n" % sig,
+        encoding="utf-8",
+    )
+    (plans / "PLAN-ctl-nolabel.md").write_text(
+        "# PLAN\n\n## Tasks\n\n- [ ] G5 Another box.\n", encoding="utf-8"
+    )
+
+    guards = files / GUARDS_PACKAGE_REL
+    guards.mkdir(parents=True, exist_ok=True)
+    (guards / "__init__.py").write_text(CONTROL_GUARDS_INIT, encoding="utf-8")
+    for stem in ("block_ctl_tested", "block_ctl_cased", "block_ctl_one_sided", "warn_ctl_bare"):
+        (guards / ("%s.py" % stem)).write_text("def main():\n    return 0\n", encoding="utf-8")
+    (guards / "test-block_ctl_tested.py").write_text(
+        "print('block_ctl_tested ok')\n", encoding="utf-8"
+    )
+    cases = files / HOOKCASES_REL
+    cases.parent.mkdir(parents=True, exist_ok=True)
+    cases.write_text(CONTROL_HOOKCASES, encoding="utf-8")
+    return sig
+
+
+def anchored(trap_id: str, enforced: str, *anchors: str, residue: str = "") -> str:
+    """One fixture entry: the three-line trailer, then its Documented-In lines."""
+    lines = [
+        "## %s" % trap_id,
+        "Trap-Id: %s" % trap_id,
+        "Enforced-By: %s" % enforced,
+        ("Residue: %s" % residue) if residue else "Residue:",
+    ]
+    lines.extend("Documented-In: %s" % a for a in anchors)
+    return "\n".join(lines) + "\n\nbody\n"
+
+
 class Controls6:
     """F6's tally: reds that must red for the RIGHT reason, greens that must not."""
 
@@ -691,6 +1167,7 @@ class Controls6:
         self.failures = 0
         self.red = 0
         self.green = 0
+        self.pins = 0
 
 
 def _control_run(
@@ -714,6 +1191,7 @@ def _control_run(
             "TRAP_SETTINGS": settings or registry.settings,
             "TRAP_LIFECYCLE": lifecycle or registry.lifecycle,
             "TRAP_FILE_ROOT": registry.file_root,
+            "TRAP_ANCHOR_ROOT": registry.anchor_root,
         }
     )
     count = scan(scoped, 5, Shape(), report=findings.append)
@@ -753,6 +1231,7 @@ def run_controls(control_dir: pathlib.Path) -> bool:
             "TRAP_SETTINGS": control_dir / "settings.json",
             "TRAP_LIFECYCLE": control_dir / "lifecycle.py",
             "TRAP_FILE_ROOT": files,
+            "TRAP_ANCHOR_ROOT": files,
         }
     )
 
@@ -1000,6 +1479,144 @@ def run_controls(control_dir: pathlib.Path) -> bool:
         settings=probed_settings,
     )
 
+    # -- F4b: Documented-In anchors (PLAN-lessons-registry L5, C1-C21) -----
+    sig = build_anchor_fixture(files)
+    stale = box_sig(CONTROL_BOX_TICKED)
+    live = "guard:block_ctl_tested"
+
+    def lesson(name: str, *anchors: str, enforced: str = live) -> pathlib.Path:
+        return write(name, anchored("ctl-lesson", enforced, *anchors), 5)
+
+    expect_green(
+        "C1 a text: phrase that is present",
+        lesson("c1.md", "text:docs/lesson.md a timeout above its sleep"),
+    )
+    expect_red(
+        "C2 a text: phrase that was deleted",
+        lesson("c2.md", "text:docs/deleted.md the shard leg is placed per module"),
+        "phrase not found in docs/deleted.md: it was deleted or reworded",
+    )
+    expect_green(
+        "C3 a text: phrase moved down 30 lines and re-wrapped across two",
+        lesson("c3.md", "text:docs/moved.md names every env read twice over"),
+    )
+    expect_red(
+        "C4 a text: phrase that moved to another document names its new home",
+        lesson("c4.md", "text:docs/old-home.md The receipt records a dropped slow gate."),
+        "It now appears in docs/new-home.md",
+    )
+    # C5 THE BLINDNESS PIN. The C2 document still has a non-blank line 3, so `file:docs/deleted.md:3` resolves although the lesson is gone. That is why Documented-In refuses `file:`. If `file:` is ever made content-aware this flips, and the header's account of the blind spot must be rewritten with it.
+    tally.pins += 1
+    if not scoped.file_resolves("docs/deleted.md:3"):
+        log.error(
+            "CONTROL FAILED (C5 blindness pin): file:<path>:<N> no longer resolves over a "
+            "deleted sentence. If file: became content-aware on purpose, update the header and "
+            "the Documented-In refusal of file: together"
+        )
+        tally.failures += 1
+    expect_red(
+        "C6 a doc: heading that was renamed suggests the nearest",
+        lesson("c6.md", "doc:docs/headings.md#The pre-push lane"),
+        "Nearest: 'The pre-push lane renamed'",
+    )
+    expect_red(
+        "C6b a doc: heading inside a fenced example is not a heading",
+        lesson("c6b.md", "doc:docs/headings.md#Fenced Heading"),
+        "heading 'Fenced Heading' not found",
+    )
+    expect_green(
+        "C7 a doc: heading moved down and changed level",
+        lesson("c7.md", "doc:docs/headings.md#Deep Moved Heading"),
+    )
+    expect_green("C8 a box: that is present", lesson("c8.md", "box:PLAN-ctl-box#G4@%s" % sig))
+    expect_red(
+        "C9 a box: whose tick line carries evidence is re-signed",
+        lesson("c9.md", "box:PLAN-ctl-resigned#G4@%s" % sig),
+        "RE-SIGNED: it now signs as %s" % stale,
+    )
+    expect_green(
+        "C10 a box: whose plan moved to _done/",
+        lesson("c10.md", "box:PLAN-ctl-moved#G4@%s" % sig),
+    )
+    expect_green(
+        "C11 a box: whose plan was compacted resolves through its (record) line",
+        lesson("c11.md", "box:PLAN-ctl-compacted#G4@%s" % sig),
+    )
+    expect_red(
+        "C12 a box: whose label was removed",
+        lesson("c12.md", "box:PLAN-ctl-nolabel#G4@%s" % sig),
+        "no box labelled G4",
+    )
+    expect_red(
+        "C12b a box: whose plan is in no plan folder",
+        lesson("c12b.md", "box:PLAN-ctl-nowhere#G4@%s" % sig),
+        "is in none of",
+    )
+    expect_red(
+        "C13 a guard: whose stem was deleted",
+        lesson("c13.md", enforced="guard:block_ctl_deleted"),
+        "not a guard the pre-tool dispatcher loads",
+    )
+    expect_red(
+        "C14 a guard: with a firing case only",
+        lesson("c14.md", enforced="guard:block_ctl_one_sided"),
+        "one-sided",
+    )
+    expect_red(
+        "C14b a guard: with no test at all",
+        lesson("c14b.md", enforced="guard:warn_ctl_bare"),
+        "nothing tests it",
+    )
+    expect_green("C15 a guard: with a sibling test", lesson("c15.md"))
+    expect_green(
+        "C15b a guard: with both hookcases directions",
+        lesson("c15b.md", enforced="guard:block_ctl_cased"),
+    )
+    expect_red(
+        "C16 Documented-In before Residue (F3c)",
+        write(
+            "c16.md",
+            "## early anchor\nTrap-Id: ctl-early-anchor\nEnforced-By: %s\n"
+            "Documented-In: text:docs/lesson.md a timeout above its sleep\nResidue:\n" % live,
+            5,
+        ),
+        "before its Residue line",
+    )
+    expect_red(
+        "C17 a text: phrase under 12 characters",
+        lesson("c17.md", "text:docs/lesson.md wake timer"),
+        "under 12 characters",
+    )
+    expect_red(
+        "C18 file: is refused in Documented-In",
+        lesson("c18.md", "file:docs/lesson.md:5"),
+        "refused in Documented-In",
+    )
+    expect_red(
+        "C19 an unknown anchor kind",
+        lesson("c19.md", "grep:the wake timer"),
+        "unknown anchor kind",
+    )
+    expect_red(
+        "C20 a dangling trap: reference",
+        lesson("c20.md", "trap:no-such-trap"),
+        "dangling trap: reference",
+    )
+    expect_green(
+        "C20b a trap: reference to an entry in the corpus",
+        lesson("c20b.md", "trap:filler-trap-1"),
+    )
+    expect_red(
+        "C21 Documented-In never stands in for an Enforced-By (F3)",
+        write(
+            "c21.md",
+            "## anchors only\nTrap-Id: ctl-anchors-only\nResidue: x.\n"
+            "Documented-In: text:docs/lesson.md a timeout above its sleep\n",
+            5,
+        ),
+        "has no Enforced-By",
+    )
+
     if tally.failures > 0:
         log.error(
             "%d of the gate's own controls misbehaved. NOT judging the real tree: a gate "
@@ -1008,13 +1625,14 @@ def run_controls(control_dir: pathlib.Path) -> bool:
         return False
     log.info(
         "controls: %d planted defects red (each matched against the finding it was "
-        "written for), %d clean fixtures green" % (tally.red, tally.green)
+        "written for), %d clean fixtures green, %d blindness pin held"
+        % (tally.red, tally.green, tally.pins)
     )
     return True
 
 
 def resolve_seams(root: pathlib.Path, env: dict[str, str] | None = None) -> dict[str, pathlib.Path]:
-    """The eight seams, each overridable by its own environment variable."""
+    """The nine seams, each overridable by its own environment variable."""
     environ = os.environ if env is None else env
     out: dict[str, pathlib.Path] = {}
     for name, parts in SEAMS.items():
@@ -1060,16 +1678,20 @@ def main(argv: list[str] | None = None) -> int:
     # Print the SHAPE, not just the verdict: a reader can notice when a number collapses, and "OK" tells nobody that the corpus stopped being parsed.
     log.info(
         "trap registry OK: %d entries (floor %d), %d JUDGMENT-ONLY, %d carrying residue, "
-        "%d live pointers (%d gate, %d hook, %d file)"
+        "%d live pointers (%d gate, %d hook, %d file, %d guard), %d documentation anchors "
+        "(%d text, %d doc, %d box, %d trap)"
         % (
             shape.entries,
             floor,
             shape.judgment,
             shape.residue,
-            shape.gate + shape.hook + shape.file,
+            shape.gate + shape.hook + shape.file + shape.guard,
             shape.gate,
             shape.hook,
             shape.file,
+            shape.guard,
+            sum(shape.anchors.values()),
+            *(shape.anchors[k] for k in ANCHOR_KINDS),
         )
     )
 
@@ -1077,7 +1699,7 @@ def main(argv: list[str] | None = None) -> int:
     if shape.entries > floor:
         log.info(
             "  ratchet: %d entries against a floor of %d. Bump TRAP_FLOOR to %d in this "
-            "commit, or gate-test:trap-registry (F1) reds in CI."
+            "commit, or test_gate_trap_registry.py's F1 case reds in check:ci-pytest."
             % (shape.entries, floor, shape.entries)
         )
     return 0
@@ -1088,7 +1710,7 @@ def selftest() -> int:
 
     The twin's F6 controls run INLINE on every real invocation and are preserved above. What they cannot reach is the PARSER's edges and the resolvers driven directly, which is what this adds.
     """
-    ctl = Controls("trap-registry", floor=38, verbose=True)
+    ctl = Controls("trap-registry", floor=49, verbose=True)
 
     # -- the parser ---------------------------------------------------------
     doc = (
@@ -1122,6 +1744,52 @@ def selftest() -> int:
         False,
     )
     ctl.check("VACUITY: an empty corpus parses to no entries", len(parse_corpus("")), 0)
+
+    # -- Documented-In (L1) -------------------------------------------------
+    documented = parse_corpus(
+        "## d\nTrap-Id: d-trap\nEnforced-By: JUDGMENT-ONLY\nResidue: x.\n"
+        "Documented-In: text:CLAUDE.md a phrase of some length\nDocumented-In: trap:other\n\n"
+        "Documented-In: body prose, not a trailer\n"
+    )[0]
+    ctl.check(
+        "CONTROL: Documented-In lines after Residue are read, in order, with line numbers",
+        documented.documented_in,
+        [(5, "text:CLAUDE.md a phrase of some length"), (6, "trap:other")],
+    )
+    ctl.falsy("CONTROL: and after Residue is not early", documented.documented_early)
+    early = parse_corpus(
+        "## e\nTrap-Id: e-trap\nEnforced-By: JUDGMENT-ONLY\nDocumented-In: trap:x\nResidue: y.\n"
+    )[0]
+    ctl.truthy("PLANT: a Documented-In above Residue is flagged (F3c)", early.documented_early)
+    ctl.check("CONTROL: and the Residue below it is still read", early.residue, "y.")
+
+    # -- the anchor helpers -------------------------------------------------
+    ctl.check("CONTROL: whitespace runs collapse", collapse("a  b\n\tc "), "a b c")
+    ctl.check("CONTROL: a box label is its first token", box_label("**G4:** do it"), "G4")
+    ctl.check(
+        "MIRROR: the underscore strip JOINS (foo_bar signs as foobar, not foo bar)",
+        box_sig("x foo_bar"),
+        box_sig("x foobar"),
+    )
+    ctl.truthy(
+        "PLANT: evidence written into a box changes its sig",
+        box_sig("G4 do it") != box_sig("G4 do it. Done: rc=0"),
+    )
+    ctl.check(
+        "CONTROL: headings at any level, closing hashes dropped, fences skipped",
+        headings("# A\n```\n## B\n```\n#### C ##\nC#\n### C#\n"),
+        ["A", "C", "C#"],
+    )
+    ctl.check(
+        "CONTROL: a box keeps the (record) sig beneath it",
+        plan_boxes("- [x] G4 text\n    (record) sig=0123abcd done=open\n- [ ] G5 more\n"),
+        [("G4", box_sig("G4 text"), "0123abcd"), ("G5", box_sig("G5 more"), "")],
+    )
+    ctl.check(
+        "MIRROR: a box inside a fence is an example, not a box",
+        plan_boxes("```\n- [ ] G4 example\n```\n"),
+        [],
+    )
 
     # -- the id grammar -----------------------------------------------------
     ctl.truthy(
@@ -1158,6 +1826,7 @@ def selftest() -> int:
                 "TRAP_SETTINGS": base / "settings.json",
                 "TRAP_LIFECYCLE": base / "lifecycle.py",
                 "TRAP_FILE_ROOT": files,
+                "TRAP_ANCHOR_ROOT": files,
             }
         )
 

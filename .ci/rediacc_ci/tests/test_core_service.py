@@ -1,4 +1,4 @@
-"""`rediacc_ci.core.service` against the live `.ci/lib/service.sh`.
+"""`rediacc_ci.core.service` against the answers frozen from the retired `.ci/lib/service.sh` (`goldens/twins/lib.service.jsonl`).
 
 REAL DOCKER, NO STACK. Every case runs the real `docker ps` and `docker inspect` against a daemon with the `rediacc-service-*` containers absent, which is the state a developer's machine is in almost all the time and the only state a differential can enter five times without building an image ten times. What is NOT covered is named in the module docstring of the port rather than
 left as an absence: `service_start` and `service_stop`.
@@ -83,9 +83,16 @@ def env_for(root, fake_date_dir, now: int = FROZEN_NOW) -> dict:
 
 
 def _bash(argv: list[str], env: dict):
+    """What the retired twin answered, from the golden frozen out of `service.sh`."""
     args = " ".join("'%s'" % a for a in argv)
     script = 'SERVICE_TWIN="%s"\nset -- %s\n%s' % (TWIN, args, BASH_DRIVER)
-    return diff.bash_streams(script, env=env)
+    return diff.twin_streams(
+        TWIN,
+        script,
+        env=env,
+        port=lambda: _python(argv, env),
+        work=diff.pytest_tmp_roots(*env.values()),
+    )
 
 
 def _python(argv: list[str], env: dict):
@@ -320,32 +327,43 @@ def _drop_bash_internal_noise(lines: list[str]) -> list[str]:
     return renumbered
 
 
+def _frozen_lifecycle(scenario: str, case, repo: pathlib.Path) -> list[str]:
+    """The retired twin's observation lines for one case, from the golden. They travel as the golden's `out`, one per line."""
+
+    def retired():
+        raise RuntimeError(
+            "%s is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
+            % (TWIN, diff.REGOLDEN_VERB, TWIN)
+        )
+
+    def port():
+        return 0, "\n".join(svc_driver.observe("new", repo, case)), ""
+
+    return diff.twin_call(TWIN, [scenario, case.name], retired, port=port)[1].splitlines()
+
+
 @pytest.mark.parametrize(
     ("scenario", "case"),
     LIFECYCLE_CASES,
     ids=["%s/%s" % (s, c.name) for s, c in LIFECYCLE_CASES],
 )
-def test_lifecycle_matches_the_live_twin(scenario, case) -> None:
+def test_lifecycle_matches_the_frozen_twin(scenario, case) -> None:
     repo = pathlib.Path(diff.repo())
-    old = _drop_bash_internal_noise(svc_driver.observe("old", repo, case))
+    old = _drop_bash_internal_noise(_frozen_lifecycle(scenario, case, repo))
     new = svc_driver.observe("new", repo, case)
     assert old == new, "case %s/%s diverged" % (scenario, case.name)
 
 
 def test_every_twin_function_is_driven_by_a_scenario() -> None:
     """ANTI-VACUITY. The twin's six functions, and the driver reaches every public one."""
-    twin = (pathlib.Path(diff.repo()) / TWIN).read_text(encoding="utf-8")
-    defined = set(re.findall(r"^([a-z_]+)\(\) \{", twin, flags=re.MULTILINE))
-    assert defined == {
-        "_service_compose",
+    driven = {svc_driver.FN[c.verb] for _, c in LIFECYCLE_CASES}
+    assert driven == {
         "service_start",
         "service_health",
         "service_stop",
         "service_status",
         "service_logs",
     }
-    driven = {svc_driver.FN[c.verb] for _, c in LIFECYCLE_CASES}
-    assert driven == defined - {"_service_compose"}
     assert {"build-fails", "all-present", "timeout-debug", "unknown"} <= {
         c.name for _, c in LIFECYCLE_CASES
     }
@@ -358,7 +376,7 @@ def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
     env = svc_driver.side_env(tmp_path, farm, case)
     for name in ("docker", "curl", "sleep", "ss"):
         assert stubfarm.shadows(farm, name, env), "%s is not the stub" % name
-    lines = svc_driver.observe("old", pathlib.Path(diff.repo()), case)
+    lines = svc_driver.observe("new", pathlib.Path(diff.repo()), case)
     calls = [line for line in lines if " call#" in line]
     assert len(calls) >= 8, "the twin made %d stubbed calls; the farm is not being reached" % len(
         calls
@@ -368,9 +386,9 @@ def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
 def test_a_transcript_difference_is_a_divergence() -> None:
     """CONTROL ON THE COMPARISON. One dropped call must make two otherwise-equal observation lists unequal."""
     case = svc_driver.SCENARIOS["health"][1]
-    old = svc_driver.observe("old", pathlib.Path(diff.repo()), case)
-    tampered = [line for line in old if "call#3|" not in line]
-    assert tampered != old
+    observed = svc_driver.observe("new", pathlib.Path(diff.repo()), case)
+    tampered = [line for line in observed if "call#3|" not in line]
+    assert tampered != observed
 
 
 def test_the_lifecycle_ledger_holds() -> None:

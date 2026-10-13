@@ -12,7 +12,8 @@ on:
     # (rediacc_ci.infra.build_renet); console is public, so a prebuilt
     # nolicense binary must never ship via artifacts. Only the embed-assets
     # staging is shared, via the renet-embed-assets cache (same key as
-    # ci-build-renet.yml).
+    # ci-build-renet.yml), and only the renet-embed-assets job stages it on a
+    # miss: every job that restores it needs that job.
     inputs:
       # The expensive suites run on PR and nightly only. This used to gate the
       # CALLER (ci.yml's `tests:` job), which is why migration-test could not
@@ -231,6 +232,90 @@ jobs:
           build-packages: 'true'
       - run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit
 
+  # The ONE job here that stages renet's embed assets on a cache miss; every job
+  # below that restores the renet-embed-assets cache `needs:` it, so each of them
+  # restores a hit and its own "Build renet" is the ~30 s go build alone.
+  # Before this job each consumer staged on a miss itself: a lockfile change
+  # (zot 2.1.22, renet a4b0da6) put 11m34s of Docker builder staging inside
+  # E2E Ceph's 15-minute budget, the watchdog cancelled it at 15.0m with its
+  # test step at 1m56s (run 37720545287 attempt 1), and the force-cancel took
+  # 76 jobs with it, about 40 of which were restaging the same tree in parallel.
+  # On a hit this job only checks the key (lookup-only); on a miss its staging
+  # (9m50s to 11m34s measured) runs under its own budget instead of a test's.
+  # check-lane-budget.ts check 8 reds a consumer that loses the needs: edge.
+  renet-embed-assets:
+    name: Renet embed assets
+    # Checkout, with the private submodules on the readonly-preset App token,
+    # and Docker Hub pulls for the staging build. No ghcr, no GitHub API.
+    permissions:
+      contents: read
+    # A superset of every dependent's own `if:` (each also requires full_suite),
+    # so no dependent is ever skipped because this job was.
+    if: inputs.full_suite == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      # lookup-only: a hit downloads nothing here; the dependents restore it.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          lookup-only: true
+      # Everything below runs on a miss only, and is the consumers' own chain.
+      - name: Login to Docker Hub
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Stage renet embed assets
+        id: build-renet
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache), as at every other save site.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+
   test-e2e-workers:
     name: E2E Workers (${{ matrix.os-image }}, ${{ matrix.shard }}/8)
     # Logs into ghcr with github.token and PULLS only (the credential is then
@@ -239,6 +324,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.0)
@@ -492,7 +578,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}-${{ github.sha }}
@@ -512,7 +598,7 @@ jobs:
       # reporter (packages/e2e-tests/playwright.config.ts) writes `unit-durations*.json` -- all of them are
       # globbed into this one artifact, and parse_unit_duration_artifact sums the
       # durations of same-named units across every member it finds.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}-${{ github.sha }}
@@ -545,6 +631,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -679,7 +766,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-ceph-${{ github.sha }}
@@ -717,6 +804,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_ceph_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20 # budget cap, operator ruling #153aace7 (measured max 15.1)
@@ -865,7 +953,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph-workers" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-ceph-workers-${{ github.sha }}
@@ -1067,7 +1155,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [renet-pkg-scope]
+    needs: [renet-pkg-scope, renet-embed-assets]
     if: needs.renet-pkg-scope.outputs.hit == 'true'
     runs-on: ubuntu-latest
     # A named exemption from the 15-minute job budget, every matrix leg: p90 16
@@ -1216,7 +1304,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-ceph-workers-${{ matrix.os-image }}" --status ${{ job.status }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-ceph-workers-${{ matrix.os-image }}-${{ github.sha }}
@@ -1236,6 +1324,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -1377,7 +1466,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-k8s-${{ github.sha }}
@@ -1408,6 +1497,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_ceph != 'false'
     runs-on: ubuntu-latest
     # A named exemption from the 15-minute job budget: p90 20 / timeout-minutes
@@ -1558,7 +1648,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s-ceph" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-k8s-ceph-${{ github.sha }}
@@ -1589,6 +1679,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false'
     runs-on: ubuntu-latest
     # 100 -> 30: a named exemption from the 15-minute job budget, p90 25 /
@@ -1792,7 +1883,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-k8s-multinode" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-k8s-multinode-${{ github.sha }}
@@ -1824,6 +1915,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_migrate != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -1993,7 +2085,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-migrate" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-e2e-migrate-${{ github.sha }}
@@ -2024,6 +2116,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_fork_isolation != 'false'
     runs-on: ubuntu-latest
     # 35 -> 15 (T4.1, PLAN-ci-time-budget): measured max 9.7 min since
@@ -2190,7 +2283,7 @@ jobs:
       - if: always()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "fork-isolation" --status ${{ job.status }}
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-fork-isolation-${{ github.sha }}
@@ -2322,7 +2415,7 @@ jobs:
           RENET_TEST_EXTRA_TIERS: ${{ matrix.shard == 1 && 'true' || 'false' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet test --shard-manifest .ci/config/shards/test-renet-go.json --shard "${{ matrix.shard }}/2"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-renet-coverage-s${{ matrix.shard }}-${{ github.sha }}
@@ -2330,7 +2423,7 @@ jobs:
           retention-days: 3
           if-no-files-found: ignore
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-renet-results-s${{ matrix.shard }}-${{ github.sha }}
@@ -2343,7 +2436,7 @@ jobs:
       # --refresh (T3.2) matches on -- the artifact above is named for a human
       # reading the Actions UI, not for T3.2's prefix match, so it needed a
       # sibling rather than a rename.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-renet-go-s${{ matrix.shard }}-${{ github.sha }}
@@ -2366,7 +2459,7 @@ jobs:
       # PINNED TO LEG 1 (T2.14), same reasoning as "Test eBPF" above.
       - name: Test eBPF socket isolation (ebpf_e2e)
         if: matrix.shard == 1
-        run: sudo .ci/scripts/private/renet-ebpf-e2e.sh
+        run: sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_ebpf_e2e
 
       # Root-tagged renet repository state tests (SaveState/LoadState). They
       # t.Fatal off-root, so under sudo they must run and PASS.
@@ -2374,7 +2467,7 @@ jobs:
       # PINNED TO LEG 1 (T2.14), same reasoning as "Test eBPF" above.
       - name: Test renet repository (root-tagged)
         if: matrix.shard == 1
-        run: sudo .ci/scripts/private/renet-root-tests.sh
+        run: sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_root_tests
 
       # CSI driver conformance (csi-sanity, spec 09 §12) on a scratch loop-BTRFS
       # datastore. Two ruled deviations (spec 09 §16) stay red by design and are
@@ -2382,7 +2475,7 @@ jobs:
       # PINNED TO LEG 1 (T2.14), same reasoning as "Test eBPF" above.
       - name: Test renet CSI driver (csi-sanity conformance)
         if: matrix.shard == 1
-        run: sudo .ci/scripts/private/renet-csi-sanity.sh
+        run: sudo env PYTHONPATH=.ci python3 -m rediacc_ci.private.renet_csi_sanity
 
   test-renet-integration:
     name: Renet (integration, ${{ matrix.shard }}/3)
@@ -2451,7 +2544,7 @@ jobs:
       # `jq` (preinstalled on the runner image) reads this leg's `ids`, strips
       # the `renet-integration:` id prefix `scripts/ci-runner/unit-enumerators.ts`
       # (`renetIntegrationUnits`) puts on them, and hands the plain filenames to
-      # `ci-test.sh` (via `.ci/scripts/private/renet-integration.sh`, unchanged)
+      # `ci-test.sh` (via `rediacc_ci.private.renet_integration`)
       # as RENET_INTEGRATION_FILES. `sudo env VAR=... cmd`, not `sudo -E`: the
       # value is set directly on the command sudo execs, so nothing else in this
       # step's environment is exposed to the root-run script that was not
@@ -2463,9 +2556,9 @@ jobs:
             .ci/config/shards/test-renet-integration.json)
           echo "Shard ${{ matrix.shard }}/3 files: $FILES"
           # sudo resets the environment, so the switches ride in explicitly. RENET_PYTEST_JUNIT=1 makes ci-test.sh write the --junit-xml the unit-durations and results uploads below read (before it, both found no file on every run). CI itself stays unset: under root it turns on LUKS/fstab Go integration tests this runner cannot pass. RENET_SKIP_GO_UNIT_TESTS=1: the Renet (go, i/2) legs already run ./pkg/..., so these legs do not repeat it.
-          sudo env "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" .ci/scripts/private/renet-integration.sh --no-cleanup
+          sudo env PYTHONPATH=.ci "RENET_PYTEST_JUNIT=1" "RENET_SKIP_GO_UNIT_TESTS=1" "RENET_INTEGRATION_FILES=$FILES" python3 -m rediacc_ci.private.renet_integration --no-cleanup
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: test-renet-integration-s${{ matrix.shard }}-${{ github.sha }}
@@ -2478,7 +2571,7 @@ jobs:
       # which GitHub Actions sets by default), uploaded a second time under the
       # `unit-durations-<lane>-` name budget_report.py --refresh (T3.2) matches
       # on -- see the identical comment on test-renet-go, above.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-renet-integration-s${{ matrix.shard }}-${{ github.sha }}
@@ -2558,12 +2651,12 @@ jobs:
             private/renet/go.sum
             .ci/scripts/private/license-mint/go.sum
 
-      # The script IS the local-dev entry point; there is no CI-only variant to
+      # The module IS the local-dev entry point; there is no CI-only variant to
       # drift from. It mints its own throwaway key when ACCOUNT_ED25519_PUBLIC_KEY
       # is unset, which is the case here on purpose: no production key is
       # involved, and nothing it signs outlives the job.
       - name: Run the license enforcement battery
-        run: .ci/scripts/private/license-e2e.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.license_e2e
 
   # ============================================================================
   # ACCOUNT E2E: Full Playwright E2E tests for the account portal
@@ -2587,6 +2680,9 @@ jobs:
         # the @webauthn coverage-floor bundle; rediacc_ci.testrun.account_e2e derives both
         # from the leg's actual file list rather than trusting these numbers,
         # so this comment is documentation, not a contract the script relies on.
+        # The leg holding the @real-provider spec (the pinned Bitwarden extension
+        # against a throwaway Vaultwarden vault) is derived the same way, and
+        # that leg fails unless the spec ran: none skipped, none retried.
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2641,6 +2737,19 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('private/account/e2e/package-lock.json') }}
+      # The real-provider spec (private/account/e2e, 20-12) loads two pinned
+      # third-party artifacts: the Bitwarden extension zip and the Vaultwarden
+      # binary. private/account/e2e/real-provider.lock.json names both by
+      # version and sha256, and the spec's own fetch verifies them on every run,
+      # cached or not, so this cache saves two downloads and proves nothing.
+      # Keyed on the lock file: a pin bump changes the hash and the next run
+      # downloads the new artifacts. Every leg restores it and only the leg that
+      # holds the spec fills the directory; on the others the save step finds no
+      # path and writes nothing.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/rediacc/real-provider
+          key: real-provider-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('private/account/e2e/real-provider.lock.json') }}
       - name: Install Stripe CLI
         # Leg 1 holds the 10-stripe mutex unit (test-account-e2e.json); the
         # other three never call `stripe`, so skipping the install there is a
@@ -2671,7 +2780,7 @@ jobs:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
           STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
       - name: Upload E2E report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()
         with:
           name: account-e2e-report-s${{ matrix.shard }}-${{ github.sha }}
@@ -2688,7 +2797,7 @@ jobs:
       # (private/account/e2e/playwright.config.ts) writes results.json whether the
       # run passed or failed, so `always()` + `ignore` here only covers a crash
       # before Playwright ever started.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-test-account-e2e-s${{ matrix.shard }}-${{ github.sha }}
@@ -2747,6 +2856,7 @@ jobs:
     # scope. Submodules ride the readonly-preset App token.
     permissions:
       contents: read
+    needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_drills != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 7
@@ -2826,21 +2936,23 @@ jobs:
           set -o pipefail
           ./run.sh drill universe --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-universe.log"
 
-      # DECLARED, not skipped silently. Every phase of this drill enrolls a
-      # device, and enrollment writes its slot secret to the OS keyring
-      # (secure-storage.ts uses keyctl @u, for the password method as much as for
-      # passkeys). A runner job has no accessible session keyring, so the CLI
-      # fails with `keyctl_read_alloc: Permission denied` four assertions deep
-      # and blames the config store. Without this declaration the drill REDS
-      # rather than passing quietly — that is the point of the variable.
+      # RUNS FOR REAL, inside a session keyring that links the user keyring.
+      # Every phase of this drill enrolls a device, and enrollment writes its
+      # slot secret to the OS keyring (secure-storage.ts uses keyctl @u, for the
+      # password method as much as for passkeys). A runner job's own session
+      # keyring does not link @u, so `keyctl add` succeeds and the read back is
+      # refused with `keyctl_read_alloc: Permission denied`; until 2026-10-13
+      # this step declared that with DRILL_EXPECT_NO_KEYRING and the drill
+      # exited 0 having enrolled nothing. `keyctl session -` gives the drill a
+      # fresh session keyring and `keyctl link @u @s` makes @u possessed for
+      # the drill and every rdc it starts (rdc.sh execs node directly). The
+      # same wrapper as ci-quality.yml's Secure Storage (keyctl) leg. No
+      # declaration is set on purpose: a keyring that is still unreadable
+      # fails the drill's preflight, loudly, instead of skipping it.
       - name: drill transfer
-        env:
-          DRILL_EXPECT_NO_KEYRING: >-
-            GitHub runners give the job no accessible session keyring, so
-            keyctl @u is unwritable and device enrollment cannot run here
         run: |
           set -o pipefail
-          ./run.sh drill transfer --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
+          keyctl session - sh -c 'keyctl link @u @s && exec ./run.sh drill transfer --keep-work' 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
 
       # The chunk-store backup drill: session mint from a licence blob, the
       # quota boundary, lease accounting, idempotent commit, the delete-free
@@ -2861,7 +2973,7 @@ jobs:
         if: failure()
         run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_drill_diagnostics
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: failure()
         with:
           name: test-drills-${{ github.sha }}

@@ -26,7 +26,7 @@ import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
 import { askConfirm } from '../utils/prompt.js';
-import type { HandoffPayload } from './config-remote-handoff.js';
+import type { DeviceCredentials } from './config-remote-handoff.js';
 
 /** GET /configs/enable-requirements (api-token auth, subscription:read) for the token's own user. */
 export interface EnableRequirements {
@@ -129,7 +129,7 @@ export async function checkEnablePrerequisites(apiUrl: string): Promise<EnablePr
 export type PendingRemoteConfig = Omit<RemoteConfig, 'configId'> & { configId?: string };
 
 export async function storeHandoffCredentials(
-  payload: HandoffPayload,
+  payload: DeviceCredentials,
   configName: string
 ): Promise<PendingRemoteConfig> {
   const { getSecureStorage } = await import('../utils/secure-storage.js');
@@ -356,12 +356,12 @@ export async function finalizeEnable(
 }
 
 /**
- * Store-and-finalize for a relay handoff. On any
- * finalize failure the stored credentials are removed so a retry starts clean
- * (mirrors the password path's cleanup). Exported for the seed tests.
+ * Store-and-finalize for a first enrollment, relay handoff or password slot alike. On any
+ * finalize failure the stored credentials are removed so a retry starts clean. Exported for the
+ * seed tests.
  */
 export async function applyHandoff(
-  payload: HandoffPayload,
+  payload: DeviceCredentials,
   configName: string,
   opts: { force?: boolean }
 ): Promise<void> {

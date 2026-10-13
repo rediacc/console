@@ -73,17 +73,36 @@ def push_note(doc):
     return M.N_CI_HOLD % (head, ahead) if ahead else M.N_CI_HOLD_PUSHED % head
 
 
+def receipt_note(doc):
+    """N_RECEIPT_EARLY, or "" while a turbo local batch is still filling (agent/plans/PLAN-turbo-local-first.md D4): no push is due before the batch completes, so "a stop with unpushed commits" is not a reason to build a receipt then."""
+    syspath = _load_syspath()
+    syspath.on_sys_path(syspath.STOP_DIR)
+    import worklist_messages as M  # noqa: PLC0415
+
+    try:
+        import wl_checks  # noqa: PLC0415 -- only a receipt run needs the loop state
+        import wl_core as C  # noqa: PLC0415
+        import wl_prscope  # noqa: PLC0415
+
+        start = C.project_start(doc)
+        root = C.project_root(start)
+        state = wl_prscope.loop_state(
+            root, C.worklist_for(start), str(doc.get("session_id") or ""), gh=False
+        )
+        if wl_checks.local_batch_open(state, root):
+            return ""
+    except Exception:  # noqa: BLE001 -- advisory: an unreadable loop state keeps the note
+        pass
+    return M.N_RECEIPT_EARLY
+
+
 def note_for(doc):
     """The additionalContext text for this payload, or ""."""
     tool_input = doc.get("tool_input")
     cmd = str(tool_input.get("command") or "") if isinstance(tool_input, dict) else ""
     kind = classify(cmd)
     if kind == "receipt":
-        syspath = _load_syspath()
-        syspath.on_sys_path(syspath.STOP_DIR)
-        import worklist_messages as M  # noqa: PLC0415
-
-        return M.N_RECEIPT_EARLY
+        return receipt_note(doc)
     if kind == "push":
         return push_note(doc)
     return ""

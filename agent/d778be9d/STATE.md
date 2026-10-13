@@ -1,15 +1,13 @@
-## SESSION d778be9d 2026-10-07T01:17:11Z
+## SESSION d778be9d 2026-10-13T03:01:05Z
 
-Console PR #598 is a DRAFT on branch 1006-3. Pushed head: 3d46e9af5. CI run 37554728873 is RUNNING on it, with no red seen so far. Plan: agent/plans/PLAN-gh-retry.md, epic #b320552c, and every box G0-G13 is ticked. The account half is rediacc/account#93 (account branch 1006-3, e9c23be, a lockfile freshness bump). The console pointer already points at it, and it merges FIRST at /pr-merge. Both PRs were opened with the PR_BRANCH_DATE_OK=1 prefix.
-
-Two LOCAL commits are held while CI runs (rule: no push into a running run unless it fixes a red):
-- 375655b79 feat(guards): block_unscoped_formatter_run (#ab17ccc1 ticked), which prevents the repo-wide `ruff format` mistake.
-- 3db03c027 republishes agent/pr/1006-3.md and STATE.md.
-The PR body's epic block currently mirrors the OLD committed snapshot (5bbf86794). After the next push, run `.ci/scripts/pr/sync-epic-block.sh 598 1006-3` so the body matches 3db03c027's snapshot.
-
-Open: #dfd933e8 (the CI verdict watch). Wake timer bh3lp7uag is armed. The scratchpad prepush.sh reinstalls the push clone when the lockfile changes; carrycheck.py verifies the carries. Only the check:ci-pytest carry is left (4 host-only skips).
+## Where things stand
+Draft PR rediacc/console#600 on 1008-1 (submodule PRs rediacc/account#96 at 1384f5b, rediacc/renet#117 at ecbcbc4, both pushed). The pushed console head is 9a8c475a0, pushed 2026-10-13 at about 02:52Z.
+CI run 38338925089 on that head was RED on one job: Tests + Infra / Renet (go, 1/2), three pkg/nodeteardown tests. Cause: their fixture process is pid 14464 and the scan skips its own pid, so a test binary running as pid 14464 drops the fixture. Fixed in renet ecbcbc4 (selfPID seam); the console pointer bump is ced5c9c8c, local and not yet pushed. Budget freshness passed in that run.
+Also local and unpushed: session records 3d8994ad6, the reggate ledgers 96359814d.
+Item #ff3ab826: an opus writer sub-agent (id a1937821b4fedafa6) is building `shellscan.output_landings` in scratchpad/ffclone and delivers scratchpad/ff.patch; it stays open for review feedback.
 
 ## Next action
-1. Run `timeout 60 python3 .ci/scripts/ci/ci-trace.py`. If it is RED: fix it as its own commit, then prepush.sh, carrycheck.py and `git push origin 1006-3` at once. If it is GREEN: run prepush, carrycheck and push for the two held commits, then sync-epic-block.sh 598 1006-3, then wait for that run.
-2. Once CI Complete is SUCCESS on the head, wait for Review Complete and answer its summary with wl_prreview.py. Then `wl_review.py --check` must exit 0, then `gh pr ready 598`.
-3. /pr-merge: merge account#93 (rebase), bump private/account to the merged sha and push, wait for the fast-path run, then merge #598 (`gh pr merge --rebase --auto`; ff fallback `git push origin 1006-3:main` with an Operational-Reason if GitHub refuses more than 100 commits).
+1. `worklist.py --review-commit d778be9d`, then `npm run ci:quick` on a still tree, then `npx tsx scripts/ci-runner/run.ts --only <gate>` for each dropped gate, then `TURBO_PUSH_REASON='red-fix: ...' git push origin 1008-1`, then `PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 600 1008-1`.
+2. Watch with `.ci/scripts/ci/ci-trace.py --wait --until-final` in the background; fix each red at its cause.
+3. When ff.patch arrives: check the writer's claims against the artifact, `git apply -3`, hook suite plus the eight hook gates, commit, review-mark, tick #ff3ab826. Hold its push while a CI run on the head is in progress and not red.
+4. At CI Complete green on the head: stop and wait for the operator. Do not merge unasked.

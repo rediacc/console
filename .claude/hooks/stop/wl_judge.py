@@ -17,12 +17,22 @@ import wl_bravedefault as BD
 import wl_claimcheck as CC
 import wl_classsweep as CS
 import wl_defersettle as DS
+import wl_models
 import wl_proc
 import wl_proofcheck as PF
 import worklist_messages as M
 
 # v5: no cap. Kept as a name so the counter file (used only to TELL the judge it is repeating itself) reads clearly.
-JUDGE_MODEL = os.environ.get("WORKLIST_JUDGE_MODEL", "claude-haiku-4-5-20251001")
+# ONE SOURCE: the model id is WK_CLAUDE_HAIKU_MODEL in .ci/config/well-known.env, which the per-commit reviewer reads too. No WORKLIST_JUDGE_MODEL knob any more, and the Python reader ignores an exported WK_ value (only the bash projection honours one): a second place to set it is a second place to forget on the next upgrade.
+
+
+def __getattr__(name):
+    # `wl_judge.JUDGE_MODEL` stays readable by wl_checks, wl_planrec and wl_shapedup, resolved when read (wl_models.haiku_model).
+    if name == "JUDGE_MODEL":
+        return wl_models.haiku_model()
+    raise AttributeError(name)
+
+
 # Measured on 2026-07-29 with --json-schema: haiku warm $0.011-$0.026 per call at 4.9-20.0s; sonnet $0.231 at 12.1s for the same judgement. Haiku it is. MEASURED, not guessed (2026-08-05): at $0.10 the judge died mid-run with
 # subtype=error_max_budget_usd at cost $0.1025, and reported it as the
 # unactionable "judge exited 1: " because the envelope goes to stdout, which the failure path was not reading (see _explain_failed_exit). The cap is a post-hoc between-turns stop, not a ceiling, so it must sit clear of the real cost rather than at it: a trivial prompt in a project cwd already reached $0.1025, while the same prompt in the judge's isolated workdir cost $0.0205. $0.25
@@ -344,7 +354,7 @@ def run_triage(finding, context):
                 "--json-schema",
                 json.dumps(TRIAGE_SCHEMA),
                 "--model",
-                JUDGE_MODEL,
+                wl_models.haiku_model(),
                 # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
                 # model that cannot look must be told the paths instead of inventing them.
                 #
@@ -436,7 +446,7 @@ def _run_structured(label, prompt, schema, extract):
                 "--json-schema",
                 json.dumps(schema),
                 "--model",
-                JUDGE_MODEL,
+                wl_models.haiku_model(),
                 # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
                 # model that cannot look must be told the paths instead of inventing them.
                 #
@@ -538,7 +548,7 @@ def run_admission(message):
                 "--json-schema",
                 json.dumps(ADMISSION_SCHEMA),
                 "--model",
-                JUDGE_MODEL,
+                wl_models.haiku_model(),
                 # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a
                 # model that cannot look must be told the paths instead of inventing them.
                 #
@@ -800,8 +810,11 @@ def run_judge(
     fixset_provenance=None,
     transcript=None,
     fixset_instance=None,
+    local_batch=None,
 ):
     """(verdict_dict, error_string). Exactly one is non-None.
+
+    `local_batch` is `{"finished": k, "batch": n}` while a turbo batch fills on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D6), else None: the prompt then carries M.JUDGE_LOCAL_BATCH and the sanitiser also strips an order to open a PR (LOCAL_BATCH_ORDERS).
 
     `transcript` is the lead's transcript path: an outstanding sweep or proof demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced, wl_proofcheck.discharge_if_evidenced).
 
@@ -861,6 +874,12 @@ def run_judge(
         "citations": citations or "  (none cited)",
         "traps": "\n".join("  - " + h for h in (traps or [])) or "  (none recorded)",
     } + (extra or "")
+    if local_batch:
+        # After `extra`, never inside it: is_fix_stop and judge_schema_for read `extra`, and this paragraph asks for no schema field.
+        prompt += M.JUDGE_LOCAL_BATCH % {
+            "finished": int(local_batch.get("finished") or 0),
+            "batch": int(local_batch.get("batch") or 1),
+        }
     env = dict(os.environ)
     # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not suppress it. Without this line the hook forks itself forever.
     env["STOPHOOK_CHILD"] = "1"
@@ -873,7 +892,7 @@ def run_judge(
         "--json-schema",
         json.dumps(judge_schema_for(extra)),
         "--model",
-        JUDGE_MODEL,
+        wl_models.haiku_model(),
         # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a model that
         # cannot look must be told the paths instead of inventing them.
         #
@@ -992,7 +1011,7 @@ def run_judge(
             ]
     if not fired:
         out = settle_wait_only_continue(out)
-    return sanitize_next_action(out), None
+    return sanitize_next_action(out, local_batch=bool(local_batch)), None
 
 
 # A `continue` whose ONLY order is to wait contradicts itself: waiting on background work is what a legitimate stop does, and the harness wakes the session when that work exits. Seen 2026-10-05: verdict "continue", reason "Stop gate confirms pure background wait is legitimate; wake timer armed", next_action "Await worker output or timer expiry", which blocked a stop the judge's own reason allowed. Applied only when no rule placed an order this stop (a rule's order is real work and must survive), and only on the model's own next_action.
@@ -1034,8 +1053,15 @@ FORBIDDEN_ORDERS = (
 DS.check_catalog(FORBIDDEN_ORDERS)
 
 
-def sanitize_next_action(out):
-    """Strip an operator-only directive from a judge verdict, in place.
+# The orders a filling turbo batch forbids (agent/plans/PLAN-turbo-local-first.md D6): the PR opens once, when the batch completes, and the hook's own LOOP NEXT block says when. Applied only while `local_batch` is set, so under `turbo_push: pr` (and turbo off) "open the draft PR" stays a legitimate next action.
+LOCAL_BATCH_ORDERS = (
+    (re.compile(r"\bgh\s+pr\s+create\b", re.IGNORECASE), "opening a PR"),
+    (re.compile(r"\bopen\s+(?:a|the)\s+(?:draft\s+)?PR\b", re.IGNORECASE), "opening a PR"),
+)
+
+
+def sanitize_next_action(out, local_batch=False):
+    """Strip an operator-only directive from a judge verdict, in place, and with `local_batch` an order to open a PR before the batch completes (LOCAL_BATCH_ORDERS).
 
     Matches on the ORDER, not on politeness: "merge 563" and "you should probably merge 563" are the same instruction. Deliberately narrow about `release`, since "release notes" and "the release channel" are ordinary nouns a legitimate next action may name, while "cut the release" is an order.
     """
@@ -1046,4 +1072,9 @@ def sanitize_next_action(out):
         if pattern.search(action):
             out["next_action"] = M.V_JUDGE_ORDER_REJECTED % (label, action[:120])
             return out
+    if local_batch:
+        for pattern, _label in LOCAL_BATCH_ORDERS:
+            if pattern.search(action):
+                out["next_action"] = M.V_JUDGE_BATCH_ORDER_REJECTED % (action[:120],)
+                return out
     return out

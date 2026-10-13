@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/write-release-sentinel.sh`.
 
-Writes the `.released` commit sentinel, which is the ATOMIC COMMIT POINT of the release pipeline: after this, `write_once_guard` in `upload-to-r2.sh` refuses to overwrite the bytes and the drift gate requires a matching git tag. The twin's header carries the contract; this docstring records only what the PORT decided.
+Writes the `.released` commit sentinel, which is the ATOMIC COMMIT POINT of the release pipeline: after this, `deploy.write_once_guard` refuses to overwrite the bytes and the drift gate requires a matching git tag. The twin's header carries the contract; this docstring records only what the PORT decided.
 
-THE VALIDATOR LIBRARY IS NOT RE-PORTED HERE. `rediacc_ci.core. release_state_validator` is already the Python side of `.ci/scripts/lib/release-state-validator.sh`, so `binary_count` and `get_sentinel_payload` come from there rather than being spelled a second time. One consequence is visible in the differential and named rather than hidden: that module's `_log_error` deliberately
-omits `common.sh`'s `✗ ` glyph (its own docstring says so), while the twin's `log_error` emits it. The two stderr streams therefore differ by exactly that prefix on the `rsv_binary_count` failure path, and `test_deploy_write_release_sentinel` normalises that one prefix and nothing else.
+THE VALIDATOR LIBRARY IS NOT RE-PORTED HERE. `rediacc_ci.core.release_state_validator` is the Python side of the deleted bash library `release-state-validator.sh`, so `binary_count` and `get_sentinel_payload` come from there rather than being spelled a second time. Its `_log_error` goes through `rediacc_ci.log`, so the error lines carry `common.sh`'s `✗ ` glyph exactly as the twin's did.
 
 `aws` AND `jq` ARE SHELLED OUT TO. `aws` because it is a credentialed tool with a real remote side, which is precisely the kind the campaign fakes on `PATH` rather than reimplements; `jq` because the payload IS jq's bytes. `jq -nc`
 with five `--arg`s produces a specific key order and a specific escaping, and a

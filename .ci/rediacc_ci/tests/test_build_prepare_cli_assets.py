@@ -22,6 +22,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-prepare-cli-assets.observations.jsonl`.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -32,6 +33,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import prepare_cli_assets as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -40,7 +42,6 @@ ROOT = paths.repo_root()
 
 TWIN_REL = ".ci/scripts/build/prepare-cli-assets.sh"
 PORT_REL = ".ci/rediacc_ci/build/prepare_cli_assets.py"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 
 VENDORED = (
@@ -110,9 +111,10 @@ def fixture(
     package_json: str = '{"name": "@rediacc/cli", "version": "9.9.9"}\n',
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    twin_files = (TWIN_REL,) if diff.regolden_mode(TWIN_REL) == "bash" else ()
+    for rel in (*twin_files, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -222,10 +224,20 @@ def _reset(root: pathlib.Path) -> None:
         generated.unlink()
 
 
-def run_both(root: pathlib.Path, **kw):
+def _old_side(root: pathlib.Path, **kw):
+    """The twin's whole answer: process, call log and produced files. It comes from the golden (PLAN-retire-bash-oracles B3); this is how it was recorded."""
     _reset(root)
-    old, old_calls = _run(root, "old", **kw)
-    old_files = _artifacts(root)
+    proc, calls = _run(root, "old", **kw)
+    return proc, calls, _artifacts(root)
+
+
+def run_both(root: pathlib.Path, **kw):
+    old, old_calls, old_files = diff.twin_result(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _old_side(root, **kw),
+        work=(str(root), str(root.parent)),
+    )
     _reset(root)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)
@@ -625,3 +637,18 @@ def test_a_planted_defect_is_caught_only_by_the_artifacts(tmp_path) -> None:
     new_meta = json.loads(new_t[2]["packages/cli/dist/assets/renet-metadata.json"])
     assert sorted(old_meta["binaries"]) == ["amd64", "arm64"]
     assert sorted(new_meta["binaries"]) == ["linux-amd64", "linux-arm64"]
+
+
+def test_the_digest_of_a_file_whose_path_holds_a_backslash_carries_no_escape_mark(tmp_path):
+    """GNU sha256sum prefixes its line with a backslash for such a name; the digest must not keep it."""
+    odd = tmp_path / "back\\slash"
+    odd.mkdir()
+    target = odd / "renet-windows-amd64"
+    target.write_bytes(b"asset bytes")
+    raw = subprocess.run(
+        ["sha256sum", str(target)], capture_output=True, text=True, check=True
+    ).stdout
+    assert raw.startswith("\\"), "control: the tool does mark this name, or the test proves nothing"
+    digest, error = port.file_sha256(target)
+    assert error is None
+    assert digest == hashlib.sha256(b"asset bytes").hexdigest()

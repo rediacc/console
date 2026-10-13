@@ -393,6 +393,30 @@ EDGE_CASES = [
     ("L12 a gh after a -C is not in the submodule", "git -C private/renet fetch; gh pr merge 3"),
     ("S1 a space-indented marker does not close", "cat <<EOF\n  EOF\ngh pr merge 1 --admin\nEOF"),
     ("S2 a marker with a dash is the whole word", "cat <<END-X\nEND\ngh pr merge 1 --admin\nEND-X"),
+    # -- #ec63ff8c (2026-10-09): launchers are walked, an ssh remote command is not lifted --------
+    ("ec63 npx with a flag launches gh", "npx -y gh pr merge 1 --admin"),
+    ("ec63 npx -c is a shell string", "npx -c 'gh pr ready 2'"),
+    ("ec63 sshpass launches ssh", "sshpass -p x ssh prod-1 docker ps"),
+    (
+        "ec63 every find -exec is lifted",
+        r"find . -name x -exec true {} \; -exec gh pr edit 3 --body x \;",
+    ),
+    ("ec63 a quoted ssh remote command stays remote", 'ssh prod-1 "gh pr merge 1 --admin"'),
+    # -- #32e75fa4 (review 4aad4597.2): every npm option that takes a value is skipped with it ----
+    ("4aad npx --loglevel takes a value", "npx --loglevel silent gh pr merge 1 --admin"),
+    ("4aad npx -C is --prefix and takes a value", "npx -C . gh pr merge 1 --admin"),
+    ("4aad npx --no-yes takes none", "npx --no-yes gh pr merge 1 --admin"),
+    # -- #31ed6c5f: a wrapper is a command the walk found; npm's own parse finds a launch ----------
+    ("31ed a quoted sh -c is an echo argument", """echo "sh -c 'gh pr merge 1 --admin'" x"""),
+    ("31ed a quoted eval is an echo argument", 'echo "eval gh pr merge 1 --admin"'),
+    (
+        "31ed a real wrapper after a quoted mention",
+        """echo "sh -c x"; sh -c 'gh pr merge 1 --admin'""",
+    ),
+    ("31ed a payload stops at its own command", 'sh -c true && echo "x; gh pr merge 1 --admin"'),
+    ("31ed npx with an abbreviated value option", "npx --logl silent gh pr merge 1 --admin"),
+    ("31ed npm exec is a launcher", "npm exec -- gh pr merge 1 --admin"),
+    ("31ed an npm option before x", "npm --logl silent x gh pr merge 1 --admin"),
 ]
 
 

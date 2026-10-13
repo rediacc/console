@@ -232,12 +232,12 @@ Publishing is not "run the sync script". It is four steps, and skipping any one 
 
 1. **Stage** - `video_pipeline/run.sh --publish-www --langs a,b` copies rendered solution
 videos into `packages/www/public/assets/videos/solutions/<lang>/`. The sync script reads that directory and nothing else. **Trap:** a locale rendered but not staged uploads nothing and the sync still exits 0. Verified: ar/et had 63 files each sitting only in the pipeline's `processing/` dir, and a bare sync would have published neither.
-2. **Upload** - `.ci/scripts/deploy/sync-media-to-r2.sh [--audio-only|--tutorials-only|--solutions-only]`.
+2. **Upload** - `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2 [--audio-only|--tutorials-only|--solutions-only]`.
 Always `--dry-run` first and count; verify afterwards by re-running the dry run, which must report zero pending. Do not trust the exit code alone.
 3. **Manifest** - `packages/www/scripts/generate-video-manifest.ts`.
-**⚠ It is a SCAN, not a merge.** It rebuilds the manifest from whatever media is on disk, and media is gitignored, so on a normal checkout most locales are absent. Running it blind DROPPED ten locales from 21 slugs to 2-3 each (-5361 lines). Always `sync-media-from-r2.sh` first so the tree is complete, then regenerate.
-4. **Purge** - `.ci/scripts/deploy/purge-media-cache.sh` (needs `CLOUDFLARE_API_TOKEN`, or
-`CF_GLOBAL_API_KEY` + `CF_EMAIL`). **Verify against the BUCKET, not the exit code**, and export `AWS_DEFAULT_REGION=auto`: the AWS CLI otherwise inherits a real region from ambient config and `list-objects-v2` returns an EMPTY list that reads as an empty bucket. The bucket is `rediacc-www-media`, hardcoded at `sync-media-to-r2.sh:35`; nothing reads a bucket name from the
+**⚠ It is a SCAN, not a merge.** It rebuilds the manifest from whatever media is on disk, and media is gitignored, so on a normal checkout most locales are absent. Running it blind DROPPED ten locales from 21 slugs to 2-3 each (-5361 lines). Always `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2` first so the tree is complete, then regenerate.
+4. **Purge** - `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.purge_media_cache` (needs `CLOUDFLARE_API_TOKEN`, or
+`CF_GLOBAL_API_KEY` + `CF_EMAIL`). **Verify against the BUCKET, not the exit code**, and export `AWS_DEFAULT_REGION=auto`: the AWS CLI otherwise inherits a real region from ambient config and `list-objects-v2` returns an EMPTY list that reads as an empty bucket. The bucket is `rediacc-www-media`, hardcoded at `.ci/rediacc_ci/deploy/sync_media_to_r2.py:94`; nothing reads a bucket name from the
 environment. (Corrected 2026-09-02: this line claimed `R2_MEDIA_BUCKET` was not in `private/account/.env`. It was, under a comment saying publish.py and the sync scripts read it. Neither held, and the key is now deleted.) **Without the PURGE** the CDN keeps serving pre-publish copies, and `check-tutorial-caption-sync` - which fetches from `media.rediacc.com` - reports a large,
 entirely false failure set. This produced a bogus 53-combo report. **After a publish, purge before believing any mass failure.** Prove the cache is fresh by fetching one `words.json` and diffing it against the local file.
 

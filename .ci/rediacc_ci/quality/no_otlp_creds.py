@@ -68,7 +68,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.well_known import RENET_REPO
 
-# The dev build produced by `build.sh dev`, and the CI release builds produced by `.ci/scripts/build/build-renet.sh`. The twin checks whichever exists and says "it's fine to have just one".
+# The dev build produced by `build.sh dev`, and the CI release builds produced by `python3 -m rediacc_ci.build.build_renet`. The twin checks whichever exists and says "it's fine to have just one".
 DEV_RENET = ("private", "renet", "bin", "renet")
 RELEASE_BIN_DIR = ("private", "bin")
 RELEASE_PREFIX = "renet-"
@@ -94,12 +94,13 @@ BASE64_LINE_RE = re.compile(r"^[A-Za-z0-9+/=]{20,}$")
 # of a literal apostrophe inside a single-quoted shell pattern.
 BASIC_LITERAL_RE = re.compile(r"[\"']Basic [A-Za-z0-9+/=]{20,}[\"']")
 
-# The em dash in these two lines is the TWIN'S BYTE, not authored prose, and both strings are compared against the twin's stdout by the shadow differential. It is written as an escape so this source file carries none.
+# The em dash in NO_RENET_WARN is the TWIN'S BYTE, not authored prose, and the string is kept identical to what the retired twin printed (the committed ledger `.ci/shadow/w7p2-otlp-creds.observations.jsonl` records that stdout); no differential runs against it any more. It is written as an escape so this source file carries none. NO_RENET_HINT departs from the twin on purpose: it names the Python port of the deleted build-renet.sh.
 NO_RENET_WARN = (
     "no renet binaries found at private/renet/bin or private/bin \u2014 skipping renet checks"
 )
 NO_RENET_HINT = (
-    "build with ./build.sh dev or .ci/scripts/build/build-renet.sh before running this check"
+    "build with ./build.sh dev or PYTHONPATH=.ci python3 -m rediacc_ci.build.build_renet "
+    "before running this check"
 )
 
 
@@ -267,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error("")
         log.error("%d credential leak(s) detected. Do NOT ship these artifacts." % errors)
         log.error("Check for accidentally-reintroduced build-time injection in")
-        log.error("private/renet/build.sh, .ci/scripts/build/build-renet.sh, or")
+        log.error("private/renet/build.sh, rediacc_ci/build/build_renet.py, or")
         log.error("packages/cli/bundle.mjs.")
         return 1
 

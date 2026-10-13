@@ -7,6 +7,7 @@ import {
   TEST_PASSWORD,
 } from '../src/constants';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { log } from '../src/utils/log';
 
 /**
  * PostgreSQL Fork Isolation Tests
@@ -723,8 +724,7 @@ test.describe
     test('2. calculate parent data hash before fork', async () => {
       parentHashBeforeFork = await runner.getUsersDataHash(parentContainerName, parentNetworkId);
       expect(parentHashBeforeFork).toBeTruthy();
-      // eslint-disable-next-line no-console
-      console.log(`Parent hash before fork: ${parentHashBeforeFork}`);
+      log(`Parent hash before fork: ${parentHashBeforeFork}`);
     });
 
     test('3. create fork', async () => {
@@ -750,8 +750,7 @@ test.describe
 
     test('4. verify fork hash matches parent hash before modifications', async () => {
       const forkHash = await runner.getUsersDataHash(forkContainerName, forkNetworkId);
-      // eslint-disable-next-line no-console
-      console.log(`Fork hash: ${forkHash}`);
+      log(`Fork hash: ${forkHash}`);
       expect(forkHash).toBe(parentHashBeforeFork);
     });
 
@@ -764,8 +763,7 @@ test.describe
       );
 
       const forkHashAfter = await runner.getUsersDataHash(forkContainerName, forkNetworkId);
-      // eslint-disable-next-line no-console
-      console.log(`Fork hash after modification: ${forkHashAfter}`);
+      log(`Fork hash after modification: ${forkHashAfter}`);
       expect(forkHashAfter).not.toBe(parentHashBeforeFork);
     });
 

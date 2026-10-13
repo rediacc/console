@@ -203,7 +203,19 @@ def repo(tmp_path: pathlib.Path) -> dict:
     return {"root": root, "fix": fix, "stray": stray, "tmp": tmp_path}
 
 
-ITEMS = {"abcdef12": (" ", "F2 of the PR review"), "deadbe00": ("x", "closed one")}
+ASKED = "ASKED:2026-10-08T10:00Z"
+ITEMS = {
+    "abcdef12": (" ", "pr:%d/F3 needs the operator" % PR, "operator-only"),
+    "deadbe00": ("x", "closed one", "operator-only"),
+    "c0ffee00": (" ", "pr:%d/F3 is small" % PR, "inline"),
+    "f33f33f3": (" ", "pr:%d/F33 needs the operator" % PR, "operator-only"),
+    "0dead000": ("~", "pr:%d/F3 removed" % PR, "operator-only"),
+}
+
+
+def asked_ok(text: str) -> bool:
+    """Stands in for the transcript check: only the operator's answer at ASKED's minute matches."""
+    return ASKED in text
 
 
 def good_lines(fix: str) -> list[str]:
@@ -211,14 +223,16 @@ def good_lines(fix: str) -> list[str]:
         "# summary: %d" % SUMMARY_ID,
         "F1 fixed %s" % fix,
         "F2 not-a-bug | the helper name matches a.py:3 and the call sites",
-        "F3 deferred #abcdef12",
+        "F3 waived #abcdef12 %s" % ASKED,
     ]
 
 
 def answer(repo: dict, gh: FakeGh, lines: list[str]) -> int:
     path = repo["tmp"] / "dispositions.txt"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return P.cmd_answer(PR, path, gh, repo_root=repo["root"], items=lambda: ITEMS)
+    return P.cmd_answer(
+        PR, path, gh, repo_root=repo["root"], items=lambda: ITEMS, asked_ok=asked_ok
+    )
 
 
 # ---- the selector is review_comments', by value ----
@@ -244,6 +258,39 @@ def test_summary_verdict_agrees_with_review_comments(findings):
     theirs = RC.summary_verdict(gh.issue)
     assert ours[0] == theirs[0]
     assert (ours[1] or {}).get("id") == (theirs[1] or {}).get("id")
+
+
+def test_a_deferring_reply_is_the_deferred_verdict_in_both_copies():
+    """D6: a reply that defers a finding exists and still fails; the gate and this tool rule alike."""
+    gh = FakeGh(inline=False)
+    gh.issue.append(
+        {
+            "id": 4242,
+            "user": ME,
+            "body": "Answer to #issuecomment-%d: F1 deferred to worklist item #abcdef12, the rest fixed."
+            % SUMMARY_ID,
+            "created_at": "2026-10-03T12:00:00Z",
+        }
+    )
+    assert RC.summary_verdict(gh.issue)[0] == "deferred"
+    assert P.summary_verdict(gh.issue)[0] == "deferred"
+    state = P.check_state(None, gh)
+    assert state["rc"] == 1, state
+    assert "defers a finding" in state["reason"], state
+    # CONTROL: the same reply answering with a fix is answered and passes.
+    gh.issue[-1]["body"] = "Answer to #issuecomment-%d: F1 fixed in %s, the rest fixed." % (
+        SUMMARY_ID,
+        HEAD,
+    )
+    assert P.summary_verdict(gh.issue)[0] == "answered"
+    assert P.check_state(None, gh)["rc"] == 0
+
+
+def test_the_draft_offers_a_waiver_and_no_deferral(capsys):
+    assert P.cmd_draft(None, FakeGh()) == 0
+    out = capsys.readouterr().out
+    assert "waived #<item> ASKED:" in out, out
+    assert "deferred" not in out, out
 
 
 def test_module_reads_no_environment():
@@ -618,26 +665,60 @@ def test_answer_refuses_todo_left_in(repo, capsys):
     assert gh.posts() == []
 
 
-@pytest.mark.parametrize(
-    ("item", "needle"), [("0badc0de", "does not exist"), ("deadbe00", "is not open")]
-)
-def test_answer_refuses_bad_deferral(repo, capsys, item, needle):
+@pytest.mark.parametrize("item", ["abcdef12", "0badc0de"])
+def test_answer_refuses_a_deferral_with_the_fix_order(repo, capsys, item):
+    """PLAN-deferred-findings-block-merge D6: a deferral is no answer, whatever its item."""
     gh = FakeGh()
     lines = good_lines(repo["fix"])
     lines[3] = "F3 deferred #%s" % item
+    assert answer(repo, gh, lines) == 1
+    err = capsys.readouterr().err
+    assert "F3: deferred is retired" in err, err
+    assert "pr:%d/F3" % PR in err, err
+    assert gh.posts() == []
+
+
+@pytest.mark.parametrize(
+    ("disposition", "needle"),
+    [
+        ("waived #0badc0de %s" % ASKED, "does not exist"),
+        ("waived #0dead000 %s" % ASKED, "does not exist"),
+        ("waived #deadbe00 %s" % ASKED, "does not name pr:7/F3"),
+        ("waived #c0ffee00 %s" % ASKED, "not operator-only"),
+        ("waived #f33f33f3 %s" % ASKED, "does not name pr:7/F3"),
+        ("waived #abcdef12 ASKED:2026-10-08T10:06Z", "matches no AskUserQuestion answer"),
+        ("waived #abcdef12", "is not fixed <sha40>"),
+    ],
+)
+def test_answer_refuses_a_bad_waiver(repo, capsys, disposition, needle):
+    gh = FakeGh()
+    lines = good_lines(repo["fix"])
+    lines[3] = "F3 %s" % disposition
     assert answer(repo, gh, lines) == 1
     assert needle in capsys.readouterr().err
     assert gh.posts() == []
 
 
-def test_an_unreadable_worklist_refuses_every_deferral_as_unreadable(repo):
+def test_a_waiver_without_an_asked_check_is_refused(repo):
+    errors = P.validate({1: "waived #abcdef12 %s" % ASKED}, 1, repo["root"], lambda: ITEMS)
+    assert errors, "no asked_ok means the operator's answer is unverified"
+
+
+def test_an_unreadable_worklist_refuses_every_waiver_as_unreadable(repo):
     calls = []
 
     def broken() -> dict:
         calls.append(1)
         raise OSError("store locked")
 
-    errors = P.validate({1: "deferred #0badc0de", 2: "deferred #deadbe00"}, 2, repo["root"], broken)
+    errors = P.validate(
+        {1: "waived #0badc0de %s" % ASKED, 2: "waived #deadbe00 %s" % ASKED},
+        2,
+        repo["root"],
+        broken,
+        asked_ok,
+        PR,
+    )
     assert errors == [
         "F1: the worklist cannot be read (store locked)",
         "F2: the worklist cannot be read (store locked)",
@@ -666,7 +747,8 @@ def test_answer_reply_cites_summary_and_clears_review_comments(repo):
     body = next(a for a in top[0] if a.startswith("body=")).split("=", 1)[1]
     assert "#issuecomment-%d" % SUMMARY_ID in body
     assert "| F1 | high | `a.py:2` | guard the empty list | fixed in %s |" % repo["fix"] in body
-    assert "deferred to worklist item #abcdef12" in body
+    assert "waived by the operator (%s), worklist item #abcdef12" % ASKED in body
+    assert "deferred to worklist item" not in body
     summary = RC.newest_summary(gh.issue)
     assert summary is not None
     assert summary["id"] == SUMMARY_ID
@@ -745,3 +827,28 @@ def test_escaped_fence_check_and_draft(capsys):
 def test_escaped_fence_pattern_equals_review_comments():
     assert P.FENCE_OPENER.pattern == RC.FENCE_OPENER.pattern
     assert RC.findings_fence_is_empty(ESCAPED_EMPTY_BODY) is True
+
+
+def test_the_default_asked_check_reads_the_lead_transcript(tmp_path, monkeypatch):
+    """default_asked_ok resolves this session's transcript through wl_roster and matches with wl_checks._asked_in_transcript."""
+    roster = wlfix.import_wl("wl_roster")
+    rows = [
+        {
+            "timestamp": "2026-10-08T10:00:20+00:00",
+            "message": {"content": [{"type": "tool_use", "name": "AskUserQuestion", "id": "a1"}]},
+        },
+        {
+            "timestamp": "2026-10-08T10:00:20+00:00",
+            "message": {"content": [{"type": "tool_result", "tool_use_id": "a1"}]},
+        },
+    ]
+    (tmp_path / "sess.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        roster, "session_subagents_dir", lambda *_a: tmp_path / "sess" / "subagents"
+    )
+    assert P.default_asked_ok(ASKED) is True
+    assert P.default_asked_ok("ASKED:2026-10-08T10:30Z") is False
+    monkeypatch.setattr(roster, "session_subagents_dir", lambda *_a: None)
+    assert P.default_asked_ok(ASKED) is False

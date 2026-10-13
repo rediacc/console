@@ -8,8 +8,8 @@
  * TWO PLACEHOLDERS, TWO ANSWERS:
  *
  *   `.tutorial-video-container` -- emitted by remark-tutorial-embed.ts when a docs page
- *     sets `useVideoPlayer: true`. A bare div with no poster, so there is nothing for a
- *     visitor to click; it builds in place when an IntersectionObserver says it is near.
+ *     sets `useVideoPlayer: true`. Carries a poster and play button
+ *     and `data-click-to-load="inline"`: the player builds in place on the first press.
  *
  *   `.video-player-mount` -- emitted by SPSolutionVideo.astro for the solution, persona
  *     and homepage videos. Carries a server-rendered poster and `data-click-to-load`, and
@@ -21,23 +21,33 @@
  * remains active for any page that does not opt in.
  */
 
-import { mountPlayers } from './tutorial-video-mount';
+import { mountPlayers, whenVideoAppears } from './tutorial-video-mount';
 import { openTheater } from './video-theater';
 
+/** Build the player in place and start it. A blocked play() (the chunk fetch can outlast the gesture) leaves the built, paused player, which is the fallback worth having. */
+async function playInline(el: HTMLElement) {
+  await mountPlayers([el]);
+  const video = await whenVideoAppears(el);
+  await video?.play().catch(() => {});
+}
+
+/** The press handler for a docs mount. A failed chunk fetch (offline, a blip) would otherwise leave a dead button, because the listener fires once: it is re-armed so the next press retries. */
+export function armInline(el: HTMLElement) {
+  el.addEventListener(
+    'click',
+    () => {
+      playInline(el).catch(() => armInline(el));
+    },
+    { once: true }
+  );
+}
+
 /**
- * HYDRATE WHEN THE PLAYER IS ACTUALLY IN VIEW, not on DOMContentLoaded.
- *
- * plyr plus the player is 122,110 B, and it was reaching every visitor of every
- * locale homepage the moment the document parsed -- `check:ci-client-bundle-budget`
- * measures the homepage at 576,294 B against a 500,000 B target, and this chunk is
- * essentially the whole overage.
- *
- * `rootMargin` is deliberately generous: the point is to skip the download for a
- * visitor who never scrolls to the video, not to make someone who does scroll wait
- * for it. Loading starts while the mount is still a screen away.
- *
- * A browser without IntersectionObserver mounts immediately, which is the old
- * behaviour and the safe direction to fail.
+ * EVERY MOUNT IS CLICK-TO-LOAD. The Video.js skin plus the player is about 272 KB, and
+ * it used to reach every visitor the moment the document parsed. A visibility observer
+ * did not help: measured 2026-10-08, every solution, homepage and docs mount sits within
+ * 600px of the fold, so the observer fired on load and deferred nothing. Both producers
+ * now render a poster with `data-click-to-load`, and nothing builds before a press.
  */
 function scheduleHydration() {
   const containers = Array.from(
@@ -51,9 +61,10 @@ function scheduleHydration() {
   //
   // An IntersectionObserver cannot help these: measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so the observer fires on load and defers nothing. The visitor is looking at the poster already; the 122 KB player only has to exist once they ask for it.
   //
-  // The poster markup is server-rendered by SPSolutionVideo.astro, so the frame paints immediately -- sooner than before, when it waited for the player chunk to arrive and paint it. Mounts WITHOUT a poster (the docs `.tutorial-video-container`, emitted by remark-tutorial-embed.ts as a bare div) keep the observer path below, because there is nothing for a visitor to click.
-  const clickToLoad = containers.filter((el) => el.dataset.clickToLoad !== undefined);
-  const observed = containers.filter((el) => el.dataset.clickToLoad === undefined);
+  // The poster markup is server-rendered by SPSolutionVideo.astro, so the frame paints immediately -- sooner than before, when it waited for the player chunk to arrive and paint it. Both producers set `data-click-to-load`; a mount without it is markup no producer emits, and it stays a poster-less placeholder.
+  const clickToLoad = containers.filter((el) => el.dataset.clickToLoad === '');
+  // DOCS TUTORIALS: the same click-to-load, but the player is built IN PLACE. The docs column is up to 960px wide and the player carries its own fullscreen button, so the theater adds nothing there. Measured 2026-10-08: with the old bare-div observer path, every docs tutorial visit fetched the 272 KB Video.js chunk and the 82 KB skin on load, because the mount sits within 600px of the fold.
+  const inline = containers.filter((el) => el.dataset.clickToLoad === 'inline');
 
   // CLICK OPENS THE THEATER; it no longer builds the player in place.
   //
@@ -66,25 +77,9 @@ function scheduleHydration() {
     el.addEventListener('click', () => openTheater(el));
   });
 
-  if (observed.length === 0) return;
-
-  if (typeof IntersectionObserver === 'undefined') {
-    void mountPlayers(observed);
-    return;
-  }
-
-  const io = new IntersectionObserver(
-    (entries, observer) => {
-      const visible = entries.filter((e) => e.isIntersecting).map((e) => e.target as HTMLElement);
-      if (visible.length === 0) return;
-      visible.forEach((el) => observer.unobserve(el));
-      void mountPlayers(visible);
-    },
-    { rootMargin: '600px 0px' }
-  );
-  observed.forEach((el) => {
+  inline.forEach((el) => {
     el.dataset.observed = 'true';
-    io.observe(el);
+    armInline(el);
   });
 }
 

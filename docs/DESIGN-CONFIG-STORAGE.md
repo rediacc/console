@@ -137,24 +137,69 @@ The `passkey_secret` is stored in **platform-native secure storage**, not in the
 
 | Platform | Mechanism | Headless? | Persists Reboot? | Protection |
 |----------|-----------|-----------|-----------------|------------|
-| Linux | Kernel keyring (`keyctl`) | Yes | No (memory) | Kernel-level isolation, per-user, supports timeouts |
+| Linux | Kernel keyring (`keyctl`, user keyring `@u`) | Yes | No (memory) | Kernel-level isolation, per-user, no expiry set |
 | macOS | Keychain (`security`) | Yes | Yes (encrypted) | OS-level encryption, optional Touch ID |
-| Windows | DPAPI (`ProtectedData`) | Yes | Yes (encrypted) | Tied to user's Windows login credentials |
-| Fallback | Token file (0o600) | Yes | Yes | File permissions only (warning logged) |
+| Windows | DPAPI (`ProtectedData`) | Yes | Yes (encrypted) | Tied to the Windows login credentials of the user |
+| Opt-in (`REDIACC_SECRET_STORE=file`) | `secure-keys.json` in the CLI state directory (0o600) | Yes | Yes | File permissions only, plaintext, never selected on its own |
 
 ```bash
-# Linux — store in kernel keyring
-keyctl add user "$storageKeyId" "$passkey_secret" @u
-keyctl timeout <key-id> 86400   # 24h auto-expiry
+# Linux: store in the kernel user keyring, with no timeout; the payload is read from stdin
+printf '%s' "$passkey_secret" | keyctl padd user "$storageKeyId" @u
 
-# macOS — store in Keychain
-security add-generic-password -a "$storageKeyId" -s rdc-config -w "$passkey_secret"
+# macOS: store in the default Keychain; the command line is read from stdin, the value armoured
+printf 'add-generic-password -a %s -s rdc-config -U -w rdc-b64.1.%s\n' \
+  "$storageKeyId" "$(printf '%s' "$passkey_secret" | base64)" | security -i
 
-# Windows — encrypt with DPAPI, save to file
-powershell -c "[Convert]::ToBase64String(
-  [Security.Cryptography.ProtectedData]::Protect(...))"
-# Saved to %LOCALAPPDATA%\rediacc\keys\<storageKeyId>.dpapi
+# Windows: encrypt with DPAPI (CurrentUser scope); base64 in on stdin, base64 out on stdout
+powershell.exe -NonInteractive -NoProfile -Command "<fixed script>"
+# Saved to %LOCALAPPDATA%\rediacc\keys\<sha256 of storageKeyId>.dpapi
 ```
+
+The implementation is `packages/cli/src/utils/secure-storage.ts`. Seven properties of it are part of this design:
+
+- **No expiry on Linux.** The key is added to `@u` without `keyctl timeout`. It lives until it is deleted, or until the kernel discards the user keyring (the last process of the UID exits, or the machine reboots). A missing key is fatal for `deriveCek()` and the device enrolls again.
+- **A native backend is proven before it is used.** Selection stores, reads back and removes a throwaway key (`rdc:probe:<pid>-<random>`) through the same operations a real secret takes, once per process. "The tool runs" is not the test: `keyctl show @u` passed on a keyring that then refused every read.
+- **The Linux read needs possession.** A process reads a key in `@u` only when its session keyring links `@u`. A login session does; a systemd service with a private keyring, and a CI runner job, do not. There `keyctl add` succeeds and the read is refused, so the proof fails and the CLI refuses. The CLI does not run `keyctl link @u @s` itself: the link lands in a session keyring the whole session shares, outlives the CLI, and hands every process of that session possession of every key in `@u`, which a service manager that isolated a unit chose against. The refusal names the command.
+- **Nothing falls back on its own** (operator ruling 2026-10-13). On every platform, a native backend that fails its proof, a native tool that cannot be run (`keyctl`, `security`, `powershell`), and a platform with no native backend end the same way: `SecureStorageUnavailableError`, raised before anything is stored, naming what is missing and the opt-in. `config remote enable` checks the storage before any portal link is printed.
+- **The file backend is an opt-in, and one variable.** `REDIACC_SECRET_STORE=file` selects the file backend, and only it does: the secret is then plaintext in `secure-keys.json` under the state directory (`$XDG_STATE_HOME/rediacc` on Linux), at mode 0o600, and one notice per process on stderr says so. The variable is a choice of backend, not a permission to fall back: with it set the file backend is used even where the native one works. Any other value is refused.
+- **Keys are allowlisted.** `storageKeyId` arrives from the server, so every backend refuses a key outside `[A-Za-z0-9:_-]{1,200}` before any native tool sees it. A key reaches `keyctl` and `security` as one argument or one token, and never reaches PowerShell at all: on Windows it only names the file.
+- **No secret on a command line.** Every backend hands the value to its tool on standard input. An argument is readable by other processes of the machine for the life of the child (`ps`, procfs) and is what process-creation auditing records; a pipe is neither.
+
+#### Per-OS storage contract
+
+Every backend returns exactly the string it was given, for any string. What differs is where the bytes rest and how they travel.
+
+| | Linux (`keyctl`) | macOS (`security`) | Windows (`powershell.exe`) |
+|---|---|---|---|
+| Location | Key of type `user` in `@u`, described by the `storageKeyId` | Generic-password items of the default keychain, account `storageKeyId`, service `rdc-config` (and `rdc-config:N` for part N) | `%LOCALAPPDATA%\rediacc\keys\<sha256 of storageKeyId>.dpapi` |
+| Stored form | The UTF-8 bytes of the value | `rdc-b64.<parts>.<base64 of the UTF-8 bytes>`, split at 3072 base64 characters per item | JSON `{"key", "blob"}`: the `storageKeyId` and the base64 DPAPI blob of the UTF-8 bytes |
+| Write | `keyctl padd user <key> @u`, value on stdin | `security -i`, one `add-generic-password ... -U -w <part>` line on stdin per item | Fixed script, base64 of the value on stdin |
+| Read | `keyctl search`, then `keyctl pipe <id>` (raw bytes) | `security find-generic-password -w` per item, then base64 decode | Fixed script, base64 of the blob on stdin, base64 of the value on stdout |
+| Earlier entries | Same bytes as before; still read | A head without the `rdc-b64.` marker is returned as stored, and the next write replaces it | None exist: no write ever succeeded |
+
+- **macOS, why the armour.** `security find-generic-password -w` prints the stored bytes only when every byte is printable; otherwise it prints their hex digits with nothing to mark them, so a value with a newline or a non-ASCII letter came back as hex. The armoured form is printable ASCII, which the tool never rewrites. Hex output is never decoded, so a value that is itself hex digits needs no guess.
+- **macOS, why `security -i` and why parts.** `add-generic-password` takes the password as an argument or prompts for it on the terminal. Interactive mode reads whole command lines from stdin, which keeps the value off the process list. A line there holds at most 4095 bytes, and a longer one is cut and its tail run as the next command, so a long value is split across items. The value this CLI stores (44 characters) is one item.
+- **macOS, earlier entries.** Every value stored before the armour is base64 text, which cannot begin with `rdc-b64.` (neither `-` nor `.` is a base64 character). The marker therefore separates the two forms without ambiguity for anything this CLI stored.
+- **Windows, the script.** Windows PowerShell 5.1 (`powershell.exe`, part of every supported Windows) runs one constant script; PowerShell 7 (`pwsh`) is never called. The script starts with `Add-Type -AssemblyName System.Security`, because on .NET Framework `ProtectedData` lives in `System.Security.dll`, which Windows PowerShell does not load on its own. Without it every call failed with `TypeNotFound`, so no secret was ever stored on Windows and no earlier format has to be read.
+- **Windows, encoding.** Input reaches the script through `$input` and output leaves through `[Console]::Out.Write`, both as base64, the output behind an `rdc-dpapi:` marker. Only ASCII crosses either pipe, so no console code page, byte-order mark or line ending can change a byte. `$ErrorActionPreference='Stop'` turns a failure into a non-zero exit, and output without the marker is a failure whatever the exit code. No execution policy applies: a policy governs script files, and `-Command` runs a string.
+- **Windows, the file name.** The name is the SHA-256 of the key, and the file records the key, which a read checks. The earlier name replaced `:` with `_`, so `a:b` and `a_b` were one file. A spelled-out key cannot be the name: NTFS folds letter case, and an escape that keeps `A` and `a` apart grows a 200-character key past what a Windows path holds.
+- **Windows, what DPAPI protects.** The `CurrentUser` scope ties the blob to the Windows account, so a copied file is useless to another account or machine. A process running as the same user can decrypt it.
+
+#### The contract CI pins
+
+`packages/cli/src/utils/__tests__/secure-storage.native.test.ts` runs the real module with nothing mocked, in the `Quality / Secure Storage` job of `ci-quality.yml`, one leg per operating system. The job sets `SECURE_STORAGE_REQUIRE_NATIVE=1`, under which an unreachable native backend is a failure and never a skip, and it checks a receipt naming the backend that ran.
+
+`secure-storage.tools.test.ts`, beside it, runs in the unit suite on Linux. It drives the macOS and Windows backends against stand-ins for `security` and `powershell.exe` placed on `PATH`, and pins what the module sends: the exact script text and arguments, the payload on stdin and on no command line, the armour and its parts, the file name and content. Whether the real tools accept it is what the macOS and Windows legs prove.
+
+| Platform | Backend selected | Pinned |
+|----------|------------------|--------|
+| Linux | `keyctl` | Storage contract; cross-process read; the secret is on no `keyctl` command line; after a set, no file under the config, state or cache directory holds the secret; selection leaves no throwaway key behind; a session keyring without `@u` is refused, naming `keyctl link @u @s` and the opt-in, with nothing stored |
+| macOS | `keychain` | Storage contract; cross-process read; the secret is on no `security` command line; an entry stored before the armour still reads; a long value spans several items, and a shorter set or a delete leaves none behind |
+| Windows | `dpapi` | Storage contract; cross-process read; the key file holds the key and ciphertext, never the secret; keys that differ only in `:` against `_`, or only in letter case, are distinct; a file copied under another key does not answer for it; a value or a damaged file shaped like PowerShell executes nothing |
+| Linux, `keyctl` off `PATH` | none | Refused, naming `keyctl` and the opt-in; no file is written |
+| Linux, `REDIACC_SECRET_STORE=file` | `file` | Storage contract; `secure-keys.json` at mode 0o600 holding the secret in plaintext; one notice on stderr and nothing but the result on stdout; a value other than `file` is refused |
+
+The storage contract is the same on every backend: a value reads back byte-exact (base64, a leading dash, an embedded newline, a trailing newline with CRLF and outer spaces, quotes, `$` and backticks, unicode, a value of only hex digits, 4 KB, 3 KB of unicode lines); a second set overwrites; delete then get returns null; a missing key returns null; two keys do not collide. The CLI itself only ever stores base64 text.
 
 The `storageKeyId` is generated by the server during setup (e.g., `rdc:org_abc:team_xyz:config_123`) and stored in the token file. The token file becomes a **pointer** to the secret, not the secret itself.
 
@@ -934,8 +979,9 @@ Implements the same `StoreAdapter` interface as S3, Bitwarden, Git, etc. Registe
 
 ### CLI (Daily Operations)
 Shipped under `rdc config remote`:
-- `rdc config remote enable`: link this config to the store (`--headless` for a device-code flow)
-- `rdc config remote disable`: disconnect and write the config back to disk
+- `rdc config remote enable`: link this config to the store (`--password` enrolls against a pre-provisioned password slot, with no browser). On a config that is already linked it enrolls this device again for the same store once the device can no longer open the config, and refuses while the enrollment still works. A re-enrollment replaces only the device-held credentials (slot secret, config token, wrapped CEK), keeps `storeId` and `configId`, pulls, and refreshes the cache; it never pushes or seeds. On Linux this is the path after every restart, because the kernel keyring that holds the slot secret is memory-only (see *Client-Side Secure Storage*).
+- `rdc config remote disable`: disconnect and write the config back to disk. Server-only: it pulls the newest server copy first, so a disable from a stale cache cannot lose another device's writes.
+- `rdc config remote disable --local`: unlink on this device without the server, for a config whose store copy is gone or whose account left the store. It writes the cached copy without its `remote` pointer, host-local sections included, after a confirmation that newer server data is not fetched (`--yes` in a run with no terminal), and removes this device's token file and slot secret. It refuses, with the file untouched, when the file holds no cached copy or when a master-password cache cannot be opened. `disable` and `enable` name it only from the states where the server path cannot work.
 - `rdc config remote refresh`: download and decrypt the latest config
 - `rdc config remote status`: show store info
 - `rdc config rotate-cek`: rotate the client-controlled encryption key
@@ -964,7 +1010,7 @@ Config CRUD operations use rotating X-Config-Token header. Portal operations use
 }
 ```
 
-The token file contains only **references and wrapped keys** — no plaintext secrets. The `passkey_secret` lives in platform-native secure storage indexed by `storageKeyId`. If native secure storage is unavailable (rare), the CLI falls back to storing `passkey_secret` in the token file with a warning.
+The token file contains only **references and wrapped keys**, and no plaintext secrets. The `passkey_secret` lives in platform-native secure storage indexed by `storageKeyId`. If native secure storage is unavailable, the CLI refuses and stores nothing; with `REDIACC_SECRET_STORE=file` the secret goes to a separate `secure-keys.json` file (0o600) in its state directory, never the token file (see *Client-Side Secure Storage*).
 
 ## Config Setup Portal Security
 
@@ -1001,7 +1047,7 @@ This prevents a rogue server from substituting the handoff public key in headles
 
 | Risk | Rationale |
 |------|-----------|
-| `passkey_secret` is static | Stored in native secure storage (not token file). Mitigated by rotating `serverToken` (limits damage window) and IP binding. On systems without native storage (fallback to token file), file permissions (0o600) + warning logged. |
+| `passkey_secret` is static | Stored in native secure storage (not token file). Mitigated by rotating `serverToken` (limits damage window) and IP binding. On systems without native storage the CLI refuses; the opt-in `REDIACC_SECRET_STORE=file` keeps it in `secure-keys.json` in the state directory, protected by file permissions (0o600) only. |
 | All config versions decryptable with same CEK | CEK compromise = full exposure by design. Rotate CEK if compromise suspected (re-encrypt all configs, re-distribute to members). |
 | `sdkMaster` rotation requires admin participation | Server can't rotate `sdkMaster` alone — the SDK layer is inside the CEK layer. An admin must pull configs (decrypt all 3 layers), server generates new `sdkMaster`, admin re-encrypts and pushes. Only needed if `sdkMaster` itself is compromised — for removed members, simply stop serving `sdk_derived` (no rotation needed). Time-windowed derivation limits captured key exposure to specific windows. |
 | The server serves the portal code | A server that ships modified JavaScript can read the CEK in the browser. Out of scope of the claim; closing it needs code the server does not serve (a signed extension or a native client). |
@@ -1015,7 +1061,7 @@ This prevents a rogue server from substituting the handoff public key in headles
 2. **Account server**: Passkey registration with PRF extension support + X25519 identity key storage + `storageKeyId` generation
 3. **Account server**: CEK handoff endpoints (admin encrypts for member's X25519 key, member accepts)
 4. **Account server**: Static config setup page with CSP + SRI
-5. **CLI**: Platform-native secure storage abstraction (`keyctl` / Keychain / DPAPI / file fallback)
+5. **CLI**: Platform-native secure storage abstraction (`keyctl` / Keychain / DPAPI / file by opt-in)
 6. **CLI**: `rediacc-store-adapter.ts` implementing `StoreAdapter` interface
 7. **CLI**: Browser-based setup flow (local loopback for passkey_secret handoff, store in native storage by `storageKeyId`)
 8. **CLI**: Device code flow with ephemeral X25519 handoff (headless mode)
@@ -1186,7 +1232,7 @@ CEK rotation is not needed to cut server access. It is needed when a removed mem
 ### Why store `passkey_secret` in OS-native secure storage instead of the token file?
 
 The token file sits on disk as a regular file (protected only by 0o600 permissions). If stolen (backup leak, malware, shared filesystem), all secrets in it are exposed. Native secure storage provides OS-level protection:
-- **Linux kernel keyring**: Keys in kernel memory, not user-space. Not accessible via filesystem. Supports auto-expiry timeouts.
+- **Linux kernel keyring**: Keys in kernel memory, not user-space. Not accessible via filesystem. The CLI sets no expiry on them.
 - **macOS Keychain**: Encrypted at rest by the OS. Can require Touch ID to access.
 - **Windows DPAPI**: Encrypted with user's login credentials. Useless if copied to another machine.
 
@@ -1215,7 +1261,7 @@ Yes. Both runtimes use Hono (HTTP framework) and Web Crypto API (cryptography). 
 ### What's the riskiest part to implement?
 
 The platform-native secure storage abstraction (implementation step 5). Three different OS APIs (`keyctl`, `security`, DPAPI) with different behaviors:
-- Linux kernel keyring: keys in memory, lost on reboot, timeout-based expiry
+- Linux kernel keyring: keys in memory, lost on reboot, readable only from a session that links the user keyring
 - macOS Keychain: persistent, encrypted at rest, optional biometric
 - Windows DPAPI: persistent, encrypted blob files, tied to user login
 

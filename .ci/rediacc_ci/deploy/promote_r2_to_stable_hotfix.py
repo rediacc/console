@@ -46,10 +46,10 @@ import sys
 import tempfile
 
 from rediacc_ci.core import common
-from rediacc_ci.deploy import channel_stamp, promote_r2_to_stable, r2_promote
+from rediacc_ci.deploy import cf_purge_urls, channel_stamp, promote_r2_to_stable, r2_promote
 
-# The twin's own name, carried in its three guard messages. A literal, because the bytes must survive the port.
-SELF = "promote-r2-to-stable-hotfix.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.promote_r2_to_stable_hotfix"
 
 # `for dir in cli apt rpm apk archlinux` (twin :64). ORDER MATTERS to the call log and the purge list.
 CHANNEL_DIRS = ("cli", "apt", "rpm", "apk", "archlinux")
@@ -64,9 +64,6 @@ CATCH_ALL: tuple[str, ...] = ()
 # The stamps, shared with the soak-gated sibling through `channel_stamp`.
 CONFIG_SED = channel_stamp.CHANNEL_SED
 INSTALL_SED = channel_stamp.INSTALL_SED
-
-# `"$SCRIPT_DIR/cf-purge-urls.sh"` (twin :117), where SCRIPT_DIR is `.ci/scripts/deploy`.
-PURGE_SCRIPT_RELATIVE = ".ci/scripts/deploy/cf-purge-urls.sh"
 
 # The three `${VAR:?msg}` guards (twin :47-49), in order, as (name, message).
 REQUIRED_ENV: tuple[tuple[str, str], ...] = (
@@ -100,17 +97,6 @@ class BashExitError(Exception):
     def __init__(self, code: int) -> None:
         super().__init__("set -e: exit %d" % code)
         self.code = code
-
-
-def script_dir() -> str:
-    """`SCRIPT_DIR` (twin :44), by location rather than by cwd.
-
-    The twin resolves `.ci/scripts/deploy` from its own `BASH_SOURCE`; this file sits at `.ci/rediacc_ci/deploy/`, three directories under the same root, so the arithmetic is identical and neither side depends on the caller's cwd. `abspath`, NOT `realpath`: bash's `cd` is logical, so a checkout reached through a symlink keeps the symlinked spelling on both sides.
-    `paths.repo_root()` is deliberately not used, because it resolves symlinks and honours `$REDIACC_CI_ROOT`, and neither is a thing the twin does.
-    """
-    here = os.path.dirname(os.path.abspath(__file__))
-    root = os.path.abspath(os.path.join(here, "..", "..", ".."))
-    return os.path.join(root, os.path.dirname(PURGE_SCRIPT_RELATIVE))
 
 
 def environment() -> dict[str, str]:
@@ -150,15 +136,6 @@ def require_env(env: dict[str, str]) -> dict[str, str]:
 def endpoint_args(endpoint: str) -> list[str]:
     """`$EP` unquoted (twin :59)."""
     return r2_promote.endpoint_args(endpoint)
-
-
-def purge_argv(zone: str) -> list[str]:
-    """`"$SCRIPT_DIR/cf-purge-urls.sh" --zone "${CLOUDFLARE_ZONE_ID:-}"` (twin :117).
-
-    `:-` and not `:?`, so an UNSET zone becomes an EMPTY ARGUMENT rather than a refusal here. cf-purge-urls.sh then refuses on its own account, and under `pipefail` that status is this script's, AFTER the promotion has already happened. That is the twin's stated design ("the purge is best-effort and is the last thing this script does, so a missing/void credential cannot leave the
-    promotion half-done"), not an oversight, and it is reproduced.
-    """
-    return [os.path.join(script_dir(), os.path.basename(PURGE_SCRIPT_RELATIVE)), "--zone", zone]
 
 
 def phases(dir_name: str) -> tuple[tuple[str, ...], ...]:
@@ -209,17 +186,13 @@ def _purge(urls: list[str], zone: str) -> None:
 
     Guarded by `${#PURGE_URLS[@]} -gt 0` in the twin, which is why an empty list
     makes no call at all rather than a call with empty stdin. Under `pipefail` the pipeline's status is the purge script's, since `printf` cannot fail here.
+
+    The purge runs in process through `cf_purge_urls.purge`. `:-` and not `:?`, so an UNSET zone becomes an EMPTY zone rather than a refusal here: the purge then refuses on its own account, AFTER the promotion has already happened. That is the twin's stated design ("the purge is best-effort and is the last thing this script does, so a missing/void credential cannot leave the promotion half-done"), not an oversight, and it is reproduced.
     """
     payload = "".join(url + "\n" for url in urls)
-    argv = purge_argv(zone)
-    try:
-        status = _run(argv, input=payload, text=True)
-    except OSError as exc:
-        # A MISSING OR UNRUNNABLE PURGE SCRIPT. bash reports this itself, with its own line number and status 127; Python raises. Same stream, same
-        # status, different sentence, which is the ruling the `${VAR:?}` guards
-        # get too.
-        print("%s: %s: %s" % (SELF, argv[0], exc.strerror), file=sys.stderr)
-        raise BashExitError(127) from exc
+    _flush()
+    status = cf_purge_urls.purge(zone, payload)
+    _flush()
     if status:
         raise BashExitError(status)
 

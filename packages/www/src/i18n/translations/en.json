@@ -9848,7 +9848,10 @@
     }
   },
   "video": {
-    "playVideo": "Play video"
+    "playVideo": "Play video",
+    "player": {
+      "chapters": "Chapters"
+    }
   },
   "layout": {
     "meta": {

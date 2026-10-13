@@ -1,0 +1,3 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 1, "source": "bash", "twin": ".ci/scripts/test/gates/test-run-sh.sh", "twin_blob": "4f64f2fa35d8aae3480bfcae7e41f8809c093357"}}
+{"_silent": []}
+{"_key": "parity#b39736cccb985133", "err": "", "out": "passes: 27\n", "rc": "0"}

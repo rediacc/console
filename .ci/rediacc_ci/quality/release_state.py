@@ -1,9 +1,6 @@
 """The R2 `.released` sentinels, the git tags and the channel pointers agree.
 
-Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts of `.ci/scripts/lib/release-state-validator.sh` it calls. W7 P5 retired the twin and the library stays for its five other bash consumers; see `rediacc_ci.quality.__init__` for the phase-5 decision.
-
-WHY THE LIBRARY COMES WITH IT. The bash gate is thirty lines of glue over five library functions, and the library has five other bash consumers (`upload-to-r2.sh`, `write-release-sentinel.sh`, `assert-r2-sentinel.sh`, `cleanup-versions.sh`) that still source it. A port of the gate alone would be a port of the glue, and the differential would compare two programs that both delegate
-the interesting half to the same shell file, which proves nothing about the half that decides. So the five functions the gate reaches are ported here, into the gate's own module, and the bash library stays exactly where it is for its other callers.
+Ported from `.ci/scripts/quality/check-release-state.sh` TOGETHER WITH the parts of the bash library `release-state-validator.sh` it called. W7 P5 retired the twin; the library itself was deleted under operator ruling D5, and `rediacc_ci.core.release_state_validator` is its Python side. This module still carries its own copy of the five functions the gate reaches (see that module's docstring for the duplicate and what collapsing it would move).
 
 THE CONTRACT, from the library's own header:
 
@@ -54,6 +51,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.version import resolve_version
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 # The bucket, and the sentinel object name inside each version prefix.
@@ -391,26 +389,20 @@ def require_var(name: str) -> None:
         raise SystemExit(1)
 
 
-def _resolve_in_flight(root: pathlib.Path) -> str:
-    """`$IN_FLIGHT_VERSION`, or `v$(resolve-version.sh --bump-type patch)`.
+def _resolve_in_flight() -> str:
+    """`$IN_FLIGHT_VERSION`, or `v$(resolve_version --bump-type patch)`.
 
     Mirrors what ci.yml's initialize step computes, which is what keeps this gate runnable standalone.
     """
     given = os.environ.get("IN_FLIGHT_VERSION")
     if given:
         return given
-    script = root / ".ci" / "scripts" / "version" / "resolve-version.sh"
-    proc = subprocess.run(
-        [str(script), "--bump-type", "patch"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    # `set -e` on the twin: a failing resolve-version.sh kills the gate with its own diagnostics. The port forwards them and does the same.
-    if proc.returncode != 0:
-        sys.stderr.write(proc.stderr)
-        raise SystemExit(proc.returncode)
-    return "v" + proc.stdout.strip()
+    status, out, err = resolve_version.run(["--bump-type", "patch"])
+    # `set -e` on the twin: a failing resolver kills the gate with its own diagnostics. The port forwards them and does the same.
+    if status != 0:
+        sys.stderr.write(err)
+        raise SystemExit(status)
+    return "v" + out.strip()
 
 
 def _read_pointer(channel: str, name: str, endpoint: str) -> str:
@@ -453,7 +445,7 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["AWS_DEFAULT_REGION"] = "auto"
     endpoint = os.environ["CLOUDFLARE_R2_ENDPOINT"]
 
-    in_flight = _resolve_in_flight(root)
+    in_flight = _resolve_in_flight()
     log.info("in-flight version (excluded from bijection check): %s" % in_flight)
 
     log.step("listing cli sentinels")
@@ -503,7 +495,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log.error("release-state gate: FAIL — drift between R2 sentinels and git tags")
     log.error("  the findings above indicate an incomplete release or a missing tag")
-    log.error("  see .ci/scripts/lib/release-state-validator.sh for the invariant")
+    log.error("  see rediacc_ci/core/release_state_validator.py for the invariant")
     return 1
 
 

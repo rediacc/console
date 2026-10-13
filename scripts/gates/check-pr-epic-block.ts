@@ -280,7 +280,7 @@ const main = (): number => {
     return die([
       `✗ PR #${prNumber} has no ${BEGIN} block.`,
       '  A raw `gh pr edit --body` replaces the whole description and drops it.',
-      `  Rebuild it: .ci/scripts/pr/sync-epic-block.sh ${prNumber} ${branch}`,
+      `  Rebuild it: PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block ${prNumber} ${branch}`,
     ]);
   }
 
@@ -289,7 +289,7 @@ const main = (): number => {
     return die([
       `✗ PR #${prNumber}'s epic block: the "${BACKLOG_TITLE}" section is malformed: ${bodyBacklog}.`,
       '  The section is mandatory on every PR; it was dropped or edited by hand.',
-      `  Re-sync: .ci/scripts/pr/sync-epic-block.sh ${prNumber} ${branch}`,
+      `  Re-sync: PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block ${prNumber} ${branch}`,
     ]);
   }
 
@@ -302,7 +302,7 @@ const main = (): number => {
       ...missing.map((i) => `    in the snapshot but not the body: ${i}`),
       ...extra.map((i) => `    in the body but not the snapshot: ${i}`),
       '',
-      `  Re-sync: .ci/scripts/pr/sync-epic-block.sh ${prNumber} ${branch}`,
+      `  Re-sync: PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block ${prNumber} ${branch}`,
     ]);
   }
 

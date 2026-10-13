@@ -62,6 +62,80 @@ jobs:
         id: list
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.list_e2e_probe_files
 
+  # Stages renet's embed assets on a cache miss under its own budget, so the consumer
+  # below restores a hit and its "Build renet" is the go build alone (modeled on
+  # ct-tests.yml's renet-embed-assets; check-lane-budget.ts check 8 reds a consumer
+  # that loses the needs: edge).
+  renet-embed-assets:
+    name: Renet embed assets
+    # Checkout, with the private submodules on the readonly-preset App token,
+    # and Docker Hub pulls for the staging build. No ghcr, no GitHub API.
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      # lookup-only: a hit downloads nothing here; the dependents restore it.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          lookup-only: true
+      # Everything below runs on a miss only, and is the consumers' own chain.
+      - name: Login to Docker Hub
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Stage renet embed assets
+        id: build-renet
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        # Only a tree this job staged itself and build.sh's receipt vouches for
+        # (rediacc_ci.infra.renet_embed_cache), as at every other save site.
+        if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+
   # ==========================================================================
   # One leg per file, ubuntu-24.04 only (T2.12: "one distro"). Provisioning
   # steps are ct-tests.yml's test-e2e-workers job, unchanged, down to the
@@ -73,7 +147,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [list-files]
+    needs: [list-files, renet-embed-assets]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
@@ -195,7 +269,7 @@ jobs:
         # test-e2e-workers' own create_complete step relies on.
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.record_e2e_probe_outcome "${{ matrix.file }}" "${{ job.status }}"
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: e2e-probe-result-${{ matrix.file }}-${{ github.sha }}
@@ -237,7 +311,7 @@ jobs:
       - uses: ./.github/actions/setup-workspace
 
       - name: Download probe leg results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           pattern: e2e-probe-result-*-${{ github.sha }}
           path: /tmp/e2e-probe-results
@@ -247,7 +321,7 @@ jobs:
           npx tsx scripts/ci-runner/e2e-probe-edges.ts --results-dir /tmp/e2e-probe-results \
             > e2e-probe-edges.json
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: e2e-probe-edges-${{ github.sha }}

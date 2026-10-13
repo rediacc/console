@@ -30,6 +30,7 @@ import shutil
 import tempfile
 
 from rediacc_ci import paths
+from rediacc_ci.security import check_commands
 from rediacc_ci.tests.gates import harness
 
 SUT = paths.from_root(".ci", "rediacc_ci", "security", "check_commands.py")
@@ -139,9 +140,14 @@ def test_this_repos_own_explanations_survive(gate):
     pattern = re.compile(r"^[ \t]*#.*\b(%s|%s)\b" % (BANNED_SEQ, BANNED_MAPFILE), re.MULTILINE)
     documented = 0
     scanned = 0
-    # ALL OF `.ci/scripts`, not only `quality/` and `security/`: PLAN-retire-bash-oracles B3 retired the last shell gates there, and the file that documented `mapfile` in a comment (`typecheck-workers.sh`) went with them. The subject is the real tree's prose, wherever it lives; the gate itself scans every tracked `*.sh`.
-    base = paths.from_root(".ci", "scripts")
-    for path in sorted(base.rglob("*")):
+    # THE GATE'S OWN CORPUS, read through its own enumerator. This was `.ci/scripts` alone until 2026-10-08, when W11-A/B/C and section 12 U1-U3 deleted the last shell file there that documented a banned command; B3 had already taken `typecheck-workers.sh`. The gate scans every `*.sh` under `.ci` and `scripts`, so that is the prose that has to stay green.
+    root = paths.repo_root()
+    corpus = [
+        *check_commands._find_sh_files(root, ".ci"),
+        *check_commands._find_sh_files(root, "scripts"),
+    ]
+    for rel in corpus:
+        path = root / rel
         if not path.is_file():
             continue
         scanned += 1

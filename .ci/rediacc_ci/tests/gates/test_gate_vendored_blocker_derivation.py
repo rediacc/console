@@ -87,7 +87,7 @@ def test_a_deleted_manifest_is_not_a_free_pass(gate):
         target = pathlib.Path(root)
         for rel in (
             ".ci/breakpoint/lib/breakpoint-blocker.sh",
-            ".ci/scripts/test/gates/test-blocker-golden-corpus.sh",
+            ".ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py",
         ):
             dest = target / rel
             dest.parent.mkdir(parents=True, exist_ok=True)

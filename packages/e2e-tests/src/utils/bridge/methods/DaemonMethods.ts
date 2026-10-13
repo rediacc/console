@@ -6,21 +6,21 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 export class DaemonMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
-  async daemonSetup(networkId?: string): Promise<ExecResult> {
+  daemonSetup(networkId?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'daemon_setup',
       networkId,
     });
   }
 
-  async daemonTeardown(networkId?: string): Promise<ExecResult> {
+  daemonTeardown(networkId?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'daemon_teardown',
       networkId,
     });
   }
 
-  async daemonStart(
+  daemonStart(
     repository?: string,
     datastorePath?: string,
     networkId?: string
@@ -33,11 +33,7 @@ export class DaemonMethods {
     });
   }
 
-  async daemonStop(
-    repository?: string,
-    datastorePath?: string,
-    networkId?: string
-  ): Promise<ExecResult> {
+  daemonStop(repository?: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'daemon_stop',
       repository,
@@ -46,7 +42,7 @@ export class DaemonMethods {
     });
   }
 
-  async daemonStatus(
+  daemonStatus(
     repository?: string,
     datastorePath?: string,
     networkId?: string
@@ -59,7 +55,7 @@ export class DaemonMethods {
     });
   }
 
-  async daemonRestart(
+  daemonRestart(
     repository?: string,
     datastorePath?: string,
     networkId?: string
@@ -72,11 +68,7 @@ export class DaemonMethods {
     });
   }
 
-  async daemonLogs(
-    repository?: string,
-    datastorePath?: string,
-    networkId?: string
-  ): Promise<ExecResult> {
+  daemonLogs(repository?: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'daemon_logs',
       repository,
@@ -85,15 +77,15 @@ export class DaemonMethods {
     });
   }
 
-  async renetStart(networkId?: string): Promise<ExecResult> {
+  renetStart(networkId?: string): Promise<ExecResult> {
     return this.testFunction({ function: 'daemon_start', networkId });
   }
 
-  async renetStop(networkId?: string): Promise<ExecResult> {
+  renetStop(networkId?: string): Promise<ExecResult> {
     return this.testFunction({ function: 'daemon_stop', networkId });
   }
 
-  async renetStatus(networkId?: string): Promise<ExecResult> {
+  renetStatus(networkId?: string): Promise<ExecResult> {
     return this.testFunction({ function: 'daemon_status', networkId });
   }
 }

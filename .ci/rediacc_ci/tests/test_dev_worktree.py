@@ -1,18 +1,19 @@
-"""`rediacc_ci.dev.worktree` against `scripts/dev/worktree.sh`, in throwaway repositories.
+"""`rediacc_ci.dev.worktree` against the answers frozen from the retired `scripts/dev/worktree.sh`, in throwaway repositories.
 
-NOTHING HERE TOUCHES A REAL CHECKOUT. Each case builds its own fixture under pytest's `tmp_path`: a bare `origin.git`, a bare `sub.git` for a submodule, and a clone of origin that carries copies of `worktree.sh` and `common.sh`. The bash derives its root from where its copy sits and the port from `$REDIACC_CI_ROOT`, so both act on the fixture and on nothing else. `tmux`, `gh`, `docker`, `sudo` and `git` are shims first on PATH: the first four so no real session, PR lookup, container or privilege is ever reached, `git` so every call is recorded (and passed through to the real binary) and "never stashed, never checked out" is asserted from the log and not from the end state alone.
+NOTHING HERE TOUCHES A REAL CHECKOUT. Each case builds its own fixture under pytest's `tmp_path`: a bare `origin.git`, a bare `sub.git` for a submodule, and a clone of origin. The port derives its root from `$REDIACC_CI_ROOT`, so it acts on the fixture and on nothing else. `tmux`, `gh`, `docker`, `sudo` and `git` are shims first on PATH: the first four so no real session, PR lookup, container or privilege is ever reached, `git` so every call is recorded (and passed through to the real binary) and "never stashed, never checked out" is asserted from the log and not from the end state alone.
 
 Two kinds of case:
 
-  DIFFERENTIAL (`test_same_*`). The bash and the port run over identically built fixtures; exit code, stdout, stderr (fixture path masked) and the resulting repository state must match. These are the behaviours the bash gets right.
+  DIFFERENTIAL (`test_same_*`). The port runs over a fixture and its exit code, stdout, stderr (fixture path masked), resulting repository state and recorded tool calls must match the golden frozen from the bash (`goldens/twins/scripts.dev.worktree.jsonl`). These are the behaviours the bash got right.
 
-  DELTA (`test_delta_*`). One per deliberate difference listed in the port's module docstring (D1 to D12), and the INCIDENT case of 2026-10-01 (`./run.sh worktree prune --help` ran a real prune). Each asserts what the port does and, while `worktree.sh` exists, that the bash does the opposite, so the case provably fails on the bash behaviour. When the bash is deleted (PLAN-retire-bash-oracles B3) the `bash_*` halves go with it.
+  DELTA (`test_delta_*`). One per deliberate difference listed in the port's module docstring (D1 to D12), and the INCIDENT case of 2026-10-01 (`./run.sh worktree prune --help` ran a real prune). Each asserts what the port does. Each was run against the live bash before it was deleted and failed there; the `bash_*` halves went with the script (PLAN-retire-bash-oracles B3).
 
 `git worktree add` is what the create cases run, inside the fixtures only. The guard that blocks it (`block_worktree_add.py`) matches the text of an agent's Bash command, and these cases are test code run by pytest in CI.
 """
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import stat
@@ -24,19 +25,18 @@ from typing import TYPE_CHECKING, NamedTuple
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 REPO = paths.repo_root()
-BASH_SCRIPT = REPO / "scripts" / "dev" / "worktree.sh"
-COMMON_SH = REPO / ".ci" / "scripts" / "lib" / "common.sh"
+TWIN = "scripts/dev/worktree.sh"
 CI_DIR = REPO / ".ci"
 REAL_GIT = shutil.which("git") or "/usr/bin/git"
 SYSTEM_PATH = "/usr/bin:/bin"
 TODAY = time.strftime("%m%d")
 
-needs_bash = pytest.mark.skipif(not BASH_SCRIPT.is_file(), reason="worktree.sh is retired")
 
 GIT_SHIM = (
     f'#!/bin/bash\necho "git TP=${{GIT_TERMINAL_PROMPT-}} $*" >>"$CALLS"\nexec {REAL_GIT} "$@"\n'
@@ -146,11 +146,6 @@ class Fixture:
         self.git("add", "--", name, cwd=where)
         self.git("commit", "-q", "-m", message or name, cwd=where)
 
-    def run_bash(self, args: list[str], *, cwd: Path | str | None = None, **extra: str) -> Result:
-        return self._run(
-            ["bash", str(self.root / "scripts" / "dev" / "worktree.sh"), *args], cwd, extra
-        )
-
     def run_port(self, args: list[str], *, cwd: Path | str | None = None, **extra: str) -> Result:
         code = (
             "import sys; from rediacc_ci.dev import worktree; sys.exit(worktree.main(sys.argv[1:]))"
@@ -177,6 +172,7 @@ class Fixture:
     def mask(self, text: str) -> str:
         """Paths and abbreviated shas: the two fixtures hold different `.gitmodules` URLs, so their commit ids differ though everything observable is the same."""
         text = text.replace(str(self.root), "<ROOT>").replace(str(self.base), "<BASE>")
+        text = text.replace(TODAY + "-", "<TODAY>-")
         return re.sub(r"\b[0-9a-f]{7,40}\b", "<sha>", text)
 
     def call_log(self, *tools: str) -> list[str]:
@@ -247,9 +243,7 @@ def make_fixture(tmp_path: Path, name: str = "fx") -> Fixture:
     fx.git("checkout", "-q", "-b", "main")
     (fx.root / "scripts" / "dev").mkdir(parents=True)
     (fx.root / ".ci" / "scripts" / "lib").mkdir(parents=True)
-    if BASH_SCRIPT.is_file():
-        shutil.copy(BASH_SCRIPT, fx.root / "scripts" / "dev" / "worktree.sh")
-    shutil.copy(COMMON_SH, fx.root / ".ci" / "scripts" / "lib" / "common.sh")
+    (fx.root / "scripts" / "dev" / ".keep").write_text("", encoding="utf-8")
     (fx.root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         REPO / ".ci" / "config" / "well-known.env", fx.root / ".ci" / "config" / "well-known.env"
@@ -291,6 +285,67 @@ def dirty_checkout(fx: Fixture, branch: str = "0930-1") -> None:
         (fx.root / f"untracked-{i}.txt").write_text("live work\n", encoding="utf-8")
 
 
+class Frozen:
+    """The bash side of a `test_same_*` case as the golden holds it: the repository state after the run, since the fixture itself was never built."""
+
+    def __init__(self, state: dict[str, object]) -> None:
+        self._state = state
+
+    def state(self) -> dict[str, object]:
+        return self._state
+
+
+def _no_bash() -> tuple[int, str, str]:
+    raise RuntimeError(
+        "scripts/dev/worktree.sh is retired: re-record a Rule-T change with "
+        "`%s %s --source port --reason ...`" % (diff.REGOLDEN_VERB, TWIN)
+    )
+
+
+def _frozen_pair(tmp_path: Path, setup, args: list[str], tools: tuple[str, ...], extra: dict):
+    """The retired bash's side of one differential, from the golden. `setup` is part of the key, so two cases that differ only in their fixture do not share an answer."""
+    b = make_fixture(tmp_path, "port")
+    setup(b)
+    b.forget_calls()
+    box: dict[str, Result] = {}
+
+    def port() -> tuple[int, str, str]:
+        r = b.run_port(args, **extra)
+        box["r"] = r
+        return r.rc, r.out, r.err
+
+    rc, out, err, frozen = diff.twin_run(
+        TWIN,
+        [setup.__qualname__, json.dumps(args), json.dumps(sorted(extra.items())), ",".join(tools)],
+        _no_bash,
+        extras={
+            "state": lambda: json.dumps(b.state(), sort_keys=True),
+            "calls": lambda: json.dumps(b.call_log(*tools)),
+        },
+        port=port,
+        work=(tmp_path,),
+    )
+    return (
+        b,
+        Result(rc, out, err),
+        Frozen(json.loads(frozen["state"])),
+        json.loads(frozen["calls"]),
+        box.get("r"),
+    )
+
+
+def _bash_only(fx: Fixture, args: list[str]) -> Result:
+    """The retired bash's answer to one command that touches nothing, from the golden."""
+    rc, out, err = diff.twin_call(
+        TWIN,
+        ["bash-only", json.dumps(args)],
+        _no_bash,
+        port=lambda: tuple(fx.run_port(args)),
+        work=(fx.base,),
+    )
+    return Result(rc, out, err)
+
+
 def diff_pair(
     tmp_path: Path,
     setup,
@@ -298,22 +353,45 @@ def diff_pair(
     tools: tuple[str, ...] = ("tmux", "sudo", "run.sh", "docker"),
     **extra: str,
 ):
-    """Run the bash on one fixture and the port on an identically built one."""
-    a, b = make_fixture(tmp_path, "bash"), make_fixture(tmp_path, "port")
-    for fx in (a, b):
-        setup(fx)
-        fx.forget_calls()
-    ra = a.run_bash(args, **extra)
-    rb = b.run_port(args, **extra)
-    return a, b, ra, rb, (a.call_log(*tools), b.call_log(*tools))
+    """The bash's recorded answer and the port's live one, over identically built fixtures."""
+    b, ra, a, calls_a, rb = _frozen_pair(tmp_path, setup, args, tools, extra)
+    rb = rb or b.run_port(args, **extra)
+    return a, b, ra, rb, (calls_a, b.call_log(*tools))
+
+
+DAY_BRANCH = re.compile(r"^\d{4}-(?=\d+$)")
+
+
+def undated(state: dict[str, object]) -> dict[str, object]:
+    """The state with the day prefix of `MMDD-N` branch and directory names masked on both sides. The golden froze the branch names of the day it was recorded, and the port names today's, so a raw comparison fails after the first midnight."""
+
+    def one(name: object) -> object:
+        return DAY_BRANCH.sub("<TODAY>-", name) if isinstance(name, str) else name
+
+    return {
+        key: [one(v) for v in value] if isinstance(value, list) else one(value)
+        for key, value in state.items()
+    }
 
 
 def assert_same(a: Fixture, b: Fixture, ra: Result, rb: Result, calls) -> None:
     assert rb.rc == ra.rc
     assert rb.err == ra.err
     assert rb.out == ra.out
-    sa, sb = a.state(), b.state()
-    assert sa == sb
+    assert undated(a.state()) == undated(b.state())
+
+    # The mask hides the day on both sides, so the port's own day is pinned here (review 1650ad7f.1): every dated name it creates carries TODAY, the clock the output masking above already uses.
+    # A name both sides hold verbatim is fixture setup (a pre-created `0101-1`), not stamped by the run, so only the port's names the golden lacks are checked.
+    def names(state: dict[str, object]) -> set[str]:
+        return {
+            n
+            for v in state.values()
+            for n in (v if isinstance(v, list) else [v])
+            if isinstance(n, str) and DAY_BRANCH.match(n)
+        }
+
+    for name in sorted(names(b.state()) - names(a.state())):
+        assert name.startswith(TODAY + "-"), "dated name %r is not stamped %s" % (name, TODAY)
     assert calls[0] == calls[1]
 
 
@@ -332,11 +410,10 @@ def git_mutations(fx: Fixture) -> list[str]:
 # --------------------------------------------------------------------------- differential: behaviour the bash gets right ---------------------------------------------------------------------------
 
 
-@needs_bash
 @pytest.mark.parametrize("sub", ["create", "switch"])
 def test_same_help_of_the_commands_the_bash_already_honoured(tmp_path: Path, sub: str) -> None:
     fx = make_fixture(tmp_path)
-    b, p = fx.run_bash([sub, "--help"]), fx.run_port([sub, "--help"])
+    b, p = _bash_only(fx, [sub, "--help"]), fx.run_port([sub, "--help"])
     assert (p.rc, p.err) == (b.rc, b.err) == (0, "")
     if sub == "create":
         assert p.out == b.out
@@ -344,15 +421,13 @@ def test_same_help_of_the_commands_the_bash_already_honoured(tmp_path: Path, sub
         assert p.out.startswith(b.out.rstrip("\n").split("Options:")[0])
 
 
-@needs_bash
 def test_same_unknown_command_is_refused_with_the_same_message_and_code(tmp_path: Path) -> None:
     fx = make_fixture(tmp_path)
-    b, p = fx.run_bash(["frobnicate"]), fx.run_port(["frobnicate"])
+    b, p = _bash_only(fx, ["frobnicate"]), fx.run_port(["frobnicate"])
     assert (p.rc, p.err) == (b.rc, b.err) == (1, "✗ Unknown command: frobnicate\n")
     assert p.out.startswith("\nUsage: ./run.sh worktree <command> [options]")
 
 
-@needs_bash
 def test_same_no_worktrees_and_list_with_one(tmp_path: Path) -> None:
     a, b, ra, rb, calls = diff_pair(tmp_path, _noop, ["list"])
     assert_same(a, b, ra, rb, calls)
@@ -366,7 +441,6 @@ def test_same_no_worktrees_and_list_with_one(tmp_path: Path) -> None:
     assert "0101-1" in rb.out
 
 
-@needs_bash
 @pytest.mark.parametrize("flags", [[], ["--teams"], ["--no-devbox"]])
 def test_same_create_on_a_clean_main_checkout(tmp_path: Path, flags: list[str]) -> None:
     a, b, ra, rb, calls = diff_pair(tmp_path, _noop, ["create", *flags], tools=("tmux",))
@@ -383,7 +457,6 @@ def test_same_create_on_a_clean_main_checkout(tmp_path: Path, flags: list[str]) 
     assert sub_branch == f"{TODAY}-1"
 
 
-@needs_bash
 def test_same_create_sequence_number_and_existing_branch_refusal(tmp_path: Path) -> None:
     def setup(fx: Fixture) -> None:
         add_worktree(fx, f"{TODAY}-3")
@@ -400,7 +473,6 @@ def test_same_create_sequence_number_and_existing_branch_refusal(tmp_path: Path)
     assert_same(a, b, ra, rb, calls)
 
 
-@needs_bash
 def test_same_create_brings_the_devbox_up_and_prints_its_url(tmp_path: Path) -> None:
     def setup(fx: Fixture) -> None:
         commit_run_sh(fx)
@@ -413,7 +485,6 @@ def test_same_create_brings_the_devbox_up_and_prints_its_url(tmp_path: Path) -> 
     assert_same(a, b, ra, rb, calls)
 
 
-@needs_bash
 def test_same_remove_a_clean_worktree_and_the_not_found_refusal(tmp_path: Path) -> None:
     def setup(fx: Fixture) -> None:
         add_worktree(fx, "0101-1")
@@ -430,7 +501,6 @@ def test_same_remove_a_clean_worktree_and_the_not_found_refusal(tmp_path: Path) 
     assert_same(a, b, ra, rb, calls)
 
 
-@needs_bash
 @pytest.mark.parametrize(("docker_rc", "remove_rc"), [("0", "0"), ("0", "1"), ("1", "1")])
 def test_same_devbox_teardown_runs_first_and_a_failed_one_aborts(
     tmp_path: Path, docker_rc: str, remove_rc: str
@@ -465,7 +535,6 @@ def test_same_devbox_teardown_runs_first_and_a_failed_one_aborts(
             assert order[0].startswith("run.sh")
 
 
-@needs_bash
 def test_same_prune_removes_a_merged_pr_worktree_and_an_empty_one(tmp_path: Path) -> None:
     def setup(fx: Fixture) -> None:
         path = add_worktree(fx, "0101-1")
@@ -481,7 +550,6 @@ def test_same_prune_removes_a_merged_pr_worktree_and_an_empty_one(tmp_path: Path
     assert b.state()["dirs"] == ["0101-3"]
 
 
-@needs_bash
 def test_same_switch_to_a_remote_branch_and_the_refusals(tmp_path: Path) -> None:
     def setup(fx: Fixture) -> None:
         fx.git("checkout", "-q", "-b", "feat")
@@ -506,7 +574,6 @@ def test_same_switch_to_a_remote_branch_and_the_refusals(tmp_path: Path) -> None
         assert_same(a, b, ra, rb, calls)
 
 
-@needs_bash
 def test_same_switch_refuses_a_tracked_change(tmp_path: Path) -> None:
     def setup(fx: Fixture) -> None:
         fx.git("branch", "other")
@@ -518,7 +585,6 @@ def test_same_switch_refuses_a_tracked_change(tmp_path: Path) -> None:
     assert b.state()["branch"] == "main"
 
 
-@needs_bash
 def test_same_switch_fast_forwards_a_branch_that_is_behind_its_remote(tmp_path: Path) -> None:
     def setup(fx: Fixture) -> None:
         fx.git("checkout", "-q", "-b", "feat")
@@ -553,17 +619,6 @@ def test_delta_d1_help_is_side_effect_free_for_every_subcommand(tmp_path: Path, 
     assert fx.root.joinpath(".gitignore").read_text(encoding="utf-8") == tracked
 
 
-@needs_bash
-def test_delta_d1_bash_prune_help_really_ran_the_prune(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    dirty_checkout(fx)
-    result = fx.run_bash(["prune", "--help"])
-    assert result.rc == 0
-    assert "Syncing main repo" in result.err
-    assert any("stash" in line for line in fx.call_log("git"))
-    assert fx.git("rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
-
-
 @pytest.mark.parametrize("sub", ["prune", "create"])
 def test_delta_d2_d3_a_dirty_shared_checkout_is_left_alone(tmp_path: Path, sub: str) -> None:
     fx = make_fixture(tmp_path)
@@ -584,16 +639,6 @@ def test_delta_d2_d3_a_dirty_shared_checkout_is_left_alone(tmp_path: Path, sub: 
         # create branches from the fetched origin/main without touching the checkout.
         assert result.rc == 0, result.err
         assert f"{TODAY}-1" in fx.branches()
-
-
-@needs_bash
-@pytest.mark.parametrize("sub", ["prune", "create"])
-def test_delta_d2_d3_bash_stashed_and_switched_the_dirty_checkout(tmp_path: Path, sub: str) -> None:
-    fx = make_fixture(tmp_path)
-    dirty_checkout(fx)
-    fx.run_bash([sub] + (["--no-devbox"] if sub == "create" else []))
-    assert any("stash" in line for line in fx.call_log("git"))
-    assert any("checkout main" in line for line in fx.call_log("git"))
 
 
 def test_delta_d2_untracked_only_is_dirty_too(tmp_path: Path) -> None:
@@ -617,14 +662,6 @@ def test_delta_d3_a_clean_checkout_on_its_branch_is_not_moved_to_main(tmp_path: 
     assert fx.git("rev-parse", "--abbrev-ref", "HEAD").strip() == "0930-1"
     assert git_mutations(fx) == []
     assert any(" fetch origin main" in line for line in fx.call_log("git"))
-
-
-@needs_bash
-def test_delta_d3_bash_moved_a_clean_checkout_to_main(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    fx.git("checkout", "-q", "-b", "0930-1")
-    fx.run_bash(["prune"])
-    assert fx.git("rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
 
 
 def test_delta_d3_a_clean_main_checkout_is_fast_forwarded(tmp_path: Path) -> None:
@@ -664,16 +701,6 @@ def test_delta_d4_surplus_arguments_and_options_are_refused(
     assert git_mutations(fx) == []
 
 
-@needs_bash
-@pytest.mark.parametrize("args", [["list", "x"], ["remove", "a", "b"]])
-def test_delta_d4_bash_accepted_them(tmp_path: Path, args: list[str]) -> None:
-    fx = make_fixture(tmp_path)
-    assert fx.run_bash(args).err.startswith("✗ ") is (
-        args[0] == "remove"
-    )  # `remove a b` only failed because `a` does not exist
-    assert fx.run_bash(["list", "x"]).rc == 0
-
-
 @pytest.mark.parametrize("name", ["../victim", "..", ".", "a/b", "/etc", "-rf", ".hidden", ""])
 def test_delta_d5_remove_takes_a_name_never_a_path(tmp_path: Path, name: str) -> None:
     fx = make_fixture(tmp_path)
@@ -687,18 +714,6 @@ def test_delta_d5_remove_takes_a_name_never_a_path(tmp_path: Path, name: str) ->
     assert (victim / "keep").exists()
     assert fx.call_log("sudo") == []
     assert not any("worktree remove" in line or " branch -D" in line for line in fx.call_log("git"))
-
-
-@needs_bash
-def test_delta_d5_bash_reached_sudo_rm_on_a_path_outside_the_base(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    (fx.root / ".worktrees").mkdir()
-    (fx.root / "victim").mkdir()
-    fx.run_bash(["remove", "../victim"])
-    assert any(
-        line.startswith("sudo rm -rf") and line.endswith("/.worktrees/../victim")
-        for line in fx.call_log("sudo")
-    )
 
 
 def test_delta_d5_a_symlink_named_like_a_worktree_is_not_followed(tmp_path: Path) -> None:
@@ -731,15 +746,6 @@ def test_delta_d6_prune_keeps_an_untracked_only_worktree_and_a_dirty_merged_one(
     assert {"0101-1", "0101-2"} <= set(fx.branches())
 
 
-@needs_bash
-def test_delta_d6_bash_deleted_the_untracked_only_worktree(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    untracked = add_worktree(fx, "0101-1")
-    (untracked / "notes.txt").write_text("unsaved thought\n", encoding="utf-8")
-    fx.run_bash(["prune"])
-    assert not untracked.exists()
-
-
 def test_delta_d6_prune_never_removes_the_worktree_it_runs_from(tmp_path: Path) -> None:
     fx = make_fixture(tmp_path)
     here = add_worktree(fx, "0101-1")
@@ -759,16 +765,6 @@ def test_delta_d7_a_merged_pr_does_not_cover_commits_made_after_it(tmp_path: Pat
     assert "0101-1" in fx.branches()
 
 
-@needs_bash
-def test_delta_d7_bash_deleted_the_branch_with_its_later_commits(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    path = add_worktree(fx, "0101-1")
-    fx.commit("after-merge.txt", cwd=path)
-    fx.stale.write_text("0101-1\n", encoding="utf-8")
-    fx.run_bash(["prune"])
-    assert "0101-1" not in fx.branches()
-
-
 def test_delta_d8_a_detached_worktree_is_not_pruned_and_head_is_never_a_branch_to_delete(
     tmp_path: Path,
 ) -> None:
@@ -780,18 +776,6 @@ def test_delta_d8_a_detached_worktree_is_not_pruned_and_head_is_never_a_branch_t
     assert result.rc == 0
     assert path.is_dir()
     assert not any(" branch -D" in line for line in fx.call_log("git"))
-
-
-@needs_bash
-def test_delta_d8_bash_removed_the_detached_worktree_and_reported_deleting_a_branch_called_head(
-    tmp_path: Path,
-) -> None:
-    fx = make_fixture(tmp_path)
-    path = fx.root / ".worktrees" / "0101-1"
-    fx.git("worktree", "add", "-q", "--detach", str(path), "origin/main")
-    result = fx.run_bash(["prune"])
-    assert not path.exists()
-    assert "Deleted branch: HEAD" in result.err
 
 
 def test_delta_d8_remove_never_deletes_main(tmp_path: Path) -> None:
@@ -820,14 +804,6 @@ def test_delta_d9_switch_keeps_local_commits_the_remote_lacks(tmp_path: Path) ->
     assert result.rc == 0, result.err
     assert fx.git("rev-parse", "HEAD").strip() == tip
     assert "has commits origin/feat lacks" in result.err
-
-
-@needs_bash
-def test_delta_d9_bash_reset_the_local_branch_to_the_remote(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    tip = _local_ahead_of_remote(fx)
-    fx.run_bash(["switch", "feat"])
-    assert fx.git("rev-parse", "HEAD").strip() != tip
 
 
 def test_delta_d9_a_submodule_branch_ahead_of_its_remote_is_kept(tmp_path: Path) -> None:
@@ -862,14 +838,6 @@ def test_delta_d9_switch_refuses_untracked_paths_and_a_bad_branch_name(tmp_path:
     assert "Invalid branch name" in bad.err
 
 
-@needs_bash
-def test_delta_d9_bash_switched_over_untracked_paths(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    fx.git("branch", "other")
-    (fx.root / "scratch.txt").write_text("x\n", encoding="utf-8")
-    assert fx.run_bash(["switch", "other"]).rc == 0
-
-
 def test_delta_d10_the_sudo_fallback_never_waits_for_a_password(tmp_path: Path) -> None:
     fx = make_fixture(tmp_path)
     path = add_worktree(fx, "0101-1")
@@ -878,16 +846,6 @@ def test_delta_d10_the_sudo_fallback_never_waits_for_a_password(tmp_path: Path) 
     result = fx.run_port(["remove", "0101-1"])
     assert "trying sudo removal" in result.err
     assert fx.call_log("sudo") == ["sudo -n rm -rf -- <ROOT>/.worktrees/0101-1"]
-
-
-@needs_bash
-def test_delta_d10_bash_called_sudo_without_n(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    path = add_worktree(fx, "0101-1")
-    fx.git("worktree", "lock", str(path))
-    fx.forget_calls()
-    fx.run_bash(["remove", "0101-1"])
-    assert fx.call_log("sudo") == ["sudo rm -rf <ROOT>/.worktrees/0101-1"]
 
 
 def test_delta_d11_list_matches_the_base_directory_not_a_string_prefix(tmp_path: Path) -> None:
@@ -900,15 +858,6 @@ def test_delta_d11_list_matches_the_base_directory_not_a_string_prefix(tmp_path:
     assert "0202-2" not in result.out
 
 
-@needs_bash
-def test_delta_d11_bash_listed_the_sibling_directory(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    add_worktree(fx, "0101-1")
-    outside = fx.root / ".worktrees-old" / "0202-2"
-    fx.git("worktree", "add", "-q", "-b", "0202-2", str(outside), "origin/main")
-    assert "0202-2" in fx.run_bash(["list"]).out
-
-
 def test_delta_d12_git_never_waits_for_a_credential_prompt(tmp_path: Path) -> None:
     fx = make_fixture(tmp_path)
     fx.forget_calls()
@@ -916,14 +865,6 @@ def test_delta_d12_git_never_waits_for_a_credential_prompt(tmp_path: Path) -> No
     lines = fx.call_log("git")
     assert lines
     assert all(line.startswith("git TP=0 ") for line in lines)
-
-
-@needs_bash
-def test_delta_d12_bash_left_the_prompt_on(tmp_path: Path) -> None:
-    fx = make_fixture(tmp_path)
-    fx.forget_calls()
-    fx.run_bash(["prune"])
-    assert all(line.startswith("git TP= ") for line in fx.call_log("git"))
 
 
 def test_the_port_runs_as_a_module_file(tmp_path: Path) -> None:

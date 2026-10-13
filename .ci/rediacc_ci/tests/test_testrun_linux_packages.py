@@ -13,69 +13,60 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import typing
 
 import pytest
 
 from rediacc_ci.testrun import linux_packages as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
+from rediacc_ci.tests.twin_names import as_twin, usage_command
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
 TWIN_REL = ".ci/scripts/test/test-linux-packages.sh"
 TWIN = ts.ROOT / TWIN_REL
 MODULE = "rediacc_ci.testrun.linux_packages"
-TWIN_TEXT = TWIN.read_text()
 
 
-def bash_function(name: str) -> str:
-    start = TWIN_TEXT.index(f"{name}() {{")
-    return TWIN_TEXT[start : TWIN_TEXT.index("\n}\n", start) + 3]
-
-
-def bash(script: str, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        [ts.BASH, "-c", script, "x", *args],
-        capture_output=True,
-        text=True,
-        check=False,
-        stdin=subprocess.DEVNULL,
-    )
-
-
-@pytest.mark.parametrize("version", ["99.0.0", "v1.2.3", "10.20.30", "1.2.3-rc.1"])
-def test_version_token_re_matches_the_twin(version: str) -> None:
-    done = bash(f'{bash_function("version_token_re")}\nversion_token_re "$1"', version)
-    assert port.version_token_re(version) == done.stdout
+# The retired twin's answers, measured while `test-linux-packages.sh` still existed (its `version_token_re` and `assert_version_field` functions and its welding awk program were run on these exact inputs, PLAN-retire-bash-oracles B3).
+@pytest.mark.parametrize(
+    ("version", "expected"),
+    [
+        ("99.0.0", "(^|[^0-9.])v?99\\.0\\.0([^0-9.]|$)"),
+        ("v1.2.3", "(^|[^0-9.])v?1\\.2\\.3([^0-9.]|$)"),
+        ("10.20.30", "(^|[^0-9.])v?10\\.20\\.30([^0-9.]|$)"),
+        ("1.2.3-rc.1", "(^|[^0-9.])v?1\\.2\\.3-rc\\.1([^0-9.]|$)"),
+    ],
+)
+def test_version_token_re_matches_the_twin(version: str, expected: str) -> None:
+    assert port.version_token_re(version) == expected
 
 
 @pytest.mark.parametrize(
-    ("text", "label"),
+    ("text", "label", "accepted"),
     [
-        ("Package: x\nVersion: 99.0.0\n", "Version"),
-        (" Version : 99.0.0\n", "Version"),
-        ("Version: 99.0.01\n", "Version"),
-        ("Version: 199.0.0\n", "Version"),
-        ("Name: x\n", "Version"),
-        ("Version: 99.0.0\nVersion: 1\n", "Version"),
+        ("Package: x\nVersion: 99.0.0\n", "Version", True),
+        (" Version : 99.0.0\n", "Version", True),
+        ("Version: 99.0.01\n", "Version", False),
+        ("Version: 199.0.0\n", "Version", False),
+        ("Name: x\n", "Version", False),
+        ("Version: 99.0.0\nVersion: 1\n", "Version", True),
     ],
 )
-def test_assert_version_field_matches_the_twin(text: str, label: str) -> None:
-    script = f'source "{ts.ROOT}/.ci/scripts/lib/common.sh"\nTEST_VERSION=99.0.0\n{bash_function("assert_version_field")}\nassert_version_field "$1" "$2"'
-    assert port.assert_version_field(text, label) == (bash(script, text, label).returncode == 0)
+def test_assert_version_field_matches_the_twin(text: str, label: str, accepted: bool) -> None:
+    assert port.assert_version_field(text, label) is accepted
 
 
 ARMOR = "-----BEGIN PGP PRIVATE KEY BLOCK-----\n\nAAAA\nBBBB\nCCCC\nDDDD\nEEEE\nFFFF\nGGGG\n=chk\n-----END PGP PRIVATE KEY BLOCK-----"
+# What the twin's awk program printed for ARMOR: the fourth body line and the fifth welded into one, then a trailing newline.
+WELDED = "-----BEGIN PGP PRIVATE KEY BLOCK-----\n\nAAAA\nBBBB\nCCCC\nDDDDEEEE\nFFFF\nGGGG\n=chk\n-----END PGP PRIVATE KEY BLOCK-----\n"
 
 
 def test_weld_armor_matches_the_twins_awk_program() -> None:
-    awk = re.search(r"awk '\n(.*?)'\)", TWIN_TEXT, re.DOTALL)
-    assert awk
-    done = subprocess.run(
-        ["awk", awk.group(1)], input=ARMOR + "\n", capture_output=True, text=True, check=False
-    )
-    assert port.weld_armor(ARMOR) == done.stdout
-    assert "DDDDEEEE" in done.stdout
+    assert port.weld_armor(ARMOR) == WELDED
+    assert "DDDDEEEE" in WELDED
 
 
 # ---- dry run, both sides -----------------------------------------------------------------------------------------------------
@@ -94,21 +85,44 @@ def nfpm_available() -> bool:
     return fetched.returncode == 0
 
 
-def mask_paths(text: str) -> str:
+def mask_paths(text: str, tmp: str | None = None) -> str:
+    """Every scratch directory becomes `<TMP>`: this host's first, then the two shapes a recorded answer holds.
+
+    THIS HOST'S TEMP ROOT IS MASKED BY NAME. The pattern alone knows `/tmp/<name>` and `<anything>/tmp<name>`, so under a `TMPDIR` such as `/var/tmp/run` it matched the `/tmp/run` in the MIDDLE of `/var/tmp/run/linux-packages-x` and left `/var<TMP>/linux-packages-x` behind: the differential passed only where the temp root was `/tmp` itself.
+    """
+    root = (tmp or tempfile.gettempdir()).rstrip("/")
+    text = re.sub(re.escape(root) + r"/[A-Za-z0-9._-]+", "<TMP>", text)
     return re.sub(r"/tmp/[A-Za-z0-9._-]+|/[A-Za-z0-9._/-]*/tmp[A-Za-z0-9._-]+", "<TMP>", text)
+
+
+def test_the_path_mask_follows_the_temp_root() -> None:
+    """Control first: under `/tmp` the mask is what it always was. Under a nested root the whole scratch directory is one `<TMP>`, not a root with a hole in it."""
+    recorded = "Working dir: /tmp/linux-packages-abc\nBinary: /tmp/linux-packages-abc/rdc-dummy\n"
+    masked = "Working dir: <TMP>\nBinary: <TMP>/rdc-dummy\n"
+    assert mask_paths(recorded, "/tmp") == masked
+    nested = recorded.replace("/tmp/", "/var/tmp/run/")
+    assert mask_paths(nested, "/var/tmp/run") == masked
+    # What the pattern alone does with that root, which is the defect.
+    assert mask_paths(nested, "/tmp") == masked.replace("<TMP>", "/var<TMP>/linux-packages-abc")
 
 
 def test_dry_run_matches_the_twin() -> None:
     if not nfpm_available():
         pytest.skip("nfpm cannot be fetched on this host (offline)")
-    old = subprocess.run(
-        [ts.BASH, str(TWIN), "--dry-run"],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=300,
-        stdin=subprocess.DEVNULL,
-    )
+
+    def twin_streams() -> tuple[int, str, str]:
+        proc = subprocess.run(
+            [ts.BASH, str(TWIN), "--dry-run"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=300,
+            stdin=subprocess.DEVNULL,
+        )
+        return proc.returncode, proc.stdout, proc.stderr
+
+    # The bash twin is retired: its answer comes from the golden (PLAN-retire-bash-oracles B3).
+    old = subprocess.CompletedProcess([], *diff.twin_call(TWIN_REL, ["dry-run"], twin_streams))
     new = subprocess.run(
         [sys.executable, "-m", MODULE, "--dry-run"],
         capture_output=True,
@@ -119,7 +133,7 @@ def test_dry_run_matches_the_twin() -> None:
         env={**os.environ, "PYTHONPATH": str(ts.ROOT / ".ci")},
     )
     assert old.returncode == 0, old.stderr
-    assert (new.returncode, mask_paths(new.stdout), mask_paths(new.stderr)) == (
+    assert (new.returncode, mask_paths(as_twin(new.stdout)), mask_paths(as_twin(new.stderr))) == (
         old.returncode,
         mask_paths(old.stdout),
         mask_paths(old.stderr),
@@ -140,9 +154,7 @@ def test_delta_unknown_arguments_are_refused() -> None:
     )
     assert new.returncode == 2
     assert "Unknown option: --dry-runn" in new.stderr
-    # The twin reads exactly one thing, the first argument, and has no refusal arm: `--dry-runn` or `x --dry-run` silently run the full Docker suite.
-    assert '[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true' in TWIN_TEXT
-    assert "Unknown" not in TWIN_TEXT
+    # The retired twin read exactly one thing, the first argument, and had no refusal arm: `--dry-runn` or `x --dry-run` silently ran the full Docker suite.
 
 
 class StubSuite(port.Suite):
@@ -196,11 +208,7 @@ def test_delta_the_throwaway_gpg_home_is_removed_when_a_control_returns_early(
     assert suite.p4_apt_metadata() is False
     assert homes, "a GNUPGHOME was handed to gpg"
     assert not pathlib.Path(homes[0]).exists(), "the key material is gone"
-    # The twin's cleanup line sits after every early `return 1` of the signing block, so those paths skipped it.
-    block = TWIN_TEXT[TWIN_TEXT.index("phase4_validate_apt_metadata() {") :]
-    first_return = block.index("return 1", block.index("CONTROL FAILED"))
-    cleanup = block.index('rm -rf "$gnupg_tmp"')
-    assert first_return < cleanup
+    # The retired twin's cleanup line sat after every early `return 1` of the signing block, so those paths skipped it.
 
 
 def test_delta_gpg_failure_is_reported_where_it_happens(tmp_path: pathlib.Path) -> None:
@@ -214,8 +222,7 @@ def test_delta_gpg_failure_is_reported_where_it_happens(tmp_path: pathlib.Path) 
     assert not any("build_pkg_repo" in " ".join(a) for a, _ in suite.seen), (
         "no repo build was attempted with no key"
     )
-    # In the twin the same call ends in `2>/dev/null` with no `||`, inside a function that `run_test` calls as an `if` condition, where `set -e` is off.
-    assert re.search(r"--quick-generate-key[^\n]*2>/dev/null\n", TWIN_TEXT)
+    # In the retired twin the same call ended in `2>/dev/null` with no `||`, inside a function that `run_test` called as an `if` condition, where `set -e` is off.
 
 
 def test_delta_nginx_and_network_are_removed_when_the_flow_fails(
@@ -256,3 +263,19 @@ def test_a_missing_docker_is_a_clean_refusal(
     monkeypatch.setattr(port.common, "require_cmd", refuse)
     assert port.main([]) == 1
     assert "Required command 'docker' is not available" in capsys.readouterr().err
+
+
+def test_the_usage_line_runs_as_printed_from_the_repository_root() -> None:
+    """Review finding 08928e86.2's sibling: the usage line is a command a reader runs from the repository root, so it must import there. Control first: the same command without its `PYTHONPATH=.ci` cannot find `rediacc_ci`."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    assigned, argv = usage_command(port.USAGE)
+    assert assigned == {"PYTHONPATH": ".ci"}, port.USAGE
+    argv = [sys.executable, *argv[1:], "--not-an-option"]
+    bare = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    control = subprocess.run(argv, cwd=root, env=bare, capture_output=True, text=True, check=False)
+    assert "No module named 'rediacc_ci'" in control.stderr, control.stderr
+    proc = subprocess.run(
+        argv, cwd=root, env={**bare, **assigned}, capture_output=True, text=True, check=False
+    )
+    assert proc.returncode == 2, proc.stderr
+    assert port.USAGE in proc.stderr.splitlines(), proc.stderr

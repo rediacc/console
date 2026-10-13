@@ -351,10 +351,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
+    # THE ARM COUNT PER ROOT, printed because a root can keep its shell files and lose every arm: on 2026-10-08 the last bash gate tests left `.ci/scripts/test` and it went to ZERO arms while this line still read as a clean verdict over it.
+    test_arms = len(extract_case_keys(split_dirs(test_dirs_text), root))
+    media_arms = len(extract_case_keys(split_dirs(media_dirs_text), root))
     log.info(
-        "no dead case arms across %s %s (%d media shell file(s); the planted-arm control "
-        "fired and the live-arm control stayed silent, so this verdict is real)"
-        % (test_dirs_text, media_dirs_text, media_files)
+        "no dead case arms across %s (%d arm(s)) and %s (%d arm(s), %d media shell file(s)); "
+        "the planted-arm control fired and the live-arm control stayed silent, so this "
+        "verdict is real" % (test_dirs_text, test_arms, media_dirs_text, media_arms, media_files)
     )
     return 0
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Both sides of the `core.account_lifecycle` port differential, in one file.
+"""The port side of the `core.account_lifecycle` differential. The bash side (`.ci/lib/account.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.account.jsonl`.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.account_lifecycle_shadow_driver --side old --twin .ci/lib/account.sh --port .ci/rediacc_ci/core/account_lifecycle.py <scenario>
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.account_lifecycle_shadow_driver --side new --twin .ci/lib/account.sh --port .ci/rediacc_ci/core/account_lifecycle.py <scenario>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.account_lifecycle_shadow_driver --side new --port .ci/rediacc_ci/core/account_lifecycle.py <scenario>
+
+While the bash existed, `--side old --twin .ci/lib/account.sh` drove it and the ledger rows under `.ci/shadow/` record both commands.
 
 A SECOND DRIVER AND A SECOND PAIR (`w7p5b-account-lifecycle`) FOR THE SAME TWIN, on the `local_common_actions_shadow_driver.py` precedent: `core/shadow_driver.py` compares the deterministic half's answers inside one bash process per side, and this one runs every case as its OWN PROCESS per side with the external programs stubbed (`core/stubfarm.py`). RUN AS A MODULE, never by path, for the reason
 `core/shadow_driver.py` records.
@@ -61,7 +62,6 @@ import shutil
 import signal
 import subprocess
 import sys
-import tempfile
 import time
 from typing import TYPE_CHECKING
 
@@ -818,7 +818,8 @@ SCENARIOS: dict[str, list[Case]] = {
 
 
 def base_dir() -> pathlib.Path:
-    return pathlib.Path(tempfile.gettempdir()) / BASE_NAME
+    # A LITERAL /tmp, see `locked`.
+    return pathlib.Path("/tmp") / BASE_NAME
 
 
 def _real(name: str) -> str:
@@ -835,6 +836,7 @@ def build_sandbox(repo: pathlib.Path, case: Case) -> tuple[pathlib.Path, Farm]:
         shutil.rmtree(base)
     root = base / "root"
     (root / ".ci" / "scripts").mkdir(parents=True)
+    # `.ci/lib` is a DANGLING link, kept on purpose: the directory is gone, but every frozen lifecycle transcript lists the sandbox tree and the link is one of its lines (`.ci/lib link <repo>/.ci/lib`).
     for rel in (
         ".ci/lib",
         ".ci/config",
@@ -930,43 +932,12 @@ def side_env(root: pathlib.Path, farm: Farm, case: Case) -> dict[str, str]:
     return farm.env(base, hidden=case.hidden)
 
 
-OLD_PROGRAM = r"""
-set -euo pipefail
-R="$1"; shift
-source "$R/.ci/config/constants.sh"
-source "$R/.ci/scripts/lib/toolchain.sh"
-source "$R/.ci/lib/local-common.sh"
-source "$R/.ci/lib/account.sh"
-shadow_epilogue() {
-    local rc=$? n
-    for n in ${SHADOW_SHOW:-}; do
-        if [[ -n "${!n+x}" ]]; then printf 'env| %s=%s\n' "$n" "${!n}"; else printf 'env| %s unset\n' "$n"; fi
-    done
-    if [[ -n "${SHADOW_PIDS:-}" ]]; then printf 'pids| %s\n' "${#ACCOUNT_PIDS[@]}"; fi
-    exit "$rc"
-}
-trap shadow_epilogue EXIT
-fn="$1"; shift
-case "${SHADOW_PRE:-}" in
-    exit3) set +e; (exit 3) ;;
-    child) "$SHADOW_REAL_SLEEP" 30 & ACCOUNT_PIDS+=("$!"); printf '%s\n' "$!" >"$STUB_ROOT/child.pid" ;;
-    foreign) ACCOUNT_PIDS+=("$SHADOW_FOREIGN_PID") ;;
-    tree)
-        account_spawn "$CONSOLE_ROOT_DIR" "$STUB_ROOT/tree.log" npx tree-job
-        for i in $(seq 200); do [[ -f "$STUB_ROOT/child.pid" ]] && break; "$SHADOW_REAL_SLEEP" 0.05; done
-        ;;
-esac
-"$fn" "$@"
-"""
-
-
 def run_side(
     side: str, root: pathlib.Path, case: Case, env: dict[str, str]
 ) -> subprocess.CompletedProcess:
-    if side == "old":
-        argv = ["bash", "-c", OLD_PROGRAM, "account-old", str(root), FN[case.verb], *case.args]
-    else:
-        argv = [sys.executable, "-m", __spec__.name, "--inner", case.verb, *case.args]
+    if side != "new":
+        raise ValueError("the bash side is retired: its answers are the golden lib.account.jsonl")
+    argv = [sys.executable, "-m", __spec__.name, "--inner", case.verb, *case.args]
     return subprocess.run(
         argv, cwd=root, env=env, input="", capture_output=True, text=True, check=False, timeout=600
     )
@@ -1180,7 +1151,8 @@ def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
 
 @contextlib.contextmanager
 def locked():
-    lock = pathlib.Path(tempfile.gettempdir()) / (BASE_NAME + ".lock")
+    """The machine-wide lock. The base is a literal /tmp and not `tempfile.gettempdir()`: `ensure_deps` hashes absolute paths into its stamp, and the frozen transcripts in `goldens/twins/lib.account.jsonl` carry the hash for exactly this path, so a `TMPDIR` that differs between the recording machine and CI would fail every case that reads the stamp."""
+    lock = pathlib.Path("/tmp") / (BASE_NAME + ".lock")
     with open(lock, "w") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
         try:
@@ -1195,20 +1167,18 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="one side of the core.account_lifecycle differential"
     )
-    parser.add_argument("--side", choices=("old", "new"), required=True)
-    parser.add_argument("--twin", required=True)
+    parser.add_argument("--side", choices=("new",), required=True)
     parser.add_argument("--port", required=True)
     parser.add_argument("--case", help="run only the named case (for debugging a mismatch)")
     parser.add_argument("scenario", choices=sorted(SCENARIOS))
     args = parser.parse_args(argv)
     repo = pathlib.Path.cwd().resolve()
-    for label, rel in (("twin", args.twin), ("port", args.port)):
-        if not (repo / rel).is_file():
-            sys.stderr.write(
-                "account_lifecycle_shadow_driver: the %s %s does not exist under %s, so a row would attest to nothing\n"
-                % (label, rel, repo)
-            )
-            return EXIT_CANNOT_RUN
+    if not (repo / args.port).is_file():
+        sys.stderr.write(
+            "account_lifecycle_shadow_driver: the port %s does not exist under %s, so a row would attest to nothing\n"
+            % (args.port, repo)
+        )
+        return EXIT_CANNOT_RUN
     with locked():
         for case in SCENARIOS[args.scenario]:
             if args.case and case.name != args.case:

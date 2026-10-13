@@ -245,7 +245,8 @@ def plan_tasks(text):
             continue
         body = re.sub(r"[*_`]+", "", body).strip()
         key = _norm(body)[:120]
-        if len(key) < 8 or key in seen:
+        # The 8-character floor screens out stray plain bullets; a checkbox is explicit at any length ("- [ ] WC1: e2e." is a box).
+        if not key or (not cb and len(key) < 8) or key in seen:
             continue
         seen.add(key)
         tasks.append(body[:300])

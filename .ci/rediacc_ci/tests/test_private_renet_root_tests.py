@@ -33,18 +33,21 @@ import pathlib
 import re
 import shutil
 import subprocess
+from typing import Any
 
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.private import renet_root_tests as port_module
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "renet-root-tests.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_root_tests.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-root-tests.sh")
+TWIN_STR = str(TWIN_REL)
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_root_tests.py")
 
 # The recording `go`. Configured by its own TEXT rather than through the environment: the subject advertises "No env vars", and a fixture that added three would make any env-shaped divergence unattributable.
@@ -118,7 +121,56 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
     return text.replace(str(root), "<root>").replace(str(tmp), "<tmp>")
 
 
-def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
+def _recording() -> bool:
+    """True only while the twin's bytes are being recorded (`REDIACC_CI_REGOLDEN=bash`). Every other run reads the golden and the twin is not in the tree."""
+    return diff.regolden_mode(TWIN_STR) == "bash"
+
+
+def _twin_answer(
+    tmp_path: pathlib.Path,
+    root: pathlib.Path,
+    binder: str,
+    parts: list[str],
+    *,
+    argv: tuple[str, ...] = (),
+) -> dict[str, Any]:
+    """The twin's four observables: recorded from bash while recording, the golden otherwise."""
+    seen: dict[str, list[str]] = {"calls": []}
+
+    def bash() -> tuple[int, str, str]:
+        out = _run(TWIN_REL, root, tmp_path, binder, argv=argv)
+        seen["calls"] = list(out["calls"])
+        return out["exit"], out["stdout"], out["stderr"]
+
+    def port() -> tuple[int, str, str]:
+        out = _run(PORT_REL, root, tmp_path, binder, argv=argv)
+        seen["calls"] = list(out["calls"])
+        return out["exit"], out["stdout"], out["stderr"]
+
+    rc, out, err, frozen = diff.twin_run(
+        TWIN_STR,
+        parts,
+        bash,
+        port=port,
+        extras={"calls": lambda: "\n".join(seen["calls"])},
+    )
+    return {
+        "exit": rc,
+        "stdout": out,
+        "stderr": err,
+        "calls": [line for line in frozen["calls"].split("\n") if line],
+    }
+
+
+def _subjects(tmp_path: pathlib.Path, root: pathlib.Path, binder: str, argv: tuple[str, ...] = ()):
+    """`(subject path, observables)` for the twin (golden) and the port (live), in that order."""
+    yield TWIN_REL, _twin_answer(tmp_path, root, binder, ["subjects"], argv=argv)
+    yield PORT_REL, _run(PORT_REL, root, tmp_path, binder, argv=argv)
+
+
+def _fixture(
+    tmp_path: pathlib.Path, *, submodule: str = "dir", twin: bool | None = None
+) -> pathlib.Path:
     """A tree shaped like the repository, holding COPIES of both subjects.
 
     Copies, because each subject derives the console root from its own location (`BASH_SOURCE`/`__file__`, then three directories up). Driving the tracked files with a `cwd` would point both at the REAL repository, and the go fake would then be invoked in the real `private/renet`.
@@ -131,8 +183,8 @@ def _fixture(tmp_path: pathlib.Path, *, submodule: str = "dir") -> pathlib.Path:
     (root / ".ci" / "scripts" / "private").mkdir(parents=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
-    shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    if _recording() if twin is None else twin:
+        shutil.copy2(TWIN, root / TWIN_REL)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -207,7 +259,7 @@ def _run(
     tmp_path: pathlib.Path,
     binder: str,
     argv: tuple[str, ...] = (),
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Drive one subject and collect all four observables."""
     env = {
         "PATH": binder,
@@ -302,7 +354,7 @@ def test_port_and_twin_agree(tmp_path, binder_kw, fixture_kw):
     binder = _binder(tmp_path, **binder_kw)
     argv = fixture_kw.get("argv", ())
 
-    old = _run(TWIN_REL, root, tmp_path, binder, argv=argv)
+    old = _twin_answer(tmp_path, root, binder, [repr(argv)], argv=argv)
     new = _run(PORT_REL, root, tmp_path, binder, argv=argv)
 
     for field in ("exit", "stdout", "stderr", "calls"):
@@ -352,8 +404,7 @@ def test_the_guard_fires_on_a_green_run_that_skipped_everything(tmp_path):
     root = _fixture(tmp_path)
     skipped = "=== RUN   %s\n--- SKIP: %s (0.00s)\nPASS\nok\t0.001s\n" % (NAMES[0], NAMES[0])
     binder = _binder(tmp_path, rc=0, out=skipped.encode())
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder):
         assert out["exit"] == 1, "%s went green on an all-skips run" % subject.name
         assert "::error::%s did not PASS" % NAMES[0] in out["stdout"], out["stdout"]
 
@@ -362,8 +413,7 @@ def test_the_guard_does_not_fire_on_a_real_pass(tmp_path):
     """THE NEGATIVE CONTROL. A gate with only positive controls will happily flag a tree in which nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder):
         assert out["exit"] == 0, "%s failed a run in which all three passed" % subject.name
         assert "::error::" not in out["stdout"]
         assert "Root-tagged repository tests passed" in out["stderr"]
@@ -373,29 +423,42 @@ def test_only_the_first_missing_name_is_reported(tmp_path):
     """The twin's loop exits on the FIRST miss, so a run in which all three are absent names one test, not three. Reproduced rather than improved: a port that listed all three would be a different gate, and the difference would show up in CI annotations."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, out=b"PASS\nok\t0.001s\n")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for _subject, out in _subjects(tmp_path, root, binder):
         assert out["stdout"].count("::error::") == 1, out["stdout"]
         assert NAMES[0] in out["stdout"]
         assert NAMES[1] not in out["stdout"]
 
 
-def test_a_substring_match_satisfies_the_guard(tmp_path):
-    """A TWIN DEFECT, PINNED IN BOTH: `grep -q -- "--- PASS: $t"` is a substring test, so `--- PASS: TestLoadState_PreservesDataAndMore` satisfies the guard
-    for `TestLoadState_PreservesData`. A renamed test would therefore keep the
-    guard green while the test it names no longer exists.
-
-    Reported, not fixed: anchoring the pattern would change what the gate accepts, which is a cutover-box decision, and a port that anchored it would no longer be equivalent to the script it claims to replace.
-    """
+def test_a_substring_match_no_longer_satisfies_the_guard(tmp_path):
+    """RULE T, INTENTIONAL DELTA. The twin's `grep -q -- "--- PASS: $t"` is a substring test, so `--- PASS: TestLoadState_PreservesDataAndMore` satisfied the guard for `TestLoadState_PreservesData`: a renamed test kept the guard green while the test it names no longer existed. The golden holds the twin's exit 0; the port refuses, naming the first test whose own line is missing."""
     root = _fixture(tmp_path)
     renamed = "".join(
         "=== RUN   %sAndMore\n--- PASS: %sAndMore (0.01s)\n" % (name, name) for name in NAMES
     )
     binder = _binder(tmp_path, out=(renamed + "PASS\nok\t0.05s\n").encode())
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
-        assert out["exit"] == 0, "%s: expected the defect to be reproduced" % subject.name
-        assert "::error::" not in out["stdout"]
+    twin = _twin_answer(tmp_path, root, binder, ["substring"])
+    assert twin["exit"] == 0, "the recorded twin no longer shows the substring defect"
+    assert "::error::" not in twin["stdout"]
+    out = _run(PORT_REL, root, tmp_path, binder)
+    assert out["exit"] == 1, "the port still accepts a longer test name as the guarded one"
+    assert "::error::%s did not PASS" % NAMES[0] in out["stdout"], out["stdout"]
+
+
+def test_a_subtest_line_does_not_stand_in_for_its_parent():
+    """The anchor ends the name at whitespace or end of line, so `--- PASS: Name/sub` is not `--- PASS: Name`."""
+    assert not port_module.passed("TestA", b"    --- PASS: TestA/sub (0.00s)\n")
+    assert not port_module.passed("TestA", b"--- PASS: TestAB (0.00s)\n")
+    assert port_module.passed("TestA", b"--- PASS: TestA (0.00s)\n")
+    assert port_module.passed("TestA", b"=== RUN TestA\n--- PASS: TestA")
+
+
+def test_the_run_pattern_and_the_guard_share_one_list(monkeypatch):
+    """RULE T. The twin spelled the tests twice, so adding one to `-run` left it unguarded. The port derives the pattern from the guarded tuple: a name added there reaches both."""
+    monkeypatch.setattr(
+        port_module, "GUARDED_TESTS", (*port_module.GUARDED_TESTS, "TestAddedLater")
+    )
+    assert port_module.run_pattern().split("|")[-1] == "TestAddedLater"
+    assert port_module.run_pattern().split("|")[:3] == list(NAMES)
 
 
 def test_the_mask_does_not_hide_the_message(tmp_path):
@@ -403,11 +466,12 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
     sample = "/a/b/twin.sh: line 20: go: command not found\nkept: line noise\n"
     masked = _mask(sample, pathlib.Path("/nowhere"), pathlib.Path("/nowhere-either"))
     assert masked == "<shell>: go: command not found\nkept: line noise\n", masked
-    # And the thing it is masking really is different between the two subjects, which is the whole reason the mask exists.
+    # And the thing it is masking really is different between the two subjects, which is the whole reason the mask exists. The twin's RAW stdout is read from the golden (it is the unmasked bytes, with the fixture paths folded).
     root = _fixture(tmp_path)
     binder = _binder(tmp_path, go="missing")
-    raw = {}
-    for subject in (TWIN_REL, PORT_REL):
+    work = (root, tmp_path.resolve())
+
+    def raw(subject: pathlib.PurePosixPath) -> str:
         env = {
             "PATH": binder,
             "HOME": str(tmp_path),
@@ -423,9 +487,14 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
             check=False,
             timeout=120,
         )
-        raw[subject.name] = proc.stdout
-    assert raw[TWIN_REL.name] != raw[PORT_REL.name], (
+        return proc.stdout
+
+    _, twin_raw, _ = diff.twin_call(
+        TWIN_STR, ["raw-go-missing"], lambda: (0, raw(TWIN_REL), ""), work=work
+    )
+    port_raw = raw(PORT_REL)
+    assert twin_raw != port_raw, (
         "the two prefixes are identical, so the mask is unnecessary and should be deleted"
     )
-    assert "go: command not found" in raw[TWIN_REL.name]
-    assert "go: command not found" in raw[PORT_REL.name]
+    assert "go: command not found" in twin_raw
+    assert "go: command not found" in port_raw

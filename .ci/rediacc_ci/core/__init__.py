@@ -2,7 +2,7 @@
 
 WHY THIS SUBPACKAGE EXISTS AND THE FLAT MODULES DO NOT LIVE HERE. The package root already holds `paths`, `log`, `proc`, `gitx`, `controls` and `workflows`. Those are PRIMITIVES: they answer questions any program in this repository has (where is the root, how do I run a command, what does git say). They were never a bash library and they have no bash twin.
 
-`core` is the other thing. Every module in here is the port of a specific file under `.ci/`, that file still exists, and it still works -- it delegates. The subpackage name is not decoration: `docs/ci-overhaul/08-driver-contract.md` arbitrates `rediacc_ci/core/env.py` as the home of `env_file_load` when W8 retargets `.ci/lib/local-common.sh`, and `.ci/rediacc_ci/__init__.py` names
+`core` is the other thing. Every module in here is the port of a specific file under `.ci/`, the file it replaces is either deleted (its answers frozen as goldens under `tests/goldens/twins/`) or delegates here. The subpackage name is not decoration: `docs/ci-overhaul/08-driver-contract.md` arbitrates `rediacc_ci/core/env.py` as the home of `env_file_load` when W8 retargets `.ci/lib/local-common.sh`, and `.ci/rediacc_ci/__init__.py` names
 `rediacc_ci.core.env` and `rediacc_ci.core.output` in its own roadmap. Putting the ported libraries anywhere else would have made that arbitration wrong on arrival.
 
 THE SHIM CONTRACT, stated once here rather than in each module. For every module in this subpackage:

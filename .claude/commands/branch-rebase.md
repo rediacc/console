@@ -1,7 +1,6 @@
 ---
-description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify ONLY - merges nothing, lands nothing, and never force-pushes. Use to refresh a long-running branch onto a moved main before or during a PR.
+description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify, then republish only through step 5's guarded lease push - merges nothing, lands nothing, opens no PR. Use to refresh a long-running branch onto a moved main before or during a PR.
 argument-hint: "[base]  (optional; defaults to main. A feature branch is legal: see below)"
-disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*)
 ---
 
@@ -11,7 +10,7 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Base: !`echo "origin/${ARGUMENTS:-main}" | tr -d ' '`
-- Branch vs base (left=base-only, right=branch-only): !`b="origin/${ARGUMENTS:-main}"; b="$(echo "$b" | tr -d " ")"; git rev-list --left-right --count "$b"...HEAD 2>/dev/null || echo '(unavailable -- does that base exist? `git fetch origin` first)'`
+- Branch vs base (left=base-only, right=branch-only): !`b="origin/${ARGUMENTS:-main}"; b="$(echo "$b" | tr -d " ")"; git rev-list --left-right --count "$b"...HEAD 2>/dev/null || echo '(unavailable -- does that base exist? run git fetch origin first)'`
 - Matching branches in submodules: !`cb="$(git branch --show-current)"; for d in private/renet private/account private/elite private/homebrew-tap; do [ -e "$d/.git" ] || continue; if git -C "$d" show-ref --verify --quiet "refs/heads/$cb" || git -C "$d" ls-remote --exit-code --heads origin "$cb" >/dev/null 2>&1; then echo "  $d: HAS $cb"; else echo "  $d: none"; fi; done; true`
 
 ## Task: rebase the current branch onto `origin/$ARGUMENTS` (default `main`)
@@ -99,7 +98,7 @@ Never rebase, add, or bump one. Report if any is dirty and move on.
 
   ```bash
   cb="$(git branch --show-current)"; git ls-remote --exit-code --heads origin "$cb" >/dev/null 2>&1 \
-    && echo "PUSHED: rebase will require a force-push the assistant cannot perform" \
+    && echo "PUSHED: republish with the lease push of step 5 after the rebase" \
     || echo "LOCAL ONLY: a plain push will work after the rebase"
   ```
 
@@ -132,9 +131,9 @@ the tip anyway.
 - A submodule with **no matching branch** is not rebased and not checked out. Its
 gitlink may still conflict in step 3 (if the base moved it); resolve that by **ancestry**, not by preference. See step 3's second table.
 - **Conflicts inside a submodule are real code conflicts.** Resolve them there, commit,
-and only then continue. Do not `--skip`: it silently DROPS the commit being replayed.
-- If a submodule branch was already pushed, its rebase also needs a force-push it
-cannot do. Note it for step 5; do not attempt it.
+and only then continue. Do not `--skip`: it silently DROPS the commit being replayed, and `block_rebase_over_foreign_dirt` refuses it.
+- If a submodule branch was already pushed, its rebase needs the step 5 lease push,
+submodule before console. Note it for step 5; nothing pushes before step 4 verifies.
 
 ### 3. Rebase the console branch
 
@@ -183,7 +182,7 @@ git add <sm>
 git rebase --continue
 ```
 
-**Never `git rebase --skip`.** It drops the commit outright. If the branch is unrecoverable, `git rebase --abort` returns to the pre-rebase state recorded in step 0.
+**Never `git rebase --skip`.** It drops the commit outright, and `.claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py` refuses it in this checkout and its submodules, pointing to `--abort`. If the branch is unrecoverable, `git rebase --abort` returns to the pre-rebase state recorded in step 0.
 
 ### 4. Verify: a rebase that "succeeded" can still be wrong
 
@@ -236,6 +235,8 @@ broken (your branch and the base each edited around the other). At minimum `npx 
 
 A rebase rewrites history, so an already-pushed branch can only be updated with a force-push. `.claude/rediacc_hooks/guards/block_git_force_push.py` refuses `--force`, `-f`, `--mirror` and `+refspec` unconditionally, and since the operator ruling of 2026-10-02 (PLAN-plan-per-pr-loop M3) it admits exactly one form: `git push --force-with-lease origin <branch>` on the repository's one live `MMDD-N` branch. `warn_remote_drift` lets that lease push through when every remote-only commit is patch-equivalent to a rebased local one, and refuses it, naming the commit, when the remote holds work the rebase never saw. Do not try other variants; do not "temporarily" edit either guard.
 
+The push is deliberately absent from this command's `allowed-tools`, which pre-approves read-only probes only, as `pr-merge.md` and `pr-babysit.md` do. Whether a force-push prompts is the session's permission mode, the same as for the fetch and rebase of steps 1-3, and under every mode the guard above admits no other form.
+
 - **Branch never pushed** → a plain `git push -u origin <branch>` is fine; do it and
 say so.
 - **Branch already pushed** → republish it with the lease push, or with the mediated verb
@@ -264,4 +265,4 @@ the commit-count comparison.
 - The push status: pushed, or the exact operator commands still outstanding.
 - Anything left dirty and whose it is.
 
-**Do not** merge, open, flip, or land anything. The branch is rebased and verified; the next move is the operator's.
+**Do not** merge, open, flip, or land anything. The branch is rebased and verified, and the next move belongs to whoever invoked this command. No command file calls it by name: it is reached from the `REBASE LOCALLY` notice `block_unverified_push` prints, by the operator, or at the two points the per-PR loop rebases onto `origin/main` (`.claude/agents/pr-babysitter.md` step 2, and `.claude/commands/pr-merge.md` step 3 when the branch is not a pure fast-forward).

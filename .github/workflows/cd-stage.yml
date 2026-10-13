@@ -115,26 +115,26 @@ jobs:
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
       - name: Download CLI executables
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           pattern: build-cli-*-${{ github.sha }}
           path: dist/cli/
           merge-multiple: true
 
       - name: Download CLI npm tarball
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: cli-npm-${{ github.sha }}
           path: dist/npm/
 
       - name: Download www build
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: build-www-${{ github.sha }}
           path: packages/www/dist/
 
       - name: Download json build
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: build-json-${{ github.sha }}
           path: packages/json/dist/
@@ -270,7 +270,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Upload preview pages artifact
         if: ${{ inputs.upload_pages && github.event_name != 'push' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: preview-pages-${{ github.sha }}
           path: dist/pages/
@@ -281,7 +281,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Upload staging release artifact
         if: github.event_name == 'push'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: release-artifacts-${{ github.sha }}
           path: |
@@ -304,7 +304,7 @@ jobs:
       # to fire at all.
       - name: Upload CLI manifest for the CD artifact-version assertion
         if: github.event_name == 'push'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: cli-manifest
           path: dist/cli/manifest.json

@@ -13,9 +13,7 @@ for a human is three log lines that say the same thing whatever was written.
 The ARTIFACT is a JSON object that a forensic sweep reads months later to reconstruct what CI intended, and its key order, its types and its escaping are all jq's. A differential that compared only stdout would score a port that
 uploaded `{}` as equivalent.
 
-THE ONE NORMALISATION, AND IT IS NOT THIS PORT'S DOING.
-`rediacc_ci.core.release_state_validator._log_error` deliberately omits `common.sh`'s `✗ ` glyph -- its own docstring says so, and that module was ported and ledgered in an earlier wave. So on the one path that surfaces a library error (`rsv_binary_count` failing) the twin's stderr carries `✗ ` and the port's does not. `_normalise_err` strips that prefix and NOTHING else; the
-message text, the indented aws diagnostic beneath it and the exit code are all compared unmasked.
+STDERR IS COMPARED UNMASKED. `rediacc_ci.core.release_state_validator._log_error` goes through `rediacc_ci.log`, so the validator's error lines carry `common.sh`'s `✗ ` glyph exactly as the bash twin's did; the one-prefix normaliser this file used to need is gone.
 
 `released_at` CANNOT AGREE and is not supposed to: the twin stamps `date -u`, the port stamps `datetime.now(UTC)`, and the two processes run seconds apart. Only that field is masked, and `test_released_at_has_the_same_shape_on_both_sides` asserts the FORMAT separately so the masking cannot hide a port that wrote a Unix epoch there.
 
@@ -83,13 +81,6 @@ CREDS = {
     "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "test-secret",
     "CLOUDFLARE_R2_ENDPOINT": "https://r2.invalid",
 }
-
-GLYPH = "✗ "  # common.sh's log_error marker; see the module docstring.
-
-
-def _normalise_err(text: str) -> str:
-    """Strip the validator library's missing `✗ ` prefix, and nothing else."""
-    return "".join(line.removeprefix(GLYPH) + "\n" for line in text.split("\n")[:-1])
 
 
 def _normalise_payload(text: str) -> str:
@@ -177,7 +168,7 @@ def drive(
 def assert_same(old: Run, new: Run) -> None:
     assert new.rc == old.rc, "exit: twin %s, port %s" % (old.rc, new.rc)
     assert new.out == old.out
-    assert _normalise_err(new.err) == _normalise_err(old.err)
+    assert new.err == old.err
     assert new.log == old.log, "the two sides did not make the same aws calls"
     if old.payload is None or new.payload is None:
         assert old.payload == new.payload, "one side uploaded and the other did not"
@@ -530,6 +521,6 @@ def test_a_port_that_skipped_the_readback_is_caught_by_the_call_log(
 
     old, new = drive(tmp_path, HAPPY, port_file=broken)
     assert old.rc == new.rc == 0, "the defect is invisible to the exit code"
-    assert _normalise_err(old.err) == _normalise_err(new.err), "and to stderr"
+    assert old.err == new.err, "and to stderr"
     assert _normalise_payload(old.payload) == _normalise_payload(new.payload)
     assert new.log != old.log, "PLANT DID NOT FIRE: the aws call log is not being compared"

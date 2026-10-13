@@ -1,4 +1,4 @@
-# twin .ci/scripts/private/run-account.sh blob 3eeb89c8fed218f5937e2cb90e2210e72e218c47
+# twin .ci/scripts/private/run-account.sh blob 3eeb89c8fed218f5937e2cb90e2210e72e218c47 ; delta 2026-10-09: line 11 names the Python port rediacc_ci.deploy.deploy_account, the twin deploy-account.sh being deleted (PLAN-retire-bash-oracles)
 exit: 1
 --- stdout ---
 npm ci stdout
@@ -8,7 +8,7 @@ npm ci stderr
 ✗ Production and edge are the seven configs under workers/account/:
 ✗   wrangler.{eu,us,asia}.toml, wrangler.edge-{eu,us,asia}.toml, wrangler.bench.toml
 ✗ Deploy through the script that resolves them:
-✗   .ci/scripts/deploy/deploy-account.sh --region <eu|us|asia> [--target edge]
+✗   PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region <eu|us|asia> [--target edge]
 --- calls ---
 [
   "npm\t<root>/private/account\tci"

@@ -1,4 +1,4 @@
-"""Differential: `rediacc_ci.setup.install_deps` against its twin `.ci/scripts/setup/install-deps.sh`.
+"""Differential: `rediacc_ci.setup.install_deps` against the answers frozen from its retired twin `.ci/scripts/setup/install-deps.sh` (`goldens/twins/setup.install-deps.jsonl`).
 
 NOTHING HERE RUNS A REAL `npm ci`. A recording fake `npm` sits on a scratch PATH, logs its exact argv AND the directory it was called in, echoes the same under a `call: ` prefix, and exits with whatever the environment tells it to. The one thing this script does is decide which `npm` runs where and with which flags, so the CALL LOG is the primary evidence and the two streams are
 the secondary.
@@ -24,6 +24,7 @@ THE LEDGER LINE. `shadow-gate.ts` classifies any line starting with `â†’ ` or `â
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -33,6 +34,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.setup import install_deps as port
+from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -40,18 +42,14 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/setup/install-deps.sh"
 PORT_REL = ".ci/rediacc_ci/setup/install_deps.py"
-BASH = shutil.which("bash") or "/bin/bash"
 
-# The files a fixture tree needs: the twin, the bash library it sources, and the Python modules the port imports transitively. Listed explicitly rather than copied with a wildcard, so a new dependency appears here as an edit instead of being dragged in silently.
+# The files a fixture tree needs: the Python modules the port imports transitively. Listed explicitly rather than copied with a wildcard, so a new dependency appears here as an edit instead of being dragged in silently.
 TREE_FILES = (
-    TWIN_REL,
-    ".ci/scripts/lib/common.sh",
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
-    ".ci/config/well-known.generated.sh",
     ".ci/rediacc_ci/proc.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
@@ -184,8 +182,7 @@ def _layout(
 
 
 def _run(subject: str, tree: pathlib.Path, args: list[str], *, drop: str = "", **extra: str):
-    side = "old" if subject.endswith(".sh") else "new"
-    call_log = tree / f"{side}-calls.log"
+    call_log = tree / "new-calls.log"
     call_log.write_text("", encoding="utf-8")
     env = {
         "PATH": _bin(tree, drop=drop),
@@ -198,9 +195,8 @@ def _run(subject: str, tree: pathlib.Path, args: list[str], *, drop: str = "", *
         "FAKE_TREE_ROOT": str(tree),
     }
     env.update(extra)
-    runner = [BASH] if subject.endswith(".sh") else [sys.executable]
     proc = subprocess.run(
-        [*runner, subject, *args],
+        [sys.executable, subject, *args],
         cwd=tree,
         capture_output=True,
         text=True,
@@ -214,10 +210,22 @@ def _run(subject: str, tree: pathlib.Path, args: list[str], *, drop: str = "", *
 
 
 def run_both(tmp_path: pathlib.Path, args: list[str], **kw):
+    """The twin's answer (from the golden frozen out of `install-deps.sh`) and the port's live one."""
     layout_kw = {k: kw.pop(k) for k in ("node_modules", "accounts") if k in kw}
     tree = _tree(tmp_path)
-    _layout(tree, **layout_kw)
-    old, old_calls = _run(TWIN_REL, tree, args, **kw)
+    parts = [
+        json.dumps(list(args)),
+        json.dumps(sorted(layout_kw.items())),
+        json.dumps(sorted(kw.items())),
+    ]
+
+    def twin():
+        raise RuntimeError(
+            "%s is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
+            % (TWIN_REL, diff.REGOLDEN_VERB, TWIN_REL)
+        )
+
+    old, old_calls = diff.twin_result(TWIN_REL, parts, twin, work=(tmp_path,))
     _layout(tree, **layout_kw)
     new, new_calls = _run(PORT_REL, tree, args, **kw)
     return old, new, old_calls, new_calls

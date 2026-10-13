@@ -15,6 +15,7 @@ from the counter and is not read back off the model, so it cannot be fabricated.
 THE WIDE TIER at the foot of this file is the same question over the counter's `advisory` profile, and it is ADVISORY ONLY: it queues one allow-report section and never blocks. It reports duplication in the Stop hook's own `wl_*.py` files, some of which is deliberate parallel rule structure; its section comment says why that is expected and how a `no` verdict settles.
 """
 
+import ast
 import fnmatch
 import glob
 import hashlib
@@ -65,7 +66,11 @@ Three answers, and the middle one is a real answer rather than a hedge:
             module that should, in `harness` -- an existing one if there is one.
   already   a shared module for this ALREADY exists and these copies simply do not use
             it. Name it in `harness`. This is checked against the disk: a module that
-            does not exist, or that the instances do not import, is treated as `yes`.
+            does not exist is treated as `yes`, and one that EVERY instance's file
+            already imports is treated as consolidated and answers nothing, because
+            then what repeats is a thin local wrapper around a shared call. If those
+            wrappers take different arguments or return different things, answer `no`
+            and cite the differing signatures.
   no        they look alike and are not one thing. `divergence` is REQUIRED and must be
             CONCRETE: a behavioural difference visible in the instances listed above,
             such as differing return values, error handling or side effects, cited by
@@ -109,8 +114,67 @@ def harness_is_real(harness, root=None):
     return bool(cand) and os.path.exists(os.path.join(root, cand))
 
 
-def read_verdict(out, root=None):
+def _module_stem(harness):
+    """`a/b/harness.py:run_gate` -> `harness`. The name an import of the module would carry."""
+    cand = (harness or "").split(":")[0].strip()
+    base = os.path.basename(cand.rstrip("/"))
+    return base.split(".")[0] if base else ""
+
+
+def _imports_module(text, stem):
+    """Does this source text IMPORT a module named `stem`? An import statement, a TS/JS `from`/`import`/`require` specifier, or a shell `source`. A bare mention of the word is not an import: counting a comment as adoption would silence a real `already`.
+
+    PYTHON IS READ BY `ast` (review fdb82cba.1). A line regex counted `from helpers import run  # see harness` and an import quoted in a docstring, and missed one split over parenthesized lines. Text that parses as Python is answered from its Import/ImportFrom nodes alone. Anything else (TS, JS, shell) has its comments stripped before the specifier and `source` patterns run, so `// from "./harness"` is not one either.
+    """
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        tree = None
+    if tree is not None:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import) and any(stem in a.name.split(".") for a in node.names):
+                return True
+            if isinstance(node, ast.ImportFrom) and (
+                stem in (node.module or "").split(".") or any(a.name == stem for a in node.names)
+            ):
+                return True
+        return False
+    s = re.escape(stem)
+    code = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    code = re.sub(r"(?m)(?:^|(?<=\s))(?://|#).*$", "", code)
+    return bool(
+        re.search(
+            r"""(?:\bfrom|\bimport|\brequire\()\s*['"][^'"]*\b%s(?:\.[a-z]+)?['"]""" % s, code
+        )
+        or re.search(r"^\s*(?:source|\.)\s+\S*\b%s\.sh\b" % s, code, re.MULTILINE)
+    )
+
+
+def instances_import(harness, instances, root=None):
+    """True only when EVERY instance's file exists and imports the named module.
+
+    SHAPE_PROMPT says `already` means the copies do not use the module, and that a module every instance already imports is consolidated. This is that sentence checked against the disk rather than left to the model: measured 2026-10-09, the run_gate calibration control answered `already` naming harness.py on one run of five, while all three of its files import it. Strict on purpose (all instances, an import statement, a file that exists): a wrong True silences a real finding, a wrong False only leaves the fire the model asked for.
+    """
+    stem = _module_stem(harness)
+    if not stem or not instances:
+        return False
+    root = root or os.getcwd()
+    for inst in instances:
+        path = os.path.join(root, str(inst).rsplit(":", 1)[0])
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                text = fh.read()
+        except OSError:
+            return False
+        if not _imports_module(text, stem):
+            return False
+    return True
+
+
+def read_verdict(out, root=None, instances=None):
     """(kind, payload). kind is 'silent', 'fire' or 'degraded'.
+
+    `instances` are the counter's file:line list. Given, an `already` naming a module every instance already imports is SILENT (see instances_import); omitted, that check is skipped, which only ever leaves a fire standing.
 
     FAIL SEMANTICS are wl_classsweep's, not the regression gate's: a missing or malformed object NEVER fails closed. Degrading loses a demand; it can never grant an exit that was otherwise refused.
     """
@@ -141,10 +205,17 @@ def read_verdict(out, root=None):
         if len(divergence) < 20:
             return "degraded", "consolidatable=no with no concrete divergence named"
         return "silent", "not one thing: %s" % divergence[:160]
+    # THE OTHER HALF OF `already`'s DEFINITION, checked on disk: copies that all import the named module already use it, so there is nothing to adopt. Silent rather than degraded, because the disk has answered the question, not failed to.
+    if (
+        verdict == "already"
+        and harness_is_real(harness, root)
+        and instances_import(harness, instances, root)
+    ):
+        return "silent", "already consolidated: every instance imports %s" % harness[:120]
     # `already` USED TO RETURN SILENT HERE, and that was backwards. Operator ruling 2026-09-02, after the calibration fixture and this line had contradicted each other for a full run: "Make it FIRE".
     #
     # The rubric asks whether these copies should become one thing, and reads `already` as "yes, and the thing already exists". Answering that with silence made the MOST actionable case the quietest one -- a helper is on disk, N copies ignore it, and adopting it is a mechanical edit with no design left to do. V_ACTION already carried the right order for it ("Extract the shared
-    # piece into <harness>"), which is the adopt instruction; nothing needed writing, only unmuting. The evidence that settled it: with_temp_dir exists at .ci/scripts/test/lib/test-helpers.sh, and 70 gate scripts hand-roll `mktemp -d` against 26 that use it.
+    # piece into <harness>"), which is the adopt instruction; nothing needed writing, only unmuting. The evidence that settled it at the time: with_temp_dir existed in test-helpers.sh, and 70 gate scripts hand-rolled `mktemp -d` against 26 that used it (both since ported to pytest and deleted).
     #
     # `already` naming a module that is NOT on disk still fires too -- that is a claim, not a fact, and it fires with the harness it named so the session can see the mistake. Both branches fire now; they differ only in whether the named harness is real, which the instruction carries either way.
     return "fire", {
@@ -286,7 +357,7 @@ def apply_verdict(out, instances, shape_hash, root=None, path=None):
     without a prior the count is pinned at 1 forever, and `load` returns None only once the cap is ALREADY reached, so the guard could not fire while a live demand existed. The rule blocked on the same shape indefinitely. Caught by the control below, not by reading the code.
     """
     demand = demand_for(shape_hash)
-    kind, payload = read_verdict(out, root)
+    kind, payload = read_verdict(out, root, instances)
     if kind != "fire":
         demand.clear(path)
         return kind, payload if isinstance(payload, str) else ""
@@ -308,10 +379,8 @@ COUNTER_TIMEOUT_S = 60
 
 # The corpus signature, so an unchanged tree costs a stat sweep rather than 1.1s of tsx. Measured 2026-09-01: the counter is ~1.10s wall over 320 files / 39,447 windows, and the Stop hook fires on every poll. mtime+size rather than content: any edit moves it, so this can make the rule LATE by nothing and can never silently switch it off.
 # `.ci/scripts/quality/check-*.sh` left with the counter's family of that name (PLAN-retire-bash-oracles B3 retired its last file), so the two literals stay equal.
-CORPUS_GLOBS = (
-    "scripts/gates/check-*.ts",
-    ".ci/scripts/test/gates/test-*.sh",
-)
+# `.ci/scripts/test/gates/test-*.sh` left the same way on 2026-10-08, when W11-A/B/C and section 12 U1-U3 deleted that family's last file and the counter's row with it.
+CORPUS_GLOBS = ("scripts/gates/check-*.ts",)
 
 
 def corpus_sig(root, globs=CORPUS_GLOBS):
@@ -619,7 +688,7 @@ def wide_report(root, findings, err, branch):
         if out is None:
             note = "wide shape_dup not judged: %s" % err2
         else:
-            kind, payload = read_verdict(out, root)
+            kind, payload = read_verdict(out, root, instances)
             if kind == "fire":
                 desc = payload["shape"]
                 action = V_ACTION_WIDE % (

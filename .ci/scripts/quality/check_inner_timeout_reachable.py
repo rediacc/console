@@ -81,6 +81,8 @@ CHECKOUT_ALIASES = (".review-scripts/",)
 
 MODULE_RE = re.compile(r"-m\s+(rediacc_ci(?:\.[A-Za-z_][A-Za-z0-9_]*)+)")
 SCRIPT_RE = re.compile(r"[\w./-]+\.py\b")
+# A module whose last segment is a GitHub expression (`-m rediacc_ci.deploy.${{ steps.x.outputs.y }}`). MODULE_RE stops at the dot before `${{`, so without this the finding named the PARENT package and said the step "would fail at import" when it ran fine; the true defect is that no reader can tell which module, and so which timers, the step runs.
+DYNAMIC_MODULE_RE = re.compile(r"-m\s+(rediacc_ci(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\.\$\{\{")
 USES_LOCAL_RE = re.compile(r"^\s*(?:-\s+)?uses:\s*['\"]?(\./[^\s'\"#]+)", re.MULTILINE)
 
 
@@ -393,7 +395,16 @@ def scan_steps(workflows: dict[str, str], read: Callable[[str], str | None]) -> 
             texts.extend(_composite_runs(step.text, read, set()))
             for run_text in texts:
                 modules, scripts = step_refs(run_text)
+                dynamic = set(DYNAMIC_MODULE_RE.findall(run_text))
                 for module in modules:
+                    if module in dynamic:
+                        out.problems.append(
+                            "%s: runs `python3 -m %s.${{ ... }}`, a module chosen by a GitHub "
+                            "expression this gate cannot resolve, so its timers are unchecked. "
+                            "Spell each module out (a `case` over an env var) so every one is read."
+                            % (where, module)
+                        )
+                        continue
                     rel = next((p for p in module_path(module) if read(p) is not None), None)
                     if rel is None:
                         out.problems.append(
@@ -666,6 +677,16 @@ def selftest(*, verbose: bool = False) -> bool:
         "a module that does not exist is a finding, not a skip",
         len([p for p in scan.problems if "rediacc_ci.missing.mod" in p]),
         1,
+    )
+    dyn_wf = (
+        "jobs:\n  d:\n    timeout-minutes: 10\n    steps:\n      - name: Deploy\n"
+        "        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.${{ steps.t.outputs.script }}\n"
+    )
+    dyn = scan_steps({"d.yml": dyn_wf}, _fixture_reader(files))
+    c.check(
+        "a module named by a ${{ }} expression is a finding that says so, not an import failure of its parent",
+        [("expression" in p, "neither" in p) for p in dyn.problems],
+        [(True, False)],
     )
     c.check(
         "the step's own ceiling wins over its job's",

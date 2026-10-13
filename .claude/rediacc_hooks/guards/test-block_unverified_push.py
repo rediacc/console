@@ -385,6 +385,39 @@ put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
 carry(keyed(K1), keyed(K1, gate="check:lint"))
 cases.append((2, run(PUSH), "a STALE carried entry (its gate now green) refuses"))
 
+
+# NOT RUN IS NOT GREEN: the same two carries, with the second gate recorded as deferred by the lane. Refused before, as if a gate that never ran had gone green.
+def _two_carried(second):
+    return {
+        "check:fixture-ok": GM._gate_entry("ok"),
+        "check:fixture-cionly": GM._gate_entry("ciOnly"),
+        TRAILERS: GM._gate_entry("fail"),
+        "check:lint": GM._gate_entry(second),
+    }
+
+
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("deferred"))
+cases.append((0, run(PUSH), "a carried gate the lane DEFERRED is not stale"))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("ciOnly"))
+cases.append((0, run(PUSH), "a carried gate recorded as ciOnly is not stale"))
+put(
+    exitCode=1,
+    failed=[TRAILERS],
+    blocked=["check:lint"],
+    findings={TRAILERS: [K1]},
+    gates=_two_carried("blocked"),
+)
+_blocked_err = run_err(PUSH)
+cases.append(
+    (
+        False,
+        "NOT failing" in _blocked_err,
+        "a carried gate recorded as blocked is not called stale",
+    )
+)
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("ok"))
+cases.append((2, run(PUSH), "CONTROL: the same carried gate recorded as ok is stale"))
+
 # The same rot on a WHOLLY GREEN receipt: nothing failing means every carried entry is stale. Measured 2026-10-02, this arm ran only on a red receipt, so the check:ci-external-links carry rode the green push of afe0503db unremarked.
 put(exitCode=0)
 carry(keyed(K1))
@@ -1119,6 +1152,214 @@ def drive_v2_off(where, cmd):
     return proc.returncode, proc.stderr
 
 
+# --- a gate the run STOPPED before is not judged (PLAN-gate-scheduling-learned T1) ---------------
+# The runner writes `blocked` both for a gate that exited 77 and for one the pool skipped (run.ts receiptGates). A `--fail-fast` run whose only red is carried still writes `whole: true`, and every gate it never launched read as judged. Reproduced 2026-10-08 against this guard before the fix: rc=0 with only the carried-red note, because the top-level `blocked` list holds only exit-77 gates.
+FF_RED = "check:fixture-red"
+FF_PRE = "build:fixture-pre"
+FF_LOCK = [
+    *GM.FIXTURE_LOCK,
+    {"id": FF_RED, "run": "npm run check:fixture-red", "gate": True, "leaves": []},
+    {"id": FF_PRE, "run": "npm run build:fixture-pre", "gate": False, "leaves": []},
+    {"id": "check:fixture-dep", "run": "x", "gate": True, "needs": [FF_PRE], "leaves": []},
+    {
+        "id": "check:fixture-dep2",
+        "run": "x",
+        "gate": True,
+        "needs": ["check:fixture-dep"],
+        "leaves": [],
+    },
+    {"id": "check:fixture-tool", "run": "x", "gate": True, "leaves": []},
+]
+
+
+def failfast_world(name, verdicts, red, blocked=()):
+    """A repo whose lock is FF_LOCK and whose receipt gives each FF gate `verdicts[id]`, with `red` failing and carried whole ("*")."""
+    root = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / name
+    gates = {
+        "check:fixture-ok": GM._gate_entry("ok"),
+        "check:fixture-cionly": GM._gate_entry("ciOnly"),
+    }
+    for gid, v in verdicts.items():
+        gates[gid] = GM._gate_entry(
+            v, exitCode=None if v == "blocked" else (1 if v == "fail" else 0)
+        )
+    receipt = {
+        "whole": True,
+        "narrowedBy": [],
+        "exitCode": 1,
+        "failed": [red],
+        "findings": {red: None},
+        "blocked": list(blocked),
+        "droppedTouched": [],
+        "gates": gates,
+    }
+    GM._repo_with_receipt(
+        root,
+        receipt,
+        carried={"version": 2, "carried": [keyed("*", gate=red, reason=STAR_REASON)]},
+    )
+    # _repo_with_receipt seeds FIXTURE_LOCK; this world needs `needs`, so the lock is replaced in a second commit and the receipt re-keyed to the tree that commit produced.
+    GM._write_fixture_lock(root, FF_LOCK)
+    env = GM._env()
+    subprocess.run(["git", "add", "-A", "--", "scripts"], cwd=str(root), check=True, env=env)
+    subprocess.run(["git", "commit", "-qm", "lock"], cwd=str(root), check=True, env=env)
+    tree = subprocess.run(
+        ["git", "rev-parse", "HEAD^{tree}"],
+        cwd=str(root),
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
+    ).stdout.strip()
+    rpath = root / ".ci" / "cache" / "prepush-receipt.json"
+    body = json.loads(rpath.read_text(encoding="utf-8"))
+    body["headTree"] = tree
+    rpath.write_text(json.dumps(body), encoding="utf-8")
+    return root
+
+
+def drive_unjudged_off(where, cmd):
+    """The guard with unjudged_blocked forced to find nothing, in a child: the hole as it was before T1."""
+    runner = (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src, 'broken', 'exec'), ns)\n"
+        "ns['unjudged_blocked'] = lambda *a, **k: []\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "sys.exit(ns['run'](ev))\n"
+    ) % (str(GUARD.parents[2]), str(GUARD), str(GUARD))
+    proc = subprocess.run(
+        [sys.executable, "-c", runner],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(where),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(where)),
+        check=False,
+    )
+    return proc.returncode, proc.stderr
+
+
+def test_failfast_skips_refused():
+    ok_all = {
+        FF_RED: "fail",
+        FF_PRE: "ok",
+        "check:fixture-dep": "ok",
+        "check:fixture-dep2": "ok",
+        "check:fixture-tool": "ok",
+    }
+    # CONTROL FIRST: the same receipt as a full run (every gate judged, the one red carried) is allowed, so the refusals below are about the skips and nothing else in the world.
+    w = failfast_world("ff-full", ok_all, FF_RED)
+    cases.append(
+        (0, drive(w, V2_PUSH)[0], "FAIL-FAST CONTROL: the full run with a carried red is allowed")
+    )
+
+    # THE HOLE: --fail-fast stopped after the carried red, so every unstarted gate reads `blocked` with no prerequisite behind it.
+    ff = dict(
+        ok_all,
+        **{
+            FF_PRE: "blocked",
+            "check:fixture-dep": "blocked",
+            "check:fixture-dep2": "blocked",
+            "check:fixture-tool": "blocked",
+        },
+    )
+    w = failfast_world("ff-stopped", ff, FF_RED)
+    rc, err = drive(w, V2_PUSH)
+    cases.append((2, rc, "FAIL-FAST: a whole receipt with gates the run stopped before is refused"))
+    cases.append(
+        (
+            True,
+            "--fail-fast" in err and "check:fixture-tool" in err and FF_PRE in err,
+            "FAIL-FAST: the refusal names the unjudged gates and --fail-fast",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_unjudged_off(w, V2_PUSH)[0],
+            "FAIL-FAST DEFECT CONTROL: without the check the hole is open",
+        )
+    )
+
+    # ACCEPTED BEHAVIOUR KEPT: a carried prerequisite that failed skips its dependents, transitively, and that still pushes (plan section 5, part (b) not taken).
+    carried_pre = dict(
+        ok_all,
+        **{
+            FF_RED: "ok",
+            FF_PRE: "fail",
+            "check:fixture-dep": "blocked",
+            "check:fixture-dep2": "blocked",
+        },
+    )
+    w = failfast_world("ff-carried-pre", carried_pre, FF_PRE)
+    cases.append(
+        (
+            0,
+            drive(w, V2_PUSH)[0],
+            "FAIL-FAST: dependents of a carried failing prerequisite still push",
+        )
+    )
+
+    # ACCEPTED BEHAVIOUR KEPT: a gate that could not run (exit 77, in the top-level `blocked` list) warns and pushes.
+    w = failfast_world(
+        "ff-cannot-run",
+        dict(ok_all, **{"check:fixture-tool": "blocked"}),
+        FF_RED,
+        blocked=["check:fixture-tool"],
+    )
+    rc, err = drive(w, V2_PUSH)
+    cases.append((0, rc, "FAIL-FAST: a could-not-run gate still pushes"))
+    cases.append((True, "could NOT RUN" in err, "FAIL-FAST: and still warns"))
+
+    # TRANSITIVITY BOTH WAYS: a dependent whose prerequisite was itself stopped (not failed) is unjudged too, even though its own reason reads "needs".
+    stopped_chain = dict(
+        ok_all, **{"check:fixture-dep": "blocked", "check:fixture-dep2": "blocked"}
+    )
+    w = failfast_world("ff-stopped-chain", stopped_chain, FF_RED)
+    cases.append(
+        (
+            2,
+            drive(w, V2_PUSH)[0],
+            "FAIL-FAST: a dependent of a stopped (not failed) gate is refused",
+        )
+    )
+
+    # THE PURE HELPER, against the lock directly.
+    by_id = {g["id"]: g for g in FF_LOCK}
+    cases.append(
+        (
+            ["check:fixture-dep2"],
+            GM.unjudged_blocked(
+                {
+                    "blocked": [],
+                    "gates": {
+                        "check:fixture-dep": {"verdict": "ok"},
+                        "check:fixture-dep2": {"verdict": "blocked"},
+                    },
+                },
+                by_id,
+            ),
+            "UNJUDGED: a blocked gate whose need PASSED was stopped, not skipped",
+        )
+    )
+    cases.append(
+        (
+            [],
+            GM.unjudged_blocked(
+                {
+                    "blocked": ["check:fixture-tool"],
+                    "gates": {"check:fixture-tool": {"verdict": "blocked"}},
+                },
+                by_id,
+            ),
+            "UNJUDGED CONTROL: a could-not-run gate is explained",
+        )
+    )
+
+
 def test_v2_carried_hash_match_allows():
     w = v2_world("v2-ok", "ok")
     cases.append(
@@ -1260,6 +1501,7 @@ def test_v2_helpers():
     )
 
 
+test_failfast_skips_refused()
 test_v2_carried_hash_match_allows()
 test_v2_planted_input_change_refuses()
 test_v2_carried_red_never_green()

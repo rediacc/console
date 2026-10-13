@@ -129,7 +129,7 @@ PRINTF_LINE = 351  # common.sh's `printf -v "$key"`, inside parse_args
 # script's directory, then the unnormalised `../lib/common.sh`.
 TWIN_RELATIVE_DIR = ".ci/scripts/env"
 
-USAGE = "Usage: create-e2e-env.sh --output <path> [options]"  # twin :101
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --output <path> [options]"  # twin :101
 
 # The heredoc at twin :132-156. `\$RUNNER_TEMP` is escaped in the twin, so the literal dollar reaches the file; every other `$NAME` is a substitution.
 FILE_TEMPLATE = """\

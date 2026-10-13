@@ -33,6 +33,7 @@ stripped strings, which would also stop the comparison seeing a real trailing-wh
 """
 
 import base64
+import importlib.util
 import json
 import os
 import pathlib
@@ -402,6 +403,76 @@ def host_unfold(
     return text
 
 
+# --------------------------------------------------------------------------- The recorder: what a golden holds that NO token marks ---------------------------------------------------------------------------
+#
+# `host_fold` runs at RECORD time, so it covers only the variance somebody had already met when a golden was frozen. The twins are deleted and their goldens are final, so a variance met LATER cannot become a token without rewriting a frozen answer. On 2026-10-13 run 38389205702 was the first in which the three pytest legs ran to the end on GitHub's runner, and it met four at once, all invisible on the recording host because that host IS the recorder:
+#
+#   numeric ids     the recorder ran as 1000:1000 and `$(id -u):$(id -g)` froze that; the runner is 1001:1001.
+#   directory size  the recorder's scratch was tmpfs, where `ls -l` prints a directory's entry count times 20 (`60`, `80`) and a matching `total`; ext4 prints `4096`, which also widens the size column and so re-pads every row.
+#   readdir order   tmpfs lists a directory newest entry first, ext4 in hash order, and `find` prints whichever it is handed.
+#   coreutils       the recorder's `mkdir`/`ln`/... are uutils (`mkdir: Already exists`), the runner's are GNU (`mkdir: cannot create directory ‘out’: File exists`).
+#
+# The helpers below are how a call site says which of these its answer carries. The first is an UNFOLD (the recorded value becomes this host's, and the port must then match it exactly); the rest are compare-time masks applied to BOTH sides, because no rewrite of the recorded text yields "what the twin would have printed here" without running the twin.
+# `docs/agent-reference/TRAPS.md` *The same shape on the pytest lane* names the command that runs the suite as the runner would.
+RECORDER_IDS = (1000, 1000)
+
+
+def recorder_ids_here(text: str, template: str, ids: tuple[int, int] | None = None) -> str:
+    """The recorder's `uid:gid`, inside `template`, becomes this process's.
+
+    `template` is the exact context the call site vouches for (`"chown\t-R\t%d:%d\t"`), with two `%d`: a bare `1000` anywhere else in the answer is somebody's data and stays literal.
+    """
+    here = ids if ids is not None else (os.getuid(), os.getgid())
+    return text.replace(template % RECORDER_IDS, template % here)
+
+
+_LS_TOTAL_RE = re.compile(r"^total \d+$", re.MULTILINE)
+_LS_ROW_RE = re.compile(
+    r"^(?P<mode>[-bcdlpsD][-rwxsStTl]{9}[.+@]?)[ \t]+(?P<links>\d+)[ \t]+(?P<owner>\S+)[ \t]+"
+    r"(?P<group>\S+)[ \t]+(?P<size>\d+)[ \t]+",
+    re.MULTILINE,
+)
+DIR_SIZE_MARK = "<DIRSIZE>"
+LS_TOTAL_MARK = "total <BLOCKS>"
+
+
+def mask_ls_filesystem(text: str) -> str:
+    """Compare-time, BOTH sides: what `ls -l` prints about the FILESYSTEM rather than about the files.
+
+    A directory's size and the `total` line are the filesystem's block accounting, and the width `ls` pads the size column to follows the largest of them. So: `total N` loses its number, a DIRECTORY row loses its size, and every row's column padding collapses to one space. A regular file's size, every mode, link count, owner, group and name are still compared.
+    """
+
+    def row(m: re.Match[str]) -> str:
+        size = DIR_SIZE_MARK if m["mode"].startswith("d") else m["size"]
+        return " ".join((m["mode"], m["links"], m["owner"], m["group"], size)) + " "
+
+    return _LS_ROW_RE.sub(row, _LS_TOTAL_RE.sub(LS_TOTAL_MARK, text))
+
+
+def mask_coreutils_diagnostic(text: str, tool: str) -> str:
+    """Compare-time, BOTH sides: one named coreutils tool's diagnostic line keeps the tool and loses the wording.
+
+    The wording is the IMPLEMENTATION's (uutils against GNU, and GNU's own across locales), and a port that shells out to the tool prints whichever its host has. That the tool spoke, on which stream, where in the output and with what status are all still compared. `tool` is ONE name: a call site masks the tool its case makes fail, never the family, and pins the port's own line against the host's tool separately (`host_diagnostic`).
+    """
+    return re.sub(
+        r"^%s: .*$" % re.escape(tool), "%s: <DIAGNOSTIC>" % tool, text, flags=re.MULTILINE
+    )
+
+
+def host_diagnostic(argv: list[str], cwd: str, locale: str) -> str:
+    """What THIS host's tool prints on stderr for `argv`, run for real under `locale` (the one the differential gives its subjects; GNU quotes a path differently under `C` and `C.UTF-8`): the expectation a port that shells out must meet byte for byte, on a host whose wording the golden never saw."""
+    result = subprocess.run(
+        argv,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "LC_ALL": locale, "LANG": locale},
+        timeout=DEFAULT_TIMEOUT,
+    )
+    return result.stderr
+
+
 # A CPython traceback's RENDERING is the interpreter's, not the program's. Two lines of it vary by minor version: 3.13 began echoing the source of a `python3 -c` snippet under its `File "<string>"` frame (3.12, the GitHub runner, has no source to echo), and the PEP 657 ruler (`~~~^^^`) under an echoed line appears or not by version and by how much of the line the failing expression spans.
 # A subject that RUNS `python3 -c` (rather than forging the text) prints whichever its host renders, so a golden recorded on 3.14 cannot equal a 3.12 run byte for byte, and no token could be unfolded into "what this host would render" without running the snippet.
 #
@@ -722,6 +793,53 @@ def twin_streams(
     return answer
 
 
+# Twins whose `.sh` is kept as a one-line shim over the port because a drift-locked tree (`.ci/breakpoint`) tests the path with -x. Their golden stays the frozen bash answer, but the golden's `twin_blob` names the ORIGINAL bash, so the live file is held to the shim shape instead of the blob, and a freeze `--source bash` is refused (it would record the port as if it were bash).
+SHIMMED_TWINS = frozenset(
+    {
+        ".ci/scripts/infra/ci-pull-images.sh",
+        ".ci/scripts/infra/ci-start-elite.sh",
+        ".ci/scripts/infra/ci-stop-elite.sh",
+    }
+)
+SHIM_LINE_RE = re.compile(
+    r'^PYTHONPATH="\$\(dirname "\$\{BASH_SOURCE\[0\]\}"\)/\.\./\.\.\$\{PYTHONPATH:\+:\$PYTHONPATH\}" '
+    r'exec python3 -m (?P<module>rediacc_ci(?:\.\w+)+) "\$@"$'
+)
+MAIN_GUARD_RE = re.compile(r"""^if\s+__name__\s*==\s*['"]__main__['"]\s*:""", re.MULTILINE)
+
+
+def shim_problem(twin: str) -> str | None:
+    """None when `twin` is a well-formed shim (executable, one effective line, a module `rediacc_ci` can import and `python3 -m` can run), else why not.
+
+    The line resolves its own directory with `dirname`, not `${BASH_SOURCE[0]%/*}`, because `%/*` leaves a bare `x.sh` unchanged and `bash x.sh` from the shim's own directory then built `x.sh/../..` (review finding 820e5332.1).
+    """
+    path = paths.repo_root() / twin
+    if not os.access(path, os.X_OK):
+        return "%s is not executable" % twin
+    lines = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#") and line.strip() != "set -euo pipefail"
+    ]
+    if len(lines) != 1:
+        return "%s holds %d effective lines, a shim holds one" % (twin, len(lines))
+    match = SHIM_LINE_RE.match(lines[0])
+    if match is None:
+        return "%s: the effective line is not the shim form: %s" % (twin, lines[0])
+    module = match["module"]
+    try:
+        found = importlib.util.find_spec(module)
+    except (ImportError, ValueError):
+        found = None
+    if found is None:
+        return "%s names %s, which does not import" % (twin, module)
+    # find_spec only locates the module; `python3 -m` runs it as __main__, so a module with no entry guard would exit 0 having done nothing (review finding 820e5332.2).
+    origin = found.origin if found.origin and found.origin.endswith(".py") else None
+    if origin is None or not MAIN_GUARD_RE.search(pathlib.Path(origin).read_text(encoding="utf-8")):
+        return '%s names %s, which has no `if __name__ == "__main__"` entry point' % (twin, module)
+    return None
+
+
 def blob_sha(path: str) -> str:
     """`git hash-object` of the file as recorded: the sha `git cat-file -p` answers once it is committed, and the one a reader of a deleted twin needs."""
     proc = subprocess.run(
@@ -746,16 +864,26 @@ def write_recorded(
         if only is not None and stem not in only:
             continue
         twin = RECORDED_TWINS[stem]
+        if source == "bash" and str(twin) in SHIMMED_TWINS:
+            raise RuntimeError(
+                "%s is a shim over its port: a bash freeze would record the port as bash" % twin
+            )
         path = golden_file(twin)
         old_header, old_silent, old_records = goldenio.read_golden(path)
         answers = {k: (str(v[0]), v[1], v[2]) for k, v in RECORDED[stem].items()}
         silent, records, changed = goldenio.diff_and_mark(answers, old_silent, old_records, reason)
         dropped = (set(old_silent) | set(old_records)) - set(answers)
+        header_source = source
         if keep_unseen:
             # A selective re-record (`regolden.py -k`): the cases this run did not ask about keep exactly the record they had, marker and all.
+            carried = dropped & (set(old_silent) | set(old_records))
             silent |= dropped & set(old_silent)
             records.update({k: old_records[k] for k in dropped if k in old_records})
             dropped = set()
+            # The carried cases were recorded by whoever wrote the old header; when that was another source, the file is mixed and the header must not claim all of it for this run's source.
+            old_source = (old_header or {}).get("source", "")
+            if carried and old_source and old_source != source:
+                header_source = "mixed"
         if source == "bash":
             blob = blob_sha(twin)
         else:
@@ -767,7 +895,7 @@ def write_recorded(
             if source == "bash"
             else (old_header or {}).get("bash_version", ""),
             "case_count": len(silent) + len(records),
-            "source": source,
+            "source": header_source,
             "twin": twin,
             "twin_blob": blob,
         }

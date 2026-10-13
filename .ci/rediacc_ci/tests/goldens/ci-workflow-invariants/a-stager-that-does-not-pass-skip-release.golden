@@ -2,5 +2,5 @@
 exit: 1
 --- stdout ---
 --- stderr ---
-✗ INVARIANT-FAIL: skip-release: job 'stage-artifacts' does not pass `skip_release` in its `with:`. upload-to-r2.sh's guard then never fires, and a bump-none commit advances cli/<channel>/manifest.json to a version that will never be tagged.
+✗ INVARIANT-FAIL: skip-release: job 'stage-artifacts' does not pass `skip_release` in its `with:`. upload_to_r2.py's guard then never fires, and a bump-none commit advances cli/<channel>/manifest.json to a version that will never be tagged.
 ✗ ci workflow invariants FAILED

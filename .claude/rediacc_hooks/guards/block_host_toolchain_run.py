@@ -20,7 +20,7 @@ written, nor in sorted order: it visits them in the order bash's hash table yiel
 Measured on bash 5.3.9 on this host, and hard-coded below in exactly that order rather than sorted:
 
     NEEDS      check:ci-python-lint, check:ci-renet, check:ci-renet-tiers
-    NEEDS_ENV  sync-media-from-r2, sync-media-to-r2, --publish-www
+    NEEDS_ENV  rediacc_ci.deploy.sync_media_from_r2, rediacc_ci.deploy.sync_media_to_r2, --publish-www
 
 A different bash could hash differently. That is a property of the ORIGINAL, not of this port, and the differential is what would report it: the two sides would disagree on `$HIT` for a command naming two keys, on the machine where the hash order differs. Recorded here so such a report is read as what it is.
 
@@ -68,25 +68,17 @@ NEEDS = (
 # A session ran `.ci/scripts/release/assert-edge-tag-exists.sh` on the HOST, read `Required command 'aws' is not available`, and began evaluating an `awscli` install on the host. The devbox has carried aws-cli 2.36.40 the whole time (`.devcontainer/Dockerfile:467-490`). Neither table above could see the command: it names no gate key, and the tool it needs appears nowhere in the
 # command line -- the script reaches `aws` from inside itself. So the SCRIPT is what has to be matched.
 #
-# Twelve of these `require_cmd aws` (a hard refusal without the binary) and two call `aws` directly under `set -euo pipefail` with no guard at all, which fails the same way with a worse message. Counted 2026-09-23, not estimated. Two rows left on 2026-10-02 with their scripts (PLAN-retire-bash-oracles B3): the sentinel scrub, now the Python module `rediacc_ci.ops.scrub_sentinel`, and the one-shot R2 scrub, retired. `upload-to-r2.sh` is the one direct caller left.
+# Twelve of these `require_cmd aws` (a hard refusal without the binary) and two call `aws` directly under `set -euo pipefail` with no guard at all, which fails the same way with a worse message. Counted 2026-09-23, not estimated. Two rows left on 2026-10-02 with their scripts (PLAN-retire-bash-oracles B3): the sentinel scrub, now the Python module `rediacc_ci.ops.scrub_sentinel`, and the one-shot R2 scrub, retired.
+#
+# NINE MORE LEFT ON 2026-10-09. Every `.sh` row but `upload-r2.sh` named a script B3 had already deleted, so those rows matched a file nothing can run any more, and the only thing keeping them was test cases that named the deleted paths. Their ports carry the routing now, by module. A row here must name something that exists: the harness asserts every `.sh` key is a tracked basename and every `rediacc_ci.` key a module file, so a row cannot outlive its script again.
 #
 # `.ci/breakpoint/scripts/publish-endpoints.sh:96` is DELIBERATELY ABSENT, on the same precedent as `check:ci-actionlint` above: it degrades to skipping a notification rather than failing, so routing it would send a working path into the fix-the-image branch for nothing.
 #
 # MATCHED WITH `_is_invoked`, NEVER A SUBSTRING TEST. Every key here is a path a session has a real reason to grep, sed or cat, and `NEEDS`'s older `grep_q(..., fixed=True)` is exactly the "reading a script is mistaken for running it" bug `_is_invoked` was written to end for `NEEDS_ENV`.
 NEEDS_SCRIPT = (
-    ("assert-edge-tag-exists.sh", "aws"),
-    ("write-release-sentinel.sh", "aws"),
-    ("delete-r2-channel.sh", "aws"),
-    ("promote-r2-to-stable.sh", "aws"),
-    ("promote-r2-to-stable-hotfix.sh", "aws"),
-    ("simulate-promotion.sh", "aws"),
-    ("upload-repos-to-r2.sh", "aws"),
-    ("cleanup-versions.sh", "aws"),
+    # `.ci/media/tools/upload-r2.sh`, the one bash caller left. The media pipeline stays bash by design (run.sh's router comment says why).
     ("upload-r2.sh", "aws"),
-    ("sync-media-to-r2.sh", "aws"),
-    ("sync-media-from-r2.sh", "aws"),
-    ("upload-to-r2.sh", "aws"),
-    # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` as the command's target. The harness asserts every row above whose port exists has its module here.
+    # THE PYTHON PORTS, by module. `python3 -m <module>` runs the same aws calls its bash original did, and `_is_invoked` reads the module after `-m` (or the module a `.py` script path names) as the command's target.
     ("rediacc_ci.release.assert_edge_tag_exists", "aws"),
     ("rediacc_ci.deploy.write_release_sentinel", "aws"),
     ("rediacc_ci.deploy.delete_r2_channel", "aws"),
@@ -99,6 +91,11 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.deploy.sync_media_from_r2", "aws"),
     ("rediacc_ci.deploy.upload_to_r2", "aws"),
     ("rediacc_ci.ops.scrub_sentinel", "aws"),
+    # PLAN-cd-errors-in-ci W4: ci.yml and cd-v2.yml run it as a module, and it lists R2 through `aws s3api` (cd_preflight.py:286).
+    ("rediacc_ci.release.cd_preflight", "aws"),
+    # The module spellings of check:ci-release-state (NEEDS above routes the gate key only): release_state.py:141 and release_state_validator.py:251 run `aws s3api` directly.
+    ("rediacc_ci.quality.release_state", "aws"),
+    ("rediacc_ci.core.release_state_validator", "aws"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
@@ -109,10 +106,8 @@ NEEDS_SCRIPT = (
 #
 # Extend the table when another command grows a credential dependency. Match on something specific to that command, never on a bare tool name.
 NEEDS_ENV = (
-    ("sync-media-from-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
-    ("sync-media-to-r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("--publish-www", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
-    # The Python ports of the two sync scripts, by module (see NEEDS_SCRIPT for how `python3 -m` is read).
+    # The two sync scripts, by module (see NEEDS_SCRIPT for how `python3 -m` is read).
     ("rediacc_ci.deploy.sync_media_from_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("rediacc_ci.deploy.sync_media_to_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
 )
@@ -213,9 +208,15 @@ EDGE_CASES = [
     ("npx ruff", "npx ruff format packages/cli"),
     ("npx --yes shfmt", "npx --yes shfmt -w run.sh"),
     ("npx on an npm package is not this guard's business", "npx tsx scripts/gen/gen-docs.ts"),
+    # #0c331972: npm's own option grammar, so an option the guard never listed and the `x` alias still reach the tool.
+    ("npx with a value option before the tool", "npx --logl silent --yes ruff check"),
+    ("npm x -y ruff", "npm x -y ruff check"),
+    ("npm exec -- shfmt", "npm exec -- shfmt -d run.sh"),
+    ("npx -c runs a shell, not a package", "npx -c 'ruff check a.py'"),
+    ("prose naming npm x ruff", "echo 'npm x -y ruff check'"),
     # The bare-tool arm.
     ("a bare shfmt", "shfmt -w run.sh"),
-    ("a bare shellcheck", "shellcheck .ci/scripts/quality/check-python-lint.sh"),
+    ("a bare shellcheck", "shellcheck .ci/media/tools/upload-r2.sh"),
     ("a bare actionlint", "actionlint"),
     ("a bare tool after a separator", "cd packages/cli && shfmt -d ."),
     ("a tool named in prose", "echo 'run shfmt -w on it'"),
@@ -224,28 +225,31 @@ EDGE_CASES = [
     ("the longer gate key matches both", "npm run check:ci-renet-tiers"),
     # The host-bound arm.
     ("a host-bound pipeline", "shfmt -w private/growth/video_pipeline/run.sh"),
-    ("a host-bound submodule", "shellcheck private/account/scripts/rotation/rotate.sh"),
+    ("a host-bound submodule", "shellcheck private/account/scripts/ops.sh"),
     # The python -m arm: a port's module is its target, and the same key handed to pytest is a mention.
     ("a python -m port", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v1.0.5"),
     ("a python -m port by script path", "python3 .ci/rediacc_ci/deploy/upload_to_r2.py"),
     ("a port named to pytest", "python3 -m pytest -k rediacc_ci.ops.scrub_sentinel"),
     # Parse-only shells and text bash never runs (2026-10-02): judged by run, not by text.
-    ("a parse-only bash -n", "bash -n .ci/scripts/deploy/promote-r2-to-stable.sh"),
-    ("a parse-only -o noexec", "sh -o noexec .ci/scripts/deploy/upload-to-r2.sh"),
+    ("a parse-only bash -n", "bash -n .ci/media/tools/upload-r2.sh"),
+    ("a parse-only -o noexec", "sh -o noexec .ci/media/tools/upload-r2.sh"),
     ("a noexec shell's -c payload", "bash -n -c 'aws s3 ls'"),
     ("a tool named in a comment", "echo hi # then; aws s3 ls"),
     (
         "a heredoc comment, then a syntax check",
         (
             "python3 - <<'EOF'\n# aws matches the whole key\nEOF\n"
-            "bash -n .ci/scripts/deploy/promote-r2-to-stable.sh"
+            "bash -n .ci/media/tools/upload-r2.sh"
         ),
     ),
     (
         "a script run after a parse-only one",
-        "bash -n x.sh && bash .ci/scripts/deploy/upload-to-r2.sh",
+        "bash -n x.sh && bash .ci/media/tools/upload-r2.sh",
     ),
     ("a tool in a -c payload", "bash -c 'aws s3 ls'"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("npx ruff launched by find -exec", "find . -name '*.py' -exec npx ruff format {} +"),
+    ("prose naming a launched npx ruff", "echo find . -name x -exec npx ruff format {} +"),
 ]
 
 
@@ -286,17 +290,19 @@ def _runs(cmd):
 
     A PARSE-ONLY SHELL RUNS NOTHING. `bash -n` (also `sh`/`zsh`/`dash`/`ksh`, a `-n` inside a bundle such as `-nv`, or `-o noexec`) reads its script and executes none of it. On 2026-10-02 `bash -n .ci/scripts/deploy/promote-r2-to-stable.sh`, a syntax check after an edit, was refused as an aws run twice, once at the tail of a python heredoc whose comment the writer then blamed. The walk
     still lists the commands of a noexec shell's `-c` payload after it, so those are dropped here too. A noexec shell fed a heredoc keeps its body's commands: the walk does not tie a body to its reader, and judging them is the fail-closed direction.
+
+    LAUNCHED COMMANDS ARE RUNS (#503f0ba8): `find . -exec shellcheck {} +` runs shellcheck and `find . -exec npx ruff format {} +` runs `npx ruff`, so the walk is `shellscan.every_run`, which lists what `npx` and `find -exec` start right after the launcher. The skip below counts the payload the same way.
     """
     out = []
     skip = 0
-    for run_ in shellscan._analyse(cmd).runs:
+    for run_ in shellscan.every_run(cmd):
         if skip:
             skip -= 1
             continue
         if _noexec_shell(run_):
             mode, payload = shellscan._shell_payload(list(run_.argv))
             if mode == "c" and payload:
-                skip = len(shellscan._analyse(payload).runs)
+                skip = len(shellscan.every_run(payload))
             continue
         out.append(run_)
     return out
@@ -330,15 +336,17 @@ def _noexec_shell(run_):
 
 
 def _npx_runs(tool, runs):
-    """Does a judged run start `npx [-y|--yes] <tool>`?"""
+    """Does a judged run make npx RESOLVE `<tool>` as a package: `npx <tool>` or `npm exec|exe|x <tool>`, whatever options come first?
+
+    npm's own option grammar decides it, through `shellscan._launches` (#0c331972). This guard used to skip exactly `-y`/`--yes` and then demand the tool, so `npx --logl silent --yes ruff check` (a value option it never listed) and `npm x -y ruff check` (the alias) were allowed and failed with the very npm error the refusal exists to explain. Only an ARGV launch counts: `npx -c 'ruff check'` runs a shell with `node_modules/.bin` on PATH, which finds the real ruff on PATH, so it is not the package-name misuse.
+    """
     for run_ in runs:
-        if run_.name != "npx":
+        base = shellscan._base(run_.name)
+        if base not in ("npx", "npm"):
             continue
-        args = list(run_.argv)
-        if args[:1] in (["-y"], ["--yes"]):
-            args = args[1:]
-        if args[:1] == [tool]:
-            return True
+        for how, launched, _launch, _span in shellscan._launches(base, list(run_.argv)):
+            if how == "argv" and launched and shellscan._base(launched[0]) == tool:
+                return True
     return False
 
 
@@ -582,7 +590,7 @@ def run(ev):
             bare = True
             break
     if hit == "":
-        # `bare = True` HERE TOO, and it is not a detail. The label branch below turns a non-bare hit into "npm run <hit>", and `npm run assert-edge-tag-exists.sh` is not a command that exists -- the same reading error that made the bare-tool arm need its own label in the first place. What the reader needs is "this command needs 'aws'", followed by the command they typed.
+        # `bare = True` HERE TOO, and it is not a detail. The label branch below turns a non-bare hit into "npm run <hit>", and `npm run upload-r2.sh` is not a command that exists -- the same reading error that made the bare-tool arm need its own label in the first place. What the reader needs is "this command needs 'aws'", followed by the command they typed.
         for key, tool in NEEDS_SCRIPT:
             if not _is_invoked(key, cmd, runs):
                 continue
@@ -709,8 +717,8 @@ def run(ev):
                 "     the other tools there are pinned (an unpinned tool that decides a CI\n"
                 "     verdict is a different verdict on every rebuild)\n"
                 '  2. REBUILD THE IMAGE, not just the container. "devbox remove" removes the\n'
-                "     CONTAINER; devbox_ensure_image then short-circuits on the image it\n"
-                "     already has (.ci/lib/devbox.sh:367), and if you delete the image it\n"
+                "     CONTAINER; ensure_image (.ci/rediacc_ci/core/devbox.py) then short-\n"
+                "     circuits on the image it already has, and if you delete the image it\n"
                 "     PULLS from the registry first -- so a local Dockerfile edit reaches the\n"
                 "     box by neither route. Measured 2026-08-27: GO_VERSION was bumped to\n"
                 "     1.26.6 and the container still reported go1.26.4. What actually works:\n"

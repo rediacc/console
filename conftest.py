@@ -14,9 +14,11 @@ WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the
 import os
 import subprocess
 import sys
+import tempfile
 
 import pytest
 from rediacc_ci import xdist_groups
+from rediacc_ci.core import tmp_capacity
 
 # The sweep of basetemps a KILLED run left, for every test in both pytest roots; see that module for why it is a plugin rather than code here.
 # The second: a directory pytest collects twice in one run gets its conftest fixtures both times (worklist #6b5becd7; the module says when pytest does that).
@@ -33,14 +35,19 @@ def _real_tree_twins() -> set[str]:
     return _CACHE["real_tree_twins"]
 
 
-def pytest_report_header() -> str:
+def pytest_report_header() -> list[str]:
     """PRINT THE SHAPE, so a collapse in the join is visible rather than silent.
 
     The number that matters is how many real-tree gate tests the lock declares. It is the only source since the shell battery runner was retired, so if it ever reads 0, the derivation below admits every twin to every worker and `test_twin_parity`'s own refusal is the thing that will go red -- but a reader seeing this line will already know why.
 
     Suppressed automatically under `-q` (pytest prints no header at negative verbosity), which is what keeps the nested parity runs' output unchanged.
     """
-    return "xdist groups: %d real-tree gate test(s) declared by the lock" % len(_real_tree_twins())
+    lines = [
+        "xdist groups: %d real-tree gate test(s) declared by the lock" % len(_real_tree_twins())
+    ]
+    if "line" in _TMP_CAPACITY:
+        lines.append(_TMP_CAPACITY["line"])
+    return lines
 
 
 # `tryfirst` IS LOAD-BEARING, NOT TIDINESS. Without it this hook does NOTHING and does it silently.
@@ -262,8 +269,42 @@ def _mode(strict: bool) -> str:
     )
 
 
+# --------------------------------------------------------------------------- The harness's project root, dropped before the first test module is imported (worklist #04a74a81).
+#
+# Claude Code exports `CLAUDE_PROJECT_DIR` to every hook it runs, and `wl_core.project_start` (with its twin `worklist._local_project_start`, `shellscan.repo_root_env` and `hookio`'s `${CLAUDE_PROJECT_DIR:-.}`) takes it as the project root AHEAD of every other rung, by design: it is how a hook finds the repo, and how a fixture pins its own. A suite launched with it set therefore hands
+# the REAL checkout to every hook a test spawns with an inherited environment. Measured 2026-10-09 in a scratch clone: 201 hook tests failed, and `--queue-set` rewrote `agent/plans/QUEUE.md`'s settings block while `--hint-propose` and the retro rows appended to two `agent/ledgers/*.jsonl`. Unset, the same run is clean, and unset is what CI has.
+#
+# WHY HERE AND NOT IN A FIXTURE. A session-scoped fixture runs after collection, and a module that reads the variable at import time would already have its answer; `pytest_configure` runs before collection, in the controller and in every xdist worker. A test that WANTS a root still sets one explicitly (`monkeypatch.setenv`, or an `env=` it builds), which this does not touch.
+#
+# `.claude/rediacc_hooks/tests/test_project_dir_containment.py` is the control: it runs a nested suite with the variable aimed at a sentinel tree and requires the tree to come back byte-identical.
+HARNESS_ROOT_ENV = ("CLAUDE_PROJECT_DIR",)
+
+
+# --------------------------------------------------------------------------- The temp filesystem's capacity, refused up front (worklist #edd646a8).
+#
+# A run that starts on a nearly full /tmp (a tmpfs capped at 1,048,576 inodes) fails every `tmp_path` test with an ENOSPC inside a fixture traceback: on 2026-10-09 that read as "43 failed, 10379 passed, 921 errors" with 1,330 inodes free, and nothing named inodes. `rediacc_ci.core.tmp_capacity` owns the floor and the message; this aborts the run with that one line before collection.
+# CONTROLLER ONLY: an xdist worker is started after this has passed in its controller, and twenty-four workers repeating the check would repeat its consumer walk on the refusal path. `.ci/rediacc_ci/tests/test_tmp_capacity.py` drives a nested pytest with the floor raised and requires this refusal.
+_TMP_CAPACITY: dict[str, str] = {}
+
+
+def _tmp_capacity_or_exit(config: pytest.Config) -> None:
+    if hasattr(config, "workerinput"):
+        return
+    paths = [tempfile.gettempdir()]
+    basetemp = config.getoption("basetemp", None)
+    if basetemp:
+        paths.append(str(basetemp))
+    ok, line = tmp_capacity.check(paths)
+    if not ok:
+        raise pytest.UsageError(line)
+    _TMP_CAPACITY["line"] = line
+
+
 def pytest_configure(config: pytest.Config) -> None:
-    """Install the write record once per process, rooted at the rootdir."""
+    """Drop the harness's project root, refuse a temp filesystem below its floor, then install the write record once per process, rooted at the rootdir."""
+    for name in HARNESS_ROOT_ENV:
+        os.environ.pop(name, None)
+    _tmp_capacity_or_exit(config)
     if os.environ.get(SNAPSHOT_ENV) == "0" or _AUDIT["root"] is not None:
         return
     _AUDIT["root"] = os.path.realpath(str(config.rootpath))

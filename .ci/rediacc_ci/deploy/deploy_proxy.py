@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/deploy/deploy-proxy.sh`.
+"""Port of the retired `.ci/scripts/deploy/deploy-proxy.sh`; its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/deploy.deploy-proxy.jsonl`.
 
 Builds the CLI bundle the executor container image ships, then deploys the proxy Worker and that container image to Cloudflare. MANUAL ONLY: the twin's header says why in four lines, and the reason is not caution about the tooling -- the executor is the component that holds customers' config keys in memory and the only thing allowed to open SSH to their machines, so a human stays
 in the loop until it has run in front of real traffic. CI drives the `--dry-run` path.
@@ -37,7 +37,7 @@ TWO DIVERGENCES IN TEXT NOBODY PARSES, both bash's own diagnostics:
 `:?` IS AN UNSET-OR-EMPTY TEST, so `CLOUDFLARE_API_TOKEN=` refuses exactly as an
 absent one does. Driven, and pinned in the differential.
 
-A REAL DEPLOY ALSO BUILDS RENET AND SMOKE-TESTS (2026-09-24, PLAN-cloudflare-proxy.md B2 and missing test 10). The image runs the CLI outside a SEA, which executes the renet on PATH and uploads that same binary to a machine whose renet differs, so the deploy builds a release renet at the current version (`resolve-version.sh --current`, then `build-renet.sh`) and stages it in `workers/proxy/renet/`. That is why a real deploy refuses before any build without `ACCOUNT_ED25519_PUBLIC_KEY`: a renet built without it cannot verify a licence. After `wrangler deploy` both twins GET `/v1/health` (must be 200) and an unauthenticated `/v1/server-info` (must be 401) through `curl`, at the host `wrangler.toml`'s route names. A dry run does none of this, because `wrangler deploy --dry-run` never builds the image.
+A REAL DEPLOY ALSO BUILDS RENET AND SMOKE-TESTS (2026-09-24, PLAN-cloudflare-proxy.md B2 and missing test 10). The image runs the CLI outside a SEA, which executes the renet on PATH and uploads that same binary to a machine whose renet differs, so the deploy builds a release renet at the current version (`rediacc_ci.version.resolve_version --current` in process, then `python3 -m rediacc_ci.build.build_renet --version V` as a child, so its working directory changes stay out of this process) and stages it in `workers/proxy/renet/`. That is why a real deploy refuses before any build without `ACCOUNT_ED25519_PUBLIC_KEY`: a renet built without it cannot verify a licence. After `wrangler deploy` both twins GET `/v1/health` (must be 200) and an unauthenticated `/v1/server-info` (must be 401) through `curl`, at the host `wrangler.toml`'s route names. A dry run does none of this, because `wrangler deploy --dry-run` never builds the image.
 
 K=5 LEDGER: `.ci/shadow/w7p6-deploy-proxy.observations.jsonl`.
 """
@@ -45,20 +45,18 @@ K=5 LEDGER: `.ci/shadow/w7p6-deploy-proxy.observations.jsonl`.
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import shutil
 import subprocess
 import sys
-import typing
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.version import resolve_version
 
-if typing.TYPE_CHECKING:
-    import pathlib
-
-# The twin's own name, used only in the `printf -v` stand-in.
-SELF = "deploy-proxy.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.deploy_proxy"
 
 # The `${CLOUDFLARE_API_TOKEN:?...}` stand-in named in the docstring. The twin's
 # message already begins with the variable name, so this reads it twice; kept, because that is the text.
@@ -99,7 +97,10 @@ MISSING_KEY = (
     "and without the key it cannot verify a licence"
 )
 
-# The renet the image ships: built into private/bin by build-renet.sh, staged here for the Dockerfile.
+# The directory holding the `rediacc_ci` package (`.ci`).
+PACKAGE_PARENT = str(pathlib.Path(__file__).resolve().parents[2])
+
+# The renet the image ships: built into private/bin by `rediacc_ci.build.build_renet`, staged here for the Dockerfile.
 RENET_BINARY = "renet-linux-amd64"
 RENET_BUILT = ("private", "bin", RENET_BINARY)
 RENET_STAGE = "renet"
@@ -134,14 +135,18 @@ def deploy_argv() -> list[str]:
     return ["npx", "wrangler", "deploy"]
 
 
-def resolve_version_argv(repo_root: pathlib.Path) -> list[str]:
-    """`"$REPO_ROOT/.ci/scripts/version/resolve-version.sh" --current`."""
-    return [str(repo_root / ".ci" / "scripts" / "version" / "resolve-version.sh"), "--current"]
-
-
 def build_renet_argv(repo_root: pathlib.Path, version: str) -> list[str]:
-    """`"$REPO_ROOT/.ci/scripts/build/build-renet.sh" --version "$VERSION"`."""
-    return [str(repo_root / ".ci" / "scripts" / "build" / "build-renet.sh"), "--version", version]
+    """`python3 -m rediacc_ci.build.build_renet --version "$VERSION"`, the module that replaced `build-renet.sh`."""
+    del repo_root
+    return [sys.executable, "-m", "rediacc_ci.build.build_renet", "--version", version]
+
+
+def package_env() -> dict[str, str]:
+    """The environment for a `python3 -m rediacc_ci...` child: this checkout's `.ci` first on `PYTHONPATH`, as an ABSOLUTE path, because the run has already changed directory and a relative entry would no longer resolve."""
+    env = dict(os.environ)
+    existing = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = PACKAGE_PARENT + (os.pathsep + existing if existing else "")
+    return env
 
 
 def curl_argv(url: str) -> list[str]:
@@ -185,13 +190,13 @@ def smoke(worker_dir: pathlib.Path) -> int:
 def build_and_stage_renet(repo_root: pathlib.Path, worker_dir: pathlib.Path) -> int:
     """Resolve the release version, build renet at it, and stage linux-amd64 for the image."""
     log.step("Building the renet the container image ships...")
-    resolved = subprocess.run(
-        resolve_version_argv(repo_root), stdout=subprocess.PIPE, text=True, check=False
-    )
-    if resolved.returncode != 0:
-        return resolved.returncode  # `set -e` on the assignment
-    version = resolved.stdout.rstrip("\n")
-    status = _run(build_renet_argv(repo_root, version))
+    status, out, err = resolve_version.run(["--current"])
+    if status != 0:
+        sys.stderr.write(err)
+        sys.stderr.flush()
+        return status  # `set -e` on the assignment
+    version = out.rstrip("\n")
+    status = _run(build_renet_argv(repo_root, version), env=package_env())
     if status != 0:
         return status  # `set -e`
     built = repo_root.joinpath(*RENET_BUILT)
@@ -214,9 +219,9 @@ def cd_failed(worker_dir: pathlib.Path, reason: str) -> str:
     return "cd: %s: %s" % (worker_dir, reason)
 
 
-def _run(argv: list[str]) -> int:
+def _run(argv: list[str], *, env: dict[str, str] | None = None) -> int:
     """One child with BOTH streams inherited, as the twin leaves them."""
-    return subprocess.run(argv, check=False).returncode
+    return subprocess.run(argv, check=False, env=env).returncode
 
 
 def main(argv: list[str]) -> int:

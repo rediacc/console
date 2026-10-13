@@ -48,7 +48,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common, gh_retry
 
-USAGE = "Usage: cleanup-github-deployments.sh --repo <owner/repo> --environment <name> [--dry-run]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_github_deployments --repo <owner/repo> --environment <name> [--dry-run]"
 
 # `true`, exactly. common.sh's parse_args stores strings, and the twin compares against this one literal -- `--dry-run false` therefore means NOT dry run.
 DRY_RUN_ON = "true"

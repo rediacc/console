@@ -1,6 +1,6 @@
 """The `gate` fixture, and the refusal that makes a green here mean something.
 
-THE RULE, LIFTED VERBATIM FROM THE BATTERY RUNNER. `.ci/rediacc_ci/battery.py` scores a bash gate test that exits 0 without emitting a single `PASS:` line as a FAILURE, not a pass -- "exited 0 but made no assertions". That refusal is the only thing standing between a gate test whose body stopped executing and a battery that simply got faster. pytest has no equivalent: a test
+THE RULE, LIFTED VERBATIM FROM THE BATTERY RUNNER. `.ci/rediacc_ci/battery.py` (retired 2026-10-09 with the last bash gate test) scored a bash gate test that exits 0 without emitting a single `PASS:` line as a FAILURE, not a pass -- "exited 0 but made no assertions". That refusal is the only thing standing between a gate test whose body stopped executing and a battery that simply got faster. pytest has no equivalent: a test
 function whose body is `pass` is a passing test, and a test whose fixture silently returned early looks identical to one that asserted forty things.
 
 So the fixture counts, and its teardown refuses a test that recorded nothing, and a test whose `ok`/`no` tally holds a failure that no `tally_finish` raised.

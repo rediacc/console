@@ -16,6 +16,7 @@ that one field by construction. `_mask` replaces it and leaves everything else b
 
 from __future__ import annotations
 
+import itertools
 import json
 import os
 import pathlib
@@ -30,14 +31,16 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import channel_snapshot, r2_promote
 from rediacc_ci.deploy import upload_repos_to_r2 as port
+from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "upload-repos-to-r2.sh"
-PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "upload_repos_to_r2.py"
+TWIN_REL = ".ci/scripts/deploy/upload-repos-to-r2.sh"
+TWIN = ROOT / TWIN_REL
 PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
+PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "upload_repos_to_r2.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
 BASE_ENV = {
@@ -226,9 +229,10 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "rediacc_ci" / "deploy").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    # The twin and its library only while a regolden records from them; compare mode answers from the golden.
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+        shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -249,7 +253,77 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
     return root
 
 
-def _run(
+def _run(root: pathlib.Path, side: str, **kw):
+    """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
+    if side == "old":
+        old, old_calls = diff.twin_result(
+            TWIN_REL,
+            [repr((root,)), repr(sorted(kw.items()))],
+            lambda: _run_live(root, side, **kw),
+            work=diff.twin_work((root,), kw),
+        )
+        return old, purge_order_here(old_calls, find_listing(root))
+    return _run_live(root, side, **kw)
+
+
+def find_listing(root: pathlib.Path) -> list[tuple[str, str]]:
+    """`(format, path under it)` for every file `find dist/repos/<format> -type f` prints, in `find`'s own order on THIS filesystem, formats in the twin's order."""
+    listing: list[tuple[str, str]] = []
+    for fmt in port.FORMATS:
+        if not (root / "dist" / "repos" / fmt).is_dir():
+            continue
+        prefix = "dist/repos/%s/" % fmt
+        found = subprocess.run(
+            ["find", prefix[:-1], "-type", "f"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        listing.extend((fmt, path[len(prefix) :]) for path in found.splitlines())
+    return listing
+
+
+_PURGE_URL_RE = re.compile(
+    re.escape(RELEASES_ORIGIN) + r"/(?P<fmt>[^/]+)/(?P<channel>[^/]+)/(?P<rel>.+)$"
+)
+# A URL that is no package file (the two install scripts) ranks after every file `find` printed, and is never moved.
+_UNRANKED = -1
+
+
+def purge_order_here(calls: str, listing: list[tuple[str, str]]) -> str:
+    """The recorded purge list, with each format's URLs in THIS filesystem's `find` order: what the twin would have sent here.
+
+    The twin appended one URL per line of `find -type f`, and the golden froze the order the recorder's tmpfs listed (newest entry first). ext4 lists the same directory in hash order, so on GitHub's runner the frozen list named `dists/stable/Packages.gz` before `InRelease` while the port, shelling out to the same `find`, sent the reverse: nine tests on run 38389205702.
+    ONLY THE ORDER INSIDE ONE FORMAT'S RUN MOVES, and only when every URL in the run is a file `find` printed. The set of URLs, the order of the formats, the install scripts after them and every other byte of the call log are the recording's; a recorded list naming a file this tree does not hold is left exactly as recorded, and then fails.
+    """
+    head, sep, tail = calls.rpartition("--data\t")
+    line, newline, rest = tail.partition("\n")
+    try:
+        body = json.loads(line) if sep else None
+    except ValueError:
+        return calls
+    if not isinstance(body, dict) or not isinstance(body.get("files"), list):
+        return calls
+    if json.dumps(body, separators=(",", ":")) != line:
+        return calls
+    rank = {pair: index for index, pair in enumerate(listing)}
+
+    def parts_of(url: str) -> tuple[str, str, str]:
+        match = _PURGE_URL_RE.match(url)
+        return (match["fmt"], match["channel"], match["rel"]) if match else ("", "", url)
+
+    ordered: list[str] = []
+    for _key, group in itertools.groupby(body["files"], key=lambda url: parts_of(url)[:2]):
+        ranked = [(rank.get((parts_of(url)[0], parts_of(url)[2]), _UNRANKED), url) for url in group]
+        if all(position != _UNRANKED for position, _url in ranked):
+            ranked.sort()
+        ordered.extend(url for _position, url in ranked)
+    body["files"] = ordered
+    return head + sep + json.dumps(body, separators=(",", ":")) + newline + rest
+
+
+def _run_live(
     root: pathlib.Path,
     side: str,
     *,
@@ -309,22 +383,9 @@ def find_urls(root: pathlib.Path, channel: str = "edge") -> list[str]:
 
     Derived by running the same `find` the twin runs, so the expectation is the filesystem's answer rather than a second implementation of the port's walk.
     """
-    urls: list[str] = []
-    for fmt in port.FORMATS:
-        directory = root / "dist" / "repos" / fmt
-        if not directory.is_dir():
-            continue
-        listing = subprocess.run(
-            ["find", "dist/repos/%s" % fmt, "-type", "f"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout
-        urls.extend(
-            (RELEASES_ORIGIN + "/%s/%s/%s") % (fmt, channel, path[len("dist/repos/%s/" % fmt) :])
-            for path in listing.splitlines()
-        )
+    urls = [
+        (RELEASES_ORIGIN + "/%s/%s/%s") % (fmt, channel, rel) for fmt, rel in find_listing(root)
+    ]
     urls.extend(
         (RELEASES_ORIGIN + "/cli/%s/%s") % (channel, name)
         for name in ("install.sh", "install.ps1")
@@ -337,12 +398,12 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    new_stdout = _without_prune_lines(new.stdout)
+    new_stdout = _without_prune_lines(as_twin(new.stdout))
     assert new_stdout == old.stdout, (
         f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new_stdout!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert _without_prune(new_calls) == old_calls, (
@@ -416,6 +477,9 @@ def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) 
     expected = find_urls(root)
     old, old_calls = _run(root, "old")
     new, new_calls = _run(root, "new")
+    # THE PORT'S OWN LIST, which is the claim: it is `find`'s order here. The recorded side is read back in this filesystem's order (`purge_order_here`), so it says the same, and the agreement below says they are the same list.
+    sent = json.loads(_without_prune(new_calls).rpartition("--data\t")[2].rstrip("\n"))
+    assert sent["files"] == expected
     body = json.loads(old_calls.rpartition("--data\t")[2].rstrip("\n"))
     assert body["files"] == expected
 
@@ -427,6 +491,43 @@ def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) 
         "two package formats whose names sort against the twin's format order"
     )
     _assert_agree(old, new, "find-order", old_calls, new_calls)
+
+
+def _purge_line(urls: list[str]) -> str:
+    return "aws\ts3\tsync\ta\tb\ncurl\t-sS\t--data\t%s\n" % json.dumps(
+        {"files": urls}, separators=(",", ":")
+    )
+
+
+def test_the_recorded_purge_order_is_read_back_as_this_filesystems() -> None:
+    """`purge_order_here` in both directions, on the two orders run 38389205702 showed: tmpfs recorded `Packages.gz` first, ext4 lists `InRelease` first."""
+    apt = RELEASES_ORIGIN + "/apt/edge/"
+    recorded = [
+        apt + "dists/stable/Packages.gz",
+        apt + "InRelease",
+        RELEASES_ORIGIN + "/apk/edge/APKINDEX.tar.gz",
+        RELEASES_ORIGIN + "/cli/edge/install.sh",
+        RELEASES_ORIGIN + "/cli/edge/install.ps1",
+    ]
+    tmpfs = [("apt", "dists/stable/Packages.gz"), ("apt", "InRelease"), ("apk", "APKINDEX.tar.gz")]
+    ext4 = [("apt", "InRelease"), ("apt", "dists/stable/Packages.gz"), ("apk", "APKINDEX.tar.gz")]
+    # On the recorder's own filesystem the rewrite is the identity, which is why no local run ever needed it.
+    assert purge_order_here(_purge_line(recorded), tmpfs) == _purge_line(recorded)
+    assert purge_order_here(_purge_line(recorded), ext4) == _purge_line(
+        [recorded[1], recorded[0], *recorded[2:]]
+    )
+    # CONTROL: the FORMAT order is the twin's and never the filesystem's. A listing that names apk first moves nothing across formats.
+    assert purge_order_here(_purge_line(recorded), [tmpfs[2], *tmpfs[:2]]) == _purge_line(recorded)
+    # CONTROL: a recorded URL naming a file this tree does not hold leaves its run exactly as recorded, so the comparison still fails on it.
+    assert purge_order_here(_purge_line(recorded), ext4[:1]) == _purge_line(recorded)
+    # CONTROL: the install scripts are no `find` output, and `install.sh` stays ahead of `install.ps1` whatever a listing says.
+    assert purge_order_here(_purge_line(recorded[3:]), [("cli", "install.ps1")]) == _purge_line(
+        recorded[3:]
+    )
+    # CONTROL: a call log with no purge, or one whose body is not the compact JSON the twin sent, is returned untouched.
+    assert purge_order_here("aws\ts3\tsync\n", ext4) == "aws\ts3\tsync\n"
+    spaced = "curl\t--data\t" + json.dumps({"files": recorded[:2]}) + "\n"
+    assert purge_order_here(spaced, ext4) == spaced
 
 
 def test_a_nested_file_keeps_its_directories_in_the_url(tmp_path: pathlib.Path) -> None:
@@ -509,7 +610,7 @@ def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
         dropped = tuple(n for n, _m in port.REQUIRED_ENV[index:])
         old, new, old_calls, new_calls = run_both(case, drop_env=dropped)
         assert old.returncode == new.returncode == 1, name
-        assert old.stderr.rstrip("\n").endswith("%s: %s" % (name, message)), old.stderr
+        assert old.stderr.rstrip("\n").endswith(as_twin("%s: %s" % (name, message))), old.stderr
         assert ": line " in old.stderr, "bash stopped naming a line; re-read this divergence"
         assert new.stderr == "%s: %s\n" % (name, message)
         assert old.stdout == new.stdout == ""
@@ -522,7 +623,7 @@ def test_an_empty_channel_refuses_exactly_as_an_absent_one_does(
     """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ` would sail past this and sync every format to `s3://rediacc-releases/apt//`, which is every channel's parent prefix."""
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="")
     assert old.returncode == new.returncode == 1
-    assert new.stderr == "CHANNEL: upload-repos-to-r2.sh: CHANNEL must be set\n"
+    assert new.stderr == "CHANNEL: rediacc_ci.deploy.upload_repos_to_r2: CHANNEL must be set\n"
     assert old_calls == new_calls == "", "an empty channel still reached aws"
 
 
@@ -639,10 +740,11 @@ def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Pat
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "upload-repos-to-r2.sh"
+    assert port.SELF == "rediacc_ci.deploy.upload_repos_to_r2"
     assert port.FORMATS == ("apt", "rpm", "apk", "archlinux")
     assert port.CC_MUTABLE == "no-cache"
-    assert port.PURGE_SCRIPT == ".ci/scripts/deploy/cf-purge-urls.sh"
+    assert not hasattr(port, "PURGE_SCRIPT")
+    assert port.cf_purge_urls.__name__ == "rediacc_ci.deploy.cf_purge_urls"
 
     assert port.sync_argv("apt", "edge", "https://e") == [
         "aws",
@@ -662,7 +764,7 @@ def test_pure_helpers() -> None:
     assert port.sed_argv("pr-1", "dist/pages/install.sh")[2] == (
         "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-pr-1|g"
     )
-    assert port.purge_argv("Z") == [".ci/scripts/deploy/cf-purge-urls.sh", "--zone", "Z"]
+    assert not hasattr(port, "purge_argv")
 
     assert port.repo_url("apt", "edge", "dists/stable/P.gz") == (
         RELEASES_ORIGIN + "/apt/edge/dists/stable/P.gz"
@@ -689,23 +791,6 @@ def test_pure_helpers() -> None:
     assert len(banner) == 19
 
 
-def test_the_guard_list_is_the_twins_guard_list() -> None:
-    """STALENESS ALARM. `REQUIRED_ENV` is a copy of the twin's five `${VAR:?msg}`
-    guards, re-derived here from the twin's source, in order and with messages."""
-    source = TWIN.read_text(encoding="utf-8")
-    found = re.findall(r'^: "\$\{(\w+):\?([^}]*)\}"', source, re.MULTILINE)
-    assert found, "the guard shape changed; this alarm is no longer reading anything"
-    assert [(name, msg) for name, msg in found] == list(port.REQUIRED_ENV)
-
-
-def test_the_skip_values_are_the_twins_case_arms() -> None:
-    """STALENESS ALARM for the `case` arms, which sit between the two markers the gate test `test_gate_skip_release_channel_pointer.py` splits the twin on."""
-    source = TWIN.read_text(encoding="utf-8")
-    arm = re.search(r"case \"\$\{SKIP_RELEASE:-\}\" in\n\s*([^)]*)\) return 0", source)
-    assert arm is not None, "the case shape changed; this alarm reads nothing"
-    assert {value.strip() for value in arm.group(1).split("|")} == set(port.SKIP_RELEASE_VALUES)
-
-
 def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     """ANTI-VACUITY, planted on the CACHE-CONTROL header, which is the one field whose loss caused the incident this script's header is written about: an `immutable` policy let CF serve a previous run's body under a URL the new APKINDEX points at, and apt-get reported `BAD signature`. Nothing on either stream carries it, both exits are 0, and only the call log sees it. Driven
     red, then the source is confirmed byte-identical and green."""
@@ -722,8 +807,10 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert bad.returncode == old.returncode == 0, (
         "the plant is invisible in the exit code, which is why the calls are compared"
     )
-    assert _without_prune_lines(bad.stdout) == old.stdout, "the plant is invisible on stdout"
-    assert bad.stderr == old.stderr, "the plant is invisible on stderr too"
+    assert _without_prune_lines(as_twin(bad.stdout)) == old.stdout, (
+        "the plant is invisible on stdout"
+    )
+    assert as_twin(bad.stderr) == old.stderr, "the plant is invisible on stderr too"
     assert "--cache-control\timmutable" in bad_calls
     assert _without_prune(bad_calls) != old_calls, "the mutant's calls matched the twin's"
 
@@ -774,15 +861,12 @@ def _drive_port_in_process(
     """
     root = fixture(tmp_path, {"dist/repos/apt/InRelease": "InRelease body\n"})
     stub = pathlib.Path(_bin(root, aws_body=FLAKY_AWS))
-    purge = root / "purge.sh"
-    purge.write_text("#!/usr/bin/python3\nimport sys\n\nsys.stdin.read()\n", encoding="utf-8")
-    purge.chmod(0o755)
     call_log = root / "calls.log"
     call_log.write_text("", encoding="utf-8")
 
     monkeypatch.chdir(root)
     monkeypatch.setattr(port, "repo_root", lambda: str(root))
-    monkeypatch.setattr(port, "PURGE_SCRIPT", str(purge))
+    monkeypatch.setattr(port.cf_purge_urls, "purge", lambda _zone, _payload: 0)
     monkeypatch.setattr(port, "RETRY_DELAY_S", 0.0)
     # These cases are about the transfer retry; FLAKY_AWS models no bucket, so the prune (pinned by the `test_prune_*` cases) is switched off here rather than fed a fake listing.
     monkeypatch.setattr(port, "_prune_trees", lambda *_args: None)

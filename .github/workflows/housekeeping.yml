@@ -87,6 +87,28 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
+      # PLAN-cd-errors-in-ci W4: refuse to delete anything from a release state
+      # that is already broken or cannot be read. rediacc_ci.release.cd_preflight
+      # is read-only; (a) is the sentinel/tag bijection and (c) the floor and
+      # channel pointers. DRIFT or an UNCHECKED read (R2 or `git ls-remote`
+      # unreachable, zero sentinels) exits non-zero, and the cleanup below has
+      # no status function, so it is skipped: housekeeping refuses, never heals.
+      # No version is under release at 03:00, and --release-version is
+      # required, so 0.0.0 is passed: it has no sentinel and no tag, so the
+      # exclusion it buys excludes nothing and no pointer is excused.
+      # AFTER the retry step on purpose: rerunning a failed CD run is how a
+      # sentinel left without its tag gets its tag, and this check must not
+      # block that repair. The tunnel reaper below still runs (`!cancelled()`);
+      # it touches no release state.
+      - name: Release-state preflight (read-only, fails closed)
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight
+          --phase pr --release-version 0.0.0 --checks a,c
+
       - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
         run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_versions ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
         env:
@@ -306,30 +328,39 @@ jobs:
       # live AND into a file uploaded below, so a run that is cut short still shows
       # which gate it was waiting on. On the outer timeout the runner's SIGTERM
       # handler prints the gates still running and kills their process groups.
+      #
+      # CAPTURE_DIR puts the three captures OUTSIDE the checkout (#b4e94451): written to
+      # the repo root, quick.json counted as a changed file in the rotation's diff. It is
+      # set per step because job-level `env` cannot read the `runner` context.
       - name: Capture per-gate CPU (serial ci:quick)
+        env:
+          CAPTURE_DIR: ${{ runner.temp }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs quick
 
       # Never fails by itself: a hung or unreadable rotation must not cost the night's
       # fast capture, so its verdict is carried in `rc` and the last step fails on it.
       - name: Capture slow-gate rotation (one third per night)
         id: rotation
+        env:
+          CAPTURE_DIR: ${{ runner.temp }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs rotation
 
       - name: Merge the rotation into the capture
         env:
+          CAPTURE_DIR: ${{ runner.temp }}
           ROTATION_RC: ${{ steps.rotation.outputs.rc }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs merge
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: gate-costs-${{ github.sha }}
-          path: gate-costs.json
+          path: ${{ runner.temp }}/gate-costs.json
           retention-days: 3
           if-no-files-found: error
 
       # The runner's stderr, kept whatever happened above. NOT named gate-costs-*:
       # gate_costs.collect_captures reads the first artifact with that prefix as a capture.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: capture-logs-${{ github.sha }}-${{ github.run_attempt }}

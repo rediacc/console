@@ -132,7 +132,7 @@ def test_quick_passes_on_a_usable_capture_despite_gate_reds(
     out = capsys.readouterr().out
     assert "run.ts exit 1 (gate reds are expected" in out
     log = (tmp_path / "logs" / "gate-costs-quick.log").read_text(encoding="utf-8")
-    assert "start --quick --only check:x --jobs 1" in log
+    assert "start --quick --no-diff-slow --only check:x --jobs 1" in log
 
 
 def test_quick_fails_on_a_capture_that_measured_nothing(fake: Path, tmp_path: Path) -> None:
@@ -245,3 +245,35 @@ def test_an_unknown_phase_is_usage_exit_2(capsys: pytest.CaptureFixture[str]) ->
     assert cgc.main(["sideways"]) == 2
     assert cgc.main([]) == 2
     assert "quick|rotation|merge" in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------- where the captures land (#b4e94451) ---------------------------------------------------------------------------
+
+
+def test_the_captures_default_to_runner_temp_and_never_the_working_tree(
+    fake: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With CAPTURE_DIR unset, quick.json lands in RUNNER_TEMP. The working directory is a decoy checkout: until 2026-10-08 the default was ".", so the capture landed in the repo root and the rotation's diff counted it as a changed file."""
+    worktree = tmp_path / "checkout"
+    worktree.mkdir()
+    temp = tmp_path / "runner_temp"
+    temp.mkdir()
+    monkeypatch.chdir(worktree)
+    assert cgc.phase_quick({"RUNNER_TEMP": str(temp)}, **_runner(fake, "good")) == 0
+    assert (temp / "quick.json").is_file()
+    assert list(worktree.iterdir()) == []
+
+
+def test_with_neither_directory_set_quick_refuses_and_rotation_records_the_failure(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No guessed directory: quick fails loudly through main, and rotation keeps its never-fails contract by carrying rc=1."""
+    for name in ("CAPTURE_DIR", "RUNNER_TEMP"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.chdir(tmp_path)
+    assert cgc.main(["quick"]) == 1
+    assert "neither CAPTURE_DIR nor RUNNER_TEMP is set" in capsys.readouterr().out
+    output = tmp_path / "gh_output"
+    assert cgc.phase_rotation({"GITHUB_OUTPUT": str(output)}) == 0
+    assert output.read_text(encoding="utf-8") == "rc=1\n"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["gh_output"]

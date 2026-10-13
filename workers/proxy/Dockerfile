@@ -48,12 +48,12 @@ COPY packages/cli packages/cli
 # renet. Outside a SEA the CLI runs the renet it finds on PATH, and uploads that
 # same binary to a machine whose renet differs, so the image must carry a
 # release renet (with its embedded assets and the production license key), not
-# one compiled here. deploy-proxy.sh builds it and stages it in workers/proxy/renet/;
+# one compiled here. `rediacc_ci.deploy.deploy_proxy` builds it and stages it in workers/proxy/renet/;
 # the directory itself is tracked so this COPY always has a source, and the
 # check below names the missing file instead of failing later at run time.
 COPY workers/proxy/renet/ /opt/rediacc-bin/
 RUN test -x /opt/rediacc-bin/renet-linux-amd64 \
- || { echo "workers/proxy/renet/renet-linux-amd64 is missing: build it with .ci/scripts/deploy/deploy-proxy.sh (or copy a release renet-linux-amd64 there)" >&2; exit 1; }
+ || { echo "workers/proxy/renet/renet-linux-amd64 is missing: build it with PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy (or copy a release renet-linux-amd64 there)" >&2; exit 1; }
 
 # The shipped artifact is the esbuild BUNDLE, not the raw tsc output. The dist
 # tree emits extensionless ESM imports that plain node cannot resolve; the bundle

@@ -22,7 +22,7 @@ import sys
 
 from rediacc_ci import paths
 
-SELF = "validate-stage-artifacts.py"
+SELF = "rediacc_ci.release.validate_stage_artifacts"
 
 
 def _require(name: str) -> str:

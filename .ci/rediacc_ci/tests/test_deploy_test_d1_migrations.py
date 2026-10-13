@@ -1,8 +1,10 @@
-"""Differential: `rediacc_ci.deploy.test_d1_migrations` against its twin `.ci/scripts/deploy/test-d1-migrations.sh`.
+"""Differential: `rediacc_ci.deploy.test_d1_migrations` against the bytes its twin `.ci/scripts/deploy/test-d1-migrations.sh` printed.
+
+THE TWIN'S SIDE IS FROZEN (operator ruling D5, PLAN-retire-bash-oracles B3). Every `"old"` run goes through `differential.twin_run`, so its exit code, both streams and call log come from `goldens/twins/deploy.test-d1-migrations.jsonl` and the `.sh` is never read once it is deleted. A `regolden --source bash` run drives the live bash while it exists, which is why the fixture copies the twin, `clone-d1.sh` and `common.sh` only when they are on disk. The port calls `clone_d1.main` in process, where the twin spawned `clone-d1.sh`; the frozen run is the bash clone's, so the comparison is also the proof that the Python clone is a drop-in.
 
 A RECORDING FAKE FOR `npx` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
-`clone-d1.sh` IS THE REAL SCRIPT, COPIED INTO THE FIXTURE AND RUN BY BOTH SIDES. It is not stubbed, because the twin invokes it and so does the port, and running the same bytes on both sides is what makes the comparison about the two callers rather than about a stub. It reaches `npx wrangler d1 export` and `d1 execute`, which the same fake `npx` models: an export writes a small SQL
+THE CLONE IS NOT STUBBED. The twin ran the real `clone-d1.sh` and the port runs the real `clone_d1`, so the comparison is about the callers and about the clone together. It reaches `npx wrangler d1 export` and `d1 execute`, which the same fake `npx` models: an export writes a small SQL
 file, an execute reports success, and `PRAGMA foreign_key_check` answers with an
 empty result set. Its own output is therefore part of what the two sides are compared on.
 
@@ -26,14 +28,16 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import test_d1_migrations as port
+from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "deploy" / "test-d1-migrations.sh"
+TWIN_REL = ".ci/scripts/deploy/test-d1-migrations.sh"
+TWIN = ROOT / TWIN_REL
 CLONE = ROOT / ".ci" / "scripts" / "deploy" / "clone-d1.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "test_d1_migrations.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -214,9 +218,9 @@ def fixture(
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(CLONE, root / ".ci" / "scripts" / "deploy" / CLONE.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
+    if TWIN.is_file():  # only a `regolden --source bash` run still reads the bash
+        shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
+        shutil.copy2(CLONE, root / ".ci" / "scripts" / "deploy" / CLONE.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -238,7 +242,7 @@ def fixture(
     return root
 
 
-def _run(
+def _run_live(
     root: pathlib.Path,
     side: str,
     *,
@@ -285,6 +289,46 @@ def _run(
     return proc, call_log.read_text(encoding="utf-8")
 
 
+def _run(
+    root: pathlib.Path,
+    side: str,
+    *,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """`(CompletedProcess, call log)`. The `"old"` side is the bash twin's frozen answer."""
+    if side != "old":
+        return _run_live(root, side, drop=drop, drop_env=drop_env, **extra)
+    held: dict[str, str] = {}
+
+    def bash():
+        proc, calls = _run_live(root, "old", drop=drop, drop_env=drop_env, **extra)
+        held["calls"] = calls
+        return proc.returncode, proc.stdout, proc.stderr
+
+    state = (root / "old-d1.json").read_text(encoding="utf-8")
+    rc, out, err, frozen = diff.twin_run(
+        TWIN_REL,
+        [drop, repr(drop_env), repr(sorted(extra.items())), state, repr(sorted(_tree(root)))],
+        bash,
+        extras={"calls": lambda: held["calls"]},
+        work=(root.parent, *diff.pytest_tmp_roots(*extra.values())),
+    )
+    return subprocess.CompletedProcess([], rc, out, err), frozen["calls"]
+
+
+def _tree(root: pathlib.Path) -> list[str]:
+    """The fixture's non-code files, so a case with no `regions.json` or no worker dir gets its own golden key."""
+    return [
+        str(p.relative_to(root))
+        for p in root.rglob("*")
+        if p.is_file()
+        and p.relative_to(root).parts[0] not in (".ci", "fixture-bin")
+        and not p.name.endswith(("-calls.log", "-d1.json"))
+    ] + [str(p.relative_to(root)) for p in root.rglob("*") if p.is_dir() and p.name == "www"]
+
+
 def run_both(tmp_path: pathlib.Path, *, fixture_kw: dict | None = None, **kw):
     root = fixture(tmp_path, **(fixture_kw or {}))
     old = _run(root, "old", **kw)
@@ -311,13 +355,13 @@ def _agree(old, new, label: str) -> None:
     new_proc, new_calls = new
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
-        f"old stderr: {old_proc.stderr!r}\nnew stderr: {new_proc.stderr!r}"
+        f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
     )
-    assert _mask(new_proc.stdout) == _mask(old_proc.stdout), (
-        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{new_proc.stdout!r}"
+    assert _mask(as_twin(new_proc.stdout)) == _mask(old_proc.stdout), (
+        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{as_twin(new_proc.stdout)!r}"
     )
-    assert _mask(new_proc.stderr) == _mask(old_proc.stderr), (
-        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{new_proc.stderr!r}"
+    assert _mask(as_twin(new_proc.stderr)) == _mask(old_proc.stderr), (
+        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{as_twin(new_proc.stderr)!r}"
     )
     assert _mask(new_calls) == _mask(old_calls), (
         f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
@@ -653,8 +697,7 @@ def test_the_argv_builders_match_the_twins_words() -> None:
     assert port.info_argv("d") == ["npx", "wrangler", "d1", "info", "d", "--json"]
     assert port.delete_argv("d")[-1] == "--skip-confirmation"
     assert port.migrations_argv("d")[-2:] == ["--config", "wrangler-migration-test.toml"]
-    assert port.clone_argv("/r", "src", "dst")[-4:] == ["--source", "src", "--target", "dst"]
-    assert port.clone_argv("/r", "s", "d")[0] == "/r/.ci/scripts/deploy/clone-d1.sh"
+    assert port.clone_args("src", "dst") == ["--source", "src", "--target", "dst"]
 
 
 def test_the_mktemp_mask_hides_only_the_random_suffix() -> None:
@@ -692,12 +735,7 @@ def test_the_guard_table_and_the_literal_reads_cannot_drift() -> None:
         assert 'os.environ.get("%s"' % name in source, name
 
 
-def test_the_twin_still_says_what_this_port_says_it_says() -> None:
-    """A STALENESS GUARD, quoting the twin."""
-    text = TWIN.read_text(encoding="utf-8")
-    assert "jq -r '.regions[].edgeD1.name' regions.json" in text
-    assert "jq -r '.regions[].d1.name' regions.json" in text
-    assert 'DB_NAME="migration-test-${CHANNEL_TAG}-${REGION_ID}-${RUN_ID}-${RUN_ATTEMPT}"' in text
-    assert 'ALL_DBS=("${EDGE_DBS[@]}" "${STABLE_DBS[@]}")' in text
-    assert "trap cleanup EXIT" in text
-    assert "$SCRIPT_DIR/clone-d1.sh" in text
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.test_d1_migrations"
+    assert port.__name__ == port.SELF

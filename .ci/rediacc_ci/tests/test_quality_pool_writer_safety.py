@@ -15,57 +15,19 @@ THE THREE STACKED DEFECTS THIS GATE CARRIES ARE EACH ON THE RECORD, because they
      ran the twin and were retired with it.
   2. W2.4b made WRITER_TESTS a DERIVED array, so the old `WRITER_TESTS=(`...`)`
      pattern parsed EMPTY and the gate would have passed everything. The retarget
-     finishes that argument by reading the declaration itself;
-     `test_registered_writers_reads_the_mutex_declaration` pins the new parse and
-     `test_registered_writers_ignores_reads_and_non_tree_mutexes` pins the half
-     that would silently re-open the same hole.
+     finished that argument by reading the lock's declaration itself, and on
+     2026-10-08 the parse left with the bash half it fed: no
+     `.ci/scripts/test/gates/test-*.sh` remains for a registration to exempt.
   3. With both fixed the gate named a real unregistered writer. That direction is
      what `test_scan_text` and the plant controls below carry.
 """
 
-import json
 import pathlib
 
 import pytest
 
 from rediacc_ci.quality import pool_writer_safety as gate
 from rediacc_ci.tests import differential as diff
-
-# A lock that names gate tests and declares NO mutex tree: resource on any of them. This is the retarget's equivalent of the derived-assignment shape: the file parses, the entries are real, and the registered set comes out EMPTY -- exactly the state the refusal exists to catch.
-NO_WRITERS = json.dumps(
-    [
-        {"id": "gate-test:a", "run": ".ci/scripts/test/gates/test-a.sh"},
-        {
-            "id": "gate-test:b",
-            "run": ".ci/scripts/test/gates/test-b.sh",
-            "reads": ["tree:repo"],
-        },
-    ]
-)
-
-
-def lock_text(*registered: str) -> str:
-    """A lock declaring `mutex: ["tree:repo"]` on each named gate test.
-
-    One non-gate-test entry is always present, because `run` is a command line in the general case and the parser has to pick the WORD that names the script; a fixture holding only gate tests could not catch a parser that took the whole string.
-    """
-    entries: list[dict[str, object]] = [
-        {
-            "id": "check:elsewhere",
-            "run": "npx tsx scripts/gates/check-elsewhere.ts",
-            "mutex": ["tree:repo"],
-        }
-    ]
-    entries.extend(
-        {
-            "id": "gate-test:%s" % name.removeprefix("test-").removesuffix(".sh"),
-            "run": ".ci/scripts/test/gates/%s" % name,
-            "mutex": ["tree:repo"],
-        }
-        for name in registered
-    )
-    return json.dumps(entries, indent=2)
-
 
 # --------------------------------------------------------------------------- The scanner, driven directly. Both directions for every rule. ---------------------------------------------------------------------------
 
@@ -114,38 +76,6 @@ def test_the_two_passes_catch_a_write_above_its_assignment() -> None:
     assert len(gate.scan_text(text, "t.sh")) == 1
 
 
-def test_registered_writers_reads_the_mutex_declaration() -> None:
-    assert gate.registered_writers(lock_text("test-a.sh", "test-b.sh")) == [
-        "test-a.sh",
-        "test-b.sh",
-    ]
-
-
-def test_registered_writers_takes_the_script_word_out_of_a_command_line() -> None:
-    """`run` is a command line in the general case, not a bare path."""
-    assert gate.registered_writers(
-        '[{"run": "bash -x .ci/scripts/test/gates/test-x.sh --flag", "mutex": ["tree:repo"]}]'
-    ) == ["test-x.sh"]
-
-
-def test_registered_writers_ignores_reads_and_non_tree_mutexes() -> None:
-    assert (
-        gate.registered_writers(
-            '[{"run": ".ci/scripts/test/gates/test-r.sh", "reads": ["tree:repo"]},'
-            ' {"run": ".ci/scripts/test/gates/test-n.sh", "mutex": ["npm:install"]}]'
-        )
-        == []
-    )
-
-
-def test_a_lock_that_declares_nothing_parses_empty() -> None:
-    """The state the refusal exists for, in each of its three shapes."""
-    assert gate.registered_writers(NO_WRITERS) == []
-    assert gate.registered_writers("") == []
-    assert gate.registered_writers("{not json") == []
-    assert gate.registered_writers("{}") == []
-
-
 def test_the_live_declarations_name_no_real_tree_writer_and_no_lane_claim() -> None:
     """Every fixture above is synthetic. This one reads the REAL declarations.
 
@@ -173,4 +103,12 @@ def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
     assert gate.selftest() == 0
     out = capsys.readouterr().out
     assert "control(s) passed" in out
-    assert int(out.strip().split("\n")[-1].split()[0]) >= 50
+    assert int(out.strip().split("\n")[-1].split()[0]) >= 45
+
+
+def test_diagnostics_are_prefixed_with_the_module_name(tmp_path, monkeypatch, capsys) -> None:
+    """The twin's `check-pool-writer-safety.sh` is deleted, so the prefix names the module a reader can run and find."""
+    monkeypatch.setenv(gate.LOCK_ENV, str(tmp_path / "no-such-lock.json"))
+    assert gate.main([]) != 0
+    out = capsys.readouterr()
+    assert "rediacc_ci.quality.pool_writer_safety: gate lock not found" in out.out + out.err

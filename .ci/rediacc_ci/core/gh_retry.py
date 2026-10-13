@@ -10,10 +10,11 @@ THE SEAM: `runner` is the one-attempt `gh` call (default `ghx.gh`, looked up at 
 from __future__ import annotations
 
 import re
+import sys
 import time
 from typing import TYPE_CHECKING, Any
 
-from rediacc_ci import proc
+from rediacc_ci import log, proc
 from rediacc_ci.core import ghx
 
 if TYPE_CHECKING:
@@ -57,6 +58,19 @@ def retry_transient[T](
     return result
 
 
+# What a call cut off by its own timeout reads as. gh prints nothing when it is killed, so without this the failure text was "failed", which matches no transient pattern, and the call was never retried: on 2026-10-13 two pre-push runs in a row lost check:ci-budget-freshness to one `gh api .../jobs` call that exceeded 30 s while the lane held every core.
+TIMED_OUT_TEXT = "gateway timeout: gh did not answer within its time limit"
+
+
+def _failure_text(result: ghx.GhResult) -> str | None:
+    """None for success, else the text `is_transient` judges. A timeout is transient whatever gh printed before it was killed."""
+    if result.ok:
+        return None
+    if result.failure == ghx.FAILURE_TIMED_OUT:
+        return TIMED_OUT_TEXT
+    return result.stderr or "failed"
+
+
 def gh(
     args: list[str],
     *,
@@ -76,7 +90,7 @@ def gh(
         extra["timeout"] = timeout
     return retry_transient(
         lambda: run(args, env=env, attempts=1, **extra),
-        lambda r: None if r.ok else (r.stderr or "failed"),
+        _failure_text,
         attempts=attempts,
         sleep=sleep,
     )
@@ -91,3 +105,59 @@ def api_json(
 ) -> Any:
     """`gh api <path>`, retried on transient failure, then parsed. Raises the typed `ghx` error on failure."""
     return gh(["api", path], attempts=attempts, sleep=sleep, runner=runner).json()
+
+
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.gh_retry <what> -- <gh args...>"
+
+
+def main(
+    argv: list[str] | None = None,
+    *,
+    runner: Callable[..., ghx.GhResult] | None = None,
+    sleep: Callable[[float], None] | None = None,
+) -> int:
+    """The shell-facing verb: `gh <args>` retried on a transient failure, its stdout printed on success.
+
+    SUCCESS prints stdout with trailing newlines stripped (what `$(...)` would keep) and exits 0. Each transient retry logs one warn line naming `<what>`. A failure that is not transient, or the last transient one, logs `<what>: gh failed after N attempts (last exit RC).`, then gh's stderr indented four spaces on stderr, and exits 1: the caller sees `release not found` in that stderr and decides for itself.
+
+    This replaces `gh_retry` in `.ci/scripts/lib/common.sh`, which retried every failure blindly three times (a "release not found" cost nine seconds) and could not tell a 404 from an outage.
+    """
+    args = list(sys.argv[1:] if argv is None else argv)
+    if len(args) < 3 or args[1] != "--":
+        print(USAGE, file=sys.stderr)
+        return 2
+    what, gh_args = args[0], args[2:]
+    attempts_made = 0
+    nap = sleep or time.sleep
+
+    def noisy_sleep(pause: float) -> None:
+        log.warn(
+            "%s: gh call hit a transient failure (attempt %d/%d), retrying in %gs..."
+            % (what, attempts_made, ATTEMPTS, pause)
+        )
+        nap(pause)
+
+    run = runner or ghx.gh
+
+    def counted(call_args: list[str], **kw: Any) -> ghx.GhResult:
+        nonlocal attempts_made
+        attempts_made += 1
+        return run(call_args, **kw)
+
+    result = gh(gh_args, runner=counted, sleep=noisy_sleep)
+    if result.ok:
+        text = result.stdout.rstrip("\n")
+        if text:
+            print(text)
+        return 0
+    log.error(
+        "%s: gh failed after %d attempt%s (last exit %d)."
+        % (what, attempts_made, "" if attempts_made == 1 else "s", result.returncode)
+    )
+    for line in (result.stderr or "").splitlines():
+        print("    " + line, file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

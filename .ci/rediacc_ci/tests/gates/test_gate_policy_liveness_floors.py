@@ -21,6 +21,7 @@ NO `xdist_group`. Each case builds a complete fixture root under `mkdtemp`, poin
 import pathlib
 import re
 import shutil
+import subprocess
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -28,16 +29,23 @@ from rediacc_ci.tests.gates import harness
 GATE = paths.from_root("scripts/gates", "check-suppression-liveness.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 
-POLICY_FILES = (
-    ".deps-upgrade-blocklist",
-    ".go-deps-upgrade-blocklist",
-    ".embed-assets-upgrade-blocklist",
-    ".devcontainer-upgrade-blocklist",
-    ".unverified-download-allowlist",
-    ".actions-upgrade-blocklist",
-    ".cli-i18n-orphan-allowlist",
-    ".dead-bash-allowlist",
-    ".ci-parity-exempt",
+# Every dotfile in .ci/policy: BLOCKER_FILES names all of them (uncoveredPolicyLists fails the probe on one it does not), and the presence floor wants each in a full-shaped root.
+# TRACKED ones only (`git ls-files`): an untracked scratch dotfile in a working tree is not a policy list and must not demand a probe.
+POLICY_FILES = tuple(
+    sorted(
+        name
+        for name in (
+            line.rsplit("/", 1)[1]
+            for line in subprocess.run(
+                ["git", "ls-files", ".ci/policy"],
+                cwd=str(paths.from_root()),
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.splitlines()
+        )
+        if name.startswith(".")
+    )
 )
 
 ROW_RE = re.compile(r"(\d+) entries\s+floor ")
@@ -87,6 +95,15 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
     shutil.copy2(
         paths.from_root("packages", "json", ".templates-skiplist"),
         root / "packages" / "json" / ".templates-skiplist",
+    )
+    shutil.copy2(
+        paths.from_root(".ci", "config", "directive-quotes-allowlist.txt"),
+        root / ".ci" / "config" / "directive-quotes-allowlist.txt",
+    )
+    # The merged-PR ledger the pr-conditions probe requires of a full checkout.
+    shutil.copy2(
+        paths.from_root(".ci", "config", "merged-prs.json"),
+        root / ".ci" / "config" / "merged-prs.json",
     )
     allowlist = root / ".ci" / "config" / "content-quality-allowlist.txt"
     shutil.copy2(paths.from_root(".ci", "config", "content-quality-allowlist.txt"), allowlist)

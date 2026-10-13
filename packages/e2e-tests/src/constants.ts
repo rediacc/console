@@ -9,11 +9,23 @@ import { version as pkgVersion } from '../../../package.json';
 import { TEST_ENV } from './config/testEnv';
 
 /**
- * Default datastore path used for machine setup and repository operations.
- * Matches REDIACC_DEV_MACHINES datastore path in .env
+ * Top-level TEST_ENV values re-exported as named constants:
+ * - DEFAULT_DATASTORE_PATH: datastore path used for machine setup and repository operations.
+ *   Matches REDIACC_DEV_MACHINES datastore path in .env
+ * - DEFAULT_UID: universal user ID for the rediacc system user.
+ *   Matches UNIVERSAL_USER_ID in organization vault and .env
+ *   VMs have builder:x:1000:1000 pre-existing, so 7111 is used instead.
+ * - TEST_REPOSITORY_NAME, TEST_PASSWORD, TEST_USER, TEST_TEAM: test-specific values.
  */
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const DEFAULT_DATASTORE_PATH = TEST_ENV.datastorePath;
+export const {
+  datastorePath: DEFAULT_DATASTORE_PATH,
+  uid: DEFAULT_UID,
+  testRepositoryName: TEST_REPOSITORY_NAME,
+  testPassword: TEST_PASSWORD,
+  testUser: TEST_USER,
+  testTeam: TEST_TEAM,
+} = TEST_ENV;
+
 export const DEFAULT_BRIDGE_IP = TEST_ENV.vm.bridgeIp;
 export const DEFAULT_WORKER_1_IP = TEST_ENV.vm.worker1Ip;
 export const DEFAULT_WORKER_2_IP = TEST_ENV.vm.worker2Ip;
@@ -21,14 +33,6 @@ export const DEFAULT_RUSTFS_ENDPOINT = TEST_ENV.rustfs.endpoint;
 export const DEFAULT_RUSTFS_ACCESS_KEY = TEST_ENV.rustfs.accessKey;
 export const DEFAULT_RUSTFS_SECRET_KEY = TEST_ENV.rustfs.secretKey;
 export const DEFAULT_RUSTFS_BUCKET = TEST_ENV.rustfs.bucket;
-
-/**
- * Universal user ID for rediacc system user.
- * Matches UNIVERSAL_USER_ID in organization vault and .env
- * VMs have builder:x:1000:1000 pre-existing, so we use 7111 instead.
- */
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const DEFAULT_UID = TEST_ENV.uid;
 
 /**
  * Default network ID for test environments.
@@ -48,18 +52,6 @@ export const DEFAULT_NETWORK_ID = TEST_ENV.network.defaultId;
  */
 export const FORK_NETWORK_ID_A = TEST_ENV.network.forkA;
 export const FORK_NETWORK_ID_B = TEST_ENV.network.forkB;
-
-/**
- * Test-specific constants
- */
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const TEST_REPOSITORY_NAME = TEST_ENV.testRepositoryName;
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const TEST_PASSWORD = TEST_ENV.testPassword;
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const TEST_USER = TEST_ENV.testUser;
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const TEST_TEAM = TEST_ENV.testTeam;
 
 /**
  * Installation path for renet on VMs (NOT the local build path).

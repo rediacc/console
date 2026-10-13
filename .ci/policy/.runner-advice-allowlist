@@ -6,8 +6,8 @@
 # tracked BLOCKER, so one reason covers the contiguous group beneath it; plain
 # `#` comment lines do NOT reset it). The gate itself checks only that a reason
 # is PRESENT; its prose is held to the same bar as every other allowlist in the
-# repo by the shared validator in .ci/scripts/lib/blocker-validator.sh, applied
-# to this file by .ci/scripts/test/gates/test-runner-advice.sh. See
+# repo by the shared validator rediacc_ci.core.blocker_validator, applied
+# to this file by .ci/rediacc_ci/tests/gates/test_gate_runner_advice.py. See
 # docs/agent-reference/suppressions.md.
 #
 # ONLY THE COST DIRECTION IS WAIVABLE HERE. An entry suppresses a MOVE_TO_SLIM

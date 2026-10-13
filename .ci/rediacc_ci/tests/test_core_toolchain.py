@@ -1150,7 +1150,7 @@ def test_defect_1_toolchain_sh_verify_cannot_fail() -> None:
 def test_defect_1_has_a_live_variant_on_env() -> None:
     """`--env` with no pins file: exit 0 and ZERO bytes, into $GITHUB_ENV.
 
-    FOUR live call sites as of 6e713d7cc (2026-09-26): `.github/workflows/ci-quality.yml`'s `quality-static`, `quality-security`, and the two jobs that split out of quality-security, `quality-pytest` and `quality-gate-tests` -- each of the new jobs needs the same toolchain versions loaded into its own runner. Run against a COPY of the library under a fake root, so the real pins
+    THREE live call sites: `.github/workflows/ci-quality.yml`'s `quality-static`, `quality-security`, and `quality-pytest`, which split out of quality-security in 6e713d7cc (2026-09-26) and needs the same toolchain versions loaded into its own runner. A fourth, in the bash gate-test battery's job, went with that job on 2026-10-09. Run against a COPY of the library under a fake root, so the real pins
     file is never touched.
     """
     with tempfile.TemporaryDirectory() as scratch:
@@ -1162,9 +1162,13 @@ def test_defect_1_has_a_live_variant_on_env() -> None:
         assert rc == 0, "the --env arm now exits non-zero; delete this pin"
         assert out == "", out
         assert "No such file or directory" in err
-    # THE CALL SITES, so the finding's blast radius is asserted and not claimed.
+    # THE CALL SITES: every workflow job moved to the port's `pairs` verb (W11-C), which fails loudly on a missing pins file, so none of them reaches the bash arm above.
     workflow = paths.from_root(".github/workflows/ci-quality.yml").read_text(encoding="utf-8")
-    assert workflow.count('.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"') == 4
+    assert workflow.count('.ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"') == 0
+    assert (
+        workflow.count('PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"')
+        == 3
+    )
 
 
 def test_defect_1_the_port_does_not_reproduce_the_always_zero_exit() -> None:

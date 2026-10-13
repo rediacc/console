@@ -79,7 +79,7 @@ DL_FLAGS = [
 ]
 LATEST_RE = re.compile(r"^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$")
 USAGE_LINES = (
-    "  usage: test-install-methods.sh [--dry-run] [--method <method>] [--version <ver>]",
+    "  usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.install_methods [--dry-run] [--method <method>] [--version <ver>]",
     "                                 [--platform linux|mac|win] [--arch x64|arm64]",
     "                                 [--local-artifacts <dir>]",
     f"  valid --method values: {', '.join(VALID_METHODS)}",

@@ -237,6 +237,10 @@
       ],
       "project": [
         "**/*.ts"
+      ],
+      "ignoreBinaries": [
+        // BLOCKER: the real-provider spec makes the throwaway vault's self-signed certificate with the host's openssl (src/utils/throwaway-vault.ts); a host tool, not an npm dependency
+        "openssl"
       ]
     }
   },

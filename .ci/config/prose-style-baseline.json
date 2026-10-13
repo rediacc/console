@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2832,
- "files": 696,
+ "count": 2823,
+ "files": 691,
  "by_rule": {
-  "R1": 1546,
+  "R1": 1544,
   "R11": 149,
   "R14": 1,
   "R18": 13,
   "R19": 62,
-  "R2": 608,
-  "R7": 453
+  "R2": 606,
+  "R7": 448
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -107,11 +107,6 @@
    ],
    "R11": [
     "f883d5130a7c73a9"
-   ]
-  },
-  ".ci/rediacc_ci/battery.py": {
-   "R1": [
-    "1a898dfadde23b12"
    ]
   },
   ".ci/rediacc_ci/check_pytest.py": {
@@ -219,7 +214,6 @@
     "667c6aef92b4dfc8"
    ],
    "R7": [
-    "505cc76f73e28bc2",
     "5967992026bf9884"
    ]
   },
@@ -603,11 +597,6 @@
     "60602da684a982ca"
    ]
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_run_all_parallel.py": {
-   "R7": [
-    "3242aef84384834c"
-   ]
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": {
    "R7": [
     "20145c481d16bd9d",
@@ -690,9 +679,6 @@
   ".ci/rediacc_ci/tests/test_canonical_sys_path_hop.py": {
    "R1": [
     "4be39c117b778ea1"
-   ],
-   "R7": [
-    "85e8fcbfb5eccd98"
    ]
   },
   ".ci/rediacc_ci/tests/test_core_age.py": {
@@ -1921,22 +1907,12 @@
     "c815b27fd457db42"
    ]
   },
-  ".claude/rediacc_hooks/guards/block_suppressions.py": {
-   "R1": [
-    "fe8ccf95257cb4dc"
-   ]
-  },
   ".claude/rediacc_hooks/guards/block_unverified_push.py": {
    "R1": [
     "b631b5de1fd05caa"
    ],
    "R7": [
     "678c68bae879115e"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_worktree_add.py": {
-   "R2": [
-    "f1d9886778085c51"
    ]
   },
   ".claude/rediacc_hooks/guards/test-block_destructive_git_restore.py": {
@@ -4375,14 +4351,6 @@
     "2c93d62f539ab141"
    ]
   },
-  "packages/cli/src/utils/secure-storage.ts": {
-   "R2": [
-    "76daa183ec62dd86"
-   ],
-   "R7": [
-    "b8649017de5db43e"
-   ]
-  },
   "packages/e2e-tests/README.md": {
    "R7": [
     "380fd930874e4547"
@@ -6160,8 +6128,7 @@
   "scripts/lib/doc-providers.ts": {
    "R7": [
     "7047874cece18e6f",
-    "d1cf4a2e9d5d16d8",
-    "f4ad397f6163c7a4"
+    "d1cf4a2e9d5d16d8"
    ]
   },
   "scripts/lib/language-detect.ts": {

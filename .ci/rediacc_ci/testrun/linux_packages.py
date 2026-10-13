@@ -33,7 +33,7 @@ DEFAULT_RELEASES = RELEASES_ORIGIN
 PUBLISHED_KEY_REL = ".ci/keys/gpg-public.asc"
 APK_KEY_NAME = ".SIGN.RSA.releases@rediacc.com.rsa.pub"
 DUMMY_BINARY = '#!/bin/sh\necho "rdc version 99.0.0"\n'
-USAGE = "usage: test-linux-packages.sh [--dry-run]"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.linux_packages [--dry-run]"
 
 
 def version_token_re(version: str) -> str:
@@ -310,7 +310,7 @@ class Suite:
         published = {**env, "RELEASE_GPG_PUBLIC_KEY_FILE": str(self.root / PUBLISHED_KEY_REL)}
         if self.repo_build("repo-control", env=published).returncode == 0:
             log.error(
-                "CONTROL FAILED: build-pkg-repo.sh accepted a signing key that is not the published public key"
+                "CONTROL FAILED: rediacc_ci.build.build_pkg_repo accepted a signing key that is not the published public key"
             )
             return False
         log.info("CONTROL: a signing key that is not the published public key is refused")
@@ -330,11 +330,11 @@ class Suite:
             == 0
         ):
             log.error(
-                "CONTROL FAILED: build-linux-pkg.sh signed a deb with a key that is not the published public key"
+                "CONTROL FAILED: rediacc_ci.build.build_linux_pkg signed a deb with a key that is not the published public key"
             )
             return False
         log.info(
-            "CONTROL: build-linux-pkg.sh refuses a signing key that is not the published public key"
+            "CONTROL: rediacc_ci.build.build_linux_pkg refuses a signing key that is not the published public key"
         )
 
         # A key whose armor lines are welded must still sign: the private key spans two Bitwarden items and part 1 has no trailing newline.
@@ -493,7 +493,7 @@ class Suite:
             }
             built = self.repo_build("repo-real", env=env, quiet=False)
             if built.returncode != 0:
-                log.error("build-pkg-repo.sh failed for the signed repository build")
+                log.error("rediacc_ci.build.build_pkg_repo failed for the signed repository build")
                 return False
             if not self.signing_controls(env):
                 return False

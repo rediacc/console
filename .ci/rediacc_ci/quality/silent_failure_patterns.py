@@ -18,7 +18,7 @@ with `set -eo pipefail`, that propagates through any pipe (`| wc -l`,
 
 The lint scans every .sh under .ci/scripts/, scripts/dev/ and scripts/ops/ that has `set -eo pipefail` (or `set -e ... pipefail`) and flags occurrences of `aws s3 ls`, `find ...`, `grep ...` piped into `wc -l` / `head` / `tail` / `awk` without a `|| true` / `|| echo ...` guard on the same logical pipeline.
 
-Exit 0 on no findings, 1 on any unguarded match. The shared helper r2_count_objects in .ci/scripts/lib/common.sh is the recommended fix.
+Exit 0 on no findings, 1 on any unguarded match. The shared helper `PYTHONPATH=.ci python3 -m rediacc_ci.core.common r2-count-objects` is the recommended fix.
 
 Whitelist: add `# silent-failure-ok: <reason>` on the line above the risky line if the unguarded pattern is intentional (e.g. an inner step that actually wants to fail the script on missing input).
 
@@ -245,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     log.error("through a pipeline. Under `set -eo pipefail` the script will")
     log.error("abort silently. Either:")
     log.error("  - Add `|| true` / `|| echo 0` to the pipeline.")
-    log.error("  - Use the r2_count_objects helper in .ci/scripts/lib/common.sh.")
+    log.error("  - Use `PYTHONPATH=.ci python3 -m rediacc_ci.core.common r2-count-objects`.")
     log.error("  - Add `# silent-failure-ok: <reason>` on the line above if")
     log.error("    aborting is actually the intended behaviour.")
     return 1

@@ -119,7 +119,7 @@ print(''.join(e[2] for e in map(json.loads, open('/tmp/tutorial-raw-XXXX.cast'))
 TTS reuse is keyed on `textHash` **plus the mp3 existing on disk** (`private/generative/src/tutorial_tts/cli.py`), not on the cast. So re-recording is nearly free for audio **if** the cache is present:
 
 ```bash
-.ci/scripts/deploy/sync-media-from-r2.sh --audio-only   # ~2900 files, ~415 MB
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only   # ~2900 files, ~415 MB
 ```
 
 `generate` restores this itself. If it starts synthesizing broadly, **stop** — `extract` changed narration text and the cost assumption is broken.
@@ -156,7 +156,7 @@ since a concrete value is indistinguishable from a subcommand while a placeholde
 ## Publish
 
 ```bash
-.ci/scripts/deploy/sync-media-to-r2.sh --tutorials-only
+PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2 --tutorials-only
 ```
 
 Commit the regenerated `video-manifest.json`, timelines and `.recording-hashes`. **Never** run `generate-video-manifest.ts` — it rebuilds from a local filesystem scan and silently drops every entry whose media is not checked out.

@@ -36,7 +36,7 @@
     "gate": false,
     "heavy": true,
     "leaves": [
-      "scripts/eslint-heap.sh",
+      ".ci/rediacc_ci/quality/eslint_heap.py",
       "biome"
     ],
     "ci": {
@@ -57,7 +57,7 @@
     "gate": true,
     "heavy": true,
     "leaves": [
-      "scripts/eslint-heap.sh"
+      ".ci/rediacc_ci/quality/eslint_heap.py"
     ],
     "ci": {
       "kind": "step",
@@ -77,7 +77,7 @@
     "gate": true,
     "heavy": true,
     "leaves": [
-      "scripts/eslint-heap.sh"
+      ".ci/rediacc_ci/quality/eslint_heap.py"
     ],
     "ci": {
       "kind": "step",
@@ -97,7 +97,7 @@
     "gate": true,
     "heavy": true,
     "leaves": [
-      "scripts/eslint-heap.sh"
+      ".ci/rediacc_ci/quality/eslint_heap.py"
     ],
     "ci": {
       "kind": "step",
@@ -118,7 +118,7 @@
     "heavy": true,
     "leaves": [
       "biome",
-      "scripts/eslint-heap.sh"
+      ".ci/rediacc_ci/quality/eslint_heap.py"
     ],
     "ci": {
       "kind": "step",
@@ -967,7 +967,9 @@
     "run": "npm run check:ci-setup-idempotency",
     "gate": true,
     "paths": [
-      ".ci/lib/**",
+      ".ci/rediacc_ci/core/devbox.py",
+      ".ci/rediacc_ci/core/local_common.py",
+      ".ci/rediacc_ci/core/ports.py",
       "run.sh",
       ".ci/rediacc_ci/setup/machine.py",
       ".ci/scripts/quality/check_setup_idempotency.py"
@@ -1059,20 +1061,6 @@
     }
   },
   {
-    "id": "check:ci-shell-declared-commands",
-    "run": "npm run check:ci-shell-declared-commands",
-    "gate": true,
-    "leaves": [
-      "scripts/gates/check-shell-declared-commands.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "CI scripts declare the binaries they execute"
-    }
-  },
-  {
     "id": "check:ci-pr-epic-block",
     "env": {
       "GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
@@ -1152,7 +1140,8 @@
     "run": "npm run check:ci-devbox-exec",
     "gate": true,
     "paths": [
-      ".ci/lib/devbox.sh",
+      ".ci/rediacc_ci/core/devbox.py",
+      ".ci/rediacc_ci/quality/devbox_exec.py",
       ".ci/scripts/quality/check_devbox_exec.py"
     ],
     "pathsOrigin": "declared",
@@ -1434,7 +1423,6 @@
       ".ci/scripts/**",
       "scripts/**",
       ".claude/hooks/**",
-      ".ci/lib/**",
       ".devcontainer/**",
       ".ci/media/**"
     ],
@@ -1548,8 +1536,7 @@
       "**/package-lock.json",
       "**/package.json",
       "private/account",
-      ".ci/scripts/quality/check_lockfile.py",
-      ".ci/scripts/lib/common.sh"
+      ".ci/scripts/quality/check_lockfile.py"
     ],
     "pathsOrigin": "declared",
     "leaves": [
@@ -2120,7 +2107,6 @@
     },
     "run": "npm run check:ci-plan-boxes",
     "gate": true,
-    "slow": true,
     "paths": [
       "agent/plans/**",
       ".ci/config/plan-boxes.json",
@@ -2282,6 +2268,25 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-branch",
       "step": "Agent session archival"
+    }
+  },
+  {
+    "id": "check:ci-review-resolutions",
+    "env": {
+      "GITHUB_BASE_REF": "${{ github.base_ref }}",
+      "GITHUB_HEAD_REF": "${{ github.head_ref }}",
+      "GITHUB_EVENT_NAME": "${{ github.event_name }}"
+    },
+    "run": "npm run check:ci-review-resolutions",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_review_resolutions.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-branch",
+      "step": "Review resolutions"
     }
   },
   {
@@ -2577,6 +2582,20 @@
     }
   },
   {
+    "id": "check:ci-scope-mirrors",
+    "run": "npm run check:ci-scope-mirrors",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_scope_mirrors.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "PR scope rules agree with their CLAUDE.md source"
+    }
+  },
+  {
     "id": "check:ci-e2e-case-blind",
     "run": "npm run check:ci-e2e-case-blind",
     "gate": true,
@@ -2700,6 +2719,34 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "No inline Python in JS/TS"
+    }
+  },
+  {
+    "id": "check:ci-inline-suppressions",
+    "run": "npm run check:ci-inline-suppressions",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_inline_suppressions.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Inline suppression markers"
+    }
+  },
+  {
+    "id": "check:ci-model-invocable-commands",
+    "run": "npm run check:ci-model-invocable-commands",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_model_invocable_commands.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Model-invocable commands"
     }
   },
   {
@@ -2949,24 +2996,6 @@
     }
   },
   {
-    "id": "check:ci-battery-clean-tree",
-    "run": "npm run check:ci-battery-clean-tree",
-    "cores": {
-      "min": 1,
-      "max": "all"
-    },
-    "gate": true,
-    "leaves": [
-      ".ci/scripts/quality/check_battery_clean_tree.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Battery clean-tree guard"
-    }
-  },
-  {
     "id": "check:ci-workflow-env-provision",
     "run": "npm run check:ci-workflow-env-provision",
     "gate": true,
@@ -2992,20 +3021,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-static",
       "step": "Shell commands exist on the runner image"
-    }
-  },
-  {
-    "id": "check:ci-gate-id-convention",
-    "run": "npm run check:ci-gate-id-convention",
-    "gate": true,
-    "leaves": [
-      ".ci/scripts/quality/check_gate_id_convention.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "Gate registration follows the gates/ convention"
     }
   },
   {
@@ -3322,7 +3337,6 @@
   {
     "id": "check:ci-cli-contract",
     "run": "npm run check:ci-cli-contract",
-    "slow": true,
     "gate": true,
     "needs": [
       "build:packages"
@@ -3746,7 +3760,6 @@
       "private/account",
       ".ci/scripts/quality/check_account_portal.py",
       ".ci/rediacc_ci/quality/account_portal.py",
-      ".ci/scripts/lib/common.sh",
       "packages/www/scripts/build-account-onboarding.ts",
       "packages/www/src/data/account-onboarding.json",
       "packages/www/src/data/tutorial-storyboard/**",
@@ -4043,6 +4056,24 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-go",
       "step": "Check devcontainer pin upstream freshness"
+    }
+  },
+  {
+    "id": "check:ci-real-provider-pins",
+    "env": {
+      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-real-provider-pins",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-real-provider-pin-freshness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Check real-provider pin upstream freshness"
     }
   },
   {
@@ -4450,7 +4481,6 @@
       "scripts/data/em-dash-surfaces-baseline.json",
       "scripts/data/locale-de-contamination-baseline.json",
       "scripts/data/docker-image-freshness-baseline.json",
-      "scripts/data/shell-declared-commands-baseline.json",
       "scripts/data/static-nowrap-baseline.json",
       "scripts/data/hook-coverage-baseline.json",
       "scripts/data/css-dom-refs-baseline.json",
@@ -4778,6 +4808,23 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-security",
       "step": "Suppression liveness — are our allowlist entries still needed?"
+    }
+  },
+  {
+    "id": "check:ci-pr-condition-ledger",
+    "env": {
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-pr-condition-ledger",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-pr-condition-ledger.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-security",
+      "step": "PR-condition ledger is current"
     }
   },
   {
@@ -5185,7 +5232,9 @@
     "run": "PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py",
     "gate": true,
     "leaves": [
-      ".ci/rediacc_ci/deploy/write_once_guard_check.py"
+      ".ci/rediacc_ci/deploy/write_once_guard_check.py",
+      ".ci/rediacc_ci/deploy/write_once_guard.py",
+      ".ci/rediacc_ci/core/release_state_validator.py"
     ],
     "ci": {
       "kind": "step",
@@ -5311,39 +5360,6 @@
     }
   },
   {
-    "id": "check:ci-quality-gates",
-    "run": "npm run check:ci-quality-gates",
-    "cores": {
-      "min": 1,
-      "max": "all"
-    },
-    "gate": false,
-    "leaves": [
-      ".ci/rediacc_ci/battery.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:run-sh",
-    "run": ".ci/scripts/test/gates/test-run-sh.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-run-sh.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "check:ci-release-bump-skip",
     "run": "npm run check:ci-release-bump-skip",
     "gate": true,
@@ -5370,21 +5386,6 @@
     }
   },
   {
-    "id": "gate-test:toolchain",
-    "run": ".ci/scripts/test/gates/test-toolchain.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-toolchain.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
     "id": "check:ci-pytest",
     "run": "npm run check:ci-pytest",
     "gate": true,
@@ -5399,7 +5400,6 @@
     "paths": [
       ".ci/rediacc_ci/**",
       ".claude/rediacc_hooks/**",
-      ".ci/scripts/test/gates/**",
       ".claude/hooks/**",
       ".claude/settings.json",
       ".ci/scripts/test/lib/git-fixture.sh",
@@ -5447,54 +5447,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-code",
       "step": "Package key budget"
-    }
-  },
-  {
-    "id": "gate-test:blocker-golden-corpus",
-    "run": ".ci/scripts/test/gates/test-blocker-golden-corpus.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:media-r2",
-    "run": ".ci/scripts/test/gates/test-media-r2.sh",
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-media-r2.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
-    }
-  },
-  {
-    "id": "gate-test:runner-advice",
-    "run": ".ci/scripts/test/gates/test-runner-advice.sh",
-    "reads": [
-      "tree:repo"
-    ],
-    "gate": true,
-    "qualityGateTest": true,
-    "leaves": [
-      ".ci/scripts/test/gates/test-runner-advice.sh"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-gate-tests",
-      "step": "Quality-gate unit tests"
     }
   },
   {
@@ -5633,7 +5585,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: CI runs .ci/scripts/test/test-rdc-update.sh all in .github/workflows/ct-update-flow.yml:70 against a real SEA binary from build-cli-linux-x64. A developer checkout has only the node bundle, so the happy and rollback scenarios cannot run here; the proxy names both every run and runs all seven once RDC_BINARY is set."
+      "blocker": "BLOCKER: CI runs `python3 -m rediacc_ci.testrun.rdc_update all` in .github/workflows/ct-update-flow.yml:70 against a real SEA binary from build-cli-linux-x64. A developer checkout has only the node bundle, so the happy and rollback scenarios cannot run here; the proxy names both every run and runs all seven once RDC_BINARY is set."
     }
   },
   {
@@ -5713,7 +5665,7 @@
     ],
     "ci": {
       "kind": "local-only",
-      "blocker": "BLOCKER: ensure-nfpm.sh is invoked by ci.yml and cd-stage.yml as a setup step, never as a validation, and is the single site enforcing NFPM_VERSION and its sha256. The proxy runs it in a throwaway repo root so the cold-cache fetch-and-verify branch is actually reached; a step pointer would name a step that installs rather than asserts."
+      "blocker": "BLOCKER: rediacc_ci.build.ensure_nfpm is invoked by ci.yml and cd-stage.yml as a setup step, never as a validation, and is the single site enforcing NFPM_VERSION and its sha256. The proxy runs it in a throwaway repo root so the cold-cache fetch-and-verify branch is actually reached; a step pointer would name a step that installs rather than asserts."
     }
   },
   {
@@ -5781,20 +5733,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-code",
       "step": "Generated manifest regions"
-    }
-  },
-  {
-    "id": "check:ci-w7p5a-real-run-blockers",
-    "run": "npm run check:ci-w7p5a-real-run-blockers",
-    "gate": true,
-    "leaves": [
-      ".ci/scripts/quality/check_w7p5a_real_run_blockers.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
-      "step": "W7P5-a real-run blocklist"
     }
   },
   {

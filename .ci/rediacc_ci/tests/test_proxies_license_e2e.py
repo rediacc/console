@@ -90,7 +90,7 @@ def test_real_tree_passes_through_the_port() -> None:
     if new.returncode == 77:
         pytest.skip(f"the port reports cannot-run here: {new.stderr.strip()[:200]}")
     assert new.returncode == 0, new.stderr
-    assert "5 check(s) passed, 6 requirement(s) present" in new.stdout
+    assert "5 check(s) passed, 5 requirement(s) present" in new.stdout
 
 
 # --------------------------------------------------------------------------- The pure counting helper, against synthetic text -- no subprocess at all ---------------------------------------------------------------------------

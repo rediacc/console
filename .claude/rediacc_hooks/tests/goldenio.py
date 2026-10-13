@@ -12,10 +12,14 @@ WHY BASE64 EVER, given the harness's own "BYTES, NOT TEXT" rule. A guard's stder
 from __future__ import annotations
 
 import base64
+import difflib
 import hashlib
 import json
+import os
 import pathlib
+import re
 import subprocess
+import tempfile
 
 GOLDEN_DIR = pathlib.Path(__file__).resolve().parent / "goldens"
 
@@ -30,6 +34,23 @@ REPO_ROOT = next(
 )
 
 
+# THE FIXED FIXTURE WORLDS, folded onto one spelling (queued item #c2a39bea). Several guards (`block_roundlog_write`, `block_plan_without_tasks`, and every other `WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-...")`) build a deterministic world under the system temp dir, because their payload names a real file literally and must know the path at import time.
+# `tempfile.gettempdir()` follows TMPDIR, so with TMPDIR set elsewhere the payload text changed, every case key hashed from it moved, and `regolden.py` rewrote 28 lines across 5 goldens while reporting "0 changed" (a moved key is new, not changed). Folding the world prefix onto `/tmp/rediacc-guard-` in both the key and the recorded answer makes the golden independent of TMPDIR; under the default TMPDIR it is the identity, so no committed golden moves.
+WORLD_PREFIX = "rediacc-guard-"
+CANONICAL_WORLD_ROOT = "/tmp/" + WORLD_PREFIX
+
+
+def fold_temp_worlds(text, temp_root=None):
+    """`text` with the fixed fixture worlds' temp-root prefix spelled `/tmp/rediacc-guard-`, whatever TMPDIR said. `temp_root` defaults to `tempfile.gettempdir()`; a test passes its own."""
+    if text is None:
+        return text
+    prefix = os.path.join(temp_root or tempfile.gettempdir(), WORLD_PREFIX)
+    if prefix == CANONICAL_WORLD_ROOT:
+        return text
+    # Anchored at a path boundary (review a8945e6f.1): with TMPDIR=/t a bare replace also respelled `/home/u/t/rediacc-guard-`, an unrelated path that merely ends in the prefix.
+    return re.sub(r"(?<![\w./-])" + re.escape(prefix), lambda _m: CANONICAL_WORLD_ROOT, text)
+
+
 def normalize(text, work):
     """Replace the ephemeral per-session tmp root, and then the checkout's own root, with stable tokens.
 
@@ -37,7 +58,10 @@ def normalize(text, work):
 
     THE CHECKOUT ROOT IS THE SECOND THING, found 2026-09-25 (#328aca77): a guard that names a repo path (`block_agent_browser_repo_output`'s refusal, `block_unlinked_commit_author`'s `Allowed (from <root>/.ci/config/commit-identity.json)`) froze `/home/developer/console` into its golden, so the same port run from a second checkout failed on the path alone. `<WORK>` goes first because a tmp root may sit INSIDE a checkout, and the longer prefix has to win.
     """
-    if work is None or text is None:
+    if text is None:
+        return text
+    text = fold_temp_worlds(text)
+    if work is None:
         return text
     return text.replace(str(work), "<WORK>").replace(str(REPO_ROOT), "<REPO>")
 
@@ -62,7 +86,7 @@ def content_hash(*parts):
 
     `\\x1f`-joined the same way the corpus files frame their own records (`test_guards_differential.US`), so two parts can never collide by concatenation the way `"ab" + "c"` and `"a" + "bc"` would.
     """
-    joined = "\x1f".join(parts)
+    joined = "\x1f".join(fold_temp_worlds(part) for part in parts)
     return hashlib.sha256(joined.encode("utf-8", "surrogateescape")).hexdigest()[:16]
 
 
@@ -81,6 +105,22 @@ def bash_version_line():
 
 def golden_path(stem):
     return GOLDEN_DIR / ("%s.jsonl" % stem)
+
+
+def rewritten_lines(old_text, new_text):
+    """How many lines a rewrite changed: for every differing run of lines, the longer of its two sides, so a moved key (one line out, one line in) counts once and a dropped or added record counts too.
+
+    THE COUNT `regolden.py` PRINTS (queued item #c2a39bea). Its per-record `changed` list only holds keys present on BOTH sides whose value moved, so a rewrite that moved keys reported "0 changed" over a non-empty diff; this counts what a reviewer of the diff sees.
+    """
+    old_lines = old_text.splitlines()
+    new_lines = new_text.splitlines()
+    total = 0
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(
+        a=old_lines, b=new_lines, autojunk=False
+    ).get_opcodes():
+        if tag != "equal":
+            total += max(i2 - i1, j2 - j1)
+    return total
 
 
 def write_golden(path, header, silent_keys, records):

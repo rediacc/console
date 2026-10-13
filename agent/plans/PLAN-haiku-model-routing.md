@@ -13,7 +13,7 @@ Designed by a read-only Plan subagent. Every path/line below was opened and read
 
 ## 0. Two premises the operator's framing carried, both corrected before designing
 
-**The Stop hook is not the cost.** `.claude/hooks/stop/wl_judge.py:23` already pins `claude-haiku-4-5-20251001`, on measurement rather than taste (`.claude/hooks/stop/wl_judge.py:24`: haiku $0.011-$0.026/call warm vs sonnet $0.231 for the same judgement). The judge fires only when work genuinely remains open, and `.claude/hooks/stop/wl_judge.py:36` caches only clean "stop" verdicts
+**The Stop hook is not the cost.** `.claude/hooks/stop/wl_judge.py` already pins a dated Haiku build (since 2026-10-08 the single `WK_CLAUDE_HAIKU_MODEL` in `.ci/config/well-known.env`), on measurement rather than taste (`.claude/hooks/stop/wl_judge.py:24`: haiku $0.011-$0.026/call warm vs sonnet $0.231 for the same judgement). The judge fires only when work genuinely remains open, and `.claude/hooks/stop/wl_judge.py:36` caches only clean "stop" verdicts
 -- so a long run with open items pays fresh for every "continue". That is the design working, not a leak. **No change proposed to the judge.** The perceived cost is the session and its subagents, which the judge merely bookends.
 
 **"Python and TypeScript" is not the axis.** Surveying `git log --oneline -100`, the dominant class is `refactor(ci): N bash twins port to Python/pytest` (`7a9bda6d7` -- 97 bash gate tests ported; `e812c74e1` -- 8 more; `62599afc0`, `2e50af60a`, `1ea0c7340`, `02dc20665`, `4ee160b3b`, and a dozen siblings). Python is where those land; it is a property of this quarter's migration

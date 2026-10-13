@@ -475,9 +475,10 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
   'quality-pytest':
     'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
     'Python package test step, which no gate-bind region emits; T2.8 unit sharding replaces it',
-  'quality-gate-tests':
-    'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
-    '"Quality-gate unit tests" battery step, which no gate-bind region emits by its own header',
+  'quality-secure-storage':
+    'a three-OS matrix (ubuntu, macOS, Windows) that runs one vitest file against the real ' +
+    'keyring, Keychain and DPAPI backends; it holds no manifest gate, and an emitted region ' +
+    'would place Linux-only gate steps on the macOS and Windows legs',
   [AGGREGATOR_JOB]:
     'runs the receipts half of this same gate, downstream of every sharded lane; a ' +
     'region there would conjunct the judge onto one leg of the matrix it is judging, ' +

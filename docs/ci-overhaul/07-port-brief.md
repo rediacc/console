@@ -93,11 +93,10 @@ Scans: every tracked `test-*` / `test_*` file under the roots named by `.ci/scri
 
 | Root or file | Declared by | Test files | Registry | pytest |
 |---|---|---|---|---|
-| `.ci/rediacc_ci/tests` | orphan gate + pytest | 342 | 0 | 342 |
-| `.ci/rediacc_ci/tests/gates` | pytest testpaths | 171 | 11 | 160 |
-| `.ci/scripts/test/gates` | orphan gate | 5 | 5 | 0 |
-| `.claude/hooks` | orphan gate | 21 | 0 | 0 |
-| `.claude/rediacc_hooks/tests` | orphan gate + pytest | 86 | 0 | 86 |
+| `.ci/rediacc_ci/tests` | orphan gate + pytest | 365 | 0 | 365 |
+| `.ci/rediacc_ci/tests/gates` | pytest testpaths | 174 | 11 | 163 |
+| `.claude/hooks` | orphan gate | 22 | 0 | 0 |
+| `.claude/rediacc_hooks/tests` | orphan gate + pytest | 96 | 0 | 96 |
 | (unregistered) `.claude/hooks/context/test-context-bands.py` | - | 1 | 0 | 0 |
 | (unregistered) `.claude/hooks/stop/test-adhoc-watch.py` | - | 1 | 0 | 0 |
 | (unregistered) `.claude/hooks/stop/test-always-tier.py` | - | 1 | 0 | 0 |
@@ -108,6 +107,7 @@ Scans: every tracked `test-*` / `test_*` file under the roots named by `.ci/scri
 | (unregistered) `.claude/hooks/stop/test-completion-evidence.py` | - | 1 | 0 | 0 |
 | (unregistered) `.claude/hooks/stop/test-defer-settle.py` | - | 1 | 0 | 0 |
 | (unregistered) `.claude/hooks/stop/test-deflect.py` | - | 1 | 0 | 0 |
+| (unregistered) `.claude/hooks/stop/test-depgate.py` | - | 1 | 0 | 0 |
 | (unregistered) `.claude/hooks/stop/test-judge-schema.py` | - | 1 | 0 | 0 |
 | (unregistered) `.claude/hooks/stop/test-plan-status-parse.py` | - | 1 | 0 | 0 |
 | (unregistered) `.claude/hooks/stop/test-plandeps.py` | - | 1 | 0 | 0 |

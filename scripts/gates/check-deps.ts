@@ -64,9 +64,9 @@ const MAJOR_EXCEPTIONS_REL = path
   .relative(CONSOLE_ROOT, MAJOR_EXCEPTIONS_FILE)
   .split(path.sep)
   .join('/');
-// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
+// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder; `skip-pin-sync` skips the .syncpackrc.json pinVersion rewrite after an upgrade (worklist #3b831146), so the selftest can prove its syncpack-style check finds the group left behind. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
 const MUTANT = process.env.CHECK_DEPS_MUTANT;
-const MUTANTS = ['ignore-clock', 'split-update', 'update-first'];
+const MUTANTS = ['ignore-clock', 'split-update', 'update-first', 'skip-pin-sync'];
 const DAY_MS = 86_400_000;
 /** A blocklisted major fails at this age, measured from the first release of the first line past `current`. */
 const HOLD_DEADLINE_DAYS = 90;
@@ -1880,6 +1880,195 @@ function updateMismatches(
   return out;
 }
 
+const SYNCPACK_RC = path.join(CONSOLE_ROOT, '.syncpackrc.json');
+const SYNCPACK_PIN_RE = /^\^(\d+\.\d+\.\d+)$/;
+
+/**
+ * The manifests syncpack lints, mirroring `source` in .syncpackrc.json: the root, every packages/* and private/account. Fixture roots read the same shape.
+ */
+function syncpackSourceDirs(): string[] {
+  const dirs = ['', 'private/account'];
+  try {
+    for (const d of fs.readdirSync(path.join(CONSOLE_ROOT, 'packages'), { withFileTypes: true })) {
+      if (d.isDirectory()) dirs.push(`packages/${d.name}`);
+    }
+  } catch {
+    // No packages/ directory: only the root and private/account are sources.
+  }
+  return dirs.map((d) => path.join(CONSOLE_ROOT, d));
+}
+
+/**
+ * Move the `pinVersion` of every .syncpackrc.json versionGroup whose literal `dependencies` include a package the upgrade moved (worklist #3b831146: on 2026-10-08 --upgrade took @opentelemetry 0.222 -> 0.223 and left the "0.x line in lockstep" group at ^0.222.0, so check:version failed on the next run). `moved` maps a package to the version the upgrade installed; `declared` is the dependency ranges of each source manifest. Pure, so the selftest drives it without a file.
+ *
+ * Refuses (an error, no text) a rc file that is not in the exact form it would rewrite (JSON.stringify two-space plus a trailing newline), a pin that is not a plain caret range, and a group whose members do not all sit on the moved line: a member the manifests declare that did not move (or whose range this gate cannot read) is named as a laggard, because pinning the group would only trade one syncpack failure for another. Glob entries in `dependencies` are not expanded: only literal names are synced, and a caret-pinned group whose glob entry covers a package that moved past the pin is an error naming the group (a hand edit), never a silent skip. The group `label` is never touched (check-syncpack-reasons.ts keys on it).
+ */
+function globToRegExp(glob: string): RegExp {
+  const body = glob
+    .split(/([*?])/)
+    .map((part) =>
+      part === '*' ? '.*' : part === '?' ? '.' : part.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    )
+    .join('');
+  return new RegExp(`^${body}$`);
+}
+
+function planPinSync(
+  text: string,
+  moved: Map<string, string>,
+  declared: Record<string, string>[]
+): { text: string | null; groups: number; involved: number; rewrites: string[]; errors: string[] } {
+  const out = {
+    text: null as string | null,
+    groups: 0,
+    involved: 0,
+    rewrites: [] as string[],
+    errors: [] as string[],
+  };
+  let rc: { versionGroups?: Record<string, unknown>[] };
+  try {
+    rc = JSON.parse(text) as typeof rc;
+  } catch (e) {
+    out.errors.push(`.syncpackrc.json is not valid JSON: ${(e as Error).message}`);
+    return out;
+  }
+  const groups = rc.versionGroups ?? [];
+  out.groups = groups.length;
+  groups.forEach((group, i) => {
+    const pin = group.pinVersion;
+    const deps = group.dependencies;
+    if (typeof pin !== 'string' || !Array.isArray(deps)) return;
+    const members = deps.filter((d): d is string => typeof d === 'string' && !/[*?!]/.test(d));
+    const movedMembers = members.filter((d) => moved.has(d));
+    const label = typeof group.label === 'string' ? group.label : `versionGroups[${i}]`;
+    const globs = deps.filter(
+      (d): d is string => typeof d === 'string' && /[*?]/.test(d) && !d.startsWith('!')
+    );
+    // Literal members are handled by the rewrite below, so a glob entry only matters for a moved package it covers that no literal entry names.
+    const globMoved = [...moved.keys()].filter(
+      (name) => !members.includes(name) && globs.some((g) => globToRegExp(g).test(name))
+    );
+    // A glob entry cannot be expanded against the manifests here, so a moved package it covers past the pin (or past the line a literal member moves it to) is named for a hand edit, whether or not the group also has a moved literal member; a group pinned to anything but a caret range (a `*` group) holds no line to keep.
+    const gm = pin.match(SYNCPACK_PIN_RE);
+    const pinLine = movedMembers.reduce<string | null>(
+      (a, d) => {
+        const v = moved.get(d) as string;
+        return a === null || compareVersions(v, a) > 0 ? v : a;
+      },
+      gm ? gm[1] : null
+    );
+    const globBest = globMoved.reduce<string | null>(
+      (a, n) =>
+        a === null || compareVersions(moved.get(n) as string, a) > 0 ? (moved.get(n) as string) : a,
+      null
+    );
+    const globPast =
+      gm !== null &&
+      globBest !== null &&
+      pinLine !== null &&
+      compareVersions(globBest, pinLine) > 0;
+    if (globPast) {
+      out.involved++;
+      out.errors.push(
+        `group "${label}" covers ${globMoved.map((n) => `${n}@${moved.get(n)}`).join(', ')} through a glob entry, which is not expanded, so its pin ${pin} is not moved${movedMembers.length > 0 ? ` (its literal members ${movedMembers.map((n) => `${n}@${moved.get(n)}`).join(', ')} moved too, and are not rewritten either)` : ''}; set its pinVersion by hand`
+      );
+    }
+    if (movedMembers.length === 0) return;
+    if (globPast) return;
+    out.involved++;
+    const m = pin.match(SYNCPACK_PIN_RE);
+    if (!m) {
+      out.errors.push(
+        `group "${label}" pins "${pin}", which is not a plain caret range, so it is not rewritten blind; set its pinVersion by hand to the line ${movedMembers.map((d) => `${d}@${moved.get(d)}`).join(', ')} moved to`
+      );
+      return;
+    }
+    const lines = new Map<string, string[]>();
+    const note = (line: string | null, who: string) => {
+      const key = line ?? 'unreadable';
+      lines.set(key, [...(lines.get(key) ?? []), who]);
+    };
+    for (const d of members) {
+      const target = moved.get(d);
+      if (target !== undefined) {
+        note(releaseLine(target), `${d}@${target} (moved)`);
+        continue;
+      }
+      for (const ranges of declared) {
+        const range = ranges[d];
+        if (range === undefined) continue;
+        const base = range.match(/^[\^~]?(\d+\.\d+\.\d+)$/);
+        note(base ? releaseLine(base[1]) : null, `${d} "${range}" (not moved)`);
+      }
+    }
+    if (lines.size > 1) {
+      const [first, ...rest] = [...lines.entries()].sort((a, b) => b[1].length - a[1].length);
+      out.errors.push(
+        `group "${label}" has members on different lines, so its pin ${pin} is not moved: ${first[1].join(', ')} vs ${rest.map(([, who]) => who.join(', ')).join('; ')}. Move the laggards to the same line (or allow-list them), then re-run.`
+      );
+      return;
+    }
+    const best = movedMembers
+      .map((d) => moved.get(d) as string)
+      .reduce((a, b) => (compareVersions(a, b) >= 0 ? a : b));
+    const next = `^${best}`;
+    if (next === pin || compareVersions(best, m[1]) < 0) return;
+    group.pinVersion = next;
+    out.rewrites.push(`group "${label}": pinVersion "${pin}" -> "${next}"`);
+  });
+  if (out.rewrites.length > 0) {
+    const fresh = JSON.parse(text) as unknown;
+    if (`${JSON.stringify(fresh, null, 2)}\n` !== text) {
+      out.errors.push(
+        '.syncpackrc.json is not in the two-space JSON form, so its pin groups are not rewritten blind; set each pinVersion above by hand'
+      );
+      return out;
+    }
+    out.text = `${JSON.stringify(rc, null, 2)}\n`;
+  }
+  return out;
+}
+
+/**
+ * After a successful --upgrade, bring the syncpack pin groups along with the packages the steps moved. Returns false (naming each group) when a group cannot be moved safely, so the run stays red instead of leaving check:version to fail later.
+ */
+function syncPinGroups(steps: InstallStep[]): boolean {
+  const moved = new Map<string, string>();
+  for (const step of steps) {
+    if (step.refused) continue;
+    for (const p of step.packages) {
+      const prev = moved.get(p.name);
+      if (prev === undefined || compareVersions(p.latest, prev) > 0) moved.set(p.name, p.latest);
+    }
+  }
+  if (moved.size === 0) return true;
+  if (MUTANT === 'skip-pin-sync') return true;
+  let text: string;
+  try {
+    text = fs.readFileSync(SYNCPACK_RC, 'utf-8');
+  } catch (e) {
+    if (FIXTURE_ROOT) return true;
+    console.error(
+      `${RED}✗${NC} cannot read .syncpackrc.json to move its pin groups: ${(e as Error).message}`
+    );
+    return false;
+  }
+  const plan = planPinSync(text, moved, syncpackSourceDirs().map(readDeclaredRanges));
+  // A plan with no text rewrote nothing (it carries only errors), so it neither prints nor counts rewrites it did not make.
+  const written = plan.text !== null ? plan.rewrites : [];
+  if (plan.text !== null) fs.writeFileSync(SYNCPACK_RC, plan.text);
+  console.log(
+    `\n${BLUE}syncpack pin groups:${NC} ${plan.groups} groups, ${plan.involved} hold a moved package, ${written.length} rewritten`
+  );
+  for (const r of written) console.log(`  .syncpackrc.json ${r}`);
+  if (plan.errors.length === 0) return true;
+  console.error(
+    `${RED}✗${NC} ${plan.errors.length} syncpack pin group(s) not moved (check:version stays red until each is):`
+  );
+  for (const e of plan.errors) console.error(`  ${e}`);
+  return false;
+}
+
 /** Run the planned steps, printing what each one takes, and name every step that failed with its exact command and exit status. An `(update)` step that exits 0 still fails when verifyUpdatedVersions finds a version the gate did not judge. */
 function executeInstalls(steps: InstallStep[]): boolean {
   if (steps.length === 0) {
@@ -2034,7 +2223,7 @@ async function checkDependencies(): Promise<void> {
     if (!FIXTURE_ROOT || !MUTANTS.includes(MUTANT)) {
       console.error(
         `${RED}✗${NC} CHECK_DEPS_MUTANT=${MUTANT} refused: the mutants are ${MUTANTS.map((m) => `"${m}"`).join(', ')}, honoured only under ` +
-          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree they would switch the held-major clock off, split a lockstep update or run an update before the install that unpins it, so they are never honoured there.'
+          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree they would switch the held-major clock off, split a lockstep update, run an update before the install that unpins it or leave a syncpack pin group behind, so they are never honoured there.'
       );
       process.exit(1);
     }
@@ -2043,7 +2232,9 @@ async function checkDependencies(): Promise<void> {
         ? `${YELLOW}MUTANT ignore-clock: the held-major clock is OFF for this fixture run${NC}\n`
         : MUTANT === 'split-update'
           ? `${YELLOW}MUTANT split-update: one npm update per manifest for this fixture run${NC}\n`
-          : `${YELLOW}MUTANT update-first: every npm update runs before the npm install steps for this fixture run${NC}\n`
+          : MUTANT === 'skip-pin-sync'
+            ? `${YELLOW}MUTANT skip-pin-sync: the .syncpackrc.json pin groups are NOT rewritten for this fixture run${NC}\n`
+            : `${YELLOW}MUTANT update-first: every npm update runs before the npm install steps for this fixture run${NC}\n`
     );
   }
   const clockOff = MUTANT === 'ignore-clock';
@@ -2243,7 +2434,8 @@ async function checkDependencies(): Promise<void> {
       }
       process.exit(0);
     }
-    const success = executeInstalls(steps);
+    const installed = executeInstalls(steps);
+    const success = installed && syncPinGroups(steps);
     printHeld();
     printClock();
     if (totalHeld > 0) {
@@ -2351,6 +2543,8 @@ interface FixtureSpec {
   files?: Record<string, string>;
   /** Lockstep families per manifest, same keys: the stub `npm update` fails ERESOLVE when it names any package of a family without naming all of them AND passing `-w=` for every workspace listed (each holds a nested copy pinned to the others), as real npm did for vitest + @vitest/* on 2026-10-02. */
   lockstep?: Record<string, Array<{ names: string[]; workspaces: string[] }>>;
+  /** The fixture's .syncpackrc.json text, written verbatim; absent means the fixture has none. */
+  syncpackrc?: string;
 }
 
 // The fixture's local-only, non-submodule directory. See its use in `buildFixture` below.
@@ -2391,6 +2585,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     JSON.stringify({ leftpad: { current: '1.0.0', latest: '1.0.1' } })
   );
   for (const [rel, text] of Object.entries(spec.files ?? {})) write(rel, text);
+  if (spec.syncpackrc !== undefined) write('.syncpackrc.json', spec.syncpackrc);
   const manifestDirs = [
     '',
     ...Object.keys(spec.outdated),
@@ -2523,6 +2718,8 @@ function runFixture(
   root: string;
   /** The root package.json as the run left it. */
   rootManifest: string;
+  /** The .syncpackrc.json as the run left it, or null when the fixture had none. */
+  syncpackrc: string | null;
 } {
   const fx = buildFixture(spec);
   try {
@@ -2542,6 +2739,9 @@ function runFixture(
       installs,
       root: fx.root,
       rootManifest: fs.readFileSync(path.join(fx.root, 'package.json'), 'utf-8'),
+      syncpackrc: fs.existsSync(path.join(fx.root, '.syncpackrc.json'))
+        ? fs.readFileSync(path.join(fx.root, '.syncpackrc.json'), 'utf-8')
+        : null,
     };
   } finally {
     fs.rmSync(fx.root, { recursive: true, force: true });
@@ -3973,6 +4173,240 @@ function selftest(): void {
     `installs:\n${boundedInst}\noutput:\n${bounded.output}`
   );
 
+  // 13. THE SYNCPACK PIN GROUPS FOLLOW THE UPGRADE (worklist #3b831146, 2026-10-08). --upgrade took the allow-listed @opentelemetry 0.222 -> 0.223 and left the "0.x line in lockstep" group in .syncpackrc.json at ^0.222.0, so `syncpack lint` (check:version) failed on the next run. The upgrade now rewrites the pinVersion of each group holding a moved package, keeping the label; a group whose members did not all move to one line is refused by name. The fixture npm stub never rewrites a manifest, so the "syncpack-style check" below compares each group's pinVersion with the declared ranges AS npm would have left them (a moved package declares ^<its judged latest>); it does not shell out to syncpack.
+  const pinGroups = (zero: string, two: string, extra: string[] = []) =>
+    `${JSON.stringify(
+      {
+        versionGroups: [
+          {
+            label: 'Pin the OpenTelemetry 0.x line in lockstep',
+            packages: ['**'],
+            dependencies: [otelNode, ...extra],
+            pinVersion: zero,
+          },
+          {
+            label: 'Pin the OpenTelemetry 2.x line in lockstep',
+            packages: ['**'],
+            dependencies: [otelCore],
+            pinVersion: two,
+          },
+          {
+            label: 'Pin i18next for CLI',
+            packages: ['**'],
+            dependencies: ['i18next'],
+            pinVersion: '^26.4.2',
+          },
+        ],
+      },
+      null,
+      2
+    )}\n`;
+  const behindGroups = (rcText: string, spec: FixtureSpec): string[] => {
+    const latest = new Map<string, string>();
+    for (const outdated of Object.values(spec.outdated)) {
+      for (const [n, o] of Object.entries(outdated)) {
+        if (!Array.isArray(o) && o.latest) latest.set(n, o.latest);
+      }
+    }
+    const ranges = Object.values(spec.manifests ?? {}).map((m) => {
+      const deps = (m as { dependencies?: Record<string, string> }).dependencies ?? {};
+      return Object.fromEntries(
+        Object.entries(deps).map(([n, r]) => [n, latest.has(n) ? `^${latest.get(n)}` : r])
+      );
+    });
+    const rc = JSON.parse(rcText) as {
+      versionGroups: Array<{ label: string; dependencies: string[]; pinVersion: string }>;
+    };
+    return rc.versionGroups
+      .filter((g) =>
+        g.dependencies.some((d) => ranges.some((r) => r[d] !== undefined && r[d] !== g.pinVersion))
+      )
+      .map((g) => g.label);
+  };
+  const pinCase = (rcText: string, over: Partial<FixtureSpec> = {}): FixtureSpec =>
+    otelCase({ syncpackrc: rcText, ...over });
+  const startRc = pinGroups('^0.222.0', '^2.11.0');
+  const pinSpec = pinCase(startRc);
+  const pinBefore = behindGroups(startRc, pinSpec);
+  expect(
+    'pin groups: CONTROL: the syncpack-style check sees both otel groups behind the post-upgrade manifests before any rewrite',
+    pinBefore.length === 2,
+    pinBefore.join(', ')
+  );
+  const pinRun = runFixture(pinSpec, 'upgrade');
+  const pinAfter =
+    pinRun.syncpackrc === null ? ['no file'] : behindGroups(pinRun.syncpackrc, pinSpec);
+  const pinGroupsOut = (
+    pinRun.syncpackrc ? JSON.parse(pinRun.syncpackrc) : { versionGroups: [] }
+  ) as {
+    versionGroups: Array<{ label: string; pinVersion: string }>;
+  };
+  expect(
+    'pin groups: an allow-listed out-of-range move and an in-range one move their lockstep groups, labels and the untouched i18next group stay byte-identical, and nothing is left behind',
+    pinRun.status === 0 &&
+      pinAfter.length === 0 &&
+      pinRun.syncpackrc === pinGroups('^0.223.0', '^2.12.0') &&
+      pinGroupsOut.versionGroups[2].pinVersion === '^26.4.2' &&
+      pinRun.output.includes('3 groups, 2 hold a moved package, 2 rewritten') &&
+      pinRun.output.includes('pinVersion "^0.222.0" -> "^0.223.0"'),
+    `${pinRun.output}\n${pinRun.syncpackrc}`
+  );
+  const skipRun = runFixture(
+    pinCase(startRc, { env: { CHECK_DEPS_MUTANT: 'skip-pin-sync' } }),
+    'upgrade'
+  );
+  const skipBehind = skipRun.syncpackrc === null ? [] : behindGroups(skipRun.syncpackrc, pinSpec);
+  expect(
+    'pin groups: CONTROL: with the rewrite disabled (skip-pin-sync mutant) the same upgrade exits 0 yet the syncpack-style check finds both groups behind',
+    skipRun.status === 0 &&
+      skipRun.output.includes('MUTANT skip-pin-sync') &&
+      skipRun.syncpackrc === startRc &&
+      skipBehind.length === 2,
+    `${skipRun.output}\n${skipRun.syncpackrc}`
+  );
+  // A group with a second member that is declared, on the old line, and did not move: pinning it to 0.223 would only fail syncpack on that member, so the group is refused by name and left alone while the other group still moves.
+  const lagSpec = pinCase(pinGroups('^0.222.0', '^2.11.0', ['@opentelemetry/sdk-logs']), {
+    manifests: {
+      '': { workspaces: ['packages/cli'] },
+      'packages/cli': {
+        dependencies: {
+          [otelCore]: '^2.11.0',
+          [otelNode]: '^0.222.0',
+          '@opentelemetry/sdk-logs': '^0.222.0',
+        },
+      },
+    },
+  });
+  const lagRun = runFixture(lagSpec, 'upgrade');
+  expect(
+    'pin groups: a partial lockstep move is refused naming the group and the laggard, the group stays put and the run is red',
+    lagRun.status === 1 &&
+      lagRun.syncpackrc === pinGroups('^0.222.0', '^2.12.0', ['@opentelemetry/sdk-logs']) &&
+      lagRun.output.includes(
+        'group "Pin the OpenTelemetry 0.x line in lockstep" has members on different lines'
+      ) &&
+      lagRun.output.includes('@opentelemetry/sdk-logs "^0.222.0" (not moved)'),
+    `${lagRun.output}\n${lagRun.syncpackrc}`
+  );
+  // Nothing in the groups moved: the file is not rewritten at all.
+  const idleRc = `${JSON.stringify({ versionGroups: [{ label: 'Pin i18next for CLI', packages: ['**'], dependencies: ['i18next'], pinVersion: '^26.4.2' }] }, null, 2)}\n`;
+  const idleRun = runFixture(pinCase(idleRc), 'upgrade');
+  expect(
+    'pin groups: a group whose packages did not move is untouched, and the shape says 0 groups hold a moved package',
+    idleRun.status === 0 &&
+      idleRun.syncpackrc === idleRc &&
+      idleRun.output.includes('1 groups, 0 hold a moved package, 0 rewritten'),
+    `${idleRun.output}\n${idleRun.syncpackrc}`
+  );
+  // A glob entry covering a moved package: nothing is rewritten and the group is named.
+  {
+    const globGroup = (label: string, pinVersion: string) => ({
+      label,
+      packages: ['**'],
+      dependencies: ['@opentelemetry/*'],
+      pinVersion,
+    });
+    const globRc = `${JSON.stringify(
+      {
+        versionGroups: [
+          globGroup('Pin OpenTelemetry by glob', '^0.222.0'),
+          globGroup('Any version of the api', '*'),
+        ],
+      },
+      null,
+      2
+    )}\n`;
+    const plan = planPinSync(globRc, new Map([['@opentelemetry/api', '0.223.0']]), []);
+    expect(
+      'pin groups: a glob entry covering a moved package is an error naming the group, with no rewrite, and a non-caret pin stays silent',
+      plan.text === null &&
+        plan.errors.length === 1 &&
+        plan.errors[0].includes('group "Pin OpenTelemetry by glob"') &&
+        plan.rewrites.length === 0,
+      JSON.stringify(plan)
+    );
+  }
+  {
+    // A moved literal member must not hide a moved glob-covered package that ends past the line the pin would move to.
+    const mixedRc = `${JSON.stringify(
+      {
+        versionGroups: [
+          {
+            label: 'Pin OpenTelemetry mixed',
+            packages: ['**'],
+            dependencies: ['@opentelemetry/api', '@opentelemetry/sdk-*'],
+            pinVersion: '^0.222.0',
+          },
+        ],
+      },
+      null,
+      2
+    )}\n`;
+    const mixed = planPinSync(
+      mixedRc,
+      new Map([
+        ['@opentelemetry/api', '0.223.0'],
+        ['@opentelemetry/sdk-node', '0.224.0'],
+      ]),
+      []
+    );
+    expect(
+      'pin groups: a glob entry covering a package that moved past a moved literal member is an error naming the group, with no rewrite',
+      mixed.text === null &&
+        mixed.errors.length === 1 &&
+        mixed.errors[0].includes('group "Pin OpenTelemetry mixed"') &&
+        mixed.errors[0].includes('@opentelemetry/sdk-node@0.224.0') &&
+        mixed.errors[0].includes('@opentelemetry/api@0.223.0') &&
+        mixed.rewrites.length === 0,
+      JSON.stringify(mixed)
+    );
+    const level = planPinSync(
+      mixedRc,
+      new Map([
+        ['@opentelemetry/api', '0.223.0'],
+        ['@opentelemetry/sdk-node', '0.223.0'],
+      ]),
+      []
+    );
+    expect(
+      'pin groups: a glob-covered package level with the moved literal member is rewritten with the group, not refused',
+      level.errors.length === 0 && level.rewrites.length === 1,
+      JSON.stringify(level)
+    );
+  }
+  // A file the rewrite cannot reproduce byte for byte is refused, not reformatted.
+  const oddRc = startRc.replace(/\n/g, '\r\n');
+  const oddRun = runFixture(pinCase(oddRc), 'upgrade');
+  expect(
+    'pin groups: an rc file that is not in the exact form it would rewrite is refused and left byte-identical',
+    oddRun.status === 1 &&
+      oddRun.syncpackrc === oddRc &&
+      oddRun.output.includes('not in the two-space JSON form'),
+    `${oddRun.output}\n${oddRun.syncpackrc}`
+  );
+  expect(
+    'pin groups: a refused rewrite (no text) prints no rewrite line and counts 0 rewritten',
+    oddRun.output.includes('hold a moved package, 0 rewritten') &&
+      !oddRun.output.includes('.syncpackrc.json group'),
+    oddRun.output
+  );
+  const realPin: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'skip-pin-sync' };
+  delete realPin.CHECK_DEPS_ROOT;
+  delete realPin.CHECK_DEPS_FORCE_PROBE_FAILURE;
+  const realPinRun = spawnSync(process.execPath, [...process.execArgv, process.argv[1]], {
+    cwd: CONSOLE_ROOT,
+    encoding: 'utf-8',
+    env: realPin,
+  });
+  expect(
+    'mutant: CONTROL: skip-pin-sync without CHECK_DEPS_ROOT is refused',
+    realPinRun.status === 1 &&
+      `${realPinRun.stdout}${realPinRun.stderr}`.includes(
+        'CHECK_DEPS_MUTANT=skip-pin-sync refused'
+      ),
+    `${realPinRun.stdout}${realPinRun.stderr}`
+  );
+
   console.log(
     joinReport(
       `${GREEN}✓${NC} ${checks} selftest checks: the probe fails closed on both shapes; a breaking bump is held in `,
@@ -3991,7 +4425,10 @@ function selftest(): void {
       'a lockstep family moves in one npm update per lockfile, and the split-update mutant fails ERESOLVE; an allow-listed ',
       'sibling that pins an in-range package exactly is installed before its lockfile is updated, the update-first mutant ',
       'leaves that package held back, and a held-back package names its pinning sibling instead of a freshness breach; ',
-      'every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary'
+      'every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary; an upgrade ',
+      'rewrites the .syncpackrc.json pinVersion of each group holding a moved package (label kept), the skip-pin-sync ',
+      'mutant leaves the group behind and is refused on a real tree, a partial lockstep move or an unreproducible rc ',
+      'file is refused by name, and a group whose packages did not move is untouched'
     )
   );
   process.exit(0);

@@ -270,9 +270,9 @@ toolchain_cache_dir() {
 # This was the THIRD copy of this shim in the repo. It is now the SECOND, and
 # the count is written down rather than left implicit because it is the number
 # that tells the next reader whether the pattern is shrinking. The remaining
-# sibling is _sha256sum in .ci/lib/local-common.sh:37, which is not sourceable
-# from here: it pulls in the whole local-loop logging apparatus, and this
-# library is sourced by gates that must stay cheap and side-effect-free.
+# sibling is _sha256_file in .ci/rediacc_ci/setup/host.py (the Python port of
+# the deleted .ci/lib/local-common.sh _sha256sum), which bash cannot source;
+# this library is sourced by gates that must stay cheap and side-effect-free.
 #
 # The third copy, _sha256sum_portable in .ci/lib/find-port.sh, is GONE as of
 # W7 phase 1: that file now delegates to rediacc_ci.core.ports, and hashlib

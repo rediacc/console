@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""PostToolUse: after a push of the live branch, arm ONE background CI watcher for the pushed head (agent/plans/PLAN-ci-verdict.md, box G).
+"""PostToolUse: after a push of the live branch, or the `gh pr create` that opens its PR, arm ONE background CI watcher for the pushed head (agent/plans/PLAN-ci-verdict.md, box G).
 
 WHY. The operator disabled the Stop hook on 2026-10-02, and with it went the only thing that told a session its CI had finished. So the push itself now starts the watch: `.ci/scripts/ci/ci-trace.py --wait --until-final` runs detached, and on its final verdict the tracer writes the branch-keyed cache beside the worklist (`wl_civerdict.write_cache`) and appends the verdict to the session's CI worklist item. A later turn, a SessionStart or another session reads it from disk with no network call.
 
 ONE WATCHER PER HEAD. `<worklist>.ciwatch-<sha1(branch)[:8]>` records the head, pid, session and item of the watcher armed last. A second push of the same head (a retry, a no-op push, a submodule push from the same turn) finds that watcher alive and arms nothing. A new head arms a new watcher; the old one keeps running until its own head's verdict, which is still a true statement about that head.
 
-ONLY A PUSH THAT MOVED THE LIVE BRANCH. The command must mention `git push` (the same test cancel_old_ci.py uses), and afterwards `origin/<branch>` must equal `HEAD`: git updates the remote-tracking ref only on a successful push, so a failed push, a push of a submodule, or a push of some other ref leaves them apart and nothing is armed. `main` and a detached HEAD are never watched.
+NO OPEN PR, NO WATCH. A push of a branch without an open PR starts no CI, so nothing is armed (an unanswerable lookup keeps the watch). `gh pr create` re-runs the same check after the PR exists, so a branch pushed first and opened later is watched from the moment its CI starts.
+
+ONLY A PUSH THAT MOVED THE LIVE BRANCH. The command must mention `git push` (the same test cancel_old_ci.py uses) or run `gh pr create`, and afterwards `origin/<branch>` must equal `HEAD`: git updates the remote-tracking ref only on a successful push, so a failed push, a push of a submodule, or a push of some other ref leaves them apart and nothing is armed. `main` and a detached HEAD are never watched.
 
 THE ITEM. The session's CI item is reused while it is open (its id is in the state file and a fresh `--lease` on it succeeds); otherwise `worklist.py --add` makes one, tagged with the session prefix. The lease names `worker:<pid>`: the watcher is a detached process, not a harness background task, so the roster reports it as unverifiable rather than dead, which is the documented reading of such a worker. Leases are capped at `wl_core.MAX_LEASE_MIN`.
 
@@ -43,7 +45,7 @@ _SYSPATH.on_sys_path(_SYSPATH.CLAUDE_DIR)
 _SYSPATH.on_sys_path(_SYSPATH.STOP_DIR)
 
 import wl_core as C  # noqa: E402
-from rediacc_hooks import hookio  # noqa: E402
+from rediacc_hooks import hookio, shellscan  # noqa: E402
 
 TRACE = pathlib.Path(".ci") / "scripts" / "ci" / "ci-trace.py"
 WORKLIST = HOOKS / "stop" / "worklist.py"
@@ -143,13 +145,32 @@ def spawn_watch(root, sid, branch, item, log_path):
     return proc.pid
 
 
-def arm(root, sid, cli=worklist_cli, spawn=spawn_watch, alive=watcher_alive):
+def open_pr_exists(root, branch, read=None):
+    """False only when `gh pr list` ANSWERED that `branch` has no open PR. A plain push of a PR-less branch starts no CI (ci.yml runs on push to main and on pull_request), so a watcher would only wait out its timeout. A lookup that fails (no gh, network, auth) is unknown, not "no PR", and keeps the watch (fail open). The read goes through wl_gh.read_raw, the hooks' one bounded read with its transient retry."""
+    if read is None:
+        import wl_gh  # noqa: PLC0415 -- stop-dir sibling, on sys.path through the hop above
+
+        read = wl_gh.read_raw
+    out, _why = read(
+        ["pr", "list", "--head", branch, "--state", "open", "--json", "number", "--jq", "length"],
+        cwd=root,
+        timeout=30,
+    )
+    if out is None:
+        return True
+    return out.strip() != "0"
+
+
+def arm(root, sid, cli=worklist_cli, spawn=spawn_watch, alive=watcher_alive, has_pr=open_pr_exists):
     """Arm (or reuse) the watcher for the pushed head. Returns the line to print, or ""."""
     branch = _git(root, "symbolic-ref", "--short", "-q", "HEAD")
     if not branch or branch == "main" or not sid:
         return ""
     head = _git(root, "rev-parse", "HEAD")
     if not head or _git(root, "rev-parse", "origin/%s" % branch) != head:
+        return ""
+    # Turbo local-first (agent/plans/PLAN-turbo-local-first.md D5): a backup push with no open PR triggers no CI, so nothing is armed.
+    if not has_pr(root, branch):
         return ""
     me = sid[:8]
     worklist = C.worklist_for(root)
@@ -203,12 +224,18 @@ def _kill(pid):
         os.killpg(int(pid), 15)
 
 
+def starts_ci(cmd):
+    """True for a command after which CI may have just started: a `git push`, or the `gh pr create` that opens the PR (a branch pushed before its PR existed armed nothing at the push, and `pull_request` CI starts at the create)."""
+    text = hookio.normalize_git_push(cmd)
+    return hookio.grep_q_line("git push", text) or shellscan.gh_pr_at_command_pos(
+        shellscan.scan_target(text), "create"
+    )
+
+
 def main():
     payload = sys.stdin.read()
     ev = hookio.Event(payload)
-    if not hookio.grep_q_line(
-        "git push", hookio.normalize_git_push(ev.raw("tool_input", "command"))
-    ):
+    if not starts_ci(ev.raw("tool_input", "command")):
         return 0
     try:
         line = arm(ev.project_dir, ev.field("session_id"))

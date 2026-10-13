@@ -68,7 +68,7 @@ The 404 names GitHub, so the symptom points away from the cause. No textual asse
 THE A9 CONTROL IS A COPY PLUS AN APPENDED NO-OP OVERRIDE of toolchain_load. Appending cannot silently fail to apply the way a pattern substitution can when the targeted line is later reworded.
 
 A10 ASSERTS THE UNIT, not the parts. A3 proves the file is PARSEABLE by three readers. Nothing proved they still read it. Delete the `. toolchain.env` from constants.sh, or the COPY from the Dockerfile, or the --env step from the workflow, and every assertion above stays green while the pins go back to being decorative -- which is the exact state this whole file exists to end. The
-three-point wiring is the invariant; asserting the parts individually never asserted the unit. Each reader is checked for the mechanism it actually uses, not for the string "toolchain.env": a COMMENT mentioning the file would otherwise satisfy the rule, and every one of these three files has several such comments. The Actions reader is checked via `--env`, never a bare `cat`:
+three-point wiring is the invariant; asserting the parts individually never asserted the unit. Each reader is checked for the mechanism it actually uses, not for the string "toolchain.env": a COMMENT mentioning the file would otherwise satisfy the rule, and every one of these three files has several such comments. The Actions reader is checked via the `pairs` emitter, never a bare `cat`:
 $GITHUB_ENV accepts only KEY=value and would choke on the comments, which is why
 the emitter exists at all.
 
@@ -419,7 +419,8 @@ def check_a9(report: Report, root: pathlib.Path) -> None:
 # A10's three mechanisms, each checked for what it actually DOES.
 A10_SOURCE_RE = re.compile(r"(\.|source)[ \t]+\"?\$\{?_REDIACC_TOOLCHAIN_ENV")
 A10_COPY_RE = re.compile(r"^[ \t]*COPY[ \t]+toolchain\.env")
-A10_ENV_RE = re.compile(r"toolchain\.sh[ \t]+--env[ \t]*>>[ \t]*\"?\$\{?GITHUB_ENV")
+# The Actions emitter is the `pairs` verb of rediacc_ci.core.toolchain since W11-C (820e53328, 2026-10-08) moved every workflow call site off `toolchain.sh --env`; the old spelling matched nothing from then on and A10 went red over a reader that was still there.
+A10_ENV_RE = re.compile(r"rediacc_ci\.core\.toolchain[ \t]+pairs[ \t]*>>[ \t]*\"?\$\{?GITHUB_ENV")
 
 
 def check_a10(report: Report, root: pathlib.Path) -> None:
@@ -444,7 +445,7 @@ def check_a10(report: Report, root: pathlib.Path) -> None:
         if not any(A10_COPY_RE.search(line) for line in lines):
             bad.append("Dockerfile no longer COPYs toolchain.env into the image")
 
-    # Actions: some workflow must feed the pins into $GITHUB_ENV, via --env.
+    # Actions: some workflow must feed the pins into $GITHUB_ENV, via the `pairs` emitter.
     found = False
     workflows = root / ".github" / "workflows"
     if workflows.is_dir():
@@ -457,7 +458,9 @@ def check_a10(report: Report, root: pathlib.Path) -> None:
             if found:
                 break
     if not found:
-        bad.append("no workflow feeds the pins into $GITHUB_ENV via toolchain.sh --env")
+        bad.append(
+            "no workflow feeds the pins into $GITHUB_ENV via `python3 -m rediacc_ci.core.toolchain pairs`"
+        )
 
     if not bad:
         report.ok("A10. all three readers (bash, Docker, Actions) still read the pins")
@@ -852,8 +855,16 @@ def selftest() -> int:
             bool(A10_COPY_RE.search("COPY toolchain.env /tmp/")),
         )
         ctl.truthy(
-            "CONTROL: the --env emitter into $GITHUB_ENV is recognised",
-            bool(A10_ENV_RE.search('  .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"')),
+            "CONTROL: the `pairs` emitter into $GITHUB_ENV is recognised",
+            bool(
+                A10_ENV_RE.search(
+                    '  PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"'
+                )
+            ),
+        )
+        ctl.falsy(
+            "MIRROR: the `report` verb into $GITHUB_ENV is NOT the emitter (it prints prose, not KEY=value)",
+            bool(A10_ENV_RE.search('python3 -m rediacc_ci.core.toolchain report >> "$GITHUB_ENV"')),
         )
         ctl.falsy(
             "MIRROR: a bare `cat toolchain.env >> $GITHUB_ENV` is NOT the emitter",

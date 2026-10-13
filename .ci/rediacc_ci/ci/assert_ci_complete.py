@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/assert-ci-complete.sh` (89 lines).
+"""Port of the retired `.ci/scripts/ci/assert-ci-complete.sh` (89 lines), whose answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.assert-ci-complete.jsonl`.
 
-The body of the `CI Complete` gate: fail unless every CI job reached an acceptable conclusion. The twin's header owns the contract -- the HARD/SOFT tiers, why `RUN_SH_TESTS` is hard, why `MIGRATION_TEST` is absent, why `BREAKPOINT_LIFECYCLE` and `LABEL_GUIDE` are soft -- and it is not restated here. The tier membership below is a copy of the twin's two arrays; the per-member
-reasoning stays in the twin, which is the file `.ci/rediacc_ci/tests/gates/test_gate_ci_complete_tiers.py` reads.
+The body of the `CI Complete` gate: fail unless every CI job reached an acceptable conclusion. The tiers are HARD_REQUIRED and SOFT_REQUIRED below. `.ci/rediacc_ci/tests/gates/test_gate_ci_complete_tiers.py` reads them from this module, and `rediacc_ci.quality.ci_job_aggregation` parses them to hold them equal to the `RESULT_*` env block of `ci-complete`.
 
-LIVE CALLER, not repointed: `.github/workflows/ci.yml:1736` `run: .ci/scripts/ci/assert-ci-complete.sh`, with one `RESULT_*` env var per job at :1738-1760. The bash twin stays the registered gate; this module is its verified-equivalent alternative and the cutover is a separate, later, driver-only step.
+LIVE CALLER: `.github/workflows/ci.yml` runs `PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_ci_complete` in the `ci-complete` job, with one `RESULT_*` env var per job.
 
 Ledger: `.ci/shadow/w7p6-assert-ci-complete.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-ci-complete --assert --k 5`).
 
@@ -68,6 +67,8 @@ SOFT_REQUIRED = (
     "BREAKPOINT_LIFECYCLE",
     "CHECK_RELEASE_STATE",
     "E2E_DEPENDENCY_PROBE",
+    # cd-preflight runs on push-to-main and same-repo PRs only; a fork PR and the nightly skip it.
+    "CD_PREFLIGHT",
 )
 
 # The pointer-bump fast path (see `.ci/rediacc_ci/ci/detect_pointer_bump.py`): the three build jobs are DELIBERATELY skipped by ci.yml, so their skips must read as green. Soft still blocks on "failure", so a genuine build failure is not forgiven. RUN_SH_TESTS is NOT skipped on that path, and unlike the twin this list judges it -- see the delta documented above.

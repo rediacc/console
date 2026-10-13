@@ -6,7 +6,9 @@ The record policy is READ FROM HEAD, never the worktree, as the push guard reads
 
 PART 4, DON'T PUSH INTO A RUNNING RUN. `ci_hold` reads the cached PR CI state the Stop hook already keeps (`wl_ci.cistate_path`, written by `wl_ci.ci_trouble`): no GitHub call is made here. The head's run is in progress and not red, and the branch holds commits origin lacks, so the advice is to hold them until the run settles; a red with a fix in hand pushes at once.
 
-Both are advice. Nothing refuses a push and nothing here exits non-zero.
+BACKUP PUSH (agent/plans/PLAN-turbo-local-first.md D4). Under `turbo_push: batch-end` a turbo batch's commits stay local until the batch completes, so they live only on this disk. `backup_push_due(root, hours)` reads the oldest commit in `origin/<branch>..HEAD` (`origin/main..HEAD` when the branch was never pushed) and answers when it is older than `hours` (QUEUE.md `backup_push_h`, 0 off): a plain `git push -u origin <branch>` with no PR triggers no CI run and bounds what a lost disk or a stopped session can cost.
+
+All are advice. Nothing refuses a push and nothing here exits non-zero.
 """
 
 import json
@@ -207,3 +209,35 @@ def pending_run(worklist, session_id, now=None):
     if hard or soft or wl_ci.ci_gate(info).get("verdict") != "running":
         return None
     return sha[:8]
+
+
+def oldest_unpushed(root, branch=None):
+    """(oldest committer epoch, count, base ref) of the commits on HEAD that `origin/<branch>` lacks, or that `origin/main` lacks when the branch was never pushed; None when there are none or nothing could be read."""
+    branch = branch or current_branch(root)
+    if not branch:
+        return None
+    base = "origin/%s" % branch
+    if _git(root, "rev-parse", "--verify", "-q", "refs/remotes/%s" % base) is None:
+        base = "origin/main"
+        if _git(root, "rev-parse", "--verify", "-q", "refs/remotes/%s" % base) is None:
+            return None
+    out = _git(root, "log", "--format=%ct", "%s..HEAD" % base)
+    stamps = [int(x) for x in (out or "").split() if x.isdigit()]
+    if not stamps:
+        return None
+    return min(stamps), len(stamps), base
+
+
+def backup_push_due(root, hours, branch=None, now=None):
+    """{"n", "branch", "age", "hours"} when the oldest unpushed commit is at least `hours` old, else None (and always None for `hours` <= 0, the off switch). `age` is in hours."""
+    if not hours or int(hours) <= 0:
+        return None
+    branch = branch or current_branch(root)
+    got = oldest_unpushed(root, branch)
+    if got is None:
+        return None
+    oldest, n, _base = got
+    age = ((time.time() if now is None else now) - oldest) / 3600.0
+    if age < int(hours):
+        return None
+    return {"n": n, "branch": branch, "age": age, "hours": int(hours)}

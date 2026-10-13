@@ -156,7 +156,8 @@ def _read(root: str, rel: str, rev: str) -> str | None:
         return commit_policy.git(["show", "%s:%s" % (rev, rel)], cwd=root)
     try:
         return (pathlib.Path(root) / rel).read_text(encoding="utf-8")
-    except OSError:
+    # A non-UTF-8 file reads as absent, so callers fall back to defaults instead of crashing.
+    except (OSError, UnicodeDecodeError):
         return None
 
 
@@ -168,7 +169,7 @@ def _planqueue():
 
 
 def settings_at(root: str, rev: str = ""):
-    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: hook on, turbo off, batch 1."""
+    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; one that exists but cannot be read is all defaults and a problem; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: hook on, turbo off, batch 1."""
     try:
         pq = _planqueue()
     except ImportError as exc:
@@ -177,6 +178,9 @@ def settings_at(root: str, rev: str = ""):
     if text is None:
         if rev:
             return pq.Settings(), ["%s at %s is unreadable" % (QUEUE_REL, rev)]
+        # `_read` also answers None for a file that exists but cannot be read (permissions, not UTF-8): defaults, with the problem said so callers that warn on problems do.
+        if (pathlib.Path(root) / QUEUE_REL).exists():
+            return pq.Settings(), ["%s is unreadable (not UTF-8 or not readable)" % QUEUE_REL]
         return pq.Settings(), []
     return pq.settings(text)
 
@@ -188,10 +192,12 @@ def _default_settings():
     return types.SimpleNamespace(
         stop_hook=True,
         turbo=False,
+        turbo_push="batch-end",
         batch_size=1,
         plan_concurrency=1,
         writer_cap=4,
         commit_remind_min=15,
+        backup_push_h=4,
         cadence=True,
         agent_hint=True,
         agent_pushback=True,
@@ -484,6 +490,11 @@ def turbo_named(root: str, branch: str) -> list[str]:
     return [p for p in got or [] if isinstance(p, str) and PLAN_PATH.match(p)]
 
 
+def batch_body(root: str, branch: str) -> str:
+    """The PR body for opening `branch`'s PR once its turbo batch completes (agent/plans/PLAN-turbo-local-first.md D2): a `Plan:` line naming the queue head plus every plan the Stop hook named for `branch`, for `gh pr create --body-file`. The full line is written at creation because `refresh_pr_body` runs only on a push and P-A1 reads the body at the `opened` event. "" when neither a queue head nor a named plan exists."""
+    return with_plan_line("", queue_head(root), turbo_named(root, branch))
+
+
 def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     """ "" when the PR may merge on its plans, else the reason it may not (agent/plans/PLAN-stop-hook-turbo.md D6).
 
@@ -546,6 +557,7 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
 __all__ = [
     "QUEUE_REL",
     "TURBO_NAMED_SUFFIX",
+    "batch_body",
     "batch_size",
     "body_plans",
     "exists_at",

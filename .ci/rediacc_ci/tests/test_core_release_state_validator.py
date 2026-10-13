@@ -17,11 +17,9 @@ WHAT EACH GROUP OF CASES GUARDS.
                       Python 0 is FALSE, and `if sentinel_exists(...)` reading
                       backwards is the one bug a faithful port of this library
                       would have introduced.
-  the twin's defects  Three findings are PINNED rather than fixed, because
-                      `.ci/scripts/lib/` is outside this workstream's write
-                      grant. Each pin goes RED the day the twin is repaired,
-                      which is the point: a finding recorded only in prose is a
-                      finding that rots.
+  the twin's defects  Findings about the bash library, kept as FROZEN RUNS
+                      (the library is deleted, its answers are in
+                      `goldens/twins/lib.release-state-validator.jsonl`).
   the anti-vacuity    The corpus must be non-trivial and the differential must
                       actually have compared something. A test that skipped
                       every case would otherwise pass.
@@ -46,7 +44,6 @@ import itertools
 import json
 import os
 import pathlib
-import re
 import shutil
 import subprocess
 import sys
@@ -128,19 +125,25 @@ def _twin() -> pathlib.Path:
 
 
 def _bash(function: str, args: list[str], **env: str) -> tuple[int, str, str]:
-    """Source the twin and call ONE function. Returns (rc, stdout, stderr).
+    """The twin's answer for ONE function: (rc, stdout, stderr), from the golden.
 
-    `set -uo pipefail` and NOT `-e`, matching how every real caller invokes
-    these: `rsv_assert_bijection ... || rc=$?` at check-release-state.sh:50 and
-    `out="$(...)" || rc=$?` at test-release-state-consistency.sh:40. Adding `-e`
-    here would make the harness abort where the callers keep going, which is a difference in the TEST rather than in the thing under test.
+    `set -uo pipefail` and NOT `-e`, matching how every real caller invokes these: `rsv_assert_bijection ... || rc=$?`. Adding `-e` would make the harness abort where the callers keep going, which is a difference in the TEST rather than in the thing under test. A `regolden --source bash` run sources the library while it exists.
     """
-    script = "set -uo pipefail\nsource %s\n%s %s\n" % (
-        _q(str(_twin())),
-        function,
-        " ".join(_q(a) for a in args),
+
+    def live() -> tuple[int, str, str]:
+        script = "set -uo pipefail\nsource %s\n%s %s\n" % (
+            _q(str(_twin())),
+            function,
+            " ".join(_q(a) for a in args),
+        )
+        return diff.bash_streams(script, env=diff.env_for(**env))
+
+    return diff.twin_call(
+        TWIN,
+        ["fn", function, repr(args), repr(sorted(env.items()))],
+        live,
+        work=diff.pytest_tmp_roots(*args, *env.values()),
     )
-    return diff.bash_streams(script, env=diff.env_for(**env))
 
 
 def _joined(lines: list[str]) -> str:
@@ -447,8 +450,6 @@ def test_probe_is_not_an_int() -> None:
 def test_probe_return_codes_are_the_twins() -> None:
     """0 sealed / 1 absent / 2 could not tell, read out of the twin's comments."""
     assert (rsv.Probe.YES.rc, rsv.Probe.NO.rc, rsv.Probe.UNKNOWN.rc) == (0, 1, 2)
-    text = _twin().read_text(encoding="utf-8")
-    assert "`0` sealed, `1` genuinely absent, `2` COULD NOT TELL." in text
 
 
 @pytest.mark.parametrize(
@@ -568,73 +569,44 @@ def test_list_sentinels_parses_the_tab_packed_key_list(
     assert got == ["v1.0.0", "v1.2.0", "v1.10.0"]
 
 
-def test_get_sentinel_payload_fails_open_exactly_as_the_twin_does() -> None:
+def test_get_sentinel_payload_fails_open_exactly_as_the_twin_does(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """`|| true` plus `2>/dev/null`: an unreachable bucket yields "".
 
     PINNED, NOT FIXED. `write-release-sentinel.sh:140` uses this for a readback VERIFICATION, so a torn network read there reads as "the sentinel I just wrote is not there". Changing it here would make the port disagree with the twin about a release-path decision.
     """
-    text = _twin().read_text(encoding="utf-8")
-    body = text.split("rsv_get_sentinel_payload() {", 1)[1].split("\n}", 1)[0]
-    assert "|| true" in body
-    assert "2>/dev/null" in body
+
+    def failing(argv: list[str], **_kwargs: object) -> subprocess.CompletedProcess:
+        return subprocess.CompletedProcess(argv, 255, "partial body", "ExpiredToken")
+
+    monkeypatch.setattr(rsv, "_run", failing)
+    assert rsv.get_sentinel_payload("cli", "v1.0.0", "https://example.invalid") == ""
 
 
 # --------------------------------------------------------------------------- The twin's defects, pinned so they cannot rot ---------------------------------------------------------------------------
 
 
-def test_defect_1_the_twin_still_calls_an_undefined_log_error() -> None:
-    """`log_error` at 4 sites, defined nowhere, and the file sources nothing.
-
-    RED WHEN THE TWIN IS FIXED, which is the point of a pin. Whoever adds the `source common.sh` (or defines a fallback) deletes this case in the same change and the finding closes with evidence rather than by being forgotten.
-    """
-    text = _twin().read_text(encoding="utf-8")
-    calls = [m.start() for m in re.finditer(r"^\s*log_error ", text, re.MULTILINE)]
-    assert len(calls) == 4, "the log_error call count moved: %d" % len(calls)
-    assert not re.search(r"^\s*(source|\.)\s+\S", text, re.MULTILINE), (
-        "the twin now sources something; re-check whether log_error is defined"
-    )
-    assert "log_error()" not in text
-
-
 def test_defect_1_is_live_when_the_library_is_sourced_alone() -> None:
-    """Driven, not asserted from the source text. `command not found`, rc 127.
+    """The bash library's DEFECT 1, from the frozen run: `command not found`, rc 127.
 
-    The `rm -f "$err"` on the line after never runs either, so the failure also leaks the `mktemp` file the function created.
+    The library called `log_error` without defining it, so sourced alone its first probe died there, and the `rm -f "$err"` on the next line never ran either. The port defines its own logger and cannot inherit this; the recorded run is the evidence of what it would have done.
     """
-    script = (
-        "set -euo pipefail\n"
-        "source %s\n"
-        "rsv_binary_count 'cli/v0.0.0/'\n"
-        "echo NEVER-REACHED\n" % _q(str(_twin()))
-    )
-    rc, out, err = diff.bash_streams(
-        script,
-        # Built as a dict and splatted rather than written as keyword literals, because ruff's S106 flags any literal assigned to an argument whose NAME looks like a secret, and it is right to: the exception belongs here, in a harness pointed at example.invalid, and nowhere a reader might copy from.
-        env=diff.env_for(**FAKE_R2_ENV),
-    )
+
+    def live() -> tuple[int, str, str]:
+        script = (
+            "set -euo pipefail\n"
+            "source %s\n"
+            "rsv_binary_count 'cli/v0.0.0/'\n"
+            "echo NEVER-REACHED\n" % _q(str(_twin()))
+        )
+        # Built as a dict and splatted rather than written as keyword literals, because ruff's S106 flags any literal assigned to an argument whose NAME looks like a secret, and it is right to: the exception belongs here
+        return diff.bash_streams(script, env=diff.env_for(**FAKE_R2_ENV))
+
+    rc, out, err = diff.twin_call(TWIN, ["defect-1-sourced-alone"], live)
     assert "log_error: command not found" in err
     assert "NEVER-REACHED" not in out
     assert rc != 0
-
-
-def test_defect_2_only_one_probe_still_conflates_empty_with_unreachable() -> None:
-    """Three siblings grew a third state; `rsv_list_sentinels` never did.
-
-    Pinned as a COUNT so that fixing the fourth one, or regressing one of the three, both show up here.
-    """
-    text = _twin().read_text(encoding="utf-8")
-    tri_state = [
-        name
-        for name in ("rsv_prefix_nonempty", "rsv_binary_count", "rsv_sentinel_exists")
-        if "return 2" in text.split(name + "() {", 1)[1].split("\n}", 1)[0]
-    ]
-    assert sorted(tri_state) == [
-        "rsv_binary_count",
-        "rsv_prefix_nonempty",
-        "rsv_sentinel_exists",
-    ] or tri_state == ["rsv_prefix_nonempty", "rsv_sentinel_exists"], tri_state
-    swallowing = text.split("rsv_list_sentinels() {", 1)[1].split("\n}", 1)[0]
-    assert "|| true" in swallowing, "rsv_list_sentinels no longer swallows; close the finding"
 
 
 def test_defect_2_the_ratchet_is_what_keeps_that_from_being_green() -> None:
@@ -658,28 +630,22 @@ def test_defect_2_the_ratchet_is_what_keeps_that_from_being_green() -> None:
 
 
 def test_defect_3_the_inner_function_leaks_into_the_global_shell() -> None:
-    """`rsv_drop_pre_contract` survives the call that defined it. Driven live."""
-    script = (
-        "set -uo pipefail\n"
-        "source %s\n"
-        "declare -F rsv_drop_pre_contract >/dev/null && echo BEFORE-DEFINED || echo BEFORE-ABSENT\n"
-        "rsv_assert_bijection 'v1.3.0' 'v1.3.0' '' >/dev/null\n"
-        "declare -F rsv_drop_pre_contract >/dev/null && echo AFTER-DEFINED || echo AFTER-ABSENT\n"
-        % _q(str(_twin()))
-    )
-    _rc, out, _err = diff.bash_streams(script, env=diff.env_for(RSV_FLOOR_FILE="/dev/null"))
+    """`rsv_drop_pre_contract` survived the call that defined it. From the frozen run."""
+
+    def live() -> tuple[int, str, str]:
+        script = (
+            "set -uo pipefail\n"
+            "source %s\n"
+            "declare -F rsv_drop_pre_contract >/dev/null && echo BEFORE-DEFINED || echo BEFORE-ABSENT\n"
+            "rsv_assert_bijection 'v1.3.0' 'v1.3.0' '' >/dev/null\n"
+            "declare -F rsv_drop_pre_contract >/dev/null && echo AFTER-DEFINED || echo AFTER-ABSENT\n"
+            % _q(str(_twin()))
+        )
+        return diff.bash_streams(script, env=diff.env_for(RSV_FLOOR_FILE="/dev/null"))
+
+    _rc, out, _err = diff.twin_call(TWIN, ["defect-3-leak"], live)
     assert "BEFORE-ABSENT" in out
     assert "AFTER-DEFINED" in out
-
-
-def test_the_bash_4_precondition_is_still_in_the_twin() -> None:
-    """The port has no counterpart, so the twin's guard must not vanish quietly.
-
-    A Python dict is a dict on every interpreter this repo supports. The guard exists because `declare -A` fails SILENTLY on bash 3.2 and turns a healthy release state into a red that names nothing.
-    """
-    text = _twin().read_text(encoding="utf-8")
-    assert 'if [[ "${BASH_VERSINFO[0]:-0}" -lt 4 ]]; then' in text
-    assert "needs bash 4.0 or newer" in text
 
 
 # --------------------------------------------------------------------------- The duplicate, named so the collapse is a decision and not a discovery ---------------------------------------------------------------------------

@@ -21,7 +21,7 @@ import sys
 
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
-SELF = "check-edge-manifest.py"
+SELF = "rediacc_ci.release.check_edge_manifest"
 MANIFEST_URL = RELEASES_ORIGIN + "/cli/edge/manifest.json"
 
 

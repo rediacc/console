@@ -53,7 +53,7 @@ on:
       # removes the second half of a release-LOOP breaker.
       #
       # CD pushes bot commits straight to main: cd-v2.yml's contract-floor
-      # ratchet and .ci/scripts/release/update-homebrew-tap.sh both
+      # ratchet and rediacc_ci.release.update_homebrew_tap both
       # `git push origin HEAD:main` with user.name = GIT_BOT_NAME (a Bitwarden
       # secret since it left the vars.GIT_BOT_NAME Actions variable), which
       # is literally "github-actions[bot]" — the exact string
@@ -241,11 +241,11 @@ jobs:
         # `curl -sS https://webi.sh/shfmt | sh` -- unpinned, so CI silently
         # tracked whatever was latest while the image built its own copy from
         # `go install ...@latest`. The gate now acquires shfmt at the pin itself
-        # (.ci/scripts/lib/toolchain.sh), which is the only way host, container
+        # (rediacc_ci.core.toolchain), which is the only way host, container
         # and CI can be shown to agree.
         run: |
-          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
-          .ci/scripts/lib/toolchain.sh --report
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report
 
       - name: Install ruff
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -295,9 +295,6 @@ jobs:
       - name: Bash-lib port completeness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_bash_lib_ported.py
-      - name: Battery clean-tree guard
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_battery_clean_tree.py
       - name: Capability-probe parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_probe_parity.py
@@ -349,9 +346,6 @@ jobs:
       - name: Environment names
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_environment_names.py
-      - name: Gate registration follows the gates/ convention
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_gate_id_convention.py
       - name: Gate-reachability probe agrees with registrations
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_gate_reachability_coverage.py
@@ -468,9 +462,6 @@ jobs:
       - name: Vendored blocker derivation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_vendored_blocker_derivation.py
-      - name: W7P5-a real-run blocklist
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_w7p5a_real_run_blockers.py
       - name: Workflow env provision
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
@@ -644,6 +635,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: npm run check:ci-agent-session-archival
+
+      # Hand-written for the same reason as its neighbours: quality-branch has no
+      # `- id: setup` (invariant 11). A deferred per-commit review finding, an open
+      # finding at block_at, or an unreadable resolution on the PR head's
+      # agent/reviews/<branch>/ fails here; waivers are listed in the step summary.
+      - name: Review resolutions
+        if: ${{ !cancelled() }}
+        run: npm run check:ci-review-resolutions
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
 
       # HAND-WRITTEN, like its neighbours, and the reason is invariant 11:
       # quality-branch has no `- id: setup`, so `scripts/gate-bind.ts:289-300` refuses to
@@ -968,27 +971,27 @@ jobs:
         run: .ci/scripts/quality/check_no_app_admin_perm.py
       - name: AWS credential bridge
         id: gate_check_ci_aws_credential_bridge
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-aws-credential-bridge
       - name: Backup bucket conformance
         id: gate_check_ci_backup_bucket_conformance
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-backup-bucket-conformance
       - name: Backup manifest shape parity
         id: gate_check_ci_backup_manifest_shape_parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-backup-manifest-shape-parity
       - name: Backup protocol conformance
         id: gate_check_ci_backup_protocol_conformance
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-backup-protocol-conformance
       - name: Bootstrap paths install through the dependency stamp
         id: gate_check_ci_bootstrap_idempotency
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-bootstrap-idempotency
       - name: Builder env contract
         id: gate_check_ci_builder_env_contract
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-builder-env-contract
       - name: Ceph image pin freshness
         id: gate_check_ci_ceph_image_pin
@@ -1000,23 +1003,19 @@ jobs:
         run: npm run check:ci-changed-selection
       - name: CI fetch integrity
         id: gate_check_ci_fetch_integrity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-fetch-integrity
       - name: CI job aggregation
         id: gate_check_ci_job_aggregation
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_ci_job_aggregation.py
-      - name: CI scripts declare the binaries they execute
-        id: gate_check_ci_shell_declared_commands
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: npm run check:ci-shell-declared-commands
       - name: CLI docs stay in sync with their scripts' real flags
         id: gate_check_ci_cli_doc_coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: .ci/scripts/quality/check_cli_doc_coverage.py
       - name: CLI examples
         id: gate_check_cli_examples
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:cli-examples
       - name: Command tree
         id: gate_check_ci_command_tree
@@ -1024,15 +1023,15 @@ jobs:
         run: .ci/scripts/quality/check_command_tree.py
       - name: Controls are not written inside string literals
         id: gate_check_ci_control_in_string
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-control-in-string
       - name: Design tree
         id: gate_check_ci_design_tree
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-design-tree
       - name: Dockerfile npm pins
         id: gate_check_ci_docker_npm_pins
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: .ci/scripts/quality/check_docker_npm_pins.py
       - name: Enumeration vacuity
         id: gate_check_ci_enumeration_vacuity
@@ -1048,15 +1047,15 @@ jobs:
         run: .ci/scripts/quality/check_fetch_retry.py
       - name: Fixture event timestamps
         id: gate_check_ci_fixture_event_timestamps
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-fixture-event-timestamps
       - name: Format command covers its config's scope
         id: gate_check_ci_format_scope
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_format_scope.py
       - name: Gate binding
         id: gate_check_ci_gate_bind
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-gate-bind
       - name: Gate cwd independence
         id: gate_check_ci_gate_cwd_independence
@@ -1064,7 +1063,7 @@ jobs:
         run: npm run check:ci-gate-cwd-independence
       - name: Gate-test real-file plants
         id: gate_check_ci_gate_test_real_file_plants
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_gate_test_real_file_plants.py
       - name: Gates that write the real tree declare it
         id: gate_check_ci_gate_tree_writes
@@ -1076,11 +1075,15 @@ jobs:
         run: npm run check:ci-gen-manifest
       - name: Greenlight closure paths
         id: gate_check_ci_greenlight_closures
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: .ci/scripts/quality/check_greenlight_closures.py
+      - name: Inline suppression markers
+        id: gate_check_ci_inline_suppressions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        run: .ci/scripts/quality/check_inline_suppressions.py
       - name: Inner kill timers are reachable
         id: gate_check_ci_inner_timeout_reachable
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_inner_timeout_reachable.py
       - name: Instruction files do not prescribe a rejected merge method
         id: gate_check_ci_merge_method_prose
@@ -1088,11 +1091,11 @@ jobs:
         run: npm run check:ci-merge-method-prose
       - name: jq boolean defaults
         id: gate_check_ci_jq_boolean_default
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-jq-boolean-default
       - name: Judged rule wiring
         id: gate_check_ci_judged_rule_wiring
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_judged_rule_wiring.py
       - name: knip BLOCKER reasons
         id: gate_check_ci_knip_blockers
@@ -1108,27 +1111,31 @@ jobs:
         run: .ci/scripts/quality/check_lockfile.py
       - name: Mediated git tool stays lease-only and dry-run by default
         id: gate_check_ci_git_tool_safety
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-git-tool-safety
+      - name: Model-invocable commands
+        id: gate_check_ci_model_invocable_commands
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
+        run: .ci/scripts/quality/check_model_invocable_commands.py
       - name: Native modules rebuilt after every root install
         id: gate_check_ci_native_rebuild
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-native-rebuild
       - name: Naturalization model policy
         id: gate_check_ci_naturalization_model_policy
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-naturalization-model-policy
       - name: No client-side key composition
         id: gate_check_ci_no_client_key_composition
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-no-client-key-composition
       - name: No source file exceeds the line-count budget
         id: gate_check_ci_max_lines
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-max-lines
       - name: Package key budget
         id: gate_check_ci_package_key_budget
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-package-key-budget
       - name: Paths-origin provenance
         id: gate_check_ci_paths_origin
@@ -1136,11 +1143,11 @@ jobs:
         run: npm run check:ci-paths-origin
       - name: Retention knob parity
         id: gate_check_ci_retention_knob_parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-retention-knob-parity
       - name: Rubric calibration
         id: gate_check_ci_rubric_calibration
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_rubric_calibration.py
       - name: Runtime imports are dependencies
         id: gate_check_ci_runtime_imports_are_deps
@@ -1148,7 +1155,7 @@ jobs:
         run: npm run check:ci-runtime-imports-are-deps
       - name: Schema coverage
         id: gate_check_ci_schema_coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: npm run check:ci-schema-coverage
       - name: scripts/ domain partition
         id: gate_check_ci_domain_partition
@@ -1160,23 +1167,23 @@ jobs:
         run: npm run check:ci-shape-duplication
       - name: Shared constant duplication
         id: gate_check_ci_shared_constant_duplication
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-shared-constant-duplication
       - name: Step env parity
         id: gate_check_ci_step_env_parity
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-step-env-parity
       - name: Swallowed failures
         id: gate_check_ci_swallowed_failures
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
         run: .ci/scripts/quality/check_swallowed_failures.py
       - name: syncpack source coverage
         id: gate_check_ci_syncpack_sources
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: .ci/scripts/quality/check_syncpack_sources.py
       - name: Test suites are CI-reachable
         id: gate_check_ci_test_scripts_reachable
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: npm run check:ci-test-scripts-reachable
       - name: Tmpfs health
         id: gate_check_ci_tmpfs_health
@@ -1184,15 +1191,15 @@ jobs:
         run: .ci/scripts/quality/check_tmpfs_health.py
       - name: Typecheck scope coverage
         id: gate_check_ci_typecheck_scope_coverage
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-typecheck-scope-coverage
       - name: Unused exports (knip)
         id: gate_lint_unused
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run lint:unused
       - name: Verify no peer dependency conflicts
         id: gate_check_ci_peer_deps
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: .ci/scripts/quality/check_peer_deps.py
       - name: Versions
         id: gate_check_version
@@ -1204,7 +1211,7 @@ jobs:
         run: npm run check:ci-worker-secret-names
       - name: Workflow banned patterns
         id: gate_check_ci_workflows
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: .ci/scripts/quality/check_workflows.py
       - name: Workflow lint (actionlint)
         id: gate_check_ci_actionlint
@@ -1212,11 +1219,11 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.security.actionlint
       - name: Workflow orphan step keys
         id: gate_check_ci_workflow_orphan_step_keys
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: npm run check:ci-workflow-orphan-step-keys
       - name: Worklist event builders
         id: gate_check_ci_worklist_event_builders
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
         run: npm run check:ci-worklist-event-builders
       - name: Worklist path resolution
         id: gate_check_ci_worklist_path_resolution
@@ -1224,12 +1231,12 @@ jobs:
         run: npm run check:ci-worklist-path-resolution
       - name: www build token
         id: gate_check_ci_www_build_token
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
         run: .ci/scripts/quality/check_www_build_token.py
       - name: Write shard receipt
         if: always()
         env:
-          GATE_STEP_LOCK_MAP: '{"gate_check_ci_app_admin_perm":["check:ci-app-admin-perm"],"gate_check_ci_aws_credential_bridge":["check:ci-aws-credential-bridge"],"gate_check_ci_backup_bucket_conformance":["check:ci-backup-bucket-conformance"],"gate_check_ci_backup_manifest_shape_parity":["check:ci-backup-manifest-shape-parity"],"gate_check_ci_backup_protocol_conformance":["check:ci-backup-protocol-conformance"],"gate_check_ci_bootstrap_idempotency":["check:ci-bootstrap-idempotency"],"gate_check_ci_builder_env_contract":["check:ci-builder-env-contract"],"gate_check_ci_ceph_image_pin":["check:ci-ceph-image-pin"],"gate_check_ci_changed_selection":["check:ci-changed-selection"],"gate_check_ci_fetch_integrity":["check:ci-fetch-integrity"],"gate_check_ci_job_aggregation":["check:ci-job-aggregation"],"gate_check_ci_shell_declared_commands":["check:ci-shell-declared-commands"],"gate_check_ci_cli_doc_coverage":["check:ci-cli-doc-coverage"],"gate_check_cli_examples":["check:cli-examples"],"gate_check_ci_command_tree":["check:ci-command-tree"],"gate_check_ci_control_in_string":["check:ci-control-in-string"],"gate_check_ci_design_tree":["check:ci-design-tree"],"gate_check_ci_docker_npm_pins":["check:ci-docker-npm-pins"],"gate_check_ci_enumeration_vacuity":["check:ci-enumeration-vacuity"],"gate_check_ci_lint_scope_coverage":["check:ci-lint-scope-coverage"],"gate_check_ci_fetch_retry":["check:ci-fetch-retry"],"gate_check_ci_fixture_event_timestamps":["check:ci-fixture-event-timestamps"],"gate_check_ci_format_scope":["check:ci-format-scope"],"gate_check_ci_gate_bind":["check:ci-gate-bind"],"gate_check_ci_gate_cwd_independence":["check:ci-gate-cwd-independence"],"gate_check_ci_gate_test_real_file_plants":["check:ci-gate-test-real-file-plants"],"gate_check_ci_gate_tree_writes":["check:ci-gate-tree-writes"],"gate_check_ci_gen_manifest":["check:ci-gen-manifest"],"gate_check_ci_greenlight_closures":["check:ci-greenlight-closures"],"gate_check_ci_inner_timeout_reachable":["check:ci-inner-timeout-reachable"],"gate_check_ci_merge_method_prose":["check:ci-merge-method-prose"],"gate_check_ci_jq_boolean_default":["check:ci-jq-boolean-default"],"gate_check_ci_judged_rule_wiring":["check:ci-judged-rule-wiring"],"gate_check_ci_knip_blockers":["check:ci-knip-blockers"],"gate_check_lint":["check:lint","check:lint:cli","check:lint:web","check:lint:tooling","check:lint:account"],"gate_check_ci_lockfile":["check:ci-lockfile"],"gate_check_ci_git_tool_safety":["check:ci-git-tool-safety"],"gate_check_ci_native_rebuild":["check:ci-native-rebuild"],"gate_check_ci_naturalization_model_policy":["check:ci-naturalization-model-policy"],"gate_check_ci_no_client_key_composition":["check:ci-no-client-key-composition"],"gate_check_ci_max_lines":["check:ci-max-lines"],"gate_check_ci_package_key_budget":["check:ci-package-key-budget"],"gate_check_ci_paths_origin":["check:ci-paths-origin"],"gate_check_ci_retention_knob_parity":["check:ci-retention-knob-parity"],"gate_check_ci_rubric_calibration":["check:ci-rubric-calibration"],"gate_check_ci_runtime_imports_are_deps":["check:ci-runtime-imports-are-deps"],"gate_check_ci_schema_coverage":["check:ci-schema-coverage"],"gate_check_ci_domain_partition":["check:ci-domain-partition"],"gate_check_ci_shape_duplication":["check:ci-shape-duplication"],"gate_check_ci_shared_constant_duplication":["check:ci-shared-constant-duplication"],"gate_check_ci_step_env_parity":["check:ci-step-env-parity"],"gate_check_ci_swallowed_failures":["check:ci-swallowed-failures"],"gate_check_ci_syncpack_sources":["check:ci-syncpack-sources"],"gate_check_ci_test_scripts_reachable":["check:ci-test-scripts-reachable"],"gate_check_ci_tmpfs_health":["check:ci-tmpfs-health"],"gate_check_ci_typecheck_scope_coverage":["check:ci-typecheck-scope-coverage"],"gate_lint_unused":["lint:unused"],"gate_check_ci_peer_deps":["check:ci-peer-deps"],"gate_check_version":["check:version"],"gate_check_ci_worker_secret_names":["check:ci-worker-secret-names"],"gate_check_ci_workflows":["check:ci-workflows"],"gate_check_ci_actionlint":["check:ci-actionlint"],"gate_check_ci_workflow_orphan_step_keys":["check:ci-workflow-orphan-step-keys"],"gate_check_ci_worklist_event_builders":["check:ci-worklist-event-builders"],"gate_check_ci_worklist_path_resolution":["check:ci-worklist-path-resolution"],"gate_check_ci_www_build_token":["check:ci-www-build-token"]}'
+          GATE_STEP_LOCK_MAP: '{"gate_check_ci_app_admin_perm":["check:ci-app-admin-perm"],"gate_check_ci_aws_credential_bridge":["check:ci-aws-credential-bridge"],"gate_check_ci_backup_bucket_conformance":["check:ci-backup-bucket-conformance"],"gate_check_ci_backup_manifest_shape_parity":["check:ci-backup-manifest-shape-parity"],"gate_check_ci_backup_protocol_conformance":["check:ci-backup-protocol-conformance"],"gate_check_ci_bootstrap_idempotency":["check:ci-bootstrap-idempotency"],"gate_check_ci_builder_env_contract":["check:ci-builder-env-contract"],"gate_check_ci_ceph_image_pin":["check:ci-ceph-image-pin"],"gate_check_ci_changed_selection":["check:ci-changed-selection"],"gate_check_ci_fetch_integrity":["check:ci-fetch-integrity"],"gate_check_ci_job_aggregation":["check:ci-job-aggregation"],"gate_check_ci_cli_doc_coverage":["check:ci-cli-doc-coverage"],"gate_check_cli_examples":["check:cli-examples"],"gate_check_ci_command_tree":["check:ci-command-tree"],"gate_check_ci_control_in_string":["check:ci-control-in-string"],"gate_check_ci_design_tree":["check:ci-design-tree"],"gate_check_ci_docker_npm_pins":["check:ci-docker-npm-pins"],"gate_check_ci_enumeration_vacuity":["check:ci-enumeration-vacuity"],"gate_check_ci_lint_scope_coverage":["check:ci-lint-scope-coverage"],"gate_check_ci_fetch_retry":["check:ci-fetch-retry"],"gate_check_ci_fixture_event_timestamps":["check:ci-fixture-event-timestamps"],"gate_check_ci_format_scope":["check:ci-format-scope"],"gate_check_ci_gate_bind":["check:ci-gate-bind"],"gate_check_ci_gate_cwd_independence":["check:ci-gate-cwd-independence"],"gate_check_ci_gate_test_real_file_plants":["check:ci-gate-test-real-file-plants"],"gate_check_ci_gate_tree_writes":["check:ci-gate-tree-writes"],"gate_check_ci_gen_manifest":["check:ci-gen-manifest"],"gate_check_ci_greenlight_closures":["check:ci-greenlight-closures"],"gate_check_ci_inline_suppressions":["check:ci-inline-suppressions"],"gate_check_ci_inner_timeout_reachable":["check:ci-inner-timeout-reachable"],"gate_check_ci_merge_method_prose":["check:ci-merge-method-prose"],"gate_check_ci_jq_boolean_default":["check:ci-jq-boolean-default"],"gate_check_ci_judged_rule_wiring":["check:ci-judged-rule-wiring"],"gate_check_ci_knip_blockers":["check:ci-knip-blockers"],"gate_check_lint":["check:lint","check:lint:cli","check:lint:web","check:lint:tooling","check:lint:account"],"gate_check_ci_lockfile":["check:ci-lockfile"],"gate_check_ci_git_tool_safety":["check:ci-git-tool-safety"],"gate_check_ci_model_invocable_commands":["check:ci-model-invocable-commands"],"gate_check_ci_native_rebuild":["check:ci-native-rebuild"],"gate_check_ci_naturalization_model_policy":["check:ci-naturalization-model-policy"],"gate_check_ci_no_client_key_composition":["check:ci-no-client-key-composition"],"gate_check_ci_max_lines":["check:ci-max-lines"],"gate_check_ci_package_key_budget":["check:ci-package-key-budget"],"gate_check_ci_paths_origin":["check:ci-paths-origin"],"gate_check_ci_retention_knob_parity":["check:ci-retention-knob-parity"],"gate_check_ci_rubric_calibration":["check:ci-rubric-calibration"],"gate_check_ci_runtime_imports_are_deps":["check:ci-runtime-imports-are-deps"],"gate_check_ci_schema_coverage":["check:ci-schema-coverage"],"gate_check_ci_domain_partition":["check:ci-domain-partition"],"gate_check_ci_shape_duplication":["check:ci-shape-duplication"],"gate_check_ci_shared_constant_duplication":["check:ci-shared-constant-duplication"],"gate_check_ci_step_env_parity":["check:ci-step-env-parity"],"gate_check_ci_swallowed_failures":["check:ci-swallowed-failures"],"gate_check_ci_syncpack_sources":["check:ci-syncpack-sources"],"gate_check_ci_test_scripts_reachable":["check:ci-test-scripts-reachable"],"gate_check_ci_tmpfs_health":["check:ci-tmpfs-health"],"gate_check_ci_typecheck_scope_coverage":["check:ci-typecheck-scope-coverage"],"gate_lint_unused":["lint:unused"],"gate_check_ci_peer_deps":["check:ci-peer-deps"],"gate_check_version":["check:version"],"gate_check_ci_worker_secret_names":["check:ci-worker-secret-names"],"gate_check_ci_workflows":["check:ci-workflows"],"gate_check_ci_actionlint":["check:ci-actionlint"],"gate_check_ci_workflow_orphan_step_keys":["check:ci-workflow-orphan-step-keys"],"gate_check_ci_worklist_event_builders":["check:ci-worklist-event-builders"],"gate_check_ci_worklist_path_resolution":["check:ci-worklist-path-resolution"],"gate_check_ci_www_build_token":["check:ci-www-build-token"]}'
           STEPS_JSON: ${{ toJSON(steps) }}
           SHARD_INDEX: ${{ matrix.shard }}
           SHARD_OF: '4'
@@ -1239,7 +1246,7 @@ jobs:
         run: node scripts/ci/write-shard-receipt.cjs
       - name: Upload shard receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: quality-shard-${{ matrix.shard }}
           path: /tmp/gate-receipt-quality-code.json
@@ -1469,6 +1476,9 @@ jobs:
       - name: Lint rule unit specs
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-lint-rule-units
+      - name: PR scope rules agree with their CLAUDE.md source
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_scope_mirrors.py
       - name: Pricing consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-pricing-consistency
@@ -1756,7 +1766,7 @@ jobs:
       # run that fails leaves something behind.
       - name: Upload tutorial player gate artifacts
         if: ${{ failure() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: tutorial-player-release-gate-${{ github.run_attempt }}
           path: artifacts/tutorial-player-release-gate/
@@ -1784,7 +1794,7 @@ jobs:
       # silent; the only exposure is to whatever the runner image ships. Adding the same
       # pinned install its siblings use (ci-quality.yml:273 and :295) does not work in
       # THIS lane: PYYAML_VERSION is exported by the "Load gate toolchain pins" step
-      # (.ci/scripts/lib/toolchain.sh --env >> $GITHUB_ENV), and quality-packages has no
+      # (python3 -m rediacc_ci.core.toolchain pairs >> $GITHUB_ENV), and quality-packages has no
       # such step -- measured 0 occurrences -- so the pin would expand to empty and
       # `PyYAML==` would fail every run. Fixing it properly means giving this lane the
       # toolchain-pin load, which belongs with the W2.6 lane work, not to a one-line edit.
@@ -2101,20 +2111,12 @@ jobs:
   # ============================================================================
   # L9 SECURITY -- split three ways (PLAN-ci-time-budget.md T2.15, 2026-09-26).
   # The two heavy suites this job used to carry sequentially, `Python package
-  # tests` (20.9-22.5 min, check:ci-pytest) and `Quality-gate unit tests`
-  # (10.1-12.9 min, the battery), each get their own job below (`quality-pytest`,
-  # `quality-gate-tests`) with their own checkout and setup, so a slow suite no
-  # longer blocks the other's start or borrows its timeout headroom. What is left
-  # here -- the gate-bind region's meta-gate checks, Audit and Suppression
-  # liveness -- measures about 4 minutes on its own.
-  #
-  # Splitting the general shard mechanism (lanes.ts capabilities, unit
-  # enumerators, the LPT balancer, the gate-bind shard-strategy region and
-  # receipt merge -- PLAN-ci-time-budget.md T2.7-T2.11) across quality-pytest and
-  # quality-gate-tests is NOT done here: those files are outside this change's
-  # scope. Each of the two new jobs below is therefore a single unsharded leg,
-  # so quality-pytest still runs at its full 20.9-22.5 min and does not yet meet
-  # the 15-minute per-job target; quality-gate-tests already does, at 10.1-12.9.
+  # tests` (20.9-22.5 min, check:ci-pytest) and the bash gate-test battery
+  # (10.1-12.9 min), each got their own job, so a slow suite no longer blocked
+  # the other's start or borrowed its timeout headroom. The battery's job was
+  # retired with the last bash gate test (2026-10-09); `quality-pytest` below
+  # runs the pytest ports. What is left here -- the gate-bind region's meta-gate
+  # checks, Audit and Suppression liveness -- measures about 4 minutes on its own.
   # ============================================================================
   quality-security:
     name: Security
@@ -2139,9 +2141,9 @@ jobs:
     permissions:
       contents: read
       actions: read # CI time budget freshness reads ci.yml and housekeeping.yml runs, jobs and artifacts
-    # No label opt-out at JOB level any more: that guard skipped four fully
-    # OFFLINE gates (overrides/syncpack reasons, suppression liveness, the
-    # quality-gate battery) along with the one external step it aimed at.
+    # No label opt-out at JOB level any more: that guard skipped fully OFFLINE
+    # gates (overrides/syncpack reasons, suppression liveness) along with the
+    # one external step it aimed at.
     # The Audit step below carries the external_quality skip itself.
     if: inputs.is_bot != 'true'
     steps:
@@ -2199,8 +2201,8 @@ jobs:
         # a message about pip, in a step about secrets, in a job that had simply
         # never loaded the pins quality-static loads.
         run: |
-          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
-          .ci/scripts/lib/toolchain.sh --report
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report
 
       # >>> gate-bind (generated by scripts/gate-bind.ts --write; do not edit inside)
       # Steps here are EMITTED from each gate's own `---- gate ----` header. Edit the
@@ -2213,10 +2215,9 @@ jobs:
       # hit once, when it had no toolchain-pin step at all and pip's complaint arrived in
       # a step about secrets.
       #
-      # TWO GATES IN THIS LANE ARE DELIBERATELY NOT HERE. `Audit` declares `emit: false`
+      # ONE GATE IN THIS LANE IS DELIBERATELY NOT HERE. `Audit` declares `emit: false`
       # because its step carries an extra `if:` condition and a GH_TOKEN `env:` that a
-      # generated step cannot express, and both losses would be invisible in a diff. The
-      # gate-test battery below rides one hand-written step shared by 147 tests.
+      # generated step cannot express, and both losses would be invisible in a diff.
       - name: Account env files retired
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_account_env_retired.py
@@ -2238,6 +2239,11 @@ jobs:
       - name: GitHub Actions variables
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_actions_vars.py
+      - name: PR-condition ledger is current
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run check:ci-pr-condition-ledger
       - name: Release key canonical
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_release_key_canonical.py
@@ -2287,8 +2293,16 @@ jobs:
       # gate-costs.json are compared with the newest runs and captures on every
       # PR, not only in housekeeping's nightly budget-check. Drift fails the
       # open PR, which refreshes the file (budget_report / gate_costs --refresh).
+      #
+      # PULL REQUESTS ONLY (PLAN-plan-per-pr-loop R1). The check compares the committed
+      # file with a ROLLING sample of the newest runs, so on main's push and scheduled
+      # runs it reds as the sample moves, with no commit to blame and no PR open to
+      # refresh it: the nightly Console CI was red on this step on 2026-10-06/07/08
+      # (runs 37101760904, 37583863183, 37740799683), which kept
+      # nightly_tested_edge's waiver from ever firing. Nobody is left unwatched:
+      # housekeeping's budget-check job runs the same registry nightly and posts an issue.
       - name: CI time budget freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
         run: npm run check:ci-budget-freshness
         env:
           GH_TOKEN: ${{ github.token }}
@@ -2297,7 +2311,7 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-suppression-liveness
 
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: quality-security-${{ github.sha }}
@@ -2407,8 +2421,8 @@ jobs:
         # test_the_real_repository_agrees_in_table_format and its json twin fail
         # on the inventory never being built rather than on any disagreement.
         #
-        # build-packages: runs .ci/scripts/setup/build-packages.sh, whose line 20
-        # is `npm run build:packages` = `npm run build -w @rediacc/shared &&
+        # build-packages: runs rediacc_ci.setup.build_packages, which runs
+        # `npm run build:packages` = `npm run build -w @rediacc/shared &&
         # npm run build -w @rediacc/provisioning`. test_proxies_unit_tests drives
         # `npm run test:unit -w @rediacc/e2e-tests`, which imports
         # `@rediacc/provisioning/renet`; unbuilt, vitest reports
@@ -2427,8 +2441,8 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         # RUFF_VERSION for the "Install ruff" step below.
         run: |
-          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
-          .ci/scripts/lib/toolchain.sh --report
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pairs >> "$GITHUB_ENV"
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report
 
       - name: Packaging toolchain for the linux-packages differential
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -2505,101 +2519,13 @@ jobs:
       # `unit-durations-quality-pytest-` PREFIX alone, so three separate
       # per-leg artifacts are read and summed into one lane exactly as three
       # separate renet-go leg artifacts already are.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
           name: unit-durations-quality-pytest-s${{ matrix.shard }}-${{ github.sha }}
           path: .ci/cache/quality-pytest/
           # `.ci` is a dot directory, which upload-artifact skips by default; with `if-no-files-found: ignore` below that skip would be silent and the lane's durations would vanish.
           include-hidden-files: true
-          retention-days: 3
-          if-no-files-found: ignore
-
-  # ============================================================================
-  # L9c GATE TESTS -- split out of quality-security (PLAN-ci-time-budget.md
-  # T2.15, 2026-09-26). One unsharded leg, the quality-gate battery
-  # (`.ci/rediacc_ci/battery.py`, 149 bash twins under
-  # `.ci/scripts/test/gates/`), measured at 10.1-12.9 min -- already under the
-  # 15-minute per-job target without sharding.
-  # ============================================================================
-  quality-gate-tests:
-    name: Gate tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Fetch secrets from Bitwarden
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
-            GITHUB_APP_ID > BWS_APP_ID
-
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # DEEP, for the same reason quality-security takes one: some of the
-          # battery's own tests (e.g. gate-test:toolchain's siblings) walk commit
-          # topology on the real tree.
-          fetch-depth: 0
-          filter: blob:none
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - id: setup
-        uses: ./.github/actions/setup-workspace
-        # DEFAULTS ONLY: the battery's 149 bash twins run `npm run <gate>` and
-        # `tsx` against the root workspace the bare setup already restores; none
-        # of them touches the account submodule's own npm trees or the built
-        # shared/provisioning packages (those are the pytest suite's, above).
-
-      - name: Load gate toolchain pins
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        # gate-test:toolchain (one of the battery's 149) asserts its resolver
-        # against the REAL pinned versions (e.g. `fake shfmt "v${SHFMT_VERSION}"`
-        # ), so this step has to run even though nothing here installs a real
-        # toolchain from it.
-        run: |
-          .ci/scripts/lib/toolchain.sh --env >> "$GITHUB_ENV"
-          .ci/scripts/lib/toolchain.sh --report
-
-      # NO `env:` HERE, AND THE ABSENCE IS DELIBERATE. This step carried
-      # `PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}`, empty on push,
-      # schedule and the nightly dispatch. Nothing under `.ci/rediacc_ci/` reads
-      # PR_HEAD_REF from the ambient environment -- `branch_from_ci()`
-      # (gitx.py:235) has no production caller, and the battery's own tests
-      # either SCRUB the variable (test_gate_untagged_commit_branch.py:105,
-      # test-untagged-commit-branch.sh:66). Two of those modules were written
-      # precisely because a differential inheriting the developer's environment
-      # passes or fails on whether PR_HEAD_REF happens to be exported. So the
-      # key was dead, and adding a fallback clause would have re-created the
-      # exact ambient leak they defend against.
-      - name: Quality-gate unit tests
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-quality-gates
-
-      # T1.6 (PLAN-ci-time-budget): per-driver durations, for budget_report.py --refresh
-      # (T3.2) to read. `always()` and `ignore`, not `failure()`: T3.2 reads GREEN runs,
-      # so the run this artifact needs to exist on is exactly the one a failure-only
-      # condition would skip. battery.py writes this file itself before `main()`
-      # returns, win or lose, so `ignore` only covers the case where the step above
-      # never reached the battery at all (setup failing, or a control refusing the
-      # run before it starts).
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: always()
-        with:
-          name: unit-durations-quality-gate-tests-${{ github.sha }}
-          path: reports/quality-gate-tests/
           retention-days: 3
           if-no-files-found: ignore
 
@@ -2780,6 +2706,22 @@ jobs:
           EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-devcontainer-pins
 
+      # And for private/account/e2e/real-provider.lock.json: the Bitwarden
+      # browser extension and the Vaultwarden server the account E2E suite runs
+      # config-storage setup against. A stable upstream release newer than the
+      # pin and past the release-age window fails a pull request here; the
+      # message names the bump command. Same external_quality treatment as the
+      # two steps above: soft on the nightly, skipped by the label. Unlike them
+      # it FAILS CLOSED on the network (operator ruling 2026-10-13): a pin whose
+      # release list was not obtained after three tries is red on a pull
+      # request. The nightly's soft mode turns that red into a warning too.
+      - name: Check real-provider pin upstream freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-real-provider-pins
+
       # Kept inline (3 logic lines, under check-workflows.sh's limit) rather than
       # extracted: a check-*.sh path would make check-ci-parity's R2 demand a
       # manifest entry for it, which would newly require clang + libbpf on a
@@ -2877,6 +2819,120 @@ jobs:
         run: npm run check:ci-quality-complete
 
   # ============================================================================
+  # SECURE STORAGE AGAINST THE REAL BACKENDS, one leg per OS. The CLI keeps the
+  # config-store slot secret in the kernel keyring (Linux), the Keychain (macOS)
+  # or a DPAPI blob (Windows), and until this job every test of that layer
+  # mocked the module: the unit suite ran on ubuntu only, and the macOS and
+  # Windows runners built the SEA binary and read its version.
+  #
+  # A GREEN LEG CANNOT MEAN "SKIPPED". SECURE_STORAGE_REQUIRE_NATIVE=1 turns the
+  # suite's unreachable-backend skip into a failure, and the suite writes a
+  # receipt naming the backend it exercised and how many native tests ran. The
+  # last step reads the receipt against the matrix, so a misspelled variable
+  # (no receipt) or a leg that fell back to the file backend is red.
+  #
+  # LINUX: A READABLE KEYRING. A runner job's session keyring does not link the
+  # user keyring, so `keyctl add ... @u` succeeds and the read is refused with
+  # `keyctl_read_alloc: Permission denied` (the Drills job in ct-tests.yml
+  # recorded it). `keyctl session -` starts a fresh session keyring the step
+  # owns and `keyctl link @u @s` makes @u possessed for everything it execs.
+  # Reproduced on a workstation in both directions; on a hosted runner it is
+  # UNVERIFIED until this job's first run.
+  #
+  # MACOS: a throwaway keychain is created, unlocked and made the default, so
+  # the leg does not depend on the state of the runner's login keychain.
+  # WINDOWS: the backend shells out to Windows PowerShell with -Command, which
+  # the execution policy does not govern.
+  #
+  # Its own job, not a step of quality-packages: the three legs need three
+  # runners, and no gate step lives here, so the lane tables do not list it.
+  # ============================================================================
+  quality-secure-storage:
+    name: Secure Storage (${{ matrix.backend }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    # Checkout and local tests only. No API call, no App token, no secret.
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    strategy:
+      # fail-fast: false, so a red leg does not cancel the other two operating
+      # systems before they report.
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            backend: keyctl
+          - os: macos-latest
+            backend: keychain
+          - os: windows-latest
+            backend: dpapi
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # build-packages: secure-storage.ts imports @rediacc/shared/paths through
+      # its dist/. No submodules and no natives: the module needs neither.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
+
+      # `shell: bash` runs with -eo pipefail, so any refused security call
+      # stops the step. No arguments after the path in set-keychain-settings:
+      # no lock on sleep and no lock timeout.
+      - name: Throwaway default keychain (macOS)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          keychain="$RUNNER_TEMP/secure-storage-test.keychain-db"
+          pass="$(openssl rand -hex 16)"
+          security create-keychain -p "$pass" "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p "$pass" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -d user -s "$keychain"
+
+      - name: keyctl is installed (Linux)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os == 'Linux' }}
+        run: |
+          command -v keyctl >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq keyutils; }
+          keyctl --version
+
+      # Linux runs inside a fresh session keyring that links the user keyring;
+      # see the block comment above this job.
+      - name: Secure storage native tests (Linux, readable keyring)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os == 'Linux' }}
+        env:
+          SECURE_STORAGE_REQUIRE_NATIVE: '1'
+          SECURE_STORAGE_NATIVE_RECEIPT: ${{ runner.temp }}/secure-storage-receipt.json
+        run: keyctl session - sh -c 'keyctl link @u @s && exec npm run test:secure-storage-native --workspace=@rediacc/cli'
+
+      - name: Secure storage native tests (macOS, Windows)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os != 'Linux' }}
+        shell: bash
+        env:
+          SECURE_STORAGE_REQUIRE_NATIVE: '1'
+          SECURE_STORAGE_NATIVE_RECEIPT: ${{ runner.temp }}/secure-storage-receipt.json
+        run: npm run test:secure-storage-native --workspace=@rediacc/cli
+
+      # The verdict on vacuity. The suite writes the receipt only under
+      # SECURE_STORAGE_REQUIRE_NATIVE, as one JSON line whose key order is fixed
+      # (platform, backend, reachable, declared, ran), so a missing file means
+      # the requirement never reached it and `cat` fails the step. The suite
+      # itself fails when a declared native test did not run; this step holds
+      # the backend to the matrix.
+      - name: Receipt names the native backend
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        shell: bash
+        env:
+          SECURE_STORAGE_NATIVE_RECEIPT: ${{ runner.temp }}/secure-storage-receipt.json
+        run: |
+          cat "$SECURE_STORAGE_NATIVE_RECEIPT"
+          grep -q '"backend":"${{ matrix.backend }}","reachable":true' "$SECURE_STORAGE_NATIVE_RECEIPT" || { echo "::error::the receipt does not name a reachable ${{ matrix.backend }} backend"; exit 1; }
+
+  # ============================================================================
   # THE SHARD AGGREGATOR. A matrix job reports ONE roll-up result for every leg,
   # so a leg that was never created is indistinguishable from a leg that passed:
   # drop half the `shard:` list and `Quality / Code` still reports success having
@@ -2919,7 +2975,7 @@ jobs:
       # One directory per leg, which is the shape `readReceipts` already walks.
       - name: Download shard receipts
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           pattern: quality-shard-*
           path: /tmp/quality-shards

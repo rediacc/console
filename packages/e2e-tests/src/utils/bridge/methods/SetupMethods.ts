@@ -6,7 +6,7 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 export class SetupMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
-  async setup(datastorePath?: string, uid?: string): Promise<ExecResult> {
+  setup(datastorePath?: string, uid?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'setup',
       datastorePath,
@@ -14,7 +14,7 @@ export class SetupMethods {
     });
   }
 
-  async osSetup(datastorePath?: string, uid?: string): Promise<ExecResult> {
+  osSetup(datastorePath?: string, uid?: string): Promise<ExecResult> {
     // os_setup is now an alias for setup
     return this.testFunction({
       function: 'setup',
@@ -27,7 +27,7 @@ export class SetupMethods {
    * Setup with all installation parameters.
    * Tests the 6 new installation params added for vault parameter fixes.
    */
-  async setupWithOptions(options: {
+  setupWithOptions(options: {
     datastorePath?: string;
     uid?: string;
     from?: 'apt-repo' | 'tar-static' | 'deb-local';
@@ -48,7 +48,7 @@ export class SetupMethods {
     });
   }
 
-  async fixUserGroups(uid?: string): Promise<ExecResult> {
+  fixUserGroups(uid?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'machine_fix_groups',
       uid,

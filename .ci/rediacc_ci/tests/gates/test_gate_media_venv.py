@@ -20,9 +20,7 @@ TWO KINDS OF ASSERTION, and they answer different questions.
 
 cuda.sh IS SOURCED ALONGSIDE venv.sh in every case, and that is not tidiness: `install_generative_python_deps` calls `install_flash_attn_if_supported`, which lives in cuda.sh. The cross-module edge is real, so it is exercised rather than stubbed away -- if it broke, the pip case would die with "command not found".
 
-`+uname` IS REQUIRED IN EVERY SPEC. `.ci/scripts/lib/common.sh` runs
-`CI_OS="$(detect_os)"` at SOURCE time and `detect_os` shells out to `uname`, so a
-spec without it carries a stray "uname: command not found" on stderr in a case whose assertions have nothing to do with it.
+`+uname` IS ADMITTED IN EVERY SPEC, though nothing needs it now. The deleted helper library ran `detect_os` at SOURCE time, which shells out to `uname`; the specs keep the admission, harmless.
 
 NO `xdist_group`, for the reasons written out in `test_gate_media_cuda.py`: `fake_bin` mutates PATH on THIS process and restores it in a `finally`, so two of these in one worker are fine and two in two workers are independent processes. Nothing is bound, every case takes its own `mktemp -d`, and `MEDIA_MODULE_DIR` is a per-call ARGUMENT here rather than the environment variable it
 is in bash, which removes the one module-global the twin does mutate.

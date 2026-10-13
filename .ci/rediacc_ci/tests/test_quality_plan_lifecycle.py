@@ -7,7 +7,9 @@ THE REST OF THE FILE IS THE PURE CORE. `classify`, `folder_of`, `last_touch`, `r
 """
 
 import datetime as dt
+import os
 import pathlib
+import subprocess
 import tempfile
 
 import pytest
@@ -421,3 +423,31 @@ def test_moved_from_still_finds_a_legacy_stub_in_agent(tmp_path):
 def test_moved_from_control_a_stub_pointing_elsewhere_proves_nothing(tmp_path):
     _stub_tree(tmp_path, "agent/plans/PLAN-x.md", "agent/plans/_removed/PLAN-x.md")
     assert PL.moved_from(tmp_path, "agent/plans/_done/PLAN-x.md") == ""
+
+
+def test_git_dates_reads_the_move_by_author_date_and_activity_by_committer_date(
+    tmp_path, monkeypatch
+):
+    """A rebase rewrites committer dates and keeps author dates (2026-10-11: every `_done/` plan became an F6 finding on the first rebase). F6's half must be the move's author date; the backlog half stays the committer date."""
+    rel = "agent/plans/_done/PLAN-a.md"
+    (tmp_path / rel).parent.mkdir(parents=True)
+    # Hermetic: a GIT_DIR, GIT_WORK_TREE or GIT_INDEX_FILE inherited from a hook or wrapper would send these commits into the outer repository.
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    for name in [k for k in os.environ if k.startswith("GIT_")]:
+        monkeypatch.delenv(name)  # git_dates reads git through this process's environment
+    env.update(GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid")
+    env.update(GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.invalid")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, env=env)
+
+    def commit(text, authored, committed):
+        (tmp_path / rel).write_text(text, encoding="utf-8")
+        subprocess.run(["git", "-C", str(tmp_path), "add", rel], check=True, env=env)
+        stamp = dict(env, GIT_AUTHOR_DATE=authored, GIT_COMMITTER_DATE=committed)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "x"], check=True, env=stamp)
+
+    # The move, authored on the 8th and replayed by a rebase on the 11th; then an edit on the 12th.
+    commit("a\n", "2026-10-08T12:00:00+00:00", "2026-10-11T12:00:00+00:00")
+    commit("b\n", "2026-10-12T09:00:00+00:00", "2026-10-12T10:00:00+00:00")
+    last, first = PL.git_dates(tmp_path, rel)
+    assert first.startswith("2026-10-08"), first
+    assert last.startswith("2026-10-12T10:00"), last

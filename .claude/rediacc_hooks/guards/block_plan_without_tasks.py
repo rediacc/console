@@ -174,6 +174,10 @@ def _plan_world(_unused):
     os.makedirs(os.path.join(WORLD, "agent"), exist_ok=True)
     for path, text in ((LEGACY_PLAN, PROSE_PLAN), (TASKED_PLAN, TASKED_PLAN_TEXT)):
         hookio.write_world_file(path, text)
+    # A directory symlink into the guarded tree (#bc7d998c): a write through it lands in the tree.
+    link = os.path.join(WORLD, "linked")
+    if not os.path.islink(link):
+        os.symlink(os.path.join(WORLD, "agent"), link)
     return WORLD
 
 
@@ -182,6 +186,37 @@ FIXTURES = {"plan-world": _plan_world}
 ENVS = [("plans", {"REDIACC_PLAN_WORLD": "{FIXTURE:plan-world}"}, {})]
 
 EDGE_CASES = [
+    # Judged where the write LANDS (#bc7d998c): each refusal was allowed before, and the message names both paths.
+    (
+        "a new prose plan through a .. detour",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "%s/agent/x/../PLAN-not-written-yet.md" % WORLD,
+                "content": PROSE_PLAN,
+            },
+        },
+    ),
+    (
+        "a new prose plan through a symlink",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "%s/linked/PLAN-not-written-yet.md" % WORLD,
+                "content": PROSE_PLAN,
+            },
+        },
+    ),
+    (
+        "a .. detour out of the plan folder",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "%s/agent/../PLAN-not-written-yet.md" % WORLD,
+                "content": PROSE_PLAN,
+            },
+        },
+    ),
     # A WRITE is authoring, so the whole document must conform.
     (
         "a Write of a prose plan with no list at all",
@@ -252,10 +287,12 @@ def _counts(subject, stopdir):
 
 
 def run(ev):
-    file_path = ev.field("tool_input", "file_path")
-    if file_path == "":
+    # The path is judged where the write LANDS: `hookio.landing` resolves symlinks, then `..`, as the kernel does (#bc7d998c, review 9c6817f3.1-.4, .8).
+    typed = ev.field("tool_input", "file_path")
+    if typed == "":
         return hookio.ALLOW
-    if not hookio.case_glob(file_path, *PLAN_GLOBS):
+    landed, judged, shown = hookio.landing(typed, ev.field("cwd") or None)
+    if not hookio.case_glob(judged, *PLAN_GLOBS):
         return hookio.ALLOW
 
     fragments = ev.texts(
@@ -270,9 +307,9 @@ def run(ev):
     # A Write replaces the file outright; an Edit only amends it, so the resulting document is at least the union of what is there and what is arriving.
     tool = ev.field("tool_name")
     subject = fragments
-    if tool != "Write" and os.path.isfile(file_path):
+    if tool != "Write" and os.path.isfile(landed):
         try:
-            with open(file_path, encoding="utf-8", errors="surrogateescape") as handle:
+            with open(landed, encoding="utf-8", errors="surrogateescape") as handle:
                 on_disk = handle.read()
         except OSError:
             on_disk = ""
@@ -281,7 +318,7 @@ def run(ev):
         subject = "%s\n%s" % (hookio._command_substitution(on_disk), fragments)
         # The grandfather clause. An amendment to a plan that never had a task list is not the moment to demand one -- see the measured note above.
         if not hookio.grep_q(TASK_LINE, on_disk):
-            ev.warn(GRANDFATHER % file_path)
+            ev.warn(GRANDFATHER % shown)
             return hookio.ALLOW
 
     stopdir = "%s/.claude/hooks/stop" % hookio.repo_root()
@@ -314,5 +351,5 @@ def run(ev):
         parsed_n = 0
     why = WHY_INFLATED % parsed if parsed_n > 0 else WHY_EMPTY
 
-    ev.warn_raw(MESSAGE % {"file": file_path, "why": why})
+    ev.warn_raw(MESSAGE % {"file": shown, "why": why})
     return hookio.DENY

@@ -6,8 +6,7 @@ is that piece.
 THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, and that is what makes this script different from its preview sibling. The twin prints NOTHING of its own when it succeeds: there is no closing `log_info`, so stdout carries wrangler's line and stderr is empty. A port that sent an empty document, or the wrong Worker name, would produce byte-identical streams and exit 0. Every
 case that reaches wrangler therefore asserts the recorded stdin, and `test_the_bulk_call_and_its_document_are_pinned_in_full` pins it against literal bytes rather than against the port's own builders.
 
-TWO STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS, because `KEYS` and `REQUIRED_NONEMPTY` are copies: the day a twenty-fifth secret or a fourteenth guard lands in the twin, the alarm fails instead of the port quietly sending a document one key short. A third test asserts the two SIBLING scripts really are different where they look the same, since "the preview file with a longer
-list" is the assumption that would port this one wrong.
+A test asserts the two SIBLING scripts really are different where they look the same, since "the preview file with a longer list" is the assumption that would port this one wrong. The bash side of every case is answered from its frozen golden (`goldens/twins/deploy.set-www-worker-secrets.jsonl`), so the twin file is not needed to run this module.
 """
 
 from __future__ import annotations
@@ -22,12 +21,15 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.deploy import set_preview_worker_secrets as sibling
 from rediacc_ci.deploy import set_www_worker_secrets as port
+from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "set-www-worker-secrets.sh"
+TWIN_REL = ".ci/scripts/deploy/set-www-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_www_worker_secrets.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -99,6 +101,30 @@ def _run(
     drop_env: tuple[str, ...] = (),
     **extra: str,
 ):
+    """The port runs live; the bash side is answered from its frozen golden."""
+    if subject.suffix != ".sh":
+        return _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra)
+    parts = [
+        "drop=%s" % drop,
+        "drop_env=%s" % ",".join(drop_env),
+        *("%s=%s" % kv for kv in sorted(extra.items())),
+    ]
+    return diff.twin_result(
+        TWIN_REL,
+        parts,
+        lambda: _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra),
+        work=(tmp_path,),
+    )
+
+
+def _run_live(
+    subject: pathlib.Path,
+    tmp_path: pathlib.Path,
+    *,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
     side = "old" if subject.suffix == ".sh" else "new"
     call_log = tmp_path / f"{side}-calls.log"
     call_log.write_text("", encoding="utf-8")
@@ -139,11 +165,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -157,10 +183,6 @@ def document(calls: str) -> str:
     match = re.search(r"STDIN<<<(.*)>>>\n", calls, re.DOTALL)
     assert match is not None, f"no wrangler call was recorded in {calls!r}"
     return match.group(1)
-
-
-def _twin_source() -> str:
-    return TWIN.read_text(encoding="utf-8")
 
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
@@ -205,7 +227,6 @@ def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> Non
     assert old.stdout == "Finished processing secrets JSON file.\n"
     assert old.stderr == ""
     assert port.SUCCESS_IS_SILENT
-    assert "log_info" not in _twin_source(), "the twin grew a closing line; re-read this test"
     _assert_agree(old, new, "silent-success", old_calls, new_calls)
 
 
@@ -304,7 +325,10 @@ def test_divergence_a_missing_worker_name_is_bashs_own_unbound_variable(
     assert old.stderr.endswith(
         "line 54: WORKER_NAME: set-www-worker-secrets.sh: WORKER_NAME must be set\n"
     )
-    assert new.stderr == "WORKER_NAME: set-www-worker-secrets.sh: WORKER_NAME must be set\n"
+    assert (
+        new.stderr
+        == "WORKER_NAME: rediacc_ci.deploy.set_www_worker_secrets: WORKER_NAME must be set\n"
+    )
     assert old.stderr != new.stderr
     assert old.stdout == new.stdout == ""
     assert old_calls == new_calls == ""
@@ -334,25 +358,6 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
     _assert_agree(old, new, "escaping", old_calls, new_calls)
 
 
-def test_the_key_list_is_the_twins_key_list() -> None:
-    """STALENESS ALARM. `KEYS` is a copy of the twin's `--arg` list, re-derived here from the twin's source, in order."""
-    pairs = re.findall(r'--arg (\w+) "\$\{(\w+):-\}"', _twin_source())
-    assert pairs, "the --arg shape changed; this alarm is no longer reading anything"
-    assert [(env, var) for var, env in pairs] == list(port.KEYS)
-
-    body = re.search(r"'\{(.*?)\}'", _twin_source(), re.DOTALL)
-    assert body is not None
-    built = re.findall(r"(\w+): \$(\w+)", body.group(1))
-    assert built == list(port.KEYS)
-
-
-def test_the_guard_list_is_the_twins_guard_list() -> None:
-    """STALENESS ALARM for the thirteen `_require_nonempty` calls, in order."""
-    names = re.findall(r'^_require_nonempty (\w+) "', _twin_source(), re.MULTILINE)
-    assert names, "the _require_nonempty shape changed; this alarm reads nothing"
-    assert tuple(names) == port.REQUIRED_NONEMPTY
-
-
 def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. Every difference below is load bearing, and each is driven by a test above."""
     assert len(port.KEYS) == 24
@@ -369,7 +374,7 @@ def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "set-www-worker-secrets.sh"
+    assert port.SELF == "rediacc_ci.deploy.set_www_worker_secrets"
 
     argv = port.jq_argv({"SELLER_CITY": "Delft"})
     assert argv[:2] == ["jq", "-n"]
@@ -391,7 +396,7 @@ def test_pure_helpers() -> None:
 
     guard = port.GuardError("SELLER_EMAIL", "www-edge")
     assert guard.lines()[0] == (
-        "set-www-worker-secrets.sh: SELLER_EMAIL is EMPTY for WORKER_NAME=www-edge."
+        "rediacc_ci.deploy.set_www_worker_secrets: SELLER_EMAIL is EMPTY for WORKER_NAME=www-edge."
     )
     assert len(guard.lines()) == 3
 

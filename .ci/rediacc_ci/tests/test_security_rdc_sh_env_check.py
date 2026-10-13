@@ -87,16 +87,19 @@ def _run(subject: pathlib.Path, fixture: pathlib.Path) -> subprocess.CompletedPr
 def _twin(fixture: pathlib.Path) -> subprocess.CompletedProcess[str]:
     """The retired twin's run over `fixture`, from `goldens/twins/test.test-rdc-sh-env.jsonl`.
 
-    The key is the MUTATION (a zero-context diff of the fixture's `rdc.sh` against the real one, so an unrelated edit to `rdc.sh` moves no key); the scratch root folds to a token.
+    The key is the MUTATION (the changed lines of a zero-context diff of the fixture's `rdc.sh` against the real one, without its line-number headers, so an unrelated edit to `rdc.sh` moves no key); the scratch root folds to a token.
     """
     mutated = fixture / "rdc.sh"
     body = (
         "".join(
-            difflib.unified_diff(
+            line
+            for line in difflib.unified_diff(
                 RDC_SH.read_text(encoding="utf-8").splitlines(keepends=True),
                 mutated.read_text(encoding="utf-8").splitlines(keepends=True),
                 n=0,
             )
+            # The `@@ -a,b +c,d @@` headers carry line numbers, so any edit that moves a line of `rdc.sh` would move every key below it. The mutation is the +/- lines.
+            if not line.startswith("@@")
         )
         if mutated.is_file()
         else "<absent>"
@@ -106,8 +109,16 @@ def _twin(fixture: pathlib.Path) -> subprocess.CompletedProcess[str]:
         done = _run(TWIN, fixture)
         return done.returncode, done.stdout, done.stderr
 
+    def go_port() -> tuple[int, str, str]:
+        done = _run(PORT, fixture)
+        return done.returncode, done.stdout, done.stderr
+
     rc, out, err = diff.twin_call(
-        str(TWIN.relative_to(ROOT)), ["rdc.sh mutation=%s" % body], go, work=(str(fixture),)
+        str(TWIN.relative_to(ROOT)),
+        ["rdc.sh mutation=%s" % body],
+        go,
+        port=go_port,
+        work=(str(fixture),),
     )
     return subprocess.CompletedProcess([str(TWIN)], rc, out, err)
 

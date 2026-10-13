@@ -111,6 +111,9 @@ EDGE_CASES = [
     ),
     ("CONTROL: a heredoc body is data", "cat > note.md <<'EOF'\ngh run view 36953549081\nEOF"),
     ("CONTROL: the tracer itself", ".ci/scripts/ci/ci-trace.py --run 36953549081 --why"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("a read launched by npx -c", "npx -c 'gh pr checks 591'"),
+    ("CONTROL: prose naming a launched read", "echo npx -c gh pr checks 591"),
 ]
 
 
@@ -134,7 +137,8 @@ def _registry():
 
 def _refusal(registry, cmd):
     """The refusal text for the first raw CI read bash would run in `cmd`, or ""."""
-    for run_ in shellscan._analyse(cmd).runs:
+    # A gh that `npx -c` or `find -exec` starts is the same read (#503f0ba8): `shellscan.every_run`.
+    for run_ in shellscan.every_run(cmd):
         if run_.name.rsplit("/", 1)[-1] != "gh":
             continue
         args = list(run_.argv)

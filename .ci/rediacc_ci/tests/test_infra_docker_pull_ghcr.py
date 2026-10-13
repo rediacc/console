@@ -40,6 +40,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.infra import docker_pull_ghcr as dpg
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 ROOT = paths.repo_root()
 PORT = pathlib.Path(dpg.__file__).resolve()
@@ -226,8 +227,8 @@ def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str, list[str]
     want = recorded(name)
     got = port(tmp_path, name)
     assert got[0] == want[0], "%s: the twin exited %d, the port %d" % (name, want[0], got[0])
-    assert got[1] == want[1], "%s: stdout diverged: %r vs %r" % (name, want[1], got[1])
-    assert got[2] == want[2], "%s: stderr diverged: %r vs %r" % (name, want[2], got[2])
+    assert as_twin(got[1]) == want[1], "%s: stdout diverged: %r vs %r" % (name, want[1], got[1])
+    assert as_twin(got[2]) == want[2], "%s: stderr diverged: %r vs %r" % (name, want[2], got[2])
     assert got[3] == want[3], "%s: the docker calls diverged: %r vs %r" % (name, want[3], got[3])
     return got
 
@@ -252,21 +253,6 @@ def test_the_fake_docker_is_the_docker(tmp_path: pathlib.Path) -> None:
 
 def test_the_port_exists_where_this_file_says_it_does() -> None:
     assert PORT.is_file(), PORT
-
-
-def test_no_ghcr_helper_exists_to_share_because_common_sh_has_none() -> None:
-    """THE DUPLICATION CLAIM IN THE PORT'S DOCSTRING, MEASURED RATHER THAN ASSERTED.
-
-    The port says the GHCR-auth dance is duplicated and deliberately not factored, on the grounds that `common.sh` offers nothing to call. If a helper ever lands there, this goes red and that docstring becomes wrong in the same run. The surviving sibling twin is checked too: it still open-codes the same three lines.
-    """
-    common_sh = (ROOT / ".ci" / "scripts" / "lib" / "common.sh").read_text(encoding="utf-8")
-    assert "ghcr" not in common_sh.lower()
-    assert "docker login" not in common_sh
-    sibling = ROOT / ".ci" / "scripts" / "infra" / "ci-pull-images.sh"
-    assert "docker login ghcr.io" in sibling.read_text(encoding="utf-8"), sibling
-
-
-# --------------------------------------------------------------------------- The pure halves, driven directly. ---------------------------------------------------------------------------
 
 
 def test_resolve_prefers_the_flag_then_the_environment() -> None:
@@ -313,7 +299,7 @@ def test_no_image_is_the_usage_refusal_and_nothing_is_pulled() -> None:
     assert code == 1
     assert stdout == ""
     assert calls == []
-    assert stderr == "✗ %s\n" % dpg.USAGE
+    assert stderr == "✗ %s\n" % as_twin(dpg.USAGE)
 
 
 def test_the_happy_path_is_login_pull_logout_with_the_token_on_stdin() -> None:

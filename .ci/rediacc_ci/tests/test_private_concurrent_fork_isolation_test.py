@@ -58,7 +58,6 @@ from rediacc_ci.well_known import RUNTIME_DIR
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "concurrent-fork-isolation-test.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "concurrent_fork_isolation_test.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/concurrent-fork-isolation-test.sh")
@@ -229,7 +228,6 @@ def _fixture(tmp_path: pathlib.Path) -> pathlib.Path:
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True, exist_ok=True)
     if TWIN.is_file():  # only a re-freeze from bash runs it; compare mode never does
         shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"

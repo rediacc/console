@@ -16,7 +16,7 @@ import sys
 
 from rediacc_ci.core import gh_retry
 
-SELF = "check-existing-release.py"
+SELF = "rediacc_ci.release.check_existing_release"
 
 
 def _require(name: str) -> str:

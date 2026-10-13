@@ -12,7 +12,7 @@
 # SOURCED, NEVER EXECUTED. It defines functions and nothing else, so sourcing it
 # with docker, node, npm, nvcc, aws, ssh and the network all absent is a no-op.
 # It expects the caller to have provided ROOT_DIR and the log_* helpers from
-# .ci/scripts/lib/common.sh; .ci/media/media-entry.sh is the caller that does.
+# media-entry.sh (its inlined log_* functions); .ci/media/media-entry.sh is the caller that does.
 
 # Ensure the private/generative working copy is present.
 #

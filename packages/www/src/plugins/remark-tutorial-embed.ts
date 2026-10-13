@@ -7,7 +7,7 @@
  *
  * Example:
  *   Input:  ![Tutorial: rdc ops](/assets/tutorials/ops-tutorial.cast)
- *   Output: <div class="tutorial-video-container" data-video-src=".../ops-tutorial.mp4" data-poster-src=".../ops-tutorial.en.poster.jpg" data-subtitles-src=".../ops-tutorial.en.vtt" data-chapters-src=".../ops-tutorial.en.chapters.vtt" data-words-src=".../ops-tutorial.en.words.json" data-sources='{"en":{...},"de":{...}}' data-title="..." data-lang="en"></div>
+ *   Output: <div class="tutorial-video-container" data-video-src=".../ops-tutorial.mp4" data-poster-src=".../ops-tutorial.en.poster.jpg" data-subtitles-src=".../ops-tutorial.en.vtt" data-chapters-src=".../ops-tutorial.en.chapters.vtt" data-words-src=".../ops-tutorial.en.words.json" data-sources='{"en":{...},"de":{...}}' data-title="..." data-lang="en" data-click-to-load="inline"><img class="tutorial-video-poster" ...><button class="tutorial-video-play" ...></button></div>
  */
 
 import path from 'node:path';
@@ -127,7 +127,13 @@ function buildVideoContainerHtml(castUrl: string, lang: string, title: string): 
     ` data-sources="${escapeHtml(JSON.stringify(buildSources(castKey)))}"`,
     ` data-title="${escapeHtml(title)}"`,
     ` data-lang="${escapeHtml(lang)}"`,
-    '></div>',
+    ' data-click-to-load="inline">',
+    // The server-rendered poster and play control: the player (Video.js chunk plus skin, ~350 KB) is built on the first press, not on load. See scripts/tutorial-video-hydrate.ts.
+    `<img class="tutorial-video-poster" src="${escapeHtml(resolveUrl(castKey, lang, 'poster'))}" alt="" loading="lazy" decoding="async">`,
+    `<button class="tutorial-video-play" type="button" aria-label="${escapeHtml(title)}">`,
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 5v14l11-7z"/></svg>',
+    '</button>',
+    '</div>',
   ].join('');
 }
 

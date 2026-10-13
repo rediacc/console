@@ -546,13 +546,13 @@ def update_submodule_pointer(repo_root: pathlib.Path, *, dry_run: bool) -> int:
 
 
 def require_sources(root: pathlib.Path) -> None:
-    """`source common.sh` (:25) and `source constants.sh` (:26), plus what the second one refuses on.
+    """`source constants.sh` (:26), plus what it refuses on.
 
-    Ordered exactly as the twin sources them, because the message a broken checkout gets names the FIRST missing file and no other.
+    The twin also sourced `common.sh` first; that file is deleted (PLAN-retire-bash-oracles W11-B, a Rule-T fix: requiring a file nothing reads would red every build on its absence), so the message a broken checkout gets names `constants.sh` alone.
     """
     frame = inspect.currentframe()
     line = frame.f_lineno if frame else 0
-    for rel in (".ci/scripts/lib/common.sh", ".ci/config/constants.sh"):
+    for rel in (".ci/config/constants.sh",):
         path = root / rel
         if not path.is_file():
             raise MissingSourceError(path, line)

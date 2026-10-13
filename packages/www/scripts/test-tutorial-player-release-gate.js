@@ -8,12 +8,14 @@ import { fileURLToPath } from 'node:url';
 import { createDevServer, pickFreePort, resourceSnapshot } from './lib/dev-server-process.js';
 import {
   captureNavigationEvidence,
+  inlineMountState,
   makeReloadPlant,
   pollRoutesReady,
+  pressToLoadPlayer,
   reportInconclusiveCauses,
   runScenarioRetryingReload,
-  waitForPlayerReady as waitForPlayerReadyIn,
 } from './lib/tutorial-player-diagnostics.js';
+import * as probes from './lib/tutorial-player-probes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -225,12 +227,12 @@ function clickWithRetry(selector) {
 }
 
 function clickPlaybackButton() {
-  return clickWithRetry('.tvp-root [data-plyr="play"]');
+  return clickWithRetry('.tvp-root .media-play-button');
 }
 
-/** The readiness wait (lib/tutorial-player-diagnostics.js `waitForPlayerReady`), bound to this page and the scenario budget. */
-function waitForPlayerReady(budgetMs = SCENARIO_READY_MS) {
-  return waitForPlayerReadyIn(evalInPage, budgetMs, SCENARIO_READY_MS);
+/** Press the docs poster and wait for the player it builds (lib/tutorial-player-diagnostics.js `pressToLoadPlayer`), bound to this page and the scenario budget. The press also starts playback, so a scenario begins with a playing video. */
+function loadPlayer(budgetMs = SCENARIO_READY_MS) {
+  return pressToLoadPlayer({ evalInPage, click: clickSelector, wait }, budgetMs, SCENARIO_READY_MS);
 }
 
 function burstPlaybackClicks(count, gapMs) {
@@ -241,91 +243,62 @@ function burstPlaybackClicks(count, gapMs) {
   return { ok: true };
 }
 
-function currentState() {
-  return evalInPage(`(() => {
-    const video = document.querySelector('.tvp-root video');
-    const plyrRoot = video?.closest('.plyr');
-    return {
-      paused: video ? video.paused : null,
-      ended: video ? video.ended : null,
-      currentTime: video ? video.currentTime : null,
-      plyrPlaying: plyrRoot ? plyrRoot.classList.contains('plyr--playing') : null,
-      sameDocument: window.__tpgDoc === 1,
-      players: document.querySelectorAll('.tvp-root video').length
-    };
-  })()`);
-}
-
-function sampledStates(durationMs, tickMs) {
-  return evalInPage(`(() => new Promise((resolve) => {
-    const rows = [];
-    const start = Date.now();
-    const collect = () => {
-      const video = document.querySelector('.tvp-root video');
-      rows.push({
-        t: Date.now() - start,
-        paused: video ? video.paused : null,
-        currentTime: video ? video.currentTime : null,
-        // Tell a stalled fetch or a starved decoder (readyState below HAVE_FUTURE_DATA) from a play() race (data present, clock frozen).
-        readyState: video ? video.readyState : null,
-        networkState: video ? video.networkState : null,
-        bufferedEnd: video && video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : null,
-        sameDocument: window.__tpgDoc === 1
-      });
-      if (Date.now() - start >= ${durationMs}) {
-        resolve(rows);
-      } else {
-        setTimeout(collect, ${tickMs});
-      }
-    };
-    collect();
-  }))()`);
-}
+const currentState = () => probes.currentState(evalInPage);
+const clockMoves = (budgetMs) => probes.clockMoves(evalInPage, budgetMs);
+const sampledStates = (durationMs, tickMs) => probes.sampledStates(evalInPage, durationMs, tickMs);
 
 const SCENARIO_READY_MS = 20000;
 const WARMUP_READY_MS = 120000;
-// Every route a scenario opens. The HTML probe and the warm-up both walk this one list: on 2026-10-05 the warm-up covered only the first, and the seek scenario's route reloaded under it (its samples went from no video element to a fresh player at 0). `eager` marks a docs route whose player mounts on load; the solution page mounts its player only after the poster is clicked (scenarioMountConsistency's own contract), so its warm-up opens it and waits for no player.
+// Every route a scenario opens. The HTML probe and the warm-up both walk this one list: on 2026-10-05 the warm-up covered only the first, and the seek scenario's route reloaded under it (its samples went from no video element to a fresh player at 0). `inline` marks a docs route, whose poster press builds the player in place, so its warm-up presses it; the solution page builds its player in the theater (scenarioMountConsistency's own contract), so its warm-up only opens it.
 const SCENARIO_ROUTES = [
-  { path: '/en/docs/tutorial-production-mode', eager: true },
-  { path: '/en/docs/tutorial-add-server', eager: true },
-  { path: '/en/solutions/rapid-recovery', eager: false },
+  { path: '/en/docs/tutorial-production-mode', inline: true },
+  { path: '/en/docs/tutorial-add-server', inline: true },
+  { path: '/en/solutions/rapid-recovery', inline: false },
 ];
 
 /**
  * THE FIRST VISIT'S COST IS PAID HERE, ONCE, ON ITS OWN BUDGET (2026-10-05). On a dev server the
- * player's modules compile on the first browser visit, not when the "ready" probe fetches the
- * HTML, and a first-visit dependency re-optimization reloads the page once (see
- * waitForPlayerReady). Both used to land inside the first scenario's 20 s. The one-pass pre-push
+ * player's modules compile on the first press of the poster, not when the "ready" probe fetches
+ * the HTML, and a first-visit dependency re-optimization reloads the page once (see
+ * pressToLoadPlayer). Both used to land inside the first scenario's 20 s. The one-pass pre-push
  * on 2026-10-05 ran this gate beside pytest and sixty other gates: the docs page showed only its
  * poster for the whole budget, and a reload later in the run left every remaining scenario
  * reading a player that was gone (all fields null). The warm-up opens the page, waits up to
  * WARMUP_READY_MS for the player, then reloads it and requires it ready again inside the
  * scenarios' own budget, which shows compilation and re-optimization are both behind it before
  * any scenario's clock starts. It does this for EVERY route in SCENARIO_ROUTES, because a route's
- * first visit can re-optimize again.
+ * first visit can re-optimize again. The warm-up presses the poster both times: no docs page
+ * builds a player before a press (4bc0f5141), so a wait without one waits for nothing.
  */
 function warmUpPlayer() {
-  for (const [i, { path: route, eager }] of SCENARIO_ROUTES.entries()) {
+  for (const [i, { path: route, inline }] of SCENARIO_ROUTES.entries()) {
     const url = `${baseUrl}${route}`;
     const startedAt = Date.now();
     if (i === 0) openFirst(url);
     else open(url);
-    if (!eager) {
-      log(`→ warm-up ${route} opened (${Date.now() - startedAt}ms; its player mounts on click)`);
+    if (!inline) {
+      log(
+        `→ warm-up ${route} opened (${Date.now() - startedAt}ms; its player builds in the theater)`
+      );
       continue;
     }
-    const first = waitForPlayerReady(WARMUP_READY_MS);
-    assertCondition(first.ok, `player never hydrated during the warm-up of ${route}`, first);
+    const first = loadPlayer(WARMUP_READY_MS);
+    assertCondition(
+      first.ok,
+      `the poster press built no player during the warm-up of ${route}`,
+      first
+    );
     const firstMs = Date.now() - startedAt;
     open(url);
-    const again = waitForPlayerReady();
+    const again = loadPlayer();
     assertCondition(
       again.ok,
-      `${route} was not ready within the scenario budget after its warm-up reload`,
+      `${route} built no player within the scenario budget after its warm-up reload`,
       again
     );
+    // The line used to say "ok" whatever the two waits returned (CI run 38389205702 printed "ok (first hydration 120704ms...)" under two failures).
     log(
-      `→ warm-up ${route} ok (first hydration ${firstMs}ms, warm reload ${Date.now() - startedAt - firstMs}ms)`
+      `→ warm-up ${route} ${first.ok && again.ok ? 'ok' : 'FAILED'} (first press to ready ${firstMs}ms in ${first.presses} press(es), warm reload ${Date.now() - startedAt - firstMs}ms)`
     );
   }
 }
@@ -333,14 +306,13 @@ function warmUpPlayer() {
 function scenarioBasicPlayPauseResume() {
   log('→ scenario: basic play/pause/resume');
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
-  const ready = waitForPlayerReady();
-  assertCondition(ready.ok, 'player never became ready on the docs page', ready);
   clearConsole();
+  const ready = loadPlayer();
+  assertCondition(ready.ok, 'the poster press built no ready player on the docs page', ready);
 
-  assertCondition(clickPlaybackButton().ok, 'play button click failed at start');
-  wait(1400);
-  const started = currentState();
-  assertCondition(isPlaying(started), 'start did not enter playing state', started);
+  // The press is the start: playInline builds the player and calls play() on it, and a started video is one whose clock moves.
+  const started = clockMoves();
+  assertCondition(started.moved, 'the poster press did not start playback', started);
 
   assertCondition(clickPlaybackButton().ok, 'pause button click failed');
   wait(900);
@@ -366,10 +338,9 @@ function scenarioBasicPlayPauseResume() {
 function scenarioBurstToggle() {
   log('→ scenario: burst toggle resilience');
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
-  assertCondition(waitForPlayerReady().ok, 'player never became ready before burst');
   clearConsole();
-
-  assertCondition(clickPlaybackButton().ok, 'initial click failed before burst');
+  const ready = loadPlayer();
+  assertCondition(ready.ok, 'the poster press built no ready player before burst', ready);
   wait(350);
   assertCondition(burstPlaybackClicks(6, 80).ok, 'burst click scheduling failed');
 
@@ -396,15 +367,15 @@ function scenarioBurstToggle() {
 function scenarioSeekNoSnapback() {
   log('→ scenario: seek no snapback');
   open(`${baseUrl}/en/docs/tutorial-add-server`);
-  assertCondition(waitForPlayerReady().ok, 'player never became ready before seek');
+  const ready = loadPlayer();
+  assertCondition(ready.ok, 'the poster press built no ready player before seek', ready);
 
   const hasVideo = evalInPage(`(() => Boolean(document.querySelector('.tvp-root video')))()`);
   assertCondition(hasVideo, 'tutorial video element not found on the page');
   if (!hasVideo) return;
 
-  assertCondition(clickPlaybackButton().ok, 'play click failed before seek');
   wait(1200);
-  // Direct media-element seek rather than driving a .tvp-chapter-tick click: the chapter overlay only paints once the <track> cues have loaded (async, no reliable ready signal to poll for here), so a direct write is the more robust check for "does a seek stick" -- the SPA-history-triggered snapback this scenario exists to catch happens downstream of the media element's own currentTime, not upstream of it.
+  // Direct media-element seek rather than driving a click on a .media-time-slider-chapter segment: the skin's chapter segments only paint once the <track> cues have loaded (async, no reliable ready signal to poll for here), so a direct write is the more robust check for "does a seek stick" -- the SPA-history-triggered snapback this scenario exists to catch happens downstream of the media element's own currentTime, not upstream of it.
   const seekTarget = 48;
   evalInPage(`(() => {
     const v = document.querySelector('.tvp-root video');
@@ -437,12 +408,12 @@ function scenarioSeekNoSnapback() {
 function scenarioFullscreenAndLayering() {
   log('→ scenario: fullscreen and layering');
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
-  assertCondition(waitForPlayerReady().ok, 'player never became ready before fullscreen');
-  assertCondition(clickPlaybackButton().ok, 'play click failed before fullscreen');
+  const ready = loadPlayer();
+  assertCondition(ready.ok, 'the poster press built no ready player before fullscreen', ready);
   wait(900);
 
   // The Fullscreen API refuses requestFullscreen() without a trusted user gesture, same root cause as the play button -- must be a native click, not eval'd .click().
-  const enter = clickSelector('.tvp-root [data-plyr="fullscreen"]');
+  const enter = clickSelector('.tvp-root .media-fullscreen-button');
   assertCondition(enter.ok, 'failed to click fullscreen button', enter);
   wait(700);
 
@@ -451,14 +422,14 @@ function scenarioFullscreenAndLayering() {
     captionPresent: Boolean(document.querySelector('.tvp-root .tvp-caption'))
   }))()`);
   assertCondition(fsState.fullscreen, 'fullscreen not active after toggle', fsState);
-  // .tvp-caption is not swapped for a fullscreen-only element (unlike the deleted TerminalPlayer's `.terminal-player-caption-layer--fullscreen`): it is the SAME element, repositioned by `.plyr--fullscreen-active .tvp-caption` CSS. Its continued presence in the DOM is what matters here.
+  // .tvp-caption is not swapped for a fullscreen-only element (unlike the deleted TerminalPlayer's `.terminal-player-caption-layer--fullscreen`): it is the SAME element, a child of the skin root `.media-skin`, which is the element the skin's fullscreen button fullscreens, repositioned by `.media-skin:fullscreen .tvp-caption` CSS. Its continued presence in the DOM is what matters here.
   assertCondition(
     fsState.captionPresent,
     'caption element missing after entering fullscreen',
     fsState
   );
 
-  clickSelector('.tvp-root [data-plyr="fullscreen"]');
+  clickSelector('.tvp-root .media-fullscreen-button');
   wait(500);
   const exitState = evalInPage(`(() => ({ fullscreen: Boolean(document.fullscreenElement) }))()`);
   assertCondition(!exitState.fullscreen, 'fullscreen did not exit', exitState);
@@ -468,7 +439,9 @@ function scenarioFullscreenAndLayering() {
     const s = (el, prop) => el ? getComputedStyle(el)[prop] : null;
     return {
       captionZ: s(document.querySelector('.tvp-root .tvp-caption'), 'zIndex'),
-      chapterOverlayZ: s(document.querySelector('.tvp-root .tvp-chapter-overlay'), 'zIndex')
+      // The skin draws one time-slider segment per chapter cue; both counts are recorded so the artifact shows whether the chapters track reached the slider.
+      chapterSegments: document.querySelectorAll('.tvp-root .media-time-slider-chapter').length,
+      chapterCues: [...(document.querySelector('.tvp-root video')?.textTracks ?? [])].find((x) => x.kind === 'chapters')?.cues?.length ?? null
     };
   })()`);
   writeArtifact('scenario-layering-docs.json', docsZ);
@@ -478,7 +451,7 @@ function scenarioMountConsistency() {
   // The homepage no longer carries a tutorial/video player -- SPHomeHero.astro deliberately removed the old "fake terminal" (operator-approved: it "failed contrast... shipped a disclaimer apologising for being simulated"). The docs route and a solution-page hero are the two mount paths that both go through TutorialVideoPlayer today (tutorial-video-hydrate.ts:25), so THIS is the pair worth checking for consistency: same component, two different placements.
   log('→ scenario: docs/solution-page mount consistency');
 
-  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the two surfaces answer it DIFFERENTLY. Docs mounts build immediately; solution mounts carry `data-click-to-load` and render a server-side poster instead of building the 122 KB player. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
+  // ONE PROBE SHAPE for both pages, because the point of this scenario is that the two surfaces answer it DIFFERENTLY. Both server-render a poster instead of building the 272 KB player; the docs mount carries `data-click-to-load="inline"` and builds in place on the press, the solution mount carries a bare `data-click-to-load` and builds in the theater. Measured across all 44 English mount-carrying pages at 1440x900 and 390x844, every mount is ABOVE THE FOLD, so an IntersectionObserver fires on load and defers nothing -- which is why the deferral had to become a click.
   //
   // The solution assertions are the REAL contract and strictly stronger than the single `hasPlayer` this used to carry: no player before the click, a poster to click, a player inside the THEATER after it, the poster still there, and Escape putting it all back. The old form could not tell a working deferral from a broken mount.
   const probe = () =>
@@ -488,7 +461,11 @@ function scenarioMountConsistency() {
 
   open(`${baseUrl}/en/docs/tutorial-production-mode`);
   wait(800);
+  const docsBefore = inlineMountState(evalInPage);
+  const docsReady = loadPlayer();
+  const docsAfter = inlineMountState(evalInPage);
   const docs = probe();
+  writeArtifact('scenario-layering-docs-mount.json', { docsBefore, docsReady, docsAfter, docs });
   open(`${baseUrl}/en/solutions/rapid-recovery`);
   wait(1000);
   const before = probe();
@@ -501,7 +478,18 @@ function scenarioMountConsistency() {
   const closed = probe();
   writeArtifact('scenario-layering-solution.json', { before, after, closed });
 
-  assertCondition(docs.hasPlayer, 'docs page tutorial video player not found', docs);
+  // The docs half of the contract, both sides of the press: a visitor who never presses downloads no player (the 272 KB chunk is what 4bc0f5141 took off the page load), and the press replaces the poster with the player in place.
+  assertCondition(
+    !docsBefore.hasPlayer && docsBefore.hasPoster && docsBefore.clickToLoad === 'inline',
+    'docs page must show a poster and NO player before the press',
+    docsBefore
+  );
+  assertCondition(docsReady.ok, 'the docs poster press built no ready player', docsReady);
+  assertCondition(
+    docs.hasPlayer && !docsAfter.hasPoster,
+    'the docs poster press must replace the poster with the player',
+    { docs, docsAfter }
+  );
   assertCondition(
     !docs.theaterOpen,
     'docs mounts must keep building in place; no theater belongs on a docs page',

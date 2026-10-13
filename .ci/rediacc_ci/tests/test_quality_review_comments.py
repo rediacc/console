@@ -49,7 +49,8 @@ exit 1
 BOT = {"login": "github-actions[bot]"}
 HUMAN = {"login": "muhammed"}
 LONG = "y" * 250
-FENCE = "x ```json:review-findings\n[]"
+# Line-anchored since #51ec5215: the twin matched the needle anywhere, the port needs a fence OPENER line, and the twin's recorded output is the same for both spellings (test_delta_prose_naming_the_fence_is_not_a_summary pins the difference).
+FENCE = "x\n```json:review-findings\n[]"
 SUMMARY = {"id": 5189236393, "user": BOT, "created_at": "2026-08-05T10:00:00Z", "body": FENCE}
 
 
@@ -403,3 +404,77 @@ def test_findings_fence_reader_accepts_backslash_escaped_backticks():
     assert gate.findings_fence_is_empty(ESCAPED_EMPTY_BODY.replace("[]", "[")) is False
     comment = {"id": 9, "user": BOT, "created_at": "t", "body": ESCAPED_EMPTY_BODY}
     assert gate.summary_verdict([comment])[0] == "empty"
+
+
+def test_delta_prose_naming_the_fence_is_not_a_summary():
+    """INTENTIONAL DIVERGENCE from the retired twin (#51ec5215). The twin selected any bot comment containing `json:review-findings`; on PR #599 the bot's wrapper comment, prose naming the fence, was newer than the real review and outranked it. The port requires a fence opener line."""
+    review = dict(
+        SUMMARY,
+        id=1,
+        created_at="2026-10-08T05:00:00Z",
+        body="## Review verdict: approve\n\n```json:review-findings\n[]\n```\n",
+    )
+    wrapper = dict(
+        SUMMARY,
+        id=2,
+        created_at="2026-10-08T05:01:00Z",
+        body="The review above ends with a json:review-findings fence.",
+    )
+    assert gate.newest_summary([review, wrapper]) is review
+    # Control: a wrapper that does carry an opener line is a summary, and the newest wins.
+    fenced_wrapper = dict(wrapper, body="x\n```json:review-findings\n[]\n```")
+    assert gate.newest_summary([review, fenced_wrapper]) is fenced_wrapper
+
+
+# THE DEFERRAL RULE (operator ruling 2026-10-08, PLAN-deferred-findings-block-merge D6). An answer whose disposition reads "deferred to worklist item #<id>" parks the finding instead of closing it, so the summary is not answered. The pair below differs ONLY in that disposition, so a rule that ignored the phrase, or refused every long answer, reds one half. These run
+# against the fixture rather than a golden: the twin never had the rule.
+DEFERRED_ANSWER = (
+    "Re: review summary 5189236393\n\n| F1 | high | `a.py:3` | off by one | deferred to worklist item #abcdef12 |\n"
+    + "z" * gate.SUMMARY_LONGFORM_CHARS
+)
+FIXED_ANSWER = DEFERRED_ANSWER.replace(
+    "deferred to worklist item #abcdef12", "fixed in 0123456789ab"
+)
+
+
+def _answer(body: str) -> dict:
+    return {"id": 77, "user": HUMAN, "created_at": "2026-08-05T11:00:00Z", "body": body}
+
+
+def test_deferred_answer_pattern_matches_only_the_rendered_deferral():
+    assert gate.DEFERRED_ANSWER_RE.search("deferred to worklist item #abcdef12")
+    assert gate.DEFERRED_ANSWER_RE.search("x deferred to worklist item #0123456789abcdef y")
+    assert not gate.DEFERRED_ANSWER_RE.search("deferred to worklist item #abc")
+    assert not gate.DEFERRED_ANSWER_RE.search("deferred to worklist item #ABCDEF12")
+    assert not gate.DEFERRED_ANSWER_RE.search(FIXED_ANSWER)
+
+
+@pytest.mark.parametrize(
+    ("label", "answer", "want_verdict", "want_exit"),
+    [
+        ("a-deferral-answer-is-deferred-and-red", DEFERRED_ANSWER, "deferred", 1),
+        ("the-same-answer-fixed-is-answered-and-green", FIXED_ANSWER, "answered", 0),
+    ],
+    ids=["deferral-is-red", "fixed-is-green"],
+)
+def test_the_deferral_rule_end_to_end(tmp_path, label, answer, want_verdict, want_exit):
+    """The verdict function and the real module over the stubbed gh agree on both halves."""
+    summary = dict(SUMMARY, body=ONE_FENCE)
+    issues = [summary, _answer(answer)]
+    assert gate.summary_verdict(issues)[0] == want_verdict, label
+    code, out, err = run_port(build(tmp_path, [], issues))
+    assert code == want_exit, "%s: exit %d\n%s\n%s" % (label, code, out, err)
+    if want_exit:
+        assert "DEFERRED REVIEW FINDING (1):" in out
+        assert "a disposition defers a finding: fix it or waive it with ASKED:" in out
+        assert "deferred to worklist item #abcdef12" in out
+        assert "answered by comment" not in out
+    else:
+        assert "answered by comment 77 - OK" in out
+        assert "DEFERRED" not in out
+
+
+def test_a_deferral_does_not_hide_an_empty_findings_exemption():
+    """The GR6 exemption is decided before the reply search, so an empty review stays silent whatever a later comment says."""
+    issues = [dict(SUMMARY, body=EMPTY_FENCE), _answer(DEFERRED_ANSWER)]
+    assert gate.summary_verdict(issues)[0] == "empty"

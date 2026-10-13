@@ -78,8 +78,15 @@ def _isolated_store(tmp_path, monkeypatch):
         target = tmp_path / name.lower()
         target.mkdir()
         monkeypatch.setenv(name, str(target))
+    # NO REAL REPO ROOT. The hook resolves its root from CLAUDE_PROJECT_DIR before its own location, and on that root it re-renders agent/plans/QUEUE.md's in-flight block (wl_planqueue.refresh_inflight), so without this every run rewrote the tracked QUEUE.md of the checkout under test. A root with no QUEUE.md makes that refresh a no-op.
+    fixture_root = tmp_path / "root"
+    fixture_root.mkdir()
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(fixture_root))
+    monkeypatch.chdir(fixture_root)
     # NO LLM JUDGE. This file measures stdin handling, and the judge is a paid call that runs whenever the real working tree carries uncommitted fix-shaped changes (regression-gate signals): on 2026-10-04 two writers' uncommitted files sent the late-payload case into a judge call and past its 40 s budget, while the same test on a clean tree passed in 2 s.
     monkeypatch.setenv("WORKLIST_JUDGE", "off")
+    # NOT A CI RUNNER, AS FAR AS THE HOOK KNOWS. The hook exits 0 before reading its event when GITHUB_ACTIONS is true (worklist.py, "CI NO-OP"), so on a runner every case here drove that early exit: the stdin cases passed without reading stdin, and the fixture-queue case failed on the first CI run that reached it (console run 38345377035), since nothing rendered. The no-op itself has its own case below.
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
 
 
 def drive(hook: str, mode: str, budget: float) -> str:
@@ -225,3 +232,46 @@ def test_the_real_store_is_untouched(gate):
         set(after) - set(before)
     )
     gate.log_pass("a hook run leaves the real agent/worklist store byte-count identical")
+
+
+STALE_INFLIGHT = "<!-- queue:inflight:begin -->\nSTALE\n<!-- queue:inflight:end -->\n"
+
+
+def test_the_hook_renders_the_fixture_queue_not_the_real_one(gate, tmp_path):
+    """The second leak (finding #02335d81): the hook re-rendered the in-flight block of the checkout's own agent/plans/QUEUE.md on every run.
+
+    A byte comparison of the real file cannot catch it, because the render is idempotent: once any run has rendered the block, the next leaves the same bytes. So this asserts the positive side instead: a stale block planted in the FIXTURE root's QUEUE.md is re-rendered, which only happens when the hook resolved the fixture root.
+    """
+    hook = _require_hook(gate)
+    fixture_queue = tmp_path / "root" / "agent" / "plans" / "QUEUE.md"
+    fixture_queue.parent.mkdir(parents=True)
+    fixture_queue.write_text(STALE_INFLIGHT, encoding="utf-8")
+    drive(hook, "late", BUDGET)
+    rendered = fixture_queue.read_text(encoding="utf-8")
+    assert "STALE" not in rendered, (
+        "the fixture root's QUEUE.md was not re-rendered, so the hook resolved another root (the real checkout's)"
+    )
+    for marker in ("<!-- queue:inflight:begin -->", "<!-- queue:inflight:end -->"):
+        assert rendered.count(marker) == 1, "want the one block replaced in place, %s:\n%s" % (
+            marker,
+            rendered,
+        )
+    gate.log_pass(
+        "the hook re-renders the fixture root's QUEUE.md, so the real one is out of its reach"
+    )
+
+
+def test_on_a_ci_runner_the_hook_is_a_no_op(gate, tmp_path, monkeypatch):
+    """The contract the fixture above steps around: under GITHUB_ACTIONS the hook returns without hanging or crashing and renders nothing, so an unattended model in Actions is never held by a gate no person will answer."""
+    hook = _require_hook(gate)
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    fixture_queue = tmp_path / "root" / "agent" / "plans" / "QUEUE.md"
+    fixture_queue.parent.mkdir(parents=True)
+    fixture_queue.write_text(STALE_INFLIGHT, encoding="utf-8")
+    observed = drive(hook, "late", BUDGET)
+    gate.assert_contains(observed, "hung=0", "the no-op must not hang (%s)" % observed)
+    gate.assert_contains(observed, "crashed=0", "the no-op must not crash (%s)" % observed)
+    assert fixture_queue.read_text(encoding="utf-8") == STALE_INFLIGHT, (
+        "the hook rendered the queue on a CI runner, so its no-op no longer comes first"
+    )
+    gate.log_pass("under GITHUB_ACTIONS the hook exits before it renders anything")

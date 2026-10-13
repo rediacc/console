@@ -1,6 +1,6 @@
 """The rediacc/web + RustFS local stack, ported from `.ci/lib/service.sh`.
 
-PORTED FROM `.ci/lib/service.sh` (225 lines). The twin still exists and is untouched by this file, and it has exactly ONE sourcer: `.ci/legacy/run-legacy.sh:48`, which is the pre-split body of the repo-root `run.sh`. Re-measured 2026-09-09.
+PORTED FROM `.ci/lib/service.sh` (225 lines), which is DELETED (PLAN-retire-bash-oracles B3): its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.service.jsonl`, and the one library that sourced it (the bridge prelude of `setup/bridge.py`) no longer does.
 
 --------------------------------------------------------------------------
 THREE DEFECTS THE PORT FOUND, ALL REPRODUCED HERE ON PURPOSE
@@ -30,10 +30,10 @@ A port that quietly improved any of these would disagree with the live twin on r
      running)` on a pipe.
 
   3. `check_docker` IS CALLED BY FOUR FUNCTIONS HERE AND DEFINED BY NONE OF
-     THEM. It lives in `.ci/legacy/run-legacy.sh`, the file that SOURCES this
-     one, and only late binding makes that work. `source .ci/lib/service.sh`
-     followed by `service_status` in any other shell dies with `check_docker:
-     command not found`. The port defines it, because a module cannot borrow a
+     THEM. In the retired bash it lived in `.ci/legacy/run-legacy.sh`, the file that
+     SOURCED the twin, and only late binding made that work. Sourcing
+     `.ci/lib/service.sh` and calling `service_status` in any other shell died with
+     `check_docker: command not found`. The port defines it, because a module cannot borrow a
      function from its importer, and because the definition is two `command -v`
      probes that belong with the code that needs them.
 
@@ -104,13 +104,13 @@ HEALTH_INTERVAL_S = 2
 
 VALID_LOG_SERVICES = ("web", "rustfs", "all")
 
-USAGE = """service -- `.ci/lib/service.sh`, every function.
+USAGE = """service -- rediacc_ci.core.service, every function of the retired `.ci/lib/service.sh`.
 
-  python3 -m rediacc_ci.core.service start [port] [--no-build]
-  python3 -m rediacc_ci.core.service stop
-  python3 -m rediacc_ci.core.service status
-  python3 -m rediacc_ci.core.service health
-  python3 -m rediacc_ci.core.service logs [web|rustfs|all]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service start [port] [--no-build]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service stop
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service status
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service health
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.service logs [web|rustfs|all]
 
 Each verb is the twin's function of the same name, byte for byte, colour included.
 `logs` attaches (`-f`) exactly as the twin does; an unknown service is refused.

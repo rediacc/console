@@ -288,7 +288,7 @@ def _default_oras_dir() -> pathlib.Path:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python3 -m rediacc_ci.infra.vm_bake_image",
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image",
         description="Publish and fetch the pre-baked E2E VM images.",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)

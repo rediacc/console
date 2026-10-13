@@ -17,7 +17,7 @@ import sys
 from rediacc_ci.deploy import channel_snapshot, r2_promote
 from rediacc_ci.release.list_edge_releases import semver
 
-SELF = "list-channel-snapshots.py"
+SELF = "rediacc_ci.release.list_channel_snapshots"
 
 
 def versions(listing_json: str) -> list[str]:

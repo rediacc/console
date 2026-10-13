@@ -54,10 +54,13 @@ import sys
 
 from rediacc_ci.core import proxyx
 
-SUBJECT_REL = ".ci/scripts/test/test-linux-packages.sh"
+SUBJECT_REL = ".ci/rediacc_ci/testrun/linux_packages.py"
+SUBJECT_MODULE = "rediacc_ci.testrun.linux_packages"
+ENSURE_NFPM_REL = ".ci/rediacc_ci/build/ensure_nfpm.py"
 
-# `grep -cE '^run_test "'` (:60). Anchored, so a `run_test` nested in an `if` does not count -- which is the twin's behaviour and therefore this one's.
-RUN_TEST_RE = re.compile(r'^run_test "')
+# One subtest per `("<name>", <callable>)` entry in the subject's `plan()` body. Anchored at the entry indent, so a tuple nested deeper does not count.
+RUN_TEST_RE = re.compile(r'^        \("')
+PLAN_HEAD = "\ndef plan("
 
 # `grep -oE 'Results: [0-9]+ passed, [0-9]+ failed \(total [0-9]+\)'` (:89).
 RESULTS_RE = re.compile(r"Results: ([0-9]+) passed, ([0-9]+) failed \(total ([0-9]+)\)")
@@ -76,11 +79,21 @@ def _proxy_root() -> pathlib.Path:
 
 
 def expected_tests(subject_text: str) -> int:
-    """`EXPECTED_TESTS=$(grep -cE '^run_test "' "$SUBJECT")` (:60).
+    """The number of subtests the subject declares: the entries of its `plan()` function (the bash twin counted `^run_test "` lines).
 
-    grep -c counts LINES with at least one match, never matches, so a line carrying two call sites counts once. Exported for the selftest.
+    Counts LINES with an entry, never matches, so a line carrying two entries counts once. Only the `plan()` body is read, up to the next top-level definition. "No `plan()` at all" is zero, which the caller refuses rather than passes. Exported for the selftest.
     """
-    return sum(1 for line in subject_text.splitlines() if RUN_TEST_RE.search(line))
+    start = subject_text.find(PLAN_HEAD)
+    if start < 0:
+        return 0
+    body = subject_text[start + 1 :].split("\n")[1:]
+    count = 0
+    for line in body:
+        if line and not line[0].isspace() and not line.startswith(")"):
+            break
+        if RUN_TEST_RE.search(line):
+            count += 1
+    return count
 
 
 def marker_sites(subject_text: str) -> int:
@@ -132,7 +145,7 @@ def run() -> int:
     # :46-49. Both streams discarded, `|| true` swallows a failure, and the trailing newline of the printed directory is stripped by `$( )`.
     if shutil.which("nfpm") is None:
         proc = subprocess.run(
-            [str(root / ".ci" / "scripts" / "build" / "ensure-nfpm.sh")],
+            [sys.executable, str(root / ENSURE_NFPM_REL)],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
@@ -143,8 +156,11 @@ def run() -> int:
         if nfpm_dir:
             os.environ["PATH"] = f"{nfpm_dir}:{os.environ.get('PATH', '')}"
 
-    p.need_exec(subject, "the subject script is missing from this checkout")
-    p.need_cmd("nfpm", ".ci/scripts/build/ensure-nfpm.sh (needs network on first run)")
+    p.need_file(subject, "the subject script is missing from this checkout")
+    p.need_cmd(
+        "nfpm",
+        "PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm (needs network on first run)",
+    )
     p.need_cmd("dpkg-deb", "sudo apt-get install -y dpkg-dev")
     p.need_cmd("rpmbuild", "sudo apt-get install -y rpm")
     p.need_cmd("createrepo_c", "sudo apt-get install -y createrepo-c")
@@ -173,14 +189,21 @@ def run() -> int:
     # :73-77. Streams read SEPARATELY: the subject writes its log_* lines to stderr and nfpm's own chatter to stdout, so a merged capture hides which
     # side spoke. `BOTH="$(cat "$OUT" "$ERR")"` concatenates them in that order
     # and the `$( )` strips the trailing newlines of the pair.
-    sub = subprocess.run([subject, "--dry-run"], capture_output=True, text=True, check=False)
+    sub = subprocess.run(
+        [sys.executable, "-m", SUBJECT_MODULE, "--dry-run"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(root),
+        env=proxyx.with_ci_pythonpath(root),
+    )
     rc = sub.returncode
     both = (sub.stdout + sub.stderr).rstrip("\n")
 
     if rc == 0:
-        p.ok("test-linux-packages.sh --dry-run exited 0")
+        p.ok(f"{SUBJECT_MODULE} --dry-run exited 0")
     else:
-        p.bad(f"test-linux-packages.sh --dry-run exited {rc}")
+        p.bad(f"{SUBJECT_MODULE} --dry-run exited {rc}")
         print("  --- subject stdout (last 30) ---", file=sys.stderr)
         _tail(sub.stdout, 30)
         print("  --- subject stderr (last 30) ---", file=sys.stderr)

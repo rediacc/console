@@ -419,7 +419,7 @@ def test_a_directory_merely_named_worktrees_is_kept(tmp_path):
 
 
 def test_a_dot_worktrees_directory_is_pruned(tmp_path):
-    """`scripts/dev/worktree.sh` puts checkouts at `$ROOT_DIR/.worktrees` and `.gitignore:146` excludes them. Same bug, second spelling."""
+    """`rediacc_ci.dev.worktree` puts checkouts at `$ROOT_DIR/.worktrees` and `.gitignore:146` excludes them. Same bug, second spelling."""
     (tmp_path / ".worktrees" / "0824-1").mkdir(parents=True)
     (tmp_path / ".worktrees" / "0824-1" / "go.mod").write_text("", encoding="utf-8")
     (tmp_path / "go.mod").write_text("", encoding="utf-8")

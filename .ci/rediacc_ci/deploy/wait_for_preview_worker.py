@@ -19,7 +19,7 @@ import time
 import urllib.error
 import urllib.request
 
-SELF = "wait-for-preview-worker.py"
+SELF = "rediacc_ci.deploy.wait_for_preview_worker"
 
 
 USER_AGENT = "rediacc-ci-wait-for-preview-worker"

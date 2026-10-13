@@ -291,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
 
     report = Reporter(silent=False)
 
-    print("check-devcontainer-scripts: stderr visibility and lifecycle invariants")
+    print("rediacc_ci.quality.devcontainer_scripts: stderr visibility and lifecycle invariants")
 
     if not init.is_file():
         report("missing %s" % init)

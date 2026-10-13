@@ -33,7 +33,6 @@ TWIN_REL = ".ci/scripts/release/update-homebrew-tap.sh"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "update_homebrew_tap.py"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 TOOLCHAIN_ENV = ROOT / ".devcontainer" / "toolchain.env"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -256,7 +255,6 @@ def _fixture(tmp_path: pathlib.Path, side: str, *, with_pins: bool = True) -> pa
     if diff.regolden_mode(TWIN_REL) == "bash":
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "release" / TWIN.name)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "release" / PORT.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
     shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
     shutil.copy2(

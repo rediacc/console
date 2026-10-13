@@ -184,11 +184,14 @@ class Event:
 
     @property
     def project_dir(self):
-        """`${CLAUDE_PROJECT_DIR:-.}`, the root nearly every guard cd's into.
+        """`CLAUDE_PROJECT_DIR`, the root nearly every guard cd's into, and when it is unset or EMPTY the checkout the event stands in (`project_root`).
 
-        `:-` and not `-`: an EMPTY variable takes the fallback too, which is what the guards spell and what a harness that exports the variable as "" would otherwise defeat.
+        NOT `.` (#f32d3604). The bash spelled `${CLAUDE_PROJECT_DIR:-.}`, and `.` is the hook PROCESS's directory, which is the project only when the process happens to stand at its root. Run from `.claude/` with the variable unset, block_git_force_push judged `.claude/` as the project and allowed `git push --prune origin` (rc 0 against rc 2 from the root, 2026-10-11), and test_hooks_static failed those two cases. The same class was fixed for `shellscan.repo_root_env` in fae7c16a2. The answer with the variable set is unchanged.
         """
-        return self._env.get("CLAUDE_PROJECT_DIR") or "."
+        got = self._env.get("CLAUDE_PROJECT_DIR")
+        if got:
+            return got
+        return project_root(self.field("cwd") or self.cwd)
 
     @property
     def cwd(self):
@@ -480,6 +483,23 @@ def git_out(args, cwd=None, want_rc=False):
     return run_out(["git", *args], cwd=cwd, want_rc=want_rc)
 
 
+def project_root(start):
+    """The project a directory belongs to, as Claude Code names one in `CLAUDE_PROJECT_DIR`: the git checkout holding `start`, climbed through its superprojects to the top, or `start` itself, made absolute, when it is in none.
+
+    Climbed because the session's project is the console even when its shell stands inside `private/renet`, and a guard reading `CLAUDE_PROJECT_DIR` there has always been handed the console. Only SUPERPROJECT links are climbed (review 67459d36.1): a standalone clone that merely sits inside another checkout's tree, like a writer's scratch clone, is its own project, not the outer one's.
+    """
+    here = os.path.abspath(start)
+    top = git_out(["rev-parse", "--show-toplevel"], cwd=here, want_rc=True)
+    if not top:
+        return here
+    for _depth in range(8):
+        outer = git_out(["rev-parse", "--show-superproject-working-tree"], cwd=top, want_rc=True)
+        if not outer:
+            break
+        top = outer
+    return top
+
+
 def repo_root():
     """The tree holding both `.claude` and `.ci`, found by looking, not counting.
 
@@ -492,6 +512,29 @@ def repo_root():
             return candidate
     msg = "no repository root above %s (looked for a directory holding .claude and .ci)" % __file__
     raise RuntimeError(msg)
+
+
+def landing(path, cwd=None, root=None):
+    """`(absolute, judged, shown)` for the path a write tool was handed: WHERE THE WRITE LANDS, resolved as the kernel resolves it.
+
+    `realpath` over the path joined to `cwd` (else `root`, else this checkout's root), with NO lexical normalisation first: the kernel follows a symlink before it applies the `..` after it, so `out/l/../f` with `out/l` a link into a guarded directory lands inside that directory, and `normpath` would have judged it at `out/f` (review 9c6817f3.1-.4, where four guards each carried that ordering in a copy of this function). `judged` is the landing relative to `root` when it is inside it, the form the guards' patterns are written for, and absolute otherwise. `shown` is what was typed, with the landing appended when the two differ, so a refusal never names a path the write would not touch. An empty path is returned as typed, three times. A path the OS itself refuses (an embedded NUL, 9c6817f3.5) is judged and shown as typed, and its `absolute` is the path joined to the `cwd` it was given, never left relative: a caller reading a directory out of it would otherwise read the hook PROCESS's directory (3c0094e0.2).
+    """
+    if not path or path == "null":
+        return path, path, path
+    try:
+        if root is None:
+            root = str(repo_root())
+    except RuntimeError:
+        root = cwd or os.getcwd()
+    joined = os.path.join(cwd or root, path)
+    try:
+        landed = os.path.realpath(joined)
+        rel = os.path.relpath(landed, os.path.realpath(root))
+    except ValueError:
+        return joined, path, path
+    judged = landed if rel == ".." or rel.startswith("../") else rel
+    shown = path if landed == joined else "%s (lands at %s)" % (path, landed)
+    return landed, judged, shown
 
 
 def write_world_file(path, text):

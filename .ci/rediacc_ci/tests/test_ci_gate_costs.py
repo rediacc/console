@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.ci import freshness as fr
 from rediacc_ci.ci import gate_costs as gc
 from rediacc_ci.quality import workflows
 
@@ -121,10 +122,17 @@ def test_parse_capture_refuses_a_report_without_gates():
 # --------------------------------------------------------------------------- check_findings ---------------------------------------------------------------------------
 
 
-def _drifted(cpu_factor: float, wall_factor: float = 1.0, cores: int = 4) -> list[str]:
+def twice(cap: dict[str, Any]) -> list[dict[str, Any]]:
+    """The same capture from two nights: the least evidence a drift verdict is given on (`MIN_DRIFT_CAPTURES`)."""
+    return [cap] * gc.MIN_DRIFT_CAPTURES
+
+
+def _drifted(
+    cpu_factor: float, wall_factor: float = 1.0, cores: int = 4, nights: int = 2
+) -> list[str]:
     committed = baseline_from([capture([gate("g", 10000, 10000)], cores=cores)])
     fresh = gc.aggregate(
-        [capture([gate("g", 10000 * cpu_factor, 10000 * wall_factor)], cores=cores)]
+        [capture([gate("g", 10000 * cpu_factor, 10000 * wall_factor)], cores=cores)] * nights
     )
     return gc.check_findings(committed, fresh, {"g"})
 
@@ -137,6 +145,63 @@ def test_drift_26_percent_reds():
     findings = _drifted(1.26, 1.26)
     assert len(findings) == 1
     assert "cpu_s" in findings[0]
+
+
+def test_one_capture_is_one_runner_and_judges_no_drift():
+    """The window shrinks to one capture when a nightly capture fails or two age out. The same 26% and the same 30% width change that red on two captures are not judged on one."""
+    assert _drifted(1.26, 1.26, nights=1) == []
+    assert _drifted(1.0, 0.7, nights=1) == []
+    # CONTROL: two captures that agree are a finding, in both figures.
+    assert len(_drifted(1.26, 1.26, nights=2)) == 1
+    assert len(_drifted(1.0, 0.7, nights=2)) == 1
+    # CONTROL: a doubled gate is still not judged on one capture, and is named as unjudged.
+    fresh = gc.aggregate([capture([gate("g", 20000, 20000)])])
+    assert gc.thin_gates(fresh) == ["g"]
+    assert gc.thin_gates(gc.aggregate(twice(capture([gate("g", 20000, 20000)])))) == []
+
+
+# MEASURED 2026-10-13: the committed gate-costs.json (medians of captures 38129723990 and 38041991396) held against capture 38382535219 alone, cpu-seconds. Each was a drift finding on that one capture.
+ONE_CAPTURE_REDS = {
+    "check:ci-e2e-case-blind": (1.58, 1.15),
+    "check:ci-env-manifest": (4.28, 3.2),
+    "check:ci-python-control-plants": (2.77, 2.0),
+}
+
+
+def test_the_three_real_single_capture_reds_are_not_findings():
+    committed = {
+        "gates": {
+            gid: {"cpu_s": was, "wall_s": was, "eff_cores": 1.0, "capped": False}
+            for gid, (was, _now) in ONE_CAPTURE_REDS.items()
+        },
+        "unmeasured": {},
+        "source": {"cores": 4},
+    }
+    newest = capture(
+        [gate(g, now * 1000, now * 1000) for g, (_was, now) in ONE_CAPTURE_REDS.items()]
+    )
+    lock = set(ONE_CAPTURE_REDS)
+    # Each move is past the 25% limit, which is all the retired rule asked of a gate of a cpu-second.
+    for was, now in ONE_CAPTURE_REDS.values():
+        assert abs(now - was) / was > gc.DRIFT_THRESHOLD
+    assert gc.check_findings(committed, gc.aggregate([newest]), lock) == []
+    # CONTROL: the same figures from two captures. The one move of a cpu-second is a finding; the two under it are not.
+    findings = gc.check_findings(committed, gc.aggregate(twice(newest)), lock)
+    assert _finding_keys(findings) == {"gate-costs:drift:cpu_s:check:ci-env-manifest"}
+
+
+def test_a_refresh_keeps_the_figures_of_a_gate_one_capture_measured():
+    prior = baseline_from(twice(capture([gate("kept", 10000, 10000), gate("moved", 10000, 10000)])))
+    one = capture([gate("kept", 20000, 20000), gate("new", 3000, 3000)])
+    two = [capture([gate("moved", 20000, 20000)]), capture([gate("moved", 20000, 20000)]), one]
+    built = gc.build_baseline(two, [{"id": 2}], None, "2026-10-02T00:00:00Z", prior=prior)
+    assert built["gates"]["kept"]["cpu_s"] == 10.0  # one capture: the committed figure stays
+    assert built["gates"]["moved"]["cpu_s"] == 20.0  # CONTROL: two captures rewrite it
+    assert (
+        built["gates"]["new"]["cpu_s"] == 3.0
+    )  # CONTROL: a gate new to the file is written at any count
+    # And the check that follows that refresh on the same captures is green.
+    assert gc.check_findings(built, gc.aggregate(two), {"kept", "moved", "new"}) == []
 
 
 def test_uncapped_eff_cores_drift_reds():
@@ -152,13 +217,13 @@ def test_capped_eff_cores_drift_is_ignored():
     assert gc.check_findings(committed, fresh, {"g"}) == []
     # CONTROL: the same wall change on an uncapped gate is a finding.
     committed = baseline_from([capture([gate("g", 20000, 10000)], cores=4)])
-    fresh = gc.aggregate([capture([gate("g", 20000, 14000)], cores=4)])
+    fresh = gc.aggregate(twice(capture([gate("g", 20000, 14000)], cores=4)))
     assert any("eff_cores" in f for f in gc.check_findings(committed, fresh, {"g"}))
 
 
 def test_sub_second_cpu_drift_is_not_judged():
     committed = baseline_from([capture([gate("g", 400, 1000)])])
-    fresh = gc.aggregate([capture([gate("g", 800, 1000)])])
+    fresh = gc.aggregate(twice(capture([gate("g", 800, 1000)])))
     assert gc.check_findings(committed, fresh, {"g"}) == []
 
 
@@ -169,6 +234,26 @@ def test_gate_absent_from_the_manifest_is_reported():
     assert len(findings) == 1
     assert "'gone'" in findings[0]
     assert "not in the manifest" in findings[0]
+
+
+def test_a_refresh_keeps_only_the_manifest_gates_so_its_own_check_passes():
+    """A capture from a run whose manifest still had a since-retired gate (2026-10-11: nine of them, read from main's runs) must not reach the refreshed file, or `--check` refuses the refresh's own output."""
+    caps = [
+        capture(
+            [
+                gate("kept", 2000, 2000),
+                gate("retired", 2000, 2000),
+                gate("gone-unmeasured", None, 5),
+            ]
+        )
+    ]
+    built = gc.build_baseline(
+        caps, [{"id": 1}], None, "2026-10-01T00:00:00Z", prior={}, lock_ids={"kept"}, sampled=set()
+    )
+    assert set(built["gates"]) == {"kept"}
+    assert "gone-unmeasured" not in built["unmeasured"]
+    assert built["gates"]["kept"]["rank"] == 1
+    assert gc.check_findings(built, gc.aggregate(caps), {"kept"}) == []
 
 
 def test_new_gate_missing_from_the_file_is_reported():
@@ -233,14 +318,10 @@ def test_check_green_then_red_end_to_end(tmp_path: Path):
         "runs": [{"id": 7, "sha": "abc", "created_at": "2026-10-01T03:00:00Z"}],
     }
     assert written["$comment"] == gc.DEFAULT_COMMENT
-    assert (
-        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 12400, 12400)])]))
-        == 0
-    )
-    assert (
-        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 12600, 12600)])]))
-        == 1
-    )
+    under = _collect(twice(capture([gate("g", 12400, 12400)])))
+    assert gc.check(target, "o/r", tmp_path, collect=under) == 0
+    over = _collect(twice(capture([gate("g", 12600, 12600)])))
+    assert gc.check(target, "o/r", tmp_path, collect=over) == 1
 
 
 def test_check_reds_on_zero_captures(tmp_path: Path):
@@ -334,7 +415,8 @@ def test_check_writes_no_report_and_reds_on_stderr(
     target = tmp_path / "gate-costs.json"
     gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
     capsys.readouterr()
-    red = gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 20000, 20000)])]))
+    doubled = _collect(twice(capture([gate("g", 20000, 20000)])))
+    red = gc.check(target, "o/r", tmp_path, collect=doubled)
     assert red == 1
     err = capsys.readouterr().err
     assert "Gate cost baseline check found 1 issue(s)" in err
@@ -416,7 +498,7 @@ def test_slow_gate_newly_seen_is_not_new_but_a_fast_one_is():
 
 def test_slow_gate_drift_is_still_judged_when_sampled():
     committed = baseline_from([capture([gate("s", 10000, 10000)])])
-    fresh = gc.aggregate([capture([gate("s", 20000, 20000)])])
+    fresh = gc.aggregate(twice(capture([gate("s", 20000, 20000)])))
     findings = gc.check_findings(committed, fresh, {"s"}, sampled={"s"})
     assert len(findings) == 1
     assert "'s' cpu_s" in findings[0]
@@ -577,3 +659,112 @@ def test_a_single_capture_window_still_reds_a_fast_gate_it_could_not_measure(tmp
     )
     one = [capture([gate("q", None, 5, status="fail")])]
     assert gc.check(target, "o/r", tmp_path, collect=_collect(one)) == 1
+
+
+def test_committed_baseline_header_is_what_the_generator_writes() -> None:
+    """A header that differs from DEFAULT_COMMENT would be rewritten by the next --refresh."""
+    committed = json.loads((paths.repo_root() / ".ci/config/gate-costs.json").read_text("utf-8"))
+    assert committed["$comment"] == gc.DEFAULT_COMMENT
+
+
+# --------------------------------------------------------------------------- finding keys (review d21f5510.1) ---------------------------------------------------------------------------
+
+
+def _keys(text: str) -> list[str]:
+    return [
+        line[len("::finding::") :] for line in text.splitlines() if line.startswith("::finding::")
+    ]
+
+
+def _finding_keys(findings: list[str]) -> set[str]:
+    """Each finding's key; a finding that is not `Keyed` fails here, by name."""
+    for f in findings:
+        assert isinstance(f, fr.Keyed), "unkeyed finding: %r" % f
+    return {f.key for f in findings if isinstance(f, fr.Keyed)}
+
+
+def test_every_gate_cost_finding_class_carries_its_key():
+    """`check_findings`' six classes, each a `Keyed` string named `gate-costs:<class>:<gate id>`."""
+    committed = baseline_from(
+        [
+            capture(
+                [
+                    gate("drifts", 10000, 10000),
+                    gate("old", 10000, 10000),
+                    gate("quiet", 10000, 10000),
+                ]
+            )
+        ]
+    )
+    fresh = gc.aggregate(
+        twice(
+            capture(
+                [
+                    gate("drifts", 30000, 5000),
+                    gate("new", 10000, 10000),
+                    gate("quiet", None, 10, status="fail"),
+                ],
+                cores=8,
+            )
+        )
+    )
+    findings = gc.check_findings(committed, fresh, {"drifts", "new", "quiet"})
+    keys = _finding_keys(findings)
+    assert keys >= {
+        "gate-costs:not-in-manifest:old",
+        "gate-costs:missing-from-baseline:new",
+        "gate-costs:unmeasured:quiet",
+        "gate-costs:cores-changed",
+        "gate-costs:drift:cpu_s:drifts",
+    }, keys
+    assert all(isinstance(f, fr.Keyed) for f in findings)
+
+
+def test_the_eff_cores_drift_is_keyed():
+    committed = baseline_from([capture([gate("g", 10000, 10000)], cores=8)])
+    fresh = gc.aggregate(twice(capture([gate("g", 10000, 5000)], cores=8)))
+    assert _finding_keys(gc.check_findings(committed, fresh, {"g"})) == {
+        "gate-costs:drift:eff_cores:g"
+    }
+
+
+def test_a_red_gate_cost_check_prints_one_key_per_finding(tmp_path: Path, capsys):
+    write_lock(tmp_path, ["g"])
+    target = tmp_path / "gate-costs.json"
+    assert (
+        gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
+        == 0
+    )
+    capsys.readouterr()
+    over = _collect(twice(capture([gate("g", 12600, 12600)])))
+    assert gc.check(target, "o/r", tmp_path, collect=over) == 1
+    first = _keys(capsys.readouterr().err)
+    more = _collect(twice(capture([gate("g", 19000, 19000)])))
+    assert gc.check(target, "o/r", tmp_path, collect=more) == 1
+    assert first == _keys(capsys.readouterr().err) == ["gate-costs:drift:cpu_s:g"], (
+        "the key does not move with the drift"
+    )
+    assert (
+        gc.check(target, "o/r", tmp_path, collect=lambda _repo: ([], [], ["run 9: bad zip"])) == 1
+    )
+    assert _keys(capsys.readouterr().err) == [
+        "gate-costs:capture-unreadable",
+        "gate-costs:no-capture",
+    ]
+    target.write_text("{not json", encoding="utf-8")
+    assert gc.check(target, "o/r", tmp_path, collect=_collect([])) == 1
+    assert _keys(capsys.readouterr().err) == ["gate-costs:unreadable"]
+
+
+def test_control_an_unkeyed_gate_cost_finding_class_is_refused(tmp_path: Path, monkeypatch):
+    write_lock(tmp_path, ["g"])
+    target = tmp_path / "gate-costs.json"
+    assert (
+        gc.refresh(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
+        == 0
+    )
+    monkeypatch.setattr(
+        gc, "check_findings", lambda *_a, **_k: ["a new finding class nobody keyed"]
+    )
+    with pytest.raises(TypeError, match="unkeyed finding"):
+        gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))

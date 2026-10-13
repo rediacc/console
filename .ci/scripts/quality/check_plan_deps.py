@@ -7,7 +7,7 @@ THE GRAMMAR IS NOT HERE. It lives in `.claude/hooks/stop/wl_plandeps.py`, import
 
 WHICH PLANS MUST CARRY THE FIELD: every non-stub `agent/plans/PLAN-*.md` whose Status is not in `wl_planfile.FINISHED_STATES`. Stubs, finished records (`compacted`) and everything in `_done/` and `_removed/` are exempt (plan section 1).
 
-EIGHT FINDINGS, EACH WITH A PLANTED CONTROL IN `--selftest`:
+NINE FINDINGS, EACH WITH A PLANTED CONTROL IN `--selftest`:
 
     D1  a required plan has no `Depends-On:` line
     D2  malformed: a path token, a non-PLAN name, an empty token, `no-dep` without
@@ -22,7 +22,12 @@ EIGHT FINDINGS, EACH WITH A PLANTED CONTROL IN `--selftest`:
         required plan that produced neither a verdict nor a finding. ZERO parsed
         is CANNOT RUN (exit 77), never green.
 
-D9 (a task edge `PLAN-y.md#<id>` whose box no longer exists) is PLAN-plan-dependencies T12 and is not asserted here yet; a task edge is resolved at plan level.
+    D9  a task edge `PLAN-y.md#<id>` whose box no longer exists in the live plan Y.
+        An edge names a box by its explicit id (`T3`, `R20260924.3`, the first token of
+        the box) or by its content signature; the message names the closest current
+        boxes by id and text, so a renumbered or reworded box is a one-line fix and never
+        a silent break. A task edge is complete when that box is ticked with a
+        `(ticked)` evidence line or a `present` investigation row.
 
 THE X FINDINGS (agent/plans/PLAN-plan-priority-concurrency.md section 6b), over the `Priority:`, `Concurrency:` and `Owns:` lines whose grammar lives beside Depends-On's in wl_plandeps and whose meaning (the overlap engine) lives in wl_planconc:
 
@@ -120,7 +125,7 @@ except ImportError as _exc:  # pragma: no cover -- a tree without .claude/hooks/
 
 #: The floor under how many required plans a run must parse. Measured 2026-09-25: 41. The floor guards against a glob or a Status reader that stopped seeing the corpus, not against ordinary closing of plans.
 MIN_REQUIRED = 10
-CONTROL_FLOOR = 101
+CONTROL_FLOOR = 104
 #: Where `--migrate-x --save` writes the reviewed-before-apply proposal. Under the ignored `.ci/cache/`, so nothing tracked changes.
 PROPOSAL_REL = ".ci/cache/plan-x-migration/proposal.json"
 #: A seed Owns that materialises to more files than this is proposed `exclusive` (section 7).
@@ -507,6 +512,16 @@ def selftest() -> int:
         True,
     )
     tally.check("D6 twin: a diamond", _codes(_with(t=_plan(dep="PLAN-y.md, PLAN-z.md"))), set())
+
+    # D9: a task edge whose box is gone, with the closest box named; the twin points at a box that exists.
+    tally.check("D9 planted: the box is gone", _codes(_with(t=_plan(dep="PLAN-y.md#T9"))), {"D9"})
+    tally.check("D9 twin: the box exists", _codes(_with(t=_plan(dep="PLAN-y.md#T1"))), set())
+    d9 = [
+        f.message
+        for f in evaluate(D.Graph.from_texts(_with(t=_plan(dep="PLAN-y.md#T9")), _INDEX))[0]
+        if f.code == "D9"
+    ]
+    tally.check("D9 names the closest box", any("Closest now: T1 a box" in m for m in d9), True)
 
     # D8: the floor, and zero as CANNOT RUN.
     short = {k: v for k, v in _clean().items() if k != "agent/plans/PLAN-p00.md"}
@@ -900,9 +915,9 @@ def check(root: pathlib.Path, base_tree: pathlib.Path | None = None) -> int:
         )
     )
     print(
-        "  Blind spot: whether an edge is the RIGHT one (citation is not dependency), task-edge "
-        "boxes (D9, PLAN-plan-dependencies T12), and whether a plan's Owns is TRUE (overlap is "
-        "judged on what plans declare)."
+        "  Blind spot: whether an edge is the RIGHT one (citation is not dependency), whether a "
+        "box is truly done (D9 judges that it exists, completion needs its evidence line), and "
+        "whether a plan's Owns is TRUE (overlap is judged on what plans declare)."
     )
     return 0
 

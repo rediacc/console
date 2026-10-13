@@ -18,6 +18,9 @@ date comparison that always answers "exempt" is a gate that cannot fail.
 CONTROL-FIRST, the shape `.ci/scripts/quality/check_hint_corpus.py` established here. Before the real corpus is judged at all, every assertion below is driven against synthetic inputs carrying one planted defect apiece, plus a healthy fixture that must stay silent under all of them. If any plant is not caught, this gate declares itself broken and exits non-zero WITHOUT judging
 the real corpus.
 
+THE ORDER IS INVESTIGATE, IMPLEMENT, TICK. `worklist.py --plan-investigate` records what the tree held BEFORE the work, then the work lands, then `worklist.py --plan-tick` closes the box and Clause 1 checks the tick descends from the investigation. A box ticked without that row (P-A2) can only be recorded afterwards with `--plan-investigate ... --retro --write`, which reaches a TICKED box only,
+names the implementing commit, and writes `"retro": true`. P-A2 accepts that row, P-A4 is not run on it (the row already says the ordering never happened), and every late row on the branch is printed on every run, red or green, as an ADVISORY "closed before investigation" line, so the late door never reads like the real one.
+
 THE GATE SHIPS WITH NO ALLOWLIST, NO SUPPRESSION AND NO BYPASS. docs/agent-reference/suppressions.md governs every escape hatch in this repo, and an allowlist here would be an allowlist against "implement the plan", which is the whole ask. The clock is in config so it can be RETUNED, which is a different thing from exempting a file.
 
 ---- gate ----
@@ -145,20 +148,31 @@ def in_scope(ledger_plans, finished_states):
     return n_plans, n_open
 
 
+def clock_key(rel):
+    """`P-A1:<rel>`, the key one plan's open boxes are carried under.
+
+    PER PLAN, NEVER OVER THE SET. Until 2026-10-13 P-A1 was one finding naming every plan on the clock, keyed by a hash of that message, so the key belonged to the set. Commit 36a1325fb ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd` although no plan the carry named had changed.
+
+    Keyed by its own path, a plan's key holds while the plan has an open box and goes when the last one closes. A tick therefore removes a carried key or leaves it alone. The one key a tick can add belongs to a plan that was not on the clock before, and a carry is right to refuse that one.
+    """
+    return "P-A1:%s" % rel
+
+
 def clock_findings(offenders):
-    """P-A1. [] when no plan on the clock has an open box; one finding naming every plan that has.
+    """P-A1. [] when no plan on the clock has an open box; else one finding per plan that has, keyed `clock_key(rel)`.
 
     OPERATOR RULING 2026-09-26: "each new plan should be implemented, there should be no threshold to tolerate. Remove that threshold number at plan-implementation check." The descending ceiling (a baseline minus a daily drain) is gone: a plan that is not held and not finished is either fully implemented or red. `offenders` is [(rel, open)].
 
     OPERATOR RULING 2026-10-02 (worklist #508defc2, "Clock the PR's plan only"): the 2026-09-26 rule above holds unchanged, but only over the plans `clock_scope` puts on the clock, the live PR's plan and the plans this branch ticked. The caller filters `offenders` to that scope before calling here.
     """
-    if not offenders:
-        return []
-    listed = ", ".join("%s (%d)" % (rel, n) for rel, n in offenders)
     return [
-        "P-A1 OPEN BOXES: %d plan(s) on this PR's clock (the queue head and the plans this branch ticked) "
-        "are unfinished and carry open boxes: %s. There is no threshold (operator ruling "
-        "2026-09-26): implement and tick every box, or finish the plan." % (len(offenders), listed)
+        Finding(
+            "P-A1 OPEN BOXES: %s (%d) is on this PR's clock (the queue head and the plans this "
+            "branch ticked), unfinished, with open boxes. There is no threshold (operator ruling "
+            "2026-09-26): implement and tick every box, or finish the plan." % (rel, n),
+            clock_key(rel),
+        )
+        for rel, n in offenders
     ]
 
 
@@ -497,6 +511,7 @@ def tick_findings(
     successor_of,
     authored_of,
     fileline_at=None,
+    late_rows=None,
 ):
     """P-A2, P-A3 and P-A4 over one branch's newly-done boxes. [] when they hold.
 
@@ -512,6 +527,8 @@ def tick_findings(
 
     REBASE. `successor_of` (see make_successor_of) maps a sha the branch's rebase rewrote to the commit that replaced it. A P-A3 `commit:` pointer that does not resolve is re-resolved through it before it is a finding, and a P-A4 head that is not an ancestor of the ticking commit is judged by its successor when it was rewritten. A head that was NOT rewritten (still reachable from HEAD) is judged as recorded, so an investigation genuinely written after the tick still fails.
           A rewritten head NO record maps (the branch tip at investigation time is usually a `chore(reviews)` commit, which is never itself reviewed, and the rebase leaves no child record behind it) falls back to time: the row's own `at` must precede the ticking commit's AUTHOR date, the one date a rebase preserves (`authored_of`). Neither readable is a finding.
+
+    LATE ROWS. A row written with `--plan-investigate --retro` (`"retro": true`) or a legacy `--plan-backfill` row (a `backfill` field; that verb is gone, its rows stay as history and keep counting) is the honest record of a box closed BEFORE it was investigated. P-A2 accepts it, P-A3 still re-resolves its pointers, and P-A4 is not run on a retro row because the row itself already says the ordering never happened. What it is NOT is silent: every such box is appended to `late_rows` as (rel, sig, "retro"|"backfill") and the caller prints them on every run, red or green. A retro row with no `commit:` pointer is a P-A2 finding: the verb refuses to write one, so its presence means the ledger was hand-edited.
 
     Every oracle is a parameter. That is not abstraction for its own sake: it is what lets the controls drive THIS function -- the one the real run calls -- against planted inputs, rather than a copy of it that could pass while the real one is broken.
     """
@@ -533,13 +550,31 @@ def tick_findings(
                 Finding(
                     "P-A2 %s box %s was closed with no row in agent/ledgers/plan-investigation.jsonl. "
                     "The rule is investigate, then implement, then tick -- so that a box already done "
-                    "is closed by finding it rather than by doing it again. Record what was looked at:"
-                    "\n    worklist.py --plan-investigate <me> %s %s <absent|present|partial> "
-                    "<kind>:<token> <kind>:<token> -- <note> --write" % (rel, sig, rel, sig),
+                    "is closed by finding it rather than by doing it again. The box is already ticked, "
+                    "so the only honest record left is a RETROACTIVE one, and this gate lists it on "
+                    "every run as closed before investigation. Name the implementing commit and say "
+                    "what the tree held before it (absent for new code, partial when part existed):"
+                    "\n    worklist.py --plan-investigate <me> %s %s <absent|partial|present> "
+                    "commit:<implementing-sha> <kind>:<token> -- <what the tree held before that "
+                    "commit, 120+ characters> --retro --write"
+                    "\n  Next time: --plan-investigate FIRST, then implement, then --plan-tick."
+                    % (rel, sig, rel, sig),
                     box_key("P-A2:no-row", rel, sig),
                 )
             )
             continue
+        is_retro = bool(row.get("retro"))
+        if late_rows is not None and (is_retro or row.get("backfill")):
+            late_rows.append((rel, sig, "retro" if is_retro else "backfill"))
+        if is_retro and not any(k == "commit" for k, _t in (row.get("pointers") or [])):
+            out.append(
+                Finding(
+                    "P-A2 %s box %s: its --retro investigation row carries no `commit:` pointer, "
+                    "which `--plan-investigate --retro` refuses to write, so the ledger line was "
+                    "edited by hand. Append a real one through the verb." % (rel, sig),
+                    box_key("P-A2:retro-shape", rel, sig),
+                )
+            )
         for kind, token in row.get("pointers") or []:
             ok, why = resolve_fn(kind, token)
             if not ok and kind == "commit":
@@ -562,6 +597,9 @@ def tick_findings(
                     )
                 )
         head = str(row.get("head") or "").strip()
+        if is_retro:
+            # P-A4 asks whether the investigation preceded the work. A retro row answers "no" in its own `retro` field, and late_rows prints that answer every run; judging it again here would only turn a disclosed fact into a red nobody can clear.
+            continue
         if head and commit and not ancestor_fn(head, commit):
             succ = successor_of(head)
             if succ is None and written_before(row.get("at"), authored_of(commit)):
@@ -601,6 +639,59 @@ def tick_findings(
                 )
             )
     return out
+
+
+def _late_print_is_unconditional(source=None):
+    """True when main() prints `late_rows_line(...)` OUTSIDE every `if`/`for`/`while`/`try`, i.e. on every run (fe588087.1: it was indented under `if base_plans is not None:` and vanished on a run without a base)."""
+    import ast  # noqa: PLC0415
+
+    if source is None:
+        with open(__file__, encoding="utf-8") as fh:
+            source = fh.read()
+    tree = ast.parse(source)
+    main_fn = next(
+        (n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main"), None
+    )
+    if main_fn is None:
+        return False
+
+    def is_print(node):
+        return (
+            isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and getattr(node.value.func, "id", "") == "print"
+            and any(
+                isinstance(a, ast.Call) and getattr(a.func, "id", "") == "late_rows_line"
+                for a in node.value.args
+            )
+        )
+
+    return any(is_print(n) for n in main_fn.body)
+
+
+def late_rows_line(late_rows, judged=True):
+    """The advisory printed on EVERY run, red or green: how many boxes this branch closed before investigating them.
+
+    Not a finding, because the late record is the honest repair and a red nobody can clear would only push the next session to skip it. Not silent either: a count of 0 is printed too, so a reader can tell "none" from "not looked at". With `judged=False` (no base ledger on this run, so no closed box was read) the line says "not judged" and never claims a count, whatever `late_rows` holds.
+    """
+    if not judged:
+        return "  P-A2 late records: not judged (no base ledger on this run, so no closed box was read)"
+    if not late_rows:
+        return (
+            "  P-A2 late records: 0 box(es) on this branch were closed before investigation "
+            "(no --retro row, and no legacy backfill row, among the judged boxes)"
+        )
+    kinds: dict[str, int] = {}
+    for _rel, _sig, kind in late_rows:
+        kinds[kind] = kinds.get(kind, 0) + 1
+    shape = ", ".join("%d %s" % (n, k) for k, n in sorted(kinds.items()))
+    boxes = ", ".join("%s#%s" % (rel, sig) for rel, sig, _k in late_rows)
+    return (
+        "  ADVISORY P-A2 late records: %d box(es) on this branch were CLOSED BEFORE INVESTIGATION "
+        "(%s row(s)), accepted on a record written after the work: %s. Next time: "
+        "--plan-investigate FIRST, then implement, then --plan-tick."
+        % (len(late_rows), shape, boxes)
+    )
 
 
 def vacuity_findings(n_plans_total, n_boxes_total, raw_ledger_rows):
@@ -739,6 +830,25 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "C8c: the finding does not name the plan and its count",
         "a.md (1)" in " ".join(clock_findings(offenders)),
+    )
+
+    # C8f/C8g/C8h -- ONE KEY PER PLAN (2026-10-13). The key is the plan's path, so a tick that leaves the plan open cannot move it, and a plan joining the clock cannot move another plan's key.
+    def clock_keys(offs):
+        return sorted(key_of(f) for f in clock_findings(offs))
+
+    two = [("agent/plans/PLAN-a.md", 3), ("agent/plans/PLAN-b.md", 1)]
+    caught(
+        "C8f: two plans on the clock were not keyed P-A1:<rel>, one key each",
+        clock_keys(two) == ["P-A1:agent/plans/PLAN-a.md", "P-A1:agent/plans/PLAN-b.md"],
+    )
+    caught(
+        "C8g: a third plan joining the clock moved a key of the two already on it",
+        clock_keys([*two, ("agent/plans/PLAN-c.md", 1)])
+        == [*clock_keys(two), "P-A1:agent/plans/PLAN-c.md"],
+    )
+    caught(
+        "C8h: CONTROL: a plan whose last box closed kept its key",
+        clock_keys(two[:1]) == ["P-A1:agent/plans/PLAN-a.md"],
     )
     caught(
         "C8d: a held plan was not reported (P-A8)",
@@ -1013,6 +1123,86 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "P-A4: an investigation row written after the implementation commit was not reported",
         any(f.startswith("P-A4") for f in got),
+    )
+
+    # RETRO -- the late record. A `--retro` row closes P-A2 for a box ticked before it was investigated, is exempt from P-A4 (it says so itself), and is LISTED in the advisory every run. Each half has a control that must fire the other way.
+    retro_row = dict(healthy_row, retro=True, retro_commit="C1", head="H-LATE", verdict="absent")
+
+    def judge_retro(row, ancestor):
+        late: list[tuple[str, str, str]] = []
+        found = tick_findings(
+            moved_to_done(healthy_base, healthy_head),
+            lambda _r, _s: "ran the gate, exit 0",
+            lambda _r, _s: row,
+            lambda _k, _t: (True, "ok"),
+            lambda _r, _s: "C1",
+            lambda _c: "2026-01-05",
+            lambda _a, _b: ancestor,
+            "2026-01-01",
+            lambda c: c,
+            lambda _c: "",
+            None,
+            late,
+        )
+        return found, late
+
+    got, late = judge_retro(retro_row, False)
+    caught("RETRO-a: a --retro row for a ticked box was still reported", not got)
+    caught(
+        "RETRO-b: a --retro row was accepted SILENTLY; the advisory list did not name its box",
+        late == [("p.md", "aaaaaaaa", "retro")],
+    )
+    caught(
+        "RETRO-c: the advisory line does not name the late box or say it was closed before investigation",
+        "p.md#aaaaaaaa" in late_rows_line(late)
+        and "CLOSED BEFORE INVESTIGATION" in late_rows_line(late),
+    )
+    caught(
+        "RETRO-d: an empty late list printed nothing countable",
+        "0 box(es)" in late_rows_line([]),
+    )
+    caught(
+        "RETRO-d2: a run with no base ledger claimed 0 late boxes instead of saying nothing was judged",
+        "not judged" in late_rows_line([], False) and "0 box(es)" not in late_rows_line([], False),
+    )
+    caught(
+        "RETRO-f: the late-records advisory print sits under a conditional in main(), so it is skipped when no base ledger is available",
+        _late_print_is_unconditional(),
+    )
+    caught(
+        "RETRO-g: CONTROL: the probe cannot tell a nested print from a top-level one",
+        not _late_print_is_unconditional(
+            "def main():\n    if x:\n        print(late_rows_line(r))\n"
+        )
+        and _late_print_is_unconditional("def main():\n    print(late_rows_line(r))\n"),
+    )
+    got, late = judge_retro(dict(healthy_row, head="H-LATE"), False)
+    caught(
+        "RETRO-e: CONTROL: a NON-retro row written after the work stopped being P-A4 once retro existed",
+        any(f.startswith("P-A4") for f in got) and late == [],
+    )
+    got, _late = judge_retro(
+        dict(retro_row, pointers=[["fileline", "x.py:1"], ["gate", "g"]]), False
+    )
+    caught(
+        "RETRO-f: a --retro row with no `commit:` pointer (a hand-edited ledger line) was accepted",
+        any(key_of(f).startswith("P-A2:retro-shape:") for f in got),
+    )
+    _no_row = tick_findings(
+        moved_to_done(healthy_base, healthy_head),
+        lambda _r, _s: "ran the gate, exit 0",
+        lambda _r, _s: None,
+        lambda _k, _t: (True, "ok"),
+        lambda _r, _s: "C1",
+        lambda _c: "2026-01-05",
+        lambda _a, _b: True,
+        "2026-01-01",
+        lambda c: c,
+        lambda _c: "",
+    )
+    caught(
+        "RETRO-g: the P-A2 remedy for an already-ticked box does not name --retro, so it prints a command that cannot run",
+        any(f.startswith("P-A2") and "--retro --write" in f for f in _no_row),
     )
 
     # REBASE -- every repository here merges by rebase, so a row's recorded head and its `commit:` pointers are rewritten after they were written. The review records' Patch-Id maps a rewritten sha to its successor; a head that was never rewritten is judged as recorded.
@@ -1706,6 +1896,7 @@ def main(argv=None) -> int:
     # ---- P-A2/P-A3/P-A4: the forward-only proof over what this branch actually closed.
     judged = []
     bound = []
+    late_rows: list[tuple[str, str, str]] = []
     if base_plans is not None:
         judged = moved_to_done(base_plans, head_plans)
         history = planrec.ledger_history(REPO_ROOT)
@@ -1746,8 +1937,10 @@ def main(argv=None) -> int:
                 successor_of,
                 lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%aI", commit),
                 lambda commit, token: fileline_at_commit(REPO_ROOT, commit, token),
+                late_rows,
             )
         )
+    print(late_rows_line(late_rows, base_plans is not None))
 
     # P-A1's scope, printed on red and green alike so a collapsed scope is visible rather than read as a drained corpus.
     if not scope_problem:

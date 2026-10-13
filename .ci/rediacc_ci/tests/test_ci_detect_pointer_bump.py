@@ -31,13 +31,13 @@ from rediacc_ci.ci import detect_pointer_bump as port
 from rediacc_ci.core import gh_retry as _gh_retry
 from rediacc_ci.core import ghx as _ghx
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "ci" / "detect-pointer-bump.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "ci" / "detect_pointer_bump.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -219,7 +219,6 @@ def fixture(
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
     if TWIN.is_file():  # only a re-freeze from bash runs it (PLAN-retire-bash-oracles B3)
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "ci" / TWIN.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -413,10 +412,10 @@ def _agree(old, new, label: str) -> None:
         f"old stdout: {old_proc.stdout!r}\nold stderr: {old_proc.stderr!r}\n"
         f"new stdout: {new_proc.stdout!r}\nnew stderr: {new_proc.stderr!r}"
     )
-    assert _mask(new_proc.stdout) == _mask(old_proc.stdout), (
+    assert _mask(as_twin(new_proc.stdout)) == _mask(old_proc.stdout), (
         f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{new_proc.stdout!r}"
     )
-    assert _mask(new_proc.stderr) == _mask(old_proc.stderr), (
+    assert _mask(as_twin(new_proc.stderr)) == _mask(old_proc.stderr), (
         f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{new_proc.stderr!r}"
     )
     assert new_calls == old_calls, f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"

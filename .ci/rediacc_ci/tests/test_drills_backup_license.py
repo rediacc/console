@@ -25,7 +25,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import run_verbs
-from rediacc_ci.drills import backup, lib, wire
+from rediacc_ci.drills import backup, lib, vm_ssh, wire
 from rediacc_ci.drills import license as license_drill
 from rediacc_ci.tests import differential as diff
 
@@ -63,7 +63,6 @@ def root(tmp_path: pathlib.Path) -> pathlib.Path:
         "scripts/drills/lib.sh",
         "scripts/drills/backup.sh",
         "scripts/drills/license.sh",
-        ".ci/scripts/lib/common.sh",
         ".ci/config/well-known.env",
         ".ci/config/well-known.generated.sh",
     ):
@@ -120,6 +119,7 @@ def _bash(root: pathlib.Path, script: str, args: list[str], env: dict[str, str])
         twin,
         ["args=%r" % (args,), "env=%r" % (sorted(keyed.items()),)],
         go,
+        port=lambda: _port(root, script, args, env),
         work=(str(root.parent),),
     )
 
@@ -980,3 +980,142 @@ def test_the_run_verbs_route_license_and_backup_to_the_ports() -> None:
     assert run_verbs.DRILL_MODULES["license"] == "rediacc_ci.drills.license"
     assert run_verbs.DRILL_MODULES["backup"] == "rediacc_ci.drills.backup"
     assert list(run_verbs.DRILL_ARMS) == ["universe", "transfer", "license", "backup"]
+
+
+# ---------------------------------------------------------------------- Ceph is asked of the workers (Rule T 6)
+
+
+class _CephLicense(license_drill.License):
+    """A License whose ssh answers the Ceph client probe per host from a fixed table."""
+
+    answers: typing.ClassVar[dict[str, tuple[int, str]]] = {}
+    asked: typing.ClassVar[list[tuple[str, str]]] = []
+
+    def ssh_out(self, host: str, command: str, stdin: str | None = None) -> tuple[int, str]:
+        del stdin
+        type(self).asked.append((host, command))
+        return self.answers.get(host, (0, ""))
+
+
+def _ceph_subject(
+    legs: str, answers: dict[str, tuple[int, str]], vms_running: bool = True
+) -> tuple[lib.Drill, _CephLicense]:
+    drill = lib.Drill("license", selftest=False, keep_work=False)
+    drill.init()
+    opts = license_drill.Options()
+    opts.legs = legs
+    _CephLicense.answers, _CephLicense.asked = answers, []
+    lic = _CephLicense(drill, opts)
+    lic.ceph_vms_running = vms_running
+    return drill, lic
+
+
+def _asked_hosts() -> list[str]:
+    assert all(cmd == license_drill.CEPH_CLIENT_PROBE for _h, cmd in _CephLicense.asked)
+    return [host for host, _cmd in _CephLicense.asked]
+
+
+W11, W12 = "192.168.111.11", "192.168.111.12"
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_delta_a_running_ceph_vm_without_a_worker_client_refuses_leg_a(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Rule T 6: the bash called Ceph available because .21 was running; bare Ceph VMs from a default `ops up` satisfy that while no worker has /etc/ceph or rbd."""
+    drill, lic = _ceph_subject("a,b", {W12: (1, "no rbd binary\n")})
+    try:
+        with pytest.raises(SystemExit) as exc:
+            lic.preflight_ceph()
+        assert exc.value.code == 1
+        err = capsys.readouterr().err
+        assert "%s: no rbd binary" % W12 in err
+        assert "PROVISION_CEPH_CLUSTER=1" in err
+        assert _asked_hosts() == [W11, W12]
+        assert lic.ceph_available is False
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_the_ceph_probe_names_an_ssh_failure_rather_than_a_missing_client(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    drill, lic = _ceph_subject("a", {W11: (255, "")})
+    try:
+        with pytest.raises(SystemExit):
+            lic.preflight_ceph()
+        err = capsys.readouterr().err
+        assert "ssh to it failed (exit 255)" in err
+        assert "no rbd binary" not in err
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_workers_with_the_client_make_ceph_available(capsys: pytest.CaptureFixture[str]) -> None:
+    drill, lic = _ceph_subject("a", {})
+    try:
+        lic.preflight_ceph()
+        assert lic.ceph_available is True
+        assert _asked_hosts() == [W11]  # leg b is not selected, so the second worker is not asked
+        assert "ceph available: yes" in capsys.readouterr().out
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_without_leg_a_a_missing_client_is_noted_not_refused(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    drill, lic = _ceph_subject("c,d", {W11: (1, "no /etc/ceph/ceph.conf\n")})
+    try:
+        lic.preflight_ceph()
+        assert lic.ceph_available is False
+        assert "ceph available: no (%s: no /etc/ceph/ceph.conf)" % W11 in capsys.readouterr().out
+    finally:
+        drill.teardown()
+
+
+@pytest.mark.usefixtures("drill_root")
+def test_no_ceph_vms_means_no_worker_is_asked() -> None:
+    drill, lic = _ceph_subject("c", {}, vms_running=False)
+    try:
+        lic.preflight_ceph()
+        assert _asked_hosts() == []
+        assert lic.ceph_available is False
+    finally:
+        drill.teardown()
+
+
+def test_the_ceph_client_probe_reports_each_gap(tmp_path: pathlib.Path) -> None:
+    """The probe text itself, run by a real shell with /etc/ceph and PATH redirected into a scratch tree."""
+    root = tmp_path / "r"
+    (root / "bin").mkdir(parents=True)
+    probe = license_drill.CEPH_CLIENT_PROBE.replace("/etc/ceph", str(root / "etc/ceph"))
+
+    def run() -> tuple[int, str]:
+        proc = subprocess.run(
+            [BASH, "-c", probe],
+            env={"PATH": str(root / "bin")},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return proc.returncode, proc.stdout.strip().replace(str(root), "")
+
+    assert run() == (1, "no /etc/ceph/ceph.conf")
+    (root / "etc/ceph").mkdir(parents=True)
+    (root / "etc/ceph/ceph.conf").write_text("[global]\n")
+    assert run() == (1, "no rbd binary")
+    rbd = root / "bin/rbd"
+    rbd.write_text("#!/bin/sh\n")
+    rbd.chmod(0o755)
+    assert run() == (0, "")
+
+
+def test_the_license_drill_ssh_is_the_shared_one_identity_argv() -> None:
+    opts = license_drill.Options()
+    opts.ssh_user, opts.ssh_key = "alice", "/k/id_rsa"
+    lic = license_drill.License(lib.Drill("license"), opts)
+    assert lic.ssh_argv(W11, "true") == vm_ssh.ssh_argv("alice", "/k/id_rsa", W11, "true")

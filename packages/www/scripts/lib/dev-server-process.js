@@ -172,9 +172,9 @@ export function createDevServer({ repoRoot, port }) {
     }
   }
 
-  // PLAYER SELECTORS, verified against packages/www/src/components/TutorialVideoPlayer.tsx at HEAD (2026-08-28): the player root is `.tvp-shell > .tvp-root`, hydrated by tutorial-video-hydrate.ts onto `.tutorial-video-container[data-video-src]` (docs) or `.video-player-mount[data-video-src]` (solution-page hero). Plyr wraps the real
-  // `<video>` and renders standard `[data-plyr="X"]` control buttons (controls list at
-  // TutorialVideoPlayer.tsx:362-376 includes 'play' and 'fullscreen'), toggling `.plyr--playing` / `.plyr--fullscreen-active` on the `.plyr` wrapper it inserts. This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/ `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) -- see agent/PLAN-fix-tutorial-player-debug-hook-attachment.md for the full trace.
+  // PLAYER SELECTORS, verified against packages/www/src/components/TutorialVideoPlayer.tsx (2026-08-28; skin selectors re-verified 2026-10-08): the player root is `.tvp-shell > .tvp-root`, built by tutorial-video-hydrate.ts on the first press of `.tutorial-video-container[data-video-src]` (docs, in place; its poster control is `.tutorial-video-play`) or `.video-player-mount[data-video-src]` (solution-page hero, in the theater). No mount builds a player on load (4bc0f5141, 2026-10-08). Video.js 10's packaged `VideoSkin` renders the skin root `.media-skin` (our class `.tvp-skin`) with the real
+  // `<video>` as a direct child and one control per kind: `.media-play-button` and `.media-fullscreen-button` (agent/plans/PLAN-plyr-to-videojs.md, 2026-10-08). Playback state is read from the media element (`video.paused`) or the play button's `[data-started]`/`[data-paused]`, and fullscreen from `document.fullscreenElement`, which is the `.media-skin` root.
+  // This replaces the TerminalPlayer-era `.ap-control-bar`/`.terminal-tutorial`/ `window.__tutorialDebug` surface, deleted wholesale in 80a000965 (2026-05-27) -- see agent/PLAN-fix-tutorial-player-debug-hook-attachment.md for the full trace.
 
   return {
     start,

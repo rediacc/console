@@ -50,7 +50,6 @@ from rediacc_ci.well_known import ADMIN_EMAIL_DEFAULT, IMAGE_REGISTRY
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "infra" / "ci-env.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "infra" / "ci_env.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -132,7 +131,6 @@ def _tree(base: pathlib.Path) -> pathlib.Path:
     (base / ".ci" / "rediacc_ci" / "infra").mkdir(parents=True)
     (base / ".ci" / "docker" / "ci").mkdir(parents=True)
     shutil.copy2(TWIN, base / ".ci" / "scripts" / "infra" / "ci-env.sh")
-    shutil.copy2(COMMON, base / ".ci" / "scripts" / "lib" / "common.sh")
     (base / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", base / ".ci" / "config" / "well-known.env"
@@ -246,8 +244,8 @@ def _sides(name: str, env_extra: dict[str, str] | None = None, *, dump: bool = T
 # --------------------------------------------------------------------------- Controls: a comparison against a file that is not there proves nothing. ---------------------------------------------------------------------------
 
 
-def test_all_three_files_exist_where_this_file_says_they_do() -> None:
-    for path in (TWIN, COMMON, PORT):
+def test_both_files_exist_where_this_file_says_they_do() -> None:
+    for path in (TWIN, PORT):
         assert path.is_file(), path
 
 
@@ -285,10 +283,8 @@ def test_the_twin_is_sourced_by_one_script_and_executed_by_none() -> None:
             sourcing.append(path)
         elif re.search(r'(bash|sh|\./)\s*"?[^\s"]*ci-env\.sh', text):
             executed.append(hit)
-    # ci-start-account.sh was retired under PLAN-retire-bash-oracles B3; its port sources nothing.
-    assert sorted(set(sourcing)) == [
-        ".ci/scripts/infra/ci-start-elite.sh",
-    ], sourcing
+    # ci-start-account.sh was retired under PLAN-retire-bash-oracles B3 and ci-start-elite.sh is a one-line shim over its port (W11-C): nothing sources the twin, and the port reads it through an `env -0` round trip.
+    assert sorted(set(sourcing)) == [], sourcing
     assert executed == [], executed
 
 

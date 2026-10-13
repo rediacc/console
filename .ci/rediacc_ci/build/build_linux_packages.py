@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/build-linux-packages.sh`.
 
-Builds every Linux package -- deb, rpm, apk, archlinux, each for amd64 and arm64 -- by fanning out eight invocations of `build-linux-pkg.sh`, which builds exactly ONE (format, arch) pair. Driven by `.github/workflows/cd-stage.yml:154` ("Build Linux packages") with `NEXT_VERSION`, `RELEASE_GPG_PRIVATE_KEY`, `RELEASE_GPG_PASSPHRASE` and `RELEASE_SIGNING_REQUIRED: '1'`.
+Builds every Linux package -- deb, rpm, apk, archlinux, each for amd64 and arm64 -- by fanning out eight invocations of `rediacc_ci.build.build_linux_pkg`, which builds exactly ONE (format, arch) pair. Driven by `.github/workflows/cd-stage.yml:154` ("Build Linux packages") with `NEXT_VERSION`, `RELEASE_GPG_PRIVATE_KEY`, `RELEASE_GPG_PASSPHRASE` and `RELEASE_SIGNING_REQUIRED: '1'`.
 
 WHY THE MATRIX LIVES HERE, from the twin's own header: keeping the eight invocations and the Alpine/musl substitution in one file means they are written down once instead of being duplicated per workflow.
 
@@ -11,7 +11,7 @@ installs cleanly onto Alpine and fails at exec time, and nothing here says so.
 -----------------------------------------------------------------------------
 WHAT IS SHELLED OUT TO, AND WHAT IS NOT
 -----------------------------------------------------------------------------
-SHELLED OUT: `.ci/scripts/build/build-linux-pkg.sh`, eight times, by the same repo-root-relative path the twin uses. It is emphatically NOT reimplemented: it owns the nfpm config, the GPG signing decision, the arch-name translation and the output naming, and a Python copy of it would be a second source of truth for what a shipped `.deb` contains. It is also NOT this wave's port
+SHELLED OUT: `.ci/rediacc_ci/build/build_linux_pkg.py`, eight times, run as a script by its repo-root-relative path under the interpreter that runs this file (the bash `build-linux-pkg.sh` it replaced is retired behind its golden; PLAN-retire-bash-oracles B3). It is emphatically NOT reimplemented: it owns the nfpm config, the GPG signing decision, the arch-name translation and the output naming, and a Python copy of it would be a second source of truth for what a shipped `.deb` contains. It is also NOT this wave's port
 target.
 
 NOT SHELLED OUT: `mkdir -p dist/packages`, and the `${pair%%:*}` / `${pair##*:}`
@@ -93,7 +93,7 @@ MUSL_INFIX = "rdc-linux-musl-"
 
 # The one format that is musl-linked, and the sibling script every invocation goes through.
 MUSL_FORMAT = "apk"
-PKG_SCRIPT = ".ci/scripts/build/build-linux-pkg.sh"
+PKG_SCRIPT = ".ci/rediacc_ci/build/build_linux_pkg.py"
 OUTPUT_DIR = "dist/packages"
 
 
@@ -128,6 +128,7 @@ def invocations(version: str) -> Iterator[list[str]]:
     for fmt in FORMATS:
         for binary, arch in BINARY_ARCH_PAIRS:
             yield [
+                sys.executable,
                 PKG_SCRIPT,
                 "--binary",
                 binary_for(binary, fmt),
@@ -142,12 +143,19 @@ def invocations(version: str) -> Iterator[list[str]]:
             ]
 
 
+def _delegate_env(root: pathlib.Path) -> dict[str, str]:
+    """The environment of one delegate run: this process's, with the checkout's `.ci` first on `PYTHONPATH` so the delegate's `rediacc_ci` imports resolve however this module was started."""
+    inherited = os.environ.get("PYTHONPATH", "")
+    ci_dir = str(root / ".ci")
+    return {**os.environ, "PYTHONPATH": ci_dir + (os.pathsep + inherited if inherited else "")}
+
+
 def main() -> int:
     # STEP 1: refuse without a version. `:?` fires on unset OR empty; see the module docstring for why the message names this file.
     version = os.environ.get("NEXT_VERSION", "")
     if not version:
         print(
-            "%s: line %d: NEXT_VERSION: build-linux-packages.sh: NEXT_VERSION must be set"
+            "%s: line %d: NEXT_VERSION: rediacc_ci.build.build_linux_packages: NEXT_VERSION must be set"
             % (__file__, sys._getframe().f_lineno),
             file=sys.stderr,
             flush=True,
@@ -174,20 +182,25 @@ def main() -> int:
     for argv in invocations(version):
         sys.stdout.flush()
         sys.stderr.flush()
-        try:
-            completed = subprocess.run(argv, check=False)
-        except PermissionError:
-            # bash's "cannot execute": the file is there and not runnable.
-            return 126
-        except OSError:
-            # bash's "command not found", which is what a missing build-linux-pkg.sh produces. The DIAGNOSTIC differs (bash names itself and the line); the status is the one callers branch on.
+        if not (root / PKG_SCRIPT).is_file():
+            # The status a missing delegate has always had, 127, which the workflow step branches on; the interpreter itself would answer 2. The DIAGNOSTIC names this program and the delegate's path, as bash named itself and the delegate's path.
             print(
                 "%s: line %d: %s: No such file or directory"
-                % (__file__, sys._getframe().f_lineno, argv[0]),
+                % (__file__, sys._getframe().f_lineno, PKG_SCRIPT),
                 file=sys.stderr,
                 flush=True,
             )
             return 127
+        try:
+            completed = subprocess.run(argv, check=False, env=_delegate_env(root))
+        except OSError as exc:
+            print(
+                "%s: line %d: %s: %s"
+                % (__file__, sys._getframe().f_lineno, argv[0], exc.strerror or exc),
+                file=sys.stderr,
+                flush=True,
+            )
+            return 126 if isinstance(exc, PermissionError) else 127
         if completed.returncode != 0:
             return completed.returncode
     return 0

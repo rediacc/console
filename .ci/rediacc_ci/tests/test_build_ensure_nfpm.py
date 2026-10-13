@@ -26,6 +26,8 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import ensure_nfpm
+from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -94,7 +96,8 @@ def build_fixture(
     (fixture / ".devcontainer").mkdir(parents=True, exist_ok=True)
     (fixture / "bin").mkdir(parents=True, exist_ok=True)
 
-    shutil.copy2(TWIN, fixture / TWIN_REL)
+    if diff.regolden_mode(TWIN_REL) == "bash":
+        shutil.copy2(TWIN, fixture / TWIN_REL)
     if port_source is None:
         shutil.copy2(PORT, fixture / PORT_REL)
     else:
@@ -168,14 +171,8 @@ def _run(argv: list[str], fixture: pathlib.Path) -> subprocess.CompletedProcess[
     )
 
 
-def run_both(
-    fixture: pathlib.Path,
-) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
-    """The two sides, each from the SAME starting state.
-
-    The cache is snapshotted and restored between them, and that is not housekeeping: the twin runs first and a successful cold-cache run LEAVES a binary behind, so without the reset the port would take the warm-cache branch and "agree" by printing the same directory for a completely different reason. Caught by this file's own first run, which reported an empty stderr against the
-    twin's `fetching` line.
-    """
+def _old_side(fixture: pathlib.Path) -> subprocess.CompletedProcess[str]:
+    """The twin from the fixture's starting state, which is put back afterwards. Its answer comes from the golden (PLAN-retire-bash-oracles B3); this is how it was recorded."""
     cache = fixture / ".ci" / "cache"
     snapshot = fixture / ".cache-snapshot"
     if snapshot.exists():
@@ -187,6 +184,23 @@ def run_both(
         shutil.rmtree(cache)
     if snapshot.exists():
         shutil.copytree(snapshot, cache, symlinks=True)
+    return old
+
+
+def run_both(
+    fixture: pathlib.Path,
+) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
+    """The two sides, each from the SAME starting state.
+
+    The cache is snapshotted and restored between them, and that is not housekeeping: the twin runs first and a successful cold-cache run LEAVES a binary behind, so without the reset the port would take the warm-cache branch and "agree" by printing the same directory for a completely different reason. Caught by this file's own first run, which reported an empty stderr against the
+    twin's `fetching` line.
+    """
+    old = diff.twin_result(
+        TWIN_REL,
+        ["run_both"],
+        lambda: _old_side(fixture),
+        work=(str(fixture), str(fixture.parent)),
+    )
     new = _run(["python3", str(fixture / PORT_REL)], fixture)
     return old, new
 
@@ -200,38 +214,24 @@ def assert_same(
         old.stderr,
     )
     assert new.stdout == old.stdout, (old.stdout, new.stdout)
-    assert new.stderr == old.stderr, (old.stderr, new.stderr)
+    assert as_twin(new.stderr) == old.stderr, (old.stderr, new.stderr)
 
 
 # --------------------------------------------------------------------------- The real tree ---------------------------------------------------------------------------
 
 
-def test_real_tree_agrees_byte_for_byte(tmp_path: pathlib.Path) -> None:
-    """Both sides in THIS checkout, with a refusing `curl` so nothing downloads.
+def test_real_constants_agree_byte_for_byte(tmp_path: pathlib.Path) -> None:
+    """Both sides against the REAL `.ci/config/constants.sh` pins and `toolchain.env`, a cold cache and a refusing `curl` so nothing downloads.
 
-    Whether the cache here is warm (both print the cache directory, exit 0) or cold (both print the `fetching` line and exit 22 out of the shim), the two sides must agree, and this is the only case that runs against the real `.ci/config/constants.sh` in its real location.
+    A fixture root with an empty cache, because the checkout's own cache is warm on some machines and cold on others and a frozen twin answer cannot depend on which. Both sides print the `fetching` line and exit 22 out of the shim.
     """
-    shim = tmp_path / "bin"
-    shim.mkdir(parents=True, exist_ok=True)
-    (shim / "curl").write_text(CURL_REFUSE, encoding="utf-8")
-    (shim / "curl").chmod(0o755)
-    env = {
-        "PATH": os.pathsep.join([str(shim), os.environ.get("PATH", "")]),
-        "HOME": os.environ.get("HOME", "/tmp"),
-        "LC_ALL": "C",
-        "PYTHONDONTWRITEBYTECODE": "1",
-    }
-    kwargs = {"env": env, "cwd": str(ROOT), "capture_output": True, "text": True}
-    old = subprocess.run(  # type: ignore[call-overload]
-        ["bash", str(TWIN)], timeout=120, check=False, **kwargs
-    )
-    new = subprocess.run(  # type: ignore[call-overload]
-        ["python3", str(PORT)], timeout=120, check=False, **kwargs
-    )
-    assert new.returncode == old.returncode
-    assert new.stdout == old.stdout
-    assert new.stderr == old.stderr
-    assert old.returncode in (0, 22)
+    fixture = build_fixture(tmp_path, curl=CURL_REFUSE)
+    real_constants = CONSTANTS.read_bytes()
+    (fixture / ".ci" / "config" / "constants.sh").write_bytes(real_constants)
+    old, new = run_both(fixture)
+    assert_same(old, new)
+    assert old.returncode == 22
+    assert old.stdout == ""
 
 
 # --------------------------------------------------------------------------- The three cold-cache paths ---------------------------------------------------------------------------
@@ -308,7 +308,6 @@ def test_an_unpinned_architecture_is_refused_through_a_path_shim(
 
 def test_the_port_reads_uname_through_path_not_the_syscall() -> None:
     """The claim above, made against the two real files rather than a fixture."""
-    assert '"$(uname -m)"' in TWIN.read_text(encoding="utf-8")
     source = PORT.read_text(encoding="utf-8")
     assert '["uname", "-m"]' in source
     assert "os.uname()" not in source.split('"""')[2], "the code, not the docstring"
@@ -423,25 +422,14 @@ def test_a_planted_fix_of_defect_1_is_caught_by_the_differential(
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
 
 
-def test_pure_helpers_match_the_twins_literals() -> None:
-    twin = TWIN.read_text(encoding="utf-8")
+def test_pure_helpers_answer_the_twins_literals() -> None:
     assert ensure_nfpm.tarball_name("2.45.0") == "nfpm_2.45.0_Linux_x86_64.tar.gz"
-    assert 'TARBALL="nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"' in twin
     assert ensure_nfpm.download_url("2.45.0", "t.tar.gz") == (
         "https://github.com/goreleaser/nfpm/releases/download/v2.45.0/t.tar.gz"
-    )
-    assert (
-        'URL="https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/${TARBALL}"'
-        in twin
     )
     assert ensure_nfpm.is_pinned_arch("x86_64")
     assert ensure_nfpm.is_pinned_arch("amd64")
     assert not ensure_nfpm.is_pinned_arch("aarch64")
-    assert "x86_64 | amd64)" in twin
-    assert ensure_nfpm.unpinned_arch_message("riscv64") in twin.replace("$ARCH", "riscv64")
-    assert ensure_nfpm.fetching_message("2.45.0", "x86_64") in twin.replace(
-        "${NFPM_VERSION}", "2.45.0"
-    ).replace("${ARCH}", "x86_64")
 
 
 def test_the_pin_names_are_the_ones_constants_sh_defines() -> None:
@@ -456,5 +444,24 @@ def test_the_pin_names_are_the_ones_constants_sh_defines() -> None:
 
 def test_bin_dir_is_the_twins_cache_path() -> None:
     assert ensure_nfpm.bin_dir(ROOT) == ROOT / ".ci" / "cache" / "bin"
-    assert 'BIN_DIR="$REPO_ROOT/.ci/cache/bin"' in TWIN.read_text(encoding="utf-8")
     assert ensure_nfpm.repo_root() == ROOT
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `ensure-nfpm.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert ensure_nfpm.fetching_message("2.45.0", "x86_64").startswith(
+        "rediacc_ci.build.ensure_nfpm: "
+    )
+
+
+def test_the_two_messages_are_the_twins_text_up_to_the_prefix() -> None:
+    """Review findings db7749af.1 and db7749af.2: the docstrings say each message is the twin's `:58`/`:66` text with the port's prefix in place of `ensure-nfpm:`. Both halves pinned: the port's prefix, and the twin's bytes once `as_twin` maps it back."""
+    unpinned = ensure_nfpm.unpinned_arch_message("arm64")
+    fetching = ensure_nfpm.fetching_message("2.45.0", "x86_64")
+    for message in (unpinned, fetching):
+        assert message.startswith("rediacc_ci.build.ensure_nfpm: "), message
+    assert as_twin(unpinned) == (
+        "ensure-nfpm: no pinned checksum for arm64 in .ci/config/constants.sh -- "
+        "add one rather than downloading unverified bytes"
+    )
+    assert as_twin(fetching) == "ensure-nfpm: fetching nfpm 2.45.0 for x86_64"

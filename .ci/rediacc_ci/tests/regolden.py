@@ -12,10 +12,11 @@ answer; the goldens are written once pytest returns. A gate-test `BASH_TWIN` (`t
 REFUSES:
   * without `--reason`, unconditionally. It is stamped as `intentional: <reason>` on every record whose value moved; a first freeze moves nothing and writes no marker.
   * `--source bash` for a twin whose `.sh` is gone: there is nothing left to freeze from.
+  * `--source bash` for a SHIMMED twin (`differential.SHIMMED_TWINS`): its `.sh` is a one-line shim over the port, so a bash freeze would record the port as bash.
   * when the recording run is not green. A freeze taken from a red differential would enshrine the disagreement as the spec.
   * when no module names the twin, or the run recorded nothing for it: a regolden that touched no golden is not a regolden.
 
-`-k <expr>` narrows a re-record to the cases a Rule-T fix moved, so the reason is stamped only where it is true; every unselected record is carried over byte-for-byte. Without `-k` a key the run never asked for is dropped (and counted), because the run covered every case there is.
+`-k <expr>` narrows a re-record to the cases a Rule-T fix moved, so the reason is stamped only where it is true; every unselected record is carried over byte-for-byte. When the carried records were recorded from the other source, the header's `source` reads `mixed` rather than claiming the whole file for this run's source. Without `-k` a key the run never asked for is dropped (and counted), because the run covered every case there is.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ import argparse
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 
@@ -56,19 +58,46 @@ def _reexec_under_pytest() -> int:
 
     pytest is not on the system python here; the bootstrap installs it as a uv tool (`$PYTEST_BIN`, else `.ci/cache/toolchain/uv-tools/bin/pytest`), and that script's shebang names the interpreter whose site-packages hold it. A missing tool is a loud failure with the fix, never a traceback.
     """
-    candidate = os.environ.get("PYTEST_BIN") or str(
-        ROOT / ".ci/cache/toolchain/uv-tools/bin/pytest"
-    )
-    try:
-        with open(candidate, encoding="utf-8") as fh:
-            shebang = fh.readline().strip()
-    except OSError:
-        shebang = ""
-    interpreter = shebang[2:].split()[0] if shebang.startswith("#!") else ""
-    if not interpreter or not os.access(interpreter, os.X_OK) or interpreter == sys.executable:
+    override = os.environ.get("PYTEST_BIN", "")
+    wrapper = str(ROOT / ".ci/cache/toolchain/uv-tools/bin/pytest")
+    # The bootstrap's `bin/pytest` is a bash core-lease WRAPPER (`#!/usr/bin/env bash`), so its shebang names `env`, not python (2026-10-08: `env: unexpected argument '-m'`). An explicit $PYTEST_BIN wins (review finding b0d7fcf0.1), then the tool venv's own interpreter, then the wrapper's shebang; a shebang counts only when it names a python.
+    venv_py = ROOT / ".ci/cache/toolchain/uv-tools/pytest/bin/python"
+    tried: list[str] = []
+
+    def shebang_python(path: str) -> str:
+        tried.append(path)
+        try:
+            with open(path, encoding="utf-8") as fh:
+                shebang = fh.readline().strip()
+        except OSError:
+            return ""
+        words = shebang[2:].split() if shebang.startswith("#!") else []
+        if words and os.path.basename(words[0]) == "env":
+            # `#!/usr/bin/env python3` names its interpreter in the next non-option, non-assignment word, resolved on PATH.
+            rest = [w for w in words[1:] if not w.startswith("-") and "=" not in w]
+            words = [shutil.which(rest[0]) or rest[0]] if rest else []
+        named = words[0] if words else ""
+        return named if os.path.basename(named).startswith("python") else ""
+
+    interpreter = shebang_python(override) if override else ""
+    if override and not interpreter:
+        # An explicit override that names no python is refused, never quietly replaced by the tool venv (review finding 7caaf877.1).
         print(
-            "regolden: pytest is not importable and no bootstrap pytest was found at %s.\n"
-            "  fix: bash .ci/bootstrap.sh   (then re-run this command)" % candidate,
+            "regolden: $PYTEST_BIN=%s is not a script whose shebang names a python interpreter; "
+            "point it at one or unset it." % override,
+            file=sys.stderr,
+        )
+        return 77
+    if not interpreter:
+        tried.append(str(venv_py))
+        interpreter = str(venv_py) if os.access(venv_py, os.X_OK) else ""
+    if not interpreter and not override:
+        interpreter = shebang_python(wrapper)
+    if not interpreter or not os.access(interpreter, os.X_OK) or interpreter == sys.executable:
+        # Every path looked at is named, so the message never points at only the wrapper when the venv is what is missing (b0d7fcf0.2).
+        print(
+            "regolden: pytest is not importable and no bootstrap pytest interpreter was found (looked at: %s).\n"
+            "  fix: bash .ci/bootstrap.sh   (then re-run this command)" % ", ".join(tried),
             file=sys.stderr,
         )
         return 77
@@ -106,6 +135,13 @@ def main(argv: list[str] | None = None) -> int:
 
     files: list[str] = []
     for twin in args.twins:
+        if args.source == "bash" and twin in diff.SHIMMED_TWINS:
+            print(
+                "regolden: %s is a shim over its port; its bash is frozen and gone, so "
+                "--source bash would record the port as bash. Use --source port." % twin,
+                file=sys.stderr,
+            )
+            return 2
         if args.source == "bash" and not (ROOT / twin).is_file():
             print(
                 "regolden: %s does not exist; there is no bash left to freeze" % twin,

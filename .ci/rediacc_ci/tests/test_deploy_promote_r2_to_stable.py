@@ -26,6 +26,7 @@ from rediacc_ci.deploy import r2_promote
 from rediacc_ci.quality import python_env_registry
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import r2_promote_fake as fake
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -34,7 +35,6 @@ if typing.TYPE_CHECKING:
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/promote-r2-to-stable.sh"
 TWIN = ROOT / TWIN_REL
-PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "promote_r2_to_stable.py"
 MODULE = "rediacc_ci.deploy.promote_r2_to_stable"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -497,7 +497,7 @@ def test_each_required_variable_refuses_as_the_twin_does(tmp_path, missing) -> N
     tail = "%s: %s: %s must be set\n" % (missing, port.SELF, missing)
     assert old.returncode == proc.returncode == 1
     assert old.stdout == proc.stdout == ""
-    assert old.stderr.endswith(tail), repr(old.stderr)
+    assert old.stderr.endswith(as_twin(tail)), repr(old.stderr)
     assert proc.stderr == tail, repr(proc.stderr)
     assert records == []
 
@@ -576,10 +576,11 @@ def test_endpoint_args_reproduces_the_unquoted_word_split() -> None:
     assert port.endpoint_args("a b") == ["--endpoint-url", "a", "b"]
 
 
-def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
-    assert port.PURGE_SCRIPT_RELATIVE == ".ci/scripts/deploy/cf-purge-urls.sh"
-    assert PURGE.is_file()
-    assert port.purge_argv("z")[-2:] == ["--zone", "z"]
+def test_the_purge_is_the_in_process_cf_purge_urls_port() -> None:
+    """The purge script is retired: the module calls `cf_purge_urls.purge` and keeps no script path."""
+    assert port.cf_purge_urls.__name__ == "rediacc_ci.deploy.cf_purge_urls"
+    assert not hasattr(port, "PURGE_SCRIPT_RELATIVE")
+    assert not hasattr(port, "purge_argv")
 
 
 def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
@@ -756,3 +757,9 @@ def test_mutation_control_the_bare_rpm_repodata_patterns_are_caught(tmp_path) ->
     root, _proc, records = run(tmp_path, plant_port=str(planted))
     assert stable_of("rpm/edge/repodata/31cd3dfa-primary.xml.gz") not in fake.bucket_keys(root, "")
     assert _phase_order_problems(records) != []
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.promote_r2_to_stable"
+    assert port.__name__ == port.SELF

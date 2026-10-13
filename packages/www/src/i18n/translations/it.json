@@ -4012,7 +4012,7 @@
           ],
           "timeline": {
             "newLabel": "Con Rediacc",
-            "newSteps": ["Rilevamento", "<30s", "Online"],
+            "newSteps": ["Rilevamento", "<30s", "Operativo"],
             "oldLabel": "Il vecchio metodo",
             "oldSteps": [
               {
@@ -4116,7 +4116,7 @@
           "quote": "Durante l'interruzione di AWS us-east-1 dello scorso marzo, i nostri 12 servizi di produzione hanno eseguito il failover verso il datacenter secondario in 22 secondi. I nostri clienti non se ne sono accorti. I nostri concorrenti erano irraggiungibili per 6 ore. Quella settimana abbiamo ottenuto tre nuovi contratti enterprise dai loro clienti."
         },
         "techDiff": {
-          "description": "Rediacc utilizza btrfs send/receive per calcolare diff incrementali a livello di filesystem. Invece di trasferire immagini complete, vengono spostati tra i siti solo i blocchi modificati. Un ambiente da 380 GB con 2,4 GB di modifiche giornaliere trasferisce 2,4 GB, non 380 GB. Questo rappresenta una riduzione dell'utilizzo della banda del 98%. La replica viene eseguita in modo continuo o su pianificazione.",
+          "description": "Rediacc copia solo i dati cambiati dall'ultima volta. Prendi un ambiente da 380 GB in cui oggi cambiano 2,4 GB. Rediacc sposta 2,4 GB, non 380 GB. Così <span class=\"sp-emphasis\">la banda si riduce del 98%</span>. Può funzionare di continuo o a intervalli pianificati.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5351,7 +5351,7 @@
           "quote": "Abbiamo avviato 12 ambienti di test identici alla produzione in meno di 10 minuti, ciascuno con un database PostgreSQL completo da 241 GB. Il nostro processo precedente prevedeva dump manuali del database verso lo staging. Richiedeva 3 ingegneri e 2 giorni per ambiente."
         },
         "techDiff": {
-          "description": "Rediacc usa snapshot btrfs copy-on-write a livello di filesystem. Uno snapshot di un ambiente di produzione da 241 GB si completa in frazioni di secondo e inizialmente non consuma storage aggiuntivo. Man mano che il clone diverge durante lo sviluppo, solo i blocchi modificati usano nuovo spazio. Dieci clone di un database da 241 GB possono usare meno di 12 GB di storage aggiuntivo.",
+          "description": "Il trucco: Rediacc copia a livello di <span class=\"sp-emphasis\">storage</span>, non di file. Una copia da 241 GB si completa in meno di un secondo e usa quasi nessuno spazio extra. Solo le parti modificate occupano nuovo spazio in seguito. Dieci copie di quell'ambiente da 241 GB stanno in meno di 12 GB.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5617,7 +5617,7 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, \"2024 Data Protection Trends Report — BC/DR Trends,\" 2024. \"Solo il 13% delle organizzazioni utilizza workflow orchestrati come parte dei propri processi di disaster recovery.\" \"Solo il 58% dei server ha rispettato il proprio SLA di ripristino durante l'ultimo attacco su larga scala.\" \"Solo il 32% delle organizzazioni ritiene di poter ripristinare 50 workload entro un'intera settimana lavorativa.\"",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “Solo il 13% delle organizzazioni utilizza workflow orchestrati come parte dei propri processi di disaster recovery.” “Solo il 58% dei server ha rispettato il proprio SLA di ripristino durante l'ultimo attacco su larga scala.” “Solo il 32% delle organizzazioni ritiene di poter ripristinare 50 workload entro un'intera settimana lavorativa.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -5679,7 +5679,7 @@
           "quote": "Abbiamo eseguito il nostro primo test di failover automatizzato un martedì mattina. Ha trovato 3 gap critici: un record DNS obsoleto, un certificato SSL mancante sul secondario e un ritardo di replica del database di 4 minuti. Tutti e tre avrebbero causato una vera interruzione. Li abbiamo corretti in un pomeriggio. Ora testiamo ogni mese e dormiamo meglio."
         },
         "techDiff": {
-          "description": "I test DR tradizionali richiedono downtime della produzione, un team di ingegneri e settimane di pianificazione. Rediacc usa snapshot btrfs copy-on-write per creare in secondi un clone isolato dell'intera infrastruttura. Il test viene eseguito sul clone: la produzione non si ferma mai.",
+          "description": "I test di DR all'antica richiedono un fermo della produzione, una stanza piena di ingegneri e settimane di pianificazione. Rediacc clona un ambiente intero <span class=\"sp-emphasis\">in pochi secondi</span>. Il test gira sulla copia. La produzione non si ferma mai.",
           "rediaccLabel": "Test DR Rediacc",
           "rows": [
             {
@@ -5869,7 +5869,7 @@
         "meta": {
           "description": "I tuoi backup sono immutabili dal momento in cui vengono creati. Nessuno può modificarli. Né gli hacker. Né tu stesso.",
           "keywords": "backup immutabili, protezione dal ransomware, snapshot btrfs, verifica dei backup, disaster recovery, copy-on-write, backup sigillati",
-          "title": "Backup immutabili — Backup a prova di ransomware | Rediacc"
+          "title": "Backup immutabili contro il ransomware | Rediacc"
         },
         "problem": {
           "description": "Gli attaccanti moderni trovano i tuoi backup prima di crittografare i tuoi file. Se i tuoi backup possono essere modificati, lo saranno. Gli strumenti di backup tradizionali lasciano la porta aperta: il 94% delle vittime di ransomware ha subito attacchi ai propri backup durante l'attacco. Hai bisogno di backup che si chiudano a chiave nel momento in cui vengono creati.",
@@ -6004,7 +6004,7 @@
           "quote": "Siamo stati colpiti da un ransomware alle 3:17 di sabato mattina. Gli aggressori hanno crittografato 14 server, incluso il nostro repository di backup, o almeno così credevano. Gli snapshot immutabili di Rediacc erano intatti. Alle 3:24 tutti i 14 server erano stati ripristinati dai backup sigillati. Perdita di dati totale: zero byte. Riscatto pagato: zero dollari."
         },
         "techDiff": {
-          "description": "Rediacc usa snapshot btrfs in sola lettura a livello di filesystem. Una volta che uno snapshot è sigillato, il kernel stesso impedisce le modifiche: non blocchi software che il malware può aggirare, ma immutabilità a livello di filesystem. Anche con accesso root, il ransomware non può crittografare, modificare o eliminare uno snapshot btrfs sigillato.",
+          "description": "Rediacc crea una copia di sola lettura, un'istantanea congelata dei file in un preciso momento. Una volta sigillata la copia, <span class=\"sp-emphasis\">è lo stesso livello di storage a bloccare qualsiasi modifica</span>. Non è un blocco software che il malware può forzare. Nemmeno con la password dell'amministratore supremo il ransomware può cifrare, modificare o eliminare una copia sigillata.",
           "rediaccLabel": "Rediacc (btrfs immutabile)",
           "rows": [
             {
@@ -6606,7 +6606,7 @@
           "quote": "Il nostro server di database principale ha avuto un guasto alle 2:14 di sabato mattina, un controller disco corrotto. Con la nostra configurazione precedente, sarebbe stato un intero weekend di provisioning, ripristino e riconfigurazione di 11 servizi. Invece ho eseguito un comando dal telefono. Alle 2:18 tutto era tornato operativo: MariaDB, l'API, Nginx, Redis, tutto quanto. Stesse configurazioni, stesso stato, stessi dati. L'ingegnere di turno è tornato a dormire."
         },
         "techDiff": {
-          "description": "Il ripristino tradizionale comporta il provisioning di un nuovo server, l'installazione dei pacchetti, il ripristino dei file uno per uno, la riconfigurazione dei servizi e la speranza che nulla sia stato dimenticato. Rediacc usa snapshot btrfs per clonare l'intero ambiente, volumi, configurazioni, container, impostazioni di rete, in una singola operazione atomica.",
+          "description": "Il vecchio metodo: configurare un nuovo server, installare i pacchetti, ripristinare i file uno alla volta, riconfigurare i servizi. Poi sperare che non sia sfuggito nulla. Rediacc funziona in modo diverso. Copia l'intero ambiente in una volta sola. Dischi, configurazioni, container, rete, <span class=\"sp-emphasis\">tutto in un solo colpo</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8096,7 +8096,7 @@
           "quote": "Siamo passati da un piano di ripristino di 3 giorni a meno di 4 minuti. Durante un vero attacco ransomware alle 2 di notte, il nostro ingegnere di turno ha eseguito un comando e tutti gli 8 container di produzione erano di nuovo online alle 2:04. La stima del nostro vendor precedente era di 72 ore: lo abbiamo fatto in 240 secondi."
         },
         "techDiff": {
-          "description": "Il ripristino tradizionale ricostruisce da zero: reinstalla il sistema operativo, ripristina i file, riconfigura i servizi. Rediacc ripristina dagli snapshot btrfs: il filesystem semplicemente passa allo stato salvato. Nessuna reinstallazione, nessuna riconfigurazione, nessun trasferimento dati. Lo snapshot è già su disco: diventa semplicemente attivo.",
+          "description": "Il ripristino tradizionale ricostruisce tutto da zero: reinstallare il sistema, ripristinare i file, configurare di nuovo i servizi. Rediacc funziona in modo diverso. Una copia pulita <span class=\"sp-emphasis\">è già sul disco</span>. Basta accenderla. Niente reinstallazione, niente configurazione, niente trasferimenti lenti di dati.",
           "traditionalLabel": "Ricostruzione tradizionale",
           "rediaccLabel": "Rediacc (copie btrfs istantanee)",
           "rows": [
@@ -8418,7 +8418,7 @@
           "quote": "Il nostro revisore SOC2 ha richiesto la prova di 3 anni di conservazione dei backup. In precedenza significava 2 settimane a setacciare log e incrociare fogli di calcolo. Con Rediacc ho eseguito rdc retention report --framework soc2 e ho consegnato un rapporto completo in 4 minuti. Il revisore ha detto che era la documentazione più chiara che avesse mai visto."
         },
         "techDiff": {
-          "description": "La gestione tradizionale della conservazione significa tracciare le date di backup sui fogli di calcolo, eseguire script di pulizia manuale e sperare che nulla sia stato tralasciato prima che arrivi l'ispettore. Rediacc utilizza la gestione del ciclo di vita degli snapshot btrfs con applicazione automatica delle politiche: i backup vengono conservati, verificati ed eliminati senza intervento umano.",
+          "description": "La conformità a colpi di fogli di calcolo significa tracciare le date dei backup a mano, lanciare script di pulizia e sperare che nulla sia sfuggito prima dell'arrivo dell'auditor. Rediacc conserva, verifica e ripulisce i backup <span class=\"sp-emphasis\">da solo</span>. Nessun passaggio manuale.",
           "rediaccLabel": "Conservazione Rediacc",
           "rows": [
             {
@@ -8754,7 +8754,7 @@
           "quote": "Abbiamo avuto una patch critica di OpenSSL lo scorso trimestre. Normalmente avremmo pianificato una finestra di manutenzione e sperato nel meglio. Invece, abbiamo clonato tutti i 22 server di produzione, applicato la patch, eseguito l'intera suite di test e confermato zero regressioni, il tutto in 18 minuti. Abbiamo applicato la patch in produzione lo stesso giorno con totale fiducia."
         },
         "techDiff": {
-          "description": "Rediacc utilizza snapshot btrfs copy-on-write per clonare l'intero ambiente di produzione - OS, container, database, configurazione - in frazioni di secondo. Il clone viene eseguito su una rete isolata con il proprio daemon Docker. Le patch applicate al clone non toccano mai la produzione. Se il clone si rompe, lo elimini. Se funziona, applichi la stessa patch alla produzione.",
+          "description": "Rediacc copia un intero ambiente live <span class=\"sp-emphasis\">in pochi secondi</span>. Cioè il sistema operativo, le app, i database e tutte le impostazioni. La copia gira su una rete isolata tutta sua, con il proprio Docker. Le patch sulla copia non toccano mai i server reali. Se la copia si rompe, eliminala. Se funziona, applica la stessa patch per davvero.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9165,7 +9165,7 @@
             "arrows": [
               {
                 "icon": "bolt",
-                "label": "47s + 2m"
+                "label": "47s + 2min"
               },
               {
                 "icon": "arrow-right-circle",
@@ -9193,7 +9193,7 @@
                   "247 asserzioni - 0 fallimenti"
                 ],
                 "status": "In test",
-                "title": "Clone: Patch Test"
+                "title": "Clone: test patch"
               },
               {
                 "footer": "Tempo totale: 3m 41s · zero downtime",
@@ -9317,7 +9317,7 @@
           "quote": "Una CVE critica è emersa il venerdì pomeriggio. Entro il sabato mattina avevamo clonato la produzione, applicato la patch, verificato su tutti e 4 i servizi interessati e distribuito, zero downtime. Il nostro processo precedente avrebbe richiesto 3 settimane e una riunione di change management."
         },
         "techDiff": {
-          "description": "Il patching tradizionale richiede un ambiente di staging che corrisponda alla produzione, ma lo staging diverge in pochi giorni. Rediacc crea uno snapshot btrfs copy-on-write della tua effettiva infrastruttura di produzione in pochi secondi, ti consente di applicare e verificare la patch su dati e configurazioni reali, quindi distribuisce la correzione verificata in produzione. Se la patch non supera la verifica, elimina il clone. La produzione rimane intatta.",
+          "description": "Il patching tradizionale richiede una copia di staging identica alla produzione. Ma lo staging diverge nel giro di pochi giorni. Rediacc crea una copia istantanea del vero ambiente di produzione <span class=\"sp-emphasis\">in pochi secondi</span>. Applica la patch sulla copia. Provala con dati e impostazioni reali. Se funziona, rilasciala in produzione. Se fallisce, butta via la copia. La produzione resta intatta.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -9858,7 +9858,10 @@
     "title": "Come proteggiamo la continuità aziendale"
   },
   "video": {
-    "playVideo": "Riproduci video"
+    "playVideo": "Riproduci video",
+    "player": {
+      "chapters": "Capitoli"
+    }
   },
   "whyNow": {
     "cards": [

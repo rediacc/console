@@ -101,8 +101,6 @@ import tempfile
 # from `.ci/scripts/build/`; this module is one directory deeper.
 _ROOT_PARENT_INDEX = 3
 
-# `.ci/scripts/build/ensure-nfpm.sh:32`.
-_BIN_RELPATH = (".ci", "cache", "bin")
 
 # `.ci/scripts/build/ensure-nfpm.sh:30`.
 _CONSTANTS_RELPATH = (".ci", "config", "constants.sh")
@@ -122,7 +120,7 @@ def repo_root() -> pathlib.Path:
 
 def bin_dir(root: pathlib.Path) -> pathlib.Path:
     """`BIN_DIR="$REPO_ROOT/.ci/cache/bin"` (:32)."""
-    return root.joinpath(*_BIN_RELPATH)
+    return root / ".ci" / "cache" / "bin"
 
 
 def tarball_name(version: str) -> str:
@@ -141,16 +139,16 @@ def is_pinned_arch(arch: str) -> bool:
 
 
 def unpinned_arch_message(arch: str) -> str:
-    """`:58`, verbatim, minus the trailing newline `echo` adds."""
+    """The twin's `:58` text, minus the trailing newline `echo` adds, with the port's module name as the prefix where the twin printed `ensure-nfpm:` (`rediacc_ci.tests.twin_names.as_twin` maps it back for the differential)."""
     return (
-        "ensure-nfpm: no pinned checksum for %s in .ci/config/constants.sh -- "
+        "rediacc_ci.build.ensure_nfpm: no pinned checksum for %s in .ci/config/constants.sh -- "
         "add one rather than downloading unverified bytes" % arch
     )
 
 
 def fetching_message(version: str, arch: str) -> str:
-    """`:66`, verbatim, minus the trailing newline `echo` adds."""
-    return "ensure-nfpm: fetching nfpm %s for %s" % (version, arch)
+    """The twin's `:66` text, minus the trailing newline `echo` adds, with the port's module name as the prefix where the twin printed `ensure-nfpm:`."""
+    return "rediacc_ci.build.ensure_nfpm: fetching nfpm %s for %s" % (version, arch)
 
 
 def _binary_answers(binary: str | pathlib.Path) -> bool:

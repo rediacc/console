@@ -85,7 +85,7 @@ PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env \
   --vm-workers "11 12" --vm-ceph-nodes "21 22 23" \
   --vm-ram-worker 2560 --vm-ram-ceph 2560 --ceph-osd-memory-target 1717986918
 printf 'RENET_DATA_DIR=%s/.renet\n' "$HOME" >> packages/e2e-tests/.env
-.ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip
 ```
 
 The `RENET_DATA_DIR` line is the local-only delta: the generated `.env` sets `CI=true`, which sends renet to `/tmp/renet` where the VMs' authorized key does not live.

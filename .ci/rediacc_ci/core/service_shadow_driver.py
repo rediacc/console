@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Both sides of the `core.service` port differential, in one file.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.service_shadow_driver --side old --twin .ci/lib/service.sh --port .ci/rediacc_ci/core/service.py <scenario>
-        drives the BASH: sources the libraries the deleted `.ci/legacy/run-legacy.sh` sourced (`.ci/lib/service.sh` among them) and defines the `check_docker` the twin calls, then calls the twin's own function.
-
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.service_shadow_driver --side new --twin .ci/lib/service.sh --port .ci/rediacc_ci/core/service.py <scenario>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.service_shadow_driver --side new --port .ci/rediacc_ci/core/service.py <scenario>
         drives the PYTHON: `python3 -m rediacc_ci.core.service <verb>`.
+
+The bash side (`.ci/lib/service.sh`, sourced by the deleted `.ci/legacy/run-legacy.sh`) is retired: its observations are frozen in `goldens/twins/lib.service.jsonl` and `test_core_service.py` compares the port against them.
 
 RUN AS A MODULE AND NEVER BY PATH, on the `core/shadow_driver.py` precedent: `PYTHONPATH=.ci` plus `-m` removes the `sys.path` hop `test_canonical_sys_path_hop.py` refuses. ONE FILE for both sides because `dead_python.py` admits a pre-cutover port only when a `.ci/shadow/*.jsonl` record names it, and `--twin` / `--port` are checked to exist so a row can never attest to a file that is not there.
 
@@ -22,7 +21,7 @@ A case is a verb, its arguments, a stub table, and optionally a seeded state fil
 
 NUMBERED because `shadow-gate` compares a finding multiset: without the index, two `sleep 2` calls and three would be the same set, and a port that skipped a probe would compare equal. The sandbox path is replaced by `<root>` on both sides before printing.
 
-The sandbox holds a COPY of `.ci/docker/service/env.sh` (the twin sources it from `$SERVICE_DOCKER_DIR`, which follows `CONSOLE_ROOT_DIR`) and a symlink `.ci/scripts` back to this checkout, because `env.sh` sources `common.sh` relative to itself.
+The sandbox holds a COPY of `.ci/docker/service/env.sh` (the twin sources it from `$SERVICE_DOCKER_DIR`, which follows `CONSOLE_ROOT_DIR`) and a symlink `.ci/config` back to this checkout, because `env.sh` sources `well-known.generated.sh` relative to the console root.
 
 STUBBED: `docker`, `curl`, `sleep`, `ss`, `node`, `openssl` (all logged) and `date` (NOT logged: it is a clock read the port makes in-process through `SERVICE_STATUS_NOW`, and it `exec`s the real `date` for every form but `+%s`). `ss` is how `rediacc_ci.core.ports` decides a port is busy, and it runs on BOTH sides (the twin reaches the same module through `python3 -m`), which makes the free-port search deterministic without holding a single real socket.
 
@@ -50,7 +49,6 @@ import tempfile
 
 from rediacc_ci import runtmp
 from rediacc_ci.core.stubfarm import Farm
-from rediacc_ci.well_known import DOCKER_INSTALL_DOCS
 
 EXIT_CANNOT_RUN = 77
 FROZEN_NOW = 1700003725
@@ -274,7 +272,7 @@ def build_sandbox(repo: pathlib.Path, work: pathlib.Path, case: Case) -> pathlib
     service_dir = root / ".ci" / "docker" / "service"
     service_dir.mkdir(parents=True)
     shutil.copy2(repo / ".ci" / "docker" / "service" / "env.sh", service_dir / "env.sh")
-    (root / ".ci" / "scripts").symlink_to(repo / ".ci" / "scripts")
+    (root / ".ci" / "config").symlink_to(repo / ".ci" / "config")
     (root / "home").mkdir()
     if case.state is not None:
         (root / ".service-state").write_text(case.state, encoding="utf-8")
@@ -307,50 +305,13 @@ def side_env(root: pathlib.Path, farm: Farm, case: Case) -> dict[str, str]:
     return farm.env(base)
 
 
-# What the deleted `.ci/legacy/run-legacy.sh` gave the twin before the function ran: the four libraries it sourced, `set -euo pipefail`, and the `check_docker` that `service.sh` calls by late binding. `$1` is the repository root; the prelude's own `shift` drops it so `"$@"` is the twin's function and its arguments.
-OLD_PRELUDE = (
-    r"""
-set -euo pipefail
-ROOT_DIR="$1"; shift
-source "$ROOT_DIR/.ci/config/constants.sh"
-source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
-source "$ROOT_DIR/.ci/lib/local-common.sh"
-source "$ROOT_DIR/.ci/lib/service.sh"
-check_docker() {
-    if ! command -v docker &>/dev/null; then
-        log_error "Docker is not installed"
-        log_info "Install Docker from: """
-    + DOCKER_INSTALL_DOCS
-    + r"""/"
-        exit 1
-    fi
-
-    if ! docker info &>/dev/null; then
-        log_error "Docker is not running"
-        log_info "Start Docker Desktop or Docker daemon"
-        exit 1
-    fi
-}
-"""
-)
-
-
 def run_side(
     side: str, repo: pathlib.Path, case: Case, env: dict[str, str]
 ) -> subprocess.CompletedProcess:
-    if side == "old":
-        argv = [
-            "bash",
-            "-c",
-            OLD_PRELUDE + '"$@"',
-            "service-old",
-            str(repo),
-            FN[case.verb],
-            *case.args,
-        ]
-    else:
-        env = dict(env, PYTHONPATH=str(repo / ".ci"))
-        argv = ["python3", "-m", "rediacc_ci.core.service", case.verb, *case.args]
+    if side != "new":
+        raise ValueError("the bash side is retired: its answers are the golden lib.service.jsonl")
+    env = dict(env, PYTHONPATH=str(repo / ".ci"))
+    argv = [sys.executable, "-m", "rediacc_ci.core.service", case.verb, *case.args]
     return subprocess.run(
         argv, cwd=repo, env=env, capture_output=True, text=True, check=False, timeout=300
     )
@@ -395,18 +356,16 @@ def observe(side: str, repo: pathlib.Path, case: Case) -> list[str]:
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="one side of the core.service differential")
-    parser.add_argument("--side", choices=("old", "new"), required=True)
-    parser.add_argument("--twin", required=True)
+    parser.add_argument("--side", choices=("new",), required=True)
     parser.add_argument("--port", required=True)
     parser.add_argument("scenario", choices=sorted(SCENARIOS))
     args = parser.parse_args(argv)
     repo = pathlib.Path.cwd().resolve()
-    for label, rel in (("twin", args.twin), ("port", args.port)):
-        if not (repo / rel).is_file():
-            sys.stderr.write(
-                "service_shadow_driver: the %s %s does not exist under %s\n" % (label, rel, repo)
-            )
-            return EXIT_CANNOT_RUN
+    if not (repo / args.port).is_file():
+        sys.stderr.write(
+            "service_shadow_driver: the port %s does not exist under %s\n" % (args.port, repo)
+        )
+        return EXIT_CANNOT_RUN
     for case in SCENARIOS[args.scenario]:
         for line in observe(args.side, repo, case):
             print(line)

@@ -1,11 +1,11 @@
 """Port of `.ci/scripts/test/gates/test-preview-readiness.sh`, retired in W7 P5.
 
-Unit test for `.ci/scripts/deploy/wait-for-preview-worker.sh`.
+Unit test for `.ci/rediacc_ci/deploy/wait_for_preview_worker.py`, the port that replaced `wait-for-preview-worker.sh`.
 
 WHAT THIS GUARDS. The preview readiness probe gates smoke-test-preview.ts. If it reports "ready" while the worker is still flapping, the smoke test gets a cold worker and the PR goes red for a reason that has nothing to do with the PR. That happened in runs 30968082228 and 30995469629: the probe logged ready at 10:26:41.557 and the smoke test got HTTP 500 from the very same
 server-info URL 1.3 seconds later.
 
-WHY THE STREAK IS THE FIX AND NOT THE ENDPOINT. Two earlier commits already tried changing WHICH endpoint is probed -- 8b7840ed4 added the server-info probe, cefa43ca7 corrected the body it greps for -- and the failure returned both times, because a SINGLE success cannot distinguish "up" from "flapping". The deployment flaps by construction: deploy-www.sh deletes and recreates the
+WHY THE STREAK IS THE FIX AND NOT THE ENDPOINT. Two earlier commits already tried changing WHICH endpoint is probed -- 8b7840ed4 added the server-info probe, cefa43ca7 corrected the body it greps for -- and the failure returned both times, because a SINGLE success cannot distinguish "up" from "flapping". The deployment flaps by construction: the www deploy deletes and recreates the
 per-PR D1 database on every push, and server-info touches D1 while /health does not.
 
 The load-bearing case is `test_streak_is_load_bearing`: it re-runs the flapping
@@ -22,12 +22,14 @@ import contextlib
 import http.server
 import json
 import os
+import sys
 import threading
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-WAIT_SCRIPT = paths.from_root(".ci", "scripts", "deploy", "wait-for-preview-worker.sh")
+WAIT_MODULE = "rediacc_ci.deploy.wait_for_preview_worker"
+WAIT_SCRIPT = paths.from_root(".ci", "rediacc_ci", "deploy", "wait_for_preview_worker.py")
 
 GOOD_BODY = json.dumps({"e2e": {"keys": [{"keyId": "v1", "publicKeySpki": "AAAA"}]}}).encode()
 
@@ -85,10 +87,13 @@ def stub(mode: str):
 def run_wait(gate, env: dict[str, str], *, drop: tuple[str, ...] = ()) -> harness.RunResult:
     if not WAIT_SCRIPT.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(WAIT_SCRIPT))
-    bash = harness.require_tool("bash", "install bash; the subject IS a bash script")
     merged = {k: v for k, v in os.environ.items() if k not in drop}
     merged.update(env)
-    return harness.run([bash, str(WAIT_SCRIPT)], env=merged, env_replace=True, timeout=120)
+    merged["PYTHONPATH"] = str(paths.from_root(".ci"))
+    merged["PYTHONDONTWRITEBYTECODE"] = "1"
+    return harness.run(
+        [sys.executable, "-m", WAIT_MODULE], env=merged, env_replace=True, timeout=120
+    )
 
 
 def probe(gate, mode: str, extra: dict[str, str] | None = None) -> harness.RunResult:
@@ -167,14 +172,14 @@ def test_ci_defaults_are_still_strict(gate):
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(WAIT_SCRIPT))
     src = WAIT_SCRIPT.read_text(encoding="utf-8")
     gate.assert_contains(
-        src, 'REQUIRED_STREAK="${REQUIRED_STREAK:-3}"', "the default streak is still 3"
+        src, 'os.environ.get("REQUIRED_STREAK", "3")', "the default streak is still 3"
     )
     gate.assert_contains(
-        src, 'MAX_ATTEMPTS="${MAX_ATTEMPTS:-60}"', "the default budget is still 60"
+        src, 'os.environ.get("MAX_ATTEMPTS", "60")', "the default budget is still 60"
     )
     gate.assert_contains(
         src,
-        'PROBE_INTERVAL_SECONDS="${PROBE_INTERVAL_SECONDS:-2}"',
+        'os.environ.get("PROBE_INTERVAL_SECONDS", "2")',
         "the default spacing is still 2s",
     )
     gate.log_pass("CI defaults are unchanged")

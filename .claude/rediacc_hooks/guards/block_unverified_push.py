@@ -1250,6 +1250,10 @@ def dropped_verdict(receipt, tree, trees=None):
     )
 
 
+# The receipt verdicts (scripts/ci-runner/run.ts `ReceiptGate.verdict`) of a gate that did not run in the lane: deferred by the selection, CI-only, or blocked (it could not run here, or a prerequisite failed). Whether a blocked gate may ride the push at all is `unjudged_blocked`'s question, not this one's.
+NOT_RUN_VERDICTS = ("deferred", "ciOnly", "blocked")
+
+
 def carried_verdict(receipt, doc):
     """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs.
 
@@ -1278,7 +1282,15 @@ def carried_verdict(receipt, doc):
         ), []
 
     # STALE ENTRIES REFUSE. An excuse that outlives its failure is exactly how an allowlist rots into a permanent hole -- the npm side of this repo once carried 101 dead entries for that reason. If a carried gate is no longer failing, the entry must go before the next push.
-    stale = "".join(" %s" % g for g in sorted(carried) if g not in failed)
+    # NOT FAILING IS NOT THE SAME AS NOT RUN. The quick lane defers a slow gate whose inputs the push does not touch and records it as `deferred` (a `ciOnly` or `blocked` gate likewise never ran here); such a gate has not gone green, so its carry is not stale. Without this a push whose diff touched nothing check:ci-pytest reads was refused for carrying that gate's host-only skips (2026-10-13). A carried gate the receipt does not list at all stays stale.
+    gates = receipt.get("gates") if isinstance(receipt, dict) else None
+    gates = gates if isinstance(gates, dict) else {}
+    not_run = {
+        g
+        for g, entry in gates.items()
+        if isinstance(entry, dict) and entry.get("verdict") in NOT_RUN_VERDICTS
+    }
+    stale = "".join(" %s" % g for g in sorted(carried) if g not in failed and g not in not_run)
     if stale:
         return (
             "these gates are carried in .ci/config/carried-reds.json but are NOT failing"
@@ -1474,6 +1486,42 @@ def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt):
     return ""
 
 
+def unjudged_blocked(receipt, by_id):
+    """The sorted ids whose `blocked` verdict nothing in the receipt explains. PURE.
+
+    The runner writes `blocked` for two different things (scripts/ci-runner/run.ts `receiptGates`): a gate that exited 77 (it COULD NOT RUN, and it is listed in the top-level `blocked` list, which the guard warns on), and a gate the pool SKIPPED and never launched (pool.ts `skip`). A skip has two causes: a `needs` prerequisite that did not pass, which leaves the dependent unjudgeable whatever the run's flags, and `--fail-fast` (or any stop), which leaves every unstarted gate unjudged although nothing stood in its way. Only the first is accepted behaviour (PLAN-gate-scheduling-learned, section 5 "Guard": part (b) is not taken).
+
+    So a `blocked` entry is explained when it is in the top-level `blocked` list, or when one of its `needs` (read from the lock at the pushed tree) has verdict `fail` or is itself an explained `blocked`, transitively. Anything else is a gate the run stopped before: the receipt still says `whole: true`, so without this a `--quick --fail-fast` run whose only red was carried authorised a push over gates nothing judged (reproduced 2026-10-08, T1).
+    """
+    gates = receipt.get("gates") if isinstance(receipt, dict) else None
+    if not isinstance(gates, dict):
+        return []
+    could_not_run = receipt.get("blocked")
+    could_not_run = (
+        {g for g in could_not_run if isinstance(g, str)}
+        if isinstance(could_not_run, list)
+        else set()
+    )
+
+    def verdict(gid):
+        e = gates.get(gid)
+        return e.get("verdict") if isinstance(e, dict) else None
+
+    pending = {gid for gid in gates if verdict(gid) == "blocked"}
+    explained = {gid for gid in pending if gid in could_not_run}
+    pending -= explained
+    changed = True
+    while changed:
+        changed = False
+        for gid in sorted(pending):
+            needs = (by_id.get(gid) or {}).get("needs") or []
+            if any(verdict(n) == "fail" or n in explained for n in needs if isinstance(n, str)):
+                explained.add(gid)
+                pending.discard(gid)
+                changed = True
+    return sorted(pending)
+
+
 def v2_verdict(root, tree, receipt):
     """The v2 acceptance of a receipt for the pushed `tree`: '' accepts, anything else is the refusal text."""
     if not isinstance(receipt, dict) or receipt.get("schema") != RECEIPT_SCHEMA:
@@ -1505,6 +1553,19 @@ def v2_verdict(root, tree, receipt):
         entry = gates.get(gid)
         if g.get("ciOnly") and isinstance(entry, dict) and entry.get("verdict") != "ciOnly":
             return "%s is ciOnly, so its receipt verdict must be ciOnly (field verdict)." % gid
+    # A GATE THE RUN STOPPED BEFORE IS NOT JUDGED (unjudged_blocked). After the per-gate presence check, so a receipt missing a verdict keeps its own message.
+    unjudged = unjudged_blocked(receipt, by_id)
+    if unjudged:
+        return (
+            "the run stopped before judging %d gate(s) (--fail-fast, or a stop): %s. No prerequisite"
+            " failed for them and none could-not-run, so nothing judged them. Re-run `%s` without"
+            " --fail-fast."
+            % (
+                len(unjudged),
+                ", ".join(unjudged[:8]) + (" ..." if len(unjudged) > 8 else ""),
+                V2_REGEN,
+            )
+        )
     carried = sorted(
         gid for gid, e in gates.items() if isinstance(e, dict) and e.get("carriedFrom") is not None
     )

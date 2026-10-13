@@ -1,0 +1,42 @@
+{"kind":"charge","sig":"a4146a8cdc6a","why":"proven","at":"2026-10-08T06:28:38Z","br":"1008-1"}
+{"kind":"charge","sig":"2a9f6f490ef3","why":"proven","at":"2026-10-08T06:36:05Z","br":"1008-1"}
+{"kind":"charge","sig":"aa968408b39e","why":"proven","at":"2026-10-08T07:13:37Z","br":"1008-1"}
+{"kind":"charge","sig":"c73fd4bcfcf5","why":"proven","at":"2026-10-08T07:20:56Z","br":"1008-1"}
+{"kind":"charge","sig":"9a690d0b0c6d","why":"proven","at":"2026-10-08T11:48:15Z","br":"1008-1"}
+{"kind":"charge","sig":"c529302beb62","why":"proven","at":"2026-10-08T11:57:11Z","br":"1008-1"}
+{"kind":"charge","sig":"b1a30957d0ab","why":"proven","at":"2026-10-08T13:41:55Z","br":"1008-1"}
+{"kind":"charge","sig":"45f133b468a2","why":"proven","at":"2026-10-08T13:44:55Z","br":"1008-1"}
+{"kind":"charge","sig":"5cc9208fcebe","why":"proven","at":"2026-10-08T18:14:22Z","br":"1008-1"}
+{"kind":"charge","sig":"ee348dc5a69b","why":"proven","at":"2026-10-08T20:26:17Z","br":"1008-1"}
+{"kind":"debt","sig":"9785427ccde9","blind_spot":"The supplied fix-set names no gate that failed against the tree before this fix, so no existing check is credited.","surface":"hooks","artifact":"","charged":10,"at":"2026-10-08T20:32:34Z","br":"1008-1"}
+{"kind":"charge","sig":"9785427ccde9","why":"capped","at":"2026-10-08T20:32:34Z","br":"1008-1"}
+{"kind":"charge","sig":"2cb247eb4709","why":"proven","at":"2026-10-08T21:17:19Z","br":"1008-1"}
+{"kind":"charge","sig":"a4d968f9fd9f","why":"proven","at":"2026-10-09T00:11:13Z","br":"1008-1"}
+{"kind":"debt","sig":"cdebbcb2a741","blind_spot":"Defects reproduce only in a live VM run. Checks read source text or unit output, so none compare live ordering or the identity file against a running machine.","surface":"ops","artifact":".github/workflows/ci-ops-test.yml","charged":13,"at":"2026-10-09T00:14:04Z","br":"1008-1"}
+{"kind":"charge","sig":"cdebbcb2a741","why":"capped","at":"2026-10-09T00:14:04Z","br":"1008-1"}
+{"kind":"charge","sig":"f2c2a3f27a50","why":"proven","at":"2026-10-09T01:05:21Z","br":"1008-1"}
+{"kind":"charge","sig":"e2844af17441","why":"proven","at":"2026-10-09T02:43:42Z","br":"1008-1"}
+{"kind":"debt","sig":"7ac0b1c70efe","blind_spot":"The test resolved its repo root through the CLAUDE_PROJECT_DIR fallback, so it wrote to the real QUEUE.md. Every check compared the tree against its own writes, and nothing relates a test's runtime write target to its fixture root.","surface":"unit","artifact":".ci/rediacc_ci/tests/gates/test_gate_stop_hook_stdin.py","charged":16,"at":"2026-10-09T02:47:45Z","br":"1008-1"}
+{"kind":"charge","sig":"7ac0b1c70efe","why":"capped","at":"2026-10-09T02:47:45Z","br":"1008-1"}
+{"kind":"charge","sig":"f8b9f3ac71a3","why":"proven","at":"2026-10-09T03:59:28Z","br":"1008-1"}
+{"kind":"debt","sig":"15009d813d1e","blind_spot":"The guard decides on the outer command's argv and never reads the payload an interpreter runs (python3 -c, heredoc, node -e). Nothing compares its verdict with the worktree-add the payload executes.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/hookcases.py","charged":18,"at":"2026-10-09T04:05:16Z","br":"1008-1"}
+{"kind":"charge","sig":"15009d813d1e","why":"capped","at":"2026-10-09T04:05:16Z","br":"1008-1"}
+{"kind":"charge","sig":"2975fd7068f4","why":"proven","at":"2026-10-09T05:16:58Z","br":"1008-1"}
+{"kind":"charge","sig":"c4519f1c9045","why":"proven","at":"2026-10-09T05:51:01Z","br":"1008-1"}
+{"kind":"charge","sig":"12481db8769d","why":"proven","at":"2026-10-09T06:30:03Z","br":"1008-1"}
+{"kind":"debt","sig":"24267376e732","blind_spot":"The verdict comparison read the shared index, so a staged-then-edited file was judged on staged content.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_settings_collapse.py","charged":22,"at":"2026-10-09T06:33:09Z","br":"1008-1"}
+{"kind":"charge","sig":"24267376e732","why":"capped","at":"2026-10-09T06:33:09Z","br":"1008-1"}
+{"kind":"charge","sig":"f2ca3e855311","why":"proven","at":"2026-10-09T07:11:21Z","br":"1008-1"}
+{"kind":"debt","sig":"1790ec7352bf","blind_spot":"The advisory exits 0 whatever names it prints, so no check compares the gate-test names it prints against the declared GATES list.","surface":"gates","artifact":"scripts/gates/check-gate-manifest.ts","charged":24,"at":"2026-10-09T07:21:54Z","br":"1008-1"}
+{"kind":"charge","sig":"1790ec7352bf","why":"capped","at":"2026-10-09T07:21:54Z","br":"1008-1"}
+{"kind":"charge","sig":"7a9b57b92e42","why":"proven","at":"2026-10-09T07:49:56Z","br":"1008-1"}
+{"kind":"debt","sig":"fd6661bc6ec8","blind_spot":"The goldens were built from the old twin-name prefix, so they agreed with the defect. No check compares a printed diagnostic prefix with the module's own rediacc_ci path.","surface":"gates","artifact":"","charged":26,"at":"2026-10-09T07:57:30Z","br":"1008-1"}
+{"kind":"charge","sig":"fd6661bc6ec8","why":"capped","at":"2026-10-09T07:57:30Z","br":"1008-1"}
+{"kind":"charge","sig":"576b1e34c606","why":"proven","at":"2026-10-09T08:47:22Z","br":"1008-1"}
+{"kind":"charge","sig":"3731fb8de71e","why":"proven","at":"2026-10-12T22:52:21Z","br":"1008-1"}
+{"kind":"charge","sig":"f5701be547ec","why":"proven","at":"2026-10-12T23:22:36Z","br":"1008-1"}
+{"kind":"debt","sig":"ec5c9f87a8a2","blind_spot":"Every existing check exercised bare or piped scp shapes. No case fed a word through xargs into scp's destination under replace mode, so the literal-reading branch was never run.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/goldens/block_binary_deploy.jsonl","charged":30,"at":"2026-10-13T00:45:49Z","br":"1008-1"}
+{"kind":"charge","sig":"ec5c9f87a8a2","why":"capped","at":"2026-10-13T00:45:49Z","br":"1008-1"}
+{"kind":"charge","sig":"61f0ee5272fb","why":"proven","at":"2026-10-13T02:08:47Z","br":"1008-1"}
+{"kind":"debt","sig":"6151464bf02a","blind_spot":"Tests compare expected values with a date computed from the wall clock at run time, so the link between expected value and the day the test runs is never checked at a fixed instant. CI is green every day except rollover.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/hookcases.py","charged":32,"at":"2026-10-13T02:15:51Z","br":"1008-1"}
+{"kind":"charge","sig":"6151464bf02a","why":"capped","at":"2026-10-13T02:15:51Z","br":"1008-1"}

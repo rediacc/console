@@ -9,8 +9,7 @@ a leak past the fake would still not name the real repository.
 
 THE CALL LOG IS RECORDED, NOT JUST THE STREAMS, because "retried 1" and "retried 1 against a different run id" print the same line.
 
-BOTH LOGGING WORLDS ARE RECORDED. `source common.sh 2>/dev/null || { ... }` gave
-this script a second logger whose `log_info` and `log_step` write to STDOUT with their own prefixes, and the fallback is not a cosmetic variant: on a fresh clone every summary line moves stream. The three `the-fallback-*` cases were recorded in a tree with no `.ci/scripts/lib/`.
+ONE LOGGING WORLD. The twin had a second logger (`log_info` and `log_step` on STDOUT with their own prefixes) for a tree without `common.sh`. `common.sh` is deleted and so is the fallback (PLAN-retire-bash-oracles W11-B, a Rule-T fix): the three `the-fallback-*` cases and their goldens are gone, and `test_a_tree_without_the_library_...` holds the port to the one world.
 
 TIME IS PINNED BY CONSTRUCTION, not by freezing a clock. Fixtures compute `created_at` relative to the real now, well inside or well outside the age window, so neither the twin's `date -u +%s` at recording time nor the port's `time.time()` at replay time can decide a case, and no timestamp reaches a recorded stream.
 
@@ -38,7 +37,6 @@ if typing.TYPE_CHECKING:
 
 ROOT = paths.repo_root()
 PORT = ROOT / ".ci" / "rediacc_ci" / "housekeeping" / "retry_failed_runs.py"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 BASH = shutil.which("bash") or "/bin/bash"
 
 SLUG = "retry-failed-runs"
@@ -107,23 +105,11 @@ def _stub_path(tmp_path: pathlib.Path, side: str, *, with_gh: bool = True) -> st
     return str(stub)
 
 
-def _fixture(tmp_path: pathlib.Path, side: str, *, with_common: bool = True) -> pathlib.Path:
+def _fixture(tmp_path: pathlib.Path, side: str) -> pathlib.Path:
+    """A tree holding only the port: no `.ci/scripts/lib/`, the shape every run now has (the library is deleted)."""
     root = tmp_path / ("tree-%s" % side)
     (root / ".ci" / "rediacc_ci" / "housekeeping").mkdir(parents=True, exist_ok=True)
     shutil.copy2(PORT, root / ".ci" / "rediacc_ci" / "housekeeping" / PORT.name)
-    if with_common:
-        (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-        shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
-        (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
-        shutil.copy2(
-            ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
-        )
-        shutil.copy2(
-            ROOT / ".ci" / "config" / "well-known.generated.sh",
-            root / ".ci" / "config" / "well-known.generated.sh",
-        )
-    else:
-        assert not (root / ".ci" / "scripts" / "lib" / "common.sh").exists()
     return root
 
 
@@ -133,13 +119,12 @@ def _run(
     args: list[str],
     *,
     with_gh: bool = True,
-    with_common: bool = True,
     port_source: str | None = None,
     subject: pathlib.Path | None = None,
     **extra: str,
 ):
     tmp_path.mkdir(parents=True, exist_ok=True)
-    root = _fixture(tmp_path, side, with_common=with_common)
+    root = _fixture(tmp_path, side)
     if port_source is not None:
         (root / ".ci" / "rediacc_ci" / "housekeeping" / PORT.name).write_text(
             port_source, encoding="utf-8"
@@ -287,12 +272,6 @@ def case_kw(name: str) -> tuple[list[str], dict]:
             [],
             {**live, "FAKE_GH_RUNS": "", "FAKE_GH_RUNS_RC": "1"},
         ),
-        "the-fallback-logger-world": (
-            [],
-            {**live, "FAKE_GH_RUNS": runs_json(a_run(5)), "with_common": False},
-        ),
-        "the-fallback-world-warn-path": ([], {"FAKE_GH_HEADS": "", "with_common": False}),
-        "the-fallback-world-require-cmd": ([], {"with_common": False, "with_gh": False}),
         "a-null-workflow-name-shifts-the-fields": (
             [],
             {**live, "FAKE_GH_RUNS": runs_json(_null_name_record())},
@@ -320,9 +299,6 @@ CASES = (
     "the-three-numeric-knobs",
     "the-repo-comes-from-the-environment",
     "an-unreadable-runs-listing",
-    "the-fallback-logger-world",
-    "the-fallback-world-warn-path",
-    "the-fallback-world-require-cmd",
     "a-null-workflow-name-shifts-the-fields",
 )
 
@@ -537,33 +513,24 @@ def test_an_unreadable_runs_listing_yields_no_candidates() -> None:
     assert (SUMMARY % (0, 0, 0, 0, 0, 0)) in stderr
 
 
-# --------------------------------------------------------------------------- The fallback logger world ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- One logger world ---------------------------------------------------------------------------
 
 
-def test_the_fallback_logger_world_moves_info_and_step_to_stdout() -> None:
-    returncode, stdout, stderr, _ = recorded("the-fallback-logger-world")
+def test_a_tree_without_the_library_logs_to_stderr_with_glyphs(tmp_path: pathlib.Path) -> None:
+    """The twin's `source common.sh || { ... }` fallback put info and step on STDOUT with their own prefixes. `common.sh` is deleted and so is the fallback (PLAN-retire-bash-oracles W11-B, a Rule-T fix): the fixture tree holds only the port, and every line goes through `rediacc_ci.log`."""
+    returncode, stdout, stderr, _ = observed(tmp_path, "an-eligible-run-is-reran")
     assert returncode == 0
-    assert stdout.startswith("==> Nightly retry: failed runs in acme/widget (last 48h)\n")
-    assert "  reran 5 (Cleanup PR Preview, was attempt 1)\n" in stdout
-    assert "✓" not in stdout
-    assert "→" not in stdout
-    assert stderr == "", "the fallback world wrote to stderr: %r" % stderr
+    assert stdout == "", "info or step reached stdout: %r" % stdout
+    assert "→ Nightly retry: failed runs in acme/widget (last 48h)\n" in stderr
+    assert "✓ reran 32903006150 (Cleanup PR Preview, was attempt 1)\n" in stderr
 
 
-def test_the_fallback_world_warn_path_also_agrees() -> None:
-    returncode, stdout, stderr, _ = recorded("the-fallback-world-warn-path")
-    assert returncode == 0
-    assert stderr == (
-        "  WARN: could not list branch tips; skipping rather than retrying on incomplete data\n"
-    )
-    assert stdout == "==> Nightly retry: failed runs in acme/widget (last 48h)\n"
-
-
-def test_the_fallback_world_require_cmd_is_its_own_and_still_reports() -> None:
-    """The twin defined a private `require_cmd` in the fallback block because calling common.sh's would die at 127 while reporting nothing about the missing dependency it exists to report."""
-    returncode, stdout, stderr, _ = recorded("the-fallback-world-require-cmd")
+def test_a_missing_gh_error_keeps_the_error_glyph_without_the_library(
+    tmp_path: pathlib.Path,
+) -> None:
+    returncode, stdout, stderr, _ = observed(tmp_path, "a-missing-gh")
     assert returncode == 1
-    assert stderr == "Required command 'gh' is not available\n"
+    assert stderr == "✗ Required command 'gh' is not available\n"
     assert stdout == ""
 
 

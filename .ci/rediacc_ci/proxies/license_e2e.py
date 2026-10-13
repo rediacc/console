@@ -1,7 +1,7 @@
 """Port of `.ci/scripts/test/proxies/proxy-license-e2e.sh`.
 
-Local proxy for CI's licensing battery, `.ci/scripts/private/license-e2e.sh` (run in `ct-tests.yml:1848`), which is outside the parity surface. Wired as the registered gate `check:ci-proxy-license-e2e` (`package.json:387`, `scripts/ci-runner/manifest.ts:7435-7444`, `kind: 'local-only'`) -- the bash proxy is what the gate calls; this port is the parity-verified alternative, not yet
-the call site, same as every other file in this package. NO REDUCTION: unlike every other proxy here, this one runs the subject exactly as CI does, with no flag and no subset -- it needs no VM, no btrfs, no LUKS and no docker (the license gate fires before any storage work) and measured 15.8s on this host. The subject itself stays bash and unported; only this proxy is.
+Local proxy for CI's licensing battery, `rediacc_ci.private.license_e2e` (run by the License Enforcement job in `ct-tests.yml`), which is outside the parity surface. Wired as the registered gate `check:ci-proxy-license-e2e` (`package.json:387`, `scripts/ci-runner/manifest.ts:7435-7444`, `kind: 'local-only'`) -- the bash proxy is what the gate calls; this port is the parity-verified alternative, not yet
+the call site, same as every other file in this package. NO REDUCTION: unlike every other proxy here, this one runs the subject exactly as CI does, with no flag and no subset -- it needs no VM, no btrfs, no LUKS and no docker (the license gate fires before any storage work) and measured 15.8s on this host. The subject is the Python module `rediacc_ci.private.license_e2e`, run as `python3 -m` with `PYTHONPATH=.ci`; it no longer needs `jq`.
 
 WHAT THIS PROXY ADDS ON TOP OF THE SUBJECT'S OWN EXIT CODE. The subject is a three-run battery: an enforcing binary that must pass every scenario, and two deliberately broken binaries (nolicense, wrong-key) that must FAIL. "exit 0" is therefore a claim about six things, and a battery that silently degraded to running one binary would still exit 0. This proxy reads the summary lines
 back and asserts the shape: the enforcing run recorded assertions and zero failures, the nolicense control really failed, and the wrong-key control really failed. A control that does not fire is the failure this exists for -- it would leave the battery unable to detect the exact defect class it was built for, while still exiting 0.
@@ -34,12 +34,11 @@ def _count(pattern: re.Pattern[str], text: str) -> int:
 
 def run() -> int:
     root = paths.repo_root()
-    subject = str(root / ".ci" / "scripts" / "private" / "license-e2e.sh")
+    subject = str(root / ".ci" / "rediacc_ci" / "private" / "license_e2e.py")
 
-    p = proxyx.Proxy("license-e2e", ".ci/scripts/private/license-e2e.sh")
-    p.need_exec(subject, "the subject script is missing from this checkout")
+    p = proxyx.Proxy("license-e2e", ".ci/rediacc_ci/private/license_e2e.py")
+    p.need_file(subject, "the subject module is missing from this checkout")
     p.need_cmd("go", "./run.sh setup (the battery builds three renet binaries from source)")
-    p.need_cmd("jq", "sudo apt-get install -y jq")
     p.need_file(
         str(root / "private" / "renet" / "go.mod"), "git submodule update --init private/renet"
     )
@@ -54,14 +53,20 @@ def run() -> int:
     p.preflight()
 
     # Read separately on purpose, as the twin does: this subject writes every log line to stderr and nothing at all to stdout, so a merged capture would hide that the stdout side is empty by design rather than by breakage.
-    proc = subprocess.run([subject], capture_output=True, text=True, check=False)
+    proc = subprocess.run(
+        [sys.executable, "-m", "rediacc_ci.private.license_e2e"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=proxyx.with_ci_pythonpath(root),
+    )
     rc = proc.returncode
     both = proc.stdout + proc.stderr
 
     if rc == 0:
-        p.ok("license-e2e.sh exited 0")
+        p.ok("license_e2e exited 0")
     else:
-        p.bad(f"license-e2e.sh exited {rc}")
+        p.bad(f"license_e2e exited {rc}")
         print("  --- subject stderr (last 60) ---", file=sys.stderr)
         print("\n".join(proc.stderr.splitlines()[-60:]), file=sys.stderr)
         print("  --- subject stdout (last 20) ---", file=sys.stderr)

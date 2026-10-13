@@ -68,11 +68,9 @@ def build_repo():
     """A tracked corpus that clears every floor the gate enforces, plus the gate itself."""
     # Inside RUN_TMP rather than only removed by the rmtree at the bottom: that line runs only when the suite reaches it, and this repo holds a few hundred generated corpus files.
     root = pathlib.Path(tempfile.mkdtemp(prefix="corpus-", dir=RUN_TMP))
+    # ONE FAMILY SINCE 2026-10-08: the counter's FAMILIES holds only `scripts/gates/check-*.ts` once the last `.ci/scripts/test/gates/test-*.sh` was deleted, so the other three rows generated files nothing scanned. 200 files of 30 lines clear the corpus floor (129 files) and the window floor (5000; 26 windows each, 5200).
     families = [
-        ("scripts/gates", "check-gen%03d.ts", 110, "ts"),
-        (".ci/scripts/quality", "check-gen%03d.sh", 60, "qa"),
-        (".ci/scripts/test/gates", "test-gen%03d.sh", 110, "tg"),
-        (".claude/hooks/pre-bash", "block-gen%03d.sh", 2, "bg"),
+        ("scripts/gates", "check-gen%03d.ts", 200, "ts"),
     ]
     for directory, pattern, count, tag in families:
         (root / directory).mkdir(parents=True, exist_ok=True)

@@ -20,6 +20,7 @@ import pytest
 
 from rediacc_hooks import lifecycle
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.wellknown import CLAUDE_HAIKU_MODEL
 
 R = wlfix.import_wl("wl_review")
 
@@ -470,10 +471,18 @@ def test_a_malformed_cost_line_is_refused():
         R.parse(text.replace("Cost: (none)", "Cost: about a dime"))
 
 
-def test_a_commit_in_a_nested_repo_records_its_repo(world):
-    sub = world.repo / "sub"
+def _submodule(world, name="sub"):
+    """A nested repository REGISTERED in `.gitmodules`: the review hook triggers only for the project and its submodules (operator 2026-10-08)."""
+    sub = world.repo / name
     sub.mkdir()
     world.init_repo(sub)
+    with (world.repo / ".gitmodules").open("a", encoding="utf-8") as fh:
+        fh.write('[submodule "%s"]\n\tpath = %s\n\turl = ./%s\n' % (name, name, name))
+    return sub
+
+
+def test_a_commit_in_a_nested_repo_records_its_repo(world):
+    sub = _submodule(world)
     sha = world.commit("f.py", repo=sub)
     rc, out, err, _t = world.hook("git -C sub commit -m x -- f.py")
     assert rc == 0, err
@@ -486,9 +495,7 @@ def test_a_commit_in_a_nested_repo_records_its_repo(world):
 def test_check_without_a_repo_judges_the_submodule_reviews_too(world):
     """`wl_review.py --check` passes no repo and must judge every repository a review names: scoped to the console it printed "clean" while a submodule commit's review was unsettled, which the push guard then refused (renet 3ca4821f, 2026-10-02)."""
     world.answer([])  # a clean review, so only coverage can make the branch unclean
-    sub = world.repo / "sub"
-    sub.mkdir()
-    world.init_repo(sub)
+    sub = _submodule(world)
     sha = world.commit("f.py", repo=sub)
     rc, _out, err, _t = world.hook("git -C sub commit -m x -- f.py")
     assert rc == 0, err
@@ -507,14 +514,28 @@ def test_check_without_a_repo_judges_the_submodule_reviews_too(world):
 
 def test_a_commit_behind_an_unresolvable_dash_c_still_starts_its_review(world):
     """#51e1c0cf: `git -C <dir>/$r commit` (a loop variable) is a path the lexer cannot expand; the commit's repository must still be reviewed, not skipped."""
-    sub = world.repo / "sub"
-    sub.mkdir()
-    world.init_repo(sub)
+    sub = _submodule(world)
     sha = world.commit("f.py", repo=sub)
     rc, out, err, _t = world.hook('for r in sub; do git -C "$r" commit -m x -- f.py; done')
     assert rc == 0, err
     assert "started for sub %s" % sha[:8] in _context(out)
     assert world.wait_for(world.review_file(sha))
+
+
+def test_a_commit_in_a_nested_repo_that_is_not_a_submodule_starts_nothing(world):
+    """2026-10-08: private/growth is a separate, gitignored repository inside the tree. Its commits were reviewed into this project's agent/reviews/, which filed the operator's private documents here; the operator ruled it excluded. Membership is `.gitmodules`, not location."""
+    _submodule(world, "registered")
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    sha = world.commit("f.py", repo=other)
+    rc, out, err, _t = world.hook("git -C growth commit -m x -- f.py")
+    assert rc == 0, err
+    assert "started for" not in _context(out)
+    assert not world.review_file(sha).exists()
+    rc, out, err, _t = world.hook('for r in growth; do git -C "$r" commit -m x -- f.py; done')
+    assert rc == 0, err
+    assert "growth" not in _context(out)
 
 
 def test_a_commit_in_a_repository_outside_the_project_starts_nothing(world):
@@ -684,6 +705,59 @@ def test_mark_fixed_accepts_a_fix_on_a_rebased_copy_of_the_reviewed_commit(world
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
 
 
+def test_mark_fixed_follows_a_moved_to_stub_to_the_moved_file(world):
+    """2026-10-08: plans closed by `check_plan_folders.py --move` leave a `Moved-To:` stub at the old path, and a fix to the moved plan was refused as "does not touch" the stub path. The mark now follows the stub; a fix touching neither file is still refused."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.commit("done/f.py", body="a = 1\nb = 2\nc = 3\n", msg="docs: move")
+    world.commit("f.py", body="Status: moved\nMoved-To: done/f.py\n", msg="docs: stub")
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
+    fix = world.commit("done/f.py", body="a = 1\nb = 2\nc = 4\n")
+    R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
+def test_mark_fixed_reads_the_stub_from_the_fix_commit_not_the_working_tree(world):
+    """The stub is read from the fix commit's tree: deleting it in a later commit leaves the mark valid, and a fix touching neither file is still refused."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.commit("done/f.py", body="a = 1\nb = 2\nc = 3\n", msg="docs: move")
+    world.commit("f.py", body="Status: moved\nMoved-To: done/f.py\n", msg="docs: stub")
+    fix = world.commit("done/f.py", body="a = 1\nb = 2\nc = 4\n")
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
+    world.git("rm", "-q", "--", "f.py")
+    world.git("commit", "-q", "-m", "docs: drop the stub", "--", "f.py")
+    assert not (world.repo / "f.py").exists()
+    R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
+def test_mark_fixed_falls_back_to_the_flat_legacy_stub_when_the_fix_tree_has_none(world):
+    """A retired flat `agent/PLAN-<slug>.md` stub is absent from the fix commit's tree; the mark still follows the slug to the moved plan, and a fix touching neither file is refused."""
+    world.answer([{"severity": "high", "file": "agent/PLAN-x.md", "line": 1, "claim": "stale"}])
+    sha = world.commit("agent/PLAN-x.md", body="a = 1\nb = 2\nc = 3\n", msg="docs: plan")
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.git("rm", "-q", "--", "agent/PLAN-x.md")
+    world.git("commit", "-q", "-m", "docs: retire the flat stub", "--", "agent/PLAN-x.md")
+    world.commit("agent/plans/PLAN-x.md", body="a = 1\nb = 2\nc = 3\n", msg="docs: move")
+    unrelated = world.commit("other.py", body="z = 1\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(world.repo, BRANCH, fid, "fixed", [unrelated], "deadbeef")
+    fix = world.commit("agent/plans/PLAN-x.md", body="a = 1\nb = 2\nc = 4\n")
+    R.mark(world.repo, BRANCH, fid, "fixed", [fix], "deadbeef")
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
 def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     sha = world.commit()
     world.run_child(sha)
@@ -708,13 +782,12 @@ def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     assert R.parse(world.review_file(sha).read_text()).findings[0].resolution_kind() == "not-a-bug"
 
 
-def test_mark_deferred_needs_an_open_item_naming_the_finding_and_reopens_when_it_goes(world):
+def test_mark_deferred_is_refused_with_the_plan_and_fix_order(world):
+    """PLAN-deferred-findings-block-merge D1/D5: `deferred` is no longer a resolution, even with an open item that names the finding; the refusal carries the triage command and the order."""
     sha = world.commit()
     world.run_child(sha)
     fid = "%s.1" % sha[:8]
-    with pytest.raises(ValueError, match="does not exist"):
-        R.mark(world.repo, BRANCH, fid, "deferred", ["#abcdef12"], "deadbeef", items={})
-    with pytest.raises(ValueError, match="does not name"):
+    with pytest.raises(ValueError, match="deferred is retired") as err:
         R.mark(
             world.repo,
             BRANCH,
@@ -722,20 +795,108 @@ def test_mark_deferred_needs_an_open_item_naming_the_finding_and_reopens_when_it
             "deferred",
             ["#abcdef12"],
             "deadbeef",
-            items={"abcdef12": (" ", "other work")},
+            items={"abcdef12": (" ", "fix %s later" % fid, "")},
         )
-    R.mark(
-        world.repo,
-        BRANCH,
-        fid,
-        "deferred",
-        ["#abcdef12"],
+    assert "worklist.py --triage <me> '%s " % fid in str(err.value)
+    assert "PLAN+SUBAGENT" in str(err.value)
+    assert "waived #<triage-item> ASKED:" in str(err.value)
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
+ASKED_MINUTE = "2026-10-08T10:00"
+
+
+def _transcript(tmp_path, answered_at):
+    """A lead transcript holding one AskUserQuestion and its tool_result at `answered_at` (ISO, Z)."""
+    path = tmp_path / "lead.jsonl"
+    rows = [
+        {
+            "timestamp": answered_at,
+            "message": {
+                "content": [{"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_ask1"}]
+            },
+        },
+        {
+            "timestamp": answered_at,
+            "message": {"content": [{"type": "tool_result", "tool_use_id": "toolu_ask1"}]},
+        },
+    ]
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    return path
+
+
+def _asked_ok(transcript):
+    checks = wlfix.import_wl("wl_checks")
+    return lambda text: checks._asked_in_transcript(text, str(transcript))
+
+
+def test_mark_waived_needs_the_item_its_operator_only_triage_and_a_matching_answer(world, tmp_path):
+    """D3 (a)-(c), each refused on its own; the accepted call differs from each refusal in exactly the condition under test."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    good_items = {"abcdef12": (" ", "%s needs the operator" % fid, "operator-only")}
+    args = ["#abcdef12", "ASKED:%sZ" % ASKED_MINUTE]
+
+    def waive(items, asked_ok, a=args):
+        return R.mark(
+            world.repo, BRANCH, fid, "waived", a, "deadbeef", items=items, asked_ok=asked_ok
+        )
+
+    (tmp_path / "a").mkdir(exist_ok=True)
+    (tmp_path / "b").mkdir(exist_ok=True)
+    on_time = _asked_ok(_transcript(tmp_path / "a", "2026-10-08T10:00:40+00:00"))
+    late = _asked_ok(_transcript(tmp_path / "b", "2026-10-08T10:06:01+00:00"))
+    with pytest.raises(ValueError, match="does not exist"):
+        waive({}, on_time)
+    with pytest.raises(ValueError, match="does not name"):
+        waive({"abcdef12": (" ", "other work", "operator-only")}, on_time)
+    with pytest.raises(ValueError, match="not operator-only"):
+        waive({"abcdef12": (" ", "%s needs the operator" % fid, "inline")}, on_time)
+    with pytest.raises(ValueError, match="not operator-only"):
+        waive({"abcdef12": (" ", "%s needs the operator" % fid, "")}, on_time)
+    with pytest.raises(ValueError, match="AskUserQuestion"):
+        waive(good_items, late)
+    with pytest.raises(ValueError, match="AskUserQuestion"):
+        waive(good_items, None)
+    with pytest.raises(ValueError, match="ASKED:"):
+        waive(good_items, on_time, ["#abcdef12", "2026-10-08T10:00Z"])
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+    waive(good_items, on_time)
+    finding = R.parse(world.review_file(sha).read_text()).findings[0]
+    assert finding.resolution_kind() == "waived", finding.resolution
+    assert finding.resolution.startswith("waived #abcdef12 ASKED:%sZ | deadbeef " % ASKED_MINUTE)
+    st = R.branch_state(world.repo, BRANCH, repos=())
+    assert st["deferred"] == [], st
+    assert all(f.id != fid for _p, f in st["blocking"] + st["advisory"]), st
+
+
+def test_the_verb_hands_the_items_and_the_asked_check_to_a_waiver(world, tmp_path):
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    (tmp_path / "a").mkdir(exist_ok=True)
+    asked_ok = _asked_ok(_transcript(tmp_path / "a", "2026-10-08T10:00:10+00:00"))
+    items = {"abcdef12": (" ", "%s needs the operator" % fid, "operator-only")}
+    args = [fid, "waived", "#abcdef12", "ASKED:%sZ" % ASKED_MINUTE]
+    rc, text = R.verb("--review-mark", "deadbeef", args, world.repo, lambda: items, branch=BRANCH)
+    assert rc == 1, text
+    assert "AskUserQuestion" in text, text
+    rc, text = R.verb(
+        "--review-mark",
         "deadbeef",
-        items={"abcdef12": (" ", "fix %s later" % fid)},
+        args,
+        world.repo,
+        lambda: items,
+        branch=BRANCH,
+        asked_ok=asked_ok,
     )
-    assert R.branch_state(world.repo, BRANCH, repos=(), items={"abcdef12": " "})["blocking"] == []
-    reopened = R.branch_state(world.repo, BRANCH, repos=(), items={})["blocking"]
-    assert [f.id for _p, f in reopened] == [fid], "a deferral whose item is gone must reopen"
+    assert rc == 0, text
+    rc, text = R.verb(
+        "--review-mark", "deadbeef", [fid, "deferred", "#abcdef12"], world.repo, dict, branch=BRANCH
+    )
+    assert rc == 1, text
+    assert "deferred is retired" in text, text
 
 
 def test_review_commit_records_only_finished_files_with_the_trailer(world):
@@ -1205,3 +1366,226 @@ def test_ledger_migrate_refuses_a_codec_that_drops_the_labels_why(tmp_path):
     assert R.ledger_migrate(tmp_path, write=True, codec=lossy, log=out.append) == 1
     assert any("round-trip mismatch on labels" in line for line in out), out
     assert _tree_bytes(tmp_path) == before
+
+
+def test_reviewer_model_is_the_well_known_id_and_config_cannot_override_it(tmp_path):
+    """ONE SOURCE (6d0246d67): the reviewer's model is WK_CLAUDE_HAIKU_MODEL, the value the Stop-hook judge reads; a `model` key left in commit-review.json is ignored, so the id cannot drift into a second place again."""
+    assert R.load_config()["model"] == CLAUDE_HAIKU_MODEL
+    cfg = tmp_path / ".ci" / "config"
+    cfg.mkdir(parents=True)
+    # CONTROL: a stale key that a merge would honour, if the config could still set the model.
+    (cfg / "commit-review.json").write_text(
+        json.dumps({"model": "stale-model", "budget_usd": 0.5}), encoding="utf-8"
+    )
+    loaded = R.load_config(tmp_path)
+    assert loaded["budget_usd"] == 0.5, (
+        "the fixture config was not read, so the control proves nothing"
+    )
+    assert loaded["model"] == CLAUDE_HAIKU_MODEL
+    wl_judge = wlfix.import_wl("wl_judge")
+    assert wl_judge.JUDGE_MODEL == CLAUDE_HAIKU_MODEL
+
+
+def _finding(path):
+    return {
+        "severity": "low",
+        "file": path,
+        "line": 1,
+        "claim": "a claim long enough to be a real finding here",
+    }
+
+
+def test_drop_foreign_reviews_removes_only_records_of_a_repository_outside_the_project(world):
+    """The verb behind `worklist.py --drop-foreign-reviews` (operator 2026-10-08): records a reviewer filed for an unregistered nested repository go, records of the project and of a registered submodule stay."""
+    sub = _submodule(world, "registered")
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+
+    def review(repo_dir, label, findings, name):
+        world.answer(findings)
+        sha = world.commit(name, repo=repo_dir)
+        cmd = [
+            sys.executable,
+            str(R.SELF),
+            "--run",
+            sha,
+            "--branch",
+            BRANCH,
+            "--root",
+            str(world.repo),
+        ]
+        if label != "console":
+            cmd += ["--repo", label]
+        done = subprocess.run(
+            cmd, capture_output=True, text=True, env=world.env, check=False, timeout=60
+        )
+        assert done.returncode == 0, done.stderr
+        return sha
+
+    keep_md = review(world.repo, "console", [_finding("a.py")], "a.py")
+    keep_sub = review(sub, "registered", [], "b.py")
+    drop_md = review(other, "growth", [_finding("c.py")], "c.py")
+    drop_line = review(other, "growth", [], "d.py")
+    assert world.review_file(drop_md).exists()
+    assert drop_line in world.ledger_shas()
+
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=False)
+    assert rc == 0, text
+    assert "2 review record(s)" in text, text
+    assert world.review_file(drop_md).exists(), "a listing deletes nothing"
+
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=True)
+    assert rc == 0, text
+    assert not world.review_file(drop_md).exists()
+    assert drop_line not in world.ledger_shas()
+    assert world.review_file(keep_md).exists()
+    assert keep_sub in world.ledger_shas()
+    assert R.drop_foreign_reviews(world.repo, BRANCH, write=False)[1].startswith(
+        "no review records"
+    )
+
+
+def test_drop_foreign_reviews_refuses_when_gitmodules_cannot_be_read(world):
+    """Review 166c8fe1.1: an unreadable `.gitmodules` once fell back to the console alone, so every submodule record read as foreign and --write would delete them. It now refuses and touches nothing."""
+    sub = _submodule(world, "registered")
+    world.answer([])
+    sha = world.commit("e.py", repo=sub)
+    cmd = [
+        sys.executable,
+        str(R.SELF),
+        "--run",
+        sha,
+        "--branch",
+        BRANCH,
+        "--root",
+        str(world.repo),
+        "--repo",
+        "registered",
+    ]
+    done = subprocess.run(
+        cmd, capture_output=True, text=True, env=world.env, check=False, timeout=60
+    )
+    assert done.returncode == 0, done.stderr
+    (world.repo / ".gitmodules").write_text("[submodule\n\tbroken = = =\n", encoding="utf-8")
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=True)
+    assert rc == 1, text
+    assert "refused" in text
+    assert sha in world.ledger_shas(), "the submodule record survives"
+
+
+def test_the_worklist_arm_supplies_the_triage_verdict_and_the_transcript_check(
+    tmp_path, monkeypatch
+):
+    """worklist._review_cli hands wl_review.verb the fold as (state, text, triage verdict) and an `asked_ok` reading the lead transcript, so wl_review never imports wl_checks (PLAN-deferred-findings-block-merge L2)."""
+    wl = wlfix.import_wl("worklist")
+    transcript = _transcript(tmp_path, "2026-10-08T10:00:30+00:00")
+    fold = types.SimpleNamespace(
+        items=[
+            {"id": "abcdef12", "state": " ", "text": "x", "triage": {"v": "operator-only"}},
+            {"id": "c0ffee00", "state": ">", "text": "y"},
+        ]
+    )
+    seen = {}
+
+    def fake_verb(*args, asked_ok=None):
+        seen["items"] = args[4]()
+        seen["asked"] = (asked_ok("ASKED:%sZ" % ASKED_MINUTE), asked_ok("ASKED:2026-10-08T11:00Z"))
+        return 0, "ok"
+
+    monkeypatch.setattr(wl, "_identity_or_die", lambda *_a: None)
+    monkeypatch.setattr(wl, "_lead_transcript", lambda *_a: str(transcript))
+    monkeypatch.setattr(wl.C, "project_start", lambda *_a, **_k: str(tmp_path))
+    monkeypatch.setattr(wl.C, "project_root", lambda *_a, **_k: str(tmp_path))
+    monkeypatch.setattr(wl.C, "worklist_for", lambda *_a, **_k: tmp_path / "wl.jsonl")
+    monkeypatch.setattr(wl.S, "load", lambda *_a, **_k: fold)
+    monkeypatch.setattr(R, "verb", fake_verb)
+    with pytest.raises(SystemExit) as code:
+        wl._review_cli(["--review-mark", "deadbeef", "x.1", "waived", "#abcdef12", "ASKED:x"])
+    assert code.value.code == 0
+    assert seen["items"] == {
+        "abcdef12": (" ", "x", "operator-only"),
+        "c0ffee00": (">", "y", ""),
+    }
+    assert seen["asked"] == (True, False)
+
+
+def test_a_gitmodules_listing_no_submodule_has_the_console_alone(world):
+    """Finding f3056b34.1: a well-formed `.gitmodules` with no submodule (git config rc 1, no output) is a legal tree, not an unreadable one: the console is the only member and a foreign record is still found."""
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    world.answer([_finding("c.py")])
+    sha = world.commit("c.py", repo=other)
+    done = subprocess.run(
+        [
+            sys.executable,
+            str(R.SELF),
+            "--run",
+            sha,
+            "--branch",
+            BRANCH,
+            "--root",
+            str(world.repo),
+            "--repo",
+            "growth",
+        ],
+        capture_output=True,
+        text=True,
+        env=world.env,
+        check=False,
+        timeout=60,
+    )
+    assert done.returncode == 0, done.stderr
+    (world.repo / ".gitmodules").write_text("", encoding="utf-8")
+    assert R.registered_labels(world.repo) == {"console"}
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=False)
+    assert rc == 0, text
+    assert "growth" in text, text
+
+
+def test_drop_foreign_reviews_reports_a_partial_delete_and_rewrites_the_ledger_first(
+    world, monkeypatch
+):
+    """Finding 166c8fe1.3: each record was unlinked before the ledger rewrite, so an unlink that raised partway left a ledger naming records already gone, unreported. The ledger now goes first and a failed unlink is named with rc 1."""
+    other = world.repo / "growth"
+    other.mkdir()
+    world.init_repo(other)
+    shas = []
+    for name in ("c.py", "d.py"):
+        world.answer([_finding(name)])
+        sha = world.commit(name, repo=other)
+        subprocess.run(
+            [
+                sys.executable,
+                str(R.SELF),
+                "--run",
+                sha,
+                "--branch",
+                BRANCH,
+                "--root",
+                str(world.repo),
+                "--repo",
+                "growth",
+            ],
+            capture_output=True,
+            text=True,
+            env=world.env,
+            check=True,
+            timeout=60,
+        )
+        shas.append(sha)
+    real_unlink = pathlib.Path.unlink
+
+    def flaky(self, *a, **k):
+        if self.name == "%s.md" % shas[1]:
+            raise PermissionError("planted")
+        return real_unlink(self, *a, **k)
+
+    monkeypatch.setattr(pathlib.Path, "unlink", flaky)
+    rc, text = R.drop_foreign_reviews(world.repo, BRANCH, write=True)
+    assert rc == 1, text
+    assert "PARTIAL" in text, text
+    assert "%s.md" % shas[1] in text, text
+    assert not world.review_file(shas[0]).exists()
+    assert world.review_file(shas[1]).exists()

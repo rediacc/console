@@ -16,10 +16,11 @@ import os
 import pathlib
 import subprocess
 
-from rediacc_hooks import dispatch, shellscan
+from rediacc_hooks import dispatch, hookio, shellscan
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.wlfix import wl  # noqa: F401
+from rediacc_hooks.wellknown import GH_ORIGIN, RENET_REPO
 
 STALE_UNRELATED = 60
 TS_FILES = 25
@@ -163,6 +164,130 @@ def test_bulk_guard_never_calls_the_shared_index_the_commits_own(tmp_path, monke
     assert "shared index" not in err, err
 
 
+def _branch_with(repo, names, subject):
+    """Commit `names` (paths under `repo`) as one commit on the current branch."""
+    for name in names:
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("r\n", encoding="utf-8")
+    _git(repo, "add", "--", *names)
+    _git(repo, "commit", "-q", "-m", subject)
+
+
+def _pr_world(path):
+    """A repo whose `main` holds one seed commit and whose `feat` branch is checked out on top of it."""
+    repo = _repo(path)
+    (repo / "seed").write_text("s\n", encoding="utf-8")
+    _git(repo, "add", "--", "seed")
+    _git(repo, "commit", "-q", "-m", "seed")
+    _git(repo, "checkout", "-q", "-b", "feat")
+    return repo
+
+
+def test_bulk_guard_does_not_count_review_records(tmp_path, monkeypatch):
+    """A commit of 25 review records is not a transform; 25 source files with no proof still is (033a35227, 2026-10-09)."""
+    repo = _pr_world(tmp_path / "r")
+    for i in range(25):
+        _branch_with(repo, ["c%02d" % i], "fix: c%02d" % i)
+    real = _git(repo, "rev-list", "-25", "HEAD").split()
+    _branch_with(repo, ["agent/reviews/feat/%s.md" % sha for sha in real], "chore(reviews): x")
+    # A branch name holding a slash puts the records one level deeper (review 833dc9af.3).
+    _branch_with(repo, ["agent/reviews/feat/x/%s.md" % sha for sha in real], "chore(reviews): y")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 0, err
+    # Only the record shapes are exempt: 25 other files under agent/reviews/ still count (review c2e51651.1).
+    _branch_with(repo, ["agent/reviews/feat/x/s%02d.ts" % i for i in range(25)], "refactor: y")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2, err
+
+
+def test_bulk_guard_counts_a_record_name_that_is_not_a_commit(tmp_path, monkeypatch):
+    """25 files named like records, whose shas are no commit, and 25 ledgers in one commit still count (review 265f32ef.1)."""
+    repo = _pr_world(tmp_path / "r")
+    _branch_with(repo, ["agent/reviews/feat/%040x.md" % i for i in range(25)], "chore(reviews): x")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2, err
+    repo = _pr_world(tmp_path / "r2")
+    _branch_with(
+        repo, ["agent/reviews/b%02d/clean.jsonl" % i for i in range(25)], "chore(reviews): y"
+    )
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2, err
+    _branch_with(repo, ["src/f%02d.ts" % i for i in range(25)], "refactor: x")
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", repo, monkeypatch)
+    assert rc == 2
+    assert "(25 files" in err, err
+
+
+def _gitmodules(root, subs):
+    """Write `.gitmodules` naming each `path: OWNER/REPO` submodule with a GitHub url."""
+    text = "".join(
+        '[submodule "%s"]\n\tpath = %s\n\turl = %s/%s.git\n' % (path, path, GH_ORIGIN, repo)
+        for path, repo in subs.items()
+    )
+    (root / ".gitmodules").write_text(text, encoding="utf-8")
+
+
+def test_bulk_guard_finds_any_submodule_by_its_gitmodules_url(tmp_path, monkeypatch):
+    """A submodule outside the four the guard once listed is still judged in its own tree (review 833dc9af.1)."""
+    root = _pr_world(tmp_path / "console")
+    _gitmodules(root, {"vendor/newsub": "rediacc/newsub"})
+    sub = _pr_world(root / "vendor" / "newsub")
+    _branch_with(sub, ["pkg/f%02d.go" % i for i in range(25)], "refactor: newsub bulk")
+    cmd = "gh pr create --repo rediacc/newsub --base main --head feat -t x"
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 2
+    assert _git(sub, "rev-parse", "HEAD")[:10] in err, err
+
+
+def test_bulk_guard_refuses_a_project_repo_it_has_no_checkout_of(tmp_path, monkeypatch):
+    """A rediacc repository with no checkout here is refused; another owner's is outside the guard (review 265f32ef.3)."""
+    root = _pr_world(tmp_path / "console")
+    rc, _out, err = _run(
+        "block_unproven_bulk_transform",
+        "gh pr create --repo rediacc/nowhere -t x",
+        root,
+        monkeypatch,
+    )
+    assert rc == 2
+    assert "no checkout of" in err, err
+    rc, _out, err = _run(
+        "block_unproven_bulk_transform", "gh pr create --repo someone/other -t x", root, monkeypatch
+    )
+    assert rc == 0, err
+
+
+def test_bulk_guard_refuses_a_head_it_cannot_read(tmp_path, monkeypatch):
+    """`--head` naming a branch the checkout has no ref for is refused, never judged as the checked-out branch (review 833dc9af.2)."""
+    root = _pr_world(tmp_path / "console")
+    _gitmodules(root, {"private/renet": RENET_REPO})
+    _pr_world(root / "private" / "renet")
+    cmd = "gh pr create --repo %s --base main --head not-here -t x" % RENET_REPO
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 2
+    assert "no local or origin/ ref" in err, err
+
+
+def test_bulk_guard_judges_a_submodule_pr_in_its_own_checkout(tmp_path, monkeypatch):
+    """`gh pr create --repo <RENET_REPO> --head feat` walks private/renet, not the console's range (2026-10-09)."""
+    root = _pr_world(tmp_path / "console")
+    _gitmodules(root, {"private/renet": RENET_REPO})
+    _branch_with(root, ["src/f%02d.ts" % i for i in range(25)], "refactor: console bulk")
+    renet = _pr_world(root / "private" / "renet")
+    _branch_with(renet, ["one.go"], "fix: one file")
+    cmd = "gh pr create --repo %s --base main --head feat -t x" % RENET_REPO
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 0, err
+    # The console's own create still sees the console's bulk commit.
+    rc, _out, err = _run("block_unproven_bulk_transform", "gh pr create -t x", root, monkeypatch)
+    assert rc == 2, err
+    # And a bulk commit in renet is caught on the renet create.
+    _branch_with(renet, ["pkg/f%02d.go" % i for i in range(25)], "refactor: renet bulk")
+    rc, _out, err = _run("block_unproven_bulk_transform", cmd, root, monkeypatch)
+    assert rc == 2
+    assert _git(renet, "rev-parse", "HEAD")[:10] in err, err
+
+
 # --------------------------------------------------------------------------- V_SPLIT ---------------------------------------------------------------------------
 
 
@@ -255,3 +380,67 @@ def test_publish_explicit_branch_still_wins(wl, tmp_path):  # noqa: F811
     assert got.rc == 0, got.out + got.err
     assert (repo / "agent" / "pr" / "other-2.md").is_file()
     assert not (pathlib.Path(repo) / "agent" / "pr" / "t-1.md").exists()
+
+
+# --------------------------------------------------------------------------- block_rebase_over_foreign_dirt: the tree it reads ---------------------------------------------------------------------------
+
+
+def _rebase_guard(cmd, cwd, env=None):
+    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}})
+    return dispatch.run_one(
+        "block_rebase_over_foreign_dirt", payload, cwd=str(cwd), env=env or dict(os.environ)
+    )
+
+
+def test_rebase_guard_refuses_a_start_when_the_project_dir_cannot_be_named(tmp_path, monkeypatch):
+    """REVIEW 72e7ac97.1: with `CLAUDE_PROJECT_DIR` unset and the hook outside every checkout, `repo_root_env()` is empty and the guard used to ALLOW, against its own FAIL CLOSED rule. A starting rebase, pull or merge is now BLIND; every other command, `--abort` included, still passes."""
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.chdir(tmp_path)
+    # The control on the control: inside any checkout the root resolves and this case would test nothing.
+    probe = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
+    )
+    assert probe.returncode != 0, "tmp_path sits in a checkout (%s)" % probe.stdout
+    assert shellscan.repo_root_env(hookio.Event("{}")) == ""
+    # REVIEW 30573c81.4: with no checkout named, `-C /tmp` cannot be proven outside it, so a pointed `--skip` or start is refused too, as the docstring now says.
+    for cmd in (
+        "git rebase origin/main",
+        "git pull",
+        "git merge origin/main",
+        "git rebase --skip",
+        "git -C /tmp rebase --skip",
+        "git -C /tmp rebase origin/main",
+    ):
+        rc, _out, err = _rebase_guard(cmd, tmp_path)
+        assert rc == 2, (cmd, err)
+        assert "the shared checkout is unknown" in err, (cmd, err)
+    for cmd in ("git status", "git rebase --abort", "git pull --ff-only", "ls"):
+        rc, _out, err = _rebase_guard(cmd, tmp_path)
+        assert rc == 0, (cmd, err)
+
+
+def test_rebase_guard_names_a_path_that_is_not_utf8(tmp_path):
+    """The guard reads dirt through `wl_git.dirty_paths` now (worklist #dbbed0b6), whose strict decode raised UnicodeDecodeError on a non-UTF-8 file name. Driven through the real dispatcher process, so the refusal's own write to stderr is exercised too."""
+    repo = _repo(tmp_path / "console")
+    name = os.path.join(os.fsencode(repo), b"b\xffad.txt")
+    pathlib.Path(os.fsdecode(name)).write_bytes(b"a")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "seed")
+    pathlib.Path(os.fsdecode(name)).write_bytes(b"b")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env["CLAUDE_PROJECT_DIR"] = str(repo)
+    proc = subprocess.run(
+        ["python3", str(pathlib.Path(dispatch.__file__)), "block_rebase_over_foreign_dirt"],
+        input=json.dumps({"tool_input": {"command": "git rebase origin/main"}}).encode(),
+        capture_output=True,
+        cwd=str(repo),
+        env=env,
+        check=False,
+        timeout=60,
+    )
+    err = proc.stderr.decode("utf-8", "replace")
+    assert proc.returncode == 2, err
+    assert "would start over uncommitted tracked work" in err, err
+    assert "ad.txt" in err, err

@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 
-SELF = "cleanup-channel-docker-tags.py"
+SELF = "rediacc_ci.release.cleanup_channel_docker_tags"
 
 # `.ci/rediacc_ci/release/cleanup_channel_docker_tags.py` -> `.ci` -> repo root. The twin resolves the same file as `$SCRIPT_DIR/../docker/cleanup_staging.py`
 # from `.ci/scripts/release`; both spellings are three levels up plus the same

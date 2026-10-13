@@ -88,7 +88,7 @@ DNF = r"""
         curl -fsSL @RELEASES@/rpm@SUFFIX@/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
 
         # Install
-        dnf install -y @PKG@ >/dev/null 2>&1
+        dnf install -y --setopt=timeout=30 --setopt=minrate=2097152 --setopt=retries=3 @PKG@
 
         # Verify (fenced; see run_container_version_test)
         @PROBE@

@@ -61,7 +61,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common, gh_retry
 
-SELF = "assert-artifact-version.py"
+SELF = "rediacc_ci.release.assert_artifact_version"
 
 # `.ci/scripts/release/assert-artifact-version.sh:48`, verbatim. A constant rather than a parameter because the twin has no override hook either, and inventing one here would be a behaviour the bash side cannot match.
 CHECK_DIR = "/tmp/cd-artifact-check"

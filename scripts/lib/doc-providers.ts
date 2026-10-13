@@ -181,7 +181,6 @@ interface LockEntry {
   id: string;
   gate?: boolean;
   slow?: boolean;
-  qualityGateTest?: boolean;
   ci:
     | { kind: 'step'; job?: string; step?: string }
     | { kind: 'test'; test?: string }
@@ -262,12 +261,12 @@ const gateWhere = (g: LockEntry): string => {
 export const gatesProvider: Provider = {
   id: 'gates',
   scans: `${GATES_LOCK}, the committed projection of the manifest that \`check:ci-gates-lock\` keeps faithful`,
-  columns: ['Gate', 'Runs in CI as', 'Is gate', 'Slow', 'Gate test'],
+  columns: ['Gate', 'Runs in CI as', 'Is gate', 'Slow'],
   rows: (root) =>
     readGatesLock(root)
       .map((g) => ({
         key: g.id,
-        cells: [g.id, gateWhere(g), yn(g.gate), yn(g.slow), yn(g.qualityGateTest)],
+        cells: [g.id, gateWhere(g), yn(g.gate), yn(g.slow)],
       }))
       .sort((a, b) => byCodePoint(a.key, b.key)),
   missing: (root) => (fs.existsSync(path.join(root, GATES_LOCK)) ? [] : [GATES_LOCK]),
@@ -297,17 +296,15 @@ export const gatesProvider: Provider = {
 export const gatesSummaryProvider: Provider = {
   id: 'gates-summary',
   scans: `${GATES_LOCK}, folded to one row per CI lane`,
-  // "IS a gate test", not "has one", and the distinction was got wrong once here before the table was read against the lock. `qualityGateTest` marks an entry that IS one of the on-disk gate tests -- manifest.ts says so outright, and every one of the 144 rows carrying it has an id beginning `gate-test:`, with no `gate-test:` entry lacking it. A column headed "Has a gate test" would
-  // have told every reader that 86 quality-code gates are untested, which is a different and false claim.
-  columns: ['Where it runs', 'Registered', '`gate: true`', 'Slow', 'Is a gate test'],
+  // NO "Is a gate test" COLUMN SINCE 2026-10-09. It counted the lock's `qualityGateTest` entries, the bash gate tests the battery ran; that battery and the field were retired with the last of them, so the column could only ever read 0.
+  columns: ['Where it runs', 'Registered', '`gate: true`', 'Slow'],
   rows: (root) => {
-    const lanes = new Map<string, { n: number; gate: number; slow: number; test: number }>();
+    const lanes = new Map<string, { n: number; gate: number; slow: number }>();
     const bump = (key: string, g: LockEntry): void => {
-      const row = lanes.get(key) ?? { n: 0, gate: 0, slow: 0, test: 0 };
+      const row = lanes.get(key) ?? { n: 0, gate: 0, slow: 0 };
       row.n += 1;
       if (g.gate === true) row.gate += 1;
       if (g.slow === true) row.slow += 1;
-      if (g.qualityGateTest === true) row.test += 1;
       lanes.set(key, row);
     };
     for (const g of readGatesLock(root)) {
@@ -326,7 +323,7 @@ export const gatesSummaryProvider: Provider = {
       .sort((a, b) => byCodePoint(a[0], b[0]))
       .map(([key, v]) => ({
         key,
-        cells: [key, String(v.n), String(v.gate), String(v.slow), String(v.test)],
+        cells: [key, String(v.n), String(v.gate), String(v.slow)],
       }));
   },
   missing: (root) => (fs.existsSync(path.join(root, GATES_LOCK)) ? [] : [GATES_LOCK]),
@@ -1351,21 +1348,32 @@ export const jobGraphProvider: Provider = {
 
 /* ---------------------------------------------------------------- the media */
 
-const MEDIA_PUSH_SEAM = '.ci/scripts/deploy/sync-media-to-r2.sh';
-const MEDIA_PULL_SEAM = '.ci/scripts/deploy/sync-media-from-r2.sh';
+const MEDIA_PUSH_SEAM = '.ci/rediacc_ci/deploy/sync_media_to_r2.py';
+const MEDIA_PULL_SEAM = '.ci/rediacc_ci/deploy/sync_media_from_r2.py';
 const WWW_GITIGNORE = 'packages/www/.gitignore';
 const WWW_PREFIX = 'packages/www/';
 
-/** `<local>` -> `<r2 prefix>` pairs, from whichever argument order the script uses. */
+/**
+ * `<local>` -> `<r2 prefix>` pairs, from whichever argument order the script uses.
+ *
+ * Two spellings are read: a `sync_dir "<a>" "<b>"` / `restore_dir "<a>" "<b>"` call, and a Python
+ * module-level pair `NAME = ("<a>", "<b>")` as the ports write their three legs. `a` and `b` are the
+ * script's first and second argument either way, and `localFirst` says which one is the local path.
+ */
 export function mediaPairs(source: string, localFirst: boolean): Map<string, string> {
   const out = new Map<string, string>();
-  const re = /^\s*(?:sync_dir|restore_dir)\s+"([^"]+)"\s+"([^"]+)"/gm;
-  for (const m of source.matchAll(re)) {
-    const a = (m[1] ?? '').replace('$REPO_ROOT/', '');
-    const b = (m[2] ?? '').replace('$REPO_ROOT/', '');
-    const local = localFirst ? a : b;
-    const prefix = localFirst ? b : a;
-    out.set(local.replace(/\/$/, ''), prefix.replace(/\/$/, ''));
+  const res = [
+    /^\s*(?:sync_dir|restore_dir)\s+"([^"]+)"\s+"([^"]+)"/gm,
+    /^[A-Z][A-Z_]*\s*=\s*\(\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,?\s*\)\s*$/gm,
+  ];
+  for (const re of res) {
+    for (const m of source.matchAll(re)) {
+      const a = (m[1] ?? '').replace('$REPO_ROOT/', '');
+      const b = (m[2] ?? '').replace('$REPO_ROOT/', '');
+      const local = localFirst ? a : b;
+      const prefix = localFirst ? b : a;
+      out.set(local.replace(/\/$/, ''), prefix.replace(/\/$/, ''));
+    }
   }
   return out;
 }
@@ -1415,12 +1423,7 @@ export const mediaProvider: Provider = {
       );
     }
 
-    // THE UNION OF THREE SEAMS, because the interesting rows are the ones a single seam
-    // cannot show. `packages/www/public/media/` is gitignored and mirrored by NEITHER
-    // script: 138 files of narration audio, captions, photos and posters that were
-    // untracked with the rest in #512 and never went to R2. Rendering only what the sync
-    // scripts name would make that the one directory the table cannot see, which is the
-    // same as not documenting it at all.
+    // THE UNION OF THREE SEAMS, because the interesting rows are the ones a single seam cannot show. `packages/www/public/media/` is gitignored and mirrored by NEITHER script: 138 files of narration audio, captions, photos and posters that were untracked with the rest in #512 and never went to R2. Rendering only what the sync scripts name would make that the one directory the table cannot see, which is the same as not documenting it at all.
     const keys = mediaKeys(push, pull, ignored);
 
     // A DIRECTORY INSIDE A SYNCED ONE IS SYNCED, and saying otherwise is the false alarm
@@ -1784,6 +1787,25 @@ const wiringRank = (f: string): number => {
 };
 
 /**
+ * A TEST NAMES A FILE AS A FIXTURE, NOT AS ITS OWNER, so a code namer that is a test ranks after
+ * every program. By path alone `.ci/rediacc_ci/tests/...` sorts before `scripts/lib/...`, and
+ * `.ci/config/merged-prs.json` was reported as hardcoded in a gate test when
+ * `scripts/lib/suppression-liveness.ts` reads it (review finding f8461c53.1). A test still names a
+ * file that no program names.
+ *
+ * THE BASENAME RULE IS BY EXTENSION, NOT BARE. `packages/shared/src/config/test-credentials.ts` and `test-prefixes.ts` are programs that happen to start with `test-`, and a bare `test[_-]*` rule ranked them below every other namer. The test conventions this repository actually uses (measured over `git ls-files`: no `test-*`/`test_*` TypeScript or `.mjs` file is a test, the two `test-*.ts` are programs) are pytest's `test_*.py`, `*_test.py` and `conftest.py`, and the `test-*.{py,sh,js}` hook and script tests; a TypeScript test is `*.test.ts` or sits under a `tests/` directory.
+ */
+const isTestPath = (f: string): boolean =>
+  /(?:^|\/)(?:tests?|__tests__)\//.test(f) ||
+  /(?:^|\/)test_[^/]*\.py$/.test(f) ||
+  /(?:^|\/)[^/]*_test\.py$/.test(f) ||
+  /(?:^|\/)conftest\.py$/.test(f) ||
+  /(?:^|\/)test-[^/]*\.(?:py|sh|js)$/.test(f) ||
+  /\.(?:test|spec)\.[^/]+$/.test(f);
+
+const codeRank = (f: string): number => (isTestPath(f) ? 1 : 0);
+
+/**
  * A WILDCARD TOKEN NEEDS THIS MANY LITERAL CHARACTERS BEFORE IT COUNTS AS A NAME.
  *
  * `packages/json/src/_config.yml:14` holds `"*.json"`. Treated as a name, that one line
@@ -1858,11 +1880,30 @@ const isJsonMember = (f: string): boolean =>
   (f.endsWith('.json') || f.endsWith('.jsonc')) &&
   JSON_HOMES.some(({ dir }) => (dir === '.' ? !f.includes('/') : path.dirname(f) === dir));
 
-/** Everything a namer contributes to this table: its token patterns, in order. */
+/**
+ * A PROGRAM THAT BINDS THE PATH TO A NAME OWNS IT; ONE THAT MERELY MENTIONS IT DOES NOT.
+ *
+ * `.ci/config/model-invocation-exceptions.json` was reported as hardcoded in the gate module
+ * `.ci/rediacc_ci/quality/model_invocable_commands.py`, which names the path only in its
+ * docstring and an error message, while `.claude/rediacc_hooks/model_invocation.py` binds it
+ * (`EXCEPTIONS_REL = "..."`) and is the one loader every reader goes through (review finding
+ * 77997287.4). By path alone `.ci/` sorts before `.claude/`. So within one test rank a code
+ * namer that ASSIGNS a quoted path to a name (`NAME = "x.json"`, `const x = 'x.json'`, a
+ * `NAME: str = ...` annotation included) outranks one that only writes the path down; with no
+ * binder, the first mention still answers, as before.
+ */
+const BINDING =
+  /^[ \t]*(?:export[ \t]+)?(?:(?:const|let|var|readonly)[ \t]+)?[A-Za-z_$][\w$.]*(?:[ \t]*:[^=\n]+)?[ \t]*=[ \t]*(['"`])([^'"`\n]*\.jsonc?)\1/gm;
+
+/** The token patterns of the paths a program binds to a name, in order (see `BINDING`). */
+const bindingTokens = (text: string): RegExp[] =>
+  jsonTokens([...text.matchAll(BINDING)].map((m) => m[2]).join('\n'));
+
+/** Everything a namer contributes to this table: its token patterns, then its binding patterns, in order. */
 const namerTokens = (text: string | null): string =>
   text === null
     ? ''
-    : jsonTokens(text)
+    : [...jsonTokens(text), ...bindingTokens(text).map((re) => new RegExp(`=${re.source}`))]
         .map((re) => re.source)
         .join('\n');
 
@@ -1878,7 +1919,7 @@ export const jsonInventoryProvider: Provider = {
     // so the cost is one pass over the tree rather than one per row.
     const { present } = presentFiles(root, lsFiles(root, '.'));
     const wiring: { file: string; tokens: RegExp[] }[] = [];
-    const code: { file: string; tokens: RegExp[] }[] = [];
+    const code: { file: string; tokens: RegExp[]; binds: RegExp[] }[] = [];
     for (const f of present) {
       if (!isNamerCandidate(f)) continue;
       const isWiring = WIRING_EXT.includes(path.extname(f)) || f.startsWith('.vscode/');
@@ -1890,7 +1931,8 @@ export const jsonInventoryProvider: Provider = {
       }
       const tokens = jsonTokens(text);
       if (tokens.length === 0) continue;
-      (isWiring ? wiring : code).push({ file: f, tokens });
+      if (isWiring) wiring.push({ file: f, tokens });
+      else code.push({ file: f, tokens, binds: bindingTokens(text) });
     }
     if (wiring.length === 0 || code.length === 0) {
       throw new Error(
@@ -1900,7 +1942,7 @@ export const jsonInventoryProvider: Provider = {
       );
     }
     wiring.sort((a, b) => wiringRank(a.file) - wiringRank(b.file) || byCodePoint(a.file, b.file));
-    code.sort((a, b) => byCodePoint(a.file, b.file));
+    code.sort((a, b) => codeRank(a.file) - codeRank(b.file) || byCodePoint(a.file, b.file));
 
     const rows: ProviderRow[] = [];
     for (const { home, dir } of JSON_HOMES) {
@@ -1933,6 +1975,17 @@ export const jsonInventoryProvider: Provider = {
             }
           }
           if (namer !== '') break;
+        }
+        if (tier === 'code') {
+          // A binder of the same test rank outranks the first mention (see `BINDING`).
+          const rank = codeRank(namer);
+          const binder = code.find(
+            (cand) =>
+              cand.file !== rel &&
+              codeRank(cand.file) === rank &&
+              cand.binds.some((re) => re.test(rel))
+          );
+          if (binder !== undefined) namer = binder.file;
         }
         rows.push({
           key: rel,

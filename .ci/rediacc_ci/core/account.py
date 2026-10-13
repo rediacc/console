@@ -1,6 +1,6 @@
 """The DETERMINISTIC half of `.ci/lib/account.sh`, ported function for function -- plus three more, `account_stop`, `account_rotation` and `account_bws_exec`, proved a different way. See below.
 
-PORTED FROM `.ci/lib/account.sh` (1046 lines, 21 functions). The twin still exists, is untouched by this file, and stays sourced at `.ci/legacy/run-legacy.sh:405` (the `account` verb) and `:443` (the `rotation` verb). Nothing is cut over here.
+PORTED FROM `.ci/lib/account.sh` (1046 lines, 21 functions), which is DELETED (PLAN-retire-bash-oracles B3): its answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.account.jsonl`. Nothing sources it any more; `./run.sh account` and `rotation` are served by this module and `account_lifecycle`.
 This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/lib/service.sh` is the worked precedent: its port `rediacc_ci/core/service.py` has carried a K=5 ledger since 2026-09-10 while `run-legacy.sh:48` still sources the bash.
 
 --------------------------------------------------------------------------
@@ -33,7 +33,7 @@ TWO FUNCTIONS THE TWIN BORROWS FROM ITS SOURCER
 --------------------------------------------------------------------------
 RULE T: FOUR TWIN DEFECTS FIXED, ONE NOT A DEFECT (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-Each is an INTENTIONAL DELTA from `.ci/lib/account.sh`, which still has the defect; `test_core_account.py` pins the port's behaviour in its `test_delta_*` cases and excludes exactly those scenario cases from the live differential.
+Each is an INTENTIONAL DELTA from the retired `.ci/lib/account.sh`, which had the defect; `test_core_account.py` pins the port's behaviour in its `test_delta_*` cases and excludes exactly those scenario cases from the live differential.
   A1. `account_totp` used to DIE SILENTLY on a state file with no `gateway_port=` line (a bare `$(grep | cut)` assignment under `pipefail` and `errexit`). It now says "Could not read gateway port" and returns 1.
   A2. `account_banner_row` padded by BYTES (`printf '%-63s'`), so a multibyte glyph shifted the closing bar left. `banner_row()` pads by characters.
   A3. `cut -d= -f2` truncated a state value containing `=`. `grep_cut()` keeps everything after the first `=`.
@@ -906,7 +906,7 @@ USAGE = """rediacc_ci.core.account -- the deterministic half of .ci/lib/account.
                     $GITHUB_ENV, for a CI job with no Bitwarden access
 
 The dev, stop, test, reset and seed-demo verbs are NOT here: they live in
-.ci/lib/account.sh and start long-running infrastructure. See the module
+rediacc_ci.core.account_lifecycle and start long-running infrastructure. See the module
 docstring for why they are a separate slice."""
 
 

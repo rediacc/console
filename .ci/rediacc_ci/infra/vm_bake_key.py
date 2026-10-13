@@ -10,7 +10,8 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
     ceph_root.go for DefaultFilesystem, pkg_install_procgroup_unix.go, gpu_drivers.go for
     the GPU driver installs of setup, kernel_modules.go for the kernel swap the AMD install
     runs on zypper, ceph_host_runner.go for the runner those installs use, setup_phase.go
-    for the phase markers and download bound pkg_install_retry.go uses);
+    for the phase markers and download bound pkg_install_retry.go uses, apt_acquire.go for the
+    apt.conf.d body writeAptConf writes);
   * pkg/config, pkg/infra/pkgset (the package registry), pkg/embed (its Go files only,
     so pkg/embed/proxy/** and the staged assets are out), pkg/infra/image;
   * pkg/infra/aptsources, the fragment setup_command.go's writeAptConf runs to move the stock
@@ -56,6 +57,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         "pkg_install_retry.go": HASH,
         # Setup phase markers, heartbeats and the dnf/zypper download bound that pkg_install_retry.go calls (renet 2be6f4b).
         "setup_phase.go": HASH,
+        # aptAcquireOptions: writeAptConf renders aptConfBody into /etc/apt/apt.conf.d, a file the baked disk keeps (renet 5e396b7).
+        "apt_acquire.go": HASH,
         "image_build_command.go": HASH,
         "literals.go": HASH,
         "system_commands.go": HASH,
@@ -66,6 +69,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         # The kernel-module swap the AMD install runs on a zypper host with kernel-default-base (kernelModuleInstall).
         "kernel_modules.go": HASH,
         "ceph_host_runner.go": HASH,
+        # tailBuffer: hostRunner keeps the tail of a failed command's stderr with it for the error it returns (renet ed944b1).
+        "backup_stderr.go": HASH,
         "pkg_install_procgroup_windows.go": EXCLUDE,
         "main.go": EXCLUDE,
         "version.go": EXCLUDE,
@@ -85,6 +90,12 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     },
     "pkg/embed": HASH,
     "pkg/infra/image": HASH,
+    # The rclone install the image build bakes in (image.BuildOptions.PostSetupScripts <- docker.EnsureRcloneScript, renet #fcd7316f): service.go renders it, and its edits change what the baked disk holds.
+    "pkg/infra/docker": HASH,
+    # aptretry.Shell renders the bounded apt loop at the head of that baked rclone install script.
+    "pkg/infra/aptretry": HASH,
+    # service.go imports the zot registry wiring for worker setup, which shapes no baked disk.
+    "pkg/kube/registry": EXCLUDE,
     "pkg/infra/opsconfig": {
         "images.go": HASH,
         "config.go": EXCLUDE,
@@ -402,7 +413,7 @@ def _relative(files: Iterable[pathlib.Path], root: pathlib.Path) -> list[str]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="python3 -m rediacc_ci.infra.vm_bake_key",
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_key",
         description="Print the pre-baked VM image key for one distro.",
     )
     parser.add_argument("--distro", help="ops image name, e.g. ubuntu-24.04")

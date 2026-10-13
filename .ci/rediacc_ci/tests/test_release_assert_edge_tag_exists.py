@@ -24,6 +24,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import ghx
 from rediacc_ci.release import assert_edge_tag_exists as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
@@ -201,11 +202,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -514,7 +515,7 @@ def test_each_required_credential_is_demanded_in_order(tmp_path: pathlib.Path) -
         assert "must be set" in old.stderr, name
         assert "must be set" in new.stderr, name
         assert old_calls == [] == new_calls, f"{name}: an oracle ran without credentials"
-        assert new.stderr.startswith("assert-edge-tag-exists.py: "), (
+        assert new.stderr.startswith("rediacc_ci.release.assert_edge_tag_exists: "), (
             f"{name}: the port stopped naming itself"
         )
         assert "line 8" in old.stderr, (
@@ -721,3 +722,17 @@ def test_a_404_is_still_absent_after_one_call_on_either_stream(monkeypatch) -> N
     _patch(monkeypatch, fake_out)
     assert port.probe_gh_release("v1.0.0") == port.ABSENT
     assert len(fake_out.calls) == 1
+
+
+def test_every_diagnostic_carries_the_modules_own_name(capsys) -> None:
+    """Review finding 35e3dd03.1: the port has ONE name, `SELF`, its `python3 -m` module path; the twin's `.sh` name is restored only inside the differential by `as_twin`. A second constant that claimed to be the twin's name while holding the module's is gone."""
+    assert port.SELF == "rediacc_ci.release.assert_edge_tag_exists"
+    assert not hasattr(port, "TWIN")
+    for argv, tail in (
+        (["--wat"], "unknown option: --wat"),
+        ([], "a version is required (--version 1.3.0)"),
+        (["--version", "x.y"], "'x.y' is not a semver version"),
+    ):
+        assert port.main(argv) == 1
+        err = capsys.readouterr().err
+        assert "%s: %s" % (port.SELF, tail) in err, err

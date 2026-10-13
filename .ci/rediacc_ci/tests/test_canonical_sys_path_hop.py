@@ -24,10 +24,10 @@ That plan box said "68 files and rising". No reading of this tree produces 68. O
 WHY A BASELINE AND NOT THIRTY-THREE MORE EXEMPTIONS. 33 of those 36 files are outside the box that widened this control, and an exemption means "this is correct forever". Freezing them as DEBT says the opposite: the total may not grow, a baselined hop that gets fixed must be DRAINED rather than left as a permanent hole, and both halves are asserted below. EXEMPT is reserved for the
 three that are structurally required, each with a reason this file proves is still live.
 
-WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Six of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, `battery.py`, the three under `rediacc_ci/setup/`, and
-`rediacc_hooks/dispatch.py`. FOUR of those six are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `battery.py` by `xdist_groups.py`, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
+WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Five of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, the three under `rediacc_ci/setup/`, and
+`rediacc_hooks/dispatch.py` (`battery.py` made six until it was deleted with the bash gate-test battery, 2026-10-09). THREE of those five are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
 `pkg/sub/dualuse.py` as a script prints `__package__=None` and loads, while
-`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining two, `check_pytest.py` and `setup/shadow_driver.py`, COULD take a shim and would gain nothing, because they sit in different directories and the shim is itself a file containing the hop: two hops would become two shims. So none of the six is sitting there because nobody swept it.
+`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining two, `check_pytest.py` and `setup/shadow_driver.py`, COULD take a shim and would gain nothing, because they sit in different directories and the shim is itself a file containing the hop: two hops would become two shims. So none of the five is sitting there because nobody swept it.
 
 WHY THE BASELINE IS KEYED ON A HASH OF THE HOP'S SOURCE AND NOT ON ITS LINE.
 A line number churns when a paragraph moves above it, and a baseline that churns gets regenerated wholesale, which silently re-absorbs findings nobody looked at. The hash survives a MOVE and deliberately does NOT survive a REWRITE: rewriting a hop is exactly the moment a human should look at it again. When that happens the run reports one gone and one new IN THE SAME FILE --
@@ -42,9 +42,16 @@ What replaces it is derived entirely from the corpus: every path this file alrea
 
 import ast
 import hashlib
+import os
 import pathlib
+import re
+import subprocess
+import sys
+
+import pytest
 
 from rediacc_ci import gitx, paths
+from rediacc_ci.tests.twin_names import usage_command
 
 # NO XDIST GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF15). The scan lists the working tree (`git ls-files --cached --others`), and on 2026-10-01 a `-n 16` run failed here on test_gate_shrink_only_composition.py's `quality/zz_composition_string_probe_port_*.py`, listed and gone before it was read, so this reader joined the real-tree group. Every such plant now lives in a scratch copy, so nothing in the suite plants into the listed tree, and the session tripwire (`test_tree_tripwire.py`) fails a run in which a test changes one.
 
@@ -137,7 +144,6 @@ EXEMPT: dict[str, str] = {
 #: byte-identical hops in two files share a fingerprint and that is fine: the key is
 #: the (path, fingerprint) pair.
 BASELINE: dict[str, tuple[str, ...]] = {
-    ".ci/rediacc_ci/battery.py": ("068d93dec96d",),
     ".ci/rediacc_ci/check_pytest.py": ("068d93dec96d",),
     ".ci/rediacc_ci/dev/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
     ".ci/rediacc_ci/docker/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
@@ -460,7 +466,7 @@ def test_the_floor_fires_when_the_corpus_collapses() -> None:
 
 def test_the_growth_check_fires_on_a_plant_and_not_on_the_baseline() -> None:
     """Both directions of the ratchet, exercised without editing the tree."""
-    baselined = ".ci/rediacc_ci/battery.py"
+    baselined = ".ci/rediacc_ci/check_pytest.py"
     real = "sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))"
     assert fingerprint(real) in BASELINE[baselined], (
         "the fingerprint function no longer agrees with the frozen table, so every "
@@ -481,3 +487,285 @@ def test_the_growth_check_fires_on_a_plant_and_not_on_the_baseline() -> None:
     assert "nothing_knows_this" in fresh[0], fresh
     # An EXEMPT file is excused, which is the direction that must NOT fire.
     assert grown({".ci/scripts/quality/_cipath.py": [(72, plant)]}) == []
+
+
+# --------------------------------------------------------------------------- The printed `python3 -m` line (worklist #175470e9).
+#
+# `PYTHONPATH=.ci` IS THE HOP FOR A COMMAND A READER TYPES. A module's usage line, `--help` prog, or "run X first" hint is copied from the repository root, where `rediacc_ci` is not importable: `python3 -m rediacc_ci.deploy.clone_d1` there dies with `No module named 'rediacc_ci'` (review finding 08928e86.2, measured). Every printed command therefore spells the hop, `PYTHONPATH=.ci python3 -m ...`.
+#
+# THE CORPUS is every non-docstring string constant under `.ci/rediacc_ci` (tests excluded: a test builds its own command lines), plus the docstring of every module whose code reads `__doc__`, because that docstring is printed as help (`release_state_validator`, `silent_failure_patterns`, `linode_cluster_validation`, ...). A docstring nothing prints is prose about the module and is not judged.
+
+PRINTED_ROOT = ".ci/rediacc_ci"
+# EVERY INTERPRETER SPELLING, not only `python3` (review findings f6733156.1 and f6733156.3): `python`, `python3`, `python3.N`, each optionally behind a path (`/usr/bin/python3`, `.venv/bin/python`), and the package itself (`-m rediacc_ci`) as well as a dotted module. Each fails the same way from the repository root.
+INTERPRETER = r"(?:[\w.~/-]*/)?python(?:3(?:\.\d+)?)?"
+# `\b` CLOSES THE MODULE NAME (review finding 9edcb111.3): without it `rediacc_cix` and `rediacc_ci_old` read as the package followed by junk.
+BARE_M = re.compile(
+    r"(?<![\w./~-])(?<!PYTHONPATH=\.ci )%s -m (rediacc_ci(?:\.\w+)*)\b" % INTERPRETER
+)
+RUNNABLE_M = re.compile(
+    r"((?:[A-Z_]+=\S+ )*)PYTHONPATH=\.ci (%s) -m (rediacc_ci(?:\.\w+)*)\b" % INTERPRETER
+)
+
+#: (module path, a fragment of the string constant) -> (how many bare commands the strings carrying that fragment hold, why they are not commands printed for a reader to run). The key is (module, fragment); the VALUE carries the declared count beside the reason (review finding f6733156.2, the structure stated as built per 9edcb111.2): a fragment alone exempted every string in the module that carried it, so a new bare line added inside one of those strings passed in silence. Each key's count is summed over every string carrying its fragment, and a count that moves either way is red.
+NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
+    (".ci/rediacc_ci/ci/gate_ledger.py", "backfill --export <dir>"): (
+        1,
+        "the manifest's `generated_by` record of what wrote the export, data a reader parses, not a line printed to run",
+    ),
+    (".ci/rediacc_ci/proxies/ensure_nfpm.py", 'PATH="$(python3 -m rediacc_ci.build.ensure_nfpm)'): (
+        1,
+        "quotes the callers' own shell line, which runs where the workflow already exports PYTHONPATH",
+    ),
+    (
+        ".ci/rediacc_ci/quality/toolchain_pins.py",
+        "via `python3 -m rediacc_ci.core.toolchain pairs`",
+    ): (
+        1,
+        "names the workflow line the gate searches for, which must match the workflow text as written",
+    ),
+    (".ci/rediacc_ci/quality/toolchain_pins.py", 'report >> "$GITHUB_ENV"'): (
+        1,
+        "a selftest fixture fed to the gate's own regex",
+    ),
+    (".ci/rediacc_ci/quality/rdc_native.py", "exec python3 -m rediacc_ci.native"): (
+        2,
+        "the generated `rdc` shim's body, a selftest fixture compared byte for byte",
+    ),
+    (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.quality.orphan_mod"): (
+        0,
+        "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.testrun.orphan_run"): (
+        0,
+        "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
+    ),
+}
+
+
+def _exemptions(rel: str, text: str, exemptions: dict) -> list[tuple[str, str]]:
+    """EVERY exemption key whose fragment this string carries (review finding 9edcb111.1): a string holding two fragments counts toward both keys, so neither reads as stale and both declared counts are checked against it."""
+    return [key for key in exemptions if key[0] == rel and key[1] in text]
+
+
+def _docstring_nodes(tree: ast.AST) -> set[int]:
+    out = set()
+    for node in ast.walk(tree):
+        body = getattr(node, "body", None)
+        if (
+            isinstance(node, (ast.Module, ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and body
+            and isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+        ):
+            out.add(id(body[0].value))
+    return out
+
+
+def printed_texts(root: pathlib.Path) -> list[tuple[str, int, str]]:
+    """(module path, line, text) for every string this corpus counts as printed (see above)."""
+    out = []
+    for path in sorted((root / PRINTED_ROOT).rglob("*.py")):
+        rel = path.relative_to(root).as_posix()
+        if "/tests/" in rel:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        docs = _docstring_nodes(tree)
+        prints_doc = any(isinstance(n, ast.Name) and n.id == "__doc__" for n in ast.walk(tree))
+        module_doc = (
+            tree.body[0].value if tree.body and isinstance(tree.body[0], ast.Expr) else None
+        )
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Constant) and isinstance(node.value, str)):
+                continue
+            if id(node) in docs and not (prints_doc and node is module_doc):
+                continue
+            out.append((rel, node.lineno, node.value))
+    return out
+
+
+def bare_commands(texts: list[tuple[str, int, str]], exemptions: dict | None = None) -> list[str]:
+    """`path:line: <interpreter> -m <module>` for every printed text spelling the command without the hop, plus one line for every exemption whose bare count is not the declared one (a stale exemption included: it counts zero strings)."""
+    exemptions = NOT_A_PRINTED_COMMAND if exemptions is None else exemptions
+    bad = []
+    counted = dict.fromkeys(exemptions, 0)
+    seen = dict.fromkeys(exemptions, False)
+    for rel, line, text in texts:
+        keys = _exemptions(rel, text, exemptions)
+        found = ["%s:%d: %s" % (rel, line, m.group(0)) for m in BARE_M.finditer(text)]
+        if not keys:
+            bad += found
+        for key in keys:
+            seen[key] = True
+            counted[key] += len(found)
+    for key, (want, _why) in exemptions.items():
+        if not seen[key]:
+            bad.append("%s: exemption %r matches no string any more" % key)
+        elif counted[key] != want:
+            bad.append(
+                "%s: exemption %r covers %d bare command(s), declared %d"
+                % (key[0], key[1], counted[key], want)
+            )
+    return bad
+
+
+def runnable_commands(texts: list[tuple[str, int, str]]) -> list[tuple[str, str]]:
+    """(module path, the printed command up to its module) for every hop-spelled command, one per (path, module)."""
+    seen: dict[tuple[str, str], str] = {}
+    for rel, _line, text in texts:
+        if _exemptions(rel, text, NOT_A_PRINTED_COMMAND):
+            continue
+        for m in RUNNABLE_M.finditer(text):
+            seen.setdefault((rel, m.group(3)), m.group(0))
+    return sorted((rel, command) for (rel, _module), command in seen.items())
+
+
+_ROOT = paths.repo_root()
+_TEXTS = printed_texts(_ROOT)
+_RUNNABLE = runnable_commands(_TEXTS)
+_FIND = "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec(sys.argv[1]) else 3)"
+
+
+def test_every_printed_python_m_command_spells_the_hop() -> None:
+    """The class pin: a new port that prints `python -m`, `python3 -m` or `python3.N -m rediacc_ci...` without `PYTHONPATH=.ci` is named here. Control first: the detector fires on every planted bare spelling and not on the hop spelling, and an exemption whose bare count moves, or that matches nothing, is red."""
+    planted = [
+        ("x.py", 1, "usage: python3 -m rediacc_ci.a.b <x>"),
+        ("x.py", 2, "usage: PYTHONPATH=.ci python3 -m rediacc_ci.a.b"),
+        ("x.py", 3, "usage: PYTHONPATH=.ci python -m rediacc_ci.a.b"),
+    ]
+    assert bare_commands(planted, {}) == ["x.py:1: python3 -m rediacc_ci.a.b"]
+    # f6733156.1 and .3: every interpreter spelling, behind a path or not, and the bare package.
+    for text, want in (
+        ("run: python -m rediacc_ci.a.b", "python -m rediacc_ci.a.b"),
+        ("run: python3.12 -m rediacc_ci.a.b", "python3.12 -m rediacc_ci.a.b"),
+        ("run: /usr/bin/python3 -m rediacc_ci.a.b", "/usr/bin/python3 -m rediacc_ci.a.b"),
+        ("run: .venv/bin/python -m rediacc_ci.a", ".venv/bin/python -m rediacc_ci.a"),
+        ("run `python3 -m rediacc_ci` first", "python3 -m rediacc_ci"),
+    ):
+        assert bare_commands([("x.py", 1, text)], {}) == ["x.py:1: %s" % want], text
+    for text in (
+        "run: cpython3 -m rediacc_ci.a",
+        "run: PYTHONPATH=.ci python3.12 -m rediacc_ci.a",
+        "python3 -m pytest",
+        "run: python3 -m rediacc_cix",
+        "run: python3 -m rediacc_ci_old.a",
+    ):
+        assert bare_commands([("x.py", 1, text)], {}) == [], text
+    # 9edcb111.3, the other side of the boundary: the package still matches when punctuation, not a word character, follows it.
+    for text in ("run `python3 -m rediacc_ci`.", "run python3 -m rediacc_ci."):
+        assert bare_commands([("x.py", 1, text)], {}) == ["x.py:1: python3 -m rediacc_ci"], text
+    # f6733156.2: an exemption is counted, so a new bare line inside an exempt string is red, and so is a stale one.
+    fixture = {("x.py", "FIXTURE"): (1, "a planted exemption")}
+    assert bare_commands([("x.py", 1, "FIXTURE python3 -m rediacc_ci.a")], fixture) == []
+    grown = bare_commands(
+        [("x.py", 1, "FIXTURE python3 -m rediacc_ci.a\nusage: python -m rediacc_ci.b")], fixture
+    )
+    assert grown == ["x.py: exemption 'FIXTURE' covers 2 bare command(s), declared 1"], grown
+    assert bare_commands([("x.py", 1, "nothing here")], fixture) == [
+        "x.py: exemption 'FIXTURE' matches no string any more"
+    ]
+    # 9edcb111.1: one string carrying two fragments counts toward BOTH keys; neither is stale, and each declared count is checked.
+    pair = {
+        ("x.py", "ONE"): (1, "a planted exemption"),
+        ("x.py", "TWO"): (1, "a planted exemption"),
+    }
+    both = [("x.py", 1, "ONE TWO python3 -m rediacc_ci.a")]
+    assert bare_commands(both, pair) == []
+    pair[("x.py", "TWO")] = (2, "a planted exemption")
+    assert bare_commands(both, pair) == [
+        "x.py: exemption 'TWO' covers 1 bare command(s), declared 2"
+    ]
+    assert len(_RUNNABLE) >= 40, (
+        "CONTROL: only %d printed commands found; the corpus is not being read" % len(_RUNNABLE)
+    )
+    assert bare_commands(_TEXTS) == []
+
+
+@pytest.mark.parametrize(
+    ("rel", "command"), _RUNNABLE, ids=["%s:%s" % (r, c.rsplit(" ", 1)[-1]) for r, c in _RUNNABLE]
+)
+def test_every_printed_python_m_command_runs_from_the_repository_root(
+    rel: str, command: str
+) -> None:
+    """Each printed command, split the way `twin_names.usage_command` splits a usage line, finds its module from the repository root under the environment it spells. The module is located, not run: running every printed command would start e2e suites and deploys. Control first: without its `PYTHONPATH=.ci` the same lookup fails."""
+    assigned, argv = usage_command("usage: " + command)
+    assert assigned.get("PYTHONPATH") == ".ci", command
+    assert argv[1] == "-m", command
+    module = argv[2]
+    bare = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    probe = [sys.executable, "-c", _FIND, module]
+    control = subprocess.run(probe, cwd=_ROOT, env=bare, capture_output=True, check=False)
+    assert control.returncode != 0, (
+        "CONTROL: %s resolved with no PYTHONPATH; this case proves nothing" % module
+    )
+    got = subprocess.run(
+        probe, cwd=_ROOT, env={**bare, **assigned}, capture_output=True, text=True, check=False
+    )
+    assert got.returncode == 0, "%s prints `%s`, which cannot find %s from the root: %s" % (
+        rel,
+        command,
+        module,
+        got.stderr,
+    )
+
+
+_SPAWN_AFTER_CHDIR = (
+    "import os, subprocess, sys\n"
+    "import rediacc_ci\n"
+    "os.chdir(sys.argv[1])\n"
+    "sys.exit(subprocess.call([sys.executable, '-c', 'import rediacc_ci']))\n"
+)
+
+
+def test_a_relative_pythonpath_survives_a_chdir_before_a_sibling_is_spawned(tmp_path) -> None:
+    """The CLI build's failure, in small: started as `PYTHONPATH=.ci python3 -m rediacc_ci.<x>`, a module changes directory and starts a sibling module, whose import of the package must still resolve."""
+    root = paths.repo_root()
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    done = subprocess.run(
+        [sys.executable, "-c", _SPAWN_AFTER_CHDIR, str(tmp_path)],
+        cwd=root,
+        env={**env, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr[-600:]
+    # CONTROL: the same child without the package imported first keeps the relative entry and cannot find it.
+    bare = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            _SPAWN_AFTER_CHDIR.replace("import rediacc_ci\n", "", 1),
+            str(tmp_path),
+        ],
+        cwd=root,
+        env={**env, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert bare.returncode != 0
+
+
+@pytest.mark.parametrize(
+    ("given", "want"),
+    [("", ""), (".ci" + os.pathsep, "{root}/.ci" + os.pathsep), ("/abs/x", "/abs/x")],
+)
+def test_an_empty_pythonpath_entry_is_never_pinned(given: str, want: str) -> None:
+    """An empty entry stays empty, so no child gains the starting directory on its path; an absolute entry is untouched."""
+    root = paths.repo_root()
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    done = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import os, sys\nsys.path.insert(0, sys.argv[1])\nimport rediacc_ci\nprint(os.environ['PYTHONPATH'], end='')",
+            str(root / ".ci"),
+        ],
+        cwd=root,
+        env={**env, "PYTHONPATH": given},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr[-400:]
+    assert done.stdout == want.format(root=root)

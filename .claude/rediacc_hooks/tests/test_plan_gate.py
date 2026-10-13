@@ -307,7 +307,9 @@ def test_regenerate_preserves_promoted_byte_for_byte(qroot):
     assert pq.problems(qroot), "a queue with no generated section must be reported"
     assert pq.refresh(qroot) is True
     text = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
-    assert text.startswith(PROMOTED), text
+    # The hand-written bytes survive; the one addition under `## Promoted` is the generated progress block.
+    assert pq.without_progress(text).startswith(PROMOTED), text
+    assert pq.progress_text(text) is not None
     assert pq.refresh(qroot) is False
     # A hand edit to Promoted survives the next regenerate untouched.
     edited = text.replace("the operator's pick", "re-noted by hand")
@@ -371,7 +373,9 @@ def test_refresh_index_also_refreshes_the_queue(qroot):
     assert pq.problems(qroot)
     wl_planrec.refresh_index(str(qroot), wl_checks.plan_records, wl_checks.plan_box_census)
     assert pq.problems(qroot) == []
-    assert (qroot / pq.QUEUE_REL).read_text(encoding="utf-8").startswith(PROMOTED)
+    after = (qroot / pq.QUEUE_REL).read_text(encoding="utf-8")
+    assert pq.without_progress(after).startswith(PROMOTED)
+    assert pq.progress_text(after) is not None
 
 
 # ---------------------------------------------------------------- the progress order (operator rulings 2026-10-02)
@@ -698,6 +702,15 @@ def test_settings_at_reads_the_working_tree_and_defaults_without_a_file(tmp_path
     assert empty.turbo is False
     assert plan_gate.batch_size(empty) == 1
     assert problems == []
+
+
+def test_settings_at_a_non_utf8_queue_falls_back_to_defaults(tmp_path):
+    """A QUEUE.md that is not valid UTF-8 falls back to defaults and is reported as a problem; it once raised UnicodeDecodeError through every caller, and then read as silently absent."""
+    (tmp_path / "agent" / "plans").mkdir(parents=True)
+    (tmp_path / "agent" / "plans" / "QUEUE.md").write_bytes(b"## Settings\n\xff\xfe turbo: on\n")
+    got, problems = plan_gate.settings_at(str(tmp_path))
+    assert got.turbo is False
+    assert any("unreadable" in p for p in problems), problems
 
 
 def test_batch_size_is_one_with_turbo_off(tmp_path):
@@ -1087,3 +1100,34 @@ def test_tip_readers_see_the_pushed_tip_and_queue_head_still_sees_the_working_tr
     # The Stop hook's readers are the working tree's, unchanged.
     assert plan_gate.queue_head(root) == "agent/plans/PLAN-local.md"
     assert plan_gate.queue(root)[0] == "agent/plans/PLAN-local.md"
+
+
+# ---- LF-W1 of agent/plans/PLAN-turbo-local-first.md: the batch body and the local-first defaults ----
+
+
+def test_batch_body_names_the_queue_head_and_every_named_plan(tmp_path, monkeypatch):
+    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
+    (tmp_path / "tmp").mkdir()
+    root = _turbo_root(tmp_path, {n: _xplan() for n in "abc"}, ["a", "b", "c"])
+    # CONTROL: nothing named yet is the head alone, the write-once link.
+    assert plan_gate.batch_body(root, "1008-1") == "Plan: %s\n" % _t("a")
+    plan_gate.record_turbo_named(root, "1008-1", [_t("c"), _t("a")])
+    plan_gate.record_turbo_named(root, "1008-2", [_t("b")])
+    body = plan_gate.batch_body(root, "1008-1")
+    assert body == "Plan: %s, %s\n" % (_t("a"), _t("c"))
+    assert plan_gate.body_plans(body) == [_t("a"), _t("c")]
+    # Another branch's record stays out of this branch's body.
+    assert plan_gate.body_plans(plan_gate.batch_body(root, "1008-2")) == [_t("a"), _t("b")]
+    # No head and nothing named is no body at all.
+    (tmp_path / "agent" / "plans" / "QUEUE.md").write_text("# Plan queue\n", encoding="utf-8")
+    assert plan_gate.batch_body(root, "1008-9") == ""
+
+
+def test_the_fail_safe_settings_carry_the_local_first_defaults():
+    got = plan_gate._default_settings()
+    assert (got.turbo_push, got.backup_push_h) == ("batch-end", 4)
+    pq = plan_gate._planqueue()
+    assert (got.turbo_push, got.backup_push_h) == (
+        pq.Settings().turbo_push,
+        pq.Settings().backup_push_h,
+    )

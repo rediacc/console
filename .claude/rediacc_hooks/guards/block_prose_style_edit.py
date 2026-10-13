@@ -263,10 +263,9 @@ def _relative(root, file_path, cwd=None):
     if not file_path:
         return ""
     try:
-        path = file_path
-        if not os.path.isabs(path):
-            path = os.path.join(cwd or str(root), path)
-        return os.path.relpath(os.path.normpath(path), str(root))
+        # Where the edit LANDS (`hookio.landing`, review 9c6817f3.1-.4 sweep): `normpath` removed a `..` before the link in front of it was followed, so a link into the tree followed by `..` was judged outside it and allowed.
+        landed = hookio.landing(file_path, cwd or str(root), str(root))[0]
+        return os.path.relpath(landed, os.path.realpath(str(root)))
     except ValueError:
         return ""
 

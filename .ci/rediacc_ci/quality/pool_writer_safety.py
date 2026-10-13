@@ -1,5 +1,7 @@
 """A gate test that WRITES INTO THE REAL TREE must be registered as a WRITER.
 
+THE BASH HALF IS GONE, 2026-10-08. W11-A/B/C and section 12 U1-U3 deleted the last `.ci/scripts/test/gates/test-*.sh`, so the half of `main()` that scanned them and exempted the lock's `mutex: ["tree:..."]` registrations had no corpus left and refused ("no gate tests found"). It is removed, together with `registered_writers`, which existed only to feed it. What remains is the PYTHON half below: no pytest module may declare the real-tree xdist group, and the pytest lane may not hold an exclusive `tree:` claim, with its own refusal over an empty module corpus. The bash scanner (`scan_text`) and its controls STAY: `rediacc_ci.quality.gate_tree_writes` imports it for bash gate leaves. The history below describes the bash half as it was.
+
 Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-pool-writer.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Pool-registered tests do not write the real tree", needs none, selftest true.
 
 -----------------------------------------------------------------------------
@@ -137,9 +139,7 @@ from rediacc_ci.controls import Controls
 
 # The twin's seams, kept by name so one harness drives either implementation. `POOL_SAFETY_RUNNER` BECAME `POOL_SAFETY_LOCK` IN THE 2026-09-09 RETARGET, and the rename is deliberate rather than cosmetic: the seam now points at the declaration file, and a seam still called RUNNER would invite a caller to hand this gate a runner it no longer reads, which is the quietest way to make a
 # fixture-driven control test nothing.
-GATES_DIR_ENV = "POOL_SAFETY_GATES_DIR"
 LOCK_ENV = "POOL_SAFETY_LOCK"
-GATES_DIR_REL = (".ci", "scripts", "test", "gates")
 LOCK_REL = ("scripts", "ci-runner", "gates.lock.json")
 
 # THE THIRD SEAM, ADDED 2026-09-21 WITH THE PYTHON-SIDE CORPUS. Same shape as the two above, and for the same reason: a fixture-driven control that cannot move the ports directory would have to plant inside the real one.
@@ -151,9 +151,6 @@ PORT_SCAN_RELS = (
     PORTS_DIR_REL,
     (".claude", "rediacc_hooks", "tests"),
 )
-
-# A lock entry is a gate test when its `run` names a script under this prefix. `run` is a command line in the general case, so the WORD that starts with the prefix is taken rather than the whole string.
-GATES_RUN_PREFIX = ".ci/scripts/test/gates/"
 
 # The claim strength that means "serialised writer". `reads` is NOT accepted: a scanner is released to run beside other scanners, so a writer hiding in that set is exactly the flake this gate exists for.
 WRITER_CLAIM = "mutex"
@@ -376,51 +373,6 @@ def scan_file(path: pathlib.Path) -> str:
     return "\n".join(scan_text(text, path.name))
 
 
-def registered_writers(lock_text: str) -> list[str]:
-    """Gate-test basenames declared `mutex: ["tree:..."]` in gates.lock.json.
-
-    RETARGETED 2026-09-09. This used to parse `WRITER_TESTS(_FALLBACK)?=(` out of
-    run-all.sh. battery.py has no such array by design, so the registration it schedules by is the lock, and this is `battery.classify_from_lock(lock, "mutex")` transliterated -- the same algorithm run-all.sh itself carried as an inline python3 heredoc at run-all.sh:292. Reading the same declaration the runner schedules by is the point: a gate that read a SECOND list would be the
-    third copy of one definition, and copies disagree.
-
-    MEASURED AT THE RETARGET, and it is the reason this is not a weakening: the old parse returned 4 names and this one returned those same 4 plus `test-shrink-only-composition.sh`, which run-all.sh's hand list had never been updated to carry. Set difference in the other direction was empty. W7 P5 census batch A8 then retired that fifth twin, so the derivation is back to 4 names by
-    deletion rather than by a narrowing of this reader.
-
-    An unparseable or non-list lock contributes NOTHING rather than raising, which is `battery.classify_from_lock`'s documented behaviour; the CALLER turns that into the anti-vacuity refusal, because "nothing is declared" and "the lock is broken" must not silently become "nothing needs isolating".
-    """
-    try:
-        entries = json.loads(lock_text)
-    except ValueError:
-        return []
-    if not isinstance(entries, list):
-        return []
-    names: set[str] = set()
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-        run = entry.get("run")
-        if not isinstance(run, str):
-            continue
-        claimed = entry.get(WRITER_CLAIM)
-        if not isinstance(claimed, list):
-            continue
-        if not any(isinstance(r, str) and r.startswith(TREE_RESOURCE_PREFIX) for r in claimed):
-            continue
-        matched = False
-        for word in run.split():
-            if word.startswith(GATES_RUN_PREFIX):
-                names.add(os.path.basename(word))
-                matched = True
-                break
-        if matched:
-            continue
-        # `run` names an npm script or similar, not a gates-subdir file directly (the 2026-09-21 shape battery.classify_from_lock also fell back for): use the entry's own implementing file.
-        leaves = entry.get("leaves")
-        if isinstance(leaves, list) and leaves and isinstance(leaves[0], str):
-            names.add(os.path.basename(leaves[0]))
-    return sorted(names)
-
-
 def port_writers(ports_dir: pathlib.Path) -> list[str]:
     """Test modules that declare themselves into the real-tree xdist group. The answer must be EMPTY.
 
@@ -509,7 +461,7 @@ def get_repo_root() -> pathlib.Path:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the gate. 0 clean, 1 on an unregistered writer or a failed control.
+    """Run the gate. 0 clean, 1 on a real-tree declaration, a stale exclusive lane claim, or an empty corpus.
 
     `--selftest` is intercepted BEFORE any real scan, which is the addition the twin does not have. The twin takes no arguments, so no caller passes it.
     """
@@ -518,39 +470,15 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     repo_root = get_repo_root()
-    gates_dir = pathlib.Path(os.environ.get(GATES_DIR_ENV) or repo_root.joinpath(*GATES_DIR_REL))
     lock = pathlib.Path(os.environ.get(LOCK_ENV) or repo_root.joinpath(*LOCK_REL))
-
-    with tempfile.TemporaryDirectory() as control_name:
-        control_dir = pathlib.Path(control_name)
-        writer_fixture = control_dir / "test-planted-writer.sh"
-        tempsafe_fixture = control_dir / "test-planted-tempsafe.sh"
-        writer_fixture.write_text(PLANTED_WRITER, encoding="utf-8")
-        tempsafe_fixture.write_text(PLANTED_TEMPSAFE, encoding="utf-8")
-
-        if not scan_file(writer_fixture):
-            log.error(
-                "CONTROL FAILED: the scanner did not catch a planted real-tree write, so its "
-                "verdict on the real battery means nothing"
-            )
-            return 1
-        control_noise = scan_file(tempsafe_fixture)
-        if control_noise:
-            log.error(
-                "CONTROL FAILED: the scanner flagged a planted temp-only writer, so it is not "
-                "discriminating and its findings would be noise:"
-            )
-            print("  %s" % control_noise, file=sys.stderr)
-            return 1
 
     if not lock.is_file():
         return _log_fail(
-            "check-pool-writer-safety: gate lock not found at %s; refusing to pass while "
+            "rediacc_ci.quality.pool_writer_safety: gate lock not found at %s; refusing to pass while "
             "measuring nothing" % lock
         )
 
     lock_text = lock.read_text(encoding="utf-8", errors="replace")
-    registered = registered_writers(lock_text)
     port_dirs = (
         [pathlib.Path(os.environ[PORTS_DIR_ENV])]
         if os.environ.get(PORTS_DIR_ENV)
@@ -558,21 +486,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     scanned = sum(len(list(d.glob("test_*.py"))) for d in port_dirs if d.is_dir())
     ports = [name for d in port_dirs for name in port_writers(d)]
-    # THE ANTI-VACUITY REFUSALS. The bash half must still see its registered writers, and the Python half must have scanned real modules: an empty corpus would make "no module declares the group" true of nothing.
-    if not registered:
-        return _log_fail(
-            "check-pool-writer-safety: parsed ZERO mutex tree: writers out of %s; the "
-            "declaration shape changed and this gate would pass everything" % lock
-        )
+    # THE ANTI-VACUITY REFUSAL. An empty corpus would make "no module declares the group" true of nothing.
     if scanned == 0:
         return _log_fail(
-            "check-pool-writer-safety: found no test_*.py module under %s; the gate is not "
+            "rediacc_ci.quality.pool_writer_safety: found no test_*.py module under %s; the gate is not "
             "seeing the pytest corpus, so 'no module declares the %r group' would mean nothing"
             % (", ".join(str(d) for d in port_dirs), REAL_TREE_GROUP)
         )
     if ports:
         return _log_fail(
-            "check-pool-writer-safety: %d test module(s) declare the %r xdist group, which "
+            "rediacc_ci.quality.pool_writer_safety: %d test module(s) declare the %r xdist group, which "
             "means they write the tracked tree while they run: %s. Zero modules may (operator "
             "ruling 2026-10-05, agent/plans/PLAN-prepush-full-cpu.md PF15): plant into a copy of "
             "the directories the gate scans, the way test_gate_gate_anti_vacuity.py's "
@@ -582,7 +505,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     if lane_claims_tree_exclusively(lock_text, PYTEST_LANE_ID):
         return _log_fail(
-            "check-pool-writer-safety: %s declares an EXCLUSIVE tree: resource in %s, but no "
+            "rediacc_ci.quality.pool_writer_safety: %s declares an EXCLUSIVE tree: resource in %s, but no "
             "pytest module writes the tracked tree any more (zero declare the %r group, and the "
             "session tripwire enforces it). The claim holds every other tree: gate out of the "
             "pool for the whole pytest wall. Drop mutex: ['tree:repo'] and writesTree from %s "
@@ -595,49 +518,16 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
-    # `shopt -s nullglob; GATE_FILES=("$GATES_DIR"/test-*.sh)`. Sorted, because a
-    # bash glob is, and LC_ALL=C makes that bytewise, which Python's sort is too.
-    gate_files = sorted(gates_dir.glob("test-*.sh")) if gates_dir.is_dir() else []
-    if not gate_files:
-        return _log_fail(
-            "check-pool-writer-safety: no gate tests found under %s; refusing to report a clean "
-            "battery over an empty set" % gates_dir
-        )
-
-    registered_set = set(registered)
-    lock_rel = _strip_root(str(lock), str(repo_root))
-
-    violations = 0
-    for gate_file in gate_files:
-        hits = scan_file(gate_file)
-        if not hits:
-            continue
-        if gate_file.name in registered_set:
-            continue
-        log.error(
-            "%s writes into the real tree but declares no mutex tree: resource in %s, so "
-            "battery.py schedules it in the pool alongside tests that read the same paths:"
-            % (gate_file.name, lock_rel)
-        )
-        # THE TWIN'S `printf ' %s\n' "$hits"` WITH ONE MULTI-LINE ARGUMENT: only the FIRST line is indented. Carried; see the port notes.
-        print("  %s" % hits, file=sys.stderr)
-        violations += 1
-
-    if violations > 0:
-        log.error(
-            "%d unregistered real-tree writer(s). Declare mutex: ['tree:repo'] on each one's "
-            "entry in scripts/ci-runner/manifest.ts and regenerate %s, so it runs in the serial "
-            "W chain. A write left in the pool does not fail cleanly: it corrupts a concurrent "
-            "reader and presents as an unrelated gate going red in a file that parses fine on "
-            "the serial re-run." % (violations, lock_rel)
-        )
-        return 1
-
     log.info(
-        "every real-tree writer among %d gate tests declares a mutex tree: resource (%d declared "
-        "in the lock); 0 of %d test modules declare the %r group and %s holds no exclusive tree: "
-        "claim; controls fired in both directions, so this verdict is real"
-        % (len(gate_files), len(registered), scanned, REAL_TREE_GROUP, PYTEST_LANE_ID)
+        "0 of %d test modules under %d testpath(s) declare the %r group, and %s holds no "
+        "exclusive tree: claim in %s"
+        % (
+            scanned,
+            len(port_dirs),
+            REAL_TREE_GROUP,
+            PYTEST_LANE_ID,
+            _strip_root(str(lock), str(repo_root)),
+        )
     )
     return 0
 
@@ -653,7 +543,8 @@ def selftest() -> int:
 
     BOTH DIRECTIONS FOR EVERY RULE the scanner has, because a scanner that flagged everything would satisfy the positive controls perfectly while being useless, and that is the failure the twin's own negative control exists to catch.
     """
-    ctl = Controls("pool-writer-safety", floor=50, verbose=True)
+    # FLOOR 45, measured 2026-10-08: the bash half's eight registered-writer PARSE/VACUITY controls left with `registered_writers`, and its "no registered bash writer" plant became "an empty pytest corpus reds"; 45 is the count that run printed.
+    ctl = Controls("pool-writer-safety", floor=45, verbose=True)
 
     ctl.check(
         "CONTROL: the planted real-tree writer is caught",
@@ -793,72 +684,6 @@ def selftest() -> int:
         1,
     )
 
-    # -- the registered-writer parser, and its refusals -----------------------
-    #
-    # RETARGETED 2026-09-09: these cases were bash arrays until battery.py replaced run-all.sh. The subject is now the lock, so the fixtures are JSON, and the two directions that matter are unchanged: a real declaration is read, and every near-miss parses EMPTY so the caller refuses.
-    lock_text = json.dumps(
-        [
-            {
-                "id": "gate-test:generate-tag-inputs",
-                "run": "bash .ci/scripts/test/gates/test-generate-tag-inputs.sh",
-                "mutex": ["tree:repo"],
-            },
-            {
-                "id": "gate-test:both-resources",
-                "run": ".ci/scripts/test/gates/test-both-resources.sh",
-                "mutex": ["tree:repo", "npm:install"],
-            },
-            {
-                "id": "gate-test:quiet",
-                "run": ".ci/scripts/test/gates/test-quiet.sh",
-                "reads": ["tree:repo"],
-            },
-            {
-                "id": "gate-test:free",
-                "run": ".ci/scripts/test/gates/test-free.sh",
-            },
-            {
-                "id": "check:elsewhere",
-                "run": "npx tsx scripts/gates/check-elsewhere.ts",
-                "mutex": ["tree:repo"],
-            },
-        ]
-    )
-    ctl.check(
-        "PARSE: a mutex tree: declaration registers the gate test",
-        registered_writers(lock_text),
-        ["test-both-resources.sh", "test-generate-tag-inputs.sh"],
-    )
-    ctl.check(
-        "PARSE: the SCRIPT word is taken out of a `run` that is a command line",
-        registered_writers(
-            '[{"run": "bash -x .ci/scripts/test/gates/test-x.sh --flag", "mutex": ["tree:repo"]}]'
-        ),
-        ["test-x.sh"],
-    )
-    # THE ONE-DIRECTIONAL CLAIM STRENGTH. A scanner is released beside other scanners, so `reads` is NOT a writer registration; accepting it would silence exactly the flake this gate exists for.
-    ctl.check(
-        "PARSE: a `reads` declaration is NOT a writer registration",
-        registered_writers('[{"run": ".ci/scripts/test/gates/test-r.sh", "reads": ["tree:repo"]}]'),
-        [],
-    )
-    ctl.check(
-        "PARSE: a mutex resource that is not a tree: does not register",
-        registered_writers(
-            '[{"run": ".ci/scripts/test/gates/test-n.sh", "mutex": ["npm:install"]}]'
-        ),
-        [],
-    )
-    ctl.check(
-        "PARSE: a NON-gate-test entry with mutex tree: is not a gate test",
-        registered_writers('[{"run": "npx tsx scripts/gates/check-x.ts", "mutex": ["tree:repo"]}]'),
-        [],
-    )
-    ctl.check("VACUITY: an empty lock parses empty", registered_writers(""), [])
-    ctl.check("VACUITY: unparseable JSON parses empty", registered_writers("{not json"), [])
-    ctl.check(
-        "VACUITY: a JSON OBJECT rather than a list parses empty", registered_writers("{}"), []
-    )
     # -- the PYTHON half: which ports declare themselves into the real-tree group
     with tempfile.TemporaryDirectory() as tmp:
         ports = pathlib.Path(tmp)
@@ -938,13 +763,8 @@ def selftest() -> int:
     # -- THE WHOLE GATE, over fixture trees reached through the three seams --- Planted rather than argued, because the two refusals above are the ones a retarget can silently turn off: an anti-vacuity guard nobody has watched fire is indistinguishable from one that cannot.
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
-        gates = root / "gates"
         ports = root / "ports"
-        gates.mkdir()
         ports.mkdir()
-        (gates / "test-quiet.sh").write_text(
-            '#!/bin/bash\nT="$(mktemp -d)"\nprintf x >"$T/f"\n', encoding="utf-8"
-        )
         # A quiet module, so the corpus is never empty: without it every "no port" case below would red on the scanned-zero refusal and a control would pass for the wrong reason (caught on the first run of these plants).
         (ports / "test_quiet_module.py").write_text("import os\n", encoding="utf-8")
 
@@ -956,10 +776,7 @@ def selftest() -> int:
                 target.write_text('XDIST_GROUP = "real-tree"\n', encoding="utf-8")
             elif target.exists():
                 target.unlink()
-            saved = {
-                name: os.environ.get(name) for name in (GATES_DIR_ENV, PORTS_DIR_ENV, LOCK_ENV)
-            }
-            os.environ[GATES_DIR_ENV] = str(gates)
+            saved = {name: os.environ.get(name) for name in (PORTS_DIR_ENV, LOCK_ENV)}
             os.environ[PORTS_DIR_ENV] = str(ports)
             os.environ[LOCK_ENV] = str(lock_file)
             try:
@@ -971,9 +788,8 @@ def selftest() -> int:
                     else:
                         os.environ[name] = value
 
-        writer = '{"id": "gate-test:w", "run": ".ci/scripts/test/gates/test-quiet.sh", "mutex": ["tree:repo"]}'
-        clean = '[%s, {"id": "check:ci-pytest", "reads": ["www-dist"]}]' % writer
-        exclusive = '[%s, {"id": "check:ci-pytest", "mutex": ["tree:repo"]}]' % writer
+        clean = '[{"id": "check:ci-pytest", "reads": ["www-dist"]}]'
+        exclusive = '[{"id": "check:ci-pytest", "mutex": ["tree:repo"]}]'
         ctl.check("PLANT: no port and no exclusive lane claim passes", run(clean, False), 0)
         ctl.check("PLANT: a module declaring the real-tree group reds", run(clean, True), 1)
         ctl.check(
@@ -982,11 +798,8 @@ def selftest() -> int:
             1,
         )
         ctl.check("PLANT: a stale exclusive lane claim with no port reds", run(exclusive, False), 1)
-        ctl.check(
-            "VACUITY: no registered bash writer reds",
-            run('[{"id": "check:ci-pytest", "reads": ["www-dist"]}]', False),
-            1,
-        )
+        (ports / "test_quiet_module.py").unlink()
+        ctl.check("VACUITY: an empty pytest corpus reds", run(clean, False), 1)
 
     ctl.check("VACUITY: an empty file yields no hits", scan_text("", "t.sh"), [])
     ctl.check(

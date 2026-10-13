@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -237,8 +238,32 @@ cases.append(
     (2, run("npx --yes ruff format file.py", REAL), "npx cannot run a pinned non-npm tool")
 )
 cases.append((2, run("npx -y shfmt -l .", REAL), "npx misuse, short flag form"))
+# #0c331972: the npx arm reads npm's own option grammar (shellscan._launches); it used to skip only -y/--yes, so both shapes below were allowed (rc 0, measured 2026-10-11 at 306285231).
+cases.append(
+    (2, run("npx --logl silent --yes ruff check", REAL), "npx misuse behind a value option")
+)
+cases.append((2, run("npm x -y ruff check", REAL), "npx misuse through the npm x alias"))
+cases.append(
+    (0, run("npx -c 'ruff check a.py'", REAL), "CONTROL: npx -c runs a shell, not a package")
+)
+cases.append((0, run("echo 'npm x -y ruff check'", REAL), "CONTROL: prose naming npm x ruff"))
 cases.append(
     (0, run("npx --yes tsx scripts/foo.ts", REAL), "CONTROL: npx running a real npm package")
+)
+# #503f0ba8: an `npx <tool>` that `find -exec` launches is the same misuse, judged on `shellscan.every_run`; the base allowed it (rc 0, measured 2026-10-09).
+cases.append(
+    (
+        2,
+        run("find . -name '*.py' -exec npx ruff format {} +", REAL),
+        "npx misuse launched by find -exec",
+    )
+)
+cases.append(
+    (
+        0,
+        run("echo find . -name x -exec npx ruff format {} +", REAL),
+        "CONTROL: prose naming a find -exec npx run",
+    )
 )
 
 # --------------------------------------------------------------------------- Submodule / non-submodule split, and the credential file. Both added 2026-08-28 after each failed for real.
@@ -308,15 +333,15 @@ if os.path.exists(os.path.join(REPO, "private/account/package.json")):
     cases.append(
         (
             0,
-            run("grep -n R2 run.sh .ci/scripts/deploy/sync-media-to-r2.sh", REAL),
+            run("grep -n R2 run.sh .ci/media/tools/upload-r2.sh", REAL),
             "CONTROL: two .sh paths handed to grep run neither",
         )
     )
     cases.append(
         (
             2,
-            run("cd . && bash .ci/scripts/deploy/sync-media-to-r2.sh", REAL),
-            "an interpreter after a separator still runs the key",
+            run("cd . && ./run.sh --publish-www --langs en", REAL),
+            "a command after a separator still runs the key",
         )
     )
     # THE PYTHON PORT OF THE SAME UPLOAD, by module. aws is put on PATH so the toolchain arm cannot be what refuses: the refusal has to be the credential one, and the control has to clear both.
@@ -438,9 +463,12 @@ if aws_in_box:
         )
     )
 
-    # The NEEDS_SCRIPT arm, on the exact command that produced the incident. THREE ASSERTIONS, not one. The exit code says it was refused; the other two say it was refused with advice a reader can act on.
-    # `bare` is set True by the NEEDS_SCRIPT loop precisely so this message does not read "gate 'assert-edge-tag-exists.sh'" and then suggest `npm run assert-edge-tag-exists.sh`, which is not a command that exists.
-    r = run_full(".ci/scripts/release/assert-edge-tag-exists.sh --version 1.3.0", AWS_ABSENT)
+    # The NEEDS_SCRIPT arm, on the incident command as it is spelled now: the script was ported to `rediacc_ci.release.assert_edge_tag_exists` and deleted, so the module is what a session runs. THREE ASSERTIONS, not one. The exit code says it was refused; the other two say it was refused with advice a reader can act on.
+    # `bare` is set True by the NEEDS_SCRIPT loop precisely so this message does not read "gate '<key>'" and then suggest `npm run <key>`, which is not a command that exists.
+    r = run_full(
+        "PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists --version 1.3.0",
+        AWS_ABSENT,
+    )
     cases.append((2, r.returncode, "NEEDS_SCRIPT: the incident command itself is REFUSED"))
     cases.append(
         (
@@ -452,12 +480,12 @@ if aws_in_box:
     cases.append(
         (
             True,
-            "npm run assert-edge-tag-exists.sh" not in r.stderr,
-            "NEEDS_SCRIPT routing never suggests the nonsensical 'npm run <script>.sh'",
+            "npm run rediacc_ci." not in r.stderr,
+            "NEEDS_SCRIPT routing never suggests the nonsensical 'npm run <module>'",
         )
     )
 
-    # READING A SCRIPT IS NOT RUNNING IT, and this is the exact bug class `_is_invoked` was built for: `grep -n assets/videos .ci/scripts/deploy/sync-media-to-r2.sh` was once refused with a message about credentials a grep does not need.
+    # READING A SCRIPT IS NOT RUNNING IT, and this is the exact bug class `_is_invoked` was built for: `grep -n assets/videos .ci/scripts/deploy/sync-media-to-r2.sh` (a script since deleted) was once refused with a message about credentials a grep does not need.
     # Every NEEDS_SCRIPT key is a path a session has a real reason to open, so the regression is re-asserted for the new table rather than inherited from the old one.
     cases.extend(
         (
@@ -466,19 +494,19 @@ if aws_in_box:
             f"CONTROL: reading a NEEDS_SCRIPT path is not running it -- {reader.split()[0]}",
         )
         for reader in (
-            "grep -n TODO .ci/scripts/release/assert-edge-tag-exists.sh",
-            "sed -n 1,5p .ci/scripts/release/assert-edge-tag-exists.sh",
-            "cat .ci/scripts/housekeeping/cleanup-versions.sh",
+            "grep -n TODO .ci/rediacc_ci/release/assert_edge_tag_exists.py",
+            "sed -n 1,5p .ci/media/tools/upload-r2.sh",
+            "cat .ci/rediacc_ci/housekeeping/cleanup_versions.py",
         )
     )
 
-    # THE TWO TABLES COMPOSE, IN THIS ORDER. sync-media-to-r2.sh is in NEEDS_ENV as well, so satisfying the credential arm must not satisfy the toolchain one: the credentials being in the shell says nothing about whether aws is on PATH.
+    # THE TWO TABLES COMPOSE, IN THIS ORDER. The sync_media_to_r2 module is in NEEDS_ENV as well, so satisfying the credential arm must not satisfy the toolchain one: the credentials being in the shell says nothing about whether aws is on PATH.
     # The inline form is used rather than the profile form because the profile form runs the key under another interpreter, and the composition under test is about the key being invoked directly.
     cases.append(
         (
             2,
             run(
-                "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x .ci/scripts/deploy/sync-media-to-r2.sh",
+                "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2",
                 AWS_ABSENT,
             ),
             "two-stage: NEEDS_ENV satisfied, NEEDS_SCRIPT still catches the missing aws",
@@ -496,8 +524,11 @@ if aws_in_box:
     cases.append(
         (
             0,
-            run(".ci/scripts/release/assert-edge-tag-exists.sh --version 1.3.0", f"{shim}:{REAL}"),
-            "CONTROL: host HAS aws, so the script is left alone",
+            run(
+                "PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists --version 1.3.0",
+                f"{shim}:{REAL}",
+            ),
+            "CONTROL: host HAS aws, so the port is left alone",
         )
     )
 else:
@@ -571,19 +602,22 @@ cases.extend(
     )
 )
 
-# EVERY aws-needing SCRIPT WHOSE PORT EXISTS HAS ITS MODULE IN THE TABLE, so a port cannot ship without the routing its bash original carried.
-for key, tool in GUARD.NEEDS_SCRIPT:
-    if not key.endswith(".sh"):
-        continue
-    stem = key[: -len(".sh")].replace("-", "_")
-    for port in sorted(pathlib.Path(REPO, ".ci", "rediacc_ci").glob("*/%s.py" % stem)):
-        module = "rediacc_ci.%s.%s" % (port.parent.name, stem)
+# EVERY NEEDS_SCRIPT ROW NAMES SOMETHING THAT EXISTS. Until 2026-10-09 this loop asserted that every `.sh` row whose port existed also had its module row, which kept nine rows alive for scripts PLAN-retire-bash-oracles B3 had deleted: a row for a file nothing can run routes nothing, and its only readers were the cases that named the deleted paths. The rule now is the one that would have caught them: a `.sh` key is the basename of a tracked file, and a `rediacc_ci.` key is a module file under `.ci/`.
+_LS = subprocess.run(["git", "-C", REPO, "ls-files"], capture_output=True, text=True, check=False)
+_TRACKED = _LS.stdout.split("\n") if _LS.returncode == 0 else []
+_BASENAMES = {path.rsplit("/", 1)[-1] for path in _TRACKED if path}
+cases.append((True, len(_BASENAMES) > 1000, "liveness: git ls-files saw the tree"))
+for key, _tool in GUARD.NEEDS_SCRIPT:
+    if key.endswith(".sh"):
+        cases.append((True, key in _BASENAMES, f"liveness: NEEDS_SCRIPT {key} is a tracked script"))
+    elif key.startswith("rediacc_ci."):
+        module_file = pathlib.Path(REPO, ".ci", *key.split(".")).with_suffix(".py")
         cases.append(
-            (
-                True,
-                (module, tool) in GUARD.NEEDS_SCRIPT,
-                f"python -m: {key}'s port {module} is in NEEDS_SCRIPT",
-            )
+            (True, module_file.is_file(), f"liveness: NEEDS_SCRIPT {key} is a module file")
+        )
+    else:
+        cases.append(
+            (True, False, f"liveness: NEEDS_SCRIPT {key} is neither a script nor a module")
         )
 cases.append(
     (
@@ -591,6 +625,40 @@ cases.append(
         (SCRUB, "aws") in GUARD.NEEDS_SCRIPT,
         "python -m: the scrub_sentinel port is in NEEDS_SCRIPT",
     )
+)
+
+# THE OTHER DIRECTION (review 276a69db.1): every runnable module under .ci/rediacc_ci that puts `aws` at the head of an argv has its row, so a new aws-calling port cannot ship without the routing. A module counts as runnable when it carries `if __name__ == "__main__"`. The exemptions are named, each with its reason.
+_AWS_ARGV = re.compile(r"""[\[(]\s*["']aws["']\s*[,\]]""")
+_AWS_EXEMPT = {
+    # A multi-verb library CLI: aws is one verb (s3api list-objects-v2) of many, so a module row would refuse every other verb on a host without aws.
+    "rediacc_ci.core.common",
+    # A shadow-run driver for tests; it replays the bash common.sh, it is not run against R2.
+    "rediacc_ci.core.common_stub_shadow_driver",
+}
+_MODULE_ROWS = {
+    key for key, tool in GUARD.NEEDS_SCRIPT if tool == "aws" and key.startswith("rediacc_ci.")
+}
+_AWS_MODULES = set()
+for rel in _TRACKED:
+    if not (rel.startswith(".ci/rediacc_ci/") and rel.endswith(".py")) or "/tests/" in rel:
+        continue
+    source = pathlib.Path(REPO, rel)
+    # Tracked but absent from the working tree (mid-rename): nothing to scan.
+    if not source.is_file():
+        continue
+    text = source.read_text(encoding="utf-8", errors="replace")
+    if "__main__" in text and _AWS_ARGV.search(text):
+        _AWS_MODULES.add(rel[len(".ci/") : -len(".py")].replace("/", "."))
+cases.append(
+    (
+        True,
+        len(_AWS_MODULES) >= 5,
+        "coverage: the aws-argv scan found the ports (%d)" % len(_AWS_MODULES),
+    )
+)
+cases.extend(
+    (True, mod in _MODULE_ROWS, f"coverage: aws-calling module {mod} has its NEEDS_SCRIPT row")
+    for mod in sorted(_AWS_MODULES - _AWS_EXEMPT)
 )
 
 if aws_in_box:
@@ -612,14 +680,14 @@ if aws_in_box:
 
 # A PARSE-ONLY SHELL AND TEXT BASH NEVER RUNS ARE NOT INVOCATIONS. Measured 2026-10-02: `bash -n .ci/scripts/deploy/promote-r2-to-stable.sh`, a syntax check after an edit, was refused as an aws run, once at the tail of a python heredoc whose comment named aws, which is where the writer laid the blame. The guard judged a flat text scan that kept comments and split on newlines; it now
 # judges `shellscan._analyse(cmd).runs`, minus what a noexec shell only reads. Function-level first, so neither the host's aws nor the devbox decides these.
-PROMOTE = "promote-r2-to-stable.sh"
+PROMOTE = "upload-r2.sh"
 cases.extend(
     (want, GUARD._is_invoked(PROMOTE, cmd), f"parse-only: {label}")
     for want, cmd, label in (
-        (False, "bash -n .ci/scripts/deploy/%s" % PROMOTE, "bash -n parses and runs nothing"),
-        (False, "sh -n .ci/scripts/deploy/%s" % PROMOTE, "sh -n likewise"),
-        (False, "bash -nv .ci/scripts/deploy/%s" % PROMOTE, "-n inside a bundle"),
-        (False, "bash -o noexec .ci/scripts/deploy/%s" % PROMOTE, "-o noexec"),
+        (False, "bash -n .ci/media/tools/%s" % PROMOTE, "bash -n parses and runs nothing"),
+        (False, "sh -n .ci/media/tools/%s" % PROMOTE, "sh -n likewise"),
+        (False, "bash -nv .ci/media/tools/%s" % PROMOTE, "-n inside a bundle"),
+        (False, "bash -o noexec .ci/media/tools/%s" % PROMOTE, "-o noexec"),
         (False, "bash -n -c 'bash %s'" % PROMOTE, "a noexec shell's -c payload runs nothing"),
         (
             False,
@@ -629,22 +697,22 @@ cases.extend(
         (False, "true # bash %s" % PROMOTE, "a comment is not a command"),
         (
             False,
-            'for f in a \\\n  .ci/scripts/deploy/%s; do wc -l "$f"; done' % PROMOTE,
+            'for f in a \\\n  .ci/media/tools/%s; do wc -l "$f"; done' % PROMOTE,
             "a for word list on a continuation line",
         ),
         (False, "bash -c 'grep -n aws %s'" % PROMOTE, "a -c string is not a script path"),
-        (True, "bash .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: bash runs the script"),
-        (True, "bash -x .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: -x still executes"),
-        (True, "bash .ci/scripts/deploy/%s -n" % PROMOTE, "TRUE POSITIVE: -n is the script's"),
-        (True, "bash +n .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: +n turns noexec off"),
+        (True, "bash .ci/media/tools/%s" % PROMOTE, "TRUE POSITIVE: bash runs the script"),
+        (True, "bash -x .ci/media/tools/%s" % PROMOTE, "TRUE POSITIVE: -x still executes"),
+        (True, "bash .ci/media/tools/%s -n" % PROMOTE, "TRUE POSITIVE: -n is the script's"),
+        (True, "bash +n .ci/media/tools/%s" % PROMOTE, "TRUE POSITIVE: +n turns noexec off"),
         (True, "bash -c 'bash %s'" % PROMOTE, "TRUE POSITIVE: a -c payload that runs it"),
         (True, "bash <<'EOF'\nbash %s\nEOF" % PROMOTE, "TRUE POSITIVE: a heredoc fed to bash"),
         (
             True,
-            "bash -n x.sh && .ci/scripts/deploy/%s" % PROMOTE,
+            "bash -n x.sh && .ci/media/tools/%s" % PROMOTE,
             "TRUE POSITIVE: a run after a parse-only one",
         ),
-        (True, "x=$(.ci/scripts/deploy/%s)" % PROMOTE, "TRUE POSITIVE: a substitution runs it"),
+        (True, "x=$(.ci/media/tools/%s)" % PROMOTE, "TRUE POSITIVE: a substitution runs it"),
     )
 )
 
@@ -653,16 +721,16 @@ if aws_in_box:
     cases.extend(
         (want, run(cmd, AWS_ABSENT), f"parse-only end-to-end: {label}")
         for want, cmd, label in (
-            (0, "bash -n .ci/scripts/deploy/%s" % PROMOTE, "the 2026-10-02 syntax check"),
+            (0, "bash -n .ci/media/tools/%s" % PROMOTE, "the 2026-10-02 syntax check"),
             (
                 0,
                 "python3 - <<'EOF'\n# aws matches the whole key\nprint(1)\nEOF\n"
-                "bash -n .ci/scripts/deploy/%s && echo syntax-ok" % PROMOTE,
+                "bash -n .ci/media/tools/%s && echo syntax-ok" % PROMOTE,
                 "the heredoc-then-syntax-check shape",
             ),
             (0, "echo hi # then; aws s3 ls", "aws named in a comment after a separator"),
             (0, "bash -n -c 'aws s3 ls'", "aws in a noexec shell's -c payload"),
-            (2, "bash .ci/scripts/deploy/%s" % PROMOTE, "TRUE POSITIVE: running the script"),
+            (2, "bash .ci/media/tools/%s" % PROMOTE, "TRUE POSITIVE: running the script"),
             (2, "bash -c 'aws s3 ls'", "TRUE POSITIVE: aws in a -c payload"),
             (2, "bash -n x.sh; aws s3 ls", "TRUE POSITIVE: aws after a parse-only shell"),
             (2, "x=$(aws s3 ls)", "TRUE POSITIVE: aws in a substitution"),
@@ -748,7 +816,7 @@ for body, why in (
 with open(fixture_list, "w", encoding="utf-8") as fh:
     fh.write(f"# BLOCKER: {LEGIT}\ncheck:ci-release-state@aws\n")
 for hit, need, why in (
-    ("assert-edge-tag-exists.sh", "aws", "another command needing the same tool is not covered"),
+    ("upload-r2.sh", "aws", "another command needing the same tool is not covered"),
     ("check:ci-release-state", "ruff", "the same command needing another tool is not covered"),
 ):
     granted, _ = GUARD._exception(fixture_root, hit, need)

@@ -38,6 +38,7 @@ import wl_judge
 import wl_leasehelp
 import wl_liveness
 import wl_loopspeed
+import wl_plandeps
 import wl_planenforce
 import wl_planfid
 import wl_planfile
@@ -1533,6 +1534,83 @@ def queue_held_lines(verdict, fold, root):
     return "".join(out)
 
 
+# How many plans a FIRST row group may name before the rest are counted (agent/plans/PLAN-plan-dependencies.md section 3).
+FIRST_ROOTS_MAX = 3
+
+
+def dep_first_rows(fold, session_id, me_arg, root, graph):
+    """The priority-0 `FIRST` rows: one per unfinished plan some open item of this session has to wait for (agent/plans/PLAN-plan-dependencies.md section 3, "push what is needed to go first"). Each names the chain, the items waiting on it, who tracks it, its first open box and the command that starts it. At most FIRST_ROOTS_MAX rows, then one line counting the rest. [] when nothing waits on a plan.
+
+    The rows carry the sort key `()`, which orders before every real rank, so they lead the band ahead of the waiting items' own rows."""
+    if graph is None:
+        return []
+    groups: dict[str, list[tuple[dict, Any]]] = {}
+    for rec in fold.items:
+        if rec.get("state") != " " or not C.owned_by_me(rec.get("owner"), session_id):
+            continue
+        deps = wl_plandeps.item_deps(graph, rec.get("text") or "", fold.items)
+        if deps is None:
+            continue
+        for plan in deps.roots:
+            groups.setdefault(plan, []).append((rec, deps))
+    rows = []
+    for plan, members in list(groups.items())[:FIRST_ROOTS_MAX]:
+        target = graph.resolve(plan)
+        status = graph.plans[target.rel].header.status if target.rel in graph.plans else ""
+        box, n_open = None, 0
+        if target.rel in graph.plans:
+            with contextlib.suppress(Exception):
+                box = wl_planenforce.first_box(root, target.rel)
+                n_open = len(
+                    wl_planenforce.R.open_boxes(wl_planenforce._read_text(root, target.rel))
+                )
+        deps0 = members[0][1]
+        # A TASK EDGE (`Depends-On: PLAN-y.md#T3`) names that one box, not the plan's first open one.
+        task = deps0.tasks.get(plan)
+        if task and target.rel in graph.plans:
+            found = graph.task_verdict(target.rel, task).box
+            if found is not None:
+                box = (found.sig, found.body)
+        holders = deps0.tracked.get(plan) or ()
+        mine = [
+            h for h in holders if C.owned_by_me((fold.by_id.get(h) or {}).get("owner"), session_id)
+        ]
+        if mine:
+            tracked = ", ".join("#" + h for h in holders)
+            nxt = "work #%s first; the items above reopen when %s is finished" % (mine[0], plan)
+        elif holders:
+            tracked = ", ".join(
+                "#%s owner %s" % (h, str((fold.by_id.get(h) or {}).get("owner") or "?")[:8])
+                for h in holders
+            )
+            nxt = "nothing for this session; the items above reopen when %s is finished" % plan
+        else:
+            tracked = "nothing yet"
+            body = box[1][:80] if box else "<first open box>"
+            sig = box[0] if box else "<sig>"
+            nxt = '--add %s "%s [%s] %s"' % (me_arg, plan, sig, body)
+        lines = [
+            "  - FIRST %s [Status: %s], %d open box(es)" % (plan, status or "unresolved", n_open),
+            "        chain: %s" % " -> ".join(deps0.chains.get(plan) or (deps0.plan, plan)),
+            "        waiting on it: %s" % ", ".join("#" + r["id"] for r, _d in members),
+            "        tracked by: %s" % tracked,
+        ]
+        if box:
+            lines.append("        next box: %s  %s" % (box[0], box[1][:100]))
+        lines.append("        NEXT: %s" % nxt)
+        rows.append((0, (), "\n".join(lines)))
+    if len(groups) > FIRST_ROOTS_MAX:
+        rows.append(
+            (
+                0,
+                (),
+                "  - +%d more plan(s) must land first; worklist.py --list --open shows them"
+                % (len(groups) - FIRST_ROOTS_MAX),
+            )
+        )
+    return rows
+
+
 def guided_slice(
     fold, session_id, verdicts=None, me=None, root=None, full=False, live_plans=None, in_scope=None
 ):
@@ -1563,6 +1641,9 @@ def guided_slice(
     order_ctx, order_problem = PO.context(root)
     rank = PO.item_key(order_ctx)
     xinfo = PO.xinfo_for(root) if live_plans is not None else None
+    dep_graph = order_ctx.graph if order_ctx is not None else None
+    # The plans that must land first lead the slice (section 3); they are appended before any item row and carry the key `()`.
+    rows.extend(dep_first_rows(fold, session_id, me_arg, root, dep_graph))
     for rec in fold.items:
         if session_id and not C.owned_by_me(rec["owner"], session_id):
             continue
@@ -1573,10 +1654,13 @@ def guided_slice(
             st == " "
             and in_scope is not None
             and not in_scope(rec)
-            and not wl_leasehelp.waiting_on(rec, by_id)
+            and not wl_leasehelp.waiting_on(rec, by_id, dep_graph)
         ):
             continue
         txt = S.brief_text(rec, GUIDE_TEXT_CHARS)
+        _waived = wl_plandeps.waiver(rec.get("line") or "")[0]
+        if _waived:
+            txt += " (deps waived: %s)" % _waived[:80]
         upd = C.stamp_age_min(rec.get("upd", ""))
         age = "?" if upd is None else "%dm" % upd
         rid = rec["id"]
@@ -1607,14 +1691,24 @@ def guided_slice(
             and rec.get("worker") == wl_leasehelp.QUEUE_WORKER
             and C.lease_state(rec["line"]) == "expired"
         )
-        waiting = wl_leasehelp.waiting_on(rec, by_id) if st == " " or queue_wait else []
+        waiting = wl_leasehelp.waiting_on(rec, by_id, dep_graph) if st == " " or queue_wait else []
         if waiting:
+            plans_w = [w for w in waiting if w.startswith("PLAN-")]
             rows.append(
                 (
                     3,
                     key,
-                    "  - [%s] #%s waiting (%s) %s\n        NEXT: nothing until they close; it reopens by itself"
-                    % (st, rid_t, ", ".join("#" + w for w in waiting), txt),
+                    "  - [%s] #%s waiting (%s) %s\n        NEXT: %s"
+                    % (
+                        st,
+                        rid_t,
+                        ", ".join(w if w in plans_w else "#" + w for w in waiting),
+                        txt,
+                        "nothing until %s is finished (a Status in FINISHED_STATES); it reopens by itself"
+                        % ", ".join(plans_w)
+                        if plans_w
+                        else "nothing until they close; it reopens by itself",
+                    ),
                 )
             )
         elif st == " ":
@@ -2600,8 +2694,82 @@ def _first_box_text(root, rel):
     return "%s  %s" % (got[0], got[1][:120]) if got else M.LOOP_NEXT_NO_BOX
 
 
-def loop_next_text(state, root, state_doc, pr_finish_fired):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count."""
+def turbo_push_mode(state):
+    """`state.turbo_push` ("batch-end" or "pr"), read defensively: a LoopState that predates the field, or any other value, reads as "pr", today's behaviour (agent/plans/PLAN-turbo-local-first.md)."""
+    mode = getattr(state, "turbo_push", "pr")
+    return mode if mode in ("batch-end", "pr") else "pr"
+
+
+def local_batch(state):
+    """True when `state` is a turbo batch filling on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D1): turbo on, `turbo_push: batch-end`, and wl_prscope's `local_batch` set."""
+    return bool(
+        state is not None
+        and getattr(state, "turbo", False)
+        and getattr(state, "local_batch", False)
+        and turbo_push_mode(state) == "batch-end"
+    )
+
+
+def _open_in_set(state, root):
+    """The batch plans that still carry an open box, each with its count, "none" when every plan is finished, or "no plans in the set" for an empty set. "Batch 3/3 finished" alone read as complete while two turbo-named plans were still open (2026-10-08)."""
+    if not state.plans:
+        return "no plans in the set"
+    plan_gate = wl_prscope._hooks_pkg()[0]
+    parts = []
+    for rel in state.plans:
+        open_n, _done, why = plan_gate.open_boxes(root, rel)
+        if why:
+            parts.append("%s (unreadable)" % rel.rsplit("/", 1)[-1])
+        elif open_n:
+            parts.append("%s (%d open)" % (rel.rsplit("/", 1)[-1], open_n))
+    return ", ".join(parts) or "none"
+
+
+def _set_finished(state, root):
+    """True when the set is non-empty and none of its plans has an open box.
+
+    Read through plan_gate.open_boxes, which follows a `Moved-To:` stub, so a plan moved to `_done/` is judged by its real text; wl_planenforce.first_box reads the stub and saw nothing open. An empty set is NOT finished, and neither is a plan whose boxes cannot be read: either would otherwise order a push for a batch of nothing, or one that block_turbo_early_push then refuses.
+    """
+    if not state.plans:
+        return False
+    plan_gate = wl_prscope._hooks_pkg()[0]
+    for rel in state.plans:
+        open_n, _done, why = plan_gate.open_boxes(root, rel)
+        if why or open_n:
+            return False
+    return True
+
+
+def local_batch_open(state, root):
+    """True while a local batch is still filling (D2/D4/D6): `local_batch` and not `wl_prscope.batch_ready`. Unpushed commits and no PR are the intended state then."""
+    return local_batch(state) and not wl_prscope.batch_ready(state, _set_finished(state, root))
+
+
+def live_batch_ready(state, finished_all):
+    """`wl_prscope.batch_ready` for a LIVE PR. Under `turbo_push: batch-end` the PR opened with its batch complete and turbo-next is silent on it (D3), so its batch is closed: every plan of the set finished is the whole condition. Without this a queue that gained an eligible plan after the PR opened (`turbo_more`) would hold the merge forever with nothing left to name."""
+    if (
+        state is not None
+        and getattr(state, "turbo", False)
+        and turbo_push_mode(state) == "batch-end"
+    ):
+        return bool(finished_all)
+    return wl_prscope.batch_ready(state, finished_all)
+
+
+def _judge_local_batch(state, root):
+    """The judge's `local_batch` argument (agent/plans/PLAN-turbo-local-first.md D6): `{"finished", "batch"}` while a local batch fills, else None. A failed read is None, today's prompt."""
+    try:
+        if local_batch_open(state, root):
+            return {"finished": int(state.finished), "batch": int(state.batch_size)}
+    except Exception:  # noqa: BLE001 -- the judge still runs on today's prompt
+        pass
+    return None
+
+
+def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
+
+    A no-PR local batch (agent/plans/PLAN-turbo-local-first.md D2, `local_batch`) never gets "Open it": while the batch fills it is the N_TURBO_LOCAL advisory, and once it is ready the V_LOOP_NEXT_BATCH_OPEN block names the verify-push-open sequence, `me` filling its `--batch-body` line."""
     kind, branch = state.kind, state.branch
     if kind != wl_prscope.UNREADABLE:
         state_doc.pop("loopnext", None)
@@ -2632,6 +2800,16 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
     if kind == wl_prscope.NO_PR:
         ahead = C._git(root, "rev-list", "--count", "origin/main..HEAD")
         fields["ahead"] = int(ahead) if str(ahead or "").strip().isdigit() else 0
+        if local_batch(state):
+            fields["finished"] = int(state.finished)
+            fields["batch"] = int(state.batch_size)
+            fields["me"] = me
+            if fields["ahead"] > 0:
+                if not wl_prscope.batch_ready(state, _set_finished(state, root)):
+                    # Only the advisory renders the open boxes, so only this branch pays the plan reads.
+                    fields["open"] = _open_in_set(state, root)
+                    return M.N_TURBO_LOCAL % fields, False
+                return M.V_LOOP_NEXT_BATCH_OPEN % fields, True
         if fields["ahead"] > 0:
             return M.V_LOOP_NEXT_NO_PR_OPEN % fields, True
         if not nxt:
@@ -2642,8 +2820,8 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
             return "", False
         if any(wl_planenforce.first_box(root, rel) for rel in state.plans):
             return "", False
-        # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take.
-        if not wl_prscope.batch_ready(state, True):
+        # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take. Under batch-end the batch closed when the PR opened (live_batch_ready).
+        if not live_batch_ready(state, True):
             return "", False
         return M.V_LOOP_NEXT_MERGE % fields, True
     if kind == wl_prscope.UNREADABLE:
@@ -2669,14 +2847,26 @@ TURBO_KEEPS = frozenset({"turbo-next"})
 
 
 def turbo_next_text(state, root, writers):
-    """The turbo arm's text for this stop, "" when nothing is named (agent/plans/PLAN-stop-hook-turbo.md D8): turbo on, a live PR, and picks for free writer slots. Each pick is numbered by the slot it takes after the `writers` already live."""
-    if not state.turbo or state.kind != wl_prscope.LIVE or not state.turbo_picks:
+    """The turbo arm's text for this stop, "" when nothing is named (agent/plans/PLAN-stop-hook-turbo.md D8): turbo on, picks for free writer slots, and either a live PR under `turbo_push: pr` or a no-PR local batch (agent/plans/PLAN-turbo-local-first.md D1/D3). A live PR under `batch-end` is silent: its batch closed when the PR opened, so no plan joins it during its CI cycle. Each pick is numbered by the slot it takes after the `writers` already live."""
+    if not state.turbo or not state.turbo_picks:
+        return ""
+    local = state.kind == wl_prscope.NO_PR and local_batch(state)
+    if not local and (state.kind != wl_prscope.LIVE or turbo_push_mode(state) == "batch-end"):
         return ""
     cap = int(state.writer_cap)
     lines = [
         M.TURBO_NEXT_PICK % (rel, int(writers) + i + 1, cap, _first_box_text(root, rel))
         for i, rel in enumerate(state.turbo_picks)
     ]
+    if local:
+        return M.V_TURBO_NEXT_LOCAL % {
+            "branch": state.branch,
+            "free": max(0, cap - int(writers)),
+            "cap": cap,
+            "picks": "\n".join(lines),
+            "finished": state.finished,
+            "batch": state.batch_size,
+        }
     return M.V_TURBO_NEXT % {
         "pr": state.pr,
         "free": max(0, cap - int(writers)),
@@ -2888,6 +3078,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             live_bg + _wakers, wl_liveness.verify_background(live_bg + _wakers)
         ):
             _live_worker_ids.add(wl_leasehelp.LEAD_WORKER)
+    # THE PLAN ORDER, built once per stop and shared by auto-lease, classification and the guide: the `Depends-On` graph (agent/plans/PLAN-plan-dependencies.md section 2c). A plan read that fails leaves no plan wait at all: every item classifies exactly as before.
+    _order_ctx = None
+    with contextlib.suppress(Exception):
+        _order_ctx = wl_planorder.context(root)[0]
+    _dep_graph = _order_ctx.graph if _order_ctx is not None else None
     # AUTO-LEASE FROM A LIVE TASK'S OWN WORDS (P2.2): an open item this session owns, named `#<id>` in a live agent's first prompt or a live shell's description, is leased to that task here, at stop time, against the live event. It replaces the hand `--lease` every spawn used to need, and it also closes the lease-time blindness to a just-spawned worker (PLAN-parallel-writer-roster F3).
     with contextlib.suppress(Exception):
         _metas = wl_roster.load_metas(wl_roster.session_subagents_dir(event.get("cwd"), session_id))
@@ -2903,6 +3098,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             lambda r: C.owned_by_me(r.get("owner"), session_id),
             _prompt_texts,
             _live_worker_ids,
+            _dep_graph,
         )
         if _auto:
             _until = C.stamp_ahead(wl_leasehelp.AUTO_LEASE_MIN)[:16] + "Z"
@@ -2920,7 +3116,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE PLAN RANK (agent/plans/PLAN-plan-priority-concurrency.md section 2), built once per stop and shared by every picker below: the open list, the guide, queue-slot, the backlog nomination and the plan-unimplemented named box. A plan read that fails leaves age order, and the guide prints why.
     _order_key = None
     with contextlib.suppress(Exception):
-        _order_key = wl_planorder.item_key(wl_planorder.context(root)[0])
+        _order_key = wl_planorder.item_key(_order_ctx)
     # THE LOOP STATE (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 1), computed ONCE per stop: which PR, which plan set, which epic items, what comes next. A resolver that raises leaves the checkout off the loop (the full battery) and says so as a hook bug.
     _loop, _loop_err = None, ""
     try:
@@ -2934,7 +3130,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE PR'S ITEM SCOPE (Design 2). On the loop an open item blocks only while it is on an epic of the PR's plan set; off the loop None puts every item in scope. The same predicate scopes the guide below.
     # Bound once with functools.partial so both classify calls below carry it and each call keeps the exact shape the order-key mutation control (test_wl_plan_priority m4) edits.
     _in_scope = (lambda rec: rec["id"] in _scope_ids) if _on_loop else None
-    _classify = functools.partial(S.classify_items, in_scope=_in_scope)
+    _classify = functools.partial(S.classify_items, in_scope=_in_scope, dep_graph=_dep_graph)
     open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
         fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
     )
@@ -2956,20 +3152,30 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
     # UNBLOCKED (P2.4): an item that was `waiting` on the last stop and is open now has had every blocker close. One sticky line says so, because the item re-enters `open-items` without any other sign of why.
     with contextlib.suppress(Exception):
-        _waiting_now = sorted(r["id"] for r in fold.items if r.get("waiting_on"))
+        _waiting_now = sorted(
+            r["id"] for r in fold.items if r.get("waiting_on") or r.get("waiting_plans")
+        )
+        _plans_before = state_doc.get("waiting_plans") or {}
         for _rid in sorted(set(state_doc.get("waiting") or []) - set(_waiting_now)):
             _rec = fold.by_id.get(_rid)
             if _rec is not None and _rec.get("state") == " ":
-                outq_add(
-                    worklist,
-                    session_id,
-                    state_doc,
-                    "unblocked",
-                    M.N_UNBLOCKED % (_rid, S.brief_text(_rec, GUIDE_TEXT_CHARS)),
-                    1,
-                    sticky=True,
-                )
+                _roots = _plans_before.get(_rid) or []
+                if _roots and _dep_graph is not None:
+                    # A PLAN WAIT ENDS TWO WAYS: the root finished (this line), or nothing tracks it any more and the item failed closed to open (its display suffix says so, and a "finished" line would be false).
+                    if not all(_dep_graph.is_complete(_p) for _p in _roots):
+                        continue
+                    _text = M.N_UNBLOCKED_PLAN % (
+                        _rid,
+                        ", ".join(_roots),
+                        S.brief_text(_rec, GUIDE_TEXT_CHARS),
+                    )
+                else:
+                    _text = M.N_UNBLOCKED % (_rid, S.brief_text(_rec, GUIDE_TEXT_CHARS))
+                outq_add(worklist, session_id, state_doc, "unblocked", _text, 1, sticky=True)
         state_doc["waiting"] = _waiting_now
+        state_doc["waiting_plans"] = {
+            r["id"]: list(r["waiting_plans"]) for r in fold.items if r.get("waiting_plans")
+        }
     # THE PARALLEL-WRITER ROSTER (wl_roster), computed ONCE here from the RAW event rather than the pruned `live_bg`: a reaped id whose transcript is not proven finished is still a live writer, and the cap must see it. Read by the bg-report predicate below; its defects are added after the ladder, and its HONEST verdict is applied just before the cadence gate. None means it could not be
     # computed, and then nothing roster-shaped happens: no suppression, no roster key, the battery exactly as before.
     _roster = None
@@ -4252,8 +4458,35 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception:  # noqa: BLE001 -- advisory: a broken reminder read is silence, never a failed stop
         pass
+    #   backup-push     a no-PR local batch whose oldest unpushed commit is older than `backup_push_h` hours (agent/plans/PLAN-turbo-local-first.md D4).
+    # While a local batch fills, receipt-behind is silent: no push is due until the batch completes (D4).
     try:
-        _rb = wl_loopspeed.receipt_behind(root)
+        _lb_open = local_batch_open(_loop, root)
+    except Exception:  # noqa: BLE001 -- advisory: an unreadable batch reads as no batch
+        _lb_open = False
+    try:
+        _bp = (
+            wl_loopspeed.backup_push_due(
+                root, int(getattr(_loop, "backup_push_h", 0) or 0), branch=_loop.branch
+            )
+            if _loop is not None and local_batch(_loop)
+            else None
+        )
+        if _bp:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "backup-push",
+                M.N_BACKUP_PUSH % _bp,
+                1,
+                refresh_min=60,
+                on_change=False,
+            )
+    except Exception:  # noqa: BLE001 -- advisory: a broken read is silence
+        pass
+    try:
+        _rb = None if _lb_open else wl_loopspeed.receipt_behind(root)
         if _rb:
             outq_add(
                 worklist,
@@ -4424,11 +4657,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
         # Under turbo the finish line is offered only once the batch is ready (agent/plans/PLAN-stop-hook-turbo.md D8): every plan of the set finished and `batch_size` of them done, or no queued plan left to take. Turbo off: always.
         _prf_batch = (
-            _loop is None
-            or not _loop.turbo
-            or wl_prscope.batch_ready(
-                _loop, not any(wl_planenforce.first_box(root, rel) for rel in _loop.plans)
-            )
+            _loop is None or not _loop.turbo or live_batch_ready(_loop, _set_finished(_loop, root))
         )
         if _prf_batch and _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
             _prf_green = cistate == "ok"
@@ -4493,7 +4722,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if _on_loop:
         try:
             _ln_text, _ln_block = loop_next_text(
-                _loop, root, state_doc, any(k == "pr-finish" for k, _a, _t in violations)
+                _loop, root, state_doc, any(k == "pr-finish" for k, _a, _t in violations), me=me8
             )
             if _ln_text and _ln_block and not live_bg and cistate != "pending":
                 vadd("loop-next", False, _ln_text)
@@ -5659,6 +5888,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 fixset_instance=(
                     (str(root), list(reg_ids)) if reg_fixset_provenance == "diff-tree" else None
                 ),
+                local_batch=_judge_local_batch(_loop, root),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.

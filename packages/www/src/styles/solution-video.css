@@ -86,7 +86,7 @@
 
 /* The placeholder the hydrator replaces, styled ONLY until it is replaced.
  *
- * The player is mounted from a dynamic import (plyr cannot be server-rendered), so between
+ * The player is mounted from a dynamic import (the Video.js player cannot be server-rendered), so between
  * first paint and hydration this div is empty. Without a reserved box the hero's media
  * column has zero height and the whole hero reflows when the player lands. The attribute
  * is the one the hydrator sets on mount, so the reservation releases exactly when the real
@@ -141,7 +141,7 @@
    The play control on top of it carries its own colour and is unaffected. Hover
    and focus restore the image to full, so nothing is hidden from anyone actually
    looking at it, and the restore is what a pointer or a keyboard both get.
-   Duplicated for .plyr__poster in tutorial-video.css -- the hydrator DELETES this
+   Duplicated for .media-poster in tutorial-video.css -- the hydrator DELETES this
    element on first click, so treating only this one makes the effect vanish the
    moment you press play. */
 :root[data-theme='dark'] .video-poster-preview {

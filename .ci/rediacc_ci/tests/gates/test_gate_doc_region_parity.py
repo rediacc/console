@@ -27,7 +27,7 @@ WHAT EACH CASE PROVES, in the twin's order and under the twin's letters:
   I. `--selftest` is green and still carries its planted controls BY NAME. Asserting
      the exit code alone keeps passing after someone deletes the controls.
 
-A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07: NINE, and the measurement needs one caveat that will otherwise waste somebody's afternoon. `grep -c '^PASS:'` on that twin's output prints ZERO, because `test-helpers.sh` writes the colour escape BEFORE the word, so no line literally starts with `PASS:`. The parity driver strips ANSI first and then
+A FLAT TWIN, so the parity floor is its runtime `PASS:` count. Measured 2026-09-07: NINE, and the measurement needs one caveat that will otherwise waste somebody's afternoon. `grep -c '^PASS:'` on that twin's output prints ZERO, because `test-helpers.sh` (deleted in PLAN-retire-bash-oracles section 12 U3 step 2) wrote the colour escape BEFORE the word, so no line literally starts with `PASS:`. The parity driver strips ANSI first and then
 counts, which gives nine. This module records one control per lettered case, nine in total.
 
 THE FIXTURE'S CONTENTS ARE DERIVED, NOT TYPED, AND THAT IS THE POINT.

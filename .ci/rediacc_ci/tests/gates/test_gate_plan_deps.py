@@ -144,6 +144,7 @@ def test_the_clean_tree_is_green(gate, tmp_path):
         ("D5", {"x": _plan(dep="PLAN-x.md")}),
         ("D6", {"z": _plan(dep="PLAN-x.md")}),
         ("D8", {"p00": None}),
+        ("D9", {"x": _plan(dep="PLAN-y.md#T9")}),
     ],
 )
 def test_each_finding_reds_the_tree(gate, tmp_path, code, plants):
@@ -151,6 +152,14 @@ def test_each_finding_reds_the_tree(gate, tmp_path, code, plants):
     gate.assert_exit(1, result, "%s planted" % code)
     gate.assert_contains(result.err, "    %s  " % code, "the finding is named by its code")
     gate.log_pass("%s planted into a clean tree reds it" % code)
+
+
+def test_a_task_edge_to_a_box_that_exists_is_green_and_the_closest_box_is_named(gate, tmp_path):
+    """PLAN-plan-dependencies T12: the twin of the D9 plant above, and the suggestion that makes a renumbered box a one-line fix."""
+    gate.assert_exit(0, _gate(_seed(tmp_path / "ok", x=_plan(dep="PLAN-y.md#T1"))), "box T1 exists")
+    result = _gate(_seed(tmp_path / "gone", x=_plan(dep="PLAN-y.md#T9")))
+    gate.assert_contains(result.err, "Closest now: T1 a box", "the nearest box is named")
+    gate.log_pass("a task edge resolves against the live box and D9 names the nearest one")
 
 
 def test_an_ambiguous_basename_reds_the_tree(gate, tmp_path):

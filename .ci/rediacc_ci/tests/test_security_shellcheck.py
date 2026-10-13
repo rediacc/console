@@ -59,7 +59,7 @@ PORT = ROOT / PORT_REL
 CALLS_MARKER = "--- calls ---\n"
 
 # The anti-collapse floor for the real enumerator. See `real_hashes`.
-FLOOR = 150
+FLOOR = 90
 
 # The fixture's own pin, so no recorded byte depends on the real one. The fake answers `--version` with this, which is also what makes the acquisition accept it.
 #
@@ -591,7 +591,7 @@ def real_hashes() -> dict[str, str]:
 
     THE FLOOR WAS INHERITED AND STALE, and it was red before this file was rewritten. It read `> 400`, written when the tree carried 620 shell scripts; the bash-twin retirement campaign has since removed hundreds, the count is 334 today and still falling, so the floor was refusing the campaign's success rather than a defect.
 
-    It is now 150, which still refuses a collapsed enumerator (the failure mode is zero or a handful) without being a second, accidental inventory of the tree.
+    It was 150 until PLAN-retire-bash-oracles wave 1, W7 and W11-A took the count to 106 (re-measured 2026-10-08); it is now 90, which still refuses a collapsed enumerator (the failure mode is zero or a handful) without being a second, accidental inventory of the tree.
     """
     files = subprocess.run(
         ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", "*.sh"],

@@ -26,7 +26,7 @@ the two exit codes wrong.
 must not "tidy" the filter, because the filter is what the differential pins.
 
 THE FAILURE THIS SCRIPT CANNOT REPORT, named because it is the vacuity class and a reader should not have to rediscover it: A TRANSPORT FAILURE IS A SILENT NON-ZERO. `curl -s` (no `-S`) suppresses curl's own error message, so an unreachable API produces the step line, no diagnostic whatsoever, and exit 6. The caller sees a failed step with no reason. Reproduced, not repaired:
-`A_TRANSPORT_FAILURE_IS_SILENT` names it and the differential pins it.
+Repaired in the port as a Rule-T delta (2026-10-08): it logs `Purge failed: curl exited N` and keeps the exit status.
 
 K=5 LEDGER: `.ci/shadow/w7p6-purge-media-cache.observations.jsonl`.
 """
@@ -55,9 +55,6 @@ CF_API_BASE = WK_CF_API_BASE
 # `--data "{\"hosts\": [\"${HOSTNAME}\"]}"` (:43). Hand-built by the twin rather
 # than by jq, SPACE AFTER THE COLON INCLUDED, so it is a literal here too: the fake curl records argv, and a body compacted differently is a different request even though Cloudflare would accept either.
 PURGE_BODY = '{"hosts": ["%s"]}' % PURGE_HOSTNAME
-
-# The two defects named in the module docstring, as constants so the tests can assert them by name rather than by restating the sentences.
-A_TRANSPORT_FAILURE_IS_SILENT = True
 
 # The one message that interpolates REMOTE text (:46). common.sh logs through `echo -e`, which interprets backslash escapes in the message, while `rediacc_ci.log` formats the message as data. A Cloudflare error containing a literal backslash-n therefore renders as a newline through the twin and as two characters here. The differential asserts BOTH directions so nobody "fixes" it.
 PURGE_FAILED_PREFIX = "Purge failed: "
@@ -121,7 +118,6 @@ def _curl(argv: list[str]) -> str:
     """`RESPONSE="$(curl -s ...)"`: stdout captured, `set -e` armed on failure."""
     proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
     if proc.returncode != 0:
-        # THE SILENT NON-ZERO. `-s` without `-S` means curl said nothing either.
         raise BashExitError(proc.returncode)
     return proc.stdout.rstrip("\n")
 
@@ -146,6 +142,11 @@ def main(argv: list[str]) -> int:
     try:
         response = _curl(curl_argv(headers))
     except BashExitError as exc:
+        # RULE-T DELTA: the twin exited here with nothing on stderr (`curl -s`, no `-S`), so a failed step carried no reason. The exit status and the request stay the twin's.
+        log.error(
+            "%scurl exited %d before a complete Cloudflare API response arrived"
+            % (PURGE_FAILED_PREFIX, exc.code)
+        )
         return exc.code
 
     if _jq(["-r", ".success"], response + "\n") != "true":

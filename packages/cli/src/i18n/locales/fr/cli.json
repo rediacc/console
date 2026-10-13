@@ -463,12 +463,29 @@
         "description": "Gérer la connexion au stockage distant de configuration",
         "disable": {
           "description": "Déconnecter du stockage distant et sauvegarder la configuration localement",
+          "optionLocal": "Délier sur cet appareil uniquement, à partir de la copie en cache, sans contacter le serveur",
           "notEnabled": "La configuration distante n'est pas activée.",
           "serverRequired": "Désactivation impossible : le serveur de configuration {{server}} est injoignable, et la désactivation doit d'abord récupérer la dernière copie du serveur (désactiver depuis un cache obsolète pourrait perdre les écritures d'un autre appareil). Réessayez une fois le serveur joignable.",
+          "accessLost": "Désactivation impossible : le serveur de configuration refuse ce compte pour la configuration \"{{name}}\" ({{error}}), et la désactivation doit d'abord récupérer la dernière copie du serveur. Si l'accès au magasin ne revient pas, retirez le lien et gardez la copie en cache sur cet appareil avec : rdc config remote disable --local",
+          "localNoCache": "La configuration \"{{name}}\" n'a aucune copie en cache de la configuration du serveur sur cet appareil : elle n'y a jamais été récupérée, ou la copie a été retirée. Le fichier ne contient que le lien et les réglages propres à cet appareil ; il n'y a donc rien à garder, et rien n'a été modifié. Le contenu ne peut venir que du serveur (rdc config remote enable) ; pour supprimer plutôt le fichier local, exécutez : rdc config delete {{name}}",
+          "localUnreadable": "La copie en cache de la configuration \"{{name}}\" (version {{version}} du serveur) n'a pas pu être ouverte sur cet appareil ({{error}}) ; rien n'a été modifié. La copie est chiffrée avec le mot de passe maître de la configuration : avec lui (REDIACC_MASTER_PASSWORD), toute la copie peut être gardée ; sans lui, rien de la copie n'est récupérable ici, et seul le serveur en détient une lisible.",
+          "localConfirm": "Délier la configuration \"{{name}}\" de {{server}} sur cet appareil uniquement ? La copie en cache ici (version {{version}} du serveur, mise en cache le {{cachedAt}}) devient une configuration locale. Les données plus récentes du serveur, s'il y en a, ne sont pas récupérées, et rien n'est modifié sur le serveur.",
+          "localNeedsYes": "Délier la configuration \"{{name}}\" sur cet appareil uniquement garde la copie en cache ici (version {{version}} du serveur) et ne récupère pas les données plus récentes du serveur, s'il y en a. Rien n'a été modifié. Confirmez dans un terminal interactif, ou exécutez à nouveau la commande avec --yes.",
+          "localSuccess": "La configuration \"{{name}}\" est déliée sur cet appareil et enregistrée comme configuration locale à partir de la copie en cache (version {{version}} du serveur). Les données plus récentes du serveur, s'il y en avait, n'ont pas été récupérées. La copie du serveur et l'emplacement de clé de cet appareil sur le serveur n'ont pas été modifiés.",
+          "localSecretLeft": "La clé de cet appareil pour le magasin n'a pas été supprimée, car son magasin de secrets est inutilisable : {{error}}",
           "success": "Configuration distante désactivée. Configuration \"{{name}}\" sauvegardée localement."
         },
+        "secretStore": {
+          "keyctlMissing": "Cet appareil n'a nulle part où garder sa clé du stockage de configuration : `keyctl` n'est pas installé, le trousseau du noyau est donc hors d'atteinte. Rien n'a été enregistré. Installez le paquet keyutils, ou définissez REDIACC_SECRET_STORE=file pour garder la clé dans un fichier sur le disque (mode 0600).",
+          "keyringUnusable": "Cet appareil n'a nulle part où garder sa clé du stockage de configuration : une clé de test écrite avec `keyctl` dans le trousseau utilisateur du noyau n'a pas pu être enregistrée puis relue. Rien n'a été enregistré. C'est le comportement d'un trousseau de session qui ne lie pas le trousseau utilisateur (un service, un conteneur, une tâche de CI) ; `keyctl link @u @s` le lie pour la session. Ou définissez REDIACC_SECRET_STORE=file pour garder la clé dans un fichier sur le disque (mode 0600).",
+          "toolMissing": "Cet appareil n'a nulle part où garder sa clé du stockage de configuration : `{{tool}}` n'a pas pu être exécuté, {{store}} est donc hors d'atteinte. Rien n'a été enregistré. Remettez `{{tool}}` dans le PATH, ou définissez REDIACC_SECRET_STORE=file pour garder la clé dans un fichier sur le disque.",
+          "storeUnusable": "Cet appareil n'a nulle part où garder sa clé du stockage de configuration : une clé de test écrite dans {{store}} avec `{{tool}}` n'a pas pu être enregistrée puis relue. Rien n'a été enregistré. Déverrouillez ou réparez {{store}}, ou définissez REDIACC_SECRET_STORE=file pour garder la clé dans un fichier sur le disque.",
+          "unsupportedPlatform": "Cet appareil n'a nulle part où garder sa clé du stockage de configuration : aucun magasin de secrets natif n'est pris en charge sur {{platform}}. Rien n'a été enregistré. Définissez REDIACC_SECRET_STORE=file pour garder la clé dans un fichier sur le disque (mode 0600).",
+          "invalidChoice": "REDIACC_SECRET_STORE vaut \"{{value}}\", ce qui n'est pas un magasin de secrets. La seule valeur est \"file\" ; sans valeur, c'est le magasin natif de ce système.",
+          "fileNotice": "REDIACC_SECRET_STORE=file : la clé du stockage de configuration de cet appareil est gardée dans {{path}} (mode 0600), protégée uniquement par les permissions du fichier."
+        },
         "enable": {
-          "alreadyEnabled": "La configuration \"{{name}}\" est déjà liée au stockage distant. Déconnectez d'abord avec : rdc config remote disable",
+          "alreadyEnabled": "La configuration \"{{name}}\" est déjà liée au stockage distant et cet appareil peut l'ouvrir : il n'y a rien à activer. Pour la délier, exécutez : rdc config remote disable",
           "description": "Lier cette configuration au stockage distant chiffré",
           "expired": "Code d'appareil expiré. Réessayez.",
           "handoffUnreadable": "Impossible de lire la transmission de configuration envoyée par le navigateur. Recommencez avec : rdc config remote enable",
@@ -496,6 +513,11 @@
           "passwordTokenNotEnrollable": "Ce jeton API ne peut pas inscrire un config slot car il n'est pas lié à un utilisateur au sein d'une organisation. Émettez un jeton personnel depuis votre propre compte dans le portail web et réessayez.",
           "passwordWrong": "Impossible de déverrouiller la configuration avec ce mot de passe. Vérifiez REDIACC_CONFIG_PASSWORD (ou le mot de passe saisi) et réessayez.",
           "received": "Transfert reçu",
+          "reenrollConfigMismatch": "La configuration \"{{name}}\" est liée à la configuration distante {{linkedConfig}}, mais l'inscription a été approuvée pour la configuration distante {{offeredConfig}}. Rien n'a été modifié. Relancez la commande et approuvez-la pour {{linkedConfig}}.",
+          "reenrolling": "La configuration \"{{name}}\" est liée au stockage distant, mais cet appareil ne peut plus l'ouvrir. Réinscription de cet appareil auprès du même magasin.",
+          "reenrollServerMismatch": "La configuration \"{{name}}\" est liée à {{linkedUrl}} : cet appareil ne peut donc être réinscrit que là, pas sur {{requestedUrl}}. Relancez la commande sans --api-url.",
+          "reenrollStoreMismatch": "La configuration \"{{name}}\" est liée au magasin {{linkedStore}}, mais l'inscription a été approuvée pour le magasin {{offeredStore}}. Rien n'a été modifié. Approuvez-la avec un compte de l'organisation propriétaire de cette configuration.",
+          "reenrollSuccess": "Cet appareil est de nouveau inscrit. La configuration \"{{name}}\" a été actualisée depuis le serveur (version {{version}}).",
           "openRelay": "Ouvrez ce lien dans n'importe quel navigateur connecté au portail :",
           "approveAs": "Ouvrez ce lien dans n'importe quel navigateur connecté en tant que {{email}} :",
           "pairingCode": "Code d'appairage (saisissez-le sur la page quand elle le demande) :  {{code}}",
@@ -509,9 +531,10 @@
           "success": "Configuration distante activée. La configuration \"{{name}}\" est maintenant synchronisée avec {{apiUrl}}."
         },
         "handoffUndecryptable": "Le relais du serveur a renvoyé une transmission que cet appareil ne peut pas ouvrir ({{error}}) : elle a été scellée avec une autre clé que celle générée par cette exécution. Relancez la commande et n'ouvrez que le lien qu'elle affiche.",
+        "storeCopyGone": "Le magasin {{storeId}} ne contient plus la configuration distante {{configId}}, à laquelle la configuration \"{{name}}\" est liée. Rien n'a été modifié ; le fichier local est la dernière copie vue par cet appareil. Pour retirer le lien et garder cette copie comme configuration locale, exécutez : rdc config remote disable --local",
         "offlineCacheWarning": "Le serveur de configuration {{server}} est injoignable ; la configuration \"{{config}}\" est servie depuis le cache hors ligne (version serveur {{version}}, mise en cache il y a {{age}}). Les modifications ne peuvent pas être enregistrées tant que le serveur n'est pas joignable.",
         "offlineNoCache": "Le serveur de configuration {{server}} est injoignable et la configuration \"{{config}}\" n'a pas encore de cache hors ligne. Exécutez \"rdc config remote refresh\" une fois le serveur joignable pour alimenter le cache.",
-        "passkeySecretMissing": "Secret de passkey introuvable dans le trousseau du système. Réauthentifiez-vous avec : rdc config remote enable",
+        "passkeySecretMissing": "Cet appareil ne détient plus sa clé du stockage de configuration (sous Linux, le trousseau du noyau est vidé à chaque redémarrage). Réinscrivez cet appareil avec : rdc config remote enable",
         "refresh": {
           "description": "Forcer la récupération de la configuration depuis le stockage distant",
           "notEnabled": "La configuration distante n'est pas activée.",
@@ -545,11 +568,11 @@
           "loginInvalid": "Le serveur de comptes a refusé la connexion de cet appareil pendant le renouvellement du jeton de configuration. Exécutez \"rdc subscription login\" puis réessayez.",
           "loginScope": "La connexion de cet appareil ne peut pas renouveler les jetons de configuration : elle date d'avant cette fonction, ou son équipe n'existe plus. Exécutez à nouveau \"rdc subscription login\", puis réessayez.",
           "loginIpMismatch": "Le jeton de configuration n'a pas pu être renouvelé, car la connexion de cet appareil est liée à une autre adresse réseau. {{error}} Vous pouvez aussi exécuter à nouveau \"rdc config remote enable\" pour obtenir un nouveau jeton de configuration pour cet appareil.",
-          "notStoreMember": "Le compte de la connexion de cet appareil n'est pas membre du stockage de configuration {{storeId}}, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous avec le compte qui a activé cette configuration (\"rdc subscription login\"), ou exécutez à nouveau \"rdc config remote enable\".",
-          "storeMismatch": "Le stockage de configuration {{storeId}} n'appartient pas à l'organisation de la connexion de cet appareil, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous à l'organisation propriétaire de cette configuration (\"rdc subscription login\"), ou exécutez à nouveau \"rdc config remote enable\".",
+          "notStoreMember": "Le compte de la connexion de cet appareil n'est pas membre du stockage de configuration {{storeId}}, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous avec le compte qui a activé cette configuration (\"rdc subscription login\"), puis réessayez.",
+          "storeMismatch": "Le stockage de configuration {{storeId}} n'appartient pas à l'organisation de la connexion de cet appareil, le jeton de configuration n'a donc pas été renouvelé. Connectez-vous à l'organisation propriétaire de cette configuration (\"rdc subscription login\"), puis réessayez.",
           "staleGeneration": "La clé de chiffrement de la configuration a été renouvelée et aucun emplacement de clé de ce compte n'ouvre la nouvelle, le jeton de configuration n'a donc pas été renouvelé. Réinscrivez l'appareil avec : rdc config remote enable",
           "rateLimited": "Le serveur de comptes limite les renouvellements de jetons de configuration ({{error}}). Attendez une minute puis relancez la commande.",
-          "refused": "Le serveur de comptes n'a pas renouvelé le jeton de configuration de cet appareil ({{error}}). Exécutez à nouveau \"rdc config remote enable\"."
+          "refused": "Le serveur de comptes n'a pas renouvelé le jeton de configuration de cet appareil ({{error}}). Rien n'a été modifié sur cet appareil ; exécutez à nouveau la commande."
         },
         "versions": {
           "description": "Lister les versions antérieures de cette configuration conservées sur le serveur",

@@ -79,6 +79,10 @@ def _round_log_world(_unused):
         hookio.write_world_file(
             path, "# wave header\n\n## STATUS (round 1, 2026-08-19T00:00:00Z)\n\nx\n"
         )
+    # A directory symlink into the guarded tree (#bc7d998c): a write through it lands in the tree.
+    link = os.path.join(WORLD, "linked")
+    if not os.path.islink(link):
+        os.symlink(os.path.join(WORLD, "reports"), link)
     return WORLD
 
 
@@ -88,6 +92,34 @@ FIXTURES = {"roundlog-world": _round_log_world}
 ENVS = [("roundlog", {"REDIACC_ROUNDLOG_WORLD": "{FIXTURE:roundlog-world}"}, {})]
 
 EDGE_CASES = [
+    # Judged where the write LANDS (#bc7d998c): each refusal was allowed before.
+    (
+        "a .. detour onto an existing round log",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "%s/reports/x/../pr-babysit-0831-1.md" % WORLD,
+                "content": "x",
+            },
+        },
+    ),
+    (
+        "a symlink onto an existing round log",
+        {
+            "tool_name": "Write",
+            "tool_input": {"file_path": "%s/linked/pr-babysit-0831-1.md" % WORLD, "content": "x"},
+        },
+    ),
+    (
+        "a .. detour out of the reports directory",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": "%s/reports/../pr-babysit-0831-1.md" % WORLD,
+                "content": "x",
+            },
+        },
+    ),
     (
         "a Write over an existing round log",
         {"tool_name": "Write", "tool_input": {"file_path": EXISTING_LOG, "content": "x"}},
@@ -131,15 +163,17 @@ EDGE_CASES = [
 
 
 def run(ev):
-    file_path = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    # The path is judged where the write LANDS: `hookio.landing` resolves symlinks, then `..`, as the kernel does (#bc7d998c, review 9c6817f3.1-.4, .8).
+    typed = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    file_path, judged, _shown = hookio.landing(typed, ev.field("cwd") or None)
     tool = ev.field("tool_name")
 
     # Targeted edits cannot silently truncate; only whole-file writes can.
     if hookio.case_glob(tool, *TARGETED_TOOLS):
         return hookio.ALLOW
-    if hookio.case_glob(file_path, "*-briefing.md"):
+    if hookio.case_glob(judged, "*-briefing.md"):
         return hookio.ALLOW
-    if re.search(ROUND_LOG, file_path) is None:
+    if re.search(ROUND_LOG, judged) is None:
         return hookio.ALLOW
 
     # CREATING one is not truncating one. A file that does not exist has no appendix to swallow, and the failure this guard prevents is specifically the SILENT LOSS of an existing history.

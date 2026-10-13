@@ -1,6 +1,6 @@
-"""`rediacc_ci.core.common` against the live `.ci/scripts/lib/common.sh`.
+"""`rediacc_ci.core.common` against the frozen answers of the retired `.ci/scripts/lib/common.sh`.
 
-THE TWIN IS LIVE, AND IT IS THE MOST LIVE FILE IN THE TREE: 208 files source `.ci/scripts/lib/common.sh` (re-derived 2026-09-10). Every comparison below sources the real file, so a change to it turns these red rather than leaving a port drifting quietly beside it.
+THE TWIN IS DELETED. `.ci/scripts/lib/common.sh` was the base library of the bash tree; its answers are frozen in `goldens/twins/lib.common.jsonl`, so every comparison below reads the recorded bash answer rather than sourcing the file.
 
 WHAT IS COMPARED. Both sides run through their own CLI, with stdout and stderr kept SEPARATE, because the twin's whole logging contract is that messages go to stderr and data goes to stdout. A harness that merged them could not tell a correct port from one that put a diagnostic on the data stream, which is consequence 1 of the incident `rediacc_ci.log`'s docstring records.
 
@@ -36,9 +36,15 @@ def _sh(text: str) -> str:
 
 
 def twin(body: str, **env):
-    """Source the real common.sh and run `body`. Streams separate."""
+    """What the frozen bash `common.sh` answered for `body`. Streams separate.
+
+    The `.sh` is deleted; the answer comes from `goldens/twins/lib.common.jsonl`, frozen from the live file by `regolden --source bash` before it went (PLAN-retire-bash-oracles W11-B).
+    """
     script = "source %s\n%s\n" % (_sh(str(TWIN)), body)
-    return diff.bash_streams("bash -c %s" % _sh(script), env=diff.env_for(**env))
+    cmd = "bash -c %s" % _sh(script)
+    return diff.twin_streams(
+        TWIN_REL, cmd, env=diff.env_for(**env), work=diff.pytest_tmp_roots(cmd)
+    )
 
 
 def port(argv: list[str], **env):
@@ -238,7 +244,7 @@ def test_ci_env_agrees_with_the_twins_exported_variables():
 def test_the_twins_require_input_passes_on_an_empty_path_list():
     """QUIRK 1. The anti-vacuity helper, passing vacuously.
 
-    If this ever goes red, `.ci/scripts/lib/common.sh` has been repaired and `REQUIRE_INPUT_VACUOUS_IS_A_PASS` plus this module's divergence should be retired in the same change.
+    If the recorded answer ever changes, the retired `.ci/scripts/lib/common.sh` has been repaired and `REQUIRE_INPUT_VACUOUS_IS_A_PASS` plus this module's divergence should be retired in the same change.
     """
     rc, out, err = twin("require_input -f 'missing {}' 'why'\necho reached")
     assert (rc, out, err) == (0, "reached\n", "")
@@ -505,9 +511,24 @@ R2_CASES = [(scenario, case) for scenario, cases in r2_driver.SCENARIOS.items() 
 @pytest.mark.parametrize(
     ("scenario", "case"), R2_CASES, ids=["%s/%s" % (s, c.name) for s, c in R2_CASES]
 )
-def test_r2_count_objects_matches_the_live_twin(scenario, case) -> None:
+def _frozen_old(scenario, case) -> list[str]:
+    """The observation lines the bash `r2_count_objects` / `wait_for` produced for `case`, from the golden; a re-record from the port runs the driver's new side."""
     repo = paths.repo_root()
-    assert r2_driver.observe("old", repo, case) == r2_driver.observe("new", repo, case), (
+    rc, out, _err = diff.twin_call(
+        TWIN_REL,
+        ["stub-farm", scenario, case.name],
+        lambda: (0, "\n".join(r2_driver.observe("old", repo, case)), ""),
+        port=lambda: (0, "\n".join(r2_driver.observe("new", repo, case)), ""),
+    )
+    assert rc == 0
+    return out.split("\n")
+
+
+@pytest.mark.parametrize(
+    ("scenario", "case"), R2_CASES, ids=["%s/%s" % (s, c.name) for s, c in R2_CASES]
+)
+def test_r2_count_objects_matches_the_frozen_twin(scenario, case) -> None:
+    assert _frozen_old(scenario, case) == r2_driver.observe("new", paths.repo_root(), case), (
         "case %s/%s diverged" % (scenario, case.name)
     )
 
@@ -515,9 +536,8 @@ def test_r2_count_objects_matches_the_live_twin(scenario, case) -> None:
 def test_r2_stub_is_what_both_sides_reach(tmp_path) -> None:
     """ANTI-VACUITY: a count case must log exactly one `aws` call, on both sides."""
     case = r2_driver.SCENARIOS["count"][0]
-    for side in ("old", "new"):
-        lines = r2_driver.observe(side, paths.repo_root(), case)
-        assert sum(" call#" in line for line in lines) == 1, (side, lines)
+    for lines in (_frozen_old("count", case), r2_driver.observe("new", paths.repo_root(), case)):
+        assert sum(" call#" in line for line in lines) == 1, lines
     farm = stubfarm.Farm(tmp_path)
     farm.stub("aws")
     assert stubfarm.shadows(farm, "aws", farm.env({"PATH": "/usr/bin:/bin"}))
@@ -542,3 +562,20 @@ def test_the_common_stub_ledger_holds() -> None:
         timeout=180,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_launchable_resolves_the_program_through_pathext_on_windows(monkeypatch):
+    monkeypatch.setattr(common.shutil, "which", lambda name: r"C:\\node\\%s.cmd" % name)
+    assert common.launchable(["npm", "ci"], os_name="nt") == [r"C:\\node\\npm.cmd", "ci"]
+
+
+def test_launchable_leaves_a_program_it_cannot_find_for_the_caller_to_report(monkeypatch):
+    asked: list[str] = []
+    monkeypatch.setattr(common.shutil, "which", asked.append)
+    assert common.launchable(["npm", "ci"], os_name="nt") == ["npm", "ci"]
+    assert asked == ["npm"]
+
+
+def test_launchable_changes_nothing_off_windows(monkeypatch):
+    monkeypatch.setattr(common.shutil, "which", lambda name: "/usr/bin/" + name)
+    assert common.launchable(["npm", "ci"], os_name="posix") == ["npm", "ci"]

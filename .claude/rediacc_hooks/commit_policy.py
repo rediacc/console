@@ -242,30 +242,54 @@ def next_branch_name(repo_root: str, today: str, gh: bool = True) -> str:
     return "%s-%d" % (today, top + 1)
 
 
+def pushed_live_branches(repo_root: str, remote: str, sha: str) -> list[str]:
+    """Every `MMDD-N` branch whose pushed tip on `remote` (`refs/remotes/<remote>/<b>`) is exactly `sha`, sorted. Read from the remote-tracking refs, never from the checkout."""
+    out = git(
+        [
+            "for-each-ref",
+            "--points-at",
+            sha,
+            "--format=%(refname)",
+            "refs/remotes/%s/" % remote,
+        ],
+        cwd=repo_root,
+    )
+    prefix = "refs/remotes/%s/" % remote
+    names = [line[len(prefix) :] for line in (out or "").split("\n") if line.startswith(prefix)]
+    return sorted(n for n in names if BRANCH_SHAPE.match(n))
+
+
 def ff_fallback_refusal(repo_root: str, remote: str, live: str, sha: str, base: str) -> str:
     """ "" when pushing `sha` to `main` is the fast-forward fallback's local half, else why not.
 
-    Box M2 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02): when GitHub cannot rebase the open PR, `main` may move by ONE direct push, and only as a fast-forward to the live branch's pushed tip. The local facts, shared by the pre-bash guard and the git-level `pre-push` hook: the checkout is on an `MMDD-N` branch, `sha` is exactly that branch's tip on `remote` (what the PR's head is, once pushed), and `base` (the remote's current `main`) is an ancestor of `sha`. The pre-bash guard adds the facts only `gh` holds: the open PR's head and CI Complete on it.
+    Box M2 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02): when GitHub cannot rebase the open PR, `main` may move by ONE direct push, and only as a fast-forward to a live branch's pushed tip. The local facts, shared by the pre-bash guard and the git-level `pre-push` hook: `sha` is exactly the tip of an `MMDD-N` branch on `remote` (what a PR's head is, once pushed), and `base` (the remote's current `main`) is an ancestor of `sha`. The pre-bash guard adds the facts only `gh` holds: that branch's open PR has `sha` as its head, with CI Complete green on it.
+
+    THE BRANCH IS READ FROM THE PUSHED COMMIT, NOT FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although PR #599's head 1861b2726 met every condition. `live` is the branch the caller names (the guard's refspec source, or the checkout's branch, which is all the git-level hook can see; "" when the source is a sha, since the guard passes `named or ""`), and it only sharpens the refusal: any `MMDD-N` branch whose pushed tip is `sha` admits it.
     """
-    if not BRANCH_SHAPE.match(live or ""):
-        return "the checkout is on `%s`, not the live MMDD-N branch" % (live or "(detached)")
-    tip = git(
-        ["rev-parse", "--verify", "-q", "refs/remotes/%s/%s^{commit}" % (remote, live)],
-        cwd=repo_root,
-    )
-    if not tip:
-        return "`%s/%s` does not exist here, so the live branch's pushed tip is unknown" % (
-            remote,
-            live,
-        )
-    if tip != sha:
-        return "`%s` is not the pushed tip of `%s` (`%s/%s` is `%s`)" % (
-            sha[:12],
-            live,
-            remote,
-            live,
-            tip[:12],
-        )
+    branches = pushed_live_branches(repo_root, remote, sha)
+    if not branches:
+        tip = ""
+        if BRANCH_SHAPE.match(live or ""):
+            tip = (
+                git(
+                    ["rev-parse", "--verify", "-q", "refs/remotes/%s/%s^{commit}" % (remote, live)],
+                    cwd=repo_root,
+                )
+                or ""
+            )
+        if tip:
+            return (
+                "`%s` is not the pushed tip of `%s` (`%s/%s` is `%s`) nor of any other MMDD-N branch on `%s`"
+                % (
+                    sha[:12],
+                    live,
+                    remote,
+                    live,
+                    tip[:12],
+                    remote,
+                )
+            )
+        return "`%s` is not the pushed tip of any MMDD-N branch on `%s`" % (sha[:12], remote)
     if git(["merge-base", "--is-ancestor", base, sha], cwd=repo_root) is None:
         return "`%s` is not a fast-forward of `main` (`%s` is not its ancestor)" % (sha[:12], base)
     return ""

@@ -16,7 +16,7 @@
  * exactly as review saw it, not from a fresh `shardPlan` call that could silently disagree
  * with what actually shipped.
  *
- * SEVEN CHECKS, ALL LIVE (check 7 since T4.4, 2026-09-30).
+ * EIGHT CHECKS, ALL LIVE (check 7 since T4.4, 2026-09-30; check 8 since 2026-10-08).
  *
  *   1. Per-leg estimate: each committed leg's fixed job cost plus the p90 of its own
  *      units, red over 12 minutes, naming the top 3 units. Every lane with a committed
@@ -48,6 +48,11 @@
  *      `JOB_BUDGET_CAPS` jobs are read against their ruling timeouts (K8s Ceph 25, K8s
  *      Multinode 30). Unset, or a value that resolves to no number, is red. A
  *      `${{ matrix.<key> }}` value resolves to the largest `<key>:` the job's strategy sets.
+ *
+ *   8. Embed staging: a job that restores the `renet-embed-assets-*` cache `needs:` its workflow's
+ *      `renet-embed-assets` job, which alone stages the assets on a miss, unless `EMBED_SELF_STAGERS`
+ *      names it. A budget is the test's, and a miss staged inside one cost 11m34s of a 15-minute job
+ *      (run 37720545287). No restoring job anywhere is red: the reader is not seeing the tree.
  *
  * A RED REAL RUN IS MEASURED OVERRUN, NOT A GATE DEFECT. Since budget_report.py writes
  * manifest-shaped unit ids and `job_p90_minutes` (2026-09-28), what the real run reports is
@@ -835,6 +840,136 @@ export function timeoutFindings(
       findings.push(
         `check 7: ${s.file} job ${s.job} has timeout-minutes ${s.timeoutMinutes}, over the ` +
           `${ceiling}m ceiling${why}.`
+      );
+    }
+  }
+  return findings;
+}
+
+// --------------------------------------------------------------------------- Check 8: one job per workflow stages the renet embed assets ---------------------------------------------------------------------------
+
+/** The cache key prefix every renet embed-assets save and restore site shares (`renet-embed-assets-<hashFiles(lockfile)>`). */
+export const EMBED_CACHE_KEY_PREFIX = 'renet-embed-assets-';
+/** The job id that stages the assets on a miss for its whole workflow (ct-tests.yml's `renet-embed-assets`). */
+export const EMBED_STAGER_JOB = 'renet-embed-assets';
+
+/**
+ * Jobs that restore the cache and stage on a miss THEMSELVES by design, each with its reason. Keyed `file` + `job`. A
+ * consumer is not added here to quiet the check: the fix for a consumer is a `needs:` edge on its workflow's stager.
+ */
+export const EMBED_SELF_STAGERS: readonly { file: string; job: string; why: string }[] = [
+  {
+    file: '.github/workflows/ci-build-renet.yml',
+    job: 'build-renet',
+    why: 'Renet (Full) is the release build: it stages, builds and uploads the release binaries in one job under its own ruled cap (timeout 20, #2847e1b3), and it is the save site the test stagers race, not a consumer of one',
+  },
+];
+
+/** One runner job as check 8 reads it: whether it restores the embed-assets cache, and its `needs:` ids. */
+export interface EmbedSite {
+  file: string;
+  job: string;
+  restores: boolean;
+  needs: string[];
+}
+
+/** `needs:` ids out of `[a, b]`, `a`, or nothing (a block list's `- a` lines are added by the caller). */
+function needsIds(value: string): string[] {
+  const v = value.replace(/\s*#.*$/, '').trim();
+  const inner = /^\[(.*)\]$/.exec(v);
+  return (inner ? (inner[1] as string).split(',') : v === '' ? [] : [v])
+    .map((s) => s.trim().replace(/^(['"])(.*)\1$/, '$2'))
+    .filter((s) => s !== '');
+}
+
+/**
+ * Check 8's reader: every job of one workflow with whether a step of it restores the embed-assets cache
+ * (`actions/cache/restore` whose `key:` starts with EMBED_CACHE_KEY_PREFIX) and its `needs:`. Line-oriented like
+ * `workflowJobs`: jobs at two spaces, `needs:` at four (inline, scalar or a `- id` block list), steps at six.
+ */
+export function embedCacheSites(file: string, text: string): EmbedSite[] {
+  const out: EmbedSite[] = [];
+  let inJobs = false;
+  let inNeedsBlock = false;
+  let inRestoreStep = false;
+  for (const raw of text.split('\n')) {
+    if (/^jobs:\s*$/.test(raw)) {
+      inJobs = true;
+      continue;
+    }
+    if (!inJobs) continue;
+    if (raw !== '' && !/^\s/.test(raw) && !raw.startsWith('#')) break;
+    const job = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(raw);
+    if (job) {
+      out.push({ file, job: job[1] as string, restores: false, needs: [] });
+      inNeedsBlock = false;
+      inRestoreStep = false;
+      continue;
+    }
+    const last = out[out.length - 1];
+    if (last === undefined) continue;
+    const needs = /^ {4}needs:\s*(.*)$/.exec(raw);
+    if (needs) {
+      last.needs.push(...needsIds(needs[1] as string));
+      inNeedsBlock = (needs[1] as string).replace(/\s*#.*$/, '').trim() === '';
+      continue;
+    }
+    if (inNeedsBlock) {
+      const item = /^ {6}-\s*(\S+)/.exec(raw);
+      if (item) {
+        last.needs.push(...needsIds(item[1] as string));
+        continue;
+      }
+      if (/^ {4}\S/.test(raw)) inNeedsBlock = false;
+    }
+    // A new step (`      - `) starts a new restore window; only its own `uses:` opens one.
+    if (/^ {6}-\s/.test(raw)) inRestoreStep = /actions\/cache\/restore@/.test(raw);
+    else if (/^ {8}uses:\s*actions\/cache\/restore@/.test(raw)) inRestoreStep = true;
+    if (inRestoreStep && new RegExp(`^\\s+key:\\s*['"]?${EMBED_CACHE_KEY_PREFIX}`).test(raw)) {
+      last.restores = true;
+    }
+  }
+  return out;
+}
+
+/**
+ * Check 8: a job that restores the renet embed-assets cache must `needs:` its workflow's EMBED_STAGER_JOB, unless
+ * EMBED_SELF_STAGERS names it. Otherwise a lockfile change makes every such job stage the assets itself (9m50s to
+ * 11m34s measured) inside its own test budget: run 37720545287 attempt 1 had E2E Ceph cancelled by the watchdog at
+ * 15.0m with its test step at 1m56s, and about 40 E2E jobs restaging the same tree at once. Zero restoring jobs
+ * across the tree is itself a finding, because a reader that sees nothing would report a clean graph.
+ */
+export function embedStagingFindings(
+  sites: readonly EmbedSite[],
+  selfStagers: readonly { file: string; job: string }[] = EMBED_SELF_STAGERS
+): string[] {
+  const findings: string[] = [];
+  const restoring = sites.filter((s) => s.restores);
+  if (restoring.length === 0) {
+    return [
+      `check 8: no job in ${new Set(sites.map((s) => s.file)).size} workflow(s) restores the ` +
+        `${EMBED_CACHE_KEY_PREFIX}* cache; the reader is not seeing the tree, so a clean result would mean nothing.`,
+    ];
+  }
+  const stagerFiles = new Set(sites.filter((s) => s.job === EMBED_STAGER_JOB).map((s) => s.file));
+  for (const s of restoring) {
+    if (s.job === EMBED_STAGER_JOB) continue;
+    if (selfStagers.some((x) => x.file === s.file && x.job === s.job)) continue;
+    if (s.needs.includes(EMBED_STAGER_JOB)) continue;
+    findings.push(
+      `check 8: ${s.file} job ${s.job} restores the ${EMBED_CACHE_KEY_PREFIX}* cache without needing ` +
+        `${EMBED_STAGER_JOB}, so on an embed-assets.lock.json change it stages the assets itself ` +
+        `(11m34s in E2E Ceph, run 37720545287) inside its own budget. Add ${EMBED_STAGER_JOB} to its needs:` +
+        (stagerFiles.has(s.file)
+          ? '.'
+          : `, and a ${EMBED_STAGER_JOB} job to ${s.file} (ct-tests.yml's is the model).`)
+    );
+  }
+  for (const x of selfStagers) {
+    if (!restoring.some((s) => s.file === x.file && s.job === x.job)) {
+      findings.push(
+        `check 8: EMBED_SELF_STAGERS names ${x.file} job ${x.job}, which no longer restores the ` +
+          `${EMBED_CACHE_KEY_PREFIX}* cache. Delete the entry.`
       );
     }
   }
@@ -1993,12 +2128,15 @@ async function main(): Promise<number> {
   const sites: { id: string; pattern: RegExp }[] = [];
   // Check 7 reads each runner job once per DEFINING file, not per call site: ci-build-docker.yml's three callers share one timeout-minutes line.
   const timeoutSites = new Map<string, TimeoutSite>();
+  // Check 8 reads each workflow once, like check 7: every file the walk reaches, ci.yml included.
+  const walkedTexts = new Map<string, string>();
   const walk = (
     file: string,
     text: string,
     chain: readonly string[],
     stack: readonly string[]
   ): boolean => {
+    walkedTexts.set(file, text);
     for (const j of workflowJobs(text)) {
       if (j.uses === null) {
         runnerJobSet.add(j.id);
@@ -2322,6 +2460,10 @@ async function main(): Promise<number> {
   const timeoutList = [...timeoutSites.values()];
   if (CHECK7_ENABLED) findings.push(...timeoutFindings(timeoutList));
 
+  const embedSites = [...walkedTexts].flatMap(([file, text]) => embedCacheSites(file, text));
+  findings.push(...embedStagingFindings(embedSites));
+  const embedRestoring = embedSites.filter((s) => s.restores).length;
+
   // The model against reality: each variant leg's prediction beside the p90 measured under the same variant, leg and leg count. Advisory; `--table` prints every row.
   const compared = predictions.map((p) => {
     const sample = samplesForJob(sites, measured, p.job).find(
@@ -2368,7 +2510,8 @@ async function main(): Promise<number> {
     `${judgedJobs.size}/${runnerJobs.length - priced.size} other job(s) judged ` +
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s), ` +
-    `${timeoutList.length} job timeout-minutes read (check 7); ` +
+    `${timeoutList.length} job timeout-minutes read (check 7), ` +
+    `${embedRestoring} embed-assets cache consumer(s) in ${walkedTexts.size} workflow(s) (check 8); ` +
     `inert: ${inert.join(', ') || 'none'}; ${driftNote}; ` +
     `rebalance: ${rebalanceNotes.length} lane(s) over the ${REBALANCE_ADVISORY_MIN}m advisory`;
   for (const note of rebalanceNotes) console.log(`advisory: ${note}`);
@@ -2955,6 +3098,92 @@ async function selftest(): Promise<number> {
         });
       })(),
     },
+    // --- check 8: one job per workflow stages the embed assets --------------------
+    {
+      name: 'FIRES (check 8): a job restoring the embed-assets cache with no needs: on the stager is red, naming the job and the fix',
+      ok: (() => {
+        const wf =
+          'on: push\njobs:\n' +
+          "  renet-embed-assets:\n    runs-on: x\n    steps:\n      - uses: actions/cache/restore@abc # v6\n        with:\n          key: renet-embed-assets-${{ hashFiles('l') }}\n          lookup-only: true\n" +
+          "  e2e:\n    runs-on: x\n    steps:\n      - uses: actions/cache/restore@abc # v6\n        id: embed-cache\n        with:\n          path: p\n          key: renet-embed-assets-${{ hashFiles('l') }}\n";
+        const f = embedStagingFindings(embedCacheSites('wf.yml', wf), []);
+        return (
+          f.length === 1 &&
+          (f[0] as string).includes('wf.yml job e2e') &&
+          (f[0] as string).includes('Add renet-embed-assets to its needs:.')
+        );
+      })(),
+    },
+    {
+      name: 'MATCH (check 8): needs: as [a, renet-embed-assets], as a scalar and as a block list all pass; a save-only or other-key restore is no consumer',
+      ok: (() => {
+        const restore =
+          '    steps:\n      - name: Restore\n        uses: actions/cache/restore@abc # v6\n        with:\n          key: "renet-embed-assets-x"\n';
+        const wf =
+          'on: push\njobs:\n' +
+          '  renet-embed-assets:\n    runs-on: x\n' +
+          restore +
+          `  a:\n    needs: [scope, renet-embed-assets] # why\n    runs-on: x\n${restore}` +
+          `  b:\n    needs: renet-embed-assets\n    runs-on: x\n${restore}` +
+          `  c:\n    needs:\n      - scope\n      - renet-embed-assets\n    runs-on: x\n${restore}` +
+          '  d:\n    runs-on: x\n    steps:\n      - uses: actions/cache/save@abc\n        with:\n          key: renet-embed-assets-x\n' +
+          '      - uses: actions/cache/restore@abc\n        with:\n          key: vm-base-image-x\n';
+        const sites = embedCacheSites('wf.yml', wf);
+        return (
+          embedStagingFindings(sites, []).length === 0 &&
+          sites
+            .filter((s) => s.restores)
+            .map((s) => s.job)
+            .join(',') === 'renet-embed-assets,a,b,c'
+        );
+      })(),
+    },
+    {
+      name: 'FIRES (check 8): a consumer in a workflow with no stager is told to add one; zero consumers anywhere is red, not clean; a dead EMBED_SELF_STAGERS entry is red',
+      ok: (() => {
+        const consumer =
+          'on: push\njobs:\n  ops:\n    runs-on: x\n    steps:\n      - uses: actions/cache/restore@abc\n        with:\n          key: renet-embed-assets-x\n';
+        const lone = embedStagingFindings(embedCacheSites('ops.yml', consumer), []);
+        const none = embedStagingFindings(
+          embedCacheSites('wf.yml', 'on: push\njobs:\n  a:\n    runs-on: x\n'),
+          []
+        );
+        const dead = embedStagingFindings(embedCacheSites('ops.yml', consumer), [
+          { file: 'ops.yml', job: 'ops' },
+          { file: 'gone.yml', job: 'build' },
+        ]);
+        return (
+          lone.length === 1 &&
+          (lone[0] as string).includes('and a renet-embed-assets job to ops.yml') &&
+          none.length === 1 &&
+          (none[0] as string).includes('not seeing the tree') &&
+          dead.length === 1 &&
+          (dead[0] as string).includes('gone.yml job build')
+        );
+      })(),
+    },
+    {
+      name: "FIRES (live ct-tests.yml): every consumer needs the stager, and deleting E2E Ceph's needs: line turns exactly that job red",
+      ok: (() => {
+        const rel = '.github/workflows/ct-tests.yml';
+        const text = readFileSync(path.join(ROOT, rel), 'utf-8');
+        const sites = embedCacheSites(rel, text);
+        const consumers = sites.filter((s) => s.restores && s.job !== EMBED_STAGER_JOB);
+        const planted = text.replace(
+          /(\n {2}test-e2e-ceph:\n(?:.*\n)*?) {4}needs: \[renet-embed-assets\]\n/,
+          '$1'
+        );
+        const after = embedStagingFindings(embedCacheSites(rel, planted), []);
+        return (
+          consumers.length >= 10 &&
+          sites.some((s) => s.job === EMBED_STAGER_JOB && s.restores) &&
+          embedStagingFindings(sites, []).length === 0 &&
+          planted !== text &&
+          after.length === 1 &&
+          (after[0] as string).includes('job test-e2e-ceph restores')
+        );
+      })(),
+    },
     {
       name: 'CONTROL: the live lane-durations.json parses under readDurations with no crash',
       ok: (() => {
@@ -3216,6 +3445,32 @@ async function selftest(): Promise<number> {
           JSON.stringify(free.rebalanced.map((l) => l.length)) === '[2,2]' &&
           JSON.stringify(pinned.rebalanced.map((l) => l.length)) === '[3,1]'
         );
+      })(),
+    },
+    {
+      name: 'mergeLaneCapabilities accepts an identical job repeated across workflows (the renet-embed-assets stagers)',
+      ok: (() => {
+        const wf = (extra: string): string =>
+          `jobs:\n  stage-assets:\n    runs-on: ubuntu-latest\n    timeout-minutes: 10${extra}\n`;
+        try {
+          const m = mergeLaneCapabilities({ 'a.yml': wf(''), 'b.yml': wf('') });
+          return m.size === 1 && m.get('stage-assets')?.timeoutMinutes === 10;
+        } catch {
+          return false;
+        }
+      })(),
+    },
+    {
+      name: 'CONTROL: mergeLaneCapabilities throws when the same job id differs between workflows',
+      ok: (() => {
+        const wf = (timeout: number): string =>
+          `jobs:\n  stage-assets:\n    runs-on: ubuntu-latest\n    timeout-minutes: ${timeout}\n`;
+        try {
+          mergeLaneCapabilities({ 'a.yml': wf(10), 'b.yml': wf(20) });
+          return false;
+        } catch (e) {
+          return e instanceof Error && e.message.includes('"stage-assets"');
+        }
       })(),
     },
     {

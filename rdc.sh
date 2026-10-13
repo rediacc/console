@@ -13,9 +13,26 @@ set -euo pipefail
 # Root directory (portable: works on Linux, macOS, and Windows/Git Bash)
 ROOT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 
-# Source configuration and utilities
-source "$ROOT_DIR/.ci/config/constants.sh"
-source "$ROOT_DIR/.ci/lib/local-common.sh"
+# Logging, the same glyphs and the same stderr-only rule as .ci/scripts/lib/common.sh
+# (colour only on a terminal, never under NO_COLOR). Stdout belongs to the CLI command.
+if [[ -t 2 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+    _red='\033[0;31m' _green='\033[0;32m' _yellow='\033[1;33m' _blue='\033[0;34m' _nc='\033[0m'
+else
+    _red='' _green='' _yellow='' _blue='' _nc=''
+fi
+log_info() { echo -e "${_green}✓${_nc} $*" >&2; }
+log_warn() { echo -e "${_yellow}⚠${_nc} $*" >&2; }
+log_error() { echo -e "${_red}✗${_nc} $*" >&2; }
+log_step() { echo -e "${_blue}→${_nc} $*" >&2; }
+
+# NAME THE MISSING INTERPRETER, the way run.sh:44-50 does. The preparation below and
+# --native are both served by the Python CI package; without this check the failure is
+# a bare exit 127 and the word `python3`.
+if ! command -v python3 >/dev/null 2>&1; then
+    log_error "rdc.sh prepares the CLI through the Python CI package, and python3 is not on PATH."
+    log_error "Install it, or run .ci/bootstrap.sh which provisions this toolchain."
+    exit 1
+fi
 
 # --native: build the real single-executable binary (Node SEA) from local source and
 # install it over the user's rdc, instead of running via the dev bundle. Use it to
@@ -30,22 +47,12 @@ source "$ROOT_DIR/.ci/lib/local-common.sh"
 # mac and win arms were never once executed by anything in this repository.
 #
 # Do not re-inline it. check:ci-rdc-native holds this file to a line ceiling for the same
-# reason .ci/scripts/test/gates/test-run-sh.sh holds run.sh to one.
+# reason .ci/rediacc_ci/tests/gates/test_gate_run_sh.py holds run.sh to one.
 if [[ "${1:-}" == "--native" ]]; then
     shift
-    # NAME THE MISSING INTERPRETER, the way run.sh:44-50 does. Without this the
-    # failure is a bare exit 127 and the word `python3`, on a flag nobody has any
-    # reason to know is Python.
-    if ! command -v python3 >/dev/null 2>&1; then
-        log_error "--native is served by the Python CI package, and python3 is not on PATH."
-        log_error "Install it, or run .ci/bootstrap.sh which provisions this toolchain."
-        exit 1
-    fi
     # exec, not a call: a multi-hour build's exit code and signals are its own.
     PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.native "$@"
 fi
-
-check_node_version "$NODE_VERSION_MIN"
 
 if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" == "1" ]]; then
     # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
@@ -65,14 +72,12 @@ else
     log_step "Preparing CLI development environment"
 fi
 
-# Ensure the toolchain is current. All build/progress output goes to STDERR:
+# Ensure the toolchain is current (node floor, deps, packages, CLI bundle, renet; the
+# order is core/local_common.py prepare_cli). All build/progress output goes to STDERR:
 # stdout belongs to the CLI command — a rebuild triggered by an edit must not
 # corrupt an `rdc ... -o json` pipeline with npm build logs (observed live:
 # the first post-edit invocation broke JSON.parse for the caller).
-ensure_deps >&2
-ensure_packages_built >&2
-ensure_cli_built >&2
-ensure_renet_built >&2
+PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.local_common prepare-cli >&2
 
 # Regenerate skill reference if CLI has changed
 ref_file="$ROOT_DIR/.claude/skills/rdc/reference.md"

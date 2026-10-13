@@ -28,6 +28,13 @@
  * Usage:
  *   npx tsx scripts/gates/check-embed-asset-freshness.ts            # check
  *   npx tsx scripts/gates/check-embed-asset-freshness.ts --upgrade  # rewrite pins
+ *
+ * --upgrade moves EVERY pin tied to a stale component, not just its VERSION ARG:
+ * the Dockerfile `_COMMIT` / `_SHA256[_<ARCH>]` ARGs (resolved from the upstream
+ * tag or the release's published checksum file), embed-assets.lock.json, and the
+ * Go constants in scripts/lib/embed-pin-upgrade.ts SOURCE_CONSTS. A pin it cannot
+ * resolve (rsync publishes no checksum file) makes it REFUSE that component and
+ * exit 1; it never leaves a half-moved pin behind.
  *   npm run check:ci-embed-asset-freshness
  *
  * Exit codes: 0 = fresh / deferred / held / could-not-check; 1 = a confirmed
@@ -56,13 +63,24 @@ import {
   EMBED_ASSET_SOURCES as SOURCES,
   type EmbedAssetSource as Source,
 } from '../lib/embed-asset-sources.js';
-import { githubToken } from '../lib/github-token.js';
+import {
+  CONST_FILES,
+  type Fetchers,
+  fixtureEntry,
+  sharedCloneDrift,
+  type UpgradeFiles,
+  upgradeComponent,
+} from '../lib/embed-pin-upgrade.js';
+import { githubApiHeaders } from '../lib/github-token.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
-const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
+// Test seam: EMBED_RENET_DIR points --upgrade at a fixture renet tree (Dockerfile, embed-assets.lock.json, the Go files in SOURCE_CONSTS), so the gate test can prove an upgrade moves every tied pin without touching the real submodule.
+const RENET_DIR = process.env.EMBED_RENET_DIR || path.join(CONSOLE_ROOT, 'private/renet');
+const DOCKERFILE = path.join(RENET_DIR, 'Dockerfile');
+const LOCKFILE = path.join(RENET_DIR, 'embed-assets.lock.json');
 // Test seam: EMBED_BLOCKLIST_FILE points at a fixture blocklist so the gate test can prove the BLOCKER-reason validation fires without mutating the real, tracked .embed-assets-upgrade-blocklist.
 const BLOCKLIST =
   process.env.EMBED_BLOCKLIST_FILE || policyPath('.embed-assets-upgrade-blocklist', CONSOLE_ROOT);
@@ -97,12 +115,7 @@ function isNewer(latest: string, pinned: string): boolean {
 }
 
 async function fetchJson(url: string): Promise<unknown> {
-  const headers: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'rediacc-embed-asset-freshness',
-  };
-  const token = githubToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = githubApiHeaders('rediacc-embed-asset-freshness');
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
   try {
@@ -167,7 +180,7 @@ function loadFixture(): Record<string, { version: string; publishedAt?: string }
 async function latestFor(src: Source): Promise<Latest> {
   const fixture = loadFixture();
   if (fixture) {
-    const hit = fixture[src.base];
+    const hit = fixtureEntry(fixture, src.base);
     if (!hit) throw new Error('not in fixture');
     return {
       version: hit.version,
@@ -232,6 +245,103 @@ async function latestFor(src: Source): Promise<Latest> {
     // Fall through with a null date: the gate's existing policy is that a dateless source still surfaces a stale pin rather than hiding it.
   }
   return { version: newestRsync, publishedAt: rsyncPublished };
+}
+
+/** Test seam: EMBED_PIN_FIXTURE = { commits: { "<owner/repo>@<tag>": "<sha>" }, texts: { "<url>": "<body>" } }, used INSTEAD of the network for --upgrade's pin resolution. */
+function pinFetchers(): Fetchers {
+  const p = process.env.EMBED_PIN_FIXTURE;
+  if (p) {
+    const fx = JSON.parse(fs.readFileSync(p, 'utf-8')) as {
+      commits?: Record<string, string>;
+      texts?: Record<string, string>;
+    };
+    return {
+      commitOf: async (repo, tag) => {
+        const hit = fx.commits?.[`${repo}@${tag}`];
+        if (!hit) throw new Error('not in pin fixture');
+        return hit;
+      },
+      text: async (url) => {
+        const hit = fx.texts?.[url];
+        if (hit === undefined) throw new Error('not in pin fixture');
+        return hit;
+      },
+    };
+  }
+  return {
+    commitOf: async (repo, tag) => {
+      const c = (await fetchJson(
+        `${WK_GH_API_BASE}/repos/${repo}/commits/${encodeURIComponent(tag)}`
+      )) as { sha?: string };
+      if (!c.sha) throw new Error('no sha in commit response');
+      return c.sha;
+    },
+    text: fetchText,
+  };
+}
+
+/** Apply --upgrade to every stale finding; returns the exit code. A component whose pins cannot all be resolved is REFUSED and left untouched. */
+async function runUpgrade(stale: Finding[], dockerfile: string): Promise<number> {
+  const fetchers = pinFetchers();
+  const before: UpgradeFiles = {
+    dockerfile,
+    lock: fs.existsSync(LOCKFILE) ? fs.readFileSync(LOCKFILE, 'utf-8') : null,
+    consts: {},
+  };
+  for (const rel of CONST_FILES) {
+    const abs = path.join(RENET_DIR, rel);
+    if (fs.existsSync(abs)) before.consts[rel] = fs.readFileSync(abs, 'utf-8');
+  }
+  let files = before;
+  const refused: string[] = [];
+  const moved: string[] = [];
+  for (const f of stale) {
+    const repo = SOURCES.find((s) => s.base === f.base)?.repo;
+    const res = await upgradeComponent(
+      files,
+      { base: f.base, display: f.display, pinned: f.pinned, latest: f.latest, repo },
+      fetchers
+    );
+    if (!res.ok) {
+      refused.push(res.reason);
+      continue;
+    }
+    files = res.files;
+    moved.push(
+      `${GREEN}↑ ${f.display}: ${f.pinned} -> ${f.latest}${NC}`,
+      ...res.changes.map((c) => `    ${c}`)
+    );
+  }
+  const drift = sharedCloneDrift(files.dockerfile);
+  if (drift) {
+    refused.push(drift);
+    files = before;
+    // Every resolved component above is discarded with it, so none of them is reported as done.
+    moved.length = 0;
+    console.error(`${YELLOW}Nothing written: ${drift}${NC}`);
+  }
+  for (const line of moved) console.log(line);
+  if (files.dockerfile !== before.dockerfile) fs.writeFileSync(DOCKERFILE, files.dockerfile);
+  if (files.lock !== null && files.lock !== before.lock) fs.writeFileSync(LOCKFILE, files.lock);
+  for (const [rel, text] of Object.entries(files.consts)) {
+    if (text !== before.consts[rel]) fs.writeFileSync(path.join(RENET_DIR, rel), text);
+  }
+  if (refused.length > 0) {
+    console.error('');
+    console.error(
+      `${RED}✗ --upgrade REFUSED ${refused.length} component(s); their pins are untouched:${NC}`
+    );
+    for (const r of refused) console.error(`  ${r}`);
+    return 1;
+  }
+  console.log('');
+  console.log(`${YELLOW}Pins rewritten. Still to do for the bumped components:${NC}`);
+  console.log('  - `./build.sh embed_assets --force` (builds the pins and restages the assets);');
+  console.log(
+    '  - `npx tsx scripts/gen/generate-embed-credits.ts` (regenerates the credits inventories);'
+  );
+  console.log('  - hand-check prose that names the version (docs/design/spec, vendored CRDs).');
+  return 0;
 }
 
 interface Finding {
@@ -316,22 +426,7 @@ async function main(): Promise<void> {
   }
 
   if (upgrade) {
-    let src = dockerfile;
-    for (const f of stale) {
-      const arg = `${f.base.toUpperCase()}_VERSION`;
-      src = src.replace(new RegExp(`(ARG\\s+${arg}=)\\S+`, 'g'), `$1${f.latest}`);
-      console.log(`${GREEN}↑ ${f.display}: ${f.pinned} -> ${f.latest}${NC}`);
-    }
-    fs.writeFileSync(DOCKERFILE, src);
-    console.log('');
-    console.log(
-      `${YELLOW}Dockerfile ARGs rewritten. You MUST now, for the bumped components:${NC}`
-    );
-    console.log('  - refresh the SHA256 pins (zot/k3s) and the AssetK3sVersion const in');
-    console.log('    private/renet/pkg/embed/embed.go if k3s changed;');
-    console.log('  - re-run `./build.sh embed_assets --force` and update the credits');
-    console.log('    inventories — `npm run check:ci-embed-credits` will fail until they match.');
-    return;
+    process.exit(await runUpgrade(stale, dockerfile));
   }
 
   console.error('');
@@ -341,18 +436,18 @@ async function main(): Promise<void> {
   }
   // A prominent, copy-paste HOW-TO-FIX so a human or an AI agent can act without hunting: the exact upgrade command, then the follow-ups it can't do itself.
   console.error('');
-  console.error(`${YELLOW}TO FIX — bump the Dockerfile pins:${NC}`);
+  console.error(
+    `${YELLOW}TO FIX: bump every pin tied to the component (VERSION, COMMIT, SHA256, lockfile, Go constants):${NC}`
+  );
   console.error('    npx tsx scripts/gates/check-embed-asset-freshness.ts --upgrade');
   console.error('  then, for each bumped component:');
   console.error('    1. rebuild the builder image so the new binaries are pulled:');
   errorLines(
     `         (cd private/renet && docker build -t ${WK_RENET_REPO}:latest . && ./build.sh embed_assets --force)`,
-    '    2. refresh any SHA256 pin (zot/k3s) + the AssetK3sVersion const in',
-    '       private/renet/pkg/embed/embed.go if k3s changed;',
-    '    3. update the credits inventories (credits.go + third-party-credits.json)',
-    '       — `npm run check:ci-embed-credits` tells you the exact expected versions.',
-    '  A bump may need a Dockerfile tweak (e.g. a version-pinned patch that no longer',
-    '  applies); the --upgrade only rewrites the ARG, so re-run this gate to confirm.'
+    '    2. regenerate the credits inventories: npx tsx scripts/gen/generate-embed-credits.ts',
+    '       (`npm run check:ci-embed-credits` tells you the exact expected versions);',
+    '  A pin --upgrade cannot resolve (rsync publishes no checksum file) is REFUSED, not',
+    '  skipped: bump it by hand, then re-run this gate to confirm.'
   );
   console.error('');
   console.error('TO HOLD one back instead: add its base name (e.g. `k3s`) with a `# BLOCKER:`');

@@ -27,6 +27,8 @@ const {
   secureMem: new Map<string, string>(),
   tokenMem: new Map<string, { token: string; wrappedCek: string }>(),
   mockConfigFileStorage: {
+    // The cleanup after a failed enable asks which other local configs name the slot secret (F17).
+    list: vi.fn(() => Promise.resolve([] as string[])),
     load: vi.fn(),
     loadDecrypted: vi.fn(),
     save: vi.fn(),

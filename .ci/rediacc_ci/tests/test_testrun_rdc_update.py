@@ -7,12 +7,10 @@ INTENTIONAL DELTAS (Rule T), each a `test_delta_*` that fails on the bash behavi
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import pathlib
 import re
-import signal
 import subprocess
 
 import pytest
@@ -75,9 +73,11 @@ echo "Updated"
 """
 
 
-@pytest.fixture(scope="module")
-def fake_rdc(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
-    path = tmp_path_factory.mktemp("fakerdc") / "rdc"
+@pytest.fixture
+def fake_rdc(tmp_path: pathlib.Path) -> pathlib.Path:
+    """Under the test's own `tmp_path`, so the golden key folds its path with the other scratch roots."""
+    path = tmp_path / "fakerdc" / "rdc"
+    path.parent.mkdir()
     path.write_text(FAKE_RDC)
     path.chmod(0o755)
     return path
@@ -93,10 +93,10 @@ def drive(
     directory = tmp_path / name
     directory.mkdir()
     env = {"RDC_BINARY": str(rdc), "CI": "", "GITHUB_ACTIONS": "", **(extra or {})}
-    runner = ts.bash_cmd(TWIN, *args) if name.startswith("bash") else ts.py_cmd(MODULE, *args)
-    if not name.startswith("bash"):
-        env = ts.py_env(env)
-    return ts.run_side(runner, directory, (), env, timeout=240)
+    if name.startswith("bash"):
+        # The bash twin is retired: its answer comes from the golden (PLAN-retire-bash-oracles B3).
+        return ts.twin_run(TWIN, ts.bash_cmd(TWIN, *args), directory, (), env, timeout=240)
+    return ts.run_side(ts.py_cmd(MODULE, *args), directory, (), ts.py_env(env), timeout=240)
 
 
 def norm(text: str, directory: pathlib.Path) -> str:
@@ -205,95 +205,65 @@ def http_servers_under(directory: pathlib.Path) -> list[int]:
 def test_delta_a_failing_prerequisite_leaks_nothing(
     tmp_path: pathlib.Path, fake_rdc: pathlib.Path
 ) -> None:
-    """No curl on PATH: the twin's readiness poll fails, `set -e` ends it past `stop_fixture`, and the fixture server and temp tree stay behind."""
-    leaked: list[int] = []
-    try:
-        directory = tmp_path / "bash"
-        directory.mkdir()
-        bindir = ts.make_fakes(directory, ())
-        for tool in (
-            "bash",
-            "python3",
-            "mktemp",
-            "rm",
-            "mkdir",
-            "cp",
-            "sha256sum",
-            "awk",
-            "stat",
-            "uname",
-            "ldd",
-            "dirname",
-            "basename",
-            "env",
-            "sed",
-            "grep",
-            "cat",
-            "chmod",
-            "ln",
-            "mv",
-            "head",
-            "tr",
-            "id",
-            "sleep",
-            "kill",
-            "wait",
-        ):
-            found = ts.shutil.which(tool)
-            if found and not (bindir / tool).exists():
-                (bindir / tool).symlink_to(found)
-        tmp_old = directory / "tmp"
-        tmp_old.mkdir()
-        env = {
-            "PATH": str(bindir),
-            "HOME": str(directory),
-            "TMPDIR": str(tmp_old),
-            "RDC_BINARY": str(fake_rdc),
-            "LC_ALL": "C",
-        }
-        old = subprocess.run(
-            [ts.BASH, str(ts.ROOT / TWIN), "happy"],
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-            cwd=str(directory),
-        )
-        assert old.returncode != 0
-        leaked = http_servers_under(tmp_old)
-        assert leaked, "the twin left its fixture server running"
-        assert any(tmp_old.iterdir()), "the twin left its temporary tree"
-
-        directory2 = tmp_path / "py"
-        directory2.mkdir()
-        tmp_new = directory2 / "tmp"
-        tmp_new.mkdir()
-        env2 = {
-            **env,
-            "HOME": str(directory2),
-            "TMPDIR": str(tmp_new),
-            "PYTHONPATH": str(ts.ROOT / ".ci"),
-            "PATH": str(bindir),
-        }
-        new = subprocess.run(
-            [ts.sys.executable, "-m", MODULE, "happy"],
-            env=env2,
-            capture_output=True,
-            text=True,
-            timeout=120,
-            check=False,
-            cwd=str(directory2),
-        )
-        assert new.returncode == 1
-        assert "FAIL:" in new.stderr
-        assert "install.sh exited" in new.stderr
-        assert not http_servers_under(tmp_new)
-        assert not any(tmp_new.iterdir()), "the port removed its temporary tree"
-    finally:
-        for pid in leaked:
-            with contextlib.suppress(OSError):
-                os.kill(pid, signal.SIGKILL)
+    """No curl on PATH: the retired twin's readiness poll failed, `set -e` ended it past `stop_fixture`, and the fixture server and temp tree stayed behind (measured while the twin existed, 2026-10). The port stops its server and removes its tree on the same failure."""
+    directory = tmp_path / "py"
+    directory.mkdir()
+    bindir = ts.make_fakes(directory, ())
+    for tool in (
+        "bash",
+        "python3",
+        "mktemp",
+        "rm",
+        "mkdir",
+        "cp",
+        "sha256sum",
+        "awk",
+        "stat",
+        "uname",
+        "ldd",
+        "dirname",
+        "basename",
+        "env",
+        "sed",
+        "grep",
+        "cat",
+        "chmod",
+        "ln",
+        "mv",
+        "head",
+        "tr",
+        "id",
+        "sleep",
+        "kill",
+        "wait",
+    ):
+        found = ts.shutil.which(tool)
+        if found and not (bindir / tool).exists():
+            (bindir / tool).symlink_to(found)
+    tmp_new = directory / "tmp"
+    tmp_new.mkdir()
+    env = {
+        "PATH": str(bindir),
+        "HOME": str(directory),
+        "TMPDIR": str(tmp_new),
+        "RDC_BINARY": str(fake_rdc),
+        "LC_ALL": "C",
+        "PYTHONPATH": str(ts.ROOT / ".ci"),
+    }
+    new = subprocess.run(
+        [ts.sys.executable, "-m", MODULE, "happy"],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+        cwd=str(directory),
+    )
+    assert new.returncode == 1
+    assert "FAIL:" in new.stderr
+    assert "install.sh exited" in new.stderr
+    assert not http_servers_under(tmp_new)
+    assert not any(tmp_new.iterdir()), "the port removed its temporary tree"
 
 
 def test_delta_sha_mismatch_must_fail_for_the_checksum(tmp_path: pathlib.Path) -> None:

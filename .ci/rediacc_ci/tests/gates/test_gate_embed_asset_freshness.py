@@ -187,3 +187,343 @@ def test_blocklist_accepts_valid_reason(gate, tmp_path):
         0, result, "a blocklist entry with a substantive BLOCKER reason must be accepted"
     )
     gate.log_pass("well-formed blocklist entry is accepted")
+
+
+# ---- --upgrade moves every pin tied to a component -----------------------------------
+#
+# The tool used to rewrite only `ARG <BASE>_VERSION`. csi-provisioner 6.3.0 -> 6.4.0 left `ARG CSIPROVISIONER_COMMIT` at the 6.3.0 commit, so the Dockerfile's own clone check failed the build. These cases drive `--upgrade` against a FIXTURE renet tree (EMBED_RENET_DIR) with pins resolved from a fixture (EMBED_PIN_FIXTURE), never the network and never the real submodule.
+
+OLD_SHA = "34c6fc2149a354cea116724d1836262516f83225"
+NEW_SHA = "72f13ee46fb93c11a72ef91549e70158283c03af"
+ZOT_OLD = {"amd64": "a" * 64, "arm64": "b" * 64}
+ZOT_NEW = {"amd64": "c" * 64, "arm64": "d" * 64}
+RSYNC_SHA = "e" * 64
+SNAP_SHA = "f" * 40
+SNAP_NEW_SHA = "9" * 40
+ZOT_SUMS_URL = "https://github.com/project-zot/zot/releases/download/v2.2.0/checksums.sha256.txt"
+
+FIXTURE_DOCKERFILE = f"""FROM golang:1.26 AS csi-builder
+ARG CSIPROVISIONER_VERSION=6.3.0
+ARG CSIPROVISIONER_COMMIT={OLD_SHA}
+RUN [ "$actual" = "${{CSIPROVISIONER_COMMIT}}" ]
+FROM ubuntu AS zot-amd64
+ARG ZOT_VERSION=2.1.22
+ARG ZOT_SHA256_AMD64={ZOT_OLD["amd64"]}
+FROM ubuntu AS zot-arm64
+ARG ZOT_VERSION=2.1.22
+ARG ZOT_SHA256_ARM64={ZOT_OLD["arm64"]}
+FROM golang AS snapshotter
+ARG CSISNAPSHOTTER_VERSION=8.6.0
+ARG SNAPSHOTCONTROLLER_VERSION=8.6.0
+ARG CSISNAPSHOTTER_COMMIT={SNAP_SHA}
+FROM ubuntu AS rsync
+ARG RSYNC_VERSION=3.5.1
+ARG RSYNC_SHA256={RSYNC_SHA}
+"""
+
+FIXTURE_LOCK = {
+    "components": {
+        "csiprovisioner": {
+            "version": "6.3.0",
+            "upstreamSourceUrl": "https://github.com/x/external-provisioner/archive/v6.3.0/external-provisioner-6.3.0.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/external-provisioner-6.3.0.tar.gz",
+            "source": {"kind": "git", "tag": "v6.3.0", "commit": OLD_SHA},
+            "notes": "attribution text naming v6.3.0 stays verbatim",
+        },
+        "csisnapshotter": {
+            "version": "8.6.0",
+            "upstreamSourceUrl": "https://github.com/x/external-snapshotter/archive/v8.6.0/s-8.6.0.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/s-8.6.0.tar.gz",
+            "source": {"kind": "git", "tag": "v8.6.0", "commit": SNAP_SHA},
+        },
+        "snapshotcontroller": {
+            "version": "8.6.0",
+            "upstreamSourceUrl": "https://github.com/x/external-snapshotter/archive/v8.6.0/s-8.6.0.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/s-8.6.0.tar.gz",
+            "source": {"kind": "git", "tag": "v8.6.0", "commit": SNAP_SHA},
+        },
+        "zot": {
+            "version": "2.1.22",
+            "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.22/zot-2.1.22.tar.gz",
+            "plannedMirrorUrl": "https://releases.example/zot-2.1.22.tar.gz",
+            "source": {"kind": "release-binary"},
+            "arches": {
+                arch: {
+                    "url": f"https://github.com/project-zot/zot/releases/download/v2.1.22/zot-linux-{arch}",
+                    "sha256": digest,
+                }
+                for arch, digest in ZOT_OLD.items()
+            },
+        },
+        "rsync": {
+            "version": "3.5.1",
+            "upstreamSourceUrl": "https://example/rsync-3.5.1.tar.gz",
+            "plannedMirrorUrl": "https://example/rsync-3.5.1.tar.gz",
+            "source": {
+                "kind": "tarball",
+                "url": "https://example/rsync-3.5.1.tar.gz",
+                "sha256": RSYNC_SHA,
+            },
+        },
+    }
+}
+
+FIXTURE_UNITS = (
+    "const (\n"
+    '\tProvisionerVersion        = "v6.3.0"\n'
+    '\tSnapshotterVersion        = "v8.6.0"\n'
+    '\tSnapshotControllerVersion = "v8.6.0"\n'
+    ")\n"
+)
+FIXTURE_GOLDEN = "[Unit]\nDescription=Rediacc CSI external-provisioner (v6.3.0, node-deployment)\n"
+UNITS = "pkg/kube/csidriver/units.go"
+GOLDEN = "pkg/kube/csidriver/testdata/rediacc-csi-provisioner.service"
+
+
+def make_renet(tmp_path):
+    renet = tmp_path / "renet"
+    (renet / "pkg/kube/csidriver/testdata").mkdir(parents=True)
+    (renet / "Dockerfile").write_text(FIXTURE_DOCKERFILE, encoding="utf-8")
+    (renet / "embed-assets.lock.json").write_text(
+        json.dumps(FIXTURE_LOCK, indent=2) + "\n", encoding="utf-8"
+    )
+    (renet / UNITS).write_text(FIXTURE_UNITS, encoding="utf-8")
+    (renet / GOLDEN).write_text(FIXTURE_GOLDEN, encoding="utf-8")
+    return renet
+
+
+def run_upgrade(gate, tmp_path, renet, **overrides) -> harness.RunResult:
+    pins = {
+        "commits": {"kubernetes-csi/external-provisioner@v6.4.0": NEW_SHA},
+        "texts": {
+            ZOT_SUMS_URL: "".join(
+                f"{digest}  zot-linux-{arch}\n" for arch, digest in ZOT_NEW.items()
+            )
+        },
+    }
+    pins.update(overrides.pop("pins", {}))
+    pin_file = tmp_path / "pins.json"
+    pin_file.write_text(json.dumps(pins), encoding="utf-8")
+    fixture = tmp_path / "upstream.json"
+    fixture.write_text(json.dumps(upstream_map(gate, **overrides)), encoding="utf-8")
+    blocklist = tmp_path / "blocklist"
+    blocklist.write_text("# no holds\n", encoding="utf-8")
+    npx = harness.require_tool("npx", "install node; the subject is driven through tsx")
+    return harness.run(
+        [npx, "tsx", str(VALIDATOR), "--upgrade"],
+        cwd=paths.repo_root(),
+        env={
+            "EMBED_FRESHNESS_FIXTURE": str(fixture),
+            "EMBED_PIN_FIXTURE": str(pin_file),
+            "EMBED_BLOCKLIST_FILE": str(blocklist),
+            "EMBED_RENET_DIR": str(renet),
+        },
+    )
+
+
+OLD_CSI = {"version": "6.4.0", "publishedAt": "2020-01-01T00:00:00Z"}
+
+
+def test_upgrade_moves_the_commit_with_the_version(gate, tmp_path):
+    """THE REGRESSION: the version moved and the commit pin stayed, so the Dockerfile could never build."""
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(gate, tmp_path, renet, csiprovisioner=OLD_CSI)
+    gate.assert_exit(0, result, "a resolvable csi-provisioner bump should succeed")
+    dockerfile = (renet / "Dockerfile").read_text(encoding="utf-8")
+    gate.assert_contains(dockerfile, "ARG CSIPROVISIONER_VERSION=6.4.0", "version moved")
+    gate.assert_contains(dockerfile, "ARG CSIPROVISIONER_COMMIT=" + NEW_SHA, "commit moved with it")
+    gate.assert_not_contains(dockerfile, OLD_SHA, "no stale commit left behind")
+    gate.log_pass("the COMMIT pin moves with the VERSION pin")
+
+
+def test_upgrade_moves_lockfile_and_go_constants(gate, tmp_path):
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(gate, tmp_path, renet, csiprovisioner=OLD_CSI)
+    gate.assert_exit(0, result, "bump should succeed")
+    comp = json.loads((renet / "embed-assets.lock.json").read_text(encoding="utf-8"))["components"][
+        "csiprovisioner"
+    ]
+    gate.assert_eq(comp["version"], "6.4.0", "lock version")
+    gate.assert_eq(comp["source"]["tag"], "v6.4.0", "lock tag")
+    gate.assert_eq(comp["source"]["commit"], NEW_SHA, "lock commit")
+    gate.assert_contains(comp["upstreamSourceUrl"], "6.4.0", "lock source URL")
+    gate.assert_contains(comp["plannedMirrorUrl"], "6.4.0", "lock mirror URL")
+    gate.assert_contains(comp["notes"], "v6.3.0", "free-text attribution is NOT rewritten")
+    gate.assert_contains((renet / UNITS).read_text(encoding="utf-8"), '"v6.4.0"', "Go constant")
+    gate.assert_contains((renet / GOLDEN).read_text(encoding="utf-8"), "(v6.4.0,", "golden unit")
+    gate.log_pass("lockfile entry, Go constant and golden move with the Dockerfile")
+
+
+def test_upgrade_moves_published_sha256_pins(gate, tmp_path):
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(
+        gate, tmp_path, renet, zot={"version": "2.2.0", "publishedAt": "2020-01-01T00:00:00Z"}
+    )
+    gate.assert_exit(0, result, "zot publishes checksums.sha256.txt, so the bump resolves")
+    dockerfile = (renet / "Dockerfile").read_text(encoding="utf-8")
+    for arch, digest in ZOT_NEW.items():
+        gate.assert_contains(
+            dockerfile, f"ARG ZOT_SHA256_{arch.upper()}={digest}", f"{arch} digest"
+        )
+    gate.assert_not_contains(dockerfile, ZOT_OLD["amd64"], "no stale digest left behind")
+    lock = json.loads((renet / "embed-assets.lock.json").read_text(encoding="utf-8"))
+    gate.assert_eq(
+        lock["components"]["zot"]["arches"]["arm64"]["sha256"], ZOT_NEW["arm64"], "lock digest"
+    )
+    gate.log_pass("SHA256 pins move with the version")
+
+
+def test_upgrade_refuses_an_unresolvable_commit(gate, tmp_path):
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(gate, tmp_path, renet, csiprovisioner=OLD_CSI, pins={"commits": {}})
+    gate.assert_exit(1, result, "an unresolvable commit pin must refuse, not half-upgrade")
+    gate.assert_contains(result.combined, "REFUSED", "the refusal is named")
+    gate.assert_eq(
+        (renet / "Dockerfile").read_text(encoding="utf-8"),
+        FIXTURE_DOCKERFILE,
+        "Dockerfile untouched",
+    )
+    gate.log_pass("an unresolvable commit pin refuses and leaves the tree alone")
+
+
+def test_upgrade_refuses_a_pin_with_no_published_checksum(gate, tmp_path):
+    """rsync publishes no checksum file; its digest is verified by a GPG signature a human checks."""
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    result = run_upgrade(
+        gate, tmp_path, renet, rsync={"version": "9.0.0", "publishedAt": "2020-01-01T00:00:00Z"}
+    )
+    gate.assert_exit(1, result, "an rsync bump cannot resolve its sha256 and must refuse")
+    gate.assert_contains(result.combined, "sha256 pin cannot be resolved", "reason names the pin")
+    gate.assert_eq(
+        (renet / "Dockerfile").read_text(encoding="utf-8"),
+        FIXTURE_DOCKERFILE,
+        "Dockerfile untouched",
+    )
+    gate.log_pass("a digest with no published source refuses instead of going stale")
+
+
+def test_upgrade_refuses_half_of_the_shared_snapshotter_clone(gate, tmp_path):
+    """snapshotter and snapshot-controller build from ONE clone guarded by ONE commit ARG. Moving only one of them leaves the clone unbuildable, so the run refuses, writes NOTHING (the resolvable csi-provisioner bump beside it included) and does not report any of it as done."""
+    require_submodule(gate)
+    renet = make_renet(tmp_path)
+    snap = "kubernetes-csi/external-snapshotter@v8.7.0"
+    result = run_upgrade(
+        gate,
+        tmp_path,
+        renet,
+        csiprovisioner=OLD_CSI,
+        csisnapshotter={"version": "8.7.0", "publishedAt": "2020-01-01T00:00:00Z"},
+        pins={
+            "commits": {
+                "kubernetes-csi/external-provisioner@v6.4.0": NEW_SHA,
+                snap: SNAP_NEW_SHA,
+            }
+        },
+    )
+    gate.assert_exit(1, result, "bumping only one of the shared-clone pair must refuse")
+    gate.assert_contains(result.combined, "bump them together", "the pair is named")
+    gate.assert_contains(result.combined, "Nothing written", "the discard is stated")
+    gate.assert_not_contains(result.combined, "\u2191", "no component is reported as upgraded")
+    gate.assert_eq(
+        (renet / "Dockerfile").read_text(encoding="utf-8"),
+        FIXTURE_DOCKERFILE,
+        "Dockerfile untouched",
+    )
+    gate.assert_eq(
+        (renet / UNITS).read_text(encoding="utf-8"), FIXTURE_UNITS, "Go constants untouched"
+    )
+    lock = json.loads((renet / "embed-assets.lock.json").read_text(encoding="utf-8"))
+    gate.assert_eq(lock, FIXTURE_LOCK, "lockfile untouched")
+    gate.log_pass("half of the shared clone refuses, writes nothing and reports nothing as done")
+
+
+# ---- own-property lookups: a component named like an Object.prototype key is ABSENT -----
+#
+# Every table keyed by component name (the lockfile's components, SHA256_SOURCES, SOURCE_CONSTS, the freshness fixture) is read with `Object.hasOwn`. A bracket lookup returns an inherited value for each (the inherited function for `constructor` and `toString`, Object.prototype itself for `__proto__`), which reads as a found entry. The cases below drive the exported helpers directly (a real source list never contains such a base, so the gate cannot reach them) and each fails when ITS lookup is reverted to a bracket.
+
+PROTO_NAMES = ("constructor", "toString", "__proto__")
+
+UPGRADE_PROBE = (
+    "import { upgradeComponent, fixtureEntry } from './scripts/lib/embed-pin-upgrade.ts';\n"
+    "(async () => {\n"
+    "const inp = JSON.parse(process.env.PROBE_INPUT);\n"
+    "const none = { commitOf: async () => { throw new Error('unexpected'); },"
+    " text: async () => { throw new Error('unexpected'); } };\n"
+    "if (inp.fixture !== undefined) {\n"
+    "  process.stdout.write(JSON.stringify({ hit: fixtureEntry(inp.fixture, inp.base) ?? null }));\n"
+    "} else {\n"
+    "  const r = await upgradeComponent({ dockerfile: inp.dockerfile, lock: inp.lock, consts: {} },"
+    " { base: inp.base, display: inp.base, pinned: '1.0.0', latest: '2.0.0', repo: 'o/r' }, none);\n"
+    "  process.stdout.write(JSON.stringify({ ok: r.ok, reason: r.ok ? '' : r.reason,"
+    " consts: r.ok ? r.files.consts : null }));\n"
+    "}\n"
+    "})();"
+)
+
+
+def probe(gate, payload: dict) -> dict:
+    npx = harness.require_tool("npx", "install node; the helpers are TypeScript read through tsx")
+    result = harness.run(
+        [npx, "tsx", "--eval", UPGRADE_PROBE],
+        cwd=paths.repo_root(),
+        env={"PROBE_INPUT": json.dumps(payload)},
+    )
+    gate.assert_exit(0, result, "the helper must return, not throw, for base %r" % payload["base"])
+    return json.loads(result.out.strip().splitlines()[-1])
+
+
+def probe_upgrade(gate, name: str, component: dict | None) -> dict:
+    components = {} if component is None else {name: component}
+    return probe(
+        gate,
+        {
+            "base": name,
+            "dockerfile": "ARG %s_VERSION=1.0.0\n" % name.upper(),
+            "lock": json.dumps({"components": components}),
+        },
+    )
+
+
+def test_hasown_lockfile_components_lookup(gate):
+    for name in PROTO_NAMES:
+        got = probe_upgrade(gate, name, None)
+        gate.assert_eq(got["ok"], False, "%s is not a lockfile component" % name)
+        gate.assert_contains(
+            got["reason"], "has no components.%s entry" % name, "reported as ABSENT, not found"
+        )
+    gate.log_pass("a prototype-named base is absent from the lockfile components")
+
+
+def test_hasown_sha256_sources_lookup(gate):
+    pinned = {"version": "1.0.0", "arches": {"amd64": {"sha256": "a" * 64}}}
+    for name in PROTO_NAMES:
+        got = probe_upgrade(gate, name, pinned)
+        gate.assert_eq(got["ok"], False, "%s has no published checksum source" % name)
+        gate.assert_contains(
+            got["reason"],
+            "sha256 pin cannot be resolved",
+            "no checksum source, not an inherited one",
+        )
+    gate.log_pass("a prototype-named base has no SHA256 source")
+
+
+def test_hasown_source_consts_lookup(gate):
+    for name in PROTO_NAMES:
+        got = probe_upgrade(gate, name, {"version": "1.0.0"})
+        gate.assert_eq(got["ok"], True, "%s has no Go constant sites, so the bump succeeds" % name)
+        gate.assert_eq(got["consts"], {}, "no Go file is touched for %s" % name)
+    gate.log_pass("a prototype-named base has no SOURCE_CONSTS sites")
+
+
+def test_hasown_fixture_lookup(gate):
+    for name in PROTO_NAMES:
+        got = probe(gate, {"base": name, "fixture": {}})
+        gate.assert_eq(got["hit"], None, "%s is not in the fixture" % name)
+    own = probe(gate, {"base": "k3s", "fixture": {"k3s": {"version": "9.9.9"}}})
+    gate.assert_eq(own["hit"], {"version": "9.9.9"}, "CONTROL: an own key is still found")
+    gate.log_pass("a prototype-named base is absent from the fixture, an own key is found")

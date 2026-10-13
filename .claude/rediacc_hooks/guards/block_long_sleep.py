@@ -78,6 +78,10 @@ EDGE_CASES = [
     ("quoted prose naming a sleep", "printf '%s\\n' 'which sleep 600 s (a full run)' > msg.txt"),
     ("a minute suffix", "sleep 1m"),
     ("a heredoc body is still scanned", "git commit -F - <<'M'\nwhich sleep 600 s\nM"),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("a sleep launched by find -exec", r"find . -maxdepth 0 -exec sleep 900 \;"),
+    ("a sleep launched by npx", "npx sleep 900"),
+    ("prose naming a launched sleep", "echo find . -maxdepth 0 -exec sleep 900"),
 ]
 
 
@@ -125,7 +129,8 @@ def _heredoc_bodies(cmd):
 def _sleeps(cmd):
     """Every sleep in `cmd`, in seconds: the commands bash runs, then the text kept on purpose."""
     found = []
-    for run_ in shellscan._analyse(cmd).runs:
+    # LAUNCHED COMMANDS COUNT (#503f0ba8): `find . -exec <pause> \;` and `npx <pause>` stall the session exactly as the bare pause does, so the walk includes what `npx` and `find -exec` start (`shellscan.every_run`).
+    for run_ in shellscan.every_run(cmd):
         base = run_.name.rsplit("/", 1)[-1]
         if base == "sleep":
             seconds = _duration(run_.argv)

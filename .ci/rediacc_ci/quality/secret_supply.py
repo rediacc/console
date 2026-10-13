@@ -88,7 +88,7 @@ the gate requires that path to be TRACKED and to still mention the name. A delet
 and a citation that churns gets "fixed" wholesale, which is how a stale claim gets re-blessed.
 
 WHY `.ci/config/` AND NOT `.ci/policy/`, re-applying clause 1 of `.ci/policy/README.md` section 1 rather than re-deriving it. A policy file is a DECISION: a set of entries someone chose to EXEMPT, each carrying a BLOCKER reason that stops a gate firing. This file exempts nothing. Nothing in it suppresses a finding anywhere in the estate; deleting it makes this gate refuse, not
-pass. Its residue half is DERIVED wholesale from two other tracked files and then annotated, exactly as `language-policy-baseline.json` and `tracked-credentials-baseline.json` are, and it sits beside them. There is also the hard mechanical reason W8 P6 records: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without matching edits
+pass. Its residue half is DERIVED wholesale from two other tracked files and then annotated, exactly as `tracked-credentials-baseline.json` is (and the language-policy baseline was until the strict flip deleted it), and it sits beside them. There is also the hard mechanical reason W8 P6 records: `.ci/policy/` is under four-way set equality (`check:ci-policy-inventory`), so a file landing there without matching edits
 to two `POLICY_FILES` tuples and the README reds on arrival.
 
 WHAT THIS GATE DOES NOT CLAIM, so nobody reads more into a green than is there:

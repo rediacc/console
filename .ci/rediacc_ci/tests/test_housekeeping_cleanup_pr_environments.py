@@ -26,6 +26,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import ghx
 from rediacc_ci.housekeeping import cleanup_pr_environments as port
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -223,8 +224,8 @@ def compare(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None =
     assert proc.returncode == want_exit, (
         f"{name}: the twin exited {want_exit}, the port {proc.returncode}"
     )
-    assert proc.stdout == want_out, f"{name}: stdout diverged from the recorded bytes"
-    assert proc.stderr == want_err, f"{name}: stderr diverged from the recorded bytes"
+    assert as_twin(proc.stdout) == want_out, f"{name}: stdout diverged from the recorded bytes"
+    assert as_twin(proc.stderr) == want_err, f"{name}: stderr diverged from the recorded bytes"
     assert calls == want_calls, f"{name}: the gh call sequence diverged:\n{want_calls}\n{calls}"
     return proc, calls
 

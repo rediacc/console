@@ -114,7 +114,7 @@ _tutorial_video_pool() {
         if [[ "$running" -ge "$jobs" ]]; then
             # `|| true` IS THE FIX, not a swallowed error. `wait -n` returns the REAPED
             # JOB'S exit status, and under `set -euo pipefail` -- which run.sh set, and
-            # which .ci/scripts/lib/common.sh sets for this module -- a failed render
+            # which media-entry.sh sets for this module -- a failed render
             # therefore killed the pool at its first reap. The damage was entirely in the
             # CALLER: every one of the three call sites
             # (www_tutorials_video, www_tutorials_media, www_tutorials_watch) reports

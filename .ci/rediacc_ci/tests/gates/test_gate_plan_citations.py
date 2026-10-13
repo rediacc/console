@@ -6,6 +6,7 @@ THE REGRESSION THIS FILE PINS. Before the fix, `carried_lines` read only the blo
 the real branch. `_origin_last_content` closes this by walking the origin's own history for its last non-stub content, unioned with the base-blob read so the cheap path is never removed.
 """
 
+import importlib.util
 import pathlib
 import shutil
 import sys
@@ -210,3 +211,99 @@ def test_a_bare_digit_run_is_still_not_judged(gate, tmp_path):
     result = _gate(root, base)
     gate.assert_exit(0, result, "an unprefixed digit run is not a citation")
     gate.log_pass("a bare all-digit run id is still skipped")
+
+
+# A COMMIT ON origin/main (2026-10-08). CD pushes release-state and tap-pointer commits straight to main, and a plan written on a branch cut before them cites them. main is never rewritten, so such a commit survives every rebase-merge; the gate refused it with "names neither a blob nor a commit in this clone", which was also false: the "exists but not an ancestor" branch had become unreachable once the commit resolver began demanding ancestry of HEAD.
+
+
+def _side_commit(root: pathlib.Path, branch: str) -> str:
+    """A commit on `branch`, off the base and NOT an ancestor of the checked-out branch."""
+    head = _git(root, "rev-parse", "--abbrev-ref", "HEAD").strip()
+    _git(root, "checkout", "-qb", branch)
+    _write(root, "side-%s.txt" % branch, "side\n")
+    sha = _commit(root, "chore: on %s" % branch)
+    _git(root, "checkout", "-q", head)
+    return sha
+
+
+def _cited_plan(tmp_path, cite_from) -> tuple[pathlib.Path, str, str]:
+    root = _init(tmp_path)
+    _write(root, "agent/PLAN-main.md", "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n")
+    base = _commit(root, "base")
+    sha = cite_from(root)
+    # About 1 in 69 nine-character abbreviations is all digits, and the extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). The fixture's sha moves with the clock, so such a draw gets the `commit:` spelling, which is judged either way; PR 600 run on 078a550ad drew one and the gate answered VACUOUS INPUT.
+    cited = "commit:%s" % sha[:9] if sha[:9].isdigit() else sha[:9]
+    _write(
+        root,
+        "agent/PLAN-main.md",
+        "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n\nThe release ran (%s).\n" % cited,
+    )
+    _commit(root, "cite")
+    return root, base, sha
+
+
+def test_a_commit_on_origin_main_resolves(gate, tmp_path):
+    def on_main(root):
+        sha = _side_commit(root, "mainline")
+        _git(root, "update-ref", "refs/remotes/origin/main", sha)
+        return sha
+
+    root, base, _ = _cited_plan(tmp_path, on_main)
+    result = _gate(root, base)
+    gate.assert_exit(0, result, "a commit reachable from origin/main is a live citation")
+    gate.log_pass("a commit on origin/main, not yet in the branch, resolves")
+
+
+def test_an_orphan_commit_is_named_as_one(gate, tmp_path):
+    root, base, _ = _cited_plan(tmp_path, lambda root: _side_commit(root, "orphan"))
+    result = _gate(root, base)
+    gate.assert_exit(1, result, "a commit reachable from neither HEAD nor origin/main is a finding")
+    gate.assert_contains(result.err, "EXISTS in this clone", "and the message says it exists")
+    gate.log_pass("an orphan commit gets the orphan message, not 'names neither'")
+
+
+# THE `commit` KIND (eb3bcb68.1). `check_plan_record` hands `unresolved` a `commit` kind directly, so it is driven in-process here: the citation text never produces that kind.
+
+
+def _unresolved_fn():
+    spec = importlib.util.spec_from_file_location("_plan_citations_under_test", GATE)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    already = str(GATE.parent.resolve()) in sys.path
+    added = paths.on_sys_path(GATE.parent)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        if not already:
+            sys.path.remove(added)
+    return module.unresolved
+
+
+def test_a_commit_kind_on_origin_main_but_not_head_passes(gate, tmp_path):
+    def on_main(root):
+        sha = _side_commit(root, "mainline")
+        _git(root, "update-ref", "refs/remotes/origin/main", sha)
+        return sha
+
+    root, _base, sha = _cited_plan(tmp_path, on_main)
+    bad, why = _unresolved_fn()(root, "commit", sha)
+    if bad:
+        gate.log_fail("a commit-kind citation reachable from origin/main must pass: %s" % why)
+    gate.log_pass("commit kind: reachable from origin/main only, passes")
+
+
+def test_an_orphan_commit_kind_gets_the_orphan_message_naming_only_existing_refs(gate, tmp_path):
+    root, _base, sha = _cited_plan(tmp_path, lambda root: _side_commit(root, "orphan"))
+    unresolved = _unresolved_fn()
+    bad, why = unresolved(root, "commit", sha)
+    if not bad:
+        gate.log_fail("an orphan commit-kind citation must be a finding")
+    gate.assert_contains(why, "EXISTS in this clone", "and the message says it exists")
+    gate.assert_contains(why, "ancestor of HEAD,", "no origin/main ref here, so only HEAD is named")
+    if "origin/main" in why:
+        gate.log_fail("the missing ref must not be named: %s" % why)
+    _git(root, "update-ref", "refs/remotes/origin/main", _git(root, "rev-parse", "HEAD").strip())
+    _bad2, why2 = unresolved(root, "commit", sha)
+    gate.assert_contains(why2, "HEAD or origin/main", "with the ref present both are named")
+    gate.log_pass("commit kind: orphan message, refs named only when they exist")

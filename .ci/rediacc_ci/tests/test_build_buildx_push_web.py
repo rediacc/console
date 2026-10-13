@@ -46,7 +46,6 @@ ROOT = paths.repo_root()
 
 PORT_REL = ".ci/rediacc_ci/build/buildx_push_web.py"
 TWIN_REL = ".ci/scripts/build/buildx-push-web.sh"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 
@@ -124,9 +123,9 @@ CASES = tuple(CASE_KW)
 
 def fixture(where: pathlib.Path, subject: pathlib.Path) -> pathlib.Path:
     root = where / "repo"
-    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (PORT_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if subject.suffix == ".sh":
         (root / TWIN_REL).parent.mkdir(parents=True, exist_ok=True)

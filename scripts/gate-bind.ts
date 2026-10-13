@@ -94,14 +94,14 @@ const SUBJECT = /\.(py|sh|ts)$/;
  *      because the header twin was retired in W7 P5, test-gate-anti-vacuity.sh
  *      followed it on 2026-09-21, and test-claude-hooks.sh followed THEM when its
  *      own subject (.claude/hooks/test-hooks.sh) was ported to pytest: it parses
- *      as kind battery riding "Quality-gate unit tests", which is true of it.
+ *      as kind shared-step riding "Quality-gate unit tests", which is true of it.
  *      THE CONTROL'S SUBJECT KEEPS MOVING BECAUSE THE FAMILY KEEPS SHRINKING, and
  *      a control naming a deleted file is a control that tests a string literal
  *      rather than a tree -- it would go on passing over an empty directory.
  *   2. WAS: all gate-tests share the single step 'Quality-gate unit tests' and none owns
  *      it, so none could legitimately declare one, and excluding the tree said that once
  *      instead of per file.
- *      NOW: `kind: battery` says exactly that, per file, in the file. All 148 declare it.
+ *      NOW: `kind: shared-step` says exactly that, per file, in the file. Every gate-test header declares it.
  *
  * WHY THIS MATTERED ENOUGH TO CHANGE. While the exclusion stood, every header in that
  * tree was invisible to the only instrument that checks headers. Proved by planting a
@@ -249,7 +249,7 @@ export interface Bound {
    * three declare, bind and are checked, and the binder writes no workflow step for them.
    */
   kind: GateKind;
-  /** The step it owns (`step`) or rides (`battery`). Absent for `test` and `local-only`. */
+  /** The step it owns (`step`) or rides (`shared-step`). Absent for `test` and `local-only`. */
   step?: string;
   /** `false` when the gate owns a HAND-WRITTEN step a region must never take over. */
   emit?: boolean;
@@ -388,7 +388,7 @@ export function stepInJob(workflow: string, job: string, step: string): boolean 
 /**
  * Every job of the workflow carrying a step with this name.
  *
- * A `battery` gate does not CHOOSE its lane -- it rides a hand-written step, and that
+ * A `shared-step` gate does not CHOOSE its lane -- it rides a hand-written step, and that
  * step is where it runs whatever its own needs would have preferred. Placement must
  * therefore be read out of the workflow rather than computed from `needs`, or the lane
  * check below judges a lane the gate never runs in. Returns every match so a step name
@@ -660,6 +660,14 @@ export const RECEIPT_WRITER = 'scripts/ci/write-shard-receipt.cjs';
 /** The two steps below, named once: the `--write` strip guard has to know they come back. */
 export const RECEIPT_STEP_NAMES = ['Write shard receipt', 'Upload shard receipt'] as const;
 
+/**
+ * The upload-artifact pin the receipt step emits. check:actions and its upgrade recipe rewrite pins under .github only, so a bump
+ * there leaves this copy behind and `--write` would emit the old pin. Bump it with every upload-artifact bump; the selftest compares
+ * it against every pin under .github/workflows and fails on a difference.
+ */
+export const UPLOAD_ARTIFACT_PIN =
+  'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2';
+
 export function emitReceiptStep(
   job: string,
   of: number,
@@ -681,7 +689,7 @@ export function emitReceiptStep(
     `        run: node ${RECEIPT_WRITER}`,
     `      - name: ${RECEIPT_STEP_NAMES[1]}`,
     '        if: always()',
-    '        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1',
+    `        uses: ${UPLOAD_ARTIFACT_PIN}`,
     '        with:',
     `          name: quality-shard-\${{ matrix.shard }}`,
     `          path: ${receiptFile}`,
@@ -1411,10 +1419,10 @@ function selftest(endToEnd = false): number {
   );
   // THIS CONTROL WAS INVERTED ON 2026-09-06 AND THE INVERSION IS THE POINT. It used to
   // assert that a gate-test is OUT of scope, which was true and was also the reason all
-  // 148 of their headers were unread. W2.3 gave every one of them a `kind: battery`
+  // 148 of their headers were unread. W2.3 gave every one of them a `kind: shared-step`
   // declaration, so they are subjects now and this asserts the new truth.
   ck(
-    'a gate-test IS in scope: it declares kind battery, so its header is read like any other',
+    'a gate-test IS in scope: it declares kind shared-step, so its header is read like any other',
     !NOT_SUBJECT.test('.ci/scripts/test/gates/test-regions-sync.sh')
   );
   ck(
@@ -1634,16 +1642,16 @@ function selftest(endToEnd = false): number {
 
   // --- kind discriminant (parser v2) ---------------------------------------------
   // These controls exist because the drain hit the same wall 143 times: a gate-test
-  // cannot own the one battery step every gate-test rides, so under v1 it could not
+  // cannot own the one shared step every gate-test rides, so under v1 it could not
   // declare at all. What must hold now is that it CAN declare and STILL not be emitted.
-  const battery = [
+  const sharedStep = [
     '# ---- gate ----',
-    '# kind: battery',
+    '# kind: shared-step',
     '# step: Quality-gate unit tests',
     '# ---- end gate ----',
   ].join('\n');
-  const bBat = bind('.ci/scripts/test/gates/test-a.sh', battery);
-  ck('a battery gate binds, carrying the step it rides', bBat?.kind === 'battery', bBat);
+  const bBat = bind('.ci/scripts/test/gates/test-a.sh', sharedStep);
+  ck('a shared-step gate binds, carrying the step it rides', bBat?.kind === 'shared-step', bBat);
   ck('CONTROL: and a region never emits it', bBat !== null && !emits(bBat));
   const stepish = bind(
     '.ci/scripts/quality/check_a.py',
@@ -1703,7 +1711,7 @@ function selftest(endToEnd = false): number {
     jobsWithStep(TWO_JOBS, 'Only here').join() === 'b'
   );
   ck(
-    'CONTROL: a step name in two jobs returns BOTH, so a battery gate is refused rather than resolved to the first',
+    'CONTROL: a step name in two jobs returns BOTH, so a shared-step gate is refused rather than resolved to the first',
     jobsWithStep(TWO_JOBS, 'Shared').join() === 'a,b'
   );
   ck(
@@ -2053,7 +2061,7 @@ function selftest(endToEnd = false): number {
         text.includes('Upload shard receipt') &&
         text.includes(`GATE_STEP_LOCK_MAP: ${jsonEnvValue(jobLockIdMap([base]))}`) &&
         text.includes("SHARD_OF: '4'") &&
-        text.includes('actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a') &&
+        text.includes(UPLOAD_ARTIFACT_PIN) &&
         text.includes('name: quality-shard-${{ matrix.shard }}')
       );
     })()
@@ -2068,6 +2076,31 @@ function selftest(endToEnd = false): number {
         runs[0] === `        run: node ${RECEIPT_WRITER}` &&
         !out.some((l) => l.includes('run: |'))
       );
+    })()
+  );
+  ck(
+    'UPLOAD_ARTIFACT_PIN is the pin every .github workflow and composite action uses, so a bump there cannot leave the emitter behind',
+    (() => {
+      // Every file under .github, as `check:actions` rewrites the pin: composite actions under .github/actions/** carry it too.
+      const files: string[] = [];
+      const walk = (dir: string): void => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+          const full = path.join(dir, e.name);
+          if (e.isDirectory()) walk(full);
+          else if (/\.ya?ml$/.test(e.name)) files.push(full);
+        }
+      };
+      walk(path.join(ROOT, '.github'));
+      const pins = new Set<string>();
+      for (const f of files) {
+        for (const m of fs
+          .readFileSync(f, 'utf-8')
+          .matchAll(/actions\/upload-artifact@([0-9a-f]{40})/g)) {
+          pins.add(m[1]);
+        }
+      }
+      // A non-empty set of one sha, equal to the constant's: an empty scan would pass a mere `every`.
+      return pins.size === 1 && UPLOAD_ARTIFACT_PIN.includes(`@${[...pins][0]}`);
     })()
   );
   ck(
@@ -2724,11 +2757,10 @@ function main(argv: string[]): void {
 
   const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> };
   const manifest = read('scripts/ci-runner/manifest.ts');
-  // THE LOCK, not the manifest text, decides whether an id is a gate-test. `manifest.ts` is TypeScript and this file would have to re-implement a fragment of a TS parser to read `qualityGateTest` out of it, which is the exact archaeology gates.lock.json was committed to end.
+  // THE LOCK, not the manifest text, decides how an id is registered. `manifest.ts` is TypeScript and this file would have to re-implement a fragment of a TS parser to read it, which is the exact archaeology gates.lock.json was committed to end.
   const lock = JSON.parse(read('scripts/ci-runner/gates.lock.json')) as {
     id: string;
     run: string;
-    qualityGateTest?: boolean;
   }[];
   const lockById = new Map(lock.map((g) => [g.id, g]));
   const workflow = fs.readFileSync(path.join(genRoot, WORKFLOW), 'utf-8');
@@ -2772,7 +2804,7 @@ function main(argv: string[]): void {
   if (write) {
     const byLane = new Map<string, Emitting[]>();
     const handRegistered: string[] = [];
-    // ONLY `kind: step` IS EMITTED. A battery gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write 143 duplicate copies of one battery step into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
+    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write one duplicate copy of the shared step per gate into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
     // would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
     const declaredHoldouts = declared.filter((b) => b.kind === 'step' && b.emit === false);
     if (declaredHoldouts.length > 0) {
@@ -3000,7 +3032,7 @@ function main(argv: string[]): void {
       // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python port; keying on `.sh` alone meant the checks below -- run must match the header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:`
       // glob that stops selecting its own gate once the leaf is a `.py`.
       (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
-    if (lockEntry?.qualityGateTest === true || runsScriptDirectly) {
+    if (runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
         problems.push(
           `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`
@@ -3025,14 +3057,14 @@ function main(argv: string[]): void {
     );
     if (!entry) problems.push(`${b.file}: no manifest entry with id '${b.id}'`);
 
-    // WHERE THIS GATE ACTUALLY RUNS. For `step` and the two stepless kinds that is what placement derives from `needs`. For `battery` it is a FACT OF THE WORKFLOW: the job holding the step it rides. Deriving it from needs instead would check a lane the gate never enters, and pass.
+    // WHERE THIS GATE ACTUALLY RUNS. For `step` and the two stepless kinds that is what placement derives from `needs`. For `shared-step` it is a FACT OF THE WORKFLOW: the job holding the step it rides. Deriving it from needs instead would check a lane the gate never enters, and pass.
     let job: string;
-    if (b.kind === 'battery') {
+    if (b.kind === 'shared-step') {
       const owners = jobsWithStep(workflow, b.step as string);
       if (owners.length !== 1) {
         problems.push(
-          `${b.file}: kind battery rides step "${b.step}", which ${WORKFLOW} has in ` +
-            `${owners.length} job(s) (${owners.join(', ') || 'none'}). A battery step must ` +
+          `${b.file}: kind shared-step rides step "${b.step}", which ${WORKFLOW} has in ` +
+            `${owners.length} job(s) (${owners.join(', ') || 'none'}). A shared step must ` +
             'exist exactly once, or "the lane it runs in" has no answer.'
         );
         continue;
@@ -3040,7 +3072,7 @@ function main(argv: string[]): void {
       job = owners[0];
       if (b.lane !== undefined && b.lane !== job) {
         problems.push(
-          `${b.file}: pins lane '${b.lane}' but its battery step "${b.step}" lives in '${job}'`
+          `${b.file}: pins lane '${b.lane}' but its shared step "${b.step}" lives in '${job}'`
         );
         continue;
       }
@@ -3065,7 +3097,7 @@ function main(argv: string[]): void {
     if (!satisfies(lane, b.needs)) {
       problems.push(`${b.file}: lane '${job}' does not provide all of ${JSON.stringify(b.needs)}`);
     }
-    // A NON-EMITTING GATE IS CHECKED UP TO HERE AND NO FURTHER, and each of the three remaining checks says why. They are all statements about a region this gate is never written into, so applying them to a battery gate reports a defect in a step somebody else owns -- the shape that produced six false lane mismatches during the drain, once per gate, for one hand-written step.
+    // A NON-EMITTING GATE IS CHECKED UP TO HERE AND NO FURTHER, and each of the three remaining checks says why. They are all statements about a region this gate is never written into, so applying them to a shared-step gate reports a defect in a step somebody else owns -- the shape that produced six false lane mismatches during the drain, once per gate, for one hand-written step.
     if (!emits(b)) continue;
     if (!regionAfterSetup(workflow, job)) {
       problems.push(

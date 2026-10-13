@@ -65,6 +65,19 @@ MESSAGE = (
 )
 
 EDGE_CASES = [
+    # Judged where the write LANDS (#bc7d998c): each refusal was allowed before, and the control was refused.
+    (
+        "a .. detour into a session's STATE.md",
+        {"tool_input": {"file_path": "agent/x/../d1589e0b/STATE.md"}},
+    ),
+    (
+        "a docs/agent prefix that lands in agent/",
+        {"tool_input": {"file_path": "docs/agent/../../agent/d1589e0b/STATE.md"}},
+    ),
+    (
+        "a .. detour that lands in docs/agent",
+        {"tool_input": {"file_path": "agent/d1589e0b/../../docs/agent/x/STATE.md"}},
+    ),
     # The live shape as of 2026-08-18: one component below `agent`.
     ("the live one-component shape", {"tool_input": {"file_path": "agent/d1589e0b/STATE.md"}}),
     ("the same path with a leading ./", {"tool_input": {"file_path": "./agent/d1589e0b/STATE.md"}}),
@@ -103,7 +116,9 @@ EDGE_CASES = [
 
 
 def run(ev):
-    file_path = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    # The path is judged where the write LANDS: `hookio.landing` resolves symlinks, then `..`, as the kernel does (#bc7d998c, review 9c6817f3.1-.4, .8).
+    typed = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    _absolute, file_path, _shown = hookio.landing(typed, ev.field("cwd") or None)
 
     if hookio.case_glob(file_path, *DOCS_TREES):
         return hookio.ALLOW

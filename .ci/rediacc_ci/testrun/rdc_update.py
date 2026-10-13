@@ -39,7 +39,7 @@ SCENARIOS = (
     "reinstall",
 )
 USAGE = (
-    "usage: RDC_BINARY=/path/to/rdc test-rdc-update.sh [scenario ...]\n"
+    "usage: RDC_BINARY=/path/to/rdc PYTHONPATH=.ci python3 -m rediacc_ci.testrun.rdc_update [scenario ...]\n"
     f"  scenarios: {', '.join(SCENARIOS)}, all (default)"
 )
 BOGUS_SHA = "f" * 64

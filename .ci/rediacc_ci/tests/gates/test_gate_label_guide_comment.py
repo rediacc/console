@@ -22,7 +22,7 @@ WHERE THIS REIMPLEMENTS AWK AND GREP, AND WHY THE ANSWERS AGREE:
 
 WHY `| \\`` AND NOT `|` ALONE for the real-file row count: the body escapes a pipe inside a description as `\\|`, so a bare pipe count would also count those. The backtick is what makes it a NAME cell.
 
-NO `xdist_group`. Fixtures are written into pytest's own `tmp_path`, the tracked files (`.github/labels.yml`, `.github/workflows/ci.yml`) are read and never written, and `assert-ci-complete.sh` is driven read-only. Nothing is bound and no module global is mutated.
+NO `xdist_group`. Fixtures are written into pytest's own `tmp_path`, the tracked files (`.github/labels.yml`, `.github/workflows/ci.yml`) are read and never written, and `assert_ci_complete.py` is driven read-only. Nothing is bound and no module global is mutated.
 """
 
 import json
@@ -35,7 +35,7 @@ from rediacc_ci.tests.gates import harness
 MODULE = paths.from_root(".ci", "scripts", "ci", "label-guide-comment.cjs")
 REAL_LABELS = paths.from_root(".github", "labels.yml")
 CI_WORKFLOW = paths.from_root(".github", "workflows", "ci.yml")
-ASSERT_CI_COMPLETE = paths.from_root(".ci", "scripts", "ci", "assert-ci-complete.sh")
+ASSERT_CI_COMPLETE = paths.from_root(".ci", "rediacc_ci", "ci", "assert_ci_complete.py")
 
 # Fixture labels file with a KNOWN set. Every name here must appear in the rendered table, and the row count is asserted, so a renderer that quietly drops entries cannot pass by rendering "enough" of them.
 FIXTURE_LABELS = """\
@@ -444,7 +444,11 @@ def test_assert_ci_complete_judges_the_job(gate):
     # A job absent from the aggregator can go red while `CI Complete` stays green. SOFT, not HARD: the job legitimately skips on push-to-main.
     if not ASSERT_CI_COMPLETE.is_file():
         gate.log_fail("the aggregator is missing: %s" % paths.relative_to_root(ASSERT_CI_COMPLETE))
-    result = harness.run(["bash", str(ASSERT_CI_COMPLETE)])
+    result = harness.run(
+        ["python3", "-m", "rediacc_ci.ci.assert_ci_complete"],
+        cwd=paths.from_root(),
+        env={"PYTHONPATH": str(paths.from_root(".ci")), "PYTHONDONTWRITEBYTECODE": "1"},
+    )
     gate.assert_exit(1, result, "the assertion script must fail when nothing is passed")
     gate.assert_contains(result.combined, "LABEL_GUIDE", "LABEL_GUIDE is one of the judged jobs")
-    gate.log_pass("assert-ci-complete.sh judges LABEL_GUIDE")
+    gate.log_pass("assert_ci_complete.py judges LABEL_GUIDE")

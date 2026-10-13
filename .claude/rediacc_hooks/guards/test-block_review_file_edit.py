@@ -6,12 +6,15 @@ This file runs the Edit half; `test-block_review_file_shell_write.py` beside it 
     test-block_review_file_edit.py        run every Edit case through dispatch.py, then the DEFECT run
 """
 
+import atexit
 import importlib
 import importlib.util
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 import typing
 
 HERE = pathlib.Path(__file__).resolve()
@@ -27,6 +30,42 @@ DISPATCH = str(HERE.parents[1] / "dispatch.py")
 R = "agent/reviews/0930-1/" + "a" * 40 + ".md"
 # The clean ledger (PLAN-clean-review-ledger): a clean verdict is a line of this file, protected exactly as a `.md` record is.
 L = "agent/reviews/0930-1/clean.jsonl"
+# Scripts run BY PATH (#c4542b69), untracked in the system temp directory: one writes a review record, one only reads it. Written before any case runs and removed at exit.
+_SCRIPTS = pathlib.Path(tempfile.mkdtemp(prefix="test-review-file-scripts-"))
+atexit.register(shutil.rmtree, str(_SCRIPTS), True)
+WRITER = _SCRIPTS / "writer.py"
+WRITER.write_text("import pathlib\npathlib.Path(%r).write_text('x')\n" % R, encoding="utf-8")
+READER = _SCRIPTS / "reader.py"
+READER.write_text("import pathlib\nprint(pathlib.Path(%r).read_text())\n" % R, encoding="utf-8")
+# A directory symlink whose target is a review directory (review 3f53e99e.1 sweep).
+(_SCRIPTS / "agent" / "reviews" / "0930-1").mkdir(parents=True)
+(_SCRIPTS / "rl").symlink_to(_SCRIPTS / "agent" / "reviews" / "0930-1", target_is_directory=True)
+# A link then `..` (review 9c6817f3.1-.4 sweep): `out/l` points INTO the review directory, `esc` points OUT of it.
+(_SCRIPTS / "agent" / "reviews" / "0930-1" / "sub").mkdir()
+(_SCRIPTS / "out").mkdir()
+(_SCRIPTS / "out" / "l").symlink_to(
+    _SCRIPTS / "agent" / "reviews" / "0930-1" / "sub", target_is_directory=True
+)
+(_SCRIPTS / "agent" / "reviews" / "0930-1" / "esc").symlink_to(
+    _SCRIPTS / "out", target_is_directory=True
+)
+# Review b922f15c.3: a TRACKED script is exempt only while it matches HEAD. Both scripts are committed writing a review file; one is then edited after the commit.
+_REPO = _SCRIPTS / "repo"
+_REPO.mkdir()
+subprocess.run(["git", "init", "-q", str(_REPO)], check=True)
+(_REPO / "unchanged.py").write_text(WRITER.read_text(), encoding="utf-8")
+(_REPO / "edited.py").write_text("print('reviewed')\n", encoding="utf-8")
+subprocess.run(["git", "-C", str(_REPO), "add", "."], check=True)
+subprocess.run(
+    ["git", "-C", str(_REPO), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"],
+    check=True,
+)
+(_REPO / "edited.py").write_text(WRITER.read_text(), encoding="utf-8")
+# Review b922f15c.4: size never switches the read off. Past the old 1 MiB cap it is read whole; past the budget it is unjudgeable.
+PADDED = _SCRIPTS / "padded.py"
+PADDED.write_text("#" * (2 << 20) + "\n" + WRITER.read_text(), encoding="utf-8")
+HUGE = _SCRIPTS / "huge-agent-reviews.py"
+HUGE.write_text("#" * (17 << 20) + "\n", encoding="utf-8")
 
 EDIT_CASES = [
     # (name, payload, refused?)
@@ -85,6 +124,40 @@ EDIT_CASES = [
         False,
     ),
     ("no path", {"tool_name": "Write", "tool_input": {"content": "x"}}, False),
+    # Judged where the write LANDS (review 3f53e99e.1 sweep): each refusal was allowed (rc 0) before, and the control was refused.
+    (
+        "a .. detour into the directory",
+        {"tool_name": "Write", "tool_input": {"file_path": "agent/x/../reviews/0930-1/a.md"}},
+        True,
+    ),
+    (
+        "a symlink into the directory",
+        {"tool_name": "Write", "tool_input": {"file_path": str(_SCRIPTS / "rl" / "a.md")}},
+        True,
+    ),
+    (
+        "a link into the directory, then ..",
+        {
+            "tool_name": "Write",
+            "tool_input": {"file_path": str(_SCRIPTS / "out" / "l") + "/../a.md"},
+        },
+        True,
+    ),
+    (
+        "a link out of the directory, then ..",
+        {
+            "tool_name": "Write",
+            "tool_input": {
+                "file_path": str(_SCRIPTS / "agent" / "reviews" / "0930-1" / "esc") + "/../a.md"
+            },
+        },
+        False,
+    ),
+    (
+        "a .. detour out of the directory",
+        {"tool_name": "Write", "tool_input": {"file_path": "agent/reviews/../notes/a.md"}},
+        False,
+    ),
 ]
 
 SHELL_CASES = [
@@ -97,6 +170,10 @@ SHELL_CASES = [
     ("cat heredoc", "cat > %s <<'EOF'\n# Review\nEOF" % R, True),
     ("tee", "echo x | tee %s" % R, True),
     ("sed -i", "sed -i 's/high/low/' %s" % R, True),
+    # In place is sed's and perl's own option parse (review 3f53e99e.2 sweep): each refusal was allowed (rc 0) before.
+    ("sed -Ei", "sed -Ei 's/high/low/' %s" % R, True),
+    ("perl -pi -e", "perl -pi -e 's/high/low/' %s" % R, True),
+    ("sed -E without -i prints, never writes", "sed -E 's/high/low/' %s" % R, False),
     ("cp onto the directory", "cp /tmp/x.md agent/reviews/0930-1/", True),
     ("mv onto a file", "mv /tmp/x.md %s" % R, True),
     ("truncate", "truncate -s 0 %s" % R, True),
@@ -152,6 +229,222 @@ SHELL_CASES = [
         True,
     ),
     ("unrelated redirect", "echo x > /tmp/out.txt", False),
+    # A copy's destination is getopt's answer (review cac47d16.1 sweep): each refusal was allowed (rc 0) before.
+    ("cp -t into the directory", "cp -t agent/reviews/0930-1 /tmp/x.md", True),
+    ("mv --target-directory=", "mv --target-directory=agent/reviews/0930-1 /tmp/x.md", True),
+    ("a value option after the operands", "cp /tmp/x.md %s -S .bak" % R, True),
+    ("xargs appends the destination", "echo agent/reviews/0930-1/ | xargs cp /tmp/x.md", True),
+    ("cp -t out of the directory", "cp -t /tmp %s" % R, False),
+    # Every way Python fills a template (review 6dcf79c7.1-.2): each refusal was allowed (rc 0) before.
+    (
+        "str.format with a keyword field",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > {p}'.format(p='%s'))\nEOF" % R,
+        True,
+    ),
+    (
+        "str.format with numbered fields out of order",
+        "python3 - <<'EOF'\nimport os\nos.system('{1} > {0}'.format('%s', 'echo x'))\nEOF" % R,
+        True,
+    ),
+    (
+        "str.format_map over a dict",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > {p}'.format_map({'p': '%s'}))\nEOF" % R,
+        True,
+    ),
+    (
+        "a star width takes its own argument",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > %%*s' %% (0, '%s'))\nEOF" % R,
+        True,
+    ),
+    (
+        "a percent mapping key",
+        "python3 - <<'EOF'\nimport os\nos.system('echo x > %%(p)s' %% {'p': '%s'})\nEOF" % R,
+        True,
+    ),
+    (
+        "str.format putting the path in echoed text",
+        "python3 - <<'EOF'\nimport os\nos.system('echo {p} > /tmp/x'.format(p='%s'))\nEOF" % R,
+        False,
+    ),
+    (
+        "a star width before echoed text",
+        "python3 - <<'EOF'\nimport os\nos.system('echo %%*s > /tmp/x' %% (3, '%s'))\nEOF" % R,
+        False,
+    ),  # A program read from a FILE is read like one from a heredoc (#c4542b69): each refusal was allowed (rc 0) before.
+    ("a python script by path writing a review file", "python3 %s" % WRITER, True),
+    (
+        "a python script by path after a cd",
+        "cd %s && python3 -u %s" % (WRITER.parent, WRITER.name),
+        True,
+    ),
+    ("a python script by path that only reads", "python3 %s" % READER, False),
+    # The interpreter's own options, parsed as it parses them (review 63ee61e3.1): each refusal was allowed (rc 0) before.
+    ("python -E then the script", "python3 -E %s" % WRITER, True),
+    ("python -W takes its own value", "python3 -W ignore %s" % WRITER, True),
+    ("a -c after the script is the script's argument", "python3 %s -c x" % WRITER, True),
+    (
+        "a script that cannot be read fails open",
+        "python3 %s" % (WRITER.parent / "absent-agent-reviews.py"),
+        False,
+    ),
+    # Review b922f15c.1-.4: each refusal was allowed (rc 0) before.
+    (
+        "a script written and run in one command",
+        "cat > %s/later.py <<'EOF'\n%sEOF\npython3 %s/later.py"
+        % (_SCRIPTS, WRITER.read_text(), _SCRIPTS),
+        True,
+    ),
+    (
+        "a script written and run in one command that only reads",
+        "cat > %s/later_reader.py <<'EOF'\n%sEOF\npython3 %s/later_reader.py"
+        % (_SCRIPTS, READER.read_text(), _SCRIPTS),
+        False,
+    ),
+    (
+        "a script copied in and run, the command naming the directory",
+        "cp /tmp/nowhere.py %s/agent-reviews-tool.py && python3 %s/agent-reviews-tool.py"
+        % (_SCRIPTS, _SCRIPTS),
+        True,
+    ),
+    (
+        "a script copied in and run, the command naming nothing",
+        "cp /tmp/nowhere.py %s/tool.py && python3 %s/tool.py" % (_SCRIPTS, _SCRIPTS),
+        False,
+    ),
+    ("a tracked script edited after its commit", "python3 %s" % (_REPO / "edited.py"), True),
+    ("a tracked script unchanged since its commit", "python3 %s" % (_REPO / "unchanged.py"), False),
+    ("a script past the old 1 MiB cap is read whole", "python3 %s" % PADDED, True),
+    ("a script past the read budget is unjudgeable", "python3 %s" % HUGE, True),
+    # Review fc3f376a.2: a script written from a variable is judged by what bash expands it to. Each refusal was allowed (rc 0) before.
+    (
+        "a script echoed from a variable and run",
+        "P=%s; echo \"import pathlib; pathlib.Path('$P').write_text('x')\" > %s/echoed && python3 %s/echoed"
+        % (R, _SCRIPTS, _SCRIPTS),
+        True,
+    ),
+    (
+        "a script echoed from an unknown source and run",
+        'echo "$(cat /tmp/nowhere)" > %s/agent-reviews-tool && python3 %s/agent-reviews-tool'
+        % (_SCRIPTS, _SCRIPTS),
+        True,
+    ),
+    (
+        "a script echoed from a variable that only reads",
+        "P=%s; echo \"import pathlib; print(pathlib.Path('$P').read_text())\" > %s/echoed_reader && python3 %s/echoed_reader"
+        % (R, _SCRIPTS, _SCRIPTS),
+        False,
+    ),
+    # Worklist item ff3ab826: a tool's own output option is a write, and a command the reader table does not list is read as writing any word it names (`shellscan.output_landings`). Each refusal was allowed (rc 0) before.
+    ("sort -o", "sort -o %s /tmp/a" % R, True),
+    ("sort --output=", "sort --output=%s /tmp/a" % R, True),
+    ("sort with the value in a bundle", "sort -uo%s /tmp/a" % R, True),
+    ("sort --out, a unique prefix", "sort --out %s /tmp/a" % R, True),
+    ("sort -o after the operands", "sort /tmp/a -o %s" % R, True),
+    ("curl -o", "curl -o %s https://e.x/a" % R, True),
+    ("wget -O", "wget -O %s https://e.x/a" % R, True),
+    ("tar -cf", "tar -cf %s /tmp/a" % R, True),
+    ("tar -C into the directory", "tar -xf /tmp/a.tar -C agent/reviews/0930-1", True),
+    ("openssl -out", "openssl enc -in /tmp/a -out %s" % R, True),
+    ("git diff --output=", "git diff --output=%s HEAD~1" % R, True),
+    ("git format-patch -o", "git format-patch -o agent/reviews/0930-1 -1", True),
+    ("pandoc -o", "pandoc /tmp/a.md -o %s" % R, True),
+    ("xargs appends the value of sort -o", "echo %s | xargs sort /tmp/a -o" % R, True),
+    (
+        "xargs -I puts the file in --output=",
+        "echo %s | xargs -I{} sort --output={} /tmp/a" % R,
+        True,
+    ),
+    (
+        "a launched sort -o onto what find names",
+        r"find agent/reviews -name '*.md' -exec sort -o {} /tmp/a \;",
+        True,
+    ),
+    ("find -fprint", "find /tmp -name a -fprint %s" % R, True),
+    ("sed's w command", "sed -n 'w %s' /tmp/a" % R, True),
+    ("an awk redirect", "awk '{print > \"%s\"}' /tmp/a" % R, True),
+    ("uniq's output operand", "uniq /tmp/a %s" % R, True),
+    ("touch", "touch %s" % R, True),
+    ("prettier --write", "prettier --write %s" % R, True),
+    ("a variable holding the file", "F=%s; sort -o $F /tmp/a" % R, True),
+    ("a shell function handed the file", 'f() { touch "$1"; }; f %s' % R, True),
+    ("sort reads one", "sort %s" % R, False),
+    ("sort -o elsewhere", "sort -o /tmp/out %s" % R, False),
+    ("wc reads one", "wc -l %s" % R, False),
+    ("head reads one", "head -5 %s" % R, False),
+    ("git log over the directory", "git log --oneline -- agent/reviews/", False),
+    ("git diff --stat over the directory", "git diff --stat agent/reviews/", False),
+    ("git diff --output= elsewhere", "git diff --output=/tmp/d -- agent/reviews/", False),
+    ("diff reads one", "diff %s /tmp/b" % R, False),
+    ("jq reads the clean ledger", "jq . %s" % L, False),
+    (
+        "curl -o elsewhere, a URL naming the path",
+        "curl -o /tmp/out https://e.x/agent/reviews/a",
+        False,
+    ),
+    ("xargs feeds a review file to sort", "echo %s | xargs sort" % R, False),
+    ("echo spelling a sort -o", "echo sort -o %s /tmp/a" % R, False),
+    ("sed substituting the path away", "sed 's|agent/reviews/||' /tmp/list", False),
+    ("rm keeps its verdict", "rm %s" % R, False),
+    ("git checkout keeps its verdict", "git checkout -- %s" % R, False),
+    # The reads the review workflow itself runs.
+    ("grep -n over the records", "grep -n Resolution agent/reviews/1008-1/*.md", False),
+    ("sed -n prints a range", "sed -n 1,20p %s" % R, False),
+    ("git add of the directory", "git add -- agent/reviews/1008-1/", False),
+    (
+        "git commit of the directory",
+        "git commit -F /tmp/m -- agent/reviews/1008-1/",
+        False,
+    ),
+    ("ls of the directory", "ls agent/reviews/1008-1/", False),
+    ("tail of the clean ledger", "tail -1 %s" % L, False),
+    (
+        "the mark verb with evidence naming a record",
+        (
+            "python3 .claude/hooks/stop/worklist.py --review-mark d778be9d ab12cd34.1 not-a-bug "
+            "'x agent/reviews/1008-1/x.md:3'"
+        ),
+        False,
+    ),
+    # Review 906a4d56.1 and .2: an awk option's value placed where gawk does not place it hid the program. Each refusal was allowed (rc 0) before; `-o` pretty-prints without running the program, and is refused with the rest because the reading no longer rests on which word that is.
+    ("gawk -p, then a program that redirects", "gawk -p '{print > \"%s\"}' /tmp/a" % R, True),
+    ("gawk -d, then a program that redirects", "gawk -d '{print > \"%s\"}' /tmp/a" % R, True),
+    ("gawk -o, then a program that redirects", "gawk -o '{print > \"%s\"}' /tmp/a" % R, True),
+    (
+        "gawk --profile, then a program that redirects",
+        "gawk --profile '{print > \"%s\"}' /tmp/a" % R,
+        True,
+    ),
+    ("gawk -W, then a program that redirects", "gawk -W lint '{print > \"%s\"}' /tmp/a" % R, True),
+    (
+        "mawk -W, then a program that redirects",
+        "mawk -W interactive '{print > \"%s\"}' /tmp/a" % R,
+        True,
+    ),
+    ("gawk -W dump-variables=", "gawk -W dump-variables=%s '{print}' /tmp/a" % R, True),
+    # The sweep of the class: xxd's options are whole words, tree hands `-o` a later word, and an awk writes beside its input through FILENAME.
+    ("xxd -ps, then its output operand", "xxd -ps /tmp/in %s" % R, True),
+    ("tree -Lo hands -o the second word", "tree -Lo 2 %s agent" % R, True),
+    ("awk writing beside FILENAME", "awk '{print > (FILENAME \".bak\")}' %s" % R, True),
+    ("gawk reads one", "gawk '{print $1}' %s" % R, False),
+    ("gawk -W lint reads one", "gawk -W lint '{print $1}' %s" % R, False),
+    ("gawk -d reads one", "gawk -d '{print $1}' %s" % R, False),
+    ("gawk -p with its file attached reads one", "gawk -p/tmp/prof '{print $1}' %s" % R, False),
+    ("awk splitting on a pipe reads one", "awk -F'|' '{print $2}' %s" % R, False),
+    ("awk comparing reads one", "awk '$3 > 0' %s" % R, False),
+    ("xxd -ps reads one", "xxd -ps %s" % R, False),
+    ("xxd -s -l reads one", "xxd -s 4 -l 16 %s" % R, False),
+    ("tree without -o", "tree -L 2 agent/reviews", False),
+    # A read this session ran for real: a program with a regex alternation and its own assignments, from inside the directory. A draft of this fix read what follows the program's `=` as a file and refused it.
+    (
+        "awk filtering findings from inside the directory",
+        "cd agent/reviews/1008-1 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md",
+        False,
+    ),
+    (
+        "a loop reading the records after a cd",
+        "cd agent/reviews/1008-1 && grep -l open *.md | while read f; do head -1 $f; done",
+        False,
+    ),
 ]
 
 

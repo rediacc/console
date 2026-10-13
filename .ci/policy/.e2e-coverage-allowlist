@@ -38,7 +38,8 @@ repository_up_all
 
 # BLOCKER: `backup restore` IS tested end to end, but not by a suite CI runs, and
 # this gate's question is membership in the LIVE set rather than "is it tested".
-# The proof is `programs/backup-storage/local-roundtrip.sh` (9 checks, exit 0):
+# The proof is `python3 -m rediacc_ci.drills.backup_roundtrip` (the port of the
+# retired local-roundtrip.sh; 9 checks, exit 0):
 # it snapshots a real repository to a real S3 endpoint, restores it AS A
 # DIFFERENT REPO, and byte-compares source against restored -- the instrument
 # proved twice over, once by diffing against an older restore (`differ: byte

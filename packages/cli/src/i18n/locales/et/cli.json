@@ -463,12 +463,29 @@
         "description": "Halda kaugsalvestuse konfiguratsiooniühendust",
         "disable": {
           "description": "Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult",
+          "optionLocal": "Eemalda seos ainult selles seadmes, vahemälus olevast koopiast ja serveriga ühendust võtmata",
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
           "serverRequired": "Keelamine ebaõnnestus: konfiguratsiooniserver {{server}} pole kättesaadav ning keelamine peab kõigepealt tooma uusima serveri koopia (keelamine aegunud vahemälust võib kaotada teise seadme muudatused). Proovi uuesti, kui server on kättesaadav.",
+          "accessLost": "Keelamine ebaõnnestus: konfiguratsiooniserver keeldub sellele kontole konfiguratsiooni \"{{name}}\" andmast ({{error}}) ning keelamine peab kõigepealt tooma uusima serveri koopia. Kui ligipääs hoidlale ei taastu, eemalda seos ja säilita selle seadme vahemälus olev koopia käsuga: rdc config remote disable --local",
+          "localNoCache": "Konfiguratsioonil \"{{name}}\" ei ole selles seadmes serveri konfiguratsiooni vahemälukoopiat: seda pole siia kunagi toodud või koopia on eemaldatud. Failis on ainult seos ja selle seadme enda sätted, seega pole midagi säilitada, ja midagi ei muudetud. Sisu saab tulla ainult serverist (rdc config remote enable); kohaliku faili eemaldamiseks käivita selle asemel: rdc config delete {{name}}",
+          "localUnreadable": "Konfiguratsiooni \"{{name}}\" vahemälukoopiat (serveri versioon {{version}}) ei õnnestunud selles seadmes avada ({{error}}), seega midagi ei muudetud. Koopia on krüptitud konfiguratsiooni peaparooliga: parooliga (REDIACC_MASTER_PASSWORD) saab säilitada kogu koopia; ilma paroolita ei saa siin koopiast midagi taastada ja loetav koopia on ainult serveris.",
+          "localConfirm": "Kas eemaldada konfiguratsiooni \"{{name}}\" seos serveriga {{server}} ainult selles seadmes? Siin vahemälus olevast koopiast (serveri versioon {{version}}, vahemällu salvestatud {{cachedAt}}) saab kohalik konfiguratsioon. Serveris olevaid uuemaid andmeid, kui neid on, ei tooda ja serveris ei muudeta midagi.",
+          "localNeedsYes": "Konfiguratsiooni \"{{name}}\" seose eemaldamine ainult selles seadmes säilitab siin vahemälus oleva koopia (serveri versioon {{version}}) ega too serverist uuemaid andmeid, kui neid on. Midagi ei muudetud. Kinnita interaktiivses terminalis või käivita käsk uuesti võtmega --yes.",
+          "localSuccess": "Konfiguratsiooni \"{{name}}\" seos on selles seadmes eemaldatud ja konfiguratsioon salvestati vahemälukoopiast (serveri versioon {{version}}) kohaliku konfiguratsioonina. Serveri uuemaid andmeid, kui neid oli, ei toodud. Serveri koopiat ja selle seadme võtmepesa serveris ei muudetud.",
+          "localSecretLeft": "Selle seadme hoidlavõtit ei eemaldatud, sest seadme saladuste hoidlat ei saa kasutada: {{error}}",
           "success": "Kaugkonfiguratsioon keelatud. Konfiguratsioon \"{{name}}\" salvestatud kohalikult."
         },
+        "secretStore": {
+          "keyctlMissing": "Sellel seadmel pole kohta, kus hoida oma konfiguratsioonihoidla võtit: `keyctl` ei ole paigaldatud, seega pole kerneli võtmerõngas kättesaadav. Midagi ei salvestatud. Paigalda pakett keyutils või määra REDIACC_SECRET_STORE=file, et hoida võtit selle asemel kettal failis (režiim 0600).",
+          "keyringUnusable": "Sellel seadmel pole kohta, kus hoida oma konfiguratsioonihoidla võtit: käsuga `keyctl` kerneli kasutaja võtmerõngasse kirjutatud proovivõtit ei õnnestunud salvestada ja tagasi lugeda. Midagi ei salvestatud. Nii käitub seansi võtmerõngas, mis ei lingi kasutaja võtmerõngast (teenus, konteiner, CI-töö); `keyctl link @u @s` lingib selle seansi ajaks. Või määra REDIACC_SECRET_STORE=file, et hoida võtit selle asemel kettal failis (režiim 0600).",
+          "toolMissing": "Sellel seadmel pole kohta, kus hoida oma konfiguratsioonihoidla võtit: käsku `{{tool}}` ei õnnestunud käivitada, seega pole {{store}} kättesaadav. Midagi ei salvestatud. Pane `{{tool}}` tagasi PATH-i või määra REDIACC_SECRET_STORE=file, et hoida võtit selle asemel kettal failis.",
+          "storeUnusable": "Sellel seadmel pole kohta, kus hoida oma konfiguratsioonihoidla võtit: käsuga `{{tool}}` hoidlasse {{store}} kirjutatud proovivõtit ei õnnestunud salvestada ja tagasi lugeda. Midagi ei salvestatud. Ava hoidla {{store}} lukust või paranda see või määra REDIACC_SECRET_STORE=file, et hoida võtit selle asemel kettal failis.",
+          "unsupportedPlatform": "Sellel seadmel pole kohta, kus hoida oma konfiguratsioonihoidla võtit: platvormil {{platform}} ei toetata ühtegi süsteemset saladuste hoidlat. Midagi ei salvestatud. Määra REDIACC_SECRET_STORE=file, et hoida võtit selle asemel kettal failis (režiim 0600).",
+          "invalidChoice": "REDIACC_SECRET_STORE väärtus on \"{{value}}\", mis ei ole saladuste hoidla. Ainus väärtus on \"file\"; määramata jätmisel kasutatakse selle süsteemi enda hoidlat.",
+          "fileNotice": "REDIACC_SECRET_STORE=file: selle seadme konfiguratsioonihoidla võtit hoitakse failis {{path}} (režiim 0600) ja seda kaitsevad ainult failiõigused."
+        },
         "enable": {
-          "alreadyEnabled": "Konfiguratsioon \"{{name}}\" on juba seotud kaugsalvestusega. Keela kõigepealt käsuga: rdc config remote disable",
+          "alreadyEnabled": "Konfiguratsioon \"{{name}}\" on juba kaugsalvestusega seotud ja see seade saab selle avada, seega pole midagi lubada. Seose eemaldamiseks käivita: rdc config remote disable",
           "description": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",
           "expired": "Seadmekood aegus. Proovi uuesti.",
           "handoffUnreadable": "Brauserist saadetud konfiguratsiooni ei õnnestunud lugeda. Alusta uuesti: rdc config remote enable",
@@ -496,6 +513,11 @@
           "passwordTokenNotEnrollable": "See API-token ei saa config slot'i registreerida, kuna see ei ole seotud kasutajaga organisatsioonis. Väljasta portaalist oma konto isiklik token ja proovi uuesti.",
           "passwordWrong": "Konfiguratsiooni ei õnnestunud selle parooliga avada. Kontrolli REDIACC_CONFIG_PASSWORD väärtust (või sisestatud parooli) ja proovi uuesti.",
           "received": "Käepigistus saadud",
+          "reenrollConfigMismatch": "Konfiguratsioon \"{{name}}\" on seotud kaugkonfiguratsiooniga {{linkedConfig}}, kuid registreerimine kinnitati kaugkonfiguratsiooni {{offeredConfig}} jaoks. Midagi ei muudetud. Käivita käsk uuesti ja kinnita see kaugkonfiguratsiooni {{linkedConfig}} jaoks.",
+          "reenrolling": "Konfiguratsioon \"{{name}}\" on kaugsalvestusega seotud, kuid see seade ei saa seda enam avada. Seade registreeritakse sama hoidla jaoks uuesti.",
+          "reenrollServerMismatch": "Konfiguratsioon \"{{name}}\" on seotud serveriga {{linkedUrl}}, seega saab selle seadme uuesti registreerida ainult seal, mitte serveris {{requestedUrl}}. Käivita käsk uuesti ilma võtmeta --api-url.",
+          "reenrollStoreMismatch": "Konfiguratsioon \"{{name}}\" on seotud hoidlaga {{linkedStore}}, kuid registreerimine kinnitati hoidla {{offeredStore}} jaoks. Midagi ei muudetud. Kinnita see selle organisatsiooni kontoga, kellele see konfiguratsioon kuulub.",
+          "reenrollSuccess": "Seade on uuesti registreeritud. Konfiguratsioon \"{{name}}\" värskendati serverist (versioon {{version}}).",
           "openRelay": "Ava see link mis tahes brauseris, kus oled portaali sisse logitud:",
           "approveAs": "Ava see link mis tahes brauseris, kus oled sisse logitud kontoga {{email}}:",
           "pairingCode": "Sidumiskood (sisesta see lehel, kui seda küsitakse):  {{code}}",
@@ -509,9 +531,10 @@
           "success": "Kaugkonfiguratsioon lubatud. Konfiguratsioon \"{{name}}\" on nüüd sünkroonitud kohaga {{apiUrl}}."
         },
         "handoffUndecryptable": "Serveri relee tagastas üleandmise, mida see seade avada ei saa ({{error}}): see on lukustatud teise võtmega kui see, mille see käivitus lõi. Käivita käsk uuesti ja ava ainult see link, mille käsk välja prindib.",
+        "storeCopyGone": "Hoidlas {{storeId}} ei ole enam kaugkonfiguratsiooni {{configId}}, millega konfiguratsioon \"{{name}}\" on seotud. Midagi ei muudetud; kohalik fail on viimane koopia, mida see seade nägi. Seose eemaldamiseks ja selle koopia kohaliku konfiguratsioonina säilitamiseks käivita: rdc config remote disable --local",
         "offlineCacheWarning": "Konfiguratsiooniserver {{server}} pole kättesaadav; konfiguratsiooni \"{{config}}\" pakutakse võrguühenduseta vahemälust (serveri versioon {{version}}, vahemällu salvestatud {{age}} tagasi). Muudatusi ei saa salvestada enne, kui server on jälle kättesaadav.",
         "offlineNoCache": "Konfiguratsiooniserver {{server}} pole kättesaadav ja konfiguratsioonil \"{{config}}\" pole veel võrguühenduseta vahemälu. Käivita \"rdc config remote refresh\", kui server on kättesaadav, et vahemälu täita.",
-        "passkeySecretMissing": "Pääsuvõtme saladust ei leitud OS-i võtmehoidlast. Autentimine uuesti: rdc config remote enable",
+        "passkeySecretMissing": "Sellel seadmel ei ole enam konfiguratsioonihoidla võtit (Linuxis tühjendatakse kerneli võtmerõngas igal taaskäivitusel). Registreeri seade uuesti käsuga: rdc config remote enable",
         "refresh": {
           "description": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
@@ -545,11 +568,11 @@
           "loginInvalid": "Kontoserver lükkas konfiguratsioonitõendi uuendamisel selle seadme sisselogimise tagasi. Käivita \"rdc subscription login\" ja proovi uuesti.",
           "loginScope": "Selle seadme sisselogimine ei saa konfiguratsioonitõendeid uuendada: see on tehtud enne selle funktsiooni tulekut või selle meeskonda enam pole. Käivita uuesti \"rdc subscription login\" ja proovi siis uuesti.",
           "loginIpMismatch": "Konfiguratsioonitõendit ei saanud uuendada, sest selle seadme sisselogimine on seotud teise võrguaadressiga. {{error}} Või käivita uuesti \"rdc config remote enable\", et saada sellele seadmele uus konfiguratsioonitõend.",
-          "notStoreMember": "Selle seadme sisselogimise konto ei kuulu konfiguratsioonihoidlasse {{storeId}}, seega konfiguratsioonitõendit ei uuendatud. Logi sisse kontoga, mis selle konfiguratsiooni lubas (\"rdc subscription login\"), või käivita uuesti \"rdc config remote enable\".",
-          "storeMismatch": "Konfiguratsioonihoidla {{storeId}} ei kuulu selle seadme sisselogimise organisatsioonile, seega konfiguratsioonitõendit ei uuendatud. Logi sisse organisatsiooni, kellele see konfiguratsioon kuulub (\"rdc subscription login\"), või käivita uuesti \"rdc config remote enable\".",
+          "notStoreMember": "Selle seadme sisselogimise konto ei kuulu konfiguratsioonihoidlasse {{storeId}}, seega konfiguratsioonitõendit ei uuendatud. Logi sisse kontoga, mis selle konfiguratsiooni lubas (\"rdc subscription login\") ja proovi uuesti.",
+          "storeMismatch": "Konfiguratsioonihoidla {{storeId}} ei kuulu selle seadme sisselogimise organisatsioonile, seega konfiguratsioonitõendit ei uuendatud. Logi sisse organisatsiooni, kellele see konfiguratsioon kuulub (\"rdc subscription login\") ja proovi uuesti.",
           "staleGeneration": "Konfiguratsiooni krüpteerimisvõti vahetati ja ükski selle konto võtmepesa ei ava uut võtit, seega konfiguratsioonitõendit ei uuendatud. Registreeri seade uuesti käsuga: rdc config remote enable",
           "rateLimited": "Kontoserver piirab praegu konfiguratsioonitõendite uuendamist ({{error}}). Oota minut ja käivita käsk uuesti.",
-          "refused": "Kontoserver ei uuendanud selle seadme konfiguratsioonitõendit ({{error}}). Käivita uuesti \"rdc config remote enable\"."
+          "refused": "Kontoserver ei uuendanud selle seadme konfiguratsioonitõendit ({{error}}). Selles seadmes ei muudetud midagi; käivita käsk uuesti."
         },
         "versions": {
           "description": "Loetle serveris hoitavad selle konfiguratsiooni varasemad versioonid",

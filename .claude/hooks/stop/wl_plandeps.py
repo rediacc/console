@@ -33,6 +33,8 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import difflib
+import importlib
 import os
 import pathlib
 import re
@@ -107,6 +109,7 @@ D_WITHDRAWN = "D4"
 D_SELF = "D5"
 D_CYCLE = "D6"
 D_AMBIGUOUS = "D7"
+D_TASK = "D9"
 # The X findings (PLAN-plan-priority-concurrency.md section 6b). D8 is the gate's vacuity floor; D17 (an operator Priority removed or demoted since the merge-base) is the gate's alone, because only it can see the base.
 D_PRIORITY_MISSING = "D10"
 D_PRIORITY_MALFORMED = "D11"
@@ -628,6 +631,87 @@ class Target:
     detail: str = ""
 
 
+# --------------------------------------------------------------------------- Task edges (PLAN-plan-dependencies.md T12): a stable id on the box.
+
+TASK_DONE = "done"
+TASK_OPEN = "open"
+TASK_MISSING = "missing"
+# A box's explicit id is its FIRST token when that has the shape of the corpus's own ids: `T3`, `T12`, `P2.4`, `W11-B`, `R20260924.3`. A bare word never is one, so prose cannot be mistaken for an id. Emphasis is already stripped by `wl_planrec.open_boxes`.
+BOX_ID_RE = re.compile(r"^([A-Z][A-Za-z]{0,3}\d[\w.\-]*)")
+TICKED_RE = re.compile(r"^\s+\(ticked\)")
+# How many nearest boxes a D9 message names.
+SUGGEST_MAX = 2
+
+
+@dataclasses.dataclass(frozen=True)
+class Box:
+    """One checklist box of a plan: its explicit `id` ("" when it has none), the content `sig` (`wl_planrec.box_sig`), the text, whether it is `done`, and whether a `(ticked)` evidence line follows it."""
+
+    id: str
+    sig: str
+    body: str
+    done: bool
+    ticked: bool
+    line: int
+
+
+@dataclasses.dataclass(frozen=True)
+class TaskVerdict:
+    state: str
+    box: Box | None = None
+    detail: str = ""
+
+
+def box_id(body: str) -> str:
+    m = BOX_ID_RE.match(body.strip())
+    return m.group(1).rstrip(".:-,;)") if m else ""
+
+
+def plan_boxes(text: str) -> list[Box]:
+    """Every box of a plan in file order, through the real box parser (`wl_planrec.open_boxes` / `done_boxes`, loaded by name because that module imports this one). [] when the parser cannot be loaded: a task edge then never resolves, which fails closed."""
+    try:
+        rec = importlib.import_module("wl_planrec")
+        opens = rec.open_boxes(text)
+        dones = rec.done_boxes(text)
+    except (ImportError, AttributeError, ValueError, TypeError):
+        return []
+    lines = text.splitlines()
+    boxes = [Box(box_id(b), sig, b, False, False, i) for i, _l, b, sig in opens]
+    boxes += [
+        Box(
+            box_id(b),
+            sig,
+            b,
+            True,
+            any(TICKED_RE.match(x) for x in lines[i + 1 : i + 4]),
+            i,
+        )
+        for i, _l, b, sig in dones
+    ]
+    return sorted(boxes, key=lambda b: b.line)
+
+
+def _closest(boxes: list[Box], task: str) -> str:
+    """The boxes nearest to a task ref that no longer resolves, by id similarity, as `id  text`; the first open boxes when nothing is near. The ref of a signature edge is a hash with no text to compare, which is why ids exist."""
+    scored = sorted(
+        boxes,
+        key=lambda b: (
+            -difflib.SequenceMatcher(None, task.lower(), (b.id or b.sig).lower()).ratio(),
+            b.done,
+        ),
+    )
+    near = [
+        b
+        for b in scored
+        if difflib.SequenceMatcher(None, task.lower(), (b.id or b.sig).lower()).ratio() >= 0.4
+    ]
+    pick = (near or [b for b in boxes if not b.done] or boxes)[:SUGGEST_MAX]
+    return "; ".join(
+        b.body[:70] if b.id and b.body.startswith(b.id) else "%s  %s" % (b.sig, b.body[:70])
+        for b in pick
+    )
+
+
 def _read_head(path: pathlib.Path) -> str | None:
     try:
         with path.open("rb") as fh:
@@ -659,6 +743,8 @@ class Graph:
             trel = m.group("rel").strip()
             self.tombstones.setdefault(trel.rsplit("/", 1)[-1], trel)
         self._finished: frozenset[str] | None = None
+        self._full: dict[str, str] = {}
+        self._tasks: dict[tuple[str, str], TaskVerdict] = {}
 
     @classmethod
     def from_texts(cls, texts: dict[str, str], index_text: str = "") -> Graph:
@@ -716,13 +802,13 @@ class Graph:
                 detail="%d files share the name: %s" % (len(real), ", ".join(real)),
             )
         if real:
-            return self._judge(token, real[0])
+            return self._with_task(token, self._judge(token, real[0]))
         stubs = [r for r in self.by_base.get(base, []) if self.plans[r].stub]
         for srel in stubs:
             dest = self.plans[srel].header.moved_to
             info = self.plans.get(dest)
             if info is not None and not info.stub:
-                return self._judge(token, dest)
+                return self._with_task(token, self._judge(token, dest))
         stone = self.tombstones.get(base)
         if stone:
             if stone.startswith(DONE_DIR + "/"):
@@ -737,6 +823,61 @@ class Graph:
                 % self.plans[stubs[0]].header.moved_to,
             )
         return Target(token, DANGLING, detail="no plan, stub or tombstone carries this name")
+
+    def _with_task(self, token: str, target: Target) -> Target:
+        """A task edge `PLAN-y.md#<id>` of a LIVE plan is complete when that one box is ticked with evidence, and stays LIVE otherwise (an open box, a ticked one without evidence, or one that no longer exists, which is D9's finding)."""
+        task = token.split("#", 1)[1] if "#" in token else ""
+        if not task or target.state != LIVE:
+            return target
+        verdict = self.task_verdict(target.rel, task)
+        if verdict.state == TASK_DONE:
+            return dataclasses.replace(target, state=COMPLETE, detail="task %s is ticked" % task)
+        return dataclasses.replace(target, detail=verdict.detail)
+
+    def _full_text(self, rel: str) -> str:
+        """The whole plan text: the header read `Graph.load` kept is only the head, and a task edge's box can sit anywhere in a 650 KB plan. In-memory graphs (selftests) hold complete texts already."""
+        cached = self._full.get(rel)
+        if cached is not None:
+            return cached
+        text = self.texts.get(rel, "")
+        if self.root is not None:
+            with contextlib.suppress(OSError):
+                text = (self.root / rel).read_text(encoding="utf-8", errors="replace")
+        self._full[rel] = text
+        return text
+
+    def task_verdict(self, rel: str, task: str) -> TaskVerdict:
+        """What `PLAN-y.md#<task>` points at inside plan file `rel`: the box whose explicit id (`T3`, `R20260924.3`) or 8-hex signature equals `task`.
+
+        `done` needs the box ticked WITH evidence: a `(ticked)` line beneath it, or a `present` investigation row. A box ticked by hand with neither is `open`: the edge waits until the record says how it was done. `missing` carries the closest current boxes by id and text, so a reworded or renumbered box is a one-line fix and never a silent break."""
+        key = (rel, task)
+        if key in self._tasks:
+            return self._tasks[key]
+        text = self._full_text(rel)
+        found = [b for b in plan_boxes(text) if task in (b.id, b.sig)]
+        if not found:
+            verdict = TaskVerdict(TASK_MISSING, None, _closest(plan_boxes(text), task))
+        else:
+            box = found[0]
+            if box.done and (box.ticked or self._present(rel, box.sig)):
+                verdict = TaskVerdict(TASK_DONE, box, "")
+            elif box.done:
+                verdict = TaskVerdict(
+                    TASK_OPEN, box, "ticked without a `(ticked)` evidence line or a `present` row"
+                )
+            else:
+                verdict = TaskVerdict(TASK_OPEN, box, "")
+        self._tasks[key] = verdict
+        return verdict
+
+    def _present(self, rel: str, sig: str) -> bool:
+        if self.root is None:
+            return False
+        try:
+            row = importlib.import_module("wl_planrec").investigation_for(self.root, rel, sig)
+        except (ImportError, AttributeError, OSError, ValueError):
+            return False
+        return bool(row) and str(row.get("verdict") or "").strip().lower() == "present"
 
     def _judge(self, token: str, rel: str) -> Target:
         status = self.plans[rel].header.status
@@ -786,12 +927,19 @@ class Graph:
 
     def roots(self, rel: str) -> list[str]:
         """`dep_roots`: the incomplete dependencies at the bottom of each chain from `rel`, as tokens. An unresolvable token (dangling, withdrawn, ambiguous) is its own root, so a caller fails closed on it. Cycle-safe."""
+        return self.roots_with_tasks(rel)[0]
+
+    def roots_with_tasks(self, rel: str) -> tuple[list[str], dict[str, str]]:
+        """(`roots`, {root basename: task id}). A root reached through a task edge `PLAN-y.md#T3` maps to `T3`, so the guide and the refusals can name that one box instead of the plan's first open box."""
         out: list[str] = []
+        tasks: dict[str, str] = {}
         seen = {rel}
 
-        def add(name: str) -> None:
+        def add(name: str, task: str | None = None) -> None:
             if name not in out:
                 out.append(name)
+            if task and name not in tasks:
+                tasks[name] = task
 
         def walk(cur: str) -> bool:
             # True when `cur` has at least one incomplete dependency, i.e. something below it blocks. A plan already visited (a diamond, or a cycle) counts as blocking and adds nothing twice; a cycle is reported by `cycles`, and the start-time gate fails closed on it (section 2c).
@@ -808,11 +956,11 @@ class Graph:
                     continue
                 seen.add(t.rel)
                 if not walk(t.rel):
-                    add(t.rel.rsplit("/", 1)[-1])
+                    add(t.rel.rsplit("/", 1)[-1], edge.task)
             return blocked
 
         walk(rel)
-        return out
+        return out, tasks
 
     def chain(self, rel: str, root: str) -> list[str]:
         """The shortest basename path from `rel` to `root` over incomplete edges, `[X, Y, Z]`, or [] when none."""
@@ -827,6 +975,8 @@ class Graph:
                     continue
                 name = str(edge) if t.state != LIVE else t.rel.rsplit("/", 1)[-1]
                 if name == root or str(edge) == root:
+                    if edge.task and t.state == LIVE:
+                        name = "%s#%s" % (name, edge.task)
                     return [*path, name]
                 if t.state == LIVE and t.rel not in seen:
                     seen.add(t.rel)
@@ -862,12 +1012,37 @@ class Graph:
                 out.append((D_WITHDRAWN, "%s is withdrawn: %s" % (edge, t.detail)))
             elif t.state == AMBIGUOUS:
                 out.append((D_AMBIGUOUS, "%s is ambiguous: %s" % (edge, t.detail)))
+        for edge in dep.edges:
+            if not edge.task or edge.plan == info.base:
+                continue
+            t = self.resolve(str(edge))
+            if t.state != LIVE:
+                continue
+            verdict = self.task_verdict(t.rel, edge.task)
+            if verdict.state == TASK_MISSING:
+                out.append(
+                    (
+                        D_TASK,
+                        "%s: no box with that id or signature in %s any more (reworded or "
+                        "renumbered?). Closest now: %s. Point the edge at the box's id, or "
+                        "drop the `#` to depend on the whole plan."
+                        % (edge, t.rel.rsplit("/", 1)[-1], verdict.detail or "(no boxes)"),
+                    )
+                )
         out.extend(
             (D_CYCLE, "a dependency cycle: %s" % " -> ".join(cyc))
             for cyc in self.cycles()
             if info.base in cyc
         )
         return out
+
+    def dependents(self, rel: str) -> list[str]:
+        """The REQUIRED plans (rels) that name `rel` in their `Depends-On:`, directly. For `check_plan_folders.py --move`: a plan others still wait for must not be withdrawn."""
+        return [
+            other
+            for other in self.required()
+            if other != rel and any(self.resolve(str(e)).rel == rel for e in self.edges(other))
+        ]
 
     def citations(self, rel: str) -> list[tuple[str, list[str]]]:
         """[(cited basename, [up to 2 citing lines])] for every OTHER plan named in `rel`'s full text, in first-seen order. For `--draft`; reads the whole file when a root is known."""
@@ -888,3 +1063,101 @@ class Graph:
 
 
 # --------------------------------------------------------------------------- The worklist link.
+
+
+# --------------------------------------------------------------------------- The start-time verdict (section 2c).
+
+# `DEPS-WAIVED: <reason>` in a lease note or tick evidence: the one escape from the start-time gate, registered in docs/agent-reference/suppressions.md.
+WAIVER_RE = re.compile(r"\bDEPS-WAIVED:[ \t]*(\S.*)?")
+
+
+def waiver(text: str) -> tuple[str, str]:
+    """(reason, error) of a `DEPS-WAIVED:` token in `text`. ("", "") means no waiver was attempted; a token with a short or vague reason is ("", why), which the verbs refuse like a missing one."""
+    m = WAIVER_RE.search(text or "")
+    if not m:
+        return "", ""
+    reason = (m.group(1) or "").strip()
+    errors = _reason_errors(reason, "DEPS-WAIVED", "say WHY the order does not apply here")
+    return ("" if errors else reason), ("; ".join(errors) if errors else "")
+
+
+def _base_re(plan: str) -> re.Pattern[str]:
+    return re.compile(r"(?<![A-Za-z0-9._-])%s(?![A-Za-z0-9_-])" % re.escape(plan))
+
+
+def tracked_by(plan: str, fold: Any) -> list[str]:
+    """Ids of the open, deferred or leased items, of ANY owner, whose text names `plan` (a basename; a `#task` suffix is dropped). The rule `wl_backlog._claimed` carried: an item that names a plan holds that plan's work in somebody's stop. `fold` is a Fold or any iterable of item records."""
+    base = plan.split("#", 1)[0]
+    pat = _base_re(base)
+    items = getattr(fold, "items", fold)
+    return [
+        str(r.get("id"))
+        for r in items
+        if r.get("state") in _OPEN_ITEM_STATES and pat.search(str(r.get("text") or ""))
+    ]
+
+
+@dataclasses.dataclass(frozen=True)
+class ItemDeps:
+    """Why one linked worklist item cannot start yet. `roots` are the incomplete dependencies at the bottom of each chain; `tracked` maps each root to the item ids that hold it. `cyclic` means the item's chain runs through a Depends-On cycle."""
+
+    plan: str
+    rel: str
+    roots: tuple[str, ...]
+    tracked: dict[str, tuple[str, ...]]
+    chains: dict[str, tuple[str, ...]]
+    cyclic: bool
+    tasks: dict[str, str] = dataclasses.field(default_factory=dict)
+
+    @property
+    def untracked(self) -> tuple[str, ...]:
+        return tuple(r for r in self.roots if not self.tracked.get(r))
+
+    @property
+    def waiting(self) -> bool:
+        """Waiting only when every root is tracked and no cycle is in the chain; anything else fails closed to open (the item stays visible and the guide's FIRST row says where to start)."""
+        return bool(self.roots) and not self.untracked and not self.cyclic
+
+
+def _reachable(graph: Graph, rel: str) -> set[str]:
+    """Every plan file reachable from `rel` over resolvable edges, `rel` included."""
+    seen = {rel}
+    stack = [rel]
+    while stack:
+        cur = stack.pop()
+        for edge in graph.edges(cur):
+            t = graph.resolve(str(edge))
+            if t.state in (LIVE, COMPLETE) and t.rel in graph.plans and t.rel not in seen:
+                seen.add(t.rel)
+                stack.append(t.rel)
+    return seen
+
+
+_READ_ERRORS = (OSError, ValueError, KeyError, AttributeError, TypeError, RecursionError)
+
+
+def item_deps(graph: Graph | None, text: str, fold: Any = ()) -> ItemDeps | None:
+    """The `ItemDeps` of a worklist item's text, or None when nothing blocks it: no `PLAN-x.md [<sig>]` link, the plan is not a live file, or its dependencies are all complete. Never raises: a start-time read must not wedge a verb or a stop."""
+    if graph is None:
+        return None
+    try:
+        base = linked_plan(text)
+        if not base:
+            return None
+        target = graph.resolve(base)
+        if target.state != LIVE or target.rel not in graph.plans:
+            return None
+        if graph.plans[target.rel].header.status in graph.finished():
+            return None
+        rel = target.rel
+        root_list, tasks = graph.roots_with_tasks(rel)
+        roots = tuple(root_list)
+        reach = {r.rsplit("/", 1)[-1] for r in _reachable(graph, rel)}
+        cyclic = any(m in reach for cyc in graph.cycles() for m in cyc[:-1])
+        if not roots and not cyclic:
+            return None
+        tracked = {r: tuple(tracked_by(r, fold)) for r in roots}
+        chains = {r: tuple(graph.chain(rel, r)) for r in roots}
+        return ItemDeps(base, rel, roots, tracked, chains, cyclic, tasks)
+    except _READ_ERRORS:
+        return None

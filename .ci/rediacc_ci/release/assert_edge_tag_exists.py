@@ -28,17 +28,17 @@ FOUR DIVERGENCES, ALL IN REFUSAL TEXT NOBODY PARSES, NONE IN A VERDICT:
      `.ci/scripts/release/assert-edge-tag-exists.sh: line 82: CLOUDFLARE_R2_ENDPOINT:
       assert-edge-tag-exists.sh: CLOUDFLARE_R2_ENDPOINT must be set`
      Reproducing a line number would pin this port to the twin's current
-     layout, so it prints `assert-edge-tag-exists.py: <VAR> must be set`
+     layout, so it prints `rediacc_ci.release.assert_edge_tag_exists: <VAR> must be set`
      instead. Same stream, same exit 1, same position in the sequence. This is
      the same ruling `release/tag_submodules.py` and `infra/verify_ssh.py`
      already made for their `${VAR:?msg}` twins.
   2. The `--help` line interpolates `$0`, and the two files cannot share a
      name. The rest of the text is identical, and it goes to STDOUT with exit 0
      in both.
-  3. Every self-naming message says `assert-edge-tag-exists.sh` because the
-     twin's literals say so. Kept verbatim rather than "corrected" to `.py`:
-     these are the bytes the differential compares, and the twin is the live
-     script.
+  3. Every self-naming message says `rediacc_ci.release.assert_edge_tag_exists`,
+     where the twin's literals said `assert-edge-tag-exists.sh`. The differential
+     maps the module name back to the twin's (`tests/twin_names.py`), so every
+     other byte is still compared.
   4. common.sh's loggers use `echo -e`, which interprets backslash escapes IN
      THE MESSAGE, and the COULD NOT TELL line interpolates the tool's own
      output into that message. `rediacc_ci.log` formats the message as data
@@ -73,10 +73,8 @@ from rediacc_ci import log
 from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO, RELEASES_BUCKET
 
-SELF = "assert-edge-tag-exists.py"
-
-# The name the twin's own messages carry. NOT `SELF`: these strings are compared byte-for-byte against the live script, which is the `.sh`.
-TWIN = "assert-edge-tag-exists.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). The differential rewrites it back to the twin's `.sh` name (`rediacc_ci.tests.twin_names.as_twin`) before comparing, so one name serves both.
+SELF = "rediacc_ci.release.assert_edge_tag_exists"
 
 # `^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$` (:74). LOOSER than the strict semver every sibling uses: a prerelease or build suffix is accepted here, because a channel pointer may legitimately advertise one and the question is whether it EXISTS, not whether it is promotable.
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$")
@@ -233,7 +231,7 @@ class Verdicts:
             self.could_not_tell = True
             return False
         # UNREACHABLE from the three probes, and kept anyway. A fourth verdict invented by a later edit must be REPORTED, not folded into a pass: this is the arm that makes an unclassifiable answer loud.
-        log.error("INTERNAL %s: unclassifiable probe result '%s' for %s" % (TWIN, state, what))
+        log.error("INTERNAL %s: unclassifiable probe result '%s' for %s" % (SELF, state, what))
         self.failed = True
         return False
 
@@ -285,7 +283,7 @@ def parse_argv(argv: list[str]) -> tuple[str | None, int | None, str | None]:
                 "Usage: %s --version VERSION      (VERSION may be 1.3.0 or v1.3.0)" % sys.argv[0],
             )
         elif word.startswith("-"):
-            log.error("%s: unknown option: %s" % (TWIN, word))
+            log.error("%s: unknown option: %s" % (SELF, word))
             return None, 1, None
         else:
             version = word
@@ -302,14 +300,14 @@ def main(argv: list[str]) -> int:
         return code
 
     if not version:
-        log.error("%s: a version is required (--version 1.3.0)" % TWIN)
+        log.error("%s: a version is required (--version 1.3.0)" % SELF)
         return 1
 
     # `VERSION="${VERSION#v}"`: strips exactly ONE leading `v`, so `vv1.3.0`
     # keeps one and is then rejected by the pattern below.
     version = version.removeprefix("v")
     if not VERSION_RE.match(version):
-        log.error("%s: '%s' is not a semver version" % (TWIN, version))
+        log.error("%s: '%s' is not a semver version" % (SELF, version))
         return 1
     tag = "v" + version
 

@@ -14,7 +14,7 @@ return value. This module is the printer, and it can print either side:
 ONE FILE AND NOT TWO, and the reason is a gate rather than tidiness. `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is "named as the NEW side of a `.ci/shadow/*.jsonl` record"; the OLD side's command is scanned for a live `.sh` TWIN, never for a Python file. A separate `shadow_old.py` would therefore be reported dead the day it landed.
 One module, named on the new side, imports everything else in this package, and the `imported` route carries the rest.
 
-WHY IT IS DRIVEN AGAINST THE FUNCTION BODIES AND NEVER THROUGH `./run.sh setup`. `.ci/scripts/test/gates/test-run-sh.sh:279-290` emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip has to be
+WHY IT IS DRIVEN AGAINST THE FUNCTION BODIES AND NEVER THROUGH `./run.sh setup`. `.ci/rediacc_ci/tests/gates/test_gate_run_sh.py` emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip has to be
 atomic: `PORTED_VERBS=(setup)` lands in the SAME change that deletes the legacy
 arm and both function bodies. After that change there is no bash side left to drive. So this ledger is recorded BEFORE the flip, and it reaches the bash by sourcing it, which keeps working right up to the moment the bash is deleted and stops working loudly the moment after.
 
@@ -134,9 +134,6 @@ set -euo pipefail
 export REDIACC_DOCKER_GROUP_REEXEC=1
 source "$ROOT_DIR/.ci/config/constants.sh"
 source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
-source "$ROOT_DIR/.ci/lib/local-common.sh"
-source "$ROOT_DIR/.ci/lib/service.sh"
-source "$ROOT_DIR/.ci/lib/devbox.sh"
 """
 
 # The stubs that turn `setup()` into a phase trace.

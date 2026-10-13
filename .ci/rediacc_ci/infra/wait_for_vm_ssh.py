@@ -47,7 +47,7 @@ import sys
 
 from rediacc_ci import log
 
-SELF = "wait-for-vm-ssh.py"
+SELF = "rediacc_ci.infra.wait_for_vm_ssh"
 
 # The twin's hardcoded budget: 36 attempts x 5s = 180s per VM. Named so the
 # failure message and the loop cannot drift apart the way they would if 36 and "180s" were two independent literals.

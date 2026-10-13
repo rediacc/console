@@ -1,7 +1,7 @@
 r"""`scripts/gates/check-player-css-scope.ts`, its eight plants, and TWO MUTANTS of it.
 
 WHY THIS EXISTS RATHER THAN TRUSTING THE GATE'S OWN SELFTEST. That selftest builds its own corpora, so it proves the scanner reads what the selftest wrote. It cannot prove the thing that actually matters about a negative assertion: that the gate would still fire if its DETECTION were wrong rather than its arithmetic.
-Two edits make the gate green over a corpus it should refuse, and neither touches a line the selftest reads. Widening the marker list makes a NON-player stylesheet count as the player's, which over-reports and would have had the fix chasing pages that were never offenders. Deleting F6 makes "no page links the player sheet" satisfiable by deleting plyr outright.
+Two edits make the gate green over a corpus it should refuse, and neither touches a line the selftest reads. Widening the marker list makes a NON-player stylesheet count as the player's, which over-reports and would have had the fix chasing pages that were never offenders. Deleting F6 makes "no page links the player sheet" satisfiable by deleting the player skin outright.
 The gate's own plants are what catch both, so this file's job is to prove those plants can FAIL.
 
 THE PLAN NAMED THE TWO ASSERTIONS AND THIS FILE KEEPS ITS WORDS: widening the markers must red the selftest NAMING P4, and deleting F6 must red it NAMING P6. The plant numbers are therefore a contract between two files, and the gate's own header says so where a renumbering would happen.
@@ -37,8 +37,10 @@ def real_dist_skip_reason():
 
 
 # MUTANT 1. `.tvp-root` is the marker the gate's header records as MEASURED-AND-REJECTED: it appears in a non-player bundle too, so admitting it makes `a/other.css` a player stylesheet and `over.html` an offender. P4 is the plant that says it must not be.
-MARKERS_FIXED = "const MARKERS = ['.plyr__control', '.tvp-caption-word'];"
-MARKERS_WIDE = "const MARKERS = ['.plyr__control', '.tvp-caption-word', '.tvp-root'];"
+MARKERS_FIXED = (
+    "const MARKERS = ['.media-status-indicator-captions-off-icon', '.tvp-caption-word'];"
+)
+MARKERS_WIDE = "const MARKERS = ['.media-status-indicator-captions-off-icon', '.tvp-caption-word', '.tvp-root'];"
 
 # MUTANT 2. F6 is the positive half of the assertion; with its condition dead, a build in which nothing loads the player's stylesheet reports a clean tree. P6 is the plant that says it must refuse.
 F6_FIXED = "if (unreferenced.length === r.playerCss.length) {"
@@ -167,7 +169,7 @@ def test_mutant_widening_the_marker_list_reds_p4(gate, tmp_path):
 
 
 def test_mutant_deleting_f6_reds_p6(gate, tmp_path):
-    """THE SECOND MUTANT. Without F6, deleting plyr outright would pass this gate."""
+    """THE SECOND MUTANT. Without F6, deleting the player skin outright would pass this gate."""
     gate.log_test("CONTROL: killing F6's condition must red the selftest, naming P6")
     mutant = write_mutant(gate, tmp_path, F6_FIXED, F6_DEAD)
     result = run_tsx(gate, mutant)

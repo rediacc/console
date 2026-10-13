@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-releaseversion-inject-env.sh`, retired in W7 P5.
 
-Both-ways test for `.ci/scripts/version/inject-env.sh --strict`.
+Both-ways test for `rediacc_ci.version.inject_env --strict` (written against the bash `inject-env.sh`, retired behind its golden, PLAN-retire-bash-oracles B3).
 
 WHAT THE GUARD IS FOR. `--strict` is the one guard in the repo against a build stamping a placeholder or bogus version into an artifact that CD will later publish under a real tag.
 
@@ -8,27 +8,29 @@ WHAT WAS BROKEN. It had ZERO callers -- referenced only by a comment in `.ci/con
 spelled `|| '0.0.0-dev'` or `${CLI_VERSION:-0.0.0-dev}` inline instead. A guard
 nothing calls cannot fire. On top of that it compared the resolved version against the literal string "0.0.0-dev" and nothing else, so an EMPTY version, or a resolver that exited 0 printing nothing, sailed straight through the strictest setting the script has.
 
-The empty-resolver case gets a fixture: inject-env.sh finds resolve-version.sh next to itself, so the only way to plant "resolver succeeds but prints nothing" is to run a copy with a planted sibling.
+The empty-resolver case gets a fixture: the module finds `resolve_version.py` next to itself, so the only way to plant "resolver succeeds but prints nothing" is to run a copy with a planted sibling.
 
-WHAT THIS MODULE READS FROM THE REAL TREE, and why that is safe for the parity driver: the reachability case READS four release-path build boundaries and writes nowhere in them. The falsifying half builds its own stripped copies under `tmp_path`, exactly as the twin does.
+WHAT THIS MODULE READS FROM THE REAL TREE, and why that is safe for the parity driver: the reachability case READS four release-path build boundaries and writes nowhere in them. The falsifying half builds its own stripped copies under `tmp_path`, exactly as the bash gate did.
 """
+
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-GATE = paths.from_root(".ci", "scripts", "version", "inject-env.sh")
+GATE = paths.from_root(".ci", "rediacc_ci", "version", "inject_env.py")
+PYTHONPATH = str(paths.from_root(".ci"))
 
 # Every release-path boundary that must invoke --strict. Listed once, so the count below is derived from this tuple rather than typed twice.
 STRICT_CALLERS = (
     ".github/workflows/ci-build-cli.yml",
     ".github/workflows/ci-build-docker.yml",
-    ".ci/scripts/build/build-cli-executables.sh",
-    ".ci/scripts/build/build-cli-musl.sh",
+    ".ci/rediacc_ci/build/build_cli_executables.py",
+    ".ci/rediacc_ci/build/build_cli_musl.py",
 )
 
-EMPTY_RESOLVER = """#!/bin/bash
-# Exits 0, prints nothing: the shape --strict used to accept as a version.
-exit 0
+EMPTY_RESOLVER = """# Exits 0, prints nothing: the shape --strict used to accept as a version.
+raise SystemExit(0)
 """
 
 
@@ -39,8 +41,12 @@ def subject(gate):
 
 
 def run_inject(gate, *args: str, **env: str) -> harness.RunResult:
-    """The streams stay APART: the twin routes stderr into a file for the same reason, because the failure message is what says WHY it refused."""
-    return harness.run(["bash", str(subject(gate)), *args], env=env or None, timeout=120)
+    """The streams stay APART, because the failure message is what says WHY it refused."""
+    return harness.run(
+        [sys.executable, str(subject(gate)), *args],
+        env={"PYTHONPATH": PYTHONPATH, **env},
+        timeout=120,
+    )
 
 
 def strict_callers(root) -> int:
@@ -105,22 +111,20 @@ def test_reads_the_VERSION_env(gate):  # noqa: N802 -- the twin's case name; par
 
 def test_empty_resolver_output_is_not_a_version(gate, tmp_path):
     """THE CONTROL for the second half of the same hole: a resolver that exits 0 printing nothing produced an EMPTY resolved version, which --strict accepted. Planted in a fixture because inject-env.sh resolves its sibling by path."""
-    version_dir = tmp_path / "version"
+    version_dir = tmp_path / ".ci" / "rediacc_ci" / "version"
     version_dir.mkdir(parents=True, exist_ok=True)
-    copy = version_dir / "inject-env.sh"
+    copy = version_dir / "inject_env.py"
     copy.write_text(subject(gate).read_text(encoding="utf-8"), encoding="utf-8")
-    copy.chmod(0o755)
-    resolver = version_dir / "resolve-version.sh"
+    resolver = version_dir / "resolve_version.py"
     resolver.write_text(EMPTY_RESOLVER, encoding="utf-8")
-    resolver.chmod(0o755)
 
     result = harness.run(
-        ["bash", "./version/inject-env.sh", "--strict", "--print"], cwd=tmp_path, timeout=120
+        [sys.executable, str(copy), "--strict", "--print"], cwd=tmp_path, timeout=120
     )
     gate.assert_exit(1, result, "an empty resolver result must not pass --strict")
 
     # Non-strict must degrade to the documented dev placeholder, not to "".
-    result = harness.run(["bash", "./version/inject-env.sh", "--print"], cwd=tmp_path, timeout=120)
+    result = harness.run([sys.executable, str(copy), "--print"], cwd=tmp_path, timeout=120)
     gate.assert_eq(
         result.out.strip(),
         "0.0.0-dev",
@@ -135,8 +139,7 @@ def test_guard_is_reachable_from_the_release_path(gate, tmp_path):
     gate.assert_eq(
         strict_callers(root),
         len(STRICT_CALLERS),
-        "all %d release-path build boundaries must call inject-env.sh --strict"
-        % len(STRICT_CALLERS),
+        "all %d release-path build boundaries must call inject_env --strict" % len(STRICT_CALLERS),
     )
 
     # PROVE THIS COUNT CAN FALL: strip the invocations in a COPY and watch it drop to zero -- the exact state the repo was in before this wave. The copy lives under tmp_path; the real boundaries are read and never written.

@@ -16,13 +16,11 @@
  *
  * WHY AN ALLOWLIST AND NOT A HEURISTIC
  * A naive detector reports 54 orphan files, ~85% of them false, for two reasons:
- *   - glob discovery: .ci/rediacc_ci/battery.py globs DEFAULT_PATTERN = "test-*.sh"
- *     over .ci/scripts/test/gates (battery.py:111 and its discover() at :401), and
- *     run.sh iterates "$tutorials_dir"/tutorial-*.sh. Those files are never named
- *     individually. RE-KEYED 2026-09-09 (invariant 2): the glob used to live in
- *     the since-deleted .ci/scripts/test/run-all.sh as PATTERN="test-*.sh", and battery.py replaced
- *     that runner. The MECHANISM is unchanged, which is the point of naming the
- *     mechanism rather than the file in .ci/policy/.dead-bash-allowlist.
+ *   - glob discovery: run.sh iterates "$tutorials_dir"/tutorial-*.sh, so those
+ *     files are never named individually. (The bash gate-test battery globbed
+ *     .ci/scripts/test/gates/test-*.sh the same way until it was retired with its
+ *     last test on 2026-10-09.) Naming the mechanism rather than the file is the
+ *     point of .ci/policy/.dead-bash-allowlist.
  *   - dynamic dispatch: "phase_$p" builds a function name at runtime.
  * Parsing those two shapes would work today and silently miss `find -exec`,
  * `xargs`, or a glob built from a variable — under-reporting, which is exactly

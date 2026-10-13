@@ -49,11 +49,11 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_pkg_repo
+from rediacc_ci.core import common
 from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci/scripts/build/build-pkg-repo.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
 TOOLCHAIN = ROOT / ".devcontainer" / "toolchain.env"
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "build_pkg_repo.py"
@@ -227,7 +227,6 @@ def _fixture(
     """A tree shaped like the repository, holding COPIES of both subjects."""
     root = where.resolve() / "tree"
     (root / ".ci" / "scripts" / "build").mkdir(parents=True)
-    (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "config").mkdir(parents=True)
     (root / ".ci" / "keys").mkdir(parents=True)
     (root / ".devcontainer").mkdir(parents=True)
@@ -235,7 +234,6 @@ def _fixture(
 
     if diff.regolden_mode(str(TWIN_REL)) == "bash":
         shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
     shutil.copy2(CONSTANTS, root / ".ci" / "config" / "constants.sh")
     shutil.copy2(CONSTANTS.with_name("well-known.env"), root / ".ci" / "config" / "well-known.env")
     shutil.copy2(
@@ -858,7 +856,7 @@ def test_bash_arith_is_bashs_grammar_and_not_int(tmp_path):
 
 
 def test_source_common_exports_what_sourcing_the_library_would(monkeypatch):
-    """`common.sh` runs on SOURCE, before line 28 of the twin, so every child inherits `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against the library itself rather than against a constant, so a change to `detect_os` is caught."""
+    """The deleted `common.sh` ran on SOURCE, before line 28 of the twin, so every child inherited `CI_OS`, `CI_ARCH` and `CI_TEMP`. Compared against `rediacc_ci.core.common` (the library's port) rather than against a constant, so a change to `detect_os` is caught."""
     monkeypatch.delenv("CI_OS", raising=False)
     monkeypatch.delenv("CI_ARCH", raising=False)
     monkeypatch.delenv("CI_TEMP", raising=False)
@@ -866,12 +864,7 @@ def test_source_common_exports_what_sourcing_the_library_would(monkeypatch):
 
     import os  # noqa: PLC0415 -- read back the same way the children would
 
-    expected = subprocess.run(
-        ["bash", "-c", 'source "$1"; printf "%s\\n%s\\n" "$CI_OS" "$CI_ARCH"', "_", str(COMMON)],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.splitlines()
+    expected = [common.detect_os(), common.detect_arch()]
     assert [os.environ["CI_OS"], os.environ["CI_ARCH"]] == expected, expected
     assert os.environ["CI_TEMP"], "CI_TEMP was not set"
 
@@ -890,3 +883,25 @@ def test_the_harness_refuses_a_path_that_leaks_the_real_docker(tmp_path):
     resolved = shutil.which("docker", path=with_it)
     assert resolved == str(pathlib.Path(with_it) / "docker"), resolved
     assert resolved != "/usr/bin/docker"
+
+
+def test_checksum_rows_do_not_depend_on_the_working_directory(tmp_path, monkeypatch):
+    """The glob is rooted at `dists_dir`, so a caller's cwd neither feeds nor loses the rows (review finding 7caaf877.3)."""
+    dists = tmp_path / "dists"
+    (dists / "main" / "binary-amd64").mkdir(parents=True)
+    (dists / "main" / "binary-amd64" / "Packages").write_bytes(b"abc")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / "main" / "binary-arm64").mkdir(parents=True)
+    (elsewhere / "main" / "binary-arm64" / "Packages").write_bytes(b"decoy")
+    monkeypatch.chdir(elsewhere)
+    rows = build_pkg_repo._checksum_rows(str(dists), "sha256")
+    assert len(rows) == 1, rows
+    assert rows[0].endswith(" 3 main/binary-amd64/Packages"), rows
+    assert pathlib.Path.cwd() == elsewhere
+
+
+def test_checksum_rows_over_a_missing_dists_directory_raise(tmp_path):
+    """The bash `cd` died on a missing directory; an empty Release must not be the replacement (review finding 7caaf877.2)."""
+    with pytest.raises(FileNotFoundError):
+        build_pkg_repo._checksum_rows(str(tmp_path / "absent"), "md5")

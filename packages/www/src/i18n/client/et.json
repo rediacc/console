@@ -342,5 +342,10 @@
       "dev-env": "Arenduskeskkonnad",
       "defense": "Ennetav kaitse"
     }
+  },
+  "video": {
+    "player": {
+      "chapters": "Peatükid"
+    }
   }
 }

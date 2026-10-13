@@ -29,6 +29,7 @@ import pytest
 from rediacc_ci.core import bws_env
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 TWIN = ".ci/lib/bws-env.sh"
 SLUG = "bws-env"
@@ -115,6 +116,11 @@ def run_port(names: list[str], env: dict, root) -> tuple[int, str, str]:
     return code, frozen.mask_root(out, root), frozen.mask_root(err, root)
 
 
+def twin_view(result: tuple[int, str, str]) -> tuple[int, str, str]:
+    """The port's result with its module name mapped back to the twin's, the one byte-level divergence from a recording."""
+    return result[0], result[1], as_twin(result[2])
+
+
 def recorded(case_id: str) -> tuple[int, str, str]:
     """One golden, split back into exit code, stdout and stderr."""
     body = frozen.read(SLUG, case_id)
@@ -152,7 +158,7 @@ def test_port_matches_the_twins_recorded_output(
 ) -> None:
     root = fixture(tmp_path / case_id, listing, with_bws=with_bws)
     old = recorded(case_id)
-    new = run_port(names, env_for(root, with_token), root)
+    new = twin_view(run_port(names, env_for(root, with_token), root))
     assert old == new, "case %s: recorded %r vs python %r" % (case_id, old, new)
 
 
@@ -161,7 +167,7 @@ def test_map_missing(tmp_path) -> None:
     root = fixture(tmp_path / MAP_MISSING, BOTH)
     os.remove(root / ".ci" / "config" / "bws-secret-map.json")
     old = recorded(MAP_MISSING)
-    new = run_port([], env_for(root), root)
+    new = twin_view(run_port([], env_for(root), root))
     assert old == new
     assert "is missing; nothing can be resolved by name." in old[2]
     assert "<root>/.ci/config/bws-secret-map.json" in old[2], (
@@ -192,8 +198,11 @@ def test_bws_exits_non_zero_is_the_second_deliberate_divergence(tmp_path) -> Non
 
     assert old[0] == new[0] == 1, "both still fail; the exit code is not the divergence"
     assert old[1] == new[1] == "", "neither resolves a name"
-    assert old[2].splitlines()[0] == new[2].splitlines()[0] == bws_env.LIST_FAILED[0], (
-        "the first line of the refusal is the twin's, verbatim"
+    assert old[2].splitlines()[0] == as_twin(new[2].splitlines()[0]), (
+        "the first line of the refusal is the twin's, up to the prefix"
+    )
+    assert new[2].splitlines()[0] == bws_env.LIST_FAILED[0], (
+        "the first line of the refusal is the port's own LIST_FAILED line, which carries the module-name prefix"
     )
 
     assert "bws-token-expiry.json" in old[2], "the recording names the file it named that day"
@@ -442,7 +451,7 @@ def test_the_comparison_can_fail(tmp_path) -> None:
     case_id = "empty-value-is-absent"
     root = fixture(tmp_path / case_id, BETA_EMPTY)
     old = recorded(case_id)
-    new = run_port([], env_for(root), root)
+    new = twin_view(run_port([], env_for(root), root))
     assert old == new
     assert old != (new[0], new[1], new[2].replace("absent or empty", "absent")), (
         "the comparison is not looking at stderr, where every refusal lives"
@@ -729,3 +738,9 @@ def test_listing_refuses_a_credential_failure_on_the_first_attempt(tmp_path) -> 
     with pytest.raises(bws_env.RefusalError):
         bws_env.listing(bws, env={}, retry_delays=(0.0, 0.0), sleep=lambda _s: None)
     assert state.read_text() == "1", "a credential failure is never retried"
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `bws-env.sh` is deleted, so every refusal names the module a reader can run and find."""
+    for line in (bws_env.NO_TOKEN[0], bws_env.LIST_FAILED[0]):
+        assert line.startswith("rediacc_ci.core.bws_env: ")

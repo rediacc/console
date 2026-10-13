@@ -90,7 +90,13 @@ def scrubbed_environ() -> dict[str, str]:
     for key, value in os.environ.items():
         if key.startswith("WORKLIST_"):
             continue
-        if key in ("CLAUDE_CODE_SESSION_ID", "CLAUDE_SESSION_ID", "CLAUDE_PID"):
+        # CLAUDE_PROJECT_DIR: `python()` pins the fixture root with `setdefault`, which an inherited value wins against, so a suite launched from a live session sent every CLI call to the REAL checkout (worklist #04a74a81; the root conftest drops it too, this keeps the fixture right on its own).
+        if key in (
+            "CLAUDE_CODE_SESSION_ID",
+            "CLAUDE_SESSION_ID",
+            "CLAUDE_PID",
+            "CLAUDE_PROJECT_DIR",
+        ):
             continue
         out[key] = value
     return out

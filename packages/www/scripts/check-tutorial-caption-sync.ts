@@ -22,7 +22,7 @@
  * COROLLARY, learned the hard way: fetching the published asset means fetching whatever
  * the CDN currently serves. Immediately after a publish that is the OLD copy, and this
  * gate will report a large, entirely false set of failures. Run
- * `.ci/scripts/deploy/purge-media-cache.sh` and re-check before acting on any mass
+ * `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.purge_media_cache` and re-check before acting on any mass
  * failure. Once the cache is fresh, a surviving failure is real: it means the published
  * timings themselves are flat, and the fix is to RE-ALIGN (`--subtitle --resubtitle`),
  * not to re-publish the same files.
@@ -55,7 +55,7 @@ const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
 //
 // This gate fetches words.json from media.rediacc.com, so it only ever sees PUBLISHED state. That has one sharp consequence: right after a publish it will report failures
 // from the pre-publish copies Cloudflare is still serving. Run
-// `.ci/scripts/deploy/purge-media-cache.sh` and re-check BEFORE believing any en-masse finding — a stale cache has already produced one false 53-combo report here.
+// `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.purge_media_cache` and re-check BEFORE believing any en-masse finding — a stale cache has already produced one false 53-combo report here.
 const AUDIO_LANGUAGES = SITE_LOCALES;
 
 // 4, not 3: ASR timestamps sit on an 0.08s quantization grid, so a REAL 3-word cue quite often lands three identical durations (seen live in es/ru: [0.72,0.72,0.72]) -- a false positive. Estimate-fallback output
@@ -224,7 +224,7 @@ function printRemediation(slug: string, lang: string): void {
   console.error(
     `  npm run tutorials:publish-video -w @rediacc/www -- --cast ${slug} --lang ${lang}`
   );
-  console.error(`  .ci/scripts/deploy/purge-media-cache.sh`);
+  console.error(`  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.purge_media_cache`);
   console.error(
     `  # --resubtitle matters: sparse-but-structurally-valid wordTimings are otherwise` +
       ` reused as-is (has_valid_word_timings in tutorial_tts/cli.py is structural only)`

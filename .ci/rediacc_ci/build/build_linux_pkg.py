@@ -140,6 +140,9 @@ ARCH_MAP = {
 # `:198`. The sibling that repairs a welded GPG armor. Exit 10 is "repaired", and it is a SIGNAL rather than a failure: a bare call under `set -e` aborted every build whose key needed repairing, which is exactly the production case the signal exists for.
 CANON_REPAIRED = 10
 
+# The canonicaliser, run as a script under the interpreter that runs this module (the bash `canonicalise-gpg-key.sh` it replaced is retired behind its golden; PLAN-retire-bash-oracles B3). Relative to the console root.
+CANONICALISER_REL = ".ci/rediacc_ci/build/canonicalise_gpg_key.py"
+
 # `:224`. The published public key, and its environment override.
 DEFAULT_PUBLIC_KEY_REL = ".ci/keys/gpg-public.asc"
 
@@ -175,14 +178,6 @@ def console_root() -> pathlib.Path:
     """
     # This file: <root>/.ci/rediacc_ci/build/build_linux_pkg.py
     return pathlib.Path(__file__).resolve().parents[3]
-
-
-def script_dir(root: pathlib.Path) -> pathlib.Path:
-    """`$(dirname "${BASH_SOURCE[0]}")` at `:198` -- where the BASH twin lives.
-
-    Note that `:198` uses this rather than `$SCRIPT_DIR` from `:24`, so the twin's canonicaliser path is RELATIVE when the twin itself was invoked by a relative path and absolute otherwise. The two forms name the same file; this port always produces the absolute one, which is what `$SCRIPT_DIR` would have given had `:198` used it.
-    """
-    return root / ".ci" / "scripts" / "build"
 
 
 def source_common() -> None:
@@ -381,10 +376,12 @@ def _setup_gpg_signing(fmt: str, build_dir: str, root: pathlib.Path) -> None:
     # CANONICALISE THE ARMOR BEFORE nfpm SEES IT. gpg parses leniently, nfpm's Go decoder does not, and the failure lands AFTER the fingerprint check below
     # has printed a tick. `|| canon_rc=$?` in the twin rather than a bare call,
     # because exit 10 is a SIGNAL and a bare call under `set -e` aborted every build whose key needed repairing.
+    canonicaliser = str(root / CANONICALISER_REL)
     try:
         canon = subprocess.run(
             [
-                str(script_dir(root) / "canonicalise-gpg-key.sh"),
+                sys.executable,
+                canonicaliser,
                 key_file,
                 os.environ.get("RELEASE_GPG_PASSPHRASE", ""),
             ],
@@ -394,7 +391,7 @@ def _setup_gpg_signing(fmt: str, build_dir: str, root: pathlib.Path) -> None:
     except OSError:
         # `|| canon_rc=$?` catches an exec failure too: bash prints its own
         # diagnostic and yields 126/127, and the script carries on to the `else` arm below rather than dying.
-        message, canon_rc = _exec_failure(str(script_dir(root) / "canonicalise-gpg-key.sh"), 198)
+        message, canon_rc = _exec_failure(sys.executable, 198)
         print(message, file=sys.stderr, flush=True)
 
     if canon_rc == 0:
@@ -471,14 +468,14 @@ def _report_unsigned(fmt: str) -> None:
         # blocked a release for a credential nobody has (run 34003316362, v1.3.9).
         log.warn(
             "APK_RSA_PRIVATE_KEY not set, skipping APK signing (apk is "
-            "declared-unsigned; see check-release-signing-coverage.sh)"
+            "declared-unsigned; see npm run check:ci-release-signing-coverage)"
         )
     else:
         # nfpm has no signature support for archlinux at all (goreleaser/nfpm#628 open, PR #1065 unmerged), and signing by hand would BREAK existing users: pacman.conf(5) SigLevel Optional, which is what Arch ships as LocalFileSigLevel, makes "a signature from a key not in the keyring" a fatal error. A keyring rollout has to land first.
         log.warn(
             "archlinux packages are UNSIGNED: nfpm cannot sign them, and publishing "
             "a .sig before a keyring rollout would break pacman -U (see "
-            "check-release-signing-coverage.sh)"
+            "npm run check:ci-release-signing-coverage)"
         )
 
 

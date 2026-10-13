@@ -11,7 +11,7 @@ import re
 import sys
 from typing import TYPE_CHECKING
 
-from rediacc_ci import paths
+from rediacc_ci import paths, well_known
 from rediacc_ci.quality import gh_retry_shell as sh
 from rediacc_ci.tests.gates import harness
 
@@ -25,7 +25,12 @@ SHAPE_RE = re.compile(
 )
 REAPER = sh.REAPER_REL
 REAPER_CURL = 'resp="$(curl -sS -w'
-TWIN = ".ci/scripts/release/resolve-ci-run.sh"
+# A synthetic dead twin, planted into each copy: the real tree's dead twins are being retired (PLAN-retire-bash-oracles B3), so a test that named one of them would break with the deletion it is meant to survive.
+TWIN = ".ci/scripts/release/synthetic-dead-twin.sh"
+TWIN_BODY = (
+    '#!/usr/bin/env bash\nset -euo pipefail\ngh api "repos/%s/pulls" --jq ".[0].number"\n'
+    % well_known.GH_REPO
+)
 
 
 def _shell(root: pathlib.Path) -> harness.RunResult:
@@ -83,21 +88,46 @@ def test_real_tree_is_green_and_not_vacuous(gate):
     )
     gate.assert_eq(new, 0, "new shell findings on the real tree")
     collapsed = "shell counts collapsed (%s): the gate is not seeing the tree" % m.group(0)
-    assert scripts > 100, collapsed
-    assert live > 40, collapsed
-    assert dead > 20, collapsed
+    # Floors, not equalities: every retired bash twin lowers `scripts` and `dead`, so the floors sit well under the tree and above a walk that found nothing. The dead-twin exclusion is exercised on a planted twin below.
+    assert scripts > 40, collapsed
+    assert live > 25, collapsed
+    # `dead` carries a floor of one: the tree still holds dead twins (30 when measured), and a classifier that put every script in `live` would read 0 here. The sum is an invariant, so a script counted in neither or both halves also reds.
+    assert dead >= 1, collapsed
+    assert live + dead == scripts, collapsed
     assert workflows > 20, collapsed
     assert blocks > 300, collapsed
     assert curl >= 1, collapsed
-    # One live shell gh read is left since the 2026-10-07 cutover (promote-stable's retried rollback-label search); a gh detector that rots reads 0.
-    assert gh >= 1, collapsed
+    # Measured 2026-10-08: zero shell `gh` calls, live or dead, since the last two callers moved to `python3 -m rediacc_ci.core.gh_retry` and common.sh went. The gh detector is held by the in-memory real-tree run: block plant asserted below, not by a floor the tree can no longer fill.
     gate.assert_eq(debt, len(sh.SHELL_DEBT), "every SHELL_DEBT row is filled by the tree")
     gate.ok(
         "%d scripts (%d live, %d dead), %d run: blocks, %d curl and %d gh calls, %d debt, 0 new"
         % (scripts, live, dead, blocks, curl, gh, debt)
     )
+    # The dead-twin plant needs a real dead script holding an unretried read; the tree has none left, so it reports "skipped" (the rule itself is driven on a planted twin by `test_wiring_a_dead_twin_makes_its_reads_findings`). Each of the three is either red or an explicit skip, never silent, and the two that need no dead script must be red.
+    skipped = result.out.count("shell plant skipped:")
     gate.assert_eq(
-        result.out.count("shell plant red:"), 3, "all three shell real-tree plants fired"
+        result.out.count("shell plant red:") + skipped,
+        3,
+        "every shell real-tree plant reported red or skipped",
+    )
+    # A skip is honest only when the tree really has nothing for the dead-twin plant to hide: the gate's own count of reads left unjudged in dead twins must be zero. Otherwise the plant machinery rotted and "skipped" is a red wearing a skip's label.
+    unjudged = re.search(r"(\d+) unjudged in dead twins", result.out)
+    assert unjudged is not None, "no unjudged-in-dead-twins count in: %r" % result.out[-400:]
+    assert skipped <= 1, "more than the dead-twin plant was skipped"
+    assert skipped == 0 or int(unjudged.group(1)) == 0, (
+        "the dead-twin plant was skipped while %s read(s) sit unjudged in dead twins"
+        % unjudged.group(1)
+    )
+    gate.assert_eq(
+        len(
+            [
+                ln
+                for ln in result.out.splitlines()
+                if ln.startswith("  shell plant red:") and "the dead twin" not in ln
+            ]
+        ),
+        2,
+        "the reaper and run: block shell plants fired",
     )
     gate.assert_contains(
         result.out, "shell plant red: the reaper's --retry removed -> %s:" % REAPER
@@ -113,7 +143,6 @@ def test_real_tree_is_green_and_not_vacuous(gate):
         len(sh.SHELL_DEBT),
         "one visible DEBT line per frozen read",
     )
-    assert "  TWIN   " in result.out, "no TWIN line: the dead-twin exclusion is no longer printed"
     gate.ok(
         "all three in-run shell plants fired, every frozen read and every unjudged twin is printed"
     )
@@ -186,8 +215,11 @@ def test_a_one_shot_read_in_a_workflow_run_block_reds(gate, tmp_path):
 
 def test_wiring_a_dead_twin_makes_its_reads_findings(gate, tmp_path):
     root = _copy(tmp_path / "tree")
+    twin = root / TWIN
+    twin.parent.mkdir(parents=True, exist_ok=True)
+    twin.write_text(TWIN_BODY, encoding="utf-8")
     green = _shell(root)
-    gate.assert_exit(0, green, "the unplanted copy")
+    gate.assert_exit(0, green, "the copy holding only the planted dead twin")
     gate.assert_contains(green.out, "  TWIN   %s:" % TWIN)
     gate.ok("%s is reported as an unjudged dead twin on the clean copy" % TWIN)
 
@@ -232,7 +264,7 @@ def test_a_routed_debt_read_drains_its_row(gate, tmp_path):
     gate.assert_eq(len(routed.drained), 1, "the frozen read routed through gh_retry")
     gate.assert_contains(routed.drained[0], "planted reaper read")
     gate.ok(
-        "a planted SHELL_DEBT read is debt while it stands and DRAINED once routed through common.sh gh_retry"
+        "a planted SHELL_DEBT read is debt while it stands and DRAINED once routed through a gh_retry wrapper"
     )
 
 

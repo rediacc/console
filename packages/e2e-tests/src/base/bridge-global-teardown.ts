@@ -1,4 +1,5 @@
 import { FullConfig } from '@playwright/test';
+import { log } from '../utils/log';
 
 /**
  * Global teardown for bridge tests.
@@ -6,13 +7,11 @@ import { FullConfig } from '@playwright/test';
  * In local mode, there's nothing to clean up - renet runs directly.
  */
 function bridgeGlobalTeardown(_config: FullConfig) {
-  /* eslint-disable no-console */
-  console.log('');
-  console.log('='.repeat(60));
-  console.log('Bridge Test Teardown');
-  console.log('='.repeat(60));
-  console.log('');
-  /* eslint-enable no-console */
+  log('');
+  log('='.repeat(60));
+  log('Bridge Test Teardown');
+  log('='.repeat(60));
+  log('');
 }
 
 export default bridgeGlobalTeardown;

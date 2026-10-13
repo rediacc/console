@@ -26,7 +26,6 @@ DRAIN_FLAG = "--write-" + "baseline"
 
 ROOT = paths.repo_root()
 GATE = ROOT / ".ci" / "scripts" / "quality" / "check_language_policy.py"
-CANONICAL_VALIDATOR = ROOT / ".ci" / "scripts" / "lib" / "blocker-validator.sh"
 
 # A reason long enough and specific enough to satisfy the canonical validator (30 characters after normalisation, no banned phrase). Held in one constant so a case that means to test something ELSE cannot fail on the reason by accident.
 GOOD_REASON = (
@@ -307,7 +306,7 @@ def test_missing_blocker_is_refused(gate):
 
 
 def test_low_effort_blocker_is_refused(gate):
-    """This is also the control that the CANONICAL validator is really consulted. "tbd" is on `.ci/scripts/lib/blocker-validator.sh`'s banned-phrase list and nowhere in the subject's own source, so a passing verdict here would mean the subprocess never ran."""
+    """This is also the control that the CANONICAL validator is really consulted. "tbd" is on the banned-phrase list of `rediacc_ci.core.allowlist` and nowhere in the subject's own source, and the gate reaches that list through `rediacc_ci.core.blocker_validator` in process, so a passing verdict here would mean the validator was never consulted."""
     with harness.temp_dir() as d:
         fixture(d)
         allowlist(d, "# BLOCKER: tbd\ntree:.ci/media/\n")
@@ -520,7 +519,6 @@ def test_selftest_can_fail(gate):
 
         env = {
             "PYTHONPATH": "%s:%s" % (ROOT / ".ci", ROOT / ".ci" / "scripts" / "quality"),
-            "LANGUAGE_POLICY_VALIDATOR": str(CANONICAL_VALIDATOR),
             "LANGUAGE_POLICY_ROOT": str(d),
         }
         selftest = harness.run([python3(), str(mutant), "--selftest"], env=env, timeout=300)
@@ -565,12 +563,11 @@ def test_the_three_seams_still_exist_in_the_subject(gate):
         "LANGUAGE_POLICY_ROOT",
         "LANGUAGE_POLICY_BASELINE",
         "LANGUAGE_POLICY_ALLOWLIST",
-        "LANGUAGE_POLICY_VALIDATOR",
     ):
         gate.assert_contains(
             source, seam, "%s is how a case redirects the subject away from the real tree" % seam
         )
-    gate.log_pass("all four redirection seams are still read by the subject")
+    gate.log_pass("all three redirection seams are still read by the subject")
 
 
 def test_this_port_is_not_a_shrink_only_offender(gate):

@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-simulate-promotion-serverside.sh`, retired in W7 P5.
 
-Both-ways test for the SERVER-SIDE copy in `.ci/scripts/deploy/simulate-promotion.sh`.
+Both-ways test for the SERVER-SIDE copy in `.ci/rediacc_ci/deploy/simulate_promotion.py`, the port that replaced `simulate-promotion.sh`.
 
 WHAT BROKE. The promotion simulation synced the whole source channel DOWN to /tmp and then back UP to the promoted channel, so the job cost two full transfers of a channel that grows with every release. Measured on the `main` push runs: 21m57s (2026-07-27), 30m51s (2026-08-07, cancelled at the then-30-minute ceiling), 57m01s (2026-08-18), 61m12s (2026-08-20, run 32423301927, blew
 the raised 60-minute ceiling). That cancellation failed CI Complete and Pipeline Sentinel, and the release sentinel never ran. The failing job's log holds ZERO retry warnings and died mid-transfer, so it was size and not flakiness.
@@ -10,23 +10,22 @@ A PR CANNOT EXERCISE THE REAL PATH: PR runs promote a tiny per-PR channel in min
 WHY THE ABSENT `aws` DOES NOT MAKE THIS VACUOUS, and it is worth saying because a sibling gate test was dropped from this batch for exactly the opposite reason. `aws` is NOT installed on this machine. It does not matter here, because the transfers are driven through a STUB `aws` that this fixture WRITES onto PATH and that records its argv: the assertions read what the script
 actually invoked. A gate test whose subject takes a tool-absent branch has two unreachable cases and cannot be plant-verified; this one shims the tool rather than probing for it, so every case runs on any machine.
 
-WHERE THE PORT REIMPLEMENTS THE TWIN. Nowhere behaviourally. The fixture tree, the `aws` stub and the `cf-purge-urls.sh` stub are written from Python instead of from heredocs, byte for byte the same scripts, and the `rogue` flag is baked into the stub at write time exactly as the twin's unquoted heredoc bakes it. `get_repo_root()` resolves from the SCRIPT's own path
-(`.ci/scripts/lib` -> up 3), so the fixture still mirrors the tree layout rather than just holding the script.
+WHERE THE PORT REIMPLEMENTS THE TWIN. Nowhere behaviourally. The `aws` stub is written from Python instead of from a heredoc, byte for byte the same script, and the `rogue` flag is baked into the stub at write time exactly as the twin's unquoted heredoc bakes it. The purge now runs in process through `cf_purge_urls`, which reaches Cloudflare through `curl`, so the purge recorder is a stub `curl` that logs the request it is handed.
 
 NO `xdist_group`. Each case builds a complete private fixture under pytest's `tmp_path`, puts its stub bin FIRST on a PATH used by one subprocess, and writes nothing in the repository.
 """
 
 import os
 import pathlib
-import shutil
 import stat
+import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
-SUT = paths.from_root(".ci", "scripts", "deploy", "simulate-promotion.sh")
-COMMON = paths.from_root(".ci", "scripts", "lib", "common.sh")
+SUT_MODULE = "rediacc_ci.deploy.simulate_promotion"
+SUT = paths.from_root(".ci", "rediacc_ci", "deploy", "simulate_promotion.py")
 
 AWS_VERSION = "aws-cli/2.31.0 Python/3.12"
 
@@ -39,7 +38,6 @@ class Fixture:
         self.argv_log = base / "argv.log"
         self.purged = base / "purged.txt"
         self.out = base / "out.txt"
-        self.target = base / "repo" / ".ci" / "scripts" / "deploy" / "simulate-promotion.sh"
         self.bin = base / "bin"
 
     def argv(self) -> str:
@@ -61,27 +59,13 @@ def build_fixture(gate, base: pathlib.Path, *, rogue: bool = False) -> Fixture:
     fx = Fixture(base)
     if not SUT.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(SUT))
-    if not COMMON.is_file():
-        gate.log_fail("the fixture needs %s and it is not there" % paths.relative_to_root(COMMON))
-    (base / "repo" / ".ci" / "scripts" / "deploy").mkdir(parents=True)
-    (base / "repo" / ".ci" / "scripts" / "lib").mkdir(parents=True)
     fx.bin.mkdir()
-    shutil.copy2(SUT, fx.target)
-    shutil.copy2(COMMON, base / "repo" / ".ci" / "scripts" / "lib" / "common.sh")
-    (base / "repo" / ".ci" / "config").mkdir(parents=True)
-    shutil.copy2(
-        paths.from_root(".ci", "config", "well-known.env"),
-        base / "repo" / ".ci" / "config" / "well-known.env",
-    )
-    shutil.copy2(
-        paths.from_root(".ci", "config", "well-known.generated.sh"),
-        base / "repo" / ".ci" / "config" / "well-known.generated.sh",
-    )
 
-    # The purge step shells out to this; keep it inert but present. It RECORDS the URLs it is handed, so the purge assertions read what the script actually asked to be purged rather than a proxy for it.
+    # The purge step reaches Cloudflare through this; keep it inert but present. It RECORDS the request body it is handed (the batched URL list), so the purge assertions read what the run actually asked to be purged rather than a proxy for it.
     _write_exec(
-        base / "repo" / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh",
-        '#!/bin/bash\ncat >"%s"\n' % fx.purged,
+        fx.bin / "curl",
+        '#!/bin/bash\nprintf \'%%s\\n\' "$*" >>"%s"\necho \'{"success":true,"errors":[]}\'\n'
+        % fx.purged,
     )
     write_fake_aws(fx, rogue=rogue)
     return fx
@@ -144,8 +128,13 @@ PROMOTION_ENV = {
 def run_promotion(fx: Fixture) -> harness.RunResult:
     fx.argv_log.write_text("", encoding="utf-8")
     result = harness.run(
-        ["bash", str(fx.target)],
-        env={**PROMOTION_ENV, "PATH": "%s%s%s" % (fx.bin, os.pathsep, os.environ["PATH"])},
+        [sys.executable, "-m", SUT_MODULE],
+        env={
+            **PROMOTION_ENV,
+            "PATH": "%s%s%s" % (fx.bin, os.pathsep, os.environ["PATH"]),
+            "PYTHONPATH": str(paths.from_root(".ci")),
+            "PYTHONDONTWRITEBYTECODE": "1",
+        },
     )
     fx.out.write_text(result.combined, encoding="utf-8")
     return result
@@ -158,8 +147,8 @@ def promote_or_fail(gate, fx: Fixture) -> harness.RunResult:
     """
     result = run_promotion(fx)
     if result.rc != 0:
-        gate.log_error("simulate-promotion.sh exited %d under the stub:" % result.rc)
-        gate.log_fail("simulate-promotion.sh exited %d under the stub" % result.rc, result)
+        gate.log_error("simulate_promotion exited %d under the stub:" % result.rc)
+        gate.log_fail("simulate_promotion exited %d under the stub" % result.rc, result)
     return result
 
 

@@ -1,15 +1,15 @@
 #!/bin/bash
 # BLOCKER validation for .breakpoint-drift-accept. VENDORED SUBSET of
-# .ci/scripts/lib/blocker-validator.sh.
+# .ci/rediacc_ci/core/allowlist.py (LOW_EFFORT_PHRASES; the bash blocker-validator.sh it replaced is deleted).
 #
 # Vendored rather than sourced for the reason in breakpoint-common.sh, plus one
-# specific to this file: the canonical validator sources emit-advisory.sh, a
-# transitive dependency breakpoint must not take.
+# specific to this file: the canonical list lives in a Python module
+# (.ci/rediacc_ci/core/allowlist.py), which breakpoint must not depend on.
 #
-# The banned-phrase array below MUST stay a SUBSET of the canonical one.
-# test-breakpoint-portability.sh asserts exactly that (and skips the assertion
-# when the canonical file is absent, i.e. downstream), so the copy cannot rot in
-# the one repo that is able to notice.
+# The banned-phrase array below MUST stay a SUBSET of LOW_EFFORT_PHRASES there.
+# .ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py asserts exactly
+# that in the canonical repo; a downstream copy has no allowlist.py and no such
+# test, so the copy cannot rot in the one repo that is able to notice.
 #
 # Why validate at all: docs/agent-reference/suppressions.md calls BLOCKER "the single
 # escape mechanism". An unvalidated accept-list fills up with "# ok" inside a
@@ -27,7 +27,7 @@
 
 readonly BREAKPOINT_BLOCKER_MIN_LENGTH=30
 
-# Subset of LOW_EFFORT_BLOCKER_PATTERNS in .ci/scripts/lib/blocker-validator.sh.
+# Subset of LOW_EFFORT_BLOCKER_PATTERNS in .ci/rediacc_ci/core/allowlist.py (LOW_EFFORT_PHRASES; the bash blocker-validator.sh it replaced is deleted).
 # Trimmed to the phrases that plausibly appear in a drift context; the npm-audit
 # specific ones ("no upstream fix", "dev dep") are dropped as inapplicable.
 readonly BREAKPOINT_LOW_EFFORT_BLOCKERS=(
@@ -42,7 +42,7 @@ readonly BREAKPOINT_LOW_EFFORT_BLOCKERS=(
 
 # bp_validate_blocker <path> <reason>
 # Returns 0 if the reason is acceptable, 1 otherwise (printing why, and how to
-# fix it, in the shape .ci/scripts/lib/blocker-validator.sh uses).
+# fix it, in the shape .ci/rediacc_ci/core/allowlist.py (LOW_EFFORT_PHRASES; the bash blocker-validator.sh it replaced is deleted) uses).
 bp_validate_blocker() {
     local path="$1" reason="$2"
     local normalized pattern

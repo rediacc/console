@@ -150,7 +150,7 @@ function main(): number {
   console.error(
     '  ./run.sh --publish-www && .ci/scripts/deploy/sync-media-to-r2.sh --solutions-only'
   );
-  console.error('  .ci/scripts/deploy/purge-media-cache.sh');
+  console.error('  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.purge_media_cache');
   console.error('\nDo NOT silence this by widening CURRENT_ENGINE or by treating a missing');
   console.error('engine as current — that is what let the fleet drift unnoticed for months.');
   return 1;

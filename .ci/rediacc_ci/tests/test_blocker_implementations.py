@@ -14,11 +14,12 @@ So this module asserts the OTHER direction, once per implementation:
      phrases and require the result to be exactly the known set. This is how the
      FIFTH implementation was found on 2026-09-09: `swallowed_failures.py` held a
      verbatim 150-line copy that the four-implementation docstring did not name.
-  2. THE BASH MIRROR. `.ci/scripts/lib/blocker-validator.sh` still carries the two
-     arrays as TEXT, because `test_gate_breakpoint_portability.py` parses them out
-     of that file to prove the vendored copy is a subset. Nothing in the bash file
-     READS them any more. A mirror nothing compares is just a second opinion, so
-     this asserts set EQUALITY in both directions, plus the floor.
+  2. THE BASH MIRROR, RETIRED. `.ci/scripts/lib/blocker-validator.sh` carried the
+     two arrays as TEXT only so `test_gate_breakpoint_portability.py` could parse
+     them, and this module held that mirror EQUAL to the canonical. The library was
+     deleted in PLAN-retire-bash-oracles section 12 U1 and the subset proof now
+     reads `LOW_EFFORT_PHRASES` itself, so there is no mirror left to compare and
+     its three tests went with it.
   3. THE TYPESCRIPT CLIENT, structurally: it must declare no table, no floor and
      no message text of its own. That is the strongest possible form of "nothing
      reachable from the TS side is missing from the canonical", because there is
@@ -59,7 +60,6 @@ from rediacc_ci.tests import differential as diff
 ROOT = pathlib.Path(diff.repo())
 
 CANONICAL = ".ci/rediacc_ci/core/allowlist.py"
-BASH_MIRROR = ".ci/scripts/lib/blocker-validator.sh"
 VENDORED = ".ci/breakpoint/lib/breakpoint-blocker.sh"
 TS_CLIENT = "scripts/lib/blocker-validator.ts"
 
@@ -101,24 +101,6 @@ SKIP_SUFFIXES = (
 
 def _text(rel: str) -> str:
     return (ROOT / rel).read_text(encoding="utf-8")
-
-
-def bash_array(text: str, name: str) -> list[str]:
-    """The elements of `readonly <name>=( ... )`, in order.
-
-    The SAME shape `.ci/rediacc_ci/tests/gates/test_gate_breakpoint_portability.py` parses, deliberately: if this extractor and that one ever disagree about what the file says, the subset proof over there is reading something this equality proof is not.
-    """
-    match = re.search(
-        r"^readonly %s=\(\n(.*?)^\)$" % re.escape(name), text, re.MULTILINE | re.DOTALL
-    )
-    if match is None:
-        return []
-    return re.findall(r'"([^"]*)"', match.group(1))
-
-
-def bash_int(text: str, name: str) -> int | None:
-    match = re.search(r"^readonly %s=(\d+)$" % re.escape(name), text, re.MULTILINE)
-    return int(match.group(1)) if match else None
 
 
 def quoted_phrase_hits(text: str) -> int:
@@ -178,7 +160,7 @@ def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
     This is the test that would have caught `swallowed_failures.py`, which held a verbatim copy for three days while a docstring two directories away insisted there were four implementations and named a different four.
     """
     found = files_carrying_a_table()
-    expected = {CANONICAL, BASH_MIRROR, VENDORED} | set(SIBLING_LOW_EFFORT_REPLY_RULE)
+    expected = {CANONICAL, VENDORED} | set(SIBLING_LOW_EFFORT_REPLY_RULE)
     unknown = {k: v for k, v in found.items() if k not in expected}
     gone = sorted(expected - set(found))
     shape = ", ".join("%s=%d" % (k, v) for k, v in sorted(found.items()))
@@ -192,8 +174,8 @@ def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
         "delete its row here; a stale expectation makes this test assert less "
         "than it says. Full inventory: %s" % (gone, shape)
     )
-    # 6 since PLAN-retire-bash-oracles B3 deleted check-submodule-branches.sh, whose reply table its port still carries; 5 since review_report_replies.py was retired with the PR-level Claude review (2026-10-02); 6 again since wl_prreview.py restored that review's reply tool (2026-10-03); 5 since wl_prreview.py imports review_comments' table through rediacc_hooks.syspath.import_from_ci instead of carrying a copy.
-    assert len(found) == 5, "inventory shape changed: %s" % shape
+    # 4 since PLAN-retire-bash-oracles section 12 U1 deleted the bash mirror (`.ci/scripts/lib/blocker-validator.sh`); 6 since PLAN-retire-bash-oracles B3 deleted check-submodule-branches.sh, whose reply table its port still carries; 5 since review_report_replies.py was retired with the PR-level Claude review (2026-10-02); 6 again since wl_prreview.py restored that review's reply tool (2026-10-03); 5 since wl_prreview.py imports review_comments' table through rediacc_hooks.syspath.import_from_ci instead of carrying a copy.
+    assert len(found) == 4, "inventory shape changed: %s" % shape
 
 
 def test_the_inventory_detector_would_find_a_planted_table():
@@ -211,99 +193,6 @@ def test_the_inventory_detector_would_find_a_planted_table():
     assert quoted_phrase_hits(prose) == 0, (
         "unquoted prose naming every phrase was counted as a table; the detector "
         "is matching substrings, not list elements"
-    )
-
-
-# --------------------------------------------------------------------------- 2. The bash mirror ---------------------------------------------------------------------------
-
-
-def test_the_bash_mirror_is_exactly_the_canonical_tables():
-    """SET EQUALITY, BOTH DIRECTIONS. This is the assertion the goldens cannot make.
-
-    The goldens build their reason corpus from `LOW_EFFORT_PHRASES`, so a phrase that exists in the bash array and NOT in the canonical produces no test case at all and is invisible to every one of them. Here it is a named failure.
-    """
-    text = _text(BASH_MIRROR)
-    phrases = bash_array(text, "LOW_EFFORT_BLOCKER_PATTERNS")
-    substrings = bash_array(text, "LOW_EFFORT_BLOCKER_SUBSTRINGS")
-    floor = bash_int(text, "BLOCKER_MIN_LENGTH")
-
-    assert phrases, (
-        "no LOW_EFFORT_BLOCKER_PATTERNS array parsed out of %s. An empty extraction "
-        "makes every comparison below vacuous, so it is a failure rather than an "
-        "agreement." % BASH_MIRROR
-    )
-    assert substrings, "no LOW_EFFORT_BLOCKER_SUBSTRINGS array parsed out of %s" % BASH_MIRROR
-
-    bash_only = sorted(set(phrases) - set(allowlist.LOW_EFFORT_PHRASES))
-    canonical_only = sorted(set(allowlist.LOW_EFFORT_PHRASES) - set(phrases))
-    assert not bash_only, (
-        "%s bans %s and the canonical does not. This is the direction the golden "
-        "corpus cannot see: it generates its cases FROM the canonical list, so a "
-        "phrase only the bash side knows about produces no case. Add it to "
-        "LOW_EFFORT_PHRASES in %s, or delete it here." % (BASH_MIRROR, bash_only, CANONICAL)
-    )
-    assert not canonical_only, (
-        "the canonical bans %s and the bash mirror does not. The mirror is what "
-        "test_gate_breakpoint_portability.py measures the vendored subset against, so "
-        "a short mirror makes that subset proof weaker than it reads." % canonical_only
-    )
-
-    assert list(substrings) == list(allowlist.LOW_EFFORT_SUBSTRINGS), (
-        "the substring tables differ: bash=%s canonical=%s"
-        % (substrings, list(allowlist.LOW_EFFORT_SUBSTRINGS))
-    )
-    assert floor == allowlist.MIN_REASON_LENGTH, "BLOCKER_MIN_LENGTH is %r in %s and %r in %s" % (
-        floor,
-        BASH_MIRROR,
-        allowlist.MIN_REASON_LENGTH,
-        CANONICAL,
-    )
-
-    # ORDER IS LOAD-BEARING and set equality does not see it. The message quotes the FIRST pattern that matches, so a reordering changes printed bytes.
-    assert phrases == list(allowlist.LOW_EFFORT_PHRASES), (
-        "the two tables hold the same phrases in a DIFFERENT order. The rejection "
-        "message names the first pattern that matches, so order changes output."
-    )
-
-
-def test_the_bash_extractor_reports_a_planted_divergence():
-    """THE CONTROL for the equality above, on a COPY of the real file."""
-    text = _text(BASH_MIRROR)
-    planted = text.replace('"tbd" "wip"', '"tbd" "wip" "__planted_only_in_bash__"', 1)
-    assert planted != text, (
-        "the plant did not land: LOW_EFFORT_BLOCKER_PATTERNS no longer holds the "
-        "line this control edits"
-    )
-    phrases = bash_array(planted, "LOW_EFFORT_BLOCKER_PATTERNS")
-    assert "__planted_only_in_bash__" in phrases
-    assert set(phrases) - set(allowlist.LOW_EFFORT_PHRASES) == {"__planted_only_in_bash__"}
-
-    # And the other direction: a phrase REMOVED from the mirror is caught too.
-    shortened = text.replace('"tbd" "wip"', '"wip"', 1)
-    assert shortened != text
-    assert "tbd" not in bash_array(shortened, "LOW_EFFORT_BLOCKER_PATTERNS")
-
-
-def test_the_bash_mirror_is_not_read_by_the_bash_validator():
-    """The mirror's whole justification is that it is DATA, not the rule.
-
-    If a future edit wires `validate_blocker_quality` back onto the array, the file becomes a second implementation again and the equality test above turns
-    from a guarantee into a hope somebody re-runs it.
-    """
-    text = _text(BASH_MIRROR)
-    body = text[text.index("validate_blocker_quality() {") :]
-    for name in (
-        "LOW_EFFORT_BLOCKER_PATTERNS",
-        "LOW_EFFORT_BLOCKER_SUBSTRINGS",
-        "BLOCKER_MIN_LENGTH",
-    ):
-        assert name not in body, (
-            "%s reads %s again. It is a mirror of the canonical, kept only so "
-            "test_gate_breakpoint_portability.py can parse it; deciding anything from it "
-            "re-creates the divergence this collapse removed." % (BASH_MIRROR, name)
-        )
-    assert "rediacc_ci.core.allowlist" in text, (
-        "%s no longer names the canonical module; it has stopped delegating" % BASH_MIRROR
     )
 
 
@@ -396,14 +285,11 @@ def test_the_python_clients_declare_no_rule_of_their_own():
             "%s stopped naming the canonical module" % rel
         )
 
-    # AND THE HOP THAT IS STILL THERE, recorded rather than asserted away. `check_language_policy.blocker_quality_problem` shells out to `.ci/scripts/lib/blocker-validator.sh` for the QUALITY rule, and that file now shells back to `rediacc_ci.core.allowlist`. Python -> bash -> Python for an answer the first Python could have computed. It is correct and it is wasteful, and the
-    # reason it was not changed in the same pass is that the shell-out is what its gate test's "the validator cannot be consulted" refusal exists to exercise; removing one without the other deletes a live control. Pinned so the hop cannot be forgotten.
+    # THE HOP IS GONE: `check_language_policy.blocker_quality_problem` calls `rediacc_ci.core.allowlist` in process (its docstring says so), no longer `.ci/scripts/lib/blocker-validator.sh`. Pinned the other way round, so the shell-out cannot come back unnoticed, and the 'validator cannot be consulted' arm the old pin protected is already gone from test_gate_language_policy.py.
     policy = _text(".ci/scripts/quality/check_language_policy.py")
-    assert "blocker-validator.sh" in policy, (
-        "check_language_policy no longer shells out for the BLOCKER quality rule. If "
-        "it now calls rediacc_ci.core.allowlist directly, good; delete this assertion "
-        "AND the 'validator cannot be consulted' arm of test_gate_language_policy.py, which "
-        "tests a failure mode that no longer exists."
+    assert "blocker-validator.sh" not in policy, (
+        "check_language_policy shells out to blocker-validator.sh again for the BLOCKER "
+        "quality rule; call rediacc_ci.core.allowlist in process instead."
     )
 
     housekeeping = _text(".ci/rediacc_ci/quality/plan_housekeeping.py")

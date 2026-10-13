@@ -11,9 +11,9 @@ through it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for
 THE CALL LOG IS THE PRIMARY EVIDENCE. What the run PRINTS is `::group::` directives and one `log_info` line; the observable effect is the ordered set of `npx wrangler d1` invocations, one clone-d1.sh invocation per region, and the bytes of the generated `wrangler-migration-test.toml`.
 
 -----------------------------------------------------------------------------
-`clone-d1.sh`, `jq` AND `sed` ARE CALLED, NOT REIMPLEMENTED
+`clone_d1` IS CALLED IN PROCESS; `jq` AND `sed` ARE CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
-`clone-d1.sh` is invoked as the bash script the twin invokes, for the reason `upload_repos_to_r2.py` gives: agreement with the live twin includes that script's exact bytes, and it has its own export/import/verify behaviour that a second implementation would have to track. Its port, if it gets one, is a different box.
+The per-region clone is `rediacc_ci.deploy.clone_d1.main`, called in process with the twin's `--source`/`--target` words (the bash `clone-d1.sh` it used to spawn was frozen to goldens and deleted under operator ruling D5). Its streams and exit status reach the caller exactly as the child's did, because both inherit the descriptors.
 
 `jq` reads `regions.json` and `sed` strips wrangler's banner, both for the reasons `deploy/deploy_www.py` sets out at length for the same two programs.
 
@@ -81,9 +81,10 @@ import sys
 
 from rediacc_ci import log
 from rediacc_ci.core import common
+from rediacc_ci.deploy import clone_d1
 
-# The twin's own name, carried in its two guard messages and in the two bash-diagnostic stand-ins.
-SELF = "test-d1-migrations.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.test_d1_migrations"
 
 # `jq -r '.regions[].edgeD1.name' regions.json` and `.regions[].d1.name` (twin :55, :59). EDGE FIRST: edge is the release soak environment, so a regression should surface there before it can reach stable on the next promotion. The order is observable in the call log and is the twin's design.
 REGIONS_FILE = "regions.json"
@@ -111,9 +112,6 @@ D1_LOCATION = "eeur"
 TMPCONFIG_RELATIVE = ("workers", "www", "wrangler-migration-test.toml")
 WORKER_SUBDIR = ("workers", "www")
 TMPCONFIG_BASENAME = "wrangler-migration-test.toml"
-
-# `"$SCRIPT_DIR/clone-d1.sh"` (twin :114), where SCRIPT_DIR is `.ci/scripts/deploy`. Relative to the repository root so the cutover to a Python clone-d1 is a one-line change in the box that owns it.
-CLONE_SCRIPT_RELATIVE = (".ci", "scripts", "deploy", "clone-d1.sh")
 
 # The `sed` address at twin :106 and the `jq` program at twin :107, verbatim.
 JSON_START_SED = "/^[[:space:]]*[{[]/,$p"
@@ -278,9 +276,9 @@ def migrations_argv(db_name: str) -> list[str]:
     ]
 
 
-def clone_argv(root: str, source_db: str, db_name: str) -> list[str]:
-    """`"$SCRIPT_DIR/clone-d1.sh" --source "$SOURCE_DB" --target "$DB_NAME"` (twin :114)."""
-    return [os.path.join(root, *CLONE_SCRIPT_RELATIVE), "--source", source_db, "--target", db_name]
+def clone_args(source_db: str, db_name: str) -> list[str]:
+    """`"$SCRIPT_DIR/clone-d1.sh" --source "$SOURCE_DB" --target "$DB_NAME"` (twin :114), minus the program: `clone_d1.main` takes the words."""
+    return ["--source", source_db, "--target", db_name]
 
 
 def migration_test_toml(db_name: str, db_uuid: str) -> str:
@@ -384,7 +382,6 @@ def _chdir(target: str) -> None:
 
 def _one_region(
     source_db: str,
-    root: str,
     workspace: str,
     run_id: str,
     run_attempt: str,
@@ -408,7 +405,9 @@ def _one_region(
         log.error("Failed to get UUID for %s" % db_name)
         raise BashExitError(1)
 
-    status = _run(clone_argv(root, source_db, db_name))
+    _flush()
+    status = clone_d1.main(clone_args(source_db, db_name))
+    _flush()
     if status:
         raise BashExitError(status)
 
@@ -471,7 +470,7 @@ def main(argv: list[str]) -> int:
     code = 0
     try:
         for source_db in all_dbs:
-            _one_region(source_db, root, workspace, run_id, run_attempt, cleanup_dbs)
+            _one_region(source_db, workspace, run_id, run_attempt, cleanup_dbs)
     except BashExitError as exc:
         code = exc.code
     else:

@@ -92,9 +92,15 @@ SHFMT_OPTS = ("-i", "4", "-ci", "-d")
 # Re-measured 2026-10-01 at 187 (`floor_count()`) after the twin goldens retired more `.sh` files (PLAN-retire-bash-oracles B3); the floor was lowered to that measured count in the same change, so it holds no margin and each further retirement batch lowers it again.
 # Re-measured 2026-10-02 at 179: the last five ops and drill twins left with their callers switched to the Python ports (B3), and the three `.ci/scripts/review/*.sh` left with the PR-level review workflows.
 # Re-measured 2026-10-04 at 167: the seven test proxies and proxy-lib.sh, workflow-rule.sh, the profiler sampler and its control, and infra/build-renet.sh left as their goldens took over (B3).
+# Re-measured 2026-10-08 at 96 after PLAN-retire-bash-oracles wave 1 deleted 76 tracked .sh files as their goldens froze; the floor was lowered to that measured count in the same change.
 #
 # The floor stays well under the count, to catch a broken enumeration rather than today's file count, and is restated on each retirement batch so a closing margin is visible early.
-DEFAULT_MIN_FILES = "167"
+# Re-measured 2026-10-08 at 87 after W7 (six R2-state twins), W11-A (local-common.sh, test-run-sh.sh) and W11-B (lib/common.sh).
+# Re-measured 2026-10-08 at 86 after section 12 U3 deleted test-toolchain.sh.
+# Re-measured 2026-10-08 at 84 after section 12 U2 deleted test-media-r2.sh and .ci/media/verify.sh.
+# Re-measured 2026-10-08 at 80 after section 12 U1 deleted blocker-validator.sh, emit-advisory.sh, test-blocker-golden-corpus.sh and test-runner-advice.sh.
+# Re-measured 2026-10-08 at 79 after section 12 U3 step 2 deleted test-helpers.sh.
+DEFAULT_MIN_FILES = "79"
 
 # The three roots the floor counts, in the twin's argv order (order is irrelevant to a count and is kept so the two reads match on inspection).
 FLOOR_ROOTS = (".ci", ".claude", "scripts")

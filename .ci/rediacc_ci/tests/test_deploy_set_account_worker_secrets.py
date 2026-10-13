@@ -8,7 +8,7 @@ would exit 0 with byte-identical streams and break a region at runtime. Every ca
 
 THE GUARD NAME IS NOT ALWAYS THE VARIABLE TO BLANK, and `GUARD_SOURCE` below is where that is written down. Four of the seventeen guards report a Worker key (`AWS_SES_ACCESS_KEY_ID`) whose value came from a suffixed name (`AWS_SES_ACCESS_KEY_ID_EU`), so a test that blanked the reported name would drive nothing at all and pass while proving nothing.
 
-FIVE STALENESS ALARMS RE-DERIVE THE TWIN'S OWN LISTS from its source, because `KEYS`, `REQUIRED_NONEMPTY`, `REQUIRED_NONEMPTY_STABLE`, `MISSING_MESSAGES` and `SUFFIXED_PREFIXES` are all copies of something the twin states.
+THE BASH SIDE OF EVERY CASE IS ANSWERED FROM ITS FROZEN GOLDEN (`goldens/twins/deploy.set-account-worker-secrets.jsonl`), so the twin file is not needed to run this module.
 """
 
 from __future__ import annotations
@@ -27,12 +27,15 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import set_account_worker_secrets as port
 from rediacc_ci.deploy import set_preview_worker_secrets as preview
 from rediacc_ci.deploy import set_www_worker_secrets as www
+from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "set-account-worker-secrets.sh"
+TWIN_REL = ".ci/scripts/deploy/set-account-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_account_worker_secrets.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -135,6 +138,30 @@ def _run(
     drop_env: tuple[str, ...] = (),
     **extra: str,
 ):
+    """The port runs live; the bash side is answered from its frozen golden."""
+    if subject.suffix != ".sh":
+        return _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra)
+    parts = [
+        "drop=%s" % drop,
+        "drop_env=%s" % ",".join(drop_env),
+        *("%s=%s" % kv for kv in sorted(extra.items())),
+    ]
+    return diff.twin_result(
+        TWIN_REL,
+        parts,
+        lambda: _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra),
+        work=(tmp_path,),
+    )
+
+
+def _run_live(
+    subject: pathlib.Path,
+    tmp_path: pathlib.Path,
+    *,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
     side = "old" if subject.suffix == ".sh" else "new"
     call_log = tmp_path / f"{side}-calls.log"
     call_log.write_text("", encoding="utf-8")
@@ -175,11 +202,11 @@ def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
     if old_calls is not None:
         assert new_calls == old_calls, (
@@ -193,10 +220,6 @@ def document(calls: str) -> str:
     match = re.search(r"STDIN<<<(.*)>>>\n", calls, re.DOTALL)
     assert match is not None, f"no wrangler call was recorded in {calls!r}"
     return match.group(1)
-
-
-def _twin_source() -> str:
-    return TWIN.read_text(encoding="utf-8")
 
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
@@ -246,7 +269,6 @@ def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> Non
     assert old.stdout == "Finished processing secrets JSON file.\n"
     assert old.stderr == ""
     assert port.SUCCESS_IS_SILENT
-    assert "log_info" not in _twin_source(), "the twin grew a closing line; re-read this test"
     _assert_agree(old, new, "silent-success", old_calls, new_calls)
 
 
@@ -442,9 +464,9 @@ def test_divergence_a_the_three_control_variables_are_bashs_own_refusals(
         old, new, old_calls, new_calls = run_both(case, drop_env=(name,))
         expected = f"{name}: set-account-worker-secrets.sh: {name} must be set"
         assert old.returncode == new.returncode == 1
-        assert old.stderr.endswith(f"line {line}: {expected}\n"), old.stderr
+        assert old.stderr.endswith(f"line {line}: {as_twin(expected)}\n"), old.stderr
         assert old.stderr.startswith(str(TWIN)), "bash stopped naming its own file"
-        assert new.stderr == expected + "\n"
+        assert new.stderr == expected.replace("set-account-worker-secrets.sh", port.SELF) + "\n"
         assert old.stderr != new.stderr
         assert old.stdout == new.stdout == ""
         assert old_calls == new_calls == ""
@@ -457,7 +479,10 @@ def test_the_first_missing_control_variable_wins(tmp_path: pathlib.Path) -> None
     )
     assert old.returncode == new.returncode == 1
     assert old.stderr.endswith("WORKER_NAME must be set\n")
-    assert new.stderr == "WORKER_NAME: set-account-worker-secrets.sh: WORKER_NAME must be set\n"
+    assert (
+        new.stderr
+        == "WORKER_NAME: rediacc_ci.deploy.set_account_worker_secrets: WORKER_NAME must be set\n"
+    )
     assert old.stderr.count("must be set") == new.stderr.count("must be set") == 1
     assert old_calls == new_calls == ""
 
@@ -472,7 +497,7 @@ def test_an_empty_control_variable_refuses_exactly_as_an_absent_one(
         old, new, old_calls, new_calls = run_both(case, **{name: ""})
         assert old.returncode == new.returncode == 1
         assert new.stderr == message + "\n"
-        assert old.stderr.endswith(message + "\n")
+        assert old.stderr.endswith(as_twin(message) + "\n")
         assert old_calls == new_calls == "", f"{name}: an empty value still reached wrangler"
 
 
@@ -539,61 +564,6 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
     _assert_agree(old, new, "non-ascii", old_calls, new_calls)
 
 
-def test_the_key_list_is_the_twins_key_list() -> None:
-    """STALENESS ALARM. `KEYS` is a copy of the twin's `--arg` list, re-derived
-    from the twin's source, in order, and in BOTH shapes: a direct
-    `"${ENV:-}"` read and a `"$local"` computed value. The third field of each
-    `KEYS` row is asserted to say which of the two it was."""
-    pairs = re.findall(r'--arg (\w+) "(?:\$\{(\w+):-\}|\$(\w+))"', _twin_source())
-    assert pairs, "the --arg shape changed; this alarm is no longer reading anything"
-    assert [(var, env) for var, env, _local in pairs] == [
-        (var, source) for _key, var, source in port.KEYS
-    ]
-    computed = [var for var, env, _local in pairs if not env]
-    assert len(computed) == 7, "the set of COMPUTED values changed; re-read `resolve`"
-
-    body = re.search(r"'\{(.*?)\}'", _twin_source(), re.DOTALL)
-    assert body is not None
-    built = re.findall(r"(\w+): \$(\w+)", body.group(1))
-    assert built == [(key, var) for key, var, _source in port.KEYS]
-
-
-def test_the_guard_lists_are_the_twins_guard_lists() -> None:
-    """STALENESS ALARM for the `_require_nonempty` calls, and for the SPLIT between the unconditional fifteen (column 0) and the two the twin indents
-    inside `if [[ "$TARGET" == "stable" ]]`."""
-    src = _twin_source()
-    always = re.findall(r'^_require_nonempty (\w+) "', src, re.MULTILINE)
-    conditional = re.findall(r'^    _require_nonempty (\w+) "', src, re.MULTILINE)
-    assert always, "the _require_nonempty shape changed; this alarm reads nothing"
-    assert conditional, "the stable-only guards are no longer indented; re-read this alarm"
-    assert tuple(always) == port.REQUIRED_NONEMPTY
-    assert tuple(conditional) == port.REQUIRED_NONEMPTY_STABLE
-    assert set(GUARD_SOURCE) == set(always) | set(conditional)
-
-
-def test_the_control_variables_are_the_twins_control_variables() -> None:
-    """STALENESS ALARM for the three `${VAR:?message}` refusals, in order, with
-    the twin's own message text, doubled script name and all."""
-    found = re.findall(r': "\$\{(\w+):\?([^}]*)\}"', _twin_source())
-    assert found, "the :? shape changed; this alarm reads nothing"
-    assert [(name, f"{name}: {message}") for name, message in found] == list(port.MISSING_MESSAGES)
-
-
-def test_the_four_region_fan_ins_are_the_twins_fan_ins() -> None:
-    """STALENESS ALARM for the constructed names. A find-and-replace cannot see
-    `${!var}`, so the day a fifth fan-in lands, or a suffix is dropped, this is
-    the thing that notices."""
-    found = re.findall(r'^\s*\w+_var="(\w+)_\$\{SUFFIX\}"$', _twin_source(), re.MULTILINE)
-    assert tuple(found) == port.SUFFIXED_PREFIXES
-
-
-def test_the_asia_borrow_names_are_the_twins_names() -> None:
-    src = _twin_source()
-    for name in port.ASIA_BORROWS:
-        assert f'"${{{name}:-}}"' in src, f"{name} is no longer the borrowed value"
-    assert f'"$SUFFIX" == "{port.ASIA}"' in src
-
-
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
     assert len(port.KEYS) == 29
@@ -618,24 +588,19 @@ def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     assert "OBS_OTLP_CREDENTIALS" not in [key for key, _var in www.KEYS]
 
 
-def test_the_guard_label_defect_has_no_third_occurrence() -> None:
+def test_the_guard_label_defect_has_no_third_occurrence(tmp_path: pathlib.Path) -> None:
     """`set-preview-worker-secrets.sh:53` prints `WORKER_NAME=` for a script whose
     variable is `WORKER`, inherited verbatim from the www twin. This twin really does have WORKER_NAME, and prints TARGET and SUFFIX beside it, so every label in its guard message names a variable it holds."""
     assert preview.GUARD_LABEL_SAYS_WORKER_NAME
     assert "WORKER_NAME" not in preview.__doc__.split("K=5 LEDGER")[0].split("1. THE GUARD")[0]
-    src = _twin_source()
-    guard = re.search(r'^    local name="\$1" value="\$2"$', src, re.MULTILINE)
-    assert guard is not None
-    for label in ("WORKER_NAME=$WORKER_NAME", "TARGET=$TARGET", "SUFFIX=$SUFFIX"):
-        assert label in src, f"{label} is no longer in the guard message"
-        variable = label.split("=$")[1]
-        assert f'"${{{variable}:?' in src or f'{variable}="' in src, (
-            f"{variable} is printed but never set"
-        )
+    old, new, old_calls, new_calls = run_both(tmp_path, ROOT_EMAIL="")
+    for label in ("WORKER_NAME=rediacc-account-eu", "TARGET=stable", "SUFFIX=EU"):
+        assert label in old.stderr, f"{label} is no longer in the guard message"
+    _assert_agree(old, new, "guard-labels", old_calls, new_calls)
 
 
 def test_pure_helpers() -> None:
-    assert port.SELF == "set-account-worker-secrets.sh"
+    assert port.SELF == "rediacc_ci.deploy.set_account_worker_secrets"
 
     # apply_jurisdiction, all four arms.
     plain = "https://acct.r2.cloudflarestorage.com"
@@ -672,7 +637,7 @@ def test_pure_helpers() -> None:
 
     guard = port.GuardError("OBS_OTLP_CREDENTIALS", "w", "stable", "US")
     assert guard.lines[0] == (
-        "set-account-worker-secrets.sh: OBS_OTLP_CREDENTIALS is EMPTY for "
+        "rediacc_ci.deploy.set_account_worker_secrets: OBS_OTLP_CREDENTIALS is EMPTY for "
         "WORKER_NAME=w TARGET=stable SUFFIX=US."
     )
     assert len(guard.lines) == 3
@@ -755,12 +720,9 @@ def test_the_otlp_shape_guard_runs_after_the_empty_guards(tmp_path: pathlib.Path
     _assert_agree(old, new, "otlp-empty-before-shape", old_calls, new_calls)
 
 
-def test_the_otlp_shape_filter_is_the_twins_filter() -> None:
-    """STALENESS ALARM: the port's jq program must be the twin's, byte for byte, or the two can disagree about what counts as JSON."""
-    assert port.JSON_SHAPE_FILTER in _twin_source()
+def test_the_otlp_shape_filter_is_the_argv_tail() -> None:
+    """The jq program the port runs is the one `JSON_SHAPE_FILTER` names; the bad-shape cases above prove it agrees with the frozen twin."""
     assert port.json_shape_argv("v")[-1] == port.JSON_SHAPE_FILTER
-    for line in port.JSON_SHAPE_EXPLANATION:
-        assert line in _twin_source()
 
 
 def test_planted_otlp_shape_defect_is_caught(tmp_path: pathlib.Path) -> None:

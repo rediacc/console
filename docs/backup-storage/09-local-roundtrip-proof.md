@@ -140,8 +140,8 @@ failed unit pair per deleted repo, and they degrade `systemctl --failed` into no
 ## 5. How to re-run it
 
 ```bash
-programs/backup-storage/start-local-plane.sh        # bucket + gateway on :4800
-programs/backup-storage/local-roundtrip.sh          # the proof, exit 0 = passed
+PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_local_plane    # bucket + gateway on :4800
+PYTHONPATH=.ci python3 -m rediacc_ci.drills.backup_roundtrip      # the proof, exit 0 = passed
 ```
 
 The harness creates its own account, subscription, token, repo and licences, byte-compares, runs the mutation control, and deletes everything it made. It was run green end to end before being committed, 9 checks, exit 0 — the ordering 07 §8 argues for, since wiring a proof nobody has watched pass makes a red run indistinguishable from a broken script.

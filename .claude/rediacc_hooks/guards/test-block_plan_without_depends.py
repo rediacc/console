@@ -132,6 +132,13 @@ def tree():
         p = BASE / rel
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(text, encoding="utf-8")
+    # A directory symlink into agent/plans (#bc7d998c): a write through it lands in the plan folder.
+    (BASE / "linkedplans").symlink_to(BASE / "agent" / "plans", target_is_directory=True)
+    # A link then `..` (review 9c6817f3.1-.4 sweep): the kernel follows the link first. `out/l` points INTO the guarded directory, `esc` points OUT of it.
+    (BASE / "agent" / "plans" / "sub").mkdir()
+    (BASE / "out").mkdir()
+    (BASE / "out" / "l").symlink_to(BASE / "agent" / "plans" / "sub", target_is_directory=True)
+    (BASE / "agent" / "plans" / "esc").symlink_to(BASE / "out", target_is_directory=True)
     return BASE
 
 
@@ -141,6 +148,17 @@ def fp(rel):
 
 def write(rel, content):
     return {"tool_name": "Write", "tool_input": {"file_path": fp(rel), "content": content}}
+
+
+def relative(rel, content):
+    """A Write whose path is RELATIVE to the payload's own cwd, the fixture tree; this process runs somewhere else."""
+    if pathlib.Path.cwd().resolve() == BASE.resolve():
+        raise RuntimeError("this process runs in the fixture tree; the row would prove nothing")
+    return {
+        "tool_name": "Write",
+        "cwd": str(BASE),
+        "tool_input": {"file_path": rel, "content": content},
+    }
 
 
 def edit(rel, old, new, replace_all=False):
@@ -160,6 +178,38 @@ NEW = "agent/plans/PLAN-new.md"
 CASES = [
     # ---- refusals ----
     ("a Write without the field", write(NEW, plan()), True),
+    # Judged where the write LANDS (#bc7d998c): each refusal was allowed (rc 0) before.
+    (
+        "a Write without the field through a .. detour",
+        write("agent/plans/x/../PLAN-new.md", plan()),
+        True,
+    ),
+    ("a Write without the field through a symlink", write("linkedplans/PLAN-new.md", plan()), True),
+    ("a .. detour out of the plan folder", write("agent/plans/../PLAN-new.md", plan()), False),
+    # A link then `..` is judged where the kernel writes, and a NUL path writes nothing (review 9c6817f3.5: it raised, rc 1).
+    ("a link into the plan folder, then ..", write("out/l/../PLAN-new.md", plan()), True),
+    (
+        "a link out of the plan folder, then ..",
+        write("agent/plans/esc/../PLAN-new.md", plan()),
+        False,
+    ),
+    (
+        "a NUL in a plan-shaped path is judged by its text",
+        write("agent/plans/PLAN-n\x00.md", plan()),
+        True,
+    ),
+    ("a NUL in a path that is no plan", write("docs/n\x00.md", plan()), False),
+    # Review 3c0094e0.2: a RELATIVE NUL path is read against the payload's cwd, not this process's. The dependency exists only in the fixture tree, so the plan conforms there and dangles anywhere else.
+    (
+        "a relative NUL plan path, its dependency missing in the payload cwd",
+        relative("agent/plans/PLAN-n\x00.md", plan(dep="PLAN-nowhere.md")),
+        True,
+    ),
+    (
+        "a relative NUL plan path, its tree read from the payload cwd",
+        relative("agent/plans/PLAN-n\x00.md", plan(dep="PLAN-z.md")),
+        False,
+    ),
     ("a malformed value", write(NEW, plan(dep="agent/plans/PLAN-y.md")), True),
     ("a dangling token", write(NEW, plan(dep="PLAN-nowhere.md")), True),
     ("a _removed target", write(NEW, plan(dep="PLAN-rm.md")), True),

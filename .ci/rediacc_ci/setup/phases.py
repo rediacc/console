@@ -58,7 +58,7 @@ class Phase:
 # THE TABLE, IN `setup()`'s ORDER, `.ci/legacy/run-legacy.sh:600-698`.
 PHASES: tuple[Phase, ...] = (
     Phase("setup_node_toolchain", ".ci/lib/setup.sh:43", True),
-    Phase("check_node_version", ".ci/lib/local-common.sh:418", True),
+    Phase("check_node_version", ".ci/rediacc_ci/core/local_common.py", True),
     Phase("setup_system_tools", ".ci/lib/setup.sh:248", True),
     Phase(
         "init-submodules.sh",
@@ -75,12 +75,12 @@ PHASES: tuple[Phase, ...] = (
     ),
     Phase("setup_go_toolchain", ".ci/lib/setup.sh:339", True),
     Phase("setup_gh_cli", ".ci/lib/setup.sh:485", True),
-    Phase("ensure_host_tools", ".ci/lib/local-common.sh:587", True),
-    Phase("ensure_bashcov_sup", ".ci/lib/local-common.sh:566", False),
+    Phase("ensure_host_tools", ".ci/rediacc_ci/core/local_common.py", True),
+    Phase("ensure_bashcov_sup", ".ci/rediacc_ci/core/local_common.py", False),
     Phase("setup_git_identity", ".ci/lib/setup.sh:609", False),
     Phase("setup_git_credentials", ".ci/lib/setup.sh:689", True),
     # `ensure_deps` is called bare: its exit code is IGNORED by setup(), which is why `fatal` is False here even though the function itself can fail.
-    Phase("ensure_deps", ".ci/lib/local-common.sh:203", False),
+    Phase("ensure_deps", ".ci/rediacc_ci/core/local_common.py", False),
     Phase(
         "account-bws-bootstrap",
         ".ci/rediacc_ci/setup/machine.py",
@@ -95,9 +95,9 @@ PHASES: tuple[Phase, ...] = (
         False,
         condition="SKIP_ENV_DRIFT_CHECK != 1",
     ),
-    Phase("ensure_docker_installed", ".ci/lib/local-common.sh:669", True),
-    Phase("devbox_ensure_image", ".ci/lib/devbox.sh", True),
-    Phase("devbox_up", ".ci/lib/devbox.sh", True, condition="--no-start was not given"),
+    Phase("ensure_docker_installed", ".ci/rediacc_ci/core/local_common.py", True),
+    Phase("devbox_ensure_image", ".ci/rediacc_ci/core/devbox.py", True),
+    Phase("devbox_up", ".ci/rediacc_ci/core/devbox.py", True, condition="--no-start was not given"),
 )
 
 # Every key, for the readers below. A tuple so a caller cannot reorder it.

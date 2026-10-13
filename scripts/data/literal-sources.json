@@ -100,14 +100,15 @@
     {"path": ".ci/tutorials/apps/secrets-demo/docker-compose.yml", "keys": ["WK_RUNTIME_DIR"], "reason": "deployed to and run on a remote machine as a repository payload, where this tree does not exist"},
     {"path": ".github/ISSUE_TEMPLATE/config.yml", "keys": ["WK_GH_REPO", "WK_SITE_ORIGIN"], "reason": "read statically by GitHub's issue chooser; no workflow step runs before it"},
     {"path": ".github/external-callers.yml", "keys": ["WK_ACCOUNT_REPO", "WK_RENET_REPO"], "reason": "a static inventory of the other repositories that call this one's workflows, read as data"},
-    {"path": "scripts/ci-runner/manifest.ts", "keys": ["WK_MEDIA_ORIGIN"], "lines": "^\\s*PUBLIC_VIDEO_CDN_BASE_URL:", "reason": "gate harnesses (test_gate_gate_anti_vacuity.py:167) copy scripts/ alone into a bare tree and import this manifest; an import from packages/ made check-ci-parity crash there (Cannot find module), so the one env value is written out and value-checked"}
+    {"path": "scripts/ci-runner/manifest.ts", "keys": ["WK_MEDIA_ORIGIN"], "lines": "^\\s*PUBLIC_VIDEO_CDN_BASE_URL:", "reason": "gate harnesses (test_gate_gate_anti_vacuity.py:167) copy scripts/ alone into a bare tree and import this manifest; an import from packages/ made check-ci-parity crash there (Cannot find module), so the one env value is written out and value-checked"},
+    {"path": ".ci/config/merged-prs.json", "keys": ["WK_GH_REPO"], "reason": "a data ledger keyed by owner/repo#N, written by check-pr-condition-ledger.ts --refresh from GitHub's answer; the slug is the record's identity, not a setting"}
   ],
   "symbols": {
     "$comment": "How a finding spells the fix in each language. {key} is WK_NAME, {name} is NAME, {value} a region host.",
     "ts": "{key}, imported from '@rediacc/shared/config/well-known.generated'",
     "worker": "{key}, imported relatively from packages/shared/src/config/well-known.generated",
     "py": "from rediacc_ci.well_known import {name}",
-    "sh": "${key} (source .ci/config/well-known.generated.sh, or .ci/scripts/lib/common.sh / .ci/config/constants.sh)",
+    "sh": "${key} (source .ci/config/well-known.generated.sh, or .ci/config/constants.sh)",
     "workflow": "${{ env.{key} }} after the 'Load well-known' step",
     "config": "{key}, composed at read time (ARG, ${VAR:-...}, a stored path), or declare this file a carrier",
     "region": "regions.json ({value}); TS: BAKED_IN_REGIONS / DEFAULT_REGION from '@rediacc/shared/regions'"

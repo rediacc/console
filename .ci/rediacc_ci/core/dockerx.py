@@ -406,7 +406,7 @@ _ADVICE = {
         "the docker engine is running and this user cannot talk to its socket.\n"
         "  this run only:  sg docker -c '<command>'\n"
         "  permanently:    sudo usermod -aG docker $USER, then log out and back in\n"
-        "  the group is applied automatically by ./run.sh (.ci/lib/local-common.sh:630-653)."
+        "  the group is applied automatically by ./run.sh (rediacc_ci/setup/machine.py reexec_with_docker_group)."
     ),
     STATE_UNKNOWN: (
         "the docker probe did not answer and this module could not classify why.\n"
@@ -501,7 +501,10 @@ def main(argv: list[str]) -> int:
     `state` prints one word on stdout and always exits 0, for a caller that wants to branch in shell without a subshell full of pattern matching.
     """
     if not argv:
-        print("usage: python3 -m rediacc_ci.core.dockerx <verb> [args]", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.dockerx <verb> [args]",
+            file=sys.stderr,
+        )
         return 2
     verb, rest = argv[0], argv[1:]
     host = rest[0] if rest else None

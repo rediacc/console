@@ -49,7 +49,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common, gh_retry
 
-USAGE = "Usage: cleanup-pr-environments.sh --repo <owner/repo> [--dry-run]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_pr_environments --repo <owner/repo> [--dry-run]"
 
 # `true`, exactly -- see parse_args quirk 2 in the sibling port.
 DRY_RUN_ON = "true"
@@ -244,7 +244,8 @@ def main(argv: list[str]) -> int:
         if n_dep != "0":
             log.warn(
                 "SKIP %s: still holds %s deployment record(s) -- run "
-                "cleanup-github-deployments.sh first" % (env, n_dep)
+                "PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_github_deployments first"
+                % (env, n_dep)
             )
             skipped += 1
             continue

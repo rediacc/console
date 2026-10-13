@@ -13,7 +13,7 @@ THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus 
 import json
 
 from rediacc_ci import paths
-from rediacc_ci.core.bws_env import JSON_REQUIRED
+from rediacc_ci.core.bws_env import ARCHIVE_PATTERN, JSON_REQUIRED
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_bws_map.py")
@@ -47,7 +47,7 @@ SECRET_MAP = {
     "secrets": {
         "ALPHA_TOKEN": {"id": "aaaaaaaa-0000-4000-8000-000000000001"},
         "ORPHAN_TOKEN": {"id": "aaaaaaaa-0000-4000-8000-000000000002"},
-        # PREFIX_EU must be mapped or exempt: the deploy script below builds it by SUFFIX expansion from regions.json.
+        # PREFIX_EU must be mapped or exempt: the deploy module below builds it from its SUFFIXED_PREFIXES tuple and regions.json.
         "PREFIX_EU": {"id": "aaaaaaaa-0000-4000-8000-000000000003"},
     },
 }
@@ -89,7 +89,7 @@ def fixture(gate, directory) -> None:
     """A minimal tree the gate can judge. The twin's `fixture`, same contents."""
     for sub in (
         ".ci/config",
-        ".ci/scripts/deploy",
+        ".ci/rediacc_ci/deploy",
         ".github/workflows",
         ".github/actions",
         "scripts/ops",
@@ -109,14 +109,24 @@ def fixture(gate, directory) -> None:
     write(directory / ".ci/config/secret-reachability.json", json.dumps(REACHABILITY))
     write(directory / ".ci/config/secret-supply.json", json.dumps(supply(SELLER_FIELDS)))
     write(directory / "regions.json", '{"regions":[{"secretSuffix":"EU"}]}')
+    # The fan-in is a module-level SUFFIXED_PREFIXES tuple since the Worker-deploy bash twins were ported (ca8d42f5c); assertion 7 reads it there, not a `PREFIX_${SUFFIX}` line in a deploy .sh.
     write(
-        directory / ".ci/scripts/deploy/build.sh",
-        'x_var="PREFIX_${SUFFIX}"\n'
+        directory / ".ci/rediacc_ci/deploy/build.py",
+        'SUFFIXED_PREFIXES = ("PREFIX",)\n'
         "# ORPHAN_TOKEN PREFIX_EU are named here so the corpus scan sees them\n",
     )
     write(
         directory / "scripts/ops/secret-rename.py",
         'RENAMES: list[tuple[str, str]] = [\n    ("OLD_ALPHA", "ALPHA_TOKEN"),\n]\n',
+    )
+    # ASSERTION 15 reads the two files that pin the archive regex and refuses when either is unreadable or does not declare ARCHIVE_RE with bws_env.ARCHIVE_PATTERN, so the fixture carries a declaration in each, in the form the gate parses.
+    write(
+        directory / "private/account/scripts/rotation/consumers/bitwarden-sm.ts",
+        "export const ARCHIVE_RE = /%s/\n" % ARCHIVE_PATTERN,
+    )
+    write(
+        directory / "scripts/ops/bws-map-refresh.py",
+        'import re\n\nARCHIVE_RE = re.compile(r"%s")\n' % ARCHIVE_PATTERN,
     )
     write(directory / ".github/workflows/w.yml", WORKFLOW)
     harness.run([git, "add", "-A"], cwd=directory)
@@ -164,6 +174,22 @@ def test_unexempted_orphan_reds(gate, tmp_path):
     gate.assert_contains(out, "ORPHAN_TOKEN", "assertion 5 names the unexempted mapped name")
     gate.assert_contains(out, "rc=1", "and fails")
     gate.log_pass("assertion 5: a mapped name nobody requests and nobody exempts fails")
+
+
+def test_a_fan_in_the_map_lacks_reds_and_a_missing_fan_in_refuses(gate, tmp_path):
+    """Assertion 7, both directions, through the whole gate: a SUFFIXED_PREFIXES entry whose built name is unmapped is named, and a deploy tree with no fan-in at all refuses rather than passing over nothing."""
+    fixture(gate, tmp_path)
+    write(
+        tmp_path / ".ci/rediacc_ci/deploy/build.py", 'SUFFIXED_PREFIXES = ("PREFIX", "UNMAPPED")\n'
+    )
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(out, "UNMAPPED_EU", "assertion 7 names the built name the map lacks")
+    gate.assert_contains(out, "rc=1", "and fails")
+    (tmp_path / ".ci/rediacc_ci/deploy/build.py").unlink()
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(out, "the runtime-name scan lost its subject", "an empty fan-in refuses")
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.log_pass("assertion 7: an unmapped fan-in reds, and no fan-in at all refuses")
 
 
 def test_twin_appearing_kills_the_exemption(gate, tmp_path):

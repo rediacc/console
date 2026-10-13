@@ -105,6 +105,8 @@ for _name in (
     "wl_roundlog",
     "wl_defersettle",
     "wl_leasehelp",
+    "wl_plandeps",
+    "wl_planorder",
     "wl_retro",
     "worklist_messages",
 ):
@@ -132,6 +134,8 @@ H = _MODS["wl_hints"]
 RL = _MODS["wl_roundlog"]
 DS = _MODS["wl_defersettle"]
 LH = _MODS["wl_leasehelp"]
+PD = _MODS["wl_plandeps"]
+PO = _MODS["wl_planorder"]
 RT = _MODS["wl_retro"]
 
 # Re-exported for direct importers (the suite drives these two as library functions; keeping them on this module is part of the compatibility surface). Absent when their module is broken, which is correct: a caller gets an AttributeError naming this module instead of a silent stub.
@@ -729,10 +733,31 @@ def _retro_brief_cli(argv):
     print(RT.brief(worklist, root, me8, band, item))
 
 
+def _prune_scratch_cli(argv):
+    """--prune-scratch <me> [--write] [--older-than <min>]: list, or delete, the finished directories under this session's scratchpad (worklist #edd646a8). The rules are wl_scratch's; this arm checks `<me>` like every verb and hands it the store's folded items, from which it reads every live lease. Loaded here rather than in the sibling probe above: no other path needs it."""
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    scratch = __import__("wl_scratch")
+    if len(argv) < 2:
+        die(scratch.USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    start = C.project_start()
+    fold = S.load(C.worklist_for(start), sync=False)
+    rc, text = scratch.verb(C.project_root(start), me, C.resolve_session_id(), argv[2:], fold.items)
+    print(text, file=sys.stdout if rc == 0 else sys.stderr)
+    sys.exit(rc)
+
+
 def _review_cli(argv):
     """--review-mark / --review-commit / --review-run / --prune-reviews <me> ...: the per-commit review verbs (agent/plans/PLAN-per-commit-review.md sections 5 and 6).
 
-    The logic is wl_review's; this arm parses and checks `<me>` like every other verb and supplies the worklist fold, which a `deferred #<item>` resolution is checked against. A bare verb prints the usage and exits 2 rather than falling through to the Stop path.
+    The logic is wl_review's; this arm parses and checks `<me>` like every other verb and supplies the two things a `waived #<item> ASKED:<minute>Z` resolution is checked against (agent/plans/PLAN-deferred-findings-block-merge.md D3): the worklist fold with each item's latest triage verdict, and `asked_ok`, the `ASKED:` check against this session's own transcript (wl_checks._asked_in_transcript), so wl_review never imports wl_checks. A bare verb prints the usage and exits 2 rather than falling through to the Stop path.
     """
 
     def die(msg):
@@ -751,11 +776,54 @@ def _review_cli(argv):
 
     def items():
         fold = S.load(C.worklist_for(start), sync=False)
-        return {r["id"]: (r.get("state", " "), r.get("text", "")) for r in fold.items}
+        return {
+            r["id"]: (
+                r.get("state", " "),
+                r.get("text", ""),
+                str((r.get("triage") or {}).get("v") or ""),
+            )
+            for r in fold.items
+        }
 
-    rc, text = RV.verb(argv[0], me, argv[2:], pathlib.Path(C.project_root(start)), items)
+    def asked_ok(text):
+        return CK._asked_in_transcript(text, _lead_transcript(me))
+
+    rc, text = RV.verb(
+        argv[0], me, argv[2:], pathlib.Path(C.project_root(start)), items, asked_ok=asked_ok
+    )
     print(text, file=sys.stderr if rc else sys.stdout)
     sys.exit(rc)
+
+
+def _plantick_dep_gate(planrec, root, rel, selector, evidence):
+    """REFUSE (exit 2) a box tick in a plan whose dependencies are unfinished, unless the box holds a `present` investigation row (the work was already in the tree, so recording it starts nothing) or the evidence carries `DEPS-WAIVED: <reason>` (agent/plans/PLAN-plan-dependencies.md section 2c)."""
+    graph = _dep_graph(root)
+    if graph is None or rel not in graph.plans or not graph.roots(rel):
+        return
+    reason, bad = PD.waiver(evidence)
+    if reason:
+        return
+    sig = None
+    with contextlib.suppress(OSError, planrec.RecordError):
+        text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        sig = planrec.select_box(planrec.open_boxes(text), selector)[3]
+    if sig is not None:
+        row = planrec.investigation_for(root, rel, sig)
+        if (
+            row is not None
+            and not row.get("retro")
+            and str(row.get("verdict") or "").strip().lower() == "present"
+        ):
+            return
+    deps = PD.ItemDeps(
+        rel.rsplit("/", 1)[-1],
+        rel,
+        tuple(graph.roots(rel)),
+        {},
+        {r: tuple(graph.chain(rel, r)) for r in graph.roots(rel)},
+        False,
+    )
+    _dep_refuse(root, deps, "a box of %s" % rel, "--plan-tick", bad)
 
 
 def _plantick_cli(argv):
@@ -771,7 +839,7 @@ def _plantick_cli(argv):
         sys.exit(2)
 
     if len(argv) < 2:
-        die(M.CLI_PLANTICK_USAGE)
+        die(M.CLI_PLAN_ORDER + M.CLI_PLANTICK_USAGE)
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
@@ -793,7 +861,7 @@ def _plantick_cli(argv):
         print("  %d open box(es) can be ticked in place." % n)
         return
     if len(argv) < 5:
-        die(M.CLI_PLANTICK_USAGE)
+        die(M.CLI_PLAN_ORDER + M.CLI_PLANTICK_USAGE)
     rel, selector = argv[2], argv[3]
     rest = [a for a in argv[4:] if a != "--write"]
     write = "--write" in argv[4:]
@@ -806,6 +874,7 @@ def _plantick_cli(argv):
     except ValueError:
         rel = rel.lstrip("./")
 
+    _plantick_dep_gate(R, root, rel, selector, evidence)
     try:
         text, doc, note = R.plan_tick(root, rel, selector, evidence, me)
     except R.RecordError as exc:
@@ -843,8 +912,9 @@ def _planinvestigate_cli(argv):
         print(msg, file=sys.stderr)
         sys.exit(2)
 
+    usage = M.CLI_PLAN_ORDER + M.CLI_PLANINV_USAGE + M.CLI_PLANINV_RETRO_USAGE
     if len(argv) < 2:
-        die(M.CLI_PLANINV_USAGE)
+        die(usage)
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
@@ -856,6 +926,28 @@ def _planinvestigate_cli(argv):
     rest = list(argv[2:])
     write = "--write" in rest
     rest = [a for a in rest if a != "--write"]
+    # `--retro` is a flag like `--write`, accepted anywhere BEFORE the bare `--` (after it, the word is note text).
+    cut_at = rest.index("--") if "--" in rest else len(rest)
+    retro = "--retro" in rest[:cut_at]
+    rest = [a for i, a in enumerate(rest) if not (i < cut_at and a == "--retro")]
+    if not retro and rest and rest[-1] == "--retro":
+        # `--retro` after `--` is note text by grammar, but a trailing `-- <note> --retro --write` is the natural spelling, so the last word is read as the flag.
+        retro = True
+        rest = rest[:-1]
+    # `--evidence <text>` is the `    (ticked) ` line a --retro write inserts beneath a box that has none (default: the note). Like --retro it is read BEFORE the bare `--`.
+    evidence = None
+    cut_at = rest.index("--") if "--" in rest else len(rest)
+    if "--evidence" in rest[:cut_at]:
+        k = rest.index("--evidence")
+        if k + 1 >= cut_at:
+            die("--evidence takes the line to insert\n\n%s" % usage)
+        if not retro:
+            die(
+                "--evidence belongs to --retro: a live investigation writes no plan line\n\n%s"
+                % usage
+            )
+        evidence = rest[k + 1]
+        rest = rest[:k] + rest[k + 2 :]
     # THE NOTE IS EVERYTHING AFTER A BARE `--`, not "the last argument", because a note is a sentence and a sentence quoted as one argv entry is the shape nobody types correctly the first time.
     if "--" in rest:
         cut = rest.index("--")
@@ -863,148 +955,24 @@ def _planinvestigate_cli(argv):
     else:
         head_args, note = rest, ""
     if len(head_args) < 4:
-        die(M.CLI_PLANINV_USAGE)
+        die(usage)
     rel, selector, verdict = head_args[0], head_args[1], head_args[2]
     pointer_tokens = head_args[3:]
     for f in pointer_tokens:
         if f.startswith("--"):
-            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANINV_USAGE))
+            die("unknown flag %r\n\n%s" % (f, usage))
     try:
         rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
     except ValueError:
         rel = rel.lstrip("./")
 
     try:
-        row, resolved = R.plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me)
-    except R.RecordError as exc:
-        die(M.CLI_PLANREC_REFUSED % exc)
-        return
-    payload = {
-        "rel": rel,
-        "sig": row["sig"],
-        "verdict": row["verdict"],
-        "head": (row["head"] or "(no HEAD)")[:12],
-        "br": row["br"] or "(no branch)",
-        "table": R.render_resolution(resolved),
-        "ledger": "/".join(R.INVESTIGATION_REL),
-        "next": M.CLI_PLANINV_NEXT.get(row["verdict"], ""),
-    }
-    if not write:
-        sys.stdout.write(M.CLI_PLANINV_DRY % payload)
-        return
-    R.append_investigation(root, row)
-    print(M.CLI_PLANINV_WROTE % payload)
-
-
-# The three strings below live HERE rather than in worklist_messages.py beside their --plan-investigate siblings, and the reason is scope rather than taste: the session that added this verb owned worklist.py and did not own that file. Moving them across is a one-commit tidy-up for whoever next edits both.
-CLI_PLANBACKFILL_USAGE = (
-    "usage: worklist.py --plan-backfill <me> <agent/plans/PLAN-x.md> <box>\n"
-    "                   <kind>:<token> <kind>:<token>... -- <note...>\n"
-    "                   [--evidence <text>] [--write]\n"
-    "\n"
-    "RETROACTIVE ONLY, for a box that is ALREADY ticked and carries no row in\n"
-    "agent/ledgers/plan-investigation.jsonl. An OPEN box is refused: the live\n"
-    "--plan-investigate can still answer that one honestly, and this verb must\n"
-    "not become a way around it.\n"
-    "\n"
-    "The verdict is not an argument. `present` is the only honest answer about a\n"
-    "box that is already closed, so it is hard-coded.\n"
-    "\n"
-    "`head` is the PARENT of the commit that ticked the box, never the live HEAD:\n"
-    "the parent is the last tree in which the box's question was still open, and\n"
-    "it is an ancestor of the closing commit by construction. The row records\n"
-    "that derivation in a `backfill` field, so a later reader can tell a\n"
-    "reconstruction from a contemporaneous record.\n"
-    "\n"
-    "<box>       an 8-hex box signature, or text matching exactly one DONE box.\n"
-    "<kind>:<token>\n"
-    "            at least TWO pointers of at least TWO DISTINCT kinds, held to\n"
-    "            exactly the bars --plan-investigate holds its own to and\n"
-    "            re-resolved by this process rather than trusted.\n"
-    "            Kinds: blob, tree, commit, ancestor, fileline, gate, plan, trap.\n"
-    "<note>      after a bare `--`, at least 40 characters.\n"
-    "--evidence  the `    (ticked) ` line to insert beneath the box when it has\n"
-    "            none. Defaults to the note. A box that already carries one keeps\n"
-    "            it: a contemporaneous line is worth more than a reconstruction.\n"
-)
-
-CLI_PLANBACKFILL_DRY = (
-    "would backfill one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
-    "  head %(head)s (the parent of %(commit)s, which ticked this box) on %(br)s\n"
-    "  evidence line: %(evidence)s\n"
-    "  every pointer re-resolved just now, none taken from the text:\n"
-    "%(table)s\n"
-    "\n---- NOTHING was written. Re-run with --write. ----\n"
-)
-
-CLI_PLANBACKFILL_WROTE = (
-    "backfilled one investigation of %(rel)s box %(sig)s [verdict: %(verdict)s]\n"
-    "  head %(head)s (the parent of %(commit)s, which ticked this box) on %(br)s\n"
-    "  appended to %(ledger)s\n"
-    "  evidence line: %(evidence)s\n"
-    "%(table)s\n"
-    "\n"
-    "NOT COMMITTED. The plan, the ledger and agent/INDEX.md (whose plan census\n"
-    "this run rewrote) must land in the SAME commit.\n"
-    "\n"
-    "  git add %(rel)s %(ledger)s agent/INDEX.md\n"
-)
-
-
-def _planbackfill_cli(argv):
-    """--plan-backfill <me> <path> <box> <kind>:<tok>... -- <note...> [--evidence <t>] [--write].
-
-    THE REPAIR VERB. The live pipeline is structurally unable to speak about a box that is already `[x]`: `plan_investigate` and `plan_tick` both reach their box through `open_boxes`, so a box a sub-agent flipped with the Edit tool cannot be given the trail it should have had. Everything this refuses is listed in wl_planrec.plan_backfill_investigation, and the refusals are what
-    keep it a repair rather than a bypass.
-
-    NEVER COMMITS, same as every verb in this file. Two files change and both must ride one commit, for the reason --plan-tick's own message states.
-    """
-
-    def die(msg):
-        print(msg, file=sys.stderr)
-        sys.exit(2)
-
-    if len(argv) < 2:
-        die(CLI_PLANBACKFILL_USAGE)
-    me = argv[1]
-    if not C.PREFIX_RE.match(me):
-        die("bad prefix %r: pass YOUR session-id prefix first" % me)
-    _identity_or_die(me, die)
-
-    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
-
-    root = C.project_root(C.project_start())
-    rest = list(argv[2:])
-    write = "--write" in rest
-    rest = [a for a in rest if a != "--write"]
-    evidence = None
-    if "--evidence" in rest:
-        cut = rest.index("--evidence")
-        if cut + 1 >= len(rest):
-            die("--evidence takes the line to insert\n\n%s" % CLI_PLANBACKFILL_USAGE)
-        evidence = rest[cut + 1]
-        rest = rest[:cut] + rest[cut + 2 :]
-    # THE NOTE IS EVERYTHING AFTER A BARE `--`, the same shape --plan-investigate takes, so the two verbs are typed identically.
-    if "--" in rest:
-        cut = rest.index("--")
-        head_args, note = rest[:cut], " ".join(rest[cut + 1 :]).strip()
-    else:
-        head_args, note = rest, ""
-    if len(head_args) < 3:
-        die(CLI_PLANBACKFILL_USAGE)
-    rel, selector = head_args[0], head_args[1]
-    pointer_tokens = head_args[2:]
-    for f in pointer_tokens:
-        if f.startswith("--"):
-            die("unknown flag %r\n\n%s" % (f, CLI_PLANBACKFILL_USAGE))
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
-
-    try:
-        row, resolved, text = R.plan_backfill_investigation(
-            root, rel, selector, pointer_tokens, note, me, evidence=evidence
+        row, resolved = R.plan_investigate(
+            root, rel, selector, verdict, pointer_tokens, note, me, retro=retro
+        )
+        # THE PLAN HALF of a late record, computed BEFORE anything is written so a refusal on it leaves the ledger untouched.
+        retro_text = (
+            R.retro_evidence_text(root, rel, selector, evidence, note, me) if retro else None
         )
     except R.RecordError as exc:
         die(M.CLI_PLANREC_REFUSED % exc)
@@ -1014,20 +982,31 @@ def _planbackfill_cli(argv):
         "sig": row["sig"],
         "verdict": row["verdict"],
         "head": (row["head"] or "(no HEAD)")[:12],
-        "commit": (row["backfill"]["done_commit"] or "")[:12],
         "br": row["br"] or "(no branch)",
-        "evidence": (evidence if evidence is not None else row["note"])[:120],
         "table": R.render_resolution(resolved),
         "ledger": "/".join(R.INVESTIGATION_REL),
+        "next": (
+            M.CLI_PLANINV_RETRO_NEXT % {"retro_commit": row["retro_commit"][:12]}
+            if row.get("retro")
+            else M.CLI_PLANINV_NEXT.get(row["verdict"], "")
+        ),
     }
     if not write:
-        sys.stdout.write(CLI_PLANBACKFILL_DRY % payload)
+        sys.stdout.write(M.CLI_PLANINV_DRY % payload)
+        if row.get("retro"):
+            # A DRY RETRO MUST NOT LOOK LIKE A LIVE ONE: the paragraph saying it is a late record is printed here too, not only after --write.
+            print("\n" + payload["next"])
         return
-    # THE PLAN FIRST, THEN THE LEDGER, the same ordering --plan-tick uses and for the same reason: a crash between them leaves a plan with an evidence line and a ledger without its row, which one more run of this verb finishes.
-    R.write_atomic(pathlib.Path(root) / rel, text)
+    if retro_text is not None:
+        current = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+        if retro_text == current:
+            # The plan half was a no-op: a (ticked) line already sits under the box, and whatever --evidence said was dropped.
+            print(M.CLI_PLANINV_EVIDENCE_KEPT)
+        else:
+            R.write_atomic(pathlib.Path(root) / rel, retro_text)
+            R.refresh_index(root, CK.plan_records, CK.plan_box_census)
     R.append_investigation(root, row)
-    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
-    print(CLI_PLANBACKFILL_WROTE % payload)
+    print(M.CLI_PLANINV_WROTE % payload)
 
 
 def _lead_transcript(me):
@@ -1101,6 +1080,90 @@ def citable_tick_evidence(root, text):
 
     repos = [str(root), *(os.path.join(str(root), p) for p, _b in wl_git.submodules(str(root)))]
     return R.citable_commit_refs(root, text, repos)
+
+
+def _dep_graph(root):
+    """The plan graph (`wl_plandeps.Graph`) the start-time gates judge against, or None when the plans cannot be read: the gates then do not apply, the way every plan read in this file fails soft. The graph is memoised by the plan files' stat signature (`wl_planorder.context`)."""
+    try:
+        ctx, _problem = PO.context(root)
+    except RuntimeError:
+        return None
+    return ctx.graph if ctx is not None else None
+
+
+def _dep_describe(root, deps):
+    """[(root plan, chain text, 'Status: x', first open box text)] for each unfinished root of an `ItemDeps`: what a refusal or a NOTE names."""
+    out = []
+    graph = _dep_graph(root)
+    for plan in deps.roots:
+        target = graph.resolve(plan) if graph is not None else None
+        status = (
+            graph.plans[target.rel].header.status
+            if graph is not None and target is not None and target.rel in graph.plans
+            else "unresolved"
+        )
+        box = None
+        if target is not None and target.rel:
+            with contextlib.suppress(OSError, ValueError, RuntimeError):
+                box = CK.wl_planenforce.first_box(root, target.rel)
+            # A task edge names that one box (`Depends-On: PLAN-y.md#T3`).
+            task = deps.tasks.get(plan)
+            if task and graph is not None and target.rel in graph.plans:
+                found = graph.task_verdict(target.rel, task).box
+                if found is not None:
+                    box = (found.sig, found.body)
+        out.append(
+            (
+                plan,
+                " -> ".join(deps.chains.get(plan) or (deps.plan, plan)),
+                status,
+                "%s %s" % (box[0], box[1][:100]) if box else "(no open box found)",
+            )
+        )
+    return out
+
+
+def _dep_gate(root, fold, rec, rest, verb):
+    """REFUSE (exit 2) a start-time verb on an item whose linked plan has unfinished dependencies (agent/plans/PLAN-plan-dependencies.md section 2c). The exits are named in the text: finish the root, fix the edge in the header, or a `DEPS-WAIVED: <reason>` token (12+ chars) in the lease note or tick evidence, read from the item's own line too so a waiver given at lease time stands at tick time."""
+    graph = _dep_graph(root)
+    deps = PD.item_deps(graph, rec.get("text") or "", fold.items)
+    if deps is None or not deps.roots:
+        return
+    reason, bad = PD.waiver("%s %s" % (rec.get("line") or "", rest))
+    if reason:
+        return
+    _dep_refuse(root, deps, "#%s" % rec["id"], verb, bad)
+
+
+def _dep_refuse(root, deps, what, verb, bad=""):
+    rows = _dep_describe(root, deps)
+    text = M.CLI_DEPS_REFUSED % {
+        "what": what,
+        "verb": verb,
+        "plan": deps.plan,
+        "roots": "\n".join(
+            M.CLI_DEPS_ROOT % {"root": r, "chain": c, "status": st, "box": b}
+            for r, c, st, b in rows
+        ),
+        "first": rows[0][0] if rows else "",
+        "rel": deps.rel,
+    }
+    if bad:
+        text += "\n" + M.CLI_DEPS_WAIVER_BAD % bad
+    print(text, file=sys.stderr)
+    sys.exit(2)
+
+
+def _dep_note(root, text, fold, what):
+    """A stderr NOTE naming the chain when `text` (a new item) or a plan (an adoption) implements a plan whose dependencies are unfinished: allowed, since adding or adopting is ownership and not implementation, but the item will classify as waiting or fail closed."""
+    deps = PD.item_deps(_dep_graph(root), text, fold.items)
+    if deps is None or not deps.roots:
+        return
+    for r, c, st, b in _dep_describe(root, deps):
+        print(
+            M.CLI_DEPS_NOTE % {"what": what, "chain": c, "root": r, "status": st, "box": b},
+            file=sys.stderr,
+        )
 
 
 def _item_cli(argv, worklist):
@@ -1181,6 +1244,7 @@ def _item_cli(argv, worklist):
         hit = PF.match_item(text, PF.prepare(mine))
         rid = S.add_item(worklist, me, text)
         print("added #%s: %s" % (rid, text))
+        _dep_note(C.project_root(C.project_start()), text, fold, "#%s" % rid)
         if hit is not None:
             print(
                 "WARNING: similar open item: #%s -- tick one if they track the same work" % hit[0],
@@ -1228,6 +1292,7 @@ def _item_cli(argv, worklist):
     rest = " ".join(argv[3:]).replace("\n", " ").strip()
     root = C.project_root(C.project_start())
     if mode == "--tick":
+        _dep_gate(root, fold, rec, rest, "--tick")
         if not rest or not CK.completion_evidence(root, rest, _lead_transcript(me)):
             _log_tick_refusal(worklist, me, item_id, rest, "no-evidence")
             die(M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(_lead_transcript(me))))
@@ -1344,6 +1409,7 @@ def _item_cli(argv, worklist):
                 "claimed by no worker" % _rid
             )
             return
+        _dep_gate(root, fold, rec, rest, "--lease")
         until_arg = argv[3]
         if until_arg.startswith("+") and until_arg[1:].isdigit():
             minutes = min(int(until_arg[1:]), C.MAX_LEASE_MIN)
@@ -1726,6 +1792,23 @@ def _migrate_cli(argv):
                 "\n".join(lines) + ("\n" if text.endswith("\n") else ""), encoding="utf-8"
             )
             print("adopted %s (was %s, %d open box(es))" % (rel, owner or "unowned", open_n))
+            _graph = _dep_graph(root)
+            if _graph is not None and rel in _graph.plans and _graph.roots(rel):
+                _roots = tuple(_graph.roots(rel))
+                _deps = PD.ItemDeps(
+                    rel.rsplit("/", 1)[-1],
+                    rel,
+                    _roots,
+                    {},
+                    {r: tuple(_graph.chain(rel, r)) for r in _roots},
+                    False,
+                )
+                for _r, _c, _st, _b in _dep_describe(root, _deps):
+                    print(
+                        M.CLI_DEPS_NOTE
+                        % {"what": rel, "chain": _c, "root": _r, "status": _st, "box": _b},
+                        file=sys.stderr,
+                    )
             any_written = True
         if any_written:
             print("\nnow: npm run check:ci-plan-record -- --update")
@@ -1966,6 +2049,31 @@ def _teammate_idle_cli():
     # One line, one write, O_APPEND. Atomic against concurrent teammates at this size, which is why this needs no lock -- unlike the event log, nothing here is read-modify-write.
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(rec, sort_keys=True) + "\n")
+
+
+def _batch_body_cli(argv):
+    """`--batch-body <me>`: print `plan_gate.batch_body(root, branch)` for the current branch, the PR body a completed turbo batch opens its PR with (agent/plans/PLAN-turbo-local-first.md D2). Read-only. Exit 2 on a bad call, 1 when there is no branch or no plan to name."""
+    if len(argv) != 2 or not C.PREFIX_RE.match(argv[1]):
+        sys.stderr.write(M.CLI_BATCH_BODY_USAGE)
+        sys.exit(2)
+    _identity_or_die(argv[1], _die2)
+    import wl_prscope  # noqa: PLC0415 -- sibling, probed not assumed; carries the plan_gate hop
+
+    plan_gate, commit_policy = wl_prscope._hooks_pkg()
+    root = str(C.project_root(C.project_start()) or os.getcwd())
+    top = commit_policy.toplevel(root) or root
+    branch = commit_policy.current_branch(top)
+    if not branch or branch == "main":
+        sys.stderr.write(M.CLI_BATCH_BODY_REFUSED % ("no live branch is checked out (%r)" % branch))
+        sys.exit(1)
+    body = plan_gate.batch_body(top, branch)
+    if not body.strip():
+        sys.stderr.write(
+            M.CLI_BATCH_BODY_REFUSED
+            % ("agent/plans/QUEUE.md has no queue head and no plan is named for %s" % branch)
+        )
+        sys.exit(1)
+    sys.stdout.write(body if body.endswith("\n") else body + "\n")
 
 
 def _queue_set_cli(argv):
@@ -2752,9 +2860,6 @@ def main():
     if sys.argv[1:2] == ["--plan-investigate"]:
         _planinvestigate_cli(sys.argv[1:])
         return
-    if sys.argv[1:2] == ["--plan-backfill"]:
-        _planbackfill_cli(sys.argv[1:])
-        return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
         return
@@ -2763,14 +2868,21 @@ def main():
         "--review-commit",
         "--review-run",
         "--prune-reviews",
+        "--drop-foreign-reviews",
     ):
         _review_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--retro-brief"]:
         _retro_brief_cli(sys.argv[1:])
         return
+    if sys.argv[1:2] == ["--prune-scratch"]:
+        _prune_scratch_cli(sys.argv[1:])
+        return
     if sys.argv[1:2] == ["--queue-set"]:
         _queue_set_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--batch-body"]:
+        _batch_body_cli(sys.argv[1:])
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",

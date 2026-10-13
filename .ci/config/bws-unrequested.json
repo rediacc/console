@@ -116,6 +116,18 @@
       "kind": "no-github-twin",
       "reason": "human-readable half of the collector login; everything consumes the joined OBS_OTLP_CREDENTIALS."
     },
+    "OBS_READER_SSH_KEY_B64": {
+      "kind": "no-github-twin",
+      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The base64 of the OpenSSH private key file. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
+    },
+    "OBS_READER_SSH_KNOWN_HOSTS": {
+      "kind": "no-github-twin",
+      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The pinned known_hosts line(s) for the observability host; a public value. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
+    },
+    "OBS_READER_SSH_TARGET": {
+      "kind": "no-github-twin",
+      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The `user@host[:port]` the reader connects to; not a credential. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
+    },
     "OTEL_ENDPOINT": {
       "kind": "no-github-twin",
       "reason": "A constant endpoint (the OTLP collector URL), seeded 2026-09-24 from private/account/.env for PLAN-env-to-bitwarden-v2 box 27 so local .env hydration reads the vault; no workflow sends telemetry through it, so no call site requests it."

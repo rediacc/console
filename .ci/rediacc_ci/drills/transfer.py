@@ -56,7 +56,9 @@ class Transfer:
         # ROUND TRIP, not just a write: a GitHub runner lets `keyctl add` succeed and then denies the read, so mirror the two calls secure-storage.ts makes on the read path.
         if shutil.which("keyctl"):
             added = subprocess.run(
-                ["keyctl", "add", "user", KEYRING_PROBE_KEY, "probe-ok", "@u"],
+                # `padd`, with the payload on stdin: the call secure-storage.ts makes since the secret left the argument list.
+                ["keyctl", "padd", "user", KEYRING_PROBE_KEY, "@u"],
+                input=b"probe-ok",
                 capture_output=True,
                 check=False,
             )

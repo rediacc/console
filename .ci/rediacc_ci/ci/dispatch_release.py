@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/ci/dispatch-release.sh` (191 lines).
+"""Port of the retired `.ci/scripts/ci/dispatch-release.sh` (191 lines), whose answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.dispatch-release.jsonl`.
 
 Decides whether the merged commit that triggered this CI run earns a cd-v2 release, and dispatches it. The twin's own 67-line header carries the contract (the `bump-none` rule, why the HEAD commit and not the release range, why every
 failure path FAILS OPEN, and why the decision and the dispatch are separable);
 none of it is restated here.
 
-LIVE CALLERS. This module IS the release decider CI runs; the bash twin is a frozen differential oracle nothing in CI executes. `--decide-only` runs once, as the child `rediacc_ci.ci.initialize.release_decision` starts in initialize step 6b (056fe87b6), and `.github/workflows/ci.yml`'s `finalize-release-sentinel` runs `python3 -m rediacc_ci.ci.dispatch_release --dispatch-only` after the seal, reading initialize's decision rather than deciding again. `check:ci-release-bump-skip`, `test_gate_dispatch_release.py` and `test_ci_initialize.py` drive this module; `test_ci_dispatch_release.py` holds it to the twin.
+LIVE CALLERS. This module IS the release decider CI runs; the bash twin is deleted. `--decide-only` runs once, as the child `rediacc_ci.ci.initialize.release_decision` starts in initialize step 6b (056fe87b6), and `.github/workflows/ci.yml`'s `finalize-release-sentinel` runs `python3 -m rediacc_ci.ci.dispatch_release --dispatch-only` after the seal, reading initialize's decision rather than deciding again. `check:ci-release-bump-skip`, `test_gate_dispatch_release.py` and `test_ci_initialize.py` drive this module; `test_ci_dispatch_release.py` holds it to the twin's frozen golden.
 
 Ledger: `.ci/shadow/w7p6-dispatch-release.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert --k 5`).
 

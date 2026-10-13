@@ -5,8 +5,7 @@ Clone a D1 database from source to target: export the source, wrap the dump in
 `PRAGMA defer_foreign_keys=ON` / `foreign_keys=OFF` because D1 exports tables
 alphabetically rather than in FK dependency order, import into the target, and verify FK integrity afterwards.
 
-LIVE CALLERS, NOT REPOINTED. the removed edge-clone-d1.yml workflow (deleted 2026-09-20) runs the bash twin, and so does `.ci/scripts/deploy/test-d1-migrations.sh:114` (whose own port, `deploy/test_d1_migrations.py`, deliberately invokes the BASH twin for the reason its docstring gives). This module is the twin's verified-equivalent alternative; the cutover is a separate, later,
-driver-only step.
+CALLERS. `deploy.test_d1_migrations` calls `main` in process for each region. The bash twin `clone-d1.sh` was frozen to `goldens/twins/deploy.clone-d1.jsonl` and deleted under operator ruling D5 (PLAN-retire-bash-oracles, unit W7).
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are the only two programs that could, and the differential (`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each on a scratch PATH. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger
 is a separate, achievable piece of work. This is that piece.
@@ -120,8 +119,8 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The twin's own name, carried in its usage line and in the bash-diagnostic stand-ins.
-SELF = "clone-d1.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.clone_d1"
 
 # `EXPORT_ATTEMPTS=3` (twin :90) and the `sleep 10` between them (twin :99).
 # RETRIED because `d1 export` stages through R2 and R2 fails transiently in ways that have nothing to do with the database; the twin's header records the two distinct R2 errors seen on 2026-08-07 that motivated it. A database that genuinely cannot be exported still fails, three times over.
@@ -153,8 +152,8 @@ FK_JQ = ".[0].results | length"
 FK_RESULTS_JQ = ".[0].results"
 FK_COMMAND = "PRAGMA foreign_key_check"
 
-# The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D.
-USAGE = "Usage: clone-d1.sh --source <db-name> --target <db-name> [--wrangler-config <path>]"
+# The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D. `PYTHONPATH=.ci` is part of the command: run from the repository root without it, `python3 -m` cannot find `rediacc_ci` (review finding 08928e86.2).
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>]"
 
 # The one variable `require_var` demands (twin :54). The header claims two; see
 # DEFECT C.

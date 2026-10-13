@@ -20,7 +20,7 @@ WHAT THE GATE DOES, in the order it does it, because the order is the contract:
   4. pass 3, the strict stale sweep: an allowlisted advisory that now has a fix,
      or has stopped firing altogether, fails unless it carries a BLOCKER.
 
-FOUR LIBRARIES ARE NOT RE-PORTED HERE, because they already are. The twin `source`s `emit-advisory.sh`, `blocker-validator.sh`, `release-age.sh` and `age-check.sh`; the last three are themselves SHIMS that shell out to `rediacc_ci.core.allowlist` / `.release_age` / `.age`, and the first has a port at `rediacc_ci.core.advisory`. So this file imports the same four modules the twin
+FOUR LIBRARIES ARE NOT RE-PORTED HERE, because they already are. The twin `source`d `emit-advisory.sh`, `blocker-validator.sh` (both deleted in PLAN-retire-bash-oracles section 12 U1), `release-age.sh` and `age-check.sh`; the last three are themselves SHIMS that shell out to `rediacc_ci.core.allowlist` / `.release_age` / `.age`, and the first has a port at `rediacc_ci.core.advisory`. So this file imports the same four modules the twin
 ultimately reaches, and the differential measures THIS file rather than re-measuring them: `test_core_advisory.py`, `test_core_blocker_validator.py`, `test_core_release_age.py` and `test_core_age.py` own those.
 
 --------------------------------------------------------------------------
@@ -1091,7 +1091,7 @@ class Audit:
             # `age_fail=1`, so the exit code and the loop behaviour match and
             # the stderr text does not. No differential case claims otherwise.
             print(
-                "age-check.sh: unreadable verdict '' for %s/%s" % (file, entry),
+                "rediacc_ci.security.audit: unreadable verdict '' for %s/%s" % (file, entry),
                 file=sys.stderr,
                 flush=True,
             )

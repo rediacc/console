@@ -14,7 +14,7 @@ THE ONE DELIBERATE DIVERGENCE, and it is a verdict divergence, so it is stated r
         exit 0
     fi
 
-which is `exit 0` having asserted nothing. This port REFUSES instead. Two reasons, and the first is not a matter of taste: `.ci/rediacc_ci/battery.py` already scores an exit-0 run with no `PASS:` line as a FAILURE ("exited 0 but made no assertions"), so under the battery that actually runs these files the twin's skip is a red too -- it is only `bash <twin>` driven directly, which
+which is `exit 0` having asserted nothing. This port REFUSES instead. Two reasons, and the first is not a matter of taste: `.ci/rediacc_ci/battery.py` scored an exit-0 run with no `PASS:` line as a FAILURE ("exited 0 but made no assertions"), so under the battery that ran these files the twin's skip was a red too -- it is only `bash <twin>` driven directly, which
 is what `test_twin_parity.py` does, that reads it as green. The second is the rule this whole directory is built on: a case that could not run has not been checked, and unchecked folded into fine is the shape being refused. `check:ci-pytest` runs in `quality-security`, which checks submodules out, so the absent-submodule state is not one CI reaches.
 
 NO `xdist_group`. Every case writes its fixtures into pytest's own `tmp_path` and runs one short-lived `bash -c`; nothing is bound, no module global is mutated, and the subject is only ever read.

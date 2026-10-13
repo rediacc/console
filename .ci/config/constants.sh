@@ -96,7 +96,6 @@ fi
 # =============================================================================
 readonly CONSOLE_ROOT_DIR="${CONSOLE_ROOT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 readonly CI_DIR="$CONSOLE_ROOT_DIR/.ci"
-readonly CI_LIB_DIR="$CI_DIR/lib"
 
 # =============================================================================
 # DOCKER REGISTRY CONFIGURATION
@@ -212,7 +211,7 @@ fi
 # Version source of truth: git tags (e.g., v0.8.3).
 # Version injection at build time: CLI via __CLI_VERSION__ esbuild define, www via
 # APP_VERSION env, web via VITE_APP_VERSION env, renet via ldflags. All env vars are
-# exported together by .ci/scripts/version/inject-env.sh so every build boundary sees
+# exported together by rediacc_ci.version.inject_env so every build boundary sees
 # the same value. bump.sh only updates the package.json that downstream tooling reads
 # at pack/publish time (CLI npm pack).
 readonly VERSION_FILES_JSON=(

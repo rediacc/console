@@ -2,20 +2,6 @@
   "note": "SHRINK-ONLY and GENERATED. Every mypy finding, keyed by (file, code, message) so an id survives a MOVE, with occurrences as `count`. Only LOSING members or shrinking a count is allowed: a NEW id is refused even when the total falls. Drain with `check:ci-python-types --write-baseline` after fixing something, never to clear a red.",
   "findings": [
     {
-      "id": "9072b2fc7b126a6c",
-      "file": ".ci/rediacc_ci/battery.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 2 to \"_env_set\" has incompatible type \"dict[str, str] | None\"; expected \"dict[str, str]\""
-    },
-    {
-      "id": "5d25eaa4aa9514ca",
-      "file": ".ci/rediacc_ci/battery.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"_Environ[str] | dict[str, str]\", variable has type \"dict[str, str] | None\")"
-    },
-    {
       "id": "12f62ec54c555ccf",
       "file": ".ci/rediacc_ci/ci/scope_reconcile_shadow.py",
       "code": "call-overload",
@@ -28,13 +14,6 @@
       "code": "call-overload",
       "count": 1,
       "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"bool\", \"dict[str, object]\""
-    },
-    {
-      "id": "d9b157be8feeb294",
-      "file": ".ci/rediacc_ci/core/allowlist.py",
-      "code": "no-redef",
-      "count": 1,
-      "message": "Name \"failures\" already defined on line 513"
     },
     {
       "id": "b63ad461a3ca43a3",
@@ -653,13 +632,6 @@
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
     },
     {
-      "id": "f566ff775573e285",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_devbox_probes.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
-    },
-    {
       "id": "9f6d1c290cf8455e",
       "file": ".ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py",
       "code": "arg-type",
@@ -693,13 +665,6 @@
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"offenders\" (hint: \"offenders: list[<type>] = ...\")"
-    },
-    {
-      "id": "6138d92d91485fca",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_generate_tag_inputs.py",
-      "code": "assignment",
-      "count": 1,
-      "message": "Incompatible types in assignment (expression has type \"Path\", variable has type \"str\")"
     },
     {
       "id": "89ca29a6eaeb0798",
@@ -765,20 +730,6 @@
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
     },
     {
-      "id": "84ba5b313ed52689",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_closure_untagged.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
-    },
-    {
-      "id": "2c4506fb4982ded7",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py",
-      "code": "operator",
-      "count": 2,
-      "message": "Unsupported operand types for + (\"None\" and \"int\")"
-    },
-    {
       "id": "ecf31c3313150dc5",
       "file": ".ci/rediacc_ci/tests/gates/test_gate_suppression_liveness.py",
       "code": "union-attr",
@@ -802,13 +753,6 @@
     {
       "id": "37a61d7645769410",
       "file": ".ci/rediacc_ci/tests/gates/test_gate_watchdog_designed_failure.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
-    },
-    {
-      "id": "11e3ae9b5bec83ac",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py",
       "code": "union-attr",
       "count": 1,
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
@@ -845,7 +789,7 @@
       "id": "f7c95a294373d4a6",
       "file": ".ci/rediacc_ci/tests/test_build_linux_packages.py",
       "code": "call-overload",
-      "count": 2,
+      "count": 1,
       "message": "No overload variant of \"sub\" of \"Pattern\" matches argument types \"str\", \"object\""
     },
     {
@@ -1178,20 +1122,6 @@
       "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, None]\"; expected \"tuple[str, str]\""
     },
     {
-      "id": "adfd24c131c4a1ba",
-      "file": ".ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, object]\"; expected \"int\""
-    },
-    {
-      "id": "3b1fde99f4a0fb62",
-      "file": ".ci/rediacc_ci/tests/test_infra_ci_stop_elite.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 3 to \"_run\" has incompatible type \"**dict[str, object]\"; expected \"tuple[str, ...]\""
-    },
-    {
       "id": "f390e08f07c241b3",
       "file": ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
       "code": "arg-type",
@@ -1316,97 +1246,6 @@
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"spines\" (hint: \"spines: set[<type>] = ...\")"
-    },
-    {
-      "id": "b27e4407384022c5",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
-      "code": "attr-defined",
-      "count": 7,
-      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
-    },
-    {
-      "id": "3735368eb82dcec1",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"object\" has no attribute \"count\""
-    },
-    {
-      "id": "4190b543610ab7c4",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
-      "code": "operator",
-      "count": 17,
-      "message": "Unsupported right operand type for in (\"object\")"
-    },
-    {
-      "id": "14cf90f21262c572",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
-      "code": "attr-defined",
-      "count": 3,
-      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
-    },
-    {
-      "id": "e8ab11ed1436ddae",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
-      "code": "index",
-      "count": 3,
-      "message": "Value of type \"object\" is not indexable"
-    },
-    {
-      "id": "2e4e5a28803fb7c6",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
-      "code": "operator",
-      "count": 5,
-      "message": "Unsupported right operand type for in (\"object\")"
-    },
-    {
-      "id": "9c32100b04bdfb00",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_integration.py",
-      "code": "arg-type",
-      "count": 2,
-      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
-    },
-    {
-      "id": "700e60f70c8358ad",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_integration.py",
-      "code": "index",
-      "count": 2,
-      "message": "Value of type \"object\" is not indexable"
-    },
-    {
-      "id": "b7a913506ad1d28d",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_integration.py",
-      "code": "operator",
-      "count": 7,
-      "message": "Unsupported right operand type for in (\"object\")"
-    },
-    {
-      "id": "08628ee513084d2f",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 1 to \"len\" has incompatible type \"object\"; expected \"Sized\""
-    },
-    {
-      "id": "8732fa6958ecedd1",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"object\" has no attribute \"count\""
-    },
-    {
-      "id": "618f349cc8489502",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
-      "code": "index",
-      "count": 1,
-      "message": "Value of type \"object\" is not indexable"
-    },
-    {
-      "id": "2dcff809afa89ed2",
-      "file": ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
-      "code": "operator",
-      "count": 6,
-      "message": "Unsupported right operand type for in (\"object\")"
     },
     {
       "id": "09302162e87d44ef",
@@ -2226,20 +2065,6 @@
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"out\" (hint: \"out: list[<type>] = ...\")"
-    },
-    {
-      "id": "8cdd47bade337280",
-      "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
-      "code": "arg-type",
-      "count": 3,
-      "message": "Argument 1 to \"append\" of \"list\" has incompatible type \"tuple[str, str, bool]\"; expected \"tuple[str, str]\""
-    },
-    {
-      "id": "90e83e384703ba86",
-      "file": ".ci/scripts/quality/check_workflow_submodule_deps.py",
-      "code": "return-value",
-      "count": 1,
-      "message": "Incompatible return value type (got \"list[tuple[str, str]]\", expected \"list[tuple[str, str, bool]]\")"
     },
     {
       "id": "0e948028da8a4c6c",

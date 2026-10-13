@@ -463,12 +463,29 @@
         "description": "管理远程配置存储连接",
         "disable": {
           "description": "断开远程存储连接并将配置保存到本地",
+          "optionLocal": "仅在此设备上解除链接：使用缓存副本，不联系服务器",
           "notEnabled": "远程配置未启用。",
           "serverRequired": "无法禁用：配置服务器 {{server}} 不可达，而禁用必须先拉取最新的服务器副本（从过期缓存禁用可能会丢失另一台设备的写入）。服务器恢复可达后重试。",
+          "accessLost": "无法禁用：配置服务器拒绝此账户访问配置 \"{{name}}\"（{{error}}），而禁用必须先拉取最新的服务器副本。如果对该存储的访问权限不会恢复，可解除链接并保留此设备上缓存的副本：rdc config remote disable --local",
+          "localNoCache": "配置 \"{{name}}\" 在此设备上没有服务器配置的缓存副本：从未在此拉取过，或副本已被移除。文件中只有链接和此设备自身的设置，因此没有可保留的内容，也未做任何更改。内容只能来自服务器（rdc config remote enable）；如要改为删除本地文件，请运行：rdc config delete {{name}}",
+          "localUnreadable": "配置 \"{{name}}\" 的缓存副本（服务器版本 {{version}}）无法在此设备上打开（{{error}}），因此未做任何更改。该副本用配置的主密码加密：提供主密码（REDIACC_MASTER_PASSWORD）即可保留整个缓存副本；没有主密码，这里无法恢复副本中的任何内容，只有服务器持有可读的副本。",
+          "localConfirm": "仅在此设备上解除配置 \"{{name}}\" 与 {{server}} 的链接？此处缓存的副本（服务器版本 {{version}}，缓存于 {{cachedAt}}）将成为本地配置。服务器上即使有更新的数据也不会拉取，服务器上不会有任何更改。",
+          "localNeedsYes": "仅在此设备上解除配置 \"{{name}}\" 的链接会保留此处缓存的副本（服务器版本 {{version}}），服务器上即使有更新的数据也不会拉取。未做任何更改。请在交互式终端中确认，或加上 --yes 重新运行该命令。",
+          "localSuccess": "配置 \"{{name}}\" 已在此设备上解除链接，并由缓存副本（服务器版本 {{version}}）保存为本地配置。服务器上即使曾有更新的数据，也未拉取。服务器上的副本以及此设备在服务器上的密钥槽均未更改。",
+          "localSecretLeft": "此设备用于该存储的密钥未被移除，因为其机密存储无法使用：{{error}}",
           "success": "远程配置已禁用。配置 \"{{name}}\" 已保存到本地。"
         },
+        "secretStore": {
+          "keyctlMissing": "此设备没有地方保存其配置存储密钥： 未安装 `keyctl`，因此无法使用内核密钥环。 未保存任何内容。 请安装 keyutils 软件包，或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",
+          "keyringUnusable": "此设备没有地方保存其配置存储密钥： 用 `keyctl` 写入内核用户密钥环的测试密钥无法保存并读回。 未保存任何内容。 未链接用户密钥环的会话密钥环（服务、容器、CI 作业）就是这样；`keyctl link @u @s` 可为当前会话建立链接。 或者设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",
+          "toolMissing": "此设备没有地方保存其配置存储密钥： 无法运行 `{{tool}}`，因此无法使用 {{store}}。 未保存任何内容。 请将 `{{tool}}` 重新加入 PATH， 或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
+          "storeUnusable": "此设备没有地方保存其配置存储密钥： 用 `{{tool}}` 写入 {{store}} 的测试密钥无法保存并读回。 未保存任何内容。 请解锁或修复 {{store}}， 或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
+          "unsupportedPlatform": "此设备没有地方保存其配置存储密钥： {{platform}} 上没有受支持的原生机密存储。 未保存任何内容。 请设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",
+          "invalidChoice": "REDIACC_SECRET_STORE 被设置为 \"{{value}}\"，这不是一个机密存储。唯一可用的值是 \"file\"；不设置则使用本系统的原生存储。",
+          "fileNotice": "REDIACC_SECRET_STORE=file：此设备的配置存储密钥保存在 {{path}}（权限 0600）中，仅受文件权限保护。"
+        },
         "enable": {
-          "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储。请先断开连接: rdc config remote disable",
+          "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储，且此设备可以打开它，因此无需启用。如需取消链接，请运行：rdc config remote disable",
           "description": "将此配置链接到远程加密存储",
           "expired": "设备代码已过期。请重试。",
           "handoffUnreadable": "无法读取浏览器传来的配置。请重新运行：rdc config remote enable",
@@ -496,6 +513,11 @@
           "passwordTokenNotEnrollable": "此 API 令牌未关联组织内的用户，因此无法注册配置槽位。请在网页门户使用你自己的账户签发个人令牌后重试。",
           "passwordWrong": "无法使用该密码解锁配置。请检查 REDIACC_CONFIG_PASSWORD（或你输入的密码）后重试。",
           "received": "已接收移交数据",
+          "reenrollConfigMismatch": "配置 \"{{name}}\" 链接到远程配置 {{linkedConfig}}，但注册是针对远程配置 {{offeredConfig}} 批准的。未做任何更改。请重新运行命令，并针对 {{linkedConfig}} 批准。",
+          "reenrolling": "配置 \"{{name}}\" 已链接到远程存储，但此设备已无法打开它。正在为同一存储重新注册此设备。",
+          "reenrollServerMismatch": "配置 \"{{name}}\" 链接到 {{linkedUrl}}，因此此设备只能在那里重新注册，不能在 {{requestedUrl}} 上注册。请去掉 --api-url 后重新运行命令。",
+          "reenrollStoreMismatch": "配置 \"{{name}}\" 链接到存储 {{linkedStore}}，但注册是针对存储 {{offeredStore}} 批准的。未做任何更改。请使用拥有此配置的组织的账户批准。",
+          "reenrollSuccess": "此设备已重新注册。已从服务器刷新配置 \"{{name}}\"（版本 {{version}}）。",
           "openRelay": "请在任意已登录门户的浏览器中打开此链接：",
           "approveAs": "请在任意以 {{email}} 登录的浏览器中打开此链接：",
           "pairingCode": "配对码（页面要求时请输入）：  {{code}}",
@@ -509,9 +531,10 @@
           "success": "远程配置已启用。配置 \"{{name}}\" 现已与 {{apiUrl}} 同步。"
         },
         "handoffUndecryptable": "服务器中继返回了此设备无法打开的交接数据（{{error}}）：它所用的密钥并非本次运行生成的密钥。请重新运行命令，并只打开它输出的链接。",
+        "storeCopyGone": "存储 {{storeId}} 中已不存在配置 \"{{name}}\" 所链接的远程配置 {{configId}}。未做任何更改；本地文件是此设备最后看到的副本。要解除链接并将该副本保留为本地配置，请运行：rdc config remote disable --local",
         "offlineCacheWarning": "配置服务器 {{server}} 不可达；正在从离线缓存提供配置 \"{{config}}\"（服务器版本 {{version}}，缓存于 {{age}} 前）。在服务器恢复可达之前无法保存更改。",
         "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"rdc config remote refresh\" 以生成缓存。",
-        "passkeySecretMissing": "在系统密钥链中未找到通行密钥。请重新认证: rdc config remote enable",
+        "passkeySecretMissing": "此设备已不再持有配置存储的密钥（在 Linux 上，内核密钥环每次重启都会被清空）。请使用以下命令重新注册此设备：rdc config remote enable",
         "refresh": {
           "description": "强制从远程存储重新获取配置",
           "notEnabled": "远程配置未启用。",
@@ -545,11 +568,11 @@
           "loginInvalid": "续期配置令牌时，账户服务器拒绝了此设备的登录。请运行 \"rdc subscription login\" 后重试。",
           "loginScope": "此设备的登录无法续期配置令牌：该登录早于此功能，或其团队已不存在。请重新运行 \"rdc subscription login\"，然后重试。",
           "loginIpMismatch": "此设备的登录绑定在另一个网络地址上，因此无法续期配置令牌。{{error}} 或者重新运行 \"rdc config remote enable\"，为此设备获取新的配置令牌。",
-          "notStoreMember": "此设备登录的账户不是配置存储 {{storeId}} 的成员，因此未续期配置令牌。请用启用此配置的账户登录（\"rdc subscription login\"），或重新运行 \"rdc config remote enable\"。",
-          "storeMismatch": "配置存储 {{storeId}} 不属于此设备登录的组织，因此未续期配置令牌。请登录拥有此配置的组织（\"rdc subscription login\"），或重新运行 \"rdc config remote enable\"。",
+          "notStoreMember": "此设备登录的账户不是配置存储 {{storeId}} 的成员，因此未续期配置令牌。请用启用此配置的账户登录（\"rdc subscription login\"），然后重试。",
+          "storeMismatch": "配置存储 {{storeId}} 不属于此设备登录的组织，因此未续期配置令牌。请登录拥有此配置的组织（\"rdc subscription login\"），然后重试。",
           "staleGeneration": "配置加密密钥已轮换，而此账户的所有密钥槽都无法打开新密钥，因此未续期配置令牌。请重新注册：rdc config remote enable",
           "rateLimited": "账户服务器正在限制配置令牌续期（{{error}}）。请等待一分钟后重新运行命令。",
-          "refused": "账户服务器未续期此设备的配置令牌（{{error}}）。请重新运行 \"rdc config remote enable\"。"
+          "refused": "账户服务器未续期此设备的配置令牌（{{error}}）。此设备上未做任何更改；请重新运行该命令。"
         },
         "versions": {
           "description": "列出服务器保存的此配置的早期版本",

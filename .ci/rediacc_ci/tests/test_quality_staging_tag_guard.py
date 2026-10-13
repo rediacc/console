@@ -24,7 +24,8 @@ from rediacc_ci.tests import frozen
 SLUG = "staging-tag-guard"
 PORT = pathlib.Path(diff.repo()) / ".ci" / "rediacc_ci" / "quality" / "staging_tag_guard.py"
 
-SUBJECT_REL = ".ci/scripts/docker/cleanup-staging.sh"
+# The deleter the gate counts the rail in: the package module behind the headerless forwarder `.ci/scripts/docker/cleanup_staging.py`. The goldens were recorded with the bash twin as the subject; only the `a-missing-subject` golden names the subject's path, and it moved with the target (an intentional delta, test_a_missing_subject_names_the_python_deleter).
+SUBJECT_REL = ".ci/rediacc_ci/docker/cleanup_staging.py"
 CALLER_REL = ".ci/scripts/release/cleanup-channel-docker-tags.sh"
 
 GUARDED = (
@@ -51,11 +52,11 @@ def build(
     root = tmp_path / "fixture"
     subject = root / SUBJECT_REL
     subject.parent.mkdir(parents=True)
-    body = "#!/bin/bash\n# usage: cleanup-staging.sh --tag staging-abc123\n"
+    body = '"""usage: cleanup_staging.py --tag staging-abc123"""\nimport re\n\n\ndef is_staging_tag(tag):\n'
     if rail:
-        body += '[[ "$TAG" =~ ^staging- ]] || exit 1\n'
+        body += '    return re.match(r"staging-", tag) is not None\n'
     if extra_rail:
-        body += '[[ "$OTHER" =~ ^staging- ]] || exit 1\n'
+        body += '    return re.match(r"staging-", other) is not None\n'
     subject.write_text(body, encoding="utf-8")
     if drop_subject:
         subject.unlink()
@@ -211,9 +212,92 @@ def test_a_colon_in_a_caller_path_yields_a_verdict_rather_than_a_traceback(
     assert fail_line in frozen.read(SLUG, "a-colon-in-a-caller-path")
 
 
+def test_a_missing_subject_names_the_python_deleter(tmp_path: pathlib.Path) -> None:
+    """INTENTIONAL DELTA (Rule T, W5 of PLAN-retire-bash-oracles). The gate's default target is the Python deleter, not the bash twin, so the one golden that names the target's path (`a-missing-subject`) names the new path. The bash default would have reported a file that no longer exists."""
+    assert gate.DEFAULT_TARGET_REL == SUBJECT_REL
+    assert ".ci/scripts/docker/cleanup-staging.sh" not in frozen.read(SLUG, "a-missing-subject")
+    root = build(tmp_path, {CALLER_REL: GUARDED}, drop_subject=True)
+    assert "%s/%s not found" % (root, SUBJECT_REL) in run_port(root)[2]
+
+
+PY_GUARDED = (
+    "import re\n"
+    'TARGET = os.path.join(ROOT, ".ci", "scripts", "docker", "cleanup_staging.py")\n'
+    "def go(channel):\n"
+    '    if re.match(r"staging-", channel):\n'
+    '        subprocess.run([TARGET, "--tag", channel])\n'
+)
+PY_UNGUARDED = (
+    'TARGET = os.path.join(ROOT, ".ci", "scripts", "docker", "cleanup_staging.py")\n'
+    "def go(channel):\n"
+    '    subprocess.run([TARGET, "--tag", channel])\n'
+)
+PY_CALLER_REL = ".ci/rediacc_ci/release/cleanup_channel_docker_tags.py"
+
+
+def test_a_python_caller_that_pre_checks_the_prefix_passes(tmp_path: pathlib.Path) -> None:
+    """The bash forwarder is gone; its port is the one executing caller, and it proves the guard with `re.match(r"staging-", ...)`."""
+    root = build(tmp_path, {PY_CALLER_REL: PY_GUARDED})
+    assert run_port(root)[0] == 0
+
+
+def test_an_unguarded_python_caller_fails_the_gate(tmp_path: pathlib.Path) -> None:
+    """THE PLANT for the Python caller shape: the 2026-09-06 defect, spelled as the port spells the call, must still fail. The same fixture with the pre-check passes in the test above, so the failure is the missing pre-check and nothing else."""
+    root = build(tmp_path, {PY_CALLER_REL: PY_UNGUARDED})
+    code, _, err = run_port(root)
+    assert code == 1
+    assert "%s guards its call against a non-staging tag (got '0' want '1')" % PY_CALLER_REL in err
+
+
+def test_a_rail_that_is_only_in_a_docstring_does_not_count(tmp_path: pathlib.Path) -> None:
+    """The port's only `^staging-` is prose. The rail is the executable `re.match`, so a deleter whose match was edited out and whose docstring still says `^staging-` fails."""
+    root = build(tmp_path, {PY_CALLER_REL: PY_GUARDED}, rail=False)
+    subject = root / SUBJECT_REL
+    subject.write_text(
+        subject.read_text(encoding="utf-8") + '# [[ "$TAG" =~ ^staging- ]]\n', encoding="utf-8"
+    )
+    code, _, err = run_port(root)
+    assert code == 1
+    assert "still refuses a non-staging tag (got '0' want '1')" in err
+
+
+def test_rail_count_reads_code_not_prose() -> None:
+    """The verbatim call quoted in a docstring or comment is not the rail; the call statement is."""
+    call = 'def f(t):\n    return re.match(r"staging-", t) is not None\n'
+    assert gate.rail_count(call) == 1
+    assert gate.rail_count(call + call) == 2
+    assert gate.rail_count('def f(t):\n    """re.match(r"staging-", t)"""\n    return True\n') == 0
+    assert gate.rail_count('# re.match(r"staging-", t)\nx = 1\n') == 0
+    assert gate.rail_count("def (:") == 0
+
+
+def test_a_pathlib_joined_python_caller_is_seen_and_judged(tmp_path: pathlib.Path) -> None:
+    """`ROOT / "cleanup_staging.py"` is an executing reference as much as `os.path.join(..., "cleanup_staging.py")`."""
+    body = (
+        'TARGET = ROOT / ".ci" / "scripts" / "docker" / "cleanup_staging.py"\n'
+        "def go(channel):\n"
+        '    subprocess.run([str(TARGET), "--tag", channel])\n'
+    )
+    root = build(tmp_path, {PY_CALLER_REL: body})
+    code, _, err = run_port(root)
+    assert code == 1
+    assert "%s guards its call against a non-staging tag (got '0' want '1')" % PY_CALLER_REL in err
+
+
+def test_grep_hits_reads_python_callers_under_the_release_package(tmp_path: pathlib.Path) -> None:
+    """`.ci/rediacc_ci/release` is read for `.py` callers; the rest of `.ci/rediacc_ci` still is not."""
+    root = build(
+        tmp_path, {PY_CALLER_REL: PY_UNGUARDED, ".ci/rediacc_ci/quality/noise.py": PY_UNGUARDED}
+    )
+    hits, _ = gate.grep_hits(root)
+    hit_files = {h.split(":", 1)[0] for h in hits}
+    assert str(root / PY_CALLER_REL) in hit_files
+    assert str(root / ".ci/rediacc_ci/quality/noise.py") not in hit_files
+
+
 def test_executing_calls_filters_prose_and_the_subject_itself() -> None:
     """The two filter greps, pinned in both directions."""
-    target = pathlib.Path("/repo/.ci/scripts/docker/cleanup-staging.sh")
+    target = pathlib.Path("/repo/.ci/rediacc_ci/docker/cleanup_staging.py")
     files, n_calls = gate.executing_calls(
         [
             '/repo/a.sh:66:  "$D/cleanup-staging.sh" --tag "$CHANNEL"',
@@ -239,7 +323,9 @@ def test_grep_hits_only_reads_sh_and_yml(tmp_path: pathlib.Path) -> None:
         },
     )
     hits, files_read = gate.grep_hits(root)
-    assert files_read == 3, "the .md is not read"
+    assert files_read == 2, (
+        "the .md is not read, and the .py subject is outside the scanned directories"
+    )
     assert all(".md" not in h.split(":", 1)[0] for h in hits)
 
 

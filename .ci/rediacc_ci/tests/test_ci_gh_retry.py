@@ -37,6 +37,29 @@ def test_a_502_then_success_passes_with_one_backoff():
     assert all(kw == {"env": None, "attempts": 1} for _a, kw in runner.calls)
 
 
+def test_a_local_timeout_is_retried_like_a_502():
+    """A call killed by its own timeout prints nothing; it is transient all the same."""
+
+    class _TimesOutOnce(_Runner):
+        def __call__(self, args, **kw):
+            self.calls.append((args, kw))
+            if len(self.calls) == 1:
+                return ghx.GhResult(["gh", *args], 124, "", "", timed_out=True)
+            return ghx.GhResult(["gh", *args], 0, '{"jobs": []}', "")
+
+    runner = _TimesOutOnce()
+    result, slept = _run(runner)
+    assert result == {"jobs": []}
+    assert len(runner.calls) == 2
+    assert slept == [gh_retry.DELAY_S]
+    assert gh_retry.is_transient(gh_retry.TIMED_OUT_TEXT)
+    # CONTROL: a plain failure with no stderr is still not retried.
+    silent = _Runner((1, "", ""))
+    with pytest.raises(ghx.GhError):
+        _run(silent)
+    assert len(silent.calls) == 1
+
+
 def test_env_reaches_gh_unchanged_on_every_attempt():
     """review_budget passes a token through `env`; each retried call must carry it."""
     runner = _Runner((1, "", SERVER_ERROR), (0, "{}", ""))
@@ -124,3 +147,60 @@ def test_repo_and_timeout_reach_gh_on_every_attempt_only_when_set():
     bare = _Runner((0, "{}", ""))
     gh_retry.gh(["api", "x"], runner=bare, sleep=lambda _s: None)
     assert bare.calls[0][1] == {"env": None, "attempts": 1}
+
+
+# -- the shell-facing verb: `python3 -m rediacc_ci.core.gh_retry <what> -- <gh args>` ----------
+
+
+def _verb(runner, *argv, capsys):
+    slept: list[float] = []
+    rc = gh_retry.main(list(argv), runner=runner, sleep=slept.append)
+    captured = capsys.readouterr()
+    return rc, captured.out, captured.err, slept
+
+
+def test_verb_success_passes_stdout_through_without_trailing_newlines(capsys):
+    runner = _Runner((0, "3\n\n", ""))
+    rc, out, err, slept = _verb(
+        runner, "rollback-label search", "--", "pr", "list", "--jq", "length", capsys=capsys
+    )
+    assert (rc, out, err, slept) == (0, "3\n", "", [])
+    assert runner.calls[0][0] == ["pr", "list", "--jq", "length"]
+
+
+def test_verb_404_prints_release_not_found_without_retry(capsys):
+    stderr = "release not found"
+    runner = _Runner((1, "", stderr))
+    rc, out, err, slept = _verb(
+        runner, "release lookup", "--", "release", "view", "v0.0.0-nope", capsys=capsys
+    )
+    assert rc == 1
+    assert out == ""
+    assert len(runner.calls) == 1
+    assert slept == []
+    assert "release lookup: gh failed after 1 attempt (last exit 1)." in err
+    assert "    release not found" in err.splitlines()
+
+
+def test_verb_5xx_retries_twice_with_injected_sleep_then_fails(capsys):
+    runner = _Runner((1, "", SERVER_ERROR))
+    rc, _out, err, slept = _verb(runner, "pr search", "--", "pr", "list", capsys=capsys)
+    assert rc == 1
+    assert len(runner.calls) == 3
+    assert slept == [5.0, 15.0]
+    assert err.count("transient failure") == 2
+    assert "pr search: gh failed after 3 attempts (last exit 1)." in err
+    assert "    %s" % SERVER_ERROR in err.splitlines()
+
+
+def test_verb_5xx_then_success_returns_the_output(capsys):
+    runner = _Runner((1, "", SERVER_ERROR), (0, "7\n", ""))
+    rc, out, err, slept = _verb(runner, "pr search", "--", "pr", "list", capsys=capsys)
+    assert (rc, out, slept) == (0, "7\n", [5.0])
+    assert err.count("retrying") == 1
+
+
+def test_verb_without_the_separator_is_a_usage_error(capsys):
+    rc, _out, err, _slept = _verb(_Runner((0, "", "")), "what", "pr", "list", capsys=capsys)
+    assert rc == 2
+    assert "usage:" in err

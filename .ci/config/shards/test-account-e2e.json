@@ -1,7 +1,7 @@
 {
   "lane": "test-account-e2e",
   "of": 4,
-  "generatedAt": "2026-09-26T00:00:00.000Z",
+  "generatedAt": "2026-10-13T12:56:33.944Z",
   "legs": [
     {
       "index": 1,
@@ -90,6 +90,7 @@
         "account-e2e:18-contact/18-02-admin-contact.test.ts",
         "account-e2e:20-config-storage/20-02-members.test.ts",
         "account-e2e:20-config-storage/20-09-password-journey.test.ts",
+        "account-e2e:20-config-storage/20-12-real-provider-bitwarden.test.ts",
         "account-e2e:21-partner-portal/21-04-study-exam-cert.test.ts",
         "account-e2e:21-partner-portal/21-08-verify-certificate.test.ts",
         "account-e2e:25-partner-admin/25-01-applications.test.ts",

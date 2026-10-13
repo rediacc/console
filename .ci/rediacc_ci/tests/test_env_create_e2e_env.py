@@ -57,6 +57,7 @@ from rediacc_ci.core import bash_dialect
 from rediacc_ci.env import create_e2e_env as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import frozen
+from rediacc_ci.tests.twin_names import as_twin
 
 SLUG = "create-e2e-env"
 TWIN = ".ci/scripts/env/create-e2e-env.sh"
@@ -434,7 +435,7 @@ def compare(tmp_path: pathlib.Path, name: str) -> tuple:
     got = run(tmp_path, name)
     # bash 5.2 and 5.3 spell the arithmetic clause differently and the port asks the running bash, so both sides are folded; see `frozen.mask_arith_dialect`.
     want = (want[0], *(frozen.mask_arith_dialect(s) for s in want[1:3]), want[3])
-    got = (got[0], *(frozen.mask_arith_dialect(s) for s in got[1:3]), got[3])
+    got = (got[0], *(frozen.mask_arith_dialect(as_twin(s)) for s in got[1:3]), got[3])
     for index, field in enumerate(("exit", "stdout", "stderr", "file")):
         assert got[index] == want[index], "%s: %s diverged:\n twin: %r\n port: %r" % (
             name,
@@ -684,11 +685,9 @@ def test_a_tty_on_stderr_colours_the_output() -> None:
 def test_the_pinned_line_numbers_are_the_ones_bash_printed() -> None:
     """WHAT REPLACED THE SOURCE GREP. See the module docstring.
 
-    `HEREDOC_LINE` is quoted into a user-visible diagnostic, so the recording of the directory case carries the number bash itself printed, and `PRINTF_LINE` points into `common.sh`, which is still in the tree and is still read.
+    `HEREDOC_LINE` is quoted into a user-visible diagnostic, so the recording of the directory case carries the number bash itself printed, and `PRINTF_LINE` points into the deleted `common.sh`; the recording of the non-identifier flag carries the number bash printed.
     """
     assert "line %d: " % port.HEREDOC_LINE in recorded("an-output-that-is-a-directory")[2]
-    common = pathlib.Path(diff.repo(), COMMON).read_text(encoding="utf-8").split("\n")
-    assert common[port.PRINTF_LINE - 1].strip() == 'printf -v "$key" \'%s\' "$value"'
 
 
 def test_the_arith_line_still_names_an_arithmetic_diagnostic() -> None:

@@ -179,7 +179,7 @@ def test_auto_jobs_is_bounded_by_cpu_memory_and_a_ceiling(gate):
                 script = "\n".join(
                     [
                         "ROOT_DIR='%s'" % d,
-                        "source '%s/.ci/scripts/lib/common.sh'" % media_verify.MEDIA_ROOT,
+                        media_verify.LOG_PRELUDE,
                         "source '%s/portable.sh'" % media_verify.MEDIA_DIR,
                         "source '%s'" % MODULE,
                         "_tutorial_auto_jobs",
@@ -239,7 +239,7 @@ def test_the_pool_streams_within_its_bound_and_records_failures(gate):
                 "the failure file names the pair",
             )
 
-        # 3. THE DEFECT THIS PINS, AND THE FIX THAT CLOSED IT. Once the queue reaches --jobs the pool calls `wait -n`, which returns the REAPED JOB'S exit status. Under the `set -euo pipefail` that run.sh and common.sh both set, a non-zero there aborted _tutorial_video_pool on the spot, so the report block never ran: the list was never printed and the per-pair files were abandoned
+        # 3. THE DEFECT THIS PINS, AND THE FIX THAT CLOSED IT. Once the queue reaches --jobs the pool calls `wait -n`, which returns the REAPED JOB'S exit status. Under the `set -euo pipefail` that run.sh and the verify prelude both set, a non-zero there aborted _tutorial_video_pool on the spot, so the report block never ran: the list was never printed and the per-pair files were abandoned
         # in /tmp. Reproduced 2026-09-06 and fixed in pool.sh (`wait -n || true`, plus an explicit `return 0`).
         #
         # rc is 1 either way, so IT IS NOT THE EVIDENCE. The report line is: before the fix nothing printed it, and the sibling job was still in flight when the pool's shell died, so its failure file was a race.

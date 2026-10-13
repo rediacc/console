@@ -25,9 +25,11 @@
 # they decide the trade is worth it; nothing in this repository passes it today.
 #
 # HOW IT MEASURES. bash's own xtrace, turned on INSIDE the shells that run the modules by
-# verify.sh's MEDIA_COVERAGE_FILE seam, with PS4 carrying BASH_SOURCE and LINENO and the
-# trace going to its own file descriptor. No external tool, no instrumentation of the
-# modules, and nothing that needs docker, node, a GPU or a network.
+# the MEDIA_COVERAGE_FILE seam in .ci/rediacc_ci/tests/gates/media_verify.py, with PS4
+# carrying BASH_SOURCE and LINENO and the trace going to its own file descriptor. The gate
+# tests are the pytest ports under .ci/rediacc_ci/tests/gates, run here one file at a
+# time. No instrumentation of the modules, and nothing that needs docker, node, a GPU or a
+# network.
 #
 # THE FIRST DESIGN WAS WRONG AND THE REASON IS WORTH KEEPING. It exported SHELLOPTS=xtrace
 # around each gate test, which is the obvious way to trace a whole process tree. Measured
@@ -67,12 +69,12 @@ ROOT_DIR="$(cd "$MEDIA_DIR/../.." && pwd)"
 # staged pair of directories is the only way to plant an untested module and watch it get
 # named. Unset in every normal run.
 SUBJECT_DIR="${MEDIA_COVERAGE_MODULE_DIR:-$MEDIA_DIR}"
-GATES="${MEDIA_COVERAGE_GATES_DIR:-$ROOT_DIR/.ci/scripts/test/gates}"
-# THE SECOND CORPUS ROOT, added when W7 P5 census batch A4 retired ten bash media gate
-# tests and left their Python ports carrying the cases. `named_outside_a_comment` reads
-# both roots; with only the bash one it reported nine of ten modules as tested by nothing
-# the moment those twins left. It follows MEDIA_COVERAGE_GATES_DIR rather than taking a
-# seam of its own, so a fixture corpus stays exactly the directory the caller named.
+# ONE CORPUS ROOT, the pytest ports. Until 2026-10-08 there were two: the bash gate tests
+# under the bash gate-test folder (since deleted) and their Python ports here. W7 P5 census batch A4 retired
+# ten of the eleven bash media tests, and PLAN-retire-bash-oracles section 12 (unit U2)
+# retired the last one, test-media-r2.sh, once its golden was frozen. A bash root kept
+# after that would be a glob that matches nothing, which is the shape that hides a
+# corpus collapse, so it is gone rather than left empty.
 PORTS="${MEDIA_COVERAGE_GATES_DIR:-$ROOT_DIR/.ci/rediacc_ci/tests/gates}"
 
 MIN=""
@@ -81,7 +83,8 @@ UNTESTED_ONLY=""
 # --only exists so the probe's own machinery can be gated cheaply. A full run drives EVERY
 # media gate test, which is far too slow for `npm run ci`; test_gate_media_docs.py measures one
 # fast test and asserts that the result is non-vacuous, which is what keeps this file from
-# rotting into a script that reports zeroes and is never read.
+# rotting into a script that reports zeroes and is never read. `--only r2` measures
+# test_gate_media_r2.py.
 ONLY="*"
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -111,15 +114,15 @@ done
 TRACE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/rediacc-sh-$$-n$(stat -Lc %i /proc/self/ns/pid 2>/dev/null || echo 0)-media-coverage-XXXXXXXX")"
 trap 'rm -rf "$TRACE_DIR"' EXIT
 
-# THE SUBJECT MODULES, which is not the same as *.sh in this folder. verify.sh is the test
-# support library and coverage.sh is this file; measuring either would be measuring the
-# instrument. The list is derived rather than typed so a new module is included the day it
-# lands, which is the opposite of how a hand-typed list behaves.
+# THE SUBJECT MODULES, which is not the same as *.sh in this folder. coverage.sh is this
+# file, and measuring it would be measuring the instrument. The list is derived rather than
+# typed so a new module is included the day it lands, which is the opposite of how a
+# hand-typed list behaves.
 modules=()
 for f in "$SUBJECT_DIR"/*.sh; do
     [ -f "$f" ] || continue
     case "$(basename "$f")" in
-        verify.sh | coverage.sh) continue ;;
+        coverage.sh) continue ;;
     esac
     modules+=("$(basename "$f")")
 done
@@ -138,7 +141,9 @@ done
 # THE PREDICATE IS "NAMED OUTSIDE A COMMENT", and the comment half is load-bearing rather
 # than fussy. Every one of these gate tests opens with a long header, and those headers
 # name sibling modules while arguing about scope -- test_gate_media_docs.py mentions pool.sh in
-# prose and drives none of it. Counting prose would let a module be "covered" by somebody
+# prose and drives none of it. Only `#` comment lines are excluded; a module named inside a
+# Python docstring still counts, which errs towards calling a module tested and is a known
+# leniency. Counting the `#` header lines as well would let a module be "covered" by somebody
 # writing its name in a paragraph, which is the cheapest possible way to satisfy a check
 # and the least useful. Code that names a module is code that reaches for it.
 #
@@ -161,7 +166,7 @@ done
 # exists to avoid. The real folder has eleven gate tests and would have hidden it forever.
 named_outside_a_comment() {
     local hits
-    hits="$({ grep -Hn -F -- "$1" "$GATES"/test-media-*.sh "$PORTS"/test_gate_media_*.py 2>/dev/null || true; } |
+    hits="$({ grep -Hn -F -- "$1" "$PORTS"/test_gate_media_*.py 2>/dev/null || true; } |
         { grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true; })"
     [ -n "$hits" ]
 }
@@ -207,31 +212,63 @@ fi
 # because a test is failing would make this useless in exactly the situation where it is
 # most wanted. What the run's exit status was is reported at the end.
 #
-# THIS ARM STILL DRIVES BASH ONLY, AND SINCE W7 P5 BATCH A4 THAT IS ONE FILE. Ten of the
-# eleven media gate tests are now Python ports under .ci/rediacc_ci/tests/gates, driven by
-# pytest rather than by an executable path, so the percentages below are measured from
-# whatever bash twins survive and no longer from the whole suite. `media_verify.py`
-# implements the same MEDIA_COVERAGE_FILE seam that verify.sh does, so the ports can be
-# traced; what is missing is a pytest invocation here, which is a design change to this
-# instrument rather than a consequence of the deletion. The "no test at all" assertion
-# above reads both corpora and is unaffected; only the percentage is narrowed, and the
-# header already records that a zero here has two meanings.
+# THE TESTS ARE PYTEST PORTS, ONE FILE PER RUN. Each test_gate_media_<name>.py runs in its
+# own pytest process with MEDIA_COVERAGE_FILE naming its trace, and media_verify.py splices
+# the xtrace prelude into every module shell it starts. test_gate_media_docs.py is left out
+# of a full run: it gates THIS file, so measuring it would run the probe inside itself.
+#
+# A TEST FILE THAT COLLECTED NOTHING IS A FAILURE OF THE PROBE, not of the test. pytest
+# exits 5 when it collects no test, and a trace from such a run is empty for a reason that
+# has nothing to do with the module, so it stops the report rather than lowering a number.
+#
+# THE INTERPRETER is the pinned pytest environment .ci/bootstrap.sh installs, called by
+# its python rather than through the core-lease wrapper in its bin directory: this probe
+# is itself run from inside a pytest worker by test_gate_media_docs.py, and a nested
+# lease request would wait on the cores its own parent holds. A python3 that imports
+# pytest is the fallback; with neither, the probe says how to get one.
+PYTEST_PY="$ROOT_DIR/.ci/cache/toolchain/uv-tools/pytest/bin/python"
+if [ ! -x "$PYTEST_PY" ]; then
+    PYTEST_PY="$(command -v python3 || true)"
+    if [ -z "$PYTEST_PY" ] || ! "$PYTEST_PY" -c 'import pytest' >/dev/null 2>&1; then
+        echo "coverage: no python with pytest found; run 'bash .ci/bootstrap.sh' to install the pinned one" >&2
+        exit 1
+    fi
+fi
+
 failed=()
-for t in "$GATES"/test-media-$ONLY.sh; do
+measured=0
+for t in "$PORTS"/test_gate_media_$ONLY.py; do
     [ -f "$t" ] || {
-        echo "coverage: no gate test matches --only '$ONLY'" >&2
+        echo "coverage: no media gate test matches --only '$ONLY' under $PORTS" >&2
         exit 1
     }
-    name="$(basename "$t" .sh)"
+    name="$(basename "$t" .py)"
+    [ "$ONLY" = "*" ] && [ "$name" = "test_gate_media_docs" ] && continue
     # ONE TRACE FILE PER TEST, so a failing test's partial trace can be told apart from a
-    # module nothing exercises. MEDIA_COVERAGE_FILE is read by verify.sh and by nothing
-    # else; a gate test that does not source verify.sh (test_gate_media_helpers.py, deliberately,
-    # since it validates the scaffolding the others stand on) simply contributes nothing.
-    if ! MEDIA_COVERAGE_FILE="$TRACE_DIR/$name.trace" "$t" >/dev/null 2>&1; then
-        failed+=("$name")
+    # module nothing exercises. A gate test that never reaches media_run_module (the chain
+    # runner in media_verify_ext.py runs a sandbox COPY, which the header explains is not
+    # counted) simply contributes nothing.
+    rc=0
+    (cd "$ROOT_DIR" && MEDIA_COVERAGE_FILE="$TRACE_DIR/$name.trace" \
+        "$PYTEST_PY" -m pytest -q -p no:randomly "$t" >"$TRACE_DIR/$name.log" 2>&1) || rc=$?
+    if [ "$rc" -eq 5 ]; then
+        echo "coverage: pytest collected no test from $t, so its trace would measure nothing" >&2
+        exit 1
     fi
+    # Exit 1 is a gate test that FAILED after running, which leaves a partial trace (a floor, reported below). Anything else (2 a collection or import error, 3 internal, 4 usage, or a signal) ran nothing of the port, so its zero row would be a measurement of nothing.
+    if [ "$rc" -gt 1 ]; then
+        echo "coverage: pytest exited $rc on $t before measuring it, so its trace would measure nothing" >&2
+        tail -n 15 "$TRACE_DIR/$name.log" >&2 || true
+        exit 1
+    fi
+    [ "$rc" -eq 0 ] || failed+=("$name")
+    measured=$((measured + 1))
     : >>"$TRACE_DIR/$name.trace"
 done
+if [ "$measured" -eq 0 ]; then
+    echo "coverage: no media gate test was run, so every number below would be a zero for the wrong reason" >&2
+    exit 1
+fi
 
 # executable_lines <file> -- the denominator. See the header for what it over-counts.
 # `|| true` ON BOTH, and not out of superstition. Under `set -o pipefail` a grep that
@@ -286,6 +323,7 @@ done
 total_pct=0
 [ "$total_exec" -gt 0 ] && total_pct=$((total_cov * 100 / total_exec))
 printf '%-16s %8s %8s %7s%%\n' TOTAL "$total_exec" "$total_cov" "$total_pct"
+echo "measured: $measured media gate test file(s) under $PORTS"
 
 if [ "${#failed[@]}" -gt 0 ]; then
     echo ""

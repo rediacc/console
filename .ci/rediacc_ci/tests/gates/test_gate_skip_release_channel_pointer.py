@@ -2,8 +2,8 @@
 
 Gate: on a `bump-none` merge the R2 uploaders must write NOTHING on a release channel, and must keep writing everything the moment the signal is absent.
 
-WHAT IS DRIVEN. `.ci/scripts/deploy/upload-to-r2.sh` is driven where it lives, in the real tree, because it takes every path it needs as an argument. `.ci/scripts/deploy/upload-repos-to-r2.sh` derives its root from `common.sh`'s own `BASH_SOURCE` and then `cd`s to it, so it is driven from a BYTE-IDENTICAL copy inside a sandbox whose `.ci/scripts/lib`, `.ci/config` and
-`.devcontainer` are SYMLINKS to the real ones. The copy is `cmp`-checked against the original on every run: the sandbox exists to relocate a repo root, not to re-implement a script.
+WHAT IS DRIVEN. `.ci/rediacc_ci/deploy/upload_to_r2.py` and `.ci/rediacc_ci/deploy/upload_repos_to_r2.py` (the ports that replaced `upload-to-r2.sh` and `upload-repos-to-r2.sh`) derive their root from their own file location, so each is driven from a BYTE-IDENTICAL copy inside a sandbox, with the real `.ci` on `PYTHONPATH`; the sandbox's `.ci/scripts/lib`, `.ci/config` and
+`.devcontainer` are SYMLINKS to the real ones, as the sandbox's historical layout. The copy is `cmp`-checked against the original on every run: the sandbox exists to relocate a repo root, not to re-implement a script.
 
 THE MUTANTS ARE ASSEMBLED BY CONSTRUCTION, head-up-to-anchor plus a replacement block written literally in this file plus tail-after-anchor. No pattern substitution of any live source line, so a reworded guard cannot silently produce an identical "mutant". Three refusals guard the assembly and all three are the twin's: the anchors must be found, the anchor must be GONE from the
 output, and the output must differ from its source.
@@ -17,27 +17,44 @@ same number.
 
 THE TWIN IS FLAT (it declares no `test_*` functions), so `test_twin_parity.py` compares this module's control count against the twin's runtime `PASS:` count: six properties, six controls and one shape line, thirteen each side.
 
-NO `xdist_group`. The sandbox is module-scoped and built under pytest's own `tmp_path_factory`, which is per-worker, so two workers get two sandboxes and two recorders; within a worker pytest never runs two tests at once, so the single recorder log is written and read serially. Nothing outside the sandbox is written: the real `upload-to-r2.sh` is EXECUTED but never modified, and
+NO `xdist_group`. The sandbox is module-scoped and built under pytest's own `tmp_path_factory`, which is per-worker, so two workers get two sandboxes and two recorders; within a worker pytest never runs two tests at once, so the single recorder log is written and read serially. Nothing outside the sandbox is written: the real ports are EXECUTED (as copies) but never modified, and
 its mutants are assembled into the sandbox.
 """
 
+import json
 import os
 import pathlib
+import sys
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-REAL_UPLOAD = paths.from_root(".ci", "scripts", "deploy", "upload-to-r2.sh")
-REAL_REPOS = paths.from_root(".ci", "scripts", "deploy", "upload-repos-to-r2.sh")
+REAL_UPLOAD = paths.from_root(".ci", "rediacc_ci", "deploy", "upload_to_r2.py")
+REAL_REPOS = paths.from_root(".ci", "rediacc_ci", "deploy", "upload_repos_to_r2.py")
 VERSION = "9.9.9"
+
+# What the fake `aws s3api list-objects-v2` answers for the repos port: the one package file the fixture builds, listed under both channels the cases use, so the post-upload prune finds its tree complete and has nothing to delete.
+LISTING_JSON = json.dumps(
+    {
+        "Contents": [
+            {
+                "Key": "apt/%s/dists/Packages" % channel,
+                "Size": 14,
+                "LastModified": "2026-01-01T00:00:00+00:00",
+            }
+            for channel in ("edge", "pr-7")
+        ]
+    }
+)
 
 FAKE_AWS = """#!/bin/bash
 printf '%%s\\n' "$*" >>"%(awslog)s"
 case "$1 $2" in
     "s3api head-object") exit 254 ;;  # no .released sentinel -> guard says PROCEED
-    "s3api list-objects-v2") echo 0 ;;
+    # The uploader's guard counts with `echo 0`; the repos port's post-upload prune reads a JSON listing, so its runs name an empty one.
+    "s3api list-objects-v2") echo "${FAKE_LIST_JSON:-0}" ;;
     # A cp whose SOURCE is - is fed on stdin (r2_put); consume it. A cp whose
     # DESTINATION is - (r2_get) reads nothing, and consuming stdin there blocks
     # forever on an inherited terminal -- a hang, not a failure, and a hang in
@@ -47,26 +64,27 @@ esac
 exit 0
 """
 
-FAKE_PURGE = """#!/bin/bash
-cat >>"%(purgelog)s"
+# The purge now runs in process and reaches Cloudflare through `curl`, so the recorder is a fake `curl`: it logs the request body (the URL list) and answers a success body.
+FAKE_CURL = """#!/bin/bash
+printf '%%s\\n' "$*" >>"%(purgelog)s"
+echo '{"success":true,"errors":[]}'
 """
 
-MUT_UNCONDITIONAL = """skip_release_requested() { return 0; }
-if skip_release_requested; then
-    echo "MUTANT: guard is unconditional"
-    exit 0
-fi"""
+MUT_UNCONDITIONAL = """    if True:
+        print("MUTANT: guard is unconditional")
+        return 0"""
 
-MUT_CHANNEL_BLIND = """skip_release_requested() {
-    case "${SKIP_RELEASE:-}" in
-        true | 1 | yes | y | on) return 0 ;;
-        *) return 1 ;;
-    esac
-}
-if skip_release_requested; then
-    echo "MUTANT: guard ignores CHANNEL"
-    exit 0
-fi"""
+MUT_UNCONDITIONAL_PY = """    if True:
+        print("MUTANT: guard is unconditional")
+        return 0"""
+
+MUT_CHANNEL_BLIND_PY = """    if skip_release_requested(dict(os.environ)):
+        print("MUTANT: guard ignores CHANNEL")
+        return 0"""
+
+MUT_CHANNEL_BLIND = """    if skip_release_requested(os.environ.get("SKIP_RELEASE", "")):
+        print("MUTANT: guard ignores CHANNEL")
+        return 0"""
 
 BEGIN_ANCHOR = "SKIP_RELEASE_GUARD_BEGIN"
 END_ANCHOR = "SKIP_RELEASE_GUARD_END"
@@ -128,33 +146,37 @@ class Sandbox:
             )
 
         self._write_exec(self.bin / "aws", FAKE_AWS % {"awslog": self.awslog})
-        # upload-repos-to-r2.sh calls cf-purge-urls.sh by a repo-relative path after cd'ing to get_repo_root().
-        self._write_exec(
-            self.root / ".ci/scripts/deploy/cf-purge-urls.sh",
-            FAKE_PURGE % {"purgelog": self.purgelog},
-        )
+        self._write_exec(self.bin / "curl", FAKE_CURL % {"purgelog": self.purgelog})
 
-        self.sandbox_repos = self.root / ".ci/scripts/deploy/upload-repos-to-r2.sh"
+        (self.root / ".ci/rediacc_ci/deploy").mkdir(parents=True, exist_ok=True)
+        self.sandbox_repos = self.root / ".ci/rediacc_ci/deploy/upload_repos_to_r2.py"
         self.sandbox_repos.write_bytes(REAL_REPOS.read_bytes())
         self.sandbox_repos.chmod(0o755)
         if self.sandbox_repos.read_bytes() != REAL_REPOS.read_bytes():
             raise Refusal(
-                "sandbox copy of upload-repos-to-r2.sh is not byte-identical to the real script"
+                "sandbox copy of upload_repos_to_r2.py is not byte-identical to the real port"
             )
 
-        deploy = self.root / ".ci" / "scripts" / "deploy"
+        repos_dir = self.root / ".ci" / "rediacc_ci" / "deploy"
+        self.sandbox_upload = repos_dir / "upload_to_r2.py"
+        self.sandbox_upload.write_bytes(REAL_UPLOAD.read_bytes())
+        self.sandbox_upload.chmod(0o755)
+        if self.sandbox_upload.read_bytes() != REAL_UPLOAD.read_bytes():
+            raise Refusal("sandbox copy of upload_to_r2.py is not byte-identical to the real port")
         self.mutants = {
-            "a-noguard": self._assemble(REAL_UPLOAD, deploy / "mutant-a-noguard.sh", ""),
+            "a-noguard": self._assemble(self.sandbox_upload, repos_dir / "mutant_a_noguard.py", ""),
             "b-uncond": self._assemble(
-                REAL_UPLOAD, deploy / "mutant-b-uncond.sh", MUT_UNCONDITIONAL
+                self.sandbox_upload, repos_dir / "mutant_b_uncond.py", MUT_UNCONDITIONAL
             ),
-            "c-blind": self._assemble(REAL_UPLOAD, deploy / "mutant-c-blind.sh", MUT_CHANNEL_BLIND),
-            "r-noguard": self._assemble(self.sandbox_repos, deploy / "mutant-r-noguard.sh", ""),
+            "c-blind": self._assemble(
+                self.sandbox_upload, repos_dir / "mutant_c_blind.py", MUT_CHANNEL_BLIND
+            ),
+            "r-noguard": self._assemble(self.sandbox_repos, repos_dir / "mutant_r_noguard.py", ""),
             "r-uncond": self._assemble(
-                self.sandbox_repos, deploy / "mutant-r-uncond.sh", MUT_UNCONDITIONAL
+                self.sandbox_repos, repos_dir / "mutant_r_uncond.py", MUT_UNCONDITIONAL_PY
             ),
             "r-blind": self._assemble(
-                self.sandbox_repos, deploy / "mutant-r-blind.sh", MUT_CHANNEL_BLIND
+                self.sandbox_repos, repos_dir / "mutant_r_blind.py", MUT_CHANNEL_BLIND_PY
             ),
         }
 
@@ -185,13 +207,25 @@ class Sandbox:
             raise Refusal("CONTROL COULD NOT PLANT: anchor survived in %s" % out)
         if out.read_bytes() == source.read_bytes():
             raise Refusal("CONTROL COULD NOT PLANT: %s is identical to %s" % (out, source))
-        self._prove_live(out, text)
+        self._prove_live(out)
         return out
 
-    def _prove_live(self, mutant: pathlib.Path, text: str) -> None:
+    def _prove_live(self, mutant: pathlib.Path) -> None:
         """The probe is chosen to be independent of the plant: it exercises argument handling, which sits ABOVE the spliced region in both scripts."""
-        if "upload-repos-to-r2.sh: CHANNEL must be set" in text:
-            probe = self._env_run(["bash", str(mutant)], {}, unset=("CHANNEL", "SKIP_RELEASE"))
+        if mutant.name.startswith(("mutant_a", "mutant_b", "mutant_c")):
+            probe = self._env_run(
+                [sys.executable, str(mutant), "--help"], self._python_env(), unset=("SKIP_RELEASE",)
+            )
+            if probe.rc != 0 or "Usage:" not in probe.combined:
+                raise Refusal(
+                    "MUTANT IS NOT LIVE: %s --help exited %d without a usage line\n%s"
+                    % (mutant, probe.rc, harness.render_output(probe))
+                )
+            return
+        if mutant.suffix == ".py":
+            probe = self._env_run(
+                [sys.executable, str(mutant)], self._python_env(), unset=("CHANNEL", "SKIP_RELEASE")
+            )
             if "CHANNEL must be set" not in probe.combined:
                 raise Refusal(
                     "MUTANT IS NOT LIVE: %s did not reach its CHANNEL check (exit %d)\n%s"
@@ -206,6 +240,11 @@ class Sandbox:
             )
 
     # -- drivers -------------------------------------------------------------
+
+    @staticmethod
+    def _python_env() -> dict:
+        """The sandboxed port imports `rediacc_ci` from the real checkout; its own file location only fixes the repository root."""
+        return {"PYTHONPATH": str(paths.from_root(".ci")), "PYTHONDONTWRITEBYTECODE": "1"}
 
     def _env_run(
         self, argv: list[str], assignments: dict, unset: tuple[str, ...] = ()
@@ -247,9 +286,10 @@ class Sandbox:
         }
         if skip:
             assignments["SKIP_RELEASE"] = skip
+        assignments.update(self._python_env())
         return self._env_run(
             [
-                "bash",
+                sys.executable,
                 str(script),
                 "--version",
                 VERSION,
@@ -271,10 +311,12 @@ class Sandbox:
             "CLOUDFLARE_R2_ENDPOINT": "https://example.invalid",
             "CLOUDFLARE_ZONE_ID": "zone",
             "CLOUDFLARE_API_TOKEN": "tok",
+            "FAKE_LIST_JSON": LISTING_JSON,
         }
         if skip:
             assignments["SKIP_RELEASE"] = skip
-        return self._env_run(["bash", str(script)], assignments, unset=("SKIP_RELEASE",))
+        assignments.update(self._python_env())
+        return self._env_run([sys.executable, str(script)], assignments, unset=("SKIP_RELEASE",))
 
 
 @pytest.fixture(scope="module")
@@ -396,7 +438,7 @@ def test_1_skip_release_on_edge_writes_nothing(gate, sandbox):
         gate,
         sandbox,
         case_skip_writes_nothing,
-        REAL_UPLOAD,
+        sandbox.sandbox_upload,
         "1. --skip-release on edge writes NOTHING to R2",
     )
 
@@ -406,7 +448,7 @@ def test_2_clean_edge_still_writes_the_channel_pointer(gate, sandbox):
         gate,
         sandbox,
         case_clean_writes_pointer,
-        REAL_UPLOAD,
+        sandbox.sandbox_upload,
         "2. no flag on edge still writes the channel pointer + cli/v%s/" % VERSION,
     )
 
@@ -416,7 +458,7 @@ def test_3_skip_release_is_ignored_on_a_pr_channel(gate, sandbox):
         gate,
         sandbox,
         case_pr_channel_unaffected,
-        REAL_UPLOAD,
+        sandbox.sandbox_upload,
         "3. SKIP_RELEASE is ignored on pr-7",
     )
 

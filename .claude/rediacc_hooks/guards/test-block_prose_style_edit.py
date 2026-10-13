@@ -12,11 +12,15 @@ IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, not the module's `run` directly
 THE PATHS BELOW ARE RELATIVE AND DERIVED FROM THIS FILE. An absolute path under one operator's checkout is the exact failure CLAUDE.md's "Worktree Warning" names: in another worktree it would silently test a stale copy, or nothing.
 """
 
+import atexit
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 
+REPO = pathlib.Path(__file__).resolve().parents[3]
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_edit"]
 
@@ -24,8 +28,19 @@ GUARD_ARGV = [sys.executable, DISPATCH, "block_prose_style_edit"]
 Y = "y" + "ou"
 EYE = "I"
 
+# A LINK, THEN `..` (review 0067b4c2.3): the kernel follows the link before it applies the `..`. `INWARD` sits outside the tree and points at a directory under `docs/`, so `INWARD/../probe.md` is typed outside and lands at `docs/probe.md`. NOTHING IS MADE INSIDE THE TREE (review 13505e0b.3: the other direction needs a link under `docs/`, which this harness used to create in the live checkout for as long as it ran). That direction is proved against a scratch root in `tests/test_landing.py::test_the_prose_guard_scopes_an_edit_by_where_it_lands`.
+_LINKS = pathlib.Path(tempfile.mkdtemp(prefix="test-block-prose-style-edit-"))
+atexit.register(shutil.rmtree, str(_LINKS), True)
+INWARD = _LINKS / "l"
+INWARD.symlink_to(REPO / "docs" / "agent-reference", target_is_directory=True)
+
 CASES = [
     # (name, tool_input, expect_blocked) ---- the block direction ------------------------------------------
+    (
+        "a link into docs, then ..: the edit lands in the tree",
+        {"file_path": "%s/../probe.md" % INWARD, "content": "Did %s run the tests?\n" % Y},
+        True,
+    ),
     (
         "a markdown write addressing the reader",
         {"file_path": "docs/probe.md", "content": "Did %s run the tests?\n" % Y},

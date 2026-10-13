@@ -1,4 +1,4 @@
-"""Differential: `rediacc_ci.pr.sync_epic_block` against its twin `.ci/scripts/pr/sync-epic-block.sh`.
+"""Differential: `rediacc_ci.pr.sync_epic_block` against its bash oracle, the retired `sync-epic-block.sh` body kept below.
 
 A DISPOSABLE LOCAL GIT REPO (never GitHub), on the strategy the retired `test_review_epic_context.py` used: real commits, an `agent/pr/<branch>.md` snapshot the twin reads by convention, `git rev-parse --show-toplevel` resolving the fixture root rather than this checkout's.
 
@@ -20,10 +20,10 @@ import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.core import gh_retry, ghx
+from rediacc_ci.tests.twin_names import as_twin
 
 ROOT = paths.repo_root()
-# The shipped `.ci/scripts/pr/sync-epic-block.sh` is a thin `exec` of the port (its one-shot `gh pr view` read was the PLAN-gh-retry class), so it cannot be this differential's oracle: comparing it to the port would compare the port with itself. The bash body it replaced is kept HERE, verbatim, and written into each case's tmp dir. Not a tracked `.sh`, because the language policy baseline refuses a new bash path.
-SHIPPED = ROOT / ".ci" / "scripts" / "pr" / "sync-epic-block.sh"
+# The oracle is the bash body the port replaced (its one-shot `gh pr view` read was the PLAN-gh-retry class). It is kept HERE, verbatim, and written into each case's tmp dir. Not a tracked `.sh`, because the language policy baseline refuses a new bash path.
 TWIN_NAME = "sync-epic-block.sh"
 TWIN_BODY = r"""#!/usr/bin/env bash
 # Sync the worklist epic block into a PR description.
@@ -252,11 +252,11 @@ def _assert_agree(old, new, label: str) -> None:
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
-    assert new.stdout == old.stdout, (
-        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
+    assert as_twin(new.stdout) == old.stdout, (
+        f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {as_twin(new.stdout)!r}"
     )
-    assert new.stderr == old.stderr, (
-        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
+    assert as_twin(new.stderr) == old.stderr, (
+        f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {as_twin(new.stderr)!r}"
     )
 
 
@@ -466,34 +466,6 @@ def test_pr_view_4xx_fails_at_once_with_gh_stderr(monkeypatch, tmp_path, capsys)
     assert len(calls) == 1
     assert edits == []
     assert "HTTP 404" in capsys.readouterr().err
-
-
-# --- the shipped script is the port, and its read is retried ------------------------------
-
-
-def test_the_shipped_script_is_a_thin_exec_of_the_port() -> None:
-    """The cutover, pinned. The shipped script must hold no `gh` call of its own (the one-shot `gh pr view` was the PLAN-gh-retry class) and must hand its argv to the port unchanged."""
-    text = SHIPPED.read_text(encoding="utf-8")
-    code = [
-        line for line in text.splitlines() if line.strip() and not line.lstrip().startswith("#")
-    ]
-    assert not any(" gh " in " %s " % line for line in code), "the shipped script calls gh itself"
-    assert code[-1] == 'exec python3 -m rediacc_ci.pr.sync_epic_block "$@"', code[-1]
-    assert "gh pr view" in TWIN_BODY, "the oracle lost the read it exists to compare"
-
-
-def test_the_shipped_script_and_the_oracle_agree_end_to_end(tmp_path: pathlib.Path) -> None:
-    """Through the real entry point an agent runs: the edit path, the gh call sequence and the streams match the frozen bash body."""
-    repo = _repo(tmp_path)
-    _publish(repo, "0906-1", "- [x] a\n- [ ] b\n")
-    gh_env = {
-        "FAKE_GH_BODY": "Body.\n\n<!-- worklist-epics:begin -->\nstale\n<!-- worklist-epics:end -->\n"
-    }
-    old, old_calls = _run(_twin(tmp_path), repo, "5", "0906-1", gh_env=gh_env)
-    new, new_calls = _run(SHIPPED, repo, "5", "0906-1", gh_env=gh_env)
-    assert old.returncode == 0
-    _assert_agree(old, new, "shipped-vs-oracle")
-    assert _normalize_edit_call(old_calls) == _normalize_edit_call(new_calls)
 
 
 # --- INTENTIONAL DELTA (Rule T): a sync refuses a snapshot the pushed tip does not hold ---

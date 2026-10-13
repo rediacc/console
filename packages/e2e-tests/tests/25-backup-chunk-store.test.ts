@@ -181,29 +181,33 @@ interface BrowseListing {
 function parseBrowseListing(stream: string): BrowseListing | undefined {
   let found: BrowseListing | undefined;
   for (const rawLine of stream.split('\n')) {
-    let line = rawLine;
-    const wrapped = /msg="\[[a-z_]+\] (\{.*?\})"\s*$/.exec(rawLine.trim());
-    if (wrapped) {
-      line = wrapped[1].replaceAll('\\"', '"');
-    }
-    const trimmed = line.trim();
-    if (!trimmed.startsWith('{') || !trimmed.includes('"entries"')) continue;
-    try {
-      // Parsed as unknown, then narrowed. Casting to BrowseListing first made the guard below dead code in the type system's eyes -- it "knew" the value was a listing because I told it so, which is exactly the shape of assertion this suite exists to distrust.
-      const parsed: unknown = JSON.parse(trimmed);
-      if (
-        parsed !== null &&
-        typeof parsed === 'object' &&
-        Array.isArray((parsed as BrowseListing).entries) &&
-        typeof (parsed as BrowseListing).source === 'string'
-      ) {
-        found = parsed as BrowseListing;
-      }
-    } catch {
-      // the dispatcher's own --debug JSON logging shares this stream
-    }
+    found = parseListingLine(rawLine) ?? found;
   }
   return found;
+}
+
+/** Parse one stream line as a listing, unwrapping the escaped log-line form first. */
+function parseListingLine(rawLine: string): BrowseListing | undefined {
+  const wrapped = /msg="\[[a-z_]+\] (\{.*?\})"\s*$/.exec(rawLine.trim());
+  const trimmed = (wrapped ? wrapped[1].replaceAll('\\"', '"') : rawLine).trim();
+  if (!trimmed.startsWith('{') || !trimmed.includes('"entries"')) return undefined;
+  try {
+    // Parsed as unknown, then narrowed. Casting to BrowseListing first made the guard below dead code in the type system's eyes -- it "knew" the value was a listing because I told it so, which is exactly the shape of assertion this suite exists to distrust.
+    const parsed: unknown = JSON.parse(trimmed);
+    return isBrowseListing(parsed) ? parsed : undefined;
+  } catch {
+    // the dispatcher's own --debug JSON logging shares this stream
+    return undefined;
+  }
+}
+
+function isBrowseListing(parsed: unknown): parsed is BrowseListing {
+  return (
+    parsed !== null &&
+    typeof parsed === 'object' &&
+    Array.isArray((parsed as BrowseListing).entries) &&
+    typeof (parsed as BrowseListing).source === 'string'
+  );
 }
 
 test.describe
@@ -229,7 +233,7 @@ test.describe
       };
 
       /** Drive `backup_verify` the way rdc does: the FunctionDef, via a vault. */
-      const verifyViaFunction = async (guid: string, level?: string) => {
+      const verifyViaFunction = (guid: string, level?: string) => {
         const vault = new VaultBuilder()
           .withFunction('backup_verify')
           .withTeam(TEST_TEAM)
@@ -240,7 +244,7 @@ test.describe
         return runner.executeWithVault('backup_verify', vault);
       };
 
-      const browseViaFunction = async (guid: string, params?: Record<string, string>) => {
+      const browseViaFunction = (guid: string, params?: Record<string, string>) => {
         const vault = new VaultBuilder()
           .withFunction('backup_browse')
           .withTeam(TEST_TEAM)

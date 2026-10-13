@@ -1,6 +1,6 @@
-"""`rediacc_ci.core.advisory` against the live `emit-advisory.sh`.
+"""`rediacc_ci.core.advisory` against the frozen answers of `emit-advisory.sh`.
 
-THE TWIN IS LIVE, not frozen: `.ci/scripts/lib/emit-advisory.sh` still carries its implementation and is still reached by `blocker-validator.sh:80` and by `age-check.sh`; `.ci/scripts/security/audit.sh` was a third reader until W7P5-b deleted it. Every case below sources that file.
+THE TWIN IS FROZEN: `.ci/scripts/lib/emit-advisory.sh` was frozen into `goldens/twins/lib.emit-advisory.jsonl` (13 cases, `--source bash`) and deleted in PLAN-retire-bash-oracles section 12 U1, once its last sourcer, `blocker-validator.sh`, went with it. Every bash call below goes through `differential.twin_streams`, which answers from that golden; the bash text is `git cat-file -p cc6278e4b8530fe98cb64ba15ad84282d0676b4e`.
 
 THE TWIN IS DRIVEN STANDALONE, WITH NO `common.sh`, AND THAT IS THE WHOLE DIFFERENTIAL'S SCOPE. `emit-advisory.sh` defines its loggers only when nothing has defined them already (`declare -F`), so sourcing `common.sh` first replaces four of the functions under test with common.sh's. A differential that did that would be measuring `common.sh` while appearing to measure this file.
 The transitive branch belongs to whichever box ports `common.sh`; it is named here so its absence reads as a boundary rather than as an oversight.
@@ -125,10 +125,21 @@ def _shquote(text: str) -> str:
     return "'" + text.replace("'", "'\\''") + "'"
 
 
+def twin(text: str, env: dict[str, str]):
+    """The frozen twin's `(rc, out, err)` for the program `text`; `--source port` re-records it from the port driver."""
+    quoted = "printf '%%s' %s" % _shquote(text)
+    return diff.twin_streams(
+        TWIN,
+        "%s\n%s | _drive" % (BASH_DRIVER, quoted),
+        env=env,
+        port=lambda: diff.bash_streams("%s | %s" % (quoted, PY_DRIVER), env=env),
+    )
+
+
 def run_both(text: str, overrides: dict):
     env = diff.env_for(**overrides)
     quoted = "printf '%%s' %s" % _shquote(text)
-    old = diff.bash_streams("%s\n%s | _drive" % (BASH_DRIVER, quoted), env=env)
+    old = twin(text, env)
     new = diff.bash_streams("%s | %s" % (quoted, PY_DRIVER), env=env)
     return old, new
 
@@ -160,10 +171,7 @@ def test_the_two_streams_are_really_separate() -> None:
 
     A CONTROL ON THE CONTROL. If `bash_streams` ever merged the two, every case above would still pass -- both sides would be merged identically -- while the stream swap this file exists to catch became invisible.
     """
-    _rc, out, err = diff.bash_streams(
-        "%s\nprintf '%%s' %s | _drive" % (BASH_DRIVER, _shquote(program(FULL))),
-        env=diff.env_for(),
-    )
+    _rc, out, err = twin(program(FULL), diff.env_for())
     assert "✗ 1234" in err
     assert "Affected:" not in err
     assert "  Affected: <= 1.15.11  →  Patched in: 1.16.0" in out
@@ -172,10 +180,7 @@ def test_the_two_streams_are_really_separate() -> None:
 
 def test_under_ci_the_annotation_moves_to_stdout() -> None:
     """The other half of the stream story, and the reason CI is a case at all."""
-    _rc, out, err = diff.bash_streams(
-        "%s\nprintf '%%s' %s | _drive" % (BASH_DRIVER, _shquote(program(FULL))),
-        env=diff.env_for(CI="true"),
-    )
+    _rc, out, err = twin(program(FULL), diff.env_for(CI="true"))
     assert out.startswith("::error::1234 (lodash, critical, GHSA")
     assert err == ""  # the whole advisory moved to stdout
 

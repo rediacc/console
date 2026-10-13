@@ -36,7 +36,7 @@ export interface RepositoryTrimOptions {
 export class RepositoryMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
-  async repositoryNew(
+  repositoryNew(
     name: string,
     size: string,
     password?: string,
@@ -51,7 +51,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryRm(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryRm(name: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_delete',
       repository: name,
@@ -59,7 +59,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryMount(
+  repositoryMount(
     name: string,
     password?: string,
     datastorePath?: string,
@@ -75,7 +75,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryUnmount(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryUnmount(name: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_unmount',
       repository: name,
@@ -83,11 +83,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryUp(
-    name: string,
-    datastorePath?: string,
-    networkId?: string
-  ): Promise<ExecResult> {
+  repositoryUp(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_up',
       repository: name,
@@ -96,11 +92,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryDown(
-    name: string,
-    datastorePath?: string,
-    networkId?: string
-  ): Promise<ExecResult> {
+  repositoryDown(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_down',
       repository: name,
@@ -109,14 +101,14 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryList(datastorePath?: string): Promise<ExecResult> {
+  repositoryList(datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_list',
       datastorePath,
     });
   }
 
-  async repositoryResize(
+  repositoryResize(
     name: string,
     newSize: string,
     password?: string,
@@ -131,7 +123,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryInfo(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryInfo(name: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_info',
       repository: name,
@@ -139,7 +131,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryStatus(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryStatus(name: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_status',
       repository: name,
@@ -147,7 +139,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryValidate(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryValidate(name: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_validate',
       repository: name,
@@ -155,7 +147,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryGrow(
+  repositoryGrow(
     name: string,
     newSize: string,
     password?: string,
@@ -174,7 +166,7 @@ export class RepositoryMethods {
   // datastore placement. Exercised on docker repos here; the kube arm rides the
   // cluster suite live-run.
 
-  async repositoryHealth(name: string, datastorePath?: string): Promise<ExecResult> {
+  repositoryHealth(name: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_health',
       repository: name,
@@ -182,7 +174,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryLogs(
+  repositoryLogs(
     name: string,
     opts: { container?: string; lines?: string; datastorePath?: string } = {}
   ): Promise<ExecResult> {
@@ -195,7 +187,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryExec(
+  repositoryExec(
     name: string,
     command: string,
     opts: { container?: string; datastorePath?: string } = {}
@@ -210,11 +202,7 @@ export class RepositoryMethods {
   }
 
   // repository_promote (formerly repository_takeover): swap a fork's LUKS image over its grand so the fork's data becomes the grand's (spec 06 §2).
-  async repositoryPromote(
-    parent: string,
-    fork: string,
-    datastorePath?: string
-  ): Promise<ExecResult> {
+  repositoryPromote(parent: string, fork: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_promote',
       parent,
@@ -226,7 +214,7 @@ export class RepositoryMethods {
   // repository_policy_set / _get / repository_trim (renet#76): size policy the storage-maintain timer consumes + on-demand pool reclaim. `name` is a repo
   // GUID; omitting it addresses the machine-wide default (policy) / all mounted
   // repos (trim). The renet command emits --output json.
-  async repositoryPolicySet(opts: RepositoryPolicySetOptions = {}): Promise<ExecResult> {
+  repositoryPolicySet(opts: RepositoryPolicySetOptions = {}): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_policy_set',
       name: opts.name,
@@ -240,7 +228,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryPolicyGet(opts: RepositoryPolicyGetOptions = {}): Promise<ExecResult> {
+  repositoryPolicyGet(opts: RepositoryPolicyGetOptions = {}): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_policy_get',
       name: opts.name,
@@ -248,7 +236,7 @@ export class RepositoryMethods {
     });
   }
 
-  async repositoryTrim(opts: RepositoryTrimOptions = {}): Promise<ExecResult> {
+  repositoryTrim(opts: RepositoryTrimOptions = {}): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_trim',
       name: opts.name,

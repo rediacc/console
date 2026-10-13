@@ -8,6 +8,7 @@ import type {
   TestCase,
   TestResult,
 } from '@playwright/test/reporter';
+import { log } from '../utils/log';
 
 const DEFAULT_OUTPUT_DIR = 'test-outputs';
 
@@ -37,8 +38,7 @@ export default class TextFileReporter implements Reporter {
     // Ensure output directory exists
     fs.mkdirSync(this.outputDir, { recursive: true });
 
-    // eslint-disable-next-line no-console
-    console.log(`[TextFileReporter] Output directory: ${path.resolve(this.outputDir)}`);
+    log(`[TextFileReporter] Output directory: ${path.resolve(this.outputDir)}`);
   }
 
   onTestBegin(_test: TestCase): void {
@@ -68,8 +68,7 @@ export default class TextFileReporter implements Reporter {
     const timestamp = result.startTime.toISOString();
     const durationSeconds = (result.duration / 1000).toFixed(1);
     const titlePath = test.titlePath().join(' > ');
-    // eslint-disable-next-line no-console
-    console.log(`[${timestamp}] ${titlePath} (${durationSeconds}s, ${result.status})`);
+    log(`[${timestamp}] ${titlePath} (${durationSeconds}s, ${result.status})`);
 
     // Store for summary
     this.testResults.set(test.id, { test, result });
@@ -84,10 +83,8 @@ export default class TextFileReporter implements Reporter {
     const summary = this.buildSummary(result, duration);
     fs.writeFileSync(summaryPath, summary, 'utf-8');
 
-    // eslint-disable-next-line no-console
-    console.log(`[TextFileReporter] Results saved to ${path.resolve(this.outputDir)}`);
-    // eslint-disable-next-line no-console
-    console.log(`[TextFileReporter] Summary: ${summaryPath}`);
+    log(`[TextFileReporter] Results saved to ${path.resolve(this.outputDir)}`);
+    log(`[TextFileReporter] Summary: ${summaryPath}`);
 
     // Machine-readable skip count for the zero-skip gate. run-e2e.sh --fail-on-skip sums these sentinels across every reporter/config and fails the job if any test was skipped: a skipped test is invisible coverage loss, so every job must SELECT only the tests its topology can run (config testMatch/testIgnore) instead of collecting-then-skipping. process.stdout.write (not console)
     // so no lint suppression is needed.

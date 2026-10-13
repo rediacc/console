@@ -32,7 +32,7 @@ ONE DOCUMENTED DIVERGENCE, MESSAGE TEXT ONLY. The twin's
 `VERSION="${VERSION:?tag-submodules.sh: VERSION must be set}"` produces bash's
 own `<script>: line 36: VERSION: tag-submodules.sh: VERSION must be set` and exit 1. That prefix carries a line number not worth reproducing (the same
 ruling as the `${VAR:?msg}` twins in `rediacc_ci.deploy`), so this port prints
-`tag-submodules.py: VERSION must be set` to stderr and exits 1. The exit code, the stream and the substance match; the wrapper's prefix does not. `:?` fires on set-but-EMPTY as well as unset, and so does this.
+`rediacc_ci.release.tag_submodules: VERSION must be set` to stderr and exits 1. The exit code, the stream and the substance match; the wrapper's prefix does not. `:?` fires on set-but-EMPTY as well as unset, and so does this.
 
 K=5 LEDGER: `.ci/shadow/w7p6-tag-submodules.observations.jsonl`.
 """
@@ -46,7 +46,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-SELF = "tag-submodules.py"
+SELF = "rediacc_ci.release.tag_submodules"
 
 # BLOCKER: the single-element list is deliberate and moved verbatim out of cd-v2.yml -- private/renet is the only submodule whose commits ship inside a release today, and keeping the loop shape means adding the next one is a one-word edit rather than a restructure.
 SUBMODULES = ("private/renet",)

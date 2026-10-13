@@ -19,7 +19,7 @@ from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
 EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
 SITE_HOST = SITE_ORIGIN.removeprefix("https://")
 
-SELF = "resolve-www-deploy-target.py"
+SELF = "rediacc_ci.deploy.resolve_www_deploy_target"
 
 
 def _require(name: str) -> str:
@@ -36,12 +36,12 @@ def main(argv: list[str]) -> int:
     output_path = _require("GITHUB_OUTPUT")
 
     if target == "stable":
-        script = "deploy-www.sh"
+        script = "deploy_www"
         worker = "rediacc-www"
         domain = SITE_HOST
         sandbox = ""
     else:
-        script = "deploy-edge.sh"
+        script = "deploy_edge"
         worker = "edge-rediacc-www"
         domain = EDGE_HOST
         sandbox = "--sandbox"

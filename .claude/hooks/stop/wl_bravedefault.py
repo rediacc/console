@@ -110,6 +110,9 @@ an uncommitted tree, so landing the work in it is the whole act, and no
 default ever needs a commit to count. It does NOT change state when it describes
 continuing: "hold", "keep carrying", "leave it", "wait for", "do not touch",
 "report the numbers", "revisit later", "ask again". Reporting is not acting.
+Judge the DEFAULT exactly as written, never the braver form you are about to
+propose in (3): "hold and report the numbers" changes nothing, however much
+work you can see that it could have ordered instead.
 
 FOUR ACTS ARE NEVER A BRAVE DEFAULT, because this gate is forbidden to order
 them: merging a PR, pushing to main (main moves only through /pr-merge's
@@ -117,9 +120,9 @@ guarded path, never on a judge's order), cutting or publishing a release, and CO
 creating a branch, pushing, or opening a PR. That fourth one follows the
 project's first standing order: a verified unit is committed by the session's
 own cadence, a push waits for its receipt, and a second branch or PR is the
-operator's own command, so none of them is a judge's order. A deferral about
-one of these is a legitimate hold -- answer `irreversible` or `outward`, not
-`preference`. The braver form for such an item is the work that stands ready
+operator's own command, so none of them is a judge's order. A default that
+NAMES one of these acts and declines it ("do not release", "do not merge it")
+is a legitimate hold -- answer `irreversible` or `outward`, not `preference`. The braver form for such an item is the work that stands ready
 underneath it ("finish it and verify it, so the cadence commits it"), never the
 act itself.
 
@@ -133,6 +136,15 @@ there", "hold it on the branch" are refusals to act dressed in the vocabulary of
 a reserved act. `outward` means the default itself reaches a third party who
 cannot un-see it. Sitting still reaches nobody.
 
+THE TEST IS ON THE DEFAULT'S OWN WORDS, NOT THE QUESTION'S. If the DEFAULT
+text does not itself name a merge, a push to main, a release or a commit as
+the act it declines, the reserved-act clause does not apply, whatever the
+question before it asks. Measured again 2026-10-09: "land the hook change on
+main or leave it? DEFAULT: leave it on its branch." was scored `irreversible`
+on four runs of five, each time with a correct braver form ("finish it and
+verify it in the tree"). The question names main; the default names nothing
+and declines nothing, so its hold_reason is `none`.
+
 (2) IF IT HOLDS, WHY? Answer with exactly one:
   irreversible     the act cannot be undone once done (a release, a delete, a
                    force-push, a payment).
@@ -144,10 +156,11 @@ cannot un-see it. Sitting still reaches nobody.
 REVERSIBLE IS NOT OUTWARD. Deploying, republishing regenerated content,
 pushing to a preview or edge environment, regenerating and shipping files --
 all of these can be done again or rolled back, so they are ACTIONS, not holds.
-Reserve `outward` for the thing that cannot be recalled once it has left, and
-judge it from the deferral's own text and what its action touches, not from the
-verb: a step that reaches an audience or an external account is not reversible
-however routine it looks.
+Reserve `outward` for the thing that cannot be recalled once it has left: a
+message a human has read, a release others have installed, a post on an
+external account, a payment. Content on this project's own site that the next
+publish overwrites is reversible however public it is, so publishing
+regenerated pages, teasers or locales is an action, not an outward hold.
   preference       nothing is at risk; it holds only because the operator
                    might have wanted it the other way.
 
@@ -179,6 +192,11 @@ question, and never one of the four operator-only acts above.
 
 Set applicable=false only when there is genuinely no `[?]` with a `DEFAULT:`
 in the list above, or when every one of them already commits to an action.
+A default commits to an action only when its own words name the act it will
+perform. One that waits, sits, stays put or keeps things as they are does
+not, whatever verbs it uses, and neither does one that hints the act will come
+after the wait without naming it ("first", "for now", "until then"). Such an
+item IS applicable: answer about it with changes_state false.
 """
 
 

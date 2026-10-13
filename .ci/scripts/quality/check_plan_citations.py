@@ -193,6 +193,14 @@ UUID_TAIL_RE = re.compile(
     r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-([0-9a-f]{12})", re.IGNORECASE
 )
 
+#: A CLOUDFLARE D1 TIME-TRAVEL BOOKMARK IS NEVER A GIT OBJECT: `wrangler d1 time-travel info` prints `<8hex>-<8hex>-<8hex>-<32hex>`, and a deploy record must quote it verbatim to be restorable. Its 32-hex tail satisfies HEXTOK_RE by shape alone, the UUID tail's class. Measured 2026-10-08: agent/plans/PLAN-config-passkey-optional.md:118 reported `515e0bc0...` as an unresolvable object.
+D1_BOOKMARK_RE = re.compile(
+    r"\b[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{8}-([0-9a-f]{32})\b", re.IGNORECASE
+)
+
+#: The marker that licenses the D1_BOOKMARK_RE exemption, on the same line.
+D1_MARKER_RE = re.compile(r"bookmark|time-travel", re.IGNORECASE)
+
 #: A REGISTRY DIGEST IS NEVER A GIT OBJECT, and it is the same false-positive
 #: class as the UUID tail above: a long hex run that satisfies HEXTOK_RE purely
 #: by coincidence of shape, sitting behind an unambiguous marker that says what
@@ -438,6 +446,9 @@ def citations(text):
     take(R.PLAN_REF_RE, "plan")
     take(R.GATE_RE, "gate")
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
+    # The shape alone is not enough: the same line must also name it a bookmark (or time-travel), as a verbatim deploy record does.
+    if D1_MARKER_RE.search(text or ""):
+        uuid_tail_spans += [d.span(1) for d in D1_BOOKMARK_RE.finditer(text or "")]
     digest_spans = [d.span(1) for d in DIGEST_RE.finditer(text or "")]
     agent_id_spans = [a.span(1) for a in AGENT_ID_RE.finditer(text or "")]
     fingerprint_spans = [f.span(1) for f in FINGERPRINT_RE.finditer(text or "")]
@@ -522,18 +533,58 @@ def commit_is_reachable(root, token) -> bool:
     for a rewritten commit is "cite the blob id instead" -- a blob survives the
     rewrite the commit does not.
 
-    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily fetched). Ancestry needs commits, which are all present; it never needs a blob.
+    SAFE ON THIS REPOSITORY'S CI because `quality-branch` checks out with `fetch-depth: 0` (full COMMIT history) and `filter: blob:none` (blobs lazily fetched). Ancestry needs commits, which are all present; it never needs a blob. The `origin/main` half also relies on `refs/remotes/origin/main` being present in that checkout: a `fetch-depth: 0` checkout of a pull request fetches every branch head, so the ref exists (the checkout step is `.github/workflows/ci-quality.yml` job `quality-branch`, lines 547-571). A clone without the ref falls back to HEAD alone, and `reachability_refs` names only the refs that exist.
     """
-    if not R.resolve(root, "commit", token)[0]:
+    if not commit_exists(root, token):
         return False
+    # origin/main counts too: main is never rewritten, so a commit CD pushed there (a release-state or tap-pointer commit) survives every rebase-merge, and CI's fetch-depth 0 checkout carries the ref.
+    for ref in ("HEAD", "refs/remotes/origin/main"):
+        r = subprocess.run(
+            ["git", "-C", str(root), "merge-base", "--is-ancestor", token, ref],
+            capture_output=True,
+            text=True,
+            check=False,
+            env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+        )
+        if r.returncode == 0:
+            return True
+    return False
+
+
+def reachability_refs(root) -> str:
+    """The refs a commit citation is tested against, as prose: `HEAD or origin/main`, or `HEAD` alone in a clone that has no `origin/main` ref, so a message never points a reader at a ref that is not there."""
     r = subprocess.run(
-        ["git", "-C", str(root), "merge-base", "--is-ancestor", token, "HEAD"],
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main"],
         capture_output=True,
         text=True,
         check=False,
         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     )
-    return r.returncode == 0
+    return "HEAD or origin/main" if r.returncode == 0 and r.stdout.strip() else "HEAD"
+
+
+def orphan_message(root) -> str:
+    """The finding for a commit that exists in this clone yet is reachable from none of the refs it is tested against."""
+    return (
+        "is a commit that EXISTS in this clone but is not an ancestor of %s, so "
+        "a fresh checkout will not have it at all. That is what a rewrite leaves "
+        "behind -- `filter-branch`, a rebase, or `gh pr merge --rebase` -- and it "
+        "is why this passes locally and reds in CI. Cite the commit it became, or "
+        "the blob id (`git hash-object <file>`), which is content-addressed and "
+        "survives the rewrite" % reachability_refs(root)
+    )
+
+
+def commit_exists(root, token) -> bool:
+    """Is `token` a commit object in this clone, reachable or not? `R.resolve`'s commit kind also demands ancestry of HEAD, so it cannot tell an orphan from a typo; the orphan message below needs exactly that difference."""
+    r = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "--quiet", token + "^{commit}"],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+    return r.returncode == 0 and bool(r.stdout.strip())
 
 
 def unresolved(root, kind, token):
@@ -551,15 +602,8 @@ def unresolved(root, kind, token):
             or R.resolve(root, "tree", token)[0]
         ):
             return False, ""
-        if R.resolve(root, "commit", token)[0]:
-            return True, (
-                "is a commit that EXISTS in this clone but is not an ancestor of HEAD, so "
-                "a fresh checkout will not have it at all. That is what a rewrite leaves "
-                "behind -- `filter-branch`, a rebase, or `gh pr merge --rebase` -- and it "
-                "is why this passes locally and reds in CI. Cite the commit it became, or "
-                "the blob id (`git hash-object <file>`), which is content-addressed and "
-                "survives the rewrite"
-            )
+        if commit_exists(root, token):
+            return True, orphan_message(root)
         return True, (
             "names neither a blob nor a commit in this clone. Three things it could be, "
             "and the fix differs: (a) a commit sha on a branch, which `gh pr merge "
@@ -568,6 +612,11 @@ def unresolved(root, kind, token):
             "which is never an object in this repository -- name the submodule beside it "
             "so a reader knows where to look; (c) a typo"
         )
+    if kind == "commit":
+        if commit_is_reachable(root, token):
+            return False, ""
+        if commit_exists(root, token):
+            return True, orphan_message(root)
     ok, why = R.resolve(root, kind, token)
     # `why` names the path the resolver actually found (`path:line`), which may differ from the token: a legacy flat `agent/PLAN-x.md` resolves to its current folder.
     if ok and kind == "fileline" and is_gitignored(root, why.rsplit(":", 1)[0]):
@@ -914,6 +963,38 @@ def selftest(root):
         not any(
             k == "object"
             for k, _t in citations("Stripe secret 8f14e45f-ceea-467e-b7a1-3fda6dabc123 leaked")
+        ),
+    )
+    ck(
+        "the 32-hex tail of a D1 bookmark is NOT treated as an object",
+        not any(
+            k == "object"
+            for k, _t in citations(
+                "bookmark 00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212 recorded"
+            )
+        ),
+    )
+    ck(
+        "a D1-bookmark-shaped token WITHOUT a bookmark/time-travel marker on the line IS judged",
+        any(
+            k == "object"
+            for k, _t in citations("id 00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212")
+        ),
+    )
+    ck(
+        "a time-travel marker alone licenses the D1 exemption",
+        not any(
+            k == "object"
+            for k, _t in citations(
+                "wrangler d1 time-travel restore at 00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212"
+            )
+        ),
+    )
+    ck(
+        "CONTROL: the same 32 hex characters bare ARE",
+        any(
+            k == "object"
+            for k, _t in citations("bookmark 515e0bc093a659f43819fc1ade215212 recorded")
         ),
     )
     ck(

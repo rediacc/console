@@ -30,6 +30,43 @@ THE SIX INVARIANTS, all read from the PARSED document rather than grepped, so a 
      green. PR #597's run 37465283674 (2026-10-06): `duplicate-run` ran on
      push only, skipped on the PR, and `run-sh-tests` skipped with it.
 
+THE RELEASE-ORDER PHASE (added 2026-10-08, PLAN-cd-errors-in-ci W5 + the W4 pins), also after the twin, also with no differential. It reads three files, `ci.yml`, `cd-v2.yml` and `.github/actions/app-token/action.yml`, and refuses any job graph in which ci.yml's finalize-release-sentinel has sealed `cli/v<V>/.released` and cd-v2's version-tag step can still be skipped by a failure or by retry_mode.
+CD run 37749637824 is the case: the tag lived in `tag-and-release`, behind post-publish install validation, a Rocky 9 DNF stall reddened that validation, and the sealed v2.2.0 sentinel was left with no tag. Its kinds are `RELEASE_KINDS`:
+
+  * `release-order-no-sentinel-writer` / `release-order-no-tag-step` -- the
+    premise is gone (no sealing step in ci.yml, or no `git tag -a` + `git push
+    origin v...` step in cd-v2.yml), so the phase checked nothing. Vacuity is red.
+  * `release-order-dispatch-split` -- the dispatch step does not IMMEDIATELY
+    follow the seal under the identical `if:`.
+  * `release-order-tag-behind-job` -- the job holding the tag step has a
+    transitive `needs` outside `TAG_ALLOWED_ANCESTORS` (anything that can fail
+    or skip after the seal).
+  * `release-order-tag-skipped-on-retry` -- that job's or step's `if:` reads
+    `retry_mode`.
+  * `cd-contents-write` -- any cd-v2 job, or the workflow, holds `contents:
+    write`; every write rides the cd App token instead.
+  * `cd-push-not-app-token` -- a cd-v2 `git push` whose job mints no cd-preset
+    App token before it, or whose last checkout before it carries another token.
+  * `cd-preset-no-workflows` -- app-token's `cd` preset no longer requests
+    `workflows: write`, or the mint no longer passes `permission-workflows`. A
+    tag over a range that touches .github/workflows is then refused (v1.3.11,
+    v1.3.8).
+
+THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a fourth file, `housekeeping.yml` (`HOUSEKEEPING_WORKFLOW_FILE` overrides it). `rediacc_ci.release.cd_preflight` must run at three sites, each with at least the checks `PREFLIGHT_REQUIRED_CHECKS` names (`cd-preflight-narrowed` otherwise):
+
+  * `cd-preflight-no-pr-job` / `cd-preflight-not-on-pr` -- a ci.yml job runs
+    `--phase pr`, and its `if:` admits pull_request. A push-only preflight is the
+    main-only blind spot that let the 10-07 drift reach main.
+  * `cd-preflight-no-cd-step` / `cd-preflight-before-tag` -- a cd-v2 step runs
+    `--phase cd` in the version tag step's job, AFTER it: v<V> is sealed and
+    untagged until that step, so a preflight before it reds every release.
+  * `cd-preflight-no-housekeeping-step` / `cd-preflight-housekeeping-bypassed` --
+    a preflight step precedes every `cleanup_versions` step in its job, and
+    neither carries an `if:` that would run the cleanup past a red preflight.
+
+WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
+and its success line prints the shape (tag job, its ancestors, job count, push count) so a collapse is visible.
+
 NO EXTERNAL PROCESS IS INVOLVED, ON EITHER SIDE. The twin shells out to exactly
 one thing, `python3`, and only to run the heredoc that is transcribed below;
 there is no `yq`, no `jq`, no `gh`, no network. That is why the differential needs no recording fakes at all and drives both sides over fixture YAML through `$WORKFLOW_FILE`, which the twin already exposes for its own gate test.
@@ -72,6 +109,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 import shutil
 import sys
 import traceback
@@ -274,7 +312,7 @@ def message_for(kind: str, name: str, workflow_file: str) -> str | None:
     if kind == "skip-release-not-passed":
         return (
             "INVARIANT-FAIL: skip-release: job '%s' does not pass `skip_release` in its "
-            "`with:`. upload-to-r2.sh's guard then never fires, and a bump-none commit advances "
+            "`with:`. upload_to_r2.py's guard then never fires, and a bump-none commit advances "
             "cli/<channel>/manifest.json to a version that will never be tagged." % name
         )
     if kind == "skip-release-validator-ungated":
@@ -312,6 +350,498 @@ def message_for(kind: str, name: str, workflow_file: str) -> str | None:
     return None
 
 
+# --------------------------------------------------------------------------- the release-order phase (see the module docstring)
+
+RELEASE_KINDS = (
+    "release-order-no-sentinel-writer",
+    "release-order-dispatch-split",
+    "release-order-no-tag-step",
+    "release-order-tag-behind-job",
+    "release-order-tag-skipped-on-retry",
+    "cd-contents-write",
+    "cd-push-not-app-token",
+    "cd-preset-no-workflows",
+)
+
+# The ONLY job the version-tag step may sit behind. `init` resolves the version and runs two read-only guards (check-existing-release, assert-artifact-version); every other cd-v2 job publishes, deploys or validates, and each of those can fail or skip after the sentinel is sealed.
+TAG_ALLOWED_ANCESTORS = frozenset({"init"})
+
+SENTINEL_JOB = "finalize-release-sentinel"
+SENTINEL_WRITER = "write_release_sentinel"
+SENTINEL_DISPATCH = "dispatch_release"
+APP_MINT_ACTION = "./.github/actions/app-token"
+
+# `git tag -a`, allowing `git -c k=v ... tag -a`, and a push of a `v$...` ref: the version tag, not a submodule's.
+_TAG_CREATE_RE = re.compile(r"\bgit\b[^\n]*?\btag\s+-a\b")
+_TAG_PUSH_RE = re.compile(r"\bgit\s+push\s+origin\s+\"?v\$")
+_PUSH_RE = re.compile(r"\bgit\s+push\b")
+
+
+def _steps(job: object) -> list[dict]:
+    steps = job.get("steps") if isinstance(job, dict) else None
+    return [s for s in steps if isinstance(s, dict)] if isinstance(steps, list) else []
+
+
+def _text(value: object) -> str:
+    return "" if value is None else str(value)
+
+
+def _step_label(job: str, index: int, step: dict) -> str:
+    return "%s step %d (%s)" % (job, index + 1, step.get("name") or step.get("uses") or "unnamed")
+
+
+def version_tag_steps(cd_doc: object) -> list[tuple[str, int, dict]]:
+    """Every (job, index, step) in cd-v2 whose `run:` both creates an annotated tag and pushes a `v$...` ref."""
+    jobs = (cd_doc or {}).get("jobs") if isinstance(cd_doc, dict) else None
+    if not isinstance(jobs, dict):
+        return []
+    out = []
+    for name, job in jobs.items():
+        for i, st in enumerate(_steps(job)):
+            run = _text(st.get("run"))
+            if _TAG_CREATE_RE.search(run) and _TAG_PUSH_RE.search(run):
+                out.append((str(name), i, st))
+    return out
+
+
+def _sentinel_findings(ci_doc: object) -> list[tuple[str, str]]:
+    jobs = (ci_doc or {}).get("jobs") if isinstance(ci_doc, dict) else None
+    fin = jobs.get(SENTINEL_JOB) if isinstance(jobs, dict) else None
+    steps = _steps(fin)
+    seal = [i for i, s in enumerate(steps) if SENTINEL_WRITER in _text(s.get("run"))]
+    if not seal:
+        return [("release-order-no-sentinel-writer", SENTINEL_JOB)]
+    i = seal[-1]
+    nxt = steps[i + 1] if i + 1 < len(steps) else None
+    if (
+        nxt is None
+        or SENTINEL_DISPATCH not in _text(nxt.get("run"))
+        or _text(nxt.get("if")) != _text(steps[i].get("if"))
+    ):
+        return [("release-order-dispatch-split", _step_label(SENTINEL_JOB, i, steps[i]))]
+    return []
+
+
+def _tag_findings(cd_doc: object) -> list[tuple[str, str]]:
+    jobs = cd_doc.get("jobs") if isinstance(cd_doc, dict) else None
+    if not isinstance(jobs, dict):
+        return [("release-order-no-tag-step", "<no jobs>")]
+    found = version_tag_steps(cd_doc)
+    if not found:
+        return [("release-order-no-tag-step", "<none>")]
+    out = []
+    for job, _i, st in found:
+        behind = [a for a in _root_ancestors(jobs, job) if a not in TAG_ALLOWED_ANCESTORS]
+        if behind:
+            out.append(("release-order-tag-behind-job", "%s behind %s" % (job, ", ".join(behind))))
+        for where, cond in (("job", jobs[job].get("if")), ("step", st.get("if"))):
+            if "retry_mode" in _text(cond):
+                out.append(("release-order-tag-skipped-on-retry", "%s (%s if:)" % (job, where)))
+    return out
+
+
+def _writes_contents(perms: object) -> bool:
+    if isinstance(perms, str):
+        return perms.strip() == "write-all"
+    return isinstance(perms, dict) and _text(perms.get("contents")).strip() == "write"
+
+
+def _permission_findings(cd_doc: object) -> list[tuple[str, str]]:
+    if not isinstance(cd_doc, dict):
+        return []
+    out = []
+    if _writes_contents(cd_doc.get("permissions")):
+        out.append(("cd-contents-write", "<workflow>"))
+    jobs = cd_doc.get("jobs")
+    for name, job in (jobs if isinstance(jobs, dict) else {}).items():
+        if isinstance(job, dict) and _writes_contents(job.get("permissions")):
+            out.append(("cd-contents-write", str(name)))
+    return out
+
+
+def _push_findings(cd_doc: object) -> tuple[list[tuple[str, str]], int]:
+    """(findings, pushes seen). A push must follow a cd-preset app-token mint, and the last checkout before it must carry that token: actions/checkout's persisted extraheader beats the global insteadOf the action writes."""
+    jobs = cd_doc.get("jobs") if isinstance(cd_doc, dict) else None
+    out, seen = [], 0
+    for name, job in (jobs if isinstance(jobs, dict) else {}).items():
+        token_ids: list[str] = []
+        last_checkout: dict | None = None
+        for i, st in enumerate(_steps(job)):
+            uses = _text(st.get("uses"))
+            raw_with = st.get("with")
+            with_map = raw_with if isinstance(raw_with, dict) else {}
+            if uses == APP_MINT_ACTION and _text(with_map.get("preset")).strip() == "cd":
+                token_ids.append(_text(st.get("id")))
+            if uses.startswith("actions/checkout@"):
+                last_checkout = st
+            if not _PUSH_RE.search(_text(st.get("run"))):
+                continue
+            seen += 1
+            co_with = (last_checkout or {}).get("with")
+            co_token = _text(co_with.get("token")) if isinstance(co_with, dict) else ""
+            if not any(t and "steps.%s.outputs.token" % t in co_token for t in token_ids):
+                out.append(("cd-push-not-app-token", _step_label(str(name), i, st)))
+    return out, seen
+
+
+def _cd_arm(run: str) -> str:
+    match = re.search(r"^\s*cd\)\s*$(.*?)^\s*;;", run, re.MULTILINE | re.DOTALL)
+    if match is None:
+        return ""
+    return "\n".join(ln for ln in match.group(1).splitlines() if not ln.strip().startswith("#"))
+
+
+def _preset_findings(action_doc: object) -> list[tuple[str, str]]:
+    runs = action_doc.get("runs") if isinstance(action_doc, dict) else None
+    steps = _steps(runs)
+    perms = [s for s in steps if _text(s.get("id")) == "perms"]
+    if not perms or "perm-workflows=write" not in _cd_arm(_text(perms[0].get("run"))):
+        return [("cd-preset-no-workflows", "the `cd)` arm of step `perms`")]
+    mint = [s for s in steps if "create-github-app-token" in _text(s.get("uses"))]
+    with_map = mint[0].get("with") if mint else None
+    passed = _text(with_map.get("permission-workflows")) if isinstance(with_map, dict) else ""
+    if "steps.perms.outputs.perm-workflows" not in passed:
+        return [
+            ("cd-preset-no-workflows", "the create-github-app-token step's `permission-workflows`")
+        ]
+    return []
+
+
+def analyse_release(
+    ci_doc: object, cd_doc: object, action_doc: object
+) -> tuple[list[tuple[str, str]], dict[str, object]]:
+    """The release-order phase over three parsed documents: (findings, shape). Pure; the selftest drives it with literal dicts."""
+    findings = _sentinel_findings(ci_doc) + _tag_findings(cd_doc)
+    findings += _permission_findings(cd_doc)
+    push_findings, pushes = _push_findings(cd_doc)
+    findings += push_findings + _preset_findings(action_doc)
+    jobs = cd_doc.get("jobs") if isinstance(cd_doc, dict) else None
+    tags = version_tag_steps(cd_doc)
+    shape: dict[str, object] = {
+        "jobs": len(jobs) if isinstance(jobs, dict) else 0,
+        "pushes": pushes,
+        "tag": [
+            (job, st.get("name") or "unnamed", _root_ancestors(jobs, job)) for job, _i, st in tags
+        ]
+        if isinstance(jobs, dict)
+        else [],
+    }
+    return findings, shape
+
+
+def release_message_for(kind: str, name: str, files: dict[str, str]) -> str | None:
+    ci, cd, action = files["ci"], files["cd"], files["action"]
+    if kind == "release-order-no-sentinel-writer":
+        return (
+            "INVARIANT-FAIL: release-order: no step in %s job '%s' runs %s, so the release-order "
+            "check has no seal to order the tag against and verified nothing. Retarget it "
+            "deliberately." % (ci, name, SENTINEL_WRITER)
+        )
+    if kind == "release-order-dispatch-split":
+        return (
+            "INVARIANT-FAIL: release-order: %s seals the sentinel, but the very next step is not "
+            "the %s dispatch under the identical `if:`. Anything between them, or a different "
+            "guard, can seal cli/v<V>/.released and never start the run that tags v<V>. Put the "
+            "dispatch directly after the seal with the same `if:`." % (name, SENTINEL_DISPATCH)
+        )
+    if kind == "release-order-no-tag-step":
+        return (
+            "INVARIANT-FAIL: release-order: no step in %s both creates an annotated tag (`git tag "
+            "-a`) and pushes `v$...` (%s), so nothing was checked. The version tag must exist "
+            "somewhere in CD; retarget this check if it moved." % (cd, name)
+        )
+    if kind == "release-order-tag-behind-job":
+        return (
+            "INVARIANT-FAIL: release-order: the version tag step in %s sits in %s. ci.yml has "
+            "already sealed cli/v<V>/.released when CD starts, so any of those jobs failing or "
+            "skipping leaves a sentinel with no tag, the bijection break Check Release State "
+            "reddens main on (CD run 37749637824, v2.2.0). Create the tag in a job that needs "
+            "only %s." % (cd, name, ", ".join(sorted(TAG_ALLOWED_ANCESTORS)))
+        )
+    if kind == "release-order-tag-skipped-on-retry":
+        return (
+            "INVARIANT-FAIL: release-order: the version tag step in %s is skipped on retry_mode "
+            "(%s). A retry of a sealed version must re-ensure its tag (idempotently), never "
+            "skip it. Drop retry_mode from that `if:`." % (cd, name)
+        )
+    if kind == "cd-contents-write":
+        return (
+            "INVARIANT-FAIL: cd-permissions: %s %s holds `contents: write`. Every CD write rides "
+            "the cd-preset App token, so the job is all-or-nothing on one credential; a second "
+            "write-scoped credential is how a tag landed without its Release (v1.3.11, v1.3.8). "
+            "Remove the scope." % (cd, name)
+        )
+    if kind == "cd-push-not-app-token":
+        return (
+            "INVARIANT-FAIL: cd-push-token: %s %s runs `git push`, but its job mints no "
+            "`preset: cd` App token before it, or the last actions/checkout before it does not "
+            "pass `token: ${{ steps.<app-token id>.outputs.token }}` (checkout's persisted "
+            "github.token header would win). Push on the App token." % (cd, name)
+        )
+    if kind == "cd-preset-no-workflows":
+        return (
+            "INVARIANT-FAIL: cd-preset: %s no longer requests `workflows: write` for the cd "
+            "preset (%s). Without it GitHub refuses `git push origin v<X>` whenever the tagged "
+            "range touches .github/workflows, and the release half-completes (runs 34019022671, "
+            "34003183456). Restore `perm-workflows=write` and `permission-workflows`."
+            % (action, name)
+        )
+    return None
+
+
+# --------------------------------------------------------------------------- the cd-preflight pins (PLAN-cd-errors-in-ci W4)
+
+PREFLIGHT_KINDS = (
+    "cd-preflight-no-pr-job",
+    "cd-preflight-not-on-pr",
+    "cd-preflight-no-cd-step",
+    "cd-preflight-before-tag",
+    "cd-preflight-no-housekeeping-step",
+    "cd-preflight-housekeeping-bypassed",
+    "cd-preflight-narrowed",
+)
+
+PREFLIGHT_MODULE = "rediacc_ci.release.cd_preflight"
+HOUSEKEEPING_DESTRUCTIVE = "rediacc_ci.housekeeping.cleanup_versions"
+
+# The checks each site must run. A site may run more; dropping one is a finding, so a narrowed `--checks` cannot quietly turn a site into a partial check. `homebrew` is deliberately absent everywhere: the PR job deselects it (ci.yml says why), and CD runs update_homebrew_tap itself.
+PREFLIGHT_REQUIRED_CHECKS = {
+    "pr": frozenset({"a", "b", "c", "d", "promotion"}),
+    "cd": frozenset({"a", "c", "d"}),
+    "housekeeping": frozenset({"a", "c"}),
+}
+
+# A status function in a step `if:` runs the step after an earlier one failed, which is exactly how a red preflight would stop nothing.
+_STATUS_FN_RE = re.compile(r"\b(always|failure|cancelled)\s*\(")
+_CHECKS_RE = re.compile(r"--checks[=\s]+\"?([A-Za-z0-9_,]+)")
+_PHASE_RE = re.compile(r"--phase[=\s]+\"?([a-z]+)")
+
+
+def preflight_steps(doc: object) -> list[tuple[str, int, dict, str]]:
+    """Every (job, index, step, phase) whose `run:` invokes the preflight module."""
+    jobs = doc.get("jobs") if isinstance(doc, dict) else None
+    out = []
+    for name, job in (jobs if isinstance(jobs, dict) else {}).items():
+        for i, st in enumerate(_steps(job)):
+            run = _text(st.get("run"))
+            if PREFLIGHT_MODULE in run:
+                match = _PHASE_RE.search(run)
+                out.append((str(name), i, st, match.group(1) if match else ""))
+    return out
+
+
+def _narrowed(site: str, label: str, step: dict) -> list[tuple[str, str]]:
+    match = _CHECKS_RE.search(_text(step.get("run")))
+    if match is None:
+        return []  # no --checks runs every check
+    missing = PREFLIGHT_REQUIRED_CHECKS[site] - set(match.group(1).split(","))
+    if not missing:
+        return []
+    return [("cd-preflight-narrowed", "%s drops %s" % (label, ",".join(sorted(missing))))]
+
+
+# `event_name == 'pull_request'` (either operand order). `!=` never matches because the operator must be `==`, and a text-only "contains pull_request" test would pass `github.event_name != 'pull_request'`, the main-only blind spot. A match preceded by `!` through any run of spaces and `(`, or enclosed by a parenthesised group that itself follows `!`, is a negation and does not count.
+_PR_EQ_RE = re.compile(
+    r"github\.event_name\s*==\s*['\"]pull_request['\"]"
+    r"|['\"]pull_request['\"]\s*==\s*github\.event_name"
+)
+
+
+def _is_negated(cond: str, start: int) -> bool:
+    """True when the test beginning at `start` sits under an odd number of `!` negations: a `!` directly before it (through spaces), or one before any parenthesised group that encloses it, at any distance."""
+    i = start - 1
+    while i >= 0 and cond[i] in " \t\n":
+        i -= 1
+    negations = 1 if i >= 0 and cond[i] == "!" else 0
+    depth = 0
+    for j in range(start - 1, -1, -1):
+        ch = cond[j]
+        if ch == ")":
+            depth += 1
+        elif ch == "(":
+            if depth:
+                depth -= 1
+                continue
+            k = j - 1
+            while k >= 0 and cond[k] in " \t\n":
+                k -= 1
+            if k >= 0 and cond[k] == "!":
+                negations += 1
+    return negations % 2 == 1
+
+
+def _admits_pr(cond: str) -> bool:
+    """True when `cond` holds a positive, non-negated `event_name == 'pull_request'` test."""
+    return any(not _is_negated(cond, m.start()) for m in _PR_EQ_RE.finditer(cond))
+
+
+def _step_excludes_pr(cond: str) -> bool:
+    """A step-level `if:` that tests the event yet does not admit pull_request; an `if:` that never names the event (`always()`, `success()`) leaves the job's verdict alone."""
+    return "event_name" in cond and not _admits_pr(cond)
+
+
+def analyse_preflight(
+    ci_doc: object, cd_doc: object, hk_doc: object
+) -> tuple[list[tuple[str, str]], list[str]]:
+    """(findings, shape lines) for the three preflight sites. Pure; the tests drive it with literal dicts.
+
+    ci.yml: a job runs `--phase pr` and its `if:` admits pull_request (a push-only job is the main-only blind spot that let the 10-07 drift reach main). cd-v2.yml: a `--phase cd` step sits in the version tag step's job, AFTER it. housekeeping.yml: a preflight step precedes every cleanup_versions step in the same job, and that cleanup step carries no status function that would run it past a red preflight.
+    """
+    out: list[tuple[str, str]] = []
+    shape: list[str] = []
+
+    pr = [s for s in preflight_steps(ci_doc) if s[3] == "pr"]
+    if not pr:
+        out.append(("cd-preflight-no-pr-job", "<none>"))
+    jobs = ci_doc.get("jobs") if isinstance(ci_doc, dict) else None
+    ci_jobs: dict[str, typing.Any] = jobs if isinstance(jobs, dict) else {}
+    for job, i, st, _phase in pr:
+        job_if = _text(ci_jobs[job].get("if")).strip()
+        # A job with no `if:` runs on every event, pull_request included.
+        if (job_if and not _admits_pr(job_if)) or _step_excludes_pr(_text(st.get("if"))):
+            out.append(("cd-preflight-not-on-pr", job))
+        out += _narrowed("pr", _step_label(job, i, st), st)
+        shape.append("ci.yml job %s runs it on pull_request" % job)
+
+    tags = version_tag_steps(cd_doc)
+    cd = [s for s in preflight_steps(cd_doc) if s[3] == "cd"]
+    if not cd:
+        out.append(("cd-preflight-no-cd-step", "<none>"))
+    for job, i, st, _phase in cd:
+        after = [t for t in tags if t[0] == job and t[1] < i]
+        if not after:
+            out.append(("cd-preflight-before-tag", _step_label(job, i, st)))
+        else:
+            shape.append("cd-v2 %s step %d after the tag step %d" % (job, i + 1, after[0][1] + 1))
+        out += _narrowed("cd", _step_label(job, i, st), st)
+
+    hk_jobs = hk_doc.get("jobs") if isinstance(hk_doc, dict) else None
+    destructive = [
+        (str(name), i, st)
+        for name, job in (hk_jobs if isinstance(hk_jobs, dict) else {}).items()
+        for i, st in enumerate(_steps(job))
+        if HOUSEKEEPING_DESTRUCTIVE in _text(st.get("run"))
+    ]
+    if not destructive:
+        out.append(("cd-preflight-no-housekeeping-step", "<no %s step>" % HOUSEKEEPING_DESTRUCTIVE))
+    hk_pre = preflight_steps(hk_doc)
+    for job, i, st in destructive:
+        before = [p for p in hk_pre if p[0] == job and p[1] < i]
+        if not before:
+            out.append(("cd-preflight-no-housekeeping-step", _step_label(job, i, st)))
+            continue
+        _j, pi, pst, _ph = before[-1]
+        if _STATUS_FN_RE.search(_text(st.get("if"))) or _text(pst.get("if")).strip():
+            out.append(("cd-preflight-housekeeping-bypassed", _step_label(job, i, st)))
+        out += _narrowed("housekeeping", _step_label(job, pi, pst), pst)
+        shape.append("housekeeping %s step %d before cleanup step %d" % (job, pi + 1, i + 1))
+    return out, shape
+
+
+def preflight_message_for(kind: str, name: str, files: dict[str, str]) -> str | None:
+    ci, cd, hk = files["ci"], files["cd"], files["housekeeping"]
+    if kind == "cd-preflight-no-pr-job":
+        return (
+            "INVARIANT-FAIL: cd-preflight: no step in %s runs `%s --phase pr`, so a PR merges "
+            "without the CD failures it causes being predicted (PLAN-cd-errors-in-ci W4). "
+            "Restore the cd-preflight job." % (ci, PREFLIGHT_MODULE)
+        )
+    if kind == "cd-preflight-not-on-pr":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s job %s runs the preflight but its `if:` never "
+            "admits pull_request. A main-only check is how the 10-07 bijection drift was first "
+            "seen after PR #599 merged. Keep the same-repo pull_request arm." % (ci, name)
+        )
+    if kind == "cd-preflight-no-cd-step":
+        return (
+            "INVARIANT-FAIL: cd-preflight: no step in %s runs `%s --phase cd`, so CD publishes "
+            "without judging the release state first. Restore it in init, after `Create version "
+            "tag`." % (cd, PREFLIGHT_MODULE)
+        )
+    if kind == "cd-preflight-before-tag":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s %s is not after the version tag step in the same "
+            "job. v<V> is sealed by ci.yml and untagged until that step, so a preflight before it "
+            "reds every release. Move it after `Create version tag`." % (cd, name)
+        )
+    if kind == "cd-preflight-no-housekeeping-step":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s %s deletes releases, tags and R2 objects with no "
+            "`%s` step before it in its job, so a broken or unreadable release state is pruned "
+            "further instead of refused. Add the read-only preflight step before it."
+            % (hk, name, PREFLIGHT_MODULE)
+        )
+    if kind == "cd-preflight-housekeeping-bypassed":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s %s runs even when the preflight before it is red "
+            "(a status function in its `if:`, or an `if:` on the preflight step). Housekeeping "
+            "must fail closed: drop the status function." % (hk, name)
+        )
+    if kind == "cd-preflight-narrowed":
+        return (
+            "INVARIANT-FAIL: cd-preflight: %s. A narrowed --checks prints SKIPPED where a check "
+            "used to run. Restore the check, or change PREFLIGHT_REQUIRED_CHECKS in %s on "
+            "purpose." % (name, "ci_workflow_invariants.py")
+        )
+    return None
+
+
+def _preflight_phase(ci_file: str, cd_file: str, hk_file: str) -> tuple[list[str], list[str]]:
+    """(errors, info lines) for the cd-preflight pins. A missing file is an error, never a pass."""
+    files = {"ci": ci_file, "cd": cd_file, "housekeeping": hk_file}
+    docs = {}
+    for key, path in files.items():
+        if not os.path.isfile(path):
+            return [
+                "INVARIANT-FAIL: cd-preflight: no file at %s (nothing to check cannot pass)" % path
+            ], []
+        try:
+            docs[key] = load_workflow(path)
+        except SetupExit as exc:
+            return ["INVARIANT-FAIL: cd-preflight: %s" % exc.message.strip()], []
+    findings, shape = analyse_preflight(docs["ci"], docs["cd"], docs["housekeeping"])
+    errors = [m for k, n in findings if (m := preflight_message_for(k, n, files)) is not None]
+    if errors:
+        return errors, []
+    return [], ["cd-preflight holds: " + "; ".join(shape)]
+
+
+def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[str], list[str]]:
+    """(errors, info lines). Missing or unparseable inputs are errors: unread is never fine."""
+    files = {"ci": ci_file, "cd": cd_file, "action": action_file}
+    docs = {}
+    for key, path in files.items():
+        if not os.path.isfile(path):
+            return [
+                "INVARIANT-FAIL: release-order: no file at %s (nothing to check cannot pass)" % path
+            ], []
+        try:
+            docs[key] = load_workflow(path)
+        except SetupExit as exc:
+            return ["INVARIANT-FAIL: release-order: %s" % exc.message.strip()], []
+    findings, shape = analyse_release(docs["ci"], docs["cd"], docs["action"])
+    errors = [m for k, n in findings if (m := release_message_for(k, n, files)) is not None]
+    if errors:
+        return errors, []
+    tag_rows = typing.cast("list[tuple[str, str, list[str]]]", shape["tag"])
+    tag = "; ".join(
+        "%s step '%s' (needs: %s)" % (job, step, ", ".join(anc) or "nothing")
+        for job, step, anc in tag_rows
+    )
+    return [], [
+        "release order holds: %s creates the version tag, not behind any job that can fail "
+        "after the seal and not skipped on retry_mode; %s dispatches CD in the step right after "
+        "the seal under the same if:; %d cd-v2 jobs, none holding contents: write; %d `git "
+        "push` step(s), each on the cd App token; the cd preset requests workflows: write"
+        % (
+            tag,
+            SENTINEL_JOB,
+            typing.cast("int", shape["jobs"]),
+            typing.cast("int", shape["pushes"]),
+        )
+    ]
+
+
 def _guarded(path: str) -> tuple[list[tuple[str, str]] | None, int]:
     """Run the analysis the way bash runs the heredoc: any failure is rc != 0.
 
@@ -334,8 +864,17 @@ def main(argv: list[str]) -> int:
     del argv  # the twin takes no arguments and parses none
 
     root_dir = str(paths.repo_root())
-    workflow_file = os.environ.get("WORKFLOW_FILE") or os.path.join(
-        root_dir, ".github", "workflows", "ci.yml"
+    real_ci = os.path.join(root_dir, ".github", "workflows", "ci.yml")
+    workflow_file = os.environ.get("WORKFLOW_FILE") or real_ci
+    cd_file = os.environ.get("CD_WORKFLOW_FILE") or ""
+    # The release-order phase: on the real ci.yml, or when a cd-v2 file is named explicitly. See the module docstring for why a synthetic ci.yml fixture does not get it.
+    release_phase = bool(cd_file) or os.path.realpath(workflow_file) == os.path.realpath(real_ci)
+    cd_file = cd_file or os.path.join(root_dir, ".github", "workflows", "cd-v2.yml")
+    action_file = os.environ.get("APP_TOKEN_ACTION_FILE") or os.path.join(
+        root_dir, ".github", "actions", "app-token", "action.yml"
+    )
+    hk_file = os.environ.get("HOUSEKEEPING_WORKFLOW_FILE") or os.path.join(
+        root_dir, ".github", "workflows", "housekeeping.yml"
     )
 
     # Anti-vacuity: a missing workflow means the gate checked nothing, and nothing checked must never read as green.
@@ -370,6 +909,15 @@ def main(argv: list[str]) -> int:
         log.error(message)
         failed = 1
 
+    release_info: list[str] = []
+    if release_phase:
+        release_errors, release_info = _release_phase(workflow_file, cd_file, action_file)
+        preflight_errors, preflight_info = _preflight_phase(workflow_file, cd_file, hk_file)
+        release_info += preflight_info
+        for message in release_errors + preflight_errors:
+            log.error(message)
+            failed = 1
+
     if failed != 0:
         log.error("ci workflow invariants FAILED")
         return 1
@@ -379,11 +927,23 @@ def main(argv: list[str]) -> int:
         "to stage-artifacts, gates both pre-publish validators, and is not re-decided in "
         "finalize-release-sentinel"
     )
+    # The fixture runs keep the twin's recorded bytes exactly; the real-tree run says which phase is ci.yml-only.
+    scope = "the ci.yml phase reads ci.yml only" if release_phase else "this reads ci.yml only"
     log.info(
-        "  Blind spot: this reads ci.yml only. It cannot see whether cd-stage.yml FORWARDS "
+        "  Blind spot: %s. It cannot see whether cd-stage.yml FORWARDS "
         "skip_release to the upload scripts (check-workflow-gates.sh CHECK 2b/2c covers the "
         "input contract), nor whether the scripts honour it (their own gate test covers that)."
+        % scope
     )
+    for line in release_info:
+        log.info(line)
+    if release_phase:
+        log.info(
+            "  Blind spot: the release-order phase reads the job GRAPH. It cannot see a tag "
+            "step that exits 0 without pushing, nor init failing before its tag step, "
+            "nor a push made inside a script a cd-v2 step runs; "
+            "Check Release State covers the live state."
+        )
     return 0
 
 

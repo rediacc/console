@@ -14,7 +14,7 @@ Both were flipped to the port's path and the generate-tag differential was re-ru
 
 `rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`, which proves the port needs only the six modules listed in `VENDORED`. A seventh entry appearing there means the port grew a dependency, which is worth noticing.
 
-WHICH CASES ARE RECORDED AND WHICH ARE NOT. Every case driving the fixture has a golden. `test_the_port_agrees_with_common_sh_about_the_repo_root_in_this_checkout` does NOT: it reads the LIVE `common.sh` and the live checkout, and freezing it would freeze a tracked file's content into a golden. The two PATH-seal assertions are controls over the fixture rather than recordings of the
+WHICH CASES ARE RECORDED AND WHICH ARE NOT. Every case driving the fixture has a golden. `test_the_port_resolves_the_repo_root_in_this_checkout` does NOT: it reads the LIVE `common.sh` and the live checkout, and freezing it would freeze a tracked file's content into a golden. The two PATH-seal assertions are controls over the fixture rather than recordings of the
 subject, so they stay live too.
 
 WHAT IS MASKED, and it is three things. `<SELF>` is the subject's own path, which bash names in its `command not found` line and which `sys.argv[0]` spells with a `.py`; `<root>` is the throwaway fixture root, rebuilt under a different temporary name every run; `<repo>` is the checkout root. Nothing else is touched, and both streams are compared SEPARATELY, never merged.
@@ -42,7 +42,6 @@ ROOT = paths.repo_root()
 
 PORT_REL = ".ci/rediacc_ci/build/build_www.py"
 TWIN_REL = ".ci/scripts/build/build-www.sh"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 
@@ -110,9 +109,8 @@ CASES = tuple(CASE_KW)
 def fixture(where: pathlib.Path, subject: pathlib.Path) -> pathlib.Path:
     """A throwaway tree holding the subject and the libraries it needs."""
     root = where / "repo"
-    for rel in (PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (PORT_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(ROOT / COMMON_REL, root / COMMON_REL)
     shutil.copy2(ROOT / WELL_KNOWN_REL, root / WELL_KNOWN_REL)
     shutil.copy2(ROOT / GENERATED_REL, root / GENERATED_REL)
     for rel in VENDORED:
@@ -340,20 +338,12 @@ def test_npms_own_two_streams_are_inherited_unmerged() -> None:
 # --------------------------------------------------------------------------- The live tree, deliberately NOT recorded ---------------------------------------------------------------------------
 
 
-def test_the_port_agrees_with_common_sh_about_the_repo_root_in_this_checkout() -> None:
+def test_the_port_resolves_the_repo_root_in_this_checkout() -> None:
     """NOT RECORDED: it reads the LIVE `common.sh` and the live checkout.
 
     Both answers come from a file's own location three levels up, but from DIFFERENT files, so a directory move that touched one and not the other would go unnoticed until a build ran in the wrong place.
     """
-    proc = subprocess.run(
-        [BASH, "-c", 'source "$1" && get_repo_root', "bash", str(ROOT / COMMON_REL)],
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=60,
-    )
-    assert proc.stdout.strip() == str(bw.repo_root())
-    assert proc.stdout.strip() == str(ROOT)
+    assert str(bw.repo_root()) == str(ROOT)
 
 
 # --------------------------------------------------------------------------- The control: these goldens can actually fail ---------------------------------------------------------------------------

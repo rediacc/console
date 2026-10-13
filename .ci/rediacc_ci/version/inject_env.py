@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Port of `.ci/scripts/version/inject-env.sh`.
+"""Port of the retired `.ci/scripts/version/inject-env.sh`, whose answers are frozen in `tests/goldens/twins/version.inject-env.jsonl`.
 
 Decides, in ONE place, what version number an artifact ships with, and hands it out under four names: `APP_VERSION`, `VITE_APP_VERSION`, `CLI_VERSION` and the legacy `TAG`. Resolution order, unchanged from the twin:
 
   1. `--version X.Y.Z`                 explicit caller intent
   2. `$VERSION`                        already set by an outer script
-  3. `resolve-version.sh --current`    the latest git tag
+  3. `resolve_version.py --current`    the latest git tag
   4. `0.0.0-dev`                       local dev fallback
 
 -----------------------------------------------------------------------------
 WHY THIS IS A LIBRARY *AND* A CLI, WHICH THE TWIN ALSO IS
 -----------------------------------------------------------------------------
-`inject-env.sh` is on the language-policy allowlist with the reason "sourced by build-cli-executables.sh to export variables into the CALLER's shell -- a child process cannot mutate its parent's environment in any language", and that reason is still true and is not what this port disputes. The twin has TWO callers' shapes, and only one of them is unportable:
+The retired twin was SOURCED by two bash scripts to export variables into the CALLER's shell, which no child process can do in any language. Its two callers' shapes were:
 
   * SOURCED (`source inject-env.sh --strict`) by build-cli-executables.sh and
-    build-cli-musl.sh, for the exported set. A child process cannot do this in
-    any language, so `inject()` returns the mapping and the CALLER applies it --
-    the same shape `core.proxyx` and `infra.ci_env` already take for their
-    sourced-only twins.
+    build-cli-musl.sh, for the exported set. Both are Python now
+    (`build.build_cli_executables`, `build.build_cli_musl`), so `inject()`
+    returns the mapping and the CALLER applies it -- the shape `core.proxyx`
+    and `infra.ci_env` take for their sourced-only twins.
   * EXECUTED (`inject-env.sh --version "$NEXT_VERSION" --strict --print`) as a
     release preflight from ci-build-cli.yml and ci-build-docker.yml. That one is
     a plain stdout-producing CLI and `main()` is byte-identical to it.
@@ -27,10 +27,9 @@ So "equivalent" here has FOUR observables, and `test_version_inject_env.py` comp
 -----------------------------------------------------------------------------
 THE RESOLVER IS SPAWNED, NOT IMPORTED
 -----------------------------------------------------------------------------
-`resolve-version.sh --current` is run as a subprocess from the path the twin computes (`<dir of the twin>/resolve-version.sh`), derived here from this module's own location. `rediacc_ci.version.resolve_version` is deliberately NOT imported: it is a separately-verified port with its own ledger, and importing it would make THIS differential's agreement depend on THAT port's
-correctness rather than on this one's. Two ports agreeing because they share an implementation is not evidence.
+`resolve_version.py --current` is run as a subprocess by the path `<dir of this module>/resolve_version.py`, derived from this module's own location, with the interpreter that runs this module and `PYTHONPATH` at this checkout's `.ci`. It replaced `resolve-version.sh` when that script was retired (PLAN-retire-bash-oracles B3); the subprocess keeps the fixture seam the differential relies on, a stub beside a copy of this module that answers instead of git.
 
-`2>/dev/null` in the twin is reproduced: a resolver that is missing, that is not executable, that is not in a git repository, or that prints a diagnostic, all fall through to the fallback in silence. The twin's own comment records why the `&& [[ -n ... ]]` half exists -- a resolver that exits 0 printing NOTHING used to propagate an EMPTY version through `--strict`.
+`2>/dev/null` in the twin is reproduced: a resolver that is missing, that is not in a git repository, or that prints a diagnostic, all fall through to the fallback in silence. (A resolver that is merely not executable is no longer a case: it runs through the interpreter, so the mode bit does not matter. Rule T.) The twin's own comment records why the `&& [[ -n ... ]]` half exists -- a resolver that exits 0 printing NOTHING used to propagate an EMPTY version through `--strict`.
 
 -----------------------------------------------------------------------------
 A REAL DEFECT IN THE TWIN, REPRODUCED HERE ON PURPOSE
@@ -75,13 +74,11 @@ class UsageError(Exception):
 
 
 def resolver_path() -> pathlib.Path:
-    """`$_ie_dir/resolve-version.sh`, where `_ie_dir` is the twin's directory.
+    """`resolve_version.py` beside this module.
 
-    Derived from this module's own path, matching the twin's `BASH_SOURCE[0]` derivation rather than cwd or `$REDIACC_CI_ROOT`: a differential that pointed one subject at a fixture and the other at the real tree would diverge for a reason that has nothing to do with the port.
+    Derived from this module's own path, matching the retired twin's `BASH_SOURCE[0]` derivation rather than cwd or `$REDIACC_CI_ROOT`: a differential that pointed one subject at a fixture and the other at the real tree would diverge for a reason that has nothing to do with the port.
     """
-    # This file: <root>/.ci/rediacc_ci/version/inject_env.py
-    root = pathlib.Path(__file__).resolve().parents[3]
-    return root / ".ci" / "scripts" / "version" / "resolve-version.sh"
+    return pathlib.Path(__file__).resolve().parent / "resolve_version.py"
 
 
 def parse_args(argv: list[str]) -> tuple[str, bool, bool, bool]:
@@ -99,7 +96,7 @@ def parse_args(argv: list[str]) -> tuple[str, bool, bool, bool]:
         arg = argv[i]
         if arg == "--version":
             if i + 1 >= len(argv):
-                raise UsageError("inject-env.sh: --version requires an argument")
+                raise UsageError("rediacc_ci.version.inject_env: --version requires an argument")
             # THE DEFECT IN THE MODULE DOCSTRING LIVES HERE: the next word is taken whatever it is, including another flag.
             override = argv[i + 1]
             given = True
@@ -111,10 +108,10 @@ def parse_args(argv: list[str]) -> tuple[str, bool, bool, bool]:
             want_print = True
             i += 1
         else:
-            raise UsageError("inject-env.sh: unknown arg: %s" % arg)
+            raise UsageError("rediacc_ci.version.inject_env: unknown arg: %s" % arg)
 
     if given and not override:
-        raise UsageError("inject-env.sh: --version was given an empty value")
+        raise UsageError("rediacc_ci.version.inject_env: --version was given an empty value")
 
     return override, given, strict, want_print
 
@@ -134,20 +131,23 @@ def resolve(override: str) -> str:
 
 
 def _resolver_output() -> str:
-    """`"$(resolve-version.sh --current 2>/dev/null)"`, or "" on any failure.
+    """`"$(resolve_version.py --current 2>/dev/null)"`, or "" on any failure.
 
     Command substitution strips trailing newlines, so `.strip("\\n")` and not `.strip()`: a resolver that printed leading whitespace would keep it in bash, and a port that trimmed it would disagree.
     """
     script = resolver_path()
+    # <root>/.ci/rediacc_ci/version/inject_env.py: the resolver imports `rediacc_ci`, which lives under <root>/.ci.
+    ci_dir = pathlib.Path(__file__).resolve().parents[2]
     try:
         completed = subprocess.run(
-            [str(script), "--current"],
+            [sys.executable, str(script), "--current"],
             capture_output=True,
             text=True,
             check=False,
+            env={**os.environ, "PYTHONPATH": str(ci_dir)},
         )
     except OSError:
-        # A missing or non-executable resolver: bash's own diagnostic goes to the suppressed stderr and the substitution yields "".
+        # The interpreter could not start: the substitution yields "".
         return ""
     if completed.returncode != 0:
         return ""
@@ -160,15 +160,15 @@ def strict_refusal(version: str) -> str | None:
     Three and not one: the twin's own comment says the original check compared only against the literal `0.0.0-dev`, so an EMPTY version sailed through it, and anything non-numeric (a curl error page, "none", "latest") reached a build define.
     """
     if not version:
-        return "inject-env.sh: version is empty under --strict"
+        return "rediacc_ci.version.inject_env: version is empty under --strict"
     if version == DEV_VERSION:
         return (
-            "inject-env.sh: version resolved to 0.0.0-dev under --strict "
+            "rediacc_ci.version.inject_env: version resolved to 0.0.0-dev under --strict "
             "(did the checkout include tags?)"
         )
     if not PUBLISHABLE_RE.fullmatch(version):
         return (
-            "inject-env.sh: version '%s' is not a dotted numeric version, "
+            "rediacc_ci.version.inject_env: version '%s' is not a dotted numeric version, "
             "refusing under --strict" % version
         )
     return None

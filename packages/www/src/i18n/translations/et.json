@@ -4112,7 +4112,7 @@
           "quote": "AWS us-east-1 katkestuse ajal märtsis tegid meie 12 tootmisteenust tõrkesiirde sekundaarsesse andmekeskusesse 22 sekundiga. Meie kliendid ei märganud midagi. Meie konkurendid olid 6 tundi maas. Saime sel nädalal kolm uut ettevõtete lepingut nende klientidelt."
         },
         "techDiff": {
-          "description": "Rediacc kasutab btrfs send/receive inkrementaalsete erinevuste arvutamiseks failisüsteemi tasemel. Selle asemel, et edastada täismahtuseid, liiguvad saitide vahel ainult muutunud plokid. 380 GB keskkond, millel on 2,4 GB päevaseid muutusi, edastab 2,4 GB - mitte 380 GB. See on 98% ribalaiuse kokkuhoid. Replikatsioon töötab pidevalt või ajakava järgi.",
+          "description": "Rediacc kopeerib ainult andmed, mis on eelmisest korrast muutunud. Võtame 380 GB keskkonna, kus täna muutub 2,4 GB. Rediacc liigutab 2,4 GB, mitte 380 GB. See <span class=\"sp-emphasis\">vähendab ribalaiuse kasutust 98%</span>. See võib töötada pidevalt või ajakava järgi.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5048,7 +5048,7 @@
               "title": "Iseteeninduslik, Gitiga integreeritud"
             },
             {
-              "description": "Mitte ainult kood — kogu virn. OS, konteinerid, andmebaasid ja konfiguratsioon kloonitakse koos. Vead avastatakse 1-kordse hinnaga, mitte 30–100-kordse tootmishinnaga.",
+              "description": "Mitte ainult kood, kogu virn. Süsteem, konteinerid, andmebaasid ja seaded kloonitakse koos. Vead avastatakse 1-kordse hinnaga, mitte 30–100-kordse tootmishinnaga.",
               "icon": "layers",
               "title": "Rakendus + andmebaas + konfiguratsioon"
             }
@@ -5065,7 +5065,7 @@
         "calculator": {
           "annualLabel": "Meeskonna aastakulu",
           "description": "Liigutage liugureid vastavalt oma meeskonnale. Numbrid võivad teid üllatada.",
-          "footnote": "Põhineb $160K keskmise kogu töötasutel ($92/h täielikult arvestatud). Keskkonna ooteaja kulu: blokeeritud aeg × 60% tootlikkuse mõju. Kontekstivahetus: $24K–$50K/arendaja/aastas. 69% arendajatest kaotab 8+ tundi nädalas ebaefektiivsusele (Atlassian 2024). Arendajad ei ole ootamise ajal täielikult jõude, kuid ahelad sõltuvused intensiivistuvad sprinditi. Konservatiivsed hinnangud — tegelikud säästud on sageli suuremad.",
+          "footnote": "Põhineb $160K keskmisel kogutasul ($92/h täielikult arvestatud). Keskkonna ooteaja kulu: blokeeritud aeg × 60% tootlikkuse mõju. Kontekstivahetus: $24K–$50K arendaja kohta aastas. 69% arendajatest kaotab 8+ tundi nädalas ebaefektiivsusele (Atlassian 2024). Arendajad ei ole ootamise ajal täielikult jõude, kuid ahelsõltuvused kuhjuvad sprindist sprinti. Konservatiivsed hinnangud, tegelikud säästud on sageli suuremad.",
           "headerTitle": "Keskkonna ooteaja kulu kalkulaator",
           "results": {
             "blockedTime": "Blokeeritud aeg / sprint",
@@ -5128,7 +5128,7 @@
         },
         "hero": {
           "ctaLabel": "Alusta kloonimist",
-          "subtitle": "Loo täpseid koopiaid tootmisest — rakendus, andmebaas ja konfiguratsioon — arenduseks ja testimiseks. Ilma piletiteta. Ilma ootamiseta.",
+          "subtitle": "Tee tootmisest täpne koopia <span class=\"sp-emphasis\">sekundiga</span>. Rakendus, andmebaas, seaded, kõik koos. Ilma piletiteta. Ilma ootamiseta.",
           "title": "Klooni tootmiskeskkond 60 sekundiga"
         },
         "howItWorks": {
@@ -5215,7 +5215,7 @@
         },
         "label": "Keskkonna kloonimine",
         "meta": {
-          "description": "Loo täpseid koopiaid tootmisest — rakendus, andmebaas ja konfiguratsioon — arenduseks ja testimiseks. Ilma piletiteta. Ilma ootamiseta.",
+          "description": "Loo täpsed koopiad tootmisest (rakendus, andmebaas ja konfiguratsioon) arenduse ja testimise jaoks. Ilma piletiteta. Ilma ootamiseta.",
           "keywords": "keskkonna kloonimine, tootmiskloon, arenduskeskkond, kohene ettevalmistamine, btrfs kloon, copy-on-write, ajutised keskkonnad",
           "title": "Keskkonna kloonimine - klooni tootmine kiiresti | Rediacc"
         },
@@ -5281,55 +5281,55 @@
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub Codespaces creates a dedicated VM and clones the repository into a dev container for instant cloud development.",
+              "text": "GitHub Codespaces loob pühendatud VM-i ja kloonib repositooriumi dev-konteineri sisse kohese pilvearenduse jaoks.",
               "url": "https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace"
             },
             {
-              "text": "Coder templates are Terraform-defined blueprints for creating identical, reproducible development workspaces.",
+              "text": "Coder mallid on Terraform-ga määratletud plaanid identsete ja korratavate arenduskeskkondade loomiseks.",
               "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Vercel preview deployments create unique live URLs for every push/PR for isolated frontend review.",
+              "text": "Vercel eelvaate-juurutused loovad iga push/PR jaoks unikaalse live-URL-i eraldatud esiosa ülevaatuseks.",
               "url": "https://vercel.com/docs/deployments/preview-deployments"
             },
             {
-              "text": "Delphix Virtual Databases (VDBs) are full read-write copies from snapshots requiring only a fraction of traditional storage.",
+              "text": "Delphix Virtual Databases (VDB-d) on hetktõmmistest tehtud täielikud lugemis-kirjutamiskoopiad, mis vajavad vaid murdosa traditsioonilisest salvestusruumist.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branches are copy-on-write clones sharing pages with the parent until writes diverge.",
+              "text": "Neon harud on copy-on-write kloonid, mis jagavad lehti ülemharuga, kuni kirjutamised lahknevad.",
               "url": "https://neon.com/docs/introduction/branching"
             },
             {
-              "text": "Delphix supports Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB, and CockroachDB.",
+              "text": "Delphix toetab Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB ja CockroachDB andmebaase.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Codespaces prebuilds pre-assemble source code, extensions, and dependencies for substantially faster codespace creation.",
+              "text": "Codespaces prebuild'id koostavad lähtekoodi, laiendid ja sõltuvused ette, mis kiirendab codespace'i loomist märkimisväärselt.",
               "url": "https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds"
             },
             {
-              "text": "Coder prebuilt workspaces maintain a ready-to-use pool, reducing creation time from up to 20 minutes to under a minute.",
+              "text": "Coder prebuilt workspace'id hoiavad kasutusvalmis kogumit ja vähendavad loomisaega kuni 20 minutilt alla ühe minuti.",
               "url": "https://coder.com/docs/admin/templates/extending-templates/prebuilt-workspaces"
             },
             {
-              "text": "Vercel deploys to its global edge network with apps going live within seconds of pushing code.",
+              "text": "Vercel juurutab oma globaalsesse äärevõrku ning rakendused lähevad live'i mõne sekundiga pärast koodi push'imist.",
               "url": "https://vercel.com/docs/deployments"
             },
             {
-              "text": "Delphix VDB provisioning completes in minutes rather than hours or days for traditional database copies.",
+              "text": "Delphix VDB ettevalmistamine lõpeb minutitega, mitte tundide ega päevadega nagu traditsiooniliste andmebaasikoopiate puhul.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branch creation takes approximately 1 second regardless of database size.",
+              "text": "Neon haru loomine võtab umbes 1 sekundi, olenemata andmebaasi suurusest.",
               "url": "https://neon.com/docs/get-started/workflow-primer"
             },
             {
-              "text": "Delphix creates full read-write virtual copies from production data sources for application, AI, and ML teams.",
+              "text": "Delphix loob tootmise andmeallikatest täielikud lugemis-kirjutamisvirtuaalkoopiad rakenduste, AI ja ML meeskondade jaoks.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Neon branches include all parent data by default providing instant production-identical copies.",
+              "text": "Neon harud sisaldavad vaikimisi kõiki ülemharu andmeid ja pakuvad kohe tootmisega identseid koopiaid.",
               "url": "https://neon.com/docs/introduction/branching"
             }
           ]
@@ -5344,10 +5344,10 @@
             "beforeValue": "3 päeva",
             "improvement": "99,97% kiirem"
           },
-          "quote": "Käivitasime 12 tootmisidentset testkeskkonda alla 10 minutiga — igaühes täielik 241 GB PostgreSQL andmebaas. Meie eelmine protsess põhines käsitsi andmebaasi dumpidel lavastuskeskkonda. See nõudis 3 insenerit ja 2 päeva keskkonna kohta."
+          "quote": "Käivitasime 12 tootmisidentset testkeskkonda alla 10 minutiga, igaühes täielik 241 GB PostgreSQL andmebaas. Meie varasem protsess põhines käsitsi andmebaasi dumpidel staging-keskkonda. See nõudis 3 insenerit ja 2 päeva keskkonna kohta."
         },
         "techDiff": {
-          "description": "Rediacc kasutab btrfs copy-on-write hetktõmmiseid failisüsteemi tasandil. 241 GB tootmiskeskkonna hetktõmmis valmib allsekundiliselt ja tarbib algul null lisaruumi. Kuna kloon arengu käigus erinema hakkab, kasutavad ainult muutunud plokid uut ruumi. Kümme klooni 241 GB andmebaasist võib kasutada vähem kui 12 GB lisaruumi.",
+          "description": "Nipp on selles: Rediacc kopeerib <span class=\"sp-emphasis\">salvestuskihi</span> tasemel, mitte failitasemel. 241 GB koopia valmib alla sekundiga ja ei kasuta peaaegu üldse lisaruumi. Hiljem võtavad uut ruumi ainult muutunud osad. Kümme koopiat sellest 241 GB keskkonnast mahuvad alla 12 GB.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5541,7 +5541,7 @@
               "title": "Simuleeri"
             },
             {
-              "description": "Vaadake iga sammu reaalajas. RTO, RPO, teenuse seisund — kõik mõõdetud ja logitud. Ühendub teie monitooringupirnuga.",
+              "description": "Jälgige iga sammu reaalajas. Me mõõdame taastamiskiirust ja andmete kaotust. Iga teenus logitakse. Ühendub teie olemasolevate monitoorimisvahenditega.",
               "icon": "eye",
               "title": "Jälgi"
             },
@@ -5613,47 +5613,47 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, \"2024 Data Protection Trends Report — BC/DR Trends,\" 2024. \"Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.\" \"Only 58% of servers met their recovery SLA during their last large-scale attack.\" \"Only 32% of organizations believe that they could recover 50 workloads within an entire business week.\"",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “Ainult 13% organisatsioonidest kasutab orkesteeritud töövoogu oma katastroofitaaste protsesside osana.” “Ainult 58% serveritest täitis oma taastamise SLA-d viimase suuremahulise rünnaku ajal.” “Ainult 32% organisatsioonidest usub, et suudab terve ärinädala jooksul taastada 50 töökoormust.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Zerto test failovers spin up replica VMs on scratch disks in isolated bubble networks with zero production impact.",
+              "text": "Zerto test failoverid jooksutavad replika VM-e ajutistel ketastel eraldatud võrgutes, tootmist mõjutamata.",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup runs automated recovery verification in an isolated Virtual Lab with zero production impact.",
+              "text": "Veeam SureBackup käivitab automatiseeritud taastamiskontrolli eraldatud Virtual Labis, tootmist mõjutamata.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Zerto Orchestrator automates scheduled failover tests with zero production impact and generates compliance reports.",
+              "text": "Zerto Orchestrator automatiseerib planeeritud tõrkesiire-teste, tootmist mõjutamata, ja loob vastavuse aruandeid.",
               "url": "https://www.zerto.com/the-platform/automated-disaster-recovery-testing/"
             },
             {
-              "text": "Druva DR plan testing spins up cloned resources on-demand without touching production for RTO/RPO validation.",
+              "text": "Druva KT-plaani testimine käivitab kloonitud ressursse nõudmisel, tootmist mõjutamata, RTO/RPO valideerimiseks.",
               "url": "https://help.druva.com/en/articles/8806108-execute-test-vs-execute-failure-of-a-dr-plan"
             },
             {
-              "text": "Veeam ONE Reporter generates detailed DR readiness and compliance reports for audit and governance.",
+              "text": "Veeam ONE Reporter loob detailseid KT-valmisoleku ja vastavuse aruandeid auditi ja juhtimiseks.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Zerto generates Recovery Reports after every failover test with up to 90 days of historical data for SLA validation.",
+              "text": "Zerto loob taastamise aruandeid iga tõrkesiire-testi järel kuni 90 päevase ajaloo andmetega SLA valideerimiseks.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/Recovery_Reports.htm"
             },
             {
-              "text": "Veeam SureBackup validates recoverability of cloud workloads including AWS and Azure VMs in isolated tests.",
+              "text": "Veeam SureBackup valideerib pilve töökoormuseid, sealhulgas AWS ja Azure VM-e eraldatud testides.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto supports cross-cloud test failovers (on-prem to Azure, AWS to Azure) using scratch disks in isolated networks.",
+              "text": "Zerto toetab pilvedevahelisi test-failovereid (on-prem'ist Azure'isse, AWS-ist Azure'isse) ajutistel ketastel eraldatud võrkudes.",
               "url": "https://help.zerto.com/bundle/Admin.Azure.HTML.10.0_U1/page/The_Test_Failover_Process.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication on juurutatud kohapeal Windows Serveril, kasutajal täielik infrastruktuuri kontroll.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto on juurutatud kohapeal Zerto Virtual Manageriga ja hostides Virtual Replication seadmetega.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5675,7 +5675,7 @@
           "quote": "Käivitasime oma esimese automatiseeritud tõrkesiire testi teisipäeva hommikul. See leidis 3 kriitilist lünka — aegunud DNS-kirje, puuduv SSL-sertifikaat teisel serveril ja andmebaasi replikatsiooni viivitus 4 minutit. Kõik kolm oleksid põhjustanud tõelise katkestuse. Parandasime need pärastlõunal. Nüüd testime igakuiselt ja magame rahulikumalt."
         },
         "techDiff": {
-          "description": "Traditsioonilised KT-testid nõuavad tootmise seisakuakent, inseneride meeskonda ja nädala planeerimist. Rediacc kasutab btrfs copy-on-write hetktõmmiseid, et luua sekunditega isoleeritud kloon kogu teie infrastruktuurist. Test käivitatakse klooni vastu — tootmine ei peatu kunagi.",
+          "description": "Vanaviisi KT-testid nõuavad tootmise seisakut, tuppa täit insenere ja nädalatepikkust planeerimist. Rediacc kloonib kogu keskkonna <span class=\"sp-emphasis\">sekunditega</span>. Test jookseb koopial. Tootmine ei peatu kunagi.",
           "rediaccLabel": "Rediacc KT-testimine",
           "rows": [
             {
@@ -5687,12 +5687,12 @@
               "traditional": "3–5 päeva planeerimiseks, meeskonna kokkukogumine, täitmine"
             },
             {
-              "rediacc": "Igakuiselt või cron/CI kaudu — testi nii sageli kui juurutad",
-              "traditional": "Testitud kord aastas (kui üldse) — kvartalis parimal juhul"
+              "rediacc": "Igakuiselt või cron/CI kaudu, testi nii sageli kui juurutad",
+              "traditional": "Testitud kord aastas (kui üldse), kvartalis parimal juhul"
             },
             {
-              "rediacc": "Automatiseeritud tervisekontrollid — lõpetamine/mittelõpetamine täpse RTO/RPO-ga",
-              "traditional": "Käsitsi kontrollimine — \"näeb õige välja\" otsused"
+              "rediacc": "Automatiseeritud tervisekontrollid: läbitud või mitteläbitud täpsete numbritega",
+              "traditional": "Käsitsi kontrollimine: \"näeb õige välja\" otsused"
             },
             {
               "rediacc": "Forki terve klaster 46 sekundiga ja käivita õppus koopial",
@@ -5714,7 +5714,7 @@
         "calculator": {
           "annualLabel": "Aastane riskikokkupuude",
           "description": "Liigutage liugureid vastavalt oma infrastruktuurile. Numbrid kasvavad kiiresti.",
-          "footnote": "Tulurisk põhineb keskmistel seisakukuludel $9 000/min (Splunk/Oxford Economics 2024). Taastamise tööjõu: 6 insenerit × taastamistunnid × $200/h segamäär. Mainerisk hinnatud protsendina otsestest kuludest (tööstuse hinnang). Rediacc-iga: muutumatud hetktõmmised taastatakse alla 5 minutiga — seisakuaeg läheneb nullile.",
+          "footnote": "Tulurisk põhineb keskmistel seisakukuludel $9 000/min (Splunk/Oxford Economics 2024). Taastamistööd: 6 insenerit × taastamistunnid × $200/h (segamäär). Mainekulu on hinnatud protsendina otsestest kuludest (tööstuse hinnang). Rediacc-iga: muutumatud hetktõmmised taastatakse alla 5 minutiga, seisakuaeg läheneb nullile.",
           "headerTitle": "Lunavara riskikokkupuute kalkulaator",
           "results": {
             "downtime": "Seisakuaeg juhtumi kohta",
@@ -5740,7 +5740,7 @@
         },
         "comparison": {
           "capabilityLabel": "Võimekus",
-          "description": "Traditsioonilised varukoopiatööriistad lubavad muutumatust tarkvara lukkude kaudu. Rediacc jõustab seda kerneli tasandil — kuhu lunavara ei ulatu.",
+          "description": "Teised varukoopiatööriistad lubavad lukustatud varukoopiad tarkvara lukude abil. Lunavara saab need lahti murda. Rediacc jõustab lukustamise salvestuskihis, kuhu lunavara ei ulata.",
           "features": [
             {
               "name": "Muutumatud varukoopiad",
@@ -5894,91 +5894,91 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” märts 2024. “94% organisatsioonidest, keda rünnak tabas viimase aasta jooksul, ütlesid, et küberkurjategijad üritasid rünnaku ajal nende varukoopiaid kahjustada.”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” juuli 2024. “Andmeleke globaalne keskmine kulu ulatus 2024. aastal $4,88 miljonini, kuna rünnakud muutuvad häirivamaks ja kübermeeskondade koormus kasvab.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” July 2022. “In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.”",
+              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” juuli 2022. “II kvartalis oli keskmiselt 24 päeva seisakuaega, 8% langus I kvartaliga võrreldes.”",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
-              "text": "Veeam Hardened Repository provides Linux-based immutable backup storage using XFS with the immutable flag set at the file level.",
+              "text": "Veeam Hardened Repository pakub Linux-põhist muutumatut varukoopiasalvestust, kasutades XFS-i failitaseme muutumatus-lipuga.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/hardened_repository.html"
             },
             {
-              "text": "Rubrik Atlas filesystem stores all backup data in proprietary append-only immutable format that cannot be modified or deleted.",
+              "text": "Rubrik Atlas failisüsteem salvestab kõik varukoopia andmed omavormingus, mis lubab ainult lisamist ja on muutumatu ning mida ei saa muuta ega kustutada.",
               "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Commvault supports WORM storage lock and compliance lock on disk libraries for immutable backups.",
+              "text": "Commvault toetab WORM-salvestuslukku ja vastavuslukku ketasteekidel muutumatute varukoopiate jaoks.",
               "url": "https://documentation.commvault.com/2024e/software/configuring_worm_storage_mode_on_disk_libraries.html"
             },
             {
-              "text": "Druva's SaaS architecture stores backups in an air-gapped, immutable cloud decoupled from the customer's environment.",
+              "text": "Druva SaaS-arhitektuur salvestab varukoopiad õhkvahega (air-gapped) muutumatus pilves, mis on kliendi keskkonnast eraldatud.",
               "url": "https://www.druva.com/resources/solution-brief/solution-brief-druva-immutability"
             },
             {
-              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "text": "Veeam SureBackup kontrollib automaatselt varukoopiate taastatavust, käivitades VM-e isoleeritud Virtual Lab keskkonnas.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Veeam Instant VM Recovery mounts backups directly on ESXi/Hyper-V hosts for near-instant VM recovery and testing.",
+              "text": "Veeam Instant VM Recovery ühendab varukoopiad otse ESXi/Hyper-V hostidele peaaegu kohese VM-i taastamise ja testimise jaoks.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Live Mount instantly mounts backup snapshots as live VMs or file shares for testing and recovery.",
+              "text": "Rubrik Live Mount ühendab varukoopia hetktõmmised koheselt töötavate VM-ide või failijagamistena testimiseks ja taastamiseks.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery boots VMs directly from backup via NFS export for instant testing and recovery.",
+              "text": "Commvault Live Recovery käivitab VMe otse varukoopiast NFS ekspordi kaudu kohese testimise ja taastamise jaoks.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore boots VMware VMs directly from backup cloud in under 5 minutes with live migration.",
+              "text": "Druva Instant Restore käivitab VMware VMe otse varukoopiapilvest alla 5 minutiga reaalajas migratsiooni kasutades.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Zerto pidev replikatsioon päevikupõhise taastamisega tagab peaaegu nullilähedase RPO ja minutitasemel RTO kohese taastamise jaoks.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery võimaldab alla 5-minutilist RTO-t VMe käivitamisega otse varukoopia failidest.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery võimaldab alla 5-minutilist taastamist VMe ühendamisega otse muutumatutest hetktõmmistest.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery võimaldab alla 5-minutilist RTO-t VMe ühendamisega varukoobiast Storage vMotioniga taustale.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore minimeerib seisakuaega alla 5-minutilise VM taastamisega otse varukoopiapilve salvestusest.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Zerto alati sisselülitatud replikatsioon alla 10-sekundiliste RPO-de ja minutitasemel RTO-dega võimaldab peaaegu kohest täiskeskkonna taastamist.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication on paigaldatud kohapeal Windows Serveris kliendi täieliku kontrollimisega infrastruktuuri üle.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik on paigaldatud kohapealsete seadmete (r6000 seeria) kujul integreeritud arvutuste, salvestuse ja tarkvaraga.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault toetab täielikult ise majutatud (self-hosted) kohapealseid paigaldusi CommServe, MediaAgent ja Access Node komponentidega.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto on paigaldatud kohapeal Zerto Virtual Manager'iga ja host-kaupa Virtual Replication seadmetega.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -6000,19 +6000,19 @@
           "quote": "Meid tabas lunavara kell 3:17 hommikul laupäeval. Ründajad krüpteerisid 14 serverit, sealhulgas meie varukoopia hoidla — või nii nad arvasid. Rediacc muutumatud hetktõmmised olid puutumata. Kell 3:24 olid kõik 14 serverit taastatud suletud varukoopiatest. Kokku andmekadu: null baiti. Kokku makstud lunaraha: null dollarit."
         },
         "techDiff": {
-          "description": "Rediacc kasutab btrfs kirjutuskaitstud hetktõmmiseid failisüsteemi tasandil. Kui hetktõmmis on suletud, takistab kernel ise muutmist — mitte tarkvara lukud, mida pahavara saab mööda minna, vaid failisüsteemi tasandi muutumatus. Isegi root-juurdepääsuga ei suuda lunavara suletud btrfs hetktõmmist krüpteerida, muuta ega kustutada.",
+          "description": "Rediacc teeb kirjutuskaitstud koopia, failide külmutatud hetktõmmise ühest ajahetkest. Kui koopia on lukustatud, <span class=\"sp-emphasis\">blokeerib muudatused salvestuskiht ise</span>. See pole tarkvaraline lukk, mida pahavara suudaks murda. Isegi kõrgeima administraatori parooliga ei saa lunavara lukustatud koopiat krüptida, muuta ega kustutada.",
           "rediaccLabel": "Rediacc (btrfs muutumatu)",
           "rows": [
             {
-              "rediacc": "Kerneli poolt jõustatud kirjutuskaitstud hetktõmmised — ei saa muuta isegi root'iga",
-              "traditional": "Tarkvara taseme \"muutumatus\" — admin/root juurdepääsuga möödasõidetav"
+              "rediacc": "Salvestuskihi kaitstud kirjutuskaitstud koopiad, turvalised isegi administraatori peaparooliga",
+              "traditional": "Tarkvara \"kaitsed\", admin-parooliga möödasõidetavad"
             },
             {
-              "rediacc": "Hetktõmmised eksisteerivad failisüsteemi kihis — kasutajaruumi pahavarast nähtamatud",
-              "traditional": "Varukoopia failid salvestatud tavaliste failidena kettal — nähtavad ja krüpteeritavad"
+              "rediacc": "Koopiad asuvad salvestuskihis, tavalisele pahavarale peidetud",
+              "traditional": "Varukoopiad on kettal tavaliste failidena, neid on lihtne leida ja krüpteerida"
             },
             {
-              "rediacc": "Automatiseeritud igapäevane kloon + käivitamine + tervisekontroll — tegelikult taastatakse ja kontrollitakse",
+              "rediacc": "Iga päev: kloon, käivitus, tervisekontroll, tõesti testitav taastamine",
               "traditional": "Kontrollimine = ainult \"varukoopia lõpetatud\" olekuteade"
             },
             {
@@ -6602,7 +6602,7 @@
           "quote": "Meie peamine andmebaasiserver ebaõnnestus laupäeval kell 2:14 - rikutud kettakontroller. Vana süsteemiga oleks see tähendanud tervet nädalavahetust 11 teenuse seadistamise, taastamise ja uuesti konfigureerimisega. Selle asemel käivitasin ühe käsu telefonist. Kell 2:18 oli kõik tagasi - MariaDB, API, Nginx, Redis, kõik. Samad konfiguratsioonid, sama olek, samad andmed. Valveinseneer läks tagasi magama."
         },
         "techDiff": {
-          "description": "Traditsiooniline taastamine tähendab uue serveri seadistamist, pakettide installimist, failide ükshaaval taastamist, teenuste uuesti konfigureerimist ja lootmist, et midagi ei jäänud vahele. Rediacc kasutab btrfs-hetktõmmiseid, et kloonida kogu keskkond - mahud, konfiguratsioonid, konteinerid, võrguseaded - ühes aatomioperatsioonis.",
+          "description": "Vana viis: seadista uus server, paigalda paketid, taasta failid ükshaaval, konfigureeri teenused uuesti. Seejärel looda, et midagi ei jäänud vahele. Rediacc töötab teisiti. See kopeerib kogu keskkonna korraga. Kettad, seadistused, konteinerid, võrk, <span class=\"sp-emphasis\">kõik ühe liigutusega</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -8092,7 +8092,7 @@
           "quote": "Läksime 3-päevaselt taastamisplaanilt alla 4 minuti peale. Tegeliku lunavararünnaku ajal kell 2 öösel käivitas valveinseneer ühe käsu ja kõik 8 tootmiskonteinerit olid võrgus kell 2:04. Meie eelmise tarnija hinnang oli 72 tundi - tegime selle 240 sekundiga."
         },
         "techDiff": {
-          "description": "Traditsiooniline taastamine ehitab nullist - installi OS uuesti, taasta failid, konfigureeri teenused uuesti. Rediacc taastab btrfs-hetktõmmistest: failisüsteem lülitub lihtsalt salvestatud olekule. Uuesti installimist pole, uuesti konfigureerimist pole, andmeedastust pole. Hetktõmmis on juba kettal - see lihtsalt muutub aktiivseks.",
+          "description": "Vana taaste ehitab kõik nullist: paigalda süsteem uuesti, taasta failid, seadista teenused uuesti. Rediacc töötab teisiti. Puhas koopia <span class=\"sp-emphasis\">on juba kettal</span>. Me lihtsalt lülitame selle sisse. Ei mingit uuesti paigaldamist, seadistamist ega aeglast andmeedastust.",
           "traditionalLabel": "Traditsiooniline taasülesehitus",
           "rediaccLabel": "Rediacc (hetkelised btrfs-koopiad)",
           "rows": [
@@ -8414,7 +8414,7 @@
           "quote": "Meie SOC2 audiitor nõudis 3 aasta varukoopiasäilitamise tõendust. Varem tähendas see 2 nädalat logide läbikaevamist ja tabelarvutuste ristkontrolli. Rediacciga käivitasin rdc retention report --framework soc2 ja andsin üle täieliku aruande 4 minutiga. Audiitor ütles, et see oli kõige korrektsem tõendus, mida nad olid näinud."
         },
         "techDiff": {
-          "description": "Traditsiooniline säilitushaldus tähendab varukoopiakuupäevade jälgimist tabelarvutustes, käsitsi puhastamisskriptide käivitamist ja lootmist, et midagi pole enne audiitorit jäänud kahe silma vahele. Rediacc kasutab btrfs-i snapshotide elutsüklihaldust koos automatiseeritud poliitikajõustamisega - varukoopiad säilitatakse, kontrollitakse ja puhastatakse ilma inimese sekkumiseta.",
+          "description": "Arvutustabelipõhine vastavus tähendab varukoopiate kuupäevade käsitsi jälgimist, puhastusskriptide käivitamist ja lootmist, et auditi eel poleks midagi märkamatuks jäänud. Rediacc säilitab, kontrollib ja puhastab varukoopiaid <span class=\"sp-emphasis\">ise</span>. Ühtegi käsitsi tehtavat sammu pole.",
           "rediaccLabel": "Rediacc säilitamine",
           "rows": [
             {
@@ -8750,7 +8750,7 @@
           "quote": "Meil oli eelmisel kvartalil kriitiline OpenSSL-i paik. Tavaliselt oleksime kavandanud hooldusaken ja palvetanud. Selle asemel kloonisime kõik 22 tootmisserverit, rakendasime paiga, käivitasime täieliku testikomplekti ja kinnitasime nulli regressiooni - kõik 18 minutiga. Paigaldasime tootmise samal päeval täieliku kindlusega."
         },
         "techDiff": {
-          "description": "Rediacc kasutab btrfs copy-on-write snapshoote, et kloonida kogu tootmiskeskkond - OS, konteinerid, andmebaasid, konfiguratsioon - alaosekundi jooksul. Kloon töötab isoleeritud võrgus koos oma Docker-deemoniga. Kloonile rakendatud paigad ei puutu tootmist. Kui kloon puruneb, kustutate selle. Kui see toimib, rakendate sama paiga tootmises.",
+          "description": "Rediacc kopeerib kogu töötava keskkonna <span class=\"sp-emphasis\">sekunditega</span>. See hõlmab operatsioonisüsteemi, rakendusi, andmebaase ja kõiki seadistusi. Koopia töötab oma isoleeritud võrgus oma Dockeriga. Koopiale pandud paigad ei puuduta päris servereid. Kui koopia läheb katki, kustuta see. Kui see töötab, rakenda sama paik päriselt.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9313,7 +9313,7 @@
           "quote": "Kriitiline CVE ilmus reedel pärastlõunal. Laupäeva hommikuks olime klooninud tootmise, rakendanud paiga, kontrollinud seda kõigi 4 mõjutatud teenuse vastu ja paigaldanud - null seisakut. Meie varasem protsess oleks võtnud 3 nädalat ja muudatuste haldamise koosoleku."
         },
         "techDiff": {
-          "description": "Traditsiooniline paikamine nõuab lavakeskkonda, mis vastab tootmisele - kuid lava kaldub kõrvale päevade jooksul. Rediacc loob sekunditega btrfs copy-on-write snapshooti teie tegelikust tootmistaristust, laseb rakendada ja kontrollida paika reaalsete andmete ja konfiguratsioonide vastu, seejärel paigaldab kontrollitud paranduse tootmises. Kui paik läbib kontrolli ebaõnnestunult, kustutage kloon. Tootmine jääb puutumatuks.",
+          "description": "Vana moodi paikamine vajab testkoopiat, mis vastab tootmiskeskkonnale. Kuid testkeskkond triivib mõne päevaga eemale. Rediacc teeb päris tootmiskeskkonnast kohese koopia <span class=\"sp-emphasis\">sekunditega</span>. Rakenda paik koopiale. Testi seda päris andmete ja päris seadistustega. Kui see töötab, võta see tootmises kasutusele. Kui ei tööta, viska koopia minema. Tootmine jääb puutumata.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -9852,7 +9852,10 @@
     "title": "Kuidas tagame äri järjepidevuse"
   },
   "video": {
-    "playVideo": "Esita video"
+    "playVideo": "Esita video",
+    "player": {
+      "chapters": "Peatükid"
+    }
   },
   "whyNow": {
     "cards": [

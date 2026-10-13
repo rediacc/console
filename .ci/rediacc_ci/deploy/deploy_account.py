@@ -36,7 +36,7 @@ this campaign has ruled on before (`deploy/set_www_worker_secrets.py`, `deploy/w
      the same exit status 1.
   2. An argument whose flag is not a valid shell identifier (`--foo.bar`) is
      `printf -v`'s own failure inside `common.sh:341`, exit 2, and names
-     common.sh's path and line. The port prints `deploy-account.sh: printf:
+     common.sh's path and line. The port prints `rediacc_ci.deploy.deploy_account: printf:
      ...` with the same status, following `autopilot/sweep_collect.py:284`.
 
 `:?` IS AN UNSET-OR-EMPTY TEST, so `--region=` refuses exactly as an absent
@@ -59,8 +59,8 @@ from rediacc_ci.core import common
 if typing.TYPE_CHECKING:
     import pathlib
 
-# The twin's own name, used only in the two bash-diagnostic stand-ins.
-SELF = "deploy-account.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.deploy_account"
 
 # The `${ARG_REGION:?...}` stand-in named in the docstring. The twin's own text
 # after the `VAR: ` prefix bash adds; kept verbatim, because that is the text.

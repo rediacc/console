@@ -17,11 +17,12 @@ import { t } from '../i18n/index.js';
 import { ValidationError } from '../utils/errors.js';
 
 /**
- * Decrypted handoff payload from the portal. `configId` is absent for a
- * fresh (zero-config) store, the CLI then mints one from the local config's
- * id and seeds the store on enable.
+ * What one enrollment hands this device, whichever way it was obtained: the portal handoff carries
+ * it sealed, and the password path derives the slot secret locally and builds the same shape.
+ * `configId` is absent for a fresh (zero-config) store, the CLI then mints one from the local
+ * config's id and seeds the store on enable.
  */
-export interface HandoffPayload {
+export interface DeviceCredentials {
   passkey_secret: string;
   token: string;
   storageKeyId: string;
@@ -30,6 +31,10 @@ export interface HandoffPayload {
   apiUrl: string;
   configId?: string;
   teamId?: string;
+}
+
+/** Decrypted handoff payload from the portal: the device credentials, plus the nonce that ties them to this run. */
+export interface HandoffPayload extends DeviceCredentials {
   /** The nonce from the link fragment, echoed inside the sealed plaintext; the relay refuses any other value. */
   handoffNonce: string;
 }

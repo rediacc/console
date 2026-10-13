@@ -11,10 +11,10 @@ THE DERIVATION, AND WHY IT YIELDS NOTHING TODAY
 `.ci/rediacc_ci/tests/gates/test_gate_*.py` modules each declare a `BASH_TWIN`, and `test_twin_parity.py` RUNS that twin against the real tree on every pytest run. A twin that writes or scans the real tree therefore makes `check:ci-pytest` a participant in the battery's isolation contract; two such twins running in two workers at once is the `cp: cannot stat` flake nobody can
 reproduce.
 
-Which twins those are is already recorded, and this reads that record rather than becoming a second copy: `scripts/ci-runner/gates.lock.json`, via `battery.classify_from_lock`, under the `mutex` (exclusive) and `reads` (shared) claims. This is where the contract BELONGS.
+Which twins those are is already recorded, and this reads that record rather than becoming a second copy: `scripts/ci-runner/gates.lock.json`, via `classify_from_lock` below, under the `mutex` (exclusive) and `reads` (shared) claims. This is where the contract BELONGS. The reader lived in the bash battery runner `battery.py` until that runner was retired with the last `.ci/scripts/test/gates/test-*.sh` (2026-10-09); this module was its only remaining caller, so it moved here.
 
 THERE WAS A SECOND SOURCE AND IT IS GONE, WHICH IS A NARROWING RATHER THAN A LOSS. Until the shell battery runner was retired this also unioned in the `*_FALLBACK` arrays parsed out of `.ci/scripts/test/run-all.sh`, the hand-maintained knowledge that predated the lock declarations. The union was retired ON A MEASUREMENT, not on a hope: with the lock alone and with both
-sources the answer was the same 27 names, and the runner-only set was EMPTY -- the arrays had nothing left to contribute because every name in them had landed in the lock. `battery.py`, which replaced that runner, carries no such array on purpose: a hand list beside the lock is the duplicated definition the whole port removes.
+sources the answer was the same 27 names, and the runner-only set was EMPTY -- the arrays had nothing left to contribute because every name in them had landed in the lock. `battery.py`, which replaced that runner, carried no such array on purpose: a hand list beside the lock is the duplicated definition the whole port removes.
 
 MEASURED 2026-09-07 AND STATED SO NOBODY CALLS IT A BUG: 29 of 29 ported modules resolve, and ZERO of them are in `mutex | reads`. **The derivation returns no groups today.** That is the correct answer and not a broken reader, and there is deliberately NO "at least one group must exist" floor here: such a floor would be red on the day it was written and would be suppressed within
 the week. The anti-vacuity claim that IS available is one directory up -- `real_tree_twins` must not return an EMPTY SET, because an empty one would make `test_no_ported_twin_is_a_real_tree_writer_or_scanner` admit every twin including the four that rewrite tracked files. `test_xdist_groups.py` asserts that, and `test_twin_parity.py` already refuses on it at runtime.
@@ -41,13 +41,14 @@ What remains in a group is a resource that is machine-wide by construction and c
 """
 
 import fcntl
+import json
 import os
 import pathlib
 import random
 import socket
 import time
 
-from rediacc_ci import battery, paths
+from rediacc_ci import paths
 
 # The source, as path PARTS rather than a joined string, so a component is greppable on its own and the separator is the platform's.
 LOCK_SUBDIR = ("scripts", "ci-runner", "gates.lock.json")
@@ -67,6 +68,35 @@ def lock_path(root: pathlib.Path | None = None) -> pathlib.Path:
     return paths.from_root(*LOCK_SUBDIR, root=root)
 
 
+def classify_from_lock(lock: pathlib.Path, claim: str) -> set[str]:
+    """Basenames of the implementing file (`leaves[0]`) of every lock entry declaring a `tree:` resource under `claim` (`mutex` for exclusive, `reads` for shared).
+
+    Returns an EMPTY SET when the lock is unreadable or declares nothing, and the caller decides what that means -- "no declarations yet" and "the lock is broken" must not silently become the same thing as "nothing needs isolating".
+
+    THE IDENTITY IS `leaves[0]`, NEVER `run`. This used to match a `run` naming a `.ci/scripts/test/gates/*.sh` file first, back when every isolation-declaring entry was one of those bash files and `run` WAS the path. That directory holds no test since 2026-10-09, so the `run` branch could only ever match nothing, and it was removed with the battery rather than kept as a path that cannot fire. An entry with no `leaves` names no file and contributes nothing.
+    """
+    try:
+        with lock.open(encoding="utf-8") as handle:
+            entries = json.load(handle)
+    except (OSError, ValueError):
+        return set()
+    if not isinstance(entries, list):
+        return set()
+    found = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        claimed = entry.get(claim)
+        if not isinstance(claimed, list):
+            continue
+        if not any(isinstance(r, str) and r.startswith("tree:") for r in claimed):
+            continue
+        leaves = entry.get("leaves")
+        if isinstance(leaves, list) and leaves and isinstance(leaves[0], str):
+            found.add(os.path.basename(leaves[0]))
+    return found
+
+
 def real_tree_twins(lock: pathlib.Path) -> set[str]:
     """Gate-test basenames that touch the REAL tree while they run.
 
@@ -74,10 +104,10 @@ def real_tree_twins(lock: pathlib.Path) -> set[str]:
 
     `lock` is a PARAMETER rather than a module constant so the controls can drive both directions on fixture files. That is the whole reason the signature takes it.
 
-    An unreadable lock contributes NOTHING rather than raising, which is `battery.classify_from_lock`'s documented behaviour and is the caller's decision to interpret: "nothing is declared yet" and "the lock is broken" must not silently become "nothing needs isolating". THAT INTERPRETATION IS NOW THE WHOLE ANSWER, where it used to be one half of a union: a broken lock empties
+    An unreadable lock contributes NOTHING rather than raising, which is `classify_from_lock`'s documented behaviour and is the caller's decision to interpret: "nothing is declared yet" and "the lock is broken" must not silently become "nothing needs isolating". THAT INTERPRETATION IS NOW THE WHOLE ANSWER, where it used to be one half of a union: a broken lock empties
     this set, so the anti-vacuity refusal on the total -- which lives with the callers, in `test_xdist_groups.py` and at runtime in `test_twin_parity.py` -- is the only thing standing between a damaged lock and a parity run that admits every twin including the ones that rewrite tracked files. That refusal is load-bearing rather than decorative.
     """
-    return battery.classify_from_lock(lock, "mutex") | battery.classify_from_lock(lock, "reads")
+    return classify_from_lock(lock, "mutex") | classify_from_lock(lock, "reads")
 
 
 def group_for(module: object, unsafe: set[str] | None = None) -> str | None:
@@ -171,8 +201,6 @@ def unit_durations(path: pathlib.Path | None = None) -> tuple[dict[str, float], 
     """
     source = path if path is not None else paths.from_root(*LANE_DURATIONS_SUBDIR)
     try:
-        import json  # noqa: PLC0415 -- read once per collection, by the conftest only
-
         data = json.loads(source.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}, 0.0
@@ -201,7 +229,7 @@ def order_longest_first(files: list[str], durations: dict[str, float], default: 
 # --------------------------------------------------------------------------
 # What remains in a group is a resource machine-wide by construction (the docstring above): a driver pinning constant ports, a fixed tmp path. `--dist loadgroup` serialises a group inside ONE pytest run only. Once the core lease split the machine fairly between concurrent runs (agent/plans/PLAN-prepush-full-cpu.md B11), two runs at 12 workers each both ran `account-shadow-fixed-ports` at once and nine of its cases failed on "port 45210 is taken ... [Errno 98] Address already in use". So every group also takes a flock named for it, beside the core lease, from its first item to its last in a worker: one process holds at most one group lock at a time, so two runs cannot deadlock on two groups taken in opposite orders, and process death releases the lock.
 
-#: How long an item waits for another run to leave its group before failing with the holder named. The largest group measured 217.3 s in one run (env-manifest, 2026-10-05); a holder that keeps it past this is hung, not busy.
+#: How long an item waits for ONE holder to leave its group before failing with that holder named. The largest group measured 217.3 s in one run (env-manifest, 2026-10-05); a holder that keeps it past this is hung, not busy. The bound is per holder: a queue of several runs taking the group in turn is busy, not hung, and on 2026-10-13 a waiter behind three writers' suites was failed as if one of them had hung.
 GROUP_LOCK_WAIT_S = 900.0
 GROUP_LOCK_POLL_S = 0.2
 
@@ -231,13 +259,17 @@ class MachineGroupLock:
         path = root / ("%s.lock" % "".join(c if c.isalnum() or c in "-_" else "_" for c in group))
         fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
         deadline = time.monotonic() + self._wait_s
+        seen = ""
         while True:
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except BlockingIOError:
+                holder = os.pread(fd, 200, 0).decode("utf-8", "replace").strip()
+                if holder != seen:
+                    # Another run has the group now: the one waited on left, so the clock starts again for this one.
+                    seen, deadline = holder, time.monotonic() + self._wait_s
                 if time.monotonic() >= deadline:
-                    holder = os.pread(fd, 200, 0).decode("utf-8", "replace").strip()
                     os.close(fd)
                     raise TimeoutError(
                         "xdist group %r is held machine-wide by another run (%s) for over %g s; "

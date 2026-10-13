@@ -22,377 +22,373 @@ was lost, and it only works if it was recorded first.
 
 Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manifest that `check:ci-gates-lock` keeps faithful.
 
-| Gate | Runs in CI as | Is gate | Slow | Gate test |
-|---|---|---|---|---|
-| build:cli | local-only | no | no | no |
-| build:packages | local-only | no | no | no |
-| build:www | quality-www-build / Build www (produces dist/route-manifest.json) | no | yes | no |
-| check:actions | quality-code / Action freshness | yes | no | no |
-| check:ci-account-config-auth | quality-go / Check config token auth requires org membership | yes | no | no |
-| check:ci-account-env-retired | quality-security / Account env files retired | yes | no | no |
-| check:ci-account-layer-isolation | quality-code / Check account route layer isolation | yes | yes | no |
-| check:ci-account-no-admin-role | quality-go / Check no admin user role (must be root) | yes | no | no |
-| check:ci-account-no-node-env-routes | quality-go / Assert no NODE_ENV branching in account routes | yes | no | no |
-| check:ci-account-onboarding | quality-content / Validate account onboarding splash against canonical tutorials | yes | no | no |
-| check:ci-account-portal | quality-packages / Check account portal (typecheck + build) | yes | yes | no |
-| check:ci-account-probes | quality-static / Dev-stack liveness probes | yes | no | no |
-| check:ci-account-scope-audit | quality-go / Check scope registry audit | yes | no | no |
-| check:ci-account-server | quality-go / Run account integration tests | yes | yes | no |
-| check:ci-actionlint | quality-code / Workflow lint (actionlint) | yes | no | no |
-| check:ci-actions-allowlist | quality-static / Actions allowlist | yes | no | no |
-| check:ci-actions-vars | quality-security / GitHub Actions variables | yes | no | no |
-| check:ci-agent-browser-exit | quality-static / agent-browser exit status | yes | no | no |
-| check:ci-agent-hint-liveness | quality-content / Agent hints can actually fire | yes | no | no |
-| check:ci-agent-model-roster | quality-content / Agent model roster matches its documented reasons | yes | no | no |
-| check:ci-agent-session-archival | quality-branch / Agent session archival | yes | no | no |
-| check:ci-allowlist-key-matching | quality-static / Allowlist key matching | yes | no | no |
-| check:ci-anchor-integrity | quality-www-build / Redirects | yes | yes | no |
-| check:ci-app-admin-perm | quality-code / App admin permission | yes | no | no |
-| check:ci-audit-coverage | quality-static / Check audit logging coverage for CLI operations | yes | no | no |
-| check:ci-aws-credential-bridge | quality-code / AWS credential bridge | yes | no | no |
-| check:ci-backup-bucket-conformance | quality-code / Backup bucket conformance | yes | no | no |
-| check:ci-backup-manifest-shape-parity | quality-code / Backup manifest shape parity | yes | no | no |
-| check:ci-backup-protocol-conformance | quality-code / Backup protocol conformance | yes | no | no |
-| check:ci-baseline-key-semantics | quality-content / Baseline key semantics | yes | no | no |
-| check:ci-bash-lib-ported | quality-static / Bash-lib port completeness | yes | no | no |
-| check:ci-battery-clean-tree | quality-static / Battery clean-tree guard | yes | no | no |
-| check:ci-bootstrap-idempotency | quality-code / Bootstrap paths install through the dependency stamp | yes | no | no |
-| check:ci-breakpoint-drift | quality-code / Breakpoint drift | yes | no | no |
-| check:ci-browser-smoke | quality-www-build / Browser smoke | yes | yes | no |
-| check:ci-budget-freshness | quality-security / CI time budget freshness | yes | yes | no |
-| check:ci-builder-env-contract | quality-code / Builder env contract | yes | no | no |
-| check:ci-bws-map | quality-security / Bitwarden secret map | yes | no | no |
-| check:ci-bws-rotation-notice | quality-security / BWS rotation notice | yes | no | no |
-| check:ci-captcha-recovery | quality-www-build / Captcha recovery | yes | no | no |
-| check:ci-ceph-image-pin | quality-code / Ceph image pin freshness | yes | no | no |
-| check:ci-changed-selection | quality-code / Changed-file selection contract | yes | no | no |
-| check:ci-checkout-cone | quality-static / Checkout cone covers what steps run | yes | no | no |
-| check:ci-cli-contract | quality-packages / CLI contract | yes | yes | no |
-| check:ci-cli-doc-coverage | quality-code / CLI docs stay in sync with their scripts' real flags | yes | no | no |
-| check:ci-cli-proxy-safe-output | quality-static / CLI proxy-safe output | yes | no | no |
-| check:ci-client-bundle-budget | quality-www-build / SEO | yes | yes | no |
-| check:ci-client-i18n | quality-i18n / i18n | yes | no | no |
-| check:ci-command-planes | quality-code / Command planes | yes | no | no |
-| check:ci-command-tree | quality-code / Command tree | yes | yes | no |
-| check:ci-compose-env | quality-static / Compose env | yes | no | no |
-| check:ci-config-migrations | quality-packages / Check config-migration runner + fixtures | yes | no | no |
-| check:ci-container-build-context | quality-static / Container build context | yes | no | no |
-| check:ci-content-quality | quality-content / Check content for AI slop patterns | yes | no | no |
-| check:ci-control-in-string | quality-code / Controls are not written inside string literals | yes | no | no |
-| check:ci-control-vacuity | quality-code / Control-first gates prove their plant landed | yes | no | no |
-| check:ci-css-dom-refs | quality-content / CSS DOM references | yes | no | no |
-| check:ci-cta-bolt | quality-www-build / CTA bolt | yes | yes | no |
-| check:ci-dead-bash | quality-code / Dead bash | yes | yes | no |
-| check:ci-dead-case-arms | test: .ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py | yes | no | no |
-| check:ci-dead-css | quality-content / Dead CSS | yes | no | no |
-| check:ci-dead-python | quality-static / Dead Python | yes | no | no |
-| check:ci-dead-service-methods | quality-content / Dead service methods | yes | no | no |
-| check:ci-dead-translation-keys | quality-i18n / i18n | yes | no | no |
-| check:ci-decision-ids | quality-branch / Decision ids | yes | no | no |
-| check:ci-design-tree | quality-code / Design tree | yes | no | no |
-| check:ci-devbox-exec | quality-code / Devbox exec invocation | yes | no | no |
-| check:ci-devcontainer-pins | quality-go / Check devcontainer pin upstream freshness | yes | no | no |
-| check:ci-devcontainer-scripts | quality-code / Devcontainer script stderr visibility | yes | no | no |
-| check:ci-dkim-notify | quality-content / DKIM notify DNS | yes | no | no |
-| check:ci-doc-region-parity | quality-code / Doc region parity | yes | no | no |
-| check:ci-docker-image-freshness | quality-content / Docker image freshness | yes | no | no |
-| check:ci-docker-npm-pins | quality-code / Dockerfile npm pins | yes | no | no |
-| check:ci-dockerfile-mirror-resilience | quality-static / Dockerfile mirror resilience | yes | no | no |
-| check:ci-docs-browse-invariants | quality-content / Docs browse invariants | yes | no | no |
-| check:ci-docs-copy-units | quality-content / Docs code-block copy units | yes | no | no |
-| check:ci-docs-render-parity | quality-www-build / Docs render parity | yes | yes | no |
-| check:ci-docs-structure-parity | quality-i18n / Docs structure parity | yes | no | no |
-| check:ci-docs-thumb-coverage | quality-content / Docs thumbnail coverage | yes | no | no |
-| check:ci-domain-partition | quality-code / scripts/ domain partition | yes | no | no |
-| check:ci-drill-verdicts | quality-static / Drill verdict logic | yes | no | no |
-| check:ci-durable-paths-tracked | quality-static / Durable paths are not gitignored | yes | no | no |
-| check:ci-e2e-case-blind | quality-content / E2E case-blind assertions | yes | no | no |
-| check:ci-e2e-coverage | quality-content / Check E2E test coverage for all renet functions | yes | no | no |
-| check:ci-e2e-skip-hygiene | quality-content / Check E2E skip hygiene (no collected-then-skipped suites) | yes | no | no |
-| check:ci-editorconfig | quality-static / EditorConfig | yes | yes | no |
-| check:ci-em-dash-surfaces | quality-i18n / i18n | yes | no | no |
-| check:ci-embed-arch-parity | quality-go / Check embed arch parity | yes | no | no |
-| check:ci-embed-asset-freshness | quality-go / Check embed-asset upstream freshness | yes | no | no |
-| check:ci-embed-asset-versions | quality-go / Check embedded asset versions match their pins | yes | no | no |
-| check:ci-embed-credits | quality-go / Check embed credits consistency | yes | no | no |
-| check:ci-enumeration-vacuity | quality-code / Enumeration vacuity | yes | no | no |
-| check:ci-env-file-adoption | quality-static / Env file adoption | yes | no | no |
-| check:ci-env-manifest | quality-static / Env manifest | yes | no | no |
-| check:ci-environment-names | quality-static / Environment names | yes | no | no |
-| check:ci-external-links | quality-content / External links | yes | yes | no |
-| check:ci-fetch-integrity | quality-code / CI fetch integrity | yes | no | no |
-| check:ci-fetch-retry | quality-code / Fetch retry | yes | no | no |
-| check:ci-fixture-event-timestamps | quality-code / Fixture event timestamps | yes | no | no |
-| check:ci-form-validation | test: .ci/rediacc_ci/tests/gates/test_gate_form_validation.py | yes | no | no |
-| check:ci-format-scope | quality-code / Format command covers its config's scope | yes | yes | no |
-| check:ci-gate-bind | quality-code / Gate binding | yes | no | no |
-| check:ci-gate-cwd-independence | quality-code / Gate cwd independence | yes | no | no |
-| check:ci-gate-id-convention | quality-static / Gate registration follows the gates/ convention | yes | no | no |
-| check:ci-gate-manifest | quality-code / Gate manifest self-consistency | yes | no | no |
-| check:ci-gate-prerequisites | quality-code / Gate prerequisites | yes | no | no |
-| check:ci-gate-reachability-coverage | quality-static / Gate-reachability probe agrees with registrations | yes | no | no |
-| check:ci-gate-test-real-file-plants | quality-code / Gate-test real-file plants | yes | no | no |
-| check:ci-gate-tree-writes | quality-code / Gates that write the real tree declare it | yes | yes | no |
-| check:ci-gates-lock | quality-code / Gates lock | yes | no | no |
-| check:ci-gen-manifest | quality-code / Generated manifest regions | yes | no | no |
-| check:ci-gh-retry-reads | quality-static / GitHub reads retry transient faults | yes | no | no |
-| check:ci-git-history-depth | quality-static / Git history depth | yes | no | no |
-| check:ci-git-op-conditionals | quality-code / Git-op conditional guards | yes | no | no |
-| check:ci-git-tool-safety | quality-code / Mediated git tool stays lease-only and dry-run by default | yes | no | no |
-| check:ci-go-deps | quality-go / Check Go dependency freshness | yes | no | no |
-| check:ci-go-module-sync | quality-go / Check Go module sync against the renet worktree | yes | no | no |
-| check:ci-go-tool-path | quality-code / Go tool PATH | yes | no | no |
-| check:ci-greenlight-closures | quality-code / Greenlight closure paths | yes | no | no |
-| check:ci-guard-mention-anchoring | quality-code / Guard mention anchoring | yes | yes | no |
-| check:ci-guard-mutations | quality-packages / Guard mutations | yes | yes | no |
-| check:ci-hint-corpus | quality-content / Behavioral hints can actually fire | yes | no | no |
-| check:ci-hook-cross-os | quality-static / Hook cross-OS seams | yes | no | no |
-| check:ci-hook-exec-baseline | quality-static / Hook exec baseline | yes | no | no |
-| check:ci-hook-integrity | quality-code / Hook integrity | yes | no | no |
-| check:ci-hooks-resolvable | quality-static / Hooks resolvable | yes | no | no |
-| check:ci-host-toolchain-coverage | quality-code / Host toolchain runtime coverage | yes | no | no |
-| check:ci-hydration-clean | test: .ci/rediacc_ci/tests/gates/test_gate_hydration_clean.py | yes | no | no |
-| check:ci-i18n-account-email-templates | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-cli-help-render | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-cli-key-usage | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-command-parity | quality-i18n / i18n command parity | yes | no | no |
-| check:ci-i18n-completeness | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-cross-locale | quality-i18n / i18n cross-locale | no | no | no |
-| check:ci-i18n-cross-locale-core | quality-i18n / i18n cross-locale | yes | no | no |
-| check:ci-i18n-docs-inline | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-docs-render-parity | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-docs-untranslated | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-hardcoded-strings | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-hashes | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-ledger-growth | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-locale-only | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-media | quality-i18n / Tutorial media | yes | no | no |
-| check:ci-i18n-naturalization | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-page-locale-imports | quality-i18n / i18n | yes | yes | no |
-| check:ci-i18n-placeholders | quality-i18n / i18n placeholders | yes | no | no |
-| check:ci-i18n-untranslated | quality-i18n / i18n untranslated | yes | no | no |
-| check:ci-i18n-value-types | quality-content / i18n value types match English | yes | no | no |
-| check:ci-i18n-www-cli-docs | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-www-comparison-refs | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-www-content | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-www-content-accuracy | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-www-docs-cli-usage | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-www-landing-cli-usage | quality-i18n / i18n | yes | no | no |
-| check:ci-i18n-www-translation-freshness | quality-i18n / i18n | yes | no | no |
-| check:ci-illustration-contract | quality-content / Dead CSS | yes | no | no |
-| check:ci-inner-timeout-reachable | quality-code / Inner kill timers are reachable | yes | no | no |
-| check:ci-install-sh-config | quality-static / install.sh config tests | yes | no | no |
-| check:ci-install-table | quality-static / Install table | yes | no | no |
-| check:ci-job-aggregation | quality-code / CI job aggregation | yes | no | no |
-| check:ci-jq-boolean-default | quality-code / jq boolean defaults | yes | no | no |
-| check:ci-judged-rule-wiring | quality-code / Judged rule wiring | yes | no | no |
-| check:ci-knip-blockers | quality-code / knip BLOCKER reasons | yes | no | no |
-| check:ci-label-inventory | test: .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py | yes | no | no |
-| check:ci-label-refs | test: .ci/rediacc_ci/tests/gates/test_gate_label_references.py | yes | no | no |
-| check:ci-landmarks | quality-www-build / Landmarks | yes | yes | no |
-| check:ci-lane-budget | local-only | no | no | no |
-| check:ci-language-policy | quality-static / Language policy | yes | no | no |
-| check:ci-layout-overflow | test: .ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py | yes | no | no |
-| check:ci-lint-rule-liveness | quality-content / Enabled lint rules can actually fire | yes | yes | no |
-| check:ci-lint-rule-units | quality-content / Lint rule unit specs | yes | no | no |
-| check:ci-lint-scope-coverage | quality-code / Every source file reaches a linter | yes | yes | no |
-| check:ci-literal-sources | quality-static / Literal sources | yes | no | no |
-| check:ci-locale-config-divergence | quality-i18n / i18n cross-locale | yes | no | no |
-| check:ci-locale-currency | quality-i18n / i18n | yes | no | no |
-| check:ci-locale-de-contamination | quality-i18n / i18n cross-locale | yes | no | no |
-| check:ci-locale-sources | quality-i18n / Locale sources | yes | no | no |
-| check:ci-locale-tutorial-assets | quality-content / Validate per-locale tutorial video assets exist | yes | no | no |
-| check:ci-lockfile | quality-code / Lockfile | yes | yes | no |
-| check:ci-max-lines | quality-code / No source file exceeds the line-count budget | yes | yes | no |
-| check:ci-merge-method-prose | quality-code / Instruction files do not prescribe a rejected merge method | yes | no | no |
-| check:ci-mutate-check | quality-static / Mutation runner self-test | yes | no | no |
-| check:ci-native-rebuild | quality-code / Native modules rebuilt after every root install | yes | no | no |
-| check:ci-naturalization-model-policy | quality-code / Naturalization model policy | yes | no | no |
-| check:ci-nis2-quotes | quality-content / Verify NIS2 directive quotations match the official source | yes | no | no |
-| check:ci-no-client-key-composition | quality-code / No client-side key composition | yes | no | no |
-| check:ci-no-inline-python | quality-static / No inline Python in JS/TS | yes | no | no |
-| check:ci-no-otlp-creds | build-renet / Assert no OTLP credentials baked into the built binaries | yes | no | no |
-| check:ci-npmrc | quality-code / Block legacy-peer-deps workarounds | yes | no | no |
-| check:ci-overrides-reasons | quality-security / BLOCKER validator — package.json overrides | yes | no | no |
-| check:ci-package-key-budget | quality-code / Package key budget | yes | no | no |
-| check:ci-page-density | quality-www-build / Page density | yes | yes | no |
-| check:ci-page-locale-imports | quality-i18n / Page locale imports | yes | no | no |
-| check:ci-parity | quality-content / Validate parity between the local gate set and the CI quality surface | yes | no | no |
-| check:ci-paths-origin | quality-code / Paths-origin provenance | yes | no | no |
-| check:ci-pathspec-scope | quality-static / Pathspec scope | yes | no | no |
-| check:ci-peer-deps | quality-code / Verify no peer dependency conflicts | yes | no | no |
-| check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | no | no |
-| check:ci-plan-boxes | quality-branch / Plan checkbox ledger | yes | yes | no |
-| check:ci-plan-citations | quality-branch / Plan citations | yes | yes | no |
-| check:ci-plan-deps | quality-branch / Plan dependencies | yes | no | no |
-| check:ci-plan-folders | quality-branch / Plan folders and retention | yes | no | no |
-| check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | yes | no |
-| check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | yes | no |
-| check:ci-plan-record | quality-branch / Plan records | yes | yes | no |
-| check:ci-plant-proofs | quality-static / Control plant proofs | yes | no | no |
-| check:ci-player-css-scope | quality-www-build / Player CSS scope | yes | yes | no |
-| check:ci-policy-inventory | quality-static / Policy inventory | yes | no | no |
-| check:ci-pool-writer-safety | quality-static / Pool-registered tests do not write the real tree | yes | no | no |
-| check:ci-portal-sitekey-guard | quality-static / Portal site-key guard | yes | no | no |
-| check:ci-pr-epic-block | quality-code / PR epic block matches the published worklist | yes | no | no |
-| check:ci-pr-head-ref-completeness | quality-code / PR_HEAD_REF completeness | yes | no | no |
-| check:ci-pr-task-trailers | quality-code / Every commit names its epic | yes | yes | no |
-| check:ci-pricing-consistency | quality-content / Pricing consistency | yes | no | no |
-| check:ci-probe-parity | quality-static / Capability-probe parity | yes | no | no |
-| check:ci-profiler-coverage | test: .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py | yes | no | no |
-| check:ci-prose-style | quality-content / Check prose style (the work, not the person) | yes | yes | no |
-| check:ci-proxy-cli-manifest | local-only | yes | no | no |
-| check:ci-proxy-docker-prepull | local-only | yes | yes | no |
-| check:ci-proxy-ensure-nfpm | local-only | yes | no | no |
-| check:ci-proxy-go-unit | local-only | yes | yes | no |
-| check:ci-proxy-image-smoke | local-only | yes | yes | no |
-| check:ci-proxy-license-e2e | local-only | yes | yes | no |
-| check:ci-proxy-linux-packages | local-only | yes | no | no |
-| check:ci-proxy-ops-host-check | local-only | yes | no | no |
-| check:ci-proxy-rdc-update | local-only | yes | yes | no |
-| check:ci-pytest | quality-pytest / Python package tests | yes | yes | no |
-| check:ci-python-control-plants | quality-static / Python control plants | yes | no | no |
-| check:ci-python-env-registry | quality-static / Python env registry | yes | yes | no |
-| check:ci-python-gate-deps | quality-static / Python gate deps | yes | no | no |
-| check:ci-python-lint | quality-static / Python lint + format (ruff) | yes | no | no |
-| check:ci-python-types | quality-static / Python types (mypy) | yes | yes | no |
-| check:ci-quality-complete | quality-wiring / Quality shard aggregation | yes | no | no |
-| check:ci-quality-gates | quality-gate-tests / Quality-gate unit tests | no | no | no |
-| check:ci-rdc-native | quality-static / rdc.sh wrapper budget and --native arms | yes | no | no |
-| check:ci-rdc-sh-env | quality-static / rdc.sh env tests | yes | no | no |
-| check:ci-record-paths | quality-static / Record paths and fixed widths | yes | yes | no |
-| check:ci-recovery-context | quality-go / Check recovery functions get an uncancellable context | yes | no | no |
-| check:ci-redirect-integrity | quality-www-build / Redirects | yes | yes | no |
-| check:ci-redirects | quality-www-build / Redirects | no | yes | no |
-| check:ci-regions-sync | test: .ci/rediacc_ci/tests/gates/test_gate_regions_sync.py | yes | no | no |
-| check:ci-release-bump-skip | test: .ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py | yes | no | no |
-| check:ci-release-key-canonical | quality-security / Release key canonical | yes | no | no |
-| check:ci-release-signing-coverage | quality-security / Release signing coverage | yes | no | no |
-| check:ci-renet | quality-go / Run renet quality | yes | yes | no |
-| check:ci-renet-tiers | local-only | yes | no | no |
-| check:ci-renet-types | quality-go / Check renet types freshness | yes | no | no |
-| check:ci-resprofile | quality-branch / Resource profile (previous run's captures) | yes | no | no |
-| check:ci-retention-knob-parity | quality-code / Retention knob parity | yes | no | no |
-| check:ci-retired-commands | quality-content / Retired commands in docs | yes | no | no |
-| check:ci-rubric-calibration | quality-code / Rubric calibration | yes | no | no |
-| check:ci-runner-advice | quality-static / Runner sizing advice | yes | no | no |
-| check:ci-runner-selftest | quality-code / CI runner selftest | yes | no | no |
-| check:ci-runtime-imports-are-deps | quality-code / Runtime imports are dependencies | yes | no | no |
-| check:ci-scans-tracked-paths | quality-static / CI executes only tracked paths | yes | no | no |
-| check:ci-schema-call-sites | quality-static / Schema call sites | yes | no | no |
-| check:ci-schema-coverage | quality-code / Schema coverage | yes | no | no |
-| check:ci-scope-completeness | quality-security / Scope completeness | yes | no | no |
-| check:ci-scope-scripts-reachability | quality-security / Scope map, reachable scripts/ paths force full CI | yes | no | no |
-| check:ci-script-exec-bit | quality-code / Block non-executable invoked scripts | yes | no | no |
-| check:ci-search-index | quality-i18n / Search index | yes | no | no |
-| check:ci-secret-reachability | quality-security / Secret reachability | yes | no | no |
-| check:ci-secret-scope | quality-security / Secret scope | yes | no | no |
-| check:ci-secret-supply | quality-static / Secret supply | yes | no | no |
-| check:ci-security-audit | quality-security / Audit | yes | yes | no |
-| check:ci-sentence-wrapping | quality-content / Sentence wrapping | yes | no | no |
-| check:ci-seo | quality-www-build / SEO | no | yes | no |
-| check:ci-seo-core | quality-www-build / SEO | yes | yes | no |
-| check:ci-setup-idempotency | quality-code / Setup path idempotency | yes | no | no |
-| check:ci-setup-port-parity | quality-static / Setup port parity | yes | no | no |
-| check:ci-shape-duplication | quality-code / Shape duplication | yes | no | no |
-| check:ci-shard-manifest-coverage | quality-go / Shard manifest coverage | yes | no | no |
-| check:ci-shared-constant-duplication | quality-code / Shared constant duplication | yes | no | no |
-| check:ci-shared-esm-resolvable | quality-packages / Shared ESM resolvable | yes | no | no |
-| check:ci-shell-commands | quality-static / Shell commands exist on the runner image | yes | no | no |
-| check:ci-shell-declared-commands | quality-code / CI scripts declare the binaries they execute | yes | no | no |
-| check:ci-shell-format | quality-static / Shell format | yes | no | no |
-| check:ci-shell-lint | quality-static / Shell lint | yes | yes | no |
-| check:ci-shell-size | quality-code / Shell file size | yes | no | no |
-| check:ci-silent-failures | quality-static / Silent-failure patterns | yes | no | no |
-| check:ci-skill-size | quality-content / Self-improving skill size | yes | no | no |
-| check:ci-solution-video-engine | quality-content / Validate solution narration engine is current | yes | no | no |
-| check:ci-solution-videos | quality-content / Validate localized solution videos exist | yes | no | no |
-| check:ci-source-rules | local-only | no | no | no |
-| check:ci-ssr-locale | quality-www-build / SSR locale | yes | yes | no |
-| check:ci-staging-tag-guard | quality-security / Staging tag guard | yes | no | no |
-| check:ci-step-env-parity | quality-code / Step env parity | yes | no | no |
-| check:ci-subscription-schema | quality-go / Check subscription schema consistency | yes | no | no |
-| check:ci-suppression-liveness | quality-security / Suppression liveness — are our allowlist entries still needed? | yes | no | no |
-| check:ci-svg-theme-reach | quality-content / SVG theme reach | yes | no | no |
-| check:ci-swallowed-failures | quality-code / Swallowed failures | yes | no | no |
-| check:ci-syncpack-reasons | quality-security / BLOCKER validator — syncpack versionGroups | yes | no | no |
-| check:ci-syncpack-sources | quality-code / syncpack source coverage | yes | no | no |
-| check:ci-test-account-web | quality-packages / Account portal unit tests | yes | yes | no |
-| check:ci-test-file-orphans | quality-security / Test-file orphan check | yes | no | no |
-| check:ci-test-gate-wiring | quality-content / Test-gate wiring | yes | no | no |
-| check:ci-test-scripts-reachable | quality-code / Test suites are CI-reachable | yes | no | no |
-| check:ci-timeout-headroom | quality-static / CI job timeout headroom | yes | no | no |
-| check:ci-tmpfs-health | quality-code / Tmpfs health | yes | no | no |
-| check:ci-toolchain-env-dockerfile-sync | quality-code / Toolchain env/Dockerfile sync | yes | no | no |
-| check:ci-toolchain-pins | quality-code / Toolchain pins | yes | no | no |
-| check:ci-tracked-credentials | quality-security / Tracked credentials | yes | no | no |
-| check:ci-tracked-sidecars | quality-static / Tracked runtime sidecars | yes | no | no |
-| check:ci-trap-registry | quality-code / Trap registry dispositions | yes | no | no |
-| check:ci-tree-shape | quality-static / Tree shape | yes | no | no |
-| check:ci-turnstile-drift | quality-static / Turnstile widget drift | yes | no | no |
-| check:ci-tutorial-caption-sync | quality-content / Validate published tutorial word-timing sync (real ASR alignment, not estimated) | yes | no | no |
-| check:ci-tutorial-card-fonts | quality-content / Validate tutorial card fonts cover every locale | yes | yes | no |
-| check:ci-tutorial-casts | quality-content / Block fallback hacks and error output in tutorial recordings | yes | no | no |
-| check:ci-tutorial-cli-validity | quality-content / Tutorial CLI validity | yes | no | no |
-| check:ci-tutorial-commands | quality-content / Validate tutorial storyboard commands against the live CLI | yes | no | no |
-| check:ci-tutorial-healthcheck-headroom | quality-packages / Tutorial healthcheck headroom | yes | no | no |
-| check:ci-tutorial-no-skips | quality-content / Tutorials cannot skip themselves | yes | no | no |
-| check:ci-tutorial-noninteractive | quality-content / Validate tutorial commands are non-interactive | yes | no | no |
-| check:ci-tutorial-parity | quality-content / Validate tutorial cast/storyboard/transcript/mdx parity | yes | no | no |
-| check:ci-tutorial-render-queue | test: .ci/rediacc_ci/tests/gates/test_gate_tutorial_render_queue.py | yes | no | no |
-| check:ci-typecheck-scope-coverage | quality-code / Typecheck scope coverage | yes | yes | no |
-| check:ci-unverified-downloads | quality-security / Check every Dockerfile download is cryptographically verified | yes | no | no |
-| check:ci-vendored-blocker-derivation | quality-static / Vendored blocker derivation | yes | no | no |
-| check:ci-video-player-invariants | quality-content / Video player invariants | yes | no | no |
-| check:ci-viewport-unit-mixing | quality-content / Dead CSS | yes | no | no |
-| check:ci-w7p5a-real-run-blockers | quality-static / W7P5-a real-run blocklist | yes | no | no |
-| check:ci-watch-recipe | quality-code / CI-watch recipe has one source | yes | no | no |
-| check:ci-worker-secret-names | quality-code / Worker secret names | yes | no | no |
-| check:ci-workflow-env-provision | quality-static / Workflow env provision | yes | no | no |
-| check:ci-workflow-gates | quality-code / Workflow structural gates | yes | no | no |
-| check:ci-workflow-invariants | test: .ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py | yes | no | no |
-| check:ci-workflow-orphan-step-keys | quality-code / Workflow orphan step keys | yes | no | no |
-| check:ci-workflow-submodule-deps | quality-static / Workflow submodule deps | yes | no | no |
-| check:ci-workflows | quality-code / Workflow banned patterns | yes | no | no |
-| check:ci-worklist-env-registry | quality-static / Worklist env registry | yes | yes | no |
-| check:ci-worklist-event-builders | quality-code / Worklist event builders | yes | no | no |
-| check:ci-worklist-path-resolution | quality-code / Worklist path resolution | yes | no | no |
-| check:ci-www-build-token | quality-code / www build token | yes | no | no |
-| check:cli-docs | quality-i18n / i18n | yes | no | no |
-| check:cli-examples | quality-code / CLI examples | yes | yes | no |
-| check:deps | quality-content / External dependency freshness | yes | yes | no |
-| check:format | quality-code / Format | yes | no | no |
-| check:i18n | quality-i18n / i18n | no | yes | no |
-| check:i18n:key-usage | quality-i18n / i18n | yes | yes | no |
-| check:lint | quality-code / Lint | no | yes | no |
-| check:lint:account | quality-code / Lint | yes | yes | no |
-| check:lint:cli | quality-code / Lint | yes | yes | no |
-| check:lint:tooling | quality-code / Lint | yes | yes | no |
-| check:lint:web | quality-code / Lint | yes | yes | no |
-| check:test-cli | quality-packages / Run CLI unit tests | yes | yes | no |
-| check:test-e2e-unit | quality-packages / Run e2e-tests unit suite | yes | no | no |
-| check:test-provisioning | quality-packages / Run provisioning unit tests | yes | no | no |
-| check:test-shared | quality-packages / Run shared package tests | yes | no | no |
-| check:test-workers | quality-www-build / Worker unit tests (workers/www, workers/proxy) | yes | yes | no |
-| check:test-www | quality-packages / Run www unit tests | yes | no | no |
-| check:test:tutorial-player | quality-packages / Tutorial player release gate | yes | yes | no |
-| check:types | quality-code / TypeScript | yes | yes | no |
-| check:types:incremental | local-only | yes | yes | no |
-| check:version | quality-code / Versions | yes | no | no |
-| env:register | local-only | no | no | no |
-| gate-test:blocker-golden-corpus | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
-| gate-test:media-r2 | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
-| gate-test:run-sh | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
-| gate-test:runner-advice | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
-| gate-test:toolchain | quality-gate-tests / Quality-gate unit tests | yes | no | yes |
-| gen:docs | local-only | no | no | no |
-| gen:gates-lock | local-only | no | no | no |
-| lint:unused | quality-code / Unused exports (knip) | yes | yes | no |
-| shard:place | local-only | no | no | no |
-| test:install-script | quality-static / Install-script tests | yes | no | no |
-| test:write-once-guard | quality-static / Write-once guard tests | yes | no | no |
+| Gate | Runs in CI as | Is gate | Slow |
+|---|---|---|---|
+| build:cli | local-only | no | no |
+| build:packages | local-only | no | no |
+| build:www | quality-www-build / Build www (produces dist/route-manifest.json) | no | yes |
+| check:actions | quality-code / Action freshness | yes | no |
+| check:ci-account-config-auth | quality-go / Check config token auth requires org membership | yes | no |
+| check:ci-account-env-retired | quality-security / Account env files retired | yes | no |
+| check:ci-account-layer-isolation | quality-code / Check account route layer isolation | yes | yes |
+| check:ci-account-no-admin-role | quality-go / Check no admin user role (must be root) | yes | no |
+| check:ci-account-no-node-env-routes | quality-go / Assert no NODE_ENV branching in account routes | yes | no |
+| check:ci-account-onboarding | quality-content / Validate account onboarding splash against canonical tutorials | yes | no |
+| check:ci-account-portal | quality-packages / Check account portal (typecheck + build) | yes | yes |
+| check:ci-account-probes | quality-static / Dev-stack liveness probes | yes | no |
+| check:ci-account-scope-audit | quality-go / Check scope registry audit | yes | no |
+| check:ci-account-server | quality-go / Run account integration tests | yes | yes |
+| check:ci-actionlint | quality-code / Workflow lint (actionlint) | yes | no |
+| check:ci-actions-allowlist | quality-static / Actions allowlist | yes | no |
+| check:ci-actions-vars | quality-security / GitHub Actions variables | yes | no |
+| check:ci-agent-browser-exit | quality-static / agent-browser exit status | yes | no |
+| check:ci-agent-hint-liveness | quality-content / Agent hints can actually fire | yes | no |
+| check:ci-agent-model-roster | quality-content / Agent model roster matches its documented reasons | yes | no |
+| check:ci-agent-session-archival | quality-branch / Agent session archival | yes | no |
+| check:ci-allowlist-key-matching | quality-static / Allowlist key matching | yes | no |
+| check:ci-anchor-integrity | quality-www-build / Redirects | yes | yes |
+| check:ci-app-admin-perm | quality-code / App admin permission | yes | no |
+| check:ci-audit-coverage | quality-static / Check audit logging coverage for CLI operations | yes | no |
+| check:ci-aws-credential-bridge | quality-code / AWS credential bridge | yes | no |
+| check:ci-backup-bucket-conformance | quality-code / Backup bucket conformance | yes | no |
+| check:ci-backup-manifest-shape-parity | quality-code / Backup manifest shape parity | yes | no |
+| check:ci-backup-protocol-conformance | quality-code / Backup protocol conformance | yes | no |
+| check:ci-baseline-key-semantics | quality-content / Baseline key semantics | yes | no |
+| check:ci-bash-lib-ported | quality-static / Bash-lib port completeness | yes | no |
+| check:ci-bootstrap-idempotency | quality-code / Bootstrap paths install through the dependency stamp | yes | no |
+| check:ci-breakpoint-drift | quality-code / Breakpoint drift | yes | no |
+| check:ci-browser-smoke | quality-www-build / Browser smoke | yes | yes |
+| check:ci-budget-freshness | quality-security / CI time budget freshness | yes | yes |
+| check:ci-builder-env-contract | quality-code / Builder env contract | yes | no |
+| check:ci-bws-map | quality-security / Bitwarden secret map | yes | no |
+| check:ci-bws-rotation-notice | quality-security / BWS rotation notice | yes | no |
+| check:ci-captcha-recovery | quality-www-build / Captcha recovery | yes | no |
+| check:ci-ceph-image-pin | quality-code / Ceph image pin freshness | yes | no |
+| check:ci-changed-selection | quality-code / Changed-file selection contract | yes | no |
+| check:ci-checkout-cone | quality-static / Checkout cone covers what steps run | yes | no |
+| check:ci-cli-contract | quality-packages / CLI contract | yes | no |
+| check:ci-cli-doc-coverage | quality-code / CLI docs stay in sync with their scripts' real flags | yes | no |
+| check:ci-cli-proxy-safe-output | quality-static / CLI proxy-safe output | yes | no |
+| check:ci-client-bundle-budget | quality-www-build / SEO | yes | yes |
+| check:ci-client-i18n | quality-i18n / i18n | yes | no |
+| check:ci-command-planes | quality-code / Command planes | yes | no |
+| check:ci-command-tree | quality-code / Command tree | yes | yes |
+| check:ci-compose-env | quality-static / Compose env | yes | no |
+| check:ci-config-migrations | quality-packages / Check config-migration runner + fixtures | yes | no |
+| check:ci-container-build-context | quality-static / Container build context | yes | no |
+| check:ci-content-quality | quality-content / Check content for AI slop patterns | yes | no |
+| check:ci-control-in-string | quality-code / Controls are not written inside string literals | yes | no |
+| check:ci-control-vacuity | quality-code / Control-first gates prove their plant landed | yes | no |
+| check:ci-css-dom-refs | quality-content / CSS DOM references | yes | no |
+| check:ci-cta-bolt | quality-www-build / CTA bolt | yes | yes |
+| check:ci-dead-bash | quality-code / Dead bash | yes | yes |
+| check:ci-dead-case-arms | test: .ci/rediacc_ci/tests/gates/test_gate_dead_case_arms.py | yes | no |
+| check:ci-dead-css | quality-content / Dead CSS | yes | no |
+| check:ci-dead-python | quality-static / Dead Python | yes | no |
+| check:ci-dead-service-methods | quality-content / Dead service methods | yes | no |
+| check:ci-dead-translation-keys | quality-i18n / i18n | yes | no |
+| check:ci-decision-ids | quality-branch / Decision ids | yes | no |
+| check:ci-design-tree | quality-code / Design tree | yes | no |
+| check:ci-devbox-exec | quality-code / Devbox exec invocation | yes | no |
+| check:ci-devcontainer-pins | quality-go / Check devcontainer pin upstream freshness | yes | no |
+| check:ci-devcontainer-scripts | quality-code / Devcontainer script stderr visibility | yes | no |
+| check:ci-dkim-notify | quality-content / DKIM notify DNS | yes | no |
+| check:ci-doc-region-parity | quality-code / Doc region parity | yes | no |
+| check:ci-docker-image-freshness | quality-content / Docker image freshness | yes | no |
+| check:ci-docker-npm-pins | quality-code / Dockerfile npm pins | yes | no |
+| check:ci-dockerfile-mirror-resilience | quality-static / Dockerfile mirror resilience | yes | no |
+| check:ci-docs-browse-invariants | quality-content / Docs browse invariants | yes | no |
+| check:ci-docs-copy-units | quality-content / Docs code-block copy units | yes | no |
+| check:ci-docs-render-parity | quality-www-build / Docs render parity | yes | yes |
+| check:ci-docs-structure-parity | quality-i18n / Docs structure parity | yes | no |
+| check:ci-docs-thumb-coverage | quality-content / Docs thumbnail coverage | yes | no |
+| check:ci-domain-partition | quality-code / scripts/ domain partition | yes | no |
+| check:ci-drill-verdicts | quality-static / Drill verdict logic | yes | no |
+| check:ci-durable-paths-tracked | quality-static / Durable paths are not gitignored | yes | no |
+| check:ci-e2e-case-blind | quality-content / E2E case-blind assertions | yes | no |
+| check:ci-e2e-coverage | quality-content / Check E2E test coverage for all renet functions | yes | no |
+| check:ci-e2e-skip-hygiene | quality-content / Check E2E skip hygiene (no collected-then-skipped suites) | yes | no |
+| check:ci-editorconfig | quality-static / EditorConfig | yes | yes |
+| check:ci-em-dash-surfaces | quality-i18n / i18n | yes | no |
+| check:ci-embed-arch-parity | quality-go / Check embed arch parity | yes | no |
+| check:ci-embed-asset-freshness | quality-go / Check embed-asset upstream freshness | yes | no |
+| check:ci-embed-asset-versions | quality-go / Check embedded asset versions match their pins | yes | no |
+| check:ci-embed-credits | quality-go / Check embed credits consistency | yes | no |
+| check:ci-enumeration-vacuity | quality-code / Enumeration vacuity | yes | no |
+| check:ci-env-file-adoption | quality-static / Env file adoption | yes | no |
+| check:ci-env-manifest | quality-static / Env manifest | yes | no |
+| check:ci-environment-names | quality-static / Environment names | yes | no |
+| check:ci-external-links | quality-content / External links | yes | yes |
+| check:ci-fetch-integrity | quality-code / CI fetch integrity | yes | no |
+| check:ci-fetch-retry | quality-code / Fetch retry | yes | no |
+| check:ci-fixture-event-timestamps | quality-code / Fixture event timestamps | yes | no |
+| check:ci-form-validation | test: .ci/rediacc_ci/tests/gates/test_gate_form_validation.py | yes | no |
+| check:ci-format-scope | quality-code / Format command covers its config's scope | yes | yes |
+| check:ci-gate-bind | quality-code / Gate binding | yes | no |
+| check:ci-gate-cwd-independence | quality-code / Gate cwd independence | yes | no |
+| check:ci-gate-manifest | quality-code / Gate manifest self-consistency | yes | no |
+| check:ci-gate-prerequisites | quality-code / Gate prerequisites | yes | no |
+| check:ci-gate-reachability-coverage | quality-static / Gate-reachability probe agrees with registrations | yes | no |
+| check:ci-gate-test-real-file-plants | quality-code / Gate-test real-file plants | yes | no |
+| check:ci-gate-tree-writes | quality-code / Gates that write the real tree declare it | yes | yes |
+| check:ci-gates-lock | quality-code / Gates lock | yes | no |
+| check:ci-gen-manifest | quality-code / Generated manifest regions | yes | no |
+| check:ci-gh-retry-reads | quality-static / GitHub reads retry transient faults | yes | no |
+| check:ci-git-history-depth | quality-static / Git history depth | yes | no |
+| check:ci-git-op-conditionals | quality-code / Git-op conditional guards | yes | no |
+| check:ci-git-tool-safety | quality-code / Mediated git tool stays lease-only and dry-run by default | yes | no |
+| check:ci-go-deps | quality-go / Check Go dependency freshness | yes | no |
+| check:ci-go-module-sync | quality-go / Check Go module sync against the renet worktree | yes | no |
+| check:ci-go-tool-path | quality-code / Go tool PATH | yes | no |
+| check:ci-greenlight-closures | quality-code / Greenlight closure paths | yes | no |
+| check:ci-guard-mention-anchoring | quality-code / Guard mention anchoring | yes | yes |
+| check:ci-guard-mutations | quality-packages / Guard mutations | yes | yes |
+| check:ci-hint-corpus | quality-content / Behavioral hints can actually fire | yes | no |
+| check:ci-hook-cross-os | quality-static / Hook cross-OS seams | yes | no |
+| check:ci-hook-exec-baseline | quality-static / Hook exec baseline | yes | no |
+| check:ci-hook-integrity | quality-code / Hook integrity | yes | no |
+| check:ci-hooks-resolvable | quality-static / Hooks resolvable | yes | no |
+| check:ci-host-toolchain-coverage | quality-code / Host toolchain runtime coverage | yes | no |
+| check:ci-hydration-clean | test: .ci/rediacc_ci/tests/gates/test_gate_hydration_clean.py | yes | no |
+| check:ci-i18n-account-email-templates | quality-i18n / i18n | yes | no |
+| check:ci-i18n-cli-help-render | quality-i18n / i18n | yes | no |
+| check:ci-i18n-cli-key-usage | quality-i18n / i18n | yes | no |
+| check:ci-i18n-command-parity | quality-i18n / i18n command parity | yes | no |
+| check:ci-i18n-completeness | quality-i18n / i18n | yes | no |
+| check:ci-i18n-cross-locale | quality-i18n / i18n cross-locale | no | no |
+| check:ci-i18n-cross-locale-core | quality-i18n / i18n cross-locale | yes | no |
+| check:ci-i18n-docs-inline | quality-i18n / i18n | yes | no |
+| check:ci-i18n-docs-render-parity | quality-i18n / i18n | yes | no |
+| check:ci-i18n-docs-untranslated | quality-i18n / i18n | yes | no |
+| check:ci-i18n-hardcoded-strings | quality-i18n / i18n | yes | no |
+| check:ci-i18n-hashes | quality-i18n / i18n | yes | no |
+| check:ci-i18n-ledger-growth | quality-i18n / i18n | yes | no |
+| check:ci-i18n-locale-only | quality-i18n / i18n | yes | no |
+| check:ci-i18n-media | quality-i18n / Tutorial media | yes | no |
+| check:ci-i18n-naturalization | quality-i18n / i18n | yes | no |
+| check:ci-i18n-page-locale-imports | quality-i18n / i18n | yes | yes |
+| check:ci-i18n-placeholders | quality-i18n / i18n placeholders | yes | no |
+| check:ci-i18n-untranslated | quality-i18n / i18n untranslated | yes | no |
+| check:ci-i18n-value-types | quality-content / i18n value types match English | yes | no |
+| check:ci-i18n-www-cli-docs | quality-i18n / i18n | yes | no |
+| check:ci-i18n-www-comparison-refs | quality-i18n / i18n | yes | no |
+| check:ci-i18n-www-content | quality-i18n / i18n | yes | no |
+| check:ci-i18n-www-content-accuracy | quality-i18n / i18n | yes | no |
+| check:ci-i18n-www-docs-cli-usage | quality-i18n / i18n | yes | no |
+| check:ci-i18n-www-landing-cli-usage | quality-i18n / i18n | yes | no |
+| check:ci-i18n-www-translation-freshness | quality-i18n / i18n | yes | no |
+| check:ci-illustration-contract | quality-content / Dead CSS | yes | no |
+| check:ci-inline-suppressions | quality-code / Inline suppression markers | yes | no |
+| check:ci-inner-timeout-reachable | quality-code / Inner kill timers are reachable | yes | no |
+| check:ci-install-sh-config | quality-static / install.sh config tests | yes | no |
+| check:ci-install-table | quality-static / Install table | yes | no |
+| check:ci-job-aggregation | quality-code / CI job aggregation | yes | no |
+| check:ci-jq-boolean-default | quality-code / jq boolean defaults | yes | no |
+| check:ci-judged-rule-wiring | quality-code / Judged rule wiring | yes | no |
+| check:ci-knip-blockers | quality-code / knip BLOCKER reasons | yes | no |
+| check:ci-label-inventory | test: .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py | yes | no |
+| check:ci-label-refs | test: .ci/rediacc_ci/tests/gates/test_gate_label_references.py | yes | no |
+| check:ci-landmarks | quality-www-build / Landmarks | yes | yes |
+| check:ci-lane-budget | local-only | no | no |
+| check:ci-language-policy | quality-static / Language policy | yes | no |
+| check:ci-layout-overflow | test: .ci/rediacc_ci/tests/gates/test_gate_layout_overflow.py | yes | no |
+| check:ci-lint-rule-liveness | quality-content / Enabled lint rules can actually fire | yes | yes |
+| check:ci-lint-rule-units | quality-content / Lint rule unit specs | yes | no |
+| check:ci-lint-scope-coverage | quality-code / Every source file reaches a linter | yes | yes |
+| check:ci-literal-sources | quality-static / Literal sources | yes | no |
+| check:ci-locale-config-divergence | quality-i18n / i18n cross-locale | yes | no |
+| check:ci-locale-currency | quality-i18n / i18n | yes | no |
+| check:ci-locale-de-contamination | quality-i18n / i18n cross-locale | yes | no |
+| check:ci-locale-sources | quality-i18n / Locale sources | yes | no |
+| check:ci-locale-tutorial-assets | quality-content / Validate per-locale tutorial video assets exist | yes | no |
+| check:ci-lockfile | quality-code / Lockfile | yes | yes |
+| check:ci-max-lines | quality-code / No source file exceeds the line-count budget | yes | yes |
+| check:ci-merge-method-prose | quality-code / Instruction files do not prescribe a rejected merge method | yes | no |
+| check:ci-model-invocable-commands | quality-code / Model-invocable commands | yes | no |
+| check:ci-mutate-check | quality-static / Mutation runner self-test | yes | no |
+| check:ci-native-rebuild | quality-code / Native modules rebuilt after every root install | yes | no |
+| check:ci-naturalization-model-policy | quality-code / Naturalization model policy | yes | no |
+| check:ci-nis2-quotes | quality-content / Verify NIS2 directive quotations match the official source | yes | no |
+| check:ci-no-client-key-composition | quality-code / No client-side key composition | yes | no |
+| check:ci-no-inline-python | quality-static / No inline Python in JS/TS | yes | no |
+| check:ci-no-otlp-creds | build-renet / Assert no OTLP credentials baked into the built binaries | yes | no |
+| check:ci-npmrc | quality-code / Block legacy-peer-deps workarounds | yes | no |
+| check:ci-overrides-reasons | quality-security / BLOCKER validator — package.json overrides | yes | no |
+| check:ci-package-key-budget | quality-code / Package key budget | yes | no |
+| check:ci-page-density | quality-www-build / Page density | yes | yes |
+| check:ci-page-locale-imports | quality-i18n / Page locale imports | yes | no |
+| check:ci-parity | quality-content / Validate parity between the local gate set and the CI quality surface | yes | no |
+| check:ci-paths-origin | quality-code / Paths-origin provenance | yes | no |
+| check:ci-pathspec-scope | quality-static / Pathspec scope | yes | no |
+| check:ci-peer-deps | quality-code / Verify no peer dependency conflicts | yes | no |
+| check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | no |
+| check:ci-plan-boxes | quality-branch / Plan checkbox ledger | yes | no |
+| check:ci-plan-citations | quality-branch / Plan citations | yes | yes |
+| check:ci-plan-deps | quality-branch / Plan dependencies | yes | no |
+| check:ci-plan-folders | quality-branch / Plan folders and retention | yes | no |
+| check:ci-plan-housekeeping | quality-i18n / Plan file housekeeping | yes | yes |
+| check:ci-plan-implementation | quality-branch / Plan implementation clock | yes | yes |
+| check:ci-plan-record | quality-branch / Plan records | yes | yes |
+| check:ci-plant-proofs | quality-static / Control plant proofs | yes | no |
+| check:ci-player-css-scope | quality-www-build / Player CSS scope | yes | yes |
+| check:ci-policy-inventory | quality-static / Policy inventory | yes | no |
+| check:ci-pool-writer-safety | quality-static / Pool-registered tests do not write the real tree | yes | no |
+| check:ci-portal-sitekey-guard | quality-static / Portal site-key guard | yes | no |
+| check:ci-pr-condition-ledger | quality-security / PR-condition ledger is current | yes | no |
+| check:ci-pr-epic-block | quality-code / PR epic block matches the published worklist | yes | no |
+| check:ci-pr-head-ref-completeness | quality-code / PR_HEAD_REF completeness | yes | no |
+| check:ci-pr-task-trailers | quality-code / Every commit names its epic | yes | yes |
+| check:ci-pricing-consistency | quality-content / Pricing consistency | yes | no |
+| check:ci-probe-parity | quality-static / Capability-probe parity | yes | no |
+| check:ci-profiler-coverage | test: .ci/rediacc_ci/tests/gates/test_gate_profiler_coverage.py | yes | no |
+| check:ci-prose-style | quality-content / Check prose style (the work, not the person) | yes | yes |
+| check:ci-proxy-cli-manifest | local-only | yes | no |
+| check:ci-proxy-docker-prepull | local-only | yes | yes |
+| check:ci-proxy-ensure-nfpm | local-only | yes | no |
+| check:ci-proxy-go-unit | local-only | yes | yes |
+| check:ci-proxy-image-smoke | local-only | yes | yes |
+| check:ci-proxy-license-e2e | local-only | yes | yes |
+| check:ci-proxy-linux-packages | local-only | yes | no |
+| check:ci-proxy-ops-host-check | local-only | yes | no |
+| check:ci-proxy-rdc-update | local-only | yes | yes |
+| check:ci-pytest | quality-pytest / Python package tests | yes | yes |
+| check:ci-python-control-plants | quality-static / Python control plants | yes | no |
+| check:ci-python-env-registry | quality-static / Python env registry | yes | yes |
+| check:ci-python-gate-deps | quality-static / Python gate deps | yes | no |
+| check:ci-python-lint | quality-static / Python lint + format (ruff) | yes | no |
+| check:ci-python-types | quality-static / Python types (mypy) | yes | yes |
+| check:ci-quality-complete | quality-wiring / Quality shard aggregation | yes | no |
+| check:ci-rdc-native | quality-static / rdc.sh wrapper budget and --native arms | yes | no |
+| check:ci-rdc-sh-env | quality-static / rdc.sh env tests | yes | no |
+| check:ci-real-provider-pins | quality-go / Check real-provider pin upstream freshness | yes | no |
+| check:ci-record-paths | quality-static / Record paths and fixed widths | yes | yes |
+| check:ci-recovery-context | quality-go / Check recovery functions get an uncancellable context | yes | no |
+| check:ci-redirect-integrity | quality-www-build / Redirects | yes | yes |
+| check:ci-redirects | quality-www-build / Redirects | no | yes |
+| check:ci-regions-sync | test: .ci/rediacc_ci/tests/gates/test_gate_regions_sync.py | yes | no |
+| check:ci-release-bump-skip | test: .ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py | yes | no |
+| check:ci-release-key-canonical | quality-security / Release key canonical | yes | no |
+| check:ci-release-signing-coverage | quality-security / Release signing coverage | yes | no |
+| check:ci-renet | quality-go / Run renet quality | yes | yes |
+| check:ci-renet-tiers | local-only | yes | no |
+| check:ci-renet-types | quality-go / Check renet types freshness | yes | no |
+| check:ci-resprofile | quality-branch / Resource profile (previous run's captures) | yes | no |
+| check:ci-retention-knob-parity | quality-code / Retention knob parity | yes | no |
+| check:ci-retired-commands | quality-content / Retired commands in docs | yes | no |
+| check:ci-review-resolutions | quality-branch / Review resolutions | yes | no |
+| check:ci-rubric-calibration | quality-code / Rubric calibration | yes | no |
+| check:ci-runner-advice | quality-static / Runner sizing advice | yes | no |
+| check:ci-runner-selftest | quality-code / CI runner selftest | yes | no |
+| check:ci-runtime-imports-are-deps | quality-code / Runtime imports are dependencies | yes | no |
+| check:ci-scans-tracked-paths | quality-static / CI executes only tracked paths | yes | no |
+| check:ci-schema-call-sites | quality-static / Schema call sites | yes | no |
+| check:ci-schema-coverage | quality-code / Schema coverage | yes | no |
+| check:ci-scope-completeness | quality-security / Scope completeness | yes | no |
+| check:ci-scope-mirrors | quality-content / PR scope rules agree with their CLAUDE.md source | yes | no |
+| check:ci-scope-scripts-reachability | quality-security / Scope map, reachable scripts/ paths force full CI | yes | no |
+| check:ci-script-exec-bit | quality-code / Block non-executable invoked scripts | yes | no |
+| check:ci-search-index | quality-i18n / Search index | yes | no |
+| check:ci-secret-reachability | quality-security / Secret reachability | yes | no |
+| check:ci-secret-scope | quality-security / Secret scope | yes | no |
+| check:ci-secret-supply | quality-static / Secret supply | yes | no |
+| check:ci-security-audit | quality-security / Audit | yes | yes |
+| check:ci-sentence-wrapping | quality-content / Sentence wrapping | yes | no |
+| check:ci-seo | quality-www-build / SEO | no | yes |
+| check:ci-seo-core | quality-www-build / SEO | yes | yes |
+| check:ci-setup-idempotency | quality-code / Setup path idempotency | yes | no |
+| check:ci-setup-port-parity | quality-static / Setup port parity | yes | no |
+| check:ci-shape-duplication | quality-code / Shape duplication | yes | no |
+| check:ci-shard-manifest-coverage | quality-go / Shard manifest coverage | yes | no |
+| check:ci-shared-constant-duplication | quality-code / Shared constant duplication | yes | no |
+| check:ci-shared-esm-resolvable | quality-packages / Shared ESM resolvable | yes | no |
+| check:ci-shell-commands | quality-static / Shell commands exist on the runner image | yes | no |
+| check:ci-shell-format | quality-static / Shell format | yes | no |
+| check:ci-shell-lint | quality-static / Shell lint | yes | yes |
+| check:ci-shell-size | quality-code / Shell file size | yes | no |
+| check:ci-silent-failures | quality-static / Silent-failure patterns | yes | no |
+| check:ci-skill-size | quality-content / Self-improving skill size | yes | no |
+| check:ci-solution-video-engine | quality-content / Validate solution narration engine is current | yes | no |
+| check:ci-solution-videos | quality-content / Validate localized solution videos exist | yes | no |
+| check:ci-source-rules | local-only | no | no |
+| check:ci-ssr-locale | quality-www-build / SSR locale | yes | yes |
+| check:ci-staging-tag-guard | quality-security / Staging tag guard | yes | no |
+| check:ci-step-env-parity | quality-code / Step env parity | yes | no |
+| check:ci-subscription-schema | quality-go / Check subscription schema consistency | yes | no |
+| check:ci-suppression-liveness | quality-security / Suppression liveness — are our allowlist entries still needed? | yes | no |
+| check:ci-svg-theme-reach | quality-content / SVG theme reach | yes | no |
+| check:ci-swallowed-failures | quality-code / Swallowed failures | yes | no |
+| check:ci-syncpack-reasons | quality-security / BLOCKER validator — syncpack versionGroups | yes | no |
+| check:ci-syncpack-sources | quality-code / syncpack source coverage | yes | no |
+| check:ci-test-account-web | quality-packages / Account portal unit tests | yes | yes |
+| check:ci-test-file-orphans | quality-security / Test-file orphan check | yes | no |
+| check:ci-test-gate-wiring | quality-content / Test-gate wiring | yes | no |
+| check:ci-test-scripts-reachable | quality-code / Test suites are CI-reachable | yes | no |
+| check:ci-timeout-headroom | quality-static / CI job timeout headroom | yes | no |
+| check:ci-tmpfs-health | quality-code / Tmpfs health | yes | no |
+| check:ci-toolchain-env-dockerfile-sync | quality-code / Toolchain env/Dockerfile sync | yes | no |
+| check:ci-toolchain-pins | quality-code / Toolchain pins | yes | no |
+| check:ci-tracked-credentials | quality-security / Tracked credentials | yes | no |
+| check:ci-tracked-sidecars | quality-static / Tracked runtime sidecars | yes | no |
+| check:ci-trap-registry | quality-code / Trap registry dispositions | yes | no |
+| check:ci-tree-shape | quality-static / Tree shape | yes | no |
+| check:ci-turnstile-drift | quality-static / Turnstile widget drift | yes | no |
+| check:ci-tutorial-caption-sync | quality-content / Validate published tutorial word-timing sync (real ASR alignment, not estimated) | yes | no |
+| check:ci-tutorial-card-fonts | quality-content / Validate tutorial card fonts cover every locale | yes | yes |
+| check:ci-tutorial-casts | quality-content / Block fallback hacks and error output in tutorial recordings | yes | no |
+| check:ci-tutorial-cli-validity | quality-content / Tutorial CLI validity | yes | no |
+| check:ci-tutorial-commands | quality-content / Validate tutorial storyboard commands against the live CLI | yes | no |
+| check:ci-tutorial-healthcheck-headroom | quality-packages / Tutorial healthcheck headroom | yes | no |
+| check:ci-tutorial-no-skips | quality-content / Tutorials cannot skip themselves | yes | no |
+| check:ci-tutorial-noninteractive | quality-content / Validate tutorial commands are non-interactive | yes | no |
+| check:ci-tutorial-parity | quality-content / Validate tutorial cast/storyboard/transcript/mdx parity | yes | no |
+| check:ci-tutorial-render-queue | test: .ci/rediacc_ci/tests/gates/test_gate_tutorial_render_queue.py | yes | no |
+| check:ci-typecheck-scope-coverage | quality-code / Typecheck scope coverage | yes | yes |
+| check:ci-unverified-downloads | quality-security / Check every Dockerfile download is cryptographically verified | yes | no |
+| check:ci-vendored-blocker-derivation | quality-static / Vendored blocker derivation | yes | no |
+| check:ci-video-player-invariants | quality-content / Video player invariants | yes | no |
+| check:ci-viewport-unit-mixing | quality-content / Dead CSS | yes | no |
+| check:ci-watch-recipe | quality-code / CI-watch recipe has one source | yes | no |
+| check:ci-worker-secret-names | quality-code / Worker secret names | yes | no |
+| check:ci-workflow-env-provision | quality-static / Workflow env provision | yes | no |
+| check:ci-workflow-gates | quality-code / Workflow structural gates | yes | no |
+| check:ci-workflow-invariants | test: .ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py | yes | no |
+| check:ci-workflow-orphan-step-keys | quality-code / Workflow orphan step keys | yes | no |
+| check:ci-workflow-submodule-deps | quality-static / Workflow submodule deps | yes | no |
+| check:ci-workflows | quality-code / Workflow banned patterns | yes | no |
+| check:ci-worklist-env-registry | quality-static / Worklist env registry | yes | yes |
+| check:ci-worklist-event-builders | quality-code / Worklist event builders | yes | no |
+| check:ci-worklist-path-resolution | quality-code / Worklist path resolution | yes | no |
+| check:ci-www-build-token | quality-code / www build token | yes | no |
+| check:cli-docs | quality-i18n / i18n | yes | no |
+| check:cli-examples | quality-code / CLI examples | yes | yes |
+| check:deps | quality-content / External dependency freshness | yes | yes |
+| check:format | quality-code / Format | yes | no |
+| check:i18n | quality-i18n / i18n | no | yes |
+| check:i18n:key-usage | quality-i18n / i18n | yes | yes |
+| check:lint | quality-code / Lint | no | yes |
+| check:lint:account | quality-code / Lint | yes | yes |
+| check:lint:cli | quality-code / Lint | yes | yes |
+| check:lint:tooling | quality-code / Lint | yes | yes |
+| check:lint:web | quality-code / Lint | yes | yes |
+| check:test-cli | quality-packages / Run CLI unit tests | yes | yes |
+| check:test-e2e-unit | quality-packages / Run e2e-tests unit suite | yes | no |
+| check:test-provisioning | quality-packages / Run provisioning unit tests | yes | no |
+| check:test-shared | quality-packages / Run shared package tests | yes | no |
+| check:test-workers | quality-www-build / Worker unit tests (workers/www, workers/proxy) | yes | yes |
+| check:test-www | quality-packages / Run www unit tests | yes | no |
+| check:test:tutorial-player | quality-packages / Tutorial player release gate | yes | yes |
+| check:types | quality-code / TypeScript | yes | yes |
+| check:types:incremental | local-only | yes | yes |
+| check:version | quality-code / Versions | yes | no |
+| env:register | local-only | no | no |
+| gen:docs | local-only | no | no |
+| gen:gates-lock | local-only | no | no |
+| lint:unused | quality-code / Unused exports (knip) | yes | yes |
+| shard:place | local-only | no | no |
+| test:install-script | quality-static / Install-script tests | yes | no |
+| test:write-once-guard | quality-static / Write-once guard tests | yes | no |
 
-367 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+363 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -437,6 +433,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/test-completion-evidence.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-defer-settle.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-deflect.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/hooks/stop/test-depgate.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-judge-schema.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-plan-status-parse.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-plandeps.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -454,7 +451,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_bgsweep.py | (none) | via .claude/hooks/stop/test-bgsweep.py | py |
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
+| .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/hooks/stop/wl_civerdict.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/stop/wl_claimcheck.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
@@ -464,23 +461,24 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_defersettle.py | (none) | via .claude/hooks/stop/test-defer-settle.py | py |
 | .claude/hooks/stop/wl_deflect.py | (none) | via .claude/hooks/stop/test-deflect.py | py |
 | .claude/hooks/stop/wl_epic.py | (none) | via .claude/hooks/stop/worklist.py | py |
-| .claude/hooks/stop/wl_gh.py | (none) | via .claude/hooks/stop/test-ci-rerun.py | py |
+| .claude/hooks/stop/wl_gh.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/stop/wl_git.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_hints.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_histfirst.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_judge.py | (none) | via .claude/hooks/stop/test-defer-settle.py | py |
-| .claude/hooks/stop/wl_leasehelp.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
+| .claude/hooks/stop/wl_leasehelp.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_lineage.py | (none) | via .claude/hooks/stop/wl_core.py | py |
 | .claude/hooks/stop/wl_liveness.py | (none) | via .claude/hooks/stop/test-teammate-idle.py | py |
 | .claude/hooks/stop/wl_lkg.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_loopspeed.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
+| .claude/hooks/stop/wl_models.py | (none) | via .claude/hooks/stop/wl_judge.py | py |
 | .claude/hooks/stop/wl_planconc.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
-| .claude/hooks/stop/wl_plandeps.py | (none) | via .claude/hooks/stop/test-plandeps.py | py |
-| .claude/hooks/stop/wl_planenforce.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
+| .claude/hooks/stop/wl_plandeps.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
+| .claude/hooks/stop/wl_planenforce.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_planfid.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
-| .claude/hooks/stop/wl_planfile.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
+| .claude/hooks/stop/wl_planfile.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_planindex.py | (none) | via .claude/hooks/stop/test-planindex.py | py |
-| .claude/hooks/stop/wl_planorder.py | (none) | via .claude/hooks/stop/wl_backlog.py | py |
+| .claude/hooks/stop/wl_planorder.py | (none) | via .claude/hooks/stop/test-depgate.py | py |
 | .claude/hooks/stop/wl_planqueue.py | (none) | via .claude/hooks/stop/wl_agents.py | py |
 | .claude/hooks/stop/wl_planrec.py | (none) | via .claude/hooks/stop/test-planenforce.py | py |
 | .claude/hooks/stop/wl_popup.py | (none) | via .claude/hooks/stop/test-popup.py | py |
@@ -488,7 +486,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_profile.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_proofcheck.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_prreview.py | (none) | via .claude/hooks/post-bash/github_status_note.py | py |
-| .claude/hooks/stop/wl_prscope.py | (none) | via .claude/hooks/stop/wl_backlog.py | py |
+| .claude/hooks/stop/wl_prscope.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_prsignals.py | (none) | via .claude/hooks/stop/wl_prreview.py | py |
 | .claude/hooks/stop/wl_reggate.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_report.py | SubagentStop | settings.json | py |
@@ -500,6 +498,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_roundlog.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_rules.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
 | .claude/hooks/stop/wl_schedred.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
+| .claude/hooks/stop/wl_scratch.py | (none) | via .claude/hooks/stop/worklist.py | py |
 | .claude/hooks/stop/wl_shapedup.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_standdown.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_store.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
@@ -529,6 +528,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_ci_skip_token.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_cli_bundle.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_commit_meta.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_commit_of_live_writer_file.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_commit_on_main.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_compacted_plan_edit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_destructive_git_restore.py | (none) | via dispatch.py (glob) | py |
@@ -548,6 +548,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_nondraft_pr_create.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_nonstandard_branch_name.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_pathspecless_git_commit.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_plan_box_rewrite.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_plan_concurrency.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_plan_without_depends.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_plan_without_tasks.py | (none) | via dispatch.py (glob) | py |
@@ -559,6 +560,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_push_with_unrecorded_reviews.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_raw_ci_read.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_raw_pr_body_edit.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_review_file_edit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_review_file_shell_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_roundlog_truncate.py | (none) | via dispatch.py (glob) | py |
@@ -571,6 +573,8 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_ssh_file_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_stale_pr_branch_date.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_suppressions.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_suppressions_shell_write.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_turbo_early_push.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_unlinked_commit_author.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_unproven_bulk_transform.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_unpushed_submodule_pin.py | (none) | via dispatch.py (glob) | py |
@@ -578,11 +582,14 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/block_unscoped_formatter_run.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_untagged_commit.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_unverified_push.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_user_only_command.py | (none) | via dispatch.py (glob) | py |
+| .claude/rediacc_hooks/guards/block_user_only_command_shell_write.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_worktree_add.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_admin_merge.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_agent_cap.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_ci_skip_token.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_commit_meta.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_commit_of_live_writer_file.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_commit_on_main.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_destructive_git_restore.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_focus_spawn.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -592,6 +599,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_long_sleep.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_missing_npm_script.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_no_review_ineligible.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_plan_box_rewrite.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_plan_concurrency.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_plan_without_depends.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_prose_style_commit.py | (none) | via test_hooks_delegates.py (glob) | py |
@@ -602,20 +610,26 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/guards/test-block_review_file_edit.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_review_file_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_second_branch.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_suppressions.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_suppressions_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_turbo_early_push.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unproven_bulk_transform.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unpushed_submodule_pin.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unsatisfiable_pid_wait.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unscoped_formatter_run.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_untagged_commit.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-block_unverified_push.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_user_only_command.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/rediacc_hooks/guards/test-block_user_only_command_shell_write.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_hook_change.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_remote_drift.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_staged_shape_duplication.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_stale_index.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/warn_submodule_deletions.py | (none) | via dispatch.py (glob) | py |
-| .claude/rediacc_hooks/hookio.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
+| .claude/rediacc_hooks/hookio.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
 | .claude/rediacc_hooks/lifecycle.py | PostCompact, PostToolUse, SessionStart | settings.json | py |
+| .claude/rediacc_hooks/model_invocation.py | (none) | via .claude/rediacc_hooks/guards/block_user_only_command.py | py |
 | .claude/rediacc_hooks/plan_gate.py | (none) | via .claude/hooks/post-bash/refresh_pr_body.py | py |
 | .claude/rediacc_hooks/proc.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/run_tests.py | (none) | via .claude/rediacc_hooks/hookio.py | py |
@@ -647,11 +661,16 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_hooks_static.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_hooks_trapguard.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_hooks_wiring.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_landing.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_output_landings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_plan_gate.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_post_bash_differential.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_pr_body_guards_repo_scope.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_pr_body_reader.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_proc.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_project_dir_containment.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_project_dir_fallback.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_regolden_bootstrap.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_review_commit_hook.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_settings_collapse.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_shellscan_differential.py | (none) | via pytest (testpaths) | py |
@@ -690,6 +709,8 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_message_catalogue.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_messaging_removed.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_migrate.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_models.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_plan_deps.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_plan_fidelity.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_plan_priority.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_plan_tracked_enumeration.py | (none) | via pytest (testpaths) | py |
@@ -697,6 +718,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_priority_ladder.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_prreview.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_prscope.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_queue_progress.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_queue_settings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_queue_slots.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_regression_gate.py | (none) | via pytest (testpaths) | py |
@@ -706,8 +728,10 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_report_scope.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_retro.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_review_check.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_review_deferrals.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_roster.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_schedred.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_wl_scratch.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_state_document.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_submodule_decision.py | (none) | via pytest (testpaths) | py |
@@ -719,7 +743,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/test-popup.py | py |
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 
-309 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+337 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -739,6 +763,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/actions-vars.json | 1 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 1 | JSON value |
+| .ci/config/inline-suppressions-baseline.json | 1 | JSON value |
 | .ci/config/prose-style-rules.json | 9 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
@@ -746,35 +771,33 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.audit-prod-allowlist | 3 | # comment |
 | .ci/policy/.ci-parity-exempt | 9 | # comment |
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
-| .ci/policy/.dead-bash-allowlist | 8 | # comment |
-| .ci/policy/.deps-upgrade-blocklist | 7 | inline |
+| .ci/policy/.dead-bash-allowlist | 5 | # comment |
+| .ci/policy/.deps-upgrade-blocklist | 6 | inline |
 | .ci/policy/.devcontainer-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
-| .ci/policy/.embed-assets-upgrade-blocklist | 2 | # comment |
-| .ci/policy/.go-deps-upgrade-blocklist | 4 | # comment |
+| .ci/policy/.embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
+| .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
-| .ci/policy/.language-policy-allowlist | 18 | # comment |
+| .ci/policy/.language-policy-allowlist | 21 | # comment |
 | .ci/policy/.plan-housekeeping-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |
 | .ci/policy/.unverified-download-allowlist | 4 | # comment |
-| .ci/policy/.w7p5a-real-run-blocklist | 6 | # comment |
-| .ci/policy/.w7p5a-real-run-leg-blocklist | 7 | # comment |
 | .ci/policy/hook-exec-baseline.json | 1 | JSON value |
 | .ci/shadow/w7p2-go-deps.observations.jsonl | 2 | inline |
 | .ci/shadow/w7p2-plan-housekeeping.observations.jsonl | 5 | inline |
 | .ci/shadow/w7p2-profiler-coverage.observations.jsonl | 3 | inline |
-| .ci/shadow/w7p5a-status.json | 6 | JSON value |
 | .ci/shadow/w7p5b-blocker-validator.observations.jsonl | 2 | inline |
 | .syncpackrc-reasons.json | 8 | JSON value |
 | agent/ledgers/plan-investigation.jsonl | 2 | inline |
-| knip.jsonc | 26 | // comment |
+| agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
+| knip.jsonc | 27 | // comment |
 | package.json | 24 | JSON value |
 | scripts/ci-runner/gates.lock.json | 30 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 47 | JSON value |
 | scripts/data/shape-duplication-seed.json | 9 | JSON value |
 
-38 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+37 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -794,7 +817,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/breakpoint/lib | 2 | .sh 2 |
 | .ci/breakpoint/scripts | 20 | .sh 20 |
 | .ci/breakpoint/workflow | 1 | .yml 1 |
-| .ci/config | 47 | .json 38, .txt 4, .sh 2, .conf 1, .env 1, .yaml 1 |
+| .ci/config | 51 | .json 42, .txt 4, .sh 2, .conf 1, .env 1, .yaml 1 |
 | .ci/config/shards | 6 | .json 6 |
 | .ci/docker | 1 | .sh 1 |
 | .ci/docker/ci | 1 | .yml 1 |
@@ -803,40 +826,42 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/docker/web | 4 | .conf 2, (none) 1, .sh 1 |
 | .ci/docs | 2 | .md 2 |
 | .ci/keys | 1 | .asc 1 |
-| .ci/lib | 4 | .sh 4 |
-| .ci/media | 11 | .sh 11 |
+| .ci/media | 10 | .sh 10 |
 | .ci/media/tools | 2 | .sh 2 |
 | .ci/media/tts | 2 | (none) 1, .toml 1 |
-| .ci/policy | 27 | (none) 19, .json 7, .md 1 |
+| .ci/policy | 25 | (none) 17, .json 7, .md 1 |
 | .ci/prompts | 1 | .md 1 |
-| .ci/rediacc_ci | 19 | .py 19 |
+| .ci/rediacc_ci | 18 | .py 18 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
-| .ci/rediacc_ci/ci | 29 | .py 29 |
+| .ci/rediacc_ci/catalog | 3 | .py 3 |
+| .ci/rediacc_ci/ci | 31 | .py 31 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
-| .ci/rediacc_ci/core | 35 | .py 35 |
-| .ci/rediacc_ci/deploy | 34 | .py 34 |
-| .ci/rediacc_ci/dev | 4 | .py 4 |
+| .ci/rediacc_ci/core | 37 | .py 37 |
+| .ci/rediacc_ci/deploy | 35 | .py 35 |
+| .ci/rediacc_ci/dev | 5 | .py 5 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 6 | .py 6 |
-| .ci/rediacc_ci/drills | 7 | .py 7 |
+| .ci/rediacc_ci/drills | 10 | .py 10 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
 | .ci/rediacc_ci/housekeeping | 7 | .py 7 |
 | .ci/rediacc_ci/infra | 17 | .py 17 |
-| .ci/rediacc_ci/ops | 12 | .py 12 |
+| .ci/rediacc_ci/ops | 13 | .py 13 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
-| .ci/rediacc_ci/private | 9 | .py 9 |
+| .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 109 | .py 109 |
-| .ci/rediacc_ci/release | 28 | .py 28 |
+| .ci/rediacc_ci/quality | 111 | .py 111 |
+| .ci/rediacc_ci/release | 30 | .py 30 |
 | .ci/rediacc_ci/review | 7 | .py 7 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
-| .ci/rediacc_ci/tests | 352 | .py 352 |
+| .ci/rediacc_ci/tests | 376 | .py 376 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
+| .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |
-| .ci/rediacc_ci/tests/gates | 179 | .py 178, .fixture 1 |
+| .ci/rediacc_ci/tests/fixtures/gate_model/20261008 | 3 | .json 2, .jsonl 1 |
+| .ci/rediacc_ci/tests/gates | 182 | .py 181, .fixture 1 |
 | .ci/rediacc_ci/tests/goldens/actionlint | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/bash-pairs | 17 | .golden 17 |
 | .ci/rediacc_ci/tests/goldens/allowlist/corpus | 17 | .list 17 |
@@ -894,7 +919,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/resolve-backfill-commit | 5 | .golden 5 |
 | .ci/rediacc_ci/tests/goldens/resolved-threads | 6 | .golden 6 |
 | .ci/rediacc_ci/tests/goldens/retag-image | 32 | .golden 32 |
-| .ci/rediacc_ci/tests/goldens/retry-failed-runs | 22 | .golden 22 |
+| .ci/rediacc_ci/tests/goldens/retry-failed-runs | 19 | .golden 19 |
 | .ci/rediacc_ci/tests/goldens/review-comments | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/run-account | 24 | .golden 24 |
 | .ci/rediacc_ci/tests/goldens/run-external-gate | 21 | .golden 21 |
@@ -906,7 +931,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/shfmt | 11 | .golden 11 |
 | .ci/rediacc_ci/tests/goldens/staging-tag-guard | 12 | .golden 12 |
 | .ci/rediacc_ci/tests/goldens/standing-orders-brief | 16 | .golden 16 |
-| .ci/rediacc_ci/tests/goldens/twins | 65 | .jsonl 65 |
+| .ci/rediacc_ci/tests/goldens/twins | 123 | .jsonl 123 |
 | .ci/rediacc_ci/tests/goldens/validate-stage-artifacts | 3 | .golden 3 |
 | .ci/rediacc_ci/tests/goldens/verify-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/version-bump | 28 | .golden 28 |
@@ -914,30 +939,22 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/tests/goldens/wait-for-vm-ssh | 16 | .golden 16 |
 | .ci/rediacc_ci/tests/goldens/write-once-guard | 7 | .golden 7 |
 | .ci/rediacc_ci/version | 5 | .py 5 |
-| .ci/scripts/build | 9 | .sh 9 |
 | .ci/scripts/build/sea-inject | 7 | .mjs 7 |
-| .ci/scripts/ci | 12 | .cjs 8, .sh 3, .py 1 |
+| .ci/scripts/ci | 9 | .cjs 8, .py 1 |
 | .ci/scripts/ci/profiler | 3 | .py 2, .awk 1 |
-| .ci/scripts/deploy | 26 | .sh 26 |
-| .ci/scripts/docker | 5 | .py 4, .sh 1 |
+| .ci/scripts/deploy | 1 | .sh 1 |
+| .ci/scripts/docker | 4 | .py 4 |
 | .ci/scripts/docs | 2 | .mjs 2 |
-| .ci/scripts/housekeeping | 2 | .py 1, .sh 1 |
+| .ci/scripts/housekeeping | 1 | .py 1 |
 | .ci/scripts/infra | 4 | .sh 4 |
-| .ci/scripts/lib | 5 | .sh 5 |
-| .ci/scripts/pr | 1 | .sh 1 |
-| .ci/scripts/private | 5 | .sh 5 |
+| .ci/scripts/lib | 1 | .sh 1 |
 | .ci/scripts/private/license-mint | 3 | .go 1, .mod 1, .sum 1 |
 | .ci/scripts/quality | 158 | .py 156, .json 1, .mjs 1 |
 | .ci/scripts/quality/lib | 1 | .py 1 |
-| .ci/scripts/release | 15 | .sh 15 |
 | .ci/scripts/security | 2 | .py 2 |
-| .ci/scripts/setup | 2 | .sh 2 |
-| .ci/scripts/test | 7 | .sh 6, .ts 1 |
+| .ci/scripts/test | 2 | .sh 1, .ts 1 |
 | .ci/scripts/test/fixtures/mutate-check | 2 | .py 1, .sh 1 |
-| .ci/scripts/test/gates | 5 | .sh 5 |
-| .ci/scripts/test/lib | 2 | .sh 2 |
-| .ci/scripts/test/manual | 1 | .sh 1 |
-| .ci/scripts/version | 3 | .sh 3 |
+| .ci/scripts/test/lib | 1 | .sh 1 |
 | .ci/shadow | 285 | .jsonl 284, .json 1 |
 | .ci/tutorials | 21 | .sh 20, .md 1 |
 | .ci/tutorials/apps/demo-pgadmin | 2 | (none) 1, .yml 1 |
@@ -946,7 +963,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/tutorials/apps/secrets-demo | 2 | (none) 1, .yml 1 |
 | .ci/tutorials/lib | 4 | .sh 4 |
 
-157 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+151 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 ## Hook wiring, folded
@@ -1011,7 +1028,7 @@ Scans: every `.github/workflows/*.yml` that calls a reusable workflow, folded to
 | `cd-v2.yml` | 6 | `deploy-account-stable`, `deploy-marketing-stable` | `cd-deploy-account.yml`, `cd-deploy-worker.yml` |
 | `ci.yml` | 0 | `duplicate-run` | - |
 | `ci.yml` | 1 | `initialize` | - |
-| `ci.yml` | 2 | `breakpoint-lifecycle`, `build-devcontainer`, `build-renet`, `cancel-watchdog`, `check-release-state`, `e2e-dependency-probe`, `label-guide`, `quality`, `run-sh-tests`, `tests` | `ci-build-docker.yml`, `ci-build-renet.yml`, `ci-quality.yml`, `ct-e2e-probe.yml`, `ct-tests.yml` |
+| `ci.yml` | 2 | `breakpoint-lifecycle`, `build-devcontainer`, `build-renet`, `cancel-watchdog`, `cd-preflight`, `check-release-state`, `e2e-dependency-probe`, `label-guide`, `quality`, `run-sh-tests`, `tests` | `ci-build-docker.yml`, `ci-build-renet.yml`, `ci-quality.yml`, `ct-e2e-probe.yml`, `ct-tests.yml` |
 | `ci.yml` | 3 | `build-cli`, `build-docker-fast`, `ops-tests`, `package-tests`, `review-gate` | `ci-build-cli.yml`, `ci-build-docker.yml`, `ci-ops-test.yml` |
 | `ci.yml` | 4 | `build-docker`, `elite-run-test`, `stripe-sandbox`, `update-flow-test` | `ci-build-docker.yml`, `ct-update-flow.yml` |
 | `ci.yml` | 5 | `stage-artifacts` | `cd-stage.yml` |
@@ -1070,22 +1087,22 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 |---|---|---|---|
 | `.syncpackrc-reasons.json` | root | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
 | `.syncpackrc.json` | root | wiring: `package.json` | yes -- repoint in `package.json` |
-| `biome.json` | root | code: `.ci/rediacc_ci/tests/gates/test_gate_tree_shape.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_tree_shape.py` |
+| `biome.json` | root | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `css-custom-data.json` | root | wiring: `.vscode/settings.json` | yes -- repoint in `.vscode/settings.json` |
-| `knip.jsonc` | root | code: `.ci/rediacc_ci/tests/gates/test_gate_knip_blockers.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_knip_blockers.py` |
+| `knip.jsonc` | root | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
 | `package-lock.json` | root | wiring: `.github/actions/setup-workspace/action.yml` | yes -- repoint in `.github/actions/setup-workspace/action.yml` |
 | `package.json` | root | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
 | `regions.json` | root | wiring: `.github/workflows/cd-deploy-account.yml` | yes -- repoint in `.github/workflows/cd-deploy-account.yml` |
 | `tsconfig.json` | root | wiring: `.github/workflows/ci.yml` | yes -- repoint in `.github/workflows/ci.yml` |
 | `.ci/config/account-env-retired-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/account_env_retired.py` | no -- hardcoded in `.ci/rediacc_ci/quality/account_env_retired.py` |
-| `.ci/config/actions-allowlist.json` | .ci/config | code: `.ci/scripts/quality/check_actions_allowlist.py` | no -- hardcoded in `.ci/scripts/quality/check_actions_allowlist.py` |
+| `.ci/config/actions-allowlist.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/actions-retention.json` | .ci/config | wiring: `.github/workflows/claude-review.yml` | yes -- repoint in `.github/workflows/claude-review.yml` |
 | `.ci/config/actions-vars.json` | .ci/config | code: `.ci/rediacc_ci/quality/actions_vars.py` | no -- hardcoded in `.ci/rediacc_ci/quality/actions_vars.py` |
 | `.ci/config/agent-session-archival.json` | .ci/config | code: `.ci/rediacc_ci/quality/agent_session_archival.py` | no -- hardcoded in `.ci/rediacc_ci/quality/agent_session_archival.py` |
 | `.ci/config/bulk-transform-proof-baseline.json` | .ci/config | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
 | `.ci/config/bws-secret-map.json` | .ci/config | wiring: `.github/actions/bws-secrets/action.yml` | yes -- repoint in `.github/actions/bws-secrets/action.yml` |
-| `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` |
-| `.ci/config/carried-reds.json` | .ci/config | code: `.claude/hooks/stop/test-ci-carried.py` | no -- hardcoded in `.claude/hooks/stop/test-ci-carried.py` |
+| `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/scripts/quality/check_bws_map.py` | no -- hardcoded in `.ci/scripts/quality/check_bws_map.py` |
+| `.ci/config/carried-reds.json` | .ci/config | code: `.claude/hooks/stop/wl_ci.py` | no -- hardcoded in `.claude/hooks/stop/wl_ci.py` |
 | `.ci/config/ci-alerts.json` | .ci/config | wiring: `.github/workflows/nightly-status.yml` | yes -- repoint in `.github/workflows/nightly-status.yml` |
 | `.ci/config/commit-attributions.json` | .ci/config | code: `scripts/gates/check-pr-task-trailers.ts` | no -- hardcoded in `scripts/gates/check-pr-task-trailers.ts` |
 | `.ci/config/commit-identity.json` | .ci/config | code: `.ci/rediacc_ci/quality/commit_identity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/commit_identity.py` |
@@ -1093,42 +1110,46 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/commit-review.json` | .ci/config | code: `.ci/rediacc_ci/quality/agent_session_archival.py` | no -- hardcoded in `.ci/rediacc_ci/quality/agent_session_archival.py` |
 | `.ci/config/deps-major-allow.json` | .ci/config | code: `scripts/gates/check-deps.ts` | no -- hardcoded in `scripts/gates/check-deps.ts` |
 | `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_allowlist_key_matching.py` | no -- hardcoded in `.ci/scripts/quality/check_allowlist_key_matching.py` |
-| `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/actions_vars.py` | no -- hardcoded in `.ci/rediacc_ci/quality/actions_vars.py` |
+| `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |
 | `.ci/config/freshness.json` | .ci/config | wiring: `.github/workflows/housekeeping.yml` | yes -- repoint in `.github/workflows/housekeeping.yml` |
 | `.ci/config/gate-costs.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
 | `.ci/config/gh-retry-reads-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/gh_retry_reads.py` | no -- hardcoded in `.ci/rediacc_ci/quality/gh_retry_reads.py` |
+| `.ci/config/inline-suppressions-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/inline_suppressions.py` | no -- hardcoded in `.ci/rediacc_ci/quality/inline_suppressions.py` |
 | `.ci/config/lane-durations.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
-| `.ci/config/language-policy-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
-| `.ci/config/plan-boxes.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_lifecycle.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_lifecycle.py` |
+| `.ci/config/merged-prs.json` | .ci/config | code: `scripts/lib/suppression-liveness.ts` | no -- hardcoded in `scripts/lib/suppression-liveness.ts` |
+| `.ci/config/model-invocation-exceptions.json` | .ci/config | code: `.claude/rediacc_hooks/model_invocation.py` | no -- hardcoded in `.claude/rediacc_hooks/model_invocation.py` |
+| `.ci/config/plan-boxes.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/plan-implementation.json` | .ci/config | code: `.ci/scripts/quality/check_plan_implementation.py` | no -- hardcoded in `.ci/scripts/quality/check_plan_implementation.py` |
-| `.ci/config/plan-lifecycle.json` | .ci/config | code: `.ci/rediacc_ci/quality/plan_housekeeping.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plan_housekeeping.py` |
+| `.ci/config/plan-lifecycle.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/plant-proof-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/plant_proofs.py` | no -- hardcoded in `.ci/rediacc_ci/quality/plant_proofs.py` |
 | `.ci/config/prose-style-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
 | `.ci/config/prose-style-rules.json` | .ci/config | code: `.ci/rediacc_ci/quality/prose_style.py` | no -- hardcoded in `.ci/rediacc_ci/quality/prose_style.py` |
-| `.ci/config/python-env-registry.json` | .ci/config | code: `.ci/rediacc_ci/deploy/set_account_worker_secrets.py` | no -- hardcoded in `.ci/rediacc_ci/deploy/set_account_worker_secrets.py` |
+| `.ci/config/python-env-registry.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |
 | `.ci/config/python-types-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_types.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_types.py` |
-| `.ci/config/release-age.json` | .ci/config | code: `.ci/rediacc_ci/core/release_age.py` | no -- hardcoded in `.ci/rediacc_ci/core/release_age.py` |
+| `.ci/config/release-age.json` | .ci/config | code: `.ci/rediacc_ci/quality/go_deps.py` | no -- hardcoded in `.ci/rediacc_ci/quality/go_deps.py` |
 | `.ci/config/rubric-calibration.json` | .ci/config | code: `.ci/rediacc_ci/quality/rubric_calibration.py` | no -- hardcoded in `.ci/rediacc_ci/quality/rubric_calibration.py` |
-| `.ci/config/secret-reachability.json` | .ci/config | code: `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_bws_map.py` |
+| `.ci/config/scope-mirrors-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/scope_mirrors.py` | no -- hardcoded in `.ci/rediacc_ci/quality/scope_mirrors.py` |
+| `.ci/config/scope-mirrors.json` | .ci/config | code: `.ci/rediacc_ci/quality/scope_mirrors.py` | no -- hardcoded in `.ci/rediacc_ci/quality/scope_mirrors.py` |
+| `.ci/config/secret-reachability.json` | .ci/config | code: `.ci/scripts/quality/check_secret_reachability.py` | no -- hardcoded in `.ci/scripts/quality/check_secret_reachability.py` |
 | `.ci/config/secret-scope-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
-| `.ci/config/secret-supply.json` | .ci/config | code: `.ci/lib/account.sh` | no -- hardcoded in `.ci/lib/account.sh` |
-| `.ci/config/syncpack-source-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_language_policy.py` | no -- hardcoded in `.ci/scripts/quality/check_language_policy.py` |
+| `.ci/config/secret-supply.json` | .ci/config | code: `.ci/rediacc_ci/quality/account_env_retired.py` | no -- hardcoded in `.ci/rediacc_ci/quality/account_env_retired.py` |
+| `.ci/config/syncpack-source-exclusions.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/config/tracked-credentials-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/python_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/python_env_registry.py` |
-| `.ci/config/tree-write-mutators.json` | .ci/config | code: `.ci/rediacc_ci/quality/gate_tree_writes.py` | no -- hardcoded in `.ci/rediacc_ci/quality/gate_tree_writes.py` |
-| `scripts/data/css-dom-refs-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
-| `scripts/data/dead-css-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
-| `scripts/data/dead-translation-keys-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
-| `scripts/data/doc-registry-preport.json` | scripts/data | code: `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py` |
-| `scripts/data/docker-image-freshness-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
-| `scripts/data/domain-layout-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `.ci/config/tree-write-mutators.json` | .ci/config | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/css-dom-refs-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/dead-css-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/dead-translation-keys-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/doc-registry-preport.json` | scripts/data | code: `scripts/gen/gen-docs.ts` | no -- hardcoded in `scripts/gen/gen-docs.ts` |
+| `scripts/data/docker-image-freshness-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/domain-layout-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/domains.json` | scripts/data | code: `.ci/rediacc_ci/ops/__init__.py` | no -- hardcoded in `.ci/rediacc_ci/ops/__init__.py` |
-| `scripts/data/em-dash-surfaces-baseline.json` | scripts/data | code: `.ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py` | no -- hardcoded in `.ci/rediacc_ci/tests/gates/test_gate_shrink_only_composition.py` |
-| `scripts/data/enumeration-vacuity-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
-| `scripts/data/hook-audit-scope.json` | scripts/data | code: `.ci/rediacc_ci/quality/hook_integrity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/hook_integrity.py` |
-| `scripts/data/hook-coverage-baseline.json` | scripts/data | code: `.ci/rediacc_ci/quality/hook_integrity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/hook_integrity.py` |
-| `scripts/data/hook-inventory-baseline.json` | scripts/data | code: `.ci/rediacc_ci/quality/dead_python.py` | no -- hardcoded in `.ci/rediacc_ci/quality/dead_python.py` |
+| `scripts/data/em-dash-surfaces-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/enumeration-vacuity-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/hook-audit-scope.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/hook-coverage-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/hook-inventory-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/literal-sources.json` | scripts/data | code: `.ci/rediacc_ci/quality/literal_sources.py` | no -- hardcoded in `.ci/rediacc_ci/quality/literal_sources.py` |
-| `scripts/data/locale-de-contamination-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `scripts/data/locale-de-contamination-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `scripts/data/nis2-directive-2022-2555-de.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-en.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-es.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
@@ -1136,21 +1157,20 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `scripts/data/nis2-directive-2022-2555-fr.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-it.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
 | `scripts/data/nis2-directive-2022-2555-pt.manifest.json` | scripts/data | code: `scripts/gates/check-directive-quotes.ts` | no -- hardcoded in `scripts/gates/check-directive-quotes.ts` |
-| `scripts/data/package-key-budget-baseline.json` | scripts/data | code: `.ci/scripts/quality/check_docker_npm_pins.py` | no -- hardcoded in `.ci/scripts/quality/check_docker_npm_pins.py` |
-| `scripts/data/sentence-wrapping-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
-| `scripts/data/shape-duplication-seed-advisory.json` | scripts/data | code: `.claude/hooks/stop/test-judge-schema.py` | no -- hardcoded in `.claude/hooks/stop/test-judge-schema.py` |
+| `scripts/data/package-key-budget-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/sentence-wrapping-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
+| `scripts/data/shape-duplication-seed-advisory.json` | scripts/data | code: `.claude/hooks/stop/wl_shapedup.py` | no -- hardcoded in `.claude/hooks/stop/wl_shapedup.py` |
 | `scripts/data/shape-duplication-seed.json` | scripts/data | code: `.ci/scripts/ci/scope-map.cjs` | no -- hardcoded in `.ci/scripts/ci/scope-map.cjs` |
-| `scripts/data/shell-declared-commands-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
-| `scripts/data/static-nowrap-baseline.json` | scripts/data | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `scripts/data/static-nowrap-baseline.json` | scripts/data | wiring: `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` | yes -- repoint in `.ci/rediacc_ci/tests/fixtures/gate_model/20261008/lock.json` |
 | `.ci/policy/carry-exempt.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 | `.ci/policy/deps-major-exceptions.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 | `.ci/policy/fixed-widths.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
-| `.ci/policy/hook-exec-baseline.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
+| `.ci/policy/hook-exec-baseline.json` | .ci/policy | code: `.ci/rediacc_ci/quality/hook_exec_baseline.py` | no -- hardcoded in `.ci/rediacc_ci/quality/hook_exec_baseline.py` |
 | `.ci/policy/record-paths.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
-| `.ci/policy/tree-shape.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
-| `.ci/policy/worklist-env-registry.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
+| `.ci/policy/tree-shape.json` | .ci/policy | code: `.ci/rediacc_ci/quality/tree_shape.py` | no -- hardcoded in `.ci/rediacc_ci/quality/tree_shape.py` |
+| `.ci/policy/worklist-env-registry.json` | .ci/policy | code: `.ci/rediacc_ci/quality/worklist_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/worklist_env_registry.py` |
 
-81 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+84 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->
 
@@ -1197,6 +1217,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ACTIONS_ALLOWLIST_MIN` | gate-seam | - |
 | `ACTIONS_ALLOWLIST_ROOT` | gate-seam | - |
 | `ACTION_REFS_MIN_FILES` | gate-seam | - |
+| `AGENT_BROWSER_SESSION` | harness | - |
 | `AGENT_BROWSER_VERSION` | toolchain | - |
 | `AGENT_SESSION_ARCHIVAL_ROOT` | gate-seam | - |
 | `AGE_FAIL_DAYS` | gate-seam | - |
@@ -1207,6 +1228,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `APK_RSA_PRIVATE_KEY` | secret | - |
 | `APPDATA` | machine-local | - |
 | `APP_TOKEN` | tombstone | - |
+| `APP_TOKEN_ACTION_FILE` | gate-seam | - |
 | `APP_TOKEN_OWNER` | ci-runner | - |
 | `APP_TOKEN_PROBE` | ci-runner | - |
 | `APP_TOKEN_REPOS` | ci-runner | - |
@@ -1214,6 +1236,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `ARG_BUNDLE` | ci-runner | - |
 | `ARG_CONNECT_TIMEOUT` | ci-runner | - |
 | `ARG_VERIFY` | ci-runner | - |
+| `ARTIFACTS_DIR` | harness | - |
 | `ASTRO_PORT` | harness | - |
 | `ATTEMPTS` | ci-runner | - |
 | `AUTOPILOT_ALLOW_PUSH` | tombstone | - |
@@ -1259,7 +1282,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `BACKUP_BUCKET_STABLE` | ci-runner | - |
 | `BACKUP_STORAGE_SUITE` | harness | - |
 | `BAKED_IMAGE_KEY` | harness | - |
-| `BATTERY_CLEAN_TREE_ROOT` | gate-seam | - |
 | `BINARY_PATH` | ci-runner | - |
 | `BOT` | tombstone | - |
 | `BP_ACCESS_EMAILS` | harness | - |
@@ -1277,6 +1299,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `BRANCH_MAX_AGE_DAYS` | ci-runner | - |
 | `BREAKPOINT_DEBUG_SHELL` | harness | - |
 | `BREAKPOINT_DESKTOP` | harness | - |
+| `BRIDGE_HOST` | harness | - |
 | `BRIDGE_TEST_SKIP_RESET` | harness | - |
 | `BRIDGE_TIMEOUT` | harness | - |
 | `BUCKET` | ci-runner | - |
@@ -1298,6 +1321,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `CAPTURE_EXTRA_ARGS` | gate-seam | - |
 | `CAPTURE_NIGHT` | gate-seam | - |
 | `CC_MUTABLE` | harness | - |
+| `CD_WORKFLOW_FILE` | gate-seam | - |
+| `CELL_BYTES` | harness | - |
 | `CEPH_MODE` | harness | - |
 | `CEPH_OSD_MEMORY_TARGET` | harness | - |
 | `CEPH_POOL_PG_NUM` | harness | - |
@@ -1333,11 +1358,13 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `CI_RUN_ID` | ci-runner | - |
 | `CI_SCHED` | ci-runner | - |
 | `CI_SHA` | ci-runner | - |
+| `CI_STEP_ENV_PARITY_ROOT` | gate-seam | - |
 | `CI_TEMP` | ci-runner | - |
 | `CI_TRACE_HEAD_LAG_POLL_S` | ci-runner | - |
 | `CI_TRACE_HEAD_LAG_S` | ci-runner | - |
 | `CI_TRACE_MAX_READ_FAILURES` | ci-runner | - |
 | `CI_TRACE_NOCI_GRACE_S` | ci-runner | - |
+| `CI_TRACE_NO_FOLD` | ci-runner | - |
 | `CI_TRACE_POLL_S` | ci-runner | - |
 | `CI_TRACE_SIGNALS_POLL_S` | ci-runner | - |
 | `CI_TRACE_TIMEOUT_S` | ci-runner | - |
@@ -1390,6 +1417,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `CTX_BAND_STATE_DIR` | harness | - |
 | `CURSOR_TRACE_ID` | product-runtime | - |
 | `DATABASE_PATH` | harness | - |
+| `DATASTORE` | harness | - |
 | `DB_HOST` | product-runtime | - |
 | `DB_PORT` | product-runtime | - |
 | `DEAD_BASH_ROOT` | gate-seam | - |
@@ -1400,6 +1428,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `DECISION_IDS_BASE` | gate-seam | - |
 | `DECISION_IDS_REGISTER` | gate-seam | - |
 | `DECISION_IDS_ROOT` | gate-seam | - |
+| `DEPLOY_SCRIPT` | ci-runner | - |
 | `DEPLOY_WORKERS_ONLY` | ci-runner | - |
 | `DESKTOP_RESOLUTION` | harness | - |
 | `DETECT_BUMP_MAX_COMMITS` | ci-runner | - |
@@ -1424,6 +1453,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `DOCKER_REGISTRY` | product-runtime | - |
 | `DOCKER_TAG` | ci-runner | - |
 | `DOCS_RENDER_PARITY_ROOT` | gate-seam | - |
+| `DOMAIN_PARTITION_ROOT` | gate-seam | - |
 | `DRILL_EXPECT_NO_KEYRING` | harness | - |
 | `DRILL_HOST` | harness | - |
 | `DRILL_KEEP_WORK` | harness | - |
@@ -1468,6 +1498,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `EMBED_CREDITS_JSON_FILE` | gate-seam | - |
 | `EMBED_FRESHNESS_FIXTURE` | gate-seam | - |
 | `EMBED_PARITY_LOCKFILE` | gate-seam | - |
+| `EMBED_PIN_FIXTURE` | gate-seam | - |
+| `EMBED_RENET_DIR` | gate-seam | - |
 | `ENABLE_HTTPS` | harness | - |
 | `ENUM_VACUITY_MIN` | gate-seam | - |
 | `ENV_MANIFEST_OVERRIDE_FILE` | gate-seam | - |
@@ -1553,6 +1585,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `HOME` | machine-local | - |
 | `HOOK_EXEC_COUNTER_DIR` | gate-seam | - |
 | `HOOK_LABEL_DIR` | harness | - |
+| `HOUSEKEEPING_WORKFLOW_FILE` | gate-seam | - |
 | `HTTPS_PORT` | harness | - |
 | `HTTP_PORT` | harness | - |
 | `IMAGE_PATH` | ci-runner | - |
@@ -1579,17 +1612,18 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LABEL_REFS_LABELS_FILE` | gate-seam | - |
 | `LABEL_REFS_MIN_DISTINCT` | gate-seam | - |
 | `LABEL_REFS_SCAN_DIRS` | gate-seam | - |
+| `LANE_BUDGET_ROOT` | gate-seam | - |
 | `LANG` | machine-local | - |
 | `LANGUAGE_POLICY_ALLOWLIST` | gate-seam | - |
 | `LANGUAGE_POLICY_BASELINE` | gate-seam | - |
 | `LANGUAGE_POLICY_ROOT` | gate-seam | - |
-| `LANGUAGE_POLICY_VALIDATOR` | gate-seam | - |
 | `LC_ALL` | machine-local | - |
 | `LC_CTYPE` | machine-local | - |
 | `LOCALAPPDATA` | machine-local | - |
 | `LOCAL_CI_DIR` | harness | - |
 | `LOCAL_LIB_DIR` | harness | - |
 | `LOCAL_ROOT_DIR` | harness | - |
+| `LOG_DIR` | harness | - |
 | `MACHINE_NAME` | harness | - |
 | `MAP` | ci-runner | - |
 | `MATRIX_DOMAIN` | ci-runner | - |
@@ -1611,6 +1645,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `MYPY_BIN` | toolchain | - |
 | `MYPY_VERSION` | toolchain | - |
 | `NETWORK_CIDR` | harness | - |
+| `NET_SRC` | harness | - |
 | `NEXT_VERSION` | ci-runner | - |
 | `NFPM_APK_KEY_FILE` | secret | - |
 | `NFPM_ARCH` | ci-runner | - |
@@ -1642,6 +1677,9 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `OBS_OTLP_CREDENTIALS_US` | secret | - |
 | `OBS_OTLP_PASSWORD` | secret | - |
 | `OBS_OTLP_USERNAME` | secret | - |
+| `OBS_READER_SSH_KEY_B64` | secret | - |
+| `OBS_READER_SSH_KNOWN_HOSTS` | secret | - |
+| `OBS_READER_SSH_TARGET` | secret | - |
 | `ONBOARD_NOTICE` | harness | - |
 | `OPS_RESET_TIMEOUT_MS` | product-runtime | - |
 | `OTEL_ENDPOINT` | secret | - |
@@ -1685,7 +1723,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PLAYER_CSS_ROOT` | gate-seam | - |
 | `POINTER_BUMP_ONLY` | ci-runner | - |
 | `POLICY_INVENTORY_ROOT` | gate-seam | - |
-| `POOL_SAFETY_GATES_DIR` | gate-seam | - |
 | `POOL_SAFETY_LOCK` | gate-seam | - |
 | `POOL_SAFETY_PORTS_DIR` | gate-seam | - |
 | `POSTGRES_DB` | product-runtime | - |
@@ -1694,6 +1731,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PREVIEW_URL` | ci-runner | - |
 | `PREVIEW_URL_OVERRIDE` | ci-runner | - |
 | `PRE_SHA` | tombstone | - |
+| `PROBE_BUCKET` | harness | - |
 | `PROBE_INTERVAL_SECONDS` | ci-runner | - |
 | `PROFILER_CONTROL_DIR` | ci-runner | - |
 | `PROFILER_COVERAGE_ACTION_DIR` | gate-seam | - |
@@ -1711,10 +1749,12 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PROVIDER` | harness | - |
 | `PROVISION_CEPH_CLUSTER` | harness | - |
 | `PR_BASE_REF` | ci-runner | - |
+| `PR_CONDITION_LEDGER_ROOT` | gate-seam | - |
 | `PR_HEAD_REF` | ci-runner | - |
 | `PR_HEAD_SHA` | ci-runner | - |
 | `PR_LABELS` | ci-runner | - |
 | `PR_NUMBER` | ci-runner | - |
+| `PR_STATE_FIXTURE` | gate-seam | - |
 | `PUBLIC_SITE_URL` | product-runtime | - |
 | `PUBLIC_VIDEO_CDN_BASE_URL` | product-runtime | - |
 | `PUBLISH_DOCKER_REGISTRY` | ci-runner | - |
@@ -1729,6 +1769,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `PYTHONPATH` | toolchain | - |
 | `PYYAML_VERSION` | toolchain | - |
 | `PY_CONTROL_PLANTS_ROOT` | gate-seam | - |
+| `QUALITY_COMPLETE_ROOT` | gate-seam | - |
 | `QUICK_BOUND` | gate-seam | - |
 | `QUICK_LANE_FLOOR` | gate-seam | - |
 | `QWEN_TTS_PYTHON_BIN` | toolchain | - |
@@ -1747,6 +1788,9 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RDC_TUTORIAL_HWENC` | product-runtime | - |
 | `RDC_UPDATE_CHANNEL` | tombstone | - |
 | `RDC_UPDATE_INTERVAL_HOURS` | tombstone | - |
+| `REAL_PROVIDER_API_BASE` | gate-seam | - |
+| `REAL_PROVIDER_FRESHNESS_FIXTURE` | gate-seam | - |
+| `REAL_PROVIDER_LOCK_FILE` | gate-seam | - |
 | `REASON` | tombstone | - |
 | `RECEIPT_LANE` | ci-runner | - |
 | `RECEIPT_PATH` | ci-runner | - |
@@ -1775,6 +1819,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_DOCKER_GROUP_REEXEC` | product-runtime | - |
 | `REDIACC_ENVIRONMENT` | tombstone | note |
 | `REDIACC_EXECUTOR_TOKEN` | tombstone | - |
+| `REDIACC_GATE_LEDGER_DIR` | machine-local | - |
 | `REDIACC_GUARD_DIFF_FULL` | gate-seam | - |
 | `REDIACC_HOOK_SETTINGS` | harness | - |
 | `REDIACC_IN_DEVBOX` | harness | - |
@@ -1792,6 +1837,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_PROXY_URL` | product-runtime | - |
 | `REDIACC_PYTEST_REAL_DIST` | harness | - |
 | `REDIACC_REGION` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |
+| `REDIACC_SECRET_STORE` | product-runtime | - |
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | product-runtime | - |
 | `REDIACC_SKIP_MACHINE_ACTIVATION` | product-runtime | - |
 | `REDIACC_SKIP_ROUTER_RESTART` | product-runtime | - |
@@ -1838,17 +1884,20 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RENET_TEST_PKGS` | ci-runner | - |
 | `RENET_VERSION` | ci-runner | - |
 | `REPO` | tombstone | - |
+| `REPOSITORY_NETWORK_MODE` | harness | - |
 | `REPO_CHANNEL` | ci-runner | - |
 | `REQUESTED` | ci-runner | - |
 | `REQUIRED_CHECK` | ci-runner | - |
 | `REQUIRED_STREAK` | ci-runner | - |
 | `RERUN_EXECUTED` | ci-runner | - |
 | `RESPROFILE_ROOT` | gate-seam | - |
+| `RESULTS_FILE` | harness | - |
 | `RESULT_BREAKPOINT_LIFECYCLE` | ci-runner | - |
 | `RESULT_BUILD_CLI` | ci-runner | - |
 | `RESULT_BUILD_DEVCONTAINER` | ci-runner | - |
 | `RESULT_BUILD_DOCKER` | ci-runner | - |
 | `RESULT_BUILD_DOCKER_FAST` | ci-runner | - |
+| `RESULT_CD_PREFLIGHT` | ci-runner | - |
 | `RESULT_CHECK_RELEASE_STATE` | ci-runner | - |
 | `RESULT_DEPLOY_PREVIEW` | ci-runner | - |
 | `RESULT_E2E_DEPENDENCY_PROBE` | ci-runner | - |
@@ -1875,6 +1924,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RESULT_WINDOWS_X64` | ci-runner | - |
 | `RETIRE_MIN_WORKFLOWS` | gate-seam | - |
 | `RETIRE_ROOT` | gate-seam | - |
+| `RETRY_MODE` | ci-runner | - |
 | `RETRY_REPO` | ci-runner | - |
 | `REVIEW_MODEL` | ci-runner | - |
 | `REVIEW_OUTCOME` | ci-runner | - |
@@ -1892,12 +1942,12 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `RUNNER_ADVICE_WORKFLOW_DIR` | gate-seam | - |
 | `RUNNER_LABEL` | ci-runner | - |
 | `RUNNER_TEMP` | ci-runner | - |
-| `RUN_ALL_GATES_DIR` | gate-seam | - |
-| `RUN_ALL_JOBS` | gate-seam | - |
 | `RUN_ID` | ci-runner | - |
 | `RUN_URL` | tombstone | - |
 | `RUSTFS_ACCESS_KEY` | secret | - |
+| `RUSTFS_KEY` | harness | - |
 | `RUSTFS_PORT` | harness | - |
+| `RUSTFS_SECRET` | harness | - |
 | `RUSTFS_SECRET_KEY` | secret | - |
 | `SCOPE_MODE` | ci-runner | - |
 | `SCOPE_SHADOW_OUT` | gate-seam | - |
@@ -1906,6 +1956,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `SCRIPT_ENTRYPOINT` | harness | - |
 | `SECRET_RENAME_MIN_FILES` | gate-seam | - |
 | `SECRET_SCOPE_ROOT` | gate-seam | - |
+| `SECURE_STORAGE_NATIVE_RECEIPT` | harness | - |
+| `SECURE_STORAGE_REQUIRE_NATIVE` | harness | - |
 | `SELLER_ADDRESS_LINE1` | secret | - |
 | `SELLER_ADDRESS_LINE2` | secret | - |
 | `SELLER_CITY` | secret | - |
@@ -1954,6 +2006,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `SRC_PREFIX` | ci-runner | - |
 | `SSH_KEY` | secret | - |
 | `SSH_USER` | harness | - |
+| `SSTOOLS_POWERSHELL` | harness | - |
 | `STABLE_VERSION` | ci-runner | - |
 | `STAGING_GUARD_ROOT` | gate-seam | - |
 | `STAGING_GUARD_TARGET` | gate-seam | - |
@@ -1981,6 +2034,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `STRIPE_WEBHOOK_SECRET_US` | secret | - |
 | `STUB_ROOT` | gate-seam | - |
 | `STUCK_THRESHOLD_MIN` | ci-runner | - |
+| `SUBMODULE_PRESENCE_ROOT` | gate-seam | - |
 | `SUBSCRIPTION_SCHEMA_OUT` | gate-seam | - |
 | `SUDO_USER` | machine-local | - |
 | `SUFFIX` | ci-runner | - |
@@ -1996,6 +2050,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `THRESHOLD_GB` | ci-runner | - |
 | `TIMEOUT_SECS` | ci-runner | - |
 | `TMPDIR` | machine-local | - |
+| `TMP_CAPACITY_MIN_FREE_INODES` | gate-seam | - |
 | `TOKEN` | secret | - |
 | `TRACE` | gate-seam | - |
 | `TRACKED_CRED_ROOT` | gate-seam | - |
@@ -2039,6 +2094,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `VITE_CI_MODE` | product-runtime | - |
 | `VITE_PORT` | harness | - |
 | `VITE_TURNSTILE_SITE_KEY` | product-runtime | - |
+| `VM` | harness | - |
 | `VM_BAKE` | ci-runner | - |
 | `VM_BRIDGE` | harness | - |
 | `VM_CEPH_NODES` | harness | - |
@@ -2082,6 +2138,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WK_BENCH_ORIGIN` | well-known | - |
 | `WK_CF_API_BASE` | well-known | - |
 | `WK_CLAUDE_CODE_URL` | well-known | - |
+| `WK_CLAUDE_HAIKU_MODEL` | well-known | - |
 | `WK_CLOUD_ORIGIN` | well-known | - |
 | `WK_CONSOLE_ORIGIN` | well-known | - |
 | `WK_CONTACT_EMAIL` | well-known | - |
@@ -2116,6 +2173,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WK_UBUNTU_ARCHIVE` | well-known | - |
 | `WK_UBUNTU_AZURE_MIRROR` | well-known | - |
 | `WK_WEB_IMAGE_REPO` | well-known | - |
+| `WORK` | harness | - |
 | `WORKER2_IP` | harness | - |
 | `WORKERS_ONLY` | ci-runner | - |
 | `WORKER_IDLE_BLOCK_MIN` | harness | - |
@@ -2177,7 +2235,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_JUDGE` | harness | - |
 | `WORKLIST_JUDGE_BUDGET_USD` | harness | - |
 | `WORKLIST_JUDGE_CACHE_MIN` | harness | - |
-| `WORKLIST_JUDGE_MODEL` | harness | - |
 | `WORKLIST_JUDGE_TIMEOUT_S` | harness | - |
 | `WORKLIST_JUSTIFY_AGE_MIN` | harness | - |
 | `WORKLIST_JUSTIFY_PER_STOP` | harness | - |
@@ -2273,6 +2330,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `_DEVBOX_DOCKER` | harness | - |
 | `_WL_SITEPROFILE` | harness | - |
 
-1098 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+1135 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->

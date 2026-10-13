@@ -49,6 +49,8 @@ ROOT = Path(__file__).resolve().parents[2]
 MAP = ROOT / ".ci" / "config" / "bws-secret-map.json"
 
 MIN_ENTRIES = 40
+# A rotation's pre-rotation archive clone (`<NAME>__ROTATED_<UTC stamp>`) is deleted to Trash at once, but one that survives a crash must never be mapped. The literal is pinned equal to bws_env.ARCHIVE_PATTERN and bitwarden-sm.ts by check:ci-bws-map.
+ARCHIVE_RE = re.compile(r"__ROTATED_\d{8}T\d{6}Z$")
 
 # THE EXPIRY FILE IS GONE, AND SO IS EVERYTHING THAT READ IT. `warn_if_token_expiring()` lived here until 2026-09-23 and read a hand-maintained date out of `.ci/config/bws-token-expiry.json`.
 # Both are deleted by `agent/plans/PLAN-bws-rotation-on-failure.md`, whose ruling is that detection is the FAILURE and never a date: nothing in this repository can observe a machine account's expiry, so a written-down date is a second source of truth that only a human ever refreshes.
@@ -149,6 +151,14 @@ def main() -> int:
         for s in raw
     ]
     del raw, proc
+
+    leaked = sorted(e["key"] for e in entries if ARCHIVE_RE.search(e["key"]))
+    entries = [e for e in entries if not ARCHIVE_RE.search(e["key"])]
+    for key in leaked:
+        print(
+            f"! excluded archive clone {key}; delete it: ./run.sh rotation bws-gc --apply",
+            file=sys.stderr,
+        )
 
     if len(entries) < MIN_ENTRIES:
         die(

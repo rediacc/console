@@ -10,9 +10,9 @@
 #
 # Part of the media pipeline extraction (W10). Moved out of run.sh byte for byte in
 # phase 1, comments included; phase 2 deleted run.sh's copies, so these are the only
-# definitions of the two names anywhere. .ci/scripts/test/gates/test-media-r2.sh asserts
-# that ownership and drives both the credentials-absent and credentials-present paths
-# with the sync scripts faked, so no bucket is ever touched.
+# definitions of the two names anywhere. .ci/rediacc_ci/tests/gates/test_gate_media_r2.py
+# asserts that ownership and drives both the credentials-absent and credentials-present
+# paths with the sync scripts faked, so no bucket is ever touched.
 #
 # SOURCED, NEVER EXECUTED. Callers supply ROOT_DIR and the log_* helpers.
 
@@ -29,7 +29,7 @@ www_tutorial_audio_restore() {
         return 0
     fi
     log_step "Restoring tutorial-audio cache from R2..."
-    "$ROOT_DIR/.ci/scripts/deploy/sync-media-from-r2.sh" --audio-only || log_warn "Audio cache restore failed, continuing without it"
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only || log_warn "Audio cache restore failed, continuing without it"
 }
 
 www_tutorial_audio_upload() {
@@ -40,5 +40,5 @@ www_tutorial_audio_upload() {
         return 0
     fi
     log_step "Backing up tutorial-audio cache to R2..."
-    "$ROOT_DIR/.ci/scripts/deploy/sync-media-to-r2.sh" --audio-only || log_warn "Audio cache upload failed"
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.deploy.sync_media_to_r2 --audio-only || log_warn "Audio cache upload failed"
 }

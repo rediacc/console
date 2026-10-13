@@ -152,7 +152,9 @@ PY_LOCAL_PLANT = re.compile(r"^%s*def plant(?:_re)?%s*\(" % (SPACE, SPACE))
 # The gate the CONTROL mutilates, relative to the repository root. It named `review_turn_capacity.py` (the port of the retired bash control) until that gate was retired with the PR-level Claude review on 2026-10-02; `renet_tier_map.py` imports `plant` from the harness and calls it from its selftest, which is all the control needs.
 CONTROL_GATE = os.path.join(".ci", "rediacc_ci", "quality", "renet_tier_map.py")
 
-BANNER = "check-control-vacuity: every pattern-substitution control proves its plant landed"
+BANNER = (
+    "rediacc_ci.quality.control_vacuity: every pattern-substitution control proves its plant landed"
+)
 
 
 def read_lines(path) -> list[str]:

@@ -20,12 +20,14 @@ import os
 import shutil
 import subprocess
 import sys
+import types
 import typing
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import sync_media_to_r2 as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import MEDIA_ORIGIN
 
 if typing.TYPE_CHECKING:
@@ -38,18 +40,21 @@ BASH = shutil.which("bash") or "/bin/bash"
 
 # The eight files a fixture tree needs: the twin, the bash library it sources, and the Python package the port imports. Listed explicitly rather than copytree'd, so a new dependency shows up here as an edit instead of being dragged in silently by a wildcard.
 TREE_FILES = (
-    TWIN_REL,
-    ".ci/scripts/lib/common.sh",
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
-    ".ci/config/well-known.generated.sh",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/common.py",
     ".ci/rediacc_ci/deploy/__init__.py",
     PORT_REL,
+)
+
+# The bash side is frozen as a golden, so these exist only while the twin does and a recording needs them.
+TWIN_TREE_FILES = (
+    TWIN_REL,
+    ".ci/config/well-known.generated.sh",
 )
 
 # NAMED `SIGNING_KEY` RATHER THAN `SECRET_KEY`, and the reason is the linter rather than taste: ruff S105 keys on the NAME, so a constant spelled with "secret" in it is "a hardcoded password" even when its value is visibly a
@@ -117,7 +122,7 @@ def _tree(tmp_path: pathlib.Path) -> pathlib.Path:
     tree = tmp_path / "tree"
     if tree.exists():
         return tree
-    for rel in TREE_FILES:
+    for rel in TREE_FILES + tuple(f for f in TWIN_TREE_FILES if (ROOT / f).exists()):
         dest = tree / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, dest)
@@ -131,7 +136,7 @@ def _layout(tree: pathlib.Path, dirs: tuple[str, ...]) -> None:
         (tree / rel).mkdir(parents=True, exist_ok=True)
 
 
-def _run(
+def _exec(
     subject: str,
     tree: pathlib.Path,
     args: list[str],
@@ -171,6 +176,28 @@ def _run(
     )
     calls = [line for line in call_log.read_text(encoding="utf-8").splitlines() if line]
     return proc, calls
+
+
+def _run(subject: str, tree: pathlib.Path, args: list[str], **kw):
+    """`_exec`, except the bash twin is answered from its frozen golden (and recorded from the real file under `regolden.py --source bash`)."""
+    if subject != TWIN_REL:
+        return _exec(subject, tree, args, **kw)
+    box: dict[str, list[str]] = {}
+
+    def bash():
+        proc, calls = _exec(subject, tree, args, **kw)
+        box["calls"] = calls
+        return proc.returncode, proc.stdout, proc.stderr
+
+    rc, out, err, live = diff.twin_run(
+        TWIN_REL,
+        [*args, repr(sorted(kw.items()))],
+        bash,
+        extras={"calls": lambda: "\n".join(box["calls"])},
+        work=(tree.parent,),
+    )
+    calls = [line for line in live["calls"].split("\n") if line]
+    return types.SimpleNamespace(returncode=rc, stdout=out, stderr=err), calls
 
 
 def run_both(tmp_path: pathlib.Path, args: list[str], *, dirs: tuple[str, ...] = ALL_DIRS, **kw):

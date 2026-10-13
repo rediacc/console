@@ -12,6 +12,7 @@ THE ROWS. The IDs follow A0 section 3's tables, with one rename: A0 numbers the 
 from __future__ import annotations
 
 import ast
+import fnmatch
 import json
 import os
 import pathlib
@@ -24,6 +25,7 @@ from dataclasses import dataclass, field
 import pytest
 
 from rediacc_hooks import dispatch, guards, hookio, shellscan
+from rediacc_hooks.guards import block_roundlog_truncate as G
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 
@@ -795,6 +797,153 @@ FACTS = [
         source="blank line",
         sees=("zzrun X",),
     ),
+    # #ec63ff8c, 2026-10-09: the launchers shellscan walks and the stdin xargs turns into operands.
+    Fact(
+        "W17",
+        "find runs every -exec command, each up to its own escaped semicolon",
+        'find "{T}" -maxdepth 0 -exec zzrun X {} \\; -exec zzrun Y \\;',
+        "RAN:X|{T}\nRAN:Y\n",
+        relies_on=((SS, "_launched"), (SS, "lifted_commands")),
+        source="find -exec",
+        sees=("zzrun X", "zzrun Y"),
+    ),
+    Fact(
+        "W18",
+        "xargs turns the text on its stdin into the operands of the command it runs",
+        "echo a b | xargs zzargv",
+        "<a><b>\n",
+        relies_on=((SS, "_stage_feed"),),
+        source="xargs feed",
+        check="xargs_feed",
+        extra={"feed": "echo a b"},
+    ),
+    # #32e75fa4 (review 4aad4597.1): what block_protected_files' payload inheritance rests on.
+    Fact(
+        "W19",
+        "xargs hands the fed words to a sh -c payload as $0, $1, ...",
+        """echo a b | xargs sh -c 'zzargv "$0" "$@"'""",
+        "<a><b>\n",
+        relies_on=((SS, "_shell_payload"), (SS, "_stage_feed")),
+        source="xargs sh -c feed",
+    ),
+    Fact(
+        "W20",
+        "a sh -c payload reads the shell's own stdin, so an xargs inside it gets the piped words",
+        "echo a b | sh -c 'xargs zzargv'",
+        "<a><b>\n",
+        relies_on=((SS, "_shell_payload"), (SS, "_stage_feed")),
+        source="sh -c stdin feed",
+    ),
+    # Review e085085d.1: what shellscan's loop frames (`_loop_word`) and `< <(...)` feed rest on, and so block_protected_files' loop refusals.
+    Fact(
+        "W21",
+        "a redirect after done feeds the whole loop, condition and body",
+        'while read f; do zzargv "$f"; done <<< a',
+        "<a>\n",
+        relies_on=((SS, "_loop_word"), (SS, "_redir_feed")),
+        source="done <<< feed",
+        check="fed_zzargv",
+        extra={"feed": "a"},
+    ),
+    Fact(
+        "W22",
+        "< <(...) is a redirect whose target is a process substitution, read as the loop's stdin",
+        'while read f; do zzargv "$f"; done < <(echo a)',
+        "<a>\n",
+        relies_on=((SS, "_procsub"), (SS, "_redir_feed")),
+        source="done < <(...) feed",
+        check="fed_zzargv",
+        extra={"feed": "echo a"},
+    ),
+    Fact(
+        "W23",
+        "a loop on the consumer side of a pipe hands its stdin to the commands in its body",
+        "echo a b | while true; do xargs zzargv; break; done",
+        "<a><b>\n",
+        relies_on=((SS, "_loop_word"), (SS, "_stage_feed")),
+        source="piped loop body feed",
+        check="fed_zzargv",
+        extra={"feed": "echo a b"},
+    ),
+    Fact(
+        "W24",
+        "a for loop assigns its variable each word of its list in turn",
+        'for f in a b; do zzargv "$f"; done',
+        "<a>\n<b>\n",
+        relies_on=((SS, "_loop_word"),),
+        source="for list binding",
+        check="loop_vars",
+        extra={"loop_vars": {"f": ["a", "b"]}},
+    ),
+    # Review cac47d16.1: what `shellscan.run_copies` rests on for an xargs-fed copier.
+    Fact(
+        "W25",
+        "xargs appends the fed words AFTER the command's own arguments",
+        "echo d | xargs zzargv a",
+        "<a><d>\n",
+        relies_on=((SS, "run_copies"),),
+        source="xargs appends",
+    ),
+    # An option's value is not the command (review cac47d16.1 sweep, `shellscan._prefix_option`): each of these walked as a command named by the VALUE before.
+    Fact(
+        "W26",
+        "xargs's --max-procs takes the next word as its value",
+        "echo a | xargs --max-procs 2 zzargv",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"), (SS, "_strip_prefixes")),
+        source="xargs long value option",
+        check="run_names",
+        extra={"names": ["echo", "zzargv"]},
+    ),
+    Fact(
+        "W27",
+        "a bundle ending in a value letter takes the next word (-rP 2)",
+        "echo a | xargs -rP 2 zzargv",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"),),
+        source="xargs bundled value option",
+        check="run_names",
+        extra={"names": ["echo", "zzargv"]},
+    ),
+    Fact(
+        "W28",
+        "xargs resolves a unique prefix of a long option (--max-p)",
+        "echo a | xargs --max-p 2 zzargv",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"),),
+        source="xargs abbreviated option",
+        check="run_names",
+        extra={"names": ["echo", "zzargv"]},
+    ),
+    Fact(
+        "W29",
+        "an OPTIONAL value is only ever attached: xargs --max-lines 1 runs 1",
+        "echo a | xargs --max-lines 1 zzargv",
+        rc_nonzero=True,
+        relies_on=((SS, "_prefix_option"),),
+        source="xargs optional value",
+        check="run_names",
+        extra={"names": ["echo", "1"]},
+    ),
+    Fact(
+        "W30",
+        "stdbuf's --output takes the next word as its value",
+        "stdbuf --output L zzargv a",
+        "<a>\n",
+        relies_on=((SS, "_prefix_option"),),
+        source="stdbuf long value option",
+        check="run_names",
+        extra={"names": ["zzargv"]},
+    ),
+    Fact(
+        "W31",
+        "env --chdir runs the command in that directory",
+        "env --chdir {T} sh -c 'zzargv \"$PWD\"'",
+        "<{T}>\n",
+        relies_on=((SS, "_PREFIX_CHDIR"),),
+        source="env --chdir",
+        check="chdir",
+    ),
 ]
 
 
@@ -976,6 +1125,24 @@ def scanner_mismatch(fact, tmp, monkeypatch):
     elif fact.check == "unresolvable_cd":
         if shellscan.target_root("cd /nonexistent-q && git push", str(tmp)) != "":
             problems.append("a cd bash cannot perform resolved to a root")
+    elif fact.check == "xargs_feed":
+        fed = [(r.name, r.feed, r.via) for r in runs if r.feed is not None]
+        if fed != [("zzargv", fact.extra["feed"], ("xargs",))]:
+            problems.append("fed runs %r" % fed)
+    elif fact.check == "fed_zzargv":
+        fed = [r.feed for r in runs if r.name == "zzargv"]
+        if not fed or any(f is None or fact.extra["feed"] not in f for f in fed):
+            problems.append("zzargv feeds %r, want each to carry %r" % (fed, fact.extra["feed"]))
+    elif fact.check == "chdir":
+        if [r.cwd for r in runs[:1]] != [_subst("{T}", tmp)]:
+            problems.append("the first run's directory %r" % [r.cwd for r in runs[:1]])
+    elif fact.check == "run_names":
+        if [r.name for r in runs] != fact.extra["names"]:
+            problems.append("runs %r" % [r.name for r in runs])
+    elif fact.check == "loop_vars":
+        bound = [r.loop_vars for r in runs if r.name == "zzargv"]
+        if bound != [fact.extra["loop_vars"]]:
+            problems.append("zzargv loop variables %r" % bound)
     elif fact.check == "ssh_locality":
         problems.append(_check_ssh_locality(tmp))
     elif fact.check == "command_v":
@@ -1035,6 +1202,47 @@ VERDICTS = [
     ("L13", "block_ssh_file_write", 'ssh prod-1 "echo hi > /etc/x"', 2),
     ("L13 control", "block_ssh_file_write", "echo \"ssh prod-1 'cat > /etc/x'\"", 0),
     ("L13 control", "block_ssh_file_write", "ssh prod-1 'journalctl 2>&1 >/dev/null'", 0),
+    # #ec63ff8c, 2026-10-09: each refusal here was allowed before; each control was allowed before and after.
+    ("ec63 ssh remote", "block_ssh_docker", 'ssh prod-1 "docker ps"', 2),
+    ("ec63 ssh remote", "block_ssh_docker", 'sshpass -e ssh prod-1 "docker ps"', 2),
+    ("ec63 ssh remote control", "block_ssh_docker", "ssh prod-1 'echo docker'", 0),
+    ("ec63 xargs feed", "block_protected_files", "echo .claude/settings.json | xargs rm", 2),
+    ("ec63 xargs feed control", "block_protected_files", "echo .claude/settings.json | cat", 0),
+    # #32e75fa4 (review 4aad4597.1): the fed words are a `sh -c` payload's positional parameters (W19), so its rm deletes them.
+    (
+        "4aad xargs sh -c",
+        "block_protected_files",
+        """echo .claude/settings.json | xargs sh -c 'rm "$0"'""",
+        2,
+    ),
+    (
+        "4aad xargs sh -c control",
+        "block_protected_files",
+        """echo .claude/settings.json | xargs sh -c 'cat "$0"'""",
+        0,
+    ),
+    # The payload's own commands read the shell's stdin (W20), so an xargs inside a piped sh -c is fed too.
+    (
+        "4aad sh -c stdin",
+        "block_protected_files",
+        "echo .claude/settings.json | sh -c 'xargs rm'",
+        2,
+    ),
+    (
+        "4aad sh -c stdin control",
+        "block_protected_files",
+        "echo .claude/settings.json | sh -c 'xargs cat'",
+        0,
+    ),
+    ("ec63 launcher", "block_cli_bundle", "npx -y node packages/cli/dist/cli.js", 2),
+    ("ec63 launcher", "block_git_force_push", "npx -c '%s'" % FORCE, 2),
+    ("ec63 launcher", "block_git_force_push", "find . -maxdepth 0 -exec %s \\;" % FORCE, 2),
+    (
+        "ec63 launcher control",
+        "block_git_force_push",
+        "find . -name '*.md' -exec grep -l '%s' {} +" % FORCE,
+        0,
+    ),
     ("prose control", "block_git_force_push", "echo '%s'" % FORCE, 0),
     ("heredoc control", "block_git_force_push", "cat > R.md <<'EOF'\n%s\nEOF" % FORCE, 0),
 ]
@@ -1056,6 +1264,231 @@ def test_rule_t_verdict(item, stem, cmd, want):
         cmd,
         want,
         err[:200],
+    )
+
+
+# A COMMENT THAT SORTS ROWS IS A CLAIM ABOUT VERDICTS (#32e75fa4, review 4aad4597.3). block_ssh_docker's EDGE_CASES once headed a run of rows "what the payload reading must not refuse" while three of them were refused, so a reader trusting the heading would take a deny for a regression. Each heading below names the verdict of every row up to the next comment line.
+_SSH_DOCKER_GROUPS = (
+    ("# ... and the argv shapes ssh_remote_commands has to parse", 2),
+    ("# What the payload reading must NOT refuse", 0),
+)
+
+
+def test_ssh_docker_edge_case_headings_match_verdicts():
+    path = HOOKS / "guards" / "block_ssh_docker.py"
+    src = path.read_text()
+    lines = src.splitlines()
+    tree = ast.parse(src)
+    rows = next(
+        node.value
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "EDGE_CASES" for t in node.targets)
+    )
+    assert isinstance(rows, ast.List)
+    checked = 0
+    for heading, want in _SSH_DOCKER_GROUPS:
+        start = next(
+            (i + 1 for i, line in enumerate(lines) if line.strip().startswith(heading)), None
+        )
+        assert start is not None, "block_ssh_docker.py lost the heading %r" % heading
+        end = next(
+            (i + 1 for i, line in enumerate(lines) if i >= start and line.strip().startswith("#")),
+            len(lines) + 1,
+        )
+        group = [row for row in rows.elts if start < row.lineno < end]
+        assert group, "no EDGE_CASES row under %r" % heading
+        for row in group:
+            assert isinstance(row, ast.Tuple)
+            name, cmd = (ast.literal_eval(e) for e in row.elts)
+            rc, _out, _err = dispatch.run_one(
+                "block_ssh_docker",
+                json.dumps({"tool_input": {"command": cmd}}),
+                cwd=str(HOOKS.parents[1]),
+            )
+            assert rc == want, "%r sits under %r, which says rc %d; the guard answers %d" % (
+                name,
+                heading,
+                want,
+                rc,
+            )
+            checked += 1
+    assert checked >= 10, "only %d rows sat under the headings" % checked
+
+
+# --------------------------------------------------------------------------- npm's own argument parse ---------------------------------------------------------------------------
+
+# WHERE AN npm LAUNCH STARTS IS npm's ANSWER, NOT A LIST'S (#32e75fa4, review 4aad4597.2; #31ed6c5f). `shellscan._launches` finds the program `npx`, `npm exec`, `npm exe` and `npm x` run by porting npm's two argument passes (`_npx_argv`, `_nopt`) over npm's option table. Two lists came before it: seven value options that missed `--loglevel`, then the full table, which still read `silent` as the program in
+# `npx --logl silent node packages/cli/dist/cli.js` because nopt accepts any unique prefix of an option name (442 `--` prefixes take a value). Both were allowed by block_cli_bundle (rc 0, 2026-10-09), and so was `npm exec -- node packages/cli/dist/cli.js`, which was no launcher at all.
+# The oracle is the pinned npm itself, with `lib/cli.js` stubbed so nothing runs. For `npx`, `bin/npx-cli.js` rewrites its argv to `npm exec <options> -- <program> ...` and calls the stub; for `npm`, the argv goes to the stub as it stands. Either way `nopt` then parses it with npm's own option types, as `@npmcli/config` does, and `lib/utils/cmd-list.js` resolves the command word: what runs is the operands after
+# `exec`, or the `--call` string. Every spelling npm accepts is asked: every option name, shorthand and unique prefix, with one dash and two, with its value as the next word, after `=`, as `true`/`false`, and as a word that looks like an option, behind `npx`, `npm exec` and `npm x`, and with the option in front of `exec`.
+_NPM_ORACLE_JS = r"""
+const fs = require('fs')
+const path = require('path')
+const target = process.argv[1]
+const from = { paths: [path.dirname(target)] }
+const src = fs.readFileSync(target, 'utf8')
+const words = (name) => {
+  const m = src.match(new RegExp('const ' + name + ' = new Set\\(\\[([\\s\\S]*?)\\]\\)'))
+  if (!m) { process.stderr.write('npx-cli.js no longer declares ' + name + '\n'); process.exit(3) }
+  return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])
+}
+const defs = require(require.resolve('@npmcli/config/lib/definitions', from))
+const configPath = require.resolve('@npmcli/config', from)
+const config = require(configPath)
+const nopt = require(require.resolve('nopt', { paths: [configPath] }))
+const abbrev = require(require.resolve('abbrev', { paths: [require.resolve('nopt', { paths: [configPath] })] }))
+const cmdList = require(path.join(path.dirname(target), '..', 'lib', 'utils', 'cmd-list.js'))
+const { types } = config.getTypesFromDefinitions(defs.definitions)
+// The table shellscan carries, in its own spelling: "B" Boolean, "S" String, "V" any other single type, and for a list of types "A" then "b" (Boolean), "n" (null), "s" (String), "N" (Number) and "|literal" for each literal string.
+const kind = (t) => {
+  if (Array.isArray(t) && t.length === 1) t = t[0]
+  if (t === Boolean) return 'B'
+  if (t === String) return 'S'
+  if (!Array.isArray(t)) {
+    if (t === null) throw new Error('a lone null type, which shellscan does not model')
+    return 'V'
+  }
+  const has = (x, f) => (t.includes(x) ? f : '')
+  return 'A' + has(Boolean, 'b') + has(null, 'n') + has(String, 's') + has(Number, 'N') + t.filter((x) => typeof x === 'string').map((x) => '|' + x).join('')
+}
+const table = {}
+for (const key of Object.keys(types)) table[key] = kind(types[key])
+// `local-address` lists this machine's own addresses; shellscan spells them "|<address>".
+table['local-address'] = table['local-address'].replace(/\|.*/, '|<address>')
+const shorthands = {}
+for (const key of Object.keys(defs.shorthands)) shorthands[key] = defs.shorthands[key].join(' ')
+const commandWords = [...new Set([...Object.keys(abbrev(cmdList.commands.concat(Object.keys(cmdList.aliases)))), ...Object.keys(cmdList.aliases)])]
+const execWords = commandWords.filter((w) => cmdList.deref(w) === 'exec')
+const npx = { removedSwitches: words('removedSwitches'), removedOpts: words('removedOpts'), opts: words('opts') }
+const switchExtras = words('switches')
+const cliPath = require.resolve(path.join(path.dirname(target), '..', 'lib', 'cli.js'))
+let got = null
+require.cache[cliPath] = { id: cliPath, filename: cliPath, loaded: true, exports: (proc) => { got = proc.argv.slice(2) } }
+const run = (argv) => {
+  const conf = nopt(types, defs.shorthands, argv, 0)
+  const remain = conf.argv.remain
+  if (!remain.length || cmdList.deref(remain[0]) !== 'exec') return null
+  if (typeof conf.call === 'string' && conf.call) return { call: conf.call }
+  return remain.length > 1 ? { argv: remain.slice(1) } : null
+}
+const spellings = new Set([
+  ...Object.keys(abbrev(Object.keys(types))), ...Object.keys(abbrev(Object.keys(defs.shorthands))),
+  ...npx.opts, ...npx.removedOpts, ...npx.removedSwitches, ...switchExtras,
+])
+const answers = []
+for (const key of spellings) {
+  for (const dash of ['-', '--']) {
+    const opt = dash + key
+    const samples = [
+      [opt, 'zzval', 'zzprog', 'zzarg'], [opt + '=zzval', 'zzprog', 'zzarg'],
+      [opt, 'false', 'zzprog'], [opt, '-zzdash', 'zzprog'], ['--no-' + key, 'zzval', 'zzprog'],
+    ]
+    for (const sample of samples) {
+      process.argv = [process.argv[0], target, ...sample]
+      delete require.cache[require.resolve(target)]
+      got = null
+      require(target)
+      answers.push(['npx', sample, got ? run(got) : null])
+      answers.push(['npm', ['exec', ...sample], run(['exec', ...sample])])
+    }
+    answers.push(['npm', ['x', opt, 'zzval', 'zzprog'], run(['x', opt, 'zzval', 'zzprog'])])
+    answers.push(['npm', [opt, 'zzval', 'exec', 'zzprog'], run([opt, 'zzval', 'exec', 'zzprog'])])
+  }
+}
+process.stdout.write(JSON.stringify({ table, shorthands, execWords, npx, switchExtras, answers }) + '\n')
+"""
+
+
+def _npm_oracle():
+    npx = shutil.which("npx")
+    node = shutil.which("node")
+    if npx is None or node is None:
+        pytest.fail(
+            "no npx/node on PATH: this test asks the pinned npm where an npm launch starts. "
+            "fix: install npm at NPM_VERSION from .devcontainer/toolchain.env"
+        )
+    assert npx is not None
+    assert node is not None
+    cli = pathlib.Path(npx).resolve()
+    if cli.name != "npx-cli.js":
+        pytest.fail("npx on PATH resolves to %s, not npm's bin/npx-cli.js" % cli)
+    # The table is npm's at the PINNED version: another npm's answer would quietly re-key it.
+    env_file = HOOKS.parents[1] / ".devcontainer" / "toolchain.env"
+    pin = re.search(r"^NPM_VERSION=(\S+)$", env_file.read_text(), re.MULTILINE)
+    assert pin is not None, "%s no longer pins NPM_VERSION" % env_file
+    meta = json.loads((cli.parents[1] / "package.json").read_text())
+    if meta.get("version") != pin.group(1):
+        pytest.fail(
+            "npx on PATH is npm %s, the pin is %s (%s). fix: npm install -g npm@%s"
+            % (meta.get("version"), pin.group(1), env_file, pin.group(1))
+        )
+    proc = subprocess.run(
+        [node, "-e", _NPM_ORACLE_JS, str(cli)],
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    assert proc.returncode == 0, "the npm oracle failed (rc %d): %s" % (
+        proc.returncode,
+        proc.stderr[-400:],
+    )
+    return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+@pytest.fixture(scope="module")
+def npm_oracle():
+    return _npm_oracle()
+
+
+def test_npm_tables_match_npm(npm_oracle):
+    table = dict(shellscan._NPM_TYPE)
+    assert npm_oracle["table"] == table, (
+        "shellscan._NPM_TYPES differs from npm's option types: %s"
+        % sorted(set(table.items()) ^ set(npm_oracle["table"].items()))
+    )
+    assert npm_oracle["shorthands"] == shellscan._NPM_SHORTHANDS
+    assert set(npm_oracle["execWords"]) == shellscan._NPM_EXEC_WORDS
+    npx = npm_oracle["npx"]
+    assert set(npx["removedSwitches"]) == shellscan._NPX_REMOVED_SWITCHES
+    assert set(npx["removedOpts"]) == shellscan._NPX_REMOVED_OPTS
+    assert set(npx["opts"]) == shellscan._NPX_OPTS
+    npm_switches = {k for k, v in table.items() if v == "B" or v.startswith("Ab")}
+    want = npm_switches | set(npx["removedSwitches"]) | set(npm_oracle["switchExtras"])
+    assert want == shellscan._NPX_SWITCHES
+
+
+def test_npm_launch_matches_npm(npm_oracle):
+    answers = npm_oracle["answers"]
+    # Anti-vacuity: npm's whole option table was asked, and every kind of answer occurs in it.
+    assert len(answers) > 20000, "the npm oracle asked about only %d argvs" % len(answers)
+    programs = {a[2]["argv"][0] for a in answers if a[2] and "argv" in a[2]}
+    assert {"zzval", "zzprog"} <= programs, (
+        "the oracle never ran one of the two words: %r" % programs
+    )
+    assert any(a[2] and "call" in a[2] for a in answers), "the oracle never ran a --call string"
+    assert any(a[2] is None for a in answers), "the oracle always ran something"
+    assert [
+        "npx",
+        ["--logl", "zzval", "zzprog", "zzarg"],
+        {"argv": ["zzprog", "zzarg"]},
+    ] in answers, "the oracle cannot see the abbreviation the review found"
+    wrong = []
+    for base, argv, want in answers:
+        got = shellscan._launches(base, argv)
+        if want is None:
+            ok = got == []
+        elif "call" in want:
+            ok = len(got) == 1 and got[0][0] == "text" and got[0][1] == want["call"]
+        else:
+            ok = len(got) == 1 and got[0][0] == "argv" and got[0][1] == want["argv"]
+        if not ok:
+            wrong.append((base, argv, want, [(g[0], g[1]) for g in got]))
+    assert wrong == [], "%d of %d argvs launch something other than npm runs, first: %r" % (
+        len(wrong),
+        len(answers),
+        wrong[:5],
     )
 
 
@@ -1132,3 +1565,612 @@ def test_the_rows_are_unique_and_cover_the_tables():
     assert len(ids) == len(set(ids)), "duplicate row ids"
     tables = {re.sub(r"\d+[a-z]?$", "", i) for i in ids}
     assert tables == {"W", "E", "H", "Q", "SEP", "R", "C", "P", "X"}, tables
+
+
+# --------------------------------------------------------------------------- where a copy lands ---------------------------------------------------------------------------
+
+# WHERE A COPY LANDS IS THE TOOL'S ANSWER (review cac47d16.1). `shellscan.copy_destination` ports each copier's own option parse, and two guards judge a copy by it. Each row runs the real tool in a scratch directory holding files `a`, `b`, a directory `d` and a directory `src` (with `src/f`), and the files that appear must be exactly where the port says each source lands: inside the destination when the command
+# names it a directory (`into`, or a directory on disk), else the destination itself. `ln a` runs from `sub/`, where `.` is not where `a` lives.
+COPIES = [
+    "cp -t d a",
+    "cp --target-directory=d a b",
+    "cp --target d a",
+    "cp --t d a",
+    "cp -rt d src",
+    "cp -at d a",
+    "cp a d -S .bak",
+    "cp -S .bak a e",
+    "cp a b -t d",
+    "cp --no-preserve mode a e",
+    "cp -T a e",
+    "cp -- a e",
+    "mv -t d a",
+    "mv a d -S x",
+    "install -m 644 -t d a",
+    "install -t d a b",
+    "install -ma+r a e",
+    "ln -t d a",
+    "ln ../a",
+    "ln -s a e",
+    "rsync a d/ --exclude x",
+    "rsync -t a e",
+    "rsync -e ssh a e",
+    "rsync -rt src d/",
+]
+
+
+@pytest.mark.parametrize("cmd", COPIES)
+def test_copy_destination_matches_the_tool(tmp_path, cmd):
+    argv = cmd.split()
+    if shutil.which(argv[0]) is None:
+        pytest.fail("%s is not installed; this row asks the real tool where a copy lands" % argv[0])
+    world = tmp_path / "w"
+    (world / "d").mkdir(parents=True)
+    (world / "src").mkdir()
+    (world / "sub").mkdir()
+    for rel in ("a", "b", "src/f"):
+        (world / rel).write_text(rel, encoding="utf-8")
+    run_in = world / "sub" if cmd == "ln ../a" else world
+    before = {p.relative_to(world) for p in world.rglob("*")}
+    done = subprocess.run(argv, cwd=run_in, capture_output=True, text=True, check=False)
+    assert done.returncode == 0, "%s: %s" % (cmd, done.stderr)
+    new = {p.relative_to(world) for p in world.rglob("*")} - before
+    landed = {p for p in new if not any(q != p and q in p.parents for q in new)}
+    found = shellscan.copy_destination(argv[0], argv[1:])
+    assert found is not None, "%s copies, and the port says it does not" % cmd
+    sources, dest, into = found
+    target = pathlib.Path(os.path.normpath(run_in / dest))
+    want = {
+        (
+            target / pathlib.Path(s.rstrip("/")).name if into or target.is_dir() else target
+        ).relative_to(world)
+        for s in sources
+    }
+    assert landed == want, "%s landed %s; the port says %s" % (cmd, sorted(landed), sorted(want))
+
+
+def test_copy_destination_reads_no_copy_where_there_is_none():
+    """The other direction: `install -d` makes directories, a lone `cp` operand copies nothing, and a non-copier is not read."""
+    assert shellscan.copy_destination("install", ["-d", "a", "b"]) is None
+    assert shellscan.copy_destination("cp", ["a"]) is None
+    assert shellscan.copy_destination("cat", ["a", "b"]) is None
+
+
+# --------------------------------------------------------------------------- where an xargs-fed copy lands ---------------------------------------------------------------------------
+
+# WHERE A FED WORD LANDS IS THE TOOL'S ANSWER TOO (#5077391c). xargs APPENDS what it reads to the command's own arguments, so under `-t` a fed word is a SOURCE and without it the last fed word is the destination. `shellscan.run_copies` once read every fed word as a destination, `-t` or not, and answered "into a directory" for a fed file. Each row runs the real pipeline in the world `test_copy_destination_matches_the_tool` builds, and
+# `shellscan.copy_landings` must name exactly the files that appeared. The EXACT rows have a literal producer (an `echo`, a here-string) and an xargs that appends once, so the port places every word; the FAIL-SAFE rows (a `-n1` split, a producer whose output is not computed) must name every file that appeared, and may name more.
+FED_EXACT = [
+    "echo a | xargs cp -t d",
+    "echo b | xargs cp -t d a",
+    "echo e | xargs cp a",
+    "echo b d | xargs cp a",
+    "echo d | xargs cp a b",
+    "echo a b | xargs -r cp -t d",
+    "echo e | xargs mv a",
+    "echo b | xargs mv -t d a",
+    "echo b | xargs install -t d a",
+    "echo e | xargs install -m 644 a",
+    "xargs cp a <<< e",
+    "xargs cp -t d <<< 'a b'",
+    # Review 126f2a9f.4: `c` holds the same bytes as `a`, so only its stat shows this overwrite.
+    "echo c | xargs cp a",
+    # Review 126f2a9f.1: a heredoc body is not brace-, tilde- or glob-expanded, quoted delimiter or not, so these names reach cp as written.
+    "xargs cp a <<'EOF'\n{e}\nEOF",
+    "xargs cp a <<EOF\n{e,f}\nEOF",
+    # Review 126f2a9f.3: a producer whose stdout goes to a file feeds xargs nothing.
+    "echo e > /dev/null | xargs -r cp a",
+]
+FED_FAIL_SAFE = [
+    "echo e f | xargs -n1 cp a",
+    "printf '%s\\n' e | xargs cp a",
+    "ls | grep -x b | xargs cp -t d",
+    # Review 126f2a9f.1: bash expands these before xargs reads them, so their words are unknown here and read fail-safe.
+    "echo {b,d} | xargs cp a",
+    "echo ~/e | xargs cp a",
+    "xargs cp a <<< ~/e",
+    "echo /T/[w]/[d] | xargs cp a",
+    # Review 8ae5b370.3: a relative glob is matched in the directory the producer runs in, here the `cd` before the pipeline.
+    "cd src && echo f* | xargs cp ../a",
+    # Review a165575f.1: the producer's own `cd`, inside its subshell, decides where its glob matches.
+    "(cd src; echo f*) | xargs -I{} cp a src/{}",
+    # Review a165575f.2: a failed `cd` leaves the shell where it was, and the glob matches there.
+    "cd nosuch; echo b* | xargs cp a",
+    # Review 8ae5b370.1/.2/.4: an unmatched `{` before a brace, a stepped range, a letter range.
+    "echo x{y{d,e}x | xargs -n1 cp a",
+    "echo {b..d..2} | xargs cp a",
+]
+
+
+def _fed_world(tmp_path):
+    world = tmp_path / "w"
+    (world / "d").mkdir(parents=True)
+    (world / "src").mkdir()
+    for rel in ("a", "b", "src/f"):
+        (world / rel).write_text(rel, encoding="utf-8")
+    (world / "c").write_text("a", encoding="utf-8")
+    # Every seed starts at mtime 1ns, so a copy that rewrites a file with the bytes it already held still moves its stat (review 126f2a9f.4).
+    for path in world.rglob("*"):
+        if path.is_file():
+            os.utime(path, ns=(1, 1))
+    return world
+
+
+def _stamp(path):
+    st = path.stat()
+    return st.st_ino, st.st_mtime_ns, path.read_bytes()
+
+
+def _fed_landed(bash, world, cmd):
+    """The files the real pipeline wrote, as paths relative to `world`: new ones, and old ones whose inode, mtime or bytes changed."""
+    before = {p: _stamp(p) for p in world.rglob("*") if p.is_file()}
+    done = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", cmd],
+        cwd=world,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(world)},
+        timeout=30,
+    )
+    assert done.returncode == 0, "%s: %s" % (cmd, done.stderr)
+    return {
+        p.relative_to(world)
+        for p in world.rglob("*")
+        if p.is_file() and (p not in before or _stamp(p) != before[p])
+    }
+
+
+def _fed_claimed(world, cmd):
+    copier = [r for r in shellscan.every_run(cmd) if r.name in shellscan.COPIERS]
+    assert len(copier) == 1, "%s: expected one copier run, the walk found %d" % (cmd, len(copier))
+    # A claim outside the world (an unexpanded glob, a home directory elsewhere) names no file the pipeline could write here.
+    return {
+        pathlib.Path(path).relative_to(world)
+        for path, _into in shellscan.copy_landings(copier[0], str(world))
+        if pathlib.Path(path).is_relative_to(world)
+    }
+
+
+@pytest.mark.parametrize("cmd", FED_EXACT)
+def test_fed_copy_lands_where_the_tool_puts_it(bash, tmp_path, cmd, monkeypatch):
+    world = _fed_world(tmp_path)
+    monkeypatch.setenv("HOME", str(world))
+    claimed = _fed_claimed(world, cmd)
+    landed = _fed_landed(bash, world, cmd)
+    assert landed == claimed, "%s wrote %s; shellscan says %s" % (
+        cmd,
+        sorted(landed),
+        sorted(claimed),
+    )
+
+
+@pytest.mark.parametrize("cmd", FED_FAIL_SAFE)
+def test_fed_copy_fails_safe_where_the_words_are_unknown(bash, tmp_path, cmd, monkeypatch):
+    world = _fed_world(tmp_path)
+    # bash runs with HOME=<world> (`_fed_landed`), and the fail-safe reading expands `~` for the user the hook runs as.
+    monkeypatch.setenv("HOME", str(world))
+    cmd = cmd.replace("/T/", "%s/" % tmp_path)
+    claimed = _fed_claimed(world, cmd)
+    landed = _fed_landed(bash, world, cmd)
+    assert landed <= claimed, "%s wrote %s; shellscan names only %s" % (
+        cmd,
+        sorted(landed),
+        sorted(claimed),
+    )
+
+
+def _old_run_copies(run, argv=None, cwd=None):
+    """The placement before #5077391c, kept only as the plant below: every fed word a destination, `-t` or not, and "into a directory" for the fed-only shape."""
+    # The old reading matched no glob anywhere, so the directory `copy_landings` now hands over is set aside.
+    del cwd
+    name = run.name.rsplit("/", 1)[-1]
+    if name not in shellscan.COPIERS:
+        return None
+    argv = list(run.argv if argv is None else argv)
+    found = shellscan.copy_destination(name, argv)
+    fed = run.feed.split() if run.feed and "xargs" in run.via else []
+    if found is None:
+        return ([a for a in argv if not a.startswith("-")], fed, True) if fed else None
+    sources, dest, into = found
+    if fed:
+        return [*sources, dest], [dest, *fed], into
+    return sources, [dest], into
+
+
+def test_the_fed_copy_rows_can_fail(bash, tmp_path, monkeypatch):
+    """The plant: the old feed placement put back, and the exact rows that read the feed through `-t` or a fed destination go red."""
+    monkeypatch.setattr(shellscan, "run_copies", _old_run_copies)
+    red = []
+    for k, cmd in enumerate(
+        ("echo b | xargs cp -t d a", "echo e | xargs cp a", "echo a | xargs cp -t d")
+    ):
+        world = _fed_world(tmp_path / str(k))
+        if _fed_claimed(world, cmd) != _fed_landed(bash, world, cmd):
+            red.append(cmd)
+    assert len(red) == 3, "the old placement still matched the tool on: %s" % sorted(
+        {"echo b | xargs cp -t d a", "echo e | xargs cp a", "echo a | xargs cp -t d"} - set(red)
+    )
+
+
+# WHEN THE FED WORDS COUNT AS EXACT (review 126f2a9f.1-.3). Exact only where bash expands nothing before xargs reads the text (the measurements above `_PLAIN_WORD` in shellscan), only from the stdin bash really connects (the command's own heredoc or here-string wins over the pipe, and one it cannot read leaves the feed unknown), and an `echo` whose stdout goes elsewhere feeds nothing.
+FEED_WORDS = [
+    ("echo b | xargs cp -t d", ["b"]),
+    ("echo 'a b' | xargs cp -t d", ["a", "b"]),
+    ("echo ~/x | xargs cp -t d", None),
+    ("echo a=~/x | xargs cp -t d", None),
+    ("echo {x,y} | xargs cp -t d", None),
+    ("echo g* | xargs cp -t d", None),
+    ("echo <(true) | xargs cp -t d", None),
+    ("echo $HOME | xargs cp -t d", None),
+    ("xargs cp -t d <<< ~/x", None),
+    ("xargs cp -t d <<< a:~/x", None),
+    ("xargs cp -t d <<'EOF'\n~/x {a,b} g*\nEOF", ["~/x", "{a,b}", "g*"]),
+    ("xargs cp -t d <<EOF\n$HOME\nEOF", None),
+    ("echo a | xargs cp -t d <<'EOF'\nb\nEOF", ["b"]),
+    ("echo a | xargs cp -t d < list.txt", None),
+    ("echo a | xargs cp -t d <<EOF", None),
+    ("echo a > f | xargs cp -t d", []),
+    ("echo a >&2 | xargs cp -t d", []),
+    ("echo a &> f | xargs cp -t d", []),
+    ("echo a 2>/dev/null | xargs cp -t d", ["a"]),
+    ("echo a >&1 | xargs cp -t d", ["a"]),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), FEED_WORDS)
+def test_fed_words_are_exact_only_where_bash_expands_nothing(cmd, want):
+    copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
+    assert len(copier) == 1, cmd
+    assert copier[0].feed_words == want, "%s: feed_words %r, want %r" % (
+        cmd,
+        copier[0].feed_words,
+        want,
+    )
+
+
+def _old_literal_word(raw):
+    """The literal test before review 126f2a9f.1, kept only as the plant below: `~` and braces counted as literal."""
+    return None if re.search(r"[$`*?\[\]'\"\\]", raw) else raw.strip("'\"").split()
+
+
+def test_the_expansion_rows_can_fail(bash, tmp_path, monkeypatch):
+    """The plant: the old literal test put back, and the brace and tilde rows under-claim (bash writes a file the walk does not name)."""
+    monkeypatch.setattr(shellscan, "_literal_word", _old_literal_word)
+    shellscan._ANALYSIS_CACHE.clear()
+    red = []
+    for k, cmd in enumerate(("echo {b,d} | xargs cp a", "echo ~/e | xargs cp a")):
+        world = _fed_world(tmp_path / str(k))
+        monkeypatch.setenv("HOME", str(world))
+        if not _fed_landed(bash, world, cmd) <= _fed_claimed(world, cmd):
+            red.append(cmd)
+    shellscan._ANALYSIS_CACHE.clear()
+    assert len(red) == 2, "the old literal test still covered: %s" % red
+
+
+# BRACE EXPANSION, MEASURED (reviews 8ae5b370.1, .2, .4). Each word is expanded by the real bash (`printf '%s\\n' <word>`, empty words dropped as the shell drops them) and by `shellscan._brace_alternatives`, which must agree on the first `_FED_EXPANSION_CAP` words.
+BRACE_WORDS = [
+    "x{y{a,b}",
+    "x{{a,b}",
+    "{a,b",
+    "{a,b}}",
+    "x}{a,b}",
+    "a{b}c",
+    "{b}{x,y}",
+    "{x{a,b}}",
+    "{a,b}{1,2}",
+    "{a,}x",
+    "{,}",
+    "x{a,b{c,d}}y",
+    "a{1..3}b{x,y}",
+    "{1..9..2}",
+    "{9..1..3}",
+    "{1..10..3}",
+    "{1..3..-1}",
+    "{1..2..0}",
+    "{-2..2}",
+    "{01..03}",
+    "{001..10}",
+    "{-01..2}",
+    "{1..1}",
+    "{a..e}",
+    "{a..e..2}",
+    "{e..a}",
+    "{z..a..5}",
+    "{a..a}",
+    "{a..C}",
+    "{1..a}",
+    "{1...3}",
+    "{ab..c}",
+    "{1..200}",
+    # Review a165575f.3: seventeen braces, more than the old depth limit of sixteen, still all expand.
+    "{a,b}" * 17,
+]
+
+
+@pytest.mark.parametrize("word", BRACE_WORDS)
+def test_brace_expansion_matches_bash(bash, word):
+    done = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", "printf '%s\\n' " + word],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
+        timeout=30,
+    )
+    assert done.returncode == 0, done.stderr
+    # Empty words dropped FIRST, then the cap, exactly as `_brace_expand` does (review a165575f.4).
+    real = [w for w in done.stdout.split("\n")[:-1] if w != ""][: shellscan._FED_EXPANSION_CAP]
+    assert shellscan._brace_alternatives(word) == real, word
+
+
+def test_a_huge_brace_expansion_stays_capped(monkeypatch):
+    """Review 8ae5b370.1: a range of ten billion, or several ranges in one word, produce at most the cap; the old code built the whole list first. Judged by the WORK done (review a165575f.5): every range iterator is counted as it is read, so the bound holds however loaded the machine is."""
+    pulled = []
+    real_range = shellscan._brace_range
+
+    def counted(body):
+        words = real_range(body)
+        if words is None:
+            return None
+
+        def tally():
+            for w in words:
+                pulled.append(w)
+                yield w
+
+        return tally()
+
+    monkeypatch.setattr(shellscan, "_brace_range", counted)
+    shellscan._ANALYSIS_CACHE.clear()
+    one = shellscan._brace_alternatives("{1..9999999999}")
+    assert len(one) == shellscan._FED_EXPANSION_CAP
+    assert one[:3] == ["1", "2", "3"]
+    assert len(pulled) <= shellscan._FED_EXPANSION_CAP + 1
+    pulled.clear()
+    product = shellscan._brace_alternatives("{1..99999999}{1..99999999}{a..z}x")
+    assert len(product) == shellscan._FED_EXPANSION_CAP
+    assert product[0] == "11ax"
+    assert len(pulled) <= 4 * (shellscan._FED_EXPANSION_CAP + 1)
+    pulled.clear()
+    cmd = "echo {1..9999999999} {1..9999999999} | xargs cp a b"
+    copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
+    landed = shellscan.copy_landings(copier[0], "/nonexistent-root")
+    assert landed, "the capped words still reach the copy reader"
+    assert len(pulled) <= 4 * (shellscan._FED_EXPANSION_CAP + 1)
+    shellscan._ANALYSIS_CACHE.clear()
+
+
+def test_a_truncated_brace_expansion_falls_back_to_a_glob():
+    """Review a165575f.3: when the cap leaves words unread, the fail-safe reading adds the word with every brace as `*`, and that glob's shape, rather than leaving later braces literal."""
+    word = "{a,b}" * 17
+    words, truncated = shellscan._brace_expand(word)
+    assert truncated
+    assert len(words) == shellscan._FED_EXPANSION_CAP
+    assert "{" not in "".join(words)
+    candidates = shellscan._fed_candidates([word], None)
+    assert "*" * 17 in candidates
+    assert "x" * 17 in candidates
+    assert not any("{" in c for c in candidates)
+
+
+def test_the_producer_directory_and_a_failed_cd(tmp_path):
+    """Reviews a165575f.1, .2: a subshell's own `cd` is where its glob matches, and a `cd` to a directory that is not there leaves the shell in the starting one, read as uncertain so the shape fallback stays."""
+    (tmp_path / "src").mkdir()
+    sub = next(r for r in shellscan.every_run("(cd src; echo f*) | xargs cp a") if r.name == "cp")
+    assert "src" in sub.feed_cwds
+    directories, uncertain = shellscan._feed_directories(sub, str(tmp_path))
+    assert str(tmp_path / "src") in directories
+    failed = next(
+        r for r in shellscan.every_run("cd nosuch; echo b* | xargs cp a") if r.name == "cp"
+    )
+    directories, uncertain = shellscan._feed_directories(failed, str(tmp_path))
+    assert directories == [str(tmp_path)]
+    assert uncertain
+    assert "x" in shellscan._fed_candidates(["*"], directories, True)
+
+
+def test_a_glob_in_an_unknown_directory_keeps_a_name_of_its_shape():
+    """Review 8ae5b370.3: with the producer's directory unknown, the pattern stays and one name of its shape is added, so a guard that reads names (a round log's, a running script's) still sees one."""
+    assert "pr-babysit-x.md" in shellscan._fed_candidates(["pr-babysit-*.md"], None)
+    assert "rex" in shellscan._fed_candidates(["re*"], None)
+    assert "rexet" in shellscan._fed_candidates(["[r]e?et"], None)
+    assert "xx.sh" in shellscan._fed_candidates(["[!a]?.sh"], None)
+    cmd = 'cd "$D" && echo pr-babysit-*.md | xargs cp /tmp/x.md'
+    copier = [r for r in shellscan.every_run(cmd) if r.name == "cp"]
+    names = {pathlib.Path(p).name for p, _into in shellscan.copy_landings(copier[0], "/tmp")}
+    assert "pr-babysit-x.md" in names, names
+
+
+def test_a_redirect_onto_a_glob_writes_the_one_file_it_matches(bash, tmp_path):
+    """#e5b0540a: bash pathname-expands a redirect's target, so `> agent/pr-babysit-*.md` truncates the one log it matches. block_roundlog_truncate reads a redirect target through its expansions for this reason. With two matches bash refuses the redirect as ambiguous, and with none it creates the literal name."""
+    (tmp_path / "agent").mkdir()
+    log = tmp_path / "agent" / "pr-babysit-0831-1.md"
+    log.write_text("history\n", encoding="utf-8")
+    env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(tmp_path)}
+    one = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", "echo x > agent/pr-babysit-*.md"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert one.returncode == 0, one.stderr
+    assert log.read_text(encoding="utf-8") == "x\n"
+    (tmp_path / "agent" / "pr-babysit-0831-2.md").write_text("other\n", encoding="utf-8")
+    two = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", "echo y > agent/pr-babysit-*.md"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    assert two.returncode != 0
+    assert log.read_text(encoding="utf-8") == "x\n"
+
+
+def test_a_launched_run_reads_its_glob_by_shape_too(tmp_path):
+    """Review 9ed30a8a.1: a run `find -exec` starts is uncertain (the shape reading is added beside its disk matches), and one started ELSEWHERE (`-execdir`, each match's own directory) names no directory at all."""
+    (tmp_path / "src").mkdir()
+    here = r"find . -maxdepth 0 -exec sh -c 'echo f* | xargs cp a' \;"
+    there = r"find . -maxdepth 1 -execdir sh -c 'echo f* | xargs cp a' \;"
+    plain = "echo f* | xargs cp a"
+    for cmd, want_dirs, want_uncertain in (
+        (here, [str(tmp_path)], True),
+        (there, [], True),
+        (plain, [str(tmp_path)], False),
+    ):
+        copier = next(r for r in shellscan.every_run(cmd) if r.name == "cp")
+        assert shellscan._feed_directories(copier, str(tmp_path)) == (want_dirs, want_uncertain), (
+            cmd
+        )
+
+
+LOG_NAME_CORPUS = [
+    "pr-babysit-0831-1.md",
+    "pr-babysit-1008-1.md",
+    "pr-babysit-x.md",
+    "pr-babysit-a.b-c_d.md",
+    "pr-babysit-0831-1-briefing.md",
+    "pr-babysit-.md",
+    "pr-babysit-x.mdx",
+    "notes-1.md",
+    "x.md",
+    "pr-babysit-x.txt",
+]
+
+
+@pytest.mark.parametrize(
+    "glob_pattern",
+    [
+        "*.md",
+        "pr-*",
+        "p?-babysit-*",
+        "[p]r-babysit-x.md",
+        "pr-babysit-a*.md",
+        "pr-babysit-?.md",
+        "*-briefing.md",
+        "pr-babysit-*.m?",
+        "notes-*.md",
+        "*.txt",
+        "[!p]*.md",
+        "pr-babysit-.md",
+    ],
+)
+def test_the_roundlog_prefilter_meets_every_log_name_a_glob_can(glob_pattern):
+    """Review 9ed30a8a.3: `_glob_meets_log` is the intersection of the glob and the round-log pattern, read from `RL` itself. Sound against every name in a corpus (a name both match forces True), and exact on the negatives the corpus cannot show."""
+    witnessed = any(
+        fnmatch.fnmatchcase(name, glob_pattern) and re.fullmatch(G.RL, name)
+        for name in LOG_NAME_CORPUS
+    )
+    if witnessed:
+        assert G._glob_meets_log(glob_pattern), glob_pattern
+    if glob_pattern in ("notes-*.md", "*.txt", "[!p]*.md", "pr-babysit-.md"):
+        assert not G._glob_meets_log(glob_pattern), glob_pattern
+
+
+def test_the_roundlog_automaton_is_read_from_rl(monkeypatch):
+    """Review 9ed30a8a.3: a change to `RL` that leaves `<prefix>[<class>]+<suffix>` raises at once rather than leaving the prefilter testing an old pattern; one that keeps the shape is read."""
+    monkeypatch.setattr(G, "RL", r"round-log-(\d+)\.md")
+    with pytest.raises(RuntimeError):
+        G._log_automaton()
+    monkeypatch.setattr(G, "RL", r"rl-[0-9]+\.txt")
+    edges, accept = G._log_automaton()
+    assert accept == ("S", 4)
+    assert ("S", 0) not in edges or edges[("S", 0)][0][0] == frozenset(".")
+
+
+# --------------------------------------------------------------------------- pr_selector's cut is linear (worklist #bc7d998c round) ---------------------------------------------------------------------------
+
+# `pr_selector` cut each record with `re.subn(".*gh pr <verb>[<SPACE>]*", "", record, count=1)`. A line naming no `gh pr <verb>` made that regex try every start position and backtrack from each to the line's end: 0.29 s at 20,000 characters and 36 s at 200,000 (measured 2026-10-11). `shellscan._cut_through_last` reads one pass per line; these tests pin that it answers exactly as the regex did and that the WORK is one line span per
+# line, whatever the line's length, rather than a wall clock.
+_CUT_CASES = [
+    "",
+    "gh pr merge 12",
+    "x gh pr merge 1 gh pr merge 2 tail",
+    "gh pr merge\t\v 7",
+    "no verb here",
+    "first line\ngh pr merge 3\ngh pr merge 4",
+    "gh pr merge\n  next line",
+    "gh pr mergeX",
+    "a\rgh pr merge\r 9",
+]
+
+
+@pytest.mark.parametrize("record", _CUT_CASES)
+@pytest.mark.parametrize("verb", ["merge", "ready"])
+def test_cut_through_last_answers_as_the_regex(record, verb):
+    old = re.compile(r".*gh pr " + verb + r"[" + shellscan.SPACE + r"]*").subn("", record, count=1)
+    assert shellscan._cut_through_last(record, "gh pr " + verb) == old
+
+
+def test_cut_through_last_answers_as_the_regex_on_a_seeded_sample():
+    pieces = ["gh pr merge", "gh pr ", "merge", " ", "\t", "\n", "\r", "\v", "x", "-", "t", "n"]
+    rng = __import__("random").Random(11)
+    for _ in range(5000):
+        record = "".join(rng.choice(pieces) for _ in range(rng.randint(0, 14)))
+        old = re.compile(r".*gh pr merge[" + shellscan.SPACE + r"]*").subn("", record, count=1)
+        assert shellscan._cut_through_last(record, "gh pr merge") == old, repr(record)
+
+
+def test_pr_selector_reads_each_line_once(monkeypatch):
+    """The work is one line span per line, never one attempt per character: a 200,000-character line is one span."""
+    spans = []
+    real = shellscan._line_spans
+
+    def counted(text):
+        for span in real(text):
+            spans.append(span)
+            yield span
+
+    monkeypatch.setattr(shellscan, "_line_spans", counted)
+    assert shellscan.pr_selector("x" * 200000, "merge") == ""
+    assert len(spans) == 1
+    spans.clear()
+    assert shellscan.pr_selector("y" * 100000 + " gh pr merge 42", "merge") == "42\n"
+    assert len(spans) == 1
+
+
+def test_pr_selector_never_scans_a_line_with_a_leading_dot_star(monkeypatch):
+    """The quadratic shape itself: an unanchored scan (`search`, `sub`, `subn`, `findall`, `finditer`) of a pattern opening with `.*` restarts at every position. The cut may use an anchored `match` at one position, never that."""
+    scans = []
+    real_compile = re.compile
+
+    class Recorded:
+        def __init__(self, compiled):
+            self._compiled = compiled
+
+        def __getattr__(self, name):
+            attr = getattr(self._compiled, name)
+            unanchored = name in ("search", "sub", "subn", "findall", "finditer")
+            if unanchored and self._compiled.pattern.startswith(".*"):
+                scans.append((name, self._compiled.pattern))
+            return attr
+
+    monkeypatch.setattr(
+        re, "compile", lambda pattern, flags=0: Recorded(real_compile(pattern, flags))
+    )
+    assert shellscan.pr_selector("x" * 2000 + " gh pr merge 42", "merge") == "42\n"
+    assert shellscan.pr_selector("x" * 2000, "merge") == ""
+    assert scans == []
+
+
+@pytest.mark.parametrize(
+    ("cmd", "bases"),
+    [
+        ('cd "$D" && cp a b', 2),
+        ("cd ~ && cp a b", 2),
+        ("cd - && cp a b", 2),
+        ("cd nosuch-dir && cp a b", 2),
+        ("cp a b", 1),
+    ],
+)
+def test_an_unresolved_cd_lands_under_both_bases(tmp_path, cmd, bases):
+    """Review 1d4e1754.2: `run.cwd` is None only when no `cd` ran (one base, the starting directory); an unresolved or failed `cd` leaves a path that is not on disk, and the copy is read under that path and under the starting directory."""
+    copier = next(r for r in shellscan.every_run(cmd) if r.name == "cp")
+    assert (copier.cwd is None) == (bases == 1)
+    landed = [p for p, _into in shellscan.copy_landings(copier, str(tmp_path))]
+    assert len(landed) == bases, landed
+    assert str(tmp_path / "b") in landed

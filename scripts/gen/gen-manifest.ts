@@ -8,7 +8,7 @@
  * nothing. Five conditions, each one paid for by a measurement recorded in
  * `agent/plans/PLAN-tooling-transformation.md`'s C1 box:
  *
- *   1. No hand-only field. `qualityGateTest`, `paths`, `reads`, `heavy`, `mutex`,
+ *   1. No hand-only field. `paths`, `reads`, `heavy`, `mutex`,
  *      `writesTree`, `cores`, `noProfile` -- the last of which the box's own list
  *      omits, and two entries carry it. `cores` (the elastic width range) replaced
  *      `weight` on 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF1).
@@ -64,7 +64,6 @@ const MANIFEST = path.join(ROOT, 'scripts/ci-runner/manifest.ts');
 const WORKFLOW = path.join(ROOT, '.github/workflows/ci-quality.yml');
 
 const HAND_ONLY = [
-  'qualityGateTest',
   'paths',
   'reads',
   'heavy',
@@ -115,10 +114,10 @@ function serialise(leaf: string, h: GateHeader, workflow: string): string {
   L.push('    gate: true,', `    leaves: [${q(leaf)}],`);
   if (h.when) L.push(`    when: ${q(h.when as string)},`);
 
-  // A `battery` header RIDES a shared step, which the manifest records as `step`.
-  const kind = h.kind === 'battery' ? 'step' : (h.kind as string);
+  // A `shared-step` header RIDES a shared step, which the manifest records as `step`.
+  const kind = h.kind === 'shared-step' ? 'step' : (h.kind as string);
   L.push('    ci: {', `      kind: ${q(kind)},`);
-  if (h.kind === 'step' || h.kind === 'battery') {
+  if (h.kind === 'step' || h.kind === 'shared-step') {
     L.push(
       `      workflow: ${q(workflow)},`,
       `      job: ${q(job ?? '')},`,

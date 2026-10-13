@@ -1,0 +1,271 @@
+{
+  "canonical": "CLAUDE.md",
+  "floors": {
+    "clauses": 10,
+    "mirror_checks": 31
+  },
+  "quote_sources": [
+    {
+      "path": ".claude/rediacc_hooks/guards/block_settled_questions.py",
+      "where": "py:MESSAGE"
+    }
+  ],
+  "clauses": {
+    "pr.push-cadence": {
+      "sha": "17b160de61a7",
+      "atoms": [
+        "at an epic milestone",
+        "every 2 hours",
+        "unpushed commits"
+      ],
+      "sentinels": [
+        "every 2 hours of committed work"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/output-styles/standing-orders.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/skills/pr-epics/trailers.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/rediacc_hooks/guards/block_settled_questions.py",
+          "mode": "terms",
+          "where": "py:MESSAGE"
+        }
+      ]
+    },
+    "pr.turbo-batch-end": {
+      "sha": "7c100d0d55bf",
+      "atoms": [
+        "`turbo: on`",
+        "`turbo_push: batch-end`",
+        "`backup_push_h`",
+        "`TURBO_PUSH_REASON"
+      ],
+      "sentinels": [
+        "turbo_push: batch-end` (the default)"
+      ],
+      "oracle": {
+        "path": ".claude/rediacc_hooks/guards/block_turbo_early_push.py",
+        "const": "KINDS",
+        "rule": "all-in-span"
+      },
+      "mirrors": [
+        {
+          "path": ".claude/output-styles/standing-orders.md",
+          "mode": "verbatim"
+        },
+        {
+          "path": ".claude/skills/pr-epics/trailers.md",
+          "mode": "verbatim"
+        },
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/rediacc_hooks/guards/block_settled_questions.py",
+          "mode": "terms",
+          "where": "py:MESSAGE"
+        },
+        {
+          "path": "agent/plans/QUEUE.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.one-branch-one-pr": {
+      "sha": "d5513bc36ebf",
+      "atoms": [
+        "`block_second_branch`",
+        "`block_second_open_pr`"
+      ],
+      "sentinels": [
+        "block_second_open_pr"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/output-styles/standing-orders.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/commands/pr-babysit.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.merge-condition": {
+      "sha": "c69665588abc",
+      "atoms": [
+        "--rebase --auto",
+        "CI Complete",
+        "`wl_review.py --check`",
+        "Review Complete",
+        "`Operational-Reason:`"
+      ],
+      "sentinels": [],
+      "mirrors": [
+        {
+          "path": ".claude/output-styles/standing-orders.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.ff-fallback": {
+      "sha": "57f855cd6b80",
+      "atoms": [
+        ":main`",
+        "CI Complete",
+        "`Operational-Reason:`"
+      ],
+      "sentinels": [
+        "one direct push"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/output-styles/standing-orders.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.one-plan-per-pr": {
+      "sha": "15d3a891ac1e",
+      "atoms": [
+        "one plan per PR",
+        "`turbo: on`"
+      ],
+      "sentinels": [
+        "works one plan per PR",
+        "one plan per PR, or"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/commands/pr-babysit.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms",
+          "where": "frontmatter:description"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms"
+        },
+        {
+          "path": "agent/plans/QUEUE.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.plan-set": {
+      "sha": "c0d8ebae2d30",
+      "atoms": [
+        "`Plan:`",
+        "`Operational-Reason:`",
+        "unfinished prerequisites"
+      ],
+      "sentinels": [
+        "unfinished prerequisites"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/skills/pr-epics/SKILL.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/commands/pr-babysit.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.queued-plan-start": {
+      "sha": "151b9e20c538",
+      "atoms": [
+        "starts only when the hook names it"
+      ],
+      "sentinels": [
+        "starts only when the hook names it"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.epic-carries-plan": {
+      "sha": "45804a0a0bd3",
+      "atoms": [
+        "`--epic <me> new --plan"
+      ],
+      "sentinels": [
+        "An epic carries its plan"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/skills/pr-epics/SKILL.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "terms"
+        },
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "terms"
+        }
+      ]
+    },
+    "pr.queue-switches": {
+      "sha": "023eda25ad8d",
+      "atoms": [],
+      "sentinels": [],
+      "oracle": {
+        "path": ".claude/hooks/stop/wl_planqueue.py",
+        "const": "SETTINGS_KEYS",
+        "rule": "equal-backticked"
+      },
+      "mirrors": []
+    }
+  }
+}

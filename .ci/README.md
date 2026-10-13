@@ -21,25 +21,17 @@ Abridged — only the entry points most often edited by hand are listed. The ful
 │   ├── constants.sh         # Pinned tool versions and shared CI constants
 │   └── nfpm.yaml            # Linux package (deb/rpm/apk) build definition
 ├── scripts/
-│   ├── lib/
-│   │   └── common.sh        # Shared utilities (OS detection, logging)
-│   ├── ci/
-│   │   └── generate-tag.sh  # Generate time-based CI tag (YYYYMMDD-HHMMSS)
-│   ├── version/
-│   │   ├── detect-bump-type.sh # FROZEN TWIN, not run by CI: the live bump detector is rediacc_ci.version.detect_bump_type (initialize step 6)
-│   │   └── resolve-version.sh  # Resolve current/next version from git tags
-│   ├── setup/
-│   │   ├── install-deps.sh     # npm ci with platform handling
-│   │   └── build-packages.sh   # Build shared libraries
-│   ├── test/
-│   │   └── run-e2e.sh          # Run E2E (renet) tests
 │   ├── docker/
-│   │   └── retag_image.py      # Re-tag CI images to semantic version
-│   ├── housekeeping/
-│   │   └── cleanup-versions.sh # Cleanup old releases, tags, and GHCR packages
-│   └── build/
-│       ├── build-cli.sh        # Build CLI
-│       └── build-renet.sh      # Build renet binary
+│   │   └── retag_image.py   # Re-tag CI images to semantic version
+│   └── housekeeping/
+│       └── retire-shadowed-secrets.py
+├── rediacc_ci/              # Python modules that replaced the retired bash scripts (run with PYTHONPATH=.ci python3 -m)
+│   ├── ci/generate_tag.py   # Generate time-based CI tag (YYYYMMDD-HHMMSS)
+│   ├── version/             # resolve_version, detect_bump_type, bump
+│   ├── setup/               # install_deps (npm ci with platform handling), build_packages (shared libraries)
+│   ├── testrun/e2e.py       # Run E2E (renet) tests
+│   ├── housekeeping/cleanup_versions.py # Cleanup old releases, tags, and GHCR packages
+│   └── build/               # build_cli, build_renet, and the other build modules
 └── README.md
 ```
 
@@ -49,16 +41,16 @@ All scripts are designed to be run from the repository root:
 
 ```bash
 # Install dependencies
-.ci/scripts/setup/install-deps.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_deps
 
 # Build shared packages
-.ci/scripts/setup/build-packages.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.setup.build_packages
 
 # Run unit tests
 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit
 
 # Run E2E (renet) tests
-.ci/scripts/test/run-e2e.sh
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e
 ```
 
 ## Versioning
@@ -83,7 +75,7 @@ For CI, write the computed version to an output file:
 PYTHONPATH=.ci python3 -m rediacc_ci.version.bump --auto --output "$GITHUB_OUTPUT"
 ```
 
-Note that the version source of truth is **git tags**, not a file — there are no version bump commits. `resolve-version.sh --current` reads the latest tag and `--bump-type` computes the next one. See the "Versioning" section of the top-level `CLAUDE.md`.
+Note that the version source of truth is **git tags**, not a file — there are no version bump commits. `rediacc_ci.version.resolve_version --current` reads the latest tag and `--bump-type` computes the next one. See the "Versioning" section of the top-level `CLAUDE.md`.
 
 ## Environment Variables
 
@@ -110,30 +102,18 @@ Test scripts locally before CI:
 
 ```bash
 # Check if common utilities work
-source .ci/scripts/lib/common.sh
-detect_os  # Should print: linux, macos, or windows
+PYTHONPATH=.ci python3 -c "from rediacc_ci.core import common; print(common.detect_os())"  # linux, macos, or windows
 
-# Run the shell-gate suite the way CI does
-npm run test:quality-gates
+# Run the gate-test suite (pytest) the way CI does
+npm run check:ci-pytest
 ```
 
 ## Adding New Scripts
 
-1. Create script in appropriate directory
-2. Source `lib/common.sh` for utilities
-3. Add `set -euo pipefail` for strict mode
-4. Make executable: `chmod +x script.sh`
-5. Document usage in script header
+New CI logic is Python (the language policy, `check:ci-language-policy`, refuses new bash under `.ci`):
 
-Template:
-```bash
-#!/bin/bash
-# Description of what this script does
-# Usage: script.sh [options]
-
-set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/common.sh"
-
-# Script logic here
-```
+1. Create a module under `.ci/rediacc_ci/<area>/`
+2. Use `rediacc_ci.core.common` (OS detection, `require_cmd`, `parse_args`) and `rediacc_ci.log` for utilities
+3. Run it as `PYTHONPATH=.ci python3 -m rediacc_ci.<area>.<module>`
+4. Document usage in the module docstring
+5. Add a pytest under `.ci/rediacc_ci/tests/`

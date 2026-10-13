@@ -1,13 +1,6 @@
 """The sentinel-based release-commit contract, ported from the bash library.
 
-PORTED FROM `.ci/scripts/lib/release-state-validator.sh` (496 lines), which still exists, is untouched by this file, and has **10 real sourcers**, re-measured on 2026-09-20 with
-
-    grep -rnP '^\\s*(source|\\.)\\s+.*\\brelease-state-validator\\.sh' .
-
-(`.ci/scripts/deploy/upload-to-r2.sh:258`, `.ci/scripts/deploy/write-release-sentinel.sh:34`, `.ci/scripts/test/assert-r2-sentinel.sh:23`, `.ci/scripts/test/gates/test-release-state-consistency.sh:33`, `.ci/scripts/housekeeping/cleanup-versions.sh:1309`, `.ci/scripts/release/reprobe-r2-sentinel.sh:28`,
-`.ci/scripts/release/advance-contract-floor.sh:49`, `scripts/ops/scrub-sentinel.sh:32`, and two heredocs inside `.ci/rediacc_ci/tests/test_quality_release_state.py:148,213`). It is NOT the
-"496" in the programme plan, which is this file's LINE COUNT and not its fan-in;
-the library's own "Sourced by:" header lists only four and is itself six short.
+PORTED FROM `.ci/scripts/lib/release-state-validator.sh` (496 lines), which was frozen to `tests/goldens/twins/lib.release-state-validator.jsonl` (367 recorded calls, the blob sha in its header) and DELETED under operator ruling D5 (PLAN-retire-bash-oracles, unit W7). By then every bash sourcer was gone: the uploader, the sentinel writer, the sentinel assertion, the scrub, the reprobe, the housekeeping sweep and the contract-floor advance are all Python, and the write-once guard is `deploy.write_once_guard`. The per-line references to the bash file below (`upload-to-r2.sh:275` and its kin) name the deleted source and are kept as provenance.
 
 The contract, restated from the twin's header because a port that does not carry the invariant is just a translation:
 
@@ -108,23 +101,23 @@ A Python `dict` is a `dict` on every interpreter this repo supports, so there is
 --------------------------------------------------------------------------
 COMMAND-LINE ENTRY POINT (what a bash caller can reach)
 --------------------------------------------------------------------------
-    python3 -m rediacc_ci.core.release_state_validator bijection \\
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator bijection \\
         --cli <file|-> --tags <file|-> [--in-flight vX.Y.Z]
         the DRIFT/OK lines on stdout, exit 0 on bijection and 1 on drift.
 
-    python3 -m rediacc_ci.core.release_state_validator pointer \\
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator pointer \\
         <channel> <latest> <manifest> --tags <file|-> [--in-flight vX.Y.Z]
         the DRIFT/OK lines on stdout, exit 0 when the pointer is tagged.
 
-    python3 -m rediacc_ci.core.release_state_validator floor --cli <file|->
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator floor --cli <file|->
         the pre-contract floor, or nothing at all when there is none.
 
-    python3 -m rediacc_ci.core.release_state_validator sentinels <product>
-    python3 -m rediacc_ci.core.release_state_validator tags
-    python3 -m rediacc_ci.core.release_state_validator binary-count <prefix>
-    python3 -m rediacc_ci.core.release_state_validator sentinel-exists <p> <v>
-    python3 -m rediacc_ci.core.release_state_validator prefix-nonempty <prefix>
-    python3 -m rediacc_ci.core.release_state_validator payload <product> <ver>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator sentinels <product>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator tags
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator binary-count <prefix>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator sentinel-exists <p> <v>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator prefix-nonempty <prefix>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.release_state_validator payload <product> <ver>
         the live probes. Each exits with the twin's shell code, so
         `sentinel-exists` is 0 sealed / 1 absent / 2 could not tell.
 """
@@ -138,7 +131,7 @@ import re
 import subprocess
 import sys
 
-from rediacc_ci import paths
+from rediacc_ci import log, paths
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 # `RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"` (release-state-validator.sh:72).
@@ -179,9 +172,9 @@ class Probe(enum.Enum):
 def _log_error(message: str) -> None:
     """The twin's `log_error`, which the twin does not define. See DEFECT 1.
 
-    `common.sh`'s `log_error` writes to stderr with a colour prefix when stderr is a tty. The prefix is deliberately NOT reproduced: it is chatter, the differential normalises it away, and a port that invents a colour code the twin might not emit is a port that can never be proven equal.
+    Routed through `rediacc_ci.log`, which is `common.sh`'s `log_error` in Python: the `\u2717` glyph, colour only on a tty. Every bash caller sourced `common.sh` first, so this is the line they printed; the write-once guard's goldens pin it.
     """
-    print(message, file=sys.stderr)
+    log.error(message)
 
 
 def bucket(env: dict[str, str] | None = None) -> str:

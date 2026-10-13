@@ -30,7 +30,7 @@ SHARD_GREP_BUCKETS = {
 }
 
 USAGE = (
-    "usage: run-e2e.sh [--workers N] [--config FILE] [--filter|--grep PATTERN] [--grep-invert PATTERN] [--test FILE]... "
+    "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e [--workers N] [--config FILE] [--filter|--grep PATTERN] [--grep-invert PATTERN] [--test FILE]... "
     "[--headed] [--debug] [--ui] [--fail-on-skip] [--shard-manifest PATH --shard I/N [--also A,B]]"
 )
 
@@ -160,7 +160,7 @@ def combined_grep(plain: list[str], bucket_files: list[str], bucket_greps: list[
     parts = [js_escape(f) for f in plain]
     parts += [f"{js_escape(f)}.*(?:{g})" for f, g in zip(bucket_files, bucket_greps, strict=True)]
     if not parts:
-        raise shard.ShardError("run-e2e.sh: no files resolved for this leg")
+        raise shard.ShardError("rediacc_ci.testrun.e2e: no files resolved for this leg")
     return "|".join(parts)
 
 
@@ -270,7 +270,7 @@ def main(argv: list[str]) -> int:
     try:
         opts = parse(argv)
     except UsageError as exc:
-        print(f"run-e2e.sh: {exc}", file=sys.stderr)
+        print(f"rediacc_ci.testrun.e2e: {exc}", file=sys.stderr)
         if isinstance(exc, PairError):
             return 1
         print(USAGE, file=sys.stderr)

@@ -22,17 +22,19 @@ import pathlib
 import re
 import shutil
 import subprocess
+from typing import Any
 
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "private" / "renet-integration.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "private" / "renet_integration.py"
 
 TWIN_REL = pathlib.PurePosixPath(".ci/scripts/private/renet-integration.sh")
+TWIN_STR = str(TWIN_REL)
 PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/private/renet_integration.py")
 
 # The recording `ci-test.sh`, standing in for the renet integration suite. It writes to BOTH streams so the absence of any redirection in either subject is observable, and it records the cwd it was given plus every argument it got.
@@ -74,6 +76,47 @@ def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
     return text.replace(str(root), "<root>").replace(str(tmp), "<tmp>")
 
 
+def _recording() -> bool:
+    """True only while the twin's bytes are being recorded (`REDIACC_CI_REGOLDEN=bash`). Every other run reads the golden and the twin is not in the tree."""
+    return diff.regolden_mode(TWIN_STR) == "bash"
+
+
+def _twin_answer(
+    tmp_path: pathlib.Path,
+    root: pathlib.Path,
+    binder: str,
+    parts: list[str],
+    **run_kw,
+) -> dict[str, Any]:
+    """The twin's four observables: recorded from bash while recording, the golden otherwise."""
+    seen: dict[str, list[str]] = {"calls": []}
+
+    def drive(subject: pathlib.PurePosixPath) -> tuple[int, str, str]:
+        out = _run(subject, root, tmp_path, binder, **run_kw)
+        seen["calls"] = list(out["calls"])
+        return out["exit"], out["stdout"], out["stderr"]
+
+    rc, out, err, frozen = diff.twin_run(
+        TWIN_STR,
+        parts,
+        lambda: drive(TWIN_REL),
+        port=lambda: drive(PORT_REL),
+        extras={"calls": lambda: "\n".join(seen["calls"])},
+    )
+    return {
+        "exit": rc,
+        "stdout": out,
+        "stderr": err,
+        "calls": [line for line in frozen["calls"].split("\n") if line],
+    }
+
+
+def _subjects(tmp_path: pathlib.Path, root: pathlib.Path, binder: str, tag: str = "", **run_kw):
+    """`(subject path, observables)` for the twin (golden) and the port (live), in that order."""
+    yield TWIN_REL, _twin_answer(tmp_path, root, binder, ["subjects", tag], **run_kw)
+    yield PORT_REL, _run(PORT_REL, root, tmp_path, binder, **run_kw)
+
+
 def _fixture(
     tmp_path: pathlib.Path,
     *,
@@ -100,8 +143,8 @@ def _fixture(
     (root / ".ci" / "scripts" / "private").mkdir(parents=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True)
     (root / ".ci" / "rediacc_ci" / "private").mkdir(parents=True)
-    shutil.copy2(TWIN, root / TWIN_REL)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / "common.sh")
+    if _recording():
+        shutil.copy2(TWIN, root / TWIN_REL)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -155,7 +198,7 @@ def _run(
     binder: str,
     argv: tuple[str, ...] = (),
     env_extra: dict[str, str] | None = None,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Drive one subject from a NEUTRAL cwd and collect all four observables."""
     cwd = tmp_path.resolve() / "elsewhere"
     cwd.mkdir(exist_ok=True)
@@ -242,7 +285,7 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
     root = _fixture(tmp_path, **fixture_kw)
     binder = _binder(tmp_path)
 
-    old = _run(TWIN_REL, root, tmp_path, binder, **run_kw)
+    old = _twin_answer(tmp_path, root, binder, ["agree"], **run_kw)
     new = _run(PORT_REL, root, tmp_path, binder, **run_kw)
 
     for field in ("exit", "stdout", "stderr", "calls"):
@@ -277,8 +320,7 @@ def test_the_empty_flag_expands_to_zero_words_not_one(tmp_path):
     empty argument, which no stream can show and which a suite parsing its own argv would see. Both subjects are asserted, because the claim is about the pair."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         fields = out["calls"][0].split("\t")
         assert fields[2] == "argc=0", "%s passed %r" % (subject.name, fields[2:])
 
@@ -294,8 +336,9 @@ def test_the_missing_ci_arm_is_a_real_hole(tmp_path):
     """
     root = _fixture(tmp_path, marker="none")
     binder = _binder(tmp_path)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder, env_extra={"CI": "true"})
+    for subject, out in _subjects(
+        tmp_path, root, binder, tag="root/binder", env_extra={"CI": "true"}
+    ):
         assert out["exit"] == 0, (
             "%s exited %r under CI with no submodule. If the twin was given the CI arm, "
             "port it and update this test and the module docstring." % (subject.name, out["exit"])
@@ -308,8 +351,7 @@ def test_the_suite_runs_when_the_submodule_is_there(tmp_path):
     """THE NEGATIVE CONTROL on the guard. A gate with only positive controls will happily refuse on a tree where nothing is wrong."""
     root = _fixture(tmp_path)
     binder = _binder(tmp_path)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 0, "%s refused a healthy tree" % subject.name
         assert len(out["calls"]) == 1, "%s did not run the suite" % subject.name
         assert "Running renet integration tests..." in out["stderr"]
@@ -320,8 +362,7 @@ def test_a_failing_suite_never_claims_completion(tmp_path):
     """`set -e` makes both trailing `log_info` lines unreachable on a red run. A port that logged them anyway would turn a failed integration suite into a transcript that reads as finished, and only the exit code would disagree."""
     root = _fixture(tmp_path, rc=7, results="file")
     binder = _binder(tmp_path)
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, root, tmp_path, binder)
+    for subject, out in _subjects(tmp_path, root, binder, tag="root/binder"):
         assert out["exit"] == 7, "%s exited %r" % (subject.name, out["exit"])
         assert "Integration tests completed" not in out["stderr"], out["stderr"]
         assert "Integration test results available" not in out["stderr"], out["stderr"]
@@ -331,8 +372,7 @@ def test_the_results_line_needs_a_real_file(tmp_path):
     """`[[ -f ... ]]` again: a DIRECTORY named `test-results.xml` must not be announced, and the announcement must appear when a real file is there. Both halves, because a port testing mere existence passes the second alone."""
     binder = _binder(tmp_path)
     present = _fixture(tmp_path, results="file")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, present, tmp_path, binder)
+    for _subject, out in _subjects(tmp_path, present, binder, tag="present/binder"):
         assert (
             "Integration test results available at: <root>/private/renet/test-results.xml"
             in (out["stderr"])
@@ -340,8 +380,7 @@ def test_the_results_line_needs_a_real_file(tmp_path):
 
     shutil.rmtree(present)
     absent = _fixture(tmp_path, results="dir")
-    for subject in (TWIN_REL, PORT_REL):
-        out = _run(subject, absent, tmp_path, binder)
+    for _subject, out in _subjects(tmp_path, absent, binder, tag="absent/binder"):
         assert "Integration test results available" not in out["stderr"], out["stderr"]
 
 
@@ -354,8 +393,8 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
 
     root = _fixture(tmp_path, marker="noexec")
     binder = _binder(tmp_path)
-    raw = {}
-    for subject in (TWIN_REL, PORT_REL):
+
+    def drive(subject: pathlib.PurePosixPath) -> str:
         proc = subprocess.run(
             ["bash" if subject.suffix == ".sh" else "python3", str(root / subject)],
             capture_output=True,
@@ -370,7 +409,11 @@ def test_the_mask_does_not_hide_the_message(tmp_path):
             check=False,
             timeout=120,
         )
-        raw[subject.name] = proc.stderr
+        return proc.stderr
+
+    work = (root, tmp_path.resolve())
+    _, twin_raw, _ = diff.twin_call(TWIN_STR, ["raw"], lambda: (0, drive(TWIN_REL), ""), work=work)
+    raw = {TWIN_REL.name: twin_raw, PORT_REL.name: drive(PORT_REL)}
     assert raw[TWIN_REL.name] != raw[PORT_REL.name], (
         "the two prefixes are identical, so the mask is unnecessary and should be deleted"
     )

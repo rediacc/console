@@ -1,11 +1,11 @@
 """The BLOCKER convention transport, ported from `.ci/scripts/lib/blocker-validator.sh`.
 
-PORTED FROM `.ci/scripts/lib/blocker-validator.sh` (356 lines), which still exists and is untouched by this file. SIX real sourcers, re-measured on 2026-09-21 with the grep that produced the earlier count of eight (`grep -rnP '^\\s*(source|\\.)\\s+.*blocker-validator\\.sh'`): `.ci/scripts/quality/check-ci-job-aggregation.sh:52`,
+PORTED FROM `.ci/scripts/lib/blocker-validator.sh` (356 lines), DELETED in PLAN-retire-bash-oracles section 12 U1 once nothing sourced it but tests; its text is `git cat-file -p 31ee52d2231d191462e99025a819ee1ffe6a7be1` (the `twin_blob` of `goldens/twins/lib.blocker-validator.jsonl`), and the `:NNN` line citations below are into that blob. Before the deletion it had SIX real sourcers, re-measured on 2026-09-21 with the grep that produced the earlier count of eight (`grep -rnP '^\\s*(source|\\.)\\s+.*blocker-validator\\.sh'`): `.ci/scripts/quality/check-ci-job-aggregation.sh:52`,
 `.ci/scripts/quality/check-go-deps.sh:37`, `.ci/scripts/quality/check-profiler-coverage.sh:85`, `.ci/scripts/quality/check-swallowed-failures.sh:86`, and `.ci/rediacc_ci/tests/test_core_allowlist.py:126` and `:153`, which drive the real library from bash snippets.
 
 THREE SITES LEFT THE LIST SINCE 2026-09-10, and naming them beats letting the number look like drift: `.ci/scripts/security/audit.sh:36` went with W7 P5's audit deletion, and `.ci/scripts/test/gates/test-blocker-validator.sh:26` plus `.ci/scripts/test/gates/test-emit-advisory.sh:141` and `:168` went with census batch A7. Their cases are carried by
-`.ci/rediacc_ci/tests/gates/test_gate_blocker_validator.py` and `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py`, which exercise this module rather than the twin. This module does NOT shim any sourcer: cutover is a later box, both implementations are live, and
-`.ci/rediacc_ci/tests/test_core_blocker_validator.py` is what says they agree.
+`.ci/rediacc_ci/tests/gates/test_gate_blocker_validator.py` and `.ci/rediacc_ci/tests/gates/test_gate_emit_advisory.py`, which exercise this module rather than the twin. Every sourcer has since been ported or deleted, so this module is the only implementation, and
+`.ci/rediacc_ci/tests/test_core_blocker_validator.py` compares it against the bash library's frozen answers.
 
 WHAT THIS FILE IS NOT. It is not a second copy of the BLOCKER rule. The twin stopped being an implementation on 2026-09-09: its grammar, its two banned-phrase tables, its 30-character floor and all four message bodies live in `rediacc_ci.core.allowlist`, and `parse_blockered_list` / `verify_all_blockers` there are TRANSPORTS that decide nothing. This is the Python transport over
 the same canonical module, so the hop the twin pays (bash -> python3 -m ... -> bash) collapses to a function call, and nothing about the verdict moves.
@@ -13,7 +13,7 @@ the same canonical module, so the hop the twin pays (bash -> python3 -m ... -> b
 --------------------------------------------------------------------------
 WHY THE PHRASE ARRAYS DO NOT CROSS OVER, WHICH IS NOT AN OVERSIGHT
 --------------------------------------------------------------------------
-The twin still carries `LOW_EFFORT_BLOCKER_PATTERNS` and `LOW_EFFORT_BLOCKER_SUBSTRINGS` as a TEXT MIRROR, because `.ci/rediacc_ci/tests/gates/test-breakpoint-portability.sh:361` parses them out of THAT FILE'S TEXT to prove the vendored breakpoint copy is a subset. That justification is specific to the bash file and does not travel: a Python mirror would be read by nothing, and
+The twin carried `LOW_EFFORT_BLOCKER_PATTERNS` and `LOW_EFFORT_BLOCKER_SUBSTRINGS` as a TEXT MIRROR until its deletion, because `.ci/rediacc_ci/tests/gates/test-breakpoint-portability.sh:361` parses them out of THAT FILE'S TEXT to prove the vendored breakpoint copy is a subset. That justification is specific to the bash file and does not travel: a Python mirror would be read by nothing, and
 `.ci/rediacc_ci/tests/test_blocker_implementations.py:207` fails BY NAME on any tracked file that carries ten or more of the canonical phrases as quoted literals. So the constants below are REFERENCES to `rediacc_ci.core.allowlist`, never copies, and `BLOCKER_MIN_LENGTH` is `allowlist.MIN_REASON_LENGTH` rather than the literal 30 the twin writes.
 
 --------------------------------------------------------------------------
@@ -159,7 +159,7 @@ def parse_blockered_list(file: str | pathlib.Path, comment_char: str = "#") -> T
     except (OSError, UnicodeDecodeError) as exc:
         # `blocker-validator.sh:205-209`. The twin sees a non-zero exit from the canonical module; here the same failures (unreadable file, undecodable bytes) arrive as exceptions. The words are the twin's.
         advisory.ci_error(
-            "blocker-validator: rediacc_ci.core.allowlist could not parse %s (%s)"
+            "rediacc_ci.core.blocker_validator: rediacc_ci.core.allowlist could not parse %s (%s)"
             % (path, type(exc).__name__)
         )
         print(
@@ -228,7 +228,8 @@ def replay_frames(stream: str, *, out=None) -> bool:
         index += 1
         if not line.startswith(BLOCKER_VALIDATOR_RS):
             advisory.ci_error(
-                "blocker-validator: unframed output from rediacc_ci.core.allowlist: %s" % line
+                "rediacc_ci.core.blocker_validator: unframed output from rediacc_ci.core.allowlist: %s"
+                % line
             )
             return False
         count_text = line[len(BLOCKER_VALIDATOR_RS) :]
@@ -250,7 +251,7 @@ def replay_frames(stream: str, *, out=None) -> bool:
     if frames == 0:
         # UNREACHABLE, and kept. See behaviour 3 in the module docstring.
         advisory.ci_error(
-            "blocker-validator: the canonical validator reported a failure but emitted no message"
+            "rediacc_ci.core.blocker_validator: the canonical validator reported a failure but emitted no message"
         )
         return False
     return True

@@ -1,16 +1,17 @@
 #!/usr/bin/env node
-// ---- gate ---- kind: battery step: i18n needs: node, submodules id: check:ci-i18n-account-email-templates lane: quality-i18n ---- end gate ----
+// ---- gate ---- kind: shared-step step: i18n needs: node, submodules id: check:ci-i18n-account-email-templates lane: quality-i18n ---- end gate ----
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SITE_LOCALES } from '@rediacc/locales';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.join(__dirname, '..', '..');
-const TEMPLATE_DIR = path.join(ROOT_DIR, 'private/account/src/email/templates');
-const LOCALES_DIR = path.join(ROOT_DIR, 'private/account/src/i18n/locales');
+const TEMPLATE_DIR = submodulePath('private/account/src/email/templates');
+const LOCALES_DIR = submodulePath('private/account/src/i18n/locales');
 const LANGUAGES = SITE_LOCALES;
 const TEMPLATE_FILES = [
   'auth.ts',
@@ -174,15 +175,8 @@ function main(): void {
   console.log('Account Email Template Validation');
   console.log('============================================================\n');
 
-  if (!fs.existsSync(TEMPLATE_DIR) || !fs.existsSync(LOCALES_DIR)) {
-    const message =
-      'private/account is not initialized; account email template validation requires the account submodule';
-    if (process.env.CI) {
-      console.log(`\u001B[31m✗\u001B[0m ${message}\n`);
-      process.exit(1);
-    }
-
-    console.log(`\u001B[33m↷\u001B[0m Skipping account email template validation (${message})\n`);
+  if (!requireSubmodule('account email template validation', [TEMPLATE_DIR, LOCALES_DIR])) {
+    console.log('');
     return;
   }
 

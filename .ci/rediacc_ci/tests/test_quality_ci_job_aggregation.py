@@ -61,23 +61,6 @@ RESULT_VARS_AWK = r"""
     }
 """
 
-TIER_AWK = r"""
-    /^(HARD_REQUIRED|SOFT_REQUIRED)\+?=\(/ {
-        collecting = 1
-        sub(/^[^(]*\(/, "")
-    }
-    collecting {
-        line = $0
-        if (index(line, ")") > 0) {
-            sub(/\).*$/, "", line)
-            collecting = 0
-        }
-        sub(/#.*$/, "", line)
-        n = split(line, parts, /[[:space:]]+/)
-        for (i = 1; i <= n; i++) if (parts[i] != "") print parts[i]
-    }
-"""
-
 
 def _awk(program: str, text: str, *args: str) -> list[str]:
     """Run the real awk over `text` and return its non-empty output lines."""
@@ -146,16 +129,22 @@ def test_result_vars_matches_awk_including_the_first_match_only_shape() -> None:
         assert ja.result_vars(text) == _awk(RESULT_VARS_AWK, text), text
 
 
-def test_tier_entries_matches_awk_on_every_array_form() -> None:
-    """Multi-line, single-line, `+=`, an inline comment, and an unrelated array."""
-    for text in (
-        ja.FIXTURE_ASSERT,
-        "HARD_REQUIRED+=(EXTRA)\n",
-        "HARD_REQUIRED=(\n  A  # why\n  B\n)\n",
-        "OTHER=(A B)\n",
-        "SOFT_REQUIRED=(A B C)\n",
-    ):
-        assert ja.tier_entries(text) == _awk(TIER_AWK, text), text
+def test_tier_entries_reads_the_python_tuples_on_every_form() -> None:
+    """Multi-line, single-line, `+=`, an inline comment, an unrelated tuple, and text that does not parse.
+
+    The tiers moved into `assert_ci_complete.py` as Python tuples when the bash twin was deleted (8ba9169be), so the awk oracle that parsed `HARD_REQUIRED=(...)` no longer describes the input; the expected members are stated here instead.
+    """
+    cases: tuple[tuple[str, list[str]], ...] = (
+        ('HARD_REQUIRED += ("EXTRA",)\n', ["EXTRA"]),
+        ('HARD_REQUIRED = (\n    "A",  # why\n    "B",\n)\n', ["A", "B"]),
+        ('OTHER = ("A", "B")\n', []),
+        ('SOFT_REQUIRED = ("A", "B", "C")\n', ["A", "B", "C"]),
+        ("HARD_REQUIRED=(A B)\n", []),
+    )
+    for text, want in cases:
+        assert ja.tier_entries(text) == want, text
+    # Exact, in order: the fixture holds two hard and one soft member, so an extra or a missing one fails (review finding 930dcad8.1).
+    assert ja.tier_entries(ja.FIXTURE_ASSERT) == ["INITIALIZE", "QUALITY", "BUILD_CLI"]
 
 
 def test_result_var_for_matches_tr() -> None:

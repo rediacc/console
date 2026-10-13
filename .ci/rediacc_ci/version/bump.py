@@ -345,10 +345,10 @@ def update_package_json(path: str, version: str, *, dry_run: bool) -> tuple[bool
 
 
 def require_sources(root: pathlib.Path) -> None:
-    """`source common.sh` (:25) and `source constants.sh` (:26), in that order, plus the one thing the second refuses on."""
+    """`source constants.sh` (:26), plus the one thing it refuses on. `common.sh` is deleted (PLAN-retire-bash-oracles W11-B), so its presence is no longer asked for."""
     frame = inspect.currentframe()
     line = frame.f_lineno if frame else 0
-    for rel in (".ci/scripts/lib/common.sh", ".ci/config/constants.sh"):
+    for rel in (".ci/config/constants.sh",):
         path = root / rel
         if not path.is_file():
             raise MissingSourceError(path, line)

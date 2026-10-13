@@ -32,14 +32,13 @@ from rediacc_ci.well_known import DEV_USER_EMAIL, WEB_IMAGE_REPO
 if TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
 
-# What a verb hands over to. Every drill and `worktree` are Python (`rediacc_ci.drills`, `rediacc_ci.dev.worktree`). `WORKTREE_SCRIPT` names the bash twin of `worktree`, which nothing executes any more: it stays named only so check:ci-scope-scripts-reachability keeps it reachable as a differential oracle until PLAN-retire-bash-oracles B3 freezes its goldens and deletes it. The drills' bash twins were frozen and deleted there.
+# What a verb hands over to. Every drill and `worktree` are Python (`rediacc_ci.drills`, `rediacc_ci.dev.worktree`); the bash twins were frozen as goldens and deleted under PLAN-retire-bash-oracles B3.
 DRILL_MODULES = {
     "universe": "rediacc_ci.drills.universe",
     "transfer": "rediacc_ci.drills.transfer",
     "license": "rediacc_ci.drills.license",
     "backup": "rediacc_ci.drills.backup",
 }
-WORKTREE_SCRIPT = "scripts/dev/worktree.sh"
 
 # `quality <verb>` -> the `scripts/gates` program it runs, and the line it announces first.
 QUALITY_TS_GATES = {
@@ -494,7 +493,9 @@ def quality_all() -> int:
     for message in verdict.messages:
         print("    %s" % message, file=sys.stderr)
     log.info("Run them in the devbox instead: ./run.sh devbox exec -- ./run.sh quality shell")
-    log.info("Or see what every lane has: .ci/scripts/lib/toolchain.sh --report")
+    log.info(
+        "Or see what every lane has: PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report"
+    )
     return 1
 
 
@@ -537,7 +538,9 @@ def fix_shell() -> int:
         print(line, file=sys.stderr)
     if binary is None:
         log.error("shfmt is unusable, so formatting would not match the gate")
-        log.info("Every lane's toolchain: .ci/scripts/lib/toolchain.sh --report")
+        log.info(
+            "Every lane's toolchain: PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain report"
+        )
         return 1
     base = root()
     targets: list[str] = []
@@ -620,5 +623,7 @@ if __name__ == "__main__":
     elif sys.argv[1:] == ["help"]:
         sys.stdout.write(help_text())
     else:
-        print("usage: python3 -m rediacc_ci.core.run_verbs arms|help", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.run_verbs arms|help", file=sys.stderr
+        )
         sys.exit(2)

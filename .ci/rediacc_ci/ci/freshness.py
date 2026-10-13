@@ -19,15 +19,19 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Self
 
-from rediacc_ci import paths
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+from rediacc_ci import log, paths
 
 REGISTRY_REL_PATH = ".ci/config/freshness.json"
 CADENCES = ("pr", "nightly")
@@ -36,6 +40,55 @@ ENTRY_KEYS = frozenset({"artifact", "producers", "check", "network", "cadence"})
 # ONE deadline for every check of a run, not one per check: housekeeping's budget-check job has 10 minutes, and its report step only runs if this returns before the job is killed. Measured 2026-10-07 from a dev box: budget_report --check 280 s, gate_costs --check 17 s.
 CHECK_BUDGET_S = 480
 REFUSED = 2
+
+
+# FINDING KEYS (review d21f5510.1). check:ci-budget-freshness printed prose only, so the one way to carry a known red past the push guard was `"findings": "*"`, which carries every failure of the gate, the next budget or cost red included. Every finding a check reports is now a `Keyed` string, and `emit_findings` prints one `::finding::<key>` line per DISTINCT KEY, so a carry names finding keys one by one and a new one is refused.
+# DUPLICATES COLLAPSE because the key is the unit a carry names, and several findings can share one: two stale runs of one lane are two findings with two texts and one key, since the key holds no number that would tell them apart. Printing the key twice would add nothing a carry or the push guard could act on, and the prose above the key lines still shows every finding.
+# THE KEY IS `<artifact>:<class>[:<subject>]`: the artifact's short name (`lane-durations`, `gate-costs`, `freshness`), the finding class, and the lane, gate, unit or job it is about. Never a count, a duration, a percentage, a run id or a date: those move from run to run, and a key that moves reads as a new finding every time.
+_KEY_UNSAFE = re.compile(r"[^A-Za-z0-9._:/@#-]+")
+
+
+def key_part(text: str) -> str:
+    """`text` cut to the finding-key alphabet (`rediacc_ci.log.FINDING_KEY_RE`): every run of other characters becomes one `-`."""
+    return _KEY_UNSAFE.sub("-", text).strip("-") or "unnamed"
+
+
+class Keyed(str):
+    """A finding's text, carrying its stable `key`. A plain `str` everywhere a finding is compared or printed, so the pure finding functions and their tests are unchanged."""
+
+    __slots__ = ("key",)
+    key: str
+
+    def __new__(cls, key: str, text: str) -> Self:
+        if not log.FINDING_KEY_RE.match(key):
+            raise ValueError("finding key %r is not %s" % (key, log.FINDING_KEY_RE.pattern))
+        self = super().__new__(cls, text)
+        self.key = key
+        return self
+
+
+def emit_findings(findings: Iterable[str], stream: Any = None) -> list[str]:
+    """Print one `::finding::<key>` line per distinct key, in first-seen order, and return the keys.
+
+    AN UNKEYED FINDING RAISES. A finding class added as a bare string would fail the gate with no key, and beside carried keys the push guard would see nothing new; refusing it here makes the omission a crash in the producer's own tests rather than a hole in the carry.
+    """
+    keys: list[str] = []
+    for finding in findings:
+        if not isinstance(finding, Keyed):
+            raise TypeError(
+                "unkeyed finding %r: every finding a freshness check reports must be a Keyed(key, text)"
+                % (finding,)
+            )
+        if finding.key not in keys:
+            keys.append(finding.key)
+    for key in keys:
+        log.emit_finding(key, stream)
+    return keys
+
+
+def artifact_name(artifact: str) -> str:
+    """`.ci/config/lane-durations.json` -> `lane-durations`, the first part of every key about that artifact."""
+    return key_part(Path(artifact).stem)
 
 
 class RegistryError(ValueError):
@@ -164,6 +217,34 @@ def run_check(argv: tuple[str, ...], root: Path, timeout: float) -> tuple[int, s
     return proc.returncode, proc.stdout or ""
 
 
+# A check reports findings by exiting 1 (`budget_report --check`, `gate_costs --check`, and the registry's own contract); any other failing exit is something else: a usage error, a signal, a crash in a wrapper.
+FINDING_RC = 1
+_TRACEBACK = "Traceback (most recent call last)"
+
+
+def _keyed_output(entry: Entry, rc: int, output: str) -> str:
+    """`output`, with a `::finding::` line appended when the keys a FAILED check printed do not account for its failure: `freshness:missing:<artifact>` for a registered artifact that is not there, `freshness:unchecked:<artifact>` for a check that timed out or could not start, and `freshness:unkeyed-failure:<artifact>` for one that failed in a way its producer has no key for. A failure with no key at all would sit beside carried keys unseen.
+
+    KEYS PRINTED ARE NOT PROOF THE FAILURE IS KEYED (review 8abc48a1.2). A check that printed one keyed finding and then crashed, or exited with anything but the finding exit code, failed for a reason no key names; with that one key carried, the crash would pass the push guard as a known red. So a traceback in the output, or an exit other than `FINDING_RC`, adds `freshness:unkeyed-failure:<artifact>` beside the keys the check did print.
+    """
+    if rc == 0:
+        return output
+    keyed = any(line.startswith(log.FINDING_PREFIX) for line in output.splitlines())
+    if keyed:
+        if rc == FINDING_RC and _TRACEBACK not in output:
+            return output
+        kind = "unkeyed-failure"
+    elif output.startswith("UNCHECKED:"):
+        kind = "unchecked"
+    elif not output.startswith("%s does not exist." % entry.artifact):
+        kind = "unkeyed-failure"
+    else:
+        kind = "missing"
+    body = output if output.endswith("\n") or not output else output + "\n"
+    key = "freshness:%s:%s" % (kind, artifact_name(entry.artifact))
+    return "%s%s%s\n" % (body, log.FINDING_PREFIX, key)
+
+
 def _section(entry: Entry, rc: int, output: str) -> str:
     verdict = "PASS" if rc == 0 else "FAIL"
     body = output if output.endswith("\n") or not output else output + "\n"
@@ -222,6 +303,7 @@ def check(
             )
         else:
             rc, output = run_check(entry.check, root, left)
+        output = _keyed_output(entry, rc, output)
         section = _section(entry, rc, output)
         sys.stdout.write(section)
         sys.stdout.flush()

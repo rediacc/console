@@ -132,7 +132,7 @@ def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib
 @pytest.mark.parametrize(
     ("rel", "hits"),
     [
-        pytest.param(".ci/lib/devbox.sh", 1, id="under-an-inheriting-prefix"),
+        pytest.param("sourced-lib/devbox.sh", 1, id="under-an-inheriting-prefix"),
         pytest.param("scripts/dev/thing.sh", 0, id="anywhere-else"),
         pytest.param(None, 0, id="a-fixture-has-no-path"),
     ],
@@ -140,19 +140,28 @@ def test_the_builtin_mechanism_control_reproduces_on_this_host(tmp_path: pathlib
 def test_inherited_pipefail_is_decided_by_path(rel: str | None, hits: int) -> None:
     """Identical bytes, classified by PATH alone.
 
-    `.ci/lib/devbox.sh:1082` sets no pipefail of its own and inherits it from every sourcer (scripts/dev/worktree.sh:12, .ci/lib/local-common.sh:937,983 via rdc.sh:11), which is why the gate could not see the sweep's strongest finding.
+    The retired `.ci/lib/devbox.sh:1082` set no pipefail of its own and inherited it from every sourcer, which is why the gate could not see the sweep's strongest finding. `INHERITS_PIPEFAIL_PREFIXES` is empty now that `.ci/lib/` is gone, so the case passes a synthetic prefix through the `prefixes` parameter; the logic under test is the same.
     """
     text = (
         'lib_detect() { git -C "$1" status --porcelain; }\n'
         'if printf "%%s" "$out" | %s dubious; then :; fi\n' % GQ
     )
-    assert len(gate.offenders_in(text, rel)) == hits
+    assert len(gate.offenders_in(text, rel, ("sourced-lib/",))) == hits
+
+
+def test_no_inheriting_prefix_is_configured_for_a_path_that_does_not_exist() -> None:
+    """A prefix that matches no tracked file guards nothing, which is how `.ci/lib/` stayed in the tuple after the directory was deleted."""
+    root = paths.repo_root()
+    for prefix in gate.INHERITS_PIPEFAIL_PREFIXES:
+        assert (root / prefix).is_dir(), prefix
 
 
 def test_the_live_corpus_is_not_empty() -> None:
     """`git ls-files` over the real tree must return files, or the gate is blind."""
     files = [f for f in gate.scan_files(paths.repo_root()) if f]
-    assert len(files) > 100
+    # Floor re-measured 2026-10-08 at 52 scanned shell files after PLAN-retire-bash-oracles wave 1 deleted 76 tracked .sh files, then at 46 after W7 and W11-A, then at 43 after W11-B (lib/common.sh and a swept script), measured with the deletion staged, then at 42 after section 12 U3 deleted test-toolchain.sh, then at 40 after U2 deleted test-media-r2.sh and verify.sh.
+    # Then at 36 after section 12 U1 deleted blocker-validator.sh, emit-advisory.sh, test-blocker-golden-corpus.sh and test-runner-advice.sh, measured in a clone with the deletions applied, then at 35 after section 12 U3 step 2 deleted test-helpers.sh.
+    assert len(files) >= 35
 
 
 def test_selftest_passes_and_is_not_vacuous(capsys) -> None:

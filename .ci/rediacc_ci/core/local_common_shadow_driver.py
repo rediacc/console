@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Both sides of the `core.local_common` port differential, in one file.
+"""The port side of the `core.local_common` differential (the pure half). The bash side (`.ci/lib/local-common.sh`) is retired: its transcripts are frozen in `goldens/twins/lib.local-common.jsonl`, keyed by scenario, and `test_core_local_common.py` compares this driver's output against them.
 
-WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules on whether a port kept the verdict. It needs each side to PRINT what it observed, because the thing being compared is a finding multiset and not a return value. This module is the printer, and it can print either side:
-
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_shadow_driver --side old --twin .ci/lib/local-common.sh --port .ci/rediacc_ci/core/local_common.py <scenario>
-        drives the BASH: sources `.ci/lib/local-common.sh` through the same prelude `.ci/legacy/run-legacy.sh` uses, and calls the twin's own functions.
-
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_shadow_driver --side new --twin .ci/lib/local-common.sh --port .ci/rediacc_ci/core/local_common.py <scenario>
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.local_common_shadow_driver --side new --port .ci/rediacc_ci/core/local_common.py <scenario>
         drives the PYTHON: `rediacc_ci.core.local_common`.
+
+While the bash existed, `--side old --twin .ci/lib/local-common.sh` sourced the library through the prelude `.ci/legacy/run-legacy.sh` used and called the twin's own functions; the ledger rows under `.ci/shadow/` record both commands. A Rule-T change to the port is recorded with `regolden --source port`.
 
 RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invocation puts `.ci/rediacc_ci/core` on `sys.path[0]` and nothing on it can find `rediacc_ci`, so the file would have to open with a hand-written `sys.path.insert`. `test_canonical_sys_path_hop.py` refuses exactly that, and `PYTHONPATH=.ci` plus `-m` removes the need rather than baselining it.
 
@@ -21,8 +18,8 @@ THE SANDBOX, AND WHY PYTHON BUILDS THE FIXTURES FOR BOTH SIDES
 -----------------------------------------------------------------------------
 Every function in this slice reads or writes a real path, and two of the scenarios MUTATE what they read (`sed` edits files in place, `stamp` writes them). A differential pointing both sides at one directory would have the first side leave the tree in the state that makes the second take a different branch.
 
-So each side builds its OWN temporary `CONSOLE_ROOT_DIR`: a real directory holding the fixtures, with `.devcontainer`, `scripts`, `.ci/config`, `.ci/scripts`, `.ci/lib` and `.ci/rediacc_ci` SYMLINKED to the checkout this driver was invoked from.
-Symlinks rather than copies because `constants.sh` derives `CI_LIB_DIR` from `CONSOLE_ROOT_DIR`, and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
+So each side builds its OWN temporary `CONSOLE_ROOT_DIR`: a real directory holding the fixtures, with `.devcontainer`, `scripts`, `.ci/config`, `.ci/scripts` and `.ci/rediacc_ci` SYMLINKED to the checkout this driver was invoked from.
+Symlinks rather than copies because `constants.sh` derived `CI_LIB_DIR` from `CONSOLE_ROOT_DIR` when these transcripts were frozen, and because the code under comparison must be the TRACKED code, which is what the recorded tree id claims.
 `cd "$(dirname "${BASH_SOURCE[0]}")" && pwd` is LOGICAL in bash, so the twin's own `LOCAL_ROOT_DIR` resolves to the sandbox rather than to the real checkout behind the symlink. That is load-bearing for the `npm-script` scenario, and the derivation is emitted as an observation rather than assumed.
 
 THE FIXTURES ARE BUILT IN PYTHON FOR BOTH SIDES, which is the one place this driver departs from `core/shadow_driver.py`'s shape. That driver writes its fixtures inside the bash scenario body and again in Python, which works when a fixture is three `printf`s.
@@ -67,68 +64,16 @@ OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
 
-# What the sandbox symlinks. `.devcontainer` carries the toolchain pins `constants.sh` refuses to load without; `scripts` and `.ci/scripts` because the prelude sources `toolchain.sh` and, through `local-common.sh`, `common.sh`.
+# What the sandbox symlinks. `.devcontainer` carries the toolchain pins; `scripts`, `.ci/config` and `.ci/scripts` are the other trees the fixtures and the port's git calls resolve through.
 SANDBOX_LINKS = (
     (".devcontainer",),
     ("scripts",),
     (".ci", "config"),
     (".ci", "scripts"),
-    (".ci", "lib"),
     (".ci", "rediacc_ci"),
 )
 
-# The prelude `.ci/legacy/run-legacy.sh:41-47` runs before it dispatches anything, minus the per-verb libs. `local-common.sh` sources `common.sh` itself, which is where `log_error` and `log_debug` come from.
-PRELUDE = r"""
-set -euo pipefail
-source "$W/.ci/config/constants.sh"
-source "$W/.ci/scripts/lib/toolchain.sh"
-source "$W/.ci/lib/local-common.sh"
-
-norm() {
-    local s="$1"
-    s="${s//$W/<work>}"
-    s="${s//$HOME/<home>}"
-    printf '%s' "$s"
-}
-
-emit() { printf 'obs %s\n' "$(norm "$1")"; }
-
-# `<file>: line <N>: cd: ...` names a line INSIDE the twin. The message is the twin's real behaviour and is compared; the file-and-line stamp in front of it is not reproducible by a port and is dropped on both sides. `[^ ]*` rather than `.*` so a message that itself contained the phrase could not eat the part being compared.
-strip_loc() { printf '%s' "$1" | sed -E 's|^[^ ]*: line [0-9]+: ||'; }
-
-# rc first, then stdout, then stderr, so the two sides cannot differ on ORDER for a reason that is the harness rather than the subject. The subshell keeps a twin function's `exit 1` from taking this driver down with it.
-step() {
-    local name="$1"
-    shift
-    local o e rc l
-    o="$(mktemp)"
-    e="$(mktemp)"
-    # NOT `if ( set -e; "$@" ); then`, and that spelling cost a wrong measurement in the `core.account` differential before it was fixed. A command in an `if` CONDITION runs with errexit suppressed, and the suppression propagates into a subshell created there, so the inner `set -e` is INERT: the trap `docs/agent-reference/TRAPS.md` calls errexit-rearmed-in-a-tested-command.
-    # It matters twice as much here, because `_git_tree_fingerprint` has a bare assignment whose whole behaviour depends on whether errexit is genuinely armed, which is exactly what one of these scenarios measures.
-    set +e
-    ( set -e; "$@" ) >"$o" 2>"$e"
-    rc=$?
-    set -e
-    emit "rc $name=$rc"
-    # `|| [[ -n "$l" ]]` IS NOT DECORATION. A bare `while IFS= read -r l` DROPS a final line
-    # that has no trailing newline, because `read` returns non-zero at EOF without a
-    # delimiter. `read_stamp_hash` over a stamp written by hand and `_sed_i` over a file with
-    # no final newline both produce exactly that, and without this the BASH side under-reported
-    # a line the twin really printed while the Python side reported it. Found by running it.
-    while IFS= read -r l || [[ -n "$l" ]]; do emit "out $name| $l"; done <"$o"
-    while IFS= read -r l || [[ -n "$l" ]]; do emit "err $name| $(strip_loc "$l")"; done <"$e"
-    rm -f "$o" "$e"
-}
-
-dump() {
-    local name="$1" path="$2" l
-    if [[ ! -f "$path" ]]; then emit "file $name| <absent>"; return 0; fi
-    while IFS= read -r l || [[ -n "$l" ]]; do emit "file $name| $l"; done <"$path"
-}
-"""
-
-# The prefix `strip_loc` removes above, applied identically on the port side, where it is a
-# no-op because nothing in Python emits a bash source location.
+# The prefix the bash side's diagnostics carried (`<file>: line <N>: `). The frozen transcripts are stripped of it, and it is applied to the port side as well, where it is a no-op because nothing in Python emits a bash source location.
 BASH_LOCATION_RE = re.compile(r"^[^ ]*: line [0-9]+: ")
 
 # The fixture `package.json` the `npm-script` scenario reads. `zod` and `name` are here because they are the twin's two real false positives: the grep is over the whole file.
@@ -461,143 +406,10 @@ def call(printer: Printer, name: str, fn) -> int:
     return rc
 
 
-# --------------------------------------------------------------------------- the old side ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the scenarios ---------------------------------------------------------------------------
 
-BASH_SCENARIOS = {
-    "hash": r"""
-step sha-one _sha256sum "$W/plain.txt"
-step sha-two _sha256sum "$W/plain.txt" "$W/second.txt"
-step sha-space _sha256sum "$W/a space.txt"
-step sha-backslash _sha256sum "$W/back\\slash.txt"
-step sha-missing _sha256sum "$W/nosuch.txt"
-step sha-partial _sha256sum "$W/plain.txt" "$W/nosuch.txt"
-
-sha_stdin() { printf 'hello\nworld\n' | _sha256sum; }
-step sha-stdin sha_stdin
-
-step walk-pkg compute_hash_for_package_dirs "$W" pkg
-step walk-two compute_hash_for_package_dirs "$W" pkg other
-step walk-slash compute_hash_for_package_dirs "$W" pkg/
-step walk-empty compute_hash_for_package_dirs "$W" empty
-step walk-missing compute_hash_for_package_dirs "$W" nosuch
-step walk-mixed compute_hash_for_package_dirs "$W" pkg nosuch
-step walk-default compute_hash_for_package_dirs "$W/pkg"
-step walk-bad-root compute_hash_for_package_dirs "$W/not-a-directory" pkg
-step walk-file-root compute_hash_for_package_dirs "$W" plain.txt
-step walk-file-as-root compute_hash_for_package_dirs "$W/plain.txt" pkg
-""",
-    "git-fp": r"""
-step fp-dot _git_tree_fingerprint "$W/repo" .
-step fp-src _git_tree_fingerprint "$W/repo" src
-step fp-doc _git_tree_fingerprint "$W/repo" doc
-step fp-two _git_tree_fingerprint "$W/repo" src doc
-step fp-no-tree _git_tree_fingerprint "$W/repo" src nosuchdir
-step fp-only-missing _git_tree_fingerprint "$W/repo" nosuchdir
-step fp-deleted-first _git_tree_fingerprint "$W/repo-first" .
-step fp-deleted-first-src _git_tree_fingerprint "$W/repo-first" src
-step fp-not-a-repo _git_tree_fingerprint "$W/notarepo" .
-step fp-bad-root _git_tree_fingerprint "$W/nosuch" .
-step fp-no-paths _git_tree_fingerprint "$W/repo"
-""",
-    "tree-hash": r"""
-step th-git compute_tree_hash "$W/repo" .
-step th-git-src compute_tree_hash "$W/repo" src
-step th-deleted-first compute_tree_hash "$W/repo-first" src
-step th-fallback compute_tree_hash "$W/notarepo" .
-step th-fallback-nested compute_tree_hash "$W/notarepo" nested
-step th-bad-root compute_tree_hash "$W/nosuch" .
-""",
-    "stamp": r"""
-step read-absent read_stamp_hash "$W/stamps/nosuch.stamp"
-step read-empty read_stamp_hash "$W/stamps/empty.stamp"
-step read-bare read_stamp_hash "$W/stamps/bare.stamp"
-step read-two read_stamp_hash "$W/stamps/two.stamp"
-step read-dir read_stamp_hash "$W/stamps"
-
-step write-simple write_stamp_hash "$W/stamps/out.stamp" "deadbeef"
-dump write-simple "$W/stamps/out.stamp"
-step read-back read_stamp_hash "$W/stamps/out.stamp"
-
-step write-two write_stamp_hash "$W/stamps/deep/nested/out.stamp" "abc
-bin=4096:1700000000"
-dump write-two "$W/stamps/deep/nested/out.stamp"
-
-step write-spaces write_stamp_hash "$W/stamps/spaces.stamp" "a value with spaces"
-dump write-spaces "$W/stamps/spaces.stamp"
-
-step write-empty write_stamp_hash "$W/stamps/blank.stamp" ""
-dump write-empty "$W/stamps/blank.stamp"
-
-step write-overwrite write_stamp_hash "$W/stamps/out.stamp" "second"
-dump write-overwrite "$W/stamps/out.stamp"
-
-relative() { (cd "$W/stamps" && write_stamp_hash "relative.stamp" "rel"); }
-step write-relative relative
-dump write-relative "$W/stamps/relative.stamp"
-""",
-    "version": r"""
-while IFS='|' read -r a b; do
-    set +e
-    ( set -e; _version_gte "$a" "$b" )
-    rc=$?
-    set -e
-    emit "vgte [$a] [$b] = $rc"
-done <"$W/version-pairs.txt"
-""",
-    "npm-script": r"""
-emit "root| $LOCAL_ROOT_DIR"
-emit "ci| $LOCAL_CI_DIR"
-emit "lib| $LOCAL_LIB_DIR"
-while IFS= read -r name; do
-    set +e
-    ( set -e; has_npm_script "$name" )
-    rc=$?
-    set -e
-    emit "npm [$name] = $rc"
-done <"$W/names.txt"
-mv "$W/package.json" "$W/package.json.away"
-step npm-missing has_npm_script build
-mv "$W/package.json.away" "$W/package.json"
-""",
-    "sed": r"""
-step sed-one _sed_i 's/beta/BETA/' "$W/sed/one.txt"
-dump sed-one "$W/sed/one.txt"
-
-step sed-two _sed_i 's/alpha/ALPHA/' "$W/sed/one.txt" "$W/sed/two.txt"
-dump sed-two-a "$W/sed/one.txt"
-dump sed-two-b "$W/sed/two.txt"
-
-step sed-nomatch _sed_i 's/nothing-here/X/' "$W/sed/nomatch.txt"
-dump sed-nomatch "$W/sed/nomatch.txt"
-
-step sed-nonewline _sed_i 's/beta/BETA/' "$W/sed/nonewline.txt"
-dump sed-nonewline "$W/sed/nonewline.txt"
-
-step sed-append _sed_i '$a appended' "$W/sed/two.txt"
-dump sed-append "$W/sed/two.txt"
-
-step sed-missing _sed_i 's/a/b/' "$W/sed/nosuch.txt"
-""",
-}
-
-
-def run_old(work: pathlib.Path, scenario: str, env: dict[str, str]) -> int:
-    """Source the twin through `run-legacy.sh`'s own prelude and call its functions."""
-    script = work / "driver.sh"
-    script.write_text(
-        'W="%s"\n%s\n%s' % (work, PRELUDE, BASH_SCENARIOS[scenario]), encoding="utf-8"
-    )
-    proc = subprocess.run(
-        ["bash", str(script)],
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=600,
-    )
-    sys.stdout.write(proc.stdout)
-    sys.stderr.write(proc.stderr)
-    return proc.returncode
+# The scenario names, as the frozen transcripts in `goldens/twins/lib.local-common.jsonl` key them. Each one's bash side ran inside `.ci/lib/local-common.sh`, deleted under PLAN-retire-bash-oracles B3; its transcript is the golden.
+SCENARIOS = ("git-fp", "hash", "npm-script", "sed", "stamp", "tree-hash", "version")
 
 
 # --------------------------------------------------------------------------- the new side ---------------------------------------------------------------------------
@@ -877,20 +689,18 @@ def run_new(scenario: str, printer: Printer, work: pathlib.Path, env: dict[str, 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="one side of the core.local_common differential")
-    parser.add_argument("--side", choices=("old", "new"), required=True)
-    parser.add_argument("--twin", required=True, help="the bash file under comparison")
+    parser.add_argument("--side", choices=("new",), required=True)
     parser.add_argument("--port", required=True, help="the Python module under comparison")
-    parser.add_argument("scenario", choices=sorted(BASH_SCENARIOS))
+    parser.add_argument("scenario", choices=SCENARIOS)
     args = parser.parse_args(argv)
 
     repo = pathlib.Path.cwd().resolve()
-    for label, rel in (("twin", args.twin), ("port", args.port)):
-        if not (repo / rel).is_file():
-            sys.stderr.write(
-                "local_common_shadow_driver: the %s %s does not exist under %s. A ledger row "
-                "naming a file that is not there attests to nothing.\n" % (label, rel, repo)
-            )
-            return EXIT_CANNOT_RUN
+    if not (repo / args.port).is_file():
+        sys.stderr.write(
+            "local_common_shadow_driver: the port %s does not exist under %s. A transcript "
+            "of a file that is not there attests to nothing.\n" % (args.port, repo)
+        )
+        return EXIT_CANNOT_RUN
 
     if shutil.which("git") is None:
         sys.stderr.write(
@@ -905,8 +715,6 @@ def main(argv: list[str]) -> int:
         env = sandbox_env(work)
         build_fixtures(work, args.scenario, env)
         printer = Printer(work)
-        if args.side == "old":
-            return run_old(work, args.scenario, env)
         return run_new(args.scenario, printer, work, env)
     except RefusalError as exc:
         sys.stderr.write("local_common_shadow_driver: %s\n" % exc)

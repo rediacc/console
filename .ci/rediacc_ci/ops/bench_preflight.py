@@ -8,6 +8,7 @@ Python rather than a sourced bash library: Ruling 7 (2026-09-06) bans new bash u
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight buckets <wrangler-config>
 """
 
+import json
 import re
 import subprocess
 import sys
@@ -17,13 +18,57 @@ JURISDICTION = re.compile(r"^\s*jurisdiction\s*=", re.MULTILINE)
 LISTED_NAME = re.compile(r"^name:\s+(\S+)", re.MULTILINE)
 
 
+MARKS = ("missing", "invalid", "extraneous")
+ARCHIVES = (".tgz", ".tar.gz", ".tar")
+
+
+def _is_link(node):
+    """Whether NODE is a `file:` dependency on a directory, which npm links; a `file:` tarball is installed like any other."""
+    resolved = str(node.get("resolved", ""))
+    return resolved.startswith("file:") and not resolved.endswith(ARCHIVES)
+
+
+def _marks(node, linked=False):
+    """(own, linked): the missing, invalid and extraneous marks `npm ls --json` puts on NODE and below, split by whether they sit strictly inside a linked directory.
+
+    A linked package (private/account links packages/shared) is installed by the tree it lives in, the console root, which is checked as a directory of its own. Seen from the linking package its dependencies are all `missing`, whatever the state of either install. A mark on the link itself is this install's.
+    """
+    here = sum(1 for flag in MARKS if node.get(flag))
+    own, inside = (0, here) if linked else (here, 0)
+    below = linked or _is_link(node)
+    for child in (node.get("dependencies") or {}).values():
+        child_own, child_inside = _marks(child, below)
+        own += child_own
+        inside += child_inside
+    return own, inside
+
+
+def _drifted(directory):
+    """Whether DIRECTORY's install is out of line with its lockfile.
+
+    The first run is the bash's own `npm ls --all`, and a zero exit settles it. Only a failing run is asked again as JSON, to tell a linked package's marks from this install's. It is drift unless the report is readable and every problem it lists is a mark inside a linked directory.
+    """
+    plain = subprocess.run(["npm", "ls", "--all"], cwd=directory, capture_output=True, check=False)
+    if plain.returncode == 0:
+        return False
+    done = subprocess.run(
+        ["npm", "ls", "--all", "--json"], cwd=directory, capture_output=True, text=True, check=False
+    )
+    try:
+        tree = json.loads(done.stdout)
+    except ValueError:
+        return True
+    if not isinstance(tree, dict):
+        return True
+    own, inside = _marks(tree)
+    listed = len(tree.get("problems") or [])
+    return own > 0 or inside == 0 or listed > inside
+
+
 def lockfile(dirs):
     """Refuse when `npm ls --all` reports any install out of line with its package-lock.json."""
     for directory in dirs:
-        rc = subprocess.run(
-            ["npm", "ls", "--all"], cwd=directory, capture_output=True, check=False
-        ).returncode
-        if rc != 0:
+        if _drifted(directory):
             print(
                 "✗ node_modules in %s does not match its package-lock.json (npm ls --all fails)"
                 % directory,

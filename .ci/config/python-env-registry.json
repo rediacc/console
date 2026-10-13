@@ -1,10 +1,8 @@
 {
   "note": "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a moved module. Every `<module>: [NAME, ...]` here is one environment variable a tracked Python module reads, derived from the AST by .ci/scripts/quality/check_python_env_registry.py. A `*` prefix means the name is not a literal at the call site and the EXPRESSION is recorded instead. The gate asserts SET EQUALITY with the tree in both directions: a read missing from here reds, and so does an entry here that nothing reads -- so this file can neither be trimmed to escape a finding nor pre-loaded with one. Drain it with `--write-baseline`, which refuses any reseed that would ADD a pair even when the total shrinks. A genuinely new read must be typed: `--write-baseline --allow-new <module>:<NAME>`.",
   "modules": {
-    ".ci/rediacc_ci/battery.py": [
-      "CI",
-      "RUN_ALL_GATES_DIR",
-      "RUN_ALL_JOBS"
+    ".ci/rediacc_ci/__init__.py": [
+      "PYTHONPATH"
     ],
     ".ci/rediacc_ci/build/build_cli.py": [
       "ARG_BUNDLE",
@@ -22,7 +20,8 @@
       "RELEASE_BUILD"
     ],
     ".ci/rediacc_ci/build/build_linux_packages.py": [
-      "NEXT_VERSION"
+      "NEXT_VERSION",
+      "PYTHONPATH"
     ],
     ".ci/rediacc_ci/build/build_linux_pkg.py": [
       "APK_RSA_PRIVATE_KEY",
@@ -64,6 +63,12 @@
     ],
     ".ci/rediacc_ci/build/prepare_cli_assets.py": [
       "RENET_VERSION"
+    ],
+    ".ci/rediacc_ci/catalog/lifecycle.py": [
+      "*name",
+      "ARTIFACTS_DIR",
+      "REPOSITORY_NETWORK_MODE",
+      "RESULTS_FILE"
     ],
     ".ci/rediacc_ci/check_pytest.py": [
       "CI",
@@ -126,6 +131,11 @@
     ],
     ".ci/rediacc_ci/ci/dispatch_watchdog.py": [
       "GITHUB_REPOSITORY"
+    ],
+    ".ci/rediacc_ci/ci/gate_ledger.py": [
+      "CI",
+      "REDIACC_GATE_LEDGER_DIR",
+      "XDG_STATE_HOME"
     ],
     ".ci/rediacc_ci/ci/generate_tag.py": [
       "GITHUB_OUTPUT"
@@ -268,6 +278,9 @@
       "*name",
       "WSL_DISTRO_NAME"
     ],
+    ".ci/rediacc_ci/core/proxyx.py": [
+      "PYTHONPATH"
+    ],
     ".ci/rediacc_ci/core/release_state_validator.py": [
       "AWS_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT"
@@ -296,6 +309,9 @@
     ".ci/rediacc_ci/core/shadow_driver.py": [
       "HOME",
       "PATH"
+    ],
+    ".ci/rediacc_ci/core/tmp_capacity.py": [
+      "TMP_CAPACITY_MIN_FREE_INODES"
     ],
     ".ci/rediacc_ci/core_lease.py": [
       "CI_CORE_LEASE_HELD",
@@ -436,6 +452,9 @@
     ".ci/rediacc_ci/deploy/write_release_sentinel.py": [
       "CLOUDFLARE_R2_ENDPOINT"
     ],
+    ".ci/rediacc_ci/dev/measure_page_density.py": [
+      "XDG_RUNTIME_DIR"
+    ],
     ".ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py": [
       "RUNNER_TEMP",
       "TMPDIR"
@@ -475,13 +494,26 @@
       "DRILL_STORE_KEY",
       "DRILL_STORE_REGION",
       "DRILL_STORE_SECRET",
-      "HOME",
-      "RENET_DATA_DIR",
       "RUSTFS_PORT",
-      "SSH_KEY",
-      "SSH_USER",
-      "USER",
       "VM_NET_BASE"
+    ],
+    ".ci/rediacc_ci/drills/backup_local_plane.py": [
+      "BRIDGE_HOST",
+      "GATEWAY_PORT",
+      "LOG_DIR",
+      "PROBE_BUCKET",
+      "RUSTFS_KEY",
+      "RUSTFS_PORT",
+      "RUSTFS_SECRET"
+    ],
+    ".ci/rediacc_ci/drills/backup_roundtrip.py": [
+      "BRIDGE_HOST",
+      "CELL_BYTES",
+      "DATASTORE",
+      "GATEWAY_PORT",
+      "NET_SRC",
+      "VM",
+      "WORK"
     ],
     ".ci/rediacc_ci/drills/lib.py": [
       "DRILL_HOST",
@@ -494,14 +526,9 @@
       "CURSOR_TRACE_ID",
       "DRILL_RENET_PATH",
       "GEMINI_CLI",
-      "HOME",
       "REDIACC_AGENT",
       "REDIACC_ALLOW_CLUSTER_OPS",
       "REDIACC_ALLOW_GRAND_REPO",
-      "RENET_DATA_DIR",
-      "SSH_KEY",
-      "SSH_USER",
-      "USER",
       "VM_NET_BASE"
     ],
     ".ci/rediacc_ci/drills/transfer.py": [
@@ -581,6 +608,9 @@
       "CI",
       "NO_COLOR"
     ],
+    ".ci/rediacc_ci/native.py": [
+      "PYTHONPATH"
+    ],
     ".ci/rediacc_ci/ops/apply_cf_redirect_rules.py": [
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
@@ -615,9 +645,7 @@
       "ACCOUNT_SERVER_API_KEY",
       "ACCOUNT_X25519_PRIVATE_KEY",
       "ACCOUNT_X25519_PUBLIC_KEY",
-      "AWS_IAM_ADMIN_ACCESS_KEY_ID",
       "AWS_SES_ACCESS_KEY_ID",
-      "AWS_SES_ADMIN_KEY_ID",
       "AWS_SES_CONFIGURATION_SET",
       "AWS_SES_FROM",
       "AWS_SES_REGION",
@@ -724,9 +752,6 @@
     ],
     ".ci/rediacc_ci/quality/audit_coverage.py": [
       "REDIACC_CI_ROOT"
-    ],
-    ".ci/rediacc_ci/quality/battery_clean_tree.py": [
-      "BATTERY_CLEAN_TREE_ROOT"
     ],
     ".ci/rediacc_ci/quality/branch.py": [
       "*k",
@@ -870,7 +895,6 @@
     ],
     ".ci/rediacc_ci/quality/pool_writer_safety.py": [
       "*name",
-      "POOL_SAFETY_GATES_DIR",
       "POOL_SAFETY_LOCK",
       "POOL_SAFETY_PORTS_DIR"
     ],
@@ -1036,6 +1060,11 @@
     ".ci/rediacc_ci/release/backfill_write_sentinel.py": [
       "*name"
     ],
+    ".ci/rediacc_ci/release/cd_preflight.py": [
+      "CLOUDFLARE_R2_ACCESS_KEY_ID",
+      "CLOUDFLARE_R2_ENDPOINT",
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+    ],
     ".ci/rediacc_ci/release/check_edge_manifest.py": [
       "*name"
     ],
@@ -1150,6 +1179,9 @@
       "CI"
     ],
     ".ci/rediacc_ci/security/ci_workflow_invariants.py": [
+      "APP_TOKEN_ACTION_FILE",
+      "CD_WORKFLOW_FILE",
+      "HOUSEKEEPING_WORKFLOW_FILE",
       "WORKFLOW_FILE"
     ],
     ".ci/rediacc_ci/security/shellcheck.py": [
@@ -1227,6 +1259,9 @@
     ".ci/rediacc_ci/tests/gates/media_verify_ext.py": [
       "MEDIA_COVERAGE_FILE"
     ],
+    ".ci/rediacc_ci/tests/gates/run_bare.py": [
+      "GATE_HARNESS_LEDGER"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_assert_edge_tag_exists.py": [
       "PATH"
     ],
@@ -1292,10 +1327,10 @@
     ".ci/rediacc_ci/tests/gates/test_gate_housekeeping_phases.py": [
       "PATH"
     ],
-    ".ci/rediacc_ci/tests/gates/test_gate_installmethods_manifest.py": [
+    ".ci/rediacc_ci/tests/gates/test_gate_mark_production.py": [
       "PATH"
     ],
-    ".ci/rediacc_ci/tests/gates/test_gate_mark_production.py": [
+    ".ci/rediacc_ci/tests/gates/test_gate_media_helpers.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_nightly_retry_filters.py": [
@@ -1314,6 +1349,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/gates/test_gate_renet_security_keys.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_scope_engine.py": [
@@ -1335,9 +1373,6 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_gate_toolchain.py": [
-      "PATH"
-    ],
-    ".ci/rediacc_ci/tests/gates/test_gate_worktree_devbox_teardown.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/gates/test_harness.py": [
@@ -1388,6 +1423,9 @@
     ".ci/rediacc_ci/tests/test_build_prepare_cli_assets.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_catalog_lifecycle.py": [
+      "REPOSITORY_NETWORK_MODE"
+    ],
     ".ci/rediacc_ci/tests/test_ci_cancel_older_runs.py": [
       "PATH"
     ],
@@ -1426,7 +1464,8 @@
       "GIT_INDEX_FILE"
     ],
     ".ci/rediacc_ci/tests/test_core_account.py": [
-      "HOME"
+      "HOME",
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_core_devbox.py": [
       "PATH"
@@ -1512,6 +1551,9 @@
     ".ci/rediacc_ci/tests/test_deploy_verify_edge_endpoints.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_deploy_write_once_guard.py": [
+      "HOME"
+    ],
     ".ci/rediacc_ci/tests/test_deploy_write_once_guard_check.py": [
       "HOME",
       "PATH"
@@ -1530,6 +1572,9 @@
     ],
     ".ci/rediacc_ci/tests/test_drills_backup_license.py": [
       "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_backup_local_plane.py": [
+      "ACCOUNT_BACKUP_S3_BUCKET"
     ],
     ".ci/rediacc_ci/tests/test_drills_lib.py": [
       "HOME",
@@ -1609,6 +1654,9 @@
     ".ci/rediacc_ci/tests/test_quality_browser_smoke.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_quality_eslint_heap.py": [
+      "HOME"
+    ],
     ".ci/rediacc_ci/tests/test_quality_lockfile.py": [
       "PATH",
       "REDIACC_CI_ROOT"
@@ -1636,6 +1684,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_release_assert_edge_tag_exists.py": [
+      "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_release_assert_r2_sentinel.py": [
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_release_check_edge_manifest.py": [
@@ -1767,8 +1818,7 @@
     ".ci/scripts/quality/check_language_policy.py": [
       "LANGUAGE_POLICY_ALLOWLIST",
       "LANGUAGE_POLICY_BASELINE",
-      "LANGUAGE_POLICY_ROOT",
-      "LANGUAGE_POLICY_VALIDATOR"
+      "LANGUAGE_POLICY_ROOT"
     ],
     ".ci/scripts/quality/check_plan_boxes.py": [
       "GITHUB_BASE_REF",
@@ -1951,7 +2001,6 @@
       "WORKLIST_JUDGE",
       "WORKLIST_JUDGE_BUDGET_USD",
       "WORKLIST_JUDGE_CACHE_MIN",
-      "WORKLIST_JUDGE_MODEL",
       "WORKLIST_JUDGE_TIMEOUT_S"
     ],
     ".claude/hooks/stop/wl_liveness.py": [
@@ -2119,6 +2168,9 @@
     ".claude/rediacc_hooks/guards/test-block_second_branch.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/guards/test-block_turbo_early_push.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [
       "PATH"
     ],
@@ -2136,9 +2188,6 @@
     ],
     ".claude/rediacc_hooks/run_tests.py": [
       "PYTEST_BIN"
-    ],
-    ".claude/rediacc_hooks/shellscan.py": [
-      "CLAUDE_PROJECT_DIR"
     ],
     ".claude/rediacc_hooks/tests/hooklabels.py": [
       "HOOK_LABEL_DIR"
@@ -2165,6 +2214,9 @@
     ".claude/rediacc_hooks/tests/test_proc.py": [
       "HOME",
       "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_project_dir_containment.py": [
+      "CLAUDE_PROJECT_DIR"
     ],
     ".claude/rediacc_hooks/tests/test_settings_collapse.py": [
       "PATH"

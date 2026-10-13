@@ -20,7 +20,7 @@
  *   1 - Some keys are missing from en.json
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * id: check:i18n:key-usage

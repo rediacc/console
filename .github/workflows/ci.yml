@@ -149,7 +149,7 @@ jobs:
     name: Initialize
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
     timeout-minutes: 14
-    # checks: read is for detect-pointer-bump.sh (reads the baseline commit's
+    # checks: read is for rediacc_ci.ci.detect_pointer_bump (reads the baseline commit's
     # "CI Complete" check-run with the plain GITHUB_TOKEN; the app token has
     # no checks scope). Job-level permissions replace the workflow defaults,
     # so contents+packages are restated.
@@ -336,7 +336,7 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          # Plain job token for detect-pointer-bump.sh: check-runs need
+          # Plain job token for rediacc_ci.ci.detect_pointer_bump: check-runs need
           # checks:read, which the app-token presets do not carry.
           CHECKS_TOKEN: ${{ github.token }}
         run: |
@@ -427,7 +427,7 @@ jobs:
       # if-no-files-found: ignore is what makes this succeed unconditionally:
       # the shadow step may legitimately produce neither file (no base/head
       # pair resolved), and that is data, not a failure.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: github.event_name == 'pull_request'
         with:
           name: scope-shadow-${{ github.run_id }}
@@ -443,7 +443,7 @@ jobs:
       # goes hunting for a baseline, which is the only consumer it has.
       # It carries no `reconciled` flag, so it can be found and parsed but
       # never used as a baseline. That is the point at this stage.
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: github.event_name == 'pull_request'
         with:
           name: ci-skip-plan
@@ -459,7 +459,7 @@ jobs:
           renet_tag=${{ steps.init.outputs.renet_tag }}
           web_tag=${{ steps.init.outputs.web_tag }}
           EOF
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: steps.init.outputs.is_bot != 'true'
         with:
           name: ci-tags-${{ github.sha }}
@@ -624,10 +624,10 @@ jobs:
           runner-label: ubuntu-slim
 
       - name: run.sh entry-point controls
-        run: .ci/scripts/test/gates/test-run-sh.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_run_sh
 
       - name: gate toolchain resolver controls
-        run: .ci/scripts/test/gates/test-toolchain.sh
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.tests.gates.run_bare rediacc_ci.tests.gates.test_gate_toolchain
 
   # ============================================================================
   # REVIEW GATE: enforce review-thread hygiene (bot-agnostic)
@@ -980,7 +980,7 @@ jobs:
   # ============================================================================
   # COLUMN 3A-BIS: RELEASE-STATE DRIFT GATE
   # BLOCKER gate that enforces the sentinel-based release contract defined in
-  # .ci/scripts/lib/release-state-validator.sh. Fails loud if R2 `.released`
+  # rediacc_ci.core.release_state_validator. Fails loud if R2 `.released`
   # sentinels and git release tags are not in bijection. Runs before
   # stage-artifacts so drift from a prior cancelled run is caught before any
   # new bytes are uploaded. Only blocks release channels on push-to-main;
@@ -1025,6 +1025,84 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
           IN_FLIGHT_VERSION: v${{ needs.initialize.outputs.next_version }}
         run: .ci/scripts/quality/check_release_state.py
+
+  # ============================================================================
+  # CD PREFLIGHT: the CD failures a merge would cause, predicted before it
+  # PLAN-cd-errors-in-ci W4. rediacc_ci.release.cd_preflight is READ-ONLY: it
+  # reads live R2 sentinels, pointers and the tracker plus `git ls-remote
+  # --tags`, and judges (a) the bijection now, (b) the bijection after the next
+  # housekeeping runs and this release, (c) the floor and channel pointers, (d)
+  # that the version this merge releases is neither tagged nor sealed, and the
+  # Validate Promotion budget. An unreadable answer is UNCHECKED and red.
+  #
+  # Runs on same-repo PRs AND on main. Check Release State runs on main only,
+  # which is how the 10-07 drift (v1.3.1 sentinel, tag deleted by housekeeping)
+  # first surfaced AFTER PR #599 merged. Fork PRs skip: they get no secrets,
+  # and an R2 read without credentials is UNCHECKED, never a verdict.
+  #
+  # The version is initialize's next_version: initialize checks out with
+  # fetch-tags, and a checkout without the newest tag predicts the wrong one.
+  #
+  # `homebrew` is deselected, so it prints SKIPPED. Its dry run needs the
+  # private homebrew-tap submodule (an App-token checkout this read-only job
+  # should not mint) and real checksums, which exist only after build-cli;
+  # the formula rewrite is exercised by test_release_cd_preflight.py and by
+  # CD's own update_homebrew_tap.
+  #
+  # Aggregated soft in ci-complete: success or skipped (forks, schedule).
+  # ============================================================================
+  cd-preflight:
+    name: CD Preflight
+    # Checkout plus R2 reads with the bws-secrets credentials, and `git
+    # ls-remote` on the persisted github.token. No GitHub API.
+    permissions:
+      contents: read
+    needs: [initialize]
+    # ubuntu-latest, not ubuntu-slim: the image ships the aws CLI the R2
+    # readers call; slim does not, and a missing aws is UNCHECKED (red).
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: >-
+      always() &&
+      needs.initialize.result == 'success' &&
+      needs.initialize.outputs.is_bot != 'true' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # .ci/config holds release-contract-floor.txt (the ratchet) and the
+          # constants the release modules read; .github/actions the two local
+          # actions below. Driven in a cone of exactly these three on
+          # 2026-10-08: same verdict as a full checkout.
+          sparse-checkout: |
+            .ci/rediacc_ci
+            .ci/config
+            .github/actions
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+
+      - name: Predict CD failures
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          NEXT_VERSION: ${{ needs.initialize.outputs.next_version }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight
+          --phase pr --release-version "$NEXT_VERSION"
+          --checks a,b,c,d,promotion
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
@@ -1466,7 +1544,7 @@ jobs:
         working-directory: workers/www
 
       - name: Download preview pages artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
           name: preview-pages-${{ github.sha }}
           path: workers/www/dist/
@@ -1681,7 +1759,7 @@ jobs:
     # below for the same cause: with no channel there is nothing staged, so the
     # job has no subject. That comment already names Validate Install Methods as
     # one of the three instances of this class; this is the site it missed.
-    # VALIDATE_INSTALL is soft-required in assert-ci-complete.sh, which forgives
+    # VALIDATE_INSTALL is soft-required in assert_ci_complete.py, which forgives
     # `skipped`.
     if: >-
       always() &&
@@ -1714,7 +1792,7 @@ jobs:
     #   30528112416 28m35s   30596539903 24m09s   30621380078 24m56s
     #   30692838860 24m01s   31143504009 CANCELLED 30m51s
     # The second cancellation blocked the 0804-1 release: validate-promote is
-    # soft-required in assert-ci-complete.sh, which forgives `skipped` but NOT
+    # soft-required in assert_ci_complete.py, which forgives `skipped` but NOT
     # `cancelled`, so CI Complete and Pipeline Sentinel both failed and the
     # finalize step never dispatched cd-v2.yml. Nothing was wrong with the code.
     #
@@ -1769,7 +1847,7 @@ jobs:
     # Skipping is the honest outcome, not a workaround: promotion validation
     # copies a STAGED channel and re-tests installs from the copy. With no
     # channel there is nothing staged, so the job has no subject. VALIDATE_PROMOTE
-    # is soft-required in assert-ci-complete.sh, which forgives `skipped`.
+    # is soft-required in assert_ci_complete.py, which forgives `skipped`.
     #
     # The other two instances of this class: Stage Artifacts (fixed in Wave A)
     # and Validate Install Methods (fixed on this branch). All three shared one
@@ -1872,7 +1950,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
+    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -1918,6 +1996,7 @@ jobs:
           RESULT_STRIPE_SANDBOX: ${{ needs.stripe-sandbox.result }}
           RESULT_PACKAGE_TESTS: ${{ needs.package-tests.result }}
           RESULT_CHECK_RELEASE_STATE: ${{ needs.check-release-state.result }}
+          RESULT_CD_PREFLIGHT: ${{ needs.cd-preflight.result }}
           RESULT_STAGE_ARTIFACTS: ${{ needs.stage-artifacts.result }}
           RESULT_VALIDATE_INSTALL: ${{ needs.validate-install.result }}
           RESULT_VALIDATE_PROMOTE: ${{ needs.validate-promote.result }}
@@ -2008,8 +2087,8 @@ jobs:
   # has passed. The sentinel seals the version: from here on, write_once_guard
   # refuses to overwrite, and the drift gate requires a matching git tag.
   #
-  # See .ci/scripts/lib/release-state-validator.sh for the invariant and
-  # .ci/scripts/deploy/write-release-sentinel.sh for the writer.
+  # See rediacc_ci.core.release_state_validator for the invariant and
+  # rediacc_ci.deploy.write_release_sentinel for the writer.
   #
   # always() prefix is load-bearing (same reason as housekeeping): ci-complete
   # transitively needs deploy-preview / smoke-test-preview which are

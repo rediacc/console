@@ -17,7 +17,7 @@ import sys
 
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
-SELF = "check-stable-manifest.py"
+SELF = "rediacc_ci.release.check_stable_manifest"
 MANIFEST_URL = RELEASES_ORIGIN + "/cli/stable/manifest.json"
 
 

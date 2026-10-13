@@ -342,5 +342,10 @@
       "dev-env": "개발 환경",
       "defense": "사전 방어"
     }
+  },
+  "video": {
+    "player": {
+      "chapters": "챕터"
+    }
   }
 }

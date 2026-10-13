@@ -1,0 +1,18 @@
+{
+  "$comment": [
+    "The ONE exception list to the operator ruling of 2026-10-09: no slash command or skill in this repo is user-only (disable-model-invocation).",
+    "Read through rediacc_hooks/model_invocation.py (load_exceptions) by the pre-edit guard block_user_only_command, its pre-bash twin and check:ci-model-invocable-commands, so the three cannot disagree.",
+    "An entry is an OPERATOR RULING, never a BLOCKER entry: each names the file, the value its frontmatter keeps, and the ruling's date and verbatim quote. The gate refuses an entry without a ruling, a duplicate, a file that no longer exists, and a file that no longer carries the key exactly as listed.",
+    "The hook refuses any edit to this file: adding an exception is an operator decision, made with !."
+  ],
+  "exceptions": [
+    {
+      "path": ".claude/commands/handoff.md",
+      "value": "true",
+      "ruling": {
+        "date": "2026-10-09",
+        "quote": "it seems that we need an exceptionlist. I forgot about handoff command. let's include it into the exception list for CI & hook(s)"
+      }
+    }
+  ]
+}

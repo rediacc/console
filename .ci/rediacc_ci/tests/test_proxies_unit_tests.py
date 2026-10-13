@@ -22,6 +22,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.proxies import unit_tests
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -166,8 +167,8 @@ def assert_same(
         new.returncode,
         old.stderr,
     )
-    assert new.stdout == old.stdout
-    assert new.stderr == old.stderr
+    assert as_twin(new.stdout) == old.stdout
+    assert as_twin(new.stderr) == old.stderr
 
 
 def _bin_without(tmp_path: pathlib.Path, drop: str) -> str:
@@ -243,7 +244,11 @@ def test_selftest_is_byte_identical() -> None:
     )
     assert old.returncode == 0, old.stderr
     assert "proxy-lib selftest: 4 case(s) passed" in old.stdout
-    assert (new.returncode, new.stdout, new.stderr) == (old.returncode, old.stdout, old.stderr)
+    assert (new.returncode, as_twin(new.stdout), as_twin(new.stderr)) == (
+        old.returncode,
+        old.stdout,
+        old.stderr,
+    )
 
 
 @pytest.mark.parametrize(

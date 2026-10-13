@@ -319,8 +319,15 @@ class Fakes:
     def alive(self, pid):
         return any(p == pid for _b, _i, p in self.spawned) and pid not in self.killed
 
-    def arm(self, root):
-        return AW.arm(root, SID, cli=self.cli, spawn=self.spawn, alive=self.alive)
+    def arm(self, root, has_pr=True):
+        return AW.arm(
+            root,
+            SID,
+            cli=self.cli,
+            spawn=self.spawn,
+            alive=self.alive,
+            has_pr=lambda _root, _branch: has_pr,
+        )
 
 
 @pytest.fixture
@@ -408,6 +415,17 @@ def test_a_push_that_did_not_move_the_branch_arms_nothing(armenv):
     assert f.cli_calls == []
 
 
+def test_lf6_a_branch_without_an_open_pr_arms_nothing(armenv):
+    # LF6: a plain backup push with no PR starts no CI, so no watcher and no worklist item.
+    f = Fakes()
+    assert f.arm(armenv, has_pr=False) == ""
+    assert f.spawned == []
+    assert f.cli_calls == []
+    # Control: the same head with an open PR arms.
+    assert "CI watch armed" in f.arm(armenv, has_pr=True)
+    assert len(f.spawned) == 1
+
+
 def test_main_is_never_watched(armenv):
     subprocess.run(["git", "-C", str(armenv), "checkout", "-q", "-b", "main"], check=True)
     f = Fakes()
@@ -488,7 +506,7 @@ def test_the_real_worklist_accepts_the_item_and_the_lease(armenv, monkeypatch):
         spawned.append(item)
         return 999999
 
-    line = AW.arm(armenv, SID, spawn=spawn, alive=lambda _pid: False)
+    line = AW.arm(armenv, SID, spawn=spawn, alive=lambda _pid: False, has_pr=lambda _r, _b: True)
     assert line.startswith("CI watch armed"), line
     rc, out = AW.worklist_cli(armenv, SID, "--list", "--open", "deadbeef")
     assert rc == 0, out
@@ -519,3 +537,54 @@ def test_the_real_worklist_accepts_the_item_and_the_lease(armenv, monkeypatch):
 def test_a_push_spelled_with_git_global_options_still_counts(cmd, is_push):
     """2026-10-02: `git -C /home/developer/console push ...` armed no watcher and cancelled no older run, because the post-bash hooks looked for the literal `git push`; they normalize first now."""
     assert hookio.grep_q_line("git push", hookio.normalize_git_push(cmd)) is is_push
+
+
+# --------------------------------------------------------------------------- 8ed69711: gh pr create arms, open_pr_exists fails open
+
+
+@pytest.mark.parametrize(
+    ("cmd", "starts"),
+    [
+        ("git push origin b", True),
+        ("gh pr create --draft --base main --head b --body-file x", True),
+        ("git push -u origin b && gh pr create --draft", True),
+        ("gh pr view 5", False),
+        ("gh pr list --head b", False),
+        ('git commit -m "run gh pr create later" -- a', False),
+        ('git commit -m "x; gh pr create" -- a', False),
+        ("git commit -m 'x && gh pr create --draft' -- a", False),
+        ('sh -c "gh pr create --draft"', True),
+        ("ls -la", False),
+    ],
+)
+def test_gh_pr_create_starts_ci_like_a_push(cmd, starts):
+    """8ed69711.1: a branch pushed before its PR existed armed nothing at the push; the create is the moment CI starts."""
+    assert AW.starts_ci(cmd) is starts
+
+
+@pytest.mark.parametrize(
+    ("answer", "want"), [(("0\n", ""), False), (("1\n", ""), True), ((None, "gh: 502"), True)]
+)
+def test_open_pr_exists_reads_gh_count_and_fails_open_when_unanswered(tmp_path, answer, want):
+    """A count of 0 is the only "no PR"; an unanswered read (no gh, network, auth, a 5xx past the retry) keeps the watch."""
+    assert AW.open_pr_exists(tmp_path, "b", read=lambda *_a, **_k: answer) is want
+
+
+def test_open_pr_exists_reads_through_the_shared_bounded_read(monkeypatch, tmp_path):
+    """The default read is wl_gh.read_raw, the hooks' one gh read with the transient retry (check:ci-gh-retry-reads), not a one-shot subprocess."""
+    import wl_gh  # noqa: PLC0415
+
+    seen = []
+
+    def fake(argv, **kw):
+        seen.append((argv, kw.get("cwd")))
+        return "1\n", ""
+
+    monkeypatch.setattr(wl_gh, "read_raw", fake)
+    assert AW.open_pr_exists(tmp_path, "b") is True
+    assert seen == [
+        (
+            ["pr", "list", "--head", "b", "--state", "open", "--json", "number", "--jq", "length"],
+            tmp_path,
+        )
+    ]

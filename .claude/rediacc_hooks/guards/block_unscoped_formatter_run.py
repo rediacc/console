@@ -20,7 +20,7 @@ A genuine whole-tree format is an operator decision, run with the `!` prefix, wh
 
 WHAT IS JUDGED, AND WHAT IS LEFT OPEN.
     tools     ruff (format; check --fix/--fix-only), black, prettier --write, eslint --fix, biome (format/check/lint with --write/--fix/--apply), gofmt -w, goimports -w, gofumpt -w, shfmt -w, golangci-lint run --fix, go fmt
-    launchers npx, npm exec, uvx, uv run, uv tool run, pipx run, python -m, plus whatever shellscan already strips (env, timeout, xargs, command, ...), `bash -c`, `eval`
+    launchers npx, npm exec/exe/x and find -exec through shellscan's own launches (`shellscan.every_run` lists the command each starts, parsed with npm's own option grammar), uvx, uv run, uv tool run, pipx run, python -m here, plus whatever shellscan already strips (env, timeout, xargs, command, ...), `bash -c`, `eval`
     names     a command named by a variable (`$R format`) is resolved through a literal `R=...` assignment in the same command, which is exactly the incident's spelling
 Read-only modes (`--check`, `--diff`, `-l`, no `--fix`), stdin modes (`-`, `--stdin-filename` and its spellings) and biome's VCS scopes (`--staged`, `--changed`) are allowed.
 It FAILS OPEN where it cannot judge: a command name that is a variable with no literal assignment, a `cd` into a computed directory (the root test only), and an option this table does not know takes a value (its value is then read as a path, which can only make the guard more permissive).
@@ -83,6 +83,33 @@ EDGE_CASES = [
     ("biome over staged files", "npx biome check --write --staged"),
     ("prose is not a run", "echo 'ruff format'"),
     ("a commit message is not a run", 'git commit -m "ruff format" -- a.py'),
+    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
+    ("find -exec runs ruff format with no path", r"find . -maxdepth 0 -exec ruff format \;"),
+    ("npx -c runs eslint --fix on the root", "npx -c 'eslint --fix .'"),
+    # #0c331972: npm's own option grammar, from shellscan. A value option the guard never listed and the `x` alias no longer hide the tool...
+    ("npm x with -- runs prettier --write", "npm x -- prettier --write"),
+    ("npx with a value option it never listed", "npx --logl silent --yes prettier --write"),
+    ("npm exe runs eslint --fix on the root", "npm exe -- eslint --fix ."),
+    ("npx with a versioned package spec", "npx prettier@3 --write"),
+    # ...and a flag written before `--` is npm's, so prettier runs read-only. The guard's own npx table refused the `npm exec` spelling (rc 2 at 306285231), and read a workspace run's `.` as this repository's root.
+    ("npm x eats a flag before --", "npm x prettier --write"),
+    ("npm exec eats a flag before -- too", "npm exec prettier --write"),
+    ("a workspace run's dot is that package", "npx -w packages/cli eslint --fix ."),
+    # Review 0bbd6471.2: a versioned package spec, under every npm spelling.
+    ("npm exec runs a versioned spec", "npm exec -- prettier@3 --write"),
+    ("npm exe runs a versioned spec", "npm exe -- prettier@3 --write"),
+    ("npm x runs a versioned spec", "npm x -- prettier@3 --write"),
+    ("npm x runs a scoped versioned spec", "npm x -- @biomejs/biome@2 check --write"),
+    ("an unquoted variable npx hands on", "npx prettier --write $files"),
+    (
+        "a quoted substitution npx hands on is one word",
+        'npx prettier --write "$(git ls-files | head -1)"',
+    ),
+    ("find -exec naming {} is scoped", "find . -name '*.py' -exec ruff format {} +"),
+    (
+        "find -execdir's . is each match's directory",
+        r"find packages -name cli -execdir ruff format . \;",
+    ),
 ]
 
 # --------------------------------------------------------------------------- the tool table ---------------------------------------------------------------------------
@@ -247,8 +274,7 @@ STDIN_OPTS = frozenset(
 BIOME_SUBS = frozenset(("format", "check", "lint"))
 BIOME_WRITE = frozenset(("--write", "--fix", "--apply", "--apply-unsafe"))
 BIOME_SCOPED = frozenset(("--staged", "--changed"))
-# Launchers whose own options take a value, so their value is not the tool.
-NPX_VALUE = frozenset(("-p", "--package", "--cache", "--userconfig", "-w", "--workspace"))
+# Launchers whose own options take a value, so their value is not the tool. NO npx TABLE (#0c331972): npx and `npm exec`/`exe`/`x` are parsed by shellscan with npm's own option grammar, so a value option this guard did not list (`--logl silent`) or the `x` alias no longer hides the tool, and npm consuming a flag written before `--` (`npm x prettier --write` hands prettier no `--write`) is read as npm reads it.
 UV_VALUE = frozenset(
     (
         "--with",
@@ -382,16 +408,15 @@ def _resolve_name(name, assigns):
     return assigns.get(m.group(1) or m.group(2), name)
 
 
-def _tool_argv(name, argv, assigns):
-    """(tool, argv after the tool) for a formatter run, or None. Unwraps the launchers the module docstring names."""
+def _tool_argv(name, argv, assigns, by_npx=False):
+    """(tool, argv after the tool) for a formatter run, or None. Unwraps the launchers the module docstring names, except npx and `npm exec`, whose launched command is a run of its own in `shellscan.every_run`; `by_npx` says this run is one, so its name is a package spec (`prettier@3`, `@biomejs/biome`)."""
     base = shellscan._base(_resolve_name(name, assigns))
+    if by_npx:
+        base = _package_bin(_resolve_name(name, assigns))
     for _ in range(4):
         if base in VALUE_OPTS:
             return base, argv
-        if base == "npx" or (base == "npm" and argv[:1] == ["exec"]):
-            rest = argv[1:] if base == "npm" else argv
-            found = _skip_launcher_opts(rest, NPX_VALUE)
-        elif base == "uvx" or (base == "pipx" and argv[:1] == ["run"]):
+        if base == "uvx" or (base == "pipx" and argv[:1] == ["run"]):
             rest = argv[1:] if base == "pipx" else argv
             found = _skip_launcher_opts(rest, UV_VALUE)
         elif base == "uv" and argv[:1] == ["run"]:
@@ -554,7 +579,11 @@ def _assignments(cmd):
 
 
 def _base_dir(ev, run):
-    base = pathlib.Path(ev.field("cwd") or ev.cwd)
+    """The directory a run's `.` names: the payload's `cwd` joined with the run's own `cd`.
+
+    NEVER THE HOOK PROCESS'S CWD. The harness sends `cwd` on every event; a payload without one (a hand-built case, a replay) used to fall back to wherever the guard process happened to start, so `npx -c 'eslint --fix .'` was refused from the repo root and allowed from `.claude/` (test_hooks_static, 2026-10-11). The fallback is the repository root, which judges `.` as the whole tree: the refusing direction, and the place a session's commands run from.
+    """
+    base = pathlib.Path(ev.field("cwd") or hookio.repo_root())
     if run.cwd is None:
         return base
     if _dynamic(run.cwd) or run.cwd in ("-", "~") or run.cwd.startswith("~"):
@@ -614,8 +643,11 @@ def _xargs_fed(tool, cmd):
     return True, re.search(XARGS_SAFE % name, cmd) is not None
 
 
-def _verdict(ev, cmd, run, assigns, loop_vars):
-    found = _tool_argv(run.name, run.argv, assigns)
+def _verdict(ev, cmd, run, assigns, loop_vars, launcher=""):
+    """`launcher` is the canonical line of the npx/npm run that started `run`, if one did: shellscan re-quotes a launched argv word (`_quote_argv`), so the launched run's own canonical shows `$files` as quoted, and the quoted/unquoted test below reads the launcher's line, where the word stands as it was typed."""
+    # EVERY npm launcher, not npx alone: shellscan names `npx`, `npm exec`, `npm exe` and `npm x` launches alike (`Launch("npx", ...)` in `_npm_launch`), so a versioned spec (`prettier@3`) is unwrapped for each spelling (review 0bbd6471.2, pinned in EDGE_CASES).
+    by_npx = run.launch is not None and run.launch.launcher == "npx"
+    found = _tool_argv(run.name, run.argv, assigns, by_npx)
     if found is None:
         return None
     tool, argv = found
@@ -625,7 +657,8 @@ def _verdict(ev, cmd, run, assigns, loop_vars):
         return None
     paths = []
     for word in path_words:
-        paths.extend(_classify(word, run.canonical, cmd, assigns, loop_vars))
+        view = "%s\n%s" % (run.canonical, launcher) if by_npx else run.canonical
+        paths.extend(_classify(word, view, cmd, assigns, loop_vars))
     shown = run.canonical if len(run.canonical) <= 160 else run.canonical[:157] + "..."
     safe = _safe_verb(tool, words, flags)
     # xargs appends its input as paths, so that input is one more path word: one that vanishes on empty input unless `-r` stops the run. Routed through the same predicate as every other path, so the DEFECT judges it too.
@@ -639,6 +672,9 @@ def _verdict(ev, cmd, run, assigns, loop_vars):
             return tool, shown, safe, WHY_XARGS
         return tool, shown, safe, WHY_VANISH % ", ".join(p.text for p in paths)
     base = _base_dir(ev, run)
+    # A run that executes ELSEWHERE (`find -execdir`, `npx -w/--prefix`, see `shellscan.Launch`) reads `.` as each match's directory or another package, never as this cwd, so the root test is not asked of it; the empty-set test above still is.
+    if run.launch is not None and run.launch.elsewhere:
+        return None
     for p in paths:
         root = None if p.vanishes or p.text == XARGS_INPUT else _root_hit(p.text, base)
         if root is not None:
@@ -669,8 +705,12 @@ def run(ev):
         return hookio.ALLOW
     assigns = _assignments(cmd)
     loop_vars = set(FOR_VAR.findall(cmd))
-    for item in shellscan._analyse(cmd).runs:
-        verdict = _verdict(ev, cmd, item, assigns, loop_vars)
+    # `find . -exec ruff format \;` and `npx -c 'ruff format'` run the formatter with no path just as the bare run does (#503f0ba8), so the walk is `shellscan.every_run`. `find ... -exec ruff format {} +` names `{}`, a path that is never empty, and stays allowed.
+    launcher = ""
+    for item in shellscan.every_run(cmd):
+        if shellscan._base(item.name) in ("npx", "npm"):
+            launcher = item.canonical
+        verdict = _verdict(ev, cmd, item, assigns, loop_vars, launcher)
         if verdict is None:
             continue
         tool, shown, safe, why = verdict

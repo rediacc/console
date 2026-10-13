@@ -3,16 +3,21 @@
 WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/release/backfill-write-sentinel.sh` over the same environment and compared its exit code, stdout and stderr against the port's.
 The K=5 ledger `.ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-backfill-write-sentinel --assert --k 5`) and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
-`DRY_RUN=false` STAYS ON THE LOCAL-ARGUMENT-VALIDATION PATH, same design as `test_deploy_upload_media_to_r2.py`'s forwarding-shim cases: `aws` is MADE unreachable below, so the forward into `.ci/scripts/deploy/write-release-sentinel.sh` dies at its own `require_cmd aws` -- before any network access, before any R2 credential is read. That failure message is exactly what the case
+`DRY_RUN=false` STAYS ON THE LOCAL-ARGUMENT-VALIDATION PATH, same design as `test_deploy_upload_media_to_r2.py`'s forwarding-shim cases: `aws` is MADE unreachable below, so the call into `rediacc_ci.deploy.write_release_sentinel` dies at its own `require_cmd aws` -- before any network access, before any R2 credential is read. That failure message is exactly what the case
 asserts, which is the real, unmocked forward this port makes, stopped by the same missing binary the bash twin stopped on.
 """
 
 from __future__ import annotations
 
 import functools
+import os
 import pathlib
 
+import pytest
+
 from rediacc_ci import runtmp
+from rediacc_ci.deploy import write_release_sentinel
+from rediacc_ci.release import backfill_write_sentinel as subject
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import pathmask
 
@@ -54,7 +59,7 @@ def test_dry_run_true_prints_the_invocation_byte_for_byte() -> None:
     env = {"VERSION": "v1.1.2", "CHANNEL": "edge", "COMMIT_SHA": "deadbeef1234", "DRY_RUN": "true"}
     expected_stdout = (
         "→ DRY RUN -- would invoke:\n"
-        "   .ci/scripts/deploy/write-release-sentinel.sh --version 1.1.2 "
+        "   PYTHONPATH=.ci python3 -m rediacc_ci.deploy.write_release_sentinel --version 1.1.2 "
         "--channel edge --commit-sha deadbeef1234\n"
         "→ no R2 mutation performed\n"
     )
@@ -101,3 +106,66 @@ def test_missing_dry_run_is_refused_and_names_the_variable() -> None:
     assert exit_code == 1
     assert "DRY_RUN" in err
     assert "must be set" in err
+
+
+def test_the_in_process_writer_leaves_the_working_directory_as_it_found_it(
+    tmp_path, monkeypatch
+) -> None:
+    """Review finding 67a505d6.2: the writer runs in process from the checkout root, and the caller's directory comes back afterwards, on a raise as well as a return."""
+    for name, value in {
+        "VERSION": "v1.2.3",
+        "CHANNEL": "edge",
+        "COMMIT_SHA": "a" * 40,
+        "DRY_RUN": "false",
+    }.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.chdir(tmp_path)
+    seen = []
+
+    def fake(_args):
+        seen.append(os.getcwd())
+        return 7
+
+    monkeypatch.setattr(write_release_sentinel, "main", fake)
+    assert subject.main([]) == 7
+    assert seen == [str(subject._ROOT)]
+    assert os.getcwd() == str(tmp_path)
+
+    def boom(_args):
+        raise RuntimeError("writer failed")
+
+    monkeypatch.setattr(write_release_sentinel, "main", boom)
+    with pytest.raises(RuntimeError):
+        subject.main([])
+    assert os.getcwd() == str(tmp_path)
+
+
+def test_a_deleted_caller_directory_neither_blocks_the_writer_nor_masks_its_result(
+    tmp_path, monkeypatch
+) -> None:
+    """Review 74389ce3.1: `os.getcwd()` raises when the caller's directory is gone, and `os.chdir` back would raise over the writer's return value."""
+    for name, value in {
+        "VERSION": "v1.2.3",
+        "CHANNEL": "edge",
+        "COMMIT_SHA": "a" * 40,
+        "DRY_RUN": "false",
+    }.items():
+        monkeypatch.setenv(name, value)
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    monkeypatch.chdir(gone)
+    gone.rmdir()
+    monkeypatch.setattr(write_release_sentinel, "main", lambda _args: 7)
+    assert subject.main([]) == 7
+
+    # The directory vanishes DURING the writer: the restore chdir fails and must not replace the result.
+    back = tmp_path / "back"
+    back.mkdir()
+    monkeypatch.chdir(back)
+
+    def vanish(_args):
+        back.rmdir()
+        return 9
+
+    monkeypatch.setattr(write_release_sentinel, "main", vanish)
+    assert subject.main([]) == 9

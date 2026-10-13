@@ -235,7 +235,7 @@ def usage(problem: str) -> int:
     """Say what is wrong and what the table serves, on stderr, and exit 2."""
     print("%s: %s" % (SELF, problem), file=sys.stderr)
     print(
-        "%s: usage: python3 -m rediacc_ci.docker.run_in_image <%s> [command...]"
+        "%s: usage: PYTHONPATH=.ci python3 -m rediacc_ci.docker.run_in_image <%s> [command...]"
         % (SELF, "|".join(target_names())),
         file=sys.stderr,
     )

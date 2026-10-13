@@ -42,6 +42,7 @@ import re
 import shlex
 
 import wl_common
+import wl_roster
 import wl_rules
 
 # The substring the prompt section carries, used by wl_judge.judge_schema_for to decide whether `class_sweep` is REQUIRED. Same contract as _REGGATE_MARKER: when the prompt asks for the object, the schema requires it, so the model cannot satisfy the schema by omitting the answer.
@@ -96,7 +97,10 @@ one of these:
 
   - TWO PATHS THROUGH ONE GUARD. A guard matched a MENTION of a filename
     where it needed the filename as a command TARGET; the identical line in
-    a second guard was found minutes later.
+    a second guard was found minutes later. A false positive fixed on one
+    input path of a guard (a heredoc) left the same hole on its other paths
+    (a redirect), found only when it fired again: siblings are the guard's
+    other paths and the other guards, even when the fix names one guard.
   - A DIRECTORY WRITTEN FROM ONE TEMPLATE. A CI script died on a PATH
     assumption; patching it moved the failure to the next script, and four
     scripts in that directory had it.
@@ -183,8 +187,30 @@ all `none`. A fix touching several files is `none` too, unless the message
 says how that set was ENUMERATED -- fixing three files you happened to trip
 over is not a sweep.
 
+A GUARD HAS TWO PLACES TO SWEEP: its own other input paths, and the other
+guards. A message that reports looking in only ONE of them, and says nothing
+of the other, has not swept the class, so swept=false and `instruction` names
+the place it skipped. A message that covers BOTH has swept it. A place is
+covered by a reported search, or by a statement that it holds nothing to
+sweep that NAMES what makes it so: a guard said to read one input, with that
+input named IN THAT SAME STATEMENT concretely enough to check (a payload
+field, a named argument or command part, a chain, a file:line), has no other
+paths of its own, and that statement covers its half. A bare "it reads a
+single input" that names nothing is an assertion, and covers nothing, even
+when the message mentions some input elsewhere: the claim has to say which
+input it means. This is about which places were looked in, never about the
+pattern: do not discount a reported search because you would have written a
+broader one.
+
 Set swept=true ONLY when evidence_kind is not `none`. An assertion with no
 quotable evidence is exactly the failure this object exists to catch.
+
+FOR A GUARD, swept=true NEEDS ONE QUOTE PER PLACE. Before setting it, find the
+words that cover the guard's OWN other input paths, separately from the words
+that cover the other guards. If there are none, or the only ones claim a
+single input without saying which, set swept=false and name the guard's own
+paths in `instruction`: a search of the other guards, however thorough, says
+nothing about the guard's own paths.
 
 (4) THIS IS NOT ONLY ABOUT CODE. Ask the same question of: a guard or hook
 fixed for one file (siblings: the other guards); a test fixed for one machine
@@ -652,6 +678,18 @@ def names_destructive(text):
     return wl_rules.names_write(text)
 
 
+def _in_place_editor(search):
+    """The name of an in-place editor `search` runs (`sed`, `gsed`, `perl`), or "".
+
+    ASKED OF THE GUARDS' OWN PARSE (#6378e10e): every command the walk finds (`shellscan.every_run`, so one after a pipe, `xargs` or `find -exec` too) is put to `shellscan.in_place_edit`. The token test this replaces caught only a bare `-i` behind a leading `sed`/`perl`, so `sed -i.bak`, `sed --in-place`, `perl -pi`, `gsed -i` and `grep -l x f | xargs sed -i ...` all passed as a read-only sweep. The walk is the guards' own lexer, which reads any string without raising.
+    """
+    shellscan = wl_roster._shellscan()
+    for run in shellscan.every_run(search):
+        if shellscan.in_place_edit(run) is not None:
+            return run.name.rsplit("/", 1)[-1]
+    return ""
+
+
 def validate_search(search, root=None):
     """(ok, reason). `reason` is empty when ok, else why the command was dropped."""
     root = root or _repo_root()
@@ -679,8 +717,10 @@ def validate_search(search, root=None):
             ]
         if tok == "-delete":
             return False, "it passes -delete to find; a sweep only reads"
-        if tok == "-i" and tokens[0] in ("sed", "perl"):
-            return False, "it edits in place with `%s -i`; a sweep only reads" % tokens[0]
+
+    editor = _in_place_editor(search)
+    if editor:
+        return False, "it edits in place with `%s -i`; a sweep only reads" % editor
 
     for tok in tokens:
         if tok.startswith("-") or not _PATHY.match(tok):

@@ -53,8 +53,8 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The twin's own name, printed in every guard message it emits (:53). A literal rather than argv[0], because the bytes must survive the port and argv[0] here is a `.py` path.
-SELF = "set-preview-worker-secrets.sh"
+# This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
+SELF = "rediacc_ci.deploy.set_preview_worker_secrets"
 
 # `WORKER="pr-${PR_NUMBER}"` (:40).
 WORKER_PREFIX = "pr-"

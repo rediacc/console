@@ -1,7 +1,6 @@
 """`rediacc_ci.docker.cleanup_staging`, driven against the bytes its bash twin produced.
 
-THE TWIN IS STILL ON DISK, AND THAT IS THE ONE DIFFERENCE FROM ITS SIBLINGS. Every case below compares against `goldens/cleanup-staging/`, recorded from `.ci/scripts/docker/cleanup-staging.sh` exactly as if it had been deleted, so the deletion is a no-op for this file. It was not deleted because `check:ci-staging-tag-guard` is a live, currently-green gate whose default target IS
-that path: it greps the twin for the `^staging-` rail and exits 1 with "not found -- nothing was verified" the moment the file goes. Repointing it at the port is not a one-line edit, and `.ci/scripts/docker/cleanup_staging.py`'s own header says so; the port's only `^staging-` is inside a docstring, so a repointed rail check would be verifying a comment.
+THE TWIN IS DELETED (PLAN-retire-bash-oracles B3, W5). Every case below compares against `goldens/cleanup-staging/`, recorded from `.ci/scripts/docker/cleanup-staging.sh` exactly as if it had been deleted, so the deletion was a no-op for this file. `check:ci-staging-tag-guard` used to forbid it: its default target was that path. The gate now counts the rail in the port instead (`re.match(r"staging-", tag)` in `.ci/rediacc_ci/docker/cleanup_staging.py`; the port's `^staging-` in its docstring is prose, and the gate's rail pattern ignores prose).
 
 The ledger `.ci/shadow/w7p6-cleanup-staging.observations.jsonl` recorded the differential over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward.
 
@@ -51,7 +50,6 @@ SLUG = "cleanup-staging"
 
 TWIN_REL = ".ci/scripts/docker/cleanup-staging.sh"
 PORT_REL = ".ci/rediacc_ci/docker/cleanup_staging.py"
-TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
 CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -61,15 +59,11 @@ SELF = "<SELF>"
 FX = "<fx>"
 
 COPIED = (
-    ".ci/scripts/lib/common.sh",
     ".ci/config/well-known.generated.sh",
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",
     PORT_REL,
 )
-
-# What a BASH subject needed on top of that. Reached only by the one-shot recorder; the suite's subject is the port or a throwaway mutant of it.
-TWIN_ONLY = (TWIN_REL,)
 
 # THE FAKE'S STDOUT IS CONSTANT ON THE DELETE PATH. See the module docstring: that is what makes the recorded argv the only witness to WHICH version id was deleted. The list path answers from `FAKE_GH_MODE` so every branch of the response handling can be driven.
 FAKE_GH = r"""#!/usr/bin/python3
@@ -174,13 +168,13 @@ def stub_bin(root: pathlib.Path, *, drop: str = "") -> str:
     return str(stub)
 
 
-def build(tmp_path: pathlib.Path, subject_rel: str = PORT_REL) -> pathlib.Path:
+def build(tmp_path: pathlib.Path) -> pathlib.Path:
     """A throwaway tree holding the subject and the libraries it resolves from its own location.
 
     THE SUBJECT IS COPIED IN rather than run from this checkout, because the twin resolved common.sh and constants.sh from its OWN location and constants.sh then resolves `.devcontainer/toolchain.env` from ITS own location. Running the real files would drive them against the real tree.
     """
     root = tmp_path / "repo"
-    for rel in COPIED + (TWIN_ONLY if subject_rel.endswith(".sh") else ()):
+    for rel in COPIED:
         dest = root / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / rel, dest)
@@ -243,7 +237,7 @@ def drive(
 def run(
     tmp_path: pathlib.Path, name: str, *, subject_rel: str = PORT_REL
 ) -> tuple[int, str, str, list[str]]:
-    return drive(build(tmp_path, subject_rel), name, subject_rel=subject_rel)
+    return drive(build(tmp_path), name, subject_rel=subject_rel)
 
 
 def render(code: int, stdout: str, stderr: str, calls: list[str]) -> str:

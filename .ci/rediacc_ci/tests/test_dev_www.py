@@ -321,7 +321,7 @@ def test_the_ledger_carries_five_equivalent_distinct_trees() -> None:
 
 
 def test_the_verb_is_served_once_and_only_by_python() -> None:
-    """The partition `.ci/scripts/test/gates/test-run-sh.sh` section 6 asserts, from this side.
+    """The partition `tests/gates/test_gate_run_sh.py` asserts, from this side.
 
     An OVERLAP is the failure the whole split exists to prevent: a verb served by two implementations is answered by whichever the router reaches first, so the port appears to work while the code it replaced is what actually ran. The router has no `dev` arm and no table row; the package's VERBS table is the only server, and the bash dispatcher that once held `dev()` is deleted.
     """

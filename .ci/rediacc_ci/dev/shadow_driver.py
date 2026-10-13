@@ -12,7 +12,7 @@ WHAT THIS IS FOR. `scripts/lib/shadow-gate.ts` compares two commands and rules o
 ONE FILE AND NOT TWO, on the `rediacc_ci/setup/shadow_driver.py` precedent and for the reason that file records: `.ci/rediacc_ci/quality/dead_python.py:280` admits a pre-cutover port as alive only when it is named as the NEW side of a `.ci/shadow/*.jsonl` record, and the OLD side's command is scanned for a live `.sh` twin rather than for a Python file. A separate old-side module
 would be reported dead the day it landed.
 
-WHY IT IS DRIVEN AGAINST THE FUNCTION AND NEVER THROUGH `./run.sh dev`. `.ci/scripts/test/gates/test-run-sh.sh` section 6 emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip is atomic: the router table gains `dev` in the same change that deletes the arm and the body. After that change there is no bash side left to drive, so this
+WHY IT IS DRIVEN AGAINST THE FUNCTION AND NEVER THROUGH `./run.sh dev`. `rediacc_ci/tests/gates/test_gate_run_sh.py` emits `overlap <verb>` when a verb sits in both `PORTED_VERBS` and the legacy dispatcher, so the flip is atomic: the router table gains `dev` in the same change that deletes the arm and the body. After that change there is no bash side left to drive, so this
 ledger is recorded BEFORE the flip and it reaches the bash by sourcing the file, which keeps working right up to the moment the body is deleted and stops working loudly the moment after.
 
 -----------------------------------------------------------------------------
@@ -75,43 +75,11 @@ OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
 
-# What the sandbox is built from. `.devcontainer` carries the toolchain pins `constants.sh` refuses to load without; `.ci/config` and `.ci/scripts/lib` are here because the prelude sources `constants.sh`, `toolchain.sh` and, through `local-common.sh`, `common.sh`; `.ci/lib` carries the two functions being stubbed and `service.sh`, which the twin also sources.
+# What the sandbox is built from. `.devcontainer` carries the toolchain pins the port reads, and `.ci/config` the files beside them. Nothing under `.ci/lib` or `.ci/scripts/lib` is copied: the bash library the old side sourced is deleted, and the port runs from the tree under test.
 SANDBOX_DIRS = (
     (".devcontainer",),
     (".ci", "config"),
-    (".ci", "scripts", "lib"),
-    (".ci", "lib"),
 )
-
-# The file the sandbox replaces, and the only one. Chosen because it is the LAST file both preludes source, so these definitions win over the real ones without either implementation knowing a stub exists.
-STUB_TARGET = (".ci", "lib", "devbox.sh")
-
-STUB_DEVBOX = """#!/bin/bash
-# SANDBOX STUB, written by .ci/rediacc_ci/dev/shadow_driver.py. Not a library.
-#
-# Sourced last by both sides' prelude, so these two definitions replace the
-# real ones from local-common.sh for the bash side and for every bridged call
-# the Python side makes. The trace file is how their ORDER reaches the driver:
-# the two sides run them in different processes, and a shared append-only file
-# is the one record both shapes produce identically.
-#
-# DEV_STUB=0 LEAVES THE REAL ONES IN PLACE, which is how the two `real-*`
-# scenarios reach `check_node_version` and `ensure_deps` as local-common.sh
-# defines them. The stubbed scenarios decide ORDER and SHORT-CIRCUIT; the real
-# ones decide whether the seam reaches the same function and leaves the same
-# side effect behind.
-if [[ "${DEV_STUB:-1}" == "1" ]]; then
-    check_node_version() {
-        printf 'check_node_version\\n' >>"$DEV_TRACE"
-        return "${DEV_CNV_RC:-0}"
-    }
-
-    ensure_deps() {
-        printf 'ensure_deps\\n' >>"$DEV_TRACE"
-        return "${DEV_ED_RC:-0}"
-    }
-fi
-"""
 
 # A node that reports one fixed version, so `check_node_version` compares a constant against the constant floor in constants.sh instead of whatever this machine has installed.
 FAKE_NODE = """#!/usr/bin/env python3
@@ -132,19 +100,31 @@ sys.stderr.write("[fake npm] starting\\n")
 sys.exit(int(os.environ.get("DEV_NPM_RC", "0")))
 """
 
-# The prelude the OLD side runs, which is `rediacc_ci/setup/bridge.py:PRELUDE` line for line. Identical on purpose: a differential whose two sides source different files is comparing environments rather than implementations.
-OLD_PROGRAM = """set -euo pipefail
-ROOT_DIR="$REDIACC_CI_ROOT"
-source "$ROOT_DIR/.ci/config/constants.sh"
-source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"
-source "$ROOT_DIR/.ci/lib/local-common.sh"
-source "$ROOT_DIR/.ci/lib/service.sh"
-source "$ROOT_DIR/.ci/lib/devbox.sh"
-dev "$@"
-"""
+# The port, as one expression, with the two preconditions replaced when `DEV_STUB=1`. `main` either returns an exit code or is replaced by npm, so this has to be a process of its own rather than an import into the driver. A stub appends its name to `DEV_TRACE` (how the ORDER reaches the driver, the way the bash stubs did) and, for a non-zero `DEV_CNV_RC` / `DEV_ED_RC`, raises with that code, which `bridge.call` returns verbatim. `DEV_STUB=0` leaves the real functions in place, which is how the two `real-*` scenarios reach `check_node_version` and `ensure_deps` as `core.local_common` defines them.
+NEW_PROGRAM = """import os
+import sys
 
-# The NEW side, as one expression. `main` either returns an exit code or is replaced by npm, so this has to be a process of its own rather than an import into the driver.
-NEW_PROGRAM = "import sys; from rediacc_ci.dev import www; sys.exit(www.main(sys.argv[1:]))"
+from rediacc_ci.core import local_common
+from rediacc_ci.dev import www
+
+
+def stub(name, rc_var):
+    def run(*_args, **_kwargs):
+        with open(os.environ["DEV_TRACE"], "a", encoding="utf-8") as fh:
+            fh.write(name + "\\n")
+        code = int(os.environ.get(rc_var, "0"))
+        if code:
+            raise local_common.LocalCommonError(name, code=code)
+        return True
+
+    return run
+
+
+if os.environ.get("DEV_STUB", "1") == "1":
+    local_common.check_node_version = stub("check_node_version", "DEV_CNV_RC")
+    local_common.ensure_deps = stub("ensure_deps", "DEV_ED_RC")
+sys.exit(www.main(sys.argv[1:]))
+"""
 
 
 class Scenario:
@@ -188,7 +168,7 @@ SCENARIOS = (
     Scenario("real-cached", stub=False),
 )
 
-# Where `ensure_deps` keeps its hash stamp, relative to the root it is given (`.ci/lib/local-common.sh:205`). Read as an observation because it is the side effect the install path leaves behind, and the only tree-derived value either implementation produces.
+# Where `ensure_deps` keeps its hash stamp, relative to the root it is given (`core.local_common.ensure_deps`). Read as an observation because it is the side effect the install path leaves behind, and the only tree-derived value either implementation produces.
 STAMP_PATH = (".ci", "cache", "npm-install.stamp")
 
 # The root files `ensure_deps` hashes, copied into the sandbox so the real function has something to hash. Absent from a specimen the scenario still runs and both sides still agree, but the stamp then hashes a shorter input, which is a weaker observation rather than a wrong one.
@@ -207,7 +187,6 @@ def build_sandbox(root: pathlib.Path, base: pathlib.Path) -> pathlib.Path:
     sandbox = base / "sandbox"
     for parts in SANDBOX_DIRS:
         shutil.copytree(root.joinpath(*parts), sandbox.joinpath(*parts), symlinks=False)
-    sandbox.joinpath(*STUB_TARGET).write_text(STUB_DEVBOX, encoding="utf-8")
     (sandbox / "packages").mkdir(parents=True, exist_ok=True)
     for name in ROOT_FIXTURES:
         source = root / name
@@ -268,10 +247,9 @@ def run_side(
     trace.write_text("", encoding="utf-8")
     env = scenario_env(scenario, sandbox, trace, bins)
     cwd = sandbox / scenario.subdir if scenario.subdir else sandbox
-    if side == "old":
-        argv = ["bash", "-c", OLD_PROGRAM, "dev", *scenario.args]
-    else:
-        argv = [sys.executable, "-c", NEW_PROGRAM, *scenario.args]
+    if side != "new":
+        raise ValueError("the bash side of the dev differential is deleted; got side=%r" % side)
+    argv = [sys.executable, "-c", NEW_PROGRAM, *scenario.args]
     proc = subprocess.run(
         argv,
         cwd=str(cwd),

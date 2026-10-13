@@ -32,7 +32,7 @@ export class RegistryMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
   /** Bring the zot pull-through cache online (kube_registry_up). */
-  async kubeRegistryUp(opts: RegistryUpOptions = {}): Promise<ExecResult> {
+  kubeRegistryUp(opts: RegistryUpOptions = {}): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_registry_up',
       upstreams: opts.upstreams,
@@ -42,7 +42,7 @@ export class RegistryMethods {
   }
 
   /** Wire containerd + k3s to pull through the zot cache (kube_registry_wire). */
-  async kubeRegistryWire(opts: RegistryWireOptions = {}): Promise<ExecResult> {
+  kubeRegistryWire(opts: RegistryWireOptions = {}): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_registry_wire',
       endpoint: opts.endpoint,

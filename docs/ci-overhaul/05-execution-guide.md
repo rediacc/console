@@ -126,12 +126,12 @@ to `main` after every release.
 Run before claiming any wave complete:
 
 - `npm run ci` from the repo root.
-- `npm run test:quality-gates` (the gate self-tests; new gates must be registered in
-`test-gate-anti-vacuity.sh` with a pinned diagnostic).
-- `.ci/scripts/security/check-workflow-gates.sh` (CHECK 1 `always()` prefixes, CHECK 2 the
+- `npm run check:ci-pytest` (the gate self-tests; new gates must be registered in
+`.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py` with a pinned diagnostic).
+- `npm run check:ci-workflow-gates` (CHECK 1 `always()` prefixes, CHECK 2 the
 reusable input/secret contract both directions, CHECK 3 the `ubuntu-slim` 14-minute cap).
-- `.ci/scripts/quality/check-workflows.sh` (`INLINE_MAX_LOGIC=8`, so detector logic lives in
-`.ci/scripts/ci/`).
+- `npm run check:ci-workflows` (`INLINE_MAX_LOGIC=8`, so detector logic lives in a Python
+module under `.ci/rediacc_ci/`).
 - `scripts/gates/check-ci-parity.ts`: a gate wired into a workflow must also be in the
 `npm run ci` chain.
 - `.ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests` if any hook changed, and it must show a nonzero collected count.

@@ -1,7 +1,6 @@
-"""The refuse-early half of `.ci/scripts/lib/common.sh`, the tree's base library.
+"""The refuse-early half of the retired bash base library `.ci/scripts/lib/common.sh`.
 
-`.ci/scripts/lib/common.sh` is 772 lines and **208 files source it** (re-derived 2026-09-10 with `grep -rlP '^\\s*(source|\\.)\\s+.*lib/common\\.sh'`, excluding `node_modules` and `.git`, minus the one `.md` mention: 206 `.sh` plus two `.py` test files that emit a source line). The plan's "251" and the later "209" both counted files rather than real sourcers; the number to quote is
-208.
+`.ci/scripts/lib/common.sh` was 772 lines. It was ported to Python and deleted; this module keeps the refuse-early half, and `tests/test_core_common.py` pins it against the frozen answers of that file.
 
 It is NOT one library. It is seven, stacked in one file, and five of them were already ported by earlier waves under names that describe what they do:
 
@@ -191,6 +190,17 @@ class RefusalError(Exception):
 
 def _env(env: dict[str, str] | None) -> dict[str, str]:
     return dict(os.environ) if env is None else env
+
+
+def launchable(argv: list[str], *, os_name: str | None = None) -> list[str]:
+    """ARGV with its program resolved the way a shell would resolve it, on Windows only.
+
+    Python starts a child on Windows through CreateProcess, which finds `npm.exe` and nothing else, and npm ships as `npm.cmd`. Bash found it, so the deleted install-deps.sh worked, and the port printed `npm: command not found` on the first Windows job that missed its node_modules cache (PR 600 run 38381096702, OPS Check windows-amd64). `shutil.which` reads PATHEXT, so the resolved path names the `.cmd`. A program that is not found is left as it was, and the caller's own not-found arm reports it. Everywhere else the list is returned unchanged, so a recorded call shape stays `npm`.
+    """
+    if (os_name or os.name) != "nt" or not argv:
+        return argv
+    found = shutil.which(argv[0])
+    return [found, *argv[1:]] if found else argv
 
 
 def detect_os(system: str | None = None) -> str:
@@ -637,7 +647,7 @@ def _indent_detail(blob: bytes) -> None:
     sys.stderr.write(out)
 
 
-USAGE = """common -- the refuse-early half of .ci/scripts/lib/common.sh.
+USAGE = """common -- the refuse-early half of the retired bash library common.sh.
 
   require-cmd <name>              refuse unless the command resolves
   require-file <path>             refuse unless it is a regular file

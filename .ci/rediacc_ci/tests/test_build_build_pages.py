@@ -35,7 +35,6 @@ ROOT = paths.repo_root()
 
 TWIN_REL = ".ci/scripts/build/build-pages.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_pages.py"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 GENERATED_REL = ".ci/config/well-known.generated.sh"  # common.sh sources this
 
@@ -92,9 +91,9 @@ def fixture(
     an empty dict means it is created and left EMPTY, which is a different case (defect 4) and the one the twin reports as `cp: cannot stat`.
     """
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
+    for rel in (TWIN_REL, WELL_KNOWN_REL, GENERATED_REL, *VENDORED):
         if rel == TWIN_REL and not (ROOT / rel).is_file():
             continue  # retired (PLAN-retire-bash-oracles B3): compare mode reads its golden
         shutil.copy2(ROOT / rel, root / rel)
@@ -583,16 +582,8 @@ def test_a_missing_rm_stops_before_anything_is_copied(tmp_path) -> None:
     _agree(old_t, new_t, "rm-absent")
 
 
-def test_the_port_and_the_twin_agree_about_the_repo_root_in_this_checkout() -> None:
-    proc = subprocess.run(
-        [BASH, "-c", 'source "$1" && get_repo_root', "bash", str(ROOT / COMMON_REL)],
-        capture_output=True,
-        text=True,
-        check=True,
-        timeout=60,
-    )
-    assert proc.stdout.strip() == str(port.repo_root())
-    assert proc.stdout.strip() == str(ROOT)
+def test_the_port_resolves_the_repo_root_in_this_checkout() -> None:
+    assert str(port.repo_root()) == str(ROOT)
 
 
 def test_defect_2_nothing_in_the_tree_writes_the_manifest_path_this_reads() -> None:

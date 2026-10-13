@@ -43,20 +43,22 @@ WHERE THIS REIMPLEMENTS grep, sed, sort, comm AND awk, AND WHY THE ANSWERS AGREE
 WHAT IS NOT PORTED, AND WHY IT IS NOT A GAP. The twin's `|| true` on its grep is a bash-specific defence: without it, a file naming no `.ci/` path makes grep exit 1, `pipefail` carries that out, and `set -e` kills the caller with an empty stderr. Python has no such hazard, but the CASE that proves the hazard is closed is kept verbatim -- a file with no `.ci` path must leave the
 scan alive and return an empty result -- because what the case really asserts is "the scan survives a file with nothing in it", and that claim is language-independent.
 
-NO `xdist_group`, WITH ONE THING WORTH SAYING OUT LOUD. Two cases execute `.ci/scripts/test/gates/test-media-r2.sh` and `.ci/media/coverage.sh`, which are real programs in the checkout, but both are READ-ONLY with respect to the tree: the r2 twin builds its fixtures under its own `mktemp -d`, and the coverage probe writes only to the trace file it is handed. Nothing here writes
-into the repository, so there is no state for two workers to share.
+NO `xdist_group`, WITH ONE THING WORTH SAYING OUT LOUD. Two cases execute `.ci/media/coverage.sh`, a real program in the checkout, and the coverage probe in turn runs `test_gate_media_r2.py` in a child pytest. Both are READ-ONLY with respect to the tree: the r2 cases build their fixtures under their own temp directories, and the probe writes only to the trace
+directory it makes under TMPDIR. Nothing here writes into the repository, so there is no state for two workers to share.
+
+THE COVERAGE PROBE'S SUBJECT IS `test_gate_media_r2.py`, chosen on 2026-10-08 when `.ci/scripts/test/gates/test-media-r2.sh` (the last bash media gate test) was deleted after its golden was frozen. It is the smallest module behind the fastest port: about a second, both functions of r2.sh driven, and a known floor (r2.sh at 83 percent when chosen) far above the 50 percent the
+non-vacuity case demands. The seam case drives `media_verify.media_run_module` directly, on and off, because that is the function the seam lives in.
 """
 
 import pathlib
 import re
 
 from rediacc_ci import paths
-from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.gates import harness, media_verify
 
 ROOT = paths.repo_root()
 COVERAGE = ROOT / ".ci" / "media" / "coverage.sh"
 R2_DOC = ROOT / ".ci" / "docs" / "r2-media-setup.md"
-MEDIA_R2_TWIN = ROOT / ".ci" / "scripts" / "test" / "gates" / "test-media-r2.sh"
 
 CI_PATH_RE = re.compile(r"\.ci/[A-Za-z0-9._*/-]+")
 DEFINED_FN_RE = re.compile(r"^([a-z_][a-z0-9_]*)\(\)", re.MULTILINE)
@@ -175,7 +177,7 @@ def test_the_dangling_path_scan_can_fail(gate, tmp_path):
         gate.log_fail("the scan did not notice a comment naming a .ci path that does not exist")
 
     fresh = tmp_path / "fresh.sh"
-    fresh.write_text("# see .ci/media/verify.sh for details\n", encoding="utf-8")
+    fresh.write_text("# see .ci/media/r2.sh for details\n", encoding="utf-8")
     if dangling_ci_paths(fresh):
         gate.log_fail(
             "the scan reported a finding for a .ci path that does exist, so it fires on everything"
@@ -237,32 +239,38 @@ def test_the_coverage_probe_still_measures_something(gate):
     )
 
 
-def test_the_coverage_seam_does_not_perturb_the_run(gate, tmp_path):
+def test_the_coverage_seam_does_not_perturb_the_run(gate, tmp_path, monkeypatch):
     # THE CLAIM COVERAGE.SH MAKES ABOUT ITSELF, asserted rather than believed. The
     # first design of this probe forced SHELLOPTS=xtrace into every child shell, and
     # eight of the ten media gate tests then failed, because media_run_module captures merged stdout and stderr and the behaviour cases assert on that text.
-    trace = tmp_path / "trace"
-    off = harness.run(["bash", str(MEDIA_R2_TWIN)], timeout=600)
-    on = harness.run(
-        ["bash", str(MEDIA_R2_TWIN)],
-        env={"MEDIA_COVERAGE_FILE": str(trace)},
-        timeout=600,
+    # The credentials-absent path of both r2.sh functions: it runs log_warn, a `return`, and no external command, so the two runs below differ ONLY in the seam.
+    code = (
+        "unset CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY "
+        "CLOUDFLARE_R2_MEDIA_ENDPOINT\n"
+        "www_tutorial_audio_restore\nwww_tutorial_audio_upload\n"
     )
-    gate.assert_eq(on.rc, off.rc, "tracing must not change whether a gate test passes")
-    if on.out != off.out:
+    trace = tmp_path / "trace"
+    monkeypatch.delenv("MEDIA_COVERAGE_FILE", raising=False)
+    off = media_verify.media_run_module(tmp_path, "r2.sh", code)
+    monkeypatch.setenv("MEDIA_COVERAGE_FILE", str(trace))
+    on = media_verify.media_run_module(tmp_path, "r2.sh", code)
+    monkeypatch.delenv("MEDIA_COVERAGE_FILE")
+    gate.assert_eq(on.rc, off.rc, "tracing must not change whether the module call succeeds")
+    if (on.out, on.err) != (off.out, off.err):
         gate.log_fail(
-            "tracing changed what the gate test printed:\n--- off ---\n%s\n--- on ---\n%s"
-            % (off.out, on.out)
+            "tracing changed what the module printed:\n--- off ---\n%s\n--- on ---\n%s"
+            % (off.combined, on.combined)
         )
-    # And the trace must actually have been written, or the comparison above is between two untraced runs and proves nothing at all.
-    if not (trace.is_file() and trace.stat().st_size > 0):
+    # And the trace must actually have been written, and name r2.sh, or the comparison above is between two untraced runs and proves nothing at all.
+    traced = trace.read_text(encoding="utf-8") if trace.is_file() else ""
+    if "|%s|" % (media_verify.MEDIA_DIR / "r2.sh") not in traced:
         gate.log_fail(
-            "MEDIA_COVERAGE_FILE produced no trace, so the two runs compared above were "
-            "identical for the wrong reason"
+            "MEDIA_COVERAGE_FILE produced no trace line for r2.sh, so the two runs compared "
+            "above were identical for the wrong reason"
         )
     gate.log_pass(
-        "a gate test's exit status and its entire stdout are identical with the coverage "
-        "seam on and off, and the seam did write a trace"
+        "media_run_module's exit status and both streams are identical with the coverage "
+        "seam on and off, and the seam did write a trace naming r2.sh"
     )
 
 
@@ -430,11 +438,10 @@ def test_the_untested_module_report_can_fail(gate, tmp_path):
         directory.mkdir(parents=True, exist_ok=True)
     (mods / "covered.sh").write_text("covered_fn() { :; }\n", encoding="utf-8")
     (mods / "lonely.sh").write_text("lonely_fn() { :; }\n", encoding="utf-8")
-    fixture = gates / "test-media-fixture.sh"
+    fixture = gates / "test_gate_media_fixture.py"
     # lonely.sh is named ONLY in a comment, which must not count as a test.
     fixture.write_text(
-        "#!/bin/bash\n# this header mentions lonely.sh in prose\n"
-        'MODULE="$ROOT/.ci/media/covered.sh"\n',
+        '# this header mentions lonely.sh in prose\nMODULE = MEDIA_DIR / "covered.sh"\n',
         encoding="utf-8",
     )
 
@@ -461,8 +468,8 @@ def test_the_untested_module_report_can_fail(gate, tmp_path):
 
     # THE OTHER DIRECTION.
     fixture.write_text(
-        '#!/bin/bash\nmedia_run_module "$1" "lonely.sh" "$2"\n'
-        'MODULE="$ROOT/.ci/media/covered.sh"\n',
+        'media_verify.media_run_module(root, "lonely.sh", code)\n'
+        'MODULE = MEDIA_DIR / "covered.sh"\n',
         encoding="utf-8",
     )
     result = probe(mods, gates)
@@ -478,3 +485,20 @@ def test_the_untested_module_report_can_fail(gate, tmp_path):
         "the untested-module report names a planted module, ignores a prose-only mention, "
         "passes when every module is named in code, and refuses an empty corpus"
     )
+
+
+def test_a_port_that_cannot_be_collected_makes_the_probe_exit_non_zero(gate, tmp_path):
+    # A pytest exit of 2 (an import error in the port) used to land in the "failed" list, print a zero row and exit 0, which is a report of nothing that looks like a report.
+    gates = tmp_path / "gates"
+    gates.mkdir(parents=True, exist_ok=True)
+    (gates / "test_gate_media_broken.py").write_text(
+        'import zz_no_such_module_zz\nMODULE = "covered.sh"\n', encoding="utf-8"
+    )
+    result = harness.run(
+        [str(COVERAGE), "--only", "broken"],
+        env={"MEDIA_COVERAGE_GATES_DIR": str(gates)},
+        timeout=600,
+    )
+    gate.assert_exit(1, result, "a port pytest cannot collect must fail the probe")
+    gate.assert_contains(result.combined, "exited 2", "the refusal must name pytest's exit code")
+    gate.log_pass("the probe refuses a port that cannot be collected")

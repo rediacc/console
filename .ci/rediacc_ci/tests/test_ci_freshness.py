@@ -5,6 +5,7 @@ FIXTURE-DRIVEN, NO NETWORK. Every check here is a `python -c` argv run under a `
 
 from __future__ import annotations
 
+import io
 import json
 import re
 import sys
@@ -510,3 +511,124 @@ def test_package_json_budget_freshness_runs_the_registry_at_pr_cadence():
     assert "rediacc_ci.ci.freshness --check --cadence pr" in cmd, cmd
     for old in OLD_CALLS:
         assert old not in cmd, "check:ci-budget-freshness calls %s directly: %s" % (old, cmd)
+
+
+def test_pr_freshness_step_runs_on_pull_requests_only() -> None:
+    """The rolling-sample check reds on main/scheduled runs with no PR to refresh the file (nightly Console CI red 2026-10-06..08, PLAN-plan-per-pr-loop R1); housekeeping's nightly budget-check covers those events."""
+    text = (REAL_ROOT / ".github/workflows/ci-quality.yml").read_text(encoding="utf-8")
+    m = re.search(
+        r"- name: CI time budget freshness\n\s+if: (?P<cond>[^\n]+)\n\s+run: npm run check:ci-budget-freshness",
+        text,
+    )
+    assert m, "the CI time budget freshness step moved or lost its if:"
+    assert (
+        m.group("cond")
+        == "${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}"
+    )
+
+
+# --------------------------------------------------------------------------- finding keys (review d21f5510.1) ---------------------------------------------------------------------------
+
+
+def _keys(text: str) -> list[str]:
+    return [
+        line[len("::finding::") :] for line in text.splitlines() if line.startswith("::finding::")
+    ]
+
+
+def test_a_keyed_checks_finding_lines_reach_stdout_and_the_report_whole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """The runner reads `::finding::<key>` at the start of a line on either stream, so the check's own lines pass through the section untouched, and freshness adds none of its own."""
+    code = "import sys; sys.stderr.write('  - lane x has NO artifacts\\n::finding::lane-durations:no-unit-artifacts:x\\n'); sys.exit(1)"
+    root = make_root(
+        tmp_path, [entry("a/lane-durations.json", py(code)), entry("b/ok.json", py("print('ok')"))]
+    )
+    report = tmp_path / "report.txt"
+    assert (
+        run_main(monkeypatch, root, ["--check", "--cadence", "pr", "--report-to", str(report)]) == 1
+    )
+    assert _keys(capsys.readouterr().out) == ["lane-durations:no-unit-artifacts:x"]
+    assert _keys(report.read_text(encoding="utf-8")) == ["lane-durations:no-unit-artifacts:x"]
+
+
+def test_a_failure_with_no_key_gets_one_from_freshness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """A failing check that printed no key, a missing artifact and a check that could not start each get a `freshness:<class>:<artifact>` key, so no failure of this gate is ever keyless beside carried keys."""
+    root = make_root(
+        tmp_path,
+        [
+            entry("a/lane-durations.json", py("import sys; print('drifted 40%'); sys.exit(1)")),
+            entry("b/gate-costs.json", py("pass")),
+            entry("c/other.json", ["/nonexistent/freshness-probe-binary"]),
+            entry("d/fine.json", py("print('ok')")),
+        ],
+    )
+    (root / "b/gate-costs.json").unlink()
+    assert run_main(monkeypatch, root, ["--check", "--cadence", "pr"]) == 1
+    assert _keys(capsys.readouterr().out) == [
+        "freshness:unkeyed-failure:lane-durations",
+        "freshness:missing:gate-costs",
+        "freshness:unchecked:other",
+    ]
+
+
+def test_keys_that_do_not_account_for_the_failure_get_the_unkeyed_key_too(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    """Review 8abc48a1.2: a check that printed a keyed finding and then crashed, or exited with something other than the finding exit code, also gets `freshness:unkeyed-failure:<artifact>`, so a carry of its one key does not carry the crash. The control is the same keyed finding on a plain exit 1, which gets nothing added."""
+    keyed = "import sys; print('::finding::lane-durations:stale:unit', file=sys.stderr); "
+    root = make_root(
+        tmp_path,
+        [
+            entry("a/crashed.json", py(keyed + "raise RuntimeError('after the key')")),
+            entry("b/odd-exit.json", py(keyed + "sys.exit(3)")),
+            entry("c/accounted.json", py(keyed + "sys.exit(1)")),
+        ],
+    )
+    assert run_main(monkeypatch, root, ["--check", "--cadence", "pr"]) == 1
+    assert _keys(capsys.readouterr().out) == [
+        "lane-durations:stale:unit",
+        "freshness:unkeyed-failure:crashed",
+        "lane-durations:stale:unit",
+        "freshness:unkeyed-failure:odd-exit",
+        "lane-durations:stale:unit",
+    ]
+
+
+def test_a_green_run_emits_no_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+):
+    root = make_root(tmp_path, [entry("a/ok.json", py("print('ok')"))])
+    assert run_main(monkeypatch, root, ["--check", "--cadence", "pr"]) == 0
+    captured = capsys.readouterr()
+    assert _keys(captured.out + captured.err) == []
+
+
+def test_keyed_is_a_string_with_a_key_and_emit_refuses_a_bare_one():
+    finding = fr.Keyed(
+        "lane-durations:no-unit-artifacts:quality-pytest", "lane 'quality-pytest' has NO ..."
+    )
+    assert finding == "lane 'quality-pytest' has NO ..."
+    assert finding.key == "lane-durations:no-unit-artifacts:quality-pytest"
+    buf = io.StringIO()
+    assert fr.emit_findings([finding, fr.Keyed(finding.key, "again")], buf) == [finding.key]
+    assert buf.getvalue() == "::finding::%s\n" % finding.key
+    with pytest.raises(TypeError, match="unkeyed finding"):
+        fr.emit_findings([finding, "a bare string"], buf)
+    with pytest.raises(ValueError, match="finding key"):
+        fr.Keyed("has a space", "x")
+    assert fr.key_part("Validate Promotion (stable)") == "Validate-Promotion-stable"
+    assert fr.artifact_name(".ci/config/lane-durations.json") == "lane-durations"
+
+
+def test_the_carried_budget_freshness_entry_names_keys_not_a_wildcard():
+    """Review d21f5510.1, .3: the carry is a list of exact keys, each in the `lane-durations:no-unit-artifacts:<lane>` shape this module's producer emits, and no `"*"` remains for this gate."""
+    carried = json.loads((REAL_ROOT / ".ci/config/carried-reds.json").read_text(encoding="utf-8"))
+    entries = [e for e in carried["carried"] if e["gate"] == "check:ci-budget-freshness"]
+    for e in entries:
+        assert isinstance(e["findings"], list), "a wildcard carries every future budget or cost red"
+        assert e["findings"], e
+        for key in e["findings"]:
+            assert key.startswith("lane-durations:no-unit-artifacts:"), key

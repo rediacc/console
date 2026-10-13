@@ -34,6 +34,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import simulate_promotion as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
@@ -53,8 +54,6 @@ pytestmark = pytest.mark.xdist_group("deploy-fixed-tmp")
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/deploy/simulate-promotion.sh"
 TWIN = ROOT / TWIN_REL
-PURGE = ROOT / ".ci" / "scripts" / "deploy" / "cf-purge-urls.sh"
-COMMON = ROOT / ".ci" / "scripts" / "lib" / "common.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "simulate_promotion.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
@@ -285,15 +284,13 @@ def _bin(root: pathlib.Path, *, drop: str = "") -> str:
 
 
 def fixture(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None) -> pathlib.Path:
-    """A throwaway repository holding the twin, cf-purge-urls.sh and common.sh, plus one bucket copy per side."""
+    """A throwaway repository holding the twin and common.sh, plus one bucket copy per side."""
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
-    # The twin only while a regolden records from it; the purge script and its library stay, because the PORT still runs cf-purge-urls.sh.
+    # The twin only while a regolden records from it; common.sh stays, because the twin sources it.
     if diff.regolden_mode(TWIN_REL) == "bash":
         shutil.copy2(TWIN, root / ".ci" / "scripts" / "deploy" / TWIN.name)
-    shutil.copy2(PURGE, root / ".ci" / "scripts" / "deploy" / PURGE.name)
-    shutil.copy2(COMMON, root / ".ci" / "scripts" / "lib" / COMMON.name)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
     shutil.copy2(
         ROOT / ".ci" / "config" / "well-known.env", root / ".ci" / "config" / "well-known.env"
@@ -417,13 +414,13 @@ def _agree(old, new, label: str) -> None:
     new_proc, new_calls = new
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
-        f"old stderr: {old_proc.stderr!r}\nnew stderr: {new_proc.stderr!r}"
+        f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
     )
-    assert sorted(new_proc.stdout.splitlines()) == sorted(old_proc.stdout.splitlines()), (
-        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{new_proc.stdout!r}"
+    assert sorted(as_twin(new_proc.stdout).splitlines()) == sorted(old_proc.stdout.splitlines()), (
+        f"{label}: stdout diverged:\n{old_proc.stdout!r}\n{as_twin(new_proc.stdout)!r}"
     )
-    assert sorted(new_proc.stderr.splitlines()) == sorted(old_proc.stderr.splitlines()), (
-        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{new_proc.stderr!r}"
+    assert sorted(as_twin(new_proc.stderr).splitlines()) == sorted(old_proc.stderr.splitlines()), (
+        f"{label}: stderr diverged:\n{old_proc.stderr!r}\n{as_twin(new_proc.stderr)!r}"
     )
     assert _normalise(new_calls) == _normalise(old_calls), (
         f"{label}: call log diverged:\n{old_calls}\n---\n{new_calls}"
@@ -674,7 +671,7 @@ def test_fact_an_unset_zone_is_an_unbound_variable_at_the_end(tmp_path) -> None:
         old_proc.stderr
     )
     assert new_proc.stderr.endswith(
-        "simulate-promotion.sh: CLOUDFLARE_ZONE_ID: unbound variable\n"
+        "rediacc_ci.deploy.simulate_promotion: CLOUDFLARE_ZONE_ID: unbound variable\n"
     ), repr(new_proc.stderr)
 
     # THE PROMOTION HAS ALREADY HAPPENED, on both sides.
@@ -921,10 +918,11 @@ def test_strip_prefix_and_read_lines_follow_bash_rather_than_python() -> None:
     assert port.read_lines("") == []
 
 
-def test_the_purge_script_is_still_the_bash_one_and_still_exists() -> None:
-    assert port.PURGE_SCRIPT_RELATIVE == ".ci/scripts/deploy/cf-purge-urls.sh"
-    assert PURGE.is_file()
-    assert port.purge_argv("z")[-2:] == ["--zone", "z"]
+def test_the_purge_is_the_in_process_cf_purge_urls_port() -> None:
+    """The purge script is retired: the module calls `cf_purge_urls.purge` and keeps no script path."""
+    assert port.cf_purge_urls.__name__ == "rediacc_ci.deploy.cf_purge_urls"
+    assert not hasattr(port, "PURGE_SCRIPT_RELATIVE")
+    assert not hasattr(port, "purge_argv")
 
 
 def test_normalise_ignores_where_a_parallel_retry_sleep_lands() -> None:
@@ -938,3 +936,9 @@ def test_inverse_normalise_still_sees_a_missing_retry() -> None:
     first = "call: aws s3 ls x\ncall: aws s3api copy-object A\ncall: sleep 5\ncall: aws s3api copy-object A\n"
     second = "call: aws s3 ls x\ncall: aws s3api copy-object A\ncall: aws s3api copy-object A\n"
     assert _normalise(first) != _normalise(second)
+
+
+def test_diagnostics_are_prefixed_with_the_module_name() -> None:
+    """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
+    assert port.SELF == "rediacc_ci.deploy.simulate_promotion"
+    assert port.__name__ == port.SELF

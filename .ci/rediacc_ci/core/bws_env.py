@@ -111,7 +111,7 @@ LIST_ARGV = ("secret", "list", "--output", "json", "--color", "no")
 LIST_TIMEOUT_S = 60
 
 NO_TOKEN = [
-    "bws-env: BWS_ACCESS_TOKEN is not set and no token file was found.",
+    "rediacc_ci.core.bws_env: BWS_ACCESS_TOKEN is not set and no token file was found.",
     "  It is the one credential that cannot come from Bitwarden -- no bws verb",
     "  mints or rotates a machine-account token. Put it in",
     "  ${XDG_CONFIG_HOME:-~/.config}/rediacc/bws-access-token (mode 0600).",
@@ -130,15 +130,15 @@ BOOTSTRAP_FILE_NAME = "bws-access-token"
 # A world- or group-readable credential file is refused rather than read. Reading it would work, which is exactly the problem: the widened mode would then persist unnoticed until the file was copied somewhere that mattered.
 BOOTSTRAP_MODE_MASK = 0o077
 NO_BINARY = [
-    "bws-env: the bws CLI is not on PATH (set BWS_BIN to point at it).",
+    "rediacc_ci.core.bws_env: the bws CLI is not on PATH (set BWS_BIN to point at it).",
     "  The devcontainer installs it; see .devcontainer/Dockerfile.",
 ]
 LIST_FAILED = [
-    "bws-env: bws secret list failed. If the token is expired this is what",
+    "rediacc_ci.core.bws_env: bws secret list failed. If the token is expired this is what",
     "  that looks like; the rotation notice below says what to do about it.",
 ]
 LIST_TRANSIENT = [
-    "bws-env: bws secret list failed on every attempt with a transient Bitwarden",
+    "rediacc_ci.core.bws_env: bws secret list failed on every attempt with a transient Bitwarden",
     "  error (HTTP 429 rate limit, a 5xx, or a network timeout). The credential is",
     "  fine: do NOT rotate it. Run again in a minute, or with fewer parallel callers.",
 ]
@@ -210,6 +210,9 @@ CACHEABLE = (
     "UPSTREAM_PUBLIC_KEY",
 )
 
+# The suffix a rotation's pre-rotation archive clone carries. The SAME literal is pinned in private/account/scripts/rotation/consumers/bitwarden-sm.ts and scripts/ops/bws-map-refresh.py; `check:ci-bws-map` assertion 15 asserts all three agree and that no mapped name matches it.
+ARCHIVE_PATTERN = r"__ROTATED_\d{8}T\d{6}Z$"
+
 # The STORE names each cacheable LOCAL name may be read from (PLAN-account-env-to-bws T15). Hardcoded for the same reason as CACHEABLE: the allowlist is on the LOCAL name, and without a fixed pair table an alias would turn `cache-to` into `ANY_SECRET > ACCOUNT_ED25519_PUBLIC_KEY`.
 #
 # The `_DEV` spellings are why this exists. Local development signs licences with the DEV keypair, so a dev renet must bake the DEV public key; caching the unsuffixed store entry would bake the PRODUCTION key and break every dev-signed licence.
@@ -246,28 +249,28 @@ JSON_REQUIRED = {
 
 USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
-  python3 -m rediacc_ci.core.bws_env names [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env names [SPEC ...]
       Resolve, then print the sorted LOCAL names that came back with a NON-EMPTY
       value, one per line, on stdout. Diagnostics on stderr, exactly as the twin
       writes them. Exit 0 when every requested name resolved, 1 otherwise.
       A SPEC is `NAME` or `NAME > LOCAL_NAME`; the grammar is the one
       `.github/actions/bws-secrets` uses, parsed by the same rule.
 
-  python3 -m rediacc_ci.core.bws_env map
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env map
       The names the map knows, sorted. No store access.
 
-  python3 -m rediacc_ci.core.bws_env json NAME
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env json NAME
       NAME's value is a JSON object. Print the sorted KEYS it binds, one per
       line. Refuses a non-object, a key that is not a legal identifier, and a
       record missing any key JSON_REQUIRED demands for NAME.
 
-  python3 -m rediacc_ci.core.bws_env cache-to FILE SPEC [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to FILE SPEC [SPEC ...]
       Write `LOCAL=value` lines to FILE, mode 0644. Every LOCAL must be on the
       three-name CACHEABLE allowlist of PUBLIC keys, and an aliased store name
       must be one CACHE_STORE_NAMES pairs with it; anything else is refused
       and no file is written at all.
 
-  python3 -m rediacc_ci.core.bws_env rotation-notice RC
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env rotation-notice RC
       Classify ONE `bws` failure and print the rotation notice on stdout when
       the verdict is a rotation. RC is the exit code; the captured stderr
       arrives on STDIN, never on argv, and is matched against fixed markers and
@@ -276,25 +279,25 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
       This verb exists so `scripts/ops/bws-map-refresh.py` can reach the ONE
       classifier without a sys.path insert of its own.
 
-  python3 -m rediacc_ci.core.bws_env fingerprint
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env fingerprint
       16 hex digits of sha256 over the CLIENT ID half of BWS_ACCESS_TOKEN. The
       secret half never enters the digest, which is what makes the result
       publishable. Exit 1 when the variable is absent or is not a token shape.
 
-  python3 -m rediacc_ci.core.bws_env compare FILE [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env compare FILE [SPEC ...]
       For each SPEC (default: every name FILE assigns), compare FILE's value
       of LOCAL against the store's value of NAME, in process. Prints
       `LOCAL MATCH|MISMATCH|ABSENT|LOCAL-EMPTY`, never a value or a length.
       Exit 0 only when every line is MATCH.
 
-  python3 -m rediacc_ci.core.bws_env exec --profile P [--profile Q] -- CMD [ARG ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile P [--profile Q] -- CMD [ARG ...]
       Bind the profiles' specs (from the `consumers` object of
       .ci/config/secret-supply.json) into CMD's environment and exec it. The
       shell wins; a profile already listed in REDIACC_BWS_PROFILES is skipped.
       Nothing is written to stdout or to disk. With no token, it proceeds only
       when every REQUIRED name is already in the environment.
 
-  python3 -m rediacc_ci.core.bws_env store-from-env SPEC [SPEC ...]
+  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env store-from-env SPEC [SPEC ...]
       For each `STORE > LOCAL` spec, write the environment's LOCAL value into
       the existing store entry STORE, then read it back with the same
       comparison `compare` makes. Prints names and MATCH/MISMATCH only.
@@ -462,14 +465,15 @@ def expand_json(name: str, value: str, required: tuple[str, ...] | None = None) 
     except json.JSONDecodeError as exc:
         raise RefusalError(
             [
-                "bws-env: %s does not parse as JSON, so it cannot be expanded." % name,
+                "rediacc_ci.core.bws_env: %s does not parse as JSON, so it cannot be expanded."
+                % name,
                 "  The store entry's value must be a JSON object; fix the store entry.",
             ]
         ) from exc
     if not isinstance(doc, dict):
         raise RefusalError(
             [
-                "bws-env: %s is a JSON %s, not an object; there is nothing to bind."
+                "rediacc_ci.core.bws_env: %s is a JSON %s, not an object; there is nothing to bind."
                 % (name, type(doc).__name__),
                 "  Expanding a string would iterate its characters and a list its indices,",
                 "  so this refuses rather than binding something that looks like a result.",
@@ -479,7 +483,7 @@ def expand_json(name: str, value: str, required: tuple[str, ...] | None = None) 
     if bad:
         raise RefusalError(
             [
-                "bws-env: %s has %d key(s) that are not legal identifiers: %s"
+                "rediacc_ci.core.bws_env: %s has %d key(s) that are not legal identifiers: %s"
                 % (name, len(bad), " ".join(bad)),
                 "  No shell can export such a name and no consumer can read it, so binding",
                 "  it would create a variable that exists and is unreachable.",
@@ -490,7 +494,7 @@ def expand_json(name: str, value: str, required: tuple[str, ...] | None = None) 
     if absent:
         raise RefusalError(
             [
-                "bws-env: %s is missing %d required key(s): %s"
+                "rediacc_ci.core.bws_env: %s is missing %d required key(s): %s"
                 % (name, len(absent), " ".join(absent)),
                 "  A partial record binds what it found and returns 0, which is how an",
                 "  invoice ships with a blank field. Fix the store entry; do not bind a subset.",
@@ -515,7 +519,7 @@ def cache_refusal(names: list[str]) -> list[str] | None:
     ]
     if unpaired and not outside:
         return [
-            "bws-env: cache-to refuses %d alias(es) outside the pair table: %s"
+            "rediacc_ci.core.bws_env: cache-to refuses %d alias(es) outside the pair table: %s"
             % (len(unpaired), ", ".join(unpaired)),
             "  A cacheable local name may only be read from the store names paired",
             "  with it in CACHE_STORE_NAMES. No file was written.",
@@ -523,7 +527,7 @@ def cache_refusal(names: list[str]) -> list[str] | None:
     if not outside:
         return None
     return [
-        "bws-env: cache-to refuses %d name(s) outside the public allowlist: %s"
+        "rediacc_ci.core.bws_env: cache-to refuses %d name(s) outside the public allowlist: %s"
         % (len(outside), " ".join(sorted(set(outside)))),
         "  Only these may ever be written to disk: %s" % " ".join(CACHEABLE),
         "  All three are PUBLIC keys already baked into built artefacts. Caching anything",
@@ -570,7 +574,8 @@ def notice_lines(env: dict | None = None) -> list[str]:
         text = ""
     if not text.strip():
         return [
-            "bws-env: %s is missing or empty, so the rotation procedure cannot be" % path,
+            "rediacc_ci.core.bws_env: %s is missing or empty, so the rotation procedure cannot be"
+            % path,
             "  printed. The credential still needs rotating; the instructions for it are",
             "  what is absent. Restore that file from git.",
         ]
@@ -645,7 +650,8 @@ def read_token(env: dict | None = None) -> str:
     if wide:
         raise RefusalError(
             [
-                "bws-env: refusing to read the bootstrap token: %s." % "; ".join(wide),
+                "rediacc_ci.core.bws_env: refusing to read the bootstrap token: %s."
+                % "; ".join(wide),
                 "  The file must be 0600 and its directory 0700. Fix it with:",
                 "    chmod 700 %s && chmod 600 %s" % (os.path.dirname(path), path),
             ]
@@ -687,7 +693,9 @@ def load(
         raise RefusalError(NO_BINARY)
     path = map_path(environ)
     if not os.path.isfile(path):
-        raise RefusalError(["bws-env: %s is missing; nothing can be resolved by name." % path])
+        raise RefusalError(
+            ["rediacc_ci.core.bws_env: %s is missing; nothing can be resolved by name." % path]
+        )
 
     rows = listing(bws, environ)
 
@@ -711,14 +719,14 @@ def load(
     rc = 0
     if missing:
         print(
-            "bws-env: %d name(s) absent or empty in the store: %s"
+            "rediacc_ci.core.bws_env: %d name(s) absent or empty in the store: %s"
             % (len(missing), " ".join(missing)),
             file=err,
         )
         for line in MISSING_TAIL:
             print(line, file=err)
         rc = 1
-    print("bws-env: exported %d secret(s)" % len(resolved), file=err)
+    print("rediacc_ci.core.bws_env: exported %d secret(s)" % len(resolved), file=err)
     return resolved, missing, rc
 
 
@@ -734,13 +742,14 @@ def main(argv: list[str]) -> int:
         path = map_path()
         if not os.path.isfile(path):
             print(
-                "bws-env: %s is missing; nothing can be resolved by name." % path, file=sys.stderr
+                "rediacc_ci.core.bws_env: %s is missing; nothing can be resolved by name." % path,
+                file=sys.stderr,
             )
             return 1
         names = mapped_names(path)
         if not names:
             print(
-                "bws-env: the map lists zero secrets, so every later lookup would\n"
+                "rediacc_ci.core.bws_env: the map lists zero secrets, so every later lookup would\n"
                 "  resolve nothing and report success. That is not an empty store,\n"
                 "  it is an unusable map.",
                 file=sys.stderr,
@@ -751,30 +760,39 @@ def main(argv: list[str]) -> int:
         return 0
     if verb == "json":
         if len(rest) != 1:
-            print("bws-env: json takes exactly one NAME", file=sys.stderr)
+            print("rediacc_ci.core.bws_env: json takes exactly one NAME", file=sys.stderr)
             return 2
         return _json_verb(rest[0])
     if verb == "cache-to":
         if len(rest) < 2:
-            print("bws-env: cache-to takes a FILE and at least one NAME", file=sys.stderr)
+            print(
+                "rediacc_ci.core.bws_env: cache-to takes a FILE and at least one NAME",
+                file=sys.stderr,
+            )
             return 2
         return _cache_verb(rest[0], rest[1:])
     if verb == "rotation-notice":
         if len(rest) != 1:
-            print("bws-env: rotation-notice takes exactly one exit code", file=sys.stderr)
+            print(
+                "rediacc_ci.core.bws_env: rotation-notice takes exactly one exit code",
+                file=sys.stderr,
+            )
             return 2
         return _rotation_notice_verb(rest[0])
     if verb == "fingerprint":
         return _fingerprint_verb()
     if verb == "compare":
         if not rest:
-            print("bws-env: compare takes a FILE and optional SPECs", file=sys.stderr)
+            print(
+                "rediacc_ci.core.bws_env: compare takes a FILE and optional SPECs", file=sys.stderr
+            )
             return 2
         return _compare_verb(rest[0], rest[1:])
     if verb == "store-from-env":
         if not rest:
             print(
-                "bws-env: store-from-env takes at least one `STORE > LOCAL` SPEC", file=sys.stderr
+                "rediacc_ci.core.bws_env: store-from-env takes at least one `STORE > LOCAL` SPEC",
+                file=sys.stderr,
             )
             return 2
         return _store_verb(rest)
@@ -808,7 +826,10 @@ def _json_verb(name: str) -> int:
         return 1
     for key in sorted(bound):
         print(key)
-    print("bws-env: %s expanded to %d binding(s)" % (name, len(bound)), file=sys.stderr)
+    print(
+        "rediacc_ci.core.bws_env: %s expanded to %d binding(s)" % (name, len(bound)),
+        file=sys.stderr,
+    )
     return 0
 
 
@@ -832,7 +853,7 @@ def _cache_verb(target: str, names: list[str]) -> int:
         return 1
     if missing:
         print(
-            "bws-env: refusing to write a partial cache to %s; %d name(s) unresolved"
+            "rediacc_ci.core.bws_env: refusing to write a partial cache to %s; %d name(s) unresolved"
             % (target, len(missing)),
             file=sys.stderr,
         )
@@ -843,7 +864,7 @@ def _cache_verb(target: str, names: list[str]) -> int:
     # 0644 BY EXPLICIT chmod, not by umask. These are public keys and four build steps must read them under whatever user the build runs as; inheriting a 0600 umask would make the cache work for its writer and fail for its readers, which is the hardest kind of environment bug to see.
     os.chmod(target, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
     print(
-        "bws-env: cached %d public key(s) to %s (mode 0644)" % (len(names), target),
+        "rediacc_ci.core.bws_env: cached %d public key(s) to %s (mode 0644)" % (len(names), target),
         file=sys.stderr,
     )
     return 0
@@ -860,7 +881,8 @@ def _rotation_notice_verb(raw_rc: str) -> int:
         rc = int(raw_rc)
     except ValueError:
         print(
-            "bws-env: rotation-notice needs an integer exit code, got %r" % raw_rc, file=sys.stderr
+            "rediacc_ci.core.bws_env: rotation-notice needs an integer exit code, got %r" % raw_rc,
+            file=sys.stderr,
         )
         return 2
     stderr = sys.stdin.read() if not sys.stdin.isatty() else ""
@@ -890,7 +912,7 @@ def _fingerprint_verb() -> int:
     digest = client_fingerprint(token)
     if not digest:
         print(
-            "bws-env: %s (and the token file) is absent or is not shaped like `0.<client-id>.<secret>:<key>`,"
+            "rediacc_ci.core.bws_env: %s (and the token file) is absent or is not shaped like `0.<client-id>.<secret>:<key>`,"
             % ACCESS_ENV,
             file=sys.stderr,
         )
@@ -942,7 +964,7 @@ def _compare_verb(path: str, raw_specs: list[str]) -> int:
     try:
         local = envfile.read_pairs(path, missing_ok=False)
     except envfile.EnvFileError as exc:
-        print("bws-env: %s" % exc, file=sys.stderr)
+        print("rediacc_ci.core.bws_env: %s" % exc, file=sys.stderr)
         return 1
     specs = parse_specs(raw_specs) if raw_specs else [(k, k) for k in sorted(local)]
     try:
@@ -960,7 +982,7 @@ def _compare_verb(path: str, raw_specs: list[str]) -> int:
         print("%s %s" % (local_name, verdict))
     bad = sum(1 for _n, v in verdicts if v != MATCH)
     print(
-        "bws-env: compared %d name(s): %d MATCH, %d not"
+        "rediacc_ci.core.bws_env: compared %d name(s): %d MATCH, %d not"
         % (len(verdicts), len(verdicts) - bad, bad),
         file=sys.stderr,
     )
@@ -978,10 +1000,12 @@ def profiles(env: dict | None = None) -> dict[str, dict]:
         with open(path, encoding="utf-8") as handle:
             doc = json.load(handle)
     except (OSError, json.JSONDecodeError) as exc:
-        raise RefusalError(["bws-env: cannot read the profiles in %s (%s)." % (path, exc)]) from exc
+        raise RefusalError(
+            ["rediacc_ci.core.bws_env: cannot read the profiles in %s (%s)." % (path, exc)]
+        ) from exc
     consumers = doc.get("consumers")
     if not isinstance(consumers, dict) or not consumers:
-        raise RefusalError(["bws-env: %s has no `consumers` profiles." % path])
+        raise RefusalError(["rediacc_ci.core.bws_env: %s has no `consumers` profiles." % path])
     return {k: v for k, v in consumers.items() if isinstance(v, dict)}
 
 
@@ -993,7 +1017,7 @@ def profile_specs(
     if unknown:
         raise RefusalError(
             [
-                "bws-env: unknown profile(s): %s" % " ".join(unknown),
+                "rediacc_ci.core.bws_env: unknown profile(s): %s" % " ".join(unknown),
                 "  Known: %s" % " ".join(sorted(table)),
             ]
         )
@@ -1038,7 +1062,7 @@ def hydrate(
             if need_req:
                 raise RefusalError(NO_TOKEN)
             print(
-                "bws-env: no token; %d optional name(s) left unset: %s"
+                "rediacc_ci.core.bws_env: no token; %d optional name(s) left unset: %s"
                 % (len(need_opt), " ".join(s[1] for s in need_opt)),
                 file=err,
             )
@@ -1052,7 +1076,7 @@ def hydrate(
             if absent_req:
                 raise RefusalError(
                     [
-                        "bws-env: %d required name(s) absent or empty in the store: %s"
+                        "rediacc_ci.core.bws_env: %d required name(s) absent or empty in the store: %s"
                         % (len(absent_req), " ".join(absent_req)),
                         *MISSING_TAIL,
                     ]
@@ -1060,7 +1084,7 @@ def hydrate(
             absent_opt = [n for n, _l in need_opt if not pick(rows, n)]
             if absent_opt:
                 print(
-                    "bws-env: %d optional name(s) absent in the store, left unset: %s"
+                    "rediacc_ci.core.bws_env: %d optional name(s) absent in the store, left unset: %s"
                     % (len(absent_opt), " ".join(absent_opt)),
                     file=err,
                 )
@@ -1078,7 +1102,7 @@ def hydrate(
     carried = done + wanted
     environ[PROFILES_ENV] = ",".join(carried)
     print(
-        "bws-env: profile(s) %s: %d name(s) bound, %d already set"
+        "rediacc_ci.core.bws_env: profile(s) %s: %d name(s) bound, %d already set"
         % (
             ",".join(wanted),
             len(resolved),
@@ -1106,13 +1130,17 @@ def _exec_verb(argv: list[str]) -> int:
             i += 1
             continue
         print(
-            "bws-env: exec: unexpected argument %r (want --profile P ... -- CMD)" % argv[i],
+            "rediacc_ci.core.bws_env: exec: unexpected argument %r (want --profile P ... -- CMD)"
+            % argv[i],
             file=sys.stderr,
         )
         return 2
     cmd = argv[i + 1 :] if i < len(argv) else []
     if not names or not cmd:
-        print("bws-env: exec takes at least one --profile and a command after --", file=sys.stderr)
+        print(
+            "rediacc_ci.core.bws_env: exec takes at least one --profile and a command after --",
+            file=sys.stderr,
+        )
         return 2
     try:
         child, _carried = hydrate(names)
@@ -1125,7 +1153,10 @@ def _exec_verb(argv: list[str]) -> int:
     try:
         os.execvpe(cmd[0], cmd, child)  # noqa: S606 -- the child IS the product: its env carries the values, no shell ever sees them
     except OSError as exc:
-        print("bws-env: exec: cannot run %s: %s" % (cmd[0], exc.strerror), file=sys.stderr)
+        print(
+            "rediacc_ci.core.bws_env: exec: cannot run %s: %s" % (cmd[0], exc.strerror),
+            file=sys.stderr,
+        )
         return 127
     return 0  # pragma: no cover -- execvpe does not return
 
@@ -1139,7 +1170,8 @@ def _store_verb(raw_specs: list[str]) -> int:
     missing_local = [local for _n, local in specs if not os.environ.get(local)]
     if missing_local:
         print(
-            "bws-env: store-from-env: not set in the environment: %s" % " ".join(missing_local),
+            "rediacc_ci.core.bws_env: store-from-env: not set in the environment: %s"
+            % " ".join(missing_local),
             file=sys.stderr,
         )
         return 1
@@ -1157,7 +1189,8 @@ def _store_verb(raw_specs: list[str]) -> int:
     absent = [n for n, _l in specs if not ids.get(n)]
     if absent:
         print(
-            "bws-env: store-from-env: not in the store, refusing to create: %s" % " ".join(absent),
+            "rediacc_ci.core.bws_env: store-from-env: not in the store, refusing to create: %s"
+            % " ".join(absent),
             file=sys.stderr,
         )
         return 1
@@ -1183,7 +1216,8 @@ def _store_verb(raw_specs: list[str]) -> int:
         )
         if proc.returncode != 0:
             print(
-                "bws-env: store-from-env: editing %s failed (rc=%d)" % (name, proc.returncode),
+                "rediacc_ci.core.bws_env: store-from-env: editing %s failed (rc=%d)"
+                % (name, proc.returncode),
                 file=sys.stderr,
             )
             return 1

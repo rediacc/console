@@ -9,6 +9,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   3. THE BACKEND'S WHOLE PROCESS TREE IS STOPPED. `npx` forks, so `kill $BACKEND_PID` ended the wrapper and left the tsx server holding the port. The backend (and `stripe listen`) lead their own sessions and the group is signalled.
   4. A MISSING `private/account` IS A FAILURE UNDER CI. The twin logged a warning and exited 0, so a job that forgot `submodules: true` passed having run no test. Outside CI it still skips with exit 0.
   5. `stripe listen` PRINTING SEVERAL `whsec_` TOKENS NO LONGER CORRUPTS THE SECRET: the first is taken (the twin kept a multi-line string).
+  6. THE REAL-PROVIDER SPEC IS PROVEN TO HAVE RUN. The twin predates it. A spec file tagged `@real-provider` drives a real passkey provider (the pinned Bitwarden extension against a throwaway Vaultwarden vault), and a leg that holds one must report at least one such chromium test as `expected` and none skipped or failed. Whether a leg holds one is read from the files themselves, so a tree without the spec behaves exactly as the twin did.
 """
 
 import contextlib
@@ -31,9 +32,11 @@ from rediacc_ci.core import common
 from rediacc_ci.testrun import shard
 
 MIN_WEBAUTHN_TESTS = 20
+REAL_PROVIDER_TAG = "@real-provider"
+MIN_REAL_PROVIDER_TESTS = 1
 LISTEN_TIMEOUT = 90
 DEFAULT_WEBHOOK_FIXTURE = "whsec_e2e_test_webhook_secret_for_simulation_only"
-USAGE = 'usage: run-account-e2e.sh [--projects "chromium firefox"] [--grep TAG] [--skip-setup] [--workers N] [--shard-manifest PATH --shard I/N]'
+USAGE = 'usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e [--projects "chromium firefox"] [--grep TAG] [--skip-setup] [--workers N] [--shard-manifest PATH --shard I/N]'
 REQUIRED_SECRETS = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -121,8 +124,20 @@ def leg_flags(files: list[str], tests_dir: pathlib.Path) -> tuple[bool, bool]:
     return stripe, webauthn
 
 
+def has_real_provider(files: list[str], tests_dir: pathlib.Path) -> bool:
+    """Whether this run holds a `@real-provider` spec: the leg's own files when sharded, else every spec under `tests_dir`."""
+    if files:
+        return any(grep_has(tests_dir / name, REAL_PROVIDER_TAG) for name in files)
+    return any(grep_has(path, REAL_PROVIDER_TAG) for path in sorted(tests_dir.rglob("*.ts")))
+
+
 def webauthn_report(report: dict) -> tuple[dict[str, int], list[str]]:
     """Count `@webauthn` chromium tests by status, the twin's embedded node program as Python."""
+    return tag_report(report, "webauthn")
+
+
+def tag_report(report: dict, tag: str) -> tuple[dict[str, int], list[str]]:
+    """Count the chromium tests tagged `@<tag>` by status, with every one that is not `expected` named."""
     counts = {"expected": 0, "skipped": 0, "other": 0}
     bad: list[str] = []
 
@@ -130,8 +145,8 @@ def webauthn_report(report: dict) -> tuple[dict[str, int], list[str]]:
         here = [*trail, suite["title"]] if suite.get("title") else trail
         for spec in suite.get("specs") or []:
             title = " > ".join([*here, spec.get("title", "")])
-            tagged = "@webauthn" in title or any(
-                str(t).lstrip("@") == "webauthn" for t in spec.get("tags") or []
+            tagged = f"@{tag}" in title or any(
+                str(t).lstrip("@") == tag for t in spec.get("tags") or []
             )
             if not tagged:
                 continue
@@ -164,6 +179,28 @@ def check_webauthn(results_json: pathlib.Path, floor: int) -> bool:
         print(f"  {line}", file=sys.stderr)
     if counts["skipped"] > 0 or counts["other"] > 0 or counts["expected"] < floor:
         print(f"need >= {floor} expected and none skipped or failed", file=sys.stderr)
+        return False
+    return True
+
+
+def check_real_provider(results_json: pathlib.Path) -> bool:
+    """True when the `@real-provider` chromium tests ran: at least one `expected`, none skipped, none failed."""
+    if not results_json.exists():
+        print(f"no Playwright JSON report at {results_json}", file=sys.stderr)
+        return False
+    counts, bad = tag_report(
+        json.loads(results_json.read_text(encoding="utf-8")), REAL_PROVIDER_TAG.lstrip("@")
+    )
+    print(
+        f"{REAL_PROVIDER_TAG} chromium tests: {counts['expected']} expected, {counts['skipped']} skipped, {counts['other']} other"
+    )
+    for line in bad:
+        print(f"  {line}", file=sys.stderr)
+    if counts["skipped"] > 0 or counts["other"] > 0 or counts["expected"] < MIN_REAL_PROVIDER_TESTS:
+        print(
+            f"need >= {MIN_REAL_PROVIDER_TESTS} expected and none skipped or failed",
+            file=sys.stderr,
+        )
         return False
     return True
 
@@ -427,6 +464,7 @@ def main(argv: list[str]) -> int:
             print(exc, file=sys.stderr)
             return 1
     has_stripe, has_webauthn = leg_flags(files, run.e2e_dir / "tests")
+    real_provider = has_real_provider(files, run.e2e_dir / "tests")
 
     if not (run.account_dir / "package.json").is_file():
         if common.is_ci():
@@ -468,6 +506,18 @@ def main(argv: list[str]) -> int:
                 log.error("WebAuthn virtual-authenticator coverage check failed")
                 return 1
             log.info("WebAuthn virtual-authenticator tests ran")
+        # Phase 6: prove the real-provider spec RAN. It never skips by design, and this is what keeps a later skip, or a filter that drops it, from reading as green.
+        if (
+            "chromium" in projects
+            and (not opts.grep or "real-provider" in opts.grep)
+            and real_provider
+        ):
+            results = run.e2e_dir / "reports" / "e2e" / "results.json"
+            log.step(f"Checking {REAL_PROVIDER_TAG} coverage in {results}")
+            if not check_real_provider(results):
+                log.error("Real-provider coverage check failed")
+                return 1
+            log.info("Real-provider tests ran")
         return 0
     except RefusedError as exc:
         if str(exc):

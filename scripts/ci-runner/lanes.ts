@@ -204,9 +204,9 @@ export function placeGate(
  * here is not an error at THIS layer -- `laneCapabilities` simply returns no entry for it,
  * and `shardPlan`'s own "lane is not a job in the workflow" refusal catches it exactly as
  * it does today for `quality-*`. That is deliberate: `test-renet-go`, `test-renet-integration`,
- * `quality-pytest`, `quality-gate-tests` and `ops-tutorials` do not exist as separate jobs
- * yet (T2.14/T2.15/T2.16 split them out of `test-renet` and `quality-security`), so this
- * table names where they WILL live and stays inert -- same shape as a `SHARD_COUNTS` entry
+ * `quality-pytest` and `ops-tutorials` did not exist as separate jobs
+ * yet when this was written (T2.14/T2.15/T2.16 split them out of `test-renet` and
+ * `quality-security`), so this table named where they WOULD live and stayed inert -- same shape as a `SHARD_COUNTS` entry
  * for a lane the workflow does not yet define.
  */
 export const TEST_LANE_WORKFLOWS: Readonly<Record<string, string>> = {
@@ -215,7 +215,6 @@ export const TEST_LANE_WORKFLOWS: Readonly<Record<string, string>> = {
   'test-renet-go': '.github/workflows/ct-tests.yml',
   'test-renet-integration': '.github/workflows/ct-tests.yml',
   'quality-pytest': '.github/workflows/ci-quality.yml',
-  'quality-gate-tests': '.github/workflows/ci-quality.yml',
   'ops-tutorials': '.github/workflows/ci-ops-test.yml',
 };
 
@@ -242,7 +241,9 @@ export function mergeLaneCapabilities(
   for (const [path, text] of Object.entries(workflows)) {
     for (const [job, cap] of laneCapabilities(text)) {
       const already = out.get(job);
-      if (already !== undefined) {
+      // The same job id with an identical capability record is not ambiguous: the per-workflow
+      // `renet-embed-assets` stagers (check-lane-budget.ts check 8) repeat by design.
+      if (already !== undefined && JSON.stringify(already) !== JSON.stringify(cap)) {
         throw new Error(
           `mergeLaneCapabilities: job "${job}" is defined in more than one of the given ` +
             `workflows (at least one is "${path}"). Lane lookup by job name is ambiguous ` +
@@ -539,7 +540,7 @@ export const SHARD_REPLICATED_MAX: Readonly<Record<string, number>> = { 'quality
  * THE LANE'S SET IS EVERY REGISTERED STEP, not every `gate: true` entry. Seven
  * lock entries are steps with `gate: false` (check:lint, check:i18n,
  * check:ci-i18n-cross-locale, check:ci-seo, check:ci-redirects, build:www and
- * check:ci-quality-gates, measured 2026-09-09). Each one still occupies a step in
+ * the bash battery aggregate retired 2026-10-09, measured 2026-09-09). Each one still occupies a step in
  * its job, so a plan that dropped them would emit a lane missing work CI runs
  * today, and `build:www` in particular is what twelve other entries `needs`.
  *

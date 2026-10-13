@@ -1,0 +1,16 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 14, "source": "bash", "twin": ".ci/scripts/version/resolve-version.sh", "twin_blob": "ff06629de8f471c5f4fde41d32d4fc8bd02d5a73"}}
+{"_silent": []}
+{"_key": "test_bump_major_resets_minor_and_patch#84a2e5ac112a0ce6", "err": "", "out": "2.0.0\n", "rc": "0"}
+{"_key": "test_bump_minor_resets_patch#8ee1848ec15decc7", "err": "", "out": "1.3.0\n", "rc": "0"}
+{"_key": "test_bump_patch#9f317b191ec8edeb", "err": "", "out": "1.2.4\n", "rc": "0"}
+{"_key": "test_bump_type_with_no_value_is_an_error#4481297248a95eba", "err": "Error: --bump-type requires a value\n", "out": "", "rc": "1"}
+{"_key": "test_current_reads_the_latest_tag#e26c5f49724188f1", "err": "", "out": "1.2.3\n", "rc": "0"}
+{"_key": "test_extra_dotted_component_folds_into_patch#e26c5f49724188f1", "err": "", "out": "1.2.3.4\n", "rc": "0"}
+{"_key": "test_invalid_bump_type_names_the_bad_value#a7d2261bbf0ab718", "err": "Error: invalid bump type 'bogus' (expected patch, minor, or major)\n", "out": "", "rc": "1"}
+{"_key": "test_missing_patch_component_defaults_to_zero#9f317b191ec8edeb", "err": "", "out": "9.9.1\n", "rc": "0"}
+{"_key": "test_newest_tag_by_version_sort_wins_not_creation_order#e26c5f49724188f1", "err": "", "out": "10.0.0\n", "rc": "0"}
+{"_key": "test_no_arguments_is_an_error#a3bcd8d710379a15", "err": "Error: --bump-type or --current required\n", "out": "", "rc": "1"}
+{"_key": "test_no_tags_is_a_loud_error_not_a_silent_default#e26c5f49724188f1", "err": "Error: no version tags found. Create an initial tag: git tag -a v0.0.0 -m v0.0.0\n", "out": "", "rc": "1"}
+{"_key": "test_prerelease_suffix_is_stripped_before_current_and_bump#9f317b191ec8edeb", "err": "", "out": "2.5.1\n", "rc": "0"}
+{"_key": "test_prerelease_suffix_is_stripped_before_current_and_bump#e26c5f49724188f1", "err": "", "out": "2.5.0\n", "rc": "0"}
+{"_key": "test_unknown_flag_prints_usage#50b74aed0440468a", "err": "Usage: resolve-version.sh [--current | --bump-type patch|minor|major]\n", "out": "", "rc": "1"}

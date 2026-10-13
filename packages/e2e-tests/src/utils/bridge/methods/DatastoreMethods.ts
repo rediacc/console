@@ -66,7 +66,7 @@ export interface DatastoreSnapshotOptions {
 export class DatastoreMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
-  async datastoreExpand(newSize: string, datastorePath?: string): Promise<ExecResult> {
+  datastoreExpand(newSize: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_expand',
       newSize,
@@ -74,7 +74,7 @@ export class DatastoreMethods {
     });
   }
 
-  async datastoreResize(newSize: string, datastorePath?: string): Promise<ExecResult> {
+  datastoreResize(newSize: string, datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_resize',
       newSize,
@@ -82,7 +82,7 @@ export class DatastoreMethods {
     });
   }
 
-  async datastoreValidate(datastorePath?: string): Promise<ExecResult> {
+  datastoreValidate(datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_validate',
       datastorePath,
@@ -92,7 +92,7 @@ export class DatastoreMethods {
   // --- Named-datastore registry lifecycle (datastore-cluster model) ---
 
   /** Create a named datastore, local or ceph-backed (datastore_create). */
-  async datastoreCreate(opts: DatastoreCreateOptions): Promise<ExecResult> {
+  datastoreCreate(opts: DatastoreCreateOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_create',
       name: opts.name,
@@ -106,7 +106,7 @@ export class DatastoreMethods {
   }
 
   /** Attach a datastore (or a fork, selecting its write home) (datastore_attach). */
-  async datastoreAttach(opts: DatastoreAttachOptions): Promise<ExecResult> {
+  datastoreAttach(opts: DatastoreAttachOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_attach',
       name: opts.name,
@@ -118,7 +118,7 @@ export class DatastoreMethods {
   }
 
   /** Detach a datastore; --discard removes a fork (datastore_detach). */
-  async datastoreDetach(name: string, discard?: boolean): Promise<ExecResult> {
+  datastoreDetach(name: string, discard?: boolean): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_detach',
       name,
@@ -127,7 +127,7 @@ export class DatastoreMethods {
   }
 
   /** Delete a datastore (datastore_delete). */
-  async datastoreDelete(name: string): Promise<ExecResult> {
+  datastoreDelete(name: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_delete',
       name,
@@ -135,7 +135,7 @@ export class DatastoreMethods {
   }
 
   /** List the datastore registry as JSON (datastore_list). */
-  async datastoreList(): Promise<ExecResult> {
+  datastoreList(): Promise<ExecResult> {
     return this.testFunction({ function: 'datastore_list' });
   }
 
@@ -144,7 +144,7 @@ export class DatastoreMethods {
    * (datastore_fork). A local-backed parent is REFUSED (gate C8) — repos inside
    * a local datastore fork individually by reflink instead.
    */
-  async datastoreFork(opts: DatastoreForkOptions): Promise<ExecResult> {
+  datastoreFork(opts: DatastoreForkOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_fork',
       parent: opts.parent,
@@ -159,7 +159,7 @@ export class DatastoreMethods {
    * Create a datastore snapshot; --group makes it an atomic GROUP snapshot
    * across a cluster's ceph datastores (datastore_snapshot_create).
    */
-  async datastoreSnapshotCreate(opts: DatastoreSnapshotOptions): Promise<ExecResult> {
+  datastoreSnapshotCreate(opts: DatastoreSnapshotOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_snapshot_create',
       name: opts.name,
@@ -174,7 +174,7 @@ export class DatastoreMethods {
    * (refuses while it still has live fork clones — discard those first)
    * (datastore_snapshot_delete).
    */
-  async datastoreSnapshotDelete(opts: DatastoreSnapshotOptions): Promise<ExecResult> {
+  datastoreSnapshotDelete(opts: DatastoreSnapshotOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_snapshot_delete',
       name: opts.name,

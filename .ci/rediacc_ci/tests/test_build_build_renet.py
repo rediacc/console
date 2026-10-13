@@ -19,7 +19,9 @@ FOUR KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
   * The exit code, which for this script is `go`'s, `zstd`'s, `ls`'s or
     `build.sh`'s own rather than a flattened 1.
 
-`ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart, so `ls` prints a different mtime for otherwise identical files; the mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. `test_the_ls_mask_hides_only_the_timestamp` pins that in both directions. The only other mask is `$0`.
+`ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart, so `ls` prints a different mtime for otherwise identical files; the mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. `test_the_ls_mask_hides_only_the_timestamp` pins that in both directions. The only other masks are `$0` and the FILESYSTEM's share of the listing.
+
+THE FILESYSTEM'S SHARE: the recorded listing came off tmpfs, where a directory's size is its entry count times 20 (`60`, `80`) under a `total 8`; ext4, which is what GitHub's runner hands pytest, prints `4096` under a `total 16` and so pads every size in the column two wider. `diff.mask_ls_filesystem` removes exactly that (the `total` number, a DIRECTORY's size, the column padding) from both sides, and `test_the_ls_mask_hides_only_what_the_filesystem_owns` pins it in both directions. Twelve tests here failed on run 38389205702 for that reason alone.
 
 RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout IS an artifact (the `ls` listing and the checksum file), and a fake that logged to stdout would corrupt the very output under comparison. The `FAKEBIN ` prefix
 is also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
@@ -39,6 +41,7 @@ import typing
 
 from rediacc_ci import paths
 from rediacc_ci.build import build_renet as port
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import RENET_REPO
 
 if typing.TYPE_CHECKING:
@@ -48,7 +51,6 @@ ROOT = paths.repo_root()
 
 TWIN_REL = ".ci/scripts/build/build-renet.sh"
 PORT_REL = ".ci/rediacc_ci/build/build_renet.py"
-COMMON_REL = ".ci/scripts/lib/common.sh"
 WELL_KNOWN_REL = ".ci/config/well-known.env"
 LOCKFILE_REL = "private/renet/embed-assets.lock.json"
 
@@ -281,9 +283,10 @@ def fixture(
     renet_dir: bool = True,
 ) -> pathlib.Path:
     root = tmp_path / "repo"
-    for rel in (TWIN_REL, PORT_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    for rel in (TWIN_REL, PORT_REL, WELL_KNOWN_REL, *VENDORED):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
-    for rel in (TWIN_REL, COMMON_REL, WELL_KNOWN_REL, *VENDORED):
+    twin_files = (TWIN_REL,) if diff.regolden_mode(TWIN_REL) == "bash" else ()
+    for rel in (*twin_files, WELL_KNOWN_REL, *VENDORED):
         shutil.copy2(ROOT / rel, root / rel)
     if port_source is None:
         shutil.copy2(ROOT / PORT_REL, root / PORT_REL)
@@ -394,10 +397,20 @@ def _reset(root: pathlib.Path) -> None:
         assets.mkdir(parents=True, exist_ok=True)
 
 
-def run_both(root: pathlib.Path, **kw):
+def _old_side(root: pathlib.Path, **kw):
+    """The twin's whole answer: process, call log and produced files. It comes from the golden (PLAN-retire-bash-oracles B3); this is how it was recorded."""
     _reset(root)
-    old, old_calls = _run(root, "old", **kw)
-    old_files = _artifacts(root)
+    proc, calls = _run(root, "old", **kw)
+    return proc, calls, _artifacts(root)
+
+
+def run_both(root: pathlib.Path, **kw):
+    old, old_calls, old_files = diff.twin_result(
+        TWIN_REL,
+        [repr(sorted(kw.items()))],
+        lambda: _old_side(root, **kw),
+        work=(str(root), str(root.parent)),
+    )
     _reset(root)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)
@@ -405,7 +418,7 @@ def run_both(root: pathlib.Path, **kw):
 
 
 def _mask(text: str) -> str:
-    return LS_DATE_RE.sub("<MTIME>", SELF_RE.sub("<SELF>", text))
+    return diff.mask_ls_filesystem(LS_DATE_RE.sub("<MTIME>", SELF_RE.sub("<SELF>", text)))
 
 
 def _agree(old_t, new_t, label: str) -> None:
@@ -467,6 +480,38 @@ def test_the_ls_mask_hides_only_the_timestamp() -> None:
     assert _mask(a) == _mask(b)
     assert _mask(a) != _mask(c)
     assert _mask(a) != _mask(d), "a mode change must survive the mask"
+
+
+TMPFS_LISTING = """<W>/assets/arm64/base/:
+total 8
+drwxr-xr-x 2 dev dev 80 Sep 14 09:27 .
+drwxr-xr-x 3 dev dev 60 Sep 14 09:27 ..
+-rw-r--r-- 1 dev dev 28 Sep 14 09:27 criu-linux-arm64.zst
+-rw-r--r-- 1 dev dev 29 Sep 14 09:27 rsync-linux-arm64.zst
+"""
+EXT4_LISTING = """<W>/assets/arm64/base/:
+total 16
+drwxr-xr-x 2 dev dev 4096 Sep 14 09:27 .
+drwxr-xr-x 3 dev dev 4096 Sep 14 09:27 ..
+-rw-r--r-- 1 dev dev   28 Sep 14 09:27 criu-linux-arm64.zst
+-rw-r--r-- 1 dev dev   29 Sep 14 09:27 rsync-linux-arm64.zst
+"""
+
+
+def test_the_ls_mask_hides_only_what_the_filesystem_owns() -> None:
+    """The recorded tmpfs listing and the same tree on ext4 (both verbatim from run 38389205702's diff) compare equal, and nothing a port could get wrong does."""
+    assert _mask(TMPFS_LISTING) == _mask(EXT4_LISTING)
+    for wrong, why in (
+        (EXT4_LISTING.replace("   28 ", "   27 "), "a regular file's size"),
+        (EXT4_LISTING.replace("-rw-r--r-- 1 dev dev   29", "-rwxr-xr-x 1 dev dev   29"), "a mode"),
+        (EXT4_LISTING.replace("drwxr-xr-x 2 dev", "drwxr-xr-x 3 dev"), "a directory's link count"),
+        (EXT4_LISTING.replace("1 dev dev   28", "1 root dev   28"), "an owner"),
+        (EXT4_LISTING.replace("criu-linux-arm64.zst", "criu-linux-amd64.zst"), "a name"),
+        (EXT4_LISTING.replace("total 16\n", ""), "the total line itself"),
+        (EXT4_LISTING.replace("drwxr-xr-x 3 dev dev 4096 Sep 14 09:27 ..\n", ""), "a row"),
+    ):
+        assert wrong != EXT4_LISTING, "the control for %s did not apply" % why
+        assert _mask(wrong) != _mask(TMPFS_LISTING), "%s is hidden by the mask" % why
 
 
 # --------------------------------------------------------------------------- Argument parsing ---------------------------------------------------------------------------
@@ -1006,7 +1051,7 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
     root = fixture(tmp_path, port_source=planted)
     old_t, new_t = run_both(root)
     assert old_t[0].returncode == new_t[0].returncode == 0, new_t[0].stderr
-    assert old_t[0].stdout == new_t[0].stdout, "the plant is invisible on stdout"
+    assert _mask(old_t[0].stdout) == _mask(new_t[0].stdout), "the plant is invisible on stdout"
     assert old_t[2] != new_t[2], "the tree MUST diverge, or this suite proves nothing"
     assert old_t[2]["private/bin/criu-linux-amd64"].startswith("755 ")
     assert new_t[2]["private/bin/criu-linux-amd64"].startswith("644 ")

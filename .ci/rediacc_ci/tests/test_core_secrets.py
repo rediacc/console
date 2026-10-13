@@ -366,7 +366,7 @@ def test_the_verbs_refuse_rather_than_guess() -> None:
 def test_an_env_file_can_be_reported_on_without_any_value_escaping(tmp_path) -> None:
     """End to end: read a .env, say what is in it, leak nothing.
 
-    This is the shape `.ci/lib/account.sh` needs and cannot express today. The controls are the name assertions -- a report that said nothing at all would also leak nothing.
+    This is the shape the retired `.ci/lib/account.sh` needed and could not express. The controls are the name assertions -- a report that said nothing at all would also leak nothing.
     """
     path = tmp_path / "dotenv"
     path.write_text(

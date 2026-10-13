@@ -109,11 +109,14 @@ def find_db_uuid(listing: str, db_name: str) -> str | None:
 
 def main(argv: list[str]) -> int:
     if argv:
-        print(f"seed-smoke-test.sh takes no arguments, got: {' '.join(argv)}", file=sys.stderr)
+        print(
+            f"rediacc_ci.testrun.seed_smoke takes no arguments, got: {' '.join(argv)}",
+            file=sys.stderr,
+        )
         return 2
     pr = os.environ.get("PR_NUMBER", "")
     if not pr:
-        print("seed-smoke-test.sh: PR_NUMBER is required", file=sys.stderr)
+        print("rediacc_ci.testrun.seed_smoke: PR_NUMBER is required", file=sys.stderr)
         return 1
     if not PR_RE.match(pr):
         log.error(f"PR_NUMBER must be digits, got '{pr}'")

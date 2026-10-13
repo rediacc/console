@@ -53,7 +53,7 @@ is therefore UNREACHABLE. Measured 2026-09-06 with a `gh` stub that exits 1: the
 
 The port reproduces both statuses, because invariant 5 says the twin is not edited in the change that ports it and the differential rules on behaviour, not on intent. It is reported as a defect in the twin.
 
-A SECOND, QUIETER ONE: this gate calls `gh` DIRECTLY rather than through `gh_json` from `.ci/scripts/lib/common.sh`, so it gets no retry and no body-parses-as-JSON check. `gh_json`'s own comment says why that matters: "gh api graphql can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." Eight other call sites across the review gates were
+A SECOND, QUIETER ONE: the twin called `gh` DIRECTLY rather than through `gh_json` from the retired `.ci/scripts/lib/common.sh`, so it got no retry and no body-parses-as-JSON check. The port reads through `core.gh_retry` and parses the body in Python. `gh_json`'s own comment says why that matters: "gh api graphql can exit 0 while returning a truncated or malformed body, so an exit-code check alone misses it." Eight other call sites across the review gates were
 moved onto it; this one was left behind.
 
 -----------------------------------------------------------------------------
@@ -176,7 +176,7 @@ def stale_block(repo: str, pr_number: str, commit_count: int, age_minutes: int) 
         "  5. Update the description WITHOUT dropping its generated sections.",
         "     The body carries <!-- worklist-epics --> and <!-- pushed-head -->, and an",
         "     edit writes the whole body, so anything you omit is deleted:",
-        "       .ci/scripts/pr/sync-epic-block.sh %s <branch>" % pr_number,
+        "       PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block %s <branch>" % pr_number,
         "     re-reads the current body and rewrites only its own markers.",
         "     To change the prose, read the body first and keep every marker:",
         "       gh pr view %s --json body --jq .body > /tmp/body.md" % pr_number,
@@ -357,7 +357,9 @@ def selftest() -> int:
         "the block warns about the generated marker sections",
         "<!-- worklist-epics -->" in text and "<!-- pushed-head -->" in text,
     )
-    ctl.truthy("the block names the marker-preserving script", "sync-epic-block.sh 42" in text)
+    ctl.truthy(
+        "the block names the marker-preserving script", "rediacc_ci.pr.sync_epic_block 42" in text
+    )
     ctl.check(
         "the block does NOT advise a whole-body replacement",
         '--body "new body"' in text,

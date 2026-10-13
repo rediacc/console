@@ -390,12 +390,19 @@ RETIRED_TWINS = {
     "w7p4b-cancel-older-runs": "the 30-twin batch in commit 62599afc0",
     "w7p4b-install-cli-global": "W7P5 batch M1",
     "w7p4b-run-renet": "W7P5 batch M5",
+    "w7p4b-clone-d1": "PLAN-retire-bash-oracles W7 (goldens/twins/deploy.clone-d1.jsonl)",
+    "w7p4b-assert-r2-sentinel": "PLAN-retire-bash-oracles W7 (goldens/twins/test.assert-r2-sentinel.jsonl)",
     "w7p4b-run-account": "W7P5 batch M5",
     "w7p4b-compose-healthcheck-smoke-test": "W7P5 batch M5",
     "w7p4b-scope-shadow": "W7P5 batch M6",
     "w7p4b-ci-start-account": "PLAN-retire-bash-oracles B3 (goldens/twins/infra.ci-start-account.jsonl)",
     "w7p4b-typecheck-workers": "PLAN-retire-bash-oracles B3 (goldens/twins/quality.typecheck-workers.jsonl)",
     "w7p4b-build-renet": "PLAN-retire-bash-oracles B3 (goldens/twins/infra.build-renet.jsonl)",
+    "w7p4b-ensure-nfpm": "PLAN-retire-bash-oracles wave 1 unit W2, commit 4a6641bf2 (goldens/twins/build.ensure-nfpm.jsonl)",
+    "w7p4b-resolve-version": "PLAN-retire-bash-oracles wave 1 unit W3, commit 8ba9169be (goldens/twins/version.resolve-version.jsonl)",
+    "w7p4b-check-existing-release": "PLAN-retire-bash-oracles wave 1 unit W5, commit 58aaa1604 (release twins frozen to goldens)",
+    "w7p4b-wait-for-preview-worker": "PLAN-retire-bash-oracles wave 1 unit W6, commit a9caf34b1 (promote, purge and verify twins frozen to goldens)",
+    "w7p4b-inject-env": "PLAN-retire-bash-oracles wave 1 unit W2, commit 4a6641bf2 (goldens/twins/version.inject-env.jsonl)",
 }
 
 

@@ -1,6 +1,12 @@
-/* TutorialVideoPlayer styles. Plyr's own stylesheet is imported by the
- * component; this file adds the container layout and the chapter-tick
- * overlay that sits on top of Plyr's progress bar. */
+/* TutorialVideoPlayer styles. The Video.js skin stylesheet
+ * (@videojs/react/video/skin.css) is loaded first at runtime; this file adds the
+ * container layout, the caption overlay and the language picker on top of it.
+ *
+ * CASCADE: skin.css sits entirely inside @layer base/components/utilities and this
+ * site declares no layers, so every unlayered rule here (and every global reset in
+ * public/styles/main.css) beats the skin regardless of specificity. When a skin
+ * control renders wrong, suspect a global `button`, `video`, `svg` or `[hidden]`
+ * rule first. */
 
 .tvp-root {
   position: relative;
@@ -22,35 +28,48 @@
   margin-inline: auto;
 }
 
-.tvp-root .plyr {
+.tvp-root .tvp-skin {
   border-radius: var(--radius-md);
-  --plyr-color-main: #e94e2b;
-  --plyr-video-control-color-hover: #ffffff;
-  --plyr-tooltip-radius: 4px;
+  --media-accent-color: #e94e2b;
+  /* Set with the accent: browsers before Chrome 147 / Firefox 146 / Safari 26
+     lack contrast-color(), which the skin otherwise derives this from. */
+  --media-accent-text-color: #ffffff;
+  aspect-ratio: 16 / 9;
 }
 
-.tvp-root .plyr__poster {
-  background-size: cover;
+/* The skin sets no aspect ratio of its own; the portrait cut needs the same
+   9:16 on the skin root as on .tvp-root or the file letterboxes. */
+.tvp-root--portrait .media-skin {
+  aspect-ratio: 9 / 16;
 }
 
-/* The same damping the pre-hydration poster gets in solution-video.css. Plyr
-   swaps its own .plyr__poster in when the player mounts, so without this the
+/* The same damping the pre-hydration poster gets in solution-video.css. The
+   skin swaps its own poster in when the player mounts, so without this the
    frame snaps back to full brightness the instant someone clicks play. */
-:root[data-theme='dark'] .tvp-root .plyr__poster {
+:root[data-theme='dark'] .tvp-root .media-poster,
+:root[data-theme='dark'] .tvp-root .media-poster-image {
   filter: brightness(0.55) saturate(0.9);
 }
 
-/* Suppress Plyr's built-in caption box — our .tvp-caption overlay below
- * renders the same text with per-word highlighting. The subtitles track is
- * still loaded so Plyr's CC button + captions menu stay wired. */
-.tvp-root .plyr__captions {
-  display: none !important;
+/* The skin renders captions with the BROWSER's cue renderer. Our .tvp-caption
+ * overlay draws the same text with per-word highlighting, so the native one is
+ * hidden or every line shows twice. The player sets data-tvp-native-fs on the
+ * video between webkitbeginfullscreen and webkitendfullscreen (iOS), where the
+ * native renderer is the only caption left. The subtitles track stays loaded so
+ * the skin's CC button and the textTracks state keep working. */
+.tvp-root .media-skin video:not([data-tvp-native-fs])::cue {
+  opacity: 0;
+  background: transparent;
+}
+
+.tvp-root .media-skin video:not([data-tvp-native-fs])::-webkit-media-text-track-container {
+  display: none;
 }
 
 .tvp-caption {
   position: absolute;
   left: 50%;
-  bottom: 64px;
+  bottom: 16px;
   transform: translateX(-50%);
   max-width: min(85%, 900px);
   padding: 8px 14px;
@@ -66,9 +85,15 @@
   visibility: hidden;
   transition:
     opacity var(--transition-duration-fast) var(--ease-standard),
+    bottom var(--transition-duration-fast) var(--ease-standard),
     visibility 0s linear var(--transition-duration-fast);
   z-index: 3;
   text-wrap: balance;
+}
+
+/* Lift the caption above the control bar while the skin shows it. */
+.tvp-root .media-skin[data-controls-visible] .tvp-caption {
+  bottom: 64px;
 }
 
 .tvp-caption.is-visible {
@@ -85,10 +110,13 @@
 }
 
 /* In fullscreen the controls overlay sits higher; nudge the caption up. */
-.tvp-root .plyr--fullscreen-active .tvp-caption,
-.tvp-root .plyr:fullscreen .tvp-caption {
-  bottom: 96px;
+.tvp-root .media-skin:fullscreen .tvp-caption {
+  bottom: 24px;
   font-size: var(--font-size-xl);
+}
+
+.tvp-root .media-skin:fullscreen[data-controls-visible] .tvp-caption {
+  bottom: 96px;
 }
 
 .tvp-caption-word {
@@ -99,138 +127,26 @@
 }
 
 .tvp-caption-word.is-active {
-  color: var(--plyr-color-main, #e94e2b);
+  color: var(--media-accent-color, #e94e2b);
   font-weight: 700;
 }
 
 @media (max-width: 640px) {
-  .tvp-caption {
+  .tvp-root .media-skin[data-controls-visible] .tvp-caption {
     bottom: 56px;
+  }
+
+  .tvp-caption {
     font-size: var(--font-size-base);
     padding: 6px 10px;
   }
-}
-
-/* Chapter overlay: a row of ticks sitting directly above Plyr's progress
- * bar. Plyr's .plyr__progress is a relatively positioned wrapper around
- * the seek input; we append this element into it so it scales with the
- * progress bar across viewport sizes and fullscreen toggles. */
-.tvp-chapter-overlay {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  height: 100%;
-  pointer-events: none;
-  z-index: 4;
-}
-
-.tvp-chapter-overlay .tvp-chapter-tick {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 18px;
-  padding: 0;
-  border: 0;
-  /* EXCEPTION to the radius scale, and it is deliberate. This is a 12x18px hit
-     target; --radius-full clamps to 6px on a box that narrow, which is a
-     lozenge rather than a tick. A radius token is not scale-free: --radius-full
-     means "pill" only on an element wide enough to have one. Proven by
-     rendering 12x18 at 2px against 12x18 at 9999px: the two differ. */
-  border-radius: 2px;
-  background: transparent;
-  pointer-events: auto;
-  cursor: pointer;
-  transition: background var(--transition-duration-fast) var(--ease-standard);
-}
-
-/* The visible tick mark is drawn as a centered pseudo-element so the button's
- * hit area can be wider than the painted bar (3px is too narrow to hover). */
-.tvp-chapter-overlay .tvp-chapter-tick::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 14px;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.85);
-  /* EXCEPTION to the one-shadow rule. Zero offset, zero blur, 1px spread is an
-     OUTLINE, not elevation: it is what keeps this white tick visible against a
-     bright video frame. --shadow is 0 1px 3px at 8% opacity and outlines
-     nothing, so forcing it here would have removed the tick's edge on light
-     footage. A box-shadow with zero blur and non-zero spread must never be
-     forced onto an elevation token. */
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
-  /* EXCEPTION to the radius scale, same reason as the parent: 3px wide. */
-  border-radius: 1px;
-  transition:
-    background var(--transition-duration-fast) var(--ease-standard),
-    transform var(--transition-duration-fast) var(--ease-standard);
-}
-
-.tvp-chapter-overlay .tvp-chapter-tick:hover::before,
-.tvp-chapter-overlay .tvp-chapter-tick:focus-visible::before {
-  background: var(--plyr-color-main, #e94e2b);
-  transform: translate(-50%, -50%) scaleY(1.4);
-}
-
-.tvp-chapter-overlay .tvp-chapter-tick:focus-visible {
-  outline: none;
-}
-
-.tvp-chapter-tooltip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 10px;
-  background: rgba(0, 0, 0, 0.9);
-  color: #fff;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  line-height: 1.2;
-  /* Bounded, and allowed to wrap. It used to be `white-space: nowrap` with no
-     max-width: `visibility: hidden` keeps an element in layout, so the hidden
-     tooltip still claimed its longest chapter title's width and widened the
-     scrollable area of every page carrying a player. Caught by
-     npm run check:ci-layout-overflow as [phantom-nowrap]. */
-  max-width: 14rem;
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow);
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity var(--transition-duration-fast) var(--ease-standard),
-    visibility 0s linear var(--transition-duration-fast);
-  z-index: 5;
-}
-
-.tvp-chapter-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 5px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.9);
-}
-
-.tvp-chapter-overlay .tvp-chapter-tick:hover .tvp-chapter-tooltip,
-.tvp-chapter-overlay .tvp-chapter-tick:focus-visible .tvp-chapter-tooltip {
-  opacity: 1;
-  visibility: visible;
-  transition:
-    opacity var(--transition-duration-fast) var(--ease-standard),
-    visibility 0s linear 0s;
 }
 
 /* Language picker row above the player.
  *
  * It sits OUTSIDE .tvp-root on purpose. .tvp-root is a 16/9 box with
  * overflow:hidden, so a control placed inside it would either cover the video or
- * be clipped, and anything inside .plyr is destroyed and rebuilt every time the
+ * be clipped, and anything inside the skin is destroyed and rebuilt every time the
  * language changes -- which is precisely the element this control triggers. */
 .tvp-shell {
   margin: 1.5rem 0;
@@ -253,27 +169,11 @@
   flex: none;
 }
 
-/* THE LANGUAGE PANE HOLDS THIRTEEN ENTRIES, and Plyr's settings menu was built for three
- * or four numeric quality steps. At ~30px a row that pane is taller than the player it
- * lives inside, and Plyr's container is `overflow: hidden` with an animated height, so
- * the tail was simply unreachable: no scrollbar, no way to get to it. Reported by the
- * operator on 2026-08-24 and reproduced at 1440x900, where the pane wanted about 390px
- * inside a 324px player.
- *
- * Capping the PANE rather than the container is what works: Plyr measures the pane to
- * animate the container to its height, so a capped pane yields a capped container.
- */
-.tvp-root .plyr__menu__container [id$='-quality'] {
-  max-height: min(14rem, 60vh);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
 /* The language picker INSIDE the player frame, top-right, over the video.
  *
- * Plyr's settings menu cannot host it (see TutorialVideoPlayer's Plyr config comment), so
- * "integrated to the player" is delivered by position rather than by living in that menu.
- * z-index sits above the poster and below Plyr's own controls, which own the bottom edge.
+ * The packaged skin's settings menu cannot host it (VideoSettingsMenu takes no children),
+ * so "integrated to the player" is delivered by position rather than by living in that
+ * menu. It is a child of the skin root, so it stays visible in fullscreen.
  *
  * The colour rules outrank `.sp-hero-media .tvp-toolbar .language-trigger` on purpose.
  * That one now tracks the hero band, which INVERTS with the theme after operator decision
@@ -312,28 +212,4 @@
   max-height: min(12rem, 45vh);
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-
-/* THE LANGUAGE PANE INSIDE PLYR'S SETTINGS MENU.
- *
- * The clamp is not cosmetic. `.tvp-root` is `overflow: hidden`, so 13 entries do not merely
- * overflow, they are CLIPPED: measured on a 720px 16:9 player, the unclamped popup is 488px
- * tall and starts 127px ABOVE the container, hiding the first four languages with no
- * scrollbar and no way to reach them. Plyr ships no max-height on its menu container, and
- * its size measurement clones the pane, so a clamped pane animates to the clamped height.
- * Its only `wheel` binding is scoped to the volume input, so scrolling here is safe.
- */
-.tvp-root [id$='-language'] [role='menu'] {
-  max-height: min(40vh, 220px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-.tvp-root .tvp-lang-item {
-  width: 100%;
-  justify-content: flex-start;
-}
-
-.tvp-root .tvp-lang-item[aria-checked='true'] {
-  font-weight: 600;
 }

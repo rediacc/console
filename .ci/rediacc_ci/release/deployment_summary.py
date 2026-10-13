@@ -14,7 +14,7 @@ import sys
 
 from rediacc_ci.well_known import IMAGE_REGISTRY, SITE_ORIGIN
 
-SELF = "deployment-summary.py"
+SELF = "rediacc_ci.release.deployment_summary"
 
 
 def _require(name: str) -> str:

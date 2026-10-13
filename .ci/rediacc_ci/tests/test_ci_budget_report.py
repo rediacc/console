@@ -21,6 +21,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ci import budget_report as br
+from rediacc_ci.testrun import e2e as e2e_run
 from rediacc_ci.well_known import GH_REPO
 
 # --------------------------------------------------------------------------- parse_workflow_jobs: has_matrix ---------------------------------------------------------------------------
@@ -248,16 +249,6 @@ def test_parse_gotestsum_junit_unit_ms_records_a_package_with_no_tests_at_its_su
     }
 
 
-def test_parse_battery_summary_unit_ms():
-    text = json.dumps({"drivers": [{"name": "W-writer1", "duration_ms": 4200}]})
-    assert br.parse_battery_summary_unit_ms(text) == {"battery:W-writer1": 4200.0}
-
-
-def test_parse_battery_summary_unit_ms_raises_without_the_drivers_array():
-    with pytest.raises(TypeError, match="drivers"):
-        br.parse_battery_summary_unit_ms(json.dumps({"nope": []}))
-
-
 def test_parse_tutorial_summary_unit_ms():
     text = json.dumps({"tutorials": [{"slug": "quickstart", "duration_ms": 90000}]})
     assert br.parse_tutorial_summary_unit_ms(text) == {"tutorial:quickstart": 90000.0}
@@ -324,7 +315,7 @@ def _playwright_json(file_name: str, duration_ms: int) -> str:
 
 
 def test_parse_unit_duration_artifact_sums_several_members_of_the_same_format():
-    """CONTROL: a sharded E2E leg's own run-e2e.sh can invoke Playwright more than once, writing one `unit-durations*.json` per invocation into the SAME artifact. Two members naming the same spec file must sum to that file's total duration, not have one silently discarded by `next(...)`."""
+    """CONTROL: a sharded E2E leg's own runner can invoke Playwright more than once, writing one `unit-durations*.json` per invocation into the SAME artifact. Two members naming the same spec file must sum to that file's total duration, not have one silently discarded by `next(...)`."""
     blob = _zip_with_many(
         {
             "unit-durations-1.json": _playwright_json("a.spec.ts", 2000),
@@ -764,117 +755,118 @@ def test_check_lane_durations_fails_on_26_percent_drift_not_24_percent(tmp_path)
     assert under == 0
 
 
-def test_unit_drift_below_the_absolute_floor_is_noise_not_a_finding(tmp_path):
-    """Run 37190043363: 16 -> 124.5 ms is 678% and 108 ms. Under MIN_UNIT_DRIFT_MS a unit never drifts; past it, the ratio rule still decides."""
-    path = tmp_path / "lane-durations.json"
-    path.write_text(json.dumps(_committed(units={"pytest:a.py": 16, "pytest:b.py": 10000})))
-    noise = _fake_compute(units={"pytest:a.py": 124.5, "pytest:b.py": 10000})
-    assert br.check_lane_durations(path, limit=10, compute=noise) == 0
-    # CONTROL: the same 26% ratio on a unit large enough to clear the floor is still a finding.
-    path.write_text(json.dumps(_committed(units={"pytest:a.py": 16, "pytest:b.py": 20000})))
-    real = _fake_compute(units={"pytest:a.py": 16, "pytest:b.py": 25200})
-    assert br.check_lane_durations(path, limit=10, compute=real) == 1
+# --------------------------------------------------------------------------- the unit drift rule: evidence, persistence, materiality (worklist #f67c1612) ---------------------------------------------------------------------------
 
-
-# The four 2026-10-04/05 refreshes on branch 1004-2 (#ce346f22): committed -> measured, each the open PR's own pushes replacing sampled runs. None of them may block.
-PR_NOISE_COMMITTED = {
-    "pytest:.claude/rediacc_hooks/tests/test_wl_hints.py": 5278.0,
-    "pytest:.ci/rediacc_ci/tests/test_review_standing_orders_brief.py": 9068.2,
-    "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py": 9688.4,
-    "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py": 10066.8,
-    "e2e-workers:16-setup-installation-params.test.ts": 5967.4,
-    "pytest:.ci/rediacc_ci/tests/test_big.py": 300000.0,
-    "e2e-workers:10-backup-checkpoint.test.ts": 150598.0,
-}
-PR_NOISE_MEASURED = {
-    **PR_NOISE_COMMITTED,
-    "pytest:.claude/rediacc_hooks/tests/test_wl_hints.py": 7376.8,
-    "pytest:.ci/rediacc_ci/tests/test_review_standing_orders_brief.py": 6681.4,
-    "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py": 13070.5,
-    "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py": 13002.5,
-    "e2e-workers:16-setup-installation-params.test.ts": 8335.0,
-}
-
-
-def test_pr_noise_shaped_unit_drift_passes(tmp_path):
-    """#ce346f22: every one of these 26-40% moves fired under the old 2 s floor and cost a refresh plus a 45-minute pre-push. Each is a 2.1-3.4 s move on a 5-15 s unit."""
-    moved = [u for u, was in PR_NOISE_COMMITTED.items() if PR_NOISE_MEASURED[u] != was]
-    assert len(moved) == 5
-    for unit_id in moved:
-        # Each move is over the 25% ratio and over the old 2 s floor: the old check fired on all five.
-        was, now = PR_NOISE_COMMITTED[unit_id], PR_NOISE_MEASURED[unit_id]
-        assert br.drift_finding("u", was, now) is not None
-        assert 2000 <= abs(now - was) < br.MIN_UNIT_DRIFT_MS
-    findings, lanes = br.unit_drift_findings(PR_NOISE_COMMITTED, PR_NOISE_MEASURED)
-    assert findings == []
-    assert lanes == 2
-    path = tmp_path / "lane-durations.json"
-    path.write_text(json.dumps(_committed(units=PR_NOISE_COMMITTED)))
-    assert (
-        br.check_lane_durations(path, limit=10, compute=_fake_compute(units=PR_NOISE_MEASURED)) == 0
+# The check:ci-budget-freshness reds of 2026-10-13, whole: every sample of the seven artifact-bearing runs and the committed table of each red (the fixture's own `$comment` says how it was cut).
+DRIFT_FIXTURE = json.loads(
+    (paths.repo_root() / ".ci/rediacc_ci/tests/fixtures/budget_drift/20261013.json").read_text(
+        encoding="utf-8"
     )
-
-
-def test_planted_sustained_single_unit_drift_still_fails(tmp_path):
-    """CONTROL: the 2026-10-04 12-01-subscription-renewal move (22838 -> 38369 ms, 68%, and it kept climbing) on top of the PR noise above must still red the check, and must name the unit."""
-    committed = {**PR_NOISE_COMMITTED, "account-e2e:12-01-subscription-renewal.test.ts": 22837.8}
-    measured = {**PR_NOISE_MEASURED, "account-e2e:12-01-subscription-renewal.test.ts": 38368.6}
-    findings, _ = br.unit_drift_findings(committed, measured)
-    # It is the only account-e2e unit in this fixture, so its lane sum moves 68% too.
-    assert [f for f in findings if f.startswith("unit ")] == [
-        f for f in findings if "12-01-subscription-renewal" in f
-    ]
-    assert len(findings) == 2
-    path = tmp_path / "lane-durations.json"
-    path.write_text(json.dumps(_committed(units=committed)))
-    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(units=measured)) == 1
-
-
-def test_planted_sustained_lane_wide_drift_of_sub_floor_units_still_fails(tmp_path):
-    """CONTROL: the floor must not hide a whole lane slowing down. 40 pytest units at 4 s each all grow 30% (1.2 s apiece, every one under the 5 s floor): no per-unit finding, but the lane sum moves 30% and 48 s, so the check reds and names the lane."""
-    committed = {"pytest:t%02d.py" % i: 4000.0 for i in range(40)}
-    measured = {k: v * 1.30 for k, v in committed.items()}
-    findings, lanes = br.unit_drift_findings(committed, measured)
-    assert lanes == 1
-    assert len(findings) == 1
-    assert "lane 'quality-pytest' summed unit p90" in findings[0]
-    path = tmp_path / "lane-durations.json"
-    path.write_text(json.dumps(_committed(units=committed)))
-    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(units=measured)) == 1
-    # And the same lane growing 20% stays under the 25% ratio: not a finding.
-    under = {k: v * 1.20 for k, v in committed.items()}
-    assert br.unit_drift_findings(committed, under) == ([], 1)
-
-
-def test_a_tiny_lane_sum_cannot_drift_on_the_ratio_alone():
-    """battery's five units sum to about 8.5 s: a 30% move (2.6 s) is under the absolute floor and is noise, the same rule a single unit gets."""
-    committed = {"battery:a.sh": 3000.0, "battery:b.sh": 2500.0, "battery:c.sh": 3000.0}
-    measured = {k: v * 1.30 for k, v in committed.items()}
-    assert br.unit_drift_findings(committed, measured) == ([], 1)
-
-
-# #d901ba82: the samples behind the four 2026-10-05/06 check:ci-budget-freshness reds, in seconds. Each unit's typical run did not move; one or two slow runners (or a step change still rolling through the 10-run window) moved the p90 alone.
-SPREAD_NOISE = {
-    # committed p90 s, measured samples s
-    "tutorial:branching": (65.0, [56.0, 58.0, 60.0, 62.0, 67.0, 99.0, 101.0]),
-    "tutorial:installation": (12.6, [6.0, 8.0, 8.0, 9.0, 10.0, 15.0, 22.0]),
-    "pytest:.ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py": (
-        119.95,
-        [71.7, 77.3, 91.8, 94.0, 99.2, 99.8, 146.3, 167.0],
-    ),
-    # A real 105 -> 57 s step change mid-roll: one old run left in the window holds the max.
-    "pytest:.ci/rediacc_ci/tests/test_ci_profiler_sampler_linux.py": (
-        105.27,
-        [56.6, 56.8, 56.9, 57.2, 57.3, 59.2, 105.3],
-    ),
-    "pytest:.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py": (
-        25.36,
-        [8.9, 10.5, 10.9, 11.2, 11.4, 11.5, 25.4],
-    ),
-    # The rest of each lane, steady: the live ops-tutorials sum is about 18 units and quality-pytest's about 570, so a lane sum carries far more than the five units above.
-    "tutorial:rest-of-lane": (600.0, [600.0] * 7),
-    "pytest:rest-of-lane.py": (3000.0, [3000.0] * 7),
+)
+DRIFT_UNITS: list[str] = DRIFT_FIXTURE["units"]
+DRIFT_LEGS = {u: leg for u, leg in zip(DRIFT_UNITS, DRIFT_FIXTURE["legs"], strict=True) if leg}
+PYTEST_WIDE = {"quality-pytest": 4}
+ALL_RUNS = [run["id"] for run in DRIFT_FIXTURE["runs"]]
+GUARDS = "pytest:.claude/rediacc_hooks/tests/test_guards_differential.py"
+LICENSE_E2E = "pytest:.ci/rediacc_ci/tests/test_private_license_e2e.py"
+CLEANUP_VERSIONS = "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py"
+PRF_MATRIX = "account-e2e:20-config-storage/20-11-prf-provider-matrix.test.ts"
+# What is left of each red under the rule, by finding key: nothing of the morning, and five findings that two runs agree on or that name a missing row.
+REAL_FINDINGS = {
+    "morning": [],
+    "run-38409515814": [
+        "lane-durations:drift:unit:%s" % PRF_MATRIX,
+        "lane-durations:drift:leg-sum:test-account-e2e-leg-2/4",
+        "lane-durations:unpriced-unit:%s" % LICENSE_E2E,
+    ],
+    "after-1dd250d87": [
+        "lane-durations:drift:unit:%s" % CLEANUP_VERSIONS,
+        "lane-durations:drift:unit:tutorial:delta-transfer",
+    ],
 }
+
+
+def _table(revision: str) -> dict[str, float]:
+    """The fixture's committed `units` at one revision."""
+    row = DRIFT_FIXTURE["tables"][revision]
+    return {u: float(ms) for u, ms in zip(DRIFT_UNITS, row, strict=True) if ms is not None}
+
+
+def _samples(run_ids: list[int]) -> dict[str, list[list[float]]]:
+    """`{unit: one sample list per run}` over the fixture runs named, newest run first."""
+    per_run: dict[str, list[list[float]]] = {}
+    for run in DRIFT_FIXTURE["runs"]:
+        if run["id"] in run_ids:
+            for position, samples in run["samples"].items():
+                per_run.setdefault(DRIFT_UNITS[int(position)], []).append(samples)
+    return per_run
+
+
+def _window_stats(run_ids: list[int]) -> dict[str, dict[str, float]]:
+    return {u: _runs(*per_run) for u, per_run in _samples(run_ids).items()}
+
+
+def _fixture_tree(tmp_path, units: dict[str, float]):
+    """A tree holding a lane-durations.json with `units` and the fixture's shard manifests, so the real check reads the fixture's legs."""
+    config = tmp_path / ".ci" / "config"
+    (config / "shards").mkdir(parents=True, exist_ok=True)
+    by_lane: dict[str, dict[int, list[str]]] = {}
+    for unit_id, label in DRIFT_LEGS.items():
+        lane, _, leg = label.partition(" leg ")
+        by_lane.setdefault(lane, {}).setdefault(int(leg.split("/")[0]), []).append(unit_id)
+    for lane, by_leg in by_lane.items():
+        manifest = {
+            "of": len(by_leg),
+            "legs": [{"index": i, "ids": by_leg[i]} for i in sorted(by_leg)],
+        }
+        (config / "shards" / ("%s.json" % lane)).write_text(json.dumps(manifest))
+    path = config / "lane-durations.json"
+    path.write_text(
+        json.dumps(
+            _committed(
+                units=units,
+                unitParallelism=DRIFT_FIXTURE["unitParallelism"],
+                defaultUnitMs=DRIFT_FIXTURE["defaultUnitMs"],
+            )
+        )
+    )
+    return path
+
+
+def _judge(table: dict[str, float], unit_stats: dict[str, dict[str, float]], root) -> list[str]:
+    """Every unit finding the check makes of a table and a sample: drift, leg sums and unpriced units, as keys."""
+    committed = {
+        "units": table,
+        "unitParallelism": DRIFT_FIXTURE["unitParallelism"],
+        "defaultUnitMs": DRIFT_FIXTURE["defaultUnitMs"],
+    }
+    findings, _shape = br.unit_drift_findings(
+        table, unit_stats, parallelism=DRIFT_FIXTURE["unitParallelism"], legs=DRIFT_LEGS
+    )
+    return [f.key for f in [*findings, *br.unpriced_unit_findings(committed, unit_stats, root)]]
+
+
+def _runs(*per_run: list[float]) -> dict[str, float]:
+    """`br.unit_run_stats` for one unit, one list of samples (ms) per sampled run, newest run first."""
+    st = br.unit_run_stats(per_run)
+    assert st is not None
+    return st
+
+
+def _measured(unit_stats: dict[str, dict[str, float]]) -> dict[str, Any]:
+    """The `units` and `unit_stats` a compute returns for these records."""
+    return {"units": {u: st["p90"] for u, st in unit_stats.items()}, "unit_stats": unit_stats}
+
+
+def _retired_rule(was: float, runs: list[list[float]], faster_floor: int) -> str | None:
+    """The rule this one replaces, as it stood on 2026-10-13: slower on the pooled median at ANY sample count, faster on the pooled max from `faster_floor` samples, each over 25% and 5 s."""
+    pooled = [ms for run in runs for ms in run]
+    st = _stats(pooled)
+    if st["median"] - was >= 5000 and (st["median"] - was) / was > 0.25:
+        return "slower"
+    if len(pooled) >= faster_floor and was - st["max"] >= 5000 and (was - st["max"]) / was > 0.25:
+        return "faster"
+    return None
 
 
 def _stats(samples_ms: list[float]) -> dict[str, float]:
@@ -884,67 +876,523 @@ def _stats(samples_ms: list[float]) -> dict[str, float]:
     return st
 
 
-def _spread(table):
-    committed, measured, unit_stats = {}, {}, {}
-    for unit_id, (was_s, samples_s) in table.items():
-        st = _stats([x * 1000 for x in samples_s])
-        committed[unit_id] = was_s * 1000
-        measured[unit_id] = st["p90"]
-        unit_stats[unit_id] = st
-    return committed, measured, unit_stats
+def test_the_materiality_floor_is_the_lane_budget_gates_own_advisory_threshold():
+    """`MATERIAL_LEG_MS` is not a number chosen here: it is the leg difference below which check-lane-budget.ts does not advise a rebalance. Read from that file, so a change there reds this test instead of leaving two thresholds."""
+    source = (paths.repo_root() / "scripts/gates/check-lane-budget.ts").read_text(encoding="utf-8")
+    found = re.findall(r"^export const REBALANCE_ADVISORY_MIN = ([0-9.]+);$", source, re.MULTILINE)
+    assert len(found) == 1, found
+    assert float(found[0]) * 60_000 == br.MATERIAL_LEG_MS
+    assert br.MIN_DRIFT_RUNS >= 2, "one run is one runner: a verdict on one is the retired rule"
 
 
-def test_outlier_shaped_unit_moves_pass_on_the_sample_spread(tmp_path):
-    """#d901ba82: every one of these fired on the p90-only rule (proved by the `measured_stats=None` call, which IS that rule), and none may fire once the committed p90 is held against the median (slower) and the max (faster)."""
-    committed, measured, unit_stats = _spread(SPREAD_NOISE)
-    old_rule, _ = br.unit_drift_findings(committed, measured)
-    assert sorted(f.split("'")[1] for f in old_rule if f.startswith("unit ")) == sorted(
-        u for u in SPREAD_NOISE if "rest-of-lane" not in u
+def test_unit_run_stats_counts_runs_and_reads_the_newest_ones():
+    st = _runs([300.0], [100.0], [200.0])
+    assert (st["runs"], st["n"], st["median"], st["max"]) == (3, 3, 200.0, 300.0)
+    assert st["recent_low"] == 100.0, (
+        "the lowest of the newest MIN_DRIFT_RUNS runs, not of the window"
     )
-    assert br.unit_drift_findings(committed, measured, unit_stats) == ([], 2)
+    # A run with several samples (an E2E file on five distros) is ONE run, read as its own median.
+    many = _runs([10.0, 20.0, 90.0], [40.0])
+    assert (many["runs"], many["n"], many["recent_low"]) == (2, 4, 20.0)
+    one = _runs([50.0])
+    assert one["runs"] == 1
+    assert "recent_low" not in one
+    assert br.unit_run_stats([]) is None
+    assert br.unit_run_stats([[]]) is None
+
+
+def test_material_move_needs_the_ratio_and_the_leg_wall():
+    assert br.material_move(100_000.0, 140_000.0, 1) is True  # 40%, 40 s of a serial leg
+    assert (
+        br.material_move(100_000.0, 140_000.0, 4) is False
+    )  # the same file 4 wide: 10 s of leg wall
+    assert br.material_move(100_000.0, 124_000.0, 1) is False  # 24 s
+    assert br.material_move(1_000_000.0, 1_200_000.0, 1) is False  # 200 s and 20%
+    assert br.material_move(0.0, 31_000.0, 1) is True  # a committed zero has no ratio
+    assert br.material_move(0.0, 29_000.0, 1) is False
+
+
+def _retired_reds(name: str) -> dict[str, str]:
+    """The units the retired rule reports in one fixture window, and which side fired."""
+    window = DRIFT_FIXTURE["windows"][name]
+    table = _table(window["table"])
+    floor = window["retired_faster_floor"]
+    verdicts = {
+        u: _retired_rule(table[u], per_run, floor)
+        for u, per_run in _samples(window["runs"]).items()
+        if u in table
+    }
+    return {u: side for u, side in verdicts.items() if side}
+
+
+@pytest.mark.parametrize(
+    ("name", "retired"), [("morning", 26), ("run-38409515814", 17), ("after-1dd250d87", 14)]
+)
+def test_the_three_reds_of_2026_10_13_replayed(name, retired, tmp_path, capsys):
+    """Each window is one real red, whole. The retired rule reports the count the day's logs show (17 on run 38409515814, 14 one run after 1dd250d87). Under the rule none of those units is a finding, and what is left is `REAL_FINDINGS`, each of which the controls below take apart."""
+    window = DRIFT_FIXTURE["windows"][name]
+    reported = _retired_reds(name)
+    assert len(reported) == retired
+    table = _table(window["table"])
+    unit_stats = _window_stats(window["runs"])
+    path = _fixture_tree(tmp_path, table)
+    keys = _judge(table, unit_stats, tmp_path)
+    assert sorted(_normal(k) for k in keys) == sorted(_normal(k) for k in REAL_FINDINGS[name])
+    for unit_id in reported:
+        assert not any(k.endswith(br.key_part(unit_id)) for k in keys), unit_id
+    # The same verdict through the real check, reading the legs from the tree's shard manifests.
+    rc = br.check_lane_durations(path, limit=10, compute=_fake_compute(**_measured(unit_stats)))
+    assert rc == (1 if REAL_FINDINGS[name] else 0)
+    captured = capsys.readouterr()
+    assert sorted(_normal(k) for k in _keys(captured.err)) == sorted(
+        _normal(k) for k in REAL_FINDINGS[name]
+    )
+
+
+def _normal(key: str) -> str:
+    """A finding key with its subject cut to the key alphabet, so a test can spell a unit id as it is written."""
+    head, _, subject = key.partition(":drift:unit:")
+    if subject:
+        return "%s:drift:unit:%s" % (head, br.key_part(subject))
+    head, _, subject = key.partition(":unpriced-unit:")
+    if subject:
+        return "%s:unpriced-unit:%s" % (head, br.key_part(subject))
+    return key
+
+
+def test_what_the_three_reds_were_made_of():
+    """Why they were red, read off the samples: the slower side fired on one or two samples, and the faster side fired on units the refresh had refused to lower."""
+    run = _retired_reds("run-38409515814")
+    samples = _samples(DRIFT_FIXTURE["windows"]["run-38409515814"]["runs"])
+    slower = [u for u, side in run.items() if side == "slower"]
+    assert len(slower) == 15
+    counts = [sum(len(per_run) for per_run in samples[u]) for u in slower]
+    assert max(counts) == 2
+    assert counts.count(1) == 11
+    after = _retired_reds("after-1dd250d87")
+    assert sum(1 for side in after.values() if side == "faster") == 12
+    # 25 of the morning's 26 were a speedup read from ONE cancelled run.
+    morning = _retired_reds("morning")
+    assert sum(1 for side in morning.values() if side == "faster") == 25
+    assert len(DRIFT_FIXTURE["windows"]["morning"]["runs"]) == 1
+
+
+def test_control_the_lanes_largest_file_slower_on_two_runs_is_red(tmp_path, capsys):
+    """REAL, and the kind the table is for: test_guards_differential.py, 447 s committed at 1ee6476e3, ran 586 s on run 38389205702 and 598 s on run 38409515814. One run of it is evidence on its way, named and not red; the second run makes it a finding."""
+    was = _table("1ee6476e3")[GUARDS]
+    newest, older = _samples(ALL_RUNS)[GUARDS]
+    assert (was, older, newest) == (447215.0, [585869], [598158])
+    once, shape = br.unit_drift_findings(
+        {GUARDS: was}, {GUARDS: _runs(older)}, parallelism=PYTEST_WIDE
+    )
+    assert once == []
+    assert (shape["judged"], shape["thin"]) == (0, 1)
+    assert len(shape["pending"]) == 1
+    assert GUARDS in shape["pending"][0]
+    twice, shape = br.unit_drift_findings(
+        {GUARDS: was}, {GUARDS: _runs(newest, older)}, parallelism=PYTEST_WIDE
+    )
+    assert [_normal(f.key) for f in twice if ":unit:" in f.key] == [
+        "lane-durations:drift:unit:%s" % br.key_part(GUARDS)
+    ]
+    assert "31% slower, 35 s of leg wall at 4 at once" in twice[0]
+    assert "each of the newest 2" in twice[0]
     path = tmp_path / "lane-durations.json"
-    path.write_text(json.dumps(_committed(units=committed)))
-    compute = _fake_compute(units=measured, unit_stats=unit_stats)
-    assert br.check_lane_durations(path, limit=10, compute=compute) == 0
-    # The same file and sample WITHOUT the spread is the p90-only rule, and it reds.
-    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(units=measured)) == 1
+    path.write_text(json.dumps(_committed(units={GUARDS: was}, unitParallelism=PYTEST_WIDE)))
+    stats = {GUARDS: _runs(newest, older)}
+    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(**_measured(stats))) == 1
+    assert "2 sampled run(s)" in capsys.readouterr().err
+    # In the day as it went, the table of 1ee6476e3 against every run: this file is among the findings.
+    keys = _judge(_table("1ee6476e3"), _window_stats(ALL_RUNS), tmp_path)
+    assert "lane-durations:drift:unit:%s" % br.key_part(GUARDS) in [_normal(k) for k in keys]
 
 
-def test_planted_unit_doubling_still_fails_on_the_sample_spread(tmp_path):
-    """CONTROL: test_settings_collapse.py went 118 -> 278 s after 00fa66691; every sample of a unit doubling moves its median 2x, so the slower side reds and says which statistic did it."""
-    base = [110.0, 112.0, 115.0, 116.0, 117.0, 118.0, 120.0]
-    was = _stats([x * 1000 for x in base])["p90"]
-    doubled = _stats([x * 2000 for x in base])
-    unit = "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py"
-    findings, _ = br.unit_drift_findings({unit: was}, {unit: doubled["p90"]}, {unit: doubled})
-    unit_findings = [f for f in findings if f.startswith("unit ")]
-    assert len(unit_findings) == 1
-    assert "measured median of 7 sample(s)" in unit_findings[0]
-    assert "slower" in unit_findings[0]
-    path = tmp_path / "lane-durations.json"
-    path.write_text(json.dumps(_committed(units={unit: was})))
-    compute = _fake_compute(units={unit: doubled["p90"]}, unit_stats={unit: doubled})
-    assert br.check_lane_durations(path, limit=10, compute=compute) == 1
+def test_control_a_file_three_times_slower_that_moves_its_leg_is_red():
+    """PLANTED: a 100 s pytest file at 300 s, 50 s of leg wall on a leg 4 wide. Red on two agreeing runs; on one run, and on one slow run beside a normal one, it is not."""
+    unit = "pytest:.ci/rediacc_ci/tests/test_planted_slow.py"
+    committed = {unit: 100_000.0}
+
+    def judge(*per_run):
+        return br.unit_drift_findings(committed, {unit: _runs(*per_run)}, parallelism=PYTEST_WIDE)[
+            0
+        ]
+
+    red = judge([300_000.0], [300_000.0])
+    assert len([f for f in red if f.startswith("unit ")]) == 1
+    assert "200% slower, 50 s of leg wall at 4 at once" in red[0]
+    assert judge([300_000.0]) == [], "one run is one runner"
+    assert judge([300_000.0], [100_000.0]) == [], (
+        "one slow run beside a normal one is not persistence"
+    )
+    assert judge([100_000.0], [300_000.0], [300_000.0]) == [], "the newest run is back to normal"
+    # The same threefold move on a 30 s file is 15 s of leg wall: no reader acts on it, so the unit is not a finding.
+    small = "pytest:.ci/rediacc_ci/tests/test_planted_small.py"
+    stats = {small: _runs([90_000.0], [90_000.0])}
+    assert br.unit_drift_findings({small: 30_000.0}, stats, parallelism=PYTEST_WIDE)[0] == []
+    # And on a lane that runs one unit at a time the same 60 s IS the leg's wall.
+    serial = "account-e2e:12-billing/12-01-subscription-renewal.test.ts"
+    stats = {serial: _runs([90_000.0], [90_000.0])}
+    assert (
+        len(br.unit_drift_findings({serial: 30_000.0}, stats)[0]) == 2
+    )  # the unit and its lane sum
 
 
-def test_planted_step_change_reds_once_the_window_agrees():
-    """CONTROL: the 105 -> 57 s speedup reds once no old run is left in the window (max under 75% of the committed p90), and a slowdown reds once half the window carries it (the median)."""
-    unit = "pytest:.ci/rediacc_ci/tests/test_ci_profiler_sampler_linux.py"
-    rolled = _stats([x * 1000 for x in [56.6, 56.8, 56.9, 57.2, 57.3, 57.5, 59.2]])
-    findings, _ = br.unit_drift_findings({unit: 105266.0}, {unit: rolled["p90"]}, {unit: rolled})
+def test_control_many_small_moves_in_one_leg_are_red_as_the_leg_sum():
+    """PLANTED: 40 pytest files of 20 s each all 30% slower on two runs. Each moves 1.5 s of leg wall, so no unit is a finding; their leg moves 60 s and 30%, and the leg is."""
+    committed = {"pytest:t%02d.py" % i: 20_000.0 for i in range(40)}
+    legs = dict.fromkeys(committed, "quality-pytest leg 2/3")
+    slower = {u: _runs([26_000.0], [26_000.0]) for u in committed}
+    findings, shape = br.unit_drift_findings(committed, slower, parallelism=PYTEST_WIDE, legs=legs)
+    assert [f.key for f in findings] == ["lane-durations:drift:leg-sum:quality-pytest-leg-2/3"]
+    assert "30% slower, 60 s of leg wall at 4 at once" in findings[0]
+    assert (shape["judged"], shape["sums"]) == (40, 1)
+    # 20% is under the ratio, and one normal run among the two is not persistence.
+    under = {u: _runs([24_000.0], [24_000.0]) for u in committed}
+    assert br.unit_drift_findings(committed, under, parallelism=PYTEST_WIDE, legs=legs)[0] == []
+    mixed = {u: _runs([26_000.0], [20_000.0]) for u in committed}
+    assert br.unit_drift_findings(committed, mixed, parallelism=PYTEST_WIDE, legs=legs)[0] == []
+    # The same units spread over two legs move each leg 30 s: both legs are named, which a lane sum would have folded into one.
+    halves = {u: "quality-pytest leg %d/3" % (1 + i % 2) for i, u in enumerate(sorted(committed))}
+    keys = [
+        f.key
+        for f in br.unit_drift_findings(committed, slower, parallelism=PYTEST_WIDE, legs=halves)[0]
+    ]
+    assert keys == [
+        "lane-durations:drift:leg-sum:quality-pytest-leg-1/3",
+        "lane-durations:drift:leg-sum:quality-pytest-leg-2/3",
+    ]
+    # A lane too small to move a leg by half a minute cannot drift on the ratio alone.
+    tiny = {"tutorial:a": 3000.0, "tutorial:b": 2500.0, "tutorial:c": 3000.0}
+    grown = {u: _runs([v * 1.3], [v * 1.3]) for u, v in tiny.items()}
+    assert br.unit_drift_findings(tiny, grown)[0] == []
+
+
+def test_control_a_real_leg_over_estimated_by_a_third_is_red():
+    """REAL: Account E2E leg 2 of 4 at 1ee6476e3. Two runs agree its 25 units take 339 s against 514 s committed, by their slowest samples. On the newest of those runs alone the same leg is thin, which was the morning's red."""
+    window = DRIFT_FIXTURE["windows"]["run-38409515814"]
+    leg = "test-account-e2e leg 2/4"
+    table = {u: ms for u, ms in _table(window["table"]).items() if DRIFT_LEGS.get(u) == leg}
+    unit_stats = {u: st for u, st in _window_stats(window["runs"]).items() if u in table}
+    findings, shape = br.unit_drift_findings(table, unit_stats, legs=DRIFT_LEGS)
+    assert shape["judged"] == 25
+    sums = [f for f in findings if ":leg-sum:" in f.key]
+    assert [f.key for f in sums] == ["lane-durations:drift:leg-sum:test-account-e2e-leg-2/4"]
+    assert "34% faster, 175 s of leg wall" in sums[0]
+    one = {u: _runs(_samples(window["runs"])[u][0]) for u in table}
+    assert br.unit_drift_findings(table, one, legs=DRIFT_LEGS)[0] == []
+
+
+def test_faster_needs_every_run_of_the_window_to_agree():
+    unit = "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py"
+    committed = {unit: 299_571.0}
+    # REAL: 115 s and 124 s on the two runs that measured it, against 300 s committed.
+    agreed = {unit: _runs([124_256.0], [115_300.0])}
+    findings = br.unit_drift_findings(committed, agreed, parallelism=PYTEST_WIDE)[0]
     assert len([f for f in findings if f.startswith("unit ") and "faster" in f]) == 1
-    half_slow = _stats([x * 1000 for x in [60, 61, 62, 130, 131, 132, 133]])
-    findings, _ = br.unit_drift_findings(
-        {unit: 62000.0}, {unit: half_slow["p90"]}, {unit: half_slow}
+    # One old run still in the window holds the slowest sample, so the window does not agree yet.
+    rolling = {unit: _runs([124_256.0], [115_300.0], [299_000.0])}
+    assert br.unit_drift_findings(committed, rolling, parallelism=PYTEST_WIDE)[0] == []
+    assert (
+        br.unit_drift_findings(committed, {unit: _runs([124_256.0])}, parallelism=PYTEST_WIDE)[0]
+        == []
     )
-    assert len([f for f in findings if f.startswith("unit ") and "slower" in f]) == 1
 
 
-def test_a_median_move_under_the_absolute_floor_is_still_noise():
-    """The floor applies to the judged statistic: a 10 s unit whose median moves 40% (4 s) is not a finding."""
-    unit = "pytest:small.py"
-    st = _stats([14000.0] * 7)
-    assert br.unit_drift_findings({unit: 10000.0}, {unit: st["p90"]}, {unit: st})[0] == []
+def test_one_more_run_cannot_make_a_finding_on_its_own():
+    """The pre-push check and the CI step read windows one run apart: the push itself completes or cancels a run in between. Whatever that one run measured, it cannot turn a green window red by itself, in either direction."""
+    committed = {"pytest:big.py": 400_000.0, "account-e2e:a.test.ts": 60_000.0}
+    window = {
+        "pytest:big.py": ([410_000.0], [390_000.0]),
+        "account-e2e:a.test.ts": ([61_000.0], [59_000.0]),
+    }
+
+    def judge(extra):
+        stats = {
+            u: _runs(*(([extra * committed[u]],) if extra else ()), *runs)
+            for u, runs in window.items()
+        }
+        return br.unit_drift_findings(committed, stats, parallelism=PYTEST_WIDE)[0]
+
+    assert judge(None) == []
+    for factor in (0.01, 0.5, 0.74, 1.26, 1.4, 3.0, 50.0):
+        assert judge(factor) == [], factor
+    # CONTROL: the same extreme run, once a second run agrees with it, is a finding for each unit.
+    stats = {
+        u: _runs([3.0 * committed[u]], [3.0 * committed[u]], *runs) for u, runs in window.items()
+    }
+    agreed = br.unit_drift_findings(committed, stats, parallelism=PYTEST_WIDE)[0]
+    assert len([f for f in agreed if f.startswith("unit ")]) == 2
+
+
+def test_control_a_new_slow_unit_with_no_row_is_red_on_one_run(tmp_path, capsys):
+    """REAL: test_private_license_e2e.py had no row at 1ee6476e3 and ran 173 s on run 38389205702, which the lane budget priced at the 23.4 s lane default. That is a fact about the table, so one run is enough."""
+    assert LICENSE_E2E not in _table("1ee6476e3")
+    stats = {LICENSE_E2E: _runs(*_samples([38389205702])[LICENSE_E2E])}
+    assert stats[LICENSE_E2E]["runs"] == 1
+    table = _committed(
+        units={}, defaultUnitMs=DRIFT_FIXTURE["defaultUnitMs"], unitParallelism=PYTEST_WIDE
+    )
+    findings = br.unpriced_unit_findings(table, stats, tmp_path)
+    assert [_normal(f.key) for f in findings] == [
+        "lane-durations:unpriced-unit:%s" % br.key_part(LICENSE_E2E)
+    ]
+    assert "37 s of leg wall at 4 at once" in findings[0]
+    path = tmp_path / ".ci" / "config" / "lane-durations.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(table))
+    assert br.check_lane_durations(path, limit=10, compute=_fake_compute(**_measured(stats))) == 1
+    assert "has no row in the table" in capsys.readouterr().err
+    # A new file near the lane default moves no leg: the default prices it well enough.
+    near = {LICENSE_E2E: _runs([60_000.0])}
+    assert br.unpriced_unit_findings(table, near, tmp_path) == []
+    # With its row written (what the refresh does at any count) it is no longer unpriced.
+    priced = {**table, "units": {LICENSE_E2E: stats[LICENSE_E2E]["p90"]}}
+    assert br.unpriced_unit_findings(priced, stats, tmp_path) == []
+    # A unit its lane's manifest does not name is the coverage gate's: a refresh prunes its row, so this finding has no way to clear.
+    shards = tmp_path / ".ci" / "config" / "shards"
+    shards.mkdir(parents=True)
+    (shards / "quality-pytest.json").write_text(
+        json.dumps({"of": 1, "legs": [{"index": 1, "ids": []}]})
+    )
+    assert br.unpriced_unit_findings(table, stats, tmp_path) == []
+    (shards / "quality-pytest.json").write_text(
+        json.dumps({"of": 1, "legs": [{"index": 1, "ids": [LICENSE_E2E]}]})
+    )
+    assert len(br.unpriced_unit_findings(table, stats, tmp_path)) == 1
+
+
+def test_a_refresh_rewrites_a_unit_only_on_the_evidence_the_check_judges():
+    one = _runs([20_000.0])
+    two = _runs([20_000.0], [19_000.0])
+    committed = {"a": 40_000.0, "b": 40_000.0, "c": 10_000.0, "d": 10_000.0, "kept": 7.0}
+    measured = {"a": 20_000.0, "b": 20_000.0, "c": 20_000.0, "d": 20_000.0, "new": 5.0}
+    stats = {"a": one, "b": two, "c": one, "d": two, "new": one}
+    assert br.refreshed_units(committed, measured, stats) == {
+        "a": 40_000.0,  # one run and faster: kept
+        "b": 20_000.0,  # CONTROL: two runs lower it
+        "c": 10_000.0,  # one run and slower: kept too, which the retired refresh wrote
+        "d": 20_000.0,  # CONTROL: two runs raise it
+        "kept": 7.0,
+        "new": 5.0,  # a unit new to the table is written from one run
+    }
+    assert br.refreshed_units({"a": 1.0}, {"a": 2.0}, {}) == {"a": 1.0}, (
+        "no evidence record is no evidence"
+    )
+
+
+def _refreshed(
+    table: dict[str, float], unit_stats: dict[str, dict[str, float]]
+) -> dict[str, float]:
+    measured = {u: st["p90"] for u, st in unit_stats.items()}
+    return br.refreshed_units(table, measured, unit_stats)
+
+
+@pytest.mark.parametrize("name", ["morning", "run-38409515814", "after-1dd250d87"])
+def test_a_check_after_a_refresh_on_the_same_sample_is_green(name, tmp_path):
+    """The property that ends the refresh-then-red loop: the table a refresh writes from a sample has no unit, leg or unpriced finding on that sample. Driven through the real refresh and the real check over each of the three real windows."""
+    window = DRIFT_FIXTURE["windows"][name]
+    unit_stats = _window_stats(window["runs"])
+    path = _fixture_tree(tmp_path, _table(window["table"]))
+    compute = _fake_compute(jobs={"quality-pytest": 1.0}, **_measured(unit_stats))
+    assert br.check_lane_durations(path, limit=10, compute=compute) == (
+        1 if REAL_FINDINGS[name] else 0
+    )
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 0
+    written = json.loads(path.read_text())["units"]
+    thin = [u for u, st in unit_stats.items() if st["runs"] < br.MIN_DRIFT_RUNS]
+    before = _table(window["table"])
+    assert all(written[u] == before[u] for u in thin if u in before), "a thin unit kept its value"
+
+
+def test_the_day_replayed_reds_twice_on_real_findings_and_then_holds(tmp_path):
+    """2026-10-13 from the table before the morning fix, one window per artifact-bearing run, refreshing on each red as the session did. The retired rule and refresh gave three reds of 1, 17 and 14 findings (measured with the module as it stood at 9fb286309). The rule gives two, three findings each, all of them moves two runs agree on or a missing row."""
+    table = _table("46be5e863^")
+    reds: list[list[str]] = []
+    for position in range(len(ALL_RUNS) - 1, -1, -1):
+        unit_stats = _window_stats(ALL_RUNS[position:])
+        keys = _judge(table, unit_stats, tmp_path)
+        if keys:
+            reds.append(sorted(_normal(k) for k in keys))
+            table = _refreshed(table, unit_stats)
+            assert _judge(table, unit_stats, tmp_path) == []
+    assert [len(keys) for keys in reds] == [3, 3]
+    assert reds[0] == sorted(_normal(k) for k in REAL_FINDINGS["run-38409515814"])
+    assert reds[1] == sorted(
+        "lane-durations:drift:unit:%s" % br.key_part(u)
+        for u in (GUARDS, CLEANUP_VERSIONS, "tutorial:delta-transfer")
+    )
+    # The table that day ends on, judged on every window one run away from the full one: dropping any single run changes no verdict.
+    for dropped in ALL_RUNS:
+        window = [run for run in ALL_RUNS if run != dropped]
+        assert _judge(table, _window_stats(window), tmp_path) == [], dropped
+    # And a table refreshed WITHOUT the newest run, then judged with it (the pre-push check followed by the CI step), holds as well once the real findings are written.
+    earlier = _refreshed(table, _window_stats(ALL_RUNS[1:]))
+    assert _judge(earlier, _window_stats(ALL_RUNS), tmp_path) == []
+
+
+def test_the_verdict_prints_what_it_judged_and_which_runs(tmp_path, capsys):
+    """A green that judged nothing has to look different from a green that judged the table: the counts and the sampled runs are printed either way, with the `--as-of` that reads the same sample again."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(
+        json.dumps(_committed(units={"pytest:a.py": 10_000.0, "pytest:b.py": 10_000.0}))
+    )
+    stats = {"pytest:a.py": _runs([10_000.0], [10_000.0]), "pytest:b.py": _runs([10_000.0])}
+    sampled = [
+        {"id": 2, "updated_at": "2026-10-13T15:05:49Z"},
+        {"id": 1, "updated_at": "2026-10-13T12:13:00Z"},
+    ]
+    compute = _fake_compute(sampled_runs=sampled, **_measured(stats))
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 0
+    out = capsys.readouterr().out
+    assert (
+        "2 unit(s) measured: 1 judged in 1 leg sum(s), 1 thin (fewer than 2 sampled runs, not judged), 0 with no row in the table."
+        in out
+    )
+    assert (
+        "sample: 2 run(s), newest first: 2 1. The same sample again: --check --as-of 2026-10-13T15:05:49Z"
+        in out
+    )
+    # A compute that returns units with no evidence record judges none of them, and says so.
+    bare = _fake_compute(units={"pytest:a.py": 99_000_000.0})
+    assert br.check_lane_durations(path, limit=10, compute=bare) == 0
+    assert "1 unit(s) measured: 0 judged in 0 leg sum(s), 1 thin" in capsys.readouterr().out
+
+
+def test_as_of_bounds_the_sample_to_the_runs_completed_by_then(monkeypatch):
+    runs = [
+        {"id": 1, "created_at": "2026-10-13T04:00:00Z", "updated_at": "2026-10-13T04:27:00Z"},
+        {"id": 2, "created_at": "2026-10-13T11:17:00Z", "updated_at": "2026-10-13T12:13:00Z"},
+        # Created before run 2 finished, completed after: a run the push cancelled.
+        {"id": 3, "created_at": "2026-10-13T12:00:00Z", "updated_at": "2026-10-13T15:05:00Z"},
+        {"id": 4, "created_at": "2026-10-13T13:00:00Z"},
+    ]
+    seen: list[str] = []
+
+    def fake_api_json(path, **_kw):
+        seen.append(path)
+        return {"workflow_runs": runs}
+
+    monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
+    now = br._iso_to_epoch("2026-10-13T16:00:00Z")
+    live = br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 2, now=now)
+    assert [r["id"] for r in live] == [4, 3]
+    assert "per_page=2&" in seen[-1]
+    as_of = br._iso_to_epoch("2026-10-13T12:13:00Z")
+    bound = br.fetch_runs(
+        "o/r", "ci.yml", "pull_request", None, "completed", 2, now=now, as_of=as_of
+    )
+    assert [r["id"] for r in bound] == [2, 1], (
+        "run 3 had not completed, and run 4 names no completion"
+    )
+    assert "per_page=100&" in seen[-1], (
+        "the runs wanted sit behind newer ones, so the page is the largest"
+    )
+    assert br.completed_by(runs[3], None) is True
+    assert br.completed_by(runs[3], as_of) is False
+
+
+def test_as_of_reaches_the_check_and_the_refresh_and_refuses_a_time_with_no_zone(
+    tmp_path, monkeypatch
+):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed()))
+    got: list[tuple[str, object]] = []
+
+    def check(*_args, **kw):
+        got.append(("check", kw.get("as_of")))
+        return 0
+
+    def refresh(*_args, **kw):
+        got.append(("refresh", kw.get("as_of")))
+        return 0
+
+    monkeypatch.setattr(br, "check_lane_durations", check)
+    monkeypatch.setattr(br, "refresh_lane_durations", refresh)
+    stamp = br._iso_to_epoch("2026-10-13T12:13:00Z")
+    assert br.main(["--check", "--lane-durations", str(path)]) == 0
+    assert (
+        br.main(["--check", "--lane-durations", str(path), "--as-of", "2026-10-13T12:13:00Z"]) == 0
+    )
+    assert br.main(["--refresh", "--dry-run", "--as-of", "2026-10-13T14:13:00+02:00"]) == 0
+    assert got == [("check", None), ("check", stamp), ("refresh", stamp)]
+    for bad in ("2026-10-13T12:13:00", "yesterday"):
+        with pytest.raises(SystemExit) as exc:
+            br.main(["--check", "--as-of", bad])
+        assert exc.value.code == 2
+    assert len(got) == 3, "a refused --as-of reads nothing"
+
+
+def test_the_sample_bound_reaches_the_compute_only_when_one_is_set(tmp_path):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed()))
+    seen: list[dict[str, object]] = []
+
+    def compute(_repo, _workflow, _branch, _limit, **kw):
+        seen.append(kw)
+        return _fake_compute(sampled_runs=[{"id": 5, "updated_at": "2026-10-13T12:00:00Z"}])(
+            None, None, None, None
+        )
+
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 0
+    assert br.check_lane_durations(path, limit=10, compute=compute, as_of=1_800_000_000.0) == 0
+    assert seen == [{}, {"as_of": 1_800_000_000.0}]
+    line = br.sample_line(
+        {"sampled_runs": [{"id": 5, "updated_at": "2026-10-13T12:00:00Z"}]}, 1_800_000_000.0
+    )
+    assert "completed by 2027-01-15T08:00:00Z" in line
+    assert br.sample_line({}, None) == "sample: the measurement names no run."
+
+
+def test_collect_unit_durations_keeps_which_run_each_sample_came_from():
+    by_id = {"1": 100, "2": 200, "3": 300}
+
+    def fake_list(_repo, run_id):
+        ids = ("1", "2") if run_id == 9 else ("3",)
+        return [{"id": i, "name": "unit-durations-test-e2e-workers-x%s-sha" % i} for i in ids]
+
+    by_run: dict[str, dict[int, list[float]]] = {}
+    per_lane, _missing = br.collect_unit_durations(
+        GH_REPO,
+        [9, 7],
+        ["test-e2e-workers"],
+        list_artifacts=fake_list,
+        download=lambda _repo, artifact_id: _duration_blob(by_id[artifact_id]),
+        by_run=by_run,
+    )
+    assert per_lane["test-e2e-workers"] == {"e2e-workers:a.spec.ts": [100.0, 200.0, 300.0]}
+    assert by_run == {"e2e-workers:a.spec.ts": {9: [100.0, 200.0], 7: [300.0]}}
+    assert list(by_run["e2e-workers:a.spec.ts"]) == [9, 7], (
+        "run order is the caller's, newest first"
+    )
+    st = br.unit_run_stats(list(by_run["e2e-workers:a.spec.ts"].values()))
+    assert st is not None
+    assert (st["runs"], st["n"]) == (2, 3)
+
+
+def test_unit_legs_reads_the_committed_manifests(tmp_path):
+    shards = tmp_path / ".ci" / "config" / "shards"
+    shards.mkdir(parents=True)
+    (shards / "quality-pytest.json").write_text(
+        json.dumps(
+            {
+                "of": 2,
+                "legs": [
+                    {"index": 1, "ids": ["pytest:a.py"]},
+                    {"index": 2, "ids": ["pytest:b.py"]},
+                ],
+            }
+        )
+    )
+    (shards / "test-renet-go.json").write_text("{not json")
+    assert br.unit_legs(tmp_path) == {
+        "pytest:a.py": "quality-pytest leg 1/2",
+        "pytest:b.py": "quality-pytest leg 2/2",
+    }
+    # The real manifests place every unit of the fixture's pytest and account lanes.
+    real = br.unit_legs(paths.repo_root())
+    assert len(real) > 500
+    assert len(set(real.values())) >= 10
 
 
 def test_unit_lane_maps_every_unit_id_family():
@@ -953,7 +1401,6 @@ def test_unit_lane_maps_every_unit_id_family():
     assert br.unit_lane("e2e-workers:x.test.ts") == "test-e2e-workers"
     assert br.unit_lane("renet-integration:x.py") == "test-renet-integration"
     assert br.unit_lane("github.com/rediacc/renet/pkg/x") == "test-renet-go"
-    assert br.unit_lane("battery:x.sh") == "quality-gate-tests"
     assert br.unit_lane("tutorial:x") == "ops-tutorials"
     assert br.unit_lane("newlane:x") == "newlane"
 
@@ -1354,6 +1801,7 @@ def test_collect_class_records_which_runs_it_sampled(monkeypatch):
         {
             "id": 36427771349,
             "created_at": "2026-09-28T13:19:13Z",
+            "updated_at": "2026-09-28T14:02:51Z",
             "head_branch": "0923-1",
             "event": "pull_request",
             "conclusion": "failure",
@@ -1485,32 +1933,26 @@ def test_renet_integration_classname_ids_land_in_the_committed_manifest():
 
 # --------------------------------------------------------------------------- T3.1: e2e-workers describe-block buckets (BLOCKER item 5, #partN) ---------------------------------------------------------------------------
 
-_FIXTURE_RUN_E2E_SH = """
-declare -A E2E_SHARD_GREP_BUCKETS=(
-    ["part1"]="PostgreSQL Data Persistence @bridge @integration|Repository Fork Data Inheritance @bridge @integration"
-    ["part2"]="Multiple Fork Independence @bridge @integration|Fork Data Integrity @bridge @integration"
-    ["part3"]="Large Data Volume Fork @bridge @integration|Service Restart Persistence @bridge @integration"
-)
-"""
 
-
-def _write_fixture_run_e2e_sh(tmp_path):
-    script_dir = tmp_path / ".ci" / "scripts" / "test"
-    script_dir.mkdir(parents=True)
-    (script_dir / "run-e2e.sh").write_text(_FIXTURE_RUN_E2E_SH, encoding="utf-8")
-    return tmp_path
-
-
-def test_e2e_shard_bucket_titles_reads_the_bash_array(tmp_path):
-    root = _write_fixture_run_e2e_sh(tmp_path)
-    titles = br._e2e_shard_bucket_titles(root)
+def test_e2e_shard_bucket_titles_reads_the_runners_python_table():
+    """Rule T. The table the report buckets by is `rediacc_ci.testrun.e2e.SHARD_GREP_BUCKETS`, the one the E2E runner builds a bucketed leg's `--grep` from. The report used to parse the retired `run-e2e.sh`'s bash `declare -A` text, so once that script was gone it returned an empty map with no error and every spec silently fell back to whole-file grouping."""
+    titles = br._e2e_shard_bucket_titles()
     assert titles["PostgreSQL Data Persistence @bridge @integration"] == "part1"
     assert titles["Repository Fork Data Inheritance @bridge @integration"] == "part1"
     assert titles["Large Data Volume Fork @bridge @integration"] == "part3"
+    expected = {
+        title: bucket
+        for bucket, pattern in e2e_run.SHARD_GREP_BUCKETS.items()
+        for title in pattern.split("|")
+        if title
+    }
+    assert titles == expected
 
 
-def test_e2e_shard_bucket_titles_missing_script_is_an_empty_map_not_a_crash(tmp_path):
-    assert br._e2e_shard_bucket_titles(tmp_path) == {}
+def test_e2e_shard_bucket_titles_needs_no_bash_script():
+    """The retired bash runner is not an input any more: the answer is the same whether or not a `run-e2e.sh` exists under any root."""
+    assert not (paths.repo_root() / ".ci" / "scripts" / "test" / "run-e2e.sh").exists()
+    assert br._e2e_shard_bucket_titles()
 
 
 def _pw_describe_suite(file, describe_title, duration):
@@ -1605,10 +2047,10 @@ def test_parse_playwright_unit_ms_with_no_bucket_titles_is_unchanged():
 
 
 def test_e2e_workers_bucket_ids_land_in_the_committed_manifest():
-    """The BLOCKER's other named gap: the three `#partN` units have no sample. Reads the REAL `run-e2e.sh` bucket table and the REAL committed `test-e2e-workers.json` manifest (both via `paths.repo_root()`, no fixture copy) and checks the produced ids against it."""
+    """The BLOCKER's other named gap: the three `#partN` units have no sample. Reads the REAL `SHARD_GREP_BUCKETS` table of `rediacc_ci.testrun.e2e` and the REAL committed `test-e2e-workers.json` manifest (both via `paths.repo_root()`, no fixture copy) and checks the produced ids against it."""
     root = paths.repo_root()
-    bucket_titles = br._e2e_shard_bucket_titles(root)
-    assert bucket_titles, "run-e2e.sh's E2E_SHARD_GREP_BUCKETS did not parse"
+    bucket_titles = br._e2e_shard_bucket_titles()
+    assert bucket_titles, "testrun.e2e.SHARD_GREP_BUCKETS is empty"
     manifest = json.loads((root / ".ci/config/shards/test-e2e-workers.json").read_text())
     manifest_ids = {i for leg in manifest["legs"] for i in leg["ids"]}
     file = "13-postgres-fork-isolation.test.ts"
@@ -1747,12 +2189,12 @@ def test_prune_units_to_manifests_drops_ids_no_manifest_names(tmp_path):
         "pytest:/ci/a.py": 2,
         "example.com/p": 3,
         "example.com/gone": 4,
-        "battery:x": 5,
+        "tutorial:x": 5,
     }
     assert br.prune_units_to_manifests(units, tmp_path) == {
         "pytest:.ci/a.py": 1,
         "example.com/p": 3,
-        "battery:x": 5,
+        "tutorial:x": 5,
     }
 
 
@@ -2430,3 +2872,138 @@ def test_the_refresh_writes_main_push_only_jobs_without_touching_pr_numbers(monk
         root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
     )
     assert computed["job_p90_minutes"] == {"Lint": 4.0, "Check Release State": 0.5}
+
+
+# --------------------------------------------------------------------------- finding keys (review d21f5510.1) ---------------------------------------------------------------------------
+
+
+def _keys(text: str) -> list[str]:
+    return [
+        line[len("::finding::") :] for line in text.splitlines() if line.startswith("::finding::")
+    ]
+
+
+def test_every_lane_duration_finding_class_emits_its_key(tmp_path, capsys):
+    """One finding of each class, and each prints `::finding::lane-durations:<class>:<subject>`: the lane, unit or job, never the count, the run id or the measured number."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(
+        json.dumps(
+            _committed(
+                jobs={"quality-code": 2.0},
+                units={"e2e:slow.spec.ts": 100_000.0},
+                defaultUnitMs={"quality-pytest": 20_000},
+                job_max_seconds={"jobs": {"Validate Promotion": {"observed_max_seconds": 100}}},
+            )
+        )
+    )
+    compute = _fake_compute(
+        missing_artifact_lanes=["ops-tutorials", "test-renet-go"],
+        stale_sample=["run 1 is 28.2 day(s) old", "run 2 is 30.0 day(s) old"],
+        jobs={"quality-code": 13.0},
+        job_max_seconds={"Validate Promotion": {"observed_max_seconds": 400}},
+        **_measured(
+            {
+                "e2e:slow.spec.ts": _runs([400_000.0], [400_000.0]),
+                "pytest:.ci/new_and_slow.py": _runs([400_000.0]),
+            }
+        ),
+    )
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 1
+    keys = _keys(capsys.readouterr().err)
+    assert set(keys) >= {
+        "lane-durations:no-unit-artifacts:ops-tutorials",
+        "lane-durations:no-unit-artifacts:test-renet-go",
+        "lane-durations:stale-sample",
+        "lane-durations:leg-over-budget:quality-code",
+        "lane-durations:drift:job:quality-code",
+        "lane-durations:drift:unit:e2e:slow.spec.ts",
+        "lane-durations:drift:leg-sum:e2e",
+        "lane-durations:unpriced-unit:pytest:.ci/new_and_slow.py",
+        "lane-durations:drift:job-max:Validate-Promotion",
+    }, keys
+    assert len(keys) == len(set(keys)), "one line per key: two stale runs are one finding class"
+    assert not any(ch.isdigit() for k in keys for ch in k.split(":")[1]), keys
+
+
+def test_a_lane_duration_key_does_not_move_with_the_numbers(tmp_path, capsys):
+    """The same missing lane over a different sample size, on another day, keeps its key."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed()))
+    seen = []
+    for limit in (10, 25):
+        compute = _fake_compute(missing_artifact_lanes=["quality-pytest"])
+        assert br.check_lane_durations(path, limit=limit, compute=compute) == 1
+        seen.append(_keys(capsys.readouterr().err))
+    assert seen[0] == seen[1] == ["lane-durations:no-unit-artifacts:quality-pytest"]
+
+
+def test_a_green_lane_duration_check_emits_no_key(tmp_path, capsys):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(jobs={"test-e2e-workers": 5.5})))
+    compute = _fake_compute(jobs={"test-e2e-workers": 5.5})
+    assert br.check_lane_durations(path, limit=10, compute=compute) == 0
+    captured = capsys.readouterr()
+    assert _keys(captured.err + captured.out) == []
+
+
+def test_an_unreadable_lane_durations_file_is_keyed(tmp_path, capsys):
+    path = tmp_path / "lane-durations.json"
+    path.write_text("{not json")
+    assert br.check_lane_durations(path, limit=10, compute=_fake_compute()) == 1
+    assert _keys(capsys.readouterr().err) == ["lane-durations:unreadable"]
+
+
+def test_control_an_unkeyed_lane_duration_finding_class_is_refused(tmp_path, monkeypatch):
+    """A NEW finding class added as a bare string would fail the gate with no key and sit unseen beside carried ones. Planted: the over-budget finder is made to add a plain string, and the check raises instead of printing it."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed()))
+    real = br.unit_drift_findings
+
+    def unkeyed(*args, **kwargs):
+        findings, lanes = real(*args, **kwargs)
+        return [*findings, "a new finding class nobody keyed"], lanes
+
+    monkeypatch.setattr(br, "unit_drift_findings", unkeyed)
+    with pytest.raises(TypeError, match="unkeyed finding"):
+        br.check_lane_durations(path, limit=10, compute=_fake_compute())
+
+
+def _run_aged(days: float, now: float) -> dict:
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now - days * 86_400))
+    return {"id": 1, "created_at": stamp}
+
+
+def test_a_lane_is_unmeasurable_unless_a_run_inside_the_retention_finished_its_job():
+    now = 1_800_000_000.0
+    lane = "ops-tutorials"
+    patterns = {lane: re.compile(r"^Ops Tutorials")}
+    done = [{"name": "Ops Tutorials (1/2)", "conclusion": "success"}]
+    cut = [{"name": "Ops Tutorials (1/2)", "conclusion": "cancelled"}]
+
+    def split(runs, jobs, days=3, pats=patterns):
+        return br.split_unmeasurable_lanes([lane], runs, jobs, pats, days, now)
+
+    # Every run past the retention: nothing could hold an artifact.
+    assert split([_run_aged(4, now), _run_aged(9, now)], [done, done]) == ([], [lane])
+    # A fresh run cancelled before the lane's job finished uploads nothing either.
+    assert split([_run_aged(0.1, now), _run_aged(4, now)], [cut, done]) == ([], [lane])
+    # CONTROL: a fresh run that finished the lane's job and still left no artifact is the finding.
+    assert split([_run_aged(0.1, now), _run_aged(4, now)], [done, done]) == ([lane], [])
+    # CONTROLS, each failing closed: an unread retention record, a run with no date, a lane with no pattern.
+    assert split([_run_aged(4, now)], [done], days=None) == ([lane], [])
+    assert split([{"id": 2, "created_at": None}], [done]) == ([lane], [])
+    assert split([_run_aged(4, now), {"id": 2, "created_at": None}], [done, cut]) == ([lane], [])
+    assert split([_run_aged(0.1, now)], [cut], pats={}) == ([lane], [])
+    assert br.split_unmeasurable_lanes([], [_run_aged(4, now)], [done], patterns, 3, now) == (
+        [],
+        [],
+    )
+
+
+def test_the_artifact_retention_is_read_from_the_committed_record(tmp_path):
+    assert br.artifact_retention_days(br.paths.repo_root()) == 3
+    assert br.artifact_retention_days(tmp_path) is None
+    record = tmp_path / br.ACTIONS_RETENTION_REL_PATH
+    record.parent.mkdir(parents=True)
+    record.write_text('{"days": true}', encoding="utf-8")
+    assert br.artifact_retention_days(tmp_path) is None

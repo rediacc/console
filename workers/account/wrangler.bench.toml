@@ -26,6 +26,14 @@ ENVIRONMENT = "bench"
 ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
 WEBAUTHN_RP_ID = "bench.rediacc.com"
 WEBAUTHN_ORIGIN = "https://bench.rediacc.com"
+# Bench is test-only: no captcha for agents or humans (operator ruling 2026-10-13). Pairs with the
+# empty VITE_TURNSTILE_SITE_KEY in rediacc_ci/ops/deploy_bench.py. Never add to a production config.
+TURNSTILE_ENABLED = "false"
+# Bench also stores each outgoing email in the captured_emails D1 table, so an agent can read a
+# session elevation link, a magic link or an invitation token with `wrangler d1 execute` (operator
+# ruling 2026-10-13, "Bench-only email capture in D1"). No route exposes the table. The account
+# server refuses to start with this switch unless ENVIRONMENT is "bench". Never add to a production config.
+EMAIL_CAPTURE_D1 = "true"
 
 # Nightly maintenance at 03:00 UTC (off-peak): audit retention sweep + backup GC.
 # Handled by `scheduled` in src/index.ts, which forwards to the account app in

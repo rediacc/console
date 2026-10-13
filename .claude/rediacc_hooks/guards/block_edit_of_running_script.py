@@ -224,16 +224,17 @@ def indented(running):
 
 
 def run(ev):
-    path = ev.field("tool_input", "file_path")
-    if path == "":
+    typed = ev.field("tool_input", "file_path")
+    if typed == "":
         return hookio.ALLOW
-    if not hookio.case_glob(path, "*.sh"):
-        return hookio.ALLOW
-
-    base = path.rsplit("/", 1)[-1]
-    running = runningscript.live_shells(runningscript.pattern_for(base), 3)
-    if running == "":
-        return hookio.ALLOW
-
-    ev.warn_raw(MESSAGE % {"base": base, "running": indented(running)})
-    return hookio.DENY
+    # Judged where the write LANDS (`hookio.landing`, review 9c6817f3.1-.4 sweep) AND by the name that was typed (0067b4c2.2): the file edited is the one the edit lands in, whatever a link calls it, while the process table holds the name the script was STARTED under, which may be the link's. So both names are asked; the landing alone allowed an edit through `alias.sh` while `bash alias.sh` was running.
+    landed = hookio.landing(typed, ev.field("cwd") or None)[0]
+    for path in dict.fromkeys((landed, typed)):
+        if not hookio.case_glob(path, "*.sh"):
+            continue
+        base = path.rsplit("/", 1)[-1]
+        running = runningscript.live_shells(runningscript.pattern_for(base), 3)
+        if running != "":
+            ev.warn_raw(MESSAGE % {"base": base, "running": indented(running)})
+            return hookio.DENY
+    return hookio.ALLOW

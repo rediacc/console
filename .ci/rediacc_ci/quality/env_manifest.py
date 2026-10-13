@@ -195,6 +195,8 @@ PROCESS_ENV_RE = re.compile(
     r"process\.env(?:\.([A-Za-z_][A-Za-z0-9_]*)"
     r"|\[\s*['\"`]([A-Za-z_][A-Za-z0-9_]*)['\"`]\s*\])"
 )
+# `envRoot('NAME')` (scripts/lib/repo-root.ts:101) reads process.env[NAME] for a gate's fixture seam; the literal argument IS the read, and without this the seams it serves (SUBMODULE_PRESENCE_ROOT, LANE_BUDGET_ROOT, ...) were invisible to the manifest.
+ENV_ROOT_RE = re.compile(r"\benvRoot\(\s*['\"`]([A-Za-z_][A-Za-z0-9_]*)['\"`]\s*\)")
 # Counted and printed, never asserted on: see the module docstring.
 PROCESS_ENV_DYNAMIC_RE = re.compile(r"process\.env\[\s*(?!['\"`])")
 
@@ -205,6 +207,10 @@ def selects_js(rel: str) -> bool:
 
 def names_from_js(text: str) -> set[str]:
     return {m.group(1) or m.group(2) for m in PROCESS_ENV_RE.finditer(text)}
+
+
+def names_from_env_root(text: str) -> set[str]:
+    return {m.group(1) for m in ENV_ROOT_RE.finditer(text)}
 
 
 def dynamic_js_reads(text: str) -> int:
@@ -337,6 +343,14 @@ SOURCES = (
         "GATE_PROBE_JS",
         "const a = process.env.GATE_PROBE_JS;\n",
         "// GATE_PROBE_JS is named in prose, and in env.GATE_PROBE_JS with no process.\n",
+    ),
+    Reader(
+        "env-root",
+        selects_js,
+        names_from_env_root,
+        "GATE_PROBE_ENVROOT",
+        "const root = envRoot('GATE_PROBE_ENVROOT');\n",
+        "// envRoot names GATE_PROBE_ENVROOT in prose; myenvRoot(GATE_PROBE_ENVROOT) is not a literal read.\n",
     ),
     Reader(
         "os-environ",

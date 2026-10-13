@@ -59,7 +59,9 @@ async function disableRemote(configName: string): Promise<void> {
 
   // Disable is deliberately SERVER-ONLY: restoring from the offline cache
   // could silently lose another device's newer writes. Reads may cache-serve;
-  // a disable may not.
+  // a disable may not. The local-only unlink is its own command (`--local`,
+  // config-remote-unlink.ts), named here only when the server path is closed
+  // for good, never for a server that is merely unreachable.
   let fullConfig: RdcConfig;
   try {
     ({ config: fullConfig } = await adapter.pull());
@@ -70,7 +72,8 @@ async function disableRemote(configName: string): Promise<void> {
         t('commands.config.remote.disable.serverRequired', { server: remote.apiUrl })
       );
     }
-    throw error;
+    const { closedServerPath } = await import('./config-remote-unlink.js');
+    throw closedServerPath(error, configName, remote) ?? error;
   }
 
   // Write the full config to the local file without the remote pointer. The pull carries no host-local sections, so they come from the decrypted local copy through the one overlay: saving the pull as is dropped state.repos networkIds, renetPath, the master-password verifier and unknown keys, and wrote a master-password config back in plaintext (F3/F4/F18 sibling, PLAN-config-sync-hardening T3).
@@ -107,16 +110,14 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
   const remote = config.remote;
   let connected = false;
 
+  // Outside the try: a device with no usable secure storage is told so, with the remedy, instead of reading "error".
+  const { getSecureStorage } = await import('../utils/secure-storage.js');
+  const secureStorage = getSecureStorage();
+
   try {
     const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
     const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
-    const { getSecureStorage } = await import('../utils/secure-storage.js');
-    const adapter = new RemoteConfigAdapter(
-      remote,
-      configName,
-      remoteTokenStorage,
-      getSecureStorage()
-    );
+    const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);
     connected = await adapter.testConnection();
   } catch {
     // Connection test failed
@@ -364,10 +365,23 @@ export function registerRemoteCommands(configCommand: Command): void {
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
         const config = await configFileStorage.load(configName);
 
+        // Before any portal link or password prompt: an enrollment ends by storing this device's slot secret, so a device with nowhere to keep it is refused here and not after the browser ceremony.
+        const { getSecureStorage } = await import('../utils/secure-storage.js');
+        getSecureStorage();
+
+        // A linked config is refused only while this device can still open it. Once its credentials are gone (the keyring that held the slot secret did not outlive a reboot, the token chain died with no login to renew it, the key was rotated), enable enrolls THIS device again against the same store: `disable` needs those same credentials, so it was never a way out.
         if (hasRemoteConfig(config)) {
-          throw new ValidationError(
-            t('commands.config.remote.enable.alreadyEnabled', { name: configName })
-          );
+          const { enrollmentUsable, reenroll } = await import('./config-remote-reenroll.js');
+          if (await enrollmentUsable(config.remote, configName)) {
+            throw new ValidationError(
+              t('commands.config.remote.enable.alreadyEnabled', { name: configName })
+            );
+          }
+          await reenroll(configName, config.remote, {
+            password: Boolean(options.password),
+            apiUrl: options.apiUrl,
+          });
+          return;
         }
 
         const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
@@ -388,9 +402,16 @@ export function registerRemoteCommands(configCommand: Command): void {
   remote
     .command('disable')
     .description(t('commands.config.remote.disable.description'))
-    .action(async () => {
+    .option('--local', t('commands.config.remote.disable.optionLocal'))
+    .option('-y, --yes', t('options.yes'))
+    .action(async (options: { local?: boolean; yes?: boolean }) => {
       try {
         const configName = configService.getEffectiveConfigName();
+        if (options.local) {
+          const { disableLocal } = await import('./config-remote-unlink.js');
+          await disableLocal(configName, { yes: options.yes });
+          return;
+        }
         await disableRemote(configName);
       } catch (error) {
         handleError(error);

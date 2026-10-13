@@ -367,7 +367,9 @@ def test_the_real_workflow_is_green_under_the_port() -> None:
     )
     assert proc.returncode == 0, "the real ci.yml is not green:\n%s" % proc.stderr
     assert "ci workflow invariants hold" in proc.stderr
-    assert "Blind spot: this reads ci.yml only" in proc.stderr
+    # The real tree runs the release-order phase too, so the ci.yml blind spot names its phase; the fixture goldens keep the twin's "this reads ci.yml only".
+    assert "Blind spot: the ci.yml phase reads ci.yml only" in proc.stderr
+    assert "release order holds: init step 'Create version tag' (needs: nothing)" in proc.stderr
 
 
 def test_an_empty_workflow_file_falls_back_to_the_real_default() -> None:
@@ -660,3 +662,636 @@ def test_unconditional_ancestors_and_conditional_descendants_pass():
         "later": {"needs": ["initialize"], "if": "github.event_name == 'push'"},
     }
     assert _root_kinds(jobs) == []
+
+
+# ---- the release-order phase (PLAN-cd-errors-in-ci W5 + W4 pins; added after the twin, no differential) ----------
+#
+# CD run 37749637824 (v2.2.0): ci.yml sealed cli/v2.2.0/.released, cd-v2's post-publish install validation went red on a Rocky 9 DNF stall, and `tag-and-release`, the only job that created the git tag, was skipped. The pure cases below drive `analyse_release` over literal dicts in both directions; the subprocess cases drive the REAL files, including the real pre-fix cd-v2.yml.
+
+# The last commit whose cd-v2.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous.
+PRE_FIX_CD_COMMIT = "0e6af2d1cb918135c79c057ee9d29b5dfb276af1"
+
+TAG_RUN = 'git -c user.name="$N" tag -a "v${VERSION}" -m "v${VERSION}" "$CI_SHA"\ngit push origin "v${VERSION}"\n'
+PERMS_RUN = (
+    'case "$preset" in\n'
+    "  readonly)\n"
+    '    echo "perm-contents=read" >> "$GITHUB_OUTPUT"\n'
+    "    ;;\n"
+    "  cd)\n"
+    '    echo "perm-contents=write" >> "$GITHUB_OUTPUT"\n'
+    "    # perm-workflows=write is what this comment is about\n"
+    '    echo "perm-workflows=write" >> "$GITHUB_OUTPUT"\n'
+    "    ;;\n"
+    "esac\n"
+)
+
+
+def release_trio() -> tuple[dict, dict, dict]:
+    """A conformant (ci, cd, action) triple; every red case below breaks exactly one thing in a fresh copy."""
+    ci = {
+        "jobs": {
+            "finalize-release-sentinel": {
+                "steps": [
+                    {"name": "Refuse", "if": "G", "run": "python3 -m rediacc_ci.ci.sibling_runs"},
+                    {
+                        "name": "Seal",
+                        "if": "G",
+                        "run": "python3 -m rediacc_ci.deploy.write_release_sentinel",
+                    },
+                    {
+                        "name": "Dispatch",
+                        "if": "G",
+                        "run": "python3 -m rediacc_ci.ci.dispatch_release",
+                    },
+                ]
+            }
+        }
+    }
+    cd = {
+        "permissions": {},
+        "jobs": {
+            "init": {
+                "permissions": {"contents": "read", "actions": "read"},
+                "steps": [
+                    {"uses": "actions/checkout@abc", "with": {"persist-credentials": False}},
+                    {
+                        "uses": "./.github/actions/app-token",
+                        "id": "app-token",
+                        "with": {"preset": "cd"},
+                    },
+                    {
+                        "uses": "actions/checkout@abc",
+                        "with": {"token": "${{ steps.app-token.outputs.token }}"},
+                    },
+                    {
+                        "name": "Create version tag",
+                        "if": "steps.skip-check.outputs.workers_only != 'true'",
+                        "run": TAG_RUN,
+                    },
+                ],
+            },
+            "publish": {
+                "needs": ["init"],
+                "permissions": {"contents": "read"},
+                "steps": [{"run": "echo publish"}],
+            },
+            "validate": {
+                "needs": ["init", "publish"],
+                "uses": "./.github/workflows/ct-install-methods.yml",
+            },
+            "tag-and-release": {
+                "needs": ["init", "publish", "validate"],
+                "if": "success() && needs.init.outputs.workers_only != 'true'",
+                "permissions": {"contents": "read"},
+                "steps": [{"run": "python3 -m rediacc_ci.release.tag_submodules"}],
+            },
+        },
+    }
+    action = {
+        "runs": {
+            "steps": [
+                {"id": "perms", "run": PERMS_RUN},
+                {
+                    "id": "token",
+                    "uses": "actions/create-github-app-token@abc",
+                    "with": {"permission-workflows": "${{ steps.perms.outputs.perm-workflows }}"},
+                },
+            ]
+        }
+    }
+    return ci, cd, action
+
+
+def release_kinds(ci: dict, cd: dict, action: dict) -> list[tuple[str, str]]:
+    return ci_workflow_invariants.analyse_release(ci, cd, action)[0]
+
+
+def test_a_conformant_release_trio_is_clean_and_reports_its_shape() -> None:
+    """The NEGATIVE direction: without it every red case below could be red for a reason it did not plant."""
+    findings, shape = ci_workflow_invariants.analyse_release(*release_trio())
+    assert findings == []
+    assert shape == {"jobs": 4, "pushes": 1, "tag": [("init", "Create version tag", [])]}
+
+
+def test_the_pre_fix_shape_tag_behind_validation_and_off_on_retry_is_refused() -> None:
+    """The 2026-10-08 graph, as a literal: the tag step lives in tag-and-release, which needs validation and skips on retry_mode."""
+    ci, cd, action = release_trio()
+    tag_step = cd["jobs"]["init"]["steps"].pop()
+    tar = cd["jobs"]["tag-and-release"]
+    tar["if"] = "success() && needs.init.outputs.retry_mode != 'true'"
+    tar["steps"] = [*cd["jobs"]["init"]["steps"], {**tag_step, "if": None}]
+    assert release_kinds(ci, cd, action) == [
+        ("release-order-tag-behind-job", "tag-and-release behind publish, validate"),
+        ("release-order-tag-skipped-on-retry", "tag-and-release (job if:)"),
+    ]
+
+
+def test_a_tag_behind_publish_alone_is_refused() -> None:
+    """Not only validation: anything that can fail after the seal (a Docker retag in publish) strands the sentinel just the same."""
+    ci, cd, action = release_trio()
+    cd["jobs"]["init"]["needs"] = ["publish"]
+    cd["jobs"]["publish"]["needs"] = []
+    assert ("release-order-tag-behind-job", "init behind publish") in release_kinds(ci, cd, action)
+
+
+def test_a_retry_mode_guard_on_the_tag_step_itself_is_refused() -> None:
+    ci, cd, action = release_trio()
+    cd["jobs"]["init"]["steps"][-1]["if"] = "steps.skip-check.outputs.retry_mode != 'true'"
+    assert release_kinds(ci, cd, action) == [
+        ("release-order-tag-skipped-on-retry", "init (step if:)")
+    ]
+
+
+def test_no_version_tag_step_is_a_vacuity_failure() -> None:
+    """A submodule tagger or a bare `git tag` without the `v$` push is not the version tag; finding none must be red."""
+    ci, cd, action = release_trio()
+    cd["jobs"]["init"]["steps"][-1]["run"] = 'git tag -a "x" -m m\ngit push origin main\n'
+    assert ("release-order-no-tag-step", "<none>") in release_kinds(ci, cd, action)
+
+
+def test_a_missing_sentinel_writer_is_a_vacuity_failure() -> None:
+    ci, cd, action = release_trio()
+    del ci["jobs"]["finalize-release-sentinel"]["steps"][1]
+    assert release_kinds(ci, cd, action) == [
+        ("release-order-no-sentinel-writer", "finalize-release-sentinel")
+    ]
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param(lambda steps: steps[2].__setitem__("if", "always()"), id="different-if"),
+        pytest.param(lambda steps: steps.insert(2, {"run": "echo between"}), id="step-between"),
+        pytest.param(lambda steps: steps.pop(2), id="no-dispatch"),
+    ],
+)
+def test_a_dispatch_split_from_the_seal_is_refused(mutate) -> None:
+    ci, cd, action = release_trio()
+    mutate(ci["jobs"]["finalize-release-sentinel"]["steps"])
+    assert release_kinds(ci, cd, action) == [
+        ("release-order-dispatch-split", "finalize-release-sentinel step 2 (Seal)")
+    ]
+
+
+@pytest.mark.parametrize(
+    ("where", "value", "expected"),
+    [
+        ("job", {"contents": "write"}, "tag-and-release"),
+        ("job", "write-all", "tag-and-release"),
+        ("workflow", {"contents": "write"}, "<workflow>"),
+    ],
+)
+def test_contents_write_anywhere_in_cd_is_refused(where, value, expected) -> None:
+    ci, cd, action = release_trio()
+    target = cd["jobs"]["tag-and-release"] if where == "job" else cd
+    target["permissions"] = value
+    assert release_kinds(ci, cd, action) == [("cd-contents-write", expected)]
+
+
+def test_contents_read_and_other_write_scopes_pass() -> None:
+    """The negative half: packages: write in publish is legitimate and must not trip the contents pin."""
+    ci, cd, action = release_trio()
+    cd["jobs"]["publish"]["permissions"] = {"contents": "read", "packages": "write"}
+    assert release_kinds(ci, cd, action) == []
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param(lambda steps: steps[2]["with"].pop("token"), id="checkout-without-token"),
+        pytest.param(
+            lambda steps: steps[1]["with"].__setitem__("preset", "readonly"), id="readonly-preset"
+        ),
+        pytest.param(lambda steps: steps.pop(1), id="no-app-token"),
+        pytest.param(
+            lambda steps: steps.insert(3, {"uses": "actions/checkout@abc"}),
+            id="later-default-checkout",
+        ),
+    ],
+)
+def test_a_push_off_the_cd_app_token_is_refused(mutate) -> None:
+    ci, cd, action = release_trio()
+    steps = cd["jobs"]["init"]["steps"]
+    mutate(steps)
+    findings = release_kinds(ci, cd, action)
+    assert [k for k, _n in findings] == ["cd-push-not-app-token"], findings
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param(
+            lambda a: a["runs"]["steps"][0].__setitem__(
+                "run",
+                PERMS_RUN.replace('    echo "perm-workflows=write" >> "$GITHUB_OUTPUT"\n', ""),
+            ),
+            id="arm-only-mentions-it-in-a-comment",
+        ),
+        pytest.param(
+            lambda a: a["runs"]["steps"][1]["with"].clear(), id="mint-drops-permission-workflows"
+        ),
+        pytest.param(
+            lambda a: a["runs"]["steps"][0].__setitem__(
+                "run",
+                PERMS_RUN.replace(
+                    "  readonly)\n", '  readonly)\n    echo "perm-workflows=write"\n'
+                ).replace('    echo "perm-workflows=write" >> "$GITHUB_OUTPUT"\n', ""),
+            ),
+            id="workflows-on-the-wrong-preset",
+        ),
+    ],
+)
+def test_the_cd_preset_losing_workflows_is_refused(mutate) -> None:
+    ci, cd, action = release_trio()
+    mutate(action)
+    assert [k for k, _n in release_kinds(ci, cd, action)] == ["cd-preset-no-workflows"]
+
+
+def test_every_release_kind_has_a_message() -> None:
+    files = {"ci": "ci.yml", "cd": "cd.yml", "action": "action.yml"}
+    for kind in ci_workflow_invariants.RELEASE_KINDS:
+        assert ci_workflow_invariants.release_message_for(kind, "j", files) is not None, kind
+    assert ci_workflow_invariants.release_message_for("invented", "j", files) is None
+
+
+# ---- the release-order phase against the REAL files ----
+
+
+def run_real(tmp_path: pathlib.Path, **files: str) -> subprocess.CompletedProcess[str]:
+    """The port over the real tree, with any of WORKFLOW_FILE / CD_WORKFLOW_FILE / APP_TOKEN_ACTION_FILE replaced by a mutated copy."""
+    env = env_for()
+    for key, text in files.items():
+        path = tmp_path / ("%s.yml" % key.lower())
+        path.write_text(text, encoding="utf-8")
+        env[key] = str(path)
+    return subprocess.run(
+        [PYTHON, str(PORT)],
+        env=env,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+
+
+def cut_once(source: str, before: str, after: str) -> str:
+    """Exactly one replacement, asserted: a mutation that silently changed nothing would make the red case pass for no reason."""
+    assert source.count(before) == 1, "the mutation target moved (%d matches): %r" % (
+        source.count(before),
+        before,
+    )
+    return source.replace(before, after)
+
+
+REAL_CD = ROOT / ".github/workflows/cd-v2.yml"
+REAL_CI = ROOT / ".github/workflows/ci.yml"
+REAL_ACTION = ROOT / ".github/actions/app-token/action.yml"
+
+
+def test_the_real_pre_fix_cd_workflow_is_refused(tmp_path: pathlib.Path) -> None:
+    """THE HISTORICAL CONTROL: the cd-v2.yml that stranded v2.2.0's sentinel must be red, for both of its defects.
+
+    Skipped, loudly, when the commit is unreachable (a shallow clone): a missing object is not evidence of a working gate.
+    """
+    show = subprocess.run(
+        ["git", "show", "%s:.github/workflows/cd-v2.yml" % PRE_FIX_CD_COMMIT],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if show.returncode != 0:
+        pytest.skip(
+            "pre-fix commit %s unreachable here: %s" % (PRE_FIX_CD_COMMIT, show.stderr.strip())
+        )
+    proc = run_real(tmp_path, CD_WORKFLOW_FILE=show.stdout)
+    assert proc.returncode == 1, proc.stderr
+    assert (
+        "sits in tag-and-release behind publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published"
+        in proc.stderr
+    )
+    assert "is skipped on retry_mode (tag-and-release (job if:))" in proc.stderr
+    # And the fixed file, through the SAME explicit seam, is green: the red above is the graph, not the seam.
+    fixed_dir = tmp_path / "fixed"
+    fixed_dir.mkdir()
+    fixed = run_real(fixed_dir, CD_WORKFLOW_FILE=REAL_CD.read_text(encoding="utf-8"))
+    assert fixed.returncode == 0, fixed.stderr
+    assert "release order holds" in fixed.stderr
+
+
+def test_dropping_permission_workflows_from_the_real_action_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The plan's W4 control: drop the mint's `permission-workflows` input from the real action.yml."""
+    text = cut_once(
+        REAL_ACTION.read_text(encoding="utf-8"),
+        "        permission-workflows: ${{ steps.perms.outputs.perm-workflows }}\n",
+        "",
+    )
+    proc = run_real(tmp_path, APP_TOKEN_ACTION_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
+
+
+def test_dropping_the_cd_arms_workflows_line_from_the_real_action_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    text = cut_once(
+        REAL_ACTION.read_text(encoding="utf-8"),
+        '            echo "perm-workflows=write" >> "$GITHUB_OUTPUT"\n',
+        "",
+    )
+    proc = run_real(tmp_path, APP_TOKEN_ACTION_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
+
+
+def test_the_real_init_checkout_losing_the_app_token_is_refused(tmp_path: pathlib.Path) -> None:
+    """Scoped to init: its second checkout is the credential the version-tag push rides."""
+    source = REAL_CD.read_text(encoding="utf-8")
+    head, sep, rest = source.partition("\n  publish:\n")
+    assert sep, "the init/publish boundary moved"
+    head = cut_once(head, "          token: ${{ steps.app-token.outputs.token }}\n", "")
+    proc = run_real(tmp_path, CD_WORKFLOW_FILE=head + sep + rest)
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: cd-push-token:" in proc.stderr
+    assert "init step" in proc.stderr
+
+
+def test_a_real_dispatch_guard_that_differs_from_the_seal_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    """ci.yml side. CD_WORKFLOW_FILE is set to the real cd-v2 so the phase runs over the mutated ci.yml copy."""
+    text = cut_once(
+        REAL_CI.read_text(encoding="utf-8"),
+        "      - name: Dispatch cd-v2 release\n        if: needs.initialize.outputs.skip_release != 'true'\n",
+        "      - name: Dispatch cd-v2 release\n        if: always()\n",
+    )
+    proc = run_real(
+        tmp_path, WORKFLOW_FILE=text, CD_WORKFLOW_FILE=REAL_CD.read_text(encoding="utf-8")
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: release-order:" in proc.stderr
+    assert "Write release sentinels" in proc.stderr
+
+
+# ---- the cd-preflight pins (PLAN-cd-errors-in-ci W4) ----
+
+PF_PR = 'PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version "$V" --checks a,b,c,d,promotion'
+PF_CD = 'PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight --phase cd --release-version "$V" --checks a,c,d'
+PF_HK = "PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version 0.0.0 --checks a,c"
+
+
+def preflight_trio() -> tuple[dict, dict, dict]:
+    """A conformant (ci, cd, housekeeping) triple; every red case below breaks exactly one thing in a fresh copy."""
+    ci = {
+        "jobs": {
+            "cd-preflight": {
+                "needs": ["initialize"],
+                "if": "always() && (github.event_name == 'push' || github.event_name == 'pull_request')",
+                "steps": [{"uses": "actions/checkout@abc"}, {"name": "Predict", "run": PF_PR}],
+            }
+        }
+    }
+    cd = {
+        "jobs": {
+            "init": {
+                "steps": [
+                    {"uses": "actions/checkout@abc"},
+                    {"name": "Create version tag", "run": TAG_RUN},
+                    {"name": "CD preflight", "run": PF_CD},
+                ]
+            }
+        }
+    }
+    hk = {
+        "jobs": {
+            "cleanup": {
+                "steps": [
+                    {
+                        "name": "Retry",
+                        "run": "python3 -m rediacc_ci.housekeeping.retry_failed_runs",
+                    },
+                    {"name": "Preflight", "run": PF_HK},
+                    {
+                        "name": "Cleanup",
+                        "run": "python3 -m rediacc_ci.housekeeping.cleanup_versions",
+                    },
+                    {"name": "Reap", "if": "${{ !cancelled() }}", "run": "reap.sh"},
+                ]
+            }
+        }
+    }
+    return ci, cd, hk
+
+
+def preflight_kinds(ci: dict, cd: dict, hk: dict) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_preflight(ci, cd, hk)[0]]
+
+
+def test_a_conformant_preflight_trio_is_clean_and_reports_its_shape() -> None:
+    """The NEGATIVE direction, so each red case below is red for the thing it planted."""
+    findings, shape = ci_workflow_invariants.analyse_preflight(*preflight_trio())
+    assert findings == []
+    assert shape == [
+        "ci.yml job cd-preflight runs it on pull_request",
+        "cd-v2 init step 3 after the tag step 2",
+        "housekeeping cleanup step 2 before cleanup step 3",
+    ]
+
+
+def _push_only(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && github.event_name == 'push'"
+
+
+def _main_only_negated(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && github.event_name != 'pull_request'"
+
+
+def _job_pr_step_negated(ci: dict, _cd: dict, _hk: dict) -> None:
+    """A positive job-level pull_request test must not mask a step-level `if:` that excludes it."""
+    job = ci["jobs"]["cd-preflight"]
+    job["if"] = "always() && (github.event_name == 'push' || github.event_name == 'pull_request')"
+    job["steps"][1]["if"] = "github.event_name != 'pull_request'"
+
+
+def _spaced_negation(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && ! (github.event_name == 'pull_request')"
+
+
+def _nested_negation(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = "always() && !((github.event_name == 'pull_request'))"
+
+
+def _enclosed_negation(ci: dict, _cd: dict, _hk: dict) -> None:
+    ci["jobs"]["cd-preflight"]["if"] = (
+        "always() && !(github.event_name == 'pull_request' || github.event_name == 'push')"
+    )
+
+
+def _no_job_if(ci: dict, _cd: dict, _hk: dict) -> None:
+    del ci["jobs"]["cd-preflight"]["if"]
+
+
+def _no_pr_job(ci: dict, _cd: dict, _hk: dict) -> None:
+    del ci["jobs"]["cd-preflight"]
+
+
+def _before_tag(_ci: dict, cd: dict, _hk: dict) -> None:
+    steps = cd["jobs"]["init"]["steps"]
+    steps[1], steps[2] = steps[2], steps[1]
+
+
+def _other_job(_ci: dict, cd: dict, _hk: dict) -> None:
+    cd["jobs"]["preflight"] = {"steps": [cd["jobs"]["init"]["steps"].pop()]}
+
+
+def _no_cd_step(_ci: dict, cd: dict, _hk: dict) -> None:
+    cd["jobs"]["init"]["steps"].pop()
+
+
+def _no_hk_step(_ci: dict, _cd: dict, hk: dict) -> None:
+    del hk["jobs"]["cleanup"]["steps"][1]
+
+
+def _hk_after(_ci: dict, _cd: dict, hk: dict) -> None:
+    steps = hk["jobs"]["cleanup"]["steps"]
+    steps[1], steps[2] = steps[2], steps[1]
+
+
+def _hk_always(_ci: dict, _cd: dict, hk: dict) -> None:
+    hk["jobs"]["cleanup"]["steps"][2]["if"] = "always()"
+
+
+def _hk_guarded_preflight(_ci: dict, _cd: dict, hk: dict) -> None:
+    hk["jobs"]["cleanup"]["steps"][1]["if"] = "inputs.dry_run != true"
+
+
+def _no_cleanup(_ci: dict, _cd: dict, hk: dict) -> None:
+    del hk["jobs"]["cleanup"]["steps"][2]
+
+
+def _narrow_cd(_ci: dict, cd: dict, _hk: dict) -> None:
+    cd["jobs"]["init"]["steps"][2]["run"] = PF_CD.replace("a,c,d", "a,c")
+
+
+def _narrow_hk(_ci: dict, _cd: dict, hk: dict) -> None:
+    hk["jobs"]["cleanup"]["steps"][1]["run"] = PF_HK.replace("a,c", "c")
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected"),
+    [
+        (_push_only, ["cd-preflight-not-on-pr"]),
+        (_main_only_negated, ["cd-preflight-not-on-pr"]),
+        (_job_pr_step_negated, ["cd-preflight-not-on-pr"]),
+        (_spaced_negation, ["cd-preflight-not-on-pr"]),
+        (_nested_negation, ["cd-preflight-not-on-pr"]),
+        (_enclosed_negation, ["cd-preflight-not-on-pr"]),
+        (_no_pr_job, ["cd-preflight-no-pr-job"]),
+        (_before_tag, ["cd-preflight-before-tag"]),
+        (_other_job, ["cd-preflight-before-tag"]),
+        (_no_cd_step, ["cd-preflight-no-cd-step"]),
+        (_no_hk_step, ["cd-preflight-no-housekeeping-step"]),
+        (_hk_after, ["cd-preflight-no-housekeeping-step"]),
+        (_hk_always, ["cd-preflight-housekeeping-bypassed"]),
+        (_hk_guarded_preflight, ["cd-preflight-housekeeping-bypassed"]),
+        (_no_cleanup, ["cd-preflight-no-housekeeping-step"]),
+        (_narrow_cd, ["cd-preflight-narrowed"]),
+        (_narrow_hk, ["cd-preflight-narrowed"]),
+    ],
+)
+def test_each_preflight_pin_fires_on_exactly_its_plant(mutate, expected) -> None:
+    ci, cd, hk = preflight_trio()
+    mutate(ci, cd, hk)
+    assert preflight_kinds(ci, cd, hk) == expected
+
+
+def test_a_job_without_an_if_runs_on_pull_request_and_passes() -> None:
+    ci, cd, hk = preflight_trio()
+    _no_job_if(ci, cd, hk)
+    assert preflight_kinds(ci, cd, hk) == []
+
+
+def test_a_double_negation_and_a_closed_group_before_the_match_still_admit() -> None:
+    admits = ci_workflow_invariants._admits_pr
+    assert admits("!(!(github.event_name == 'pull_request'))")
+    assert admits("!(a) || github.event_name == 'pull_request'")
+    assert not admits("x && !(a && (github.event_name == 'pull_request'))")
+
+
+def test_a_preflight_without_checks_runs_all_and_is_not_narrowed() -> None:
+    ci, cd, hk = preflight_trio()
+    hk["jobs"]["cleanup"]["steps"][1]["run"] = PF_HK.replace(" --checks a,c", "")
+    assert preflight_kinds(ci, cd, hk) == []
+
+
+def test_every_preflight_kind_has_a_message() -> None:
+    files = {"ci": "ci.yml", "cd": "cd.yml", "housekeeping": "hk.yml"}
+    for kind in ci_workflow_invariants.PREFLIGHT_KINDS:
+        assert ci_workflow_invariants.preflight_message_for(kind, "j", files) is not None, kind
+    assert ci_workflow_invariants.preflight_message_for("invented", "j", files) is None
+
+
+REAL_HK = ROOT / ".github/workflows/housekeeping.yml"
+
+
+def test_a_push_only_preflight_on_the_real_ci_is_refused(tmp_path: pathlib.Path) -> None:
+    """The plan's W4 control on the real ci.yml: drop the same-repo pull_request arm."""
+    text = cut_once(
+        REAL_CI.read_text(encoding="utf-8"),
+        "      ((github.event_name == 'push' && github.ref == 'refs/heads/main') ||\n"
+        "      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))\n",
+        "      github.event_name == 'push' && github.ref == 'refs/heads/main'\n",
+    )
+    proc = run_real(
+        tmp_path, WORKFLOW_FILE=text, CD_WORKFLOW_FILE=REAL_CD.read_text(encoding="utf-8")
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: cd-preflight:" in proc.stderr
+    assert (
+        "job cd-preflight runs the preflight but its `if:` never admits pull_request" in proc.stderr
+    )
+
+
+def test_the_real_cd_preflight_moved_before_the_tag_is_refused(tmp_path: pathlib.Path) -> None:
+    """Swap the real init's last two steps: the preflight lands before `Create version tag`."""
+    source = REAL_CD.read_text(encoding="utf-8")
+    head, sep, rest = source.partition("\n  publish:\n")
+    assert sep, "the init/publish boundary moved"
+    tag_at = head.index("      - name: Create version tag\n")
+    pf_at = head.index("      - name: CD preflight\n")
+    assert tag_at < pf_at
+    # Comments between the two steps belong to the preflight; carry the block from its comment header.
+    pf_start = head.rindex("\n\n", tag_at, pf_at) + 2
+    tag_block, pf_block = head[tag_at:pf_start], head[pf_start:].rstrip("\n") + "\n\n"
+    mutated = head[:tag_at] + pf_block + tag_block.rstrip("\n") + "\n" + sep + rest
+    proc = run_real(tmp_path, CD_WORKFLOW_FILE=mutated)
+    assert proc.returncode == 1, proc.stderr
+    assert "is not after the version tag step in the same job" in proc.stderr
+
+
+def test_the_real_housekeeping_cleanup_running_past_a_red_preflight_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    text = cut_once(
+        REAL_HK.read_text(encoding="utf-8"),
+        "      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches\n",
+        "      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches\n"
+        "        if: always()\n",
+    )
+    proc = run_real(tmp_path, HOUSEKEEPING_WORKFLOW_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "Housekeeping must fail closed" in proc.stderr
+
+
+def test_the_real_housekeeping_without_its_preflight_is_refused(tmp_path: pathlib.Path) -> None:
+    text = cut_once(
+        REAL_HK.read_text(encoding="utf-8"),
+        "          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight\n",
+        "          PYTHONPATH=.ci python3 -m rediacc_ci.release.removed\n",
+    )
+    proc = run_real(tmp_path, HOUSEKEEPING_WORKFLOW_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "deletes releases, tags and R2 objects with no" in proc.stderr

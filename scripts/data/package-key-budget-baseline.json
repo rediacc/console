@@ -41,7 +41,6 @@
   "lint:unused:fix",
   "quality",
   "test:e2e",
-  "test:quality-gates",
   "typecheck",
   "version:check",
   "version:check:deps",

@@ -367,7 +367,7 @@ export default [
         },
         {
           selector: 'JSXAttribute[name.name=/^styles?$/]',
-          message: 'Inline styles are not allowed. Use CSS utility classes from global.css or Ant Design component props instead. For dynamic styles, use // eslint-disable-next-line no-restricted-syntax',
+          message: 'Inline styles are not allowed. Use CSS utility classes from global.css or Ant Design component props instead.',
         },
         {
           selector: "ExportNamedDeclaration > TSTypeAliasDeclaration:not([typeParameters]) > TSTypeAnnotation > TSTypeReference",

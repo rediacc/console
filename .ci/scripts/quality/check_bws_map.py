@@ -76,6 +76,16 @@ nothing would have noticed a nineteenth that was a real omission. Three more ass
      .ci/config/secret-supply.json binds, parsed with bws_env's own
      `parse_spec`. Either side empty refuses rather than passing.
 
+ 15. NO ARCHIVE CLONE IS MAPPED, AND THE PATTERN HAS ONE MEANING. A rotation
+     copies the pre-rotation value to `<NAME>__ROTATED_<UTC stamp>` and deletes
+     the copy to Trash at once. A clone that survived a crash and then a map
+     refresh would be a plaintext credential with a UUID every workflow could
+     fetch, so no mapped name may match `bws_env.ARCHIVE_PATTERN`, and the
+     literal must be the `ARCHIVE_RE` declaration, at line start, in
+     bitwarden-sm.ts (the sweeper) and in scripts/ops/bws-map-refresh.py (the
+     exclusion), so the three cannot drift into three different shapes. A
+     comment or docstring quoting it does not count.
+
 Control-first: the parser is proven on synthetic input in both directions before any verdict, and the failure direction is proven by a planted name.
 
 ---- gate ----
@@ -88,6 +98,7 @@ lane: quality-security
 
 from __future__ import annotations
 
+import ast
 import datetime as dt
 import json
 import os
@@ -101,6 +112,7 @@ import _cipath  # noqa: F401
 from rediacc_ci import workflows
 
 # IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the `account-dev` profile actually binds, and a second copy of the nine names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.
+from rediacc_ci.core.bws_env import ARCHIVE_PATTERN as BWS_ENV_ARCHIVE_PATTERN
 from rediacc_ci.core.bws_env import JSON_REQUIRED as BWS_ENV_JSON_REQUIRED
 from rediacc_ci.core.bws_env import parse_spec as bws_parse_spec
 
@@ -115,6 +127,8 @@ PREIMAGE = ROOT / ".ci" / "config" / "github-secret-preimage.json"
 RENAME_TABLE = ROOT / "scripts" / "ops" / "secret-rename.py"
 REGIONS = ROOT / "regions.json"
 DEPLOY_DIR = ROOT / ".ci" / "scripts" / "deploy"
+# Where the region fan-ins live since ca8d42f5c (2026-10-08) ported the Worker-deploy bash twins: `SUFFIXED_PREFIXES` in a module here, each prefix read as `<PREFIX>_<SUFFIX>`.
+DEPLOY_PY_DIR = ROOT / ".ci" / "rediacc_ci" / "deploy"
 
 # Call sites live in two places. .ci/breakpoint/workflow/ is a REAL bws-secrets caller that this gate used to miss entirely, because it globbed .github only (recorded as a blind spot in the migration plan's Part 16).
 EXTRA_WORKFLOW_DIRS = [ROOT / ".ci" / "breakpoint" / "workflow"]
@@ -195,9 +209,37 @@ job_at = workflows.job_at
 
 USE_RE = re.compile(r"(?<![\w./-])secrets\.([A-Za-z_][A-Za-z0-9_]*)")
 CALLS_REUSABLE_RE = re.compile(r"^\s*uses: \./\.github/workflows/")
-SUFFIX_RE = re.compile(r'^\s*[A-Za-z_][A-Za-z0-9_]*="([A-Z0-9_]+)_\$\{SUFFIX\}"', re.MULTILINE)
 # Never compared, never fetched: the bootstrap token and the implicit one.
 NOT_SHADOWED = {"GITHUB_TOKEN", "BWS_ACCESS_TOKEN"}
+
+
+def suffixed_prefixes(directory: Path) -> list[tuple[Path, str]]:
+    """(module, prefix) for every string in a module-level `SUFFIXED_PREFIXES` tuple or list under `directory`.
+
+    RETARGETED 2026-10-08. Assertion 7 grepped `.ci/scripts/deploy/*.sh` for `VAR="PREFIX_${SUFFIX}"`; ca8d42f5c ported those scripts, and the port names its fan-ins as DATA, `SUFFIXED_PREFIXES`, read through `<PREFIX>_<SUFFIX>`. Read by `ast`, so a prefix in a comment or a docstring is not a construction, and a nested assignment of the same name is not the module's.
+    """
+    out: list[tuple[Path, str]] = []
+    for module in sorted(directory.glob("*.py")):
+        try:
+            tree = ast.parse(module.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            continue
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                targets, value = node.targets, node.value
+            elif isinstance(node, ast.AnnAssign) and node.value is not None:
+                targets, value = [node.target], node.value
+            else:
+                continue
+            if not any(isinstance(t, ast.Name) and t.id == "SUFFIXED_PREFIXES" for t in targets):
+                continue
+            if isinstance(value, (ast.Tuple, ast.List)):
+                out.extend(
+                    (module, e.value)
+                    for e in value.elts
+                    if isinstance(e, ast.Constant) and isinstance(e.value, str)
+                )
+    return out
 
 
 def call_sites() -> list[Path]:
@@ -784,6 +826,106 @@ def seller_field_problems(
     return [], len(want)
 
 
+ARCHIVE_PIN_FILES = (
+    "private/account/scripts/rotation/consumers/bitwarden-sm.ts",
+    "scripts/ops/bws-map-refresh.py",
+)
+
+
+def archive_pin_declaration(rel: str, pattern: str) -> str:
+    """The declaration that pins the archive regex in a pinned file, by language (the form a problem message names)."""
+    if rel.endswith(".ts"):
+        return f"export const ARCHIVE_RE = /{pattern}/"
+    return f'ARCHIVE_RE = re.compile(r"{pattern}")'
+
+
+# One pass over TypeScript source: string, template and regex literals are matched FIRST so a `//` or `/*` inside one is never read as a comment start (a `"/*"` string used to swallow the real declaration up to the next `*/`). Group 1 = a literal (kept), the rest are comments (dropped). A regex literal is a `/` that follows `= ( , : ; ! & | ? { } [` or the line start (whitespace between allowed), so a division (`a / b; /* x */`) is passed over; a misread only keeps text, never drops it.
+_TS_TOKEN_RE = re.compile(
+    r"""("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`)"""
+    r"""|((?:[=(,:;!&|?{}\[]|^)[ \t]*)(/(?![/*])(?:\\.|\[(?:\\.|[^\]\\\n])*\]|[^/\\\n\[])+/[a-z]*)"""
+    r"""|/\*.*?\*/|//[^\n]*""",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def strip_ts_comments(text: str) -> str:
+    """`text` with every TypeScript comment removed and every string, template and regex literal left whole."""
+    return _TS_TOKEN_RE.sub(
+        lambda m: m.group(1) or (m.group(2) + m.group(3) if m.group(3) else ""), text
+    )
+
+
+def blank_multiline_ts_literals(code: str) -> str:
+    """`code` with every string or template literal that spans a line removed, so a line inside one is never read as a declaration."""
+    return _TS_TOKEN_RE.sub(lambda m: "" if m.group(1) and "\n" in m.group(1) else m.group(0), code)
+
+
+def archive_pin_declared(rel: str, text: str, pattern: str) -> bool:
+    """Does the file's CODE declare ARCHIVE_RE with exactly this pattern?
+
+    Python is parsed: a module-level `ARCHIVE_RE = re.compile(<str>)` whose string equals the pattern, so a comment or docstring can never count. TypeScript has no parser here, so `/* */` and `//` comments are stripped first and the declaration must then start a line. A file that does not parse pins nothing.
+    """
+    if rel.endswith(".ts"):
+        code = blank_multiline_ts_literals(strip_ts_comments(text))
+        decl = archive_pin_declaration(rel, pattern)
+        return any(line.startswith(decl) for line in code.splitlines())
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return False
+    # The LAST module-level assignment wins at import time, so it alone is compared: an earlier correct pin followed by a drifted reassignment is a drifted pin.
+    last: ast.expr | None = None
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and [getattr(t, "id", None) for t in node.targets] == [
+            "ARCHIVE_RE"
+        ]:
+            last = node.value
+    if not isinstance(last, ast.Call):
+        return False
+    fn, args = last.func, last.args
+    return bool(
+        isinstance(fn, ast.Attribute)
+        and fn.attr == "compile"
+        and getattr(fn.value, "id", None) == "re"
+        and args
+        and isinstance(args[0], ast.Constant)
+        and args[0].value == pattern
+    )
+
+
+def archive_clone_problems(
+    secrets: dict, pattern: str = BWS_ENV_ARCHIVE_PATTERN, pins: dict[str, str] | None = None
+) -> list[str]:
+    """Assertion 15. No mapped name matches the archive pattern, and each pinned file's code declares ARCHIVE_RE with it.
+
+    `pins` maps a label to that file's text (None reads ARCHIVE_PIN_FILES from the tree); a file that cannot be read is a problem, not a skip, because a pin nobody can read pins nothing.
+    """
+    problems: list[str] = []
+    rx = re.compile(pattern)
+    problems += [
+        (
+            f"mapped name {name!r} is a rotation archive clone (matches {pattern}); delete it "
+            f"(./run.sh rotation bws-gc --apply) and refresh the map"
+        )
+        for name in sorted(secrets)
+        if rx.search(name)
+    ]
+    if pins is None:
+        pins = {}
+        for rel in ARCHIVE_PIN_FILES:
+            try:
+                pins[rel] = (ROOT / rel).read_text(encoding="utf-8")
+            except OSError as exc:
+                problems.append(f"cannot read {rel} ({exc}); the archive pattern pin is blind")
+    # The pin is the ARCHIVE_RE declaration in each file's CODE (archive_pin_declared): a comment, docstring or trailing note quoting the literal pins nothing.
+    for rel, text in pins.items():
+        if not archive_pin_declared(rel, text, pattern):
+            problems.append(
+                f"{rel} does not declare {archive_pin_declaration(rel, pattern)!r} in code; its ARCHIVE_RE has drifted from bws_env.ARCHIVE_PATTERN"
+            )
+    return problems
+
+
 def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = None) -> list[str]:
     """Assertions 5, 6 and 7. Every one is the converse of assertion 1.
 
@@ -916,32 +1058,26 @@ def coverage_problems(secrets: dict, exemptions: dict, no_fetch: dict | None = N
         ]
     except (OSError, ValueError, KeyError) as exc:
         return [*problems, f"cannot read region suffixes from {REGIONS.name} ({exc})"]
-    constructions = 0
-    for script in sorted(DEPLOY_DIR.glob("*.sh")):
-        for prefix in SUFFIX_RE.findall(script.read_text(encoding="utf-8")):
-            constructions += 1
-            for suffix in suffixes:
-                built = f"{prefix}_{suffix}"
-                if built in secrets or built in exemptions:
-                    continue
-                problems.append(
-                    f'{script.relative_to(ROOT)} builds {built!r} at runtime ("{prefix}_${{SUFFIX}}") '
-                    f"and the map does not hold it -- the name appears as a literal nowhere, so "
-                    f"nothing else can see this"
-                )
-    if constructions == 0:
+    fan_ins = suffixed_prefixes(DEPLOY_PY_DIR)
+    for module, prefix in fan_ins:
+        for suffix in suffixes:
+            built = f"{prefix}_{suffix}"
+            if built in secrets or built in exemptions:
+                continue
+            where = module.relative_to(ROOT) if module.is_relative_to(ROOT) else module
+            problems.append(
+                f"{where} builds {built!r} at runtime (SUFFIXED_PREFIXES "
+                f"{prefix!r} + '_' + SUFFIX) and the map does not hold it -- the name appears as "
+                f"a literal nowhere, so nothing else can see this"
+            )
+    if not fan_ins:
         problems.append(
-            f"no PREFIX_${{SUFFIX}} construction found under {DEPLOY_DIR.relative_to(ROOT)}; "
+            f"no SUFFIXED_PREFIXES fan-in found under {DEPLOY_PY_DIR.relative_to(ROOT)}; "
             f"the runtime-name scan lost its subject"
         )
 
     # ---- an exemption that no longer describes anything ----------------------
-    built_names = {
-        f"{prefix}_{suffix}"
-        for script in sorted(DEPLOY_DIR.glob("*.sh"))
-        for prefix in SUFFIX_RE.findall(script.read_text(encoding="utf-8"))
-        for suffix in suffixes
-    }
+    built_names = {f"{prefix}_{suffix}" for _, prefix in fan_ins for suffix in suffixes}
     # Re-derived for EVERY such exemption, mapped or not. Assertion 7 used to be the only caller, and it short-circuits on `built in secrets` -- so the same kind applied to a MAPPED name was accepted on nothing but a non-empty string, making the weakest-checked kind also the one with no expiry and no worklist id. Found by audit, not by design.
     for name, rec in sorted(exemptions.items()):
         if rec.get("kind") == "superseded-at-runtime":
@@ -996,6 +1132,27 @@ jobs:
     if not ok:
         print(f"        got  {got}\n        want {want}")
         return 1
+    # ---- assertion 7's reader, both directions -----------------------------------
+    with tempfile.TemporaryDirectory() as d:
+        mod = Path(d) / "deployer.py"
+        mod.write_text(
+            '"""SUFFIXED_PREFIXES = ("IN_A_DOCSTRING",)"""\n'
+            '# SUFFIXED_PREFIXES = ("IN_A_COMMENT",)\n'
+            'SUFFIXED_PREFIXES: tuple[str, ...] = (\n    "SELFTEST_FAN_IN",\n)\n'
+            'def f():\n    SUFFIXED_PREFIXES = ("NESTED",)\n',
+            encoding="utf-8",
+        )
+        got7 = [p for _, p in suffixed_prefixes(Path(d))]
+        empty7 = suffixed_prefixes(Path(d) / "absent")
+    ok7 = got7 == ["SELFTEST_FAN_IN"] and empty7 == []
+    print(
+        f"  {'PASS' if ok7 else 'FAIL'}  the fan-in reader takes the module tuple and nothing in a "
+        f"docstring, comment or function"
+    )
+    if not ok7:
+        print(f"        got {got7} / {empty7}")
+        return 1
+
     # the failure direction must be detectable
     fake = {"secrets": {"SELFTEST_PLAIN_NAME": {"id": "x"}}}
     missing = [n for _, n, _ in got if n not in fake["secrets"]]
@@ -1267,6 +1424,162 @@ jobs:
         print(f"  {'PASS' if good14 else 'FAIL'}  {label}")
         if not good14:
             bad += 1
+
+    # ---- assertion 15: no archive clone mapped, and the pattern pinned verbatim ----
+    pat = BWS_ENV_ARCHIVE_PATTERN
+    good_pins = {
+        "a.ts": archive_pin_declaration("a.ts", pat) + ";",
+        "b.py": archive_pin_declaration("b.py", pat),
+    }
+    checks15 = [
+        (
+            "CONTROL: a map without clones and with verbatim pins is silent",
+            lambda: archive_clone_problems({"A_EU": {}}, pat, good_pins) == [],
+        ),
+        (
+            "15: a mapped clone key is named",
+            lambda: any(
+                "A_EU__ROTATED_20260902T164500Z" in m
+                for m in archive_clone_problems(
+                    {"A_EU__ROTATED_20260902T164500Z": {}}, pat, good_pins
+                )
+            ),
+        ),
+        (
+            "15: an unstamped suffix is NOT a clone (the match is anchored and strict)",
+            lambda: (
+                archive_clone_problems(
+                    {"X__ROTATED_NOTATIMESTAMP": {}, "Y__ROTATED_20260902": {}}, pat, good_pins
+                )
+                == []
+            ),
+        ),
+        (
+            "15: a pinned file that drifted from the pattern is named",
+            lambda: any(
+                "b.py" in m
+                for m in archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": good_pins["a.ts"],
+                        "b.py": r"ARCHIVE_RE = re.compile(r'__ROTATED_\d+')",
+                    },
+                )
+            ),
+        ),
+        (
+            "15: a pin kept only in a trailing comment or a docstring is named",
+            lambda: all(
+                any(
+                    "b.py" in m
+                    for m in archive_clone_problems(
+                        {}, pat, {"a.ts": good_pins["a.ts"], "b.py": body}
+                    )
+                )
+                for body in (
+                    f"RX = re.compile(r'__ROTATED_\\d+')  # {pat}",
+                    f'"""\n    {good_pins["b.py"]}\n"""',
+                    f'"""\n{good_pins["b.py"]}\n"""',
+                )
+            ),
+        ),
+        (
+            "15: a TS pin kept only inside a column-0 block comment is named",
+            lambda: any(
+                "a.ts" in m
+                for m in archive_clone_problems(
+                    {},
+                    pat,
+                    {"a.ts": "/*\n" + good_pins["a.ts"] + "\n*/", "b.py": good_pins["b.py"]},
+                )
+            ),
+        ),
+        (
+            "15: a pin kept only in a comment is named",
+            lambda: any(
+                "b.py" in m
+                for m in archive_clone_problems(
+                    {}, pat, {"a.ts": good_pins["a.ts"], "b.py": f"# {pat}\nRX = r'__ROTATED_\\d+'"}
+                )
+            ),
+        ),
+        (
+            "15: a later drifted reassignment of ARCHIVE_RE wins over an earlier verbatim pin",
+            lambda: any(
+                "b.py" in m
+                for m in archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": good_pins["a.ts"],
+                        "b.py": good_pins["b.py"] + "\nARCHIVE_RE = re.compile(r'__ROTATED_\\d+')",
+                    },
+                )
+            ),
+        ),
+        (
+            "15: a later verbatim pin wins over an earlier drifted one",
+            lambda: (
+                archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": good_pins["a.ts"],
+                        "b.py": "ARCHIVE_RE = re.compile(r'x')\n" + good_pins["b.py"],
+                    },
+                )
+                == []
+            ),
+        ),
+        (
+            "15: a `/*` inside a TS string does not swallow the real declaration",
+            lambda: (
+                archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": 'const g = "/*";\n' + good_pins["a.ts"] + "\n/* end */",
+                        "b.py": good_pins["b.py"],
+                    },
+                )
+                == []
+            ),
+        ),
+        (
+            "15: `//` inside a TS string or regex literal is not a comment",
+            lambda: (
+                strip_ts_comments('const a = "x//y", b = /p\\/\\/q/; // gone\nrest')
+                == 'const a = "x//y", b = /p\\/\\/q/; \nrest'
+            ),
+        ),
+        (
+            "15: a declaration line inside a multi-line template literal pins nothing",
+            lambda: (
+                archive_clone_problems(
+                    {},
+                    pat,
+                    {
+                        "a.ts": "const doc = `\n" + good_pins["a.ts"] + "\n`;",
+                        "b.py": good_pins["b.py"],
+                    },
+                )
+                != []
+            ),
+        ),
+        (
+            "16: a division is not a regex literal, so a block comment after it is still stripped",
+            lambda: (
+                strip_ts_comments("const a = x / b; /* c */ const d = 1 / 2; /* e */ z")
+                == "const a = x / b;  const d = 1 / 2;  z"
+            ),
+        ),
+    ]
+    for label, probe15 in checks15:
+        good15 = probe15()
+        print(f"  {'PASS' if good15 else 'FAIL'}  {label}")
+        if not good15:
+            bad += 1
     return 1 if bad else 0
 
 
@@ -1365,6 +1678,9 @@ def main() -> int:
     seller_problems, n_seller = seller_field_problems()
     problems += seller_problems
 
+    # 15. No archive clone is mapped, and the archive pattern has one spelling across bws_env, the archiver and the refresher.
+    problems += archive_clone_problems(secrets)
+
     if problems:
         print(f"✗ bws map check ({len(problems)} problem(s)):", file=sys.stderr)
         for p in problems:
@@ -1412,6 +1728,10 @@ def main() -> int:
         f"✓ seller record: the {n_seller} SELLER_* field(s) bws_env promises to bind for "
         f"{SELLER_RECORD} are exactly the ones the {SELLER_PROFILE!r} profile in "
         f"secret-supply.json binds"
+    )
+    print(
+        f"✓ archive clones: no mapped name matches {BWS_ENV_ARCHIVE_PATTERN}, and "
+        f"{len(ARCHIVE_PIN_FILES)} file(s) declare it as ARCHIVE_RE"
     )
     print("  Blind spot: this proves NAMES resolve. Liveness in Bitwarden is proven at run time,")
     print(

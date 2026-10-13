@@ -1,8 +1,8 @@
 """`.ci/lib/devbox.sh`, ported function for function: all fifty-five of them.
 
 PORTED FROM `.ci/lib/devbox.sh` (1606 lines, 54 functions).
-The twin still exists, is untouched by this file, and is still sourced at `.ci/legacy/run-legacy.sh:456`, `.ci/rediacc_ci/setup/bridge.py:35` (inside the bridged `bash -c` prelude), `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090`. Those five are the real `source` sites; nothing is cut over here.
-This is a pre-cutover port on the same sequencing every other lib in this campaign used, and `.ci/rediacc_ci/core/local_common.py` is the worked precedent: its twin `.ci/lib/local-common.sh` is still sourced at five sites while the port carries a K=5 ledger.
+The twin, `.ci/lib/devbox.sh`, is DELETED (PLAN-retire-bash-oracles B3): its transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.devbox.jsonl`, and `.ci/rediacc_ci/setup/bridge.py` runs `devbox_*` bodies through this module in process.
+The sequencing note that stood here (a pre-cutover port beside a still-sourced twin) ended with the deletion of the twin.
 
 --------------------------------------------------------------------------
 WHAT IS HERE
@@ -48,7 +48,7 @@ Every sourcer runs this library under `set -euo pipefail`. Those three flags are
 --------------------------------------------------------------------------
 RULE T: ELEVEN TWIN DEFECTS FIXED (PLAN-retire-bash-oracles, task B4)
 --------------------------------------------------------------------------
-`.ci/lib/*.sh` is not edited by a port, so each of these is an INTENTIONAL DELTA: the twin still has the defect, `test_core_devbox.py` pins the twin's behaviour against the live twin (`SCENARIO_CLAIMS`) and the port's in its `test_delta_*` cases, and the live differential leaves exactly the labels in `DELTA_LABELS` out of its comparison.
+`.ci/lib/*.sh` is not edited by a port, so each of these is an INTENTIONAL DELTA: the twin had the defect, `test_core_devbox.py` pins the twin's behaviour against its frozen transcript (`SCENARIO_CLAIMS`) and the port's in its `test_delta_*` cases, and the live differential leaves exactly the labels in `DELTA_LABELS` out of its comparison.
 
   D1. `devbox_up` DIED SILENTLY ON A HOST WITH NO `docker` GROUP (`getent group docker | cut -d: -f3` under pipefail, so getent's status 2 reached errexit). It warns, passes no `--group-add` and carries on: the `${docker_gid:+...}` guards were written for exactly that.
   D2. `devbox_identity_ok` SUCCEEDED WHEN THE DEVBOX WAS NOT RUNNING (`|| true` swallowed the refusal). It fails with a message.
@@ -66,7 +66,7 @@ RULE T: ELEVEN TWIN DEFECTS FIXED (PLAN-retire-bash-oracles, task B4)
 WHAT THIS PORT DOES NOT CLAIM, stated rather than left to a reader
 --------------------------------------------------------------------------
   THE TTY ARMS OF `devbox_exec`. `-i` and `-t` depend on whether fd 0 and fd 1 are terminals; the differential runs both sides with stdin on `/dev/null` and stdout on a capture file, so only the both-false arm is compared. The two tty arms are ported line for line and covered by in-process unit cases in `test_core_devbox.py`, not by the ledger.
-  THE HOST-FACT ARMS OF `devbox_up`. `[ -e /dev/kvm ]`, `[ -e /dev/net/tun ]` and `[[ -S /var/run/docker.sock ]]` read the real host. Both sides read the same host, so the arm the host takes is compared and the other arm of each is not; on the recording machine all three exist.
+  THE HOST-FACT ARMS OF `devbox_up`. `[ -e /dev/kvm ]`, `[ -e /dev/net/tun ]` and `[[ -S /var/run/docker.sock ]]` read the real host. The differential compares the arm the RECORDING host took (all three exist there, and its lease pool too): the driver answers `has_host_node`, `has_host_socket` and `lease_dir_ready` as that host did, since the frozen twin cannot be asked about another one. The other arm of each is covered in process by `test_core_devbox.py::test_up_drops_what_the_host_does_not_have`.
   ARITHMETIC ON A `base_port` THAT IS NOT A NUMBER. `bash_int()` covers decimal, octal and hex; anything else (a variable name, which shell arithmetic would dereference, or `08`, which it rejects) raises `DevboxError` rather than guessing.
   THAT THE CONTAINER THESE ARGV DESCRIBE REALLY SERVES. The stub farm proves the argv; `.ci/rediacc_ci/tests/gates/test_gate_devbox_slug.py` names the real-proxy claim as its blind spot 1 for the same reason.
 
@@ -554,8 +554,11 @@ class Devbox:
         stderr=None,
         stdin=None,
         repo_root: str | None = None,
+        host_ids: tuple[int, int] | None = None,
     ) -> None:
         self.env = dict(os.environ if env is None else env)
+        # `$(id -u)` and `$(id -g)`, the EFFECTIVE ids, read ONCE here. Every method that names the host's ids (the state file, the derived tag, the build args, the run env, the lease pool) reads these two, so one construction answers with one identity. `host_ids` exists for the differential: its frozen transcripts carry the recording host's ids, and a driver that let the running host's leak in failed on the first runner whose uid was not the recorder's (GitHub's is 1001).
+        self.uid, self.gid = host_ids if host_ids is not None else (os.geteuid(), os.getegid())
         self.cwd = cwd or os.getcwd()
         self.stdout = stdout if stdout is not None else sys.stdout.buffer
         self.stderr = stderr if stderr is not None else sys.stderr.buffer
@@ -565,8 +568,8 @@ class Devbox:
         # `.ci/config/constants.sh:76`: `${CONSOLE_ROOT_DIR:-<its own checkout>}`, so an EMPTY value falls back as well as a missing one.
         self.console_root = self.env.get("CONSOLE_ROOT_DIR") or root
         self.state_file = self.console_root + "/" + DEVBOX_STATE_NAME
-        # `.ci/lib/devbox.sh:22`: the directory the twin was sourced from, logical.
-        self.lib_dir = os.path.join(root, ".ci", "lib")
+        # Rule T fix D12: the twin built its bind sources as `<.ci/lib>/../../.devcontainer/<file>`, a path that only resolves while `.ci/lib` exists as a directory. The library directory is gone, and docker refuses to resolve the bind through a missing component, so the sources are `<root>/.devcontainer/<file>` directly.
+        self.devcontainer_dir = os.path.join(root, ".devcontainer")
         # `.ci/lib/devbox.sh:32-33`: REDIACC_CI_ROOT wins, else `$DEVBOX_LIB_DIR/..`.
         ci_root = self.env.get("REDIACC_CI_ROOT", "")
         self.ci_dir = ci_root + "/.ci" if ci_root else os.path.join(root, ".ci")
@@ -911,8 +914,8 @@ class Devbox:
             "image=" + DEVBOX_IMAGE,
             "image_digest=" + digest,
             "docker_gid=" + docker_gid,
-            "uid=%d" % os.geteuid(),
-            "gid=%d" % os.getegid(),
+            "uid=%d" % self.uid,
+            "gid=%d" % self.gid,
             "gate_lane=" + (self.env.get("REDIACC_GATE_LANE") or "devbox"),
         ]
         try:
@@ -1324,13 +1327,13 @@ class Devbox:
             recipe_hash = hashlib.sha256(handle.read()).hexdigest()
         self.write(
             "%s:uid%d-gid%d-%s-%s\n"
-            % (DEVBOX_UID_IMAGE_REPO, os.geteuid(), os.getegid(), base_id[:12], recipe_hash[:12])
+            % (DEVBOX_UID_IMAGE_REPO, self.uid, self.gid, base_id[:12], recipe_hash[:12])
         )
         return 0
 
     def host_ids(self) -> str:
         """`$(id -u):$(id -g)`, the EFFECTIVE ids."""
-        return "%d:%d" % (os.geteuid(), os.getegid())
+        return "%d:%d" % (self.uid, self.gid)
 
     def run_image(self, *_argv: str) -> int:
         """`devbox_run_image`: the base when its vscode already carries this host's ids, else the derived tag. Resolves; never builds."""
@@ -1377,9 +1380,9 @@ class Devbox:
             "--build-arg",
             "BASE=" + DEVBOX_IMAGE,
             "--build-arg",
-            "HOST_UID=%d" % os.geteuid(),
+            "HOST_UID=%d" % self.uid,
             "--build-arg",
-            "HOST_GID=%d" % os.getegid(),
+            "HOST_GID=%d" % self.gid,
             "-f",
             dockerfile_dir + "/Dockerfile.uid",
             dockerfile_dir,
@@ -1470,11 +1473,31 @@ class Devbox:
 
         Printed only when `/run/user/<uid>` is a directory this user owns (a systemd host); nothing otherwise. Status 0 on every path.
         """
-        runtime = "/run/user/%d" % os.geteuid()
-        with contextlib.suppress(OSError):
-            if os.path.isdir(runtime) and os.stat(runtime).st_uid == os.geteuid():
-                self.write(runtime + "/rediacc-cores\n")
+        runtime = "/run/user/%d" % self.uid
+        if self.owns_runtime_dir(runtime):
+            self.write(runtime + "/rediacc-cores\n")
         return 0
+
+    def owns_runtime_dir(self, runtime: str) -> bool:
+        """`[ -d "$runtime" ] && [ "$(stat -c %u "$runtime")" = "$(id -u)" ]`: a directory, and this user's. The one filesystem fact `core_lease_src` reads about the HOST, kept in a method of its own so the differential's driver can answer it as the recording host did; a container or a user namespace has no `/run/user/<uid>` at all."""
+        with contextlib.suppress(OSError):
+            return os.path.isdir(runtime) and os.stat(runtime).st_uid == self.uid
+        return False
+
+    # THE REST OF WHAT `up` READS ABOUT THE HOST, one method per shell test, for the reason `owns_runtime_dir` has one: the differential's frozen transcripts carry the recording host's answers (all four true), and a port that asked the running host failed `up-create` and `up-existing` on the first one that lacked any of them. GitHub's runner has no `/run/user/1000` to hold the pool (run 38409515814, job 115339511423).
+    def has_host_node(self, path: str) -> bool:
+        """`[ -e <path> ]` for `/dev/kvm` and `/dev/net/tun`: present on this host, whatever it is."""
+        return os.path.exists(path)
+
+    def has_host_socket(self, path: str) -> bool:
+        """`[[ -S <path> ]]` for `/var/run/docker.sock`: a socket, after symlinks. Anything else, and a path that cannot be read, is no socket."""
+        with contextlib.suppress(OSError):
+            return stat.S_ISSOCK(os.stat(path).st_mode)
+        return False
+
+    def lease_dir_ready(self, path: str) -> bool:
+        """`[ -d <path> ] || mkdir -m 700 <path>`: the lease pool is there, made now when it was not."""
+        return os.path.isdir(path) or self.make_lease_dir(path)
 
     def missing_binds(self, *_argv: str) -> int:
         """`devbox_missing_binds`, `.ci/lib/devbox.sh:492-513`: each bind destination the existing container does NOT have mounted.
@@ -1855,9 +1878,9 @@ class Devbox:
             docker_gid = ""
 
         kvm_gid = ""
-        if os.path.exists("/dev/kvm"):
+        if self.has_host_node("/dev/kvm"):
             _, kvm_gid = self.value(["stat", "-c", "%g", "/dev/kvm"], err=NULL)
-        tun_dev = "/dev/net/tun" if os.path.exists("/dev/net/tun") else ""
+        tun_dev = "/dev/net/tun" if self.has_host_node("/dev/net/tun") else ""
 
         base = decimal(base_port)
         vscode_port = base + DEVBOX_OFFSET_VSCODE
@@ -1867,10 +1890,9 @@ class Devbox:
         binds = ["-v", "%s:%s" % (mount_root, mount_root)]
         for pair in SCRIPT_BINDS:
             source, target = pair.split(":", 1)
-            binds += ["-v", "%s/../../.devcontainer/%s:%s:ro" % (self.lib_dir, source, target)]
-        with contextlib.suppress(OSError):
-            if stat.S_ISSOCK(os.stat("/var/run/docker.sock").st_mode):
-                binds += ["-v", "/var/run/docker.sock:/var/run/docker.sock"]
+            binds += ["-v", "%s/%s:%s:ro" % (self.devcontainer_dir, source, target)]
+        if self.has_host_socket("/var/run/docker.sock"):
+            binds += ["-v", "/var/run/docker.sock:/var/run/docker.sock"]
         home = self.env.get("HOME", "")
         for pair in HOME_BINDS:
             relative, mode = pair.split(":", 1)
@@ -1885,7 +1907,7 @@ class Devbox:
         lease_env: list[str] = []
         status, lease_src = self.sub(self.core_lease_src)
         self.checked(status)
-        if lease_src and (os.path.isdir(lease_src) or self.make_lease_dir(lease_src)):
+        if lease_src and self.lease_dir_ready(lease_src):
             binds += ["-v", "%s:%s" % (lease_src, DEVBOX_CORE_LEASE_DEST)]
             lease_env = ["-e", "REDIACC_CORE_LEASE_DIR=%s" % DEVBOX_CORE_LEASE_DEST]
 
@@ -1976,9 +1998,9 @@ class Devbox:
             run += ["--group-add", kvm_gid, "--cap-add", "NET_ADMIN", "--cap-add", "SYS_ADMIN"]
         run += [
             "-e",
-            "HOST_UID=%d" % os.geteuid(),
+            "HOST_UID=%d" % self.uid,
             "-e",
-            "HOST_GID=%d" % os.getegid(),
+            "HOST_GID=%d" % self.gid,
             "-e",
             "DOCKER_GID=%s" % docker_gid,
             "-e",

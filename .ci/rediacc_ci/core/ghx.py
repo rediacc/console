@@ -5,10 +5,10 @@ THE ONE RULE THIS MODULE EXISTS FOR. A `gh` call has three outcomes, not two: it
 ------------------------------------------------------------------------------
 TRAP 1: `|| echo "[]"` AND `2>/dev/null` TURN AN OUTAGE INTO AN EMPTY ANSWER.
 ------------------------------------------------------------------------------
-Measured across `.ci`, `scripts` and `.claude`: 28 `gh` call sites end in `|| echo "..."` or a `// empty` jq default. A rate limit, an expired token or a network blip then produces the SAME value as "there is nothing here", and the caller acts on it. `.ci/scripts/lib/common.sh:392-397` already records what that cost: "Nine call sites across the review, attribution and
+Measured across `.ci`, `scripts` and `.claude`: 28 `gh` call sites end in `|| echo "..."` or a `// empty` jq default. A rate limit, an expired token or a network blip then produces the SAME value as "there is nothing here", and the caller acts on it. The deleted bash helper library `lib/common.sh` (its `gh_retry` is now `core.gh_retry`; comment above `_gh_probe`, lines 442-451) already recorded what that cost: "Nine call sites across the review, attribution and
 submodule-branch gates
 were spelled `X=$(gh api ... 2>/dev/null || echo "[]")` ... those are
-merge-blocking gates: a swallowed failure there is a silent green on the check that is supposed to stop the merge." `_gh_probe` there is the bash answer, and this module is its typed counterpart -- with one addition `_gh_probe` cannot have, below.
+merge-blocking gates: a swallowed failure there is a silent green on the check that is supposed to stop the merge." `_gh_probe` in that library is the bash answer, and this module is its typed counterpart -- with one addition `_gh_probe` cannot have, below.
 
 ------------------------------------------------------------------------------
 TRAP 2: A PIPELINE ENDING IN `sort` ALWAYS EXITS 0, SO THE CALLER CANNOT CHECK.
@@ -566,7 +566,7 @@ def main(argv: list[str]) -> int:
     is not required for it to work.
     """
     if not argv:
-        print("usage: python3 -m rediacc_ci.core.ghx <verb> [args]", file=sys.stderr)
+        print("usage: PYTHONPATH=.ci python3 -m rediacc_ci.core.ghx <verb> [args]", file=sys.stderr)
         return 2
     verb, rest = argv[0], argv[1:]
     try:

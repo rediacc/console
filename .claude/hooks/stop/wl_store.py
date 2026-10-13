@@ -32,6 +32,7 @@ import calendar
 import contextlib
 import glob as _glob
 import hashlib
+import importlib
 import json
 import os
 import pathlib
@@ -44,6 +45,7 @@ from typing import Any
 
 import wl_core as C
 import wl_leasehelp as LH
+import wl_plandeps as PD
 
 # Kept as module constants so the lock sites read the same with or without the module present. The values are POSIX's and are only ever passed to _flock.
 LOCK_EX = getattr(fcntl, "LOCK_EX", 2)
@@ -266,6 +268,12 @@ def plan_stub_target(path):
             head = handle.read(STUB_PROBE_BYTES).decode("utf-8", errors="replace")
     except OSError:
         return _flat_legacy_fallback(path)
+    return stub_target_of_text(head)
+
+
+def stub_target_of_text(text):
+    """The `Moved-To:` target of stub TEXT, or "" when the text is not a stub (both halves required, as `is_plan_stub` documents). Reads only the first STUB_PROBE_BYTES characters, so a long plan that cites a successor in its body is never taken for a pointer."""
+    head = text[:STUB_PROBE_BYTES]
     if not _STUB_STATUS_RE.search(head):
         return ""
     match = _STUB_TARGET_RE.search(head)
@@ -646,25 +654,48 @@ def save_state(worklist, session_id, doc):
 # ---- the event log ----------------------------------------------------------
 
 
+_JSONL_APPEND_REL = (".ci", "rediacc_ci", "core", "jsonl_append.py")
+_JSONL_APPEND = None
+
+
+def _jsonl_append():
+    """`rediacc_ci.core.jsonl_append`, loaded BY FILE (a hook takes no `.ci` sys.path hop; test_canonical_sys_path_hop.py freezes them), once per process.
+
+    Looked for above this file first; then above the live `.claude/rediacc_hooks` a last-known-good snapshot links in (wl_lkg.snapshot); then above the working directory, because several suites copy this directory into a temp root (test_wl_lkg, test_wl_roster) while the process still runs from the checkout. None found is a loud refusal, never a silent dropped write.
+    """
+    global _JSONL_APPEND  # noqa: PLW0603 -- a per-process module cache
+    if _JSONL_APPEND is not None:
+        return _JSONL_APPEND
+    import importlib.util  # noqa: PLC0415 -- only the write path needs it
+
+    here = pathlib.Path(__file__).resolve()
+    linked = pathlib.Path(__file__).absolute().parents[2] / "rediacc_hooks"
+    cwd = pathlib.Path.cwd().resolve()
+    starts = [*here.parents]
+    if linked.is_dir():
+        starts += [*linked.resolve().parents]
+    starts += [cwd, *cwd.parents]
+    for base in starts:
+        cand = base.joinpath(*_JSONL_APPEND_REL)
+        if cand.is_file():
+            spec = importlib.util.spec_from_file_location("rediacc_jsonl_append", cand)
+            if spec is not None and spec.loader is not None:
+                mod = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(mod)
+                _JSONL_APPEND = mod
+                return mod
+    raise RuntimeError(
+        "worklist WRITES need %s, which is not above %s, its linked .claude/rediacc_hooks, or the working directory %s"
+        % ("/".join(_JSONL_APPEND_REL), here, cwd)
+    )
+
+
 def _append_lines(path, lock_path, payloads):
     """Append JSONL lines under a blocking flock, healing a torn tail first.
 
-    One os.write per batch. The heal: if the file's last byte is not a newline (a writer crashed mid-line), prepend one, so the torn fragment stays its own unparseable line instead of corrupting this event too.
+    The one implementation is `rediacc_ci.core.jsonl_append.append_lines` (one os.write per batch; a last byte that is not a newline gets one prepended, so a torn fragment stays its own unparseable line). `_flock` is passed so a lockless platform still gets the worklist's own refusal.
     """
-    with open(lock_path, "w") as lock:
-        _flock(lock, LOCK_EX)
-        fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
-        try:
-            size = os.fstat(fd).st_size
-            blob = b""
-            if size and os.pread(fd, 1, size - 1) != b"\n":
-                blob = b"\n"
-            blob += "".join(json.dumps(p, separators=(",", ":")) + "\n" for p in payloads).encode(
-                "utf-8"
-            )
-            os.write(fd, blob)
-        finally:
-            os.close(fd)
+    _jsonl_append().append_lines(path, lock_path, payloads, lock=_flock)
 
 
 # --------------------------------------------------------------------------- THE TRACKED STORE. agent/worklist/<writer8>.jsonl, one append-only file per WRITER identity, committed like every other artifact under agent/.
@@ -1387,7 +1418,9 @@ def deferral_justification(rec):
 # ---- classification ---------------------------------------------------------
 
 
-def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_scope=None):
+def classify_items(
+    fold, session_id, live_worker_ids=None, order_key=None, in_scope=None, dep_graph=None
+):
     """(open_items, others, deferred, in_flight, queued) as display strings / recs, the v2-v9 state machine unchanged: open blocks, [?] is reported, fresh [>] is allowed-and-reported, an expired or invalid lease fails closed into an open item.
 
     v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in `live_worker_ids` (the OS-verified running background tasks) is tolerated as in-flight instead of failing closed, with `lease_tolerated` stamped on the rec so displays can say so. A long job outliving the lease cap while its watcher is demonstrably alive is supervision, not abandonment; the moment the
@@ -1396,7 +1429,9 @@ def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_sc
     `order_key(rec)` ranks the OPEN list (agent/plans/PLAN-plan-priority-concurrency.md section 2: `wl_planorder.item_key`, dependencies, then operator priority, then AI priority, then age), so open-items and idle-stall name the most urgent work first. Without it the open list keeps fold order. `others` and `deferred` always keep fold order: the oldest-first deferral checks rely on it.
 
     `in_scope(rec)` is the live PR's item scope (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 2): in production `rec["id"] in loop_state.epic_items`. A plain open `[ ]` of this session that fails it goes to `queued` (its records, ranked like the open list) instead of `open_items`, so every consumer of the open list is scoped by construction. Two shapes stay in
-    `open_items` whatever the predicate says, because a dead claim is a loop duty (ruling 1d): a fail-closed lease and a `worker:lead` item with nothing live. `[?]` and `[>]` are never queued either: an expired DEFAULT and a live lease are the loop's own business. `in_scope=None` puts everything in scope, which is today's behaviour and the `off-loop` state."""
+    `open_items` whatever the predicate says, because a dead claim is a loop duty (ruling 1d): a fail-closed lease and a `worker:lead` item with nothing live. `[?]` and `[>]` are never queued either: an expired DEFAULT and a live lease are the loop's own business. `in_scope=None` puts everything in scope, which is today's behaviour and the `off-loop` state.
+
+    `dep_graph` is the plan graph (`wl_plandeps.Graph`, agent/plans/PLAN-plan-dependencies.md section 2c). With it, an open item linked to a plan (`PLAN-x.md [<sig>]`) whose dependencies are unfinished is `waiting` (left out of `open_items`, `rec["waiting_plans"]` names the roots) ONLY when every root is tracked by some open, deferred or leased item; an untracked root or a Depends-On cycle fails closed to open and the display line says where to start. Without it no plan wait exists, which is today's behaviour."""
     open_items, others, deferred, in_flight = [], {}, [], []
     # (rank, display) pairs for this session's open list, sorted once at the end.
     ranked: list[tuple[Any, str]] = []
@@ -1415,8 +1450,19 @@ def classify_items(fold, session_id, live_worker_ids=None, order_key=None, in_sc
         if state == " ":
             # BLOCKED_BY (agent/plans/PLAN-stop-hook-continuity.md P2.4): an open item waiting on items that are still open is `waiting`, not open work in hand. The chain's root is an ordinary item, so it still blocks; nothing is hidden, only counted once.
             rec["waiting_on"] = LH.waiting_on(rec, by_id) if mine else []
-            if mine and rec["waiting_on"]:
+            rec["waiting_plans"] = LH.plan_wait(rec, dep_graph, by_id) if mine else []
+            if mine and (rec["waiting_on"] or rec["waiting_plans"]):
                 continue
+            if mine and dep_graph is not None:
+                # THE FAIL-CLOSED SUFFIX: a dependency nothing tracks (or a cycle) cannot be waited for, so the item stays open and says where the work is. The shape of the worker:lead suffix below.
+                _dd = PD.item_deps(dep_graph, rec.get("text") or "", by_id.values())
+                if _dd is not None:
+                    _msgs = importlib.import_module("worklist_messages")
+                    disp += (
+                        _msgs.N_DEP_CYCLE % _dd.plan
+                        if _dd.cyclic
+                        else _msgs.N_DEP_UNTRACKED % (_dd.plan, ", ".join(_dd.untracked))
+                    )
             if mine and in_scope is not None and not in_scope(rec):
                 queued_ranked.append((order_key(rec) if order_key is not None else 0, rec))
             elif mine:

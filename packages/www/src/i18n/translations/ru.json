@@ -3783,7 +3783,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Одно облако падает — другое подхватывает. Без ручного вмешательства. Автоматическое переключение при сбое проверки здоровья. Интеграция с вашим стеком мониторинга.",
+              "description": "Одно облако падает, другое берёт нагрузку. Без вмешательства. Переключение срабатывает при отказе проверки. Интегрируется с вашим мониторингом.",
               "icon": "cloud",
               "title": "Всегда онлайн"
             },
@@ -3793,7 +3793,7 @@
               "title": "Мультиоблачность по умолчанию"
             },
             {
-              "description": "Move between clouds whenever you want. Open-format snapshots. No proprietary agents. Standard btrfs — available in every modern Linux kernel.",
+              "description": "Переходите между облаками когда угодно. Снимки в открытом формате. Никаких проприетарных агентов. Это стандартный btrfs, встроен в Linux с 2013 года.",
               "icon": "lock",
               "title": "Без привязки к вендору"
             }
@@ -3879,7 +3879,7 @@
         "hero": {
           "ctaLabel": "Оставаться на связи",
           "subtitle": "Ваша инфраструктура работает в нескольких облаках. Когда одно из них падает, другие берут на себя нагрузку. Автоматически.",
-          "title": "Когда AWS падает, вы — нет"
+          "title": "Когда AWS падает, бизнес продолжает работать"
         },
         "howItWorks": {
           "cloneVisual": {
@@ -3911,7 +3911,7 @@
               ],
               "size": "380 GB",
               "status": "Активен",
-              "title": "Secondary (eu-west-1)"
+              "title": "Резервный (eu-west-1)"
             },
             "production": {
               "cardClass": "down",
@@ -3936,12 +3936,12 @@
               ],
               "size": "Недоступен",
               "status": "Down",
-              "title": "Primary (us-east-1)"
+              "title": "Основной (us-east-1)"
             }
           },
           "steps": [
             {
-              "description": "Запустите rdc replicate production --target secondary. Инкрементальная синхронизация — передаются только изменённые блоки.",
+              "description": "Запустите rdc replicate production --target secondary. Синхронизируются только изменения, не весь объём. Быстро и дёшево.",
               "icon": "copy",
               "title": "Репликация"
             },
@@ -3965,7 +3965,7 @@
           "title": "Защита от облачных сбоев - будьте онлайн | Rediacc"
         },
         "problem": {
-          "description": "Критические облачные сбои выросли на 18% в 2024 году, длились на 18,7% дольше, а 68% из них были вызваны человеческим фактором. Когда ваше единственное облако падает — падает всё. Ваши клиенты, выручка, репутация. Всё в заложниках чужой инфраструктуры.",
+          "description": "Представьте: AWS us-east-1 отключается, и вместе с ним отключается весь бизнес. Сайт, продажи, поддержка. Всё лежит, остаётся только ждать. Крупные облачные сбои в 2024 году выросли на 18% по сравнению с прошлым годом и длились на 18,7% дольше. Причиной 68% из них стала человеческая ошибка. Ставка на одно облако означает ставку всего бизнеса на чужой плохой день.",
           "statCallouts": [
             {
               "number": "$300K+",
@@ -4013,64 +4013,64 @@
               }
             ]
           },
-          "title": "Одно облако — единая точка отказа"
+          "title": "Одно облако: единая точка отказа"
         },
         "references": {
           "items": [
             {
-              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
+              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “Средняя стоимость часа простоя превышает $300 000 для более чем 90% компаний среднего и крупного размера.”",
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Parametrix, “2024 Cloud Outage Risk Report,” 2024. “Critical cloud service interruption events increased by 18.0% and lasted 18.7% longer in 2024 than in 2023. Human error accounted for 68% of incidents.”",
+              "text": "Parametrix, “2024 Cloud Outage Risk Report,” 2024. “Критические сбои облачных сервисов в 2024 году выросли на 18,0% и длились на 18,7% дольше, чем в 2023 году. 68% инцидентов вызваны человеческой ошибкой.”",
               "url": "https://www.reinsurancene.ws/critical-cloud-service-outages-increase-in-2024-parametrix/"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “The total cost of downtime for Global 2000 companies is $400B annually, or 9 percent of profits, when digital environments fail unexpectedly.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “Когда цифровая инфраструктура неожиданно выходит из строя, компании Global 2000 теряют $400 млрд в год, то есть 9% прибыли.”",
               "url": "https://www.splunk.com/en_us/newsroom/press-releases/2024/conf24-splunk-report-shows-downtime-costs-global-2000-companies-400-billion-annually.html"
             },
             {
-              "text": "Veeam supports cross-cloud backup and replication between VMware, Hyper-V, AWS, Azure, and Google Cloud.",
+              "text": "Veeam поддерживает резервное копирование и репликацию между облаками: VMware, Hyper-V, AWS, Azure и Google Cloud.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Zerto replicates workloads between VMware, Hyper-V, AWS, Azure, IBM Cloud, and 350+ cloud service providers.",
+              "text": "Zerto реплицирует рабочие нагрузки между VMware, Hyper-V, AWS, Azure, IBM Cloud и 350+ облачными провайдерами.",
               "url": "https://www.zerto.com/solutions/use-cases/cloud/hybrid-cloud-and-multi-cloud/"
             },
             {
-              "text": "Druva provides cross-cloud DR by storing backup data across AWS and Azure from a single console.",
+              "text": "Druva обеспечивает аварийное восстановление между облаками, храня резервные копии в AWS и Azure из единой консоли.",
               "url": "https://www.druva.com/solutions/accelerate-protect-cloud-projects"
             },
             {
-              "text": "Veeam uses incremental backup with Changed Block Tracking (CBT) to transfer only modified data blocks.",
+              "text": "Veeam использует инкрементальное резервное копирование с Changed Block Tracking (CBT), передаёт только изменённые блоки.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/changed_block_tracking.html"
             },
             {
-              "text": "Zerto VRAs continuously replicate only changed data blocks at the hypervisor level in near-synchronous fashion.",
+              "text": "Zerto VRAs непрерывно реплицируют только изменённые блоки данных на уровне гипервизора, почти синхронно.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Druva uses incremental-forever backup with global variable-block deduplication achieving up to 90% bandwidth savings.",
+              "text": "Druva использует инкрементное резервное копирование по схеме incremental-forever с глобальной дедупликацией блоков переменного размера, экономя до 90% пропускной способности.",
               "url": "https://help.druva.com/en/articles/12158018-first-backup-vs-incremental-backups"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication развёртывается локально на Windows Server, клиент полностью контролирует инфраструктуру.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto развёртывается локально с Zerto Virtual Manager и Virtual Replication Appliances на каждом хосте.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             },
             {
-              "text": "Zerto provides automated Re-IP of recovered VMs during failover with pre/post recovery scripts for DNS updates.",
+              "text": "Zerto автоматизирует перенумерацию IP при переключении, используя скрипты до и после восстановления для обновления DNS.",
               "url": "https://help.zerto.com/kb/000002926"
             },
             {
-              "text": "Veeam Backup & Replication provides continuous replication of full application stacks with orchestrated failover.",
+              "text": "Veeam Backup & Replication обеспечивает непрерывную репликацию полных стеков приложений с согласованным переключением.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/replica_job.html"
             },
             {
-              "text": "Zerto Virtual Protection Groups replicate multi-VM application stacks as a single consistent unit with write-order fidelity.",
+              "text": "Zerto Virtual Protection Groups реплицируют многомашинные стеки приложений как единое целое, сохраняя порядок записи.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/ProtectingVirtualMachinesfrom.htm"
             }
           ]
@@ -4089,10 +4089,10 @@
             },
             "improvement": "Фейловер в 514 раз быстрее · Ноль заметных пользователями сбоев"
           },
-          "quote": "Сбой us-east-1 в марте обрушил три наших конкурента на 4 часа. Наш фейловер на eu-west-1 произошёл за 28 секунд — наши клиенты даже не заметили. Мы получили 340 новых регистраций от пользователей конкурентов на следующей неделе."
+          "quote": "Во время сбоя AWS us-east-1 прошлым мартом наши 12 боевых сервисов переключились на второй датацентр за 22 секунды. Клиенты ничего не заметили. Конкуренты простояли 6 часов. На той же неделе мы получили три новых корпоративных контракта от их клиентов."
         },
         "techDiff": {
-          "description": "Rediacc использует btrfs send/receive для вычисления инкрементальных разниц на уровне файловой системы. Вместо передачи полных образов между сайтами передаются только изменённые блоки. Среда на 380 ГБ с 2,4 ГБ ежедневных изменений передаёт 2,4 ГБ — не 380 ГБ. Это 98% экономия трафика. Репликация работает непрерывно или по расписанию.",
+          "description": "Rediacc копирует только те данные, которые изменились с прошлого раза. Возьмём среду на 380 GB, где сегодня изменилось 2,4 GB. Rediacc передаёт 2,4 GB, а не 380 GB. Это <span class=\"sp-emphasis\">сокращает трафик на 98%</span>. Копирование может идти постоянно или по расписанию.",
           "rediaccLabel": "Rediacc (btrfs send/receive)",
           "rows": [
             {
@@ -5023,12 +5023,12 @@
               "title": "Среды за 60 секунд"
             },
             {
-              "description": "Отправьте ветку — получите среду, идентичную продакшну, с реальными данными. Без скриптов настройки, без тестовых данных, без заявок в ops.",
+              "description": "Отправьте ветку, получите среду с реальными данными production. Без скриптов. Без тестовых данных. Без заявок.",
               "icon": "terminal",
               "title": "Самообслуживание с интеграцией Git"
             },
             {
-              "description": "Не только код — полный стек. ОС, контейнеры, базы данных и конфигурация клонируются вместе. Баги выявляются при 1x затратах, а не при 30-100x в продакшне.",
+              "description": "Не только код, весь стек. ОС, контейнеры, БД и конфиги клонируются вместе. Баги ловятся при x1 затратах, а не x30-100 в production.",
               "icon": "layers",
               "title": "Приложение + база данных + конфигурация"
             }
@@ -5045,7 +5045,7 @@
         "calculator": {
           "annualLabel": "Годовая стоимость для команды",
           "description": "Переместите ползунки под вашу команду. Цифры могут удивить.",
-          "footnote": "На основе средней полной компенсации $160K ($92/час с нагрузкой). Стоимость ожидания среды: время простоя × 60% потери продуктивности. Переключение контекста: $24K–$50K/разработчик/год. 69% разработчиков теряют 8+ часов в неделю из-за неэффективности (Atlassian 2024). Разработчики не полностью простаивают во время ожидания, но каскадные зависимости накапливаются от спринта к спринту. Консервативные оценки — реальная экономия часто выше.",
+          "footnote": "На основе средней полной компенсации $160K ($92/час с нагрузкой). Стоимость ожидания окружения: потерянное время × 60% снижение производительности. Переключение контекста: $24K–$50K на разработчика в год. 69% разработчиков теряют 8+ часов в неделю из-за неэффективности (Atlassian 2024). Разработчики не полностью простаивают в ожидании, но каскадные зависимости накапливаются от спринта к спринту. Консервативная оценка, реальная экономия часто выше.",
           "headerTitle": "Рассчитайте стоимость ожидания сред",
           "results": {
             "blockedTime": "Время простоя / спринт",
@@ -5071,7 +5071,7 @@
         },
         "comparison": {
           "capabilityLabel": "Возможность",
-          "description": "Инструменты разработки клонируют код. Инструменты баз данных клонируют данные. Только Rediacc клонирует и то, и другое — вместе, за 60 секунд.",
+          "description": "Инструменты разработки клонируют код. Инструменты БД клонируют данные. Только Rediacc клонирует и то, и другое вместе, за 60 секунд.",
           "features": [
             {
               "name": "Клонирование приложений",
@@ -5096,7 +5096,7 @@
             {
               "name": "Время развёртывания",
               "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": ["Минуты", "Минуты", "Минуты", "Минуты", "Секунды", "<60s"]
             },
             {
               "name": "Данные, идентичные продакшну",
@@ -5108,7 +5108,7 @@
         },
         "hero": {
           "ctaLabel": "Начать клонирование",
-          "subtitle": "Создавайте точные копии продакшена — приложение, база данных и конфигурация — для разработки и тестирования. Без заявок. Без ожидания.",
+          "subtitle": "Создайте точную копию production <span class=\"sp-emphasis\">за секунды</span>. Приложение, база данных, конфиги. Без заявок. Без ожидания.",
           "title": "Клонируйте продакшен за 60 секунд"
         },
         "howItWorks": {
@@ -5178,7 +5178,7 @@
             {
               "description": "Разработчик запускает rdc ceph snapshot create production. Без заявок. Без согласований.",
               "icon": "terminal",
-              "title": "Run"
+              "title": "Запуск"
             },
             {
               "description": "Точная копия продакшна разворачивается за 60 секунд. Та же ОС, конфиги, данные.",
@@ -5188,19 +5188,19 @@
             {
               "description": "Начинайте разработку немедленно. Без настройки. Без конфигурации. Только код.",
               "icon": "code",
-              "title": "Work"
+              "title": "Разработка"
             }
           ],
           "title": "Одна команда. Шестьдесят секунд."
         },
         "label": "Клонирование сред",
         "meta": {
-          "description": "Создавайте точные копии продакшена — приложение, база данных и конфигурация — для разработки и тестирования. Без заявок. Без ожидания.",
+          "description": "Разворачивайте точные копии production (приложение, база данных и конфигурация) для разработки и тестирования. Без заявок. Без ожидания.",
           "keywords": "клонирование среды, клон продакшена, среда разработки, мгновенное развёртывание, btrfs clone, copy-on-write, эфемерные среды",
           "title": "Клонирование среды - быстрое копирование | Rediacc"
         },
         "problem": {
-          "description": "Разработчику нужна тестовая среда. Он подаёт заявку. Ops выделяет сервер. Кто-то его настраивает. Через три дня среда всё равно не соответствует продакшену. Тем временем разработчик простаивает с понедельника — и каждое прерывание стоит 23 минуты на восстановление контекста.",
+          "description": "Разработчику нужно тестовое окружение. Поэтому он подаёт заявку. Ops выделяет сервер. Кто-то его настраивает. Через три дня окружение всё равно не совпадает с production. Разработчик застрял с понедельника, и каждое отвлечение отнимает 23 минуты на возвращение к работе.",
           "statCallouts": [
             {
               "number": "69%",
@@ -5217,13 +5217,13 @@
             {
               "number": "$50K/yr",
               "ref": 2,
-              "source": "Industry composite estimate",
+              "source": "Оценка по отрасли",
               "text": "потери на каждого разработчика из-за переключения контекста"
             }
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": ["Запустить", "60s", "Готово"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -5253,63 +5253,63 @@
         "references": {
           "items": [
             {
-              "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
+              "text": "Atlassian, DX & Wakefield Research, «State of Developer Experience Report», 2024. «69% разработчиков теряют 8+ часов в неделю из-за неэффективности.» «Для организации с 500 разработчиками потеря 8 часов в неделю обходится примерно в $6,9 млн в год.»",
               "url": "https://www.atlassian.com/blog/developer/developer-experience-report-2024"
             },
             {
-              "text": "Industry composite from vendor surveys and published benchmarks. \"Context switching costs $24K–$50K per developer per year in lost productivity.\"",
+              "text": "Совокупная оценка по отрасли на основе опросов поставщиков и опубликованных сравнительных данных. «Переключение контекста стоит $24K–$50K на одного разработчика в год потери производительности.»",
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub Codespaces creates a dedicated VM and clones the repository into a dev container for instant cloud development.",
+              "text": "GitHub Codespaces создаёт выделенную виртуальную машину и клонирует репозиторий в контейнер разработки для мгновенной облачной разработки.",
               "url": "https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace"
             },
             {
-              "text": "Coder templates are Terraform-defined blueprints for creating identical, reproducible development workspaces.",
+              "text": "Шаблоны Coder представляют собой чертежи, определённые в Terraform, для создания идентичных воспроизводимых рабочих пространств разработки.",
               "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Vercel preview deployments create unique live URLs for every push/PR for isolated frontend review.",
+              "text": "Превью-развёртывания Vercel создают уникальные рабочие URL-адреса для каждого push или PR для изолированной проверки фронтенда.",
               "url": "https://vercel.com/docs/deployments/preview-deployments"
             },
             {
-              "text": "Delphix Virtual Databases (VDBs) are full read-write copies from snapshots requiring only a fraction of traditional storage.",
+              "text": "Delphix Virtual Databases (VDB) представляют собой полные копии для чтения и записи, созданные из снимков и требующие лишь малую часть обычного объёма хранилища.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branches are copy-on-write clones sharing pages with the parent until writes diverge.",
+              "text": "Ветви Neon представляют собой клоны с копированием при записи, которые делят страницы с родительской веткой, пока записи не разойдутся.",
               "url": "https://neon.com/docs/introduction/branching"
             },
             {
-              "text": "Delphix supports Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB, and CockroachDB.",
+              "text": "Delphix поддерживает Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB и CockroachDB.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Codespaces prebuilds pre-assemble source code, extensions, and dependencies for substantially faster codespace creation.",
+              "text": "Prebuilds в Codespaces заранее собирают исходный код, расширения и зависимости, благодаря чему codespace создаётся заметно быстрее.",
               "url": "https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds"
             },
             {
-              "text": "Coder prebuilt workspaces maintain a ready-to-use pool, reducing creation time from up to 20 minutes to under a minute.",
+              "text": "Предварительно собранные рабочие пространства Coder поддерживают готовый пул, сокращая время создания с 20 минут до менее одной минуты.",
               "url": "https://coder.com/docs/admin/templates/extending-templates/prebuilt-workspaces"
             },
             {
-              "text": "Vercel deploys to its global edge network with apps going live within seconds of pushing code.",
+              "text": "Vercel развёртывает приложения в своей глобальной периферийной (edge) сети, и они начинают работать через считанные секунды после отправки кода.",
               "url": "https://vercel.com/docs/deployments"
             },
             {
-              "text": "Delphix VDB provisioning completes in minutes rather than hours or days for traditional database copies.",
+              "text": "Подготовка Delphix VDB завершается за минуты, а не часы или дни, как при традиционном копировании базы данных.",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branch creation takes approximately 1 second regardless of database size.",
+              "text": "Создание ветви Neon занимает примерно 1 секунду независимо от размера базы данных.",
               "url": "https://neon.com/docs/get-started/workflow-primer"
             },
             {
-              "text": "Delphix creates full read-write virtual copies from production data sources for application, AI, and ML teams.",
+              "text": "Delphix создаёт полнофункциональные виртуальные копии для чтения и записи из источников production для команд приложений, AI и ML.",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Neon branches include all parent data by default providing instant production-identical copies.",
+              "text": "Ветви Neon по умолчанию включают все данные родительской ветви, обеспечивая мгновенные копии, идентичные production.",
               "url": "https://neon.com/docs/introduction/branching"
             }
           ]
@@ -5324,10 +5324,10 @@
             "beforeValue": "3 дня",
             "improvement": "На 99,97% быстрее"
           },
-          "quote": "Мы развернули 12 идентичных продакшену тестовых сред менее чем за 10 минут — каждая с полной базой данных PostgreSQL на 241 ГБ. Раньше мы вручную делали дампы баз данных в staging. Это занимало 3 инженеров и 2 дня на каждую среду."
+          "quote": "За 10 минут мы развернули 12 тестовых сред, идентичных production, каждая с полной БД PostgreSQL на 241 ГБ. Раньше мы вручную выгружали БД в staging, и на каждую среду уходило 3 инженера и 2 дня работы."
         },
         "techDiff": {
-          "description": "Rediacc использует btrfs-снимки с копированием при записи на уровне файловой системы. Снимок продакшен-среды объёмом 241 ГБ создаётся за доли секунды и изначально не занимает дополнительного места. По мере расхождения клона в процессе разработки новое место занимают только изменённые блоки. Десять клонов базы данных на 241 ГБ могут использовать менее 12 ГБ дополнительного хранилища.",
+          "description": "Секрет в том, что Rediacc копирует на <span class=\"sp-emphasis\">уровне хранилища</span>, а не на уровне файлов. Копия на 241 GB создаётся меньше чем за секунду и почти не занимает дополнительного места. Новое место позже занимают только изменённые части. Десять копий этой среды на 241 GB уместятся менее чем в 12 GB.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5359,17 +5359,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Тестируйте переключение без влияния на продакшн. Симуляция выполняется на клоне btrfs — ваши работающие сервисы никогда не останавливаются.",
+              "description": "Проверьте отказоустойчивость без риска для production. Тест работает на мгновенной копии. Сервисы не остановятся ни на секунду.",
               "icon": "shield",
               "title": "Безопасные симуляции"
             },
             {
-              "description": "Видьте точно, что происходит при восстановлении, шаг за шагом. Каждый сервис, каждый порт, каждая проверка — с точными отметками времени.",
+              "description": "Смотрите каждый шаг восстановления. Каждый сервис, каждый порт, каждая проверка, с точной меткой времени.",
               "icon": "eye",
               "title": "Полная видимость"
             },
             {
-              "description": "Убедитесь, что ваш план аварийного восстановления работает, до того как он понадобится. Тест переключения интегрируется в ваш CI-пайплайн — не прошёл? Вы получите уведомление до того, как это станет критичным.",
+              "description": "Убедитесь в работоспособности плана до того как он понадобится. Интегрируйте тест в CI-пайплайн. Ошибка обнаружится рано, пока есть время исправить.",
               "icon": "check-circle",
               "title": "Уверенность до хаоса"
             }
@@ -5385,7 +5385,7 @@
         },
         "calculator": {
           "annualLabel": "Годовой риск непроверенного DR",
-          "description": "План DR, который не тестировался на реальных данных — это документ, а не план.",
+          "description": "Подвиньте ползунки под ваш бизнес. Узнайте реальную цену надежды на то, что DR-план сработает.",
           "footnote": "Стоимость учений: серверы × 4 часа × $200/ч (люди + ресурсы). Риск неудачи: 75% для ни разу не протестированных, снижается на 15% за каждое учение (до минимума 5%). Дни без проверки: 365 − (учения × 30 дней действия). С Rediacc: учения не влияют на продакшен, выполняются за минуты и могут проводиться еженедельно.",
           "headerTitle": "Калькулятор риска непроверенного DR",
           "results": {
@@ -5521,7 +5521,7 @@
               "title": "Симуляция"
             },
             {
-              "description": "Наблюдайте за каждым шагом в реальном времени. RTO, RPO, работоспособность сервисов — всё измеряется и записывается. Интеграция с вашим стеком мониторинга.",
+              "description": "Смотрите каждый шаг в реальном времени. Измеряем RTO, RPO, здоровье каждого сервиса. Интегрируется с вашим мониторингом.",
               "icon": "eye",
               "title": "Наблюдение"
             },
@@ -5540,7 +5540,7 @@
           "title": "Тестирование фейловера - проверка DR-плана | Rediacc"
         },
         "problem": {
-          "description": "Вы написали план аварийного восстановления. Он лежит в Confluence. Последний раз его тестировали в прошлом году — если вообще тестировали. Когда случается реальный сбой, план не срабатывает, потому что инфраструктура изменилась, а план — нет.",
+          "description": "У каждой компании есть план восстановления. Почти никто его не тестирует. Большинство команд просто надеются, что он сработает. Потом сбой случается в три часа ночи, и план не срабатывает. Непроверенный план не является планом. Это пожелание.",
           "statCallouts": [
             {
               "number": "Only 13%",
@@ -5593,47 +5593,47 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “Только 13% организаций используют оркестрированные рабочие процессы в своих процессах аварийного восстановления.” “Только 58% серверов соответствовали целевому времени восстановления при последней крупной атаке.” “Только 32% организаций верят, что смогут восстановить 50 рабочих нагрузок за неделю.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Zerto test failovers spin up replica VMs on scratch disks in isolated bubble networks with zero production impact.",
+              "text": "Тесты отказа в Zerto запускают реплики ВМ на временных дисках в изолированных сетях без влияния на production.",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup runs automated recovery verification in an isolated Virtual Lab with zero production impact.",
+              "text": "Veeam SureBackup запускает автоматическую проверку восстановления в изолированной Virtual Lab без влияния на production.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Zerto Orchestrator automates scheduled failover tests with zero production impact and generates compliance reports.",
+              "text": "Zerto Orchestrator автоматизирует запланированные тесты отказа без влияния на production и создаёт отчёты для соответствия.",
               "url": "https://www.zerto.com/the-platform/automated-disaster-recovery-testing/"
             },
             {
-              "text": "Druva DR plan testing spins up cloned resources on-demand without touching production for RTO/RPO validation.",
+              "text": "Тестирование DR-плана в Druva создаёт клонированные ресурсы по требованию без касания production для проверки RTO/RPO.",
               "url": "https://help.druva.com/en/articles/8806108-execute-test-vs-execute-failure-of-a-dr-plan"
             },
             {
-              "text": "Veeam ONE Reporter generates detailed DR readiness and compliance reports for audit and governance.",
+              "text": "Veeam ONE Reporter создаёт подробные отчёты готовности DR и соответствия для аудита и управления.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Zerto generates Recovery Reports after every failover test with up to 90 days of historical data for SLA validation.",
+              "text": "Zerto создаёт отчёты восстановления после каждого теста отказа с историей до 90 дней для проверки SLA.",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/Recovery_Reports.htm"
             },
             {
-              "text": "Veeam SureBackup validates recoverability of cloud workloads including AWS and Azure VMs in isolated tests.",
+              "text": "Veeam SureBackup проверяет восстанавливаемость облачных рабочих нагрузок включая AWS и Azure ВМ в изолированных тестах.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto supports cross-cloud test failovers (on-prem to Azure, AWS to Azure) using scratch disks in isolated networks.",
+              "text": "Zerto поддерживает кросс-облачные тесты отказа (on-prem в Azure, AWS в Azure) используя временные диски в изолированных сетях.",
               "url": "https://help.zerto.com/bundle/Admin.Azure.HTML.10.0_U1/page/The_Test_Failover_Process.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication развёртывается локально на Windows Server, клиент полностью контролирует инфраструктуру.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto развёртывается локально с Zerto Virtual Manager и Virtual Replication Appliances на каждом хосте.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5652,10 +5652,10 @@
             },
             "improvement": "Еженедельные DR-учения · Уверенность 98%"
           },
-          "quote": "Мы проводили DR-учения раз в год — трёхдневное мероприятие с 12 инженерами. Половина сценариев проваливалась из-за дрейфа инфраструктуры. Теперь мы проводим учения каждую неделю на клонах продакшена. Занимает 20 минут. Наша уверенность в DR выросла с 40% до 98%."
+          "quote": "Мы запустили первый автоматический тест отказа во вторник утром. Он нашёл 3 критических пробела: устаревшую DNS-запись, отсутствующий SSL-сертификат на вторичном сервере и отставание репликации БД на 4 минуты. Каждый из них привёл бы к реальному сбою. Мы исправили всё за полдня. Теперь тестируем каждый месяц и спим спокойнее."
         },
         "techDiff": {
-          "description": "Традиционные DR-учения используют staging-среды, которые дрейфуют от продакшена в течение нескольких дней. Rediacc клонирует реальный продакшен — те же данные, те же конфигурации, те же сервисы — в изолированную среду. Тестируйте фейловер, ломайте что угодно, проверяйте восстановление. Продакшен не затронут.",
+          "description": "Старые DR-тесты требуют простоя продакшена, комнаты, полной инженеров, и недель планирования. Rediacc клонирует всю среду <span class=\"sp-emphasis\">за секунды</span>. Тест идёт на копии. Продакшен никогда не останавливается.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5667,12 +5667,12 @@
               "traditional": "3-5 дней на планирование, сбор команды, выполнение"
             },
             {
-              "rediacc": "Ежемесячно или через cron/CI — тестируйте так же часто, как развёртываете",
-              "traditional": "Тестируется раз в год (если вообще) — в лучшем случае раз в квартал"
+              "rediacc": "Ежемесячно или через cron/CI, как часто развёртываете",
+              "traditional": "Раз в год (если вообще), в лучшем случае раз в квартал"
             },
             {
-              "rediacc": "Автоматические проверки здоровья — пройдено/не пройдено с точными RTO/RPO",
-              "traditional": "Ручная проверка — субъективные оценки «выглядит нормально»"
+              "rediacc": "Автоматические проверки: пройдено или не пройдено с точными RTO/RPO",
+              "traditional": "Ручные проверки: кто-то решает, что «выглядит нормально»"
             },
             {
               "rediacc": "Форкните весь кластер за 46 секунд и проведите учения на копии",
@@ -5694,7 +5694,7 @@
         "calculator": {
           "annualLabel": "Годовая подверженность",
           "description": "Переместите ползунки под вашу инфраструктуру. Цифры растут быстро.",
-          "footnote": "Выручка под угрозой на основе средней стоимости простоя $9 000/мин (Splunk/Oxford Economics 2024). Труд на восстановление: 6 инженеров × часы восстановления × $200/час. Репутационные расходы — процент от прямых потерь (отраслевая оценка). С Rediacc: неизменяемые снимки восстанавливаются менее чем за 5 минут — простой стремится к нулю.",
+          "footnote": "Доход в опасности рассчитан на основе среднего ущерба $9 000/мин (Splunk/Oxford Economics 2024). Затраты на восстановление: 6 инженеров × часы восстановления × $200/час средняя ставка. Репутационный ущерб, процент от прямых потерь (отраслевая оценка). С Rediacc: неизменяемые снимки восстанавливаются менее чем за 5 минут, поэтому простой стремится к нулю.",
           "headerTitle": "Рассчитайте вашу подверженность программам-вымогателям",
           "results": {
             "downtime": "Простой на инцидент",
@@ -5720,7 +5720,7 @@
         },
         "comparison": {
           "capabilityLabel": "Возможность",
-          "description": "Традиционные инструменты резервного копирования обещают неизменяемость через программные блокировки. Rediacc обеспечивает её на уровне ядра — куда программы-вымогатели не могут добраться.",
+          "description": "Обычные инструменты обещают защиту через программные блокировки, но вымогатели их взламывают. Rediacc встраивает защиту прямо в хранилище, туда, куда вымогатели не могут добраться.",
           "features": [
             {
               "name": "Неизменяемые бэкапы",
@@ -5750,7 +5750,7 @@
             {
               "name": "Время восстановления",
               "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "values": ["Минуты", "Минуты", "Hours", "Hours", "Секунды", "<5 min"]
             },
             {
               "name": "Собственное размещение / без зависимости от облака",
@@ -5769,7 +5769,7 @@
           "cloneVisual": {
             "arrow": {
               "icon": "lock-arrow",
-              "label": "Seal",
+              "label": "Запечатать",
               "time": ""
             },
             "clone": {
@@ -5831,7 +5831,7 @@
             {
               "description": "Неизменяемость обеспечивается на уровне файловой системы. Никакие изменения невозможны. Ни от программ-вымогателей. Ни от root.",
               "icon": "lock",
-              "title": "Lock"
+              "title": "Запечатывание"
             },
             {
               "description": "Когда случится катастрофа, ваш чистый бэкап будет ждать. Полная среда восстанавливается менее чем за 5 минут.",
@@ -5848,7 +5848,7 @@
           "title": "Неизменяемые бэкапы - защита от вымогателей | Rediacc"
         },
         "problem": {
-          "description": "Современные атакующие находят ваши бэкапы раньше, чем шифруют файлы. Если бэкапы можно изменить — их изменят. Традиционные инструменты резервного копирования оставляют дверь открытой — и у 94% жертв программ-вымогателей бэкапы были атакованы во время нападения. Вам нужны бэкапы, которые запечатываются в момент создания.",
+          "description": "Представьте: 3 часа ночи, вымогатели только что ударили. Бэкапы тоже зашифрованы. Вот почему: атакующие в первую очередь охотятся за бэкапами. На деле у 94% жертв вымогателей бэкапы стали целью атаки (Sophos 2024). Если бэкап можно изменить, его изменят. Бэкапы должны запечатываться в ту же секунду, как создаются.",
           "statCallouts": [
             {
               "number": "94%",
@@ -5874,15 +5874,15 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” март 2024. “94% организаций, атакованных вымогателями за прошлый год, подтвердили, что киберпреступники пытались скомпрометировать их архивы.”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” июль 2024. “Средняя мировая стоимость утечки данных достигла $4,88 млн в 2024 году: утечки становятся разрушительнее и сильнее нагружают команды кибербезопасности.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” July 2022. “In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.”",
+              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” июль 2022. “Во втором квартале среднее время простоя составило 24 дня, на 8% меньше, чем в первом квартале 2022.”",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
@@ -5890,75 +5890,75 @@
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Rubrik Atlas filesystem stores all backup data in proprietary append-only immutable format that cannot be modified or deleted.",
+              "text": "Файловая система Rubrik Atlas хранит все данные архива в собственном формате, доступном только для добавления, который невозможно изменить или удалить.",
               "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Commvault supports WORM storage lock and compliance lock on disk libraries for immutable backups.",
+              "text": "Commvault поддерживает блокировки WORM и compliance lock на дисковых библиотеках для неизменяемых архивов.",
               "url": "https://documentation.commvault.com/2024e/software/configuring_worm_storage_mode_on_disk_libraries.html"
             },
             {
-              "text": "Druva's SaaS architecture stores backups in an air-gapped, immutable cloud decoupled from the customer's environment.",
+              "text": "Архитектура Druva SaaS хранит резервные копии в изолированном (air-gapped) неизменяемом облаке, отделённом от окружения клиента.",
               "url": "https://www.druva.com/resources/solution-brief/solution-brief-druva-immutability"
             },
             {
-              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "text": "Veeam SureBackup автоматически проверяет восстанавливаемость архивов, загружая ВМ в отделённом Virtual Lab.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Veeam Instant VM Recovery mounts backups directly on ESXi/Hyper-V hosts for near-instant VM recovery and testing.",
+              "text": "Veeam Instant VM Recovery монтирует архивы прямо на хосты ESXi/Hyper-V для практически моментального восстановления и тестирования ВМ.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Live Mount instantly mounts backup snapshots as live VMs or file shares for testing and recovery.",
+              "text": "Rubrik Live Mount мгновенно монтирует снимки архивов как работающие ВМ или файловые ресурсы для тестирования и восстановления.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery boots VMs directly from backup via NFS export for instant testing and recovery.",
+              "text": "Commvault Live Recovery загружает ВМ напрямую из архива через NFS для моментального тестирования и восстановления.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore boots VMware VMs directly from backup cloud in under 5 minutes with live migration.",
+              "text": "Druva Instant Restore загружает ВМ VMware прямо из облачного архива менее чем за 5 минут с live migration.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Непрерывная репликация Zerto с журнальным восстановлением обеспечивает почти нулевой RPO и восстановление за минуты.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery обеспечивает восстановление менее чем за 5 минут благодаря загрузке ВМ прямо из файлов архива.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery позволяет восстановиться менее чем за 5 минут путём монтирования ВМ прямо из неизменяемых снимков.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery обеспечивает RTO менее 5 минут благодаря монтированию ВМ из архива с фоновым Storage vMotion.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore минимизирует простой через восстановление ВМ менее чем за 5 минут прямо из облачного хранилища.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Постоянная репликация Zerto с RPO менее 10 секунд и RTO в пределах минут обеспечивает почти моментальное восстановление всей среды.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication развёртывается локально на Windows Server с полным контролем клиента над инфраструктурой.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik развёртывается как локальные устройства (серия r6000) с интегрированными вычислениями, хранилищем и программным обеспечением.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault поддерживает полностью локальные развёртывания на собственной инфраструктуре (self-hosted) с компонентами CommServe, MediaAgent и Access Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto развёртывается локально с Zerto Virtual Manager и Virtual Replication Appliances на каждом хосте.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5977,22 +5977,22 @@
             },
             "improvement": "Восстановление в 4 800 раз быстрее"
           },
-          "quote": "Нас атаковали программы-вымогатели в 3:17 утра в субботу. Атакующие зашифровали 14 серверов, включая наш репозиторий бэкапов — так им казалось. Неизменяемые снимки Rediacc остались нетронутыми. К 3:24 все 14 серверов были восстановлены из запечатанных бэкапов. Потеря данных: ноль байт. Выплаченный выкуп: ноль долларов."
+          "quote": "Нас атаковали вымогатели в 3:17 утра в субботу. Они зашифровали 14 серверов, включая наш репозиторий бэкапов, или так им казалось. Неизменяемые снимки Rediacc остались нетронутыми. К 3:24 все 14 серверов были восстановлены из запечатанных бэкапов. Потеря данных: ноль байт. Выплачено выкупа: ноль долларов."
         },
         "techDiff": {
-          "description": "Rediacc использует btrfs-снимки «только для чтения» на уровне файловой системы. После запечатывания снимка ядро само предотвращает модификацию — не программные блокировки, которые вредоносное ПО может обойти, а неизменяемость на уровне файловой системы. Даже с root-доступом программы-вымогатели не могут зашифровать, изменить или удалить запечатанный btrfs-снимок.",
+          "description": "Rediacc делает копию только для чтения, замороженный снимок файлов на один момент времени. После запечатывания копии <span class=\"sp-emphasis\">сам слой хранения блокирует любые изменения</span>. Это не программная блокировка, которую может обойти вредоносное ПО. Даже с паролем главного администратора шифровальщик не сможет зашифровать, изменить или удалить запечатанную копию.",
           "rediaccLabel": "Rediacc (btrfs immutable)",
           "rows": [
             {
-              "rediacc": "Снимки только для чтения на уровне ядра — невозможно изменить даже с root",
-              "traditional": "Программная «неизменяемость» — обходится с правами admin/root"
+              "rediacc": "Копии только для чтения под защитой слоя хранилища, безопасны даже при наличии главного пароля администратора",
+              "traditional": "Программные блокировки, которые администратор может отключить паролем"
             },
             {
-              "rediacc": "Снимки существуют на уровне файловой системы — невидимы для вредоносного ПО пользовательского пространства",
-              "traditional": "Файлы бэкапов хранятся как обычные файлы на диске — видимы и шифруемы"
+              "rediacc": "Копии лежат на уровне хранилища, скрыты от обычного вредоносного ПО",
+              "traditional": "Архивы лежат обычными файлами на диске, вредоносы их легко найдут и зашифруют"
             },
             {
-              "rediacc": "Автоматический ежедневный клон + загрузка + проверка работоспособности — реальное восстановление и верификация",
+              "rediacc": "Каждый день мы копируем, загружаем и проверяем работоспособность, так что проверка настоящая",
               "traditional": "Проверка = только сообщение «бэкап завершён»"
             },
             {
@@ -6272,17 +6272,17 @@
         "benefits": {
           "items": [
             {
-              "description": "Серверы, конфиги, базы данных, сетевые настройки — весь стек восстановлен как единое целое. Без пересборки, без перенастройки, без забытых зависимостей.",
+              "description": "Серверы, конфиги, БД, сеть. Весь стек возвращается как единое целое. Без пересборки. Без перенастройки. Ничто не забыто. Запускаете Kubernetes? Весь кластер так же форкается и переносится, приложения и данные вместе.",
               "icon": "zap",
               "title": "Полные среды, а не файлы"
             },
             {
-              "description": "Откатитесь к любому снимку на временной шкале. Вчера, на прошлой неделе, три месяца назад. Выберите именно нужное состояние — без гаданий, какие файлы изменились.",
+              "description": "Откатитесь к любой сохранённой копии из истории. Вчера, на прошлой неделе, три месяца назад. Выберите нужное состояние. Без гаданий, какие файлы изменились.",
               "icon": "clock",
               "title": "Любая точка во времени"
             },
             {
-              "description": "Каждое восстановление автоматически проверяется — HTTP-эндпоинты, подключения к БД, работоспособность сервисов. Не «файлы восстановлены» — реально работает и отвечает.",
+              "description": "Мы проверяем каждое восстановление: HTTP-эндпоинты, подключения к БД, здоровье сервисов. Не просто “файлы восстановлены”. Всё реально работает и отвечает.",
               "icon": "check-circle",
               "title": "Верифицированное восстановление"
             }
@@ -6299,7 +6299,7 @@
         "calculator": {
           "annualLabel": "Годовая стоимость простоя",
           "description": "Переместите ползунки под вашу среду. Посмотрите реальную стоимость файлового восстановления.",
-          "footnote": "Файловое восстановление: 2 ч/сервис на развёртывание + перенастройку. Потерянная выручка: часы простоя × почасовая выручка. Труд: 2 инженера × часы восстановления × $200/ч. Потеря клиентов: 20% потерянной выручки из-за нарушений SLA. Rediacc: btrfs-клон восстанавливает полную среду менее чем за 5 минут — одна команда, без пересборки.",
+          "footnote": "Файловое восстановление: 2 часа на сервис (развёртывание + настройка). Потеря выручки: часы простоя × почасовая выручка. Персонал: 2 инженера × часы восстановления × $200/ч. Отток: 20% потерянной выручки из-за нарушения SLA. Rediacc: btrfs-клон восстанавливает полную среду менее чем за 5 минут, одна команда, без пересборки.",
           "headerTitle": "Рассчитайте вашу подверженность простоям",
           "results": {
             "churn": "Потеря клиентов",
@@ -6369,7 +6369,7 @@
         },
         "hero": {
           "ctaLabel": "Восстановить за минуты",
-          "subtitle": "Не только файлы. Целые среды — серверы, конфигурации, базы данных — восстановлены и работают за минуты.",
+          "subtitle": "Не только файлы. Целые системы, серверы, конфиги, БД. Восстановлены и работают <span class=\"sp-emphasis\">за минуты</span>.",
           "title": "Полное восстановление среды за минуты"
         },
         "howItWorks": {
@@ -6441,7 +6441,7 @@
               "title": "Восстановление"
             },
             {
-              "description": "Автоматические проверки работоспособности подтверждают, что каждый сервис работает. Не подсчёт файлов — реальные проверки HTTP, SQL и эндпоинтов здоровья.",
+              "description": "Автоматические проверки убедятся, что каждый сервис работает. Не подсчёт файлов, реальные проверки HTTP, SQL и health-чеков.",
               "icon": "check-circle",
               "title": "Проверка"
             }
@@ -6450,12 +6450,12 @@
         },
         "label": "Мгновенное восстановление",
         "meta": {
-          "description": "Не только файлы. Целые среды — серверы, конфигурации, базы данных — восстановлены и работают за минуты.",
+          "description": "Не только файлы. Полные среды, серверы, конфиги, БД, восстановлены и работают за минуты.",
           "keywords": "мгновенное восстановление, полное восстановление среды, btrfs clone, аварийное восстановление, восстановление бэкапа, восстановление на момент времени, проверки здоровья, восстановление одной командой",
           "title": "Мгновенное восстановление среды за минуты | Rediacc"
         },
         "problem": {
-          "description": "Восстановление отдельных файлов занимает часы. Пересоздание целых сред — дни. Когда ваш продакшен-сервер падает, вам нужны не просто файлы — вам нужно всё. Сервер, конфигурация, база данных, сетевые настройки. Всё вместе.",
+          "description": "Восстановление отдельных файлов занимает часы. Пересоздание целой среды, дни. Когда падает продакшн-сервер, одних файлов недостаточно. Нужно всё: сервер, конфигурация, база данных, сетевые параметры. Всё, работающее снова.",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6516,7 +6516,7 @@
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “Только 13% организаций используют оркестрированные рабочие процессы в рамках своих процессов аварийного восстановления.”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -6582,23 +6582,23 @@
           "quote": "Наш основной сервер баз данных вышел из строя в 2:14 ночи в субботу — повреждённый контроллер диска. С нашим старым решением это был бы целый выходной на развёртывание, восстановление и перенастройку 11 сервисов. Вместо этого я выполнил одну команду с телефона. К 2:18 всё работало — MariaDB, API, Nginx, Redis, всё. Те же конфигурации, то же состояние, те же данные. Дежурный инженер вернулся спать."
         },
         "techDiff": {
-          "description": "Традиционное восстановление означает развёртывание нового сервера, установку пакетов, поочерёдное восстановление файлов, перенастройку сервисов и надежду, что ничего не упущено. Rediacc использует btrfs-снимки для клонирования всей среды — тома, конфигурации, контейнеры, сетевые настройки — в одной атомарной операции.",
+          "description": "Старый путь: развернуть новый сервер, установить пакеты, восстановить файлы по одному, заново настроить сервисы. А потом надеяться, что ничего не забыли. Rediacc работает иначе. Он копирует всю среду целиком. Диски, конфигурации, контейнеры, сеть, <span class=\"sp-emphasis\">всё за один приём</span>.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "Атомарный клон btrfs — тома, конфиги, контейнеры, сеть в одной операции",
-              "traditional": "Восстановление файлов по отдельности — конфиги, права и состояние пропускаются"
+              "rediacc": "Одна мгновенная копия: тома, конфиги, контейнеры, сеть, всё вместе",
+              "traditional": "Восстанавливают файлы по одному, упускают конфиги, права доступа и состояние"
             },
             {
-              "rediacc": "Тот же сервер, то же монтирование, тот же демон Docker — всё восстановлено на месте",
+              "rediacc": "Тот же сервер, то же монтирование, тот же Docker, всё восстановлено на месте",
               "traditional": "Выделить новый сервер, установить пакеты, настроить вручную"
             },
             {
-              "rediacc": "Менее 5 минут — все сервисы запускаются вместе с автоматическими проверками",
+              "rediacc": "Менее 5 минут, все сервисы запускаются вместе с проверками здоровья",
               "traditional": "Часы ручной работы — каждый сервис пересобирается и тестируется отдельно"
             },
             {
-              "rediacc": "Снимок точки во времени — точное состояние на момент бэкапа, без дрейфа",
+              "rediacc": "Сохранённая копия на один точный момент. Без дрейфа.",
               "traditional": "Дрейф конфигурации между бэкапом и текущим состоянием"
             }
           ],
@@ -7028,7 +7028,7 @@
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP Цены 2024",
+              "source": "AWS/Azure/GCP Pricing 2024",
               "text": "комиссии за выгрузку данных — специально, чтобы уход был дорогим"
             }
           ],
@@ -7832,7 +7832,7 @@
         },
         "comparison": {
           "capabilityLabel": "Возможность",
-          "description": "Традиционные инструменты бэкапа восстанавливают файлы. Rediacc восстанавливает целые среды — контейнеры, конфигурации, базы данных — за минуты.",
+          "description": "Традиционные инструменты бэкапа восстанавливают файлы. Rediacc восстанавливает целую систему с контейнерами, конфигурациями и БД, за минуты.",
           "features": [
             {
               "name": "Восстановление полной среды",
@@ -7953,10 +7953,10 @@
         "meta": {
           "description": "Когда программы-вымогатели атакуют, каждая минута стоит денег. Rediacc возвращает вас в строй до того, как ущерб распространится.",
           "keywords": "быстрое восстановление, восстановление после программ-вымогателей, аварийное восстановление, btrfs restore, быстрое восстановление",
-          "title": "Быстрое восстановление — Rediacc"
+          "title": "Быстрое восстановление после сбоев | Rediacc"
         },
         "problem": {
-          "description": "Большинство команд тратят дни на восстановление после программ-вымогателей. Тем временем клиенты не могут связаться с вами. Выручка останавливается. Доверие рушится. Атака длится час. Восстановление — неделю. Вот где реальный ущерб — и среднее восстановление после программ-вымогателей занимает 24 дня.",
+          "description": "2 часа ночи. Вымогатели только что заблокировали серверы. Теперь последуют дни пересборки с нуля. Клиенты не могут дозвониться. Выручка останавливается. Доверие рушится. Атака заняла час. Уборка займёт неделю. Это и есть реальный ущерб. Среднее восстановление после вымогателей занимает 24 дня.",
           "statCallouts": [
             {
               "number": "24 days",
@@ -7982,75 +7982,75 @@
         "references": {
           "items": [
             {
-              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
+              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" июль 2022. \"В Q2 среднее время простоя составило 24 дня, что на 8% меньше, чем в Q1 2022.\"",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
-              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" June 2024. \"Each minute of downtime costs $9,000 or $540,000 per hour.\"",
+              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" июнь 2024. \"Каждая минута простоя обходится в $9 000, или $540 000 в час.\"",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"80% of organizations that paid were hit by ransomware a second time, with 68% saying the second attack came less than a month later and threat actors demanded a higher ransom amount.\"",
+              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"80% организаций, заплативших выкуп, подверглись повторной атаке вымогателей, причём 68% сообщили, что вторая атака произошла менее чем через месяц, а злоумышленники потребовали более высокий выкуп.\"",
               "url": "https://www.cybereason.com/blog/report-ransomware-attacks-and-the-true-cost-to-business-2022"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Непрерывная репликация Zerto с восстановлением на основе журнала обеспечивает почти нулевой RPO и RTO на уровне минут для мгновенного восстановления.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery обеспечивает RTO менее 5 минут, загружая виртуальные машины прямо из файлов резервной копии.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery обеспечивает восстановление менее чем за 5 минут путём монтирования ВМ непосредственно из неизменяемых снимков.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery достигает RTO менее 5 минут путём монтирования ВМ из резервной копии с фоновым Storage vMotion.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore минимизирует простой благодаря восстановлению ВМ менее чем за 5 минут прямо из облачного хранилища резервных копий.",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Всегда активная репликация Zerto с RPO менее 10 секунд и RTO на уровне минут обеспечивает практически мгновенное восстановление полной среды.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "text": "Veeam поддерживает точки восстановления на основе снимков для каждой ВМ с настраиваемым графиком резервного копирования и непрерывной защитой данных.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
             },
             {
-              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "text": "Rubrik предоставляет управляемые по SLA политики снимков с настраиваемой частотой для восстановления на момент времени.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "text": "Commvault поддерживает восстановление на момент времени, используя снимки для ВМ, файловых серверов, баз данных и приложений.",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "text": "Druva поддерживает горячие, тёплые и холодные точки восстановления, обеспечивающие восстановление на момент времени для ВМ, баз данных и приложений SaaS.",
               "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
             },
             {
-              "text": "Zerto journal stores every block-level write creating crash-consistent checkpoints every 5-10 seconds for granular recovery.",
+              "text": "Журнал Zerto сохраняет каждую запись на уровне блоков, создавая аварийно-согласованные контрольные точки каждые 5–10 секунд для детального восстановления.",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/journal-based-recovery/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication развёртывается локально на Windows Server с полным управлением инфраструктурой со стороны клиента.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik развёртывается в виде локальных устройств (серия r6000) с интегрированными вычислениями, хранилищем и программным обеспечением.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault поддерживает полностью локальные развёртывания на собственной инфраструктуре (self-hosted) с компонентами CommServe, MediaAgent и Access Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto развёртывается локально с Zerto Virtual Manager и Virtual Replication Appliances на каждом хосте.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8069,10 +8069,10 @@
             },
             "improvement": "Восстановление в 1 080 раз быстрее"
           },
-          "quote": "Мы сократили план восстановления с 3 дней до менее 4 минут. Во время реальной атаки программ-вымогателей в 2 часа ночи наш дежурный инженер выполнил одну команду, и все 8 продакшен-контейнеров были восстановлены к 2:04. Оценка предыдущего вендора — 72 часа. Мы справились за 240 секунд."
+          "quote": "Мы сократили план восстановления с 3 дней до менее чем 4 минут. Во время реальной атаки программ-вымогателей в 2 часа ночи наш дежурный инженер выполнил одну команду, и все 8 контейнеров продакшена были восстановлены к 2:04. Предыдущий вендор обещал 72 часа. Мы справились за 240 секунд."
         },
         "techDiff": {
-          "description": "Традиционное восстановление пересобирает с нуля — переустановка ОС, восстановление файлов, перенастройка сервисов. Rediacc восстанавливает из btrfs-снимков: файловая система просто переключается на сохранённое состояние. Без переустановки, перенастройки, передачи данных. Снимок уже на диске — он просто становится активным.",
+          "description": "Старое восстановление пересобирает всё с нуля: переустановить систему, восстановить файлы, заново настроить сервисы. Rediacc работает иначе. Чистая копия <span class=\"sp-emphasis\">уже лежит на диске</span>. Мы просто включаем её. Без переустановки, без настройки, без медленной передачи данных.",
           "traditionalLabel": "Традиционная пересборка",
           "rediaccLabel": "Rediacc (мгновенные копии btrfs)",
           "rows": [
@@ -8107,7 +8107,7 @@
         "calculator": {
           "annualLabel": "Годовая стоимость соответствия",
           "description": "Переместите ползунки под вашу среду. Посмотрите реальную стоимость ручного управления хранением.",
-          "footnote": "Часы подготовки: аудиты × часов на аудит. Пробелы: 1 пробел на 5 ТБ ручного управления (консервативная оценка). Штраф: $50K за пробел (медианный штраф GDPR для среднего бизнеса). Труд: часы подготовки × $200/ч (старший инженер). Средний ущерб от утечки данных — $4,88М (IBM 2024). Rediacc генерирует готовые к аудиту отчёты мгновенно — 2 часа на аудит, автоматическое применение политик.",
+          "footnote": "Часы подготовки: аудиты × часов на аудит. Пробелы: 1 пробел на каждые 5 ТБ данных, управляемых вручную (консервативная оценка). Штраф: $50K за пробел (медианный штраф GDPR для среднего бизнеса). Труд: часы подготовки × $200/ч (зарплата старшего инженера). Средняя утечка данных обходится в $4,88 млн (IBM 2024). Rediacc генерирует готовые к аудиту отчёты за секунды: 2 часа на аудит, автоматическое применение политик.",
           "headerTitle": "Рассчитайте вашу подверженность рискам соответствия",
           "results": {
             "gaps": "Пробелы в соответствии (оценка)",
@@ -8175,7 +8175,7 @@
         },
         "hero": {
           "ctaLabel": "Настроить сроки хранения",
-          "subtitle": "Настраиваемые политики хранения, соответствующие требованиям. HIPAA, SOC2, GDPR — покрыты по умолчанию.",
+          "subtitle": "Установите сроки хранения бэкапов. Rediacc хранит их установленное время, потом удаляет. Правила HIPAA, SOC2 и GDPR <span class=\"sp-emphasis\">поддерживаются с первого дня</span>.",
           "title": "Храните данные столько, сколько требует закон"
         },
         "howItWorks": {
@@ -8191,19 +8191,19 @@
               "footerRight": "Готов к аудиту",
               "items": [
                 {
-                  "detail": "2,555 backups",
+                  "detail": "2 555 бэкапов",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "1,825 backups",
+                  "detail": "1 825 бэкапов",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "1,095 backups",
+                  "detail": "1 095 бэкапов",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "365 backups",
+                  "detail": "365 бэкапов",
                   "name": "Internal"
                 }
               ],
@@ -8216,19 +8216,19 @@
               "footerRight": "Автоочистка: ВКЛ",
               "items": [
                 {
-                  "detail": "7 years",
+                  "detail": "7 лет",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "5 years",
+                  "detail": "5 лет",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "3 years",
+                  "detail": "3 года",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "1 year",
+                  "detail": "1 год",
                   "name": "Internal"
                 }
               ],
@@ -8257,12 +8257,12 @@
         },
         "label": "Соответствие требованиям хранения",
         "meta": {
-          "description": "Настраиваемые политики хранения, соответствующие требованиям. HIPAA, SOC2, GDPR — покрыты по умолчанию.",
+          "description": "Гибкие политики хранения для соответствия требованиям. HIPAA, SOC2, GDPR: поддерживаются автоматически.",
           "keywords": "соответствие требованиям хранения, хранение данных, HIPAA, SOC2, GDPR, хранение бэкапов, аудит, автоматизация соответствия",
           "title": "Соответствие хранения - легальное хранение | Rediacc"
         },
         "problem": {
-          "description": "Регуляторы требуют хранить данные определённые сроки. Промахнулись — штрафы, аудиты и юридические проблемы. Большинство инструментов резервного копирования относятся к хранению как к второстепенной задаче. В итоге вы управляете этим вручную через таблицы и надеетесь на лучшее.",
+          "description": "Закон требует хранить данные годами. Упустите срок, и последуют штрафы, проверки или судебные иски. Большинство инструментов резервного копирования считают это второстепенным, поэтому сроки хранения отслеживают вручную в таблице. А потом звонит аудитор.",
           "statCallouts": [
             {
               "number": "$4.88M",
@@ -8288,91 +8288,91 @@
         "references": {
           "items": [
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” июль 2024. “Средняя мировая стоимость утечки данных составила $4,88 млн в 2024 г.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024. “Civil money penalties up to $2,134,831 per violation category per calendar year.”",
+              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024. “Штрафы могут достигать $2 134 831 за категорию нарушения за календарный год.”",
               "url": "https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/index.html"
             },
             {
-              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “An aggregate total of EUR 1.2 billion in fines was issued across Europe in 2024.”",
+              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “В 2024 году в Европе было выписано штрафов на сумму EUR 1,2 млрд.”",
               "url": "https://cms.law/en/int/publication/gdpr-enforcement-tracker-report/numbers-and-figures"
             },
             {
-              "text": "Veeam provides configurable GFS (Grandfather-Father-Son) retention policies for daily, weekly, monthly, and yearly backups.",
+              "text": "Veeam предоставляет настраиваемые политики хранения GFS (Grandfather-Father-Son) для ежедневных, еженедельных, ежемесячных и годовых бэкапов.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/gfs_retention_policy.html"
             },
             {
-              "text": "Rubrik SLA Domains provide automated retention with configurable local and archive retention periods.",
+              "text": "Rubrik SLA Domains обеспечивают автоматическое хранение с настраиваемыми сроками локального и архивного хранения.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault provides configurable retention policies with basic, extended (GFS), and infinite retention options.",
+              "text": "Commvault предоставляет настраиваемые политики хранения с опциями базового, расширенного (GFS) и бесконечного хранения.",
               "url": "https://documentation.commvault.com/v11/commcell-console/data_retention.html"
             },
             {
-              "text": "Druva supports GFS retention policies with daily/weekly/monthly/yearly schedules plus Long-Term Retention to cold storage.",
+              "text": "Druva поддерживает политики хранения GFS с расписанием на день/неделю/месяц/год и долгосрочное хранение на холодном хранилище.",
               "url": "https://docs.druva.com/CloudRanger/013_Manage_Backup_Policies/About_Backup_Policies_and_Backup_Types/About_Retention_for_Backup_Policies"
             },
             {
-              "text": "Veeam Scale-out Backup Repository automates data lifecycle with performance, capacity, and archive tiers.",
+              "text": "Veeam Scale-out Backup Repository автоматизирует управление жизненным циклом данных с уровнями производительности, ёмкости и архива.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/backup_repository_sobr.html"
             },
             {
-              "text": "Rubrik SLA policies automate data lifecycle management with tiering from local to archive storage.",
+              "text": "Политики Rubrik SLA автоматизируют управление жизненным циклом данных с многоуровневым хранением от локального до архивного хранилища.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault Data Aging automates data lifecycle by pruning expired backup data based on retention settings.",
+              "text": "Commvault Data Aging автоматизирует управление жизненным циклом, удаляя устаревшие данные бэкапов в соответствии с политиками хранения.",
               "url": "https://documentation.commvault.com/v11/commcell-console/media_management_configuration_data_aging.html"
             },
             {
-              "text": "Druva automatically tiers data between S3, Glacier, and Deep Archive using ML-driven storage tiering.",
+              "text": "Druva автоматически распределяет данные между S3, Glacier и Deep Archive с использованием ML-управляемого распределения хранилища.",
               "url": "https://help.druva.com/en/articles/8651731-about-long-term-retention"
             },
             {
-              "text": "Veeam ONE provides built-in reporting and monitoring dashboards with compliance-ready audit reports.",
+              "text": "Veeam ONE предоставляет встроенные панели отчётности и мониторинга с готовыми к аудиту отчётами о соответствии.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Rubrik provides compliance and activity reports through its Envision reporting engine for governance needs.",
+              "text": "Rubrik предоставляет отчёты о соответствии и активности через механизм отчётности Envision для нужд управления.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault Audit Trail Report displays all user operations across Critical, High, Medium, and Low severity levels.",
+              "text": "Commvault Audit Trail Report отображает все операции пользователей по уровням серьёзности: Critical, High, Medium и Low.",
               "url": "https://documentation.commvault.com/saas/audit_trail_report_01.html"
             },
             {
-              "text": "Druva maintains a three-year audit trail of every admin and user activity with downloadable HTML/CSV reports.",
+              "text": "Druva ведёт трёхлетний журнал всех операций администраторов и пользователей с возможностью скачивания отчётов в формате HTML/CSV.",
               "url": "https://docs.druva.com/Cyber_Resilience/Audit_Trails/About_Audit_Trails"
             },
             {
-              "text": "Veeam Compliance Analyzer validates backup infrastructure against security and compliance best practices.",
+              "text": "Veeam Compliance Analyzer проверяет инфраструктуру резервного копирования на соответствие лучшим практикам безопасности и соответствия.",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/compliance_analyzer.html"
             },
             {
-              "text": "Rubrik Security Cloud enables compliance monitoring with SOC2, HIPAA, and PCI-DSS reporting templates.",
+              "text": "Rubrik Security Cloud обеспечивает мониторинг соответствия с шаблонами отчётности SOC2, HIPAA и PCI-DSS.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault holds ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High, and IRAP certifications.",
+              "text": "Commvault имеет сертификаты ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High и IRAP.",
               "url": "https://documentation.commvault.com/saas/security_and_compliance.html"
             },
             {
-              "text": "Druva holds SOC 2 Type II, HIPAA, FedRAMP ATO, and FIPS 140-2 certifications with GDPR/CCPA monitoring templates.",
+              "text": "Druva имеет сертификаты SOC 2 Type II, HIPAA, FedRAMP ATO и FIPS 140-2 с шаблонами мониторинга GDPR/CCPA.",
               "url": "https://www.druva.com/use-cases/compliance"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication развёртывается локально на Windows Server с полным контролем клиента над инфраструктурой.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik развёртывается как локальные устройства (серия r6000) с интегрированными вычислениями, хранилищем и ПО.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault поддерживает полностью локальные развёртывания на собственной инфраструктуре (self-hosted) с компонентами CommServe, MediaAgent и Access Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ]
@@ -8394,16 +8394,16 @@
           "quote": "Наш SOC2-аудитор запросил подтверждение хранения бэкапов за 3 года. Раньше это означало 2 недели копания в логах и сопоставления с таблицами. С Rediacc я выполнил rdc retention report --framework soc2 и отдал полный отчёт за 4 минуты. Аудитор сказал, что это самые чистые доказательства, которые он видел."
         },
         "techDiff": {
-          "description": "Традиционное управление хранением — это отслеживание дат бэкапов в таблицах, ручные скрипты очистки и надежда, что ничего не упущено до прихода аудитора. Rediacc использует управление жизненным циклом btrfs-снимков с автоматическим применением политик — бэкапы хранятся, верифицируются и очищаются без участия человека.",
-          "rediaccLabel": "Rediacc Retention",
+          "description": "Комплаенс на таблицах означает ручной учёт дат бэкапов, запуск скриптов очистки и надежду, что ничего не пропущено до прихода аудитора. Rediacc хранит, проверяет и очищает бэкапы <span class=\"sp-emphasis\">сам</span>. Никаких ручных шагов.",
+          "rediaccLabel": "Хранение в Rediacc",
           "rows": [
             {
-              "rediacc": "Автоматическое применение политик — всегда актуально",
-              "traditional": "Отслеживание в таблицах — быстро устаревает"
+              "rediacc": "Автоматическое применение политик, всегда актуально",
+              "traditional": "Отслеживание в таблицах, быстро устаревает"
             },
             {
-              "rediacc": "Автоматическое управление жизненным циклом — ноль ручных шагов",
-              "traditional": "Ручные скрипты очистки — риск человеческой ошибки"
+              "rediacc": "Автоматическая очистка, ноль ручных шагов",
+              "traditional": "Ручные скрипты очистки, риск ошибок"
             },
             {
               "rediacc": "Мгновенные отчёты, готовые к аудиту, через rdc retention report",
@@ -8529,7 +8529,7 @@
             },
             "clone": {
               "containerCount": "8 контейнеров",
-              "patchInfo": "▲ apt upgrade: 47 packages · kernel 6.8.0-45",
+              "patchInfo": "▲ apt upgrade: 47 пакетов · kernel 6.8.0-45",
               "services": [
                 {
                   "name": "nginx",
@@ -8603,7 +8603,7 @@
           "title": "Безопасное тестирование ОС - без риска | Rediacc"
         },
         "problem": {
-          "description": "Вам нужно обновить систему. Но каждое обновление — это ставка. Сломает ли оно что-то? Вы не узнаете, пока оно не будет применено. Большинство команд либо пропускают патчи (рискованно), либо тестируют в средах, не совпадающих с продакшеном (бесполезно). Ни то, ни другое не подходит.",
+          "description": "Патчи обязательны. Но каждое обновление похоже на лотерею. Сломается ли что-нибудь? Никто не знает, пока оно не пошло в работу. Поэтому обновление откладывают до тихих выходных, потом всё падает в 2 часа ночи, и восстановление идёт всю ночь. Большинство команд пропускают патчи или тестируют на серверах, которые не совпадают с настоящими. Ни то ни другое не работает.",
           "statCallouts": [
             {
               "number": "3x",
@@ -8626,7 +8626,7 @@
           ],
           "timeline": {
             "newLabel": "С Rediacc",
-            "newSteps": ["Clone", "60s", "Обновить и проверить"],
+            "newSteps": ["Клонируем", "60s", "Обновить и проверить"],
             "oldLabel": "Старый подход",
             "oldSteps": [
               {
@@ -8656,15 +8656,15 @@
         "references": {
           "items": [
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” май 2024. “Эксплуатация уязвимостей как вектор первоначального доступа почти утроилась и составила 14% всех взломов.”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “The two most common causes of networking- and connectivity-related outages are configuration or change management failure (cited by 45% of respondents).”",
+              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “Две самые частые причины сбоев сетей и связности: ошибки конфигурации или управления изменениями (их назвали 45% респондентов).”",
               "url": "https://uptimeinstitute.com/resources/research-and-reports/annual-outage-analysis-2023"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” June 2024. “Each minute of downtime costs $9,000 or $540,000 per hour.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” июнь 2024. “Каждая минута простоя обходится в $9 000, или $540 000 в час.”",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
@@ -8672,43 +8672,43 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Commvault Cleanroom Recovery creates Isolated Recovery Environments (IREs) with network isolation preventing outbound communication.",
+              "text": "Commvault Cleanroom Recovery создаёт изолированные среды восстановления (IRE) с сетевой изоляцией, исключающей исходящий трафик.",
               "url": "https://documentation.commvault.com/11.42/commvault-user-guide/cleanroom_recovery_isolated_recovery_environments_ires_for_cyber_resilience.html"
             },
             {
-              "text": "Zerto test failovers run in isolated bubble networks that prevent interaction with production systems during testing.",
+              "text": "Тестовые переключения Zerto выполняются в изолированных bubble-сетях, которые исключают взаимодействие с боевыми системами во время тестирования.",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup with Virtual Lab enables automated testing of patches and updates in isolated sandbox environments.",
+              "text": "Veeam SureBackup с Virtual Lab автоматически тестирует патчи и обновления в изолированной песочнице.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik Live Mount enables safe testing of patches by mounting clean snapshots in isolated environments.",
+              "text": "Rubrik Live Mount позволяет безопасно тестировать патчи, подключая чистые снимки в изолированных средах.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Cleanroom Recovery enables testing patches in isolated cleanroom environments before applying to production.",
+              "text": "Commvault Cleanroom Recovery позволяет тестировать патчи в изолированной среде перед применением к боевой системе.",
               "url": "https://documentation.commvault.com/2024e/software/cleanroom_recovery_use_cases.html"
             },
             {
-              "text": "Zerto Orchestrator automates periodic failover tests validating VPG checkpoint health and recovery VM boot correctness.",
+              "text": "Zerto Orchestrator автоматизирует периодические тесты отказоустойчивости, проверяя здоровье checkpoint'ов VPG и корректность загрузки восстановленных ВМ.",
               "url": "https://help.zerto.com/bundle/Orchestrator.HTML.95/page/Automated_Failover_Testing_with_the_Zerto_Orchestrator.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication развёртывается локально на Windows Server, клиент полностью контролирует инфраструктуру.",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik развёртывается как локальные устройства (серия r6000) с интегрированными вычислениями, хранилищем и ПО.",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault поддерживает полностью локальные развёртывания на собственной инфраструктуре (self-hosted) с компонентами CommServe, MediaAgent и Access Node.",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto развёртывается локально с Zerto Virtual Manager и Virtual Replication Appliances на каждом хосте.",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8727,10 +8727,10 @@
             },
             "improvement": "Валидация патчей в 1 680 раз быстрее"
           },
-          "quote": "В прошлом квартале у нас был критический патч OpenSSL. Обычно мы бы запланировали окно обслуживания и молились. Вместо этого мы клонировали все 22 продакшен-сервера, применили патч, прогнали полный набор тестов и подтвердили ноль регрессий — всё за 18 минут. Мы обновили продакшен в тот же день с полной уверенностью."
+          "quote": "В прошлом квартале вышел критический патч OpenSSL. Обычно мы назначили бы окно обслуживания и молились. Вместо этого мы клонировали все 22 боевых сервера, применили патч, запустили полный набор тестов и подтвердили ноль регрессий, и всё за 18 минут. Продакшен мы обновили в тот же день, полностью уверенные в результате."
         },
         "techDiff": {
-          "description": "Rediacc использует btrfs-снимки с копированием при записи для клонирования всей продакшен-среды — ОС, контейнеры, базы данных, конфигурация — за доли секунды. Клон работает в изолированной сети со своим Docker-демоном. Патчи, применённые к клону, никогда не затрагивают продакшен. Если клон сломается — удалите его. Если работает — примените тот же патч к продакшену.",
+          "description": "Rediacc копирует целую работающую среду <span class=\"sp-emphasis\">за секунды</span>. Это операционная система, приложения, базы данных и все настройки. Копия работает в собственной изолированной сети со своим Docker. Патчи на копии никогда не затрагивают реальные серверы. Если копия сломалась, удалите её. Если всё работает, примените тот же патч по-настоящему.",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9087,7 +9087,7 @@
         "benefits": {
           "items": [
             {
-              "description": "Тестируйте каждое исправление на точном клоне продакшна перед развёртыванием. Если патч что-то ломает — удалите клон. Продакшн не затронут.",
+              "description": "Тестируйте каждое исправление на точной копии production перед развёртыванием. Если патч что-то ломает, удалите копию. Production остаётся нетронутым.",
               "icon": "shield",
               "title": "Безопасное обновление"
             },
@@ -9097,7 +9097,7 @@
               "title": "Исправление в тот же день"
             },
             {
-              "description": "Каждый патч проходит повторное сканирование CVE, проверки здоровья сервисов, регрессионные тесты и проверку TLS — всё на реальных данных продакшна.",
+              "description": "Каждый патч проходит полную проверку: повторное сканирование CVE, здоровье сервисов, регрессионные тесты и TLS. Всё на реальных данных production.",
               "icon": "check-circle",
               "title": "Полная верификация"
             }
@@ -9113,8 +9113,8 @@
         },
         "calculator": {
           "annualLabel": "Годовая стоимость устранения",
-          "description": "Каждый день, пока уязвимость не исправлена — день, когда вы открыты. Каждый поспешный патч рискует инцидентом в продакшене.",
-          "footnote": "Модель: труд на традиционное устранение — $150/ч (инженер безопасности: оценка влияния, настройка staging, тестирование, откат). Неудачные патчи — 25% по отраслевому опыту. Rediacc сокращает время исправления до <1 дня с верификацией на клонах, исключая неудачные патчи.",
+          "description": "Каждый день с неисправленной уязвимостью означает лишний день риска. Каждый поспешный патч грозит инцидентом в продакшене.",
+          "footnote": "Расчёт: традиционное исправление стоит в среднем $150/ч (время инженера безопасности на оценку влияния, настройку staging, тесты, откат). Неудачные патчи оцениваются в 25% по отраслевому опыту. Rediacc сокращает время исправления до менее суток с проверкой на клонах, исключая неудачные патчи.",
           "headerTitle": "Калькулятор стоимости устранения",
           "results": {
             "exposure": "Воздействие на уязвимость",
@@ -9141,7 +9141,7 @@
             "arrows": [
               {
                 "icon": "bolt",
-                "label": "47s + 2m"
+                "label": "47с + 2м"
               },
               {
                 "icon": "arrow-right-circle",
@@ -9150,23 +9150,23 @@
             ],
             "cards": [
               {
-                "footer": "CVSS 9.8 · 3 services affected",
+                "footer": "CVSS 9.8 · затронуты 3 сервиса",
                 "items": [
-                  "OpenSSL 3.0.8 — VULN",
-                  "Keycloak :8443 — affected",
-                  "Nextcloud :443 — affected",
-                  "GitLab :443 — affected"
+                  "OpenSSL 3.0.8, УЯЗВИМА",
+                  "Keycloak :8443, затронут",
+                  "Nextcloud :443, затронут",
+                  "GitLab :443, затронут"
                 ],
                 "status": "Критическая",
                 "title": "CVE-2026-1234"
               },
               {
-                "footer": "2.1 GB CoW · disposable clone",
+                "footer": "2,1 ГБ CoW · одноразовый клон",
                 "items": [
-                  "OpenSSL → 3.0.15 — APPLIED",
-                  "Keycloak restart — healthy",
-                  "Nextcloud restart — healthy",
-                  "247 assertions — 0 failures"
+                  "OpenSSL → 3.0.15, ПРИМЕНЁН",
+                  "Keycloak перезагрузился, здоров",
+                  "Nextcloud перезагрузился, здоров",
+                  "247 проверок, 0 ошибок"
                 ],
                 "status": "Тестирование",
                 "title": "Клон: тест патча"
@@ -9174,10 +9174,10 @@
               {
                 "footer": "Total time: 3m 41s · zero downtime",
                 "items": [
-                  "OpenSSL 3.0.15 — FIXED",
-                  "CVE-2026-1234 — PATCHED",
-                  "3/3 services — healthy",
-                  "0 regressions — verified"
+                  "OpenSSL 3.0.15, ИСПРАВЛЕНА",
+                  "CVE-2026-1234, ПРОПАТЧЕНА",
+                  "Все 3 сервиса здоровы",
+                  "0 регрессий, проверено"
                 ],
                 "status": "Исправлено",
                 "title": "Продакшн"
@@ -9186,7 +9186,7 @@
           },
           "steps": [
             {
-              "description": "Автоматическое сканирование выявляет уязвимость — CVE, неправильная конфигурация или открытый сервис. Приоритизация по степени серьёзности.",
+              "description": "Сканирование находит проблему: CVE, неправильную конфигурацию или открытый сервис. Начинаем с критичных.",
               "icon": "eye",
               "title": "Обнаружение"
             },
@@ -9210,7 +9210,7 @@
           "title": "Управление уязвимостями - проактивные исправления | Rediacc"
         },
         "problem": {
-          "description": "Вы нашли уязвимость. Теперь нужно её исправить. Но сломает ли патч что-то? В продакшене тестировать нельзя. А staging-среда отстаёт на 3 недели. Приходится либо спешить с патчем и надеяться, либо ждать и оставаться уязвимым. Ни один вариант не хорош — и оба стоят денег.",
+          "description": "Появляется уязвимость. Её нужно закрыть. Но не сломает ли патч что-нибудь? Тестировать в production нельзя, а staging-копия отстаёт на 3 недели. Поэтому исправление либо выкатывают наспех на авось, либо откладывают, и уязвимость остаётся открытой. Оба варианта плохи. Оба стоят денег.",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9258,20 +9258,20 @@
               }
             ]
           },
-          "title": "Патчирование в продакшене — азартная игра"
+          "title": "Патчить в production значит играть в рулетку"
         },
         "references": {
           "items": [
             {
-              "text": "Qualys, “TruRisk Research Report,” 2023. “On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.”",
+              "text": "Qualys, “TruRisk Research Report,” 2023. “В среднем уязвимости с готовыми эксплойтами закрываются за 30,6 дня, но на самом деле закрываются лишь в 57,7% случаев.”",
               "url": "https://www.qualys.com/forms/tru-research-report"
             },
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” май 2024. “Использование уязвимостей как начальной точки входа почти утроилось по сравнению с прошлым годом и составило 14% всех взломов.”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report,” July 2024. “The global average cost of a data breach reached USD 4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report,” июль 2024. “Средняя мировая стоимость утечки данных достигла USD 4,88 млн в 2024 году.”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
           ]
@@ -9290,10 +9290,10 @@
             },
             "improvement": "Время патч + верификация + развёртывание"
           },
-          "quote": "Критическая CVE вышла в пятницу вечером. К утру субботы мы клонировали продакшен, применили патч, проверили его на всех 4 затронутых сервисах и развернули — ноль простоя. Наш предыдущий процесс занял бы 3 недели и совещание по управлению изменениями."
+          "quote": "Критическая CVE вышла в пятницу днём. К утру субботы мы клонировали production, применили патч, проверили его на всех 4 затронутых сервисах и развернули без простоя. Старый процесс занял бы 3 недели и совещание по управлению изменениями."
         },
         "techDiff": {
-          "description": "Традиционное патчирование требует staging-среды, соответствующей продакшену, но staging дрейфует за дни. Rediacc создаёт btrfs-снимок с копированием при записи вашей реальной продакшен-инфраструктуры за секунды, позволяет применить и проверить патч на реальных данных и конфигурациях, затем разворачивает проверенное исправление в продакшене. Если патч не проходит верификацию — удалите клон. Продакшен не затронут.",
+          "description": "Классическое патчирование требует staging-копии, совпадающей с продакшеном. Но staging расходится с ним уже через несколько дней. Rediacc делает мгновенную копию реального продакшена <span class=\"sp-emphasis\">за секунды</span>. Примените патч к копии. Проверьте его на реальных данных и реальных настройках. Если всё работает, выкатывайте в продакшен. Если нет, выбросьте копию. Продакшен остаётся нетронутым.",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -9305,7 +9305,7 @@
               "traditional": "Дни или недели (настройка стейджинга + тестирование)"
             },
             {
-              "rediacc": "0% — сбои обнаруживаются на клоне, клон удаляется",
+              "rediacc": "0%, отказы остаются на клоне, который можно удалить",
               "traditional": "Непротестированные патчи рискуют вызвать непредвиденные сбои"
             },
             {
@@ -9836,7 +9836,10 @@
     "title": "Как обеспечить непрерывность бизнеса"
   },
   "video": {
-    "playVideo": "Воспроизвести видео"
+    "playVideo": "Воспроизвести видео",
+    "player": {
+      "chapters": "Главы"
+    }
   },
   "whyNow": {
     "cards": [

@@ -305,7 +305,7 @@ class Outputs:
             except OSError as exc:
                 # bash prints `<script>: line 50: <file>: <reason>` and `set -e` ends the run. Same three facts, same stream, same status.
                 print(
-                    "detect-pointer-bump.sh: %s: %s" % (self.output_file, exc.strerror),
+                    "rediacc_ci.ci.detect_pointer_bump: %s: %s" % (self.output_file, exc.strerror),
                     file=sys.stderr,
                     flush=True,
                 )
@@ -500,7 +500,7 @@ def write_summary(summary_file: str, baseline: str, proof: str) -> None:
             )
     except OSError as exc:
         print(
-            "detect-pointer-bump.sh: %s: %s" % (summary_file, exc.strerror),
+            "rediacc_ci.ci.detect_pointer_bump: %s: %s" % (summary_file, exc.strerror),
             file=sys.stderr,
             flush=True,
         )
@@ -521,7 +521,7 @@ def main(argv: list[str]) -> int:
         os.chdir(root)
     except OSError as exc:
         print(
-            "detect-pointer-bump.sh: cd: %s: %s" % (root, exc.strerror),
+            "rediacc_ci.ci.detect_pointer_bump: cd: %s: %s" % (root, exc.strerror),
             file=sys.stderr,
             flush=True,
         )
@@ -596,7 +596,7 @@ def main(argv: list[str]) -> int:
         except BashUnboundError as exc:
             # DEFECT D: bash prints `<script>: line 154: <name>: unbound variable` and stops, with no output pair written at all. Same three facts, same stream, same status.
             print(
-                "detect-pointer-bump.sh: %s: unbound variable" % exc.name,
+                "rediacc_ci.ci.detect_pointer_bump: %s: unbound variable" % exc.name,
                 file=sys.stderr,
                 flush=True,
             )
@@ -669,7 +669,7 @@ def _at_least_one(green: str) -> bool:
         # `[[: 08: value too great for base (error token is "08")`, verbatim apart from bash's own `<file>: line <n>:` prefix.
         print(
             '%s: [[: %s: value too great for base (error token is "%s")'
-            % ("detect-pointer-bump.sh", stripped, stripped),
+            % ("rediacc_ci.ci.detect_pointer_bump", stripped, stripped),
             file=sys.stderr,
             flush=True,
         )

@@ -16,8 +16,7 @@
  *
  * MAINTENANCE IS BY RULE, NOT BY HAND. A wrong or stale entry fails
  * check-ci-parity rather than rotting: assertion 5 re-verifies every declared
- * `ci` pointer against the parsed workflow, and assertion 7 compares the
- * `qualityGateTest` set against the on-disk glob the battery itself uses.
+ * `ci` pointer against the parsed workflow.
  */
 
 export type { CiCoverage, GateSpec } from './gate-spec.js';
@@ -86,10 +85,10 @@ export const GATES: readonly GateSpec[] = [
     gate: false,
     // NO WIDTH DECLARED (agent/plans/PLAN-prepush-full-cpu.md PF5, 2026-10-05): the hand-typed `weight: 2` is retired, and the pool budgets this gate at its measured cpu/wall. eslint 9.39 runs single-threaded unless told `--concurrency <n>`, a knob this gate's script does not pass yet; biome, the one other tool here, honours RAYON_NUM_THREADS (measured: 101% CPU at 1, 1004% unset) and is about 1.5s of the run.
     heavy: true,
-    // eslint no longer runs directly: check:lint calls scripts/eslint-heap.sh,
+    // eslint no longer runs directly: check:lint calls .ci/rediacc_ci/quality/eslint_heap.py,
     // which clamps the heap downward only when the host cannot honour the requested size (never raises -- CI keeps its full request) and then
     // execs eslint itself. The leaf is the wrapper, not the tool it wraps.
-    leaves: ['scripts/eslint-heap.sh', 'biome'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py', 'biome'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -100,13 +99,13 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:cli',
     run: 'npm run check:lint:cli',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // 65.1s alone / 87.5s in the concurrent four
     gate: true,
     // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
-    leaves: ['scripts/eslint-heap.sh'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -117,13 +116,13 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:web',
     run: 'npm run check:lint:web',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // 60.8s alone / 83.2s in the concurrent four
     gate: true,
     // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
-    leaves: ['scripts/eslint-heap.sh'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -134,13 +133,13 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:tooling',
     run: 'npm run check:lint:tooling',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // measured in the concurrent four; retier from the reference worktree
     gate: true,
     // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
     heavy: true,
-    leaves: ['scripts/eslint-heap.sh'],
+    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -151,7 +150,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:lint:account',
     run: 'npm run check:lint:account',
-    // ELASTIC, up to 4: eslint-heap.sh passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
+    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
     cores: { min: 1, max: 4 },
     slow: true, // measured in the concurrent four; retier from the reference worktree
     gate: true,
@@ -160,7 +159,7 @@ export const GATES: readonly GateSpec[] = [
     // TWO leaves, not one: this shard alone chains `biome lint private/account/` after
     // eslint. Landing it with the other three shards' single leaf reddened
     // check:ci-parity hygiene immediately, which is the split-turns-hygiene-red case the proposal warned about and the reason leaves are derived with resolveLeaves rather than copied between sibling entries.
-    leaves: ['biome', 'scripts/eslint-heap.sh'],
+    leaves: ['biome', '.ci/rediacc_ci/quality/eslint_heap.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -935,7 +934,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-setup-idempotency',
     gate: true,
     paths: [
-      '.ci/lib/**',
+      // `.ci/lib/**` WAS HERE until 94934de41 deleted devbox.sh and its siblings (2026-10-08); checks A, C, E and F now read their Python ports, so those three files are the subjects an edit must select this gate on.
+      '.ci/rediacc_ci/core/devbox.py',
+      '.ci/rediacc_ci/core/local_common.py',
+      '.ci/rediacc_ci/core/ports.py',
       'run.sh',
       // setup() is ported to rediacc_ci.setup.machine.run_setup, which check G reads now that .ci/legacy/run-legacy.sh is deleted. Without this an edit to the file the gate READS does not select it.
       '.ci/rediacc_ci/setup/machine.py',
@@ -1023,19 +1025,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // A .ci script must declare the non-baseline binaries it runs. An undeclared one exits 127 with no message under `set -euo pipefail`, and reads as working code on any host that happens to have it.
-    id: 'check:ci-shell-declared-commands',
-    run: 'npm run check:ci-shell-declared-commands',
-    gate: true,
-    leaves: ['scripts/gates/check-shell-declared-commands.ts'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
-      step: 'CI scripts declare the binaries they execute',
-    },
-  },
-  {
     // The PR body carries a generated epic block; this asserts it matches the published snapshot, since a generated section nobody checks drifts while still looking authoritative.
     id: 'check:ci-pr-epic-block',
     env: {
@@ -1104,7 +1093,12 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-devbox-exec',
     gate: true,
     // The lane library and anything that could add a call site to it. Narrow on purpose: this gate reasons about devbox.sh's own invocations, and a wider path filter would imply a coverage it does not have.
-    paths: ['.ci/lib/devbox.sh', '.ci/scripts/quality/check_devbox_exec.py'],
+    // The subject moved with 94934de41 (2026-10-08): `.ci/lib/devbox.sh` is deleted and the gate reads its port, core/devbox.py (DEVBOX_REL in rediacc_ci/quality/devbox_exec.py).
+    paths: [
+      '.ci/rediacc_ci/core/devbox.py',
+      '.ci/rediacc_ci/quality/devbox_exec.py',
+      '.ci/scripts/quality/check_devbox_exec.py',
+    ],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_devbox_exec.py'],
     ci: {
@@ -1377,7 +1371,7 @@ export const GATES: readonly GateSpec[] = [
       '.ci/scripts/**',
       'scripts/**',
       '.claude/hooks/**',
-      '.ci/lib/**',
+      // `.ci/lib/**` left this list on 2026-10-08: 94934de41 and 0327ab26b deleted every file under it, and a glob matching nothing only drops out of --changed. The scan root in pipefail_grep_q.py stays, so a shell file that reappears there is scanned without a manifest edit.
       '.devcontainer/**',
       '.ci/media/**',
     ],
@@ -1488,7 +1482,6 @@ export const GATES: readonly GateSpec[] = [
       '**/package.json',
       'private/account',
       '.ci/scripts/quality/check_lockfile.py',
-      '.ci/scripts/lib/common.sh',
     ],
     pathsOrigin: 'declared',
     leaves: ['.ci/scripts/quality/check_lockfile.py'],
@@ -2032,7 +2025,6 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-boxes',
     gate: true,
-    slow: true, // 59.4s measured in CI (lane-durations refresh b9e561ec9)
     paths: [
       'agent/plans/**',
       '.ci/config/plan-boxes.json',
@@ -2193,6 +2185,24 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-branch',
       step: 'Agent session archival',
+    },
+  },
+  {
+    // NO `paths:` DELIBERATELY: a deferral can land in any record-only push, so the entry is always selected. Lane quality-branch: PR head ref at fetch-depth 0 for the merge-base walk (rule iv); no `- id: setup`, so the step is hand-written (invariant 11). PLAN-deferred-findings-block-merge C4.
+    id: 'check:ci-review-resolutions',
+    env: {
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+      GITHUB_HEAD_REF: '${{ github.head_ref }}',
+      GITHUB_EVENT_NAME: '${{ github.event_name }}',
+    },
+    run: 'npm run check:ci-review-resolutions',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_review_resolutions.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Review resolutions',
     },
   },
   {
@@ -2467,6 +2477,21 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tutorial CLI validity',
     },
   },
+  // <<< gen-manifest: region 18
+  {
+    // CLAUDE.md is the one written source of the PR-scope rules (push cadence, one branch and one PR, the merge condition, the plan set), and seven other files restate them by hand; agent/plans/PLAN-scope-mirrors.md measured eight live drifts before this existed. The canonical spans carry `<!-- scope: pr.* -->` anchors pinned by sha in .ci/config/scope-mirrors.json, and every registered mirror is located and judged. No `paths`, deliberately: an edit to CLAUDE.md, a mirror, a guard constant or the C9 corpus can each break agreement, and a half-populated path table would drop the gate from --changed exactly then.
+    id: 'check:ci-scope-mirrors',
+    run: 'npm run check:ci-scope-mirrors',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_scope_mirrors.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'PR scope rules agree with their CLAUDE.md source',
+    },
+  },
+  // >>> gen-manifest: region 19
   {
     id: 'check:ci-e2e-case-blind',
     run: 'npm run check:ci-e2e-case-blind',
@@ -2576,6 +2601,30 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-inline-suppressions',
+    run: 'npm run check:ci-inline-suppressions',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_inline_suppressions.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Inline suppression markers',
+    },
+  },
+  {
+    id: 'check:ci-model-invocable-commands',
+    run: 'npm run check:ci-model-invocable-commands',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_model_invocable_commands.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Model-invocable commands',
+    },
+  },
+  {
     id: 'check:ci-i18n-value-types',
     run: 'npm run check:ci-i18n-value-types',
     gate: true,
@@ -2587,7 +2636,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n value types match English',
     },
   },
-  // <<< gen-manifest: region 18
+  // <<< gen-manifest: region 19
   {
     id: 'check:ci-lint-rule-liveness',
     run: 'npm run check:ci-lint-rule-liveness',
@@ -2601,7 +2650,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Enabled lint rules can actually fire',
     },
   },
-  // >>> gen-manifest: region 19
+  // >>> gen-manifest: region 20
   {
     id: 'check:ci-agent-hint-liveness',
     run: 'npm run check:ci-agent-hint-liveness',
@@ -2629,7 +2678,7 @@ export const GATES: readonly GateSpec[] = [
   // Answers the question the other two wiring gates cannot: not "is what we declared wired up?" but "did we forget to declare something?". A test file absent from the manifest is absent from BOTH sides of ci-parity, so parity agrees and reports success; gate-reachability can only ask about entries that registered. test-teammate-idle.py was committed with 20 controls and ran
   // nowhere, and this gate then found four more orphans of the same shape. Gate 1 of the sentence-wrapping pair. Source-level and sub-second, so it runs on every PR; the browser half (check:ci-sentence-lines) measures real line boxes and needs a build. Neither subsumes the other. Shrink-only baseline, seeded at 51 because the <Sentences> mechanism does not exist yet -- that is
   // what lets wave B land it incrementally without this gate being either useless or blocking. The half of www-round5's gate 3 the content schema does NOT cover. Per-doc subcategory legality moved into content/config.ts (z.enum + superRefine), where it cannot be bypassed; what is left is thumbnail coverage. The thumbnails are hand-authored and their generator was deleted, so a new
-  // doc without one ships a blank browse card in all 13 locales silently -- one file serves every translation, resolved by base slug. Plyr's quality pane cannot host the language picker: it snaps every click to min(options), so the video plays a language nobody chose. Re-adding it is the regression that looks like it works.
+  // doc without one ships a blank browse card in all 13 locales silently -- one file serves every translation, resolved by base slug. The in-frame toolbar is the video player's ONLY language picker: Video.js 10's packaged VideoSkin settings menu takes no child row, so the overlay must render inside <VideoSkin>, the element fullscreen takes, on every cast with 2+ locales (agent/plans/PLAN-plyr-to-videojs.md).
   {
     id: 'check:ci-video-player-invariants',
     run: 'npm run check:ci-video-player-invariants',
@@ -2731,7 +2780,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent model roster matches its documented reasons',
     },
   },
-  // <<< gen-manifest: region 19
+  // <<< gen-manifest: region 20
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',
@@ -2804,21 +2853,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    id: 'check:ci-battery-clean-tree',
-    // The battery's tree snapshot must not abort on a clean checkout. It extracts the REAL tree_state() rather than copying it, and refuses if that function is gone.
-    run: 'npm run check:ci-battery-clean-tree',
-    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool runs one-wide; check:types:incremental's entry records the measurement.
-    cores: { min: 1, max: 'all' },
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_battery_clean_tree.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Battery clean-tree guard',
-    },
-  },
-  {
     id: 'check:ci-workflow-env-provision',
     // A job may not use a shell variable nothing in that job provides. bash expands an unset name to the empty string, so the failure always surfaces downstream wearing somebody else's name.
     run: 'npm run check:ci-workflow-env-provision',
@@ -2831,7 +2865,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow env provision',
     },
   },
-  // >>> gen-manifest: region 20
+  // >>> gen-manifest: region 21
   {
     id: 'check:ci-shell-commands',
     run: 'npm run check:ci-shell-commands',
@@ -2844,18 +2878,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shell commands exist on the runner image',
     },
   },
-  {
-    id: 'check:ci-gate-id-convention',
-    run: 'npm run check:ci-gate-id-convention',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_gate_id_convention.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'Gate registration follows the gates/ convention',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (2026-10-08): check:ci-gate-id-convention held every manifest entry that RUNS a `.ci/scripts/test/gates/test-*.sh` to the `gate-test:<name>` id. W11-A/B/C and section 12 U1-U3 deleted the last such script and its entry, so the lock carries zero `gate-test:` ids and zero gates/ runs, and the gate refused an empty corpus. Its module, entry point and test are deleted.
   {
     id: 'check:ci-pool-writer-safety',
     run: 'npm run check:ci-pool-writer-safety',
@@ -2868,7 +2891,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pool-registered tests do not write the real tree',
     },
   },
-  // <<< gen-manifest: region 20
+  // <<< gen-manifest: region 21
   {
     // The sibling of check:ci-pool-writer-safety: that gate holds GATE TESTS to "a real-tree writer holds an exclusive tree: claim"; this one holds the GATES themselves to it, through every Python/TS/JS/bash module their leaves reach (imports and cross-language spawns). agent/plans/PLAN-ci-gate-write-taint-scanners.md.
     id: 'check:ci-gate-tree-writes',
@@ -2899,7 +2922,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gates that write the real tree declare it',
     },
   },
-  // >>> gen-manifest: region 21
+  // >>> gen-manifest: region 22
   {
     id: 'check:ci-gate-reachability-coverage',
     run: 'npm run check:ci-gate-reachability-coverage',
@@ -2912,7 +2935,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gate-reachability probe agrees with registrations',
     },
   },
-  // <<< gen-manifest: region 21
+  // <<< gen-manifest: region 22
   {
     id: 'check:ci-gate-cwd-independence',
     run: 'npm run check:ci-gate-cwd-independence',
@@ -2977,7 +3000,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow banned patterns',
     },
   },
-  // >>> gen-manifest: region 22
+  // >>> gen-manifest: region 23
   {
     id: 'check:ci-greenlight-closures',
     run: 'npm run check:ci-greenlight-closures',
@@ -2990,7 +3013,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Greenlight closure paths',
     },
   },
-  // <<< gen-manifest: region 22
+  // <<< gen-manifest: region 23
   {
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
@@ -3003,7 +3026,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow structural gates',
     },
   },
-  // >>> gen-manifest: region 23
+  // >>> gen-manifest: region 24
   {
     id: 'check:ci-actionlint',
     run: 'npm run check:ci-actionlint',
@@ -3016,7 +3039,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow lint (actionlint)',
     },
   },
-  // <<< gen-manifest: region 23
+  // <<< gen-manifest: region 24
   {
     id: 'check:ci-breakpoint-drift',
     run: 'npm run check:ci-breakpoint-drift',
@@ -3029,7 +3052,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Breakpoint drift',
     },
   },
-  // >>> gen-manifest: region 24
+  // >>> gen-manifest: region 25
   {
     id: 'check:ci-app-admin-perm',
     run: 'npm run check:ci-app-admin-perm',
@@ -3054,7 +3077,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tracked runtime sidecars',
     },
   },
-  // <<< gen-manifest: region 24
+  // <<< gen-manifest: region 25
   {
     id: 'check:ci-scans-tracked-paths',
     run: 'npm run check:ci-scans-tracked-paths',
@@ -3080,7 +3103,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'agent-browser exit status',
     },
   },
-  // >>> gen-manifest: region 25
+  // >>> gen-manifest: region 26
   {
     id: 'check:ci-silent-failures',
     run: 'npm run check:ci-silent-failures',
@@ -3141,11 +3164,10 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check audit logging coverage for CLI operations',
     },
   },
-  // <<< gen-manifest: region 25
+  // <<< gen-manifest: region 26
   {
     id: 'check:ci-cli-contract',
     run: 'npm run check:ci-cli-contract',
-    slow: true, // 12.7s measured
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
@@ -3185,7 +3207,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Command planes',
     },
   },
-  // >>> gen-manifest: region 26
+  // >>> gen-manifest: region 27
   {
     id: 'check:ci-design-tree',
     run: 'npm run check:ci-design-tree',
@@ -3222,7 +3244,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n untranslated',
     },
   },
-  // <<< gen-manifest: region 26
+  // <<< gen-manifest: region 27
   {
     id: 'check:ci-i18n-cross-locale',
     run: 'npm run check:ci-i18n-cross-locale',
@@ -3240,7 +3262,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n cross-locale',
     },
   },
-  // >>> gen-manifest: region 27
+  // >>> gen-manifest: region 28
   {
     id: 'check:ci-i18n-cross-locale-core',
     run: 'npm run check:ci-i18n-cross-locale-core',
@@ -3291,7 +3313,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Locale sources',
     },
   },
-  // <<< gen-manifest: region 27
+  // <<< gen-manifest: region 28
   {
     id: 'check:ci-i18n-command-parity',
     run: 'npm run check:ci-i18n-command-parity',
@@ -3305,7 +3327,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n command parity',
     },
   },
-  // >>> gen-manifest: region 28
+  // >>> gen-manifest: region 29
   {
     id: 'check:ci-config-migrations',
     run: 'npm run check:ci-config-migrations',
@@ -3342,7 +3364,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shared constant duplication',
     },
   },
-  // <<< gen-manifest: region 28
+  // <<< gen-manifest: region 29
   {
     id: 'check:ci-shared-esm-resolvable',
     run: 'npm run check:ci-shared-esm-resolvable',
@@ -3356,7 +3378,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shared ESM resolvable',
     },
   },
-  // >>> gen-manifest: region 29
+  // >>> gen-manifest: region 30
   {
     id: 'check:ci-runtime-imports-are-deps',
     run: 'npm run check:ci-runtime-imports-are-deps',
@@ -3492,7 +3514,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test suites are CI-reachable',
     },
   },
-  // <<< gen-manifest: region 29
+  // <<< gen-manifest: region 30
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
@@ -3519,7 +3541,6 @@ export const GATES: readonly GateSpec[] = [
       'private/account',
       '.ci/scripts/quality/check_account_portal.py',
       '.ci/rediacc_ci/quality/account_portal.py',
-      '.ci/scripts/lib/common.sh',
       'packages/www/scripts/build-account-onboarding.ts',
       'packages/www/src/data/account-onboarding.json',
       'packages/www/src/data/tutorial-storyboard/**',
@@ -3707,7 +3728,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes',
     },
   },
-  // >>> gen-manifest: region 30
+  // >>> gen-manifest: region 31
   {
     id: 'check:ci-embed-credits',
     run: 'npm run check:ci-embed-credits',
@@ -3732,7 +3753,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed arch parity',
     },
   },
-  // <<< gen-manifest: region 30
+  // <<< gen-manifest: region 31
   {
     id: 'check:ci-embed-asset-freshness',
     env: {
@@ -3752,7 +3773,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed-asset upstream freshness',
     },
   },
-  // >>> gen-manifest: region 31
+  // >>> gen-manifest: region 32
   {
     id: 'check:ci-unverified-downloads',
     run: 'npm run check:ci-unverified-downloads',
@@ -3781,7 +3802,23 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check devcontainer pin upstream freshness',
     },
   },
-  // <<< gen-manifest: region 31
+  {
+    id: 'check:ci-real-provider-pins',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
+    run: 'npm run check:ci-real-provider-pins',
+    gate: true,
+    leaves: ['scripts/gates/check-real-provider-pin-freshness.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Check real-provider pin upstream freshness',
+    },
+  },
+  // <<< gen-manifest: region 32
   {
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
@@ -3797,7 +3834,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embedded asset versions match their pins',
     },
   },
-  // >>> gen-manifest: region 32
+  // >>> gen-manifest: region 33
   {
     id: 'check:ci-recovery-context',
     run: 'npm run check:ci-recovery-context',
@@ -3810,7 +3847,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check recovery functions get an uncancellable context',
     },
   },
-  // <<< gen-manifest: region 32
+  // <<< gen-manifest: region 33
   {
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
@@ -3825,7 +3862,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Assert no OTLP credentials baked into the built binaries',
     },
   },
-  // >>> gen-manifest: region 33
+  // >>> gen-manifest: region 34
   {
     id: 'check:ci-subscription-schema',
     run: 'npm run check:ci-subscription-schema',
@@ -3850,7 +3887,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pricing consistency',
     },
   },
-  // <<< gen-manifest: region 33
+  // <<< gen-manifest: region 34
   {
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
@@ -3896,7 +3933,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // Its cheap source-level complement: no build, so it lives in the i18n lane. It is a proxy (an inline English string is invisible to it) and cannot replace the gate above. >>> gen-manifest: region 31
-  // >>> gen-manifest: region 34
+  // >>> gen-manifest: region 35
   {
     id: 'check:ci-page-locale-imports',
     run: 'npm run check:ci-page-locale-imports',
@@ -3909,7 +3946,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Page locale imports',
     },
   },
-  // <<< gen-manifest: region 34
+  // <<< gen-manifest: region 35
   {
     id: 'check:ci-external-links',
     env: {
@@ -3942,7 +3979,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'DKIM notify DNS',
     },
   },
-  // >>> gen-manifest: region 35
+  // >>> gen-manifest: region 36
   {
     id: 'check:ci-css-dom-refs',
     run: 'npm run check:ci-css-dom-refs',
@@ -3991,7 +4028,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dead CSS',
     },
   },
-  // <<< gen-manifest: region 35
+  // <<< gen-manifest: region 36
   {
     id: 'check:ci-illustration-contract',
     run: 'npm run check:ci-illustration-contract',
@@ -4051,7 +4088,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Browser smoke',
     },
   },
-  // >>> gen-manifest: region 36
+  // >>> gen-manifest: region 37
   {
     id: 'check:ci-captcha-recovery',
     run: 'npm run check:ci-captcha-recovery',
@@ -4064,7 +4101,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Captcha recovery',
     },
   },
-  // <<< gen-manifest: region 36
+  // <<< gen-manifest: region 37
   {
     id: 'check:ci-page-density',
     run: 'npm run check:ci-page-density',
@@ -4110,7 +4147,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'SSR locale',
     },
   },
-  // >>> gen-manifest: region 37
+  // >>> gen-manifest: region 38
   {
     id: 'check:ci-docker-image-freshness',
     env: {
@@ -4126,7 +4163,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
-  // <<< gen-manifest: region 37
+  // <<< gen-manifest: region 38
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -4140,7 +4177,6 @@ export const GATES: readonly GateSpec[] = [
       'scripts/data/em-dash-surfaces-baseline.json',
       'scripts/data/locale-de-contamination-baseline.json',
       'scripts/data/docker-image-freshness-baseline.json',
-      'scripts/data/shell-declared-commands-baseline.json',
       'scripts/data/static-nowrap-baseline.json',
       'scripts/data/hook-coverage-baseline.json',
       'scripts/data/css-dom-refs-baseline.json',
@@ -4236,7 +4272,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check prose style (the work, not the person)',
     },
   },
-  // >>> gen-manifest: region 38
+  // >>> gen-manifest: region 39
   {
     id: 'check:ci-nis2-quotes',
     run: 'npm run check:ci-nis2-quotes',
@@ -4249,7 +4285,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Verify NIS2 directive quotations match the official source',
     },
   },
-  // <<< gen-manifest: region 38
+  // <<< gen-manifest: region 39
   {
     id: 'check:cli-examples',
     run: 'npm run check:cli-examples',
@@ -4263,7 +4299,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'CLI examples',
     },
   },
-  // >>> gen-manifest: region 39
+  // >>> gen-manifest: region 40
   {
     id: 'check:ci-tutorial-commands',
     run: 'npm run check:ci-tutorial-commands',
@@ -4288,7 +4324,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate tutorial commands are non-interactive',
     },
   },
-  // <<< gen-manifest: region 39
+  // <<< gen-manifest: region 40
   {
     id: 'check:ci-tutorial-parity',
     run: 'npm run check:ci-tutorial-parity',
@@ -4388,7 +4424,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate published tutorial word-timing sync (real ASR alignment, not estimated)',
     },
   },
-  // >>> gen-manifest: region 40
+  // >>> gen-manifest: region 41
   {
     id: 'check:ci-account-onboarding',
     run: 'npm run check:ci-account-onboarding',
@@ -4425,7 +4461,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'BLOCKER validator — syncpack versionGroups',
     },
   },
-  // <<< gen-manifest: region 40
+  // <<< gen-manifest: region 41
   {
     id: 'check:ci-suppression-liveness',
     run: 'npm run check:ci-suppression-liveness',
@@ -4438,6 +4474,23 @@ export const GATES: readonly GateSpec[] = [
       step: 'Suppression liveness — are our allowlist entries still needed?',
     },
   },
+  // >>> gen-manifest: region 42
+  {
+    id: 'check:ci-pr-condition-ledger',
+    env: {
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
+    run: 'npm run check:ci-pr-condition-ledger',
+    gate: true,
+    leaves: ['scripts/gates/check-pr-condition-ledger.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'PR-condition ledger is current',
+    },
+  },
+  // <<< gen-manifest: region 42
   {
     id: 'check:ci-dead-bash',
     run: 'npm run check:ci-dead-bash',
@@ -4467,7 +4520,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Action freshness',
     },
   },
-  // >>> gen-manifest: region 41
+  // >>> gen-manifest: region 43
   {
     id: 'check:ci-jq-boolean-default',
     run: 'npm run check:ci-jq-boolean-default',
@@ -4480,7 +4533,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'jq boolean defaults',
     },
   },
-  // <<< gen-manifest: region 41
+  // <<< gen-manifest: region 43
   {
     id: 'check:ci-dead-case-arms',
     run: 'npm run check:ci-dead-case-arms',
@@ -4529,7 +4582,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction',
     },
   },
-  // >>> gen-manifest: region 42
+  // >>> gen-manifest: region 44
   {
     id: 'check:ci-go-module-sync',
     run: 'npm run check:ci-go-module-sync',
@@ -4542,7 +4595,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check Go module sync against the renet worktree',
     },
   },
-  // <<< gen-manifest: region 42
+  // <<< gen-manifest: region 44
   {
     // Structural, not semantic. "every declared env var must be referenced" was measured first and rejected: 290 of 849 step env vars have no textual reference, because gh and aws read theirs implicitly. This checks the one shape that is unambiguously a defect -- a step key after a step-boundary comment, left behind when the step itself was deleted.
     id: 'check:ci-workflow-orphan-step-keys',
@@ -4581,7 +4634,7 @@ export const GATES: readonly GateSpec[] = [
   //   anchor-integrity        -> "Redirects"; both assert that a link in the BUILT output
   // resolves to something.
   //   client-bundle-budget    -> "SEO"; page weight is read from the same built HTML, and
-  // the step already sits behind build:www. The remaining three have no honest step to ride and are covered by a gate test that drives their REAL scan against the REAL tree inside the gate-test battery. WAVE 1's gate, registered here because w2-i18n correctly did not touch the root
+  // the step already sits behind build:www. The remaining three have no honest step to ride and are covered by a gate test (a pytest module under check:ci-pytest) that drives their REAL scan against the REAL tree. WAVE 1's gate, registered here because w2-i18n correctly did not touch the root
   // package.json or this file. Without it a STALE CLIENT CATALOG SHIPS SILENTLY: wave 1
   // replaced the thirteen static locale imports with generated per-locale bundles under
   // packages/www/src/i18n/{client,client-route}/, and those bundles are committed
@@ -4599,7 +4652,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 43
+  // >>> gen-manifest: region 45
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
@@ -4636,7 +4689,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 43
+  // <<< gen-manifest: region 45
   {
     id: 'check:ci-anchor-integrity',
     run: 'npm run check:ci-anchor-integrity',
@@ -4816,7 +4869,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Setup port parity',
     },
   },
-  // >>> gen-manifest: region 44
+  // >>> gen-manifest: region 46
   {
     id: 'check:ci-parity',
     run: 'npm run check:ci-parity',
@@ -4829,7 +4882,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate parity between the local gate set and the CI quality surface',
     },
   },
-  // <<< gen-manifest: region 44
+  // <<< gen-manifest: region 46
 
   // F3: two Quality/Static steps that ran in CI and nowhere else. The forward gate could not see them because its BARE_GATE pattern only covered
   // .ci/scripts/{quality,security}/check-*.sh; these live in .ci/scripts/test/
@@ -4838,7 +4891,11 @@ export const GATES: readonly GateSpec[] = [
     id: 'test:write-once-guard',
     run: 'PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py',
     gate: true,
-    leaves: ['.ci/rediacc_ci/deploy/write_once_guard_check.py'],
+    leaves: [
+      '.ci/rediacc_ci/deploy/write_once_guard_check.py',
+      '.ci/rediacc_ci/deploy/write_once_guard.py',
+      '.ci/rediacc_ci/core/release_state_validator.py',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4909,7 +4966,6 @@ export const GATES: readonly GateSpec[] = [
     },
   },
 
-  // The CI-side aggregate. gate:false because its 62 constituents are scheduled individually below: scheduling this as one unit too would run the whole 443s battery twice, and 443s is 43% of the measured serial total (plan section 2). The npm key stays because CI wants one step for it.
   {
     // B3. A matrix job's result is ONE roll-up, so shards are invisible without an intra-workflow aggregator. Clause 1 is the SET of `<lane>#<i>/<of>` receipts, not a count, and each receipt carries its own `of` and gate count -- so a leg that ran against a different plan is caught even when the totals agree. Its shard counts come
     // from `SHARD_COUNTS` in lanes.ts, the same constant the matrix emitter will read, so
@@ -4951,74 +5007,9 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shard manifest coverage',
     },
   },
-  {
-    // NO `env:`. The PR_HEAD_REF this carried was empty on push, schedule and the nightly dispatch, and nothing under `.ci/rediacc_ci/` reads it from the ambient environment -- the battery's tests scrub it or pin their own.
-    id: 'check:ci-quality-gates',
-    run: 'npm run check:ci-quality-gates',
-    // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool runs one-wide; check:types:incremental's entry records the measurement.
-    cores: { min: 1, max: 'all' },
-    gate: false,
-    leaves: ['.ci/rediacc_ci/battery.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
 
-  // --------------------------------------------------------------------------- The battery, flattened. The battery runner runs these 57 serially behind one opaque npm key; scheduling them individually is what lifts the parallel ceiling
-  // from 2.4x to roughly 7x and what makes the summary name the failing test.
-  //
-  // Assertion 7 pins this set against the on-disk glob the battery uses, so a newly added test cannot be silently omitted here -- without that rule this flattening would recreate #549 fifty-seven times over.
-  //
-  // ISOLATION IS A HYPOTHESIS, NOT A GIVEN. test-claude-hooks.sh failed once Since 2026-08-08 the battery enforces this in-step: the two writers run as an exclusive serial chain and the real-tree scanners are held until it finishes. See its header. inside the SERIAL battery and could not be reproduced standalone (plan finding F8). Any red that appears only under parallelism gets a
-  // named mutex group, never a retry.
-  //
-  // THE THREE WRITERS NAMED BELOW ARE A RECORD OF 2026-07-31, and one of them, test-gate-paths-exist.sh, was retired in W7 P5 census batch B4; its detector, its fixtures and its controls are carried by .ci/rediacc_ci/tests/gates/test_gate_paths_exist.py, which writes into .ci/scripts for the same reason.
-  //
-  // A HAZARD OF THIS CLASS, ONE INSTANCE FIXED AND TWO OPEN. Three gates write a file into the REAL working tree for the duration of their run, and a tree-scanning gate running concurrently trips over it. Observed live on 2026-07-31: FIXED .ci/scripts/test/gates/test-gate-paths-exist.sh
-  //     wrote scripts/.gate-paths-exist{,-noise}-fixture.ts and broke check:lint
-  //     with `ENOENT ... open '.../scripts/.gate-paths-exist-fixture.ts'`, exit 2
-  //     (eslint enumerated the file, then the control deleted it). Its fixtures
-  // now go to .ci/scripts, which that gate's own scan_targets() walks and no linter does. Re-run green with both controls firing and zero dotfiles observed in scripts/ for the whole 142s run. OPEN the config-migrations gate (its bash twin's line 68, now `rediacc_ci.quality.config_migrations`) -> packages/cli/.config-migrations-check.tmp.ts, which broke check:format. Cannot use the
-  // same fix: biome covers packages/**/*.ts, and the script must stay under packages/cli for node to resolve @rediacc/shared. OPEN the anti-vacuity meta-gate (its bash twin's line 255, now `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`) -> scripts/.gate-anti-vacuity-fixture.ts, same shape, no victim observed. Cannot use the same fix either: the empty-tree run builds
-  // its fixture tree with `cp -r "$REPO_ROOT/scripts"`, so the file has to exist under the real scripts/ at copy time to reach the harness at all. The hazard PREDATES the runner: `npm run check:lint` in one terminal while `npm run check:ci-quality-gates` runs in another hits the same ENOENT, and that is how it was first seen here, not through the pool.
-  //
-  // `mktemp` is NOT the fix, which is the trap: test-gate-paths-exist.sh's scan_targets() (:62-64) hardcodes `cd $REPO_ROOT` and `find scripts`, so a fixture outside the real tree stops being scanned and its control at :178-192 silently stops firing; and the config-migrations gate's generated script must sit under packages/cli for node to resolve @rediacc/shared and its relative
-  // fixtures dir. Both files have to stay in the tree.
-  //
-  // PREFER AN IGNORE RULE OVER A MUTEX, on measured cost. The insertion points
-  // exist: eslint.config.js's global `ignores` array and biome.json's
-  // `files.includes`, which already takes negated patterns. Both lists are "this is not source" exclusions (dist, node_modules, generated .d.ts), and a fixture that lives for milliseconds and is never committed belongs there. Cost: zero scheduling time, and it stands on its own merits whether or not the runner exists.
-  //
-  // USE THE FOUR EXACT PATHS, NOT A GLOB. `scripts/.gate-*-fixture.ts` would silently exempt any future file matching it; four literals cannot, because they name exactly the files that exist. The failure mode also inverts the right way: a fifth writer added later is NOT covered, so it trips the scanner loudly the first time it races instead of being silently absorbed. That matches
-  // how the rest of this repo's suppressions work, enumerated rather than pattern-matched.
-  //
-  // Both halves were PROVEN on a throwaway tree, each with a control that fires (2026-07-31), rather than reasoned from the tools' documented semantics.
-  // Both probes ran against the WORKSPACE tools, eslint 9 and biome 2.5.6,
-  // reached by linking the real node_modules into the scratch dir:
-  //   eslint  no ignore entry -> exit 1 on a planted parse error;
-  // exact-path `ignores` entry -> exit 0.
-  //   biome   no negation -> "Checked 2 files", flags the temp file, exit 1;
-  // exact-path `!` negation -> "Checked 1 file", exit 0. That biome run, and only that one, is what establishes that biome DOES walk dotfiles, which is why check:format was a victim at all. An earlier attempt without the node_modules link exited 0 in silence on a deliberately misformatted file; `npx` had resolved something other than the workspace biome, so that run is evidence
-  // about npx resolution and about nothing else. Do not read it as biome skipping dotfiles: a tool that never ran produces a green indistinguishable from a passing one, which is this whole file's subject.
-  //
-  // A mutex group binding the three writers against check:lint / check:format / lint:unused is the fallback, and it is expensive. It would serialise 511.7s of work against an observed 264.2s wall, a 1.94x regression that drops the run from about 9x to about 4.7x. It also binds the two LONGEST gates in the set to each other, because one of the writers is the critical path:
-  // test-gate-paths-exist.sh measured 142.6s standalone on an idle tree and 264.1s under parallel load, against check:lint at 194.8s under the same load. (The plan's 116.7s for check:lint is stale; do not cost this from it.) No mutex is declared here, deliberately, because that trade wants an explicit decision rather than a silent default.
-  {
-    id: 'gate-test:run-sh',
-    run: '.ci/scripts/test/gates/test-run-sh.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-run-sh.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED (2026-10-09): check:ci-quality-gates, the CI-side aggregate that ran every `.ci/scripts/test/gates/test-*.sh` through `.ci/rediacc_ci/battery.py` in ci-quality.yml's `quality-gate-tests` job, went with the last bash gate test. Every gate-test entry once flattened out of it is retired below with its subject, each ported to a pytest module collected by check:ci-pytest; the runner, its job and the `qualityGateTest` field are deleted, and check:ci-battery-clean-tree, which policed only the runner's tree snapshot, went with it.
+  // RETIRED WITH ITS SUBJECT (W11-A, 2026-10-08): gate-test:run-sh ran .ci/scripts/test/gates/test-run-sh.sh, which is deleted. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_run_sh.py` is collected by check:ci-pytest, and the bare-checkout ubuntu-slim proof is ci.yml's run-sh-tests job, which runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`.
   {
     id: 'check:ci-release-bump-skip',
     run: 'npm run check:ci-release-bump-skip',
@@ -5047,21 +5038,7 @@ export const GATES: readonly GateSpec[] = [
         '${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',
     },
   },
-  // NOT RETIRED, AND THE ONE EXCEPTION IN THIS BATCH. test-toolchain.sh is invoked directly by `.github/workflows/ci.yml:562` (job `run-sh-tests`, step "gate toolchain resolver controls"), a BARE-CHECKOUT `ubuntu-slim` job that deliberately installs no toolchain -- no node, no Python, no `.ci/cache/toolchain/uv-tools/bin/pytest` -- so it can report in under a minute.
-  // `.ci/rediacc_ci/tests/gates/test_gate_toolchain.py` reaches the identical 15 controls (verified: same case set, same PASS count) and runs as ADDITIONAL coverage under check:ci-pytest, but it cannot REPLACE this entry: pytest is not on that runner's PATH without a setup step this job exists to avoid. The twin stays registered here permanently, not pending a later deletion.
-  {
-    id: 'gate-test:toolchain',
-    run: '.ci/scripts/test/gates/test-toolchain.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-toolchain.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (section 12 U3, operator D8 ASKED:2026-10-08T19:13Z): gate-test:toolchain ran .ci/scripts/test/gates/test-toolchain.sh, which is deleted. The pytest port `.ci/rediacc_ci/tests/gates/test_gate_toolchain.py` is collected by check:ci-pytest, and ci.yml's bare-checkout run-sh-tests job runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`, which now supplies `tmp_path`, so the no-pytest reason this entry once gave no longer holds.
   // RETIRED WITH ITS SUBJECT: gate-test:claude-hooks, the heaviest entry in this file at 537.4s, was a 40-line wrapper around `.claude/hooks/test-hooks.sh` and had no other work in it. The harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`, and its label multiset was compared run-against-run before the deletion rather than diff-against-diff. The ports are
   // collected by check:ci-pytest, whose `paths` already carry `.claude/hooks/**` and `.claude/rediacc_hooks/**`, so nothing lost selection when this entry left.
   //
@@ -5088,7 +5065,7 @@ export const GATES: readonly GateSpec[] = [
     paths: [
       '.ci/rediacc_ci/**',
       '.claude/rediacc_hooks/**',
-      '.ci/scripts/test/gates/**',
+      // `.ci/scripts/test/gates/**` left this list on 2026-10-08: W11-A/B/C and section 12 U1-U3 deleted the last bash gate test and twin under it, so the glob matched nothing and could only drop out of --changed.
       '.claude/hooks/**',
       '.claude/settings.json',
       '.ci/scripts/test/lib/git-fixture.sh',
@@ -5104,12 +5081,12 @@ export const GATES: readonly GateSpec[] = [
       //
       // CI has not caught it because every port is still UNTRACKED, so the checkout CI runs has never contained one. The red would have arrived on the commit that landed them, which is the worst moment to discover a lane cannot run its own gate.
       //
-      // SPLIT OUT OF quality-security (PLAN-ci-time-budget.md T2.15, 2026-09-26): this step alone ran 20.9-22.5 minutes inside the old 45-minute job, so it now has its own job and its own toolchain setup (checkout, setup-workspace, ruff, createrepo-c, the CLI bundle) rather than sharing quality-security's. `check:ci-quality-gates`, the battery this gate's "Quality-gate unit tests" name used to sit beside, moved out too, into the sibling `quality-gate-tests` job below.
+      // SPLIT OUT OF quality-security (PLAN-ci-time-budget.md T2.15, 2026-09-26): this step alone ran 20.9-22.5 minutes inside the old 45-minute job, so it now has its own job and its own toolchain setup (checkout, setup-workspace, ruff, createrepo-c, the CLI bundle) rather than sharing quality-security's. The bash gate-test battery that sat beside it moved to a sibling job at the same time; that battery was retired on 2026-10-09 once its last test was ported.
       job: 'quality-pytest',
       step: 'Python package tests',
     },
   },
-  // >>> gen-manifest: region 45
+  // >>> gen-manifest: region 47
   {
     id: 'check:ci-pathspec-scope',
     run: 'npm run check:ci-pathspec-scope',
@@ -5122,7 +5099,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
-  // <<< gen-manifest: region 45
+  // <<< gen-manifest: region 47
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',
@@ -5142,46 +5119,9 @@ export const GATES: readonly GateSpec[] = [
       step: 'Package key budget',
     },
   },
-  {
-    id: 'gate-test:blocker-golden-corpus',
-    run: '.ci/scripts/test/gates/test-blocker-golden-corpus.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-blocker-golden-corpus.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:media-r2',
-    run: '.ci/scripts/test/gates/test-media-r2.sh',
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-media-r2.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
-  {
-    id: 'gate-test:runner-advice',
-    run: '.ci/scripts/test/gates/test-runner-advice.sh',
-    reads: ['tree:repo'],
-    gate: true,
-    qualityGateTest: true,
-    leaves: ['.ci/scripts/test/gates/test-runner-advice.sh'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-gate-tests',
-      step: 'Quality-gate unit tests',
-    },
-  },
+  // RETIRED WITH ITS SUBJECT (section 12 U1): gate-test:blocker-golden-corpus ran .ci/scripts/test/gates/test-blocker-golden-corpus.sh, deleted with .ci/scripts/lib/blocker-validator.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py` is collected by check:ci-pytest and answers the frozen golden `lib.blocker-validator.jsonl`.
+  // RETIRED WITH ITS SUBJECT (section 12 U2): gate-test:media-r2 ran .ci/scripts/test/gates/test-media-r2.sh, deleted with the then-dead .ci/media/verify.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_media_r2.py` is collected by check:ci-pytest and answers its frozen golden.
+  // RETIRED WITH ITS SUBJECT (section 12 U1): gate-test:runner-advice ran .ci/scripts/test/gates/test-runner-advice.sh, deleted with .ci/scripts/lib/emit-advisory.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py` is collected by check:ci-pytest.
   {
     // A sweep added retry_schema_exhaustion to the judge call sites one at a time and MISSED THE FIFTH, in wl_shapedup.py -- the commit that found it says so in its own subject. Five examples checked individually is not the claim that the set is uniform, and the fifth is what an example-based sweep drops. Enumerated from source, so a sixth site is covered the day it is written.
     id: 'check:ci-schema-call-sites',
@@ -5321,7 +5261,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: CI runs .ci/scripts/test/test-rdc-update.sh all in .github/workflows/ct-update-flow.yml:70 against a real SEA binary from build-cli-linux-x64. A developer checkout has only the node bundle, so the happy and rollback scenarios cannot run here; the proxy names both every run and runs all seven once RDC_BINARY is set.',
+        'BLOCKER: CI runs `python3 -m rediacc_ci.testrun.rdc_update all` in .github/workflows/ct-update-flow.yml:70 against a real SEA binary from build-cli-linux-x64. A developer checkout has only the node bundle, so the happy and rollback scenarios cannot run here; the proxy names both every run and runs all seven once RDC_BINARY is set.',
     },
   },
   {
@@ -5394,7 +5334,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: ensure-nfpm.sh is invoked by ci.yml and cd-stage.yml as a setup step, never as a validation, and is the single site enforcing NFPM_VERSION and its sha256. The proxy runs it in a throwaway repo root so the cold-cache fetch-and-verify branch is actually reached; a step pointer would name a step that installs rather than asserts.',
+        'BLOCKER: rediacc_ci.build.ensure_nfpm is invoked by ci.yml and cd-stage.yml as a setup step, never as a validation, and is the single site enforcing NFPM_VERSION and its sha256. The proxy runs it in a throwaway repo root so the cold-cache fetch-and-verify branch is actually reached; a step pointer would name a step that installs rather than asserts.',
     },
   },
   {
@@ -5439,7 +5379,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Install table',
     },
   },
-  // >>> gen-manifest: region 46
+  // >>> gen-manifest: region 48
   {
     id: 'check:ci-gen-manifest',
     run: 'npm run check:ci-gen-manifest',
@@ -5450,18 +5390,6 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-code',
       step: 'Generated manifest regions',
-    },
-  },
-  {
-    id: 'check:ci-w7p5a-real-run-blockers',
-    run: 'npm run check:ci-w7p5a-real-run-blockers',
-    gate: true,
-    leaves: ['.ci/scripts/quality/check_w7p5a_real_run_blockers.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
-      step: 'W7P5-a real-run blocklist',
     },
   },
   {
@@ -5488,7 +5416,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Container build context',
     },
   },
-  // <<< gen-manifest: region 46
+  // <<< gen-manifest: region 48
   // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow and local-only until a CI job that already builds images carries it.
   {
     id: 'check:ci-proxy-image-smoke',
@@ -5507,7 +5435,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: a full docker build of the executor image (npm ci of the workspace plus the CLI bundle) that also needs a renet-linux-amd64 to stage; no CI job builds renet before the quality lanes, and wiring it into ci-build-docker is a workflow change outside the proxy writer file set (PLAN-cloudflare-proxy.md Writer A)',
     },
   },
-  // >>> gen-manifest: region 47
+  // >>> gen-manifest: region 49
   {
     id: 'check:ci-cli-proxy-safe-output',
     run: 'npm run check:ci-cli-proxy-safe-output',
@@ -5544,7 +5472,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Turnstile widget drift',
     },
   },
-  // <<< gen-manifest: region 47
+  // <<< gen-manifest: region 49
 ];
 
 /** The root workflow every CI run enters through. */

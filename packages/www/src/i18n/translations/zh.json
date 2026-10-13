@@ -3765,7 +3765,7 @@
               "title": "默认多云"
             },
             {
-              "description": "Move between clouds whenever you want. Open-format snapshots. No proprietary agents. Standard btrfs — available in every modern Linux kernel.",
+              "description": "随时在云间迁移。快照都是开放格式。没有私有 agent。就是标准 btrfs，2013 年起就内置在 Linux 里了。",
               "icon": "lock",
               "title": "无供应商锁定"
             }
@@ -3913,7 +3913,7 @@
           },
           "steps": [
             {
-              "description": "运行 rdc replicate production --target secondary。增量同步——仅传输变更的块。",
+              "description": "运行 rdc replicate production --target secondary。只同步发生变化的数据，而不是整个数据集，所以又快又省钱。",
               "icon": "copy",
               "title": "复制"
             },
@@ -3937,7 +3937,7 @@
           "title": "云故障保护 - 多云架构部署确保服务持续不中断 | Rediacc"
         },
         "problem": {
-          "description": "2024 年关键云故障事件同比增长 18%，持续时间延长 18.7%，其中 68% 由人为错误导致。当你唯一的云宕机时，一切都宕机了。你的客户、你的收入、你的声誉——全部沦为他人基础设施的人质。",
+          "description": "想象一下：AWS us-east-1 突然宕机，整个业务也跟着瘫痪。网站、销售、客服热线全都停了，除了等待什么也做不了。2024 年大型云故障同比增长 18%，持续时间延长 18.7%，其中 68% 由人为失误引起。把业务押在单一云上，就是把生意押在别人的倒霉日子上。",
           "statCallouts": [
             {
               "number": "$300K+",
@@ -3990,59 +3990,59 @@
         "references": {
           "items": [
             {
-              "text": "ITIC, “2024 Hourly Cost of Downtime Report,” 2024. “The average cost of a single hour of downtime now exceeds $300,000 for over 90% of mid-size and large enterprises.”",
+              "text": "ITIC，“2024 Hourly Cost of Downtime Report,” 2024。“对超过 90% 的中大型企业来说，单小时停机的平均成本现已超过 $300,000。”",
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Parametrix, “2024 Cloud Outage Risk Report,” 2024. “Critical cloud service interruption events increased by 18.0% and lasted 18.7% longer in 2024 than in 2023. Human error accounted for 68% of incidents.”",
+              "text": "Parametrix，“2024 Cloud Outage Risk Report,” 2024。“关键云服务中断事件 2024 年同比增加 18.0%，持续时间延长 18.7%，其中 68% 由人为错误引起。”",
               "url": "https://www.reinsurancene.ws/critical-cloud-service-outages-increase-in-2024-parametrix/"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024. “The total cost of downtime for Global 2000 companies is $400B annually, or 9 percent of profits, when digital environments fail unexpectedly.”",
+              "text": "Splunk & Oxford Economics，“The Hidden Costs of Downtime,” 2024。“全球 2000 强企业因数字环境意外故障造成的停机总成本每年高达 $400B，占利润的 9%。”",
               "url": "https://www.splunk.com/en_us/newsroom/press-releases/2024/conf24-splunk-report-shows-downtime-costs-global-2000-companies-400-billion-annually.html"
             },
             {
-              "text": "Veeam supports cross-cloud backup and replication between VMware, Hyper-V, AWS, Azure, and Google Cloud.",
+              "text": "Veeam 支持跨云备份和复制，涵盖 VMware、Hyper-V、AWS、Azure 和 Google Cloud。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Zerto replicates workloads between VMware, Hyper-V, AWS, Azure, IBM Cloud, and 350+ cloud service providers.",
+              "text": "Zerto 在 VMware、Hyper-V、AWS、Azure、IBM Cloud 及 350+ 家云服务商间进行工作负载复制。",
               "url": "https://www.zerto.com/solutions/use-cases/cloud/hybrid-cloud-and-multi-cloud/"
             },
             {
-              "text": "Druva provides cross-cloud DR by storing backup data across AWS and Azure from a single console.",
+              "text": "Druva 通过单一控制台实现跨云灾备，将备份数据存储在 AWS 和 Azure。",
               "url": "https://www.druva.com/solutions/accelerate-protect-cloud-projects"
             },
             {
-              "text": "Veeam uses incremental backup with Changed Block Tracking (CBT) to transfer only modified data blocks.",
+              "text": "Veeam 采用增量备份和变化块追踪（CBT）技术，仅传输修改过的数据块。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/changed_block_tracking.html"
             },
             {
-              "text": "Zerto VRAs continuously replicate only changed data blocks at the hypervisor level in near-synchronous fashion.",
+              "text": "Zerto VRA 在虚拟机管理程序层持续复制变化数据块，实现近同步复制。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Druva uses incremental-forever backup with global variable-block deduplication achieving up to 90% bandwidth savings.",
+              "text": "Druva 使用永久增量备份和全局可变块去重，带宽节省最高达 90%。",
               "url": "https://help.druva.com/en/articles/12158018-first-backup-vs-incremental-backups"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication 部署在本地 Windows Server，客户保持对基础设施的完全控制。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto 采用本地部署，配有 Zerto Virtual Manager 和每台主机一个的 Virtual Replication Appliance。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             },
             {
-              "text": "Zerto provides automated Re-IP of recovered VMs during failover with pre/post recovery scripts for DNS updates.",
+              "text": "Zerto 在故障转移期间自动为恢复的虚拟机重新配置 IP，支持恢复前后脚本进行 DNS 更新。",
               "url": "https://help.zerto.com/kb/000002926"
             },
             {
-              "text": "Veeam Backup & Replication provides continuous replication of full application stacks with orchestrated failover.",
+              "text": "Veeam Backup & Replication 提供完整应用栈的持续复制和编排化故障转移。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/replica_job.html"
             },
             {
-              "text": "Zerto Virtual Protection Groups replicate multi-VM application stacks as a single consistent unit with write-order fidelity.",
+              "text": "Zerto Virtual Protection Groups 将多虚拟机应用栈作为单一一致单元复制，保持写入顺序一致性。",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/ProtectingVirtualMachinesfrom.htm"
             }
           ]
@@ -4064,8 +4064,8 @@
           "quote": "在去年三月的 AWS us-east-1 故障期间，我们的 12 个生产服务在 22 秒内故障转移到了备用数据中心。我们的客户毫无察觉。我们的竞争对手宕机了 6 小时。那周我们从他们的客户那里获得了三个新的企业合同。"
         },
         "techDiff": {
-          "description": "Rediacc 使用 btrfs send/receive 在文件系统层面计算增量差异。不是传输完整镜像，只有变更的数据块在站点之间移动。一个 380 GB 的环境如果每天有 2.4 GB 的变更，就只传输 2.4 GB——而非 380 GB。这意味着 98% 的带宽节省。复制可以持续运行或按计划执行。",
-          "rediaccLabel": "Rediacc (btrfs send/receive)",
+          "description": "Rediacc 只复制自上次以来发生变化的数据。假设一个 380 GB 的环境，今天只变了 2.4 GB，Rediacc 只传输 2.4 GB，而不是 380 GB。这样<span class=\"sp-emphasis\">带宽可节省 98%</span>。它可以持续运行，也可以按计划运行。",
+          "rediaccLabel": "Rediacc 方式（btrfs send/receive）",
           "rows": [
             {
               "rediacc": "增量差异：仅传输变更的块，日常传输量通常为 2.4 GB",
@@ -4996,7 +4996,7 @@
               "title": "自助式，Git 集成"
             },
             {
-              "description": "不仅仅是代码——是完整的技术栈。操作系统、容器、数据库和配置一起克隆。以 1 倍成本发现 Bug，而非在生产中以 30-100 倍成本发现。",
+              "description": "不仅仅是代码，是完整的技术栈。系统、容器、数据库和配置一起克隆。以 1 倍成本发现问题，而非在生产环境中以 30-100 倍成本发现。",
               "icon": "layers",
               "title": "应用 + 数据库 + 配置"
             }
@@ -5013,7 +5013,7 @@
         "calculator": {
           "annualLabel": "年度团队成本",
           "description": "拖动滑块以匹配你的团队。结果可能会让你吃惊。",
-          "footnote": "基于 $160K 平均总薪酬（$92/小时全额成本）。环境等待成本：阻塞时间 × 60% 生产力影响。上下文切换：每位开发人员每年 $24K-$50K。69% 的开发人员每周因低效损失 8 小时以上（Atlassian 2024）。开发人员在等待期间并非完全闲置——但级联依赖会在多个迭代周期中累积。保守估计——实际节省往往更高。",
+          "footnote": "基于平均薪酬 $160K（每小时 $92 全额成本）计算。环境等待成本 = 阻塞时间 × 60% 生产力影响。频繁切换成本：每位开发人员每年 $24K-$50K。69% 的开发人员因工具低效每周损失 8 小时以上（Atlassian 2024）。开发人员在等待中并非完全闲置，但级联依赖会在多个迭代周期中累积。此为保守估计，实际节省通常更可观。",
           "headerTitle": "计算你的环境等待成本",
           "results": {
             "blockedTime": "每迭代周期的阻塞时间",
@@ -5064,7 +5064,7 @@
             {
               "name": "部署时间",
               "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "values": ["分钟", "分钟", "分钟", "分钟", "秒", "<60s"]
             },
             {
               "name": "与生产一致的数据",
@@ -5076,7 +5076,7 @@
         },
         "hero": {
           "ctaLabel": "开始克隆",
-          "subtitle": "快速创建生产环境的精确副本——应用、数据库和配置——用于开发和测试。无需工单，无需等待。",
+          "subtitle": "<span class=\"sp-emphasis\">几秒内</span>创建一份与生产环境完全一致的副本。应用、数据库和配置一应俱全。无需工单，无需等待。",
           "title": "60 秒克隆生产环境"
         },
         "howItWorks": {
@@ -5146,7 +5146,7 @@
             {
               "description": "开发者运行 rdc ceph snapshot create production。无需工单，无需审批。",
               "icon": "terminal",
-              "title": "Run"
+              "title": "执行"
             },
             {
               "description": "生产环境的精确副本在 60 秒内启动。相同的操作系统、配置和数据。",
@@ -5156,7 +5156,7 @@
             {
               "description": "立即开始开发。无需安装，无需配置。直接编码。",
               "icon": "code",
-              "title": "Work"
+              "title": "工作"
             }
           ],
           "title": "一条命令，六十秒完成。"
@@ -5168,7 +5168,7 @@
           "title": "环境克隆 - 60 秒快速克隆完整生产环境 | Rediacc"
         },
         "problem": {
-          "description": "你的开发人员需要一个测试环境。他们提交工单。运维团队配置服务器。有人负责配置它。三天后，它仍然与生产环境不一致。与此同时，你的开发人员从周一起就被阻塞了——而每次中断都需要 23 分钟的恢复时间。",
+          "description": "开发人员需要一套测试环境，于是提交工单。运维搭好服务器，有人再去配置。三天后，环境仍然和生产对不上。这位开发人员从周一起就卡住了，而且每次被打断，都要花 23 分钟才能重新集中精力。",
           "statCallouts": [
             {
               "number": "69%",
@@ -5185,13 +5185,13 @@
             {
               "number": "$50K/yr",
               "ref": 2,
-              "source": "Industry composite estimate",
+              "source": "行业综合估算",
               "text": "每位开发者因上下文切换造成的年度损失"
             }
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": ["运行", "60s", "完成"],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -5221,63 +5221,63 @@
         "references": {
           "items": [
             {
-              "text": "Atlassian, DX & Wakefield Research, \"State of Developer Experience Report,\" 2024. \"Sixty-nine percent of developers are losing eight hours or more per week to inefficiencies.\" \"For an organization with 500 developers, losing 8 hours per week costs roughly $6.9 million over the course of a year.\"",
+              "text": "Atlassian、DX & Wakefield Research，《开发者体验报告》2024 年版。\"69% 的开发人员因工具低效每周损失 8 小时以上\"。\"对于拥有 500 名开发人员的组织，每周损失 8 小时在一年内成本约 $690 万\"。",
               "url": "https://www.atlassian.com/blog/developer/developer-experience-report-2024"
             },
             {
-              "text": "Industry composite from vendor surveys and published benchmarks. \"Context switching costs $24K–$50K per developer per year in lost productivity.\"",
+              "text": "来自厂商调查和已发布基准的行业综合数据。\"上下文切换每年让每位开发人员损失 $24K-$50K 的生产力\"。",
               "url": "https://release.com/blog/hidden-costs-of-staging"
             },
             {
-              "text": "GitHub Codespaces creates a dedicated VM and clones the repository into a dev container for instant cloud development.",
+              "text": "GitHub Codespaces 创建专用虚拟机，将仓库克隆到开发容器中，实现即时云开发。",
               "url": "https://docs.github.com/en/codespaces/developing-in-codespaces/creating-a-codespace"
             },
             {
-              "text": "Coder templates are Terraform-defined blueprints for creating identical, reproducible development workspaces.",
+              "text": "Coder 模板是用 Terraform 定义的蓝图，创建完全相同、可重现的开发工作空间。",
               "url": "https://coder.com/docs/admin/templates"
             },
             {
-              "text": "Vercel preview deployments create unique live URLs for every push/PR for isolated frontend review.",
+              "text": "Vercel 预览部署为每个推送/PR 创建唯一的实时 URL，用于隔离的前端审查。",
               "url": "https://vercel.com/docs/deployments/preview-deployments"
             },
             {
-              "text": "Delphix Virtual Databases (VDBs) are full read-write copies from snapshots requiring only a fraction of traditional storage.",
+              "text": "Delphix 虚拟数据库 (VDB) 是从快照创建的完整读写副本，仅需传统存储的一小部分。",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branches are copy-on-write clones sharing pages with the parent until writes diverge.",
+              "text": "Neon 分支是写时复制克隆，与父分支共享页面，直到写入操作分叉。",
               "url": "https://neon.com/docs/introduction/branching"
             },
             {
-              "text": "Delphix supports Oracle, SQL Server, PostgreSQL, MySQL, SAP ASE, IBM Db2, MariaDB, and CockroachDB.",
+              "text": "Delphix 支持 Oracle、SQL Server、PostgreSQL、MySQL、SAP ASE、IBM Db2、MariaDB 和 CockroachDB。",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Codespaces prebuilds pre-assemble source code, extensions, and dependencies for substantially faster codespace creation.",
+              "text": "Codespaces 预构建预先组装源代码、扩展和依赖项，大幅加快代码空间创建速度。",
               "url": "https://docs.github.com/en/codespaces/prebuilding-your-codespaces/about-github-codespaces-prebuilds"
             },
             {
-              "text": "Coder prebuilt workspaces maintain a ready-to-use pool, reducing creation time from up to 20 minutes to under a minute.",
+              "text": "Coder 预构建工作空间维护即用型池，将创建时间从最多 20 分钟减少到不足 1 分钟。",
               "url": "https://coder.com/docs/admin/templates/extending-templates/prebuilt-workspaces"
             },
             {
-              "text": "Vercel deploys to its global edge network with apps going live within seconds of pushing code.",
+              "text": "Vercel 部署到全球边缘网络，应用在推送代码后数秒内上线。",
               "url": "https://vercel.com/docs/deployments"
             },
             {
-              "text": "Delphix VDB provisioning completes in minutes rather than hours or days for traditional database copies.",
+              "text": "Delphix VDB 配置在数分钟内完成，远快于传统数据库副本的数小时或数天。",
               "url": "https://cd.delphix.com/docs/latest/virtual-database-vdb-management"
             },
             {
-              "text": "Neon branch creation takes approximately 1 second regardless of database size.",
+              "text": "Neon 分支创建仅需约 1 秒，无论数据库大小如何。",
               "url": "https://neon.com/docs/get-started/workflow-primer"
             },
             {
-              "text": "Delphix creates full read-write virtual copies from production data sources for application, AI, and ML teams.",
+              "text": "Delphix 从生产数据源创建完整读写虚拟副本，供应用、AI 和 ML 团队使用。",
               "url": "https://cd.delphix.com/docs/latest/overview"
             },
             {
-              "text": "Neon branches include all parent data by default providing instant production-identical copies.",
+              "text": "Neon 分支默认包含所有父级数据，提供与生产完全相同的即时副本。",
               "url": "https://neon.com/docs/introduction/branching"
             }
           ]
@@ -5295,7 +5295,7 @@
           "quote": "我们在不到 10 分钟内创建了 12 个与生产环境完全相同的测试环境——每个都包含完整的 241 GB PostgreSQL 数据库。我们之前的流程是手动将数据库导出到预发布环境，需要 3 名工程师和每个环境 2 天的时间。"
         },
         "techDiff": {
-          "description": "Rediacc 使用 btrfs 写时复制快照技术在文件系统层面运行。对 241 GB 生产环境的快照在亚秒级完成，且初始不占用额外存储空间。随着克隆在开发过程中产生差异，只有变更的数据块使用新空间。十个 241 GB 数据库的克隆可能仅使用不到 12 GB 的额外存储。",
+          "description": "秘诀在于：Rediacc 在<span class=\"sp-emphasis\">存储层</span>复制，而不是在文件层面。241 GB 的副本不到一秒就能完成，几乎不占额外空间。之后只有变化的部分才会占用新空间。十份 241 GB 环境的副本，加起来不到 12 GB 就能放下。",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -5327,17 +5327,17 @@
         "benefits": {
           "items": [
             {
-              "description": "在不影响生产的情况下测试故障转移。模拟在 btrfs 克隆上运行——您的在线服务不会停止。",
+              "description": "无需触碰生产环境即可测试故障转移。测试在即时副本上运行，你的线上服务永不中断。",
               "icon": "shield",
               "title": "安全模拟"
             },
             {
-              "description": "精确了解恢复过程中的每个步骤。每项服务、每个端口、每次健康检查——带精确时间戳记录。",
+              "description": "逐步看清恢复过程中发生的一切。每项服务、每个端口、每次健康检查，都会带着精确时间记录下来。",
               "icon": "eye",
               "title": "完整可见性"
             },
             {
-              "description": "在需要之前就知道您的灾难恢复计划是否有效。故障转移测试集成到您的 CI 流水线——失败了？在问题变严重之前您就会收到告警。",
+              "description": "在需要之前就确认计划行得通。测试可直接接入 CI 流水线。一旦失败就会告警，远早于问题造成影响。",
               "icon": "check-circle",
               "title": "混乱来临前的信心"
             }
@@ -5489,7 +5489,7 @@
               "title": "模拟"
             },
             {
-              "description": "实时观察每个步骤。RTO、RPO、服务健康——全部测量和记录。可连接到您的监控栈。",
+              "description": "实时查看每一步。我们测量恢复速度和数据丢失，记录每个服务，并可接入你现有的监控工具。",
               "icon": "eye",
               "title": "观察"
             },
@@ -5505,7 +5505,7 @@
         "meta": {
           "description": "安全地运行完整的灾难模拟和故障转移测试。确认您的恢复方案确实有效，在真正需要的关键时刻不会留下任何意外。",
           "keywords": "故障转移测试, 灾难恢复测试, DR 模拟, DR 测试自动化, 恢复验证, btrfs clone, RTO RPO 测试",
-          "title": "故障转移测试——在需要之前测试你的 DR 计划 | Rediacc"
+          "title": "故障转移测试：对灾难恢复（DR）计划进行验证 | Rediacc"
         },
         "problem": {
           "description": "你有灾难恢复计划。但你上次测试是什么时候？大多数团队没有。他们假设它能工作。然后灾难来临，他们发现它不能。未经测试的计划不是计划。它只是一个希望。",
@@ -5561,47 +5561,47 @@
         "references": {
           "items": [
             {
-              "text": "Veeam, “2024 Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.” “Only 58% of servers met their recovery SLA during their last large-scale attack.” “Only 32% of organizations believe that they could recover 50 workloads within an entire business week.”",
+              "text": "Veeam, “2024 Data Protection Trends Report: BC/DR Trends,” 2024. “仅有 13% 的组织在灾难恢复流程中采用编排工作流。” “仅有 58% 的服务器在上一次大规模攻击期间达到恢复 SLA。” “仅有 32% 的组织相信能在一个工作周内恢复 50 个工作负载。”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
-              "text": "Zerto test failovers spin up replica VMs on scratch disks in isolated bubble networks with zero production impact.",
+              "text": "Zerto 的测试故障转移在隔离网络中的临时磁盘上启动副本虚拟机，完全不影响生产。",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup runs automated recovery verification in an isolated Virtual Lab with zero production impact.",
+              "text": "Veeam SureBackup 在隔离虚拟实验室中运行自动恢复验证，完全不影响生产。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/virtual_lab.html"
             },
             {
-              "text": "Zerto Orchestrator automates scheduled failover tests with zero production impact and generates compliance reports.",
+              "text": "Zerto Orchestrator 自动运行日程化故障转移测试，完全不影响生产，并生成合规报告。",
               "url": "https://www.zerto.com/the-platform/automated-disaster-recovery-testing/"
             },
             {
-              "text": "Druva DR plan testing spins up cloned resources on-demand without touching production for RTO/RPO validation.",
+              "text": "Druva 的 DR 计划测试按需启动克隆资源，完全不影响生产，进行 RTO/RPO 验证。",
               "url": "https://help.druva.com/en/articles/8806108-execute-test-vs-execute-failure-of-a-dr-plan"
             },
             {
-              "text": "Veeam ONE Reporter generates detailed DR readiness and compliance reports for audit and governance.",
+              "text": "Veeam ONE Reporter 生成详细的 DR 就绪度及合规报告，供审计和治理使用。",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Zerto generates Recovery Reports after every failover test with up to 90 days of historical data for SLA validation.",
+              "text": "Zerto 在每次故障转移测试后生成恢复报告，保留最多 90 天历史数据用于 SLA 验证。",
               "url": "https://help.zerto.com/bundle/Admin.VC.HTML/page/Recovery_Reports.htm"
             },
             {
-              "text": "Veeam SureBackup validates recoverability of cloud workloads including AWS and Azure VMs in isolated tests.",
+              "text": "Veeam SureBackup 通过隔离测试验证云工作负载的可恢复性，支持 AWS 和 Azure 虚拟机。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Zerto supports cross-cloud test failovers (on-prem to Azure, AWS to Azure) using scratch disks in isolated networks.",
+              "text": "Zerto 支持跨云测试故障转移（本地到 Azure、AWS 到 Azure），在隔离网络中的临时磁盘上运行。",
               "url": "https://help.zerto.com/bundle/Admin.Azure.HTML.10.0_U1/page/The_Test_Failover_Process.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication 以本地部署方式运行在 Windows Server 上，客户完全掌控基础设施。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto 以本地部署方式运行，包含 Zerto 虚拟管理器和每主机虚拟复制设备。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5620,10 +5620,10 @@
             },
             "improvement": "频率提高 12 倍 · 首次运行发现 3 个关键差距"
           },
-          "quote": "我们在一个周二上午运行了第一次自动化故障转移测试。它发现了 3 个关键差距——一条过期的 DNS 记录、备用系统上缺失的 SSL 证书、以及 4 分钟的数据库复制延迟。这三个问题在真实故障时都会导致宕机。我们在一个下午就修复了它们。现在我们每月测试一次，睡得更安心。"
+          "quote": "我们周二上午跑了第一次自动化故障转移测试。一下子发现 3 个关键问题：过期的 DNS 记录、备用系统上缺失的 SSL 证书，还有 4 分钟的数据库复制延迟。这三个都会导致真实故障。下午就全修了。现在每月测试一次，睡得踏实多了。"
         },
         "techDiff": {
-          "description": "传统 DR 测试需要生产停机、一个工程师团队和数周的规划。Rediacc 使用 btrfs 写时复制快照在数秒内创建整个基础设施的隔离克隆。测试在克隆上运行——生产永不停止。",
+          "description": "老派的 DR 测试需要生产停机、一屋子工程师和数周的规划。Rediacc 能在<span class=\"sp-emphasis\">数秒内</span>克隆整套环境。测试在副本上运行。生产永不停机。",
           "rediaccLabel": "Rediacc DR 测试",
           "rows": [
             {
@@ -5635,12 +5635,12 @@
               "traditional": "3-5 天规划、组建团队、执行"
             },
             {
-              "rediacc": "每月或通过 cron/CI——部署频率即测试频率",
-              "traditional": "每年测试一次（如果有的话）——最好的情况是每季度"
+              "rediacc": "每月，或通过 cron/CI：部署多频繁，就测多频繁",
+              "traditional": "一年测一次（如果有的话），最多每季度"
             },
             {
-              "rediacc": "自动化健康检查——包含精确 RTO/RPO 的通过/失败结果",
-              "traditional": "手动验证——\"看起来没问题\"的主观判断"
+              "rediacc": "自动健康检查：用精确数据说话，通过或失败",
+              "traditional": "手工检查：凭感觉判定“看起来没问题”"
             },
             {
               "rediacc": "整个集群 46 秒克隆完成，演练在副本上进行",
@@ -5662,7 +5662,7 @@
         "calculator": {
           "annualLabel": "年度风险敞口",
           "description": "拖动滑块以匹配你的基础设施。数字累加得很快。",
-          "footnote": "面临风险的收入基于平均每分钟停机成本 $9,000（Splunk/Oxford Economics 2024）。恢复人力：6 名工程师 × 恢复小时数 × $200/小时混合费率。声誉成本按直接成本的百分比估算（行业估计）。使用 Rediacc：不可变快照在 5 分钟内恢复——停机时间趋近于零。",
+          "footnote": "收入损失基于平均每分钟 $9,000 的停机成本计算（Splunk/Oxford Economics 2024）。恢复成本：6 名工程师 × 恢复小时数 × $200/小时。声誉成本按直接成本的一定比例估算（行业估计）。采用 Rediacc：不可变快照在 5 分钟内恢复，停机时间基本为零。",
           "headerTitle": "计算你的勒索软件风险敞口",
           "results": {
             "downtime": "每次事故的停机时间",
@@ -5688,7 +5688,7 @@
         },
         "comparison": {
           "capabilityLabel": "功能",
-          "description": "传统备份工具通过软件锁承诺不可变性。Rediacc 在内核层面强制执行——勒索软件无法触及的地方。",
+          "description": "其他备份工具靠软件锁来锁定备份，勒索软件能撬开这些锁。Rediacc 把锁建在存储层里，勒索软件够不到的地方。",
           "features": [
             {
               "name": "不可变备份",
@@ -5718,7 +5718,7 @@
             {
               "name": "恢复时间",
               "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "values": ["分钟", "分钟", "Hours", "Hours", "秒", "<5 min"]
             },
             {
               "name": "自托管/无云依赖",
@@ -5799,7 +5799,7 @@
             {
               "description": "不可变性在文件系统层生效。不允许任何更改。勒索软件不行，root 用户也不行。",
               "icon": "lock",
-              "title": "Lock"
+              "title": "锁定"
             },
             {
               "description": "当灾难来临时，您的干净备份已在等待。完整环境在 5 分钟内恢复。",
@@ -5816,7 +5816,7 @@
           "title": "不可变备份 - 防勒索软件的安全数据备份方案 | Rediacc"
         },
         "problem": {
-          "description": "现代攻击者在加密文件之前会先找到你的备份。如果你的备份可以被修改，它们就会被修改。传统备份工具留下了后门——94% 的勒索软件受害者的备份在攻击期间被针对性攻击。你需要在创建的瞬间就锁定的备份。",
+          "description": "想象一下：凌晨 3 点，勒索软件来袭，备份也被加密了。原因是：攻击者会先找到备份。事实上，94% 的勒索软件受害者在攻击期间备份被盯上（Sophos 2024）。只要备份能被修改，就一定会被修改。备份必须在创建的瞬间就锁死。",
           "statCallouts": [
             {
               "number": "94%",
@@ -5842,15 +5842,15 @@
         "references": {
           "items": [
             {
-              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” March 2024. “94% of organizations hit by ransomware in the past year said that the cybercriminals attempted to compromise their backups during the attack.”",
+              "text": "Sophos, “The Impact of Compromised Backups on Ransomware Outcomes,” 2024 年 3 月。“过去一年遭受勒索软件攻击的企业中，94% 表示网络犯罪分子试图在攻击期间破坏其备份。”",
               "url": "https://www.sophos.com/en-us/blog/the-impact-of-compromised-backups-on-ransomware-outcomes/"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024, as breaches grow more disruptive and further expand demands on cyber teams.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” 2024 年 7 月。“2024 年全球数据泄露平均成本达 488 万美元，随着泄露愈加具有破坏性，网络安全团队的负担持续增加。”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” July 2022. “In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.”",
+              "text": "Coveware, “Quarterly Ransomware Report Q2 2022,” 2022 年 7 月。“第二季度平均停机天数为 24 天，环比第一季度下降 8%。”",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
@@ -5858,75 +5858,75 @@
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Rubrik Atlas filesystem stores all backup data in proprietary append-only immutable format that cannot be modified or deleted.",
+              "text": "Rubrik Atlas 文件系统以专有的仅追加不可变格式存储所有备份数据，无法修改或删除。",
               "url": "https://www.rubrik.com/content/dam/rubrik/en/resources/white-paper/rwp-recovering-fast-from-ransomware-attacks.pdf"
             },
             {
-              "text": "Commvault supports WORM storage lock and compliance lock on disk libraries for immutable backups.",
+              "text": "Commvault 支持磁盘库上的 WORM 存储锁和合规性锁，用于不可变备份。",
               "url": "https://documentation.commvault.com/2024e/software/configuring_worm_storage_mode_on_disk_libraries.html"
             },
             {
-              "text": "Druva's SaaS architecture stores backups in an air-gapped, immutable cloud decoupled from the customer's environment.",
+              "text": "Druva 的 SaaS 架构在与客户环境隔离的气隙式不可变云中存储备份。",
               "url": "https://www.druva.com/resources/solution-brief/solution-brief-druva-immutability"
             },
             {
-              "text": "Veeam SureBackup automatically verifies backup recoverability by booting VMs in an isolated Virtual Lab environment.",
+              "text": "Veeam SureBackup 通过在隔离的虚拟实验室环境中启动虚拟机来自动验证备份可恢复性。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Veeam Instant VM Recovery mounts backups directly on ESXi/Hyper-V hosts for near-instant VM recovery and testing.",
+              "text": "Veeam Instant VM Recovery 将备份直接挂载到 ESXi/Hyper-V 主机上，实现近乎即时的虚拟机恢复和测试。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Live Mount instantly mounts backup snapshots as live VMs or file shares for testing and recovery.",
+              "text": "Rubrik Live Mount 即时将备份快照挂载为实时虚拟机或文件共享，用于测试和恢复。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery boots VMs directly from backup via NFS export for instant testing and recovery.",
+              "text": "Commvault Live Recovery 通过 NFS 导出从备份直接启动虚拟机，实现即时测试和恢复。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore boots VMware VMs directly from backup cloud in under 5 minutes with live migration.",
+              "text": "Druva Instant Restore 在 5 分钟内从备份云中直接启动 VMware 虚拟机，支持实时迁移。",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Zerto 连续复制与基于日志的恢复实现近零 RPO 和分钟级 RTO，支持即时恢复。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery 通过从备份文件直接启动虚拟机，实现 5 分钟以内的 RTO。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery 通过从不可变快照直接挂载虚拟机，实现 5 分钟以内的恢复。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery 通过从备份挂载虚拟机并在后台进行存储 vMotion，实现 5 分钟以内的 RTO。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore 通过从备份云存储直接恢复虚拟机，在 5 分钟以内完成恢复，将停机时间降到最低。",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Zerto 的始终在线复制，RPO 低于 10 秒、RTO 为分钟级，可实现近乎即时的全环境恢复。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication 本地部署在 Windows Server 上，客户对基础设施拥有完全控制权。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik 作为本地一体机（r6000 系列）部署，集成了计算、存储和软件。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault 支持完全自托管的本地部署，包括 CommServe、MediaAgent 和 Access Node 组件。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto 以本地方式部署，包括 Zerto Virtual Manager 和每个主机的虚拟复制设备。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -5945,22 +5945,22 @@
             },
             "improvement": "恢复速度快 4,800 倍"
           },
-          "quote": "我们在一个周六凌晨 3:17 遭到勒索软件攻击。攻击者加密了 14 台服务器，包括我们的备份仓库——或者他们以为如此。Rediacc 的不可变快照完好无损。到凌晨 3:24，所有 14 台服务器都从封存备份中恢复。总数据损失：零字节。总支付赎金：零美元。"
+          "quote": "周六凌晨 3:17，我们遭到勒索软件攻击。攻击者加密了 14 台服务器，包括备份库，至少他们是这么以为的。Rediacc 的不可变快照毫发无损。凌晨 3:24，全部 14 台服务器都已从封存的备份中恢复。数据丢失：0 字节。赎金支付：0 美元。"
         },
         "techDiff": {
-          "description": "Rediacc 使用 btrfs 只读快照在文件系统层面运行。一旦快照被封存，内核本身就会阻止修改——不是恶意软件可以绕过的软件锁，而是文件系统级别的不可变性。即使拥有 root 权限，勒索软件也无法加密、修改或删除封存的 btrfs 快照。",
+          "description": "Rediacc 会创建一个只读副本，也就是某一时刻文件的冻结快照。副本一旦封存，<span class=\"sp-emphasis\">存储层本身就会阻止任何改动</span>。这不是恶意软件能破解的软件锁。即使拿到最高管理员密码，勒索软件也无法加密、修改或删除已封存的副本。",
           "rediaccLabel": "Rediacc（btrfs 不可变）",
           "rows": [
             {
-              "rediacc": "内核强制的只读快照——即使拥有 root 权限也无法修改",
-              "traditional": "软件级\"不可变性\"——可通过管理员/root 权限绕过"
+              "rediacc": "由存储层保护的只读副本，即使拥有最高管理员密码也无法修改",
+              "traditional": "管理员密码就能关掉的软件“锁”"
             },
             {
-              "rediacc": "快照存在于文件系统层——用户空间恶意软件不可见",
-              "traditional": "备份文件作为普通文件存储在磁盘上——可见且可被加密"
+              "rediacc": "副本存放在存储层，普通恶意软件看不到",
+              "traditional": "备份就是磁盘上的普通文件，容易被找到和加密"
             },
             {
-              "rediacc": "自动化每日克隆 + 启动 + 健康检查——实际恢复并验证",
+              "rediacc": "每天自动克隆、启动并做健康检查，所以是真正验证过的",
               "traditional": "验证 = 仅\"备份完成\"状态消息"
             },
             {
@@ -6240,17 +6240,17 @@
         "benefits": {
           "items": [
             {
-              "description": "服务器、配置、数据库、网络设置——整个技术栈作为一个单元恢复。无需重建、重新配置，不会遗漏依赖。",
+              "description": "服务器、配置、数据库、网络，整个技术栈作为一个整体恢复。无需重建，无需重新配置，不会遗漏任何内容。运行 Kubernetes？整个集群也以同样方式分叉并迁移，应用和数据一起转移。",
               "icon": "zap",
               "title": "完整环境，而非文件"
             },
             {
-              "description": "回滚到时间线中的任意快照。昨天、上周、三个月前。精确选择所需状态——无需猜测哪些文件发生了变更。",
+              "description": "恢复到历史中的任意已保存副本。昨天、上周、三个月前。精确选择所需状态，无需猜测哪些文件发生了变更。",
               "icon": "clock",
               "title": "任意时间点"
             },
             {
-              "description": "每次恢复都会自动进行健康检查——HTTP 端点、数据库连接、服务健康。不是\"文件已恢复\"——而是实际运行并响应。",
+              "description": "我们会对每次恢复做健康检查：HTTP 端点、数据库连接、服务健康。不只是“文件已恢复”，而是真正在运行、能响应。",
               "icon": "check-circle",
               "title": "经验证的恢复"
             }
@@ -6267,7 +6267,7 @@
         "calculator": {
           "annualLabel": "年度停机成本",
           "description": "拖动滑块以匹配你的环境。查看文件级恢复的真实成本。",
-          "footnote": "文件级恢复：每个服务 2 小时配置 + 重新配置。收入损失：停机小时数 × 小时收入。人员人力：2 名工程师 × 恢复小时数 × $200/小时。流失：因 SLA 违规导致的收入损失的 20%。Rediacc：btrfs 克隆在 5 分钟内恢复完整环境——一条命令，无需重建。",
+          "footnote": "文件级恢复：每个服务需要 2 小时的配置与重新配置。收入损失 = 停机小时数 × 每小时收入。员工工时 = 2 名工程师 × 恢复小时数 × $200/小时。客户流失 = SLA 违规导致收入损失的 20%。Rediacc：btrfs 克隆在 5 分钟内恢复完整环境，一条命令搞定，完全无需重建。",
           "headerTitle": "计算你的停机风险敞口",
           "results": {
             "churn": "客户流失影响",
@@ -6337,7 +6337,7 @@
         },
         "hero": {
           "ctaLabel": "几分钟内恢复",
-          "subtitle": "不仅是文件。整个环境——服务器、配置、数据库——在几分钟内恢复并运行。",
+          "subtitle": "不只是文件，而是整个环境：服务器、配置、数据库，<span class=\"sp-emphasis\">几分钟内</span>恢复并运行。",
           "title": "几分钟内完成全环境恢复"
         },
         "howItWorks": {
@@ -6409,7 +6409,7 @@
               "title": "恢复"
             },
             {
-              "description": "自动健康检查确认每项服务正在运行。不是文件计数——而是实际的 HTTP、SQL 和健康端点检查。",
+              "description": "自动健康检查确认每项服务都在运行。不是文件计数，而是真实的 HTTP、SQL 和健康检查。",
               "icon": "check-circle",
               "title": "验证"
             }
@@ -6423,7 +6423,7 @@
           "title": "即时恢复 - 几分钟内完成全部环境灾难恢复 | Rediacc"
         },
         "problem": {
-          "description": "恢复单个文件需要数小时。重建整个环境需要数天。当你的生产服务器宕机时，你不仅需要恢复文件——你需要恢复一切。服务器、配置、数据库、网络设置，全部。",
+          "description": "逐个恢复文件需要数小时。重建整个环境需要数天。主服务器宕机时，光恢复文件远远不够。一切都得回来：服务器、配置、数据库、网络。全部恢复，重新运行起来。",
           "statCallouts": [
             {
               "number": "3.4 weeks",
@@ -6446,7 +6446,7 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["运行恢复", "3m 47s", "运行中"],
+            "newSteps": ["运行恢复", "3分47秒", "运行中"],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -6484,7 +6484,7 @@
               "url": "https://itic-corp.com/itic-2024-hourly-cost-of-downtime-report/"
             },
             {
-              "text": "Veeam, “Data Protection Trends Report — BC/DR Trends,” 2024. “Only 13% of organizations utilize orchestrated workflow as part of their disaster recovery processes.”",
+              "text": "Veeam, “Data Protection Trends Report: BC/DR Trends,” 2024. “仅有 13% 的组织在灾难恢复流程中采用编排工作流。”",
               "url": "https://www.veeam.com/blog/bc-dr-trends-2024.html"
             },
             {
@@ -6547,26 +6547,26 @@
             },
             "improvement": "恢复速度快 270 倍 · 部署后零周末事故"
           },
-          "quote": "我们的主数据库服务器在周六凌晨 2:14 故障了——磁盘控制器损坏。按照旧方案，这将是整个周末的配置、恢复和重新设置 11 个服务。取而代之的是，我在手机上运行了一条命令。到凌晨 2:18，一切都恢复了——MariaDB、API、Nginx、Redis，全部。相同的配置、相同的状态、相同的数据。值班工程师回去继续睡觉了。"
+          "quote": "我们的主数据库服务器在周六凌晨 2:14 故障了，原因是磁盘控制器损坏。按照旧方案，这需要整个周末来配置、恢复和重新设置 11 个服务。结果呢？我从手机上运行了一条命令。到 2:18，一切都恢复了：MariaDB、API、Nginx、Redis，全部。相同的配置、相同的状态、相同的数据。值班工程师回床上继续睡了。"
         },
         "techDiff": {
-          "description": "传统恢复意味着配置新服务器、安装软件包、逐一恢复文件、重新配置服务，并祈祷没有遗漏。Rediacc 使用 btrfs 快照克隆整个环境——卷、配置、容器、网络设置——在一个原子操作中完成。",
+          "description": "老办法是：搭一台新服务器，装软件包，逐个恢复文件，重新配置服务，然后祈祷没有遗漏。Rediacc 的做法不同，它一次性复制整套环境。磁盘、配置、容器、网络，<span class=\"sp-emphasis\">一步到位</span>。",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
-              "rediacc": "原子性 btrfs 克隆——卷、配置、容器、网络一次完成",
-              "traditional": "逐个恢复文件——可能遗漏配置、权限和状态"
+              "rediacc": "一份即时副本：卷、配置、容器、网络，全部一起",
+              "traditional": "逐个恢复文件，容易遗漏配置、权限和状态"
             },
             {
-              "rediacc": "相同服务器、相同挂载点、相同 Docker 守护进程——一切原地恢复",
+              "rediacc": "同一服务器、同一挂载点、同一 Docker，全部原地恢复",
               "traditional": "部署新服务器、安装软件包、手动重新配置"
             },
             {
-              "rediacc": "不到 5 分钟——所有服务一起启动并进行自动健康检查",
-              "traditional": "数小时的手动工作——每项服务单独重建和测试"
+              "rediacc": "不到 5 分钟，所有服务一起启动，并自动做健康检查",
+              "traditional": "耗费数小时的手动工作，每项服务都要单独重建和测试"
             },
             {
-              "rediacc": "时间点快照——备份时刻的精确状态，无偏移",
+              "rediacc": "某个精确时刻的已保存副本，无偏移",
               "traditional": "备份与当前状态之间的配置偏移"
             }
           ],
@@ -6978,19 +6978,19 @@
             {
               "number": "27%",
               "ref": 1,
-              "source": "Flexera 2024 年云计算状态报告",
+              "source": "Flexera 2024 State of the Cloud Report",
               "text": "的云支出每年都被浪费掉"
             },
             {
               "number": "17%",
               "ref": 2,
-              "source": "Flexera 2025 年云计算状态报告",
+              "source": "Flexera 2025 State of the Cloud Report",
               "text": "组织平均云预算超支比例"
             },
             {
               "number": "$0.09/GB",
               "ref": 3,
-              "source": "AWS/Azure/GCP 定价 2024",
+              "source": "AWS/Azure/GCP Pricing 2024",
               "text": "设计上让离开变得昂贵的出站流量费"
             }
           ],
@@ -7794,7 +7794,7 @@
         },
         "comparison": {
           "capabilityLabel": "功能",
-          "description": "传统备份工具恢复文件。Rediacc 恢复整个环境——容器、配置、数据库——在几分钟内。",
+          "description": "传统备份工具只能恢复文件。Rediacc 在几分钟内恢复整个系统。容器、配置、数据库全部归来。",
           "features": [
             {
               "name": "完整环境恢复",
@@ -7918,7 +7918,7 @@
           "title": "快速恢复 - 极速灾难响应与业务连续性恢复 | Rediacc"
         },
         "problem": {
-          "description": "大多数团队在勒索软件后花数天重建。与此同时，客户无法联系你。收入停止。信任崩塌。攻击持续一小时，恢复花一周。那才是真正的损害——而勒索软件的平均恢复时间是 24 天。",
+          "description": "凌晨 2 点。勒索软件锁定了服务器。接下来是几天的从头重建。客户无法联系你。收入停止。信任崩塌。攻击只花了一小时。清理却花了一周。那才是真正的伤害。平均恢复时间是 24 天。",
           "statCallouts": [
             {
               "number": "24 days",
@@ -7944,75 +7944,75 @@
         "references": {
           "items": [
             {
-              "text": "Coveware, \"Quarterly Ransomware Report Q2 2022,\" July 2022. \"In Q2, the average days of downtime was measured at 24 days, a decrease of 8% from Q1 2022.\"",
+              "text": "Coveware，《2022 年第二季度勒索病毒报告》，2022 年 7 月。「Q2 平均宕机时长为 24 天，环比 Q1 下降 8%。」",
               "url": "https://www.coveware.com/blog/2022/7/27/fewer-ransomware-victims-pay-as-medium-ransom-falls-in-q2-2022"
             },
             {
-              "text": "Splunk & Oxford Economics, \"The Hidden Costs of Downtime,\" June 2024. \"Each minute of downtime costs $9,000 or $540,000 per hour.\"",
+              "text": "Splunk & Oxford Economics，《停机的隐性代价》，2024 年 6 月。「每分钟停机造成 $9,000 损失，折合每小时 $540,000。」",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
-              "text": "Cybereason, \"Ransomware Attacks and the True Cost to Business 2022,\" 2022. \"80% of organizations that paid were hit by ransomware a second time, with 68% saying the second attack came less than a month later and threat actors demanded a higher ransom amount.\"",
+              "text": "Cybereason，《2022 年勒索病毒攻击与商业真实成本》。「80% 支付赎金的企业遭到二次攻击，其中 68% 表示第二次攻击在一个月内发生，且索价更高。」",
               "url": "https://www.cybereason.com/blog/report-ransomware-attacks-and-the-true-cost-to-business-2022"
             },
             {
-              "text": "Zerto continuous replication with journal-based recovery delivers near-zero RPO and minutes-level RTO for instant recovery.",
+              "text": "Zerto 的持续复制加基于日志的恢复，可实现近零 RPO 和分钟级 RTO，支持即时恢复。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam Instant VM Recovery enables sub-5-minute RTO by booting VMs directly from backup files.",
+              "text": "Veeam Instant VM Recovery 直接从备份启动虚拟机，5 分钟内完成恢复。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/instant_recovery.html"
             },
             {
-              "text": "Rubrik Instant Recovery enables sub-5-minute recovery by mounting VMs directly from immutable snapshots.",
+              "text": "Rubrik Instant Recovery 从不可变快照直接挂载虚拟机，5 分钟内完全恢复。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Live Recovery enables sub-5-minute RTO by mounting VMs from backup with background Storage vMotion.",
+              "text": "Commvault Live Recovery 从备份挂载虚拟机并后台迁移存储，5 分钟内恢复上线。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva Instant Restore minimizes downtime with sub-5-minute VM recovery directly from backup cloud storage.",
+              "text": "Druva Instant Restore 直接从云备份恢复虚拟机，5 分钟内最小化停机时间。",
               "url": "https://help.druva.com/en/articles/8651153-restore-vmware-virtual-machines-instantly"
             },
             {
-              "text": "Zerto's always-on replication with sub-10-second RPOs and minute-level RTOs enables near-instant full-environment recovery.",
+              "text": "Zerto 的始终在线复制，RPO 低于 10 秒、RTO 为分钟级，支持近乎即时的全环境恢复。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/always-on-replication/"
             },
             {
-              "text": "Veeam supports per-VM snapshot-based restore points with configurable backup schedules and continuous data protection.",
+              "text": "Veeam 支持按虚拟机快照恢复点，灵活设置备份计划和持续数据保护。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/cdp_replication.html"
             },
             {
-              "text": "Rubrik provides SLA-driven snapshot policies with configurable frequency for granular point-in-time recovery.",
+              "text": "Rubrik 基于 SLA 的快照策略，自定义频率，支持粒度化的时间点恢复。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault supports point-in-time recovery using snapshots for VMs, file servers, databases, and applications.",
+              "text": "Commvault 支持虚拟机、文件服务器、数据库和应用程序的快照时间点恢复。",
               "url": "https://documentation.commvault.com/v11/software/latest_recovery_and_point_in_time_recovery_operations.html"
             },
             {
-              "text": "Druva maintains hot, warm, and cold recovery points enabling point-in-time restores of VMs, databases, and SaaS apps.",
+              "text": "Druva 维护热、温、冷三层恢复点，支持虚拟机、数据库和 SaaS 应用的时间点恢复。",
               "url": "https://help.druva.com/en/articles/8651296-recovery-points-that-you-can-restore"
             },
             {
-              "text": "Zerto journal stores every block-level write creating crash-consistent checkpoints every 5-10 seconds for granular recovery.",
+              "text": "Zerto 日志记录每个块级写操作，每 5-10 秒创建一个崩溃一致的检查点，实现粒度化恢复。",
               "url": "https://www.zerto.com/zerto-platform/core-elements/continuous-data-protection/journal-based-recovery/"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication 部署在客户本地 Windows Server，基础设施完全由客户掌控。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik 以本地设备方式部署（r6000 系列），集计算、存储和软件于一体。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault 支持完全自托管的本地部署，包含 CommServe、MediaAgent 和 Access Node 组件。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto 部署在本地环境，包含 Zerto Virtual Manager 和每台主机的虚拟复制设备。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8031,10 +8031,10 @@
             },
             "improvement": "恢复速度快 1,080 倍"
           },
-          "quote": "我们从 3 天的恢复计划缩短到了 4 分钟以内。在凌晨 2 点的一次真实勒索软件事件中，我们的值班工程师运行了一条命令，到凌晨 2:04 所有 8 个生产容器都恢复上线了。我们之前的厂商估计需要 72 小时——我们用了 240 秒。"
+          "quote": "我们从 3 天的恢复计划缩短到 4 分钟以内。凌晨 2 点的一次真实勒索软件事件中，值班工程师运行一条命令，2:04 时 8 个生产容器全部恢复上线。之前厂商的预估是 72 小时，我们用了 240 秒。"
         },
         "techDiff": {
-          "description": "传统恢复从头重建——重装操作系统、恢复文件、重新配置服务。Rediacc 从 btrfs 快照恢复：文件系统只需切换到保存的状态。无需重装，无需重新配置，无需数据传输。快照已经在磁盘上——它只是变为活跃状态。",
+          "description": "传统恢复要从头重建一切：重装系统、恢复文件、重新配置服务。Rediacc 的做法不同。一份干净的副本<span class=\"sp-emphasis\">早已在磁盘上</span>。我们只需启用它。无需重装，无需配置，也没有缓慢的数据传输。",
           "traditionalLabel": "传统重建",
           "rediaccLabel": "Rediacc（btrfs 即时副本）",
           "rows": [
@@ -8069,7 +8069,7 @@
         "calculator": {
           "annualLabel": "年度合规成本",
           "description": "拖动滑块以匹配你的环境。查看手动保留管理的真实成本。",
-          "footnote": "准备小时数：审计次数 × 每次审计小时数。差距：每 5 TB 手动管理数据 1 个差距（保守估计）。罚款：每个差距 $50K（中小企业 GDPR 罚款中位数）。人力：准备小时数 × $200/小时（高级工程师）。平均数据泄露成本 $4.88M（IBM 2024）。Rediacc 即时生成审计报告——每次审计 2 小时，自动化策略执行。",
+          "footnote": "准备工时 = 审计次数 × 单次审计工时；缺口 = 每 5TB 手动管理数据 1 个缺口（保守估计）；罚款 = 每个缺口 $50K（中小企业 GDPR 罚款中值）；人力 = 准备工时 × $200/小时（高级工程师）。数据泄露平均成本 $4.88M（IBM 2024）。Rediacc 即时生成审计报告：每次审计仅需 2 小时，策略执行全自动。",
           "headerTitle": "计算你的合规风险敞口",
           "results": {
             "gaps": "合规差距（预估）",
@@ -8137,7 +8137,7 @@
         },
         "hero": {
           "ctaLabel": "设置保留规则",
-          "subtitle": "可配置的保留策略满足合规要求。HIPAA、SOC2、GDPR——默认覆盖。",
+          "subtitle": "设定备份保留时长。Rediacc 按规则保留，然后自动清理。HIPAA、SOC2、GDPR 规范<span class=\"sp-emphasis\">从第一天起就完全支持</span>。",
           "title": "按法律要求保留数据"
         },
         "howItWorks": {
@@ -8153,19 +8153,19 @@
               "footerRight": "审计就绪",
               "items": [
                 {
-                  "detail": "2,555 backups",
+                  "detail": "2,555 个备份",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "1,825 backups",
+                  "detail": "1,825 个备份",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "1,095 backups",
+                  "detail": "1,095 个备份",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "365 backups",
+                  "detail": "365 个备份",
                   "name": "Internal"
                 }
               ],
@@ -8178,19 +8178,19 @@
               "footerRight": "自动清理：开启",
               "items": [
                 {
-                  "detail": "7 years",
+                  "detail": "7年",
                   "name": "HIPAA"
                 },
                 {
-                  "detail": "5 years",
+                  "detail": "5年",
                   "name": "SOC2"
                 },
                 {
-                  "detail": "3 years",
+                  "detail": "3年",
                   "name": "GDPR"
                 },
                 {
-                  "detail": "1 year",
+                  "detail": "1年",
                   "name": "Internal"
                 }
               ],
@@ -8250,91 +8250,91 @@
         "references": {
           "items": [
             {
-              "text": "IBM Security, “Cost of a Data Breach Report 2024,” July 2024. “The global average cost of a data breach reached $4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report 2024,” 2024 年 7 月。“2024 年全球数据泄露平均成本达到 488 万美元。”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024. “Civil money penalties up to $2,134,831 per violation category per calendar year.”",
+              "text": "U.S. Department of Health & Human Services, “HIPAA Enforcement Rule,” 2024。“每个违规类别每个日历年的民事罚款最高达 $2,134,831。”",
               "url": "https://www.hhs.gov/hipaa/for-professionals/compliance-enforcement/index.html"
             },
             {
-              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025. “An aggregate total of EUR 1.2 billion in fines was issued across Europe in 2024.”",
+              "text": "CMS Law, “GDPR Enforcement Tracker Report 2024/2025,” 2025。“2024 年欧洲共开出罚款合计 12 亿欧元。”",
               "url": "https://cms.law/en/int/publication/gdpr-enforcement-tracker-report/numbers-and-figures"
             },
             {
-              "text": "Veeam provides configurable GFS (Grandfather-Father-Son) retention policies for daily, weekly, monthly, and yearly backups.",
+              "text": "Veeam 提供可配置的 GFS（祖父-父亲-儿子）保留策略，支持每日、每周、每月和每年备份。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/gfs_retention_policy.html"
             },
             {
-              "text": "Rubrik SLA Domains provide automated retention with configurable local and archive retention periods.",
+              "text": "Rubrik SLA Domains 提供自动化保留功能，支持本地和归档保留期的配置。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault provides configurable retention policies with basic, extended (GFS), and infinite retention options.",
+              "text": "Commvault 提供可配置的保留策略，包括基础、扩展 (GFS) 和无限保留选项。",
               "url": "https://documentation.commvault.com/v11/commcell-console/data_retention.html"
             },
             {
-              "text": "Druva supports GFS retention policies with daily/weekly/monthly/yearly schedules plus Long-Term Retention to cold storage.",
+              "text": "Druva 支持 GFS 保留策略，包括每日/每周/每月/每年计划，以及到冷存储的长期保留。",
               "url": "https://docs.druva.com/CloudRanger/013_Manage_Backup_Policies/About_Backup_Policies_and_Backup_Types/About_Retention_for_Backup_Policies"
             },
             {
-              "text": "Veeam Scale-out Backup Repository automates data lifecycle with performance, capacity, and archive tiers.",
+              "text": "Veeam Scale-out Backup Repository 通过性能层、容量层和归档层自动化数据生命周期。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/backup_repository_sobr.html"
             },
             {
-              "text": "Rubrik SLA policies automate data lifecycle management with tiering from local to archive storage.",
+              "text": "Rubrik SLA 策略通过本地到归档存储的分层，自动化数据生命周期管理。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/common_sla_policy_tasks.html"
             },
             {
-              "text": "Commvault Data Aging automates data lifecycle by pruning expired backup data based on retention settings.",
+              "text": "Commvault Data Aging 根据保留设置自动清理过期备份数据，实现数据生命周期自动化。",
               "url": "https://documentation.commvault.com/v11/commcell-console/media_management_configuration_data_aging.html"
             },
             {
-              "text": "Druva automatically tiers data between S3, Glacier, and Deep Archive using ML-driven storage tiering.",
+              "text": "Druva 使用机器学习驱动的存储分层，自动在 S3、Glacier 和 Deep Archive 之间分层数据。",
               "url": "https://help.druva.com/en/articles/8651731-about-long-term-retention"
             },
             {
-              "text": "Veeam ONE provides built-in reporting and monitoring dashboards with compliance-ready audit reports.",
+              "text": "Veeam ONE 提供内置的报告和监控仪表板，生成符合审计要求的报告。",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/about_reporter.html"
             },
             {
-              "text": "Rubrik provides compliance and activity reports through its Envision reporting engine for governance needs.",
+              "text": "Rubrik 通过 Envision 报告引擎提供合规和活动报告，满足治理需求。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault Audit Trail Report displays all user operations across Critical, High, Medium, and Low severity levels.",
+              "text": "Commvault Audit Trail Report 展示所有用户操作，覆盖 Critical、High、Medium 和 Low 四个严重级别。",
               "url": "https://documentation.commvault.com/saas/audit_trail_report_01.html"
             },
             {
-              "text": "Druva maintains a three-year audit trail of every admin and user activity with downloadable HTML/CSV reports.",
+              "text": "Druva 维护所有管理员和用户活动的三年审计日志，并支持下载 HTML/CSV 报告。",
               "url": "https://docs.druva.com/Cyber_Resilience/Audit_Trails/About_Audit_Trails"
             },
             {
-              "text": "Veeam Compliance Analyzer validates backup infrastructure against security and compliance best practices.",
+              "text": "Veeam Compliance Analyzer 根据安全和合规最佳实践验证备份基础设施。",
               "url": "https://helpcenter.veeam.com/docs/one/reporter/compliance_analyzer.html"
             },
             {
-              "text": "Rubrik Security Cloud enables compliance monitoring with SOC2, HIPAA, and PCI-DSS reporting templates.",
+              "text": "Rubrik Security Cloud 支持 SOC2、HIPAA 和 PCI-DSS 合规监控与报告模板。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/envision_creating_reports.html"
             },
             {
-              "text": "Commvault holds ISO 27001, SOC 2 Type II, HIPAA, PCI DSS, FedRAMP High, and IRAP certifications.",
+              "text": "Commvault 持有 ISO 27001、SOC 2 Type II、HIPAA、PCI DSS、FedRAMP High 和 IRAP 认证。",
               "url": "https://documentation.commvault.com/saas/security_and_compliance.html"
             },
             {
-              "text": "Druva holds SOC 2 Type II, HIPAA, FedRAMP ATO, and FIPS 140-2 certifications with GDPR/CCPA monitoring templates.",
+              "text": "Druva 持有 SOC 2 Type II、HIPAA、FedRAMP ATO 和 FIPS 140-2 认证，并支持 GDPR/CCPA 监控模板。",
               "url": "https://www.druva.com/use-cases/compliance"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication 本地部署在 Windows Server 上，客户拥有基础设施的完全控制权。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik 作为本地设备（r6000 系列）部署，集成计算、存储和软件。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault 支持完全自托管本地部署，包含 CommServe、MediaAgent 和 Access Node 组件。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             }
           ]
@@ -8356,16 +8356,16 @@
           "quote": "我们的 SOC2 审计员要求提供 3 年的备份保留证明。之前这意味着 2 周的日志翻查和电子表格交叉引用。使用 Rediacc，我运行了 rdc retention report --framework soc2，4 分钟内交出了一份完整的报告。审计员说这是她见过的最干净的证据。"
         },
         "techDiff": {
-          "description": "传统保留管理意味着在电子表格中跟踪备份日期，运行手动清理脚本，并祈祷在审计员到来前没有遗漏。Rediacc 使用 btrfs 快照生命周期管理和自动化策略执行——备份被保留、验证和清理，无需人工干预。",
+          "description": "靠电子表格做合规，就是手工记录备份日期、运行清理脚本，再祈祷审计人员上门前没有遗漏。Rediacc 会<span class=\"sp-emphasis\">自动</span>保留、检查并清理备份。无需任何人工步骤。",
           "rediaccLabel": "Rediacc 保留",
           "rows": [
             {
-              "rediacc": "自动化策略执行——始终保持最新",
-              "traditional": "电子表格跟踪——容易过时"
+              "rediacc": "自动策略执行，始终最新",
+              "traditional": "电子表格跟踪，容易过时"
             },
             {
-              "rediacc": "自动生命周期管理——零手动步骤",
-              "traditional": "手动清理脚本——存在人为错误风险"
+              "rediacc": "自动清理，零手动操作",
+              "traditional": "手动清理脚本，容易出错"
             },
             {
               "rediacc": "通过 rdc retention report 即时生成审计就绪报告",
@@ -8588,7 +8588,7 @@
           ],
           "timeline": {
             "newLabel": "使用 Rediacc",
-            "newSteps": ["Clone", "60s", "打补丁并验证"],
+            "newSteps": ["克隆", "60s", "打补丁并验证"],
             "oldLabel": "传统方式",
             "oldSteps": [
               {
@@ -8618,15 +8618,15 @@
         "references": {
           "items": [
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” 2024 年 5 月。“将漏洞利用作为初始入侵方式的情况几乎是前一年的 3 倍，占所有泄露事件的 14%。”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "Uptime Institute, “Annual Outage Analysis 2023,” 2023. “The two most common causes of networking- and connectivity-related outages are configuration or change management failure (cited by 45% of respondents).”",
+              "text": "Uptime Institute，“2023 年度中断分析报告，” 2023 年。“网络和连接相关中断最常见的两个原因是配置或变更管理失误（45% 的受访者提及）。”",
               "url": "https://uptimeinstitute.com/resources/research-and-reports/annual-outage-analysis-2023"
             },
             {
-              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” June 2024. “Each minute of downtime costs $9,000 or $540,000 per hour.”",
+              "text": "Splunk & Oxford Economics, “The Hidden Costs of Downtime,” 2024 年 6 月。“每分钟停机成本为 $9,000，折合每小时 $540,000。”",
               "url": "https://www.splunk.com/en_us/blog/cio-office/cost-of-downtime-from-global-executives.html"
             },
             {
@@ -8634,43 +8634,43 @@
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             },
             {
-              "text": "Commvault Cleanroom Recovery creates Isolated Recovery Environments (IREs) with network isolation preventing outbound communication.",
+              "text": "Commvault Cleanroom Recovery 创建隔离恢复环境（IRE），通过网络隔离阻止所有出站通信。",
               "url": "https://documentation.commvault.com/11.42/commvault-user-guide/cleanroom_recovery_isolated_recovery_environments_ires_for_cyber_resilience.html"
             },
             {
-              "text": "Zerto test failovers run in isolated bubble networks that prevent interaction with production systems during testing.",
+              "text": "Zerto 测试故障转移在隔离气泡网络中运行，测试期间与生产系统完全隔离。",
               "url": "https://help.zerto.com/bundle/DR.Test.VC.HTML/page/The_Failover_Test_Operation.htm"
             },
             {
-              "text": "Veeam SureBackup with Virtual Lab enables automated testing of patches and updates in isolated sandbox environments.",
+              "text": "Veeam SureBackup 和 Virtual Lab 配合，在隔离沙箱环境中自动化测试补丁和更新。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/surebackup_recovery_verification.html"
             },
             {
-              "text": "Rubrik Live Mount enables safe testing of patches by mounting clean snapshots in isolated environments.",
+              "text": "Rubrik Live Mount 通过在隔离环境中挂载干净的快照，安全地测试补丁。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/vs_performing_an_instant_recovery.html"
             },
             {
-              "text": "Commvault Cleanroom Recovery enables testing patches in isolated cleanroom environments before applying to production.",
+              "text": "Commvault Cleanroom Recovery 让你在隔离的 cleanroom 环境中测试补丁，再应用到生产环境。",
               "url": "https://documentation.commvault.com/2024e/software/cleanroom_recovery_use_cases.html"
             },
             {
-              "text": "Zerto Orchestrator automates periodic failover tests validating VPG checkpoint health and recovery VM boot correctness.",
+              "text": "Zerto Orchestrator 自动化定期故障转移测试，验证 VPG 检查点健康状况和恢复 VM 启动正确性。",
               "url": "https://help.zerto.com/bundle/Orchestrator.HTML.95/page/Automated_Failover_Testing_with_the_Zerto_Orchestrator.htm"
             },
             {
-              "text": "Veeam Backup & Replication is deployed on-premises on Windows Server with full customer control over infrastructure.",
+              "text": "Veeam Backup & Replication 本地部署在 Windows Server 上，客户拥有基础设施的完全控制权。",
               "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
             },
             {
-              "text": "Rubrik is deployed as on-premises appliances (r6000 series) with integrated compute, storage, and software.",
+              "text": "Rubrik 作为本地一体机（r6000 系列）部署，集成计算、存储和软件。",
               "url": "https://docs.rubrik.com/en-us/saas/saas/system_requirements.html"
             },
             {
-              "text": "Commvault supports fully self-hosted on-premises deployments with CommServe, MediaAgent, and Access Node components.",
+              "text": "Commvault 支持完全自托管本地部署，包含 CommServe、MediaAgent 和 Access Node 组件。",
               "url": "https://documentation.commvault.com/v11/software/initial_setup_self_service_deployments.html"
             },
             {
-              "text": "Zerto is deployed on-premises with a Zerto Virtual Manager and per-host Virtual Replication Appliances.",
+              "text": "Zerto 部署在本地，配置 Zerto 虚拟管理器和每台主机的虚拟复制设备。",
               "url": "https://help.zerto.com/bundle/Install.VC.HTML/page/Installing_Zerto_Virtual_Replication_in_On-Premise_Environments.htm"
             }
           ]
@@ -8689,10 +8689,10 @@
             },
             "improvement": "补丁验证速度快 1,680 倍"
           },
-          "quote": "上个季度我们需要紧急修补一个关键的 OpenSSL 补丁。通常我们会安排一个维护窗口然后祈祷。相反，我们克隆了所有 22 台生产服务器，应用了补丁，运行了完整的测试套件，确认零回归——全部在 18 分钟内完成。我们当天就满怀信心地打了生产补丁。"
+          "quote": "上季度我们遇到一个关键的 OpenSSL 补丁。通常我们会排期维护窗口然后祈祷。这次不一样，我们克隆了全部 22 台生产服务器，应用补丁，跑完整个测试套件，确认零回归，全部在 18 分钟内完成。当天就满怀信心地给生产环境打了补丁。"
         },
         "techDiff": {
-          "description": "Rediacc 使用 btrfs 写时复制快照在亚秒级克隆整个生产环境——操作系统、容器、数据库、配置。克隆在隔离网络上运行，拥有自己的 Docker 守护进程。对克隆应用的补丁永远不会触及生产环境。如果克隆崩溃了，删除它。如果成功了，将相同的补丁应用到生产环境。",
+          "description": "Rediacc 能在<span class=\"sp-emphasis\">数秒内</span>复制整套运行中的环境，包括操作系统、应用、数据库和所有配置。副本运行在独立的隔离网络中，拥有自己的 Docker。副本上的补丁永远不会碰到真实服务器。副本坏了就删掉；没问题就把同一个补丁正式打上去。",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -9059,7 +9059,7 @@
               "title": "当天修复"
             },
             {
-              "description": "每个补丁都经过 CVE 重新扫描、服务健康检查、回归测试和 TLS 验证——全部在真实生产数据上运行。",
+              "description": "每个补丁都经过完整检查：CVE 重新扫描、服务健康检查、回归测试和 TLS 验证，全部在真实生产数据上进行。",
               "icon": "check-circle",
               "title": "完整验证"
             }
@@ -9112,34 +9112,34 @@
             ],
             "cards": [
               {
-                "footer": "CVSS 9.8 · 3 services affected",
+                "footer": "CVSS 9.8 · 3 个服务受影响",
                 "items": [
-                  "OpenSSL 3.0.8 — VULN",
-                  "Keycloak :8443 — affected",
-                  "Nextcloud :443 — affected",
-                  "GitLab :443 — affected"
+                  "OpenSSL 3.0.8，漏洞",
+                  "Keycloak :8443，受影响",
+                  "Nextcloud :443，受影响",
+                  "GitLab :443，受影响"
                 ],
                 "status": "严重",
                 "title": "CVE-2026-1234"
               },
               {
-                "footer": "2.1 GB CoW · disposable clone",
+                "footer": "2.1 GB CoW · 一次性克隆",
                 "items": [
-                  "OpenSSL → 3.0.15 — APPLIED",
-                  "Keycloak restart — healthy",
-                  "Nextcloud restart — healthy",
-                  "247 assertions — 0 failures"
+                  "OpenSSL → 3.0.15，已应用",
+                  "Keycloak 重启，正常",
+                  "Nextcloud 重启，正常",
+                  "247 个断言，0 个失败"
                 ],
                 "status": "测试中",
                 "title": "克隆：补丁测试"
               },
               {
-                "footer": "Total time: 3m 41s · zero downtime",
+                "footer": "总耗时：3m 41s · 零停机",
                 "items": [
-                  "OpenSSL 3.0.15 — FIXED",
-                  "CVE-2026-1234 — PATCHED",
-                  "3/3 services — healthy",
-                  "0 regressions — verified"
+                  "OpenSSL 3.0.15，已修复",
+                  "CVE-2026-1234，已修补",
+                  "3/3 个服务，正常",
+                  "0 个回归，已验证"
                 ],
                 "status": "已修补",
                 "title": "生产"
@@ -9148,7 +9148,7 @@
           },
           "steps": [
             {
-              "description": "自动扫描识别漏洞——CVE、配置错误或暴露的服务。按严重程度优先排序。",
+              "description": "扫描发现问题：CVE、配置缺陷或暴露的服务。最严重的排在前面。",
               "icon": "eye",
               "title": "检测"
             },
@@ -9172,7 +9172,7 @@
           "title": "漏洞管理 - 主动发现、测试与修复安全漏洞 | Rediacc"
         },
         "problem": {
-          "description": "你发现了一个漏洞。现在需要修补它。但补丁会破坏什么吗？你无法在生产环境测试。而你的预发布环境已经落后 3 周了。所以你要么匆忙打补丁并祈祷，要么等待并保持暴露。两个选择都不好——而且都要花钱。",
+          "description": "发现漏洞必须修补。但补丁会不会搞坏东西？生产环境不能乱试，预发布环境又落后了 3 周。所以要么冒险赶忙打补丁，要么等着继续暴露风险。两边都不行，还都要花钱。",
           "statCallouts": [
             {
               "number": "30.6 days",
@@ -9225,15 +9225,15 @@
         "references": {
           "items": [
             {
-              "text": "Qualys, “TruRisk Research Report,” 2023. “On average, weaponized vulnerabilities are patched within 30.6 days yet only patched an average of 57.7% of the time.”",
+              "text": "Qualys, “TruRisk Research Report,” 2023. “已被武器化的漏洞平均在 30.6 天内完成修补，但平均只有 57.7% 的情况下真正修补。”",
               "url": "https://www.qualys.com/forms/tru-research-report"
             },
             {
-              "text": "Verizon, “2024 Data Breach Investigations Report,” May 2024. “The exploitation of vulnerabilities as an initial point of entry almost tripled from the previous year, accounting for 14% of all breaches.”",
+              "text": "Verizon, “2024 Data Breach Investigations Report,” 2024 年 5 月。“将漏洞作为初始入侵点的攻击几乎是前一年的 3 倍，占所有入侵事件的 14%。”",
               "url": "https://www.verizon.com/about/news/feed/2024-data-breach-investigations-report-vulnerability-exploitation-boom"
             },
             {
-              "text": "IBM Security, “Cost of a Data Breach Report,” July 2024. “The global average cost of a data breach reached USD 4.88 million in 2024.”",
+              "text": "IBM Security, “Cost of a Data Breach Report,” 2024 年 7 月。“2024 年全球数据泄露平均成本达 488 万美元。”",
               "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
             }
           ]
@@ -9252,10 +9252,10 @@
             },
             "improvement": "补丁 + 验证 + 部署时间"
           },
-          "quote": "一个关键 CVE 在周五下午发布。到周六上午，我们已经克隆了生产环境、应用了补丁、在所有 4 个受影响的服务上验证了它，并完成了部署——零停机。我们之前的流程需要 3 周和一次变更管理会议。"
+          "quote": "关键 CVE 在周五下午发布。周六上午，我们已经克隆生产、应用补丁、在所有 4 个受影响的服务上验证，并零停机完成部署。用之前的流程需要 3 周和一次变更管理会议。"
         },
         "techDiff": {
-          "description": "传统打补丁需要一个与生产环境匹配的预发布环境——但预发布在几天内就会偏差。Rediacc 在数秒内创建实际生产基础设施的 btrfs 写时复制快照，让你在真实数据和真实配置上应用和验证补丁，然后将经过验证的修复部署到生产环境。如果补丁未通过验证，丢弃克隆。生产环境保持不变。",
+          "description": "传统打补丁需要一个与生产环境一致的预发布副本，但预发布环境几天内就会漂移。Rediacc 能在<span class=\"sp-emphasis\">数秒内</span>为真实的生产环境创建即时副本。把补丁打在副本上，用真实数据和真实配置测试。成功就部署到生产，失败就丢掉副本。生产环境始终不受影响。",
           "rediaccLabel": "Rediacc",
           "rows": [
             {
@@ -9267,7 +9267,7 @@
               "traditional": "数天到数周（预发布环境搭建 + 测试）"
             },
             {
-              "rediacc": "0%——失败在克隆上捕获并丢弃",
+              "rediacc": "0%，失败在克隆上隔离后销毁",
               "traditional": "未经测试的补丁可能导致意外中断"
             },
             {
@@ -9788,7 +9788,10 @@
     "title": "让业务永不中断"
   },
   "video": {
-    "playVideo": "播放视频"
+    "playVideo": "播放视频",
+    "player": {
+      "chapters": "章节"
+    }
   },
   "whyNow": {
     "cards": [

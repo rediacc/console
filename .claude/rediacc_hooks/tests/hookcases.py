@@ -19,9 +19,9 @@ HOW A CASE NAMES ITS GUARD. By the key `check-hook-integrity.sh` inventories it 
 """
 
 import dataclasses
-import datetime
 import json
 import subprocess
+import time
 
 from rediacc_hooks.tests import corpus
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO, RENET_REPO
@@ -171,6 +171,17 @@ def case(spec: str, payload: str, label: str, needle: str | None = None) -> Case
     return Case(spec=spec, payload=payload, label=label, needle=needle)
 
 
+# Stands for the machine's LOCAL month and day in a payload, and is filled by `today_filled` at the moment the case runs. Local and not UTC, as block_stale_pr_branch_date reads its clock.
+TODAY_MARK = "@TODAY-MMDD@"
+
+
+def today_filled(text: str) -> str:
+    """`text` with `TODAY_MARK` replaced by the local MMDD read NOW, so a case built before midnight and run after it still names the day the guard sees."""
+    if TODAY_MARK not in text:
+        return text
+    return text.replace(TODAY_MARK, time.strftime("%m%d"))
+
+
 def run_guard(
     key: str, payload: str, *, want_stderr: bool, env: dict | None = None, cwd: str | None = None
 ) -> tuple[int, str]:
@@ -181,7 +192,7 @@ def run_guard(
     argv = guard_cmd(key)
     completed = subprocess.run(
         argv,
-        input=payload.encode(),
+        input=today_filled(payload).encode(),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE if want_stderr else subprocess.DEVNULL,
         env=env,
@@ -194,6 +205,13 @@ def run_guard(
 
 
 # The corpus. Every entry below is one case of the bash suite, in file order, with the comment that explained it. Cases whose payload needs a FIXTURE -- a temporary git repo, a PATH stub, a live process -- are not here: they cannot be data, so they live in test_hooks_fixtures.py beside the code that builds what they need.
+def _handed_down(cmd: str, times: int) -> str:
+    """`cmd` wrapped `times` times in `python3 -c "import os; os.system(...)"`: each layer is one program handing a command down, which is what block_review_file_shell_write's depth counts."""
+    for _ in range(times):
+        cmd = "python3 -c " + json.dumps("import os; os.system(%s)" % json.dumps(cmd))
+    return cmd
+
+
 STATIC: list[Case] = [
     # --- should BLOCK (exit 2) --- The PR body is generated, so a hand-written whole-body write silently drops the worklist-epics block and CI fails minutes later naming nothing useful.
     case(
@@ -203,7 +221,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_raw_pr_body_edit.py",
-        bash_json(".ci/scripts/pr/sync-epic-block.sh 42 0826-1"),
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 42 0826-1"),
         "raw-pr-body(tool passes)",
     ),
     # The edit arm requires EVERY generated marker, not just the epic one. This case asserted the opposite for a few hours on 2026-09-03 and was WRONG: the edit form writes the WHOLE body, and these PR bodies carry a second machine-written section, pushed-head. A body carrying only the epic block therefore passes a one-marker check and silently destroys the other section -- the
@@ -411,6 +429,22 @@ STATIC: list[Case] = [
         bash_json("scp host:/var/log/renet.log ./logs/"),
         "binary-deploy CONTROL: pulling a log back is diagnosis, not a deploy",
     ),
+    # scp AT COMMAND POSITION, 2026-10-09 (#ecb59527). `(^|[{B}])scp[{B}]` matched after any blank, so a sentence ending in a host spec read as an upload. The launcher the guard names (sshpass) is pinned beside the two prose controls, so the narrowing cannot drift into letting a real upload through.
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("echo never run scp bin/renet host:/usr/local/bin/renet"),
+        "binary-deploy CONTROL: an unquoted sentence naming scp is not an upload",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("git commit -m 'docs: scp x h:/p'"),
+        "binary-deploy CONTROL: a commit message naming scp is not an upload",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sshpass -p x scp x h:/p"),
+        "binary-deploy: a launcher before scp is still at command position",
+    ),
     case(
         "check 0 guards/block_protected_files.py",
         bash_json("git checkout main && cat .claude/settings.json"),
@@ -476,6 +510,741 @@ STATIC: list[Case] = [
         bash_json("echo 'git restore .claude/settings.json'"),
         "protected-files CONTROL: echoing it is not restoring",
     ),
+    # THE UNQUOTED SENTENCE, for the three guards check:ci-guard-mention-anchoring found refusing it on 2026-10-09. Each matched its command word after any whitespace (or anywhere, for `\bssh\b`), so a doc line or worklist note naming the command was refused; each now anchors at command position. The deny cases after them are what anchoring must not have cost.
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("echo the docs say never to run node cli-bundle.js in this repo"),
+        "cli-bundle CONTROL: an unquoted sentence naming it is not running it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo the docs say never to run git restore .claude/settings.json in this repo"),
+        "protected-files CONTROL: an unquoted sentence naming the restore is not restoring",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo never rm .claude/settings.json here"),
+        "protected-files CONTROL: an unquoted sentence naming rm is not deleting",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("echo the docs say never to run ssh docker in this repo"),
+        "ssh-docker CONTROL: an unquoted sentence naming it is not running it",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("cd packages/cli && sudo node cli-bundle.js"),
+        "cli-bundle: a prefix command after && is still at command position",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("git -C . restore .claude/settings.json"),
+        "protected-files: git global flags before the verb are still reached",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("timeout 9 ssh prod-1 docker ps"),
+        "ssh-docker: a prefix command is still at command position",
+    ),
+    # #ec63ff8c, 2026-10-09: a quoted ssh remote command, a protected path arriving on stdin through xargs, sshpass stripped as a prefix, and the launchers shellscan now walks (npx, find -exec). Every deny row here was allowed before; every CONTROL row was allowed before and after.
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('ssh prod-1 "docker ps"'),
+        "ssh-docker: a quoted remote command is a payload the far side runs",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("ssh -p 2222 -i key prod-1 'sudo docker ps'"),
+        "ssh-docker: the remote command behind ssh flags and sudo",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('sshpass -p x ssh prod-1 "docker ps"'),
+        "ssh-docker: a quoted remote command behind sshpass",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("ssh -t prod-1 'cd /srv && docker compose up -d'"),
+        "ssh-docker: docker after a separator inside the remote command",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json("ssh 192.168.111.10 uptime; ssh prod-1 docker ps"),
+        "ssh-docker: the bridge carve-out is per ssh, not per line",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json('ssh 192.168.111.10 "docker ps"'),
+        "ssh-docker CONTROL: a quoted remote command on the bridge VM",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("ssh prod-1 'echo docker'"),
+        "ssh-docker CONTROL: a remote command that only names docker",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("ssh -o 'ProxyCommand=ssh -W %h:%p jump' prod-1 uptime"),
+        "ssh-docker CONTROL: an option value is not the remote command",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs rm"),
+        "protected-files: xargs rm fed the path on stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("printf '%s' scripts/pre-commit-check.sh | xargs git restore"),
+        "protected-files: xargs git restore fed the path on stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | sort | xargs git checkout --"),
+        "protected-files: an earlier stage of the pipe feeds xargs too",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json(r"find . -name x -exec true {} \; -exec rm .claude/settings.json \;"),
+        "protected-files: every find -exec is walked, not only the first",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | cat"),
+        "protected-files CONTROL: piping the path to cat reads it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs cat"),
+        "protected-files CONTROL: xargs cat reads it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json; ls | xargs rm"),
+        "protected-files CONTROL: a separator ends the pipe before xargs",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npx -y node packages/cli/dist/cli.js"),
+        "cli-bundle: npx with its own flag before node",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json(r"find packages -maxdepth 0 -exec node cli-bundle.js \;"),
+        "cli-bundle: find -exec running node",
+    ),
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("npx -y prettier --check packages/cli/dist/cli.js"),
+        "cli-bundle CONTROL: npx running another program over the bundle path",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('ssh prod-1 -t "docker ps"'),
+        "ssh-docker: an ssh option after the destination",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('ssh bastion ssh prod-1 "docker ps"'),
+        "ssh-docker: an ssh hop inside the remote command",
+    ),
+    case(
+        "check 2 guards/block_ssh_docker.py",
+        bash_json('sshpass -e ssh prod-1 "docker ps"'),
+        "ssh-docker: sshpass -e takes no value",
+    ),
+    case(
+        "check 0 guards/block_ssh_docker.py",
+        bash_json("ssh -O check prod-1"),
+        "ssh-docker CONTROL: a control command names no remote command",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | git restore --pathspec-from-file=-"),
+        "protected-files: git reads its pathspec from stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json(r"find .claude/settings.json -exec rm {} \;"),
+        "protected-files: find -exec rm of the path find names",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("git ls-files .claude/settings.json | xargs git rm"),
+        "protected-files: xargs git rm",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs ls -l"),
+        "protected-files CONTROL: xargs ls lists it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json(r"find .claude/settings.json -exec cat {} \;"),
+        "protected-files CONTROL: find -exec cat reads it",
+    ),
+    # #32e75fa4 (review 4aad4597.1, 2026-10-09): xargs hands the fed words to a `sh -c` payload as its positional parameters, so the rm inside it deletes the path. Each refusal was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs sh -c 'rm "$0"'"""),
+        "protected-files: an xargs-fed sh -c payload removes $0",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs bash -c 'rm "$@"' _"""),
+        "protected-files: an xargs-fed bash -c payload removes $@",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs -I{} sh -c 'rm {}'"),
+        "protected-files: xargs -I substitutes the path into a sh -c payload",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs sh -c 'cat "$0"'"""),
+        "protected-files CONTROL: an xargs-fed sh -c payload that only reads",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("""echo packages/x.ts | xargs sh -c 'rm "$0"'"""),
+        "protected-files CONTROL: an xargs-fed sh -c rm of an unprotected path",
+    ),
+    # The other way a payload inherits the feed: its own commands read the shell's stdin, so the xargs inside it is fed. Allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | sh -c 'xargs rm'"),
+        "protected-files: a piped sh -c payload's xargs rm reads the shell's stdin",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | bash -c 'cat | xargs rm'"),
+        "protected-files: a piped bash -c payload passes its stdin through cat to xargs rm",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | bash -c 'xargs cat'"),
+        "protected-files CONTROL: a piped bash -c payload that only reads",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npx -c 'node cli-bundle.js'"),
+        "cli-bundle: npx -c runs a shell string",
+    ),
+    # #31ed6c5f, 2026-10-09: a wrapper is a command the walk found, not a quoted word that spells one. Both refusals below were rc 2 before, the second on the lead's own worklist note.
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("""echo "sh -c 'rm x'" "x .claude/settings.json | y\""""),
+        "protected-files CONTROL: a quoted sh -c is an echo argument, not a wrapper",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json(
+            """python3 .claude/hooks/stop/worklist.py --add d778be9d "sh -c 'rm x' then .claude/settings.json | y\""""
+        ),
+        "protected-files CONTROL: a worklist note quoting sh -c rm and the settings path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo "sh -c 'rm x'"; sh -c 'rm .claude/settings.json'"""),
+        "protected-files: a real sh -c after a quoted mention is still read",
+    ),
+    # #31ed6c5f: a group's stdin is every member's, and a read loop turns the feed into a variable. All three were allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | (xargs rm)"),
+        "protected-files: a subshell consumer is fed",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | { xargs rm; }"),
+        "protected-files: a brace-group consumer is fed",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('echo .claude/settings.json | while read f; do rm "$f"; done'),
+        "protected-files: a read loop removes the read variable",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('echo .claude/settings.json | while read -r f; do cat "$f"; done'),
+        "protected-files CONTROL: a read loop that only reads",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo packages/x.ts | (xargs rm)"),
+        "protected-files CONTROL: a subshell consumer fed an unprotected path",
+    ),
+    # Review e085085d.1: a loop's stdin is what `done` redirects, and what feeds the loop feeds its body. Each refusal was allowed (rc 0) before; the first was pinned as a KNOWN GAP.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('while read f; do rm "$f"; done <<< .claude/settings.json'),
+        "protected-files: a read loop fed through done <<<",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('while read f; do rm "$f"; done < <(echo .claude/settings.json)'),
+        "protected-files: a read loop fed through done < <(...)",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("while read f; do rm \"$f\"; done <<'EOF'\n.claude/settings.json\nEOF"),
+        "protected-files: a read loop fed a heredoc through done",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | while true; do xargs rm; break; done"),
+        "protected-files: a piped loop's body reads the loop's stdin",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('while read f; do cat "$f"; done <<< .claude/settings.json'),
+        "protected-files CONTROL: a loop fed through done that only reads",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('while read f; do rm "$f"; done <<< packages/x.ts'),
+        "protected-files CONTROL: a loop fed an unprotected path through done",
+    ),
+    # The path reaching the destructive command through syntax the prose view drops (e085085d.1 sweep): quoting, a variable, a for list, a substitution, a cd. Each was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm ".claude/settings.json"'),
+        "protected-files: a quoted path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('git restore -- ".claude/settings.json"'),
+        "protected-files: a quoted path after git restore --",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('f=.claude/settings.json; rm "$f"'),
+        "protected-files: a variable holding the path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('for f in .claude/settings.json; do rm "$f"; done'),
+        "protected-files: a for list holding the path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$(echo .claude/settings.json)"'),
+        "protected-files: a quoted substitution printing the path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("cd .claude && rm settings.json"),
+        "protected-files: a path relative to a cd",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude//settings.json"),
+        "protected-files: a path with a doubled slash",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf .claude"),
+        "protected-files: a recursive rm of a directory holding the path",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('for f in .claude/settings.json; do cat "$f"; done'),
+        "protected-files CONTROL: a for list read, not removed",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('f=.claude/settings.json; cat "$f"'),
+        "protected-files CONTROL: a variable read, not removed",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm -rf .claude/tmp-scratch"),
+        "protected-files CONTROL: a recursive rm beside the path, not above it",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/settings.local.json"),
+        "protected-files CONTROL: a neighbouring file",
+    ),
+    # Review c093f0f3.2: a word the guard cannot evaluate (`$(...)`, a backtick, an unresolved `$NAME`) is a wildcard; it is refused when a literal segment is a protected path's and the pattern can reach a protected file. Each refusal was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/$(echo settings.json)"),
+        "protected-files: a substitution after the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm $(echo .claude)/settings.json"),
+        "protected-files: a substitution before the protected basename",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm `echo .claude`/settings.json"),
+        "protected-files: a backtick substitution before the protected basename",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm .claude/"$NAME"'),
+        "protected-files: an unresolved variable after the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf $(pwd)/.claude"),
+        "protected-files: a recursive rm of the protected directory under a substitution",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$(mktemp)"'),
+        "protected-files CONTROL: a substitution with no protected segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$(mktemp -d)/x"'),
+        "protected-files CONTROL: a substitution beside an unrelated segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$X".json'),
+        "protected-files CONTROL: a variable beside a partial basename",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/$(echo tmp)/x.log"),
+        "protected-files CONTROL: a protected segment whose pattern cannot reach a protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$S/w2clone"'),
+        "protected-files CONTROL: a recursive rm of an unrelated directory under a variable",
+    ),
+    # Review cd8ccb11.1-.2: a wildcarded operand is normalised segment by segment (`.` dropped, `//` collapsed, `..` popping a literal segment, a `..` popping a substitution reaching anything under the literal prefix). Measured on cd8ccb112, 7 rows were wrong: 6 refusals were allowed (rc 0), namely the `./`, `//` and literal-`..` rows before a substitution, the `./` row after one, `"$D"/.claude/..` and the unnormalised substitution text; and the `"$(mktemp -d)"/..` control was refused. The other 4 refusals and 3 controls were already right, and stay as pins.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/./$(echo settings.json)"),
+        "protected-files: a ./ segment before a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude//$(echo settings.json)"),
+        "protected-files: a doubled slash before a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/x/../$(echo settings.json)"),
+        "protected-files: a .. popping a literal segment before a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm $(echo .claude)/./settings.json"),
+        "protected-files: a ./ segment after a substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm -rf "$D"/.claude/..'),
+        "protected-files: a recursive rm whose .. pops the protected directory under a variable",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf .claude/$(echo x)/.."),
+        "protected-files: a recursive rm whose .. pops a substitution under the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/$(echo x)/../settings.json"),
+        "protected-files: a .. popping a substitution back onto the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$(echo .claude/./settings.json)"'),
+        "protected-files: a substitution printing an unnormalised protected path",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf .claude/x/.."),
+        "protected-files: a recursive rm of a literal path that normalises to the protected directory",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$(mktemp -d)"/../x.log'),
+        "protected-files CONTROL: a .. popping a substitution beside an unrelated file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf ./$(echo build)/.."),
+        "protected-files: a recursive rm whose .. pops a substitution back onto the project root",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm ./$(echo build)/out.txt"),
+        "protected-files CONTROL: a ./ substitution path with no protected segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$(mktemp -d)"/..'),
+        "protected-files CONTROL: a recursive rm whose .. pops an unknown absolute substitution",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/./$(echo tmp)/x.log"),
+        "protected-files CONTROL: a ./ protected-directory path that cannot reach a protected file",
+    ),
+    # Review f12404e0.1-.2: a glob (`*`, `?`, `[`) is a pattern matched segment by segment against the protected set, in a plain word and inside a substitution's text; and a word whose `..` pops a substitution is skipped only where rm itself refuses it. Rows run from `.claude/` carry that `cwd`.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm $(echo .claude/settings.json*)"),
+        "protected-files: a glob inside a substitution names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/settings.js*"),
+        "protected-files: a glob names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/*"),
+        "protected-files: a glob over the protected directory",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$(ls .claude/settings.j?on)"'),
+        "protected-files: a ? glob inside a quoted substitution",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf .cl*"),
+        "protected-files: a recursive rm of a glob naming the protected directory",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm *.log"),
+        "protected-files CONTROL: a glob that cannot cross into a directory",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/*.log"),
+        "protected-files CONTROL: a glob in the protected directory that cannot name a protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm -rf /tmp/zz-*"),
+        "protected-files CONTROL: a recursive glob elsewhere",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm -rf .claude/*/"),
+        "protected-files CONTROL: a trailing slash makes a glob expand to directories, never the protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm -f */settings.json"),
+        "protected-files CONTROL: a glob never matches a leading dot, so */ cannot reach .claude/",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf scr*/"),
+        "protected-files: a directory-only glob over the directory holding a protected file",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        _j({"tool_input": {"command": 'rm -rf "$(echo x)/.."'}, "cwd": str(ROOT / ".claude")}),
+        "protected-files CONTROL: from .claude/, rm refuses a last component of .. (GNU rm 9.7, measured)",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        _j({"tool_input": {"command": 'git rm -r "$(echo x)/.."'}, "cwd": str(ROOT / ".claude")}),
+        "protected-files: from .claude/, git rm -r normalises x/.. to the directory holding the protected file",
+    ),
+    # Review 63ee61e3.2: a bracket class is matched the way bash expands it, never compiled from raw text, so no pattern can crash the guard. Measured on bash 5.3: an invalid range and an unknown POSIX class match nothing, `]` first is a member, an unterminated `[` is literal; an unknown class is still read as any character, toward refusing.
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/[z-a]"),
+        "protected-files CONTROL: an invalid range matches nothing, as bash expands it (it crashed the guard, rc 1)",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/settings.jso[!]"),
+        "protected-files CONTROL: an unterminated class is literal text (it crashed the guard, rc 1)",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("rm .claude/s[e-a]ttings.json"),
+        "protected-files CONTROL: an invalid range inside the protected name matches nothing",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[[:alpha:]]ttings.json"),
+        "protected-files: a POSIX class names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[]e]ttings.json"),
+        "protected-files: a class whose first member is ] names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[!a-d]ttings.json"),
+        "protected-files: a negated range names the protected file",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm .claude/s[[:bogus:]]ttings.json"),
+        "protected-files: an unknown POSIX class fails safe toward the protected file",
+    ),
+    # Found on b922f15cb by this writer's own cleanup command: a `?` inside `${T:?}` was read as a glob, and a word whose root is unevaluated was resolved under the run's directory, so the documented safe idiom was refused from the project root. Both controls were refused (rc 2); the refusals stay refused.
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "${T:?}"'),
+        "protected-files CONTROL: the ${VAR:?} idiom is a parameter, not a glob",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$(mktemp -d)"/*'),
+        "protected-files CONTROL: a glob under an unknown root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm -rf "${T:?}"/.claude'),
+        "protected-files: a protected segment after a ${VAR:?} root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("rm -rf ./*"),
+        "protected-files: a glob over the project root's own directories",
+    ),
+    # Review fc3f376a.3: a glob under an unknown root still names the protected file by its trailing segments. Review fc3f376a.4: a protected path written after a substitution is `_unjudgeable`'s, pinned here. The two glob refusals were allowed (rc 0) before; the controls stay allowed.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$D"/.claude/settings*'),
+        "protected-files: a glob naming the protected file under an unknown root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm -rf "$D"/.cl*'),
+        "protected-files: a recursive glob naming the protected directory under an unknown root",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$(pwd)"/.claude/settings.json'),
+        "protected-files: a protected path written after a substitution",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -rf "$D"/*'),
+        "protected-files CONTROL: a bare glob under an unknown root names no protected segment",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$D"/.claude/notes*'),
+        "protected-files CONTROL: a glob under an unknown root that no protected name matches",
+    ),
+    # Review 094dea3b.4-.5: a glob glued to an unknown root with no slash was allowed (rc 0); a protected basename directly under an unknown root is refused on purpose, since the root may be `.claude`.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$D"settings*'),
+        "protected-files: a glob glued to an unknown root with no slash",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('rm "$D"/settings*'),
+        "protected-files: a protected basename glob directly under an unknown root",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm "$D"notes*'),
+        "protected-files CONTROL: a glued glob no protected name matches",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json('rm -f "$D"*'),
+        "protected-files CONTROL: a bare glob glued to an unknown root",
+    ),
+    # A prefix command's option VALUE is not the command (cac47d16.1 sweep, shellscan._prefix_option): each refusal was allowed (rc 0) before, the value read as the command.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs --max-procs 2 rm"),
+        "protected-files: xargs --max-procs takes a separate value",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs -rP 2 rm"),
+        "protected-files: xargs bundle ending in a value letter",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs --max-p 2 rm"),
+        "protected-files: xargs abbreviated long option",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("sudo --user root rm .claude/settings.json"),
+        "protected-files: sudo --user takes a separate value",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("stdbuf --output L rm .claude/settings.json"),
+        "protected-files: stdbuf --output takes a separate value",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json('env -S "rm .claude/settings.json"'),
+        "protected-files: env -S splits its string into the command",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("env --chdir .claude rm settings.json"),
+        "protected-files: env --chdir moves where rm runs",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("echo .claude/settings.json | xargs --max-procs 2 cat"),
+        "protected-files CONTROL: xargs --max-procs feeding a reader",
+    ),
+    case(
+        "check 0 guards/block_protected_files.py",
+        bash_json("env --chdir /tmp rm settings.json"),
+        "protected-files CONTROL: env --chdir elsewhere",
+    ),
+    # Review 5aa562c3.1: a fed shell payload with any destructive command is refused whether or not it names $0, because both of these delete the path without the rm naming a positional.
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs sh -c 'f=$0; rm "$f"'"""),
+        "protected-files: a fed payload copying $0 before the rm",
+    ),
+    case(
+        "check 2 guards/block_protected_files.py",
+        bash_json("""echo .claude/settings.json | xargs sh -c 'for f; do rm "$f"; done' _"""),
+        "protected-files: a fed payload looping over its positionals",
+    ),
+    # #31ed6c5f: npm's own parse finds the program, abbreviations included, and `npm exec`/`npm x` launch like npx. Each was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npx --logl silent node packages/cli/dist/cli.js"),
+        "cli-bundle: an abbreviated npx value option",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npm exec -- node packages/cli/dist/cli.js"),
+        "cli-bundle: npm exec launches node",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npm x node packages/cli/dist/cli.js"),
+        "cli-bundle: npm x launches node",
+    ),
+    case(
+        "check 2 guards/block_cli_bundle.py",
+        bash_json("npm --logl silent exe -- node packages/cli/dist/cli.js"),
+        "cli-bundle: an npm option before an abbreviated exec",
+    ),
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("npm exec -- prettier --check packages/cli/dist/cli.js"),
+        "cli-bundle CONTROL: npm exec running another program over the bundle path",
+    ),
+    case(
+        "check 0 guards/block_cli_bundle.py",
+        bash_json("npm run build -- packages/cli/dist/cli.js"),
+        "cli-bundle CONTROL: npm run is not a launcher",
+    ),
     # AND THE OTHER DIRECTION, which is the half that makes the narrowing safe. The scanner extracts shell-wrapper payloads, so hiding a banned command inside `sh -c` / `eval` must still be caught. Without these, "we stopped matching prose" and "we stopped matching" look identical from the outside.
     case(
         "check 2 guards/block_ci_polling.py",
@@ -512,6 +1281,1065 @@ STATIC: list[Case] = [
         "check 2 guards/block_long_sleep.py",
         bash_json("bash <<EOF\nsleep 300\nEOF"),
         "long-sleep: a heredoc fed to bash is still scanned",
+    ),
+    # #503f0ba8, 2026-10-09: the commands `npx` and `find -exec` LAUNCH, judged through `shellscan.every_run`. Every deny row below was allowed on the base (rc 0, measured); every CONTROL row was allowed before and after. A launched run that executes ELSEWHERE (`find -execdir`, `npx -w/--prefix`, `shellscan.Launch.elsewhere`) is left unjudged by the guards that resolve a cwd or a package.
+    case(
+        "check 2 guards/block_long_sleep.py",
+        bash_json(r"find . -maxdepth 0 -exec sleep 900 \;"),
+        "long-sleep: a sleep that find -exec launches",
+    ),
+    case(
+        "check 2 guards/block_long_sleep.py",
+        bash_json("npx sleep 900"),
+        "long-sleep: a sleep that npx launches",
+    ),
+    case(
+        "check 0 guards/block_long_sleep.py",
+        bash_json("echo find . -maxdepth 0 -exec sleep 900"),
+        "long-sleep CONTROL: prose naming a launched sleep",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(r"find . -maxdepth 0 -exec python3 -m rediacc_ci.dev.worktree create x \;"),
+        "worktree-add: the port's create launched by find -exec",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "find . -maxdepth 0 -exec python3 -c \"import os; os.system('git worktree add /tmp/x')\" \\;"
+        ),
+        "worktree-add: a python program launched by find -exec",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            r"find . -maxdepth 0 -exec python3 -c 'print(\"never run git worktree add here\")' \;"
+        ),
+        "worktree-add CONTROL: a launched python printing a sentence",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("echo find . -exec python3 -m rediacc_ci.dev.worktree create x"),
+        "worktree-add CONTROL: prose naming a launched create",
+    ),
+    case(
+        "check 2 guards/block_host_toolchain_run.py",
+        bash_json("find . -name '*.py' -exec npx ruff format {} +"),
+        "host-toolchain: npx ruff launched by find -exec",
+    ),
+    case(
+        "check 0 guards/block_host_toolchain_run.py",
+        bash_json("echo find . -name x -exec npx ruff format {} +"),
+        "host-toolchain CONTROL: prose naming a launched npx ruff",
+    ),
+    # #0c331972: npm's own option grammar (shellscan._launches) instead of a hand-rolled `-y` skip, so both shapes below were allowed at 306285231 (rc 0, measured).
+    case(
+        "check 2 guards/block_host_toolchain_run.py",
+        bash_json("npx --logl silent --yes ruff check"),
+        "host-toolchain: npx ruff behind a value option",
+    ),
+    case(
+        "check 2 guards/block_host_toolchain_run.py",
+        bash_json("npm x -y ruff check"),
+        "host-toolchain: npx ruff through the npm x alias",
+    ),
+    case(
+        "check 0 guards/block_host_toolchain_run.py",
+        bash_json("echo 'npm x -y ruff check'"),
+        "host-toolchain CONTROL: prose naming npm x ruff",
+    ),
+    case(
+        "check 2 guards/block_self_matching_pgrep.py",
+        bash_json(r"find . -maxdepth 0 -exec pkill -f sleep \;"),
+        "self-matching-pgrep: a pkill -f that find -exec launches",
+    ),
+    case(
+        "check 0 guards/block_self_matching_pgrep.py",
+        bash_json("echo find . -maxdepth 0 -exec pkill -f sleep"),
+        "self-matching-pgrep CONTROL: prose naming a launched pkill",
+    ),
+    case(
+        "check 2 guards/block_missing_npm_script.py",
+        bash_json("npx -c 'npm run does-not-exist-example'"),
+        "missing-npm-script: an npm run that npx -c launches",
+    ),
+    case(
+        "check 2 guards/block_missing_npm_script.py",
+        bash_json(r"find packages -maxdepth 1 -name cli -exec npm run does-not-exist-example \;"),
+        "missing-npm-script: find -exec runs npm in find's own cwd",
+    ),
+    case(
+        "check 0 guards/block_missing_npm_script.py",
+        bash_json(
+            r"find packages -maxdepth 1 -name cli -execdir npm run does-not-exist-example \;"
+        ),
+        "missing-npm-script CONTROL: find -execdir runs npm in each match's directory",
+    ),
+    case(
+        "check 0 guards/block_missing_npm_script.py",
+        bash_json("npx -w packages/cli -c 'npm run does-not-exist-example'"),
+        "missing-npm-script CONTROL: npx -w runs npm in another package",
+    ),
+    case(
+        "check 0 guards/block_missing_npm_script.py",
+        bash_json("npx -c 'npm run check:ci-python-lint'"),
+        "missing-npm-script CONTROL: a launched npm run of a real script",
+    ),
+    case(
+        "check 2 guards/block_raw_ci_read.py",
+        bash_json("npx -c 'gh pr checks 591'"),
+        "raw-ci-read: a gh read that npx -c launches",
+    ),
+    case(
+        "check 2 guards/block_raw_ci_read.py",
+        bash_json(r"find . -maxdepth 0 -exec gh run list --limit 1 \;"),
+        "raw-ci-read: a gh read that find -exec launches",
+    ),
+    case(
+        "check 0 guards/block_raw_ci_read.py",
+        bash_json("echo npx -c gh pr checks 591"),
+        "raw-ci-read CONTROL: prose naming a launched read",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json(r"find . -maxdepth 0 -exec ruff format \;"),
+        "unscoped-formatter: find -exec runs ruff format with no path",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npx -c 'eslint --fix .'"),
+        "unscoped-formatter: npx -c runs eslint --fix on the root",
+    ),
+    case(
+        "check 0 guards/block_unscoped_formatter_run.py",
+        bash_json("find . -name '*.py' -exec ruff format {} +"),
+        "unscoped-formatter CONTROL: find -exec naming {} is scoped",
+    ),
+    case(
+        "check 0 guards/block_unscoped_formatter_run.py",
+        bash_json(r"find packages -name cli -execdir ruff format . \;"),
+        "unscoped-formatter CONTROL: find -execdir's . is each match's directory",
+    ),
+    # #0c331972: the launched command comes from shellscan's npm parser. The two deny rows were allowed at 306285231 (rc 0, measured); npm consumes a flag written before `--`, so the third hands prettier no --write.
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npm x -- prettier --write"),
+        "unscoped-formatter: npm x runs prettier --write with no path",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npx --logl silent --yes prettier --write"),
+        "unscoped-formatter: a value option npx takes does not hide the tool",
+    ),
+    case(
+        "check 0 guards/block_unscoped_formatter_run.py",
+        bash_json("npm x prettier --write"),
+        "unscoped-formatter CONTROL: npm x eats a flag written before --",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npx prettier --write $files"),
+        "unscoped-formatter: an unquoted variable npx hands on may vanish",
+    ),
+    # Review 0bbd6471.2: a versioned spec under the npm spellings, which shellscan launches as npx does.
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npm exec -- prettier@3 --write"),
+        "unscoped-formatter: npm exec with a versioned spec",
+    ),
+    case(
+        "check 2 guards/block_unscoped_formatter_run.py",
+        bash_json("npm x -- prettier@3 --write"),
+        "unscoped-formatter: npm x with a versioned spec",
+    ),
+    case(
+        "check 2 guards/block_suppressions_shell_write.py",
+        bash_json("find . -name '*.py' -exec sed -i 's/$/  # " + "no" + "qa: E501/' {} +"),
+        "suppressions-shell-write: sed -i launched by find -exec on the *.py it names",
+    ),
+    case(
+        "check 0 guards/block_suppressions_shell_write.py",
+        bash_json("find . -name '*.py' -exec grep -n " + "no" + "qa {} +"),
+        "suppressions-shell-write CONTROL: a launched grep reads, never writes",
+    ),
+    # #f3f36655: a script run BY PATH is read like a heredoc; the refusals need a scratch script on disk and live in test-block_suppressions.py. These pin the two allow paths: a TRACKED script whose own source carries markers (worklist.py: reading it would refuse every run), and a script that cannot be read, which fails open.
+    case(
+        "check 0 guards/block_suppressions_shell_write.py",
+        bash_json("python3 .claude/hooks/stop/worklist.py --list --open x"),
+        "suppressions-shell-write CONTROL: a tracked script whose source carries markers",
+    ),
+    case(
+        "check 0 guards/block_suppressions_shell_write.py",
+        bash_json("python3 /nonexistent/zz-never-written.py"),
+        "suppressions-shell-write CONTROL: a script that cannot be read fails open",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("find agent/reviews -name '*.md' -exec sed -i s/high/low/ {} +"),
+        "review-file-shell-write: sed -i launched by find under agent/reviews",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec cp /tmp/x.md {} \;"),
+        "review-file-shell-write: a launched cp onto the files find names",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec cp {} /tmp/ \;"),
+        "review-file-shell-write CONTROL: a launched copy OUT of the directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo find agent/reviews -exec sed -i s/high/low/ {} +"),
+        "review-file-shell-write CONTROL: prose naming a launched sed -i",
+    ),
+    # The cac47d16.1 sweep: a copy's destination is getopt's answer. Both refusals were allowed (rc 0) before, and the control was refused.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("cp -t agent/reviews/0930-1 /tmp/x.md"),
+        "review-file-shell-write: cp -t into the review directory",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/0930-1/ | xargs cp /tmp/x.md"),
+        "review-file-shell-write: xargs appends the review directory as the destination",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("cp -t /tmp agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: cp -t copies a review file OUT",
+    ),
+    # Review 6dcf79c7.1-.2: a Python template filled by keyword, by a star width's extra argument, or from a mapping. Each was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport os\nos.system('echo x > {p}'.format(p='agent/reviews/a.md'))\nEOF"
+        ),
+        "review-file-shell-write: a str.format keyword field fills the redirect target",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport os\nos.system('echo x > %*sfoo' % (0, 'agent/reviews/a.md'))\nEOF"
+        ),
+        "review-file-shell-write: a star width takes its own argument",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport os\nos.system('echo x > %(p)s' % {'p': 'agent/reviews/a.md'})\nEOF"
+        ),
+        "review-file-shell-write: a percent mapping key fills the redirect target",
+    ),
+    # The twin of the coordinator finding: a program that only READS a review file is allowed, one that writes it is refused.
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('agent/reviews/0930-1/a.md')\nprint(p.read_text())\nEOF"
+        ),
+        "review-file-shell-write CONTROL: a heredoc that only reads a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('agent/reviews/0930-1/a.md')\np.write_text('x')\nEOF"
+        ),
+        "review-file-shell-write: a heredoc writing a review file through Path",
+    ),
+    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_review_file_edit.py. These pin the allow paths: a TRACKED script whose own text names a review path and writes files, and a script that cannot be read, which fails open.
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("python3 .claude/rediacc_hooks/tests/test_wl_loopspeed.py"),
+        "review-file-shell-write CONTROL: a tracked script the guard would refuse if it read it",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("python3 /nonexistent/zz-agent-reviews-writer.py"),
+        "review-file-shell-write CONTROL: a script that cannot be read fails open",
+    ),
+    # Review c093f0f3.1: more auto-numbered fields than positionals (`*row`) rendered by raising StopIteration inside the guard. An unknown field renders as a placeholder.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport os\nrow = ['a', 'b', 'c']\nos.system('{} {} {} > agent/reviews/a.md'.format(*row))\nEOF"
+        ),
+        "review-file-shell-write: more auto fields than positionals before a review redirect",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport os\nrow = ['a', 'b', 'c']\nos.system('echo {} {} {} > /tmp/x'.format(*row))\nprint('agent/reviews/a.md')\nEOF"
+        ),
+        "review-file-shell-write CONTROL: more auto fields than positionals, written elsewhere",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json(r"find . -maxdepth 0 -exec ssh prod-1 'cat > /etc/x' \;"),
+        "ssh-file-write: an ssh remote write that find -exec launches",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json("npx -c \"ssh prod-1 'tee /etc/x'\""),
+        "ssh-file-write: an ssh remote tee that npx -c launches",
+    ),
+    case(
+        "check 0 guards/block_ssh_file_write.py",
+        bash_json("echo \"find . -exec ssh prod-1 'cat > /etc/x' ;\""),
+        "ssh-file-write CONTROL: prose naming a launched remote write",
+    ),
+    # The shared ssh parser (`shellscan.ssh_remote_commands`) replaced this guard's own copy, and four answers moved ON PURPOSE: the old option table had no `P` (a typo), it stopped at the destination although OpenSSH reads options after it, and it never walked a hop.
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json("ssh -P tag prod-1 tee /etc/x < f"),
+        "ssh-file-write: -P takes a value, so the remote command is the tee",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json("ssh prod-1 -t tee /etc/x < f"),
+        "ssh-file-write: an option after the destination is ssh's, not the remote command",
+    ),
+    case(
+        "check 2 guards/block_ssh_file_write.py",
+        bash_json('ssh jump "ssh prod-1 tee /etc/x"'),
+        "ssh-file-write: a remote write one hop further in",
+    ),
+    case(
+        "check 0 guards/block_ssh_file_write.py",
+        bash_json('ssh prod-1 -o "ProxyCommand=nc %h %p 2>/tmp/err" uptime'),
+        "ssh-file-write CONTROL: a ProxyCommand's redirect is local, and the remote command is uptime",
+    ),
+    # Review findings fa5d11be.1-.4 on block_worktree_add: an option's value is not the script, `-e` takes attached code, a program too deep for `ast` is read by regex instead of crashing the guard, and bracket-delimited quote-like literals are read. Each deny row was allowed on the base (rc 0, or rc 1 from a traceback for the deep one).
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json('perl -I lib -e \'system("git","worktree","add","x")\''),
+        "worktree-add: perl -I's value is not the script, so the -e after it runs (fa5d11be.1)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -I lib script.pl git worktree add x"),
+        "worktree-add CONTROL: words after perl's script are its arguments (fa5d11be.1)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl '-esystem(\"git worktree add x\")'"),
+        "worktree-add: perl -e with its code attached (fa5d11be.2)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl -Iexample -e 'system(\"git worktree add x\")'"),
+        "worktree-add: an attached -I value holding an e is not an eval (fa5d11be.2)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -x /tmp -e 'print 1'"),
+        "worktree-add CONTROL: a perl one-liner with no worktree in it (fa5d11be.2)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import os; os.system('git worktree add /tmp/x'); x = %s1\""
+            % ("-" * 10000)
+        ),
+        "worktree-add: a program too deep for ast is read by regex, not crashed on (fa5d11be.3)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json('python3 -c "x = %s1"' % ("-" * 10000)),
+        "worktree-add CONTROL: a deep program that runs nothing (fa5d11be.3)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl -e 'system qw(git worktree add x)'"),
+        "worktree-add: a perl qw() word list spells the command (fa5d11be.4)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -e 'print qw(never run git worktree add here)'"),
+        "worktree-add CONTROL: a qw() sentence is not a command (fa5d11be.4)",
+    ),
+    # block_user_only_command and its shell twin (operator ruling 2026-10-09, #18c7e53c): no slash command or skill is user-only, except a file on the operator's exception list.
+    case(
+        "check 2 guards/block_user_only_command.py",
+        tool_json(
+            "Write",
+            ".claude/commands/zz-probe.md",
+            "content",
+            "---\ndescription: x\ndisable-model-invocation: true\n---\n",
+        ),
+        "user-only-command: a Write that adds the key",
+    ),
+    case(
+        "check 2 guards/block_user_only_command.py",
+        tool_json("Write", ".ci/config/model-invocation-exceptions.json", "content", "{}"),
+        "user-only-command: a Write of the exception list",
+    ),
+    case(
+        "check 0 guards/block_user_only_command.py",
+        tool_json(
+            "Write",
+            ".claude/commands/zz-probe.md",
+            "content",
+            "---\ndescription: x\n---\n\nNever set `disable-model-invocation: true`.\n",
+        ),
+        "user-only-command CONTROL: a body that only mentions the key",
+    ),
+    case(
+        "check 0 guards/block_user_only_command.py",
+        tool_json(
+            "Write", "docs/zz-probe.md", "content", "---\ndisable-model-invocation: true\n---\n"
+        ),
+        "user-only-command CONTROL: a file outside the command directories",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo 'disable-model-invocation: true' >> .claude/commands/zz-probe.md"),
+        "user-only-command-shell-write: an append of the key",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo '{}' > .ci/config/model-invocation-exceptions.json"),
+        "user-only-command-shell-write: a redirect into the exception list",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("sed -i '/^disable-model-invocation:/d' .claude/commands/zz-probe.md"),
+        "user-only-command-shell-write CONTROL: sed -i deleting the key line",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("echo 'disable-model-invocation: true is banned'"),
+        "user-only-command-shell-write CONTROL: echo to the terminal",
+    ),
+    # Review cac47d16.1: the target-directory option names where a copy lands. The listed command carries the key, so a copy of it anywhere else is refused; each was allowed (rc 0) before.
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("cp -t .claude/skills .claude/commands/handoff.md"),
+        "user-only-command-shell-write: cp -t copies a flagged command into the skills directory",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("cp .claude/commands/handoff.md .claude/skills/ -S .bak"),
+        "user-only-command-shell-write: a value option written after the destination",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("cp -t /tmp .claude/commands/handoff.md"),
+        "user-only-command-shell-write CONTROL: cp -t copies a command OUT",
+    ),
+    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_user_only_command.py, and so does the TRACKED-and-unchanged control, in a fixture git repo (review b922f15c.3: the only tracked script in this tree that the guard would refuse if read is its own harness, which is edited whenever the guard is, and an edited tracked script is read). This pins the other allow path: a script that cannot be read, which fails open.
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("python3 /nonexistent/zz-commands-writer.py"),
+        "user-only-command-shell-write CONTROL: a script that cannot be read fails open",
+    ),
+    # A python program is judged by where it WRITES, not by the paths it names (coordinator finding 2026-10-11): the first two controls were refused as "a python3 program writing the exception list".
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport json\np = '.ci/config/model-invocation-exceptions.json'\nprint(len(json.load(open(p))['exceptions']))\nEOF"
+        ),
+        "user-only-command-shell-write CONTROL: a heredoc that only reads the exception list",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\nprint('.ci/config/model-invocation-exceptions.json')\npathlib.Path('/tmp/out.txt').write_text('x')\nEOF"
+        ),
+        "user-only-command-shell-write CONTROL: a heredoc naming the list and writing elsewhere",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\np = '.ci/config/model-invocation-exceptions.json'\nopen(p, 'w').write('{}')\nEOF"
+        ),
+        "user-only-command-shell-write: a heredoc opening the exception list for write",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\npathlib.Path('.ci/config').joinpath('model-invocation-exceptions.json').write_text('{}')\nEOF"
+        ),
+        "user-only-command-shell-write: a heredoc writing the list through Path",
+    ),
+    # #5077391c: the fed words under `-t` are SOURCES. The deny row was allowed (the commands directory read as the source) and both controls refused (a fed word read as the destination).
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo .claude/commands/handoff.md | xargs cp -t .claude/skills/demo"),
+        "user-only-command-shell-write: xargs feeds a flagged command to cp -t a skill",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("echo .claude/commands/handoff.md | xargs cp -t /tmp"),
+        "user-only-command-shell-write CONTROL: xargs feeds a flagged command to cp -t another directory",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("echo .ci/config/model-invocation-exceptions.json | xargs cp -t /tmp"),
+        "user-only-command-shell-write CONTROL: xargs feeds the exception list to cp -t another directory",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("echo /tmp/x.json .ci/config/model-invocation-exceptions.json | xargs cp"),
+        "user-only-command-shell-write: xargs feeds cp the exception list as its destination",
+    ),
+    # #e5b0540a: a relative fed glob is matched in the run's own directory (allowed before: only a name of its shape was read).
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("cd .claude && echo command?/handoff.md | xargs cp -t skills/demo"),
+        "user-only-command-shell-write: a relative fed glob names the flagged command copied into a skill",
+    ),
+    case(
+        "check 2 guards/block_user_only_command_shell_write.py",
+        bash_json("cd .ci && echo /tmp/x.json conf?g/model-invocation-exceptions.json | xargs cp"),
+        "user-only-command-shell-write: a relative fed glob names the exception list as the destination",
+    ),
+    case(
+        "check 0 guards/block_user_only_command_shell_write.py",
+        bash_json("cd .claude && echo command?/handoff.md | xargs cp -t /tmp"),
+        "user-only-command-shell-write CONTROL: the same glob copied out of the tree",
+    ),
+    # block_review_file_shell_write judges a Python program by its write TARGETS (2026-10-09): a review path that only flows into written content was refused live, and a target built from a review path through a name was allowed.
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('/tmp/scratchpad/fix833t.py')\n"
+            "s = p.read_text()\ns = s.replace('X', 'agent/reviews/feat/%02d.md')\np.write_text(s)\nEOF"
+        ),
+        "review-file-shell-write CONTROL: a review path that is only written CONTENT",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\nT = 'agent/reviews/feat/%02d.md'\n"
+            "p = pathlib.Path(T % 1)\np.write_text('x')\nEOF"
+        ),
+        "review-file-shell-write: a write whose target is built from a review path",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\nroot = pathlib.Path('agent/reviews')\n"
+            "(root / 'b' / 'x.md').write_text('x')\nEOF"
+        ),
+        "review-file-shell-write: a write under a name bound to the directory itself",
+    ),
+    # Review findings e30f1ad1.1-.2 on block_review_file_shell_write: pathlib's `.open` takes its mode FIRST and `os.open` takes flags, and a command a program hands to a shell is a command. Each deny row was allowed on the base (rc 0).
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import pathlib; pathlib.Path('agent/reviews/x.md').open('w').write('x')\""
+        ),
+        "review-file-shell-write: Path.open with its mode as the first argument (e30f1ad1.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.open('agent/reviews/x.md', os.O_WRONLY | os.O_CREAT)\""
+        ),
+        "review-file-shell-write: os.open with write flags (e30f1ad1.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import pathlib; print(pathlib.Path('agent/reviews/x.md').open().read())\""
+        ),
+        "review-file-shell-write CONTROL: Path.open with no mode reads (e30f1ad1.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("python3 -c \"import os; os.open('agent/reviews/x.md', os.O_RDONLY)\""),
+        "review-file-shell-write CONTROL: os.open read-only (e30f1ad1.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("python3 -c \"import os; os.system('echo x > agent/reviews/a.md')\""),
+        "review-file-shell-write: a redirect inside os.system (e30f1ad1.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import subprocess as sp; sp.call(['sh', '-c', 'echo x > agent/reviews/a.md'])\""
+        ),
+        "review-file-shell-write: an sh -c argv through an aliased subprocess (e30f1ad1.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("python3 -c \"import os; p = 'agent/reviews/a.md'; os.system(f'echo x > {p}')\""),
+        "review-file-shell-write: an f-string shell command through a bound review path (e30f1ad1.2)",
+    ),
+    # Review 071b7987.1 and its siblings: a review path glued after a value the ast cannot spell, in every way Python builds a string.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; root = os.environ['R']; os.system(f'echo x > {root}agent/reviews/a.md')\""
+        ),
+        "review-file-shell-write: an f-string review path after an unbound prefix (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo x > %sagent/reviews/a.md' % os.environ['R'])\""
+        ),
+        "review-file-shell-write: a %-template review path after an unbound prefix (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo x > {}agent/reviews/a.md'.format(os.environ['R']))\""
+        ),
+        "review-file-shell-write: a str.format review path after an unbound prefix (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo x > ' + os.path.join(os.environ['R'], 'agent/reviews/a.md'))\""
+        ),
+        "review-file-shell-write: an os.path.join review path (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; from pathlib import Path; os.system('echo x > ' + str(Path(os.environ['R']) / 'agent/reviews/a.md'))\""
+        ),
+        "review-file-shell-write: a Path / review path through str() (071b7987.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('echo %s > /tmp/out' % 'agent/reviews/a.md')\""
+        ),
+        "review-file-shell-write CONTROL: a %-template that only echoes a review path into another file (071b7987.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('cat {}agent/reviews/a.md > /tmp/out'.format(os.environ['R']))\""
+        ),
+        "review-file-shell-write CONTROL: a str.format review path that is only read (071b7987.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("perl -e 'system(\"echo x > agent/reviews/a.md\")'"),
+        "review-file-shell-write: a redirect inside perl system, read by the line fallback (e30f1ad1.2)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"import os; os.system('grep -rn high agent/reviews/ > /tmp/hits')\""
+        ),
+        "review-file-shell-write CONTROL: a shell command that reads the directory and writes elsewhere (e30f1ad1.2)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 -c \"open('/tmp/x', 'w').write('os.system(\\\"echo > agent/reviews/a\\\")')\""
+        ),
+        "review-file-shell-write CONTROL: a shell command that is only written CONTENT (e30f1ad1.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(_handed_down("echo x > agent/reviews/a.md", 6)),
+        "review-file-shell-write: a write handed down six programs deep is refused, not dropped at the depth cap",
+    ),
+    # #5077391c: xargs appends its feed to cp's own words, so under `-t` a fed word is a SOURCE. The control was refused while every fed word read as a destination.
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs cp -t /tmp"),
+        "review-file-shell-write CONTROL: xargs feeds a review file to cp -t another directory",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo /tmp/a.md | xargs cp -t agent/reviews/1008-1"),
+        "review-file-shell-write: xargs feeds a source to cp -t the review directory",
+    ),
+    # The fed word as the file an in-place editor, tee or truncate writes: appended, or put where the marker stands. Each refusal was allowed before, since the editor's own words named no review file.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs sed -i s/a/b/"),
+        "review-file-shell-write: xargs feeds a review file to sed -i",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs -rI{} sed -i s/a/b/ {}"),
+        "review-file-shell-write: xargs puts a review file at its marker for sed -i",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs tee"),
+        "review-file-shell-write: xargs feeds a review file to tee",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1 | xargs -I{} truncate -s 0 {}/x.md"),
+        "review-file-shell-write: xargs puts a review directory at its marker for truncate",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1 | xargs -I X truncate -s 0 X/x.md"),
+        "review-file-shell-write: xargs puts a review directory at a marker of its own for truncate",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs cat"),
+        "review-file-shell-write CONTROL: xargs feeds a review file to a reader",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo /tmp/x.md | xargs sed -i s/a/b/"),
+        "review-file-shell-write CONTROL: xargs feeds another file to sed -i",
+    ),
+    # #e5b0540a: a relative fed glob is matched in the run's own directory, so `revi*s/...` from agent/ is the review directory (allowed before: only a name of its shape was read).
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("cd agent && echo revi*s/1008-1/026b*.md | xargs cp /tmp/x.md; ls reviews"),
+        "review-file-shell-write: a relative fed glob from agent/ lands in the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("cd agent && echo plan*/QUEUE.md | xargs cp /tmp/x.md; ls reviews"),
+        "review-file-shell-write CONTROL: a relative fed glob elsewhere in agent/",
+    ),
+    # Worklist item ff3ab826: a tool's own output option is a write, and a command `shellscan.output_landings` does not list as a reader is read as writing any word it names. Every deny row was allowed (rc 0) on the base; the controls name the same paths through a reader, or the same option elsewhere.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort -o agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort -o names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort --output=agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort --output= names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort -uoagent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort carries the review file in a short bundle",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort --out agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort --out is a unique prefix of --output",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort /tmp/a -o agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: sort -o after the operands",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("curl -o agent/reviews/0930-1/a.md https://e.x/a"),
+        "review-file-shell-write: curl -o names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("wget -O agent/reviews/0930-1/a.md https://e.x/a"),
+        "review-file-shell-write: wget -O names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("tar -cf agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: tar -cf names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("tar -xf /tmp/a.tar -C agent/reviews/0930-1"),
+        "review-file-shell-write: tar -C unpacks into the review directory",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("openssl enc -in /tmp/a -out agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: openssl -out names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("git diff --output=agent/reviews/0930-1/a.md HEAD~1"),
+        "review-file-shell-write: git diff --output= names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("git format-patch -o agent/reviews/0930-1 -1"),
+        "review-file-shell-write: git format-patch -o names the review directory",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("pandoc /tmp/a.md -o agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: pandoc -o names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/0930-1/a.md | xargs sort /tmp/a -o"),
+        "review-file-shell-write: xargs appends the review file as the value of sort -o",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/0930-1/a.md | xargs -I{} sort --output={} /tmp/a"),
+        "review-file-shell-write: xargs -I puts the review file in sort --output=",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec sort -o {} /tmp/a \;"),
+        "review-file-shell-write: a launched sort -o onto the files find names",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("find /tmp -name a -fprint agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: find -fprint names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sed -n 'w agent/reviews/0930-1/a.md' /tmp/a"),
+        "review-file-shell-write: a sed w command names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: an awk program redirects into a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("uniq /tmp/a agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: uniq's second operand is its output",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("touch agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: touch names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("prettier --write agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: prettier --write names a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sort agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: sort reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sort -o /tmp/out agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: sort -o elsewhere reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("wc -l agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: wc reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("head -5 agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: head reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git log --oneline -- agent/reviews/"),
+        "review-file-shell-write CONTROL: git log over the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git diff --stat agent/reviews/"),
+        "review-file-shell-write CONTROL: git diff --stat over the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git diff --output=/tmp/d -- agent/reviews/"),
+        "review-file-shell-write CONTROL: git diff --output= elsewhere",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("diff agent/reviews/0930-1/a.md /tmp/b"),
+        "review-file-shell-write CONTROL: diff reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("jq . agent/reviews/0930-1/clean.jsonl"),
+        "review-file-shell-write CONTROL: jq reads the clean ledger",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("curl -o /tmp/out https://e.x/agent/reviews/a"),
+        "review-file-shell-write CONTROL: curl -o elsewhere, a URL naming the directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/0930-1/a.md | xargs sort"),
+        "review-file-shell-write CONTROL: xargs feeds a review file to sort as its input",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo sort -o agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write CONTROL: prose naming a sort -o",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sed 's|agent/reviews/||' /tmp/list"),
+        "review-file-shell-write CONTROL: a sed script that names the directory and writes nothing",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("rm agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: rm keeps the verdict it had",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git checkout -- agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: git checkout keeps the verdict it had",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("grep -n Resolution agent/reviews/1008-1/*.md"),
+        "review-file-shell-write CONTROL: grep -n over the records",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sed -n 1,20p agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: sed -n prints a range of a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git add -- agent/reviews/1008-1/"),
+        "review-file-shell-write CONTROL: git add of the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git commit -F /tmp/m -- agent/reviews/1008-1/"),
+        "review-file-shell-write CONTROL: git commit of the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("ls agent/reviews/1008-1/"),
+        "review-file-shell-write CONTROL: ls of the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("tail -1 agent/reviews/0930-1/clean.jsonl"),
+        "review-file-shell-write CONTROL: tail of the clean ledger",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 .claude/hooks/stop/worklist.py --review-mark d778be9d ab12cd34.1 not-a-bug 'x agent/reviews/1008-1/x.md:3'"
+        ),
+        "review-file-shell-write CONTROL: the mark verb with evidence naming a record",
+    ),
+    # Review 906a4d56.1 and .2: gawk's -o, -p and -d take a value only attached, and -W takes a separate word, so the option parse put the program in the wrong word and its redirect was never read. Every deny row was allowed (rc 0) on the base.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -p '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -p takes no separate value, the next word is the program (906a4d56.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -d '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -d takes no separate value, the next word is the program (906a4d56.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -o '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -o with a program that redirects into a review file (906a4d56.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk --profile '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk --profile takes its file only after = (906a4d56.1 sweep)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -W lint '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -W takes a separate word, the word after it is the program (906a4d56.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("mawk -W interactive '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: mawk -W takes a separate word (906a4d56.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -W dump-variables=agent/reviews/0930-1/a.md '{print}' /tmp/a"),
+        "review-file-shell-write: gawk -W hands over a long write option (906a4d56.2 sweep)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("xxd -ps /tmp/in agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: xxd -ps is one flag, the second operand is its output (906a4d56 sweep)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > (FILENAME \".bak\")}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: an awk program writes beside its input through FILENAME (906a4d56 sweep)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("gawk '{print $1}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: gawk reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("gawk -W lint '{print $1}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: gawk -W lint reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("gawk -d '{print $1}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: gawk -d reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk -F'|' '{print $2}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: awk splitting on a pipe reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("xxd -ps agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: xxd -ps reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "cd agent/reviews/1008-1 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md"
+        ),
+        "review-file-shell-write CONTROL: awk with an alternation and its own assignments, run inside the directory",
+    ),
+    # Review 660ec7a0.1: an awk program that redirects a print names its target without a literal, so every operand is a landing. The three refusals were allowed at 660ec7a04.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk 'BEGIN{print \"x\" > ARGV[1]}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk prints into the operand it was handed",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{f=ARGV[1]; print \"x\" > f}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk prints into a variable built from its operand",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > FILENAME}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk prints into the file it reads",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk 'BEGIN{print \"a;b\" > ARGV[1]}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk redirects after a literal that holds a semicolon",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json('awk \'BEGIN{print "x" > "" ARGV[1]}\' agent/reviews/1008-1/x.md'),
+        "review-file-shell-write: awk redirects into a target that starts with a literal",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '$3 > 5 {print}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: a printing awk program that holds a > is refused, comparison or not",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk '$3 > 5' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write CONTROL: an awk program that prints nothing redirects nothing",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk '/^### (a|b)/{p=1} p' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write CONTROL: a pattern's alternation is not a pipe",
     ),
     case(
         "check 2 guards/block_ssh_docker.py",
@@ -709,6 +2537,83 @@ STATIC: list[Case] = [
         bash_json('eval "git push origin +main:main"'),
         "force-push: eval wrapper bypass, refspec form",
     ),
+    # #18c7e53c A-1 and C-3 (operator ruling 2026-10-09). The checked-out-branch and dirty-tree directions depend on the checkout, so they live in each guard's EDGE_CASES against fixture worlds; the rows here answer the same in any checkout.
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json("git push --prune origin"),
+        "force-push #18c7e53c: --prune deletes remote branches no line names",
+    ),
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json('git push origin --delete "$B"'),
+        "force-push #18c7e53c: a deleted branch name the walk cannot read",
+    ),
+    case(
+        "check 2 guards/block_git_force_push.py",
+        bash_json("git -C private/renet push --force-with-lease --delete origin 0101-9"),
+        "force-push #18c7e53c: --delete is never part of the lease form",
+    ),
+    case(
+        "check 0 guards/block_git_force_push.py",
+        bash_json("git push origin --delete 0101-9"),
+        "force-push #18c7e53c: deleting a branch no checkout names (pr-merge step 7)",
+    ),
+    case(
+        "check 0 guards/block_git_force_push.py",
+        bash_json("git push origin :"),
+        "force-push #18c7e53c: the matching refspec deletes nothing",
+    ),
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git --work-tree=. rebase origin/main"),
+        "rebase-dirt #18c7e53c: --work-tree hides the tree the rebase touches",
+    ),
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("GIT_DIR=.git git rebase origin/main"),
+        "rebase-dirt #18c7e53c: GIT_DIR on the command line is refused, not guessed",
+    ),
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git --git-dir=.git merge origin/main"),
+        "rebase-dirt #18c7e53c: --git-dir on a merge",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git rebase --continue"),
+        "rebase-dirt #18c7e53c: --continue starts nothing",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git rebase --abort"),
+        "rebase-dirt #18c7e53c: --abort starts nothing",
+    ),
+    # Worklist #dbbed0b6: `--skip` drops the commit being replayed, so it is refused on any tree; outside this checkout it is not this guard's business.
+    case(
+        "check 2 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git rebase --skip"),
+        "rebase-dirt #dbbed0b6: --skip drops the replayed commit",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git -C /tmp rebase --skip"),
+        "rebase-dirt #dbbed0b6 CONTROL: --skip outside this checkout",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git pull --ff-only"),
+        "rebase-dirt #18c7e53c: a fast-forward pull (pr-merge step 7)",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("git merge --ff-only origin/main"),
+        "rebase-dirt #18c7e53c: a fast-forward merge",
+    ),
+    case(
+        "check 0 guards/block_rebase_over_foreign_dirt.py",
+        bash_json("echo 'git rebase origin/main later'"),
+        "rebase-dirt #18c7e53c: prose naming a rebase",
+    ),
     case(
         "check 2 guards/block_git_empty_commit.py",
         bash_json("git commit --allow-empty -m x"),
@@ -734,7 +2639,7 @@ STATIC: list[Case] = [
         bash_json("echo start; git worktree add ../x"),
         "worktree-add: after a command separator",
     ),
-    # THE WRAPPER FORMS. `./run.sh worktree create` runs `git worktree add -b` inside scripts/dev/worktree.sh, so it is the same decision -- but the text this hook sees never contains "git worktree add", and the literal block matched nothing. It now also starts a devbox, so the bypass costs an image pull and a port block.
+    # THE WRAPPER FORMS. `./run.sh worktree create` runs `git worktree add -b` inside `rediacc_ci.dev.worktree.cmd_create`, so it is the same decision -- but the text this hook sees never contains "git worktree add", and the literal block matched nothing. It now also starts a devbox, so the bypass costs an image pull and a port block.
     case(
         "check 2 guards/block_worktree_add.py",
         bash_json("./run.sh worktree create"),
@@ -747,8 +2652,54 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_worktree_add.py",
-        bash_json("bash scripts/dev/worktree.sh create"),
+        bash_json("bash run.sh worktree create"),
         "worktree-add: interpreter prefix puts bash in command position, not the script",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("/home/x/console/run.sh worktree create"),
+        "worktree-add: run.sh by absolute path",
+    ),
+    # THE PYTHON PORT, reached without run.sh. scripts/dev/worktree.sh became `.ci/rediacc_ci/dev/worktree.py` and was deleted, and chain-head.sh allowed each spelling below with rc 0 on 2026-10-09 because neither arm named it.
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci worktree create x"),
+        "worktree-add: the package entry run.sh execs",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci.dev.worktree create x"),
+        "worktree-add: the port's module",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 .ci/rediacc_ci/dev/worktree.py create x"),
+        "worktree-add: the port by path",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 .ci/rediacc_ci worktree create x"),
+        "worktree-add: the package directory by path",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci.dev.worktree list"),
+        "worktree-add: the port's list is not create",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("PYTHONPATH=.ci python3 -m rediacc_ci worktree list"),
+        "worktree-add: the package's worktree list is not create",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("grep -n create .ci/rediacc_ci/dev/worktree.py"),
+        "worktree-add: reading the port is not running it",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("echo the docs say never to run rediacc_ci.dev.worktree create here"),
+        "worktree-add: an unquoted sentence naming the port is not running it",
     ),
     case(
         "check 2 guards/block_worktree_add.py",
@@ -776,6 +2727,166 @@ STATIC: list[Case] = [
         "check 0 guards/block_worktree_add.py",
         bash_json('echo "run.sh worktree create is blocked"'),
         "worktree-add: prose is not an invocation",
+    ),
+    # THE INTERPRETER FORMS. Every one ran with rc 0 through chain-head.sh on 2026-10-09: a program text handed to python (-c, a heredoc, a here-string, a pipe), node, perl or ruby is one opaque argument to the shell walk, so the three arms above never saw the command inside it.
+    case(
+        "check_out 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; subprocess.run(['git','worktree','add','/tmp/x'])\""
+        ),
+        "worktree-add: python -c with a git argv list",
+        "program text",
+    ),
+    case(
+        "check_out 2 guards/block_worktree_add.py",
+        bash_json("python3 -c 'from rediacc_ci.dev import worktree; worktree.main([\"create\"])'"),
+        "worktree-add: python -c calling the port's main with create",
+        "worktree port",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "PYTHONPATH=.ci python3 -c 'from rediacc_ci.dev.worktree import cmd_create; cmd_create([\"x\"])'"
+        ),
+        "worktree-add: python -c calling cmd_create",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            'python3 -c \'from rediacc_ci.__main__ import main; main(["worktree", "create", "x"])\''
+        ),
+        "worktree-add: python -c through the package entry",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 -c 'import os; os.system(\"git worktree add /tmp/x\")'"),
+        "worktree-add: python -c with a shell string",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; subprocess.run('cd /r && git worktree add /tmp/x', shell=True)\""
+        ),
+        "worktree-add: python -c with a compound shell string",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; subprocess.run(['python3','-m','rediacc_ci.dev.worktree','create','x'])\""
+        ),
+        "worktree-add: python -c spawning the port",
+    ),
+    case(
+        "check_out 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['git', 'worktree', 'add', '/tmp/x'])\nEOF"
+        ),
+        "worktree-add: python reading a heredoc",
+        "program text",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 <<'EOF'\nimport os\nos.system('git worktree add /tmp/x')\nEOF"),
+        "worktree-add: python with no target reads the heredoc",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("python3 - <<< 'import os; os.system(\"git worktree add /tmp/x\")'"),
+        "worktree-add: python reading a here-string",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("echo 'import os; os.system(\"git worktree add /tmp/x\")' | python3"),
+        "worktree-add: python fed by echo through a pipe",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("timeout 30 python3 -c \"import os; os.system('git worktree add /tmp/x')\""),
+        "worktree-add: python -c behind timeout",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "sh -c \"python3 - <<'EOF'\nimport os; os.system('git worktree add /tmp/x')\nEOF\""
+        ),
+        "worktree-add: a python heredoc inside sh -c",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "x=$(python3 - <<'EOF'\nimport subprocess; subprocess.run(['git','worktree','add','/tmp/x'])\nEOF\n)"
+        ),
+        "worktree-add: a python heredoc inside a substitution",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            'PYTHONPATH=.ci python3 -c \'from rediacc_ci.core import git; git.run("worktree", "add", "/tmp/x")\''
+        ),
+        "worktree-add: python -c handing a helper worktree add",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json('node -e \'require("child_process").execSync("git worktree add /tmp/x")\''),
+        "worktree-add: node -e",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("perl -le 'print `git worktree add /tmp/x`'"),
+        "worktree-add: perl backticks in a bundled -le",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("ruby -e 'system \"git worktree add /tmp/x\"'"),
+        "worktree-add: ruby -e",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("bash -c 'git worktree add /tmp/x'"),
+        "worktree-add: bash -c (caught before the interpreter arm)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c \"import subprocess; print(subprocess.run(['git','worktree','list'],capture_output=True).stdout)\""
+        ),
+        "worktree-add: python -c listing worktrees is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("python3 -c 'from rediacc_ci.dev import worktree; worktree.main([\"list\"])'"),
+        "worktree-add: python -c calling the port's list is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("python3 -c 'print(\"never run git worktree add here\")'"),
+        "worktree-add: python printing a sentence naming it is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "python3 - <<'EOF'\nprint(open('.ci/rediacc_ci/dev/worktree.py').read().count('create'))\nEOF"
+        ),
+        "worktree-add: python reading the port's source is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "python3 -c 'from rediacc_ci.dev import worktree; print(worktree.cmd_create.__doc__)'"
+        ),
+        "worktree-add: python reading cmd_create's docstring is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("perl -ne 'print if /git worktree add/' docs/x.md"),
+        "worktree-add: perl grepping for the command is allowed",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "cat > n.md <<'EOF'\npython3 -c \"import os; os.system('git worktree add x')\"\nEOF"
+        ),
+        "worktree-add: a heredoc into a file naming a python -c is data",
     ),
     case(
         "check 2 guards/block_blanket_git_add.py",
@@ -1097,6 +3208,195 @@ STATIC: list[Case] = [
         bash_json("git status"),
         "destructive-git: unrelated git command",
     ),
+    # #18c7e53c, operator ruling 2026-10-09: /branch-rebase is AI-invocable, and what its prose forbids a guard refuses. Every BLOCK row below answered rc 0 through the live pre-bash chain in the audit that opened the item. Each payload answers the same in any checkout: no row depends on which branch is checked out or what is dirty.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout -f"),
+        "destructive-git #18c7e53c: a forced checkout overwrites every modified file",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout -f main"),
+        "destructive-git #18c7e53c: a forced checkout of a branch",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout HEAD packages/cli/x.ts"),
+        "destructive-git #18c7e53c: a tree-ish and a path without --",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout origin/main packages/cli/x.ts"),
+        "destructive-git #18c7e53c: a remote ref and a path without --",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout zz-no-such-ref-q9"),
+        "destructive-git #18c7e53c: a lone operand that resolves as no ref is a pathspec",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout --ours private/renet"),
+        "destructive-git #18c7e53c: --ours on a gitlink drops the branch's submodule work",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout --theirs private/renet"),
+        "destructive-git #18c7e53c: --theirs on a gitlink pins an orphaned commit",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet switch -f main"),
+        "destructive-git #18c7e53c: a forced switch in a submodule",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git switch --discard-changes main"),
+        "destructive-git #18c7e53c: a discarding switch",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git reset --hard origin/main"),
+        "destructive-git #18c7e53c: a hard reset",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet reset --hard origin/main"),
+        "destructive-git #18c7e53c: a hard reset in a submodule",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git reset --keep HEAD"),
+        "destructive-git #18c7e53c: a keep reset rewrites the tree too",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git rebase --autostash origin/main"),
+        "destructive-git #18c7e53c: --autostash stashes peers' work",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -c rebase.autoStash=true rebase origin/main"),
+        "destructive-git #18c7e53c: -c rebase.autoStash is the same stash",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet pull --rebase --autostash"),
+        "destructive-git #18c7e53c: pull --autostash in a submodule",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git merge --autostash origin/main"),
+        "destructive-git #18c7e53c: merge --autostash",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git config --global rebase.autoStash true"),
+        "destructive-git #18c7e53c: a global autoStash write",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git checkout HEAD"),
+        "destructive-git #18c7e53c: a lone operand that resolves is a switch",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet checkout --detach HEAD"),
+        "destructive-git #18c7e53c: setting a gitlink by commit stays open",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git reset --soft HEAD~1"),
+        "destructive-git #18c7e53c: a soft reset keeps the tree",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git reset -- packages/cli/x.ts"),
+        "destructive-git #18c7e53c: a path reset only unstages",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git rebase --no-autostash origin/main"),
+        "destructive-git #18c7e53c: --no-autostash is allowed",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git config rebase.autoStash false"),
+        "destructive-git #18c7e53c: turning autoStash off is allowed",
+    ),
+    # #a234b06e, the second widening: the audit's B38-B49 forms. With no submodule present a foreach payload is judged in the repository itself, so these rows too answer the same in any checkout.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git rm -f packages/cli/x.ts"),
+        "destructive-git #a234b06e: a forced rm deletes a modified file",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git rm --cached -r ."),
+        "destructive-git #a234b06e: a recursive cached rm empties the shared index",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git read-tree --reset -u HEAD"),
+        "destructive-git #a234b06e: read-tree -u rewrites the work tree",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git checkout-index -f -a"),
+        "destructive-git #a234b06e: a forced checkout-index overwrites modified files",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git submodule update --init --force"),
+        "destructive-git #a234b06e: a forced submodule update discards submodule work",
+    ),
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git submodule foreach git clean -fd"),
+        "destructive-git #a234b06e: a foreach payload is judged as a command in each submodule",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git rm packages/cli/x.ts"),
+        "destructive-git #a234b06e: a plain rm stays open, git refuses it over a modified file",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git rm --cached packages/cli/x.ts"),
+        "destructive-git #a234b06e: one cached path stays open",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git submodule update --init --recursive"),
+        "destructive-git #a234b06e: /pr-merge's submodule update stays open",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git submodule foreach git status"),
+        "destructive-git #a234b06e: a read-only foreach payload stays open",
+    ),
+    # Review 9849764b.1: a payload's `-C` is relative to the submodule it runs in, so `../..` from private/renet is this checkout.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("git -C private/renet submodule foreach 'git -C ../.. checkout -- .'"),
+        "destructive-git 9849764b.1: a foreach payload's relative -C resolves from the submodule",
+    ),
+    # Review 72e7ac97.2/.3: GIT_CONFIG_PARAMETERS is read per key, and an empty value is git's false.
+    case(
+        "check 2 guards/block_destructive_git_restore.py",
+        bash_json("""GIT_CONFIG_PARAMETERS="'rebase.autostash'='true'" git rebase origin/main"""),
+        "destructive-git 72e7ac97.2: GIT_CONFIG_PARAMETERS with autostash true",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("""GIT_CONFIG_PARAMETERS="'rebase.autostash'='false'" git rebase origin/main"""),
+        "destructive-git 72e7ac97.2 CONTROL: GIT_CONFIG_PARAMETERS with autostash false",
+    ),
+    case(
+        "check 0 guards/block_destructive_git_restore.py",
+        bash_json("git -c rebase.autostash= rebase origin/main"),
+        "destructive-git 72e7ac97.3 CONTROL: an empty -c value is false",
+    ),
     case(
         "check 2 guards/block_blanket_git_add.py",
         bash_json("cd private/account && git add -A"),
@@ -1142,11 +3442,11 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_stale_pr_branch_date.py",
         bash_json(
-            # LOCAL today, deliberately, and noqa'd on this line rather than by
-            # disabling DTZ: the guard under test reads the clock with a bare `datetime.now()` precisely so it honours TZ the way its `date +%m%d` twin does. A tz-aware `today()` here would disagree with the guard
+            # LOCAL today, deliberately: the guard under test reads the clock with a bare `datetime.now()` precisely so it honours TZ the way its `date +%m%d` twin does. A tz-aware `today()` here would disagree with the guard
             # for the hours either side of local midnight and fail this case on
             # any host off Greenwich -- which is the exact defect the guard's port notes record being measured at 00:47 CEST.
-            "gh pr create --draft --head %s-9 -t x -b y" % datetime.date.today().strftime("%m%d")  # noqa: DTZ011
+            # The date is `TODAY_MARK`, filled when the case RUNS (#0f87655f): a date frozen when this table is imported is yesterday's for every case run after a midnight the suite crosses.
+            "gh pr create --draft --head %s-9 -t x -b y" % TODAY_MARK
         ),
         "stale-pr-branch: today's MMDD allowed",
     ),
@@ -1343,6 +3643,97 @@ STATIC: list[Case] = [
         ask_json("Should I describe how the branch guard works?"),
         "settled(how-clause passes)",
     ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push to a fork?"),
+        "settled(push how-do mechanics passes)",
+    ),
+    case(
+        # The permission rule, not the timing rule, owns "can i push": a leading `how` does not make it a mechanics question.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How can I push a submodule commit?"),
+        "settled(push how-can is still a permission ask)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("We already pushed the first fix to origin."),
+        "settled(push statement with a time word passes)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How should a finished turbo batch push?"),
+        "settled(push how-should timing refused)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("Should I push now?"),
+        "settled(push now question refused)",
+    ),
+    case(
+        # An unpunctuated timing ask is still the permission rule's: the time word is not what refuses it.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("Should we push now."),
+        "settled(push now unpunctuated refused)",
+    ),
+    case(
+        # A mechanics lead (how do/does/can ...) keeps a trailing time clause part of the mechanics.
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do we push the batch once the review is in?"),
+        "settled(push how-do with a once clause is mechanics)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push to a fork once my branch is rebased?"),
+        "settled(push how-do to a fork with a once clause is mechanics)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do we push the batch until the review is in?"),
+        "settled(push how-do with an until clause is mechanics)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("Should I push once CI is green?"),
+        "settled(push should with a once clause is timing)",
+    ),
+    case(
+        # Review ef6e61d0.1: a mechanics lead silences only a once/until condition, never a time choice.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push the batch now or later?"),
+        "settled(push how-do with a now-or-later choice is timing)",
+    ),
+    case(
+        # Review 53e2515a.1: a time word inside the object noun phrase of a mechanics question is not a timing ask.
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push the first commit to my fork?"),
+        "settled(push how-do with 'the first commit' is mechanics)",
+    ),
+    case(
+        "check 0 guards/block_settled_questions.py",
+        ask_json("How do I push the fix I already committed?"),
+        "settled(push how-do with 'I already committed' is mechanics)",
+    ),
+    case(
+        # Review cae71925.1: the determiner or pronoun must modify a following word; at the end of the clause it is the timing ask.
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push this first?"),
+        "settled(push how-do ending in 'this first' is timing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do I push it already?"),
+        "settled(push how-do ending in 'it already' is timing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do I push that already, or wait for the review?"),
+        "settled(push how-do with 'that already, or wait' is timing)",
+    ),
+    case(
+        "check 2 guards/block_settled_questions.py",
+        ask_json("How do we push the branch first, or wait for the review?"),
+        "settled(push how-do with an or-wait alternative is timing)",
+    ),
     # 2026-09-16, added live: the worktree/branch ROUTING class -- "shouldn't have asked ... it has big-bang answering usually" -- gets the same two-condition treatment as commit/branch/push/pr/merge.
     case(
         "check 2 guards/block_settled_questions.py",
@@ -1442,6 +3833,22 @@ STATIC: list[Case] = [
     #
     # THE PATHS HERE ARE LITERAL STRINGS with no filesystem behind them, which is what makes them dangerous during a move: when the tree went from .agent/<branch>/ to agent/<branch>/<session>/ (2026-08-14), every one of these cases would have kept passing against the OLD path while the guard stopped covering the new one, and the suite would have reported that as green. It moved
     # AGAIN on 2026-08-18, when the branch left the path and agent/<session>/STATE.md became the live shape, so the same hazard applies to these very lines: the live one-level shape is asserted FIRST, and the retired two-level shapes after it, because writing THERE is a session running stale instructions rather than a path nobody would ever try.
+    # #bc7d998c: the path is judged where the write LANDS. Both refusals were allowed (rc 0) before, the second because its typed `docs/agent/` prefix took the docs exclusion; the control was allowed before and stays allowed.
+    case(
+        "check 2 guards/block_agent_state_shape.py",
+        tool_json("Write", "agent/x/../deadbeef/STATE.md", "content", "tiny"),
+        "agent-state: a .. detour into a session's STATE.md",
+    ),
+    case(
+        "check 2 guards/block_agent_state_shape.py",
+        tool_json("Write", "docs/agent/../../agent/deadbeef/STATE.md", "content", "tiny"),
+        "agent-state: a docs/agent prefix that lands in agent/",
+    ),
+    case(
+        "check 0 guards/block_agent_state_shape.py",
+        tool_json("Write", "agent/deadbeef/../../docs/agent/x/STATE.md", "content", "tiny"),
+        "agent-state CONTROL: a .. detour that lands in docs/agent",
+    ),
     case(
         "check_out 2 guards/block_agent_state_shape.py",
         tool_json("Write", "/r/agent/deadbeef/STATE.md", "content", "tiny"),
@@ -1797,6 +4204,702 @@ STATIC: list[Case] = [
         "check 0 guards/block_adhoc_sanctioned.py",
         EMPTY_INPUT,
         "adhoc: no command in the payload is not a violation",
+    ),
+    # #0c331972, 2026-10-11: three guards matched raw text, so a plain echo of the command they guard was refused (rc 2 at 306285231, each measured). They judge the runs bash would start now: every CONTROL row below was refused before, and every deny row is a real run of the same command. block_adhoc_sanctioned keeps its text match by operator ruling 2026-08-25 (#6a2c9652), so it has deny rows here and no mention control.
+    case(
+        "check 2 guards/block_adhoc_sanctioned.py",
+        bash_json("bash -c 'gh run watch 123'"),
+        "adhoc: a watch inside sh -c still runs",
+    ),
+    case(
+        "check 0 guards/block_bash_write_to_running_script.py",
+        bash_json("echo 'echo x > /tmp/rediacc-guard-bashwrite/bash-side-suite.sh'"),
+        "bash-write CONTROL: an echo quoting a redirect writes nothing",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("echo 'true; sudo cp renet /usr/local/bin/renet'"),
+        "binary-deploy CONTROL: a quoted separator is not a command position",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sudo -u root cp renet /usr/local/bin/renet"),
+        "binary-deploy: sudo with an option still copies onto the binary",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("sudo cp /usr/local/bin/renet /tmp/renet.bak"),
+        "binary-deploy CONTROL: backing up the installed binary is a read",
+    ),
+    # Review 0bbd6471.1: a renet-named sibling in the install directory is the two-step deploy, and every copier counts.
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sudo cp bin/renet /usr/local/bin/renet.new"),
+        "binary-deploy: a staged renet sibling is refused",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("sudo install -m 755 bin/renet /usr/local/bin/renet"),
+        "binary-deploy: sudo install onto the binary is refused",
+    ),
+    case(
+        "check 0 guards/block_binary_deploy.py",
+        bash_json("sudo cp bin/rdc /usr/local/bin/rdc"),
+        "binary-deploy CONTROL: another binary in the install directory",
+    ),
+    # Review 126f2a9f.1 and 88362611.1: a fed word bash brace-expands is not a literal (allowed at 126f2a9fc), and a destination a variable holds is read expanded.
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("echo {/tmp/x,/usr/local/bin/renet} | sudo xargs cp bin/renet"),
+        "binary-deploy: a brace-expanded fed destination is the binary",
+    ),
+    case(
+        "check 2 guards/block_binary_deploy.py",
+        bash_json("D=/usr/local/bin/renet; sudo cp bin/renet $D"),
+        "binary-deploy: a destination set by an earlier statement",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("echo 'echo x | tee --output-error=warn agent/pr-babysit-0831-1.md'"),
+        "roundlog-truncate CONTROL: an echo quoting a truncating tee",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo x | tee --output-error=warn agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: the same tee, run",
+    ),
+    # Review 3f53e99e.2 sweep: in place is sed's own option parse. The first refusal pins a bundle; the control was refused before, its `i` read inside an attached `-e` script.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("sed -Ei 's/a/b/' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: sed -Ei is in place",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("sed -es/i/x/ agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: an i inside an attached -e script is not in place",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            ".claude/hooks/stop/worklist.py --roundlog 0831-1; mv agent/pr-babysit-0831-1.md /tmp/bak.md"
+        ),
+        "roundlog-truncate: the verb's name no longer exempts a mv on the same line",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("echo x >> agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: an append cannot truncate",
+    ),
+    # Review 0bbd6471.3: xargs appends the log as cp's destination.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo agent/pr-babysit-0831-1.md | xargs cp /tmp/bak.md"),
+        "roundlog-truncate: xargs feeds the log to cp as its destination",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("cp agent/pr-babysit-0831-1.md /backup/"),
+        "roundlog-truncate CONTROL: a copy into a backup directory is a read",
+    ),
+    # Review 126f2a9f.1: a fed word bash brace-expands is not a literal (allowed at 126f2a9fc).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo {/tmp/x,agent/pr-babysit-0831-1.md} | xargs cp /tmp/y.md"),
+        "roundlog-truncate: a brace-expanded fed destination is the log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("echo {/tmp/x,/tmp/z} | xargs cp /tmp/y.md"),
+        "roundlog-truncate CONTROL: a brace-expanded fed destination elsewhere",
+    ),
+    # Review 8ae5b370.1: a ten-billion range is capped, not built; the guard answers inside the case timeout.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo {1..9999999999} pr-babysit-0831-1.md | xargs cp /tmp/x.md"),
+        "roundlog-truncate: a huge fed brace range is capped and the log still read",
+    ),
+    # Review 8ae5b370.2 and .4: bash expands a brace after an unmatched `{`, and a stepped range (both allowed at 8ae5b3706).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo x{y{/tmp/a,agent/pr-babysit-0831-1.md} | xargs cp /tmp/x.md"),
+        "roundlog-truncate: a brace after an unmatched one still expands to the log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "cat agent/pr-babysit-0831-1.md; echo agent/pr-babysit-0831-{1..3..2}.md | xargs cp /tmp/x.md"
+        ),
+        "roundlog-truncate: a stepped fed range expands to the log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "cat agent/pr-babysit-0831-1.md; echo /tmp/pr-babysit-0831-{2..4..2}.txt | xargs cp /tmp/x.md"
+        ),
+        "roundlog-truncate CONTROL: a stepped fed range that names no log",
+    ),
+    # #e5b0540a: a glob or brace that could spell a round-log name passes the prefilter (it allowed all of these before the walk ran), and every arm reads it expanded.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && echo pr-babysit-*.md | xargs cp /tmp/x.md'),
+        "roundlog-truncate: a fed log glob in an unknown directory",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("mv agent/pr-babysit-{0831-1,x}.md /tmp/"),
+        "roundlog-truncate: mv a brace that spells the log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("echo x > agent/pr-babysit-*.md"),
+        "roundlog-truncate: a redirect onto a log glob",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && echo notes-*.md | xargs cp /tmp/x.md'),
+        "roundlog-truncate CONTROL: a fed glob that cannot spell a log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("ls agent/pr-babysit-*.md"),
+        "roundlog-truncate CONTROL: listing a log glob is a read",
+    ),
+    # #6378e10e: perl edits in place too (allowed at fc3f376a8 while only sed was asked).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("perl -pi -e 's/a/b/' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: perl -pi rewrites the log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("perl -pe 's/a/b/' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: perl -pe only prints the log",
+    ),
+    # Review 9ed30a8a.3: the prefilter meets the round-log pattern itself, not three sample names, and a relative glob in an unknown directory that could name a log counts as one (both allowed at fc3f376a8).
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && echo pr-babysit-a*.md | xargs cp /tmp/x.md'),
+        "roundlog-truncate: a log glob no sample name fits still reaches the walk",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && truncate -s 0 *.md'),
+        "roundlog-truncate: an md glob in an unknown directory could be a log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('cd "$D" && truncate -s 0 *.txt'),
+        "roundlog-truncate CONTROL: a txt glob cannot be a log",
+    ),
+    # #e5b0540a, live false positive reported by w2: a `*` in Python code passed the whole-command prefilter and the program's write through a variable failed closed (all three refused at 82d323de1).
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('notes.txt')\nn = 3 * 4\np.write_text(str(n))\nEOF"
+        ),
+        "roundlog-truncate CONTROL: a heredoc that multiplies and writes through a variable",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import pathlib,sys; t=pathlib.Path(sys.argv[1]); t.write_text('x' * 3)\" out.txt"
+        ),
+        "roundlog-truncate CONTROL: python -c repeating a string into a file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("python3 - <<'EOF'\nfrom os import *\nf = open(name, 'w')\nf.write('x')\nEOF"),
+        "roundlog-truncate CONTROL: a star import that writes",
+    ),
+    # ...and a program whose own text could spell a log still fails closed on an unresolvable target.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - <<'PY'\nimport glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')\nPY"
+        ),
+        "roundlog-truncate: a program globbing md files writes through a variable",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - <<'PY'\nb = '0831-1'\nopen(f'agent/pr-babysit-{b}.md', 'w').write('')\nPY"
+        ),
+        "roundlog-truncate: a program building the log name in an f-string",
+    ),
+    # Review 1d4e1754.1: a program HANDED the log (an argument, the environment, stdin) names no path in its text, and all three were allowed at 0067b4c27.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a program opening argv for write, handed the log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "F=agent/pr-babysit-0831-1.md python3 -c \"import os; open(os.environ['F'],'w').write('')\""
+        ),
+        "roundlog-truncate: the log handed through the environment",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "echo agent/pr-babysit-0831-1.md | python3 -c \"import sys; open(sys.stdin.read().strip(),'w').write('')\""
+        ),
+        "roundlog-truncate: the log handed on stdin",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            'python3 -c "import sys; print(open(sys.argv[1]).read())" agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate CONTROL: a program that only reads the log it is handed",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "cat agent/pr-babysit-0831-1.md; python3 -c \"import sys; open(sys.argv[1],'w').write('')\" notes.txt"
+        ),
+        "roundlog-truncate CONTROL: a writer handed another file after the log was only read",
+    ),
+    # Review 4b3f59b5.1: the program arm is judged per write. Each deny row was allowed at 8abc48a14 with the log handed.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; print(open('README.md').read()); open(sys.argv[1],'w').write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a named md file read beside a write to argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; pathlib.Path(sys.argv[1]).open('w').write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a path object's own open('w') on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'python3 -c "import sys,os; os.truncate(sys.argv[1], 0)" agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: os.truncate on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('python3 -c "import sys,os; os.remove(sys.argv[1])" agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate: os.remove on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,os; os.system('cp /dev/null ' + sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a shell command built from argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "node -e \"require('fs').truncateSync(process.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: node truncateSync on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open(sys.argv[1].split('=')[1],'w').write('')\" --out=pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: the log as an option's value",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'cd "$D" && ls *.md | python3 -c "import sys; [open(l.strip(),\'w\') for l in sys.stdin]"'
+        ),
+        "roundlog-truncate: an md glob on the program's stdin",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; m='w'; open(sys.argv[1], m).write('')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a write mode held in a variable",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\np = 'x.txt'\nfor p in sys.argv[1:]:\n    open(p, 'w').write('')\nPY"
+        ),
+        "roundlog-truncate: a literal-bound name a loop rebinds",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open('out.txt','w').write(open(sys.argv[1]).read())\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: a named output written from the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; print(open(sys.argv[1]).read()); open('copy.md','w').write('x')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: a named md copy written while the handed log is printed",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; m='r'; print(open(sys.argv[1], m).read())\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: a read mode held in a variable",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; open(sys.argv[1], 'a').write('more')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: an append to the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("python3 -c \"p=2*3; open('n.txt','w').write(str(p))\""),
+        "roundlog-truncate CONTROL: a star in inline code beside a named write",
+    ),
+    # Review 8b651626.1: a perl open's path is its third argument, not its handle. The controls were refused at 13505e0b4; the python deny rows were allowed.
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('perl -e \'open(my $f, ">", "out.txt"); print $f 1\' agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: perl writing a named file beside the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("perl -e 'open(F, \">out.txt\"); print F 1' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: perl two-argument open onto a named file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('perl -e \'open my $f, ">", "out.txt"; print $f 1\' agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: perl open without parentheses onto a named file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; s=pathlib.Path(sys.argv[1]).read_text(); print(s.replace('a','b'))\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: str.replace on text read through a Path of the handed log",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('perl -e \'open(my $f, ">", "agent/pr-babysit-0831-1.md")\''),
+        "roundlog-truncate: perl three-argument open onto the log by name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("perl -e 'open my $f, \">\", $ARGV[0]; close $f' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: perl open without parentheses onto argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; p=pathlib.Path(sys.argv[1]); p.replace('/tmp/x')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: Path.replace on a name bound to a Path of argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,pathlib; pathlib.Path('x.txt').rename(sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: Path.rename of a named file onto argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; __import__('os').remove(sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: __import__('os').remove on argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,os; getattr(os,'rem'+'ove')(sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: getattr on os with a concatenated literal name",
+    ),
+    # Reviews 97a72d29.1/.2: with a log in play the program must be one the guard can follow. The deny rows were allowed at 97a72d29c; the BOUNDARY rows are the same programs with no log in play.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nfrom pathlib import Path\np = 'x'\np = Path(sys.argv[1])\np.replace('/tmp/x')\nPY"
+        ),
+        "roundlog-truncate: a name bound to a string and then to a Path of argv",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; __import__('o' + 's').remove(sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: __import__ with a concatenated module name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, pathlib\nxs = []\nxs.append(pathlib.Path(sys.argv[1]))\nxs[0].unlink()\nPY"
+        ),
+        "roundlog-truncate: a Path of argv appended to a list and indexed back",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,os; vars(os)['remove'](sys.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: vars() subscripted for a writer",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys; ().__class__.__base__.__subclasses__()[0](sys.argv[1], 'w')\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: a subclass walk from a tuple",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys\nclass W:\n    def go(self, p):\n        open(p, 'w')\nW().go(sys.argv[1])\nPY"
+        ),
+        "roundlog-truncate: a class",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "node -e \"const fs=require('fs'); fs['rm'+'Sync'](process.argv[1])\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: node: a computed member call",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json('ruby -e "ARGV.each(&File.method(:delete))" agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate: ruby: a method object",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("ruby -i -pe '$_.upcase!' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: ruby: -i edits the handed file in place",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json("perl -e 'my $f = \"unlink\"; &$f($ARGV[0])' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate: perl: a call through a name",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("python3 -c \"import sys; __import__('o' + 's').remove(sys.argv[1])\" notes.txt"),
+        "roundlog-truncate CONTROL: BOUNDARY: a concatenated __import__ handed another file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - notes.txt <<'PY'\nimport sys\nfrom pathlib import Path\np = 'x'\np = Path(sys.argv[1])\np.replace('/tmp/x')\nPY"
+        ),
+        "roundlog-truncate CONTROL: BOUNDARY: a mixed-binding Path handed another file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 -c \"import sys,subprocess; subprocess.run(['rm', sys.argv[1]])\" notes.txt"
+        ),
+        "roundlog-truncate CONTROL: BOUNDARY: a subprocess handed another file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "cat agent/pr-babysit-0831-1.md; python3 -c \"import subprocess; subprocess.run(['ls'])\""
+        ),
+        "roundlog-truncate CONTROL: BOUNDARY: a subprocess beside a cat of the log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport sys, datetime\nlines = open(sys.argv[1]).read().splitlines()\nrows = sorted(lines, key=lambda l: l.lower())\nout = open('sorted.txt', 'w')\nout.write('\\n'.join(rows))\nout.close()\nprint(datetime.datetime.now().isoformat(), len(rows))\nPY"
+        ),
+        "roundlog-truncate CONTROL: a sort by a lambda written to a named file",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "python3 - agent/pr-babysit-0831-1.md <<'PY'\nimport argparse\np = argparse.ArgumentParser()\np.add_argument('log')\na = p.parse_args()\nprint(open(a.log).read().count('\\n'))\nPY"
+        ),
+        "roundlog-truncate CONTROL: argparse reading the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "node -e \"const fs=require('fs'); const t=fs.readFileSync(process.argv[1],'utf8').split('\\n').filter(l => l.startsWith('#')); console.log(t.length)\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: node: an arrow filter over the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "ruby -e \"File.open('out.txt', 'w') { |f| f.write(File.read(ARGV[0])) }\" agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: ruby: a block writing a named file from the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("perl -ne 'print if /round/' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: perl: -ne with a pattern",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'open(my $f, ">|", "out.txt"); print $f 1\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate CONTROL: perl: the >| mode onto a named file is not a pipe",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json("perl -e 'open(FH, \"w\"); print <FH>' agent/pr-babysit-0831-1.md"),
+        "roundlog-truncate CONTROL: perl: a two-argument open of a file named w is a read",
+    ),
+    # Reviews 801bbb46.1/.2: a construct whose extent the word reader does not know is refused, not blanked.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'local $" = ","; my $c = \\&CORE::unlink; $c->($ARGV[0])\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: the list separator variable is not a string opener",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my @x = qw#a#; my $c = \\&CORE::unlink; $c->($ARGV[0])' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like operator on a # delimiter is not a comment",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = ?"; File.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: a character literal is not a string opener",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'open(my $f, \"<\", $ARGV[0]) or die; print <$f>' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: perl: a plain read of the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: ruby: a plain read of the handed log",
+    ),
+    # Reviews 012e1b7b.1/.2/.3: the quote-like extent rule, not a delimiter list. The deny rows were allowed at 012e1b7b2.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = %-"-; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: percent on a dash delimiter",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'my @q = qw,",; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: qw on a comma delimiter",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'print << "EOT";\nA"\nEOT\nmy $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: heredoc with a space before the quoted tag",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = %Q-"-; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: a typed percent on a dash delimiter",
+    ),
+    # Review a52292e4.4: the four rows of the round above that had only a golden record. Reviews a52292e4.1/.2: a quote-like word after an operator, and one with a space before its slash; allowed at a52292e48.
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = %="=; y = File.send(:delete, ARGV[0]); z = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: percent on an equals delimiter",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'print 1 if m,",; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: m on a comma delimiter holding a quote",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'my $x="z"; $x =~ s=z="=; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: s on an equals delimiter holding a quote",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'ruby -e \'x = <<~EOS\n  a"\nEOS\nFile.send(:delete, ARGV[0]); y = ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: ruby: a tilde heredoc body holding a quote",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my $x = 1>q#a#; my $c = \\&CORE::unlink; $c->($ARGV[0]); print \"\"' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like word after a comparison is not a name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my $x = 1&&q#a#; my $c = \\&CORE::unlink; $c->($ARGV[0]); print \"\"' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like word after a logical and is not a name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'my $x = 7 %q#2#; my $c = \\&CORE::unlink; $c->($ARGV[0]); print \"\"' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate: perl: a quote-like word after a modulo is not a name",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'$_ = "z"; s /z/"/; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: a substitution with a space before its slash",
+    ),
+    case(
+        "check 2 guards/block_roundlog_truncate.py",
+        bash_json(
+            'perl -e \'print 1 if m /"/; my $c = \\&CORE::unlink; $c->($ARGV[0]); print ""\' agent/pr-babysit-0831-1.md'
+        ),
+        "roundlog-truncate: perl: a match with a space before its slash",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json(
+            "perl -e 'open(my $f, \"<\", $ARGV[0]) or die; print <$f>' agent/pr-babysit-0831-1.md"
+        ),
+        "roundlog-truncate CONTROL: perl: a plain read of the handed log",
+    ),
+    case(
+        "check 0 guards/block_roundlog_truncate.py",
+        bash_json('ruby -e "puts File.read(ARGV[0])" agent/pr-babysit-0831-1.md'),
+        "roundlog-truncate CONTROL: ruby: a plain read of the handed log",
     ),
     # --- warn-hook-change.sh: warning only, ALWAYS exit 0 ------------------------ The operator chose warn over block for hook edits (2026-08-25) because a hard block would have fired six times that day on legitimate work. These pin that it can never block: a warn hook that can block is a block hook nobody reviewed.
     case(

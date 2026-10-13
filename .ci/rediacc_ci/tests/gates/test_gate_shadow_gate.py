@@ -17,7 +17,10 @@ So this asserts in BOTH directions, and neither is optional:
                  load-bearing line each in a COPY of the module and require the copy's
                  selftest to go red.
 
-THE PILOT PAIR IS REAL, NOT A FIXTURE. `.ci/scripts/lib/blocker-validator.sh` and `scripts/lib/blocker-validator.ts` are two live implementations of one rule. `.ci/breakpoint/lib/breakpoint-blocker.sh` is a third, DELIBERATELY a subset, and its five recorded divergences are used here as a divergence nobody planted. The corpus is lifted verbatim from `test-blocker-golden-corpus.sh`.
+THE PILOT PAIR IS REAL, NOT A FIXTURE. `.ci/rediacc_ci/core/blocker_validator.py` and `scripts/lib/blocker-validator.ts` are two live implementations of one rule. `.ci/breakpoint/lib/breakpoint-blocker.sh` is a third, DELIBERATELY a subset, and its five recorded divergences are used here as a divergence nobody planted. The corpus is the `CORPUS_TEXT` of `test_gate_blocker_golden_corpus.py`.
+
+THE OLD SIDE WAS BASH UNTIL PLAN-retire-bash-oracles section 12 U1. It sourced `.ci/scripts/lib/blocker-validator.sh`; that library and the corpus's bash heredoc (`test-blocker-golden-corpus.sh`) were deleted there, and the old side is now the library's port, `rediacc_ci.core.blocker_validator`, whose byte-for-byte agreement with the deleted bash is pinned by the frozen differential `test_core_blocker_validator.py`. The pair still differs on every axis
+a port may differ on (language, stream, marker, order, progress line), which is what the EQUIVALENT case needs; the old side keeps the bash wrapper's exact output shape so every assertion below reads the same lines it did.
 
 NOTHING HERE WRITES TO THE TRACKED TREE. Every fixture, every mutated copy and every ledger lives under pytest's own `tmp_path`. `.ci/breakpoint/**` is READ and never written, which matters because invariant 8 forbids any sweep from touching it: the vendored subset is an INPUT to the divergence case, not a subject of it.
 
@@ -26,15 +29,11 @@ twin's own comment records that reusing one path left an uncommitted file behind
 
 WHERE THIS REIMPLEMENTS sed, grep, awk, sort, wc AND cmp, AND WHY THE ANSWERS AGREE.
 
-  `sed -n "/^read -r -d '' CORPUS/,/^EOF$/p" | grep -v "^read -r\\|^EOF" | grep . |
-   awk -F'|' '{print $1"|"$2}'`
-  is a RANGE extraction, two line filters and a field rejoin. The range is inclusive
-  of both anchors and the two `grep -v` alternatives then remove exactly those two
-  anchors again, so `corpus_rows` below slices between them and skips blanks --
-  identical membership. `awk -F'|' '{print $1"|"$2}'` keeps the first two
-  PIPE-separated fields and DROPS the rest, which is `split("|")[:2]` rejoined; a
-  row with only one field prints `id|` because awk's `$2` is the empty string, and
-  the Python form pads to two for the same reason.
+  The twin's `sed -n "/^read -r -d '' CORPUS/,/^EOF$/p" | ... | awk -F'|' '{print $1"|"$2}'`
+  extracted `id|reason` from the bash heredoc. The heredoc is gone; `corpus_rows`
+  reads the same rows out of the corpus gate's `CORPUS_TEXT` through
+  `vendored_blocker_derivation.parse_corpus`, the one parser of that literal, and
+  keeps the first two fields, which is what the awk rejoin kept.
 
   `grep -c '^  only-old '` counts LINES beginning with that literal, two leading
   spaces included. `grep -c '^PASS: '` likewise. Neither counts occurrences.
@@ -62,39 +61,49 @@ import re
 import shutil
 
 from rediacc_ci import paths
+from rediacc_ci.quality import vendored_blocker_derivation
 from rediacc_ci.tests.gates import harness
 
 ROOT = paths.repo_root()
 LIB = ROOT / "scripts" / "lib" / "shadow-gate.ts"
 TSX = ROOT / "node_modules" / ".bin" / "tsx"
-GOLDEN = ROOT / ".ci" / "scripts" / "test" / "gates" / "test-blocker-golden-corpus.sh"
-BASH_VALIDATOR = ROOT / ".ci" / "scripts" / "lib" / "blocker-validator.sh"
+GOLDEN = ROOT / vendored_blocker_derivation.CORPUS_REL
+PY_VALIDATOR = ROOT / ".ci" / "rediacc_ci" / "core" / "blocker_validator.py"
 TS_VALIDATOR = ROOT / "scripts" / "lib" / "blocker-validator.ts"
 BP_VALIDATOR = ROOT / ".ci" / "breakpoint" / "lib" / "breakpoint-blocker.sh"
 BP_COMMON = ROOT / ".ci" / "breakpoint" / "lib" / "breakpoint-common.sh"
 
-CORPUS_OPEN = "read -r -d '' CORPUS"
-CORPUS_CLOSE = "EOF"
-
-GATE_BASH = """#!/bin/bash
-set -uo pipefail
-LIB="$1"; CORPUS="$2"
-source "$LIB"
-n=0
-while IFS='|' read -r id reason; do
-    [ -z "$id" ] && continue
-    if out=$(validate_blocker_quality "$id" "$reason" "corpus.txt" 2>&1); then continue; fi
-    case "$out" in
-        *"low-effort placeholder"*) kind="low-effort" ;;
-        *"defers a routine bump"*)  kind="deferral" ;;
-        *"is too short"*)           kind="too-short" ;;
-        *)                          kind="UNCLASSIFIED" ;;
-    esac
-    echo "✗ corpus.txt: $id rejected as $kind" >&2
-    n=$((n+1))
-done < "$CORPUS"
-echo "→ $n rejected reason(s)"
-[ "$n" -eq 0 ] || exit 1
+# The OLD side, in gate shape: the port of the deleted bash library, printing exactly what the bash wrapper printed (the cross and the finding on stderr, the progress line on stdout, exit 1 on any finding). `$1` is the validator module's FILE, imported by path, so a planted copy would be driven the same way the bash wrapper sourced a planted copy; PYTHONPATH supplies the `rediacc_ci` it imports.
+GATE_PY = """import contextlib, importlib.util, io, sys
+lib, corpus = sys.argv[1], sys.argv[2]
+spec = importlib.util.spec_from_file_location("blocker_validator_under_test", lib)
+bv = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(bv)
+n = 0
+with open(corpus, encoding="utf-8") as fh:
+    rows = fh.read().splitlines()
+for row in rows:
+    entry, _, reason = row.partition("|")
+    if not entry:
+        continue
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+        ok = bv.validate_blocker_quality(entry, reason, "corpus.txt")
+    if ok:
+        continue
+    out = buf.getvalue()
+    if "low-effort placeholder" in out:
+        kind = "low-effort"
+    elif "defers a routine bump" in out:
+        kind = "deferral"
+    elif "is too short" in out:
+        kind = "too-short"
+    else:
+        kind = "UNCLASSIFIED"
+    print("\u2717 corpus.txt: %s rejected as %s" % (entry, kind), file=sys.stderr)
+    n += 1
+print("\u2192 %d rejected reason(s)" % n)
+sys.exit(1 if n else 0)
 """
 
 # The vendored SUBSET. Never edited -- it is drift-locked by check-breakpoint-drift.sh and vendored into other repositories. READ ONLY.
@@ -185,27 +194,11 @@ def sg(gate, *argv: str, subject: pathlib.Path | None = None) -> harness.RunResu
 
 
 def corpus_rows(gate) -> list[str]:
-    """The recorded corpus, `id|reason`, exactly the twin's four-stage pipeline."""
+    """The recorded corpus, `id|reason`, from the corpus gate's `CORPUS_TEXT`."""
     if not GOLDEN.is_file():
         gate.log_fail("the recorded corpus is missing: %s" % GOLDEN)
-    lines = GOLDEN.read_text(encoding="utf-8").splitlines()
-    start = next((i for i, line in enumerate(lines) if line.startswith(CORPUS_OPEN)), None)
-    if start is None:
-        gate.log_fail(
-            "%s no longer opens its corpus with %r, so the extraction below would take "
-            "nothing and every case would be vacuous" % (GOLDEN.name, CORPUS_OPEN)
-        )
-    end = next((i for i in range(start + 1, len(lines)) if lines[i] == CORPUS_CLOSE), None)
-    if end is None:
-        gate.log_fail("%s's corpus heredoc never closes at `EOF`" % GOLDEN.name)
-    rows = []
-    for line in lines[start + 1 : end]:
-        if not line.strip():
-            continue
-        fields = line.split("|")
-        while len(fields) < 2:
-            fields.append("")
-        rows.append("%s|%s" % (fields[0], fields[1]))
+    cases = vendored_blocker_derivation.parse_corpus(GOLDEN.read_text(encoding="utf-8"))
+    rows = ["%s|%s" % (case.case_id, case.reason) for case in cases]
     # A collapsed corpus would make every case below vacuously green.
     if len(rows) < 14:
         gate.log_fail("corpus collapsed to %d case(s); the recorded floor is 14" % len(rows))
@@ -225,20 +218,29 @@ class Fixtures:
         self.corpus_clean = directory / "corpus-clean.txt"
         self.corpus_clean.write_text("\n".join(clean) + "\n", encoding="utf-8")
 
-        self.gate_bash = directory / "gate-bash.sh"
-        self.gate_bash.write_text(GATE_BASH, encoding="utf-8")
+        self.gate_py = directory / "gate-py.py"
+        self.gate_py.write_text(GATE_PY, encoding="utf-8")
         self.gate_bp = directory / "gate-bp.sh"
         self.gate_bp.write_text(GATE_BP, encoding="utf-8")
         self.gate_ts = directory / "gate-ts.ts"
         self.gate_ts.write_text(GATE_TS, encoding="utf-8")
 
-        self.old_side = "bash %s %s %s" % (self.gate_bash, BASH_VALIDATOR, self.corpus)
+        self.old_side = self.py_side(self.corpus)
         self.new_side = "%s %s %s %s" % (TSX, self.gate_ts, TS_VALIDATOR, self.corpus)
         self.bp_side = "bash %s %s %s %s" % (
             self.gate_bp,
             BP_VALIDATOR,
             self.corpus,
             BP_COMMON,
+        )
+
+    def py_side(self, corpus: pathlib.Path) -> str:
+        # PYTHONSAFEPATH=1: the comparator runs from the repo root, and `python3 <file>` puts the script's directory first on sys.path; neither may shadow the checkout's `rediacc_ci`.
+        return "PYTHONSAFEPATH=1 PYTHONPATH=%s python3 %s %s %s" % (
+            ROOT / ".ci",
+            self.gate_py,
+            PY_VALIDATOR,
+            corpus,
         )
 
     def ts_side(self, module: pathlib.Path, corpus: pathlib.Path | None = None) -> str:
@@ -332,7 +334,7 @@ def test_real_pair_is_equivalent(gate, tmp_path):
     fingerprints = len(set(FP_RE.findall(result.out)))
     if fingerprints != 1:
         gate.log_fail("EQUIVALENT was reported with %d distinct fingerprints" % fingerprints)
-    gate.log_pass("bash and TypeScript twins agree across stream, marker, order and wording")
+    gate.log_pass("Python and TypeScript twins agree across stream, marker, order and wording")
 
 
 def test_real_pair_divergence_is_named(gate, tmp_path):
@@ -364,7 +366,7 @@ def test_planted_dropped_finding(gate, tmp_path):
     fx = Fixtures(gate, tmp_path)
     # ONE banned substring removed from the port. Nothing else.
     #
-    # RETARGETED 2026-09-09, and the twin carries the same note. This used to delete a literal line from the port's own `LOW_EFFORT_BLOCKER_SUBSTRINGS` array. That array is gone: the port reads the table from `rediacc_ci.core.allowlist`, which is also what the bash OLD side reads, so a plant in the shared table would move BOTH sides and produce no divergence at all. The plant
+    # RETARGETED 2026-09-09, and the twin carries the same note. This used to delete a literal line from the port's own `LOW_EFFORT_BLOCKER_SUBSTRINGS` array. That array is gone: the port reads the table from `rediacc_ci.core.allowlist`, which is also what the OLD side reads, so a plant in the shared table would move BOTH sides and produce no divergence at all. The plant
     # therefore sits in the part of the port that is still the port's, the loop that consumes the table. Behaviourally identical defect, unchanged assertions below.
     anchor = "  for (const pattern of c.substrings) {"
     source = TS_VALIDATOR.read_text(encoding="utf-8")
@@ -443,7 +445,7 @@ def test_both_empty_refuses_to_bless(gate, tmp_path):
         "--pair",
         "t-vacuous",
         "--old",
-        "bash %s %s %s" % (fx.gate_bash, BASH_VALIDATOR, fx.corpus_clean),
+        fx.py_side(fx.corpus_clean),
         "--new",
         fx.ts_side(blind, fx.corpus_clean),
     )
@@ -490,7 +492,7 @@ def test_comment_ratio_is_recorded(gate, tmp_path):
         "--new",
         fx.new_side,
         "--old-file",
-        str(BASH_VALIDATOR),
+        str(PY_VALIDATOR),
         "--new-file",
         str(TS_VALIDATOR),
     )

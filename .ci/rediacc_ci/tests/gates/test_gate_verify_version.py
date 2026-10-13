@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-verify-version.sh`, retired in W7 P5.
 
-Tests for `verify_version()` in `.ci/scripts/test/test-install-methods.sh`.
+Tests for `verify_version()` in `rediacc_ci.testrun.install_methods` (written against the bash `verify_version()` of `test-install-methods.sh`, retired behind its golden, PLAN-retire-bash-oracles B3).
 
 WHY THIS EXISTS. On 2026-08-07 release run 31154305287 published CLI binaries built as 1.2.16 under the label 1.2.17. Two guards passed silently, and underneath both sat this one primitive, whose whole body was
 
@@ -10,21 +10,11 @@ which reports success in three situations where nothing was verified: an EMPTY e
 
 The rule being pinned: there is ALWAYS a version, or it fails. A caller that genuinely cannot determine one must SKIP visibly, never hand an empty string to this and take the pass.
 
-WHY THE SUBJECT IS EXTRACTED RATHER THAN SOURCED, unchanged from the twin: sourcing the whole script would run its argument parsing. The extraction is by ANCHOR, so a rename breaks this file loudly instead of leaving it exercising a copy pasted in here -- and an extraction that comes back EMPTY is a refusal, not a suite that passes over nothing.
-
-WHY EACH CALL IS ITS OWN `bash -c`. The bash twin evals the function into its own shell once. A Python port has no shell to eval into, so each call is a process, and the function text is re-injected each time. That is slower and strictly more honest: no case can leave state behind for the next one.
+THE SUBJECT IS CALLED IN PROCESS. The module's `verify_version` is a pure function, so every call is a plain call and no case can leave state behind for the next one. (The bash gate lifted the function out of the script by an anchored awk range and ran each call in its own `bash -c`.)
 """
 
-import re
-
-from rediacc_ci import paths
+from rediacc_ci.testrun import install_methods as port
 from rediacc_ci.tests.gates import harness
-
-TARGET = paths.from_root(".ci", "scripts", "test", "test-install-methods.sh")
-
-# `verify_version() {` .. the closing `}` at column 0, which is the awk range the
-# twin uses spelled as a regex.
-FN_RE = re.compile(r"^verify_version\(\) \{.*?^\}", re.MULTILINE | re.DOTALL)
 
 # The EXACT pre-fix body, re-created. Not a mutation of the current one: a mutation drifts with the subject, and the point of this control is that the shape which shipped the incident really did admit both silent-pass classes.
 OLD_BODY = """
@@ -39,34 +29,10 @@ old_verify() {
 """
 
 
-def function_source() -> str:
-    match = FN_RE.search(TARGET.read_text(encoding="utf-8"))
-    return match.group(0) if match else ""
-
-
-def require_subject(gate) -> str:
-    """The function text, or a refusal. Never an empty string handed onward."""
-    if not TARGET.is_file():
-        gate.log_fail("target not found: %s" % TARGET)
-    body = function_source()
-    if not body:
-        gate.log_fail(
-            "verify_version() not found in %s -- renamed or removed, so these tests "
-            "would check nothing" % paths.relative_to_root(TARGET)
-        )
-    return body
-
-
 def vv(gate, output: str, expected: str) -> int:
-    """0 when verify_version ACCEPTED, 1 when it refused. The twin's `vv`."""
-    body = require_subject(gate)
-    script = (
-        "log_error() { :; }\n"  # the function under test calls it; keep output clean
-        + body
-        + '\nverify_version "$1" "$2" >/dev/null 2>&1 && echo 0 || echo 1\n'
-    )
-    result = harness.run(["bash", "-c", script, "verify-version-port", output, expected])
-    return int(result.out.strip() or "-1")
+    """0 when verify_version ACCEPTED, 1 when it refused. The retired gate's `vv`."""
+    del gate
+    return 0 if port.verify_version(output, expected) else 1
 
 
 def old_verify(output: str, expected: str) -> int:
@@ -128,10 +94,7 @@ def test_the_founding_defect_fires(gate):
     gate.log_pass("the old implementation really did admit both silent-pass classes")
 
 
-def test_the_extraction_anchor_is_present(gate):
-    """PORT-ONLY. The twin refuses at load time when the anchor is gone; a pytest module cannot refuse at import without taking the whole file down, so the refusal becomes its own case and stays visible in the report."""
-    require_subject(gate)
-    gate.log_pass(
-        "verify_version() extracted from %s (%d lines)"
-        % (paths.relative_to_root(TARGET), len(function_source().splitlines()))
-    )
+def test_the_subject_is_the_modules_own_function(gate):
+    """The cases above call `port.verify_version` directly; a rename or removal makes this module fail to import rather than pass over nothing."""
+    gate.assert_eq(callable(port.verify_version), True, "verify_version must exist and be callable")
+    gate.log_pass("verify_version() is present in rediacc_ci.testrun.install_methods")

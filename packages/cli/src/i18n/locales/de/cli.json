@@ -463,12 +463,29 @@
         "description": "Remote-Konfigurationsspeicher-Verbindung verwalten",
         "disable": {
           "description": "Verbindung zum Remote-Speicher trennen und Konfiguration lokal speichern",
+          "optionLocal": "Nur auf diesem Gerät trennen, aus der zwischengespeicherten Kopie und ohne den Server zu kontaktieren",
           "notEnabled": "Remote-Konfiguration ist nicht aktiviert.",
           "serverRequired": "Deaktivieren nicht möglich: Config-Server {{server}} ist nicht erreichbar, und die Deaktivierung muss zuerst die neueste Serverkopie abrufen (ein Deaktivieren aus einem veralteten Cache könnte Schreibvorgänge eines anderen Geräts verlieren). Erneut versuchen, sobald der Server erreichbar ist.",
+          "accessLost": "Deaktivieren nicht möglich: Der Config-Server verweigert diesem Konto die Konfiguration \"{{name}}\" ({{error}}), und die Deaktivierung muss zuerst die neueste Serverkopie abrufen. Kommt der Zugriff auf den Speicher nicht zurück, lässt sich die Verknüpfung lösen und die auf diesem Gerät zwischengespeicherte Kopie behalten: rdc config remote disable --local",
+          "localNoCache": "Die Konfiguration \"{{name}}\" hat auf diesem Gerät keine zwischengespeicherte Kopie der Serverkonfiguration: Sie wurde hier nie abgerufen, oder die Kopie wurde entfernt. Die Datei enthält nur die Verknüpfung und die eigenen Einstellungen dieses Geräts; es gibt also nichts zu behalten, und es wurde nichts geändert. Der Inhalt kann nur vom Server kommen (rdc config remote enable); um stattdessen die lokale Datei zu entfernen: rdc config delete {{name}}",
+          "localUnreadable": "Die zwischengespeicherte Kopie der Konfiguration \"{{name}}\" (Serverversion {{version}}) ließ sich auf diesem Gerät nicht öffnen ({{error}}); es wurde nichts geändert. Die Kopie ist mit dem Master-Passwort der Konfiguration verschlüsselt: Mit dem Passwort (REDIACC_MASTER_PASSWORD) bleibt die gesamte Kopie erhalten; ohne es lässt sich hier nichts davon wiederherstellen, und nur der Server hält eine lesbare Kopie.",
+          "localConfirm": "Konfiguration \"{{name}}\" nur auf diesem Gerät von {{server}} trennen? Die hier zwischengespeicherte Kopie (Serverversion {{version}}, zwischengespeichert am {{cachedAt}}) wird zu einer lokalen Konfiguration. Neuere Daten auf dem Server, falls vorhanden, werden nicht abgerufen, und auf dem Server wird nichts geändert.",
+          "localNeedsYes": "Das Trennen der Konfiguration \"{{name}}\" nur auf diesem Gerät behält die hier zwischengespeicherte Kopie (Serverversion {{version}}) und ruft neuere Serverdaten, falls vorhanden, nicht ab. Es wurde nichts geändert. Bestätige in einem interaktiven Terminal oder führe den Befehl erneut mit --yes aus.",
+          "localSuccess": "Die Konfiguration \"{{name}}\" ist auf diesem Gerät getrennt und wurde aus der zwischengespeicherten Kopie (Serverversion {{version}}) als lokale Konfiguration gespeichert. Neuere Serverdaten, falls es welche gab, wurden nicht abgerufen. Die Serverkopie und der Schlüssel-Slot dieses Geräts auf dem Server blieben unverändert.",
+          "localSecretLeft": "Der Schlüssel dieses Geräts für den Speicher wurde nicht entfernt, weil sein Geheimnisspeicher nicht nutzbar ist: {{error}}",
           "success": "Remote-Konfiguration deaktiviert. Konfiguration \"{{name}}\" lokal gespeichert."
         },
+        "secretStore": {
+          "keyctlMissing": "Dieses Gerät hat keinen Ort für seinen Schlüssel zum Konfigurationsspeicher: `keyctl` ist nicht installiert, der Kernel-Schlüsselbund ist also nicht erreichbar. Es wurde nichts gespeichert. Installiere das Paket keyutils oder setze REDIACC_SECRET_STORE=file, um den Schlüssel stattdessen in einer Datei auf der Festplatte (Modus 0600) abzulegen.",
+          "keyringUnusable": "Dieses Gerät hat keinen Ort für seinen Schlüssel zum Konfigurationsspeicher: Ein Testschlüssel, der mit `keyctl` in den Benutzer-Schlüsselbund des Kernels geschrieben wurde, ließ sich nicht speichern und wieder auslesen. Es wurde nichts gespeichert. So verhält sich ein Sitzungs-Schlüsselbund, der den Benutzer-Schlüsselbund nicht einbindet (ein Dienst, ein Container, ein CI-Job); `keyctl link @u @s` bindet ihn für die Sitzung ein. Oder setze REDIACC_SECRET_STORE=file, um den Schlüssel stattdessen in einer Datei auf der Festplatte (Modus 0600) abzulegen.",
+          "toolMissing": "Dieses Gerät hat keinen Ort für seinen Schlüssel zum Konfigurationsspeicher: `{{tool}}` ließ sich nicht ausführen, {{store}} ist also nicht erreichbar. Es wurde nichts gespeichert. Mache `{{tool}}` wieder über PATH erreichbar oder setze REDIACC_SECRET_STORE=file, um den Schlüssel stattdessen in einer Datei auf der Festplatte abzulegen.",
+          "storeUnusable": "Dieses Gerät hat keinen Ort für seinen Schlüssel zum Konfigurationsspeicher: Ein Testschlüssel, der mit `{{tool}}` in {{store}} geschrieben wurde, ließ sich nicht speichern und wieder auslesen. Es wurde nichts gespeichert. Entsperre oder repariere {{store}} oder setze REDIACC_SECRET_STORE=file, um den Schlüssel stattdessen in einer Datei auf der Festplatte abzulegen.",
+          "unsupportedPlatform": "Dieses Gerät hat keinen Ort für seinen Schlüssel zum Konfigurationsspeicher: Unter {{platform}} wird kein nativer Geheimnisspeicher unterstützt. Es wurde nichts gespeichert. Setze REDIACC_SECRET_STORE=file, um den Schlüssel stattdessen in einer Datei auf der Festplatte (Modus 0600) abzulegen.",
+          "invalidChoice": "REDIACC_SECRET_STORE ist auf \"{{value}}\" gesetzt, und das ist kein Geheimnisspeicher. Der einzige Wert ist \"file\"; ohne Wert gilt der native Speicher dieses Systems.",
+          "fileNotice": "REDIACC_SECRET_STORE=file: Der Schlüssel dieses Geräts zum Konfigurationsspeicher liegt in {{path}} (Modus 0600) und ist nur durch Dateiberechtigungen geschützt."
+        },
         "enable": {
-          "alreadyEnabled": "Konfiguration \"{{name}}\" ist bereits mit dem Remote-Speicher verknüpft. Zuerst trennen mit: rdc config remote disable",
+          "alreadyEnabled": "Konfiguration \"{{name}}\" ist bereits mit dem Remote-Speicher verknüpft und dieses Gerät kann sie öffnen, es gibt also nichts zu aktivieren. Zum Trennen: rdc config remote disable",
           "description": "Diese Konfiguration mit verschlüsseltem Remote-Speicher verknüpfen",
           "expired": "Gerätecode abgelaufen. Versuchen Sie es erneut.",
           "handoffUnreadable": "Die Konfigurationsübergabe aus dem Browser ließ sich nicht lesen. Neu starten mit: rdc config remote enable",
@@ -496,6 +513,11 @@
           "passwordTokenNotEnrollable": "Dieses API-Token kann keinen Config-Slot anlegen, da es nicht an einen Benutzer in einer Organisation gebunden ist. Fordern Sie ein persönliches Token von Ihrem eigenen Account im Web-Portal an und versuchen Sie es erneut.",
           "passwordWrong": "Die Config konnte mit diesem Passwort nicht entsperrt werden. Prüfen Sie REDIACC_CONFIG_PASSWORD (oder das eingegebene Passwort) und versuchen Sie es erneut.",
           "received": "Übergabe empfangen",
+          "reenrollConfigMismatch": "Konfiguration \"{{name}}\" ist mit der Remote-Konfiguration {{linkedConfig}} verknüpft, die Registrierung wurde aber für die Remote-Konfiguration {{offeredConfig}} freigegeben. Es wurde nichts geändert. Führe den Befehl erneut aus und gib sie für {{linkedConfig}} frei.",
+          "reenrolling": "Konfiguration \"{{name}}\" ist mit dem Remote-Speicher verknüpft, aber dieses Gerät kann sie nicht mehr öffnen. Das Gerät wird für denselben Speicher erneut registriert.",
+          "reenrollServerMismatch": "Konfiguration \"{{name}}\" ist mit {{linkedUrl}} verknüpft, daher kann dieses Gerät nur dort erneut registriert werden, nicht auf {{requestedUrl}}. Führe den Befehl ohne --api-url erneut aus.",
+          "reenrollStoreMismatch": "Konfiguration \"{{name}}\" ist mit dem Speicher {{linkedStore}} verknüpft, die Registrierung wurde aber für den Speicher {{offeredStore}} freigegeben. Es wurde nichts geändert. Gib sie mit einem Konto der Organisation frei, der diese Konfiguration gehört.",
+          "reenrollSuccess": "Dieses Gerät ist wieder registriert. Konfiguration \"{{name}}\" wurde vom Server aktualisiert (Version {{version}}).",
           "openRelay": "Öffnen Sie diesen Link in einem beliebigen Browser, der am Portal angemeldet ist:",
           "approveAs": "Öffnen Sie diesen Link in einem beliebigen Browser, der als {{email}} angemeldet ist:",
           "pairingCode": "Kopplungscode (auf der Seite eingeben, sobald danach gefragt wird):  {{code}}",
@@ -509,9 +531,10 @@
           "success": "Remote-Konfiguration aktiviert. Konfiguration \"{{name}}\" wird jetzt mit {{apiUrl}} synchronisiert."
         },
         "handoffUndecryptable": "Das Server-Relay hat eine Übergabe geliefert, die dieses Gerät nicht öffnen kann ({{error}}): Sie wurde mit einem anderen Schlüssel versiegelt als dem, den dieser Aufruf erzeugt hat. Führen Sie den Befehl erneut aus und öffnen Sie nur den Link, den er ausgibt.",
+        "storeCopyGone": "Der Speicher {{storeId}} enthält die Remote-Konfiguration {{configId}} nicht mehr, mit der die Konfiguration \"{{name}}\" verknüpft ist. Es wurde nichts geändert; die lokale Datei ist die letzte Kopie, die dieses Gerät gesehen hat. Um die Verknüpfung zu lösen und diese Kopie als lokale Konfiguration zu behalten: rdc config remote disable --local",
         "offlineCacheWarning": "Config-Server {{server}} ist nicht erreichbar; Konfiguration \"{{config}}\" wird aus dem Offline-Cache bereitgestellt (Serverversion {{version}}, zwischengespeichert vor {{age}}). Änderungen können erst gespeichert werden, wenn der Server wieder erreichbar ist.",
         "offlineNoCache": "Config-Server {{server}} ist nicht erreichbar, und für Konfiguration \"{{config}}\" existiert noch kein Offline-Cache. Führen Sie \"rdc config remote refresh\" aus, sobald der Server erreichbar ist, um den Cache zu befüllen.",
-        "passkeySecretMissing": "Passkey-Geheimnis nicht im OS-Schlüsselbund gefunden. Erneut authentifizieren mit: rdc config remote enable",
+        "passkeySecretMissing": "Dieses Gerät hält seinen Schlüssel für den Konfigurationsspeicher nicht mehr (unter Linux wird der Kernel-Schlüsselbund bei jedem Neustart geleert). Gerät erneut registrieren mit: rdc config remote enable",
         "refresh": {
           "description": "Konfiguration erneut vom Remote-Speicher abrufen",
           "notEnabled": "Remote-Konfiguration ist nicht aktiviert.",
@@ -545,11 +568,11 @@
           "loginInvalid": "Der Kontoserver hat die Anmeldung dieses Geräts beim Erneuern des Konfigurations-Tokens abgelehnt. Führe \"rdc subscription login\" aus und versuche es noch einmal.",
           "loginScope": "Die Anmeldung dieses Geräts darf keine Konfigurations-Tokens erneuern: Sie stammt aus der Zeit vor dieser Funktion, oder ihr Team existiert nicht mehr. Führe \"rdc subscription login\" erneut aus und versuche es dann noch einmal.",
           "loginIpMismatch": "Das Konfigurations-Token ließ sich nicht erneuern, weil die Anmeldung dieses Geräts an eine andere Netzwerkadresse gebunden ist. {{error}} Alternativ führe \"rdc config remote enable\" erneut aus, um ein neues Konfigurations-Token für dieses Gerät zu erhalten.",
-          "notStoreMember": "Das Konto der Anmeldung dieses Geräts ist kein Mitglied des Konfigurationsspeichers {{storeId}}, daher wurde das Konfigurations-Token nicht erneuert. Melde dich mit dem Konto an, das diese Konfiguration aktiviert hat (\"rdc subscription login\"), oder führe \"rdc config remote enable\" erneut aus.",
-          "storeMismatch": "Der Konfigurationsspeicher {{storeId}} gehört nicht zur Organisation der Anmeldung dieses Geräts, daher wurde das Konfigurations-Token nicht erneuert. Melde dich bei der Organisation an, der diese Konfiguration gehört (\"rdc subscription login\"), oder führe \"rdc config remote enable\" erneut aus.",
+          "notStoreMember": "Das Konto der Anmeldung dieses Geräts ist kein Mitglied des Konfigurationsspeichers {{storeId}}, daher wurde das Konfigurations-Token nicht erneuert. Melde dich mit dem Konto an, das diese Konfiguration aktiviert hat (\"rdc subscription login\") und versuche es erneut.",
+          "storeMismatch": "Der Konfigurationsspeicher {{storeId}} gehört nicht zur Organisation der Anmeldung dieses Geräts, daher wurde das Konfigurations-Token nicht erneuert. Melde dich bei der Organisation an, der diese Konfiguration gehört (\"rdc subscription login\") und versuche es erneut.",
           "staleGeneration": "Der Verschlüsselungsschlüssel der Konfiguration wurde rotiert, und keiner der Schlüssel-Slots dieses Kontos öffnet den neuen, daher wurde das Konfigurations-Token nicht erneuert. Registriere das Gerät neu mit: rdc config remote enable",
           "rateLimited": "Der Kontoserver begrenzt gerade das Erneuern von Konfigurations-Tokens ({{error}}). Warte eine Minute und führe den Befehl erneut aus.",
-          "refused": "Der Kontoserver hat das Konfigurations-Token dieses Geräts nicht erneuert ({{error}}). Führe \"rdc config remote enable\" erneut aus."
+          "refused": "Der Kontoserver hat das Konfigurations-Token dieses Geräts nicht erneuert ({{error}}). Auf diesem Gerät wurde nichts geändert; führe den Befehl erneut aus."
         },
         "versions": {
           "description": "Frühere Versionen dieser Konfiguration auflisten, die der Server aufbewahrt",

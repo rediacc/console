@@ -524,13 +524,6 @@ def test_every_ported_drill_module_exists_with_a_main() -> None:
         assert callable(rv.importlib.import_module(module).main), module
 
 
-def test_the_real_exec_targets_exist_and_are_executable() -> None:
-    for script in (rv.WORKTREE_SCRIPT,):
-        path = paths.from_root(script)
-        assert path.is_file(), script
-        assert os.access(path, os.X_OK), script
-
-
 # --------------------------------------------------------------------------- the table and the introspection ---------------------------------------------------------------------------
 
 

@@ -1,59 +1,18 @@
 """`devbox_docker` CAN ANSWER TWO WORDS, and every consumer must treat it that way.
 
-Ported from `.ci/scripts/quality/check-devbox-exec.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-devbox-exec.observations.jsonl` asserted equivalence over five distinct trees.
+The subject is `.ci/rediacc_ci/core/devbox.py`, the Python port of the retired `.ci/lib/devbox.sh`.
 
-The twin's header, carried whole because the incident, the "why static" argument and the scope limit are each load-bearing:
+WHAT WENT WRONG, measured 2026-08-26 in the bash original: `sudo docker: command not found`. `devbox_docker` answers plain `docker` when the caller's shell already has the docker group and the TWO-WORD string `sudo docker` when it does not. One call site, `devbox_exec` (the lane every gate routes through), passed that answer as ONE command name, so every routed gate died on any host where docker needs sudo, which is the default on a fresh Linux machine.
 
-    WHAT WENT WRONG, measured 2026-08-26:
+THE SAME SHAPE EXISTS IN THE PORT. `Devbox.docker_words()` returns the answer already split into a list, and a call site that writes `[d, "exec", ...]` instead of `[*d, "exec", ...]` hands subprocess one argv element holding two words. That is B1, and it is invisible wherever CI runs, because runners already grant docker without sudo and the failing branch is never taken. The defect is fully visible in the SOURCE, so the gate is static.
 
-      .ci/lib/devbox.sh: line 606: sudo docker: command not found
+B2: the exec into the devbox names the user BY NAME (`-u vscode`), never by numeric id. The devbox runs a local layer whose `vscode` carries the host identity, so the name is correct on Linux, macOS (501:20) and WSL2, while a numeric id is correct only where the host's numbering means something inside the container. The wrong identity makes git refuse the worktree ("dubious ownership"), `git ls-files` return empty, and a gate report green over zero files.
 
-    `devbox_docker` returns plain `docker` when the caller's shell already has
-    the docker group, and the TWO-WORD string `sudo docker` when it does not
-    (.ci/lib/devbox.sh:58-63). Sixteen call sites relied on word-splitting an
-    UNQUOTED $d and were fine. One -- devbox_exec, the function the whole gate
-    lane routes through -- wrote `"$d" "${flags[@]}"`, quoting two words as a
-    single command name. Every routed gate therefore died on any machine where
-    docker needs sudo, which is the default on a fresh Linux host.
+THE ANTI-VACUITY FLOOR counts the `*d` / `*words` splat sites: a count below MIN_SITES means the enumeration broke, not that the code is clean.
 
-    WHY NO EXISTING GATE SAW IT, and why this one is static rather than a runtime
-    test. The bug is invisible to every environment CI actually has: runners and
-    containers already grant docker without sudo, so the failing branch is never
-    taken. A runtime test would have to manufacture a sudo-requiring docker,
-    which is neither portable nor honest. But the defect is fully visible in the
-    SOURCE -- a quoted expansion where word-splitting is required -- so per
-    .claude/skills/testing that routes to a static gate. This is the "could the
-    defect be seen without running the product?" question, and the answer is yes.
+THE SCANS READ WHOLE-LINE-COMMENT-BLANKED TEXT, with line numbers preserved: the wrong shapes are explained in docstrings and comments throughout, and a scan that read them would fail on its own documentation. Docstring text is not blanked, so a docstring must not spell the wrong shape as code.
 
-    B2 exists because fixing B1 surfaced a sibling: devbox_shell was still
-    passing the numeric `-u $(id -u):$(id -g)` into the container.
-    the devbox runs a local layer whose `vscode` carries the host identity
-    (devbox_ensure_uid_image, .devcontainer/Dockerfile.uid), so the NAME is
-    correct on Linux, macOS (501:20, where gid 20 is dialout) and WSL2, while a
-    numeric id is correct only where the host's numbering means something inside
-    the container. Exec as the wrong identity and git refuses the worktree with
-    "dubious ownership", `git ls-files` returns empty, and a gate reports green
-    over zero files -- the vacuity failure this whole wave exists to prevent.
-
-    WHAT THIS GATE CANNOT SEE: it reasons about devbox.sh's own call sites. A new
-    file elsewhere that shells out to `sudo docker` on its own is out of scope.
-
------------------------------------------------------------------------------
-PORT NOTES.
------------------------------------------------------------------------------
-
-`code_of` STRIPS WHOLE-LINE COMMENTS AND THE TWIN SAYS WHY, in a sentence kept at the function: "Every explanation of the WRONG shape in this repo lives in a comment, so a scan for that shape must read code only or it fails on its own documentation. (Learned the hard way by the editorconfig gate, which matched `binary` inside a PATH.)"
-
-THE REPORTED LINE NUMBERS ARE NUMBERS IN THE FILTERED STREAM, NOT IN THE FILE,
-and that is a TWIN DEFECT carried rather than repaired. `code_of "$DEVBOX" | grep -nE ...` numbers the lines grep actually received, and `code_of` has already removed every comment line, so a finding reported at line 40 sits somewhere below line 40 in the real file. Fixing it would change the gate's output and therefore its differential, so it is reproduced exactly and reported
-instead.
-
-THE ANTI-VACUITY FLOOR IS 10 CALL SITES and it is the only thing standing between a collapsed enumeration and a green B1. The twin's wording is carried verbatim because it names the failure mode rather than the symptom: "B1 SCANNED ALMOST NOTHING (%d sites) -- the enumeration broke, not the code".
-
-THE FOUR CONTROLS ARE BUILT BY CONCATENATION, never by substituting into a copy of the real file, and the twin's reason is kept with them: "a substitution silently yields an identical copy when the targeted line is later reworded, and the control then passes against unmutated source."
-
-COLOUR IS UNCONDITIONAL IN THE TWIN. It assigns `RED=$'\\033[0;31m'` with no tty
-test at all, so its `FAIL` lines carry escape sequences even into a pipe. The port uses the package logger's decision instead, which is a tty test; the difference is invisible to the differential because the comparator strips ANSI before it compares, and it is the better behaviour for a human piping the gate into a file. Named here so it is a decision rather than a drift.
+WHAT THIS GATE CANNOT SEE: it reasons about core/devbox.py's own call sites. A new file elsewhere that builds a docker argv from `docker_words()` on its own is out of scope.
 """
 
 import os
@@ -65,47 +24,41 @@ import tempfile
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
 
-# The subject, repo-relative. This gate reasons about ONE file's call sites; see the header for what that deliberately excludes.
-DEVBOX_REL = ".ci/lib/devbox.sh"
+# The subject, repo-relative. This gate reasons about ONE file's call sites.
+DEVBOX_REL = ".ci/rediacc_ci/core/devbox.py"
 
-# The bug shape: a variable holding devbox_docker's answer, expanded QUOTED in
-# command position. `"$d" ` / `"${d}" ` at the start of a command.
-BUG_RE = re.compile(r'(^|[;&|(]|then |else |do )[ \t]*"\$\{?d\}?"[ \t]')
+# B1: a list literal whose first element is the bare variable `d`/`words` (a single argv element) instead of its splat. Spans lines.
+BUG_RE = re.compile(r"\[\s*(?:d|words)\s*[,\]]")
 
-# Every expansion of that variable in command-ish position, quoted or not. This is the anti-vacuity denominator: B1 is a scan, and a scan over nothing passes.
-SITE_RE = re.compile(r"\$\{?d\}?[ \t]")
+# The anti-vacuity denominator: every splat of the split docker answer into an argv.
+SITE_RE = re.compile(r"\*(?:d|words)\b")
 
-# The numeric-identity shape B2 forbids: `-u "$(id -u)..."`, with or without the quote, which is correct only where the host's numbering means something inside the container.
-NUMERIC_RE = re.compile(r"-u[ \t]+\"?\$\(id -u\)")
+# B2: a `-u` argv element whose value is anything but the literal "vscode", or a `-u <value>` inside one string.
+NUMERIC_RE = re.compile(r"\"-u\",\s*(?!\s|\"vscode\")|[\"']-u[ =]")
 
-# The floor under B1's enumeration. Ten, matching the twin: devbox.sh has carried sixteen call sites since the incident, so a count below this means the enumeration broke rather than the code being clean.
+# The floor under B1's enumeration: core/devbox.py carries 34 splat sites (measured), so a count below this means the enumeration broke.
 MIN_SITES = 10
 
 
 def code_of(text: str) -> str:
-    """`grep -vE '^[[:space:]]*#'`: whole-line comments removed.
+    """Whole-line `#` comments blanked, line numbers preserved.
 
-    Every explanation of the WRONG shape in this repo lives in a comment, so a scan for that shape must read code only or it fails on its own documentation. (Learned the hard way by the editorconfig gate, which matched `binary` inside a PATH.)
-
-    An INLINE comment is left alone, exactly as the twin leaves it: the pattern is anchored at a command position, and a trailing `# ...` cannot be one.
+    Every explanation of the WRONG shape in this repo lives in a comment, so a scan for that shape must read code only or it fails on its own documentation.
     """
-    return "\n".join(line for line in text.split("\n") if not re.match(r"^[ \t]*#", line))
+    return "\n".join("" if re.match(r"^[ \t]*#", line) else line for line in text.split("\n"))
 
 
-def grep_n(pattern: re.Pattern, text: str) -> list[str]:
-    """`grep -nE`: `<line-number>:<line>` for every match, numbered from ONE.
-
-    THE NUMBERS ARE POSITIONS IN `text`, which the caller has already stripped of comments. See the port notes: that is the twin's behaviour and it is a defect carried rather than repaired, because repairing it would change the output the differential compares.
-    """
+def find(pattern: re.Pattern, text: str) -> list[str]:
+    """`<line>:<matched line>` for every match, numbered from ONE in `text` (the true file line, since `code_of` keeps blanks)."""
+    lines = text.split("\n")
     return [
-        "%d:%s" % (number, line)
-        for number, line in enumerate(text.split("\n"), start=1)
-        if pattern.search(line)
+        "%d:%s" % (text.count("\n", 0, m.start()) + 1, lines[text.count("\n", 0, m.start())])
+        for m in pattern.finditer(text)
     ]
 
 
-def grep_c(pattern: re.Pattern, text: str) -> int:
-    """`grep -cE`: how many LINES match, not how many matches there are."""
+def count(pattern: re.Pattern, text: str) -> int:
+    """How many LINES carry a match."""
     return len([line for line in text.split("\n") if pattern.search(line)])
 
 
@@ -113,25 +66,23 @@ def grep_c(pattern: re.Pattern, text: str) -> int:
 #
 # Never by substituting into a copy of the real file: a substitution silently yields an identical copy when the targeted line is later reworded, and the control then passes against unmutated source. ---------------------------------------------------------------------------
 
-CONTROL_BAD = '#!/bin/bash\nd="$(devbox_docker)"\n"$d" exec -u vscode "$cid" bash -lc "$*"\n'
+CONTROL_BAD = 'd = self.sub(self.docker)[1]\nself.run([d, "exec", "-u", "vscode", cid])\n'
+
+CONTROL_BAD_MULTILINE = 'self.run(\n    [\n        d,\n        "exec",\n    ]\n)\n'
 
 CONTROL_GOOD = (
-    "#!/bin/bash\n"
-    'd="$(devbox_docker)"\n'
-    '$d exec -u vscode "$cid" bash\n'
-    'local -a dk; read -r -a dk <<<"$d"\n'
-    '"${dk[@]}" exec "$cid" bash\n'
+    "d = self.docker_words()\n"
+    'self.run([*d, "exec", "-u", "vscode", cid])\n'
+    'self.run([*words, *flags, cid, "bash"])\n'
 )
 
-CONTROL_NUMERIC = '#!/bin/bash\n$d exec -it -u "$(id -u):$(id -g)" -w "$w" "$cid" bash\n'
+CONTROL_NUMERIC = 'self.run([*d, "exec", "-u", "%d:%d" % (uid, gid), cid])\n'
 
-CONTROL_COMMENT = (
-    '#!/bin/bash\n# $d exec -u "$(id -u)" -- the wrong shape, explained in a comment\n'
-)
+CONTROL_COMMENT = '# [d, "exec", "-u", "0"] -- the wrong shape, explained in a comment\n'
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run B1, B2, their anti-vacuity floor and the four controls. 0 clean, 1 otherwise."""
+    """Run B1, B2, their anti-vacuity floor and the controls. 0 clean, 1 otherwise."""
     args = list(argv or [])
     if args and args[0] == "--selftest":
         return selftest()
@@ -155,24 +106,24 @@ def main(argv: list[str] | None = None) -> int:
 
     code = code_of(devbox.read_text(encoding="utf-8", errors="replace"))
 
-    # --- B1. devbox_docker's answer is never invoked as one quoted word -----
-    hits = grep_n(BUG_RE, code)
+    # --- B1. devbox_docker's answer is never passed as one argv element -----
+    hits = find(BUG_RE, code)
     if not hits:
-        ok("B1. no call site quotes devbox_docker's two-word answer as one command")
+        ok("B1. no call site passes devbox_docker's two-word answer as one argv element")
     else:
-        fail("B1. these invoke a possibly-two-word docker as a single command:")
+        fail("B1. these pass a possibly-two-word docker as a single argv element:")
         for line in hits:
             print("         %s" % line)
 
-    # Anti-vacuity: B1 is a scan, and a scan over nothing passes. Prove the enumeration actually found the call sites it is supposed to be judging.
-    sites = grep_c(SITE_RE, code)
+    # Anti-vacuity: B1 is a scan, and a scan over nothing passes.
+    sites = count(SITE_RE, code)
     if sites >= MIN_SITES:
         ok("B1 anti-vacuity: %d docker invocation(s) actually scanned" % sites)
     else:
         fail("B1 SCANNED ALMOST NOTHING (%d sites) -- the enumeration broke, not the code" % sites)
 
     # --- B2. nothing execs into the devbox under a numeric identity ---------
-    numeric = grep_n(NUMERIC_RE, code)
+    numeric = find(NUMERIC_RE, code)
     if not numeric:
         ok("B2. container exec uses -u vscode by name, never a numeric id")
     else:
@@ -181,31 +132,31 @@ def main(argv: list[str] | None = None) -> int:
             print("         %s" % line)
 
     # --- controls, by CONSTRUCTION -----------------------------------------
-    if grep_n(BUG_RE, code_of(CONTROL_BAD)):
-        ok("B1 control: a quoted two-word invocation is detected")
+    if find(BUG_RE, code_of(CONTROL_BAD)):
+        ok("B1 control: a one-element docker argv is detected")
     else:
         fail("B1 CONTROL DID NOT FIRE: the planted defect went undetected")
 
-    if grep_n(BUG_RE, code_of(CONTROL_GOOD)):
-        fail("B1 IS OVER-BROAD: correct word-splitting and array forms were flagged")
+    if find(BUG_RE, code_of(CONTROL_GOOD)):
+        fail("B1 IS OVER-BROAD: splatted forms were flagged")
     else:
-        ok("B1 control: unquoted and array forms are not flagged")
+        ok("B1 control: splatted forms are not flagged")
 
-    if grep_n(NUMERIC_RE, code_of(CONTROL_NUMERIC)):
+    if find(NUMERIC_RE, code_of(CONTROL_NUMERIC)):
         ok("B2 control: a numeric container identity is detected")
     else:
         fail("B2 CONTROL DID NOT FIRE: a numeric -u went undetected")
 
-    if grep_n(NUMERIC_RE, code_of(CONTROL_COMMENT)):
-        fail("B2 IS OVER-BROAD: prose describing the wrong shape was flagged as code")
+    if find(NUMERIC_RE, code_of(CONTROL_COMMENT)) or find(BUG_RE, code_of(CONTROL_COMMENT)):
+        fail("B1/B2 ARE OVER-BROAD: prose describing the wrong shape was flagged as code")
     else:
-        ok("B2 control: a comment describing the bad shape is not flagged")
+        ok("B1/B2 control: a comment describing the bad shape is not flagged")
 
     print()
     if fails == 0:
-        print("✓ devbox exec: %d docker invocation(s), none mis-quoted." % sites)
-        print("  Blind spot: scoped to .ci/lib/devbox.sh's own call sites; a new file")
-        print("  that shells out to docker independently is not covered.")
+        print("✓ devbox exec: %d docker invocation(s), none mis-passed." % sites)
+        print("  Blind spot: scoped to core/devbox.py's own call sites; a new file")
+        print("  that builds a docker argv independently is not covered.")
         return 0
     print("✗ devbox exec: %d failure(s)." % fails)
     return 1
@@ -215,102 +166,68 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def selftest() -> int:
-    """Both directions for both detectors, plus the floor and the comment filter.
+    """Both directions for both detectors, plus the floor and the comment filter."""
+    ctl = Controls("devbox-exec", floor=21, verbose=True)
 
-    The over-broad direction is the one that decides whether this gate survives:
-    a B1 that flagged `$d exec` or `"${dk[@]}"` would fail the file it is meant
-    to protect, and a gate that is wrong is a gate that gets suppressed.
-    """
-    ctl = Controls("devbox-exec", floor=20, verbose=True)
-
-    # -- B1, both directions -------------------------------------------------
+    ctl.truthy("PLANT: a one-element docker argv is detected", find(BUG_RE, code_of(CONTROL_BAD)))
     ctl.truthy(
-        "PLANT: a quoted two-word invocation is detected", grep_n(BUG_RE, code_of(CONTROL_BAD))
+        "PLANT: the same defect spread over several lines is detected",
+        find(BUG_RE, code_of(CONTROL_BAD_MULTILINE)),
     )
+    ctl.check("MIRROR: splatted forms are not flagged", find(BUG_RE, code_of(CONTROL_GOOD)), [])
+    ctl.truthy("PLANT: `[words]` alone is the same defect", find(BUG_RE, "x = [words]\n"))
     ctl.check(
-        "MIRROR: unquoted and array forms are not flagged",
-        grep_n(BUG_RE, code_of(CONTROL_GOOD)),
-        [],
-    )
-    ctl.truthy(
-        'PLANT: `"${d}" ` with braces is the same defect',
-        grep_n(BUG_RE, '"${d}" exec x\n'),
-    )
-    ctl.truthy(
-        "PLANT: the shape is caught after a `then`",
-        grep_n(BUG_RE, 'if x; then "$d" exec y; fi\n'),
-    )
-    ctl.truthy(
-        "PLANT: and after a pipe or a semicolon",
-        grep_n(BUG_RE, 'a | "$d" exec y\n'),
-    )
-    ctl.check(
-        'MIRROR: `"$d"` as an ARGUMENT rather than a command is not flagged',
-        grep_n(BUG_RE, 'echo "$d" here\n'),
+        "MIRROR: `d` as a later element is not flagged",
+        find(BUG_RE, 'self.run(["echo", d])\n'),
         [],
     )
     ctl.check(
-        "MIRROR: a comment carrying the defect shape is stripped before the scan",
-        grep_n(BUG_RE, code_of('#  "$d" exec -- the wrong shape\n')),
+        "MIRROR: a comment carrying the defect shape is blanked before the scan",
+        find(BUG_RE, code_of('# [d, "exec"] -- the wrong shape\n')),
         [],
     )
-
-    # -- B2, both directions -------------------------------------------------
-    ctl.truthy(
-        "PLANT: a numeric container identity is detected",
-        grep_n(NUMERIC_RE, code_of(CONTROL_NUMERIC)),
+    ctl.check(
+        "the reported line is the TRUE file line",
+        find(BUG_RE, code_of('# a\n# b\nself.run([d, "x"])\n')),
+        ['3:self.run([d, "x"])'],
     )
+
+    ctl.truthy("PLANT: a numeric container identity is detected", find(NUMERIC_RE, CONTROL_NUMERIC))
+    ctl.truthy(
+        "PLANT: a `-u` value on the next line is detected",
+        find(NUMERIC_RE, '"-u",\n    uid,\n'),
+    )
+    ctl.truthy("PLANT: `-u 0` inside one string is detected", find(NUMERIC_RE, '"-u 0"\n'))
     ctl.check(
         "MIRROR: a comment describing the bad shape is not flagged",
-        grep_n(NUMERIC_RE, code_of(CONTROL_COMMENT)),
+        find(NUMERIC_RE, code_of(CONTROL_COMMENT)),
         [],
     )
     ctl.check(
         "MIRROR: `-u vscode` by NAME is not flagged",
-        grep_n(NUMERIC_RE, '$d exec -u vscode "$cid" bash\n'),
+        find(NUMERIC_RE, '["exec", "-u", "vscode", cid]\n'),
         [],
     )
-    ctl.truthy(
-        "PLANT: the unquoted numeric form is caught too",
-        grep_n(NUMERIC_RE, "$d exec -u $(id -u):$(id -g) x\n"),
+    ctl.check(
+        "MIRROR: `-u vscode` split over lines is not flagged",
+        find(NUMERIC_RE, '"-u",\n    "vscode",\n'),
+        [],
     )
 
-    # -- the comment filter, both directions --------------------------------
-    ctl.check("a whole-line comment is DROPPED, not blanked", code_of("# gone\nkept\n"), "kept\n")
     ctl.check(
-        "an INDENTED whole-line comment is dropped too",
-        code_of("   # gone\nkept\n"),
-        "kept\n",
+        "a whole-line comment is BLANKED, keeping the numbering",
+        code_of("# gone\nkept\n"),
+        "\nkept\n",
     )
     ctl.check("an INLINE comment survives", code_of("kept # tail\n"), "kept # tail\n")
+    ctl.check("count counts LINES, not matches", count(SITE_RE, "*d a *d b\n*d c\n"), 2)
 
-    # -- the numbering, and the defect it carries --------------------------- THE TWIN DEFECT, demonstrated rather than described. The offending line is line 3 of the FILE and is reported as line 1, because `code_of` DROPS the comment lines before `grep -n` ever numbers anything. A reader following the number lands above the finding. Carried, because repairing it would change the
-    # gate's output and therefore its differential.
-    original = '# a\n# b\n"$d" exec x\n'
-    ctl.check(
-        "TWIN DEFECT: the number is the position in the COMMENT-STRIPPED stream",
-        grep_n(BUG_RE, code_of(original)),
-        ['1:"$d" exec x'],
-    )
-    ctl.check(
-        "TWIN DEFECT: and the real position in the FILE is 3, so the number misleads",
-        [i for i, line in enumerate(original.split("\n"), start=1) if BUG_RE.search(line)],
-        [3],
-    )
-    ctl.check(
-        "grep -c counts LINES, not matches",
-        grep_c(SITE_RE, "$d a $d b\n$d c\n"),
-        2,
-    )
-
-    # -- the whole gate, over fixtures --------------------------------------
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
 
         def run(body: str | None) -> int:
-            lib = root / ".ci" / "lib"
-            lib.mkdir(parents=True, exist_ok=True)
-            target = lib / "devbox.sh"
+            target = root / DEVBOX_REL
+            target.parent.mkdir(parents=True, exist_ok=True)
             if body is None:
                 if target.exists():
                     target.unlink()
@@ -326,17 +243,17 @@ def selftest() -> int:
                 else:
                     os.environ[paths.ROOT_ENV] = saved
 
-        clean = "#!/bin/bash\n" + "".join('$d exec -u vscode "$c%d" bash\n' % i for i in range(12))
-        ctl.check("MIRROR: a clean devbox.sh with 12 sites passes", run(clean), 0)
-        ctl.check("PLANT: one quoted call site reds", run(clean + '"$d" exec x\n'), 1)
+        clean = "".join('self.run([*d, "exec", "-u", "vscode", "c%d"])\n' % i for i in range(12))
+        ctl.check("MIRROR: a clean devbox.py with 12 sites passes", run(clean), 0)
+        ctl.check("PLANT: one single-element call site reds", run(clean + 'x([d, "exec"])\n'), 1)
         ctl.check(
             "PLANT: a numeric identity reds",
-            run(clean + '$d exec -u "$(id -u)" x\n'),
+            run(clean + 'x([*d, "exec", "-u", ids])\n'),
             1,
         )
         ctl.check(
-            "PLANT: a devbox.sh with too FEW sites trips the anti-vacuity floor",
-            run("#!/bin/bash\n$d exec a\n"),
+            "PLANT: a devbox.py with too FEW sites trips the anti-vacuity floor",
+            run('self.run([*d, "exec"])\n'),
             1,
         )
         ctl.check("PLANT: a missing subject reds rather than skipping", run(None), 1)

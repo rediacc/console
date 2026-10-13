@@ -373,7 +373,7 @@ truthy(
 )
 
 # BLINDNESS IS A FINDING. Raw boxes the parser cannot resolve must be named, never counted as clean -- otherwise 'no untracked tasks' and 'saw nothing at all' print identically.
-blind = rows_for(plan_body(open_tasks=["ab", "cd"]), [])
+blind = rows_for(plan_body(open_tasks=["**", "``"]), [])
 control("a plan whose boxes the parser cannot resolve is reported BLIND", len(blind), 1)
 truthy("  and says so in the body", "CANNOT SEE" in F.render(blind[0]) if blind else False)
 control(

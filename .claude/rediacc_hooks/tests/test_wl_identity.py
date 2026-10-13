@@ -29,6 +29,10 @@ FOREIGN = "4c3e095a"
 XDIST_GROUP = "wl-identity-l1"
 
 
+#: Exit codes an ACCEPTED run of a verb ends with when the git-less fixture makes it answer with a refusal of its own (see the 184 loop).
+ACCEPTED_RC = {"--batch-body": 1}
+
+
 def l1run(fix, *argv: str, peer: str = "") -> wlfix.Result:
     """The CLI under the fixture, with the STATE body on stdin so `--state` is drivable.
 
@@ -148,60 +152,6 @@ def plant_investigate_target(fix) -> tuple[str, str]:
         encoding="utf-8",
     )
     return rel, wlfix.import_wl("wl_planrec").box_sig(body)
-
-
-def plant_backfill_target(fix) -> tuple[str, str]:
-    """(rel, sig) for a real, ALREADY-DONE box `--plan-backfill`'s table row can cite.
-
-    Unlike `plant_investigate_target`, `plan_backfill_investigation` has no `history=` override at the CLI layer -- it always walks `wl_planrec.ledger_history`, `git log --reverse -- .ci/config/plan-boxes.json`, to find the first commit that attests the box's signature. There is no git-free path through it, so this fixture turns `fix.proj/.git` -- a plain directory by
-    design elsewhere in this file, see `wlfix.Fixture.setup`'s own comment -- into a real two-commit repo, mirroring the exact recipe `.claude/hooks/stop/test-planrec.py`'s own module-level `build()` uses for the same verb: one commit with the box open and the ledger's `open_sigs` naming it, a second with the box ticked and the ledger's `done_sigs` naming it. `commit^`
-    then resolves to the first commit, which is the `head` the row wants.
-    """
-    planrec = wlfix.import_wl("wl_planrec")
-    rel = "agent/plans/PLAN-l1-backfill-target.md"
-    body = "the one already-done box this row backfills"
-    sig = planrec.box_sig(body)
-    (fix.proj / "agent" / "plans").mkdir(parents=True, exist_ok=True)
-
-    def write_ledger(done: bool) -> None:
-        (fix.proj / planrec.LEDGER_REL).parent.mkdir(parents=True, exist_ok=True)
-        (fix.proj / planrec.LEDGER_REL).write_text(
-            json.dumps(
-                {
-                    "plans": {
-                        rel: {
-                            "status": "executing",
-                            "owner": fix.sid,
-                            "open": 0 if done else 1,
-                            "done": 1 if done else 0,
-                            "open_sigs": [] if done else [sig],
-                            "done_sigs": [sig] if done else [],
-                        }
-                    }
-                }
-            ),
-            encoding="utf-8",
-        )
-
-    def write_plan(mark: str) -> None:
-        (fix.proj / rel).write_text(
-            "# PLAN: l1 backfill target\nStatus: executing\nOwner: %s\nUpdated: 2026-09-01\n\n"
-            "## Tasks\n\n- %s %s\n" % (fix.sid, mark, body),
-            encoding="utf-8",
-        )
-
-    fix.git("init", "-q")
-    fix.git("config", "user.email", "t@t")
-    fix.git("config", "user.name", "t")
-    write_plan("[ ]")
-    write_ledger(done=False)
-    fix.git("add", "-A")
-    fix.git("commit", "-qm", "fixture: the l1 backfill box is open")
-    write_plan("[x]")
-    write_ledger(done=True)
-    fix.git("add", "-A")
-    fix.git("commit", "-qm", "fixture: the l1 backfill box is ticked")
-    return rel, sig
 
 
 def probe_phantom(fix) -> str:
@@ -472,7 +422,6 @@ def drive_l1(fix) -> L1Drive:
     ):
         assert value, "FIXTURE BROKEN: %s was never created, so its row proves nothing" % name
     inv_rel, inv_selector = plant_investigate_target(fix)
-    bf_rel, bf_sig = plant_backfill_target(fix)
 
     # A phantom for the --reassign row: three aged events under an identity that has never stopped, owning open items. This case runs no Stop hook, so no .lastevent- file exists for anybody here, which is exactly the phantom shape.
     fix.phantom_store("phantom1", 90)
@@ -551,22 +500,24 @@ def drive_l1(fix) -> L1Drive:
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
         # Bare form: prints the effective settings and writes nothing; the write form runs the identical argv parse and _identity_or_die.
         ("--queue-set", "--queue-set @WHO@", "stop_hook: on"),
+        # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
+        ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),
         ("--review-run", "--review-run @WHO@", "unreviewed commits"),
         # --prune-reviews runs the archival gate from the project root (PLAN-per-commit-review T5), so the fixture plants a stand-in gate there: the identity check is this table's subject, and the real gate needs a git work tree the fixture does not have.
         ("--prune-reviews", "--prune-reviews @WHO@", "no agent/reviews/<branch>/ directory"),
+        # Listing mode (no --write): the fixture has no git branch, so the accepted run lists nothing, after the same _identity_or_die its --write mode runs.
+        (
+            "--drop-foreign-reviews",
+            "--drop-foreign-reviews @WHO@",
+            "no review records of a foreign repository",
+        ),
+        # Listing mode (no --write): the fixture's TMPDIR holds no scratchpad, so the accepted run says so and deletes nothing, after the same _identity_or_die its --write mode runs.
+        ("--prune-scratch", "--prune-scratch @WHO@", "nothing to prune"),
         # The stop-hook retro brief (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13). It WRITES: the first accepted run orders the band and adds the tracking item, so a foreign `<me>` must be refused before either.
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
-        # RETROACTIVE ONLY, so CONTROL A is driven for real against plant_backfill_target's fixture -- a genuine two-commit repo, the one row in this table where `fix.proj/.git` stops being a plain directory. Dry (no `--write`): the identity rule is the whole surface this table is about, and a dry run proves the CLI reached the SAME resolve-and-render path a --write run
-        # would, without appending to the fixture's ledger.
-        (
-            "--plan-backfill",
-            "--plan-backfill @WHO@ %s %s fileline:%s:1 plan:%s -- l1 fixture note for --plan-backfill citing %s:1, which resolves and clears the checkable-evidence floor"
-            % (bf_rel, bf_sig, bf_rel, bf_rel, bf_rel),
-            "would backfill one investigation of",
-        ),
     ]
 
     stand_in = fix.proj / ".ci" / "scripts" / "quality" / "check_agent_session_archival.py"
@@ -576,6 +527,8 @@ def drive_l1(fix) -> L1Drive:
     )
 
     for verb, template, needle in table:
+        # A verb may name the exit code its ACCEPTED run ends with (a read-only verb whose fixture answer is a refusal of its own, after the identity check). Its needle then proves the identity check passed, and CONTROL C proves the refusal by the needle's ABSENCE, because a nonzero rc alone proves nothing there.
+        ok_rc = ACCEPTED_RC.get(verb, 0)
         drive.covered.add(verb)
         fire_args = template.replace("@WHO@", FOREIGN).split()
         good_args = template.replace("@WHO@", wlfix.ME).split()
@@ -592,7 +545,7 @@ def drive_l1(fix) -> L1Drive:
         # CONTROL A: one planted fact changed, the prefix, and the effect lands.
         got = l1run(fix, *good_args)
         text = both(got)
-        if not (got.rc == 0 and (not needle or needle in text)):
+        if not (got.rc == ok_rc and (not needle or needle in text)):
             drive.failures.append(
                 "184 CONTROL A %s: the check broke the verb (rc=%d, needle %r): %s"
                 % (verb, got.rc, needle, text[:200])
@@ -613,7 +566,7 @@ def drive_l1(fix) -> L1Drive:
 
         # CONTROL C: the length floor. `dead` IS a prefix of this session's id, so only the floor can refuse it, which is the whole point: same_session's symmetry would have accepted `--add d`.
         got = l1run(fix, *short_args)
-        if got.rc == 0:
+        if got.rc == 0 or (ok_rc != 0 and needle and needle in both(got)):
             drive.failures.append(
                 "184 CONTROL C %s: accepted a 4-char `<me>`: %s" % (verb, both(got)[:200])
             )

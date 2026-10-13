@@ -662,6 +662,18 @@ RETIRED_SOURCES = {
         "ported into .ci/rediacc_ci/setup/ by E1 and deleted in the same campaign; "
         "the citations are the port's provenance, deliberately kept"
     ),
+    ".ci/lib/devbox.sh": (
+        "ported into .ci/rediacc_ci/core/devbox.py and deleted by PLAN-retire-bash-oracles B3 "
+        "(its transcripts are goldens/twins/lib.devbox.jsonl); the citation is provenance"
+    ),
+    ".ci/lib/local-common.sh": (
+        "ported into .ci/rediacc_ci/core/local_common.py and deleted by PLAN-retire-bash-oracles B3 "
+        "(its transcripts are goldens/twins/lib.local-common.jsonl); the citation is provenance"
+    ),
+    "scripts/dev/worktree.sh": (
+        "ported into .ci/rediacc_ci/dev/worktree.py and deleted by PLAN-retire-bash-oracles B3 "
+        "(its answers are goldens/twins/scripts.dev.worktree.jsonl); the citation is provenance"
+    ),
 }
 
 

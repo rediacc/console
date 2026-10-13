@@ -26,6 +26,7 @@ import datetime
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -36,10 +37,12 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect, ghx
 from rediacc_ci.housekeeping import cleanup_versions as cv
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET, RENET_REPO
 
 ROOT = paths.repo_root()
-TWIN = ROOT / ".ci" / "scripts" / "housekeeping" / "cleanup-versions.sh"
+TWIN_REL = ".ci/scripts/housekeeping/cleanup-versions.sh"
+TWIN = ROOT / TWIN_REL
 PORT = pathlib.Path(cv.__file__).resolve()
 BASH = shutil.which("bash") or "/bin/bash"
 JQ = shutil.which("jq")
@@ -225,7 +228,84 @@ def _write_fixture(base: pathlib.Path, fixture: dict) -> pathlib.Path:
     return path
 
 
+# A timestamp in a fixture or an argv moves with the wall clock (`ago(...)`), and the golden key hashes its parts, so the instants are masked out of the KEY only. Every fixture is built far from a decision boundary (see the module docstring), so the recorded answer does not depend on the instant.
+_INSTANT_RE = re.compile(r"\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:Z|\.\d+Z)?")
+_EPOCH_RE = re.compile(r"\b1[5-9]\d{8}\b")
+
+
+def _mask_instants(text: str) -> str:
+    """A fixture instant echoed into a stream or a call line (`Would delete: 5 (pr-9, 2026-10-07T02:02:56Z)`) moves with the wall clock, so it is folded to `<TS>` on BOTH sides of every comparison and in the recording itself."""
+    return _INSTANT_RE.sub("<TS>", text)
+
+
+def _assert_instants_come_from_the_inputs(
+    result: tuple[int, bytes, bytes, list[str]], fixture_text: str, argv: list[str], env_text: str
+) -> None:
+    """Masking folds every instant to `<TS>` on both sides, so a port that echoed the wrong instant (a wrong field, a wrong cutoff) would still equal the golden. Every instant the PORT prints must therefore be one the case supplied, verbatim (review 58aaa160.7)."""
+    _code, out, err, calls = result
+    supplied = set(_INSTANT_RE.findall(fixture_text + " " + " ".join(argv) + " " + env_text))
+    printed = out.decode("utf-8") + "\n" + err.decode("utf-8") + "\n" + "\n".join(calls)
+    strangers = sorted(set(_INSTANT_RE.findall(printed)) - supplied)
+    assert not strangers, "the port printed instants no input supplied: %r" % strangers
+
+
+def _mask_result(
+    result: tuple[int, bytes, bytes, list[str]],
+) -> tuple[int, bytes, bytes, list[str]]:
+    code, out, err, calls = result
+    return (
+        code,
+        _mask_instants(out.decode("utf-8")).encode("utf-8"),
+        _mask_instants(err.decode("utf-8")).encode("utf-8"),
+        [_mask_instants(c) for c in calls],
+    )
+
+
+def _stable(value: object) -> str:
+    text = json.dumps(value, sort_keys=True, default=str)
+    return _EPOCH_RE.sub("<EPOCH>", _INSTANT_RE.sub("<TS>", text))
+
+
 def _run(
+    side: str,
+    phase: str,
+    argv: tuple[str, ...],
+    fixture: dict,
+    extra_env: dict,
+    base: pathlib.Path,
+) -> tuple[int, bytes, bytes, list[str]]:
+    """The twin's answer comes from its golden (`twin_tuple`); the port runs live."""
+    if side != "bash":
+        env_text = json.dumps(extra_env, sort_keys=True)
+        raw = _run_live(side, phase, argv, fixture, extra_env, base)
+        _assert_instants_come_from_the_inputs(raw, json.dumps(fixture), list(argv), env_text)
+        return _mask_result(raw)
+    parts = [phase, _stable(list(argv)), _stable(fixture), _stable(extra_env)]
+
+    def live() -> tuple[int, str, str, list[str]]:
+        code, out, err, calls = _mask_result(
+            _run_live(side, phase, argv, fixture, dict(extra_env), base)
+        )
+        return code, out.decode("utf-8"), err.decode("utf-8"), calls
+
+    code, out, err, calls = diff.twin_tuple(TWIN_REL, parts, live, work=(base.parent,))
+    return _mask_result((code, out.encode("utf-8"), err.encode("utf-8"), calls))
+
+
+# THE CONTRACT FLOOR IS THE FIXTURE'S, NEVER THE REPOSITORY'S. Phase 8d prints the floor `rsv.pre_contract_floor` computes, and its ratchet candidate is `<root>/.ci/config/release-contract-floor.txt`. The twin's goldens were recorded while the repository's file read this value; every release advances that file (v1.3.1 -> v1.3.2 with 3ce2c1994 reddened 14 cases on 2026-10-11, as v1.2.21 -> v1.2.22 had on 2026-09-30), so a case that read the real file judged the release chain's progress rather than the port.
+# The port runs with `REDIACC_CI_ROOT` at its own fixture directory, which holds its own copy of the file at this value, so the floor comes through the port's real candidate search, from a root the test owns. A case that sets `RSV_FLOOR_FILE` or `RSV_GRANDFATHER_BEFORE` still overrides it, as the library documents.
+FIXTURE_CONTRACT_FLOOR = "v1.3.1"
+
+
+def _fixture_root(base: pathlib.Path) -> pathlib.Path:
+    """`base` as a repository root for the port: `.ci/config/release-contract-floor.txt` pinned to `FIXTURE_CONTRACT_FLOOR`."""
+    floor = base / ".ci" / "config" / "release-contract-floor.txt"
+    floor.parent.mkdir(parents=True, exist_ok=True)
+    floor.write_text(FIXTURE_CONTRACT_FLOOR + "\n", encoding="utf-8")
+    return base
+
+
+def _run_live(
     side: str,
     phase: str,
     argv: tuple[str, ...],
@@ -247,6 +327,7 @@ def _run(
         "FAKE_LOG": str(log),
         "FAKE_FIXTURE": str(_write_fixture(base, fixture)),
         "GH_TOKEN": GH_TOKEN,
+        "REDIACC_CI_ROOT": str(_fixture_root(base)),
     }
     for key, value in list(extra_env.items()):
         # An EMPTY value means UNSET, because half the twin's branches are
@@ -341,6 +422,62 @@ def cf_env(**overrides: str) -> dict:
     return env
 
 
+# What `aws s3api head-object` really prints for an absent key: exit 254 and a 404 on stderr, the one failure `rsv.sentinel_exists` reads as NO.
+HEAD_404 = rule(
+    "head-object",
+    rc=254,
+    stderr="An error occurred (404) when calling the HeadObject operation: Not Found\n",
+)
+
+# `cli/stable/manifest.json`, which Phases 1 and 2 read (once, lazily) for the retention contract's `in_walk` hold. A stable NEWER than every fixture version, so no fixture tag is a promotion candidate and each case keeps the meaning it was written for; the in_walk cases set their own.
+STABLE_RULE = rule("cp", "cli/stable/manifest.json", raw='{"version":"99.99.99"}')
+
+
+def _stable_read(call: str) -> bool:
+    return call.startswith("aws\ts3\tcp\t") and "/cli/stable/manifest.json\t" in call
+
+
+def _lifetime_delta(seen: list):
+    """`port_delta` for the release-tag lifetime fix (worklist #a5a1f981, Rule T).
+
+    The port makes `aws s3api head-object` calls the twin never makes (Phases 1, 2 and 8d ask R2 for a release's sentinel before deleting its tag or prefix), and one read of `cli/stable/manifest.json` (Phases 1 and 2, the retention contract's `in_walk` bound), and its Phase 1 and Phase 2 dry runs count what they name (HAZARD 2 repaired). Exactly those two shapes are removed from the PORT's result before the byte comparison; everything else stays compared. The raw port result is appended to `seen` first, so a case asserts on what the port really did.
+    """
+
+    def mapper(result: tuple[int, bytes, bytes, list[str]]) -> tuple[int, bytes, bytes, list[str]]:
+        seen.append(result)
+        code, out, err, calls = result
+        calls = [
+            c
+            for c in calls
+            if not c.startswith("aws\ts3api\thead-object\t") and not _stable_read(c)
+        ]
+        err = re.sub(
+            rb"(Releases: would delete |Tags \([^)]*\): would delete )[0-9]+", rb"\g<1>0", err
+        )
+        return code, out, err, calls
+
+    return mapper
+
+
+def sides_lifetime(
+    phase: str,
+    *,
+    argv: tuple[str, ...] = (),
+    fixture: dict | None = None,
+    env: dict | None = None,
+) -> tuple[tuple[int, bytes, bytes, list[str]], tuple[int, bytes, bytes, list[str]]]:
+    """`sides` under `_lifetime_delta`, with R2 credentials set: (twin result, raw port result)."""
+    seen: list = []
+    twin = sides(
+        phase,
+        argv=argv,
+        fixture=fixture,
+        env=dict(R2_ENV, **(env or {})),
+        port_delta=_lifetime_delta(seen),
+    )
+    return twin, seen[0]
+
+
 def ago(days: float) -> str:
     """An RFC3339 timestamp `days` in the past, deliberately off any boundary.
 
@@ -364,15 +501,9 @@ def calls_of(calls: list[str], tool: str) -> list[list[str]]:
 # --------------------------------------------------------------------------- CONTROLS. A fake that is not reached proves nothing, and a differential that cannot fail proves less. ---------------------------------------------------------------------------
 
 
-def test_both_subjects_exist_where_this_file_says_they_do() -> None:
-    assert TWIN.is_file(), TWIN
+def test_the_port_exists_where_this_file_says_it_does() -> None:
     assert PORT.is_file(), PORT
     assert os.access(PORT, os.X_OK), "%s is not executable" % PORT
-
-
-def test_the_twin_parses_under_bash() -> None:
-    proc = subprocess.run([BASH, "-n", str(TWIN)], capture_output=True, check=False)
-    assert proc.returncode == 0, proc.stderr
 
 
 def test_neither_side_can_reach_a_real_gh_curl_aws_or_sleep() -> None:
@@ -420,13 +551,14 @@ def test_the_differential_can_fail() -> None:
         argv=("--dry-run",),
         fixture={"gh": [rule("release", "list", json_body=[])]},
     )
-    loud = sides(
+    loud, _port = sides_lifetime(
         "cleanup_releases",
         argv=("--dry-run", "--versions", "0", "--days", "1"),
         fixture={
             "gh": [
                 rule("release", "list", json_body=[{"tagName": "v9.9.9", "createdAt": ago(400)}])
-            ]
+            ],
+            "aws": [STABLE_RULE],
         },
     )
     assert quiet[2] != loud[2]
@@ -639,13 +771,14 @@ def _releases(*rows: tuple[str, str]) -> dict:
             ),
             rule("release", "delete"),
             rule("-X", "DELETE", "git/refs/tags"),
-        ]
+        ],
+        "aws": [HEAD_404, STABLE_RULE],
     }
 
 
 def test_phase_1_keeps_by_index_and_by_window_and_deletes_when_neither_holds() -> None:
     """The OR in `should_retain`, all three arms, in one run."""
-    result = sides(
+    result, port = sides_lifetime(
         "cleanup_releases",
         argv=("--dry-run", "--versions", "1", "--days", "7"),
         fixture=_releases(("v3.0.0", ago(0.5)), ("v2.0.0", ago(1.5)), ("v1.0.0", ago(90.5))),
@@ -653,16 +786,19 @@ def test_phase_1_keeps_by_index_and_by_window_and_deletes_when_neither_holds() -
     err = result[2].decode()
     assert "[DRY-RUN] Would delete release: v1.0.0" in err
     assert "v2.0.0" not in err, "inside the 7-day window, must be kept"
-    # HAZARD 2: the dry-run arm of THIS phase does not count what it names.
+    # HAZARD 2: the twin's dry-run arm of THIS phase does not count what it names; the port's does.
     assert "Releases: would delete 0 of 3" in err
+    assert b"Releases: would delete 1 of 3" in port[2]
 
 
 def test_phase_1_really_deletes_and_then_best_effort_deletes_the_tag() -> None:
-    result = sides(
+    result, port = sides_lifetime(
         "cleanup_releases",
         argv=("--versions", "0", "--days", "1"),
         fixture=_releases(("v1.0.0", ago(90.5))),
     )
+    # The port read the stable bound (the retention contract's `in_walk`), then asked R2 for the sentinel, and deleted the tag only on its 404.
+    assert [c[:2] for c in calls_of(port[3], "aws")] == [["s3", "cp"], ["s3api", "head-object"]]
     calls = calls_of(result[3], "gh")
     assert calls[1] == ["release", "delete", "v1.0.0", "--repo", GH_REPO, "--yes"]
     assert calls[2] == [
@@ -678,7 +814,10 @@ def test_phase_1_retries_three_times_with_visible_backoff_then_warns() -> None:
     """Phase 1 is the ONE call site whose `retry_with_backoff` is not silenced by a `2>/dev/null`, so its `Attempt 1/3` lines are part of the output."""
     fixture = _releases(("v1.0.0", ago(90.5)))
     fixture["gh"][1] = rule("release", "delete", rc=1)
-    result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
+    # R2 credentials, because the retention contract holds a release whose promotion bound (`cli/stable/manifest.json`) it cannot read.
+    result, _port = sides_lifetime(
+        "cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture
+    )
     err = result[2].decode()
     assert "Attempt 1/3 failed, retrying in 2s..." in err
     assert "Attempt 2/3 failed, retrying in 4s..." in err
@@ -704,7 +843,9 @@ def test_phase_1_deletes_a_survivor_by_id_and_counts_it_only_once_gone() -> None
         ),
         rule("-X", "DELETE", "releases/367236731"),
     ]
-    result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
+    result, _port = sides_lifetime(
+        "cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture
+    )
     err = result[2].decode()
     calls = calls_of(result[3], "gh")
     assert "Release still present after delete: v1.2.21; deleting it by id" in err
@@ -729,7 +870,9 @@ def test_phase_1_fails_the_run_on_a_release_that_survives_by_tag_and_by_id() -> 
         ),
         rule("-X", "DELETE", "releases/367236731"),
     ]
-    result = sides("cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture)
+    result, _port = sides_lifetime(
+        "cleanup_releases", argv=("--versions", "0", "--days", "1"), fixture=fixture
+    )
     err = result[2].decode()
     assert "Release v1.2.21 survived deletion by tag and by id" in err
     assert "Releases: deleted 0 of 1" in err
@@ -742,7 +885,9 @@ def test_delta_phase_1_an_unreadable_read_back_is_neither_counted_nor_a_survivor
         rule("release", "view", "v1.2.21", rc=1, stderr="gh: HTTP 502\n"),
         rule("api", "repos/" + GH_REPO + "/releases", "--paginate", json_body=[]),
     ]
-    _old, new = _twin_and_port("cleanup_releases", ("--versions", "0", "--days", "1"), fixture)
+    _old, new = _twin_and_port(
+        "cleanup_releases", ("--versions", "0", "--days", "1"), fixture, dict(R2_ENV)
+    )
     err = new[2].decode()
     assert "Release v1.2.21: GitHub kept failing the read-back" in err
     assert "Releases: deleted 0 of 1" in err
@@ -790,20 +935,23 @@ def _draft_release(age_days: float) -> dict:
             ),
             rule("release", "delete"),
             rule("-X", "DELETE", "git/refs/tags"),
-        ]
+        ],
+        "aws": [HEAD_404, STABLE_RULE],
     }
 
 
 def test_phase_1_reaps_a_stale_draft_inside_the_keep_window() -> None:
     """A draft older than a day is reaped even at index 0 with 20 versions kept; the CONTROL keeps a draft under a day old (a release in flight)."""
-    stale = sides("cleanup_releases", argv=("--dry-run",), fixture=_draft_release(2.5))
+    stale, _port = sides_lifetime(
+        "cleanup_releases", argv=("--dry-run",), fixture=_draft_release(2.5)
+    )
     assert b"[DRY-RUN] Would delete release: v1.2.21" in stale[2]
     fresh = sides("cleanup_releases", argv=("--dry-run",), fixture=_draft_release(0.1))
     assert b"Would delete release: v1.2.21" not in fresh[2]
 
 
 def test_phase_1_stops_at_the_delete_budget_and_says_what_it_deferred() -> None:
-    result = sides(
+    result, _port = sides_lifetime(
         "cleanup_releases",
         argv=("--versions", "0", "--days", "1"),
         fixture=_releases(("v2.0.0", ago(90.5)), ("v1.0.0", ago(91.5))),
@@ -916,7 +1064,10 @@ def test_delta_an_invalid_octal_versions_value_is_decimal_not_a_refusal_branch()
     """INTENTIONAL DELTA (Rule T). `--versions 08` made the twin print an arithmetic diagnostic and evaluate every keep-window test FALSE, so every release outside the 1-day retention was deleted regardless of the requested count. The port keeps the newest EIGHT, as asked, and prints no diagnostic."""
     rows = [("v%d.0.0" % (20 - i), ago(90.5 + i)) for i in range(10)]
     old, new = _twin_and_port(
-        "cleanup_releases", ("--dry-run", "--versions", "08", "--days", "1"), _releases(*rows)
+        "cleanup_releases",
+        ("--dry-run", "--versions", "08", "--days", "1"),
+        _releases(*rows),
+        dict(R2_ENV),
     )
     old_err, new_err = old[2].decode(), new[2].decode()
     assert 'value too great for base (error token is "08")' in old_err
@@ -925,9 +1076,8 @@ def test_delta_an_invalid_octal_versions_value_is_decimal_not_a_refusal_branch()
     assert "Would delete release: v13.0.0" not in new_err
     assert "Would delete release: v12.0.0" in new_err
     assert "Would delete release: v11.0.0" in new_err
-    assert "Releases: would delete 0 of 10" in new_err, (
-        "Phase 1 never counts a dry-run delete (HAZARD 2)"
-    )
+    assert "Releases: would delete 0 of 10" in old_err, "the twin never counts a dry-run delete"
+    assert "Releases: would delete 2 of 10" in new_err, "HAZARD 2 repaired: the port counts them"
 
 
 @pytest.mark.parametrize(
@@ -978,11 +1128,11 @@ def _tags_fixture(annotated: bool = True, *, dates: dict | None = None) -> dict:
         rules.append(rule("git/commits/", sha, json_body={"committer": {"date": dates[name]}}))
     rules.append(rule(("repos/" + RENET_REPO + "/tags"), rc=1))
     rules.append(rule("-X", "DELETE", "git/refs/tags"))
-    return {"gh": rules}
+    return {"gh": rules, "aws": [HEAD_404, STABLE_RULE]}
 
 
 def test_phase_2_dates_an_annotated_tag_from_its_tagger_and_deletes_the_old_one() -> None:
-    result = sides(
+    result, _port = sides_lifetime(
         "cleanup_tags",
         argv=("--versions", "1", "--days", "7"),
         fixture=_tags_fixture(annotated=True),
@@ -1008,7 +1158,7 @@ def test_phase_2_dates_an_annotated_tag_from_its_tagger_and_deletes_the_old_one(
 
 def test_phase_2_falls_back_to_the_commit_date_for_a_lightweight_tag() -> None:
     """Three calls instead of two, and the twin makes them for every tag it will go on to keep as well."""
-    result = sides(
+    result, _port = sides_lifetime(
         "cleanup_tags",
         argv=("--dry-run", "--versions", "0", "--days", "7"),
         fixture=_tags_fixture(annotated=False),
@@ -1030,10 +1180,11 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
     An annotated tag whose tagger date is missing needs the tag OBJECT resolved to its target commit before the commit date can be read, so the twin makes FOUR calls for that one tag. A port that reused the ref sha as the commit sha would still produce the right date here and the wrong call log, which is why this case exists: it was added after a planted defect of exactly that
     shape failed to turn anything red.
     """
-    result = sides(
+    result, _port = sides_lifetime(
         "cleanup_tags",
         argv=("--dry-run", "--versions", "0", "--days", "7"),
         fixture={
+            "aws": [HEAD_404, STABLE_RULE],
             "gh": [
                 rule(("repos/" + GH_REPO + "/tags"), json_body=[{"name": "v1.0.0"}]),
                 rule(
@@ -1048,7 +1199,7 @@ def test_phase_2_resolves_an_annotated_tag_with_no_tagger_date_in_two_more_calls
                 ),
                 rule("git/commits/commit-sha", json_body={"committer": {"date": ago(400.5)}}),
                 rule(("repos/" + RENET_REPO + "/tags"), rc=1),
-            ]
+            ],
         },
     )
     calls = calls_of(result[3], "gh")
@@ -1103,7 +1254,9 @@ def test_phase_2_retry_is_silenced_by_the_call_sites_redirection() -> None:
     """`retry_with_backoff ... 2>/dev/null` covers the FUNCTION, so the three `Attempt N/3` lines Phase 1 prints are invisible here. Getting this wrong would add three lines per failing delete."""
     fixture = _tags_fixture(annotated=True)
     fixture["gh"][-1] = rule("-X", "DELETE", "git/refs/tags", rc=1)
-    result = sides("cleanup_tags", argv=("--versions", "0", "--days", "7"), fixture=fixture)
+    result, _port = sides_lifetime(
+        "cleanup_tags", argv=("--versions", "0", "--days", "7"), fixture=fixture
+    )
     err = result[2].decode()
     assert "Attempt 1/3" not in err
     assert "Command failed after 3 attempts" not in err
@@ -1111,6 +1264,317 @@ def test_phase_2_retry_is_silenced_by_the_call_sites_redirection() -> None:
     # One deletable tag, three attempts, two backoffs: 2s then 4s.
     assert [c for c in result[3] if c.startswith("sleep")] == ["sleep\t2", "sleep\t4"]
     assert len([c for c in result[3] if "-X\tDELETE" in c]) == 3
+
+
+# --------------------------------------------------------------------------- RELEASE-TAG LIFETIME (worklist #a5a1f981). The edge R2 upload owns a release's lifetime; a tag goes only once R2 has removed `cli/<tag>/.released`. ---------------------------------------------------------------------------
+
+# The console tags as they stood before the scheduled run of 2026-10-07 deleted v1.3.0 and v1.3.1, plus the next release: v1.3.1..v2.1.0 (twenty) and v2.2.0, all sealed in R2, and v1.3.0, whose sentinel R2 had already removed.
+INCIDENT_SEALED = [
+    *("v1.3.%d" % n for n in range(1, 13)),
+    "v1.4.0",
+    "v1.4.1",
+    "v1.5.0",
+    "v1.6.0",
+    "v1.7.0",
+    "v1.8.0",
+    "v2.0.0",
+    "v2.1.0",
+    "v2.2.0",
+]
+INCIDENT_PRUNED = ["v1.3.0"]
+
+
+def _sentinel_rule(version: str, *, rc: int = 0, stderr: str = "") -> dict:
+    # The trailing `/.released` keeps `cli/v1.3.1/` from matching `cli/v1.3.10/`.
+    return rule("head-object", "cli/%s/.released" % version, rc=rc, stderr=stderr)
+
+
+def _incident_fixture(head: list | None = None) -> dict:
+    """Lightweight tags dated oldest-first, every one far outside the 14-day window, and `production` (a moving pointer) newer than all of them."""
+    names = INCIDENT_PRUNED + INCIDENT_SEALED
+    dates = {name: ago(200.5 - 3 * i) for i, name in enumerate(names)}
+    dates["production"] = ago(40.5)
+    gh = [rule(("repos/" + GH_REPO + "/tags"), json_body=[{"name": n} for n in dates])]
+    # Longest names first: `git/ref/tags/v1.3.1` is a substring of `git/ref/tags/v1.3.10`.
+    for name in sorted(dates, key=len, reverse=True):
+        gh.append(
+            rule(
+                "git/ref/tags/%s" % name,
+                json_body={"object": {"type": "commit", "sha": "s-" + name}},
+            )
+        )
+        gh.append(rule("git/commits/s-%s" % name, json_body={"committer": {"date": dates[name]}}))
+    gh.append(rule(("repos/" + RENET_REPO + "/tags"), rc=1))
+    gh.append(rule("-X", "DELETE", "git/refs/tags"))
+    if head is None:
+        head = [_sentinel_rule(v) for v in sorted(INCIDENT_SEALED, key=len, reverse=True)]
+        head.append(HEAD_404)
+    return {"gh": gh, "aws": [*head, STABLE_RULE]}
+
+
+def _would_delete(err: bytes) -> list[str]:
+    return re.findall(r"Would delete tag: (\S+)", err.decode())
+
+
+def test_delta_phase_2_never_deletes_a_tag_whose_sentinel_r2_still_holds() -> None:
+    """INTENTIONAL DELTA (Rule T). The CONTROL is the twin: newest 20 tags by date with `production` in one slot, so it deletes v1.3.1 and v1.3.2 while R2 still holds both sentinels -- the bijection break of run 37604651929. The port deletes exactly v1.3.0, the one tag whose sentinel R2 already removed."""
+    old, new = _twin_and_port("cleanup_tags", ("--dry-run",), _incident_fixture(), dict(R2_ENV))
+    assert "v1.3.1" in _would_delete(old[2]), (
+        "the control moved: the twin no longer reproduces the incident"
+    )
+    assert "v1.3.2" in _would_delete(old[2])
+    assert _would_delete(new[2]) == ["v1.3.0"]
+    err = new[2].decode()
+    # 22 release tags: the window keeps v2.2.0..v1.3.2, so v1.3.2 is kept by its slot, which `production` no longer takes, and v1.3.1 by its sentinel.
+    assert "Keeping tag v1.3.1: cli/v1.3.1/.released still exists in R2" in err
+    assert "Tags (%s): would delete 1 of 23" % GH_REPO in err
+    assert "production" not in _would_delete(new[2])
+    # Only tags outside the keep window were asked about, each once.
+    asked = [
+        c[c.index("--key") + 1]
+        for c in calls_of(new[3], "aws")
+        if c[:2] == ["s3api", "head-object"]
+    ]
+    assert asked == ["cli/v1.3.1/.released", "cli/v1.3.0/.released"]
+    assert not calls_of(old[3], "aws"), "the twin never asked R2"
+
+
+def test_delta_phase_2_really_deletes_only_the_unsealed_tag() -> None:
+    """The same run without `--dry-run`: the DELETE calls are the evidence, not the log."""
+    old, new = _twin_and_port("cleanup_tags", (), _incident_fixture(), dict(R2_ENV))
+    deleted_old = [
+        c[-1].rsplit("/", 1)[1] for c in calls_of(old[3], "gh") if c[1:3] == ["-X", "DELETE"]
+    ]
+    deleted_new = [
+        c[-1].rsplit("/", 1)[1] for c in calls_of(new[3], "gh") if c[1:3] == ["-X", "DELETE"]
+    ]
+    assert "v1.3.1" in deleted_old, "the control moved"
+    assert deleted_new == ["v1.3.0"]
+    assert b"Tags (%s): deleted 1 of 23" % GH_REPO.encode() in new[2]
+
+
+@pytest.mark.parametrize(
+    ("head", "env"),
+    [
+        # AccessDenied is not a 404: the probe could not answer.
+        (
+            [
+                rule(
+                    "head-object",
+                    rc=254,
+                    stderr="An error occurred (403) when calling the HeadObject operation: Forbidden\n",
+                )
+            ],
+            {},
+        ),
+        # The aws binary answers nothing useful at all.
+        ([rule("head-object", rc=255, stderr="Could not connect to the endpoint URL\n")], {}),
+        # No credentials: the question cannot even be asked.
+        ([HEAD_404], {"CLOUDFLARE_R2_ACCESS_KEY_ID": ""}),
+    ],
+    ids=["forbidden", "unreachable", "no-credentials"],
+)
+def test_delta_phase_2_an_unanswered_sentinel_probe_deletes_no_tag(head: list, env: dict) -> None:
+    """FAIL CLOSED. An unanswered probe must never read as an absent sentinel: no tag is deleted (not even v1.3.0, whose sentinel really is gone), each kept tag is named as UNCHECKED, and the run is latched as failed. The twin, the control, deletes regardless."""
+    full_env = dict(R2_ENV, GITHUB_ACTIONS="true", **env)
+    old, new = _twin_and_port("cleanup_tags", (), _incident_fixture(head), full_env)
+    assert any(c[1:3] == ["-X", "DELETE"] for c in calls_of(old[3], "gh")), "the control moved"
+    assert not any(c[1:3] == ["-X", "DELETE"] for c in calls_of(new[3], "gh"))
+    err = new[2].decode()
+    for version in ("v1.3.0", "v1.3.1"):
+        assert "Tag %s kept UNCHECKED" % version in err
+    assert "Tags (%s): deleted 0 of 23" % GH_REPO in err
+    assert b"::error title=Release tag unchecked::" in new[1]
+
+
+FORBIDDEN_HEAD = rule(
+    "head-object",
+    rc=254,
+    stderr="An error occurred (403) when calling the HeadObject operation: Forbidden\n",
+)
+
+
+def test_delta_phase_2_asks_r2_only_after_the_delete_budget() -> None:
+    """With the budget spent (`MAX_DELETES_PER_RUN=0`) no tag can be deleted this run, so R2 is not asked about any: the probe used to come first and could latch the run as failed for a tag nothing was going to touch. The CONTROL is the same run with budget, which does ask."""
+    env = dict(R2_ENV, GITHUB_ACTIONS="true", MAX_DELETES_PER_RUN="0")
+    _old, new = _twin_and_port("cleanup_tags", (), _incident_fixture([FORBIDDEN_HEAD]), env)
+    assert not calls_of(new[3], "aws"), "R2 was probed with no budget left"
+    assert b"Phase 2: hit MAX_DELETES_PER_RUN=0" in new[2]
+    assert b"::error title=Release tag unchecked::" not in new[1]
+    _old, funded = _twin_and_port(
+        "cleanup_tags", (), _incident_fixture([FORBIDDEN_HEAD]), dict(R2_ENV, GITHUB_ACTIONS="true")
+    )
+    assert calls_of(funded[3], "aws"), "the control moved: with budget R2 is asked"
+
+
+def test_delta_phase_2_a_dry_run_does_not_latch_an_unanswered_probe() -> None:
+    """A dry run deletes nothing, so an unanswered probe is named but must not latch the run as failed (no `::error`, no failed latch). The CONTROL is the live run, which still latches."""
+    env = dict(R2_ENV, GITHUB_ACTIONS="true")
+    _old, dry = _twin_and_port(
+        "cleanup_tags", ("--dry-run",), _incident_fixture([FORBIDDEN_HEAD]), env
+    )
+    assert b"::error title=Release tag unchecked::" not in dry[1]
+    assert b"Tag v1.3.1 kept UNCHECKED" in dry[2]
+    _old, live = _twin_and_port("cleanup_tags", (), _incident_fixture([FORBIDDEN_HEAD]), env)
+    assert b"::error title=Release tag unchecked::" in live[1], "the control moved"
+
+
+def test_delta_phase_2_a_pointer_tag_does_not_take_a_release_slot() -> None:
+    """`--versions 2`: the twin indexes `production` with the releases, so v1.0.0 is third and goes. The port indexes releases among releases, so v2.0.0 and v1.0.0 both keep their slots and `production` keeps its own."""
+    fixture = _tags_fixture(
+        annotated=False,
+        dates={"production": ago(30.5), "v2.0.0": ago(60.5), "v1.0.0": ago(90.5)},
+    )
+    old, new = _twin_and_port(
+        "cleanup_tags", ("--dry-run", "--versions", "2", "--days", "1"), fixture, dict(R2_ENV)
+    )
+    assert _would_delete(old[2]) == ["v1.0.0"], "the control moved"
+    assert _would_delete(new[2]) == []
+    assert not calls_of(new[3], "aws"), "nothing outside a keep window, so nothing to ask R2"
+
+
+def test_delta_phase_2_renet_tags_are_not_held_by_cli_sentinels() -> None:
+    """renet writes no `.released` sentinel (`write_release_sentinel.PRODUCT` is `cli`), so its tags keep the date-and-count rule and R2 is never asked about them."""
+    dates = {"v2.0.0": ago(60.5), "v1.0.0": ago(90.5)}
+    gh = [rule(("repos/" + GH_REPO + "/tags"), rc=1)]
+    gh.append(rule(("repos/" + RENET_REPO + "/tags"), json_body=[{"name": n} for n in dates]))
+    for name, date in dates.items():
+        gh.append(
+            rule(
+                "git/ref/tags/%s" % name,
+                json_body={"object": {"type": "commit", "sha": "s-" + name}},
+            )
+        )
+        gh.append(rule("git/commits/s-%s" % name, json_body={"committer": {"date": date}}))
+    _old, new = _twin_and_port(
+        "cleanup_tags", ("--dry-run", "--versions", "1", "--days", "1"), {"gh": gh}, dict(R2_ENV)
+    )
+    assert _would_delete(new[2]) == ["v1.0.0"]
+    assert not calls_of(new[3], "aws")
+    assert b"Tags (%s): would delete 1 of 2" % RENET_REPO.encode() in new[2]
+
+
+@pytest.mark.parametrize("phase", ["cleanup_releases", "cleanup_tags"])
+def test_delta_a_dry_run_summary_counts_every_would_delete_line(phase: str) -> None:
+    """HAZARD 2 repaired. The control: the twin's summary reads 0 however many lines it printed. The port's number equals the count of `[DRY-RUN] Would delete` lines."""
+    if phase == "cleanup_releases":
+        fixture = _releases(*[("v1.0.%d" % i, ago(90.5 + i)) for i in range(4)])
+        summary = rb"Releases: would delete ([0-9]+) of"
+    else:
+        fixture = _tags_fixture(
+            annotated=False, dates={"v1.0.%d" % i: ago(90.5 + i) for i in range(4)}
+        )
+        summary = rb"Tags \([^)]*" + re.escape(GH_REPO.encode()) + rb"\): would delete ([0-9]+) of"
+    old, new = _twin_and_port(
+        phase, ("--dry-run", "--versions", "1", "--days", "1"), fixture, dict(R2_ENV)
+    )
+    old_summary = re.search(summary, old[2])
+    new_summary = re.search(summary, new[2])
+    assert old_summary is not None, "the twin printed no summary line"
+    assert new_summary is not None, "the port printed no summary line"
+    assert old[2].count(b"[DRY-RUN] Would delete") == 3
+    assert old_summary.group(1) == b"0", "the control moved"
+    assert new[2].count(b"[DRY-RUN] Would delete") == 3
+    assert new_summary.group(1) == b"3"
+
+
+def test_delta_phase_1_keeps_the_tag_of_a_pruned_release_while_r2_holds_its_sentinel() -> None:
+    """Phase 1's best-effort tag delete is the second door to the same break. The release goes; its tag stays while `cli/v1.3.1/.released` exists. The control: the twin deletes both."""
+    fixture = _releases(("v1.3.1", ago(90.5)))
+    fixture["aws"] = [_sentinel_rule("v1.3.1"), STABLE_RULE]
+    old, new = _twin_and_port(
+        "cleanup_releases", ("--versions", "0", "--days", "1"), fixture, dict(R2_ENV)
+    )
+    tag_ref = ["api", "-X", "DELETE", "repos/" + GH_REPO + "/git/refs/tags/v1.3.1"]
+    assert tag_ref in calls_of(old[3], "gh"), "the control moved"
+    assert tag_ref not in calls_of(new[3], "gh")
+    assert ["release", "delete", "v1.3.1", "--repo", GH_REPO, "--yes"] in calls_of(new[3], "gh")
+    assert b"Keeping tag v1.3.1: cli/v1.3.1/.released still exists in R2" in new[2]
+
+
+def test_delta_phase_1_an_unanswered_probe_keeps_the_tag_and_fails_the_run() -> None:
+    fixture = _releases(("v1.3.1", ago(90.5)))
+    fixture["aws"] = [rule("head-object", rc=255, stderr="Could not connect\n"), STABLE_RULE]
+    _old, new = _twin_and_port(
+        "cleanup_releases",
+        ("--versions", "0", "--days", "1"),
+        fixture,
+        dict(R2_ENV, GITHUB_ACTIONS="true"),
+    )
+    assert not any("git/refs/tags" in " ".join(c) for c in calls_of(new[3], "gh"))
+    assert b"Tag v1.3.1 kept UNCHECKED" in new[2]
+    assert b"::error title=Release tag unchecked::" in new[1]
+
+
+def _stable_at(version: str) -> dict:
+    return rule("cp", "cli/stable/manifest.json", raw='{"version":"%s"}' % version)
+
+
+def test_delta_phase_2_never_deletes_a_promotion_candidate_tag() -> None:
+    """INTENTIONAL DELTA (Rule T, PLAN-cd-errors-in-ci W1/W2): the retention contract holds an `in_walk` tag. With stable at v1.2.9, v1.3.0 is outside the window and its sentinel is gone, but `check_soak_period` may still select it, so its tag stays and R2 is never even asked about it. The control is the twin, which deletes it."""
+    fixture = _incident_fixture()
+    fixture["aws"].insert(0, _stable_at("1.2.9"))
+    old, new = _twin_and_port("cleanup_tags", (), fixture, dict(R2_ENV))
+    deleted_old = [
+        c[-1].rsplit("/", 1)[1] for c in calls_of(old[3], "gh") if c[1:3] == ["-X", "DELETE"]
+    ]
+    assert "v1.3.0" in deleted_old, "the control moved"
+    assert not any(c[1:3] == ["-X", "DELETE"] for c in calls_of(new[3], "gh"))
+    err = new[2].decode()
+    assert "Keeping tag v1.3.0: newer than stable v1.2.9, a promotion candidate" in err
+    assert "Keeping tag v1.3.1: newer than stable v1.2.9, a promotion candidate" in err
+    aws = calls_of(new[3], "aws")
+    assert [c[:2] for c in aws] == [["s3", "cp"]], "one stable read, and no sentinel probe"
+
+
+def test_delta_phase_2_an_unreadable_stable_bound_deletes_no_release_tag() -> None:
+    """FAIL CLOSED. R2 answers the sentinel probes but not `cli/stable/manifest.json`: every console release tag outside the window may be a promotion candidate, so none is deleted, each is named UNCHECKED, and the run is latched as failed."""
+    fixture = _incident_fixture()
+    fixture["aws"].insert(0, rule("cp", "cli/stable/manifest.json", rc=1, stderr="403\n"))
+    old, new = _twin_and_port("cleanup_tags", (), fixture, dict(R2_ENV, GITHUB_ACTIONS="true"))
+    assert any(c[1:3] == ["-X", "DELETE"] for c in calls_of(old[3], "gh")), "the control moved"
+    assert not any(c[1:3] == ["-X", "DELETE"] for c in calls_of(new[3], "gh"))
+    err = new[2].decode()
+    for version in ("v1.3.0", "v1.3.1"):
+        assert "Tag %s kept UNCHECKED: could not read cli/stable/manifest.json" % version in err
+    assert b"::error title=Release tag unchecked::" in new[1]
+    # Read once, not once per tag.
+    assert [c[:2] for c in calls_of(new[3], "aws")] == [["s3", "cp"]]
+
+
+def test_delta_phase_1_never_deletes_a_promotion_candidate_release() -> None:
+    """Phase 1 follows the same contract: a release outside the window that `in_walk` may still promote keeps its Release and its tag. The control: the twin deletes both."""
+    fixture = _releases(("v1.3.0", ago(90.5)))
+    fixture["aws"].insert(0, _stable_at("1.2.9"))
+    old, new = _twin_and_port(
+        "cleanup_releases", ("--versions", "0", "--days", "1"), fixture, dict(R2_ENV)
+    )
+    delete = ["release", "delete", "v1.3.0", "--repo", GH_REPO, "--yes"]
+    assert delete in calls_of(old[3], "gh"), "the control moved"
+    assert delete not in calls_of(new[3], "gh")
+    assert not any("git/refs/tags" in " ".join(c) for c in calls_of(new[3], "gh"))
+    assert (
+        b"Keeping release v1.3.0 and its tag: newer than stable v1.2.9, a promotion candidate"
+        in new[2]
+    )
+
+
+def test_delta_phase_8d_a_failed_sentinel_listing_cannot_make_a_sealed_release_an_orphan() -> None:
+    """`rsv.list_sentinels` reads a failed listing as an empty bucket (its DEFECT 2). With the tag already gone, a sealed v9.0.0 then classified as an orphan and the twin removed the whole prefix. The port re-asks the direct probe, which answers YES, and keeps it."""
+    fixture = r2_fixture(
+        rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line("v9.0.0/")),
+        # The listing FAILS: exit 255, nothing on stdout.
+        rule("list-objects-v2", "ends_with(Key", rc=255, raw="", stderr="Could not connect\n"),
+        rule("--prefix cli/v9.0.0/", raw="%s\n" % ago(30.5)),
+        _sentinel_rule("v9.0.0"),
+        gh=[rule("tags", raw="")],
+    )
+    old, new = _twin_and_port("cleanup_r2", (), fixture, dict(R2_ENV, GITHUB_ACTIONS="true"))
+    rm = ["s3", "rm", "s3://%s/cli/v9.0.0/" % RELEASES_BUCKET]
+    assert any(c[:3] == rm for c in calls_of(old[3], "aws")), "the control moved"
+    assert not any(c[:3] == rm for c in calls_of(new[3], "aws"))
+    assert b"8d: cli/v9.0.0 kept" in new[2]
+    assert b"::error title=Orphan check unanswered::" in new[1]
 
 
 # --------------------------------------------------------------------------- PHASE 3: GHCR PACKAGE VERSIONS ---------------------------------------------------------------------------
@@ -1811,6 +2275,7 @@ def r2_fixture(*extra_aws: dict, gh: list | None = None) -> dict:
             rule("list-multipart-uploads", raw="null\n"),
             rule("s3", "rm"),
             rule("s3", "ls", raw=""),
+            HEAD_404,
         ],
         "gh": gh if gh is not None else [rule("tags", raw="")],
     }
@@ -1926,7 +2391,7 @@ def test_phase_8c_deletes_a_legacy_prefix_only_when_it_holds_something() -> None
 
 
 def test_phase_8d_keeps_a_committed_release_and_reaps_an_aged_orphan() -> None:
-    result = sides(
+    result, _port = sides_lifetime(
         "cleanup_r2",
         fixture=r2_fixture(
             rule(
@@ -2014,7 +2479,7 @@ def test_phase_8d_latches_the_run_as_failed_on_drift_in_either_direction() -> No
 
 
 def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
-    """`.ci/config/release-contract-floor.txt` is the ratchet, and drift below it is not actionable. Both sides read the same file, through different code."""
+    """`.ci/config/release-contract-floor.txt` is the ratchet, and drift below it is not actionable. The port reads the fixture root's copy (`_fixture_root`), pinned at the value the twin's goldens were recorded with."""
     result = sides(
         "cleanup_r2",
         fixture=r2_fixture(
@@ -2025,11 +2490,8 @@ def test_phase_8d_grandfathers_a_version_below_the_pre_contract_floor() -> None:
         env=R2_ENV,
     )
     err = result[2].decode()
-    # Read, not pinned: every release advances this file (v1.2.21 -> v1.2.22 with v1.4.0 on 2026-09-30 reddened the pinned form).
-    floor = (
-        (ROOT / ".ci" / "config" / "release-contract-floor.txt").read_text(encoding="utf-8").strip()
-    )
-    assert floor.startswith("v"), "release-contract-floor.txt holds no version: %r" % floor
+    # PINNED IN THE FIXTURE, not read from the repository: every release advances the repository's file, and a test that followed it judged the release chain (see FIXTURE_CONTRACT_FLOOR).
+    floor = FIXTURE_CONTRACT_FLOOR
     assert "8d: pre-contract floor = %s (versions below this are grandfathered)" % floor in err
     assert "drift:" not in err
     assert "found 0 drift finding(s)" in err
@@ -2144,7 +2606,7 @@ def test_phase_8_dry_run_makes_no_destructive_call_at_all() -> None:
     """The whole phase at once: every arm named, nothing removed. If any `aws s3 rm` or `abort-multipart-upload` appears in the log, the dry run is a lie."""
     listing = "%s       12 apt/stable/rediacc-cli_0.0.1_amd64.deb\n" % s3_ago(10.5)
     uploads = json.dumps([{"Key": "k", "UploadId": "u", "Initiated": ago(3.5)}])
-    result = sides(
+    result, _port = sides_lifetime(
         "cleanup_r2",
         argv=("--dry-run",),
         fixture=r2_fixture(
@@ -3277,10 +3739,16 @@ def test_an_unset_gh_token_refuses_before_any_phase_runs() -> None:
 # --------------------------------------------------------------------------- COVERAGE CONTROL ---------------------------------------------------------------------------
 
 
+# Helpers that call `sides` on their caller's behalf; see `_phases_with_a_case`.
+DIFFERENTIAL_WRAPPERS = ("sides_lifetime",)
+
+
 def _phases_with_a_case() -> set[str]:
     """Every phase name this file hands to `sides(...)`, read from the source rather than from a runtime accumulator.
 
     A literal first argument counts, and so does a name bound by a `for` over a literal tuple (the Cloudflare skip case). A `sides` call whose phase cannot be resolved either way is itself a failure, so the scan cannot quietly under-count.
+
+    `DIFFERENTIAL_WRAPPERS` run `sides` for their caller, so THEIR call sites are scanned the same way, and the one `sides` call inside each wrapper's own body (whose phase is a parameter) is the only call exempted.
     """
     tree = ast.parse(pathlib.Path(__file__).read_text(encoding="utf-8"))
     parents: dict[ast.AST, ast.AST] = {}
@@ -3293,8 +3761,13 @@ def _phases_with_a_case() -> set[str]:
         if not (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Name)
-            and node.func.id == "sides"
+            and node.func.id in ("sides", *DIFFERENTIAL_WRAPPERS)
         ):
+            continue
+        owner = parents.get(node)
+        while owner is not None and not isinstance(owner, ast.FunctionDef):
+            owner = parents.get(owner)
+        if isinstance(owner, ast.FunctionDef) and owner.name in DIFFERENTIAL_WRAPPERS:
             continue
         first = node.args[0] if node.args else None
         if isinstance(first, ast.Constant) and isinstance(first.value, str):

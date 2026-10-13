@@ -1,4 +1,4 @@
-"""The four `.ci/media/verify.sh` helpers `media_verify.py` does not carry yet.
+"""The four chain helpers of the deleted `.ci/media/verify.sh` that `media_verify.py` does not carry.
 
 `media_chain_probe`, `media_chain_mutate`, `media_chain_run` and `media_assert_absent_from_origins`.
 
@@ -31,10 +31,15 @@ WHERE THIS REIMPLEMENTS awk AND sed, AND WHY THE ANSWERS AGREE.
   `media_chain_run` is `"$BASH" "$repo/$script" "$@" 2>&1`, merged, with the
   status returned. `run()` returns the `RunResult` so a caller can read
   `.combined` (what `LAST_CHAIN` held) and `.rc` separately. The MEDIA_COVERAGE_FILE
-  arm of the bash version is NOT ported: it exists so the bash suite's own
-  coverage probe can trace a chain run, and the Python side has no such probe.
-  Its absence is visible rather than assumed -- `run()` refuses if the variable
-  is set, instead of quietly tracing nothing.
+  arm IS ported, and was added when `.ci/media/coverage.sh` began driving these
+  pytest files (PLAN-retire-bash-oracles section 12, unit U2): the earlier refusal
+  made every chain test FAIL under the probe, which the probe then reported as a
+  red gate test. The arm is the bash one: the chain starts at `./run.sh`, so there
+  is no code string to splice a prelude into, and the options arrive in the
+  environment, with BASH_XTRACEFD keeping the trace off the captured streams. The
+  probe counts only lines of the REAL `.ci/media` files, and a chain runs a sandbox
+  COPY, so a traced chain adds nothing to its numbers; the trace is still written,
+  so a reader of the raw file sees the chain ran.
 """
 
 import os
@@ -48,6 +53,15 @@ from rediacc_ci.tests.gates.media_verify import (
     MEDIA_DIR,
     media_chain_sandbox,
     media_origins,
+)
+
+# `env` for the traced chain arm in `run()`, resolved now for the reason `_BASH` is.
+_ENV = shutil.which("env") or "/usr/bin/env"
+
+# The traced chain: `$0` is `env`, `$1` the trace file, the rest the chain's own argv.
+_TRACED_CHAIN = (
+    'exec 9>>"$1"; shift; exec "$0" BASH_XTRACEFD=9 '
+    "PS4='+|${BASH_SOURCE:-}|${LINENO}|' SHELLOPTS=xtrace \"$@\""
 )
 
 __all__ = [
@@ -119,13 +133,22 @@ def run(repo: pathlib.Path, script: str, *argv: str) -> harness.RunResult:
 
     Called from inside `harness.fake_bin`, so PATH holds only what the test admitted -- for the whole chain that is `uname` and `dirname` and nothing
     else. Measured, not assumed: run.sh resolves ROOT_DIR with dirname on its
-    first line, and .ci/scripts/lib/common.sh runs detect_os at source time.
+    first line.
     """
-    if os.environ.get("MEDIA_COVERAGE_FILE"):
-        raise ChainError(
-            "MEDIA_COVERAGE_FILE is set, but the Python chain runner has no xtrace arm: "
-            "it would run the chain and record NOTHING, which reads as covered. The bash "
-            "twin's coverage seam is what that variable is for."
+    target = os.environ.get("MEDIA_COVERAGE_FILE")
+    if target:
+        # `env`, not an assignment in front of `exec`: SHELLOPTS is readonly in a running bash. Resolved at import time (`_ENV`), because PATH here is the emptied `fake_bin` one.
+        return harness.run(
+            [
+                _BASH,
+                "-c",
+                _TRACED_CHAIN,
+                _ENV,
+                target,
+                _BASH,
+                str(repo / script),
+                *argv,
+            ]
         )
     return harness.run([_BASH, str(repo / script), *argv])
 

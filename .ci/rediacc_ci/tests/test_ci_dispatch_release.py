@@ -1,4 +1,4 @@
-"""`rediacc_ci.ci.dispatch_release` against its bash twin.
+"""`rediacc_ci.ci.dispatch_release` against the frozen output of its retired bash twin (`tests/goldens/twins/ci.dispatch-release.jsonl`).
 
 BOTH SIDES ARE DRIVEN THROUGH ONE RECORDING FAKE `gh` on a scratch PATH. The twin never runs `gh` in a way a test could safely let reach GitHub -- the decide path is a real API read and the dispatch path STARTS A RELEASE -- so the fake is not a convenience, it is the only way this differential can exist. It logs its own argv as `call: gh ...` on stderr and answers from three
 environment variables:
@@ -86,7 +86,14 @@ def run_both(
     path = "%s:%s" % (bindir, os.environ.get("PATH", "/usr/bin:/bin"))
     old_env = diff.env_for(**extra, PATH=path)
     new_env = diff.env_for(**extra, PATH=path, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1")
-    old = diff.bash_streams("bash %s %s" % (TWIN, quoted), env=old_env, tty=tty, timeout=30)
+    old = diff.twin_streams(
+        TWIN,
+        "bash %s %s" % (TWIN, quoted),
+        env=old_env,
+        tty=tty,
+        timeout=30,
+        work=(str(bindir),),
+    )
     new = diff.bash_streams("python3 -m %s %s" % (MODULE, quoted), env=new_env, tty=tty, timeout=30)
     return old, new
 
@@ -348,7 +355,7 @@ def test_decide_only_writes_skip_release_to_github_output(
     new_out = tmp_path / "new.txt"
     path = "%s:%s" % (bindir, os.environ.get("PATH", "/usr/bin:/bin"))
 
-    def drive(github_output: pathlib.Path, cmd: str, stdout: str) -> tuple[int, str, str]:
+    def drive(github_output: pathlib.Path, cmd: str, stdout: str, *, twin: bool) -> None:
         env = diff.env_for(
             **BASE,
             FAKE_GH_STDOUT=stdout,
@@ -357,17 +364,26 @@ def test_decide_only_writes_skip_release_to_github_output(
             PYTHONPATH=".ci",
             PYTHONDONTWRITEBYTECODE="1",
         )
-        return diff.bash_streams(cmd, env=env, timeout=30)
+        if not twin:
+            diff.bash_streams(cmd, env=env, timeout=30)
+            return
+        diff.twin_run(
+            TWIN,
+            ["decide-only output", stdout],
+            lambda: diff.bash_streams(cmd, env=env, timeout=30),
+            files=(str(github_output),),
+            work=(str(bindir), str(tmp_path)),
+        )
 
-    drive(old_out, "bash %s --decide-only" % TWIN, "570 bump-none")
-    drive(new_out, "python3 -m %s --decide-only" % MODULE, "570 bump-none")
+    drive(old_out, "bash %s --decide-only" % TWIN, "570 bump-none", twin=True)
+    drive(new_out, "python3 -m %s --decide-only" % MODULE, "570 bump-none", twin=False)
     assert old_out.read_text(encoding="utf-8") == "skip_release=true\n"
     assert new_out.read_text(encoding="utf-8") == old_out.read_text(encoding="utf-8")
 
     old_out.write_text("", encoding="utf-8")
     new_out.write_text("", encoding="utf-8")
-    drive(old_out, "bash %s --decide-only" % TWIN, "571 feature")
-    drive(new_out, "python3 -m %s --decide-only" % MODULE, "571 feature")
+    drive(old_out, "bash %s --decide-only" % TWIN, "571 feature", twin=True)
+    drive(new_out, "python3 -m %s --decide-only" % MODULE, "571 feature", twin=False)
     assert old_out.read_text(encoding="utf-8") == ""
     assert new_out.read_text(encoding="utf-8") == ""
 
@@ -391,7 +407,16 @@ def test_a_fail_open_path_writes_nothing_to_github_output(
             PYTHONPATH=".ci",
             PYTHONDONTWRITEBYTECODE="1",
         )
-        exit_code, _out, _err = diff.bash_streams(cmd, env=env, timeout=30)
+        if label == "old":
+            exit_code, _out, _err, _ = diff.twin_run(
+                TWIN,
+                ["fail-open output"],
+                lambda env=env, cmd=cmd: diff.bash_streams(cmd, env=env, timeout=30),
+                files=(str(target),),
+                work=(str(bindir), str(tmp_path)),
+            )
+        else:
+            exit_code, _out, _err = diff.bash_streams(cmd, env=env, timeout=30)
         assert exit_code == 0
         assert not target.exists() or target.read_text(encoding="utf-8") == ""
 
@@ -435,7 +460,17 @@ def decide_with_output(
             PYTHONPATH=".ci",
             PYTHONDONTWRITEBYTECODE="1",
         )
-        streams = diff.bash_streams(cmd, env=env, timeout=30)
+        if label == "old":
+            rc, out, err, _ = diff.twin_run(
+                TWIN,
+                ["decide with output", repr(sorted(env_extra.items()))],
+                lambda env=env, cmd=cmd: diff.bash_streams(cmd, env=env, timeout=30),
+                files=(str(target),),
+                work=(str(bindir), str(tmp_path)),
+            )
+            streams = (rc, out, err)
+        else:
+            streams = diff.bash_streams(cmd, env=env, timeout=30)
         results.append((streams, target.read_text(encoding="utf-8")))
     (old, old_file), (new, new_file) = results
     assert new == old, "streams: %r vs %r" % (new, old)
@@ -571,8 +606,7 @@ def test_full_mode_passes_stable_from_its_own_decision(bindir: pathlib.Path) -> 
 
 
 def test_the_stable_label_is_the_twins_and_matches_exactly() -> None:
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        assert "STABLE_LABEL='%s'" % port.STABLE_LABEL in fh.read()
+    assert port.STABLE_LABEL == "release"
     assert port.has_stable_label("feature,release") is True
     assert port.has_stable_label("release") is True
     for labels in ("prerelease", "release-notes", "releases", "", "bump-none"):
@@ -705,25 +739,20 @@ def test_no_color_suppresses_colour_on_both_sides(bindir: pathlib.Path) -> None:
 
 def test_the_jq_filter_is_the_twins_filter_verbatim() -> None:
     """A reworded filter would silently change WHICH PRs the decision sees."""
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        text = fh.read()
-    assert "--jq '%s'" % port.PULLS_JQ in text
+    assert port.PULLS_JQ == (
+        '.[] | select(.merged_at != null) | "\\(.number) \\((.labels // []) | '
+        'map(.name) | join(","))"'
+    )
 
 
 def test_the_skip_label_and_the_modes_are_the_twins() -> None:
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        text = fh.read()
-    assert "SKIP_LABEL='%s'" % port.SKIP_LABEL in text
-    for flag in ("--decide-only", "--dispatch-only"):
-        assert "    %s) MODE=" % flag in text
+    assert port.SKIP_LABEL == "bump-none"
     assert set(port.MODES) == {"", "--decide-only", "--dispatch-only"}
 
 
 def test_the_endpoint_is_commits_sha_pulls_not_a_search() -> None:
     """`commits/{sha}/pulls` follows rebased commits; a search query does not."""
     assert port.pulls_url("o/r", "deadbeef") == "repos/o/r/commits/deadbeef/pulls"
-    with open("%s/%s" % (diff.repo(), TWIN), encoding="utf-8") as fh:
-        assert "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" in fh.read()
 
 
 def test_the_helpers_are_exercised_directly() -> None:

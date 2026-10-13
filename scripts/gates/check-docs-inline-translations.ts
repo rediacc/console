@@ -21,7 +21,7 @@
  *   1 - Some keys are invalid or inconsistent (including line number mismatches)
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * id: check:ci-i18n-docs-inline

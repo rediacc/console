@@ -1,11 +1,11 @@
-"""`rediacc_ci.core.devbox` against the live `.ci/lib/devbox.sh`: all fifty-five functions.
+"""`rediacc_ci.core.devbox` against the transcripts frozen from the retired `.ci/lib/devbox.sh` (`goldens/twins/lib.devbox.jsonl`): all fifty-five functions.
 
-THE TWIN IS STILL HERE AND IS STILL SOURCED. `.ci/rediacc_ci/setup/bridge.py:35`, `.ci/rediacc_ci/setup/shadow_driver.py:136`, `.ci/rediacc_ci/dev/shadow_driver.py:140` and `.ci/lib/account.sh:1090` still source it (the deleted `.ci/legacy/run-legacy.sh` was a fifth), nothing is cut over, and this file drives the bash for real on every run: `rediacc_ci.core.devbox_shadow_driver` sources `devbox.sh` through the same prelude `bridge.py` uses and calls the twin's own functions, then does the same work through the port, and the two transcripts are compared byte for byte.
+THE TWIN IS DELETED. The bash side of every scenario was driven by `rediacc_ci.core.devbox_shadow_driver` while `devbox.sh` existed and its full transcripts are the golden; this file compares the port's live transcript against them. A Rule-T change to the port is recorded with `regolden --source port`.
 
 WHAT IS COVERED is decided by the driver's twenty-three scenarios and stated in its module docstring rather than restated here. Seven are the first slice's pure-function scenarios; sixteen are the STUB-FARM scenarios, in which `docker`, `sudo`, `curl`, `sleep`, `getent`, `stat` and `ss` are stubs that record every call and answer from a scripted table, so a side-effecting function is compared on the calls it MADE as well as on what it printed.
 
 THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcripts would pass forever: every scenario must clear a floor of observations; every one of the fifty-five functions must be the subject of at least one step; the stub farm must really shadow the host's `docker`; and `test_a_planted_defect_is_caught` plants real defects into the port IN PROCESS and requires the live bash transcript to disagree with each.
-THE TWIN'S OWN DEFECTS are pinned against the LIVE TWIN's transcript, not against the port: `SCENARIO_CLAIMS` asserts each one inside the scenario's own comparison, so a twin that is later fixed fails here loudly rather than silently diverging from a port that still reproduces it.
+THE TWIN'S OWN DEFECTS are pinned against the FROZEN TWIN's transcript, not against the port: `SCENARIO_CLAIMS` asserts each one inside the scenario's own comparison, so a twin that is later fixed fails here loudly rather than silently diverging from a port that still reproduces it.
 
 NO XDIST GROUP. Each scenario's comparison and its claims are ONE test, and each side of a scenario is driven once per pytest RUN: `drive` keeps the transcript in the run's shared directory under a `flock`, so a worker that needs a side another worker already drove reads it instead of driving it again. The driver's fixed work directory is serialised by its own `flock`, which is a lock the scheduler does not need to know about.
 """
@@ -22,6 +22,8 @@ import pathlib
 import pty
 import re
 import shutil
+import socket
+import stat
 import subprocess
 import sys
 
@@ -30,7 +32,8 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import devbox
 from rediacc_ci.core import devbox_shadow_driver as driver
-from rediacc_ci.tests.gates import test_gate_devbox_slug as slug_gate
+from rediacc_ci.setup import bridge
+from rediacc_ci.tests import differential as diff
 
 TWIN = ".ci/lib/devbox.sh"
 PORT = ".ci/rediacc_ci/core/devbox.py"
@@ -76,14 +79,6 @@ CHEAP_STUB_SCENARIOS = ("identity-worktree", "identity-gone")
 # A legal DNS label, which is what the slug has to be for traefik to route it at all. The same expression `test_gate_devbox_slug.py:40` applies.
 HOSTNAME_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$")
 
-# The four real `source` sites, each with the line that does it. A cut-over would delete one of these, and this differential would then be comparing a library nothing loads.
-SOURCE_SITES = (
-    (".ci/rediacc_ci/setup/bridge.py", 'source "$ROOT_DIR/.ci/lib/devbox.sh"'),
-    (".ci/rediacc_ci/setup/shadow_driver.py", 'source "$ROOT_DIR/.ci/lib/devbox.sh"'),
-    (".ci/rediacc_ci/dev/shadow_driver.py", 'source "$ROOT_DIR/.ci/lib/devbox.sh"'),
-    (".ci/lib/account.sh", 'source "$CONSOLE_ROOT_DIR/.ci/lib/devbox.sh"'),
-)
-
 # The functions that are NOT ported. Empty, and asserted empty: the whole twin has a counterpart.
 NOT_PORTED_FUNCTIONS: tuple[str, ...] = ()
 
@@ -103,9 +98,9 @@ def _shared_run_dir(tmp_path_factory) -> None:
 
 
 def inputs_digest() -> str:
-    """The twin, the port and the driver as bytes: a transcript is reused only while all three are the ones that produced it."""
+    """The port and the driver as bytes: a transcript is reused only while both are the ones that produced it."""
     digest = hashlib.sha256()
-    for relative in (TWIN, PORT, DRIVER):
+    for relative in (PORT, DRIVER):
         digest.update((paths.repo_root() / relative).read_bytes())
     return digest.hexdigest()[:16]
 
@@ -116,6 +111,8 @@ def drive(side: str, scenario: str) -> tuple[int, str, str]:
     Shared across xdist workers through a file in the run's own directory, under an exclusive `flock`, so the `image` twin three tests read is driven once rather than once per worker that happens to run one of them. Every transcript is still a live run of this run's files: the directory is new per run, and the key carries `inputs_digest()`.
     """
     key = (side, scenario)
+    if side == "old":
+        return frozen_old(scenario)
     if key not in _CACHE:
         if not _RUN_DIR:
             _CACHE[key] = run_driver(side, scenario)
@@ -133,6 +130,23 @@ def drive(side: str, scenario: str) -> tuple[int, str, str]:
     return _CACHE[key]
 
 
+def frozen_old(scenario: str) -> tuple[int, str, str]:
+    """The retired twin's transcript of one scenario, from `goldens/twins/lib.devbox.jsonl`."""
+    return diff.twin_call(
+        TWIN,
+        [scenario],
+        _retired,
+        port=lambda: run_driver("new", scenario),
+    )
+
+
+def _retired() -> tuple[int, str, str]:
+    raise RuntimeError(
+        "%s is retired: re-record a Rule-T change with `%s %s --source port --reason ...`"
+        % (TWIN, diff.REGOLDEN_VERB, TWIN)
+    )
+
+
 def run_driver(side: str, scenario: str) -> tuple[int, str, str]:
     """The driver as a subprocess, which is how the ledger runs it."""
     proc = subprocess.run(
@@ -142,8 +156,6 @@ def run_driver(side: str, scenario: str) -> tuple[int, str, str]:
             DRIVER_MODULE,
             "--side",
             side,
-            "--twin",
-            TWIN,
             "--port",
             PORT,
             scenario,
@@ -306,16 +318,16 @@ def claims_image(obs: dict[str, list[str]]) -> None:
     # An absent one is built from Dockerfile.uid with the host's ids, tagged by the base's image id.
     # The fixture's recipe is `ARG BASE\nFROM ${BASE}\n`, so its hash is fixed; an edited recipe is a different tag.
     recipe = hashlib.sha256(b"ARG BASE\nFROM ${BASE}\n").hexdigest()[:12]
+    # The ids are the driver's pinned ones (`GOLDEN_HOST_IDS`), not this process's: the transcript is the recording host's.
     tag = "%s:uid%d-gid%d-52b359d8cc2e-%s" % (
         devbox.DEVBOX_UID_IMAGE_REPO,
-        os.geteuid(),
-        os.getegid(),
+        *driver.GOLDEN_HOST_IDS,
         recipe,
     )
     assert stdout_of(obs["run-image-derive"]) == (tag + "\n").encode()
     build = next(call for call in calls_of(obs["ensure-uid-builds"]) if call[1] == "build")
     assert build[2:4] == ["-t", tag]
-    assert "HOST_UID=%d" % os.geteuid() in build
+    assert "HOST_UID=%d" % driver.GOLDEN_HOST_IDS[0] in build
     assert build[-2].endswith("/.devcontainer/Dockerfile.uid")
     # Unreadable ids are a failure, never a silent run of the base.
     assert status_of(obs["ensure-uid-unresolved"]) == 1
@@ -384,27 +396,11 @@ def _hex_stdout(line: str) -> bytes:
 
 @functools.cache
 def _twin_stdout_for(values: tuple[str, ...]) -> tuple[bytes, ...]:
-    """The live twin's `devbox_slugify` stdout for each value, in one bash process."""
-    root = paths.repo_root()
-    script = (
-        "set -euo pipefail\n"
-        'ROOT_DIR="%s"\n'
-        'source "$ROOT_DIR/.ci/config/constants.sh"\n'
-        'source "$ROOT_DIR/.ci/scripts/lib/toolchain.sh"\n'
-        'source "$ROOT_DIR/.ci/lib/local-common.sh"\n'
-        'source "$ROOT_DIR/.ci/lib/service.sh"\n'
-        'source "$ROOT_DIR/.ci/lib/devbox.sh"\n'
-        "while IFS= read -r -d '' v; do devbox_slugify \"$v\" | od -An -v -tx1 | tr -d ' \\n'; echo; done\n"
-    ) % root
-    payload = b"".join(value.encode("utf-8", "surrogateescape") + b"\0" for value in values)
-    proc = subprocess.run(
-        ["bash", "-c", script],
-        input=payload,
-        capture_output=True,
-        check=True,
-        env={**os.environ, "LC_ALL": "C"},
+    """The retired twin's `devbox_slugify` stdout for each value, one hex line per value, from the golden."""
+    _, out, _ = diff.twin_call(
+        TWIN, ["slugify-stdout", json.dumps(list(values))], _retired, label="slugify-stdout"
     )
-    return tuple(bytes.fromhex(line.decode()) for line in proc.stdout.splitlines())
+    return tuple(bytes.fromhex(line) for line in out.splitlines())
 
 
 def _newline_delta_holds(scenario: str, old_out: str, new_out: str) -> bool:
@@ -428,11 +424,55 @@ def _newline_delta_holds(scenario: str, old_out: str, new_out: str) -> bool:
     )
 
 
+# D12: the twin's bind sources went through `.ci/lib/../..`; the port's do not (the directory is gone). The scenarios whose `docker run` argv carries the binds compare the twin's transcript with that spelling folded to the port's.
+BIND_SPELLING_SCENARIOS = ("up-create", "up-existing")
+TWIN_BIND_SPELLING = "/.ci/lib/../../.devcontainer/"
+PORT_BIND_SPELLING = "/.devcontainer/"
+
+
 def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
     """The comparison the whole file stands on, minus the Rule T deltas."""
+    if scenario in BIND_SPELLING_SCENARIOS:
+        old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
     if scenario in NEWLINE_SCENARIOS:
         return _newline_delta_holds(scenario, old_out, new_out)
     return _without_delta_labels(old_out, scenario) == _without_delta_labels(new_out, scenario)
+
+
+DIVERGENCE_LINES = 12
+DIVERGENCE_WIDTH = 4000
+
+
+def divergence(scenario: str, old_out: str, new_out: str) -> str:
+    """The first lines the two transcripts disagree on, both sides, for the failure message.
+
+    A bare `assert equivalent(...)` prints pytest's elided repr of two transcripts tens of kilobytes long, which names no line: runs 38389205702 and 38409515814 each cost a round trip to learn WHAT diverged. A `docker run` argv is one long line, so each side is cut around the first differing column.
+    """
+    if scenario in BIND_SPELLING_SCENARIOS:
+        old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
+    old_lines = _without_delta_labels(old_out, scenario)
+    new_lines = _without_delta_labels(new_out, scenario)
+    found = [
+        "scenario %s diverged (%d twin lines, %d port lines)"
+        % (scenario, len(old_lines), len(new_lines))
+    ]
+    for index in range(max(len(old_lines), len(new_lines))):
+        old_line = old_lines[index] if index < len(old_lines) else "<no line>"
+        new_line = new_lines[index] if index < len(new_lines) else "<no line>"
+        if old_line == new_line:
+            continue
+        column = next(
+            (at for at, (a, b) in enumerate(zip(old_line, new_line, strict=False)) if a != b),
+            min(len(old_line), len(new_line)),
+        )
+        start = max(0, column - 200)
+        found.append("line %d, column %d:" % (index + 1, column))
+        found.append("  twin: %s" % old_line[start : start + DIVERGENCE_WIDTH])
+        found.append("  port: %s" % new_line[start : start + DIVERGENCE_WIDTH])
+        if len(found) > 3 * DIVERGENCE_LINES:
+            found.append("... and more")
+            break
+    return "\n".join(found)
 
 
 @pytest.mark.parametrize("scenario", SCENARIOS)
@@ -450,7 +490,7 @@ def test_the_port_matches_the_live_twin(scenario: str) -> None:
     )
     if scenario in SCENARIO_CLAIMS:
         SCENARIO_CLAIMS[scenario](observations(old_out))
-    assert equivalent(scenario, old_out, new_out), "scenario %s diverged" % scenario
+    assert equivalent(scenario, old_out, new_out), divergence(scenario, old_out, new_out)
 
 
 @pytest.mark.parametrize("scenario", sorted(DELTA_LABELS))
@@ -496,7 +536,7 @@ def test_every_function_is_driven_by_some_scenario() -> None:
     assert driven == set(devbox.BASH_NAMES), sorted(set(devbox.BASH_NAMES) ^ driven)
 
 
-@pytest.mark.parametrize("scenario", [*sorted(driver.BASH_SCENARIOS), *CHEAP_STUB_SCENARIOS])
+@pytest.mark.parametrize("scenario", [*sorted(driver.PURE_SCENARIOS), *CHEAP_STUB_SCENARIOS])
 def test_the_in_process_transcript_is_the_subprocess_one(scenario: str) -> None:
     """The bridge `test_a_planted_defect_is_caught` stands on, checked rather than assumed."""
     _, subprocess_out, _ = drive("new", scenario)
@@ -578,8 +618,7 @@ def planted_value(attribute: str):
         def uid_image(self, *_argv):
             self.docker_words()
             self.write(
-                "%s:uid%d-gid%d-52b359d8cc2e\n"
-                % (devbox.DEVBOX_UID_IMAGE_REPO, os.geteuid(), os.getegid())
+                "%s:uid%d-gid%d-52b359d8cc2e\n" % (devbox.DEVBOX_UID_IMAGE_REPO, self.uid, self.gid)
             )
             return 0
 
@@ -689,19 +728,13 @@ def test_the_stub_answers_by_pattern_ordinal_and_history() -> None:
     assert driver.pick_rule(table, ["docker", "inspect", "x", "y"], []) is None
 
 
-# -- the twin is still there, and still says what this file claims it says ----
+# -- the twin is retired, and the port carries all of it ------------------------
 
 
-def twin_text() -> str:
-    return (paths.repo_root() / TWIN).read_text(encoding="utf-8")
-
-
-def test_the_twin_defines_these_fifty_four_and_nothing_else() -> None:
-    """Measured rather than remembered: a function added to the twin later cannot slip past unported."""
-    text = twin_text()
-    defined = set(re.findall(r"^([a-z_]+)\(\) *\{", text, re.MULTILINE))
+def test_the_port_defines_these_fifty_five_and_nothing_else() -> None:
+    """The twin's function list was measured against `devbox.BASH_NAMES` while the bash existed (fifty-five names); the count is what is kept."""
     assert len(devbox.BASH_NAMES) == 55
-    assert defined == set(devbox.BASH_NAMES), sorted(defined ^ set(devbox.BASH_NAMES))
+    assert len(set(devbox.BASH_NAMES.values())) == 55
 
 
 def test_every_twin_function_has_a_counterpart_and_none_is_unported() -> None:
@@ -717,10 +750,11 @@ def test_every_twin_function_has_a_counterpart_and_none_is_unported() -> None:
         assert callable(getattr(devbox, pure))
 
 
-def test_the_twin_is_still_sourced_and_nothing_is_cut_over() -> None:
-    root = paths.repo_root()
-    for relative, needle in SOURCE_SITES:
-        assert needle in (root / relative).read_text(encoding="utf-8"), relative
+def test_nothing_sources_the_retired_twin() -> None:
+    """The bridge reaches the port in process, so no prelude of its names the library."""
+    assert not any("devbox.sh" in line for line in bridge.PRELUDE)
+    assert bridge._devbox_words("devbox_up") == ["devbox_up"]
+    assert bridge._devbox_words("ensure_deps") is None
 
 
 def test_the_pure_three_reach_nothing_but_their_arguments() -> None:
@@ -862,6 +896,150 @@ def test_the_exec_tty_arms(stdin_tty: bool, stdout_tty: bool, flags: list[str]) 
     assert between == flags
 
 
+# -- the host's ids, which the differential pins and therefore cannot see ----
+
+
+def _quiet_box(out: io.BytesIO, **kwargs) -> devbox.Devbox:
+    return devbox.Devbox(
+        {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent"},
+        stdout=out,
+        stderr=io.BytesIO(),
+        **kwargs,
+    )
+
+
+def test_the_host_ids_are_the_running_users_by_default(tmp_path: pathlib.Path) -> None:
+    """The driver pins `GOLDEN_HOST_IDS`, so every scenario above would still pass if the DEFAULT stopped being this process's effective ids. This is the test that reads the default, and the directory probe behind the lease pool, against the real host."""
+    out = io.BytesIO()
+    box = _quiet_box(out)
+    assert (box.uid, box.gid) == (os.geteuid(), os.getegid())
+    assert box.host_ids() == "%d:%d" % (os.geteuid(), os.getegid())
+    # A directory this process made is this user's; a missing one is not a directory at all.
+    assert box.owns_runtime_dir(str(tmp_path)) is True
+    assert box.owns_runtime_dir(str(tmp_path / "missing")) is False
+    # CONTROL: injected ids are the ones every reader answers with, and somebody else's directory is not theirs.
+    stranger = (os.geteuid() + 4242, os.getegid() + 4343)
+    pinned = _quiet_box(out, host_ids=stranger)
+    assert pinned.host_ids() == "%d:%d" % stranger
+    assert pinned.owns_runtime_dir(str(tmp_path)) is False
+    assert pinned.core_lease_src() == 0
+    assert out.getvalue() == b"", "a lease pool was reported under a runtime dir nobody checked"
+
+
+def test_the_driver_answers_as_the_recording_host(tmp_path: pathlib.Path) -> None:
+    """What `GoldenHostDevbox` changes, and that it changes nothing else: the recorded runtime dir is owned, every other path is not, whatever this host holds."""
+    out = io.BytesIO()
+    box = driver.GoldenHostDevbox(
+        {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent"},
+        stdout=out,
+        stderr=io.BytesIO(),
+        host_ids=driver.GOLDEN_HOST_IDS,
+    )
+    assert box.core_lease_src() == 0
+    assert out.getvalue() == (driver.GOLDEN_RUNTIME_DIR + "/rediacc-cores\n").encode()
+    assert box.owns_runtime_dir(str(tmp_path)) is False
+
+
+def test_up_reads_the_host_by_default(tmp_path: pathlib.Path) -> None:
+    """The driver pins the three probes `up` makes of the host, so every scenario above would still pass if a DEFAULT stopped reading it. These are the defaults, against real paths: a node, a socket, and the lease pool's `mkdir -m 700`."""
+    box = _quiet_box(io.BytesIO())
+    # `[ -e ]`: whatever this host has, and never a path that is not there.
+    assert box.has_host_node("/dev/null") is True
+    assert box.has_host_node(str(tmp_path / "missing")) is False
+    for node in driver.GOLDEN_HOST_NODES:
+        assert box.has_host_node(node) is os.path.exists(node)
+    # `[[ -S ]]`: a real socket, through a symlink too; a regular file and a missing path are not one.
+    listener = socket.socket(socket.AF_UNIX)
+    try:
+        listener.bind(str(tmp_path / "s"))
+        (tmp_path / "link").symlink_to(tmp_path / "s")
+        (tmp_path / "file").write_text("", encoding="utf-8")
+        assert box.has_host_socket(str(tmp_path / "s")) is True
+        assert box.has_host_socket(str(tmp_path / "link")) is True
+        assert box.has_host_socket(str(tmp_path / "file")) is False
+        assert box.has_host_socket(str(tmp_path / "missing")) is False
+    finally:
+        listener.close()
+    # `[ -d ] || mkdir -m 700`: made once at mode 700, an answer when it is already there, and no answer under a parent that is not.
+    pool = tmp_path / "pool"
+    assert box.lease_dir_ready(str(pool)) is True
+    assert stat.S_IMODE(pool.stat().st_mode) == 0o700
+    assert box.lease_dir_ready(str(pool)) is True
+    assert box.lease_dir_ready(str(tmp_path / "missing" / "pool")) is False
+    assert not (tmp_path / "missing").exists()
+
+
+def test_the_driver_answers_for_the_recorded_devices_and_no_others(tmp_path: pathlib.Path) -> None:
+    """`GoldenHostDevbox` says yes to exactly what the recording host had, and its lease answer never makes a directory."""
+    box = driver.GoldenHostDevbox(
+        {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent"},
+        stdout=io.BytesIO(),
+        stderr=io.BytesIO(),
+        host_ids=driver.GOLDEN_HOST_IDS,
+    )
+    assert [box.has_host_node(node) for node in driver.GOLDEN_HOST_NODES] == [True, True]
+    assert box.has_host_node("/dev/null") is False
+    assert box.has_host_socket(driver.GOLDEN_DOCKER_SOCKET) is True
+    assert box.has_host_socket(str(tmp_path)) is False
+    assert box.lease_dir_ready(driver.GOLDEN_RUNTIME_DIR + "/rediacc-cores") is True
+    assert box.lease_dir_ready(str(tmp_path / "pool")) is False
+    assert not (tmp_path / "pool").exists()
+
+
+class BareHostDevbox(driver.GoldenHostDevbox):
+    """The recording host's ids on a host with none of the four: no kvm, no tun, no docker socket, no runtime dir."""
+
+    def owns_runtime_dir(self, _runtime: str) -> bool:
+        return False
+
+    def has_host_node(self, _path: str) -> bool:
+        return False
+
+    def has_host_socket(self, _path: str) -> bool:
+        return False
+
+
+# The words `up` adds to `docker run` only where the host has the thing, as the contiguous runs the argv carries them in. 993 is the stub farm's `stat -c %g /dev/kvm`.
+HOST_ONLY_RUNS = (
+    ["-v", "/var/run/docker.sock:/var/run/docker.sock"],
+    ["-v", driver.GOLDEN_RUNTIME_DIR + "/rediacc-cores:" + devbox.DEVBOX_CORE_LEASE_DEST],
+    ["--device", "/dev/kvm"],
+    ["--device", "/dev/net/tun"],
+    ["--group-add", "993", "--cap-add", "NET_ADMIN", "--cap-add", "SYS_ADMIN"],
+    ["-e", "REDIACC_CORE_LEASE_DIR=" + devbox.DEVBOX_CORE_LEASE_DEST],
+)
+
+
+def _first_run(transcript: str, label: str) -> list[str]:
+    step = observations(transcript)[label]
+    assert status_of(step) == 0
+    return next(call for call in calls_of(step) if call[1:4] == ["run", "-d", "--name"])
+
+
+def _without_run(argv: list[str], words: list[str]) -> list[str]:
+    """`argv` with its ONE occurrence of the contiguous `words` cut out; a run that is absent or repeated fails here by name."""
+    starts = [at for at in range(len(argv)) if argv[at : at + len(words)] == words]
+    assert len(starts) == 1, "%r occurs %d time(s) in the `docker run` argv" % (words, len(starts))
+    return argv[: starts[0]] + argv[starts[0] + len(words) :]
+
+
+def test_up_drops_what_the_host_does_not_have(monkeypatch) -> None:
+    """The arm the differential cannot compare: on a host with no kvm, tun, docker socket or runtime dir, `up` still creates the devbox, and its `docker run` is the recorded one minus exactly those words.
+
+    This is also what proves the driver's pins are the ONLY way those words reach the argv: it runs on whatever host the suite is on, and the recording machine has all four.
+    """
+    # CONTROL: the same step as the recording host saw it carries every run, once. `_without_run` asserts that.
+    expected = _first_run(new_transcript("up-create"), "ok")
+    for words in HOST_ONLY_RUNS:
+        expected = _without_run(expected, words)
+    monkeypatch.setattr(driver, "GoldenHostDevbox", BareHostDevbox)
+    bare = _first_run(new_transcript("up-create"), "ok")
+    assert bare == expected
+    # The docker group's gid is the stub farm's getent answer, not a host probe: it stays.
+    assert bare.count("--group-add") == 1
+    assert "--device" not in bare
+
+
 # -- the licence, and the tools the scenarios really use ---------------------
 
 
@@ -903,18 +1081,29 @@ def test_the_tools_the_scenarios_use_are_installed() -> None:
         assert shutil.which(tool) is not None, tool
 
 
-def test_the_driver_refuses_when_the_twin_is_not_there() -> None:
+def test_the_driver_refuses_the_retired_bash_side() -> None:
+    proc = subprocess.run(
+        [sys.executable, "-m", DRIVER_MODULE, "--side", "old", "--port", PORT, "arity"],
+        cwd=str(paths.repo_root()),
+        env={**os.environ, "PYTHONPATH": ".ci"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 2, "argparse refuses a side the driver no longer has"
+    assert "invalid choice" in proc.stderr
+
+
+def test_the_driver_refuses_when_the_port_is_not_there() -> None:
     proc = subprocess.run(
         [
             sys.executable,
             "-m",
             DRIVER_MODULE,
             "--side",
-            "old",
-            "--twin",
-            ".ci/lib/no-such-file.sh",
+            "new",
             "--port",
-            PORT,
+            ".ci/rediacc_ci/core/no-such-file.py",
             "arity",
         ],
         cwd=str(paths.repo_root()),
@@ -927,21 +1116,26 @@ def test_the_driver_refuses_when_the_twin_is_not_there() -> None:
     assert "attests to nothing" in proc.stderr
 
 
-def test_the_driver_scenarios_and_the_bash_bodies_line_up() -> None:
-    for name, body in driver.BASH_SCENARIOS.items():
-        assert "probe " in body, name
-        assert "%(fn)s" not in body, name
+def test_the_driver_scenarios_line_up() -> None:
+    assert set(driver.PURE_SCENARIOS) == {
+        "arity",
+        "drift",
+        "route-label",
+        "slug-basic",
+        "slug-edge",
+        "slug-fuzz",
+        "slug-utf8",
+    }
     for name, (fixture, locale, steps) in driver.STUB_SCENARIOS.items():
         built = steps()
         assert built, name
         assert fixture in ("main", "worktree", "detached", "gone"), name
         assert locale in ("C", "C.utf8"), name
-        assert "sprobe " in driver.stub_body(built), name
 
 
 # -- the pure rules, exercised directly -------------------------------------------
 
-# The nine rows `test_gate_devbox_slug.py:49-59` pins. Restated here rather than imported, and then CROSS-CHECKED against that file, so a change to either is a failure in both rather than a silent agreement.
+# The nine rows the retired `test_gate_devbox_slug.py` pinned (its bash lift of `devbox_slugify` is gone with `devbox.sh`; the same rows are in the `slug-basic` and `slug-edge` goldens).
 SLUG_ROWS = (
     ("feat/x", "feat-x"),
     ("feat//x", "feat-x"),
@@ -962,11 +1156,6 @@ def test_slugify_answers_the_pinned_rows(value: str, expected: str) -> None:
     assert len(answer) <= devbox.SLUG_MAX
     if answer:
         assert HOSTNAME_RE.match(answer)
-
-
-def test_the_pinned_rows_agree_with_the_gate_that_also_pins_them() -> None:
-    assert dict(SLUG_ROWS) == dict(slug_gate.SLUG_ROWS)
-    assert driver.LONG_BRANCH == slug_gate.LONG
 
 
 def test_the_cap_is_applied_before_the_final_trim() -> None:
@@ -1040,8 +1229,7 @@ def test_the_no_argument_call_is_a_death_and_not_a_default() -> None:
     assert devbox.slugify() == ""
 
 
-def test_the_repo_root_is_a_checkout_with_the_twin_in_it() -> None:
-    assert (paths.repo_root() / TWIN).is_file()
+def test_the_repo_root_is_a_checkout_with_the_port_in_it() -> None:
     assert (paths.repo_root() / PORT).is_file()
     assert pathlib.Path(DRIVER).name == "devbox_shadow_driver.py"
 
@@ -1062,10 +1250,33 @@ def test_delta_d1_a_host_with_no_docker_group_still_creates_the_devbox() -> None
     obs = port_obs("up-create")["no-group"]
     assert status_of(obs) == 0
     run = next(call for call in calls_of(obs) if call[1:4] == ["run", "-d", "--name"])
-    # The only `--group-add` left is the kvm group's, on a host that has /dev/kvm; the docker group's is gone and its gid env is empty.
-    assert run.count("--group-add") == (1 if os.path.exists("/dev/kvm") else 0)
+    # The only `--group-add` left is the kvm group's (the driver answers as the recording host, which has /dev/kvm); the docker group's is gone and its gid env is empty.
+    assert run.count("--group-add") == 1
     assert "DOCKER_GID=" in run
     assert any("No docker group on this host" in line for line in errs_of(obs))
+
+
+@pytest.mark.parametrize("scenario", BIND_SPELLING_SCENARIOS)
+def test_delta_d12_the_script_binds_do_not_go_through_the_deleted_lib_directory(
+    scenario: str,
+) -> None:
+    """Defect D12, fixed: the bind sources are `<root>/.devcontainer/<file>`. The twin's `<root>/.ci/lib/../../.devcontainer/<file>` cannot be resolved once `.ci/lib` is not a directory, so docker would refuse every `devbox_up`.
+
+    Both directions: the frozen twin transcript carries the old spelling (so the fold in `equivalent` is a real fold), and the port's carries the new one and never the old.
+    """
+    # The record `test_the_port_matches_the_live_twin[<scenario>]` froze: its label is passed explicitly, so this test reads the same key.
+    old_out = diff.twin_call(
+        TWIN,
+        [scenario],
+        _retired,
+        label="test_the_port_matches_the_live_twin[%s]" % scenario,
+    )[1]
+    new_out = drive("new", scenario)[1]
+    assert TWIN_BIND_SPELLING in old_out, "the frozen twin no longer shows the old spelling"
+    assert TWIN_BIND_SPELLING not in new_out
+    assert "%sdevbox-entrypoint.sh:/usr/local/bin/devbox-entrypoint.sh:ro" % PORT_BIND_SPELLING in (
+        new_out
+    )
 
 
 def test_delta_d2_the_identity_probe_fails_when_the_devbox_is_not_running() -> None:

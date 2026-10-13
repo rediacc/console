@@ -1,24 +1,30 @@
 {
   "rubrics": {
     "BRAVE_PROMPT": {
-      "calibrated": "2026-10-02",
-      "note": "Re-calibrated 2026-10-02 after the M5 wording (4e22d6014: merging and pushing main have their own guarded path, operator ruling 2026-10-02) and the COMMITTING sentence rewritten to the commit-as-you-go standing order. The first full run matched 15/17; the two brave misses ('leave it on its branch', 'hold until CI green') matched 4/4 on two --only reruns, so they were sampling noise. The final full run over the current text matched 17/17 (.ci/cache/calibrate-final-20261002.log).",
-      "sha": "c477771292a2d767"
+      "calibrated": "2026-10-11",
+      "note": "Re-calibrated 2026-10-11 (#20a3802a). On the unchanged text the held-out fixtures missed one run in two (lead7a, lead7d), both as applicable=false: the rewordings dropped the rubric's own inaction verbs and gained words that read as an act after the wait ('for now', 'first'). The applicability clause now says a default commits only when its own words name the act, and that a wait hinting at a later act is applicable. Fixtures unchanged. Five consecutive full runs matched 20/20 (.ci/cache/calibrate-20261011-w4a..e.log).",
+      "sha": "2c151b76f282ed80"
     },
     "REGGATE_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-calibrated 2026-09-24 riding the SWEEP call as always: eight of eight sweep fixtures matched in the first full run and again in the final full run (.ci/cache/calibrate-final-20260924.log), so the reggate wording changes since 2026-09-05 hold.",
-      "sha": "c033e12aa0d69e93"
+      "calibrated": "2026-10-11",
+      "note": "Measured only through the sweep fixtures, which run in one prompt with SWEEP_PROMPT, so `rides` records the SWEEP_PROMPT text of the same runs and the gate refuses this pass once that text moves (review 18700a76.5). Re-measured 2026-10-11 with SWEEP_PROMPT 3ea7dd46e2cbab7d and its own text unchanged: the 11 sweep fixtures matched in all five runs (.ci/cache/calibrate-20261011-w4a..e.log).",
+      "rides": {
+        "SWEEP_PROMPT": "3ea7dd46e2cbab7d"
+      },
+      "sha": "2b8cbd5b3ccdd640"
     },
     "SHAPE_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-calibrated 2026-09-24. The first live run's two shapedup misses were stale fixtures, not the rubric: the assertion-closure coordinates had drifted and the mktemp+trap fixture cited three bash suites since ported to Python. Coordinates re-derived, that fixture retired, and the findings-report control retired after firing on five consecutive runs at re-pointed coordinates because the report loop around the prose is a real shared scaffold (tracked separately). Three of three remaining shape fixtures matched in the final full run.",
-      "sha": "5a4d4dba40bac331"
+      "calibrated": "2026-10-09",
+      "note": "Re-calibrated 2026-10-09 (review 18700a76.2, .3). The prompt says an `already` naming a module that every instance's file imports is consolidated, and wl_shapedup.instances_import now checks that on disk, so read_verdict answers silent for it whatever the model chose; the prompt no longer claims an import check the code did not run. The run_gate control, which drew `already` naming harness.py one run in five before, is covered by both. calibrate-judge-rules.py --selftest proves the check offline. Three full runs matched 18/18 (.ci/cache/calibrate-20261009-fix4h.log, -fix4i.log, -fix4j.log).",
+      "sha": "3566612d3c625e41"
     },
     "SWEEP_PROMPT": {
-      "calibrated": "2026-09-24",
-      "note": "Re-calibrated 2026-09-24: eight of eight sweep fixtures matched in the first full live run and again in the final full run (.ci/cache/calibrate-final-20260924.log) over the current text.",
-      "sha": "1248d21ae592ce73"
+      "calibrated": "2026-10-11",
+      "note": "Re-calibrated 2026-10-11 (reviews 752b9e50.1-.3). The two-places paragraph is reflowed, a named input may be any concrete part, and the naming has to sit in the single-input statement itself. The bare-claim fire fixture now claims one input without naming it, and the judge fired on it about half the time (-w4pre1.log, -w4pre2.log), so a guard's swept=true now needs one quote per place. The round-log control names every arm the guard has. Five consecutive full runs matched 20/20 (.ci/cache/calibrate-20261011-w4a..e.log). `rides` records REGGATE_PROMPT, which shares the prompt.",
+      "rides": {
+        "REGGATE_PROMPT": "2b8cbd5b3ccdd640"
+      },
+      "sha": "3ea7dd46e2cbab7d"
     }
   }
 }

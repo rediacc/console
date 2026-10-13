@@ -30,8 +30,11 @@ ORDER = 8
 # Re-inserting the `.*` between the program slot and the bundle name is exactly the original defect this guard's header is about: the path stops having to be the program and goes back to being any substring of the line, so `node scripts/x.mjs --outdir packages/cli/dist/out.js` is refused again.
 DEFECT = (r"]*(cli-bundle[^", r"]*.*(cli-bundle[^")
 
+# COMMAND POSITION, NOT ANY WHITESPACE. The anchor used to be `(^|[;&|(]|[{S}])`, and the `[{S}]` arm admits `node` after any space, which is inside every sentence: `echo the docs say never to run node cli-bundle.js in this repo` was refused (found by check:ci-guard-mention-anchoring, 2026-10-09). Now `node` must open a command: the line start or a separator, then
+# optional blanks, then an optional directory (`/usr/bin/node`). The prefixes the whitespace arm used to tolerate (`sudo`, `time`, `env`, `xargs`, an assignment, a leading redirect, `!`, `if ... then`) still reach it, because `scan_target` lifts every command bash runs onto a line of its own (`shellscan.lifted_commands`), and so do the launchers shellscan walks (`shellscan._launched`, #ec63ff8c):
+# `npx node cli-bundle.js`, `npx -y node packages/cli/dist/cli.js` and `find . -exec node cli-bundle.js \;` each lift `node ...` onto its own line. The last two were allowed before. `npm exec`, `npm exe` and `npm x` are the same launcher, and npm's own option parse decides where the program starts, abbreviations included (`npx --logl silent node ...`, #31ed6c5f).
 NODE_BUNDLE = hookio.rx(
-    r"(^|[;&|(]|[{S}])node[{S}]+(-[^{S};|&]+[{S}]+)*[^{S};|&]*(cli-bundle[^{S};|&]*\.[cm]?js|packages/cli/dist/[^{S};|&]*)"
+    r"(^|[;&|(`{!])[{S}]*([^{S};|&()`]*/)?node[{S}]+(-[^{S};|&]+[{S}]+)*[^{S};|&]*(cli-bundle[^{S};|&]*\.[cm]?js|packages/cli/dist/[^{S};|&]*)"
 )
 
 MESSAGE = "❌ BLOCKED: Do not run the CLI bundle directly via node. Use ./rdc.sh instead."
@@ -49,6 +52,38 @@ EDGE_CASES = [
     ("prose merely quoting the banned command", "echo 'node packages/cli/dist/cli.js'"),
     ("a wrapper payload is still scanned", "sh -c 'node packages/cli/dist/cli.js'"),
     ("node with an unrelated program", "node scripts/dev/x.mjs"),
+    # Command position: the whitespace arm of the old anchor refused this sentence.
+    (
+        "a sentence naming the command is not running it",
+        "echo the docs say never to run node cli-bundle.js in this repo",
+    ),
+    ("a prefix command still reaches it", "sudo node cli-bundle.js"),
+    ("npx is a launcher shellscan walks", "npx node cli-bundle.js"),
+    # Launchers walked by shellscan (#ec63ff8c): both were allowed before 2026-10-09.
+    ("npx with its own flag before node", "npx -y node packages/cli/dist/cli.js"),
+    ("find -exec running node", r"find packages -maxdepth 0 -exec node cli-bundle.js \;"),
+    (
+        "npx running another program over the bundle path",
+        "npx -y prettier --check packages/cli/dist/cli.js",
+    ),
+    ("npx -c runs a shell string", "npx -c 'node cli-bundle.js'"),
+    ("npx running tsx", "npx tsx scripts/gen/gen-docs.ts"),
+    ("after && still reaches it", "cd x && node cli-bundle.js"),
+    # npm's own parse finds the program (#31ed6c5f): abbreviated options, and `npm exec`/`exe`/`x` as launchers. Each refusal was allowed before.
+    ("an abbreviated npx value option", "npx --logl silent node packages/cli/dist/cli.js"),
+    ("npm exec launches node", "npm exec -- node packages/cli/dist/cli.js"),
+    ("npm x launches node", "npm x node packages/cli/dist/cli.js"),
+    (
+        "an npm option before an abbreviated exec",
+        "npm --logl silent exe -- node packages/cli/dist/cli.js",
+    ),
+    ("npm exec -c runs a shell string", "npm exec -c 'node packages/cli/dist/cli.js'"),
+    (
+        "npm exec running another program over the bundle path",
+        "npm exec -- prettier --check packages/cli/dist/cli.js",
+    ),
+    ("npm run is not a launcher", "npm run build -- packages/cli/dist/cli.js"),
+    ("npm x running tsx", "npm x tsx --version"),
 ]
 
 

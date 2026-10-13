@@ -613,14 +613,40 @@ def _emit(lines, text, lineno, piece, markers):
 # JSON string values whose key marks them as an IDENTIFIER or a QUOTED EXAMPLE rather than prose about the work. `patterns`/`exceptions` are regex text; `text` is a rule's own bad/good exemplar (the JSON analogue of `BAD_EXAMPLE`, since a JSON example's `kind: "bad"` marker sits on a DIFFERENT physical line than its `text`, so the character-level BAD_EXAMPLE match cannot see it);
 # `id`/`glob`/`schema`/`$schema`/`format`/`version` are short machine-facing tokens, never a sentence about the work.
 JSON_SKIP_KEYS = frozenset(
-    ("patterns", "exceptions", "text", "id", "glob", "schema", "$schema", "format", "version")
+    (
+        "patterns",
+        "exceptions",
+        "text",
+        "id",
+        "glob",
+        "schema",
+        "$schema",
+        "format",
+        "version",
+    )
 )
+
+# KEYS SKIPPED IN ONE FILE ONLY. `quote` in the model-invocation exception list is an operator ruling quoted VERBATIM (`ruling.quote`): somebody else's words, which the module docstring already places out of this gate's reach, and restyling them would falsify the ruling. A `quote` key anywhere else (the www translations carry testimonial `quote` strings) is prose like any other value, so the skip is keyed by the file, not global (review finding cac47d16.3).
+JSON_FILE_SKIP_KEYS = {
+    ".ci/config/model-invocation-exceptions.json": frozenset(("quote",)),
+}
+
+
+def json_skip_keys_for(path):
+    """The keys whose values `path` keeps out of the prose scan: the global `JSON_SKIP_KEYS` plus that file's own entry in `JSON_FILE_SKIP_KEYS`, matched on the repo-relative tail whether `path` is relative or absolute."""
+    posix = pathlib.PurePath(path).as_posix()
+    keys = JSON_SKIP_KEYS
+    for rel, extra in JSON_FILE_SKIP_KEYS.items():
+        if posix == rel or posix.endswith("/" + rel):
+            keys = keys | extra
+    return keys
+
 
 _JSON_KEYED_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
 _JSON_ARRAY_STRING = re.compile(r'^\s*"((?:[^"\\]|\\.)*)"\s*,?\s*$')
 
 
-def json_prose_lines(text, markers=DEFAULT_MARKERS):
+def json_prose_lines(text, markers=DEFAULT_MARKERS, skip_keys=JSON_SKIP_KEYS):
     """Prose lines of a `.json` file: PHYSICAL LINE, decoded string VALUES only.
 
     NOT A PARSED WALK. `json.load` gives no line numbers, so a `Finding` (which is anchored to a line) could not be built from one, and a decoded-string-length measure would let a 380-char value sitting at 300 columns of indentation pass while the file is unreadable as text. R18 measures what a reader of the FILE sees, the same contract `Line.raw` already keeps for every other
@@ -637,7 +663,7 @@ def json_prose_lines(text, markers=DEFAULT_MARKERS):
         keyed = _JSON_KEYED_STRING.match(raw)
         if keyed:
             key, value = keyed.groups()
-            if key in JSON_SKIP_KEYS:
+            if key in skip_keys:
                 continue
         else:
             arrayed = _JSON_ARRAY_STRING.match(raw)
@@ -670,7 +696,7 @@ def extract(path, text, markers=DEFAULT_MARKERS):
         except (tokenize.TokenError, IndentationError, SyntaxError) as exc:
             return [], "%s did not tokenize as Python (%s), so NOTHING was extracted" % (path, exc)
     if suffix == ".json":
-        return json_prose_lines(text, markers), None
+        return json_prose_lines(text, markers, json_skip_keys_for(path)), None
     return cstyle_comment_lines(text, markers), None
 
 
@@ -1043,16 +1069,26 @@ def exempt_for(rel, exempts):
     """The reason `rel` is exempt, or None.
 
     SEGMENT BY SEGMENT, NOT `fnmatch` OVER THE WHOLE PATH. `fnmatch`'s `*` crosses `/` -- `agent/*/STATE.md` would match `agent/archive/x/y/STATE.md` under it -- so an exemption written to cover one directory level silently covers every level below it. An exemption that is wider than its author believes is the shape this whole mechanism exists to keep visible, so the glob is
-    matched the way a reader reads it: one segment at a time, and the depths must agree.
+    matched the way a reader reads it: one segment at a time (`*` is exactly one segment, `**` zero or more).
     """
     parts = rel.replace(os.sep, "/").split("/")
     for glob, reason in exempts:
-        wanted = glob.split("/")
-        if len(wanted) != len(parts):
-            continue
-        if all(fnmatch.fnmatchcase(got, want) for got, want in zip(parts, wanted, strict=True)):
+        if _segments_match(parts, glob.split("/")):
             return reason
     return None
+
+
+def _segments_match(parts, wanted):
+    """`*` and every other pattern segment match exactly ONE path segment; `**` matches zero or more.
+
+    Measured 2026-10-08: with equal depths required, `agent/reviews/**` covered only `agent/reviews/<file>` and missed every record under `agent/reviews/<branch>/`, so a machine-written review quoting a second-person pronoun reddened the gate the exemption exists to quiet.
+    """
+    if not wanted:
+        return not parts
+    head, rest = wanted[0], wanted[1:]
+    if head == "**":
+        return any(_segments_match(parts[i:], rest) for i in range(len(parts) + 1))
+    return bool(parts) and fnmatch.fnmatchcase(parts[0], head) and _segments_match(parts[1:], rest)
 
 
 # --------------------------------------------------------------------------- Reflow ---------------------------------------------------------------------------
@@ -2214,6 +2250,25 @@ def selftest():
     """
     ctl = Controls("prose-style", floor=40, verbose=True)
     globals_, rules = load_rules(_MINI)
+
+    # ---- exemption globs: `*` is one segment, `**` is zero or more ------------
+    _ex = [("agent/reviews/**", "r"), ("agent/*/STATE.md", "s")]
+    ctl.check(
+        "exempt: `**` covers a record one level down",
+        exempt_for("agent/reviews/1008-1/x.md", _ex),
+        "r",
+    )
+    ctl.check(
+        "exempt: `**` covers a record at its own level", exempt_for("agent/reviews/x.md", _ex), "r"
+    )
+    ctl.check(
+        "CONTROL: `*` stays one segment deep", exempt_for("agent/archive/x/STATE.md", _ex), None
+    )
+    ctl.check(
+        "CONTROL: a sibling directory is not covered",
+        exempt_for("agent/reviewsX/1008-1/x.md", _ex),
+        None,
+    )
 
     # ---- loading --------------------------------------------------------
     ctl.check("loader: three rules", [r.id for r in rules], ["X1", "X2", "X3"])

@@ -23,7 +23,7 @@ FOUR RELATIONS:
 
 VERDICTS ARE RE-DERIVED, NOT READ. classify() below mirrors report.awk's
 advise() exactly, and the row's own `verdict=` token is used only as a CONTROL:
---refresh warns when the two disagree, which is what turns a silent divergence between the two implementations into a visible one. The gate test (.ci/scripts/test/gates/test-runner-advice.sh) drives real awk output through classify() for three profiles to pin the agreement.
+--refresh warns when the two disagree, which is what turns a silent divergence between the two implementations into a visible one. The gate test (rediacc_ci/tests/gates/test_gate_runner_advice.py) drives real awk output through classify() for three profiles to pin the agreement.
 
 WHICH ROWS ARE BELIEVED. usable() below defers entirely to the row's own
 `verdict=` token: report.awk owns the trust decision, because only it can see

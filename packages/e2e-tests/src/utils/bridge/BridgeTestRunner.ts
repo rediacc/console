@@ -47,6 +47,7 @@ import { SetupMethods } from './methods/SetupMethods';
 import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
+import { log } from '../log';
 
 const execAsync = promisify(exec);
 
@@ -319,7 +320,7 @@ export class BridgeTestRunner {
    * Ensure VMs are running (starts them if not).
    * Uses ops scripts to manage VMs.
    */
-  async ensureVMsRunning(
+  ensureVMsRunning(
     options: { basic?: boolean } = {}
   ): Promise<{ success: boolean; message: string }> {
     return this.opsManager.ensureVMsRunning(options);
@@ -334,15 +335,12 @@ export class BridgeTestRunner {
    */
   private logExecutionResult(stdout: string, stderr: string, code: number): void {
     if (stdout.trim()) {
-      // eslint-disable-next-line no-console
-      console.log(`[STDOUT]\n${stdout}`);
+      log(`[STDOUT]\n${stdout}`);
     }
     if (stderr.trim()) {
-      // eslint-disable-next-line no-console
-      console.log(`[STDERR]\n${stderr}`);
+      log(`[STDERR]\n${stderr}`);
     }
-    // eslint-disable-next-line no-console
-    console.log(`[EXIT] ${code}`);
+    log(`[EXIT] ${code}`);
   }
 
   /**
@@ -368,12 +366,10 @@ export class BridgeTestRunner {
     const sshCmd = `ssh ${outerOpts} ${user}@${this.bridgeVM} "ssh ${innerOpts} ${user}@${this.targetVM} \\"${escapedForBridge}\\""`;
 
     // Log the command being executed
-    // eslint-disable-next-line no-console
-    console.log(`\n[SSH ${this.bridgeVM} → ${this.targetVM}] ${command}`);
+    log(`\n[SSH ${this.bridgeVM} → ${this.targetVM}] ${command}`);
 
-    const fallbackDirect = async (reason: string): Promise<ExecResult> => {
-      // eslint-disable-next-line no-console
-      console.log(`[BridgeTestRunner] Falling back to direct SSH to ${this.targetVM}: ${reason}`);
+    const fallbackDirect = (reason: string): Promise<ExecResult> => {
+      log(`[BridgeTestRunner] Falling back to direct SSH to ${this.targetVM}: ${reason}`);
       return this.executeOnVM(this.targetVM, command, timeout);
     };
 
@@ -425,8 +421,7 @@ export class BridgeTestRunner {
     const sshCmd = `ssh ${sshOpts} ${user}@${host} "${command.replaceAll('"', '\\"')}"`;
 
     // Log the command being executed
-    // eslint-disable-next-line no-console
-    console.log(`\n[SSH ${host}] ${command}`);
+    log(`\n[SSH ${host}] ${command}`);
 
     try {
       const { stdout, stderr } = await execAsync(sshCmd, {
@@ -456,29 +451,31 @@ export class BridgeTestRunner {
   /**
    * Execute on bridge VM via SSH.
    */
-  async executeOnBridge(command: string, timeout?: number): Promise<ExecResult> {
+  executeOnBridge(command: string, timeout?: number): Promise<ExecResult> {
     return this.executeOnVM(this.getBridgeVM(), command, timeout);
   }
 
   /**
    * Execute on worker VM via SSH.
+   * Stays async: getWorkerVM throws in a Ceph-only topology, and callers expect a rejection.
    */
   async executeOnWorker(command: string, timeout?: number): Promise<ExecResult> {
-    return this.executeOnVM(this.getWorkerVM(), command, timeout);
+    return await this.executeOnVM(this.getWorkerVM(), command, timeout);
   }
 
   /**
    * Execute on second worker VM via SSH.
+   * Stays async: getWorkerVM2 throws with fewer than 2 workers, and callers expect a rejection.
    */
   async executeOnWorker2(command: string, timeout?: number): Promise<ExecResult> {
-    return this.executeOnVM(this.getWorkerVM2(), command, timeout);
+    return await this.executeOnVM(this.getWorkerVM2(), command, timeout);
   }
 
   /**
    * Execute a command on the target Ceph VM.
    * Alias for executeViaBridge for clarity in Ceph-specific tests.
    */
-  async executeOnCeph(command: string, timeout?: number): Promise<ExecResult> {
+  executeOnCeph(command: string, timeout?: number): Promise<ExecResult> {
     return this.executeViaBridge(command, timeout);
   }
 
@@ -759,7 +756,7 @@ export class BridgeTestRunner {
    * Uses: renet functions once --test-mode --function <name>
    * Executes: Host → Bridge → Target VM
    */
-  async testFunction(opts: TestFunctionOptions): Promise<ExecResult> {
+  testFunction(opts: TestFunctionOptions): Promise<ExecResult> {
     // Use renet from PATH on the VM (deployed by InfrastructureManager) Always use --debug in e2e tests for full logging visibility
     let cmd = `renet functions once --test-mode --debug --function ${opts.function}`;
 
@@ -779,14 +776,14 @@ export class BridgeTestRunner {
   /**
    * Test a simple function (ping, nop, hello) with minimal options.
    */
-  async testSimpleFunction(functionName: string): Promise<ExecResult> {
+  testSimpleFunction(functionName: string): Promise<ExecResult> {
     return this.testFunction({ function: functionName });
   }
 
   /**
    * Get renet version on target VM to verify it's working.
    */
-  async getRenetVersion(): Promise<ExecResult> {
+  getRenetVersion(): Promise<ExecResult> {
     return this.executeViaBridge('renet version');
   }
 
@@ -802,7 +799,7 @@ export class BridgeTestRunner {
    * Test a bridge function on a specific machine via SSH.
    * Uses `renet` directly (assumes it's in PATH on the VM).
    */
-  async testFunctionOnMachine(host: string, opts: TestFunctionOptions): Promise<ExecResult> {
+  testFunctionOnMachine(host: string, opts: TestFunctionOptions): Promise<ExecResult> {
     // Always use --debug in e2e tests for full logging visibility
     let cmd = `renet functions once --test-mode --debug --function ${opts.function}`;
 
@@ -829,18 +826,14 @@ export class BridgeTestRunner {
    * Execute a direct renet CLI command on a specific machine via SSH.
    * For commands that aren't available through bridge once (e.g., setup, datastore).
    */
-  async executeRenetOnMachine(
-    host: string,
-    renetCommand: string,
-    timeout?: number
-  ): Promise<ExecResult> {
+  executeRenetOnMachine(host: string, renetCommand: string, timeout?: number): Promise<ExecResult> {
     return this.executeOnVM(host, `renet ${renetCommand}`, timeout);
   }
 
   /**
    * Check setup status on a specific machine.
    */
-  async checkSetupOnMachine(host: string): Promise<ExecResult> {
+  checkSetupOnMachine(host: string): Promise<ExecResult> {
     // machine_check_system is available through bridge once
     return this.executeOnVM(
       host,
@@ -851,7 +844,7 @@ export class BridgeTestRunner {
   /**
    * Check datastore status on a specific machine.
    */
-  async checkDatastoreOnMachine(host: string, datastorePath: string): Promise<ExecResult> {
+  checkDatastoreOnMachine(host: string, datastorePath: string): Promise<ExecResult> {
     // check_datastore may need direct CLI call
     return this.executeOnVM(
       host,
@@ -862,7 +855,7 @@ export class BridgeTestRunner {
   /**
    * List repositories on a specific machine.
    */
-  async listRepositoriesOnMachine(host: string, datastorePath: string): Promise<ExecResult> {
+  listRepositoriesOnMachine(host: string, datastorePath: string): Promise<ExecResult> {
     return this.executeOnVM(
       host,
       `renet repository list --datastore ${datastorePath} 2>&1 || echo "list completed"`
@@ -912,7 +905,7 @@ export class BridgeTestRunner {
   /**
    * Execute any function with vault configuration.
    */
-  async executeWithVault(
+  executeWithVault(
     functionName: string,
     vault: VaultBuilder,
     timeout?: number
@@ -930,8 +923,7 @@ export class BridgeTestRunner {
    * Call in test.beforeAll() for groups that need fresh datastore.
    */
   async resetWorkerState(datastorePath = DEFAULT_DATASTORE_PATH): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.log(`\n[Reset] Cleaning worker state at ${datastorePath}...`);
+    log(`\n[Reset] Cleaning worker state at ${datastorePath}...`);
 
     // 1. Force teardown all daemons (stops containers, unmounts repos)
     for (const netId of [DEFAULT_NETWORK_ID, FORK_NETWORK_ID_A, FORK_NETWORK_ID_B]) {
@@ -974,8 +966,7 @@ export class BridgeTestRunner {
     // 8. Remove datastore marker/metadata if any
     await this.executeViaBridge(`sudo rm -f ${datastorePath}/.datastore 2>/dev/null || true`);
 
-    // eslint-disable-next-line no-console
-    console.log('[Reset] Worker state cleaned');
+    log('[Reset] Worker state cleaned');
   }
 
   /**
@@ -1302,13 +1293,6 @@ export class BridgeTestRunner {
     options: Parameters<BackupMethods['pullWithOptions']>[1]
   ) => this.backupMethods.pullWithOptions(repository, options);
 
-  // Deprecated methods kept for backward compatibility
-  /* eslint-disable @typescript-eslint/no-deprecated */
-  backup = (repository: string, datastorePath?: string, storageName?: string) =>
-    this.backupMethods.backup(repository, datastorePath, storageName);
-  deploy = (repository: string, destMachine: string, datastorePath?: string) =>
-    this.backupMethods.deploy(repository, destMachine, datastorePath);
-  /* eslint-enable @typescript-eslint/no-deprecated */
   checkpointCreate = (
     repository: string,
     checkpointName: string,
@@ -1328,8 +1312,6 @@ export class BridgeTestRunner {
 
   // Helper Methods
   getCombinedOutput = (result: ExecResult) => this.testHelpers.getCombinedOutput(result);
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  hasNoSyntaxErrors = (result: ExecResult) => this.testHelpers.hasNoSyntaxErrors(result);
   hasValidCommandSyntax = (result: ExecResult) => this.testHelpers.hasValidCommandSyntax(result);
   isSuccess = (result: ExecResult) => this.testHelpers.isSuccess(result);
   isNotImplemented = (result: ExecResult) => this.testHelpers.isNotImplemented(result);

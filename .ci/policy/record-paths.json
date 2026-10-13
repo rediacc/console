@@ -104,8 +104,16 @@
           "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
         },
         {
+          "id": "check:ci-review-resolutions",
+          "evidence": ".ci/rediacc_ci/quality/review_resolutions.py:3 (cite) agent/reviews/<branch>/"
+        },
+        {
           "id": "check:ci-script-exec-bit",
           "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.md"
+        },
+        {
+          "id": "check:ci-trap-registry",
+          "evidence": ".ci/rediacc_ci/quality/trap_registry.py:641 (glob) *.md"
         },
         {
           "id": "check:ci-tree-shape",

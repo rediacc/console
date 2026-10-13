@@ -193,6 +193,9 @@ FENCE_TICKS = r"(?:\\?`){3}"
 FENCE_OPENER = re.compile(r"^[ \t]*%s%s[ \t]*$" % (FENCE_TICKS, re.escape(FENCE_NEEDLE)))
 FENCE_CLOSER = re.compile(r"^[ \t]*%s[ \t]*$" % FENCE_TICKS)
 
+# A disposition that parks a finding on a worklist item instead of closing it (PLAN-deferred-findings-block-merge D6, operator ruling 2026-10-08). The phrase is what `wl_prreview.describe` renders for the retired `deferred #<item>` disposition, so an answer carrying it has answered nothing: the finding is still unfixed. `wl_prreview` imports this pattern rather than copying it.
+DEFERRED_ANSWER_RE = re.compile(r"deferred to worklist item #[0-9a-f]{6,16}")
+
 GH_ATTEMPTS = 3
 GH_SLEEP_FACTOR = 3
 
@@ -335,7 +338,10 @@ def newest_summary(comments: list[dict]) -> dict | None:
             continue
         if body.startswith("<!--"):
             continue
-        if FENCE_NEEDLE in body or VERDICT_HEADING.search(body):
+        # A fence OPENER line, never the bare needle: the bot's wrapper comment names `json:review-findings` in prose and, being newer, outranked the real review on PR #599 (#51ec5215).
+        if any(FENCE_OPENER.match(line) for line in body.split("\n")) or VERDICT_HEADING.search(
+            body
+        ):
             matches.append(comment)
     if not matches:
         return None
@@ -375,9 +381,9 @@ def findings_fence_is_empty(body: str) -> bool:
 
 
 def summary_verdict(comments: list[dict]) -> tuple[str, dict | None, dict | None]:
-    """(verdict, summary, reply) for surface 2: "none", "empty", "answered" or "unanswered".
+    """(verdict, summary, reply) for surface 2: "none", "empty", "answered", "deferred" or "unanswered".
 
-    ONE DECISION FOR main() AND selftest(), so the controls exercise the rule the gate runs. "empty" is the GR6 exemption (operator ruling 2026-10-03) and is decided BEFORE the reply search, on the newest summary only.
+    ONE DECISION FOR main() AND selftest(), so the controls exercise the rule the gate runs. "empty" is the GR6 exemption (operator ruling 2026-10-03) and is decided BEFORE the reply search, on the newest summary only. "deferred" is an answer whose disposition parks a finding on a worklist item (DEFERRED_ANSWER_RE): the reply exists and still fails, because a deferred finding is unfinished work (PLAN-deferred-findings-block-merge D6).
     """
     summary = newest_summary(comments)
     if summary is None:
@@ -386,6 +392,8 @@ def summary_verdict(comments: list[dict]) -> tuple[str, dict | None, dict | None
         return "empty", summary, None
     reply = summary_reply(comments, summary)
     if reply is not None:
+        if DEFERRED_ANSWER_RE.search(reply.get("body") or ""):
+            return "deferred", summary, reply
         return "answered", summary, reply
     return "unanswered", summary, None
 
@@ -478,6 +486,7 @@ def main(argv: list[str] | None = None) -> int:
     issue_comments = json.loads(issue_body)
     verdict, summary, reply = summary_verdict(issue_comments)
     summary_unaddressed = False
+    summary_deferred = False
     summary_id = summary_author = summary_created = summary_head = ""
     if summary is None:
         print("No top-level review summary found - OK")
@@ -492,7 +501,9 @@ def main(argv: list[str] | None = None) -> int:
         summary_created = summary.get("created_at")
         # `jq -r '.body' | tr '\n' ' '` ADDS A TRAILING SPACE, because `jq -r` terminates its output with a newline and `tr` turns that newline into a space too. The excerpt therefore ends `... "` rather than `..."`, and a port that translated only the body's INTERNAL newlines produced a one-character difference on every summary. Found by the differential.
         summary_head = clip(((summary.get("body") or "") + "\n").replace("\n", " "), 120)
-        if reply is not None:
+        if verdict == "deferred":
+            summary_deferred = True
+        elif reply is not None:
             print(
                 "Top-level review summary (comment %s) answered by comment %s - OK"
                 % (summary_id, reply.get("id"))
@@ -500,7 +511,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             summary_unaddressed = True
 
-    if not unreplied and not low_effort and not summary_unaddressed:
+    if not unreplied and not low_effort and not summary_unaddressed and not summary_deferred:
         return 0
 
     has_issues = False
@@ -623,6 +634,25 @@ def main(argv: list[str] | None = None) -> int:
         print(("  " + GH_ORIGIN + "/%s/pull/%s#issuecomment-%s") % (repo, pr_number, summary_id))
         print("------------------------------------------------------------")
 
+    if summary_deferred:
+        has_issues = True
+        deferral = DEFERRED_ANSWER_RE.search((reply or {}).get("body") or "")
+        print()
+        print("DEFERRED REVIEW FINDING (1):")
+        print()
+        print("a disposition defers a finding: fix it or waive it with ASKED:")
+        print(
+            "  - comment %s answers review summary %s with %r"
+            % ((reply or {}).get("id"), summary_id, deferral.group(0) if deferral else "")
+        )
+        print(("    " + GH_ORIGIN + "/%s/pull/%s#issuecomment-%s") % (repo, pr_number, summary_id))
+        print()
+        print("A deferral is unfinished work (operator ruling 2026-10-08), so it")
+        print("does not answer the finding. Fix the finding and post a new answer")
+        print("saying 'fixed in <sha>', or 'not a bug: <evidence>'. The one escape")
+        print("is an operator-ruled waiver: 'waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z'")
+        print("through python3 .claude/hooks/stop/wl_prreview.py.")
+
     return 1 if has_issues else 0
 
 
@@ -654,8 +684,26 @@ def selftest() -> int:
     summary_cases = [
         (
             "the fence identifies a summary",
-            [{"id": 1, "user": bot, "created_at": "t1", "body": "x ```json:review-findings\n[]"}],
+            [{"id": 1, "user": bot, "created_at": "t1", "body": "x\n```json:review-findings\n[]"}],
             1,
+        ),
+        (
+            "a newer bot comment naming the fence in prose does NOT outrank the review (#51ec5215)",
+            [
+                {
+                    "id": 7,
+                    "user": bot,
+                    "created_at": "t1",
+                    "body": "x\n```json:review-findings\n[]\n```",
+                },
+                {
+                    "id": 8,
+                    "user": bot,
+                    "created_at": "t2",
+                    "body": "The review ends with a json:review-findings fence.",
+                },
+            ],
+            7,
         ),
         (
             "a verdict heading identifies one too",
@@ -710,8 +758,23 @@ def selftest() -> int:
         ("an unparseable fence, no reply: red (fail closed)", broken_report, "unanswered"),
         ("no fence at all, no reply: red", "## Review verdict: approve", "unanswered"),
     ]
+    # THE DEFERRAL PAIR (PLAN-deferred-findings-block-merge D6). The same long reply, once with a deferral phrase and once without: only the disposition changes, so a rule that ignored the phrase, or matched any reply, reds one half.
+    deferral_cases = [
+        (
+            "a reply deferring to a worklist item is deferred",
+            "F1: deferred to worklist item #abcdef12. " + "z" * SUMMARY_LONGFORM_CHARS,
+            "deferred",
+        ),
+        (
+            "the same reply with a fix is answered",
+            "F1: fixed in 0123456789ab. " + "z" * SUMMARY_LONGFORM_CHARS,
+            "answered",
+        ),
+    ]
 
-    floor = len(low_effort_cases) + len(summary_cases) + len(verdict_cases) + 9
+    floor = (
+        len(low_effort_cases) + len(summary_cases) + len(verdict_cases) + len(deferral_cases) + 9
+    )
     ctl = Controls("review-comments", floor=floor)
 
     for label, (text, min_chars), want in low_effort_cases:
@@ -722,10 +785,17 @@ def selftest() -> int:
     for verdict_label, report, want_verdict in verdict_cases:
         planted = [{"id": 20, "user": bot, "created_at": "2026-10-03T00:00:00Z", "body": report}]
         ctl.check("verdict: %s" % verdict_label, summary_verdict(planted)[0], want_verdict)
+    for deferral_label, answer_body, want_verdict in deferral_cases:
+        planted = [
+            {"id": 30, "user": bot, "created_at": "2026-10-08T00:00:00Z", "body": one_report},
+            {"id": 31, "user": human, "created_at": "2026-10-08T00:01:00Z", "body": answer_body},
+        ]
+        ctl.check("deferral: %s" % deferral_label, summary_verdict(planted)[0], want_verdict)
 
     # NEWEST WINS on the summary too.
-    older = {"id": 10, "user": bot, "created_at": "2026-08-01T00:00:00Z", "body": FENCE_NEEDLE}
-    newer = {"id": 11, "user": bot, "created_at": "2026-08-02T00:00:00Z", "body": FENCE_NEEDLE}
+    fenced = "```%s\n[]\n```" % FENCE_NEEDLE
+    older = {"id": 10, "user": bot, "created_at": "2026-08-01T00:00:00Z", "body": fenced}
+    newer = {"id": 11, "user": bot, "created_at": "2026-08-02T00:00:00Z", "body": fenced}
     ctl.check("only the newest summary is gated", newest_summary([older, newer])["id"], 11)
 
     # THE SUMMARY REPLY RULE, all four clauses, in both directions.
@@ -733,7 +803,7 @@ def selftest() -> int:
         "id": 5189236393,
         "user": bot,
         "created_at": "2026-08-05T10:00:00Z",
-        "body": FENCE_NEEDLE,
+        "body": fenced,
     }
     long_reply = "y" * SUMMARY_LONGFORM_CHARS
     ctl.check(

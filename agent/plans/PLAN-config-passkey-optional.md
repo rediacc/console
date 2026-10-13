@@ -114,6 +114,10 @@ Lead-verified before writing (2026-09-24): `passkeyCredentialId` is nullable (pr
   - Check first whether `DeviceConfigSetup` sends `encryptedBlob` as an object while `private/account/src/routes/device-codes.ts:38-39` expects a string.
     (ticked) 2026-10-03T09:38:53Z by d778be9d: private/account 1a5d9eb (PRF matrix spec, helpers, test:webauthn); console f3db2b125 runner assertion (ported to testrun/account_e2e.py); packages/www/src/content/docs/en/config-storage.md:62 Bitwarden row
 - [ ] T4 Lead: before deploy, run one production query: slot holders with no `config_user_identities` row. Then deploy eu and walk the operator's Bitwarden setup end to end.
+  - Query, 2026-10-08 (read-only SELECT, `wrangler d1 execute account-db-<r> --remote` under `bws_env --profile deploy-workers`, rc=0 for eu, us and asia): `config_key_slots LEFT JOIN config_user_identities ON (config_store_id, user_id) WHERE identity IS NULL` returned 0 rows in all three regions. Totals: eu 1 store, 1 slot, 1 identity (no passkey bound); us and asia 0 stores.
+  - Deploy, 2026-10-08T07:14Z: stable eu `rediacc-account-eu` version `c36ae376-2cbf-408b-86a4-991321ed584a` from private/account f3f6fea (contains T1 c443954, T2 3ba7016, T3 1a5d9eb), no pending migrations. Rollback: `npx wrangler rollback 2d1520d3-fd29-4519-ad6d-6e7eeb030a9b --config workers/account/wrangler.eu.toml -y`; D1 bookmark `00000ba5-00000000-000050fe-515e0bc093a659f43819fc1ade215212`.
+  - Verified: server-info 200, portal 200, `verify_stable_endpoints` rc=0, and the served `index-DxH36Ubo.js` carries `prf-missing` and no `setupPasskeyAlways`.
+  - Open: the Bitwarden walk-through is operator-only. eu answers `POST /auth/login` without a captcha token with 400 `Captcha verification required`, and the walk needs the Bitwarden extension and vault, so no headless run stands in for it. Steps: log in at https://eu.rediacc.com/account, set up config storage with a Bitwarden passkey, expect the `prf-missing` notice, continue with a master password, then unlock and run `rdc config remote enable`.
 
 ## 4. CI wiring
 

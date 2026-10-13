@@ -1,0 +1,106 @@
+{"_header": {"bash_version": "GNU bash, version 5.3.9(1)-release (x86_64-pc-linux-gnu)", "case_count": 126, "source": "bash", "twin": ".ci/scripts/version/inject-env.sh", "twin_blob": "d518c5f3aefcee1f6c64cedfd3a089e55bf70b3a"}}
+{"_silent": ["test_an_override_short_circuits_the_resolver#5175b37dab6258f4", "test_cli_port_and_twin_agree[no-args]#e3b7f005d1b3ad14", "test_cli_port_and_twin_agree[version-override-no-print]#5175b37dab6258f4", "test_exported_set_port_and_twin_agree[flag-beats-env]#3632c267c95cbef8", "test_exported_set_port_and_twin_agree[flag-swallowed-as-version]#8cdd3aa834e9463e", "test_exported_set_port_and_twin_agree[no-args]#7d968f0f4e51e6db", "test_exported_set_port_and_twin_agree[print-twice]#a80234c73c28f26f", "test_exported_set_port_and_twin_agree[print]#52da2363927adf96", "test_exported_set_port_and_twin_agree[resolver-fails]#52da2363927adf96", "test_exported_set_port_and_twin_agree[resolver-leading-space]#52da2363927adf96", "test_exported_set_port_and_twin_agree[resolver-missing]#52da2363927adf96", "test_exported_set_port_and_twin_agree[resolver-prints-nothing]#52da2363927adf96", "test_exported_set_port_and_twin_agree[resolver-trailing-blanks]#52da2363927adf96", "test_exported_set_port_and_twin_agree[resolver-two-lines]#52da2363927adf96", "test_exported_set_port_and_twin_agree[strict-happy]#5fdaa0ffafaffbdf", "test_exported_set_port_and_twin_agree[strict-plus]#6263b4951ed57527", "test_exported_set_port_and_twin_agree[strict-prerelease]#a16201b6043bb417", "test_exported_set_port_and_twin_agree[strict-single-component]#b625e1aeb83adfd6", "test_exported_set_port_and_twin_agree[strict-twice]#44f7bfd221e9fadb", "test_exported_set_port_and_twin_agree[version-env]#1c3803addff9d77b", "test_exported_set_port_and_twin_agree[version-override-no-print]#1656498340c071d6", "test_exported_set_port_and_twin_agree[version-override]#0da13abb040b40bb"]}
+{"_key": "test_a_flag_swallowed_as_a_version_is_a_twin_defect#8085954430f9c4e0", "err": "", "out": "--strict\n", "rc": "0"}
+{"_key": "test_a_flag_swallowed_as_a_version_is_a_twin_defect#8085954430f9c4e0|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_an_override_short_circuits_the_resolver#17c4a304a3dda300", "err": "", "out": "7.7.7\n", "rc": "0"}
+{"_key": "test_an_override_short_circuits_the_resolver#17c4a304a3dda300|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_an_override_short_circuits_the_resolver#5175b37dab6258f4|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[empty-version-is-an-error]#b4ded0231071e8dd", "err": "inject-env.sh: --version was given an empty value\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[empty-version-is-an-error]#b4ded0231071e8dd|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[flag-beats-env]#23cdd69650a0802e", "err": "", "out": "9.9.9\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[flag-beats-env]#23cdd69650a0802e|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[flag-swallowed-as-version]#8085954430f9c4e0", "err": "", "out": "--strict\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[flag-swallowed-as-version]#8085954430f9c4e0|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[no-args]#e3b7f005d1b3ad14|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[print-twice]#b8ee3e5a9d5ad296", "err": "", "out": "1.2.3\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[print-twice]#b8ee3e5a9d5ad296|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[print]#7af292c7c533b84b", "err": "", "out": "1.2.3\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[print]#7af292c7c533b84b|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-empty-under-strict]#674a59f4e0374896", "err": "inject-env.sh: version resolved to 0.0.0-dev under --strict (did the checkout include tags?)\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[resolver-empty-under-strict]#674a59f4e0374896|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-fails-under-strict]#f6550d56b40de900", "err": "inject-env.sh: version resolved to 0.0.0-dev under --strict (did the checkout include tags?)\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[resolver-fails-under-strict]#f6550d56b40de900|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-fails]#7af292c7c533b84b", "err": "", "out": "0.0.0-dev\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-fails]#7af292c7c533b84b|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-leading-space]#7af292c7c533b84b", "err": "", "out": "  1.4.0\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-leading-space]#7af292c7c533b84b|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-missing]#7af292c7c533b84b", "err": "", "out": "0.0.0-dev\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-missing]#7af292c7c533b84b|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-prints-nothing]#7af292c7c533b84b", "err": "", "out": "0.0.0-dev\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-prints-nothing]#7af292c7c533b84b|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-trailing-blanks]#7af292c7c533b84b", "err": "", "out": "2.0.0\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-trailing-blanks]#7af292c7c533b84b|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-two-lines-under-strict]#674a59f4e0374896", "err": "inject-env.sh: version '2.0.0\n3.0.0' is not a dotted numeric version, refusing under --strict\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[resolver-two-lines-under-strict]#674a59f4e0374896|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-two-lines]#7af292c7c533b84b", "err": "", "out": "2.0.0\n3.0.0\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[resolver-two-lines]#7af292c7c533b84b|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-happy]#674a59f4e0374896", "err": "", "out": "1.2.3\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-happy]#674a59f4e0374896|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-plus]#fc6dcffd5d96e8b7", "err": "", "out": "1.2.3+build.7\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-plus]#fc6dcffd5d96e8b7|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-prerelease]#f732e233ee388882", "err": "", "out": "v1.2.3-rc.1\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-prerelease]#f732e233ee388882|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-rejects-dev]#4ec1ce1cfa9e6d0a", "err": "inject-env.sh: version resolved to 0.0.0-dev under --strict (did the checkout include tags?)\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[strict-rejects-dev]#4ec1ce1cfa9e6d0a|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-rejects-trailing-space]#6eaa227e695563b7", "err": "inject-env.sh: version '1.2.3 ' is not a dotted numeric version, refusing under --strict\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[strict-rejects-trailing-space]#6eaa227e695563b7|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-rejects-word]#3a0c508ef01160d5", "err": "inject-env.sh: version 'latest' is not a dotted numeric version, refusing under --strict\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[strict-rejects-word]#3a0c508ef01160d5|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-single-component]#600006f298f6cf4b", "err": "", "out": "1\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-single-component]#600006f298f6cf4b|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-twice]#a2e6e4dfe9830833", "err": "", "out": "1.2.3\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[strict-twice]#a2e6e4dfe9830833|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[unknown-arg-after-a-good-one]#1e595a8fb7940c93", "err": "inject-env.sh: unknown arg: --bogus\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[unknown-arg-after-a-good-one]#1e595a8fb7940c93|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[unknown-arg]#385496fcdbe29aae", "err": "inject-env.sh: unknown arg: --bogus\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[unknown-arg]#385496fcdbe29aae|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[version-env]#17c4a304a3dda300", "err": "", "out": "7.7.7\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[version-env]#17c4a304a3dda300|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[version-override-no-print]#5175b37dab6258f4|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[version-override]#81aba853975f8609", "err": "", "out": "9.9.9\n", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[version-override]#81aba853975f8609|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_cli_port_and_twin_agree[version-without-value]#c91019293be5b24c", "err": "inject-env.sh: --version requires an argument\n", "out": "", "rc": "1"}
+{"_key": "test_cli_port_and_twin_agree[version-without-value]#c91019293be5b24c|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_delta_a_resolver_without_the_exec_bit_still_answers#7af292c7c533b84b", "err": "", "out": "0.0.0-dev\n", "rc": "0"}
+{"_key": "test_delta_a_resolver_without_the_exec_bit_still_answers#7af292c7c533b84b|file0", "err": "", "out": "\u0000absent", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[empty-version-is-an-error]#05423024f19b4e2f", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[empty-version-is-an-error]#05423024f19b4e2f|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[flag-beats-env]#3632c267c95cbef8|more", "err": "", "out": "[{\"APP_VERSION\": \"9.9.9\", \"CLI_VERSION\": \"9.9.9\", \"TAG\": \"9.9.9\", \"VITE_APP_VERSION\": \"9.9.9\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[flag-swallowed-as-version]#8cdd3aa834e9463e|more", "err": "", "out": "[{\"APP_VERSION\": \"--strict\", \"CLI_VERSION\": \"--strict\", \"TAG\": \"--strict\", \"VITE_APP_VERSION\": \"--strict\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[no-args]#7d968f0f4e51e6db|more", "err": "", "out": "[{\"APP_VERSION\": \"1.2.3\", \"CLI_VERSION\": \"1.2.3\", \"TAG\": \"1.2.3\", \"VITE_APP_VERSION\": \"1.2.3\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[print-twice]#a80234c73c28f26f|more", "err": "", "out": "[{\"APP_VERSION\": \"1.2.3\", \"CLI_VERSION\": \"1.2.3\", \"TAG\": \"1.2.3\", \"VITE_APP_VERSION\": \"1.2.3\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[print]#52da2363927adf96|more", "err": "", "out": "[{\"APP_VERSION\": \"1.2.3\", \"CLI_VERSION\": \"1.2.3\", \"TAG\": \"1.2.3\", \"VITE_APP_VERSION\": \"1.2.3\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-empty-under-strict]#5fdaa0ffafaffbdf", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-empty-under-strict]#5fdaa0ffafaffbdf|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-fails-under-strict]#e67b400cab20d898", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-fails-under-strict]#e67b400cab20d898|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-fails]#52da2363927adf96|more", "err": "", "out": "[{\"APP_VERSION\": \"0.0.0-dev\", \"CLI_VERSION\": \"0.0.0-dev\", \"TAG\": \"0.0.0-dev\", \"VITE_APP_VERSION\": \"0.0.0-dev\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-leading-space]#52da2363927adf96|more", "err": "", "out": "[{\"APP_VERSION\": \"  1.4.0\", \"CLI_VERSION\": \"  1.4.0\", \"TAG\": \"  1.4.0\", \"VITE_APP_VERSION\": \"  1.4.0\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-missing]#52da2363927adf96|more", "err": "", "out": "[{\"APP_VERSION\": \"0.0.0-dev\", \"CLI_VERSION\": \"0.0.0-dev\", \"TAG\": \"0.0.0-dev\", \"VITE_APP_VERSION\": \"0.0.0-dev\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-prints-nothing]#52da2363927adf96|more", "err": "", "out": "[{\"APP_VERSION\": \"0.0.0-dev\", \"CLI_VERSION\": \"0.0.0-dev\", \"TAG\": \"0.0.0-dev\", \"VITE_APP_VERSION\": \"0.0.0-dev\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-trailing-blanks]#52da2363927adf96|more", "err": "", "out": "[{\"APP_VERSION\": \"2.0.0\", \"CLI_VERSION\": \"2.0.0\", \"TAG\": \"2.0.0\", \"VITE_APP_VERSION\": \"2.0.0\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-two-lines-under-strict]#5fdaa0ffafaffbdf", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-two-lines-under-strict]#5fdaa0ffafaffbdf|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[resolver-two-lines]#52da2363927adf96|more", "err": "", "out": "[{\"APP_VERSION\": \"2.0.0\\n3.0.0\", \"CLI_VERSION\": \"2.0.0\\n3.0.0\", \"TAG\": \"2.0.0\\n3.0.0\", \"VITE_APP_VERSION\": \"2.0.0\\n3.0.0\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-happy]#5fdaa0ffafaffbdf|more", "err": "", "out": "[{\"APP_VERSION\": \"1.2.3\", \"CLI_VERSION\": \"1.2.3\", \"TAG\": \"1.2.3\", \"VITE_APP_VERSION\": \"1.2.3\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-plus]#6263b4951ed57527|more", "err": "", "out": "[{\"APP_VERSION\": \"1.2.3+build.7\", \"CLI_VERSION\": \"1.2.3+build.7\", \"TAG\": \"1.2.3+build.7\", \"VITE_APP_VERSION\": \"1.2.3+build.7\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-prerelease]#a16201b6043bb417|more", "err": "", "out": "[{\"APP_VERSION\": \"v1.2.3-rc.1\", \"CLI_VERSION\": \"v1.2.3-rc.1\", \"TAG\": \"v1.2.3-rc.1\", \"VITE_APP_VERSION\": \"v1.2.3-rc.1\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-rejects-dev]#7a6e3302366cd34a", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-rejects-dev]#7a6e3302366cd34a|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-rejects-trailing-space]#9ce991c683e8172a", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-rejects-trailing-space]#9ce991c683e8172a|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-rejects-word]#9f35a2d9eb53fd02", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-rejects-word]#9f35a2d9eb53fd02|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-single-component]#b625e1aeb83adfd6|more", "err": "", "out": "[{\"APP_VERSION\": \"1\", \"CLI_VERSION\": \"1\", \"TAG\": \"1\", \"VITE_APP_VERSION\": \"1\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[strict-twice]#44f7bfd221e9fadb|more", "err": "", "out": "[{\"APP_VERSION\": \"1.2.3\", \"CLI_VERSION\": \"1.2.3\", \"TAG\": \"1.2.3\", \"VITE_APP_VERSION\": \"1.2.3\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[unknown-arg-after-a-good-one]#f5e5121c23d4c354", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[unknown-arg-after-a-good-one]#f5e5121c23d4c354|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[unknown-arg]#c4437806ea2ba863", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[unknown-arg]#c4437806ea2ba863|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[version-env]#1c3803addff9d77b|more", "err": "", "out": "[{\"APP_VERSION\": \"7.7.7\", \"CLI_VERSION\": \"7.7.7\", \"TAG\": \"7.7.7\", \"VITE_APP_VERSION\": \"7.7.7\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[version-override-no-print]#1656498340c071d6|more", "err": "", "out": "[{\"APP_VERSION\": \"9.9.9\", \"CLI_VERSION\": \"9.9.9\", \"TAG\": \"9.9.9\", \"VITE_APP_VERSION\": \"9.9.9\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[version-override]#0da13abb040b40bb|more", "err": "", "out": "[{\"APP_VERSION\": \"9.9.9\", \"CLI_VERSION\": \"9.9.9\", \"TAG\": \"9.9.9\", \"VITE_APP_VERSION\": \"9.9.9\"}, []]", "rc": "0"}
+{"_key": "test_exported_set_port_and_twin_agree[version-without-value]#ea94efa3f3581c55", "err": "", "out": "", "rc": "1"}
+{"_key": "test_exported_set_port_and_twin_agree[version-without-value]#ea94efa3f3581c55|more", "err": "", "out": "[{}, []]", "rc": "0"}
+{"_key": "test_the_resolver_stub_is_actually_reached#7af292c7c533b84b", "err": "", "out": "1.2.3\n", "rc": "0"}
+{"_key": "test_the_resolver_stub_is_actually_reached#7af292c7c533b84b|file0", "err": "", "out": "resolve-version.sh\t--current\n", "rc": "0"}

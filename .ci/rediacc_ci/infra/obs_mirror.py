@@ -1186,7 +1186,7 @@ def _ensure_oras() -> None:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python3 -m rediacc_ci.infra.obs_mirror",
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.infra.obs_mirror",
         description="Capture, fetch and serve the OBS Ceph mirror for openSUSE Leap 16.0.",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)

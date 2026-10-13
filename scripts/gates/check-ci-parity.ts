@@ -32,10 +32,8 @@
  *      coverage -- it would make every other assertion vacuous.
  *   3. The control below runs before the real check on EVERY invocation.
  *
- * COVERAGE VIA A TEST IS DECLARED, NEVER INFERRED. The battery runs every
- * test-*.sh under .ci/scripts/test/gates/ (the glob is the live count), and
- * grepping them for a script name is precisely how #549 would have
- * been greenwashed: check-jq-boolean-default.ts is NAMED by
+ * COVERAGE VIA A TEST IS DECLARED, NEVER INFERRED. Grepping the gate tests
+ * for a script name is precisely how #549 would have been greenwashed: check-jq-boolean-default.ts is NAMED by
  * test-gate-anti-vacuity.sh:104 and that test ran green in CI for weeks while
  * the real scan never executed once. Mentioning a script is not executing it.
  * So `ci.kind: 'test'` carries a BLOCKER naming the line that proves the real
@@ -73,8 +71,6 @@ const ROOT = process.env.CI_PARITY_ROOT || path.resolve(__dirname, '..', '..');
 // Repo-relative for display; the absolute path comes from the same seam, so a message and the file it names can never drift apart.
 const EXEMPT_PATH = policyPath('.ci-parity-exempt', ROOT);
 const EXEMPT_FILE = path.relative(ROOT, EXEMPT_PATH);
-const BATTERY_DIR = '.ci/scripts/test/gates';
-const BATTERY_RUNNER = '.ci/rediacc_ci/battery.py';
 
 /**
  * Widened from the predecessor's `.ci/scripts/(quality|security)/check-*.sh`.
@@ -430,8 +426,6 @@ interface Inputs {
   surface: string[];
   workflowText: (file: string) => string | null;
   exempt: ExemptEntry[];
-  /** basenames of BATTERY_DIR/test-*.sh on disk */
-  battery: string[];
   fileExists: (rel: string) => boolean;
 }
 
@@ -601,8 +595,7 @@ function analyze(inp: Inputs): Finding[] {
       continue;
     }
     const stepLeaves = resolveLeaves(step.run, inp.scripts);
-    // The 57 battery entries all point at the single check:ci-quality-gates step, which resolves to the battery runner rather than to any one test. Verifying the pointer reaches the battery RUNNER is what proves the battery executes in CI, which is the fact those entries depend on.
-    const want = g.qualityGateTest ? [BATTERY_RUNNER] : g.leaves;
+    const want = g.leaves;
     if (!want.some((l) => stepLeaves.includes(l))) {
       add(
         'R3',
@@ -667,27 +660,6 @@ function analyze(inp: Inputs): Finding[] {
     state.set(id, 2);
   };
   for (const g of inp.gates) visit(g.id);
-
-  // --- 7. Flattened-battery equality -------------------------------------- Without this, flattening the battery would recreate #549 fifty-seven times over: a new test would run in CI via the battery and never locally, or be listed locally and silently dropped.
-  const declared = new Set(
-    inp.gates.filter((g) => g.qualityGateTest).map((g) => path.posix.basename(g.leaves[0] ?? ''))
-  );
-  for (const f of inp.battery) {
-    if (!declared.has(f)) {
-      add(
-        'battery',
-        `${BATTERY_DIR}/${f} exists on disk and the battery runs it, but no manifest entry is tagged qualityGateTest for it, so a local run never schedules it.`
-      );
-    }
-  }
-  for (const f of declared) {
-    if (!inp.battery.includes(f)) {
-      add(
-        'battery',
-        `a manifest entry is tagged qualityGateTest for ${BATTERY_DIR}/${f}, which no longer exists.`
-      );
-    }
-  }
 
   return findings;
 }
@@ -832,7 +804,6 @@ function control(): void {
     surface: ['.github/workflows/w.yml'],
     workflowText: (f) => workflows[f] ?? null,
     exempt: [],
-    battery: [],
     fileExists: () => true,
   };
 
@@ -1094,7 +1065,6 @@ function main(): void {
     refuse('package.json defines no check:ci-* gates.');
   }
 
-  const batteryDir = path.join(ROOT, BATTERY_DIR);
   const inputs: Inputs = {
     scripts,
     gates,
@@ -1104,11 +1074,6 @@ function main(): void {
       return existsSync(p) ? readFileSync(p, 'utf-8') : null;
     },
     exempt: loadExempt(),
-    battery: existsSync(batteryDir)
-      ? readdirSync(batteryDir)
-          .filter((f) => f.startsWith('test-') && f.endsWith('.sh'))
-          .sort()
-      : [],
     fileExists: (rel) => existsSync(path.join(ROOT, rel)),
   };
 
@@ -1119,7 +1084,7 @@ function main(): void {
   console.log('='.repeat(60));
   console.log(
     `${gates.length} manifest gate(s); ${surface.length} workflow scope(s) in the parity surface ` +
-      `(${surface.join(', ')}); ${inputs.exempt.length} exempt; ${inputs.battery.length} battery test(s).`
+      `(${surface.join(', ')}); ${inputs.exempt.length} exempt.`
   );
   console.log('');
 
@@ -1131,7 +1096,7 @@ function main(): void {
   }
 
   // Ordered rules first, then anything else. The trailing set is not decoration: grouping by a fixed list alone would let a rule added later count toward the exit code while never being printed, which is a finding measured and not reported -- the same silent-drop class this gate exists to catch.
-  const order = ['tautology', 'R1', 'R2', 'R3', 'hygiene', 'battery'];
+  const order = ['tautology', 'R1', 'R2', 'R3', 'hygiene'];
   const rules = [...order, ...new Set(findings.map((f) => f.rule))].filter(
     (r, i, all) => all.indexOf(r) === i
   );

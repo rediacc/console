@@ -23,7 +23,7 @@
  *
  * The fix made the bucket a DERIVED value: regions.json now carries
  * `backupR2` / `edgeBackupR2` beside the existing `r2` / `edgeR2`, the deploy
- * matrix hands it to .ci/scripts/deploy/set-account-worker-secrets.sh, and no
+ * matrix hands it to .ci/rediacc_ci/deploy/set_account_worker_secrets.py, and no
  * secret holds a bucket name any more. This gate is what stops the two sources
  * drifting apart again, since nothing else compares them.
  *

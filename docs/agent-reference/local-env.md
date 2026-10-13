@@ -23,11 +23,11 @@ Read this before fighting the devbox, the docker group, `account db`, the SEA lo
 
 **The devbox exists for AI agents first; for developers it is a convenience.** Restarting or recreating it to pick up an update (a new image, a new bind, a changed entrypoint) is almost always fine and needs no operator sign-off (operator ruling, 2026-09-24). `./run.sh devbox remove && ./run.sh devbox up` recreates it; a session whose own work is running inside the container finishes or pauses that work first.
 
-**One published port for the whole machine.** A shared `traefik:v3.6` container (`rediacc-devbox-proxy`, `.ci/lib/devbox.sh`) publishes `DEVBOX_PROXY_PORT` and routes by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app), `-db` and `-term` (ttyd on an attach-or-create tmux session, started by `devbox-autostart.sh`; a reload re-attaches rather than
+**One published port for the whole machine.** A shared `traefik:v3.6` container (`rediacc-devbox-proxy`, `rediacc_ci.core.devbox`) publishes `DEVBOX_PROXY_PORT` and routes by **Host header** to `<worktree>.localhost` (VS Code), `-account` (the whole app), `-db` and `-term` (ttyd on an attach-or-create tmux session, started by `devbox-autostart.sh`; a reload re-attaches rather than
 opening a new shell). Host routing rather than path routing is deliberate: every app keeps its own root path, so nothing needs `--server-base-path`/`base` configuration. Routes come from labels on the devbox container itself, so adding a worktree changes no proxy config. This exists because each published port needs its own manual forward on ChromeOS; now there is one -- and it is
 the ONLY one: devbox containers publish no ports at all, so the proxy is the sole ingress. `devbox status` PROBES each route and reports OK / "no backend yet", because Traefik's bare 502 names neither the service nor the reason. Servers started inside the devbox must bind `0.0.0.0` (`REDIACC_DEV_BIND`) or the proxy cannot reach them and Traefik answers 502.
 
-**The docker-group gap closes itself.** `usermod -aG docker` does not affect the shell that ran it, so the classic advice is "log out and back in". `run.sh` instead calls `reexec_with_docker_group` (`.ci/lib/local-common.sh`), which checks membership in `/etc/group` (NOT `id -nG`, which reports the stale groups of the current process — the very thing being worked around), proves
+**The docker-group gap closes itself.** `usermod -aG docker` does not affect the shell that ran it, so the classic advice is "log out and back in". `run.sh` instead calls `reexec_with_docker_group` (`.ci/rediacc_ci/core/local_common.py`), which checks membership in `/etc/group` (NOT `id -nG`, which reports the stale groups of the current process — the very thing being worked around), proves
 `sg docker -c "docker version"` succeeds, then re-execs itself under `sg`. One hop, guarded by `REDIACC_DOCKER_GROUP_REEXEC`, after which every docker call in the run is plain `docker` rather than `sudo docker`.
 
 **`account db` serves sqlite-web, not Drizzle Studio, and that reversal was paid for.** Studio's local process serves only an API; its UI is hosted at local.drizzle.studio. A real browser (agent-browser) showed Chrome's Local Network Access restriction blocking that hosted page from reaching the local server -- the page says so itself -- which no proxy change can fix. sqlite-web
@@ -37,14 +37,14 @@ serves its UI from the same origin as the data, so there is no third-party page 
 `com.rediacc.devbox.worktree` label rather than by name.
 
 **The container runs as the host operator.** The published image keeps its `vscode` user at UID/GID 7111, because renet's hub runs the same image and chowns its workspaces to `config.RediaccUID`.
-So `devbox_ensure_uid_image` (`.ci/lib/devbox.sh`) derives a thin local image, `rediacc/devbox:uid<UID>-gid<GID>-<base id 12>-<Dockerfile.uid sha256 12>`, from `.devcontainer/Dockerfile.uid`, which renumbers `vscode` to the host ids and chowns `/home/vscode`, `/opt/openvscode-server` and `/go` at BUILD time.
+So `devbox_ensure_uid_image` (`rediacc_ci.core.devbox`) derives a thin local image, `rediacc/devbox:uid<UID>-gid<GID>-<base id 12>-<Dockerfile.uid sha256 12>`, from `.devcontainer/Dockerfile.uid`, which renumbers `vscode` to the host ids and chowns `/home/vscode`, `/opt/openvscode-server` and `/go` at BUILD time.
 It runs once per operator per base image (501 s measured 2026-09-27: 337 s of chown copy-up, then 162 s exporting the layer) and before `docker run`, so it never races the readiness probe; it is skipped when the base ids already match, and is reused while its tag exists; a re-pulled base (new id) or an edited `Dockerfile.uid` (new hash) re-derives on the next `devbox up`.
 `.devcontainer/devbox-entrypoint.sh` only ASSERTS that `vscode` matches `HOST_UID:HOST_GID` and exits 1 when it does not, then drops privileges with `setpriv`. It also sets `HOME` explicitly, because setpriv changes credentials and not the environment.
 `docker run --user $(id -u)` does NOT work: a uid with no passwd entry has no home and no sudo, and the image's ownership stays untouched.
 
 The repo is bind-mounted at its IDENTICAL host path (never `/workspace`): a git worktree's gitdir link is absolute, and a nested `docker -v $(pwd)` is resolved by the host daemon. `~/.gitconfig`, `~/.git-credentials`, `~/.config/gh`, `~/.claude`, `~/.claude.json` and `~/.config/rediacc` are bound in by name.
 
-**The devbox reads its Bitwarden Secrets Manager token at shell start, and never holds a copy.** `.devcontainer/devbox-bws.sh` is bound read-only to `/etc/profile.d/zz-devbox-bws.sh` (`devbox_script_binds` in `.ci/lib/devbox.sh`), so every login shell (`bash -l`, `docker exec <devbox> bash -lc`, the ttyd tmux session) exports `BWS_ACCESS_TOKEN` from the token-only file `~/.config/rediacc/bws-access-token`. The rdc CLI's `~/.config/rediacc` is bound read-write, and that one file is bound READ-ONLY on top of it, so a CLI or E2E run in the container can neither delete nor rewrite it. Only that one line is read and xtrace is suspended around it, so the value is in no image layer, no `docker inspect` Config.Env or label, no tracked file and no log, and a rotated token reaches the next shell without a recreate. A non-login shell (a VS Code terminal by default) does not run it. A container created before a bind existed lacks it for good (including a host directory created after the container), so `devbox up` (and `./run.sh setup`) recreates on a missing bind under the same `--no-rehost`/`DEVBOX_NO_REHOST=1` opt-out as hostname drift.
+**The devbox reads its Bitwarden Secrets Manager token at shell start, and never holds a copy.** `.devcontainer/devbox-bws.sh` is bound read-only to `/etc/profile.d/zz-devbox-bws.sh` (`devbox_script_binds` in `rediacc_ci.core.devbox`), so every login shell (`bash -l`, `docker exec <devbox> bash -lc`, the ttyd tmux session) exports `BWS_ACCESS_TOKEN` from the token-only file `~/.config/rediacc/bws-access-token`. The rdc CLI's `~/.config/rediacc` is bound read-write, and that one file is bound READ-ONLY on top of it, so a CLI or E2E run in the container can neither delete nor rewrite it. Only that one line is read and xtrace is suspended around it, so the value is in no image layer, no `docker inspect` Config.Env or label, no tracked file and no log, and a rotated token reaches the next shell without a recreate. A non-login shell (a VS Code terminal by default) does not run it. A container created before a bind existed lacks it for good (including a host directory created after the container), so `devbox up` (and `./run.sh setup`) recreates on a missing bind under the same `--no-rehost`/`DEVBOX_NO_REHOST=1` opt-out as hostname drift.
 
 **`node_modules` is not shared between host and container** — the host and the image have different glibc versions, and `install:natives` builds against whichever one it runs on. `REDIACC_NPM_RUNTIME` is part of the `ensure_deps` stamp so switching sides forces one honest reinstall instead of a loader error.
 
@@ -165,6 +165,27 @@ symptom this variable exists to prevent. The documented cure was producing the d
 
 After reproducing, unset `RDC_RENET_LICENSE` (or remove from your shell) so subsequent `./rdc.sh` invocations rebuild the dev-friendly nolicense renet again.
 
+## A real passkey provider in the account E2E suite
+
+`private/account/e2e/tests/20-config-storage/20-12-real-provider-bitwarden.test.ts` drives the real Bitwarden browser extension, headless, against a throwaway Vaultwarden vault, to prove on a real provider that a passkey without PRF ends in the master-password path.
+It runs the same way on a CI runner, on a host and in the devbox, because it needs nothing privileged: no container runtime, no secret, only `openssl` and Playwright's bundled Chromium.
+The two third-party artifacts are pinned by version and sha256 in `private/account/e2e/real-provider.lock.json` and verified on every run.
+
+```bash
+# In the devbox, with `./run.sh account dev` running there
+./run.sh devbox exec "./run.sh account test e2e --grep @real-provider"
+
+# What CI runs: backend, portal and suite in one command (needs the account test secrets in the environment)
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e --grep @real-provider
+```
+
+In CI the spec is one unit of the `test-account-e2e` lane (`.ci/config/shards/test-account-e2e.json`), so it is part of `CI Complete` like every other account spec.
+The runner then reads Playwright's report and fails the leg unless the `@real-provider` test ran with status `expected`: a skip, a failure and a pass on retry all count against it.
+
+The lock file also records whether the pinned extension returns PRF (`bitwarden.providesPrf`). The spec compares that with what the extension answers and runs the matching walk; when the two differ it fails with the steps to take, first of them flipping the field.
+`check:ci-real-provider-pins` fails a pull request when either pin is behind a stable upstream release that is past the release-age window, and names the bump command (`npm run real-provider:bump` in `private/account/e2e`).
+What that means, the bump procedure, the launch flags and the `agent-browser --extension` form for probing by hand are in [private/account/e2e/README.md](../../private/account/e2e/README.md), section *Real provider*.
+
 ## Run Functions (escape hatch, debugging only)
 
 `rdc run` executes Rediaccfile functions remotely. It is hidden from help and MCP, and is for debugging only. Prefer the dedicated commands above. The function name is passed with `-f`.
@@ -214,3 +235,7 @@ the key to all three regions, smoke-tests propagation, and updates the manifest 
 Auth: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
 
 `rediacc_ci.ops.deploy_bench` runs under the `deploy-bench` Bitwarden profile and runs `rotation check --for=bench` as a preflight, so a stale bench credential cannot ship a dead key.
+The check has three outcomes (0 in sync, 1 drift, 2 could not check) and the deploy refuses the secrets push on anything but 0.
+
+`rotation check` reads the observability host's OTLP basicauth user names over plain OpenSSH, with no `rdc` login: `OBS_READER_SSH_KEY_B64` (the base64 of the machine's existing private key), `OBS_READER_SSH_KNOWN_HOSTS` (the pinned known_hosts lines) and `OBS_READER_SSH_TARGET` (`user@host[:port]`), bound by the `rotation` and `deploy-bench` profiles.
+An absent value, a host-key mismatch or a refused key is a could-not-check finding that names its cause, never drift and never a skip.

@@ -459,7 +459,7 @@ def unwindowed_installs(rel: str, lines: list[tuple[int, str]]) -> list[str]:
             ):
                 out.append(
                     "%s:%d: `%s` resolves live with no --before; pass --before from "
-                    "`python3 -m rediacc_ci.core.release_age npm-before` (an NPM_BEFORE build-arg in a Dockerfile)"
+                    "`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before` (an NPM_BEFORE build-arg in a Dockerfile)"
                     % (rel, number, " ".join(command.split()))
                 )
     return out
@@ -509,7 +509,7 @@ def composite_findings(root: pathlib.Path) -> list[str]:
     out: list[str] = []
     for needle, why in (
         ("actions/setup-node@", "no longer runs actions/setup-node"),
-        ("toolchain_pin_for npm", "no longer reads the pin through toolchain.sh"),
+        ("core.toolchain pin npm", "no longer reads the pin through rediacc_ci.core.toolchain"),
         ("npm install -g", "no longer installs the pinned npm"),
         ("npm --version", "no longer verifies the installed npm"),
     ):
@@ -681,8 +681,7 @@ FIXTURE_COMPOSITE = (
     "runs:\n  using: composite\n  steps:\n"
     "    - uses: actions/setup-node@0000000000000000000000000000000000000000\n"
     "    - shell: bash\n      run: |\n"
-    "        . .ci/scripts/lib/toolchain.sh\n"
-    '        pin="$(toolchain_pin_for npm)"\n'
+    '        pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)"\n'
     '        npm install -g "npm@${pin}"\n'
     '        [[ "$(npm --version)" == "$pin" ]]\n'
 )

@@ -36,11 +36,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { GREEN, NC, RED } from '../lib/console.js';
+import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
-const RENET_DIR = path.join(CONSOLE_ROOT, 'private', 'renet');
+const RENET_DIR = submodulePath('private', 'renet');
 
 /**
  * Functions that run to UNDO something and therefore must survive the
@@ -286,11 +287,9 @@ function main(): void {
   }
   console.log(`${GREEN}✓${NC} control fired: a work context is flagged, a fresh-rooted one is not`);
 
-  if (!fs.existsSync(path.join(RENET_DIR, 'go.mod'))) {
-    console.log(`${YELLOW}⚠${NC} SKIPPED: the renet submodule is not checked out.`);
-    console.log('  The control above still ran, so this is a stated skip, not a silent pass.');
-    process.exit(0);
-  }
+  // The control above still ran, so a local skip is stated, not silent; in CI an
+  // absent submodule is a refusal (scripts/lib/submodule-presence.ts).
+  if (!requireSubmodule('recovery context scan', [path.join(RENET_DIR, 'go.mod')])) process.exit(0);
 
   const files = goFiles(RENET_DIR);
   const findings = scan(files);

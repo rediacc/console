@@ -34,7 +34,7 @@
  *   tsx scripts/gates/check-em-dash-surfaces.ts --selftest
  *
  * ---- gate ----
- * kind: battery
+ * kind: shared-step
  * step: i18n
  * needs: node
  * lane: quality-i18n
@@ -133,13 +133,18 @@ const SURFACES: readonly Surface[] = [
   // SEEDED, NOT CLEAN, and the difference is worth stating rather than burying in a baseline diff: 83 files under `.ci/scripts` and 3 under `.ci/rediacc_ci` carry em dashes today. Seeding grandfathers those and bans the 84th from this day. That is a real ban going forward and a paper one backwards; the drain is opportunistic, and `--write-baseline` REFUSES to add, so the number
   // can only fall from here.
   //
-  // Three sibling dirs rather than one `.ci`, because the floors differ by an order of magnitude and one global floor would stop catching a collapsed glob in the small one.
+  // Sibling dirs rather than one `.ci`, because the floors differ by an order of magnitude and one global floor would stop catching a collapsed glob in the small one.
   //
   // `.ci/scripts` READ 300 UNTIL THE BASH RETIREMENT CAMPAIGN TOOK IT TO 299, at which point the floor was refusing the campaign's own success rather than a collapsed glob. Re-measured 2026-09-21 at 299 and lowered to 200, so the margin is 99 files and shrinking; it is restated on each retirement batch so a closing margin is visible early.
-  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 200 },
+  // Re-measured 2026-10-08 at 192 after PLAN-retire-bash-oracles wave 1 deleted its bash twins, and lowered from 200 to the measured count: the margin is zero, so the next batch lowers it again in the same change.
+  // Re-measured 2026-10-08 at 184 after W11-A deleted test-run-sh.sh and W11-B deleted lib/common.sh, and lowered from 187 to the measured count.
+  // Re-measured 2026-10-08 at 183 after section 12 U3 deleted test-toolchain.sh, then at 182 after U2 deleted test-media-r2.sh, then at 178 after section 12 U1 deleted blocker-validator.sh, emit-advisory.sh, test-blocker-golden-corpus.sh and test-runner-advice.sh.
+  // Re-measured 2026-10-08 at 177 after the retirement of check:ci-gate-id-convention deleted .ci/scripts/quality/check_gate_id_convention.py (its subject, every manifest entry running a .ci/scripts/test/gates/test-*.sh, was gone).
+  // Measured 177 again after section 12 U3 step 2 deleted test-helpers.sh (-1) once check:ci-scope-mirrors had added .ci/scripts/quality/check_scope_mirrors.py (+1).
+  // Re-measured 2026-10-09 at 176 after the bash battery's retirement deleted .ci/scripts/quality/check_battery_clean_tree.py (its subject, .ci/rediacc_ci/battery.py, was gone).
+  { dir: '.ci/scripts', kind: 'source', exts: ['.sh', '.py'], minFiles: 176 },
   { dir: '.ci/rediacc_ci', kind: 'source', exts: ['.py'], minFiles: 200 },
-  // `.ci/lib` READ 5 UNTIL THE BASH RETIREMENT CAMPAIGN RETIRED `bws-env.sh`, at which point the floor was refusing the campaign's own success rather than a collapsed glob. Re-measured 2026-09-21 at 4 and lowered to 4, so the margin is zero: the next retirement out of this directory has to lower it again in the same change, which is the point of restating the margin here.
-  { dir: '.ci/lib', kind: 'source', exts: ['.sh'], minFiles: 4 },
+  // `.ci/lib` was retired as a surface on 2026-10-08: W11-A deleted local-common.sh, its last file, and the directory is gone.
   // packages/cli. The first two join at ZERO (measured clean when they were added); the third rides the baseline, because 93 percent of its findings are prose inside JSDoc where the dash often does real syntactic work, and a mechanical pass over that changes documented meaning.
   //
   // THE NESTING IS LOAD-BEARING. `packages/cli/src/i18n/locales` sits INSIDE `packages/cli/src`, and they stay disjoint only because their extension sets do not intersect. Adding '.json' to the source surface would count every catalog finding twice. `nestedSurfaceOverlap()` below turns that from a comment into a check.

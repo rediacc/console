@@ -50,7 +50,7 @@ REPO = pathlib.Path(__file__).resolve().parents[3]
 SEARCH_DIRS = (
     ".claude/hooks",
     ".claude/rediacc_hooks/tests",
-    ".ci/scripts/test/gates",
+    # `.ci/scripts/test/gates` LEFT THIS TUPLE on 2026-10-08: W11-A/B/C and section 12 U1-U3 deleted its last test-*.sh, so it held no subject.
     ".ci/rediacc_ci/tests",
 )
 NAME_RE = re.compile(r"^test[-_].*\.(py|sh|ts)$")
@@ -160,14 +160,15 @@ def registration_route_selfcheck(toks):
             "CONTROL: %s is registered nowhere yet manifest_reached() says it is reached, "
             "so the match is too loose and every subject would pass this route" % absent
         )
+    # RETARGETED 2026-10-08. This picked a `.ci/scripts/test/gates/` token, and that directory emptied; any manifest token whose basename is test-shaped (NAME_RE) is the same claim, and on that day the manifest named eleven `.ci/rediacc_ci/tests/gates/test_gate_*.py`.
     present = next(
-        (t.rsplit("/", 1)[-1] for t in sorted(toks) if t.startswith(".ci/scripts/test/gates/")),
+        (b for b in (t.rsplit("/", 1)[-1] for t in sorted(toks)) if NAME_RE.match(b)),
         None,
     )
     if present is None:
         return (
-            "CONTROL: no .ci/scripts/test/gates/ path among the manifest tokens; the lock "
-            "has changed shape and this route now recognises nothing"
+            "CONTROL: no test-shaped file among the manifest tokens; the lock has changed "
+            "shape and this route now recognises nothing"
         )
     if not manifest_reached(present, toks):
         return (

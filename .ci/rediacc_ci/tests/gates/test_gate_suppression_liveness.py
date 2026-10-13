@@ -38,7 +38,7 @@ import os
 import re
 import shutil
 
-from rediacc_ci import paths
+from rediacc_ci import paths, well_known
 from rediacc_ci.tests.gates import harness
 
 # test_passes_on_real_repo and test_the_real_run_reports_a_non_trivial_corpus both drive the subject over the real tree, but both are reads; no group needed. See the docstring.
@@ -437,3 +437,247 @@ def test_cli_i18n_prefix_matching(gate):
             result.combined, "commands.sync.", "live prefix must survive prefix-matching"
         )
         gate.log_pass("cli-i18n prefixes are matched as prefixes, not exact keys")
+
+
+# --------------------------------------------------------------------------- pr-conditions, and the online ledger gate ---------------------------------------------------------------------------
+#
+# THE FROZEN HOLD. `goldens/allowlist/corpus/embed-assets-upgrade-blocklist.list` was frozen before the k3s hold was written and holds only the file header, so it cannot carry these cases. This is the block that sat in `.ci/policy/.embed-assets-upgrade-blocklist` from 2026-09-16 until 9a6c21063 deleted it, byte for byte (the file header above it is left out because it carries an em dash). It is
+# written out here, not read through `git show 9a6c21063^:...`, because a shallow CI checkout does not hold that commit.
+FROZEN_589_HOLD = (
+    "# BLOCKER: k3s 1.37.0+k3s1 is a MINOR bump to a binary renet EMBEDS, and three\n"
+    "# CI lanes execute it -- E2E K8s, E2E K8s Ceph and E2E K8s Multinode. Taking it\n"
+    "# means rebuilding the renet builder image, moving the SHA256 pin and\n"
+    "# AssetK3sVersion in private/renet/pkg/embed/embed.go, and re-deriving\n"
+    "# credits.go plus third-party-credits.json: a submodule change whose blast\n"
+    "# radius is the cluster lanes themselves. Branch 0914-1 / PR #589 is a CI-repair\n"
+    "# wave that took Quality / Security from 56 failures to an intermittent-flake\n"
+    "# hunt, and an embedded runtime upgrade landing beside it would make any red in\n"
+    "# those lanes ambiguous between the upgrade and the repair -- the one thing this\n"
+    "# wave has spent its whole length disentangling.\n"
+    "# REVISIT WHEN PR #589 MERGES: delete this line, run\n"
+    "# `npx tsx scripts/gates/check-embed-asset-freshness.ts --upgrade`, then follow the four\n"
+    "# steps that gate prints. The pin is 1.36.4+k3s1 as of 2026-09-16.\n"
+    "k3s\n"
+)
+PR_589 = "%s#589" % well_known.GH_REPO
+MERGED_589 = "2026-09-22T08:22:16Z"
+LEDGER_SUBJECT_REL = "scripts/gates/check-pr-condition-ledger.ts"
+
+# The mutant's one change: the probe never runs. Asserted to have matched, so a renamed line cannot turn the mutant into the gate itself.
+PROBE_SWITCH = "const runPrConditions = !only || only === PR_CONDITIONS;"
+
+
+def write_ledger(root, prs: dict) -> None:
+    (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    (root / ".ci" / "config" / "merged-prs.json").write_text(
+        json.dumps(
+            {
+                "format": 1,
+                "refreshed_at": "2026-10-08T00:00:00Z",
+                "prs": {ref: {"mergedAt": at} for ref, at in prs.items()},
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def hold_fixture(gate, root, hold: str = FROZEN_589_HOLD):
+    """A fixture holding the frozen hold, plus one LIVE deps entry so the default run is not vacuous for reasons unrelated to the clause."""
+    make_fixture(gate, root)
+    write_policy(root, ".embed-assets-upgrade-blocklist", hold)
+    write_policy(
+        root,
+        ".deps-upgrade-blocklist",
+        "# BLOCKER: live package pinned deliberately, must not be reported as stale\neslint\n",
+    )
+    return root
+
+
+def test_frozen_589_hold_is_red_once_the_ledger_records_589(gate):
+    """THE CASE THE PROBE EXISTS FOR, in the DEFAULT run (no --probe): the k3s hold that outlived PR #589 by sixteen days fails, naming the clause line and the merge time."""
+    with harness.temp_dir() as root:
+        hold_fixture(gate, root)
+        write_ledger(root, {PR_589: MERGED_589})
+        result = run_gate(gate, root)
+        gate.assert_exit(1, result, "a hold whose PR has merged must fail")
+        gate.assert_contains(result.combined, "pr-conditions:", "prints the probe's shape line")
+        gate.assert_contains(
+            result.combined, ".embed-assets-upgrade-blocklist:14  k3s", "file:line"
+        )
+        gate.assert_contains(result.combined, PR_589, "names the PR")
+        gate.assert_contains(result.combined, MERGED_589, "names the merge time")
+        gate.log_pass("the frozen #589 hold is red against a ledger that records #589")
+
+
+def test_frozen_589_hold_is_green_while_589_is_unmerged(gate):
+    """THE CONTROL: same hold, a ledger that does not record #589. A probe that failed every clause would fail here."""
+    with harness.temp_dir() as root:
+        hold_fixture(gate, root)
+        write_ledger(root, {})
+        result = run_gate(gate, root)
+        gate.assert_exit(0, result, "a clause whose PR is not merged must not fail")
+        gate.assert_contains(result.combined, "1 PR clause(s)", "the clause was SEEN, not missed")
+        gate.log_pass("the same hold is green while the ledger does not record #589")
+
+
+def test_lifting_the_hold_turns_the_tree_green(gate):
+    """THE OTHER CONTROL: #589 recorded, the hold deleted (what 9a6c21063 did). Green, and zero clauses seen."""
+    with harness.temp_dir() as root:
+        hold_fixture(gate, root, hold="")
+        write_ledger(root, {PR_589: MERGED_589})
+        result = run_gate(gate, root)
+        gate.assert_exit(0, result, "with the hold gone there is nothing to fail")
+        gate.assert_contains(result.combined, "0 PR clause(s)", "no clause left")
+        gate.log_pass("deleting the hold clears the finding")
+
+
+def test_a_clause_with_no_ledger_is_unchecked_and_red(gate):
+    """UNKNOWN IS A FAILURE. A clause present while the ledger is absent cannot be judged, and that is never folded into clean."""
+    with harness.temp_dir() as root:
+        hold_fixture(gate, root)
+        result = run_gate(gate, root)
+        gate.assert_exit(1, result, "an unjudgeable clause must fail")
+        gate.assert_contains(result.combined, "Unchecked is not clean", "says why")
+        gate.log_pass("a clause with no ledger to judge it against fails")
+
+
+def test_loose_wording_is_red(gate):
+    """A phrasing a human reads as a lift condition and no machine can. The canonical clause in the same file must NOT also be reported as loose."""
+    with harness.temp_dir() as root:
+        hold_fixture(
+            gate,
+            root,
+            hold="# BLOCKER: k3s is held back for a reason long enough to pass the floor here\n"
+            "# Revisit once #589 lands, then delete this line.\n"
+            "k3s\n",
+        )
+        write_ledger(root, {})
+        result = run_gate(gate, root)
+        gate.assert_exit(1, result, "loose wording naming a PR must fail")
+        gate.assert_contains(result.combined, "Revisit once #589", "quotes the loose text")
+        gate.assert_contains(result.combined, "REVISIT WHEN PR #<N> MERGES", "names the spelling")
+    with harness.temp_dir() as root:
+        hold_fixture(gate, root)
+        write_ledger(root, {})
+        result = run_gate(gate, root)
+        gate.assert_contains(
+            result.combined, "0 loose phrasing(s)", "the canonical clause is not loose"
+        )
+        gate.log_pass("loose wording is red, the canonical clause is not loose")
+
+
+def test_probe_removed_mutant_is_green_on_the_red_fixture(gate):
+    """THE MUTANT. The gate with `runPrConditions` forced off, over the fixture the first case proves red. It must be GREEN: the red above is the probe's, not some other probe's."""
+    source = SUBJECT.read_text(encoding="utf-8")
+    if source.count(PROBE_SWITCH) != 1:
+        gate.log_fail(
+            "the mutation site %r is not in %s exactly once; the mutant would BE the gate and "
+            "its green would prove nothing." % (PROBE_SWITCH, SUBJECT_REL)
+        )
+    npx = require_subject(gate)
+    with harness.temp_dir() as work:
+        (work / "lib").symlink_to(paths.from_root("scripts", "lib"), target_is_directory=True)
+        (work / "gates").mkdir()
+        mutant = work / "gates" / "mutant-liveness.ts"
+        mutant.write_text(
+            source.replace(PROBE_SWITCH, "const runPrConditions = false;"), encoding="utf-8"
+        )
+        with harness.temp_dir() as root:
+            hold_fixture(gate, root)
+            write_ledger(root, {PR_589: MERGED_589})
+            result = harness.run(
+                [npx, "tsx", os.fspath(mutant)],
+                cwd=paths.repo_root(),
+                env={"SUPPRESSION_LIVENESS_ROOT": os.fspath(root), "ACTION_REFS_MIN_FILES": "2"},
+            )
+            gate.assert_contains(result.combined, "probes:", "the mutant ran to its summary")
+            gate.assert_exit(0, result, "without the probe the #589 fixture must be green")
+            gate.assert_not_contains(result.combined, PR_589, "nothing names the PR")
+    gate.log_pass("the probe-removed mutant is green on the fixture the real gate fails")
+
+
+def run_ledger_gate(gate, root, fixture: dict | None, *args: str, ci: bool = False):
+    npx = require_subject(gate)
+    env = {"PR_CONDITION_LEDGER_ROOT": os.fspath(root), "CI": "true" if ci else "false"}
+    if fixture is not None:
+        path = root / "pr-state-fixture.json"
+        path.write_text(json.dumps(fixture), encoding="utf-8")
+        env["PR_STATE_FIXTURE"] = os.fspath(path)
+    return harness.run([npx, "tsx", LEDGER_SUBJECT_REL, *args], cwd=paths.repo_root(), env=env)
+
+
+def ledger_root(root):
+    (root / ".ci" / "policy").mkdir(parents=True, exist_ok=True)
+    write_policy(root, ".embed-assets-upgrade-blocklist", FROZEN_589_HOLD)
+    return root
+
+
+def test_ledger_gate_selftest(gate):
+    """The online gate's pure controls (classification and verdicts, both directions), run as shipped."""
+    npx = require_subject(gate)
+    result = harness.run([npx, "tsx", LEDGER_SUBJECT_REL, "--selftest"], cwd=paths.repo_root())
+    gate.assert_exit(0, result, "the online gate's own controls pass")
+    gate.assert_contains(result.combined, "controls passed", "reports its control count")
+    gate.log_pass("check-pr-condition-ledger --selftest passes")
+
+
+def test_ledger_gate_red_when_merged_but_not_recorded(gate):
+    """ONLINE, the case it exists for: GitHub says #589 merged, the ledger does not record it."""
+    with harness.temp_dir() as root:
+        ledger_root(root)
+        write_ledger(root, {})
+        merged = {"token": True, "prs": {PR_589: {"state": "merged", "mergedAt": MERGED_589}}}
+        result = run_ledger_gate(gate, root, merged)
+        gate.assert_exit(1, result, "merged on GitHub, absent from the ledger: red")
+        gate.assert_contains(result.combined, "--refresh", "hands over the fix")
+        # Control: still open on GitHub is the hold still waiting, and green.
+        result = run_ledger_gate(gate, root, {"token": True, "prs": {PR_589: {"state": "open"}}})
+        gate.assert_exit(0, result, "an open PR is a hold still waiting")
+        gate.log_pass("merged-but-not-recorded is red; still-open is green")
+
+
+def test_ledger_refresh_records_the_pr_and_the_offline_probe_then_fires(gate):
+    """END TO END. --refresh writes #589 into an empty ledger, and the offline probe over the same root then fails the hold."""
+    with harness.temp_dir() as root:
+        hold_fixture(gate, root)
+        write_ledger(root, {})
+        merged = {"token": True, "prs": {PR_589: {"state": "merged", "mergedAt": MERGED_589}}}
+        result = run_ledger_gate(gate, root, merged, "--refresh")
+        gate.assert_exit(0, result, "--refresh with every query answered succeeds")
+        written = json.loads((root / ".ci" / "config" / "merged-prs.json").read_text("utf-8"))
+        gate.assert_eq(written["prs"].get(PR_589), {"mergedAt": MERGED_589}, "recorded #589")
+        gate.assert_exit(1, run_gate(gate, root), "the offline probe now fails the hold")
+        gate.log_pass("--refresh records the merge and the offline probe fires on it")
+
+
+def test_ledger_gate_network_error_warns_and_passes(gate):
+    """A network error is a ::warning and exit 0 (the plan's ruling), and it is COUNTED as unchecked, never reported as current."""
+    with harness.temp_dir() as root:
+        ledger_root(root)
+        write_ledger(root, {})
+        down = {"token": True, "prs": {PR_589: {"state": "network"}}}
+        result = run_ledger_gate(gate, root, down, ci=True)
+        gate.assert_exit(0, result, "a network error does not redden the branch")
+        gate.assert_contains(result.combined, "::warning", "annotates in CI")
+        gate.assert_contains(result.combined, "UNCHECKED", "says it is unchecked")
+        gate.assert_not_contains(result.combined, "agrees with GitHub", "never claims current")
+        # --refresh must refuse to stamp a refreshed_at it did not earn.
+        result = run_ledger_gate(gate, root, down, "--refresh")
+        gate.assert_exit(1, result, "--refresh with an unanswered query writes nothing")
+        gate.log_pass("network error: warning, unchecked, and --refresh refuses")
+
+
+def test_ledger_gate_no_token_fails_in_ci_and_skips_loudly_locally(gate):
+    with harness.temp_dir() as root:
+        ledger_root(root)
+        write_ledger(root, {})
+        no_token = {"token": False, "prs": {}}
+        result = run_ledger_gate(gate, root, no_token, ci=True)
+        gate.assert_exit(1, result, "no token in CI is a failure")
+        gate.assert_contains(result.combined, "UNCHECKED", "names what went unchecked")
+        result = run_ledger_gate(gate, root, no_token, ci=False)
+        gate.assert_exit(0, result, "no token locally is a loud skip")
+        gate.assert_contains(result.combined, "SKIP", "says it skipped")
+        gate.log_pass("no token: red in CI, a loud SKIP locally")

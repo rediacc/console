@@ -280,7 +280,7 @@ TOOLS: tuple[Tool, ...] = (
             "apk": "sudo apk add tmux",
             "brew": "brew install tmux",
         },
-        provenance=".ci/lib/devbox.sh:608",
+        provenance=".ci/rediacc_ci/core/devbox.py (the port of .ci/lib/devbox.sh:608)",
         probe=("tmux", "-V"),
         note=(
             "Needed INSIDE the devbox container, not on the host. Kept in the "

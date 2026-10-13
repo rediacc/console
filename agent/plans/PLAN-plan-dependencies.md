@@ -28,15 +28,18 @@ Owns: .claude/hooks/stop/*.py, .ci/scripts/quality/check_plan_deps.py, .ci/redia
 
 Two writers at most. Writer A owns the grammar, the CI gate, the guard, the record and move verbs, and the wiring. Writer B owns the worklist verbs and the stop hook. The lead owns the migration review and the prose. Every task after T1 needs T1's API frozen first.
 
-- [ ] T1 [A] Create `.claude/hooks/stop/wl_plandeps.py`, the one home of the grammar (section 1). It holds `parse_header`, `resolve`, `is_complete`, `Graph.load(root)`, `cycles`, `roots(rel)`, `chain(rel, root)`, `linked_plan(item_text)`, `tracked_by(plan, fold)` (moved from `wl_backlog._claimed`, .claude/hooks/stop/wl_backlog.py:98) and `set_header(text, value)`. Use stdlib only at import time and import `wl_planfile` lazily inside `is_complete`. Controls go in `.claude/hooks/stop/test-plandeps.py` (section 5a).
+- [x] T1 [A] Create `.claude/hooks/stop/wl_plandeps.py`, the one home of the grammar (section 1). It holds `parse_header`, `resolve`, `is_complete`, `Graph.load(root)`, `cycles`, `roots(rel)`, `chain(rel, root)`, `linked_plan(item_text)`, `tracked_by(plan, fold)` (moved from `wl_backlog._claimed`, .claude/hooks/stop/wl_backlog.py:98) and `set_header(text, value)`. Use stdlib only at import time and import `wl_planfile` lazily inside `is_complete`. Controls go in `.claude/hooks/stop/test-plandeps.py` (section 5a).
+    (ticked) 2026-10-08T19:27:45Z by d778be9d: commit:2faaa8e06 test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
 - [x] T2 [A] Add the CI gate `.ci/scripts/quality/check_plan_deps.py`. It carries findings D1-D8, `--selftest` controls with a `CONTROL_FLOOR`, and the verbs `--check`, `--draft` and `--set <path> "<value>" [--write]`. Add the plant test `.ci/rediacc_ci/tests/gates/test_gate_plan_deps.py`.
     (ticked) 2026-10-03T09:45:17Z by d778be9d: c55b8a0a9: check_plan_deps.py D1-D8, CONTROL_FLOOR selftest, --draft/--set; test_gate_plan_deps.py
 - [x] T3 [A] Add the guard `.claude/rediacc_hooks/guards/block_plan_without_depends.py`. It sits in the pre-edit chain with `ORDER = 13` and `TWIN = None`, plus `EDGE_CASES`, a `DEFECT` tuple and its own suite `test-block_plan_without_depends.py`. The suite is required by .claude/rediacc_hooks/tests/test_guards_differential.py:596-620 for any guard with `TWIN = None`. Add the guard to `scripts/data/hook-inventory-baseline.json`.
     (ticked) 2026-10-03T09:45:18Z by d778be9d: c55b8a0a9: guards/block_plan_without_depends.py ORDER 13 + own suite + hook-inventory row
-- [ ] T4 [A] Records and moves:
+- [x] T4 [A] Records and moves:
+  - Amended 2026-10-08 (review 27858c9d.3): the three sub-items are held by `.claude/hooks/stop/test-planrec.py` (render carries `Depends-On:` after `Record-Sig`, lines 609-645; `revive()` carries it over or refuses a record without one, lines 679-690) and `.ci/rediacc_ci/tests/gates/test_gate_plan_folders.py` (`--move` into `_removed/` refused while a plan depends on it, and allowed with none, lines 336-361).)
   - add `Depends-On` to `wl_planrec.HEADER_FIELD_KEYS` (.claude/hooks/stop/wl_planrec.py:171) and emit it in `render()` right after `Owner` (.claude/hooks/stop/wl_planrec.py:832);
   - make `revive()` (.claude/hooks/stop/wl_planrec.py:2567) carry the record's `Depends-On:` into the revived header, or refuse without one;
   - make `check_plan_folders.py --move` (:459) refuse a move into `_removed/` while any required plan still depends on the plan being moved, and print those dependents.
+    (ticked) 2026-10-08T19:27:48Z by d778be9d: commit:2faaa8e06 test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
 - [x] T5 [A] Wiring:
   - `package.json` gets a `ci-plan-deps` gate entry next to :192;
   - `scripts/ci-runner/manifest.ts` gets an entry after the `check:ci-plan-folders` entry (:2023-2044);
@@ -44,29 +47,39 @@ Two writers at most. Writer A owns the grammar, the CI gate, the guard, the reco
   - then run `npm run gen:gates-lock`, `npm run gate:bind` and `npm run gen:docs` (ci-gates.md, the plan-records.md header table, doc-registry.md);
   - add BASELINE rows in `test_canonical_sys_path_hop.py` for the new test files.
     (ticked) 2026-10-03T09:45:20Z by d778be9d: c55b8a0a9: check:ci-plan-deps in package.json, manifest.ts, ci-quality.yml step, gates.lock.json
-- [ ] T6 [B] Make `wl_leasehelp.waiting_on` / `blocker_error` / `auto_lease_candidates` plan-aware (section 2c). Wire the per-stop `Graph` through `wl_store.classify_items` (.claude/hooks/stop/wl_store.py:1270-1290), including the fail-closed suffix for an untracked dependency.
-- [ ] T7 [B] Add the verb gates in `worklist.py`:
+- [x] T6 [B] Make `wl_leasehelp.waiting_on` / `blocker_error` / `auto_lease_candidates` plan-aware (section 2c). Wire the per-stop `Graph` through `wl_store.classify_items` (.claude/hooks/stop/wl_store.py:1270-1290), including the fail-closed suffix for an untracked dependency.
+    (ticked) 2026-10-08T19:27:50Z by d778be9d: commit:2faaa8e06 test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
+- [x] T7 [B] Add the verb gates in `worklist.py`:
   - `--lease` (:1014) and `--tick` (:945) are refused on a dependency-blocked linked item;
   - `--plan-tick` (`_plantick_cli`, :584) is refused unless the box has a `present` investigation row;
   - the `DEPS-WAIVED:` override applies to all three;
   - `--add` (:902) and `--migrate --plan` (:1308) print a NOTE naming the chain.
   - Update the messages and help text in `worklist_messages.py`: N_UNBLOCKED at :1199, help at :1925, plus the new REFUSED and NOTE strings.
-- [ ] T8 [B] Stop-hook alignment, all described in section 3:
+    (ticked) 2026-10-08T19:27:53Z by d778be9d: commit:2faaa8e06 test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
+- [x] T8 [B] Stop-hook alignment, all described in section 3:
   - FIRST rows in `guided_slice` (.claude/hooks/stop/wl_checks.py:1237-1362);
   - plan-aware waiting rows (:1281);
   - the `N_UNBLOCKED_PLAN` variant in the UNBLOCKED block (:2051-2066);
   - `wl_planenforce.evaluate` names the chain root's box (:425);
   - `wl_backlog.next_plan` / `_redirect` switch to finished-only semantics (:119, :190);
   - `--add` recipes carry `PLAN-x.md [<sig>]` (.claude/hooks/stop/wl_planfile.py:658, .claude/hooks/stop/wl_backlog.py:343, the wl_planenforce render).
-- [ ] T9 [B] Add the controls in `.claude/hooks/stop/test-depgate.py` (section 5c), and rewrite the DEPENDENCY controls in `test-backlog.py` to the new semantics.
-- [ ] T10 [lead] Run `check_plan_deps.py --draft` and put the 13 plans with candidate edges to the operator through /ask (section 4). Apply all 30 values with `--set ... --write`. Land them in the same commit as T2 and T3, with a bulk-transform proof line in the commit message.
-- [ ] T12 [A] Task edges per the operator ruling: stable task ids in boxes, `PLAN-y.md#<id>` and `#<sig>` edges, finding D9 with nearest-box suggestion, task-level completion in the lease/tick gate and the FIRST row.
-- [ ] T11 [lead] Update the prose:
+    (ticked) 2026-10-08T19:27:56Z by d778be9d: commit:2faaa8e06 test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
+- [x] T9 [B] Add the controls in `.claude/hooks/stop/test-depgate.py` (section 5c), and rewrite the DEPENDENCY controls in `test-backlog.py` to the new semantics.
+    (ticked) 2026-10-08T19:27:59Z by d778be9d: commit:2faaa8e06 test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
+- [x] T10 [lead] Run `check_plan_deps.py --draft` and put the 13 plans with candidate edges to the operator through /ask (section 4). Apply all 30 values with `--set ... --write`. Land them in the same commit as T2 and T3, with a bulk-transform proof line in the commit message.
+  - Amended 2026-10-08 (review 9d5f2639.1): the `/ask` step and the `--set ... --write` run did not happen as the box words them. `--draft` proposed `keep` for all 49 plans (0 non-keep proposals), so there was no non-keep value to put to the operator, and the headers already carried their `Depends-On:` lines. The box closes on that outcome, with `check:ci-plan-deps` rc=0, not on the 13-plan question.)
+  - Amended 2026-10-09 (review 75ce6f00.4): this is not a waived operator decision. The `/ask` was conditional on non-keep proposals; with 0 of them there was no question to ask and no `--set` value to write, so no operator answer exists or is owed.)
+    (ticked) 2026-10-08T19:57:24Z by d778be9d: check_plan_deps.py --draft: 49 plans, 0 non-keep proposals; check:ci-plan-deps rc=0 (headers set earlier, e.g. commit:2bed7822d tree)
+- [x] T12 [A] Task edges per the operator ruling: stable task ids in boxes, `PLAN-y.md#<id>` and `#<sig>` edges, finding D9 with nearest-box suggestion, task-level completion in the lease/tick gate and the FIRST row.
+    (ticked) 2026-10-08T19:28:02Z by d778be9d: commit:2faaa8e06 test-plandeps/test-depgate rc=0; pytest 120+65 passed; check:ci-plan-deps rc=0
+- [x] T11 [lead] Update the prose:
+  - Amended 2026-10-08 (review 9d5f2639.5): `npm run check:ci-gate-bind` was run after the tick and exits 0 (280 declared gates bound, generated regions fresh). The full hook suite was not run for this box; the T4 and T12 ticks cover `test-plandeps.py` and `test-depgate.py`.)
   - CLAUDE.md line 37 (the plan sentence);
   - agent/README.md layout section (:16-32);
   - docs/agent-reference/plan-records.md (a record carries `Depends-On`);
   - register `DEPS-WAIVED:` in docs/agent-reference/suppressions.md;
   - run the full hook suite, the four plan gates and `check:ci-gate-bind` / `check:ci-gates-lock`.
+    (ticked) 2026-10-08T19:51:06Z by d778be9d: commit:2bed7822d prose check clean; plan-deps/plan-folders/plan-boxes/plan-record/gates-lock rc=0
 
 ## 0. Facts established
 

@@ -468,9 +468,9 @@ def test_cli_emit_is_false_only(gate):
         )
         gate.assert_eq(out, "", "a skipped candidate job emits no output line at all")
 
-        # CONTROL 2: one console-side closure blob moved, everything else identical.
+        # CONTROL 2: one console-side closure blob moved, everything else identical. The battery is the module rediacc_ci/private/license_e2e.py, reached through the whole-package closure entry, so the moved entry is the `rediacc_ci` tree itself.
         out = captured(
-            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="license-e2e.sh")
+            run_cli(gate, bindir, GL_REPO_ROOT=os.fspath(REPO_ROOT), GL_PERTURB="rediacc_ci")
         )
         gate.assert_eq(out, "", "a single changed closure file withdraws the greenlight")
 
@@ -699,21 +699,30 @@ def test_declared_closure_paths_exist(gate):
         )
 
     count = 0
+    keys: set[str] = set()
     for line in result.out.split("\n"):
         if "\t" not in line:
             continue
         key, _, path = line.partition("\t")
         if not path:
             continue
+        keys.add(key)
         gate.assert_eq(
             ls_tree_lines(gate, path), 1, "closure path for %s must exist in HEAD: %s" % (key, path)
         )
         count += 1
     # The floor sits JUST BELOW the real total (408 across 18 keys as of 2026-08-08), not at some token value: a `> 15` floor survived a table that had lost every key but one. At 400 a parse break reads as 0 and a dropped VM/E2E key costs 30 entries, both of which fire this; trimming a path or two during honest maintenance does not.
+    # Re-measured 2026-10-08 at 383 entries across 18 keys after PLAN-retire-bash-oracles wave 1 deleted thirteen closure entries. The floor is 381, two under the measured total ("a path or two" of honest maintenance), because the eight-entry margin of cc0f8ea7 (375) could absorb a whole small key (package_tests holds 6, license_enforcement 7) without firing; the key count is asserted as well, so a dropped key fails even when its entries fit the margin (review finding cc0f8ea7.3).
+    # Re-measured 2026-10-08 at 364 entries across 18 keys after W11-B deleted lib/common.sh: 382 at HEAD minus 18, which is the ten per-key `.ci/scripts/lib/common.sh` entries plus the one in the shared VM_E2E_PATHS constant, spread into eight keys. The floor is 362, two under the measured total, by the same reasoning.
     gate.assert_eq(
-        1 if count > 400 else 0,
+        1 if count >= 362 else 0,
         1,
-        "the table must stay whole (%d entries seen, floor 400)" % count,
+        "the table must stay whole (%d entries seen, floor 362)" % count,
+    )
+    gate.assert_eq(
+        1 if len(keys) >= 18 else 0,
+        1,
+        "no closure key may disappear (%d keys seen, floor 18)" % len(keys),
     )
 
     # CONTROL: the same assertion applied to a path that does NOT exist must fail, or the loop above proves only that the loop ran.

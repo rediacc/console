@@ -1,7 +1,10 @@
 """Port of `.ci/scripts/test/gates/test-blocker-golden-corpus.sh`.
 
-THREE-WAY GOLDEN CORPUS for the BLOCKER quality validator. The same rule ("a BLOCKER reason must be substantive") is implemented three times in this tree: `scripts/lib/blocker-validator.ts`, `.ci/scripts/lib/blocker-validator.sh`, and the drift-locked vendored subset at `.ci/breakpoint/lib/breakpoint-blocker.sh`. The corpus is the RECORD of what all three answer today, including
-the five cases where the vendored subset deliberately diverges.
+THREE-WAY GOLDEN CORPUS for the BLOCKER quality validator. The same rule ("a BLOCKER reason must be substantive") was recorded on 2026-09-06 against three implementations: `scripts/lib/blocker-validator.ts`, `.ci/scripts/lib/blocker-validator.sh`, and the drift-locked vendored subset at `.ci/breakpoint/lib/breakpoint-blocker.sh`. The corpus is the RECORD of what all
+three answered, including the five cases where the vendored subset deliberately diverges.
+
+THE `sh` COLUMN IS NOW ANSWERED BY THE BASH LIBRARY'S PORT. `blocker-validator.sh` and its twin `test-blocker-golden-corpus.sh` were deleted in PLAN-retire-bash-oracles section 12 U1, and the recorded column is held by `rediacc_ci.core.blocker_validator`, which the frozen differential `test_core_blocker_validator.py` (golden `lib.blocker-validator.jsonl`) proves answers byte for byte as the bash did. The
+column keeps its recorded values unchanged; only the implementation that must reproduce them moved. The bash file's text stays recoverable with `git cat-file -p <twin_blob>` from that golden's header. The test names keep their recorded spelling (`..._followed_by_bash`) because the frozen parity golden of the deleted twin compares the CASE SET by name.
 
 THE CORPUS TEXT IS THE TWIN'S, BYTE FOR BYTE, including the seven `real-*` rows that are VERBATIM BLOCKER reasons from the live allowlists. A corpus of invented strings proves the validator agrees about strings nobody writes.
 
@@ -34,10 +37,9 @@ from rediacc_ci.tests.gates import harness
 BASH_TWIN = ".ci/scripts/test/gates/test-blocker-golden-corpus.sh"
 
 TS_LIB = paths.from_root("scripts", "lib", "blocker-validator.ts")
-SH_LIB = paths.from_root(".ci", "scripts", "lib", "blocker-validator.sh")
+PY_LIB = paths.from_root(".ci", "rediacc_ci", "core", "blocker_validator.py")
 BP_LIB = paths.from_root(".ci", "breakpoint", "lib", "breakpoint-blocker.sh")
 BP_COMMON = paths.from_root(".ci", "breakpoint", "lib", "breakpoint-common.sh")
-EMIT_ADVISORY = paths.from_root(".ci", "scripts", "lib", "emit-advisory.sh")
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 
 BP_RELPATH = ".ci/breakpoint/lib/breakpoint-blocker.sh"
@@ -72,7 +74,7 @@ empty||reject:too-short|reject:too-short|reject:too-short
 
 CORPUS = [line.split("|") for line in CORPUS_TEXT.splitlines() if line]
 
-COLUMN_LABELS = ("typescript", "bash      ", "breakpoint")
+COLUMN_LABELS = ("typescript", "python    ", "breakpoint")
 
 # The `.ts` driver the twin heredocs into a temp file. `$lib` and `$reasons` become the two format arguments; nothing else changes.
 TS_DRIVER = """import fs from 'node:fs';
@@ -85,18 +87,30 @@ for (const reason of raw) {
 }
 """
 
-SH_DRIVER = """
-        set -u
-        source "$1"
-        while IFS= read -r reason || [[ -n "$reason" ]]; do
-            out=$(validate_blocker_quality "ENTRY" "$reason" "FILE" 2>&1) && { echo accept; continue; }
-            case "$out" in
-                *"low-effort placeholder"*) echo "reject:low-effort" ;;
-                *"defers a routine bump"*)  echo "reject:deferral" ;;
-                *"is too short"*)           echo "reject:too-short" ;;
-                *)                          echo "reject:UNCLASSIFIED" ;;
-            esac
-        done <"$2"
+# The `sh` column's runner. It drives `blocker_validator.validate_blocker_quality`, the port of the deleted bash function, in a CHILD interpreter whose import path is the tree under test, so the perturbed-canonical control below can point it at a scratch copy. The verdict is read back out of the rendered message, exactly as the bash runner did with `case "$out"`, so a message that stops naming its reason lands in UNCLASSIFIED instead of passing.
+PY_DRIVER = """
+import contextlib, io, sys
+from rediacc_ci.core import blocker_validator as bv
+with open(sys.argv[1], encoding="utf-8") as fh:
+    raw = fh.read().split("\\n")
+if raw and raw[-1] == "":
+    raw.pop()
+for reason in raw:
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+        ok = bv.validate_blocker_quality("ENTRY", reason, "FILE")
+    out = buf.getvalue()
+    if ok:
+        verdict = "accept"
+    elif "low-effort placeholder" in out:
+        verdict = "reject:low-effort"
+    elif "defers a routine bump" in out:
+        verdict = "reject:deferral"
+    elif "is too short" in out:
+        verdict = "reject:too-short"
+    else:
+        verdict = "reject:UNCLASSIFIED"
+    print(verdict)
 """
 
 BP_DRIVER = """
@@ -139,7 +153,7 @@ def read_lines(text: str) -> list[str]:
 
 
 def require_inputs(gate) -> None:
-    for path in (TS_LIB, SH_LIB, BP_LIB, BP_COMMON, EMIT_ADVISORY):
+    for path in (TS_LIB, PY_LIB, BP_LIB, BP_COMMON):
         if not path.is_file():
             gate.log_fail(
                 "an implementation this corpus compares is missing: %s -- nothing below "
@@ -171,12 +185,19 @@ def run_ts(
     return result.out
 
 
-def run_sh(
-    gate, lib: pathlib.Path, reasons: pathlib.Path, env: dict[str, str] | None = None
-) -> str:
-    result = harness.run(["bash", "-c", SH_DRIVER, "_", str(lib), str(reasons)], env=env)
+def run_py(gate, reasons: pathlib.Path, root: pathlib.Path | None = None) -> str:
+    """The `sh` column, from the port, importing `rediacc_ci` out of `<root>/.ci` (the checkout by default).
+
+    PYTHONSAFEPATH=1 for the reason the bash library carried it: `python3 -c` puts the cwd first on sys.path, ahead of PYTHONPATH, so a cwd holding its own `rediacc_ci` would win over the tree this control names.
+    """
+    ci = (root or paths.repo_root()) / ".ci"
+    result = harness.run(
+        ["python3", "-c", PY_DRIVER, str(reasons)],
+        cwd=paths.repo_root(),
+        env={"PYTHONPATH": str(ci), "PYTHONSAFEPATH": "1", "CI": ""},
+    )
     if not result.out.strip():
-        gate.log_fail("the bash runner produced NO verdicts (stderr: %s)" % result.err.strip())
+        gate.log_fail("the python runner produced NO verdicts (stderr: %s)" % result.err.strip())
     return result.out
 
 
@@ -247,7 +268,7 @@ def test_three_way_reproduction(gate, tmp_path):
     reasons = write_reasons(tmp_path)
     columns = (
         run_ts(gate, TS_LIB, reasons, tmp_path),
-        run_sh(gate, SH_LIB, reasons),
+        run_py(gate, reasons),
         run_bp(gate, BP_LIB, reasons),
     )
     problems: list[str] = []
@@ -256,7 +277,8 @@ def test_three_way_reproduction(gate, tmp_path):
     if problems:
         gate.log_fail(
             "the golden corpus no longer reproduces. If the change was deliberate, "
-            "re-record with: bash %s --emit\n%s" % (BASH_TWIN, "\n".join(problems))
+            "edit the recorded CORPUS rows in %s\n%s"
+            % (paths.relative_to_root(pathlib.Path(__file__)), "\n".join(problems))
         )
     # Nothing may land in the UNCLASSIFIED bucket: that is a rejection whose message stopped naming its own reason, which is how a validator turns into something an author cannot act on.
     if any("UNCLASSIFIED" in column for column in columns):
@@ -299,10 +321,12 @@ def scratch_canonical(gate, scratch: pathlib.Path) -> pathlib.Path:
         (core.parent / name).write_text(
             (root / ".ci" / "rediacc_ci" / name).read_text(encoding="utf-8"), encoding="utf-8"
         )
-    (core / "__init__.py").write_text(
-        (root / ".ci" / "rediacc_ci" / "core" / "__init__.py").read_text(encoding="utf-8"),
-        encoding="utf-8",
-    )
+    # The canonical's CLIENTS travel with it: `blocker_validator` (the `sh` column) and the `advisory` emitter it renders through. Copied unchanged, so the only difference between this tree and the checkout is the one phrase removed below.
+    for name in ("__init__.py", "blocker_validator.py", "advisory.py"):
+        (core / name).write_text(
+            (root / ".ci" / "rediacc_ci" / "core" / name).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
     source = root / ".ci" / "rediacc_ci" / "core" / "allowlist.py"
     text = source.read_text(encoding="utf-8")
     if text.count('\n    "tbd",\n') != 1:
@@ -346,17 +370,14 @@ def test_perturbing_the_canonical_is_followed_by_bash(gate, tmp_path):
     require_inputs(gate)
     reasons = write_reasons(tmp_path)
     root = scratch_canonical(gate, tmp_path)
-    problems = compare_column(
-        1,
-        "bash(perturbed canonical)",
-        run_sh(gate, SH_LIB, reasons, env={"REDIACC_CI_ROOT": str(root)}),
-    )
+    # The name is the deleted twin's (the frozen parity golden compares case sets by name); the client is now the bash library's port, `rediacc_ci.core.blocker_validator`.
+    problems = compare_column(1, "python(perturbed canonical)", run_py(gate, reasons, root))
     if not problems:
         gate.log_fail(
-            "dropping one banned phrase from the canonical must change the bash verdicts; "
+            "dropping one banned phrase from the canonical must change the python verdicts; "
             "it did not, so the client is not reading the canonical"
         )
-    gate.log_pass("control: the bash client follows a perturbed canonical")
+    gate.log_pass("control: the python client follows a perturbed canonical")
 
 
 def test_perturbing_the_typescript_normaliser_is_caught(gate, tmp_path):

@@ -12,9 +12,21 @@ Each `## ` entry is followed immediately by three lines, and a new entry without
 Trap-Id: stable-kebab-case-id      never renumbered, never reused after retirement
 Enforced-By: <pointer>[, <pointer>...]   or the single token JUDGMENT-ONLY
 Residue: <what the instruments do not reach>   mandatory when JUDGMENT-ONLY
+Documented-In: <anchor>            optional, 0..n lines, one anchor each, only after Residue:
 ```
 
-A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire.
+A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, `guard:<guard stem>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire. A `guard:` pointer is live when the guard has its own `test-<stem>.py` suite, or both a firing and a silent case in `hookcases.py`.
+
+`Documented-In:` names where a lesson is written down. It never counts as enforcement, and each anchor must resolve to the lesson's text, not merely to a place:
+
+```
+text:<path> <phrase>        the phrase (12+ characters, whitespace collapsed) is in the file
+doc:<path>#<heading>        a heading at any level, outside fences, matches exactly
+box:<slug>#<label>@<sig8>   the labelled box in any plan folder still signs as sig8
+trap:<id>                   an id elsewhere in this corpus
+```
+
+`file:` is refused in `Documented-In:`, because `file:<path>:<N>` proves only that some non-blank line sits at N, so deleting the sentence leaves it green. Anchor the distinctive clause rather than the whole sentence, so a rewrap or a neighbouring edit does not redden it.
 
 `JUDGMENT-ONLY` is deliberately cheap to declare and is never counted against anything. Its count is the honest size of the unprotected surface, and it is the number worth reviewing:
 
@@ -440,6 +452,63 @@ The reason it is a gate and not this paragraph: the stop-hook suite's own `setup
 
 **It does not follow imports transitively.** A gate that grows a helper module with its own third-party import is one hop outside what this sees.
 
+### The same shape on the pytest lane: a green run on the recording host proves nothing about the runner
+
+Run 38389205702 (PR #600, 2026-10-13) was the first on its branch in which the three `Quality / Pytest (n/3)` legs ran to the end, and 42 tests were red that had passed on every local run for weeks. None was a product defect. Each compared an answer against the host that RECORDED it, and the developer host is that recorder, so the comparison had no way to fail there.
+
+| Property | Recording host | GitHub runner | Tests | What carried it |
+|---|---|---|---|---|
+| numeric ids | 1000:1000 | 1001:1001 | 15 | `chown -R 1000:1000` in a frozen call log; `uid1000-gid1000`, `HOST_UID=1000` and `/run/user/1000` in a frozen transcript |
+| scratch filesystem | tmpfs | ext4 | 21 | `ls -l` directory sizes, `total` and column padding; the order `find` prints |
+| coreutils | uutils | GNU | 2 | `mkdir: Already exists` against `mkdir: cannot create directory` |
+| bash | 5.3.9 | 5.2.21 | 1 | the `bash_version` in a golden's header |
+| git identity | global config | none | 1 | a guard chain that stopped at the author check before the guard under test |
+| `CI` | unset | `true` | 1 | a gate taking its CI arm inside a test of its other arm |
+| git and load | 2.53, idle | 2.55, four busy cores | 1 | `git commit`'s detached maintenance child outliving the commit and stamping a backdated tree |
+| host paths | `/run/user/1000/rediacc-cores`, `/dev/kvm`, `/dev/net/tun`, a docker socket | no `/run/user/1000` | 2 | the lease pool bind, both `--device` words and the socket bind in a frozen `docker run` argv; found one run later (38409515814) |
+
+**The tell:** a differential fails on the runner with both sides plausible, and the differing bytes are a number, an order or a wording that no port chooses. The recorded side is then "what the twin printed on one machine".
+
+**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity and host paths instead (`devbox_shadow_driver.GOLDEN_HOST_IDS`, `GOLDEN_HOST_NODES`), with one test per pin that reads the unpinned default against the real host.
+
+**The command that makes a local run mean something.** It runs one leg under another uid and gid, with no git identity, `CI=true`, an empty HOME and a scratch directory on ext4.
+
+```bash
+mkdir -p /var/tmp/runner-shape /var/tmp/runner-shape-home
+unshare --user --map-user=1001 --map-group=1001 env -i \
+  PATH="$PATH" HOME=/var/tmp/runner-shape-home USER=runner LOGNAME=runner LANG=C.UTF-8 \
+  CI=true GITHUB_ACTIONS=true GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+  TMPDIR=/var/tmp/runner-shape \
+  npm run check:ci-pytest -- --shard-manifest .ci/config/shards/quality-pytest.json --shard 2/3
+```
+
+Measured on the fix for that run, with a GNU coreutils directory first on `PATH`: the command turned 40 of the 42 red before the fix and none of them after it. The remaining two needed their condition forced, a `bash` shim answering `--version` with 5.2 and a maintenance task configured to always have work, because a namespace changes neither the bash nor the scheduler.
+
+GNU coreutils come from Ubuntu's `gnu-coreutils` package, which installs each tool as `/usr/bin/gnu<name>`; a directory of `<name>` symlinks to those, first on `PATH`, completes the shape on a uutils host.
+
+**What the simulation gets wrong, each one read as a runner failure once:**
+
+- **`TMPDIR` has to stay short.** `tsx` binds a unix socket under it, and a path past 108 bytes fails every gate test that runs a TypeScript gate with `listen EINVAL`.
+- **Uid 1001 has no passwd entry in the namespace.** `ssh-keygen` refuses with `No user exists for uid 1001`, `gpg` finds no agent, and `ls -l` prints `1001` where the runner prints `runner`. Eleven tests in three files (`test_drills_universe_transfer.py`, `test_build_canonicalise_gpg_key.py`, `test_proxies_go_unit.py`) fail for that alone, and pass under the same `env -i` line without `unshare`.
+- **`CI=true` turns a missing tool into a refusal.** `test_gate_scrub_sentinel_empty.py` refuses without `aws`, which the runner has and a developer host need not.
+- **The filesystem is still the recording host's.** A user namespace changes the ids and nothing on disk, so `/run/user/1000`, `/dev/kvm`, `/dev/net/tun` and the docker socket all answer as they did when the golden was recorded. `test_core_devbox.py`'s `up-create` and `up-existing` passed under the command above and failed on the runner for exactly that. Each of the four reproduces the two failures alone once a mount namespace takes it away. The wrapper below runs first as the namespace's root, and the command above runs inside it.
+
+  ```bash
+  unshare --user --map-root-user --mount bash -c '
+    mount -t tmpfs tmpfs /run/user                    # no /run/user/<recorder uid>
+    mount --bind /dev/null /run/docker.sock           # a path that is no socket
+    exec "$@"' -- unshare --user --map-user=1001 --map-group=1001 env -i ...
+  ```
+
+  A device node cannot be unlinked from the host's `/dev`, so taking `/dev/kvm` away means a fresh `/dev`: bind the old one aside, mount a tmpfs with `mode=755` over it, and bind `null`, `zero`, `full`, `random`, `urandom`, `tty` and `shm` back. The default sticky mode makes every `> /dev/null` fail with `Permission denied`, and without a `devpts` of its own (`-o newinstance,ptmxmode=0666`, with `/dev/ptmx` linked to `pts/ptmx`) every pty test dies with `out of pty devices`.
+  The seam for a path is a method (`Devbox.has_host_node`, `has_host_socket`, `lease_dir_ready`, `owns_runtime_dir`) that the driver answers as the recorder did, never an `os.path` call inline.
+- **docker is outside the namespace.** A test that hands its uid to a real container gets files owned by the REAL uid 1001, which the caller cannot remove, and the next pytest session dies in its basetemp cleanup. One scratch directory per run, removed through a container, avoids it.
+- **HOME under the checkout's own path prefix** (`<repo>-home`) is folded as `<root>-home` by masks that replace the checkout first.
+
+A failure that appears only under the namespace is checked against the job log before it is called a runner failure.
+
+**No instrument runs the suite as another host before a push.** The command above is run by hand, it changes neither the bash nor the git version nor the load, and a golden frozen tomorrow can carry a host property nobody has met yet.
+
 ## A green `packages/www` build can render the PREVIOUS version of a page
 Trap-Id: stale-content-cache-renders-old-page
 Enforced-By: JUDGMENT-ONLY
@@ -517,7 +586,7 @@ Trap-Id: cache-key-misses-a-baked-in-input
 Enforced-By: JUDGMENT-ONLY
 Residue: A closure of PATHS cannot cover an input that is not a path, and a git tag is not a path. Nothing detects that an artifact is stamped with something its cache key never saw.
 
-`generate-tag.sh`'s closure hashes git OIDs at HEAD, documented as being "immune to the in-job version bump that dirties package.json". That immunity is right for a dirty working file and exactly wrong for the released version: a git TAG is not a path, so no `CLOSURE_PATHS` entry could ever cover it, and the key went insensitive to the one input the image is stamped with.
+`rediacc_ci.ci.generate_tag`'s closure hashes git OIDs at HEAD, documented as being "immune to the in-job version bump that dirties package.json". That immunity is right for a dirty working file and exactly wrong for the released version: a git TAG is not a path, so no `CLOSURE_PATHS` entry could ever cover it, and the key went insensitive to the one input the image is stamped with.
 
 Cost: two full rounds. Runs `30534726467` and `30542942037`,
 `Version mismatch: expected '1.2.13', got '1.2.12'`, deterministic and self-perpetuating because cutting a tag does not move the closure.
@@ -534,7 +603,7 @@ Trap-Id: gate-accepts-the-body-it-rejects
 Enforced-By: JUDGMENT-ONLY
 Residue: Whether a needle can appear in the bad case as well as the good one is a question about the SUBJECT's data, which no meta-gate holds. Grep for a field that only exists when populated.
 
-`wait-for-preview-worker.sh` waited for a "usable body" and its own comment said a 200 carrying no keys must fail. The guard was `grep -q '"keys"'`, but `app.ts:154-173` declares `const keys = []` and always returns `c.json({ e2e: { keys } })`, so `"keys"` is present even when empty.
+`rediacc_ci.deploy.wait_for_preview_worker` (originally `wait-for-preview-worker.sh`) waited for a "usable body" and its own comment said a 200 carrying no keys must fail. The guard was `grep -q '"keys"'`, but `app.ts:154-173` declares `const keys = []` and always returns `c.json({ e2e: { keys } })`, so `"keys"` is present even when empty.
 
 Measured both ways: the old grep ACCEPTS `{"e2e":{"keys":[]}}`. Grep for a field that only exists inside a populated entry (`publicKeySpki`), not for the container.
 
@@ -932,7 +1001,7 @@ Measured 2026-09-09 on `rediacc-devbox-26-console`, after editing
 **The shape of the fix.** Reach the file through a DIRECTORY mount instead. This
 repo bind-mounts the worktree at its identical host path, so
 `$DEVBOX_WORKSPACE/.devcontainer/devbox-autostart.sh` is the same file always
-current, and `devbox_autostart_dispatch` (`.ci/lib/devbox.sh`) now runs that copy
+current, and `devbox_autostart_dispatch` (`rediacc_ci.core.devbox`) now runs that copy
 rather than the one under `/usr/local/bin`. Where a single-file mount is
 unavoidable, `docker cp` it in at dispatch time, or compare inodes before
 believing a test.
@@ -949,7 +1018,7 @@ Residue: The gate covers TRACKED shell scripts under `set -e`. A one-off `agent-
 
 Measured 2026-08-28. The `eval` immediately after returns a real `scrollHeight` in both cases, so the page is genuinely there; only the exit code differs.
 
-**Why it is expensive.** `packages/www/scripts/measure-page-density.sh` runs under `set -euo pipefail` and redirects that call, so `set -e` killed it at its FIRST page. The symptom was not an error message. It was an empty log and a CSV containing only its header row, which reads as "the harness produced nothing to say" rather than "the harness was shot". Two runs were written off
+**Why it is expensive.** `rediacc_ci.dev.measure_page_density` (originally `packages/www/scripts/measure-page-density.sh`) runs under `set -euo pipefail` and redirects that call, so `set -e` killed it at its FIRST page. The symptom was not an error message. It was an empty log and a CSV containing only its header row, which reads as "the harness produced nothing to say" rather than "the harness was shot". Two runs were written off
 as a wedged browser session before the exit code was suspected at all.
 
 **The fix is not to trust the status.** Neutralise it and let a claim about the PAGE decide:
@@ -1528,7 +1597,7 @@ With that, deleting the `|| true` fails the control. `export -n` afterwards matt
 `.ci/scripts/test/gates/test-emit-advisory.sh:78` already had this right -- its `emit_advisory` errexit control runs in `bash -c` -- so the correct form was in the tree, one directory away, and the wrong one still got written.
 
 **How to notice it without a plant.** Ask what suppressed context the assertion is running in before trusting any control over `set -e`, `set -u` or `pipefail`. A sweep of the 20 indented `set -e` re-arms in tracked shell files found the rest are `set +e` / `set -e` restore pairs around a deliberately-tolerated command, which are unaffected. One other genuine member:
-`.ci/scripts/version/inject-env.sh:49` wraps its body in `_inject_env_main()` and arms `set -euo pipefail` there, but line 137 calls it as `if _inject_env_main "$@"`, so `-e` is inert throughout (`-u` and `pipefail` still apply). Behaviour is unaffected today -- every consequential status in that function is checked explicitly and it falls back to `0.0.0-dev`, which `--strict` then
+The retired `.ci/scripts/version/inject-env.sh:49` wrapped its body in `_inject_env_main()` and armed `set -euo pipefail` there, but line 137 called it as `if _inject_env_main "$@"`, so `-e` was inert throughout (`-u` and `pipefail` still applied). Behaviour was unaffected -- every consequential status in that function was checked explicitly and it fell back to `0.0.0-dev`, which `--strict` then
 refuses, so it fails closed -- but a future edit that leans on errexit there will not get it.
 
 ## A `--suite` path under a symlink makes the mutation runner write to the REAL tree
@@ -1568,7 +1637,7 @@ Two things make the redo safe, and the first alone is not enough. Anchor the pat
 
 ## A title-deriving function fails SILENTLY and at scale
 Trap-Id: derived-title-silent-fallback
-Enforced-By: file:.claude/hooks/stop/test-planrec.py:216
+Enforced-By: file:.claude/hooks/stop/test-planrec.py:226
 Residue: The control pins ONE of the three failure modes (H1 vs the `Status:` header block). The fenced-code case and the `Word:`-header-guard case are unpinned, so either could regress and the corpus would look fine.
 
 `title_of()` in `.claude/hooks/stop/wl_planrec.py:1547` derives a plan record's title from the plan. It has a FALLBACK, and that is the whole problem: a derivation with a fallback never fails, it just quietly produces the wrong answer for a subset it cannot report. Three separate defects hid in it, and each one produced titles that looked plausible:
@@ -1869,3 +1938,95 @@ The check: before running `update-ref` or `symbolic-ref` against a ref that coul
 so in the same report that discloses the workaround, because the workaround's own safety is now the reader's problem, not the guard's.
 
 ---
+
+## The wake timer dies before it fires when its Bash timeout is not above its sleep
+Trap-Id: wake-timer-timeout-above-sleep
+Enforced-By: file:.claude/hooks/stop/wl_checks.py
+Residue: nothing reads the Bash call's timeout, so a wake timer started with the harness default is killed before it fires.
+Documented-In: text:CLAUDE.md a `timeout` above its sleep
+Documented-In: text:CLAUDE.md as a background Bash call
+
+The wake timer exists because the harness re-invokes a session only when a background task exits. Started with the harness's own 30-minute default timeout around a 30-minute sleep, the call is killed just before it would have fired, so a stop that waits on hung work never ends. The `timeout` passed to the Bash call has to sit above the timer's sleep (2400000 ms for the default).
+
+## ci:quick drops a touched slow gate and the push goes out unverified
+Trap-Id: ci-quick-drops-touched-slow-gate
+Enforced-By: guard:block_unverified_push
+Residue:
+Documented-In: text:docs/agent-reference/ci-gates.md A touched slow gate that ci:quick drops is recorded, and the push waits for it.
+Documented-In: box:PLAN-gate-drop-receipt-verify#G4@cb4c0152
+
+`ci:quick` selects slow gates from the change set, and a slow gate it drops is not run. Before the receipt recorded the drop, a push could go out with a touched slow gate never having run, and the green receipt read as full coverage. The receipt now names the dropped gate and the push guard waits for it.
+
+## A new test module without a shard leg is never collected in CI
+Trap-Id: new-test-module-needs-shard-leg
+Enforced-By: gate:check:ci-shard-manifest-coverage
+Residue:
+Documented-In: text:docs/agent-reference/ci-gates.md places each missing unit and drops the ids of units that no longer exist
+
+CI collects pytest units by shard manifest, not by directory. A new test module with no shard leg runs locally and in the full suite, and is silently absent from every CI lane until something places it. `shard:place` places the missing unit, and the coverage gate fails while one is unplaced.
+
+## An environment read registered in one registry and not the other
+Trap-Id: env-read-needs-both-registries
+Enforced-By: gate:check:ci-python-env-registry, gate:check:ci-worklist-env-registry
+Residue:
+Documented-In: text:docs/agent-reference/ci-gates.md A new environment variable is registered with one command
+
+An environment read is registered twice: the Python env registry for `.ci`, and the worklist env registry for the hook side. A read added to only one passes its own gate and fails the other's on the next run, often in a different session that never touched it.
+
+## Manifest paths without pathsOrigin
+Trap-Id: manifest-paths-needs-paths-origin
+Enforced-By: gate:check:ci-paths-origin
+Residue:
+Documented-In: text:scripts/ci-runner/manifest.ts pathsOrigin: 'declared'
+
+A manifest gate with `paths:` selects itself only when those paths change. Without `pathsOrigin`, nothing says whether the list was declared by hand or derived from the gate's real inputs, and a hand list drifts as the gate grows new inputs. The gate refuses an entry with paths and no origin.
+
+## Tick evidence written into a box line re-signs the box
+Trap-Id: tick-text-resigns-the-box
+Enforced-By: guard:block_plan_box_rewrite, gate:check:ci-plan-boxes
+Residue:
+Documented-In: trap:bare-basename-citation
+
+Writing tick evidence into a box line changes the box text, and the box signature is a hash of that text. The ledger then sees one box vanish and a new one appear, which reads as a deleted task, not a ticked one. Evidence goes into the plan's record or the investigation ledger through the plan verbs, never into the box line by hand.
+
+## A bare-basename citation resolves nowhere
+Trap-Id: bare-basename-citation
+Enforced-By: gate:check:ci-plan-citations, file:.claude/hooks/stop/wl_planrec.py
+Residue:
+Documented-In: text:.claude/hooks/stop/wl_planrec.py Write the full repo-relative path
+
+A citation of a bare file name resolves against nothing once the file moves or a second file with that name appears, and the reader cannot tell which file was meant. A citation names the full repo-relative path, and the plan record refuses one that does not resolve.
+
+## -p no:cacheprovider under --strict-config collects nothing
+Trap-Id: no-cacheprovider-vs-strict-config
+Enforced-By: JUDGMENT-ONLY
+Residue: a nested pytest run against the repo's ini with `-p no:cacheprovider` exits 4 and collects nothing; nothing refuses it.
+Documented-In: text:.ci/rediacc_ci/tests/gates/test_twin_parity.py Disabling that plugin UNREGISTERS the `cache_dir` ini key
+Documented-In: text:pyproject.toml --strict-config  an unknown key in THIS table is an error
+
+Disabling pytest's cacheprovider plugin also unregisters its `cache_dir` ini key. Under the repo's `--strict-config`, the ini's `cache_dir` then counts as an unknown key, so a nested pytest run with `-p no:cacheprovider` exits 4 and collects nothing. The empty run looks like a pass to anything that reads only the exit status of a later step.
+
+## gh -F and -f are different flags
+Trap-Id: gh-field-typed-vs-raw
+Enforced-By: JUDGMENT-ONLY
+Residue: `-F` converts true and numbers and reads @file; `-f` sends a literal string. No guard judges which one was meant.
+Documented-In: text:.claude/rediacc_hooks/shellscan.py "raw-field": ("f", True),
+Documented-In: text:.claude/rediacc_hooks/guards/block_raw_pr_body_edit.py (-F|-f|--field|--raw-field)
+
+`gh api -F` is typed: it converts `true` and numbers and reads `@file` as file content. `-f` sends the raw string. A `-f body=@file` posted the literal text `@file` as a PR comment. The two flags differ by one letter and nothing judges which one was meant.
+
+## --retro in the middle of a note is note text
+Trap-Id: retro-flag-after-bare-dashdash
+Enforced-By: file:.claude/hooks/stop/worklist.py
+Residue: only a trailing --retro is recovered; one in the middle of the note is silent note text.
+Documented-In: text:.claude/hooks/stop/worklist.py accepted anywhere BEFORE the bare
+
+The worklist verbs accept `--retro` and `--evidence` anywhere before a bare `--`. After it, only a trailing `--retro` is recovered; one in the middle of a note becomes part of the note text, and the flag silently does nothing.
+
+## A rule mirrored by hand drifts in the copy nobody re-reads
+Trap-Id: hand-mirrored-rule-drift
+Enforced-By: gate:check:ci-scope-mirrors
+Residue: a mirror that adds an exception or contradicts the canonical while still carrying every atom passes the terms test; only constant tuples serve as code oracles.
+Documented-In: text:.ci/rediacc_ci/quality/scope_mirrors.py BLIND SPOTS (plan D9), also printed on every green
+
+CLAUDE.md states the PR-scope rules once, and the output style, the pr-epics skill, `/pr-babysit`, `/pr-merge`, the pr-babysitter agent, a guard's message and the QUEUE.md header restate them in their own words. Those copies are what an agent reads mid-task. A change to the rule reaches the copies only when its author remembers each one: 8ed69711c copied one sentence into five files by hand, and earlier changes left eight disagreements behind (agent/plans/PLAN-scope-mirrors.md, F1-F8). The canonical spans are anchored and pinned by sha, so an edit to one turns red until every registered mirror has been re-read and the clause repinned.

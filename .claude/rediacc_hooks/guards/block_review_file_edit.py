@@ -103,10 +103,12 @@ EDGE_CASES = [
 
 
 def run(ev):
-    path = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
-    if not path or path == "null":
+    given = ev.first(("tool_input", "file_path"), ("tool_input", "notebook_path"))
+    if not given or given == "null":
         return hookio.ALLOW
+    # Judged where the write LANDS (review 3f53e99e.1 sweep): `agent/x/../reviews/...` and a directory symlink into the review directory were allowed as typed, and `agent/reviews/../notes/a.md` was refused. `hookio.landing` is the one reading every pre-edit guard shares (9c6817f3.8).
+    path = hookio.landing(given, ev.field("cwd") or None)[0]
     if REVIEW_PATH.search(path) is None:
         return hookio.ALLOW
-    ev.warn_raw(MESSAGE % (ev.field("tool_name") or "a write", path))
+    ev.warn_raw(MESSAGE % (ev.field("tool_name") or "a write", given))
     return hookio.DENY

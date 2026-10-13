@@ -91,6 +91,9 @@ judge: on            # on|off (the standing half of WORKLIST_JUDGE)
 - The crash handler in `__main__` stays: a crash before the read still blocks. The worklist verbs are unaffected.
 
 **D5. Turbo: continuous and parallel (supersedes the first draft's fixed batch).**
+
+*Superseded under `turbo_push: batch-end` by agent/plans/PLAN-turbo-local-first.md D1-D3.*
+
 - Turbo has no maximum. While `turbo: on`, the live PR keeps taking plans: whenever a writer slot is free (live writers < `writer_cap`) and an eligible plan exists, the hook names the next one to start on a writer.
 - Eligible, in `queue()` order (Promoted, then Generated): exists, has an open box, is not held (`.claude/hooks/stop/wl_planenforce.py:123`), is not already in the PR's plan set, and passes `block_plan_concurrency` against the live writers' plans (`Owns:`/`Concurrency:`). A `-- solo` Promoted entry (D11) is eligible only for an empty PR and then closes the PR to further plans.
 - `plan_gate.next_turbo(root, live_plans, open_slots, rev="")` returns that list, prerequisites first (an unfinished prerequisite of a pick is picked before it, as `next_queued` does today).
@@ -107,6 +110,9 @@ judge: on            # on|off (the standing half of WORKLIST_JUDGE)
 - `clock_scope` (`.ci/scripts/quality/check_plan_implementation.py:227`) drops the unconditional queue head: the scope is the body's named plans plus their closure, else `[queue_head]` (no body or no `pull_request` event). The ticked-on-branch arm is unchanged.
 
 **D8. Hook loop.**
+
+*Superseded under `turbo_push: batch-end` by agent/plans/PLAN-turbo-local-first.md D1-D3.*
+
 - Turbo on, live PR, free slots, eligible plans: a new turbo arm (key `turbo-next`, T_MISSION) blocks with "TURBO: start <plan> on a writer (slot k of writer_cap); its first box is <box>". It names at most the free-slot count of plans.
 - Turbo on, live PR, no free slot or no eligible plan, and fewer than `batch_size` plans finished: no new block; the existing PR PLAN SET OPEN and writer-roster checks hold the turn.
 - Turbo on, at least `batch_size` plans finished (or nothing eligible left) and every named plan finished: the existing pr-finish path offers the merge. After the merge, LOOP NEXT names the next branch and the turbo picks for it.
