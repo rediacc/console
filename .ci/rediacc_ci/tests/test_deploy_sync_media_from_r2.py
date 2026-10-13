@@ -231,14 +231,19 @@ def run_both(tmp_path: pathlib.Path, args: list[str], *, dirs: tuple[str, ...] =
     return old, new, old_calls, new_calls
 
 
-def _assert_agree(old, new, label: str, old_calls=None, new_calls=None) -> None:
+def _assert_agree(old, new, label: str, old_calls=None, new_calls=None, *, tool: str = "") -> None:
+    """`tool` names the ONE coreutils program whose diagnostic WORDING is left out of the stderr comparison, for a case that makes that program fail (`diff.mask_coreutils_diagnostic`)."""
     assert new.returncode == old.returncode, (
         f"{label}: exit diverged: {old.returncode!r} vs {new.returncode!r}"
     )
     assert new.stdout == old.stdout, (
         f"{label}: stdout diverged:\nold: {old.stdout!r}\nnew: {new.stdout!r}"
     )
-    assert new.stderr == old.stderr, (
+    old_err, new_err = old.stderr, new.stderr
+    if tool:
+        old_err = diff.mask_coreutils_diagnostic(old_err, tool)
+        new_err = diff.mask_coreutils_diagnostic(new_err, tool)
+    assert new_err == old_err, (
         f"{label}: stderr diverged:\nold: {old.stderr!r}\nnew: {new.stderr!r}"
     )
     if old_calls is not None:
@@ -509,7 +514,7 @@ def test_defect_dry_run_still_creates_the_local_directories(tmp_path: pathlib.Pa
 
 
 def test_a_failing_mkdir_stops_before_the_step_line(tmp_path: pathlib.Path) -> None:
-    """`mkdir` IS THE REAL BINARY ON BOTH SIDES, which is why its bytes agree. A regular file where `tutorials/video/` belongs makes `mkdir -p` fail, and because it runs ABOVE `log_step` the caller learns the run died without ever learning which prefix it died on. `os.makedirs` would print a traceback and a different status here."""
+    """`mkdir` IS THE REAL BINARY ON BOTH SIDES, which is why its bytes agreed while the twin ran beside the port. The twin's answer is frozen now, in the wording of the recorder's uutils `mkdir` (`mkdir: Already exists`); GNU's on GitHub's runner names the directory and says `File exists` (run 38389205702). So the agreement leaves the wording out and the port's line is pinned against THIS host's `mkdir`. A regular file where `tutorials/video/` belongs makes `mkdir -p` fail, and because it runs ABOVE `log_step` the caller learns the run died without ever learning which prefix it died on. `os.makedirs` would print a traceback and a different status here."""
     tree = _tree(tmp_path)
     _layout(tree, ())
     (tree / "packages/www/public/assets/tutorials").mkdir(parents=True, exist_ok=True)
@@ -520,7 +525,11 @@ def test_a_failing_mkdir_stops_before_the_step_line(tmp_path: pathlib.Path) -> N
     assert old.stderr.startswith("mkdir:"), f"mkdir no longer explains itself: {old.stderr!r}"
     assert "Restoring" not in old.stderr, "the step line printed despite the mkdir failure"
     assert old_calls == [], "aws ran on a directory that could not be created"
-    _assert_agree(old, new, "mkdir-fails", old_calls, new_calls)
+    _assert_agree(old, new, "mkdir-fails", old_calls, new_calls, tool="mkdir")
+    blocked = "%s/packages/www/public/assets/tutorials/video/" % tree
+    here = diff.host_diagnostic(["mkdir", "-p", blocked], str(tree), "C")
+    assert here.startswith("mkdir: "), here
+    assert new.stderr == here
 
 
 def test_pure_helpers() -> None:

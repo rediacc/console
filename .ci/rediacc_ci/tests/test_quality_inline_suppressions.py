@@ -54,12 +54,25 @@ def test_scan_repo_reads_code_and_skips_prose(tmp_path: pathlib.Path) -> None:
 
 
 def test_a_near_empty_root_is_vacuous_not_clean(
-    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """The floor, on a root whose submodules are absent the way a fresh local clone's are.
+
+    `CI` IS REMOVED, because `main` reads the process environment and under `CI=true` a missing submodule refuses BEFORE the floor is reached: the same exit 1 for the neighbouring test's reason. The suite inherits `CI=true` on every GitHub runner, so this passed only where it was not set (run 38389205702). The second half drives that CI arm through the same `main`, so both refusals are told apart by their text.
+    """
     root = _repo(tmp_path, {"a.py": "x = 1\n"})
+    monkeypatch.delenv("CI", raising=False)
     rc = gate.main([], root=root)
     assert rc == 1
     assert "VACUOUS" in capsys.readouterr().err
+    monkeypatch.setenv("CI", "true")
+    rc = gate.main([], root=root)
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "is required in CI but missing" in err
+    assert "VACUOUS" not in err
 
 
 def test_a_missing_submodule_refuses_in_ci(tmp_path: pathlib.Path) -> None:

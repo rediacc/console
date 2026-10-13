@@ -554,8 +554,11 @@ class Devbox:
         stderr=None,
         stdin=None,
         repo_root: str | None = None,
+        host_ids: tuple[int, int] | None = None,
     ) -> None:
         self.env = dict(os.environ if env is None else env)
+        # `$(id -u)` and `$(id -g)`, the EFFECTIVE ids, read ONCE here. Every method that names the host's ids (the state file, the derived tag, the build args, the run env, the lease pool) reads these two, so one construction answers with one identity. `host_ids` exists for the differential: its frozen transcripts carry the recording host's ids, and a driver that let the running host's leak in failed on the first runner whose uid was not the recorder's (GitHub's is 1001).
+        self.uid, self.gid = host_ids if host_ids is not None else (os.geteuid(), os.getegid())
         self.cwd = cwd or os.getcwd()
         self.stdout = stdout if stdout is not None else sys.stdout.buffer
         self.stderr = stderr if stderr is not None else sys.stderr.buffer
@@ -911,8 +914,8 @@ class Devbox:
             "image=" + DEVBOX_IMAGE,
             "image_digest=" + digest,
             "docker_gid=" + docker_gid,
-            "uid=%d" % os.geteuid(),
-            "gid=%d" % os.getegid(),
+            "uid=%d" % self.uid,
+            "gid=%d" % self.gid,
             "gate_lane=" + (self.env.get("REDIACC_GATE_LANE") or "devbox"),
         ]
         try:
@@ -1324,13 +1327,13 @@ class Devbox:
             recipe_hash = hashlib.sha256(handle.read()).hexdigest()
         self.write(
             "%s:uid%d-gid%d-%s-%s\n"
-            % (DEVBOX_UID_IMAGE_REPO, os.geteuid(), os.getegid(), base_id[:12], recipe_hash[:12])
+            % (DEVBOX_UID_IMAGE_REPO, self.uid, self.gid, base_id[:12], recipe_hash[:12])
         )
         return 0
 
     def host_ids(self) -> str:
         """`$(id -u):$(id -g)`, the EFFECTIVE ids."""
-        return "%d:%d" % (os.geteuid(), os.getegid())
+        return "%d:%d" % (self.uid, self.gid)
 
     def run_image(self, *_argv: str) -> int:
         """`devbox_run_image`: the base when its vscode already carries this host's ids, else the derived tag. Resolves; never builds."""
@@ -1377,9 +1380,9 @@ class Devbox:
             "--build-arg",
             "BASE=" + DEVBOX_IMAGE,
             "--build-arg",
-            "HOST_UID=%d" % os.geteuid(),
+            "HOST_UID=%d" % self.uid,
             "--build-arg",
-            "HOST_GID=%d" % os.getegid(),
+            "HOST_GID=%d" % self.gid,
             "-f",
             dockerfile_dir + "/Dockerfile.uid",
             dockerfile_dir,
@@ -1470,11 +1473,16 @@ class Devbox:
 
         Printed only when `/run/user/<uid>` is a directory this user owns (a systemd host); nothing otherwise. Status 0 on every path.
         """
-        runtime = "/run/user/%d" % os.geteuid()
-        with contextlib.suppress(OSError):
-            if os.path.isdir(runtime) and os.stat(runtime).st_uid == os.geteuid():
-                self.write(runtime + "/rediacc-cores\n")
+        runtime = "/run/user/%d" % self.uid
+        if self.owns_runtime_dir(runtime):
+            self.write(runtime + "/rediacc-cores\n")
         return 0
+
+    def owns_runtime_dir(self, runtime: str) -> bool:
+        """`[ -d "$runtime" ] && [ "$(stat -c %u "$runtime")" = "$(id -u)" ]`: a directory, and this user's. The one filesystem fact `core_lease_src` reads about the HOST, kept in a method of its own so the differential's driver can answer it as the recording host did; a container or a user namespace has no `/run/user/<uid>` at all."""
+        with contextlib.suppress(OSError):
+            return os.path.isdir(runtime) and os.stat(runtime).st_uid == self.uid
+        return False
 
     def missing_binds(self, *_argv: str) -> int:
         """`devbox_missing_binds`, `.ci/lib/devbox.sh:492-513`: each bind destination the existing container does NOT have mounted.
@@ -1976,9 +1984,9 @@ class Devbox:
             run += ["--group-add", kvm_gid, "--cap-add", "NET_ADMIN", "--cap-add", "SYS_ADMIN"]
         run += [
             "-e",
-            "HOST_UID=%d" % os.geteuid(),
+            "HOST_UID=%d" % self.uid,
             "-e",
-            "HOST_GID=%d" % os.getegid(),
+            "HOST_GID=%d" % self.gid,
             "-e",
             "DOCKER_GID=%s" % docker_gid,
             "-e",

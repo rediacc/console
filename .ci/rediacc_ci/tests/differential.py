@@ -403,6 +403,76 @@ def host_unfold(
     return text
 
 
+# --------------------------------------------------------------------------- The recorder: what a golden holds that NO token marks ---------------------------------------------------------------------------
+#
+# `host_fold` runs at RECORD time, so it covers only the variance somebody had already met when a golden was frozen. The twins are deleted and their goldens are final, so a variance met LATER cannot become a token without rewriting a frozen answer. On 2026-10-13 run 38389205702 was the first in which the three pytest legs ran to the end on GitHub's runner, and it met four at once, all invisible on the recording host because that host IS the recorder:
+#
+#   numeric ids     the recorder ran as 1000:1000 and `$(id -u):$(id -g)` froze that; the runner is 1001:1001.
+#   directory size  the recorder's scratch was tmpfs, where `ls -l` prints a directory's entry count times 20 (`60`, `80`) and a matching `total`; ext4 prints `4096`, which also widens the size column and so re-pads every row.
+#   readdir order   tmpfs lists a directory newest entry first, ext4 in hash order, and `find` prints whichever it is handed.
+#   coreutils       the recorder's `mkdir`/`ln`/... are uutils (`mkdir: Already exists`), the runner's are GNU (`mkdir: cannot create directory ‘out’: File exists`).
+#
+# The helpers below are how a call site says which of these its answer carries. The first is an UNFOLD (the recorded value becomes this host's, and the port must then match it exactly); the rest are compare-time masks applied to BOTH sides, because no rewrite of the recorded text yields "what the twin would have printed here" without running the twin.
+# `docs/agent-reference/TRAPS.md` *The same shape on the pytest lane* names the command that runs the suite as the runner would.
+RECORDER_IDS = (1000, 1000)
+
+
+def recorder_ids_here(text: str, template: str, ids: tuple[int, int] | None = None) -> str:
+    """The recorder's `uid:gid`, inside `template`, becomes this process's.
+
+    `template` is the exact context the call site vouches for (`"chown\t-R\t%d:%d\t"`), with two `%d`: a bare `1000` anywhere else in the answer is somebody's data and stays literal.
+    """
+    here = ids if ids is not None else (os.getuid(), os.getgid())
+    return text.replace(template % RECORDER_IDS, template % here)
+
+
+_LS_TOTAL_RE = re.compile(r"^total \d+$", re.MULTILINE)
+_LS_ROW_RE = re.compile(
+    r"^(?P<mode>[-bcdlpsD][-rwxsStTl]{9}[.+@]?)[ \t]+(?P<links>\d+)[ \t]+(?P<owner>\S+)[ \t]+"
+    r"(?P<group>\S+)[ \t]+(?P<size>\d+)[ \t]+",
+    re.MULTILINE,
+)
+DIR_SIZE_MARK = "<DIRSIZE>"
+LS_TOTAL_MARK = "total <BLOCKS>"
+
+
+def mask_ls_filesystem(text: str) -> str:
+    """Compare-time, BOTH sides: what `ls -l` prints about the FILESYSTEM rather than about the files.
+
+    A directory's size and the `total` line are the filesystem's block accounting, and the width `ls` pads the size column to follows the largest of them. So: `total N` loses its number, a DIRECTORY row loses its size, and every row's column padding collapses to one space. A regular file's size, every mode, link count, owner, group and name are still compared.
+    """
+
+    def row(m: re.Match[str]) -> str:
+        size = DIR_SIZE_MARK if m["mode"].startswith("d") else m["size"]
+        return " ".join((m["mode"], m["links"], m["owner"], m["group"], size)) + " "
+
+    return _LS_ROW_RE.sub(row, _LS_TOTAL_RE.sub(LS_TOTAL_MARK, text))
+
+
+def mask_coreutils_diagnostic(text: str, tool: str) -> str:
+    """Compare-time, BOTH sides: one named coreutils tool's diagnostic line keeps the tool and loses the wording.
+
+    The wording is the IMPLEMENTATION's (uutils against GNU, and GNU's own across locales), and a port that shells out to the tool prints whichever its host has. That the tool spoke, on which stream, where in the output and with what status are all still compared. `tool` is ONE name: a call site masks the tool its case makes fail, never the family, and pins the port's own line against the host's tool separately (`host_diagnostic`).
+    """
+    return re.sub(
+        r"^%s: .*$" % re.escape(tool), "%s: <DIAGNOSTIC>" % tool, text, flags=re.MULTILINE
+    )
+
+
+def host_diagnostic(argv: list[str], cwd: str, locale: str) -> str:
+    """What THIS host's tool prints on stderr for `argv`, run for real under `locale` (the one the differential gives its subjects; GNU quotes a path differently under `C` and `C.UTF-8`): the expectation a port that shells out must meet byte for byte, on a host whose wording the golden never saw."""
+    result = subprocess.run(
+        argv,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "LC_ALL": locale, "LANG": locale},
+        timeout=DEFAULT_TIMEOUT,
+    )
+    return result.stderr
+
+
 # A CPython traceback's RENDERING is the interpreter's, not the program's. Two lines of it vary by minor version: 3.13 began echoing the source of a `python3 -c` snippet under its `File "<string>"` frame (3.12, the GitHub runner, has no source to echo), and the PEP 657 ruler (`~~~^^^`) under an echoed line appears or not by version and by how much of the line the failing expression spans.
 # A subject that RUNS `python3 -c` (rather than forging the text) prints whichever its host renders, so a golden recorded on 3.14 cannot equal a 3.12 run byte for byte, and no token could be unfolded into "what this host would render" without running the snippet.
 #

@@ -401,12 +401,15 @@ def run_both(root: pathlib.Path, **kw):
     return old, new
 
 
-def _mask(text: str, *, lines: bool = False) -> str:
+def _mask(text: str, *, lines: bool = False, tool: str = "") -> str:
     masked = SELF_RE.sub("<SELF>", text)
+    if tool:
+        masked = diff.mask_coreutils_diagnostic(masked, tool)
     return LINE_RE.sub("line <N>: ", masked) if lines else masked
 
 
-def _agree(old_t, new_t, label: str, *, lines: bool = False) -> None:
+def _agree(old_t, new_t, label: str, *, lines: bool = False, tool: str = "") -> None:
+    """`tool` names the ONE coreutils program whose diagnostic WORDING is left out of the stderr comparison, for a case that makes that program fail (`diff.mask_coreutils_diagnostic`)."""
     old, old_calls, old_env, old_files, old_tmp = old_t
     new, new_calls, new_env, new_files, new_tmp = new_t
     assert new.returncode == old.returncode, (
@@ -416,9 +419,9 @@ def _agree(old_t, new_t, label: str, *, lines: bool = False) -> None:
     assert _mask(as_twin(new.stdout), lines=lines) == _mask(old.stdout, lines=lines), (
         "%s: stdout diverged:\n%r\n%r" % (label, old.stdout, new.stdout)
     )
-    assert _mask(as_twin(new.stderr), lines=lines) == _mask(old.stderr, lines=lines), (
-        "%s: stderr diverged:\n%r\n%r" % (label, old.stderr, new.stderr)
-    )
+    assert _mask(as_twin(new.stderr), lines=lines, tool=tool) == _mask(
+        old.stderr, lines=lines, tool=tool
+    ), "%s: stderr diverged:\n%r\n%r" % (label, old.stderr, new.stderr)
     assert new_calls == old_calls, "%s: call log diverged:\n%s---\n%s" % (
         label,
         old_calls,
@@ -696,7 +699,11 @@ def test_an_output_directory_blocked_by_a_file_fails_the_way_mkdir_does(tmp_path
         assert old_t[0].returncode == 1, old_t[0].stderr
         assert "mkdir:" in old_t[0].stderr, old_t[0].stderr
         assert "Traceback" not in new_t[0].stderr, new_t[0].stderr
-        _agree(old_t, new_t, "mkdir-blocked%s" % ("-dry" if extra else ""))
+        # THE WORDING IS THE HOST'S `mkdir`, NOT THE TWIN'S. The recorder's is uutils (`mkdir: Already exists`), GitHub's runner's is GNU (`mkdir: cannot create directory ‘out’: File exists`), so the recorded line cannot be the expectation anywhere else (run 38389205702). The agreement leaves the wording out, and the port's line is pinned against this host's real `mkdir` instead, which is the claim the docstring makes.
+        _agree(old_t, new_t, "mkdir-blocked%s" % ("-dry" if extra else ""), tool="mkdir")
+        here = diff.host_diagnostic(["mkdir", "-p", "out"], str(root), "C.UTF-8")
+        assert here.startswith("mkdir: "), here
+        assert new_t[0].stderr.endswith(here), (new_t[0].stderr, here)
     (root / "out").unlink()
 
 

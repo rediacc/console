@@ -16,14 +16,18 @@ from rediacc_hooks.tests import wlfix
 SC = wlfix.import_wl("wl_scratch")
 
 OLD_MIN = 300
+IDENTITY = ["git", "-c", "user.email=t@example.invalid", "-c", "user.name=t"]
+# NO BACKGROUND WRITER IN A TREE WHOSE MTIMES ARE THE SUBJECT. `git commit` ends by starting `git maintenance run --auto --quiet --detach`, and the detached half is still alive when `commit` returns: it holds `.git/objects/maintenance.lock`, and whatever task it decides to run writes under `.git/objects` afterwards. A test here commits and then `backdate`s the tree, so a maintenance child that outlived the commit by one scheduling slice stamped a fresh mtime over the backdated ones and the tree read `changed 0 min ago`.
+# That is what GitHub's runner (git 2.55.0, four busy cores) did to `test_a_basetemp_name_is_exempt_only_in_the_shape_pytest_makes` on run 38389205702; on an idle host the child loses the race, so it passed everywhere else.
+# `maintenance.auto=false` is the switch `git commit` reads before it spawns anything; `gc.auto=0` is the same for a git old enough to spawn `gc --auto` instead. `test_a_fixture_commit_leaves_no_writer_behind` drives both arms with a task that always has work.
 GIT = [
-    "git",
-    "-c",
-    "user.email=t@example.invalid",
-    "-c",
-    "user.name=t",
+    *IDENTITY,
     "-c",
     "init.defaultBranch=main",
+    "-c",
+    "maintenance.auto=false",
+    "-c",
+    "gc.auto=0",
 ]
 
 
@@ -60,6 +64,42 @@ def verdicts(scratch: pathlib.Path, leases=(), cwds=()) -> dict[str, tuple[bool,
             str(scratch), SC.DEFAULT_OLDER_MIN, list(leases), list(cwds)
         )
     }
+
+
+def packs_of(clone: pathlib.Path) -> list[str]:
+    return sorted(p.name for p in (clone / ".git" / "objects" / "pack").glob("*.pack"))
+
+
+def test_a_fixture_commit_leaves_no_writer_behind(tmp_path, monkeypatch):
+    """The fixture's `git commit` starts no maintenance, even when a maintenance task has work to do.
+
+    The environment hands every git a `loose-objects` task that runs at one loose object, which a fresh commit always has. Without `maintenance.auto=false` the detached child repacks under `.git/objects/pack` AFTER `commit` has returned (measured 20 of 20 on git 2.53.0), which is the writer that stamped a backdated tree. The pack is the evidence either way: none ever appears behind `GIT`, and one does behind the same commit without the switch.
+    """
+    for index, (key, value) in enumerate(
+        (("maintenance.loose-objects.enabled", "true"), ("maintenance.loose-objects.auto", "1"))
+    ):
+        monkeypatch.setenv("GIT_CONFIG_KEY_%d" % index, key)
+        monkeypatch.setenv("GIT_CONFIG_VALUE_%d" % index, value)
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "2")
+    scratch = tmp_path / "scratchpad"
+    scratch.mkdir()
+    clone = clone_of(tmp_path, scratch, "work")
+    before = packs_of(clone)
+    (clone / "b.txt").write_text("b\n")
+    git(clone, "add", "b.txt")
+    git(clone, "commit", "-qm", "local only")
+    time.sleep(0.5)
+    assert packs_of(clone) == before, "a maintenance child ran behind the fixture's commit"
+    # CONTROL: the same commit WITHOUT the switch is repacked behind its back, so the absence above is the switch's doing and not a task that never fires.
+    (clone / "c.txt").write_text("c\n")
+    subprocess.run([*IDENTITY, "add", "c.txt"], cwd=str(clone), check=True, capture_output=True)
+    subprocess.run(
+        [*IDENTITY, "commit", "-qm", "c"], cwd=str(clone), check=True, capture_output=True
+    )
+    deadline = time.monotonic() + 30
+    while packs_of(clone) == before and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert packs_of(clone) != before, "the control commit started no maintenance"
 
 
 def test_an_old_idle_dir_is_deleted_and_a_young_one_kept(tmp_path):

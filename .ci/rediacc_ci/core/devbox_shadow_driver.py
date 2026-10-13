@@ -89,6 +89,19 @@ OBS = "obs"
 
 EXIT_CANNOT_RUN = 77
 
+# THE RECORDING HOST'S IDENTITY, pinned for every later one. The frozen transcripts were recorded by uid 1000, gid 1000 on a host with a `/run/user/1000` it owned, and they carry all three: the state file's `uid=`/`gid=`, the derived tag `uid1000-gid1000-...`, the `HOST_UID`/`HOST_GID` build args and run env, and the lease pool `/run/user/1000/rediacc-cores`. The port read them from the running host until 2026-10-13, so the differential passed only where the suite ran as 1000:1000: GitHub's runner is uid 1001 (run 38389205702, seven tests), and a container or a user namespace has no `/run/user/<uid>` at all.
+# The port now takes its ids at construction (`Devbox(host_ids=...)`), and `test_core_devbox.py::test_the_host_ids_are_the_running_users_by_default` covers the default this pin replaces.
+GOLDEN_HOST_IDS = (1000, 1000)
+GOLDEN_RUNTIME_DIR = "/run/user/%d" % GOLDEN_HOST_IDS[0]
+
+
+class GoldenHostDevbox(devbox.Devbox):
+    """The port as the recording host saw it: the one answer about the HOST's filesystem is the recorded one. Everything else is `Devbox`'s own, so a plant on `devbox.Devbox` still shows."""
+
+    def owns_runtime_dir(self, runtime: str) -> bool:
+        return runtime == GOLDEN_RUNTIME_DIR
+
+
 # The prefix `strip_loc` removes above, applied identically on the port side, where it is a no-op because nothing in Python emits a bash source location.
 BASH_LOCATION_RE = re.compile(r"^[^ ]*: line [0-9]+: ")
 # `devbox_await_ready`'s progress line carries elapsed WALL-CLOCK seconds, and bash `SECONDS` ticks on a second boundary rather than a duration, so one probe round reads "(0s)" or "(1s)" by luck. The count is not the subject; that the line is printed, and for which services, is.
@@ -1303,10 +1316,8 @@ def image_steps() -> list[Step]:
     absent = rule("docker", "image", "inspect", IMAGE, exact=True, rc=1)
     digest = ("docker", "image", "inspect", "--format")
     base = d.base_answers()
-    # The host's own ids as the base would answer them, so the no-derive arm is driven whatever uid runs this.
-    matching = d.base_ids(
-        out="vscode:x:%d:%d::/home/vscode:/bin/bash\n" % (os.geteuid(), os.getegid())
-    )
+    # The pinned host's ids as the base would answer them, so the no-derive arm is driven whatever uid runs this.
+    matching = d.base_ids(out="vscode:x:%d:%d::/home/vscode:/bin/bash\n" % GOLDEN_HOST_IDS)
     build = ("docker", "build", "-t", DERIVED_PATTERN)
     return [
         Step("present", "devbox_image_present"),
@@ -2068,8 +2079,13 @@ def run_stub_new(
             open(err_path, "wb", buffering=0) as err,
             open(os.devnull, "rb") as stdin,
         ):
-            status = devbox.Devbox(
-                current, cwd=str(repo), stdout=out, stderr=err, stdin=stdin
+            status = GoldenHostDevbox(
+                current,
+                cwd=str(repo),
+                stdout=out,
+                stderr=err,
+                stdin=stdin,
+                host_ids=GOLDEN_HOST_IDS,
             ).invoke(step.fn, step.args)
         printer.probe(
             step.label,
