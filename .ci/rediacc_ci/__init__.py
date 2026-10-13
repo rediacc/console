@@ -30,14 +30,16 @@ import os as _os
 def _pin_pythonpath() -> None:
     """Make every relative `PYTHONPATH` entry absolute, once, against the directory this process started in.
 
-    Every workflow starts a module as `PYTHONPATH=.ci python3 -m rediacc_ci.<x>`, and a child process inherits that relative `.ci`. A module that changes directory and then starts a sibling with `sys.executable -m rediacc_ci.<y>` hands the child a path that now points nowhere: build_cli_executables did exactly that after `os.chdir(packages/cli)`, and every CLI build leg failed with "No module named 'rediacc_ci'" (console run 38350834911). Pinning the entries here, at the first import of the package and before any module can have changed directory, closes it for every such spawn instead of one call site. An empty entry means the current directory to Python and is pinned too.
+    Every workflow starts a module as `PYTHONPATH=.ci python3 -m rediacc_ci.<x>`, and a child process inherits that relative `.ci`. A module that changes directory and then starts a sibling with `sys.executable -m rediacc_ci.<y>` hands the child a path that now points nowhere: build_cli_executables did exactly that after `os.chdir(packages/cli)`, and every CLI build leg failed with "No module named 'rediacc_ci'" (console run 38350834911). Pinning the entries here, at the first import of the package and before any module can have changed directory, closes it for every module started with `-m` (the package is imported before the module's own code runs) instead of one call site. It does not reach a script started by path that never imports the package before it changes directory. An empty entry is left as it is: pinning it would put the starting directory on every child's path where Python had ignored it.
     """
     raw = _os.environ.get("PYTHONPATH")
-    if raw is None:
+    if not raw:
         return
     here = _os.getcwd()
     pinned = _os.pathsep.join(
-        entry if _os.path.isabs(entry) else _os.path.normpath(_os.path.join(here, entry))
+        entry
+        if not entry or _os.path.isabs(entry)
+        else _os.path.normpath(_os.path.join(here, entry))
         for entry in raw.split(_os.pathsep)
     )
     if pinned != raw:
