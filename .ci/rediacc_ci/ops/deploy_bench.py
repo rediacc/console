@@ -4,6 +4,8 @@
 
 Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to `account-db-bench`, `wrangler deploy --config wrangler.bench.toml`, run `./run.sh rotation check --for=bench`, then push the worker secrets with `wrangler secret bulk`.
 
+THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
+
 Resources: D1 `account-db-bench`, R2 `rediacc-configs-bench`, worker `rediacc-account-bench`, domain `bench.rediacc.com`. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_deploy_bench.py` that fails on the bash behaviour).
@@ -214,22 +216,50 @@ def _reexec_under_profile(argv: list[str]) -> int | None:
     ).returncode
 
 
+# `rotation check` exits 0 in sync, 1 on drift (a live value was read and differs), 2 when nothing drifted but a credential could not be checked (the query failed, so nothing was compared). Pinned to EXIT_COULD_NOT_CHECK in private/account/scripts/rotation/commands/check.ts.
+ROTATION_COULD_NOT_CHECK_RC = 2
+
+
+def _could_not_check_lines(stderr: str) -> list[str]:
+    """The `  <credential>: <cause>` lines under the check's "could not check" header, so the refusal names each credential and why."""
+    lines: list[str] = []
+    collecting = False
+    for line in stderr.splitlines():
+        if "could not check" in line:
+            collecting = True
+        elif collecting and line.startswith("  ") and line.strip():
+            lines.append(line.strip())
+        elif collecting:
+            collecting = False
+    return lines
+
+
 def _rotation_check(root) -> None:
+    """Refuse the secrets push unless the check read every credential and found it in sync. Drift (exit 1) and a check that could not read a credential (exit 2) both refuse, and are worded apart: an unread value is not drift, and rotating does not fix it."""
     log.step("Rotation preflight: ./run.sh rotation check --for=bench")
-    rc = subprocess.run(
-        [str(root / "run.sh"), "rotation", "check", "--for=bench"], check=False
-    ).returncode
+    # The check's progress goes to stderr; it is echoed as it arrives and kept to name what could not be checked.
+    seen: list[str] = []
+    with subprocess.Popen(
+        [str(root / "run.sh"), "rotation", "check", "--for=bench"],
+        stderr=subprocess.PIPE,
+        text=True,
+    ) as proc:
+        for line in proc.stderr or ():
+            sys.stderr.write(line)
+            seen.append(line)
+    rc = proc.returncode
     if rc == 0:
         return
-    # A verdict is different from a check that never reached one: reporting drift for a missing credential sends the operator to rotate a key that is fine.
-    if not _first(
-        os.environ.get("AWS_IAM_ADMIN_ACCESS_KEY_ID"), os.environ.get("AWS_SES_ADMIN_KEY_ID")
-    ):
+    if rc == ROTATION_COULD_NOT_CHECK_RC:
+        unchecked = _could_not_check_lines("".join(seen)) or ["(the check named no credential)"]
         raise DeployError(
-            "rotation check could NOT RUN: no AWS IAM admin credentials in the\n"
-            "environment even after the deploy-bench profile. This is NOT drift --\n"
-            "nothing was compared. Check AWS_IAM_ADMIN_ACCESS_KEY_ID in Bitwarden (ci-shared)."
+            "rotation check could NOT READ every credential, so refusing to push secrets to bench\n"
+            + "\n".join("  not checked, " + line for line in unchecked)
+            + "\nthis is NOT drift: nothing was compared for the credentials above, and a rotation does not help.\n"
+            "fix: the cause named on each line, then deploy again"
         )
+    if rc != 1:
+        raise DeployError("rotation check failed with exit %d, so refusing to push secrets" % rc)
     raise DeployError(
         "rotation drift detected, so refusing to push stale secrets to bench\n"
         "fix: run `./run.sh rotation rotate <slug>` for the credentials that drifted"

@@ -758,3 +758,46 @@ def test_deploy_bench_rotation_drift_matches_bash(world: h.World) -> None:
     assert rc_b == rc_p == 1
     assert "rotation drift detected" in h.strip(err_b)
     assert "rotation drift detected" in h.strip(err_p)
+
+
+UNCHECKED_STDERR = (
+    "✗ drift detected on 1 credential:\n"  # a stale line from an unrelated block must not be reported
+    "  ses-bench: version AKIA state mismatch\n"
+    "! could not check 1 credential (the live value was not read, so this is NOT drift):\n"
+    "  otlp-bench: observability query failed: ssh exit 255: reader@obs.example.test: Permission denied (publickey).\n"
+)
+
+
+def test_deploy_bench_refuses_on_a_check_that_could_not_run_and_never_pushes(
+    world: h.World,
+) -> None:
+    # Exit 2 is "nothing drifted, a credential could not be checked". The comparison must always run (operator ruling 2026-10-13), so the secrets push is refused, with wording that names the credential and the cause and does not send the reader to rotate. No bash twin: the twin read any non-zero exit as drift.
+    env = world.env(
+        FAKE_ROTATION_RC="2", FAKE_ROTATION_STDERR=UNCHECKED_STDERR, **TOKEN_ENV, **DEPLOY_ENV
+    )
+    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    assert rc == 1, err
+    text = h.strip(err)
+    refusal = text.split("rotation check could NOT READ every credential", 1)[1]
+    assert "not checked, otlp-bench: observability query failed: ssh exit 255" in refusal
+    assert "ses-bench" not in refusal  # the drift block above it is a different finding
+    assert "this is NOT drift" in refusal
+    assert "rotation drift detected" not in text
+    assert "rotation rotate" not in text
+    assert not any(
+        c["tool"] == "npx" and c["argv"][:3] == ["wrangler", "secret", "bulk"]
+        for c in world.calls()
+    )  # nothing was pushed
+
+
+def test_deploy_bench_still_refuses_on_drift_and_never_pushes(world: h.World) -> None:
+    env = world.env(
+        FAKE_ROTATION_RC="1", FAKE_ROTATION_STDERR=UNCHECKED_STDERR, **TOKEN_ENV, **DEPLOY_ENV
+    )
+    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    assert rc == 1
+    assert "rotation drift detected" in h.strip(err)
+    assert not any(
+        c["tool"] == "npx" and c["argv"][:3] == ["wrangler", "secret", "bulk"]
+        for c in world.calls()
+    )
