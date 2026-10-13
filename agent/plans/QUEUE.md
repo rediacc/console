@@ -94,7 +94,7 @@ Promoted: 6 of 13 plans done, 150 of 170 boxes done (88%).
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
 2. agent/plans/PLAN-deferred-findings-block-merge.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; 1 open, M3 closes on wl_review.py --check and check:ci-review-resolutions at exit 0 with Quality / Branch green on the pushed head (no operator-only finding exists)
-3. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; done, 22 of 22 boxes; leaves this list when PR #600 merges
+3. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; done, 22 of 22 boxes; leaves this list when PR #600 merges -- solo
 4. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: 1 open, T10 closure; the live smoke passed on bench on 2026-10-13 (a member of team X gets 403 team_forbidden on team Y, worker 2783794b) and local evidence is complete; T10 closes on a finished CI run's log
 5. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: done, 12 of 12 boxes; leaves this list when PR #600 merges
 6. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: 4 open, Step 9 (full hook suite), Step 10 (registries), the --poll box of Step 12 through the plan verbs, Step 13 (ci:quick and the live Stop check)

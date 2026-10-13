@@ -3168,7 +3168,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-cli-contract',
     run: 'npm run check:ci-cli-contract',
-    slow: true, // 12.7s measured
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],

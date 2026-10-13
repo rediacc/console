@@ -66,7 +66,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-ceph-image-pin | quality-code / Ceph image pin freshness | yes | no |
 | check:ci-changed-selection | quality-code / Changed-file selection contract | yes | no |
 | check:ci-checkout-cone | quality-static / Checkout cone covers what steps run | yes | no |
-| check:ci-cli-contract | quality-packages / CLI contract | yes | yes |
+| check:ci-cli-contract | quality-packages / CLI contract | yes | no |
 | check:ci-cli-doc-coverage | quality-code / CLI docs stay in sync with their scripts' real flags | yes | no |
 | check:ci-cli-proxy-safe-output | quality-static / CLI proxy-safe output | yes | no |
 | check:ci-client-bundle-budget | quality-www-build / SEO | yes | yes |
