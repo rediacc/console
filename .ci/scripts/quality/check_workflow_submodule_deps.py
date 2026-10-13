@@ -85,6 +85,27 @@ def package_test_files(workspace: str | None = None) -> list[pathlib.Path]:
     ]
 
 
+def named_test_files(cmd: str, workspaces: list[str], repo: pathlib.Path | None = None) -> list:
+    """The test files a runner command names outright, or [] when it names none.
+
+    `vitest run src/utils/__tests__/x.test.ts` runs that file and nothing else, so sweeping the whole workspace for it charged the job with every other test's reads (quality-secure-storage, 2026-10-13: a job that runs one file was told it reads private/renet through datastore-prune-parser.test.ts). Every named file must resolve under a workspace the job named (or any package when it named none); one that does not resolve gives [], and the caller sweeps as before, so a typo cannot shrink the sweep.
+    """
+    repo = repo or REPO
+    names = re.findall(r"(?<![\w./-])([\w./-]+\.test\.tsx?)\b", cmd)
+    if not names:
+        return []
+    found = []
+    for name in names:
+        roots = [repo / "packages" / ws for ws in workspaces] or sorted(
+            (repo / "packages").glob("*")
+        )
+        hits = [root / name for root in roots if (root / name).is_file()]
+        if not hits:
+            return []
+        found.extend(hits)
+    return found
+
+
 # Build OUTPUTS are not source. A bundler inlines the paths it read at build time, so dist/cli-bundle.cjs contains the string "private/renet/..." without the job ever opening that file. Flagging those would train a reader to ignore this gate, which is worse than not having it.
 GENERATED = re.compile(r"(^|/)(dist|build|out|coverage|node_modules|\.cache)(/|$)")
 
@@ -197,10 +218,14 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
                 {
                     m.group(1)
                     for cmd_seen in seen_cmds
-                    for m in re.finditer(r"-w\s+(?:@[\w-]+/)?([\w-]+)", cmd_seen)
+                    for m in re.finditer(
+                        r"(?:-w\s+|--workspace[=\s])(?:@[\w-]+/)?([\w-]+)", cmd_seen
+                    )
                 }
             )
-            sweep = [path for ws in (workspaces or [None]) for path in package_test_files(ws)]
+            sweep = named_test_files(cmd, workspaces) or [
+                path for ws in (workspaces or [None]) for path in package_test_files(ws)
+            ]
             for path in sweep:
                 try:
                     # SCANNED: a test runner really does execute these.
@@ -360,6 +385,19 @@ def run_controls(subs: list[str], scripts: dict[str, str]) -> list[str]:
     failures: list[str] = []
     if not subs:
         return [".gitmodules named no submodules, so the rule matches nothing and passes forever"]
+
+    # A runner command that names its files is swept as those files only, and a name that does not resolve falls back to the whole sweep.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp) / "repo"
+        (root / "packages" / "cli" / "src").mkdir(parents=True)
+        one = root / "packages" / "cli" / "src" / "one.test.ts"
+        one.write_text("// one\n")
+        if named_test_files("vitest run src/one.test.ts", ["cli"], root) != [one]:
+            failures.append("a runner command naming one test file was not narrowed to that file")
+        if named_test_files("vitest run src/missing.test.ts", ["cli"], root) != []:
+            failures.append("a named test file that does not exist still narrowed the sweep")
+        if named_test_files("vitest run", ["cli"], root) != []:
+            failures.append("a runner command naming no file was narrowed")
 
     # A path OUTSIDE the repository is never a repo file, however it is spelled (2026-10-11: an absolute `/tmp/...sh` token that existed on disk crashed the gate). Planted outside a fake repo root that holds one real script, so the in-repo direction is asserted too.
     with tempfile.TemporaryDirectory() as tmp:
