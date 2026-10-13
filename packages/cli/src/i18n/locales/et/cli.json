@@ -468,7 +468,7 @@
           "success": "Kaugkonfiguratsioon keelatud. Konfiguratsioon \"{{name}}\" salvestatud kohalikult."
         },
         "enable": {
-          "alreadyEnabled": "Konfiguratsioon \"{{name}}\" on juba seotud kaugsalvestusega. Keela kõigepealt käsuga: rdc config remote disable",
+          "alreadyEnabled": "Konfiguratsioon \"{{name}}\" on juba kaugsalvestusega seotud ja see seade saab selle avada, seega pole midagi lubada. Seose eemaldamiseks käivita: rdc config remote disable",
           "description": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",
           "expired": "Seadmekood aegus. Proovi uuesti.",
           "handoffUnreadable": "Brauserist saadetud konfiguratsiooni ei õnnestunud lugeda. Alusta uuesti: rdc config remote enable",
@@ -496,6 +496,12 @@
           "passwordTokenNotEnrollable": "See API-token ei saa config slot'i registreerida, kuna see ei ole seotud kasutajaga organisatsioonis. Väljasta portaalist oma konto isiklik token ja proovi uuesti.",
           "passwordWrong": "Konfiguratsiooni ei õnnestunud selle parooliga avada. Kontrolli REDIACC_CONFIG_PASSWORD väärtust (või sisestatud parooli) ja proovi uuesti.",
           "received": "Käepigistus saadud",
+          "reenrollConfigGone": "Hoidlas {{storeId}} ei ole enam kaugkonfiguratsiooni {{configId}}, millega konfiguratsioon \"{{name}}\" on seotud. Midagi ei muudetud; kohalik fail on viimane koopia, mida see seade nägi.",
+          "reenrollConfigMismatch": "Konfiguratsioon \"{{name}}\" on seotud kaugkonfiguratsiooniga {{linkedConfig}}, kuid registreerimine kinnitati kaugkonfiguratsiooni {{offeredConfig}} jaoks. Midagi ei muudetud. Käivita käsk uuesti ja kinnita see kaugkonfiguratsiooni {{linkedConfig}} jaoks.",
+          "reenrolling": "Konfiguratsioon \"{{name}}\" on kaugsalvestusega seotud, kuid see seade ei saa seda enam avada. Seade registreeritakse sama hoidla jaoks uuesti.",
+          "reenrollServerMismatch": "Konfiguratsioon \"{{name}}\" on seotud serveriga {{linkedUrl}}, seega saab selle seadme uuesti registreerida ainult seal, mitte serveris {{requestedUrl}}. Käivita käsk uuesti ilma võtmeta --api-url.",
+          "reenrollStoreMismatch": "Konfiguratsioon \"{{name}}\" on seotud hoidlaga {{linkedStore}}, kuid registreerimine kinnitati hoidla {{offeredStore}} jaoks. Midagi ei muudetud. Kinnita see selle organisatsiooni kontoga, kellele see konfiguratsioon kuulub.",
+          "reenrollSuccess": "Seade on uuesti registreeritud. Konfiguratsioon \"{{name}}\" värskendati serverist (versioon {{version}}).",
           "openRelay": "Ava see link mis tahes brauseris, kus oled portaali sisse logitud:",
           "approveAs": "Ava see link mis tahes brauseris, kus oled sisse logitud kontoga {{email}}:",
           "pairingCode": "Sidumiskood (sisesta see lehel, kui seda küsitakse):  {{code}}",
@@ -511,7 +517,7 @@
         "handoffUndecryptable": "Serveri relee tagastas üleandmise, mida see seade avada ei saa ({{error}}): see on lukustatud teise võtmega kui see, mille see käivitus lõi. Käivita käsk uuesti ja ava ainult see link, mille käsk välja prindib.",
         "offlineCacheWarning": "Konfiguratsiooniserver {{server}} pole kättesaadav; konfiguratsiooni \"{{config}}\" pakutakse võrguühenduseta vahemälust (serveri versioon {{version}}, vahemällu salvestatud {{age}} tagasi). Muudatusi ei saa salvestada enne, kui server on jälle kättesaadav.",
         "offlineNoCache": "Konfiguratsiooniserver {{server}} pole kättesaadav ja konfiguratsioonil \"{{config}}\" pole veel võrguühenduseta vahemälu. Käivita \"rdc config remote refresh\", kui server on kättesaadav, et vahemälu täita.",
-        "passkeySecretMissing": "Pääsuvõtme saladust ei leitud OS-i võtmehoidlast. Autentimine uuesti: rdc config remote enable",
+        "passkeySecretMissing": "Sellel seadmel ei ole enam konfiguratsioonihoidla võtit (Linuxis tühjendatakse kerneli võtmerõngas igal taaskäivitusel). Registreeri seade uuesti käsuga: rdc config remote enable",
         "refresh": {
           "description": "Sunni konfiguratsiooni uuesti toomist kaugsalvestusest",
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
@@ -545,8 +551,8 @@
           "loginInvalid": "Kontoserver lükkas konfiguratsioonitõendi uuendamisel selle seadme sisselogimise tagasi. Käivita \"rdc subscription login\" ja proovi uuesti.",
           "loginScope": "Selle seadme sisselogimine ei saa konfiguratsioonitõendeid uuendada: see on tehtud enne selle funktsiooni tulekut või selle meeskonda enam pole. Käivita uuesti \"rdc subscription login\" ja proovi siis uuesti.",
           "loginIpMismatch": "Konfiguratsioonitõendit ei saanud uuendada, sest selle seadme sisselogimine on seotud teise võrguaadressiga. {{error}} Või käivita uuesti \"rdc config remote enable\", et saada sellele seadmele uus konfiguratsioonitõend.",
-          "notStoreMember": "Selle seadme sisselogimise konto ei kuulu konfiguratsioonihoidlasse {{storeId}}, seega konfiguratsioonitõendit ei uuendatud. Logi sisse kontoga, mis selle konfiguratsiooni lubas (\"rdc subscription login\"), või käivita uuesti \"rdc config remote enable\".",
-          "storeMismatch": "Konfiguratsioonihoidla {{storeId}} ei kuulu selle seadme sisselogimise organisatsioonile, seega konfiguratsioonitõendit ei uuendatud. Logi sisse organisatsiooni, kellele see konfiguratsioon kuulub (\"rdc subscription login\"), või käivita uuesti \"rdc config remote enable\".",
+          "notStoreMember": "Selle seadme sisselogimise konto ei kuulu konfiguratsioonihoidlasse {{storeId}}, seega konfiguratsioonitõendit ei uuendatud. Logi sisse kontoga, mis selle konfiguratsiooni lubas (\"rdc subscription login\") ja proovi uuesti.",
+          "storeMismatch": "Konfiguratsioonihoidla {{storeId}} ei kuulu selle seadme sisselogimise organisatsioonile, seega konfiguratsioonitõendit ei uuendatud. Logi sisse organisatsiooni, kellele see konfiguratsioon kuulub (\"rdc subscription login\") ja proovi uuesti.",
           "staleGeneration": "Konfiguratsiooni krüpteerimisvõti vahetati ja ükski selle konto võtmepesa ei ava uut võtit, seega konfiguratsioonitõendit ei uuendatud. Registreeri seade uuesti käsuga: rdc config remote enable",
           "rateLimited": "Kontoserver piirab praegu konfiguratsioonitõendite uuendamist ({{error}}). Oota minut ja käivita käsk uuesti.",
           "refused": "Kontoserver ei uuendanud selle seadme konfiguratsioonitõendit ({{error}}). Käivita uuesti \"rdc config remote enable\"."
