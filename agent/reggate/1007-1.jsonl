@@ -1,0 +1,39 @@
+{"kind":"charge","sig":"acd3e266d97f","why":"proven","at":"2026-10-07T04:43:11Z","br":"1007-1"}
+{"kind":"charge","sig":"f181aba0cdc1","why":"proven","at":"2026-10-07T04:49:49Z","br":"1007-1"}
+{"kind":"charge","sig":"f399f555fdf2","why":"proven","at":"2026-10-07T04:54:58Z","br":"1007-1"}
+{"kind":"charge","sig":"bf5f1bbcbb67","why":"proven","at":"2026-10-07T05:11:23Z","br":"1007-1"}
+{"kind":"charge","sig":"1a4c1a0bc0fc","why":"proven","at":"2026-10-07T06:14:06Z","br":"1007-1"}
+{"kind":"charge","sig":"de40922398d9","why":"proven","at":"2026-10-07T06:32:32Z","br":"1007-1"}
+{"kind":"charge","sig":"df4dd7d17871","why":"proven","at":"2026-10-07T06:56:45Z","br":"1007-1"}
+{"kind":"charge","sig":"1e2f65eff2fe","why":"proven","at":"2026-10-07T07:24:56Z","br":"1007-1"}
+{"kind":"debt","sig":"a325b2c328dc","blind_spot":"PROOF_PHRASE regex specificity was not compared against wl_proofcheck.py validation constraints. Guard accepted low-information phrases like 'sampled N files' without required file names or counts.","surface":"gates","artifact":".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py","charged":8,"at":"2026-10-07T07:28:36Z","br":"1007-1"}
+{"kind":"charge","sig":"a325b2c328dc","why":"capped","at":"2026-10-07T07:28:36Z","br":"1007-1"}
+{"kind":"charge","sig":"73789a534dec","why":"proven","at":"2026-10-07T07:35:52Z","br":"1007-1"}
+{"kind":"charge","sig":"da8a435edef1","why":"proven","at":"2026-10-07T07:49:46Z","br":"1007-1"}
+{"kind":"debt","sig":"3c5bc85e6155","blind_spot":"Guard accepts long-form flags (--flag) but not short forms (-f). Static code analysis cannot detect missing coverage without explicit testing of all variants.","surface":"gates","artifact":".claude/rediacc_hooks/guards/block_destructive_git_restore.py","charged":11,"at":"2026-10-07T08:26:20Z","br":"1007-1"}
+{"kind":"charge","sig":"3c5bc85e6155","why":"capped","at":"2026-10-07T08:26:20Z","br":"1007-1"}
+{"kind":"debt","sig":"87682c0851f6","blind_spot":"A one-time transient failure in CI leaves no code artifact to test. CI gates cannot distinguish environmental flakes from reproducible defects without reproduction or active root-cause hypothesis.","surface":"install","artifact":".github/workflows/ci.yml","charged":12,"at":"2026-10-07T08:29:16Z","br":"1007-1"}
+{"kind":"charge","sig":"87682c0851f6","why":"capped","at":"2026-10-07T08:29:16Z","br":"1007-1"}
+{"kind":"charge","sig":"c99ff86c19a5","why":"proven","at":"2026-10-07T09:07:53Z","br":"1007-1"}
+{"kind":"charge","sig":"047441a5651a","why":"proven","at":"2026-10-07T10:01:26Z","br":"1007-1"}
+{"kind":"charge","sig":"d4356139e7e7","why":"proven","at":"2026-10-07T10:20:09Z","br":"1007-1"}
+{"kind":"charge","sig":"60c4f2ccf9f8","why":"proven","at":"2026-10-07T10:39:34Z","br":"1007-1"}
+{"kind":"charge","sig":"2293834085c5","why":"proven","at":"2026-10-07T10:58:03Z","br":"1007-1"}
+{"kind":"charge","sig":"5a71c82a4242","why":"proven","at":"2026-10-07T11:13:29Z","br":"1007-1"}
+{"kind":"charge","sig":"0bf182f63566","why":"proven","at":"2026-10-07T12:14:54Z","br":"1007-1"}
+{"kind":"charge","sig":"0c899e8bafae","why":"proven","at":"2026-10-07T14:33:35Z","br":"1007-1"}
+{"kind":"charge","sig":"80fab992893c","why":"proven","at":"2026-10-07T15:02:52Z","br":"1007-1"}
+{"kind":"debt","sig":"b801049b1e96","blind_spot":"Missing verification that pytest file-change mode is 'strict:' not 'shared:'. Existing pytest gates check test pass/fail but not conftest.py tree-tripwire configuration itself.","surface":"gates","artifact":".ci/checks/ci-pytest-conftest-mode.ts","charged":22,"at":"2026-10-07T15:15:58Z","br":"1007-1"}
+{"kind":"charge","sig":"b801049b1e96","why":"capped","at":"2026-10-07T15:15:58Z","br":"1007-1"}
+{"kind":"charge","sig":"1c043c68852a","why":"proven","at":"2026-10-07T15:57:33Z","br":"1007-1"}
+{"kind":"debt","sig":"300362d2c1e2","blind_spot":"No existing check reads ci_diagnose's runtime categorizations to verify they match expected classes for known run-cancel failure modes (watchdog-cancel, runner-lost, etc.). The tool is used diagnostically but not validated by assertions.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_ci_diagnose.py","charged":24,"at":"2026-10-07T16:10:24Z","br":"1007-1"}
+{"kind":"charge","sig":"300362d2c1e2","why":"capped","at":"2026-10-07T16:10:24Z","br":"1007-1"}
+{"kind":"debt","sig":"2f5a4b143eb7","blind_spot":"Existing checks validated plan references at the source level and checked consistency, but did not verify that a plan referenced in the post-push Plan line actually existed in the specific branch being pushed.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_plan_gate.py","charged":25,"at":"2026-10-07T16:18:03Z","br":"1007-1"}
+{"kind":"charge","sig":"2f5a4b143eb7","why":"capped","at":"2026-10-07T16:18:03Z","br":"1007-1"}
+{"kind":"charge","sig":"5b2a8b8be306","why":"proven","at":"2026-10-07T16:55:03Z","br":"1007-1"}
+{"kind":"debt","sig":"3ced2cf27079","blind_spot":"The stop hook's ci-red check reported a job failure from an older re-run attempt instead of the latest one. The check did not verify it was reading the LATEST attempt's result when multiple attempts existed for the same job.","surface":"hooks","artifact":".claude/hooks/stop/test-ci-rerun.py","charged":27,"at":"2026-10-07T16:58:20Z","br":"1007-1"}
+{"kind":"charge","sig":"3ced2cf27079","why":"capped","at":"2026-10-07T16:58:20Z","br":"1007-1"}
+{"kind":"debt","sig":"3c7e72874b34","blind_spot":"Existing checks may verify ci-trace execution but not that --wait correctly blocks until commit reaches remote (ls-remote poll) or exits 2 on head-lag timeout.","surface":"gates","artifact":".ci/rediacc_ci/tests/test_ci_trace_head_lag.py","charged":28,"at":"2026-10-07T17:57:53Z","br":"1007-1"}
+{"kind":"charge","sig":"3c7e72874b34","why":"capped","at":"2026-10-07T17:57:53Z","br":"1007-1"}
+{"kind":"charge","sig":"2fc9fc8c042e","why":"proven","at":"2026-10-08T05:27:46Z","br":"1007-1"}
+{"kind":"charge","sig":"76a4bdbb6a20","why":"proven","at":"2026-10-08T05:38:07Z","br":"1007-1"}
