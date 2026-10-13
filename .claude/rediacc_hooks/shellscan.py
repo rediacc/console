@@ -3078,6 +3078,43 @@ def copy_destination(name, argv):
 _XARGS_APPENDS_ONCE = frozenset(("-r", "--no-run-if-empty", "-t", "--verbose", "-x", "--exit"))
 
 
+def xargs_marker_candidates(options):
+    """Every string an xargs with these options may be substituting for its input: `{}` always, the word after `-I` or `-J`, what is attached to them or to `-i`, `--replace=R`, and, for a bundle of short options, whatever follows each of those three letters. It OVER-reads on purpose: a caller puts fed words in each candidate's place to find files a command may touch, where one candidate too many adds an operand and one too few hides a file."""
+    words = list(options or ())
+    found = {"{}"}
+    for at, option in enumerate(words):
+        if option.startswith("--replace="):
+            found.add(option[len("--replace=") :])
+        if option.startswith("--") or not option.startswith("-"):
+            continue
+        for spot, letter in enumerate(option):
+            if spot == 0 or letter not in "IJi":
+                continue
+            rest = option[spot + 1 :]
+            if rest:
+                found.add(rest)
+            elif at + 1 < len(words):
+                found.add(words[at + 1])
+    found.discard("")
+    return found
+
+
+def xargs_fed_operands(run, operands):
+    """`operands`, with what an xargs feeds this run added: each fed word alone (xargs appends it) and in the place of each marker candidate (`xargs_marker_candidates`) in every operand holding one. For a guard that asks whether ANY operand is a file it protects; it over-reads and never under-reads. A run xargs does not feed gets its operands back."""
+    operands = list(operands)
+    if not run.feed or "xargs" not in run.via:
+        return operands
+    fed = run.feed.split()
+    placed = [
+        a.replace(marker, word)
+        for marker in sorted(xargs_marker_candidates(run.xargs))
+        for a in operands
+        if marker in a
+        for word in fed
+    ]
+    return operands + fed + placed
+
+
 def _appends_once(options):
     return all(o in _XARGS_APPENDS_ONCE or re.fullmatch(r"-[rtx]+", o) is not None for o in options)
 

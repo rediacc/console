@@ -257,3 +257,29 @@ def test_stdin_text_is_the_feed_as_bash_hands_it_over():
     assert _fed('M=x; cat <<< "$M"', "cat")[0] is None
     assert _fed('M=x; echo "$M" | cat', "cat")[0] is None
     assert _fed("echo plain | cat", "cat")[0] == "echo plain"
+
+
+def test_xargs_marker_candidates_over_read_and_never_miss_a_marker():
+    cand = shellscan.xargs_marker_candidates
+    assert cand(()) == {"{}"}
+    assert cand(None) == {"{}"}
+    assert cand(("-I", "X")) == {"{}", "X"}
+    assert cand(("-IX",)) == {"{}", "X"}
+    assert cand(("-rI%",)) == {"{}", "%"}
+    assert cand(("--replace=R",)) == {"{}", "R"}
+    assert cand(("-J", "@", "-n1")) == {"{}", "@"}
+    assert "X" in cand(("-0tI", "X"))
+
+
+def test_xargs_fed_operands_place_each_fed_word_alone_and_at_every_marker():
+    def operands(cmd):
+        run = next(r for r in shellscan.every_run(cmd) if r.name == "sed")
+        return shellscan.xargs_fed_operands(run, ["X/kept.py", "{}/b.py"])
+
+    got = operands("echo dir | xargs -I X sed -i s/a/b/ X/kept.py")
+    assert "dir" in got
+    assert "dir/kept.py" in got
+    assert "dir/b.py" in got
+    # CONTROL: a run xargs does not feed keeps its operands as they are.
+    plain = next(r for r in shellscan.every_run("sed -i s/a/b/ X/kept.py") if r.name == "sed")
+    assert shellscan.xargs_fed_operands(plain, ["X/kept.py"]) == ["X/kept.py"]

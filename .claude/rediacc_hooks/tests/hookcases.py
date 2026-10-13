@@ -1974,6 +1974,11 @@ STATIC: list[Case] = [
         "review-file-shell-write: xargs puts a review directory at its marker for truncate",
     ),
     case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1 | xargs -I X truncate -s 0 X/x.md"),
+        "review-file-shell-write: xargs puts a review directory at a marker of its own for truncate",
+    ),
+    case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json("echo agent/reviews/1008-1/x.md | xargs cat"),
         "review-file-shell-write CONTROL: xargs feeds a review file to a reader",

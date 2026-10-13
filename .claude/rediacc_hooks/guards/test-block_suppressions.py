@@ -288,6 +288,12 @@ SHELL_CASES = [
         True,
     ),
     (
+        "sed -i adding one to a file named by a fed directory at a marker of its own",
+        "echo %s | xargs -I ZZ sed -i 's/return os.sep/return os.sep  %s: RET504/' ZZ/%s"
+        % (KEPT.parent, NQ, KEPT.name),
+        True,
+    ),
+    (
         "sed -i removing the marker from a file xargs appends",
         "echo %s | xargs sed -i 's/  %s: F401//'" % (KEPT, NQ),
         False,
