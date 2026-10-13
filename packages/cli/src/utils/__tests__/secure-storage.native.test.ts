@@ -5,7 +5,8 @@
  *
  *   1. The key allowlist, on every platform.
  *   2. The native backend of the host OS (keyctl on Linux, Keychain on macOS, DPAPI on Windows): the storage contract, backend selection, a cross-process read, and what is left at rest.
- *   3. The file fallback on Linux, selected by taking `keyctl` off PATH. It pins the behaviour of today, including the silent downgrade tracked by reggate:f91a4d9e.
+ *   3. The file backend, which only `REDIACC_SECRET_STORE=file` selects (operator ruling 2026-10-13: no machine gets a disk-held secret without choosing it).
+ *   4. The refusal: with no usable native backend and no opt-in, selection throws and stores nothing. `keyctl` off PATH, and a session keyring that cannot read the user keyring back.
  *
  * SKIP OR FAIL. Group 2 needs a backend the process can write AND read. Where it cannot be reached (a container, a session keyring that does not link the user keyring) the group skips with a printed reason, so a workstation without a keyring keeps a green unit suite. `SECURE_STORAGE_REQUIRE_NATIVE=1` removes the skip: every native test runs and an unreachable backend is a failure.
  * The CI job sets it, and `SECURE_STORAGE_NATIVE_RECEIPT` names a file the suite writes with the backend type and the number of native tests that ran, which the job reads back. A leg whose variable was misspelled writes no receipt and is red.
@@ -13,7 +14,7 @@
  * ISOLATION. Keys carry a unique throwaway prefix and are deleted in `afterAll`. On Linux the config, state and cache homes are the per-file temporary ones from isolate-config-home.ts. The kernel user keyring (`@u`) is per-UID and cannot be redirected, so the throwaway keys do pass through it.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import {
   existsSync,
@@ -30,7 +31,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { getRediaccDirs } from '@rediacc/shared/paths';
 import { afterAll, describe, expect, it } from 'vitest';
-import { getSecureStorage, type SecureStorage } from '../secure-storage.js';
+import {
+  getSecureStorage,
+  type SecureStorage,
+  SecureStorageUnavailableError,
+} from '../secure-storage.js';
 
 const NATIVE_BY_PLATFORM: Partial<Record<NodeJS.Platform, string>> = {
   linux: 'keyctl',
@@ -173,44 +178,78 @@ function unlinkFromUserKeyring(key: string): void {
   }
 }
 
-/** A storage chosen while `keyctl` is off PATH. Selection happens in getSecureStorage() and the file backend runs no tool afterwards, so PATH is restored at once. */
-function openWithoutKeyctl(): SecureStorage {
-  const emptyBin = mkdtempSync(join(tmpdir(), 'rdc-sstest-nopath-'));
-  const savedPath = process.env.PATH;
-  process.env.PATH = emptyBin;
+const KNOB = 'REDIACC_SECRET_STORE';
+
+/** Runs `fn` with the knob set to `value` (undefined unsets it), then puts the previous value back. */
+function withKnob<T>(value: string | undefined, fn: () => T): T {
+  const saved = process.env[KNOB];
+  if (value === undefined) delete process.env[KNOB];
+  else process.env[KNOB] = value;
   try {
-    return getSecureStorage();
+    return fn();
   } finally {
-    process.env.PATH = savedPath;
-    rmSync(emptyBin, { recursive: true, force: true });
+    if (saved === undefined) delete process.env[KNOB];
+    else process.env[KNOB] = saved;
   }
 }
 
-// The child takes everything as arguments: module URL, operation, key, value.
+/** The file backend, the way a user reaches it: the knob. Selection reads the knob in getSecureStorage() and the backend never reads it again. */
+function openFileStore(): SecureStorage {
+  return withKnob('file', getSecureStorage);
+}
+
+/** Descriptions of the keys in the user keyring that a probe of process `pid` would have left. */
+function probeKeysOf(pid: number): string[] {
+  const listing = execFileSync('keyctl', ['show', '@u'], {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  return listing.split('\n').filter((line) => line.includes(`rdc:probe:${pid}-`));
+}
+
+// The child takes everything as arguments: module URL, operation, key, value. It selects the storage TWICE, so "once per process" has a second call to hold against, and it reports a refusal instead of dying on it.
 const CHILD_SCRIPT = `
 const [moduleUrl, op, key, value] = process.argv.slice(1);
 const { getSecureStorage } = await import(moduleUrl);
-const storage = getSecureStorage();
-let read = null;
-if (op === 'set' || op === 'roundtrip') await storage.set(key, value);
-if (op === 'get' || op === 'roundtrip') read = await storage.get(key);
-process.stdout.write('\\nSSTEST_RESULT ' + JSON.stringify({ type: storage.type, value: read }) + '\\n');
+const result = { pid: process.pid, type: null, value: null, error: null };
+try {
+  getSecureStorage();
+  const storage = getSecureStorage();
+  result.type = storage.type;
+  if (op === 'set' || op === 'roundtrip') await storage.set(key, value);
+  if (op === 'get' || op === 'roundtrip') result.value = await storage.get(key);
+} catch (error) {
+  result.error = { name: error.name, code: error.code ?? null, message: error.message, details: error.details ?? null };
+}
+process.stdout.write('SSTEST_RESULT ' + JSON.stringify(result) + '\\n');
 `;
 
 interface ChildResult {
-  type: string;
+  pid: number;
+  type: string | null;
   value: string | null;
+  error: { name: string; code: string | null; message: string; details: string[] | null } | null;
+  /** Everything the child wrote, so a test can hold stdout to the result line and count the notices on stderr. */
+  stdout: string;
+  stderr: string;
 }
 
-/** Runs the real module in a SEPARATE node process. `wrap` prefixes the command, for example `keyctl session -`. */
+interface ChildOptions {
+  /** Prefixes the command, for example `keyctl session -`. */
+  wrap?: readonly string[];
+  /** Overrides on top of this process's environment; undefined removes a variable. */
+  env?: Record<string, string | undefined>;
+}
+
+/** Runs the real module in a SEPARATE node process. */
 function inChild(
-  op: 'set' | 'get' | 'roundtrip',
-  key: string,
+  op: 'select' | 'set' | 'get' | 'roundtrip',
+  key = '',
   value = '',
-  wrap: readonly string[] = []
+  options: ChildOptions = {}
 ): ChildResult {
   const argv = [
-    ...wrap,
+    ...(options.wrap ?? []),
     process.execPath,
     '--import',
     'tsx',
@@ -222,14 +261,30 @@ function inChild(
     key,
     value,
   ];
-  const stdout = execFileSync(argv[0], argv.slice(1), {
-    cwd: PACKAGE_DIR,
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  const line = stdout.split('\n').find((l) => l.startsWith('SSTEST_RESULT '));
-  if (line === undefined) throw new Error(`the child printed no SSTEST_RESULT line: ${stdout}`);
-  return JSON.parse(line.slice('SSTEST_RESULT '.length)) as ChildResult;
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  // A knob left in the developer's shell must not choose the backend of a test that did not ask for it.
+  delete env[KNOB];
+  for (const [name, override] of Object.entries(options.env ?? {})) {
+    if (override === undefined) delete env[name];
+    else env[name] = override;
+  }
+  const run = spawnSync(argv[0], argv.slice(1), { cwd: PACKAGE_DIR, encoding: 'utf-8', env });
+  const line = run.stdout.split('\n').find((l) => l.startsWith('SSTEST_RESULT '));
+  if (line === undefined) {
+    throw new Error(
+      `the child printed no SSTEST_RESULT line (status ${run.status}): ${run.stdout}${run.stderr}`
+    );
+  }
+  const result = JSON.parse(line.slice('SSTEST_RESULT '.length)) as Omit<
+    ChildResult,
+    'stdout' | 'stderr'
+  >;
+  return { ...result, stdout: run.stdout, stderr: run.stderr };
+}
+
+/** A directory with no tool in it, to stand in for PATH on a machine without `keyctl`. */
+function emptyPath(): string {
+  return mkdtempSync(join(tmpdir(), 'rdc-sstest-nopath-'));
 }
 
 const VALUE_CLASSES: readonly (readonly [string, string])[] = [
@@ -244,7 +299,7 @@ const VALUE_CLASSES: readonly (readonly [string, string])[] = [
 
 type Register = (name: string, fn: () => Promise<void> | void) => void;
 
-/** The storage contract every backend owes its callers. Registered once for the native backend and once for the file fallback. */
+/** The storage contract every backend owes its callers. Registered once for the native backend and once for the file backend. */
 function storageContract(register: Register, open: () => SecureStorage): void {
   for (const [label, value] of VALUE_CLASSES) {
     register(`round-trips ${label} byte-exact`, async () => {
@@ -333,8 +388,9 @@ describe('secure storage: key allowlist (ValidatingStorage)', () => {
     ['201 characters', 'k'.repeat(201)],
   ];
 
+  // Through the file backend, so the allowlist is tested on a host with no usable native backend too.
   it.each(UNSAFE_KEYS)('refuses a key with %s on get, set and delete', async (_label, key) => {
-    const storage = getSecureStorage();
+    const storage = openFileStore();
     // The wrapper throws before any promise exists, so each call sits inside an async function.
     await expect((async () => storage.get(key))()).rejects.toThrow(
       /Refusing unsafe secure-storage key/
@@ -350,7 +406,7 @@ describe('secure storage: key allowlist (ValidatingStorage)', () => {
   it.skipIf(!IS_LINUX)(
     'a refused set reaches no backend, and a 200-character key is accepted (file backend)',
     async () => {
-      const storage = openWithoutKeyctl();
+      const storage = openFileStore();
       const store = join(getRediaccDirs().state, 'secure-keys.json');
       const before = existsSync(store) ? readFileSync(store, 'utf-8') : null;
       await expect((async () => storage.set('rdc:pw a', 'leak-canary'))()).rejects.toThrow(
@@ -393,7 +449,7 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
     const key = freshKey('xproc-out');
     const value = secret();
     await getSecureStorage().set(key, value);
-    expect(inChild('get', key)).toEqual({ type: EXPECTED_NATIVE, value });
+    expect(inChild('get', key)).toMatchObject({ type: EXPECTED_NATIVE, value, error: null });
   });
 
   nativeIt('a value stored by a separate process is read back by this one', async () => {
@@ -423,15 +479,41 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
   );
 
   nativeIt(
-    'Linux, TODAY: a session keyring that does not link @u still selects keyctl, stores the value, and reads back null (the hosted-runner shape; silent, tracked by reggate:f91a4d9e)',
+    'Linux: selection proves the keyring with a throwaway key and leaves none behind',
+    () => {
+      const child = inChild('select');
+      expect(child).toMatchObject({ type: 'keyctl', error: null });
+      expect(probeKeysOf(child.pid)).toEqual([]);
+    },
+    'linux'
+  );
+
+  nativeIt(
+    'Linux: a session keyring that does not link @u is refused, naming `keyctl link @u @s` and the opt-in, and nothing is stored (the hosted-runner shape that read back null)',
     async () => {
       const key = freshKey('unlinked');
       const value = secret();
-      // `keyctl session -` gives the child a fresh, empty session keyring: @u is writable by UID and not possessed, so the write lands and the read is denied.
-      const child = inChild('roundtrip', key, value, ['keyctl', 'session', '-']);
-      expect(child).toEqual({ type: 'keyctl', value: null });
-      // The value was stored all the same: this process, whose session does link @u, reads it.
-      expect(await getSecureStorage().get(key)).toBe(value);
+      // Control: the same child in THIS session, whose keyring is readable, stores and reads the value.
+      expect(inChild('roundtrip', key, value)).toMatchObject({
+        type: 'keyctl',
+        value,
+        error: null,
+      });
+      await getSecureStorage().delete(key);
+
+      // `keyctl session -` gives the child a fresh, empty session keyring: @u is writable by UID and not possessed, so a write lands and the read is denied.
+      const child = inChild('roundtrip', key, value, { wrap: ['keyctl', 'session', '-'] });
+      expect(child.type).toBeNull();
+      expect(child.value).toBeNull();
+      expect(child.error).toMatchObject({
+        name: 'SecureStorageUnavailableError',
+        code: 'PRECONDITION_MISMATCH',
+      });
+      expect(child.error?.message).toContain('keyctl link @u @s');
+      expect(child.error?.message).toContain('REDIACC_SECRET_STORE=file');
+      // The refusal came before the write: this process, whose session does link @u, finds neither the value nor the probe's throwaway key.
+      expect(await getSecureStorage().get(key)).toBeNull();
+      expect(probeKeysOf(child.pid)).toEqual([]);
     },
     'linux'
   );
@@ -507,24 +589,27 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
   );
 });
 
-// ─── 3. The file fallback (Linux) ───────────────────────────────────────
+// ─── 3. The file backend, by opt-in ─────────────────────────────────────
 
-describe('secure storage: file fallback with keyctl absent from PATH (Linux)', () => {
+describe('secure storage: the file backend chosen with REDIACC_SECRET_STORE=file (Linux)', () => {
   const fileIt: Register = (name, fn) => {
     it.skipIf(!IS_LINUX)(name, fn);
   };
 
   fileIt(
-    'TODAY: the file backend is selected silently, and the secret sits in plaintext in state/secure-keys.json at mode 0600 (the silent fallback tracked by reggate:f91a4d9e)',
+    'the secret sits in plaintext in state/secure-keys.json at mode 0600, and a file that was wider is narrowed',
     async () => {
-      const storage = openWithoutKeyctl();
+      const storage = openFileStore();
       expect(storage.type).toBe('file');
 
-      const key = freshKey('fallback');
+      const store = join(getRediaccDirs().state, 'secure-keys.json');
+      mkdirSync(dirname(store), { recursive: true });
+      writeFileSync(store, '{}', { mode: 0o644 });
+
+      const key = freshKey('file');
       const value = secret();
       await storage.set(key, value);
 
-      const store = join(getRediaccDirs().state, 'secure-keys.json');
       expect(statSync(store).mode & 0o777).toBe(0o600);
       expect((JSON.parse(readFileSync(store, 'utf-8')) as Record<string, string>)[key]).toBe(value);
       // The same scanner that finds nothing after a keyctl set finds the secret here, in exactly one file.
@@ -534,5 +619,84 @@ describe('secure storage: file fallback with keyctl absent from PATH (Linux)', (
     }
   );
 
-  storageContract(fileIt, openWithoutKeyctl);
+  fileIt(
+    'with keyctl off PATH and the opt-in set: the file backend, one notice on stderr, and nothing but the result on stdout',
+    () => {
+      const bin = emptyPath();
+      const key = freshKey('optin');
+      const value = secret();
+      const child = inChild('roundtrip', key, value, { env: { PATH: bin, [KNOB]: 'file' } });
+      rmSync(bin, { recursive: true, force: true });
+
+      expect(child).toMatchObject({ type: 'file', value, error: null });
+      // The child selected the storage twice; the notice is per process.
+      expect(child.stderr.split(`${KNOB}=file`).length - 1).toBe(1);
+      expect(child.stderr).toContain(join(getRediaccDirs().state, 'secure-keys.json'));
+      expect(child.stdout.trim().split('\n')).toHaveLength(1);
+      expect(child.stdout).not.toContain(KNOB);
+      expect(statSync(join(getRediaccDirs().state, 'secure-keys.json')).mode & 0o777).toBe(0o600);
+    }
+  );
+
+  fileIt(
+    'the opt-in is a choice, not a fallback: it selects the file backend on a host whose keyring works',
+    () => {
+      expect(openFileStore().type).toBe('file');
+    }
+  );
+
+  storageContract(fileIt, openFileStore);
+});
+
+// ─── 4. The refusal ─────────────────────────────────────────────────────
+
+describe('secure storage: no usable native backend and no opt-in', () => {
+  it.skipIf(!IS_LINUX)(
+    'Linux, keyctl off PATH: selection refuses, naming `keyctl` and the opt-in, and writes no file',
+    () => {
+      const store = join(getRediaccDirs().state, 'secure-keys.json');
+      const before = existsSync(store) ? readFileSync(store, 'utf-8') : null;
+      const bin = emptyPath();
+      // Control: the same child, same empty PATH, reaches a backend once the opt-in is set. The refusal below is the knob's absence, not a child that cannot start.
+      expect(inChild('select', '', '', { env: { PATH: bin, [KNOB]: 'file' } })).toMatchObject({
+        type: 'file',
+        error: null,
+      });
+
+      const child = inChild('roundtrip', freshKey('refused'), secret(), { env: { PATH: bin } });
+      rmSync(bin, { recursive: true, force: true });
+
+      expect(child.type).toBeNull();
+      expect(child.error).toMatchObject({
+        name: 'SecureStorageUnavailableError',
+        code: 'PRECONDITION_MISMATCH',
+      });
+      expect(child.error?.message).toContain('`keyctl` is not installed');
+      expect(child.error?.message).toContain('REDIACC_SECRET_STORE=file');
+      expect(existsSync(store) ? readFileSync(store, 'utf-8') : null).toBe(before);
+      expect(child.stdout.trim().split('\n')).toHaveLength(1);
+    }
+  );
+
+  it('the refusal is a typed error that carries its own guidance', () => {
+    const error = new SecureStorageUnavailableError(
+      'no keyring',
+      'add_key: Operation not permitted'
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect(error).toMatchObject({
+      name: 'SecureStorageUnavailableError',
+      code: 'PRECONDITION_MISMATCH',
+      retryable: false,
+      guidance: 'no keyring',
+      details: ['add_key: Operation not permitted'],
+    });
+  });
+
+  it('a value of the knob other than "file" is refused, never read as unset', () => {
+    expect(() => withKnob('File', getSecureStorage)).toThrow(
+      /REDIACC_SECRET_STORE is set to "File"/
+    );
+    expect(() => withKnob('keyring', getSecureStorage)).toThrow(/not a secret store/);
+  });
 });

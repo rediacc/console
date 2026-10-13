@@ -13,7 +13,8 @@
  *   slot secret or token file is read locally with no request; otherwise one server-only pull
  *   decides. A pull that opens the config means the enrollment works and `enable` still refuses.
  *   Only a failure a new enrollment cures counts as lost; an unreachable server, a team this
- *   account is not in, or a rollback is raised as it came.
+ *   account is not in, a rollback, or a renewal refusal outside the closed cured set is raised as
+ *   it came. A store that no longer holds the config is refused naming `disable --local`.
  * - `reenrollDevice` takes fresh device credentials for the SAME store and replaces only what is
  *   device-held: the slot secret, the config token, the wrapped CEK and the pointer's
  *   `storageKeyId` (and the team the server names for the same config). `storeId` and `configId`
@@ -36,7 +37,6 @@ import {
 } from '../adapters/remote-config-errors.js';
 import { t } from '../i18n/index.js';
 import { normalizeServerUrl } from '../services/account/subscription-auth.js';
-import { ConfigServerError } from '../services/config/config-server-client.js';
 import { RemoteTokenRefreshError } from '../services/config/device-token-refresh.js';
 import { outputService } from '../services/core/output.js';
 import type { RemoteConfig } from '../types/index.js';
@@ -44,18 +44,19 @@ import { ValidationError } from '../utils/errors.js';
 import { checkEnablePrerequisites, storageKeyInUseElsewhere } from './config-remote-enable.js';
 import type { DeviceCredentials } from './config-remote-handoff.js';
 import { runRelayHandoff } from './config-remote-relay.js';
+import { isStoreCopyGone, storeCopyGone } from './config-remote-unlink.js';
 
 /**
- * Renewal refusals a new enrollment does not cure, raised as they came: waiting cures the first,
- * and the rest are about this device's LOGIN (rejected, without the scope, or of an account outside
- * the store), which the enrollment itself runs on.
+ * The renewal refusals a new enrollment cures: the key was rotated away from every slot of this
+ * account, or the login is bound to another address and its own message names a new enrollment as
+ * the other remedy. The set is closed on purpose. Every other code is raised as it came and starts
+ * no enrollment: a rate limit, a rejected or scopeless login, an account outside the store, and
+ * any code not listed here (a failed or malformed renewal says nothing about this device's
+ * credentials, and replacing working ones over a passing fault is the worse mistake).
  */
-const NOT_CURED_BY_ENROLLMENT: ReadonlySet<string> = new Set([
-  'rate_limited',
-  'login_invalid',
-  'login_scope',
-  'not_store_member',
-  'store_mismatch',
+const CURED_BY_ENROLLMENT: ReadonlySet<string> = new Set([
+  'stale_cek_generation',
+  'login_ip_mismatch',
 ]);
 
 /**
@@ -63,7 +64,7 @@ const NOT_CURED_BY_ENROLLMENT: ReadonlySet<string> = new Set([
  * fresh slot secret, config token and wrapped CEK replace.
  */
 function isLostEnrollment(error: unknown): boolean {
-  if (error instanceof RemoteTokenRefreshError) return !NOT_CURED_BY_ENROLLMENT.has(error.code);
+  if (error instanceof RemoteTokenRefreshError) return CURED_BY_ENROLLMENT.has(error.code);
   return (
     error instanceof RemotePasskeySecretMissingError ||
     error instanceof RemoteStaleSlotError ||
@@ -93,6 +94,8 @@ export async function enrollmentUsable(remote: RemoteConfig, configName: string)
     return true;
   } catch (error) {
     if (isLostEnrollment(error)) return false;
+    // The credentials work and the store no longer holds the config: no enrollment brings it back, so the way out is named.
+    if (isStoreCopyGone(error)) throw storeCopyGone(configName, remote);
     throw error;
   }
 }
@@ -205,15 +208,7 @@ async function pullLinked(adapter: RemoteConfigAdapter, configName: string, link
   try {
     return await adapter.pull();
   } catch (error) {
-    if (error instanceof ConfigServerError && error.status === 404) {
-      throw new ValidationError(
-        t('commands.config.remote.enable.reenrollConfigGone', {
-          name: configName,
-          configId: linked.configId,
-          storeId: linked.storeId,
-        })
-      );
-    }
+    if (isStoreCopyGone(error)) throw storeCopyGone(configName, linked);
     throw error;
   }
 }

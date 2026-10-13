@@ -94,6 +94,15 @@ vi.mock('../../account/subscription-auth.js', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   getSubscriptionTokenState: () => ({ kind: 'ready', token: { token: 'rdt_owner' } }),
 }));
+// The adapter below never reads the slot secret, and the OS secure storage is never real in a test: selecting it proves the keyring with a round trip, which a CI runner's session keyring refuses.
+vi.mock('../../../utils/secure-storage.js', () => ({
+  getSecureStorage: () => ({
+    type: 'mem',
+    get: () => Promise.resolve(null),
+    set: () => Promise.resolve(),
+    delete: () => Promise.resolve(),
+  }),
+}));
 vi.mock('../../../adapters/remote-config-adapter.js', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   RemoteConfigAdapter: class {
