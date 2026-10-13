@@ -457,16 +457,18 @@ export class BridgeTestRunner {
 
   /**
    * Execute on worker VM via SSH.
+   * Stays async: getWorkerVM throws in a Ceph-only topology, and callers expect a rejection.
    */
-  executeOnWorker(command: string, timeout?: number): Promise<ExecResult> {
-    return this.executeOnVM(this.getWorkerVM(), command, timeout);
+  async executeOnWorker(command: string, timeout?: number): Promise<ExecResult> {
+    return await this.executeOnVM(this.getWorkerVM(), command, timeout);
   }
 
   /**
    * Execute on second worker VM via SSH.
+   * Stays async: getWorkerVM2 throws with fewer than 2 workers, and callers expect a rejection.
    */
-  executeOnWorker2(command: string, timeout?: number): Promise<ExecResult> {
-    return this.executeOnVM(this.getWorkerVM2(), command, timeout);
+  async executeOnWorker2(command: string, timeout?: number): Promise<ExecResult> {
+    return await this.executeOnVM(this.getWorkerVM2(), command, timeout);
   }
 
   /**

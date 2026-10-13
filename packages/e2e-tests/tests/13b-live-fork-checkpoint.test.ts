@@ -120,10 +120,8 @@ test.describe
         await ignoreFailure(() => runner.repositoryUnmount(name, datastorePath));
         await ignoreFailure(() => runner.repositoryRm(name, datastorePath));
       }
-      await ignoreFailure(async () => {
-        await runner.daemonTeardown(forkNetworkId);
-        await runner.daemonTeardown(parentNetworkId);
-      });
+      await ignoreFailure(() => runner.daemonTeardown(forkNetworkId));
+      await ignoreFailure(() => runner.daemonTeardown(parentNetworkId));
     });
 
     test('1. create and mount parent repository', async () => {
