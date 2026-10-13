@@ -7,75 +7,75 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 export class SystemCheckMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
-  async ping(): Promise<ExecResult> {
+  ping(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_ping' });
   }
 
-  async nop(): Promise<ExecResult> {
+  nop(): Promise<ExecResult> {
     return this.testFunction({ function: 'daemon_nop' });
   }
 
-  async hello(): Promise<ExecResult> {
+  hello(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_version' });
   }
 
-  async networkUsed(): Promise<ExecResult> {
+  networkUsed(): Promise<ExecResult> {
     return this.testFunction({ function: 'network_used' });
   }
 
-  async sshTest(): Promise<ExecResult> {
+  sshTest(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_ssh_test' });
   }
 
-  async checkKernelCompatibility(): Promise<ExecResult> {
+  checkKernelCompatibility(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_kernel' });
   }
 
-  async checkSetup(): Promise<ExecResult> {
+  checkSetup(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_setup' });
   }
 
-  async checkMemory(): Promise<ExecResult> {
+  checkMemory(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_memory' });
   }
 
-  async checkSudo(): Promise<ExecResult> {
+  checkSudo(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_sudo' });
   }
 
-  async checkTools(): Promise<ExecResult> {
+  checkTools(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_tools' });
   }
 
-  async checkRenet(): Promise<ExecResult> {
+  checkRenet(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_renet' });
   }
 
-  async checkCriu(): Promise<ExecResult> {
+  checkCriu(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_criu' });
   }
 
-  async checkBtrfs(): Promise<ExecResult> {
+  checkBtrfs(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_btrfs' });
   }
 
-  async checkDrivers(): Promise<ExecResult> {
+  checkDrivers(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_drivers' });
   }
 
-  async checkSystem(): Promise<ExecResult> {
+  checkSystem(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_system' });
   }
 
-  async checkUsers(): Promise<ExecResult> {
+  checkUsers(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_users' });
   }
 
-  async checkRediaccCli(): Promise<ExecResult> {
+  checkRediaccCli(): Promise<ExecResult> {
     return this.testFunction({ function: 'machine_check_cli' });
   }
 
-  async checkDatastore(datastorePath?: string): Promise<ExecResult> {
+  checkDatastore(datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'datastore_status',
       datastorePath,
