@@ -1,7 +1,8 @@
 """Refuse a Bash command that writes a per-commit review record under `agent/reviews/` by hand.
 
 WHY. The pre-bash half of `block_review_file_edit` (agent/plans/PLAN-per-commit-review.md section 6): the Edit/Write tools are refused there, so the same hand edit through the shell is refused here. The shapes are the ones a session reaches for: an output redirection (`>`, `>>`, `>|`), `tee`, `sed -i`/`perl -i`, `cp`/`mv`/`install`/`rsync`/`ln` onto the directory, `truncate`, `dd of=`, and an
-interpreter one-liner or heredoc (`python3 -c`, `python3 - <<EOF`, `node -e`) whose code names the directory and opens something for writing.
+interpreter one-liner or heredoc (`python3 -c`, `python3 - <<EOF`, `node -e`) whose code names the directory and opens something for writing. A tool's own output option is a write too (`sort -o`, `git diff --output=`, `find -fprint`), and so is any word of a command `shellscan.output_landings` does not list as a reader (`curl -o`, `tar -cf`, `touch`): that reading is a table of non-writers, so a tool
+nobody listed is refused when it names a review path rather than allowed.
 
 READ BY THE LEXER, NOT BY A REGEX OVER THE TEXT. `shellscan` already knows where bash really redirects and which words are a command's operands, so `echo "agent/reviews"`, `cat agent/reviews/b/x.md`, `grep -rn x agent/reviews/` and a commit message naming the path all pass. The two sanctioned writers are named and pass too: the reviewer (`wl_review.py`) and the worklist verbs that
 call it (`worklist.py --review-mark`, `--review-commit`, `--review-run`).
@@ -172,7 +173,7 @@ def _operands(argv):
 def _run_operands(run, argv):
     """`_operands`, with a `find -exec` run's `{}` read as what the find walks (#503f0ba8): `find agent/reviews -exec sed -i ... {} +` edits files under `agent/reviews`, so the find's starting points (`shellscan.Launch.starts`) stand in for `{}`, in place. A `{}` that is a copy's SOURCE is still not its last operand, so `-exec cp {} /tmp/ ';'` stays a copy out."""
     ops = _operands(argv)
-    # What xargs reads becomes this command's words, appended or put where its marker stands, whatever the marker is (`shellscan.xargs_fed_operands`). It over-reads the operands and never under-reads them; a file named only inside an option's value (`sort --output=X/kept.md`) is not an operand, fed or typed, and is not read here (worklist item ff3ab826): `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
+    # What xargs reads becomes this command's words, appended or put where its marker stands, whatever the marker is (`shellscan.xargs_fed_operands`). It over-reads the operands and never under-reads them; a file named only inside an option's value (`sort --output=X/kept.md`) is not an operand, fed or typed, and is read by the `shellscan.output_landings` arm of `_offending` instead (worklist item ff3ab826): `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
     ops = shellscan.xargs_fed_operands(run, ops)
     if run.launch is None or run.launch.launcher != "find":
         return ops
@@ -220,6 +221,19 @@ def _offending(cmd, depth=0, cwd=None):
             return "truncate of a review file"
         if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], run.cwd) for a in argv):
             return "dd of= a review file"
+        # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
+        # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
+        for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
+            for word, how in shellscan.output_landings(run, words, cwd):
+                if not _is_review(word, run.cwd):
+                    continue
+                if how == "option":
+                    return "%s writing %s through its own output option" % (name, word)
+                return (
+                    "%s naming %s, and %s is not a command this guard reads as a reader; "
+                    "read a review file with cat, grep, head, sed -n, jq or git show, and call "
+                    "a command itself rather than through a shell function"
+                ) % (name, word, name)
         if name.startswith(INTERPRETERS):
             # The program is `shellscan.interpreter_program`'s reading (#c4542b69): the `-c` value, the heredocs only when it reads its program from stdin (a `cat > x.py <<EOF` earlier in the line is a file being written, not code being run), or a script passed BY PATH, which was not read at all before (rc 0 against rc 2 for the same program as a heredoc).
             text, kind = shellscan.interpreter_program(run, cmd, cwd)

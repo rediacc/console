@@ -1999,6 +1999,229 @@ STATIC: list[Case] = [
         bash_json("cd agent && echo plan*/QUEUE.md | xargs cp /tmp/x.md; ls reviews"),
         "review-file-shell-write CONTROL: a relative fed glob elsewhere in agent/",
     ),
+    # Worklist item ff3ab826: a tool's own output option is a write, and a command `shellscan.output_landings` does not list as a reader is read as writing any word it names. Every deny row was allowed (rc 0) on the base; the controls name the same paths through a reader, or the same option elsewhere.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort -o agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort -o names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort --output=agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort --output= names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort -uoagent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort carries the review file in a short bundle",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort --out agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: sort --out is a unique prefix of --output",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sort /tmp/a -o agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: sort -o after the operands",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("curl -o agent/reviews/0930-1/a.md https://e.x/a"),
+        "review-file-shell-write: curl -o names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("wget -O agent/reviews/0930-1/a.md https://e.x/a"),
+        "review-file-shell-write: wget -O names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("tar -cf agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write: tar -cf names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("tar -xf /tmp/a.tar -C agent/reviews/0930-1"),
+        "review-file-shell-write: tar -C unpacks into the review directory",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("openssl enc -in /tmp/a -out agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: openssl -out names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("git diff --output=agent/reviews/0930-1/a.md HEAD~1"),
+        "review-file-shell-write: git diff --output= names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("git format-patch -o agent/reviews/0930-1 -1"),
+        "review-file-shell-write: git format-patch -o names the review directory",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("pandoc /tmp/a.md -o agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: pandoc -o names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/0930-1/a.md | xargs sort /tmp/a -o"),
+        "review-file-shell-write: xargs appends the review file as the value of sort -o",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/0930-1/a.md | xargs -I{} sort --output={} /tmp/a"),
+        "review-file-shell-write: xargs -I puts the review file in sort --output=",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec sort -o {} /tmp/a \;"),
+        "review-file-shell-write: a launched sort -o onto the files find names",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("find /tmp -name a -fprint agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: find -fprint names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("sed -n 'w agent/reviews/0930-1/a.md' /tmp/a"),
+        "review-file-shell-write: a sed w command names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: an awk program redirects into a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("uniq /tmp/a agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: uniq's second operand is its output",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("touch agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: touch names a review file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("prettier --write agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: prettier --write names a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sort agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: sort reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sort -o /tmp/out agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: sort -o elsewhere reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("wc -l agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: wc reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("head -5 agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: head reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git log --oneline -- agent/reviews/"),
+        "review-file-shell-write CONTROL: git log over the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git diff --stat agent/reviews/"),
+        "review-file-shell-write CONTROL: git diff --stat over the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git diff --output=/tmp/d -- agent/reviews/"),
+        "review-file-shell-write CONTROL: git diff --output= elsewhere",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("diff agent/reviews/0930-1/a.md /tmp/b"),
+        "review-file-shell-write CONTROL: diff reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("jq . agent/reviews/0930-1/clean.jsonl"),
+        "review-file-shell-write CONTROL: jq reads the clean ledger",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("curl -o /tmp/out https://e.x/agent/reviews/a"),
+        "review-file-shell-write CONTROL: curl -o elsewhere, a URL naming the directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/0930-1/a.md | xargs sort"),
+        "review-file-shell-write CONTROL: xargs feeds a review file to sort as its input",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo sort -o agent/reviews/0930-1/a.md /tmp/a"),
+        "review-file-shell-write CONTROL: prose naming a sort -o",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sed 's|agent/reviews/||' /tmp/list"),
+        "review-file-shell-write CONTROL: a sed script that names the directory and writes nothing",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("rm agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: rm keeps the verdict it had",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git checkout -- agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: git checkout keeps the verdict it had",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("grep -n Resolution agent/reviews/1008-1/*.md"),
+        "review-file-shell-write CONTROL: grep -n over the records",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("sed -n 1,20p agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: sed -n prints a range of a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git add -- agent/reviews/1008-1/"),
+        "review-file-shell-write CONTROL: git add of the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("git commit -F /tmp/m -- agent/reviews/1008-1/"),
+        "review-file-shell-write CONTROL: git commit of the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("ls agent/reviews/1008-1/"),
+        "review-file-shell-write CONTROL: ls of the review directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("tail -1 agent/reviews/0930-1/clean.jsonl"),
+        "review-file-shell-write CONTROL: tail of the clean ledger",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "python3 .claude/hooks/stop/worklist.py --review-mark d778be9d ab12cd34.1 not-a-bug 'x agent/reviews/1008-1/x.md:3'"
+        ),
+        "review-file-shell-write CONTROL: the mark verb with evidence naming a record",
+    ),
     case(
         "check 2 guards/block_ssh_docker.py",
         bash_json("ssh host docker ps"),
