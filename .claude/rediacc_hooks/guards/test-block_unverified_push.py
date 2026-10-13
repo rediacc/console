@@ -398,6 +398,8 @@ def _two_carried(second):
 
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("deferred"))
 cases.append((0, run(PUSH), "a carried gate the lane DEFERRED is not stale"))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("ciOnly"))
+cases.append((0, run(PUSH), "a carried gate recorded as ciOnly is not stale"))
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("ok"))
 cases.append((2, run(PUSH), "CONTROL: the same carried gate recorded as ok is stale"))
 
