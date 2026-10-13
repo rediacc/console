@@ -69,6 +69,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         # The kernel-module swap the AMD install runs on a zypper host with kernel-default-base (kernelModuleInstall).
         "kernel_modules.go": HASH,
         "ceph_host_runner.go": HASH,
+        # tailBuffer: hostRunner keeps the tail of a failed command's stderr with it for the error it returns (renet ed944b1).
+        "backup_stderr.go": HASH,
         "pkg_install_procgroup_windows.go": EXCLUDE,
         "main.go": EXCLUDE,
         "version.go": EXCLUDE,
