@@ -3337,7 +3337,6 @@
   {
     "id": "check:ci-cli-contract",
     "run": "npm run check:ci-cli-contract",
-    "slow": true,
     "gate": true,
     "needs": [
       "build:packages"
