@@ -139,6 +139,8 @@ EDGE_CASES = [
         "a bundled xargs -rI destination uploads",
         "echo host:/usr/local/bin | xargs -rI{} scp bin/renet {}",
     ),
+    # The cost of keeping the literal reading (review 40df44f9.2): this copies into the local word `x`, and is refused because scp's own words name a host destination.
+    ("a plain fed xargs with a host among scp's own words", "echo x | xargs scp bin/renet host:/p"),
     # Options are set aside the way getopt reads them (review f212d159.1).
     ("a trailing option does not hide the upload", "scp bin/renet host:/usr/local/bin/renet -q"),
     ("a value option before the operands", "scp -P 2222 -o BatchMode=yes bin/renet host:/p"),
@@ -212,7 +214,7 @@ def _replace_marker(options):
         if option.startswith("-i"):
             return option[2:]
         # A bundle of short options holding one of the three letters (`-rI{}`, `-0tI R`): which letter takes which value is xargs' own parse, so the marker is not named.
-        if not option.startswith("--") and re.search(r"[IJi]", option[1:]):
+        if re.fullmatch(r"-[A-Za-z0-9]*[IJi].*", option):
             return ""
     return None
 
