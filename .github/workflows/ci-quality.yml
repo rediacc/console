@@ -2711,7 +2711,10 @@ jobs:
       # config-storage setup against. A stable upstream release newer than the
       # pin and past the release-age window fails a pull request here; the
       # message names the bump command. Same external_quality treatment as the
-      # two steps above: soft on the nightly, skipped by the label.
+      # two steps above: soft on the nightly, skipped by the label. Unlike them
+      # it FAILS CLOSED on the network (operator ruling 2026-10-13): a pin whose
+      # release list was not obtained after three tries is red on a pull
+      # request. The nightly's soft mode turns that red into a warning too.
       - name: Check real-provider pin upstream freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         env:
