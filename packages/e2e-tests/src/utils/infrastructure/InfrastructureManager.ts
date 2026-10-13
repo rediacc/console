@@ -7,6 +7,7 @@ import { VM_RENET_INSTALL_PATH } from '../../constants';
 import { getOpsManager, OpsManager } from '../bridge/OpsManager';
 import { getRenetResolver, RenetResolver } from '../RenetResolver';
 import { getSSHExecutor, SSHExecutor } from '../ssh';
+import { log } from '../log';
 
 const execAsync = promisify(exec);
 
@@ -199,20 +200,14 @@ export class InfrastructureManager {
    * - Deploys renet to VMs if outdated
    */
   async ensureInfrastructure(options: EnsureRenetOptions = {}): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.log('Checking infrastructure status...');
+    log('Checking infrastructure status...');
 
     const status = await this.getStatus();
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Initial Status:');
-    // eslint-disable-next-line no-console
-    console.log('  Renet:', status.renet.available ? `OK (${status.renet.path})` : 'NOT FOUND');
-    // eslint-disable-next-line no-console
-    console.log('  Bridge VM:', status.bridgeVM ? 'OK' : 'DOWN');
-    // eslint-disable-next-line no-console
-    console.log('  Worker VM:', status.workerVM ? 'OK' : 'DOWN');
+    log('');
+    log('Initial Status:');
+    log('  Renet:', status.renet.available ? `OK (${status.renet.path})` : 'NOT FOUND');
+    log('  Bridge VM:', status.bridgeVM ? 'OK' : 'DOWN');
+    log('  Worker VM:', status.workerVM ? 'OK' : 'DOWN');
 
     if (!status.renet.available) {
       // RenetResolver already tried all resolution strategies including auto-build
@@ -271,7 +266,7 @@ export class InfrastructureManager {
     const result = await this.opsManager.ensureVMsRunning();
 
     if (!result.success) {
-      throw new Error(`Failed to start VMs: ${result.message}\n` + 'Check ops logs for details.');
+      throw new Error(`Failed to start VMs: ${result.message}\nCheck ops logs for details.`);
     }
 
     console.warn(result.message);
@@ -283,12 +278,18 @@ export class InfrastructureManager {
     console.warn('  Bridge VM:', newStatus.bridgeVM ? 'OK' : 'DOWN');
     this.logWorkerStatus(newStatus.workerVM);
 
-    const workerReady = this.isWorkerVMStatusReady(newStatus.workerVM);
-    if (!newStatus.bridgeVM || !workerReady) {
-      const missing: string[] = [];
-      if (!newStatus.bridgeVM) missing.push('bridge VM');
-      if (this.hasWorkerVMs() && !newStatus.workerVM) missing.push('worker VM');
+    this.assertVMsReachable(newStatus);
+  }
 
+  /**
+   * Throw, naming each VM that is not reachable, when the bridge or a required worker is down.
+   */
+  private assertVMsReachable(status: { bridgeVM: boolean; workerVM: boolean }): void {
+    const missing: string[] = [];
+    if (!status.bridgeVM) missing.push('bridge VM');
+    if (!this.isWorkerVMStatusReady(status.workerVM)) missing.push('worker VM');
+
+    if (missing.length > 0) {
       throw new Error(
         `VMs started but still not reachable: ${missing.join(', ')}\n` +
           'Check network connectivity and SSH configuration.'
@@ -388,10 +389,8 @@ export class InfrastructureManager {
    * Deploys the local version if VMs have outdated binary.
    */
   async ensureRenetOnVMs(options: EnsureRenetOptions = {}): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Verifying renet on all VMs...');
+    log('');
+    log('Verifying renet on all VMs...');
 
     const localPath = this.getRenetPath();
     let localMD5: string;
@@ -434,28 +433,25 @@ export class InfrastructureManager {
     }
     const hasRenet = await this.opsManager.isRenetInstalledOnVM(ip);
 
-    if (hasRenet) {
-      // Check if update is needed
-      const wasUpdated = await this.deployRenetToVM(ip, localPath, localMD5, stageFromVM);
-      const version = await this.opsManager.getRenetVersionOnVM(ip);
-
-      if (wasUpdated) {
-        const source = stageFromVM ? ', staged from the ops-up copy' : '';
-        // eslint-disable-next-line no-console
-        console.log(`  ✓ ${ip}: renet updated (${version ?? 'unknown version'}${source})`);
-      } else {
-        // eslint-disable-next-line no-console
-        console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
-      }
-    } else {
+    if (!hasRenet) {
       // Install renet for the first time
-      // eslint-disable-next-line no-console
-      console.log(`  ${ip}: Installing renet...`);
+      log(`  ${ip}: Installing renet...`);
       await this.deployRenetToVM(ip, localPath, localMD5);
       const version = await this.opsManager.getRenetVersionOnVM(ip);
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
+      log(`  ✓ ${ip}: renet installed (${version ?? 'unknown version'})`);
+      return;
     }
+
+    // Check if update is needed
+    const wasUpdated = await this.deployRenetToVM(ip, localPath, localMD5, stageFromVM);
+    const version = await this.opsManager.getRenetVersionOnVM(ip);
+    const versionLabel = version ?? 'unknown version';
+    const source = stageFromVM ? ', staged from the ops-up copy' : '';
+    log(
+      wasUpdated
+        ? `  ✓ ${ip}: renet updated (${versionLabel}${source})`
+        : `  ✓ ${ip}: renet installed (${versionLabel})`
+    );
   }
 
   /**
@@ -526,8 +522,7 @@ export class InfrastructureManager {
         `Baked image check failed on ${failures.length} of ${ips.length} VM(s), BAKED_IMAGE_KEY=${expectedKey}:\n${failures.join('\n')}`
       );
     }
-    // eslint-disable-next-line no-console
-    console.log(`  ✓ All ${ips.length} VM(s) booted from baked image ${expectedKey}`);
+    log(`  ✓ All ${ips.length} VM(s) booted from baked image ${expectedKey}`);
   }
 
   /**
@@ -549,8 +544,7 @@ export class InfrastructureManager {
    * CRIU is required for container checkpointing tests.
    */
   async deployCRIUToAllVMs(): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.log('Checking CRIU deployment...');
+    log('Checking CRIU deployment...');
 
     const bridgeIP = this.opsManager.getBridgeVMIp();
     const workerIPs = this.opsManager.getWorkerVMIps();
@@ -561,8 +555,7 @@ export class InfrastructureManager {
 
     const missing = await this.workersMissingCriu(workerIPs);
     if (missing.length === 0) {
-      // eslint-disable-next-line no-console
-      console.log('  CRIU already installed on all workers');
+      log('  CRIU already installed on all workers');
       return;
     }
 
@@ -595,11 +588,9 @@ export class InfrastructureManager {
     );
     for (const probe of probes) {
       if (probe.found) {
-        // eslint-disable-next-line no-console
-        console.log(`  ✓ ${probe.ip}: CRIU already installed (${probe.output.split('\n')[0]})`);
+        log(`  ✓ ${probe.ip}: CRIU already installed (${probe.output.split('\n')[0]})`);
       } else {
-        // eslint-disable-next-line no-console
-        console.log(`  ${probe.ip}: CRIU not found: ${probe.output || '(no output)'}`);
+        log(`  ${probe.ip}: CRIU not found: ${probe.output || '(no output)'}`);
       }
     }
     return probes.filter((probe) => !probe.found).map((probe) => probe.ip);
@@ -634,8 +625,7 @@ export class InfrastructureManager {
     }
 
     const containerName = containerCheck.stdout.trim();
-    // eslint-disable-next-line no-console
-    console.log(`  Found bridge container: ${containerName}`);
+    log(`  Found bridge container: ${containerName}`);
 
     const extractResult = await this.opsManager.executeOnVM(
       bridgeIP,
@@ -643,8 +633,7 @@ export class InfrastructureManager {
     );
 
     if (extractResult.code === 0 && extractResult.stdout.includes('extracted')) {
-      // eslint-disable-next-line no-console
-      console.log('  ✓ Extracted CRIU from bridge container');
+      log('  ✓ Extracted CRIU from bridge container');
       return '/tmp/criu';
     }
 
@@ -690,8 +679,7 @@ export class InfrastructureManager {
    * A failure stays non-fatal for the run, since most suites never checkpoint, but both the install command's error and the final probe's output are printed, so the reason is in the log rather than only the word "failed".
    */
   private async buildCriuFromSource(ip: string): Promise<void> {
-    // eslint-disable-next-line no-console
-    console.log(`  ${ip}: Building CRIU from source (this may take a few minutes)...`);
+    log(`  ${ip}: Building CRIU from source (this may take a few minutes)...`);
 
     const vmId = ip.split('.').pop();
 
@@ -704,12 +692,10 @@ export class InfrastructureManager {
 
     const probe = await this.probeCriu(ip);
     if (probe.found) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ ${ip}: CRIU built and installed (${probe.output.split('\n')[0]})`);
+      log(`  ✓ ${ip}: CRIU built and installed (${probe.output.split('\n')[0]})`);
       return;
     }
-    // eslint-disable-next-line no-console
-    console.log(
+    log(
       `  Warning: CRIU installation failed on ${ip} (non-fatal for most tests)\n` +
         `    install-criu: ${installError ?? 'exited 0'}\n` +
         `    probe: ${probe.output || '(no output)'}`

@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 import { getRenetBinaryPath } from '../renetPath';
+import { log } from '../log';
 
 const execAsync = promisify(exec);
 
@@ -248,19 +249,14 @@ export class ImageTestHelper {
     const results = new Map<string, BuildResult>();
 
     for (const image of CONFIGURED_IMAGES) {
-      // eslint-disable-next-line no-console
-      console.log(`Building image: ${image.name}...`);
+      log(`Building image: ${image.name}...`);
       const result = await this.buildImage(image.name, force);
       results.set(image.name, result);
 
       if (result.success) {
-        // eslint-disable-next-line no-console
-        console.log(
-          `  ✓ ${image.name} built successfully (${Math.round(result.duration / 1000)}s)`
-        );
+        log(`  ✓ ${image.name} built successfully (${Math.round(result.duration / 1000)}s)`);
       } else {
-        // eslint-disable-next-line no-console
-        console.log(`  ✗ ${image.name} failed: ${result.error ?? 'unknown error'}`);
+        log(`  ✗ ${image.name} failed: ${result.error ?? 'unknown error'}`);
       }
     }
 

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_RUSTFS_ACCESS_KEY, DEFAULT_RUSTFS_SECRET_KEY } from '../src/constants';
 import { getOpsManager } from '../src/utils/bridge/OpsManager';
+import { log } from '../src/utils/log';
 
 /**
  * RustFS Operations Tests
@@ -38,19 +39,16 @@ test.describe('RustFS Lifecycle @bridge @rustfs', () => {
       const isRunning = await ops.isRustFSRunning();
 
       if (isRunning) {
-        // eslint-disable-next-line no-console
-        console.log('RustFS is running, stopping it...');
+        log('RustFS is running, stopping it...');
         const result = await ops.stopRustFS();
         expect(result.success).toBe(true);
 
         // Verify it's stopped
         const stillRunning = await ops.isRustFSRunning();
         expect(stillRunning).toBe(false);
-        // eslint-disable-next-line no-console
-        console.log('RustFS stopped');
+        log('RustFS stopped');
       } else {
-        // eslint-disable-next-line no-console
-        console.log('RustFS is not running, skipping stop');
+        log('RustFS is not running, skipping stop');
       }
     });
 
@@ -64,8 +62,7 @@ test.describe('RustFS Lifecycle @bridge @rustfs', () => {
       const isRunning = await ops.isRustFSRunning();
       expect(isRunning).toBe(true);
 
-      // eslint-disable-next-line no-console
-      console.log('RustFS started successfully');
+      log('RustFS started successfully');
     });
 
     test('should verify RustFS S3 endpoint is accessible', async () => {
@@ -83,8 +80,7 @@ test.describe('RustFS Lifecycle @bridge @rustfs', () => {
       // 200 = server running, no auth (also acceptable)
       expect(['200', '403']).toContain(httpCode);
 
-      // eslint-disable-next-line no-console
-      console.log(`RustFS S3 endpoint HTTP status: ${httpCode}`);
+      log(`RustFS S3 endpoint HTTP status: ${httpCode}`);
     });
 
     test('should verify RustFS console is accessible', async () => {
@@ -101,8 +97,7 @@ test.describe('RustFS Lifecycle @bridge @rustfs', () => {
       // Console should return 200 or redirect (302)
       expect(['200', '302', '403']).toContain(httpCode);
 
-      // eslint-disable-next-line no-console
-      console.log(`RustFS console HTTP status: ${httpCode}`);
+      log(`RustFS console HTTP status: ${httpCode}`);
     });
   });
 });
@@ -135,8 +130,7 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
       const result = await ops.createRustFSBucket();
 
       expect(result.success).toBe(true);
-      // eslint-disable-next-line no-console
-      console.log(result.message);
+      log(result.message);
     });
 
     test('should create custom bucket', async () => {
@@ -144,8 +138,7 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain(testBucket);
-      // eslint-disable-next-line no-console
-      console.log(result.message);
+      log(result.message);
     });
 
     test('should list default bucket', async () => {
@@ -153,8 +146,7 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
 
       expect(result.success).toBe(true);
       // Empty bucket is fine
-      // eslint-disable-next-line no-console
-      console.log(`Default bucket contents: ${result.contents || '(empty)'}`);
+      log(`Default bucket contents: ${result.contents || '(empty)'}`);
     });
 
     test('should list custom bucket', async () => {
@@ -162,8 +154,7 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
 
       expect(result.success).toBe(true);
       // Empty bucket is fine
-      // eslint-disable-next-line no-console
-      console.log(`${testBucket} contents: ${result.contents || '(empty)'}`);
+      log(`${testBucket} contents: ${result.contents || '(empty)'}`);
     });
 
     test('should upload test file to bucket', async () => {
@@ -182,8 +173,7 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
       );
 
       expect(result.code).toBe(0);
-      // eslint-disable-next-line no-console
-      console.log('Test file uploaded');
+      log('Test file uploaded');
     });
 
     test('should list bucket with uploaded file', async () => {
@@ -191,8 +181,7 @@ test.describe('RustFS Bucket Operations @bridge @rustfs', () => {
 
       expect(result.success).toBe(true);
       expect(result.contents).toContain('test-file.txt');
-      // eslint-disable-next-line no-console
-      console.log(`Bucket contents: ${result.contents}`);
+      log(`Bucket contents: ${result.contents}`);
     });
   });
 });
@@ -226,8 +215,7 @@ test.describe('RustFS Worker Configuration @bridge @rustfs', () => {
     const result = await ops.configureRustFSWorker(firstWorker);
 
     expect(result.success).toBe(true);
-    // eslint-disable-next-line no-console
-    console.log(result.message);
+    log(result.message);
   });
 
   test('should verify rclone config on configured worker', async () => {
@@ -243,8 +231,7 @@ test.describe('RustFS Worker Configuration @bridge @rustfs', () => {
     expect(result.stdout).toContain('type = s3');
     expect(result.stdout).toContain('endpoint');
 
-    // eslint-disable-next-line no-console
-    console.log('Rclone config verified on worker');
+    log('Rclone config verified on worker');
   });
 
   test('should verify RustFS access from configured worker', async () => {
@@ -254,16 +241,14 @@ test.describe('RustFS Worker Configuration @bridge @rustfs', () => {
     const result = await ops.verifyRustFSAccessFromWorker(firstWorkerId);
 
     expect(result.success).toBe(true);
-    // eslint-disable-next-line no-console
-    console.log(result.message);
+    log(result.message);
   });
 
   test('should configure all workers for RustFS access', async () => {
     const result = await ops.configureRustFSWorkers();
 
     expect(result.success).toBe(true);
-    // eslint-disable-next-line no-console
-    console.log(result.message);
+    log(result.message);
   });
 
   test('should verify RustFS access from all workers', async () => {
@@ -273,8 +258,7 @@ test.describe('RustFS Worker Configuration @bridge @rustfs', () => {
       const result = await ops.verifyRustFSAccessFromWorker(workerId);
 
       expect(result.success).toBe(true);
-      // eslint-disable-next-line no-console
-      console.log(`Worker ${workerId}: ${result.message}`);
+      log(`Worker ${workerId}: ${result.message}`);
     }
   });
 });
@@ -382,11 +366,9 @@ test.describe('RustFS Cleanup @bridge @rustfs', () => {
       const stillRunning = await ops.isRustFSRunning();
       expect(stillRunning).toBe(false);
 
-      // eslint-disable-next-line no-console
-      console.log('RustFS stopped cleanly');
+      log('RustFS stopped cleanly');
     } else {
-      // eslint-disable-next-line no-console
-      console.log('RustFS already stopped');
+      log('RustFS already stopped');
     }
   });
 });

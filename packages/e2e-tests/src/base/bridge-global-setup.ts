@@ -9,6 +9,7 @@ import {
 } from '../constants';
 import { getOpsManager } from '../utils/bridge/OpsManager';
 import { InfrastructureManager } from '../utils/infrastructure/InfrastructureManager';
+import { log } from '../utils/log';
 
 /**
  * One named unit of global setup that may run beside others.
@@ -131,10 +132,8 @@ async function timed<T>(label: string, run: () => Promise<T>): Promise<T> {
  * Wait for Ceph cluster health check
  */
 async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
-  // eslint-disable-next-line no-console
-  console.log('');
-  // eslint-disable-next-line no-console
-  console.log('Step 1b: Waiting for Ceph cluster health...');
+  log('');
+  log('Step 1b: Waiting for Ceph cluster health...');
   const healthTimeoutMs = CEPH_HEALTH_TIMEOUT_MS;
   const retryIntervalMs = CEPH_HEALTH_RETRY_MS;
   const startedAt = Date.now();
@@ -152,8 +151,7 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
     const remainingMs = healthTimeoutMs - (Date.now() - startedAt);
     const healthResult = await opsManager.runOpsCommand(['ceph', 'health'], [], remainingMs);
     if (healthResult.code === 0) {
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ Ceph cluster is healthy (attempt ${attempt})`);
+      log(`  ✓ Ceph cluster is healthy (attempt ${attempt})`);
       return;
     }
 
@@ -173,8 +171,7 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
       throw new Error(`Ceph health check failed: ${healthResult.stderr}`);
     }
 
-    // eslint-disable-next-line no-console
-    console.log(
+    log(
       `  ! Ceph not healthy yet (attempt ${attempt}). Retrying in ${Math.round(retryIntervalMs / 1000)}s...`
     );
     await new Promise((resolve) => {
@@ -242,10 +239,7 @@ async function verifyVMsWithRetry(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('(renet not installed)')) {
-      // eslint-disable-next-line no-console
-      console.log(
-        'Renet missing on one or more VMs; re-deploying renet and retrying verification...'
-      );
+      log('Renet missing on one or more VMs; re-deploying renet and retrying verification...');
       await infra.ensureRenetOnVMs();
       await opsManager.verifyAllVMsReady();
     } else {
@@ -396,33 +390,27 @@ async function bridgeGlobalSetup(_config: FullConfig) {
   // A reset that returns at all succeeded (a failed one throws below), so every VM was just recreated and provisioned by ops up in this process.
   const freshReset = !skipReset;
 
-  /* eslint-disable no-console */
-  console.log('');
-  console.log('='.repeat(60));
-  console.log('Bridge Test Setup (SSH Mode)');
-  console.log('='.repeat(60));
-  /* eslint-enable no-console */
+  log('');
+  log('='.repeat(60));
+  log('Bridge Test Setup (SSH Mode)');
+  log('='.repeat(60));
 
   const opsManager = getOpsManager();
   const infra = new InfrastructureManager();
 
   try {
     // Step 1: Soft reset VMs (mandatory - no skip option)
-    // eslint-disable-next-line no-console
-    console.log('');
+    log('');
     if (skipReset) {
-      // eslint-disable-next-line no-console
-      console.log('Step 1: Skipping VM soft reset (BRIDGE_TEST_SKIP_RESET=1)');
+      log('Step 1: Skipping VM soft reset (BRIDGE_TEST_SKIP_RESET=1)');
     } else {
-      // eslint-disable-next-line no-console
-      console.log('Step 1: Performing VM soft reset...');
+      log('Step 1: Performing VM soft reset...');
       const resetResult = await opsManager.resetVMs();
 
       if (!resetResult.success) {
         throw new Error('VM reset failed - cannot proceed with tests');
       }
-      // eslint-disable-next-line no-console
-      console.log(`  ✓ VM reset completed in ${(resetResult.duration / 1000).toFixed(1)}s`);
+      log(`  ✓ VM reset completed in ${(resetResult.duration / 1000).toFixed(1)}s`);
     }
 
     // Note: Ceph provisioning is automatically handled by ops up when VM_CEPH_NODES is configured
@@ -443,13 +431,10 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     await infra.assertBakedImageOnVMs();
 
     // Step 2: Build renet and deploy to all VMs
-    // eslint-disable-next-line no-console
-    console.log('');
-    // eslint-disable-next-line no-console
-    console.log('Step 2: Building and deploying renet...');
+    log('');
+    log('Step 2: Building and deploying renet...');
     await timed('Step 2 renet deploy', () => infra.ensureInfrastructure({ freshReset }));
-    // eslint-disable-next-line no-console
-    console.log('  ✓ Renet deployed to all VMs');
+    log('  ✓ Renet deployed to all VMs');
 
     // Step 3 needs Step 2: it runs the deployed renet, and its skip rule reads the ops-up md5 match Step 2 records.
     await timed('Step 3 renet setup', () => setupAllVMs(opsManager, infra, freshReset));
@@ -465,13 +450,11 @@ async function bridgeGlobalSetup(_config: FullConfig) {
       console.warn('Steps 5-8: skipped (no workers in this topology)');
     }
 
-    /* eslint-disable no-console */
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('All VMs ready for SSH-based test execution');
-    console.log('='.repeat(60));
-    console.log('');
-    /* eslint-enable no-console */
+    log('');
+    log('='.repeat(60));
+    log('All VMs ready for SSH-based test execution');
+    log('='.repeat(60));
+    log('');
   } catch (error) {
     console.error('');
     console.error('='.repeat(60));

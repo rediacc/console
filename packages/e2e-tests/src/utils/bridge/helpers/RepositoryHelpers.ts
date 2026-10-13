@@ -1,5 +1,6 @@
 import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { ExecResult } from '../types';
+import { log } from '../../log';
 
 /**
  * Repository-specific helper utilities for BridgeTestRunner.
@@ -19,7 +20,7 @@ export class RepositoryHelpers {
    * - Datastore: {datastorePath}
    * - Mounts: {datastorePath}/mounts/{repositoryName}  ← where content is accessible
    */
-  async writeFileToRepository(
+  writeFileToRepository(
     repositoryName: string,
     filePath: string,
     content: string,
@@ -62,7 +63,7 @@ export class RepositoryHelpers {
    * @param tag Fork tag/name (cannot be 'latest')
    * @param datastorePath Path to the datastore
    */
-  async createRepositoryFork(
+  createRepositoryFork(
     parentRepo: string,
     tag: string,
     datastorePath: string,
@@ -80,7 +81,7 @@ export class RepositoryHelpers {
    * Drives the renet CLI directly (commit/log/merge params are not in the bridge
    * once test-mode flag allowlist), mirroring createRepositoryFork.
    */
-  async repositoryCommit(
+  repositoryCommit(
     workingFork: string,
     commitGuid: string,
     message: string,
@@ -97,16 +98,12 @@ export class RepositoryHelpers {
    * Check a commit out into a fresh writable working fork. At the renet layer a
    * checkout is a reflink fork of the immutable commit, so this reuses fork.
    */
-  async repositoryCheckout(
-    commitGuid: string,
-    tag: string,
-    datastorePath: string
-  ): Promise<ExecResult> {
+  repositoryCheckout(commitGuid: string, tag: string, datastorePath: string): Promise<ExecResult> {
     return this.createRepositoryFork(commitGuid, tag, datastorePath);
   }
 
   /** Walk the commit history reachable from a working fork or commit. */
-  async repositoryLog(startGuid: string, datastorePath: string): Promise<ExecResult> {
+  repositoryLog(startGuid: string, datastorePath: string): Promise<ExecResult> {
     return this.executeViaBridge(
       `sudo renet repository log --name "${startGuid}" --datastore "${datastorePath}" -o json`
     );
@@ -118,7 +115,7 @@ export class RepositoryHelpers {
    * the common ancestor) it is a per-file three-way merge, which mounts the
    * lineage and therefore needs the repo `password` (piped via --password-stdin).
    */
-  async repositoryMerge(
+  repositoryMerge(
     target: string,
     source: string,
     datastorePath: string,
@@ -140,7 +137,7 @@ export class RepositoryHelpers {
    * Create an immutable (read-only) fork — the commit-equivalent base. It refuses
    * to mount; check it out into a writable fork to use it.
    */
-  async repositoryForkImmutable(
+  repositoryForkImmutable(
     parentRepo: string,
     tag: string,
     datastorePath: string
@@ -157,7 +154,7 @@ export class RepositoryHelpers {
    * push; deltaBase ships only the changed extents against an existing base.
    * --dest-user omitted → renet infers it from SUDO_USER (we run under sudo).
    */
-  async deltaPushToMachine(
+  deltaPushToMachine(
     repoGuid: string,
     destHost: string,
     datastorePath: string,
@@ -178,7 +175,7 @@ export class RepositoryHelpers {
    * deltaBase ships only the changed extents against a base byte-identical on both
    * ends; force overwrites an existing local repo.
    */
-  async deltaPullFromMachine(
+  deltaPullFromMachine(
     repoGuid: string,
     srcHost: string,
     datastorePath: string,
@@ -195,7 +192,7 @@ export class RepositoryHelpers {
   }
 
   /** sha256 of a repository image file (for byte-identity assertions). */
-  async repositoryImageSha256(repoGuid: string, datastorePath: string): Promise<ExecResult> {
+  repositoryImageSha256(repoGuid: string, datastorePath: string): Promise<ExecResult> {
     return this.executeViaBridge(
       `sudo sha256sum "${datastorePath}/repositories/${repoGuid}" | cut -d' ' -f1`
     );
@@ -236,18 +233,13 @@ export class RepositoryHelpers {
         `sudo docker -H unix://${WK_RUNTIME_DIR}/docker-${networkId}.sock exec ${containerName} psql -U postgres -d testdb -c "SELECT 1" -t -q 2>/dev/null`
       );
       if (result.code === 0) {
-        // eslint-disable-next-line no-console
-        console.log(`[PostgreSQL] Container ${containerName} is ready after ${i + 1} attempts`);
+        log(`[PostgreSQL] Container ${containerName} is ready after ${i + 1} attempts`);
         return true;
       }
-      // eslint-disable-next-line no-console
-      console.log(`[PostgreSQL] Waiting for ${containerName}... (${i + 1}/${maxAttempts})`);
+      log(`[PostgreSQL] Waiting for ${containerName}... (${i + 1}/${maxAttempts})`);
       await new Promise((resolve) => setTimeout(resolve, intervalMs));
     }
-    // eslint-disable-next-line no-console
-    console.log(
-      `[PostgreSQL] Container ${containerName} failed to be ready after ${maxAttempts} attempts`
-    );
+    log(`[PostgreSQL] Container ${containerName} failed to be ready after ${maxAttempts} attempts`);
     return false;
   }
 }

@@ -1,6 +1,35 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
 import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
+import { log } from '../src/utils/log';
+
+/**
+ * Check that the datastore on a VM is initialized, laying it down when it is not.
+ * Returns whether the datastore is usable on that VM.
+ */
+async function ensureDatastoreInitialized(runner: BridgeTestRunner, vm: string): Promise<boolean> {
+  const result = await runner.testFunctionOnMachine(vm, {
+    function: 'datastore_status',
+    datastorePath: DEFAULT_DATASTORE_PATH,
+  });
+  if (runner.isSuccess(result)) {
+    return true;
+  }
+
+  log(`Datastore not initialized on ${vm}, attempting to initialize...`);
+  // The datastore_init BRIDGE verb was deleted by the datastore-centric
+  // redesign; laying down the base pool is a root CLI step now.
+  const initResult = await runner.executeOnVM(
+    vm,
+    `sudo renet datastore init --path ${DEFAULT_DATASTORE_PATH} --size 5G --force`
+  );
+  if (!runner.isSuccess(initResult)) {
+    console.warn(`Failed to initialize datastore on ${vm}, skipping this VM`);
+    return false;
+  }
+  log(`Datastore initialized on ${vm}`);
+  return true;
+}
 
 /**
  * Multi-Machine Integration Workflow
@@ -71,32 +100,8 @@ test.describe
       const workers = runner.getWorkerVMs();
 
       for (const vm of workers) {
-        // Check if datastore exists and is initialized
-        const result = await runner.testFunctionOnMachine(vm, {
-          function: 'datastore_status',
-          datastorePath: DEFAULT_DATASTORE_PATH,
-        });
-
-        if (runner.isSuccess(result)) {
+        if (await ensureDatastoreInitialized(runner, vm)) {
           initializedVMs.push(vm);
-        } else {
-          // Try to initialize the datastore if not initialized
-          // eslint-disable-next-line no-console
-          console.log(`Datastore not initialized on ${vm}, attempting to initialize...`);
-          // The datastore_init BRIDGE verb was deleted by the datastore-centric
-          // redesign; laying down the base pool is a root CLI step now.
-          const initResult = await runner.executeOnVM(
-            vm,
-            `sudo renet datastore init --path ${DEFAULT_DATASTORE_PATH} --size 5G --force`
-          );
-
-          if (runner.isSuccess(initResult)) {
-            initializedVMs.push(vm);
-            // eslint-disable-next-line no-console
-            console.log(`Datastore initialized on ${vm}`);
-          } else {
-            console.warn(`Failed to initialize datastore on ${vm}, skipping this VM`);
-          }
         }
       }
 
@@ -109,7 +114,11 @@ test.describe
       const workers = runner.getWorkerVMs();
 
       for (const vm of workers) {
-        const result = await runner.deploy(repositoryName, vm, DEFAULT_DATASTORE_PATH);
+        const result = await runner.pushWithOptions(repositoryName, {
+          destinationType: 'machine',
+          destMachine: vm,
+          datastorePath: DEFAULT_DATASTORE_PATH,
+        });
         expect(runner.isSuccess(result)).toBe(true);
       }
     });
