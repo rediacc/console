@@ -29,6 +29,7 @@ USAGE:
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --refresh [--dry-run]
         [--refresh-limit 10]
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --check [--refresh-limit 10]
+        [--as-of 2026-10-13T12:13:00Z]
 
 Markdown goes to stdout (or `--markdown-out`), then the full JSON report to stdout (or `--json-out`) -- both printed by default so a plain invocation is still useful piped straight into a PR comment or a file.
 
@@ -131,18 +132,21 @@ LANE_DURATIONS_REL_PATH = ".ci/config/lane-durations.json"
 GATES_LOCK_REL_PATH = "scripts/ci-runner/gates.lock.json"
 PER_LEG_BUDGET_MINUTES = 12.0
 DRIFT_THRESHOLD = 0.25
-# A UNIT's drift counts only when the absolute move is at least this many milliseconds. Unit p90s are sampled from 10 runs, so a small unit swings by large percentages on runner noise alone: an hour after a refresh, check:ci-budget-freshness failed PR #594 (run 37190043363) on 16 -> 124.5 ms, 2119 -> 1566 ms and 5967 -> 7620 ms, none of which moves a leg's wall enough to matter. Job-level drift keeps the pure ratio. Same reasoning as gate_costs.MIN_DRIFT_CPU_S.
-# WHY 5 s AND NOT 2 s (#ce346f22). The 10-run sample is repo-wide PR runs, so every push on the open PR replaces one sampled run, and 2 s still sat inside that churn: on 2026-10-04/05 branch 1004-2 refreshed lane-durations.json four times in a day for 5-15 s units moving 2.1-3.4 s (test_wl_hints 5278 -> 7377 ms, test_review_standing_orders_brief 9068 -> 6681, test_wl_loop_next 9688 -> 13070, test_shape_probe_agreement 10067 -> 13002, e2e 16-setup-installation-params 5967 -> 8335), each refresh a 45-minute pre-push plus a commit that fed the sample again. Replayed over the last 20 refreshes, 5 s clears every same-day move and still fires on each days-apart refresh that held real movement (account-e2e +21% on 2026-10-04: 55 units; 12-01-subscription-renewal 22838 -> 38369 ms, which kept climbing to 42544). Against a 12-minute leg, 5 s is under 0.7%.
-MIN_UNIT_DRIFT_MS = 5000
-# WHICH STATISTIC A UNIT IS JUDGED ON (#d901ba82). A unit's measured p90 over the ~7 samples a 10-run window gives it is the 2nd-slowest sample or the slowest, so ONE slow runner moves it past 25% while the unit's typical run never moved: on 2026-10-05/06 check:ci-budget-freshness went red four times on tutorial:branching 65 -> 83 s (samples 56 58 60 62 67 99 101 s: five runs unchanged, two outliers), tutorial:installation 13 -> 18.5 s (median 9 s), test_gate_doc_region_parity 120 -> 152 s (+27%, median 96 s) and a 105 -> 78 s pytest p90 that was a real 105 -> 57 s step change still rolling through the window, one red per refresh. Each red cost a ~1,600-line rewrite of lane-durations.json and a 16-minute pre-push.
-# So the committed p90 is held against the measured sample's own spread instead of against its p90 alone:
-#   - SLOWER: the measured MEDIAN must clear the committed p90 by 25% (and MIN_UNIT_DRIFT_MS). Outliers cannot move a median, a real doubling moves it 2x (any unit whose committed p90 sits under 1.6x its median, which the 2026-10-06 sample showed for over 90% of units at 10 s and up), and a step change reds once, when half the window carries it, not once per refresh.
-#   - FASTER: the measured MAX, the slowest sample of the window, must fall 25% under the committed p90. A stale over-estimate only over-provisions a leg, so it reds once the WHOLE window agrees, never mid-roll.
-# Without per-unit stats (an old caller) both sides fall back to the p90 and the rule is the plain 25% ratio it always was. The per-lane sum below stays on p90: summing averages the outliers away (no same-day refresh moved a lane sum past 3.4%) and it is the backstop for a lane-wide slowdown.
-UNIT_SLOWER_STAT = "median"
-UNIT_FASTER_STAT = "max"
-# HOW MANY SAMPLES A "FASTER" VERDICT NEEDS. The faster side asks whether the whole window agrees, by holding the committed p90 against the slowest sample. A window of one or two runs has no slowest sample worth the name: after a stretch longer than the artifact retention, the first PR run is the only one with artifacts, and on 2026-10-13 a single run cancelled part-way reported 25 account-e2e units 33 to 55% faster and the lane's sum with them. Below this count the faster side, for a unit and for a lane's sum, is not judged; the slower side, which is what protects a leg's budget, is judged at any count.
-MIN_FASTER_SAMPLES = 3
+# WHAT A UNIT'S DURATION IS FOR, and so what its drift has to protect (worklist #f67c1612, 2026-10-13). Three readers price with `units`, and each of them reads a LEG, never a unit on its own.
+# `scripts/gates/check-lane-budget.ts` sums a leg's units into its estimate (`legMinutes`: fixed cost plus the serial sum divided by `unitParallelism`) and holds that against the 12-minute budget, and its check 3 holds one unit plus the fixed cost against the same budget.
+# `scripts/ci-runner/shard-place.ts` sends a new unit to the lightest leg by the same sum, and `conftest.py` starts the longest files first, which reads an order.
+# None of them changes its answer on a unit that is 25% off in isolation. The smallest leg difference any of them acts on is `REBALANCE_ADVISORY_MIN` in check-lane-budget.ts, half a minute of leg wall, below which a rebalance is not even advised.
+# THE HISTORY THIS REPLACES. A fixed floor of 2 s (2026-10-04), then 5 s (#ce346f22), then the median and max statistics (#d901ba82), then `MIN_FASTER_SAMPLES` (2026-10-13 morning) each answered one day's reds, and the gate still went red four times on branch 1008-1 on 2026-10-13.
+# MEASURED on that branch's seven artifact-bearing runs: two of every five pytest units of 5 to 20 s differ by more than 25% between runs, one of three at 60 s and up, and a whole leg ran 35% slower on one runner (leg 1 of 3: 1773 s against 2388 s of unit time) while the other two legs moved 2.5% and 6.3%.
+# The replay of the three reds found the cause was sample size before it was noise. The slower side fired on ONE run (15 of the 17 findings on run 38409515814 had one or two samples), and the refresh kept every thinly sampled unit that had got faster, which the check then reported as soon as a third sample arrived (12 of the 14 findings after 1dd250d87).
+# So the rule has three parts, and the refresh obeys the same three.
+#   1. EVIDENCE. A drift verdict, slower or faster, needs `MIN_DRIFT_RUNS` distinct sampled runs that measured the unit. One run is one runner. A unit below that count is counted, printed as thin and never judged, and a refresh keeps its committed value.
+#   2. PERSISTENCE. Slower needs the median of the window AND each of the newest `MIN_DRIFT_RUNS` runs past the limit, so no single run can produce a finding. Faster needs the slowest sample of the window under the limit, which is every run agreeing.
+#   3. MATERIALITY. The move, divided by the lane's `unitParallelism`, is at least `MATERIAL_LEG_MS` of leg wall, and it is over `DRIFT_THRESHOLD` of the committed value. A smaller move changes no reader's answer; many of them in one leg are judged as that leg's sum, by the same two numbers.
+# A refresh writes the p90 of the window, which sits between the median and the max, so a check that follows a refresh on the same sample has no drift finding by construction (test_a_check_after_a_refresh_on_the_same_sample_is_green).
+MIN_DRIFT_RUNS = 2
+# Half a minute of leg wall: check-lane-budget.ts `REBALANCE_ADVISORY_MIN` (0.5 minutes), read from that file by test_the_materiality_floor_is_the_lane_budget_gates_own_advisory_threshold so the two cannot part.
+MATERIAL_LEG_MS = 30_000
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
 HEADROOM_JOBS = ("Validate Promotion", "Stage Artifacts")
 
@@ -342,6 +346,14 @@ def sample_window_param(now: float | None = None) -> str:
     return "created=%%3E%%3D%s" % since.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def completed_by(run: dict[str, Any], as_of: float | None) -> bool:
+    """Whether `run` had completed by `as_of`, read from its `updated_at`. No bound admits every run; a run with no readable `updated_at` is outside any bound, since nothing says when it finished."""
+    if as_of is None:
+        return True
+    done = _iso_to_epoch(run.get("updated_at"))
+    return done is not None and done <= as_of
+
+
 def fetch_runs(
     repo: str,
     workflow: str,
@@ -351,15 +363,17 @@ def fetch_runs(
     limit: int,
     *,
     now: float | None = None,
+    as_of: float | None = None,
 ) -> list[dict[str, Any]]:
     """The `limit` newest runs of `event` created inside the `SAMPLE_MAX_AGE_DAYS` window (`sample_window_param`), by `created_at` DESCENDING -- explicitly, never the API's own order. MEASURED 2026-09-27: the identical query returned an August-dated page and then, a minute later, a September-dated one, so "the API's own default order" is not trustworthy enough to slice on directly. A run older than `SAMPLE_MAX_AGE_DAYS` is still warned about loudly (never refused: this is a report, and a thin or stale sample is still evidence), via `stale_sample_findings` -- with the window in the query that warning now means the API ignored the bound, not that the sample drifted."""
     # One clock for the query bound and the age check, so a run at the edge cannot be admitted by one and refused by the other.
     if now is None:
         now = time.time()
+    # `as_of` (an epoch second) keeps only the runs that had completed by then, which is how a verdict is re-judged on the sample another run of the check read (`--as-of`). The bound is applied to the page after it is read, so the page is the API's largest: the runs wanted may sit behind newer ones.
     query = "event=%s&status=%s&per_page=%d&%s" % (
         event,
         status,
-        min(limit, _PAGE_SIZE),
+        _PAGE_SIZE if as_of is not None else min(limit, _PAGE_SIZE),
         sample_window_param(now),
     )
     if branch:
@@ -386,7 +400,7 @@ def fetch_runs(
             "budget_report: %d reads of the %s run list disagreed (%s run(s) each); sampling their union."
             % (len(page_ids), event, "/".join(str(len(ids)) for ids in page_ids))
         )
-    runs = list(by_id.values())
+    runs = [run for run in by_id.values() if completed_by(run, as_of)]
     ordered = sorted(runs, key=lambda r: r.get("created_at") or "", reverse=True)
     selected = ordered[:limit]
     for finding in stale_sample_findings(selected, now):
@@ -990,8 +1004,11 @@ def collect_unit_durations(
     list_artifacts: Callable[[str, int], list[dict[str, Any]]] = fetch_artifacts,
     download: Callable[[str, Any], bytes] = download_artifact_zip,
     bucket_titles: Mapping[str, str] | None = None,
+    by_run: dict[str, dict[int, list[float]]] | None = None,
 ) -> tuple[dict[str, dict[str, list[float]]], list[str]]:
     """`({lane: {unit id: [ms, ...]}}, [lane with ZERO matching artifacts across every run_id])`.
+
+    `by_run`, when given, is filled with `{unit id: {run id: [ms, ...]}}` in the order of `run_ids`: the same samples, kept apart by the run that produced them, which is what `unit_run_stats` counts a unit's evidence in.
 
     `list_artifacts`/`download` are injectable so this is testable with zero network -- the same seam `check_job_timeout_headroom.refresh()` lacks and this module's own `fetch_runs`/`fetch_jobs` lack, taken here because artifact plumbing is the one part of T3.2 with no live data to verify against yet (T1.6 has not landed): a fixture-driven test is the only kind possible, so the function is built to take one. `bucket_titles` (see `parse_playwright_unit_ms`) is threaded straight through to every playwright artifact parsed.
     """
@@ -1049,6 +1066,8 @@ def collect_unit_durations(
         hits[lane] += 1
         for unit_id, ms in parsed.items():
             per_lane[lane].setdefault(unit_id, []).append(ms)
+            if by_run is not None:
+                by_run.setdefault(unit_id, {}).setdefault(run_id, []).append(ms)
     missing = [lane for lane in lanes if hits[lane] == 0]
     return per_lane, missing
 
@@ -1528,11 +1547,14 @@ def compute_lane_durations(
     download: Callable[[str, Any], bytes] = download_artifact_zip,
     fetch_log: Callable[[str, int], str] = fetch_job_log,
     log_cache_dir: Path | None = None,
+    as_of: float | None = None,
 ) -> dict[str, Any]:
     """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "unit_parallelism", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root). Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
 
     # THE PR SAMPLE HONOURS `--branch`, AS THE REPORT'S DOES SINCE 34ac34c13. `--refresh --branch 0923-1` still sampled PR runs with NO branch filter, so the durations it wrote came from whichever branches' runs the listing served, not the branch named. `class_branch_filter` keeps a default-branch refresh repo-wide.
+    # The completion bound is passed only when one is set, so the live path calls `fetch_runs` exactly as it always has.
+    bound: dict[str, Any] = {} if as_of is None else {"as_of": as_of}
     pr_runs = fetch_runs(
         repo,
         workflow,
@@ -1540,6 +1562,7 @@ def compute_lane_durations(
         class_branch_filter("pr-full", branch),
         REFRESH_PR_STATUS,
         limit,
+        **bound,
     )
     pr_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in pr_runs]
 
@@ -1579,6 +1602,7 @@ def compute_lane_durations(
 
     bucket_titles = _e2e_shard_bucket_titles()
     run_ids = [run["id"] for run in pr_runs]
+    samples_by_run: dict[str, dict[int, list[float]]] = {}
     unit_samples, missing_lanes = collect_unit_durations(
         repo,
         run_ids,
@@ -1586,6 +1610,7 @@ def compute_lane_durations(
         list_artifacts=list_artifacts,
         download=download,
         bucket_titles=bucket_titles,
+        by_run=samples_by_run,
     )
     retention_days = artifact_retention_days(tree_root)
     # A lane's job is keyed by the ci.yml callee id, which is not always the lane id (`VARIANT_LANE_JOBS`: ops-tutorials runs in ops-vm-provision).
@@ -1618,14 +1643,15 @@ def compute_lane_durations(
     units_ms: dict[str, float] = {}
     unit_stats: dict[str, dict[str, float]] = {}
     for per_unit in unit_samples.values():
-        for unit_id, ms_list in per_unit.items():
-            s = stats(ms_list)
+        for unit_id in per_unit:
+            # `pr_runs` is newest first and `samples_by_run` was filled in that order, so the first runs of a unit are its newest.
+            s = unit_run_stats(list(samples_by_run.get(unit_id, {}).values()))
             if s is not None:
                 units_ms[unit_id] = s["p90"]
                 unit_stats[unit_id] = s
 
     # THE HEADROOM SAMPLE IS ALWAYS THE DEFAULT BRANCH: `ci.yml` runs on `push` to `main` only, so a `--branch` naming a PR branch would sample zero push runs and leave `job_max_seconds` unmeasured.
-    main_runs = fetch_runs(repo, workflow, "push", DEFAULT_BRANCH, DEFAULT_STATUS, limit)
+    main_runs = fetch_runs(repo, workflow, "push", DEFAULT_BRANCH, DEFAULT_STATUS, limit, **bound)
     main_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in main_runs]
     # A job that never runs on a PR (the release chain) takes its p90 from the SAME main-push sample; a job the PR sample ran keeps its PR number, untouched. See `main_push_only_p90`.
     main_only = main_push_only_p90(pr_jobs_by_run, main_jobs_by_run)
@@ -1652,7 +1678,7 @@ def compute_lane_durations(
     return {
         "jobs": jobs_minutes,
         "units": units_ms,
-        # The spread behind each unit's p90 (median/max/n), read by `--check` only and never written: see `UNIT_SLOWER_STAT`.
+        # The evidence behind each unit's p90 (`unit_run_stats`), read by `--check` and by the refresh's keep rule and never written: see `MIN_DRIFT_RUNS`.
         "unit_stats": unit_stats,
         "job_max_seconds": job_max_seconds,
         "job_p90_minutes": job_p90_minutes,
@@ -1715,7 +1741,7 @@ UNIT_PREFIX_MANIFEST = {
 }
 
 
-# Unit-id prefix -> lane, for `unit_drift_findings`' per-lane sum. UNIT_PREFIX_MANIFEST names only the lanes with a shard manifest; tutorial units are priced too, so they are named here.
+# Unit-id prefix -> lane, for the units no shard manifest names. UNIT_PREFIX_MANIFEST names only the lanes with a shard manifest; tutorial units are priced too, so they are named here.
 UNIT_PREFIX_LANE = {"tutorial": "ops-tutorials"}
 
 
@@ -1725,46 +1751,226 @@ def unit_lane(unit_id: str) -> str:
     return UNIT_PREFIX_MANIFEST.get(prefix) or UNIT_PREFIX_LANE.get(prefix) or prefix
 
 
+def unit_legs(root: Path) -> dict[str, str]:
+    """`{unit id: "<lane> leg <index>/<of>"}` from every committed shard manifest `UNIT_PREFIX_MANIFEST` names. A unit no manifest places is absent, and `unit_drift_findings` sums it with its lane instead; so is every unit of a lane whose manifest cannot be read."""
+    legs: dict[str, str] = {}
+    for lane in UNIT_PREFIX_MANIFEST.values():
+        try:
+            data = json.loads(
+                (root / ".ci" / "config" / "shards" / ("%s.json" % lane)).read_text("utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            continue
+        entries = data.get("legs") if isinstance(data, dict) else None
+        for leg in entries if isinstance(entries, list) else []:
+            label = "%s leg %s/%s" % (lane, leg.get("index"), data.get("of"))
+            for unit_id in leg.get("ids") or []:
+                legs[unit_id] = label
+    return legs
+
+
+def unit_run_stats(samples_by_run: Sequence[Sequence[float]]) -> dict[str, float] | None:
+    """`stats()` over every sample of one unit, plus the two numbers the drift rule counts evidence in. `samples_by_run` holds one list per sampled run that measured the unit, NEWEST RUN FIRST.
+
+    `runs` is how many runs measured it. `recent_low` is the lowest of the newest `MIN_DRIFT_RUNS` runs, each run read as the median of its own samples (an E2E unit has one sample per distro in a run); it is absent below that count. None for a unit with no sample.
+    """
+    per_run = [list(samples) for samples in samples_by_run if samples]
+    pooled = stats([ms for samples in per_run for ms in samples])
+    if pooled is None:
+        return None
+    pooled["runs"] = len(per_run)
+    if len(per_run) >= MIN_DRIFT_RUNS:
+        pooled["recent_low"] = round(
+            min(statistics.median(samples) for samples in per_run[:MIN_DRIFT_RUNS]), 1
+        )
+    return pooled
+
+
+def _unit_runs(unit_stats: Mapping[str, float]) -> int:
+    """How many sampled runs measured a unit. A record with no count is evidence nobody counted, and reads as none."""
+    runs = unit_stats.get("runs")
+    return int(runs) if isinstance(runs, (int, float)) and not isinstance(runs, bool) else 0
+
+
+def _is_thin(unit_stats: Mapping[str, float]) -> bool:
+    """Whether a unit has too few sampled runs for a drift verdict (`MIN_DRIFT_RUNS`)."""
+    return _unit_runs(unit_stats) < MIN_DRIFT_RUNS
+
+
+def _slower_value(unit_stats: Mapping[str, float]) -> float | None:
+    """The value a unit is judged slower on: the lower of the window's median and the lowest of its newest runs, so both have to be past the limit."""
+    median, recent = unit_stats.get("median"), unit_stats.get("recent_low")
+    if median is None or recent is None:
+        return None
+    return min(median, recent)
+
+
+def material_move(was: float, now: float, workers: int) -> bool:
+    """Whether `was -> now` (milliseconds of unit time on a lane running `workers` units at once) is a move a reader of the table acts on: at least `MATERIAL_LEG_MS` of leg wall, and over `DRIFT_THRESHOLD` of the committed value. A committed zero has no ratio and is judged on the wall alone."""
+    if abs(now - was) / max(workers, 1) < MATERIAL_LEG_MS:
+        return False
+    return was == 0 or abs(now - was) / was > DRIFT_THRESHOLD
+
+
+def _move_text(was: float, now: float, workers: int) -> str:
+    """`27% slower, 41 s of leg wall at 4 at once`: the two numbers `material_move` judged."""
+    ratio = "" if was == 0 else "%.0f%% " % (abs(now - was) / was * 100)
+    return "%s%s, %.0f s of leg wall%s" % (
+        ratio,
+        "slower" if now > was else "faster",
+        abs(now - was) / max(workers, 1) / 1000,
+        "" if workers <= 1 else " at %d at once" % workers,
+    )
+
+
+def _limits_text() -> str:
+    return "over the %.0f%% and %.0f s limits" % (DRIFT_THRESHOLD * 100, MATERIAL_LEG_MS / 1000)
+
+
 def unit_drift_findings(
     committed_units: Mapping[str, float],
-    measured_units: Mapping[str, float],
-    measured_stats: Mapping[str, Mapping[str, float]] | None = None,
-) -> tuple[list[str], int]:
-    """`(findings, lanes compared)` for T3.3's drift trigger on `units`, two ways, each needing BOTH the 25% ratio AND a `MIN_UNIT_DRIFT_MS` absolute move:
+    measured_stats: Mapping[str, Mapping[str, float]],
+    *,
+    parallelism: Mapping[str, int] | None = None,
+    legs: Mapping[str, str] | None = None,
+) -> tuple[list[Keyed], dict[str, Any]]:
+    """`(findings, shape)` for the drift of `units`, under the three-part rule at `MIN_DRIFT_RUNS`: evidence, persistence, materiality.
 
-    - PER UNIT: one unit whose typical run moved enough to unbalance its leg (a 160 s spec doubling). Judged on the measured sample's spread, not its p90 alone: slower needs the MEDIAN past the committed p90, faster needs the MAX under it (see `UNIT_SLOWER_STAT`). `measured_stats` maps a unit id to `stats()`' dict; a unit with none is judged on its p90 both ways.
-    - PER LANE: the SUM of a lane's unit p90s, over the ids both sides price. The backstop for the hole the floor opens: a lane-wide slowdown made of units that each move under 5 s passes unit by unit, and the sum still reds once it moves the lane by 25%. MEASURED 2026-10-05: units under 5 s are at most 10% of any lane's sum except battery's 9 s, so sub-floor noise cannot carry a lane past 25% on its own, and over the last 20 refreshes no same-day refresh moved a lane sum by more than 3.4%.
+    - PER UNIT: a unit that at least `MIN_DRIFT_RUNS` runs measured, whose move is material for its leg (`material_move`, with the lane's `parallelism`). Slower is read on `_slower_value`, faster on the window's slowest sample.
+    - PER LEG: the same test on the SUM of a leg's judged units, committed against measured, slower and faster each on the sum of the per-unit values above. `legs` maps a unit id to its leg (`unit_legs`); a unit it does not name is summed with its lane. This is where many small moves in one leg are caught, and a leg is what every reader of the table prices.
 
-    Pure, so the selftest-style tests drive it without the network.
+    `measured_stats` maps a unit id to `unit_run_stats`' record. `shape` says what was looked at, for the verdict line: `judged` and `thin` unit counts, `sums` (legs or lanes summed), and `pending`, the thin units whose few samples are already a material move, named so a drift on its way is visible before it is a finding.
+
+    Pure, so the tests drive it without the network.
     """
-    findings: list[str] = []
-    committed_sum: dict[str, float] = {}
-    measured_sum: dict[str, float] = {}
-    stats_by_unit = measured_stats or {}
-    judged_lanes: set[str] = set()
-    for unit_id, ms in sorted(measured_units.items()):
+    workers_of = parallelism or {}
+    leg_of = legs or {}
+    findings: list[Keyed] = []
+    sums: dict[str, list[float]] = {}
+    sum_workers: dict[str, int] = {}
+    judged = thin = 0
+    pending: list[str] = []
+    for unit_id, unit_stats in sorted(measured_stats.items()):
         was = committed_units.get(unit_id)
-        if was is None or ms is None:
+        if was is None:
             continue
         lane = unit_lane(unit_id)
-        if not _too_few_for_faster(stats_by_unit.get(unit_id) or {}):
-            judged_lanes.add(lane)
-        committed_sum[lane] = committed_sum.get(lane, 0.0) + was
-        measured_sum[lane] = measured_sum.get(lane, 0.0) + ms
-        f = _unit_spread_finding(unit_id, was, ms, stats_by_unit.get(unit_id) or {})
-        if f:
-            findings.append(Keyed("lane-durations:drift:unit:%s" % key_part(unit_id), f))
-    for lane in sorted(committed_sum):
-        was, ms = committed_sum[lane], measured_sum[lane]
-        if abs(ms - was) < MIN_UNIT_DRIFT_MS:
+        workers = int(workers_of.get(lane) or 1)
+        slowest = unit_stats.get("max")
+        if _is_thin(unit_stats):
+            thin += 1
+            seen = unit_stats.get("median")
+            if seen is not None and material_move(was, seen, workers):
+                pending.append(
+                    "%s (committed %.4g, %d run(s) at %.4g)"
+                    % (unit_id, was, _unit_runs(unit_stats), seen)
+                )
             continue
-        # A sum that fell, when EVERY unit in it is too thinly sampled to be called faster on its own, is the same thin evidence added up. One well-sampled unit keeps the lane's sum judged.
-        if ms < was and lane not in judged_lanes:
+        slower = _slower_value(unit_stats)
+        if slower is None or slowest is None:
+            thin += 1
             continue
-        d = drift_finding("lane %r summed unit p90" % lane, was, ms)
-        if d:
-            findings.append(Keyed("lane-durations:drift:lane-sum:%s" % key_part(lane), d))
-    return findings, len(committed_sum)
+        judged += 1
+        group = leg_of.get(unit_id, lane)
+        total = sums.setdefault(group, [0.0, 0.0, 0.0])
+        total[0] += was
+        total[1] += slower
+        total[2] += slowest
+        sum_workers[group] = workers
+        label = "unit %r p90: committed %.4g, and" % (unit_id, was)
+        runs = _unit_runs(unit_stats)
+        text = None
+        if slower > was and material_move(was, slower, workers):
+            text = (
+                "%s the median of %d sampled run(s) and each of the newest %d are at least %.4g: %s (%s; measured p90 %.4g)."
+                % (
+                    label,
+                    runs,
+                    MIN_DRIFT_RUNS,
+                    slower,
+                    _move_text(was, slower, workers),
+                    _limits_text(),
+                    unit_stats.get("p90", slowest),
+                )
+            )
+        elif slowest < was and material_move(was, slowest, workers):
+            text = (
+                "%s the slowest sample of %d sampled run(s) is %.4g: %s (%s; measured p90 %.4g)."
+                % (
+                    label,
+                    runs,
+                    slowest,
+                    _move_text(was, slowest, workers),
+                    _limits_text(),
+                    unit_stats.get("p90", slowest),
+                )
+            )
+        if text:
+            findings.append(Keyed("lane-durations:drift:unit:%s" % key_part(unit_id), text))
+    for group in sorted(sums):
+        was, slower, slowest = sums[group]
+        workers = sum_workers[group]
+        now = (
+            slower
+            if slower > was and material_move(was, slower, workers)
+            else slowest
+            if slowest < was and material_move(was, slowest, workers)
+            else None
+        )
+        if now is not None:
+            findings.append(
+                Keyed(
+                    "lane-durations:drift:leg-sum:%s" % key_part(group),
+                    "%s: its judged units sum to %.4g committed and %.4g measured (%s): %s (%s)."
+                    % (
+                        group,
+                        was,
+                        now,
+                        "median and newest runs" if now > was else "slowest samples",
+                        _move_text(was, now, workers),
+                        _limits_text(),
+                    ),
+                )
+            )
+    return findings, {"judged": judged, "thin": thin, "sums": len(sums), "pending": pending}
+
+
+def unpriced_unit_findings(
+    committed: Mapping[str, Any], measured_stats: Mapping[str, Mapping[str, float]], root: Path
+) -> list[Keyed]:
+    """A unit the sample measured that the table does not price, when its cost is a material move from what the readers price it at instead: the lane's `defaultUnitMs`, or nothing.
+
+    ONE RUN IS ENOUGH HERE, unlike a drift: the fact judged is that the table has no row, and the refresh writes a new unit at any count. A unit its lane's shard manifest does not name is left to check:ci-shard-manifest-coverage, because `prune_units_to_manifests` drops the row a refresh writes, so the finding has no way to clear.
+    """
+    units = committed.get("units") or {}
+    defaults = committed.get("defaultUnitMs") or {}
+    workers_of = committed.get("unitParallelism") or {}
+    absent = {
+        unit_id: unit_stats.get("p90")
+        for unit_id, unit_stats in measured_stats.items()
+        if unit_id not in units
+    }
+    findings: list[Keyed] = []
+    for unit_id, cost in sorted(prune_units_to_manifests(absent, root).items()):
+        lane = unit_lane(unit_id)
+        workers = int(workers_of.get(lane) or 1)
+        priced_at = float(defaults.get(lane) or 0.0)
+        if cost is None or cost <= priced_at or not material_move(priced_at, cost, workers):
+            continue
+        findings.append(
+            Keyed(
+                "lane-durations:unpriced-unit:%s" % key_part(unit_id),
+                "unit %r has no row in the table and measured %.4g; the lane budget prices it at %s: %s (%s). Run --refresh."
+                % (
+                    unit_id,
+                    cost,
+                    "the lane default %.4g" % priced_at if priced_at else "nothing",
+                    _move_text(priced_at, cost, workers),
+                    _limits_text(),
+                ),
+            )
+        )
+    return findings
 
 
 def refreshed_units(
@@ -1772,65 +1978,16 @@ def refreshed_units(
     measured: Mapping[str, float],
     measured_stats: Mapping[str, Mapping[str, float]],
 ) -> dict[str, float]:
-    """The units a refresh writes: every measured unit replaces its committed value, except that a unit sampled fewer than `MIN_FASTER_SAMPLES` times is never LOWERED. The check does not call such a unit faster, so the refresh does not write the speedup either; a thin sample that is slower is written, since an estimate that is too low is what overfills a leg."""
+    """The units a refresh writes. A unit the table already prices is rewritten only on the evidence the check judges it on, `MIN_DRIFT_RUNS` sampled runs, in either direction; below that its committed value stays. A unit new to the table is written at any count, because a row from one run beats no row.
+
+    WHY NOT "WRITE WHAT GOT SLOWER". Until 2026-10-13 a thin sample was written when slower and kept when faster. The kept half was reported faster as soon as a third sample arrived (12 of 14 findings one run after 1dd250d87), and the written half put one runner's time in the table for the next window to disagree with (test_regolden_bootstrap.py, 11.0 s from one run, 18.9 s median two runs later).
+    """
     units = dict(committed)
     for unit_id, ms in measured.items():
-        was = committed.get(unit_id)
-        thin = _too_few_for_faster(measured_stats.get(unit_id) or {})
-        if was is not None and ms is not None and ms < was and thin:
+        if unit_id in committed and _is_thin(measured_stats.get(unit_id) or {}):
             continue
         units[unit_id] = ms
     return units
-
-
-def _too_few_for_faster(unit_stats: Mapping[str, float]) -> bool:
-    """Whether a unit's sample is too small for the faster side (`MIN_FASTER_SAMPLES`). A unit with no recorded count is an old caller's and is judged as before."""
-    n = unit_stats.get("n")
-    return n is not None and n < MIN_FASTER_SAMPLES
-
-
-def _unit_spread_finding(
-    unit_id: str, was: float, p90: float, unit_stats: Mapping[str, float]
-) -> str | None:
-    """One unit's drift under `UNIT_SLOWER_STAT`/`UNIT_FASTER_STAT`, or None."""
-    label = "unit %r p90" % unit_id
-    if was == 0:
-        return drift_finding(label, was, p90) if abs(p90) >= MIN_UNIT_DRIFT_MS else None
-    typical = unit_stats.get(UNIT_SLOWER_STAT, p90)
-    slowest = unit_stats.get(UNIT_FASTER_STAT, p90)
-    n = unit_stats.get("n")
-    sample = "" if n is None else " of %d sample(s)" % n
-    if typical - was >= MIN_UNIT_DRIFT_MS and (typical - was) / was > DRIFT_THRESHOLD:
-        return (
-            "%s: committed %.4g, and the measured %s%s is %.4g, %.0f%% slower (over the %.0f%% limit; measured p90 %.4g)."
-            % (
-                label,
-                was,
-                UNIT_SLOWER_STAT,
-                sample,
-                typical,
-                (typical - was) / was * 100,
-                DRIFT_THRESHOLD * 100,
-                p90,
-            )
-        )
-    if _too_few_for_faster(unit_stats):
-        return None
-    if was - slowest >= MIN_UNIT_DRIFT_MS and (was - slowest) / was > DRIFT_THRESHOLD:
-        return (
-            "%s: committed %.4g, and the measured %s%s is %.4g, %.0f%% faster (over the %.0f%% limit; measured p90 %.4g)."
-            % (
-                label,
-                was,
-                UNIT_FASTER_STAT,
-                sample,
-                slowest,
-                (was - slowest) / was * 100,
-                DRIFT_THRESHOLD * 100,
-                p90,
-            )
-        )
-    return None
 
 
 def prune_units_to_manifests(units: dict[str, Any], root: Path) -> dict[str, Any]:
@@ -1864,6 +2021,7 @@ def refresh_lane_durations(
     *,
     dry_run: bool = False,
     compute: Callable[..., dict[str, Any]] = compute_lane_durations,
+    as_of: float | None = None,
 ) -> int:
     """T3.2: rewrite `path` from `limit` completed PR-full runs (success-only jobs; see REFRESH_PR_STATUS). `concurrency`, `$comment` and `defaultUnitMs` are PRESERVED verbatim -- this never guesses the operator's D-W1 ruling or hand-authored fallbacks; only `jobs`, `units`, `variantCosts` (measured from job logs, merged so an unmeasured entry keeps its prior value, named on stderr), `job_max_seconds`, `job_p90_minutes`, `gate_step_p90_seconds`, `unitParallelism` (derived from the runner label, prior value kept when underivable) and `refreshed_at` move. `--dry-run` computes and prints without writing, the one network call this box's own instructions permit running for real."""
     try:
@@ -1873,7 +2031,7 @@ def refresh_lane_durations(
     if not isinstance(existing, dict):
         existing = {}
 
-    computed = compute(repo, workflow, branch, limit)
+    computed = _compute_sample(compute, repo, workflow, branch, limit, as_of)
     # A STALE SAMPLE IS REFUSED HERE, NOT WARNED. MEASURED 2026-09-28: one `--refresh` drew a sample whose Quality / Security p90 read 9.9m (1.8m the minute before) and whose lanes all had NO unit-duration artifacts, then stamped `refreshed_at` = now over it. check-lane-budget.ts's check 5 reads that stamp as "measured today", so a fresh stamp on old runs silently defeats it. A report may warn and carry on; the one writer of the stamp may not.
     for run in computed.get("sampled_runs") or []:
         print(
@@ -1919,12 +2077,28 @@ def refresh_lane_durations(
     updated["refreshed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated["concurrency"] = existing.get("concurrency", 20)
     updated["jobs"] = {**existing.get("jobs", {}), **computed["jobs"]}
+    measured_stats = computed.get("unit_stats") or {}
     updated["units"] = prune_units_to_manifests(
-        refreshed_units(
-            existing.get("units", {}), computed["units"], computed.get("unit_stats") or {}
-        ),
+        refreshed_units(existing.get("units", {}), computed["units"], measured_stats),
         repo_root_for_pruning,
     )
+    # Named, never silent: a refresh that stamps `refreshed_at` while keeping most of the table says so.
+    kept_thin = sorted(
+        unit_id
+        for unit_id in computed["units"]
+        if unit_id in existing.get("units", {}) and _is_thin(measured_stats.get(unit_id) or {})
+    )
+    if kept_thin:
+        log.warn(
+            "budget_report --refresh: %d unit(s) measured by fewer than %d sampled run(s) KEEP their "
+            "committed value (%s%s); the check does not judge them either."
+            % (
+                len(kept_thin),
+                MIN_DRIFT_RUNS,
+                ", ".join(kept_thin[:3]),
+                ", ..." if len(kept_thin) > 3 else "",
+            )
+        )
     if "defaultUnitMs" in existing:
         updated["defaultUnitMs"] = existing["defaultUnitMs"]
     # How many units a lane's leg runs at once (quality-pytest's `-n`) is DERIVED from the runner label (see the module docstring's UNIT PARALLELISM). A lane this refresh could not derive keeps its prior value and is named: dropping it would silently turn a parallel lane back into a serial estimate.
@@ -1993,18 +2167,53 @@ def refresh_lane_durations(
         return 0
     path.write_text(payload, encoding="utf-8")
     print(
-        "lane-durations.json refreshed from %d sampled run(s): %d job(s), %d unit(s), "
-        "%d headroom job(s), %d other job p90(s), %d gate step p90(s)."
+        "lane-durations.json refreshed from %d sampled run(s): %d job(s), %d unit(s) measured "
+        "(%d kept on a thin sample), %d headroom job(s), %d other job p90(s), %d gate step p90(s)."
         % (
             limit,
             len(computed["jobs"]),
             len(computed["units"]),
+            len(kept_thin),
             len(computed["job_max_seconds"]),
             len(computed["job_p90_minutes"]),
             len(computed["gate_step_p90_seconds"]),
         )
     )
     return 0
+
+
+def _compute_sample(
+    compute: Callable[..., dict[str, Any]],
+    repo: str,
+    workflow: str,
+    branch: str,
+    limit: int,
+    as_of: float | None,
+) -> dict[str, Any]:
+    """`compute` over the live sample, or over the runs that had completed by `as_of` when one is given (`--as-of`)."""
+    if as_of is None:
+        return compute(repo, workflow, branch, limit)
+    return compute(repo, workflow, branch, limit, as_of=as_of)
+
+
+def sample_line(computed: Mapping[str, Any], as_of: float | None) -> str:
+    """One line naming the sampled runs, newest first, and the `--as-of` that reads this same sample again.
+
+    A verdict on a rolling sample is only comparable with another verdict on the SAME sample. A push completes or cancels a run between the pre-push check and the CI step, so the two read windows one run apart; this line is how either is re-judged on the other's sample.
+    """
+    runs = [run for run in computed.get("sampled_runs") or [] if isinstance(run, dict)]
+    if not runs:
+        return "sample: the measurement names no run."
+    done = [stamp for run in runs if isinstance(stamp := run.get("updated_at"), str)]
+    return "sample: %d run(s)%s, newest first: %s.%s" % (
+        len(runs),
+        ""
+        if as_of is None
+        else " completed by %s"
+        % datetime.fromtimestamp(as_of, tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        " ".join(str(run.get("id")) for run in runs),
+        " The same sample again: --check --as-of %s" % max(done) if done else "",
+    )
 
 
 def check_lane_durations(
@@ -2015,8 +2224,9 @@ def check_lane_durations(
     limit: int = DEFAULT_REFRESH_LIMIT,
     *,
     compute: Callable[..., dict[str, Any]] = compute_lane_durations,
+    as_of: float | None = None,
 ) -> int:
-    """T3.3: freshly measure, then compare against the COMMITTED file -- never writes. Fails (1) when any leg's measured p90 exceeds 12m, or a committed estimate drifts more than 25% from what was just measured."""
+    """T3.3: freshly measure, then compare against the COMMITTED file -- never writes. Fails (1) when any leg's measured p90 exceeds 12m, a job's committed estimate drifts more than 25% from what was just measured, a unit or a leg's unit sum drifts under the three-part rule at `MIN_DRIFT_RUNS`, or a measured unit has no row and costs a material amount over what it is priced at."""
     try:
         committed = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -2028,7 +2238,7 @@ def check_lane_durations(
         emit_findings([Keyed("lane-durations:unreadable", "not a JSON object")])
         return 1
 
-    computed = compute(repo, workflow, branch, limit)
+    computed = _compute_sample(compute, repo, workflow, branch, limit, as_of)
     # EVERY FINDING IS KEYED (`freshness.Keyed`, review d21f5510.1): `lane-durations:<class>:<lane, unit or job>`, never the count, the run id or the measured number, so the same finding keeps its key from run to run.
     findings: list[str] = [
         Keyed(
@@ -2051,10 +2261,21 @@ def check_lane_durations(
         if d:
             findings.append(Keyed("lane-durations:drift:job:%s" % key_part(lane), d))
 
-    unit_findings, unit_lanes = unit_drift_findings(
-        committed.get("units") or {}, computed["units"], computed.get("unit_stats")
+    # .ci/config/lane-durations.json -> the repo root, three levels up, so a fixture path reads its own tree's shard manifests (the same derivation the refresh prunes with).
+    tree_root = path.resolve().parent.parent.parent
+    # A measured unit with no evidence record (a compute that returned `units` alone) is counted thin: nothing says how many runs saw it.
+    measured_stats = {
+        unit_id: (computed.get("unit_stats") or {}).get(unit_id) or {}
+        for unit_id in computed["units"]
+    }
+    unit_findings, shape = unit_drift_findings(
+        committed.get("units") or {},
+        measured_stats,
+        parallelism=committed.get("unitParallelism") or {},
+        legs=unit_legs(tree_root),
     )
     findings.extend(unit_findings)
+    findings.extend(unpriced_unit_findings(committed, measured_stats, tree_root))
 
     # DRIFT ONLY for job_max_seconds -- NOT leg_over_budget_finding's 12-minute ceiling. Validate Promotion/Stage Artifacts are the two jobs D-W2 keeps OUTSIDE the lane-budget gate precisely because they are not lane-sharded; their own ceiling is check_job_timeout_headroom.py's 1.5x-headroom-under-timeout-minutes rule, a different policy this check must not silently double up on.
     committed_headroom = (committed.get("job_max_seconds") or {}).get("jobs") or {}
@@ -2070,27 +2291,52 @@ def check_lane_durations(
         if d:
             findings.append(Keyed("lane-durations:drift:job-max:%s" % key_part(name), d))
 
+    # The shape of what was judged, on a red and on a green alike: a count that collapses (no unit judged, a sample of two runs) is visible here and nowhere else.
+    no_row = sum(1 for unit_id in measured_stats if unit_id not in (committed.get("units") or {}))
+    shape_lines = [
+        "%d unit(s) measured: %d judged in %d leg sum(s), %d thin (fewer than %d sampled runs, not judged), %d with no row in the table."
+        % (
+            len(measured_stats),
+            shape["judged"],
+            shape["sums"],
+            shape["thin"],
+            MIN_DRIFT_RUNS,
+            no_row,
+        ),
+        sample_line(computed, as_of),
+    ]
+    if shape["pending"]:
+        shape_lines.append(
+            "%d thin unit(s) already sit a material move from the table, and become a finding once %d runs agree: %s%s"
+            % (
+                len(shape["pending"]),
+                MIN_DRIFT_RUNS,
+                "; ".join(shape["pending"][:5]),
+                "; ..." if len(shape["pending"]) > 5 else "",
+            )
+        )
     if findings:
         print("CI time budget check found %d issue(s):" % len(findings), file=sys.stderr)
         for f in findings:
             print("  - %s" % f, file=sys.stderr)
+        for line in shape_lines:
+            print("  %s" % line, file=sys.stderr)
         emit_findings(findings)
         return 1
     print(
-        "CI time budget check: %d job lane(s), %d unit(s) in %d unit lane sum(s), %d headroom job(s) sampled "
-        "from %d run(s), all within budget and within %.0f%% of committed (unit moves under %.0f s ignored; a unit reds slower on its %s, faster on its %s)."
+        "CI time budget check: %d job lane(s) and %d headroom job(s) within budget and within %.0f%% of committed; "
+        "a unit or a leg's unit sum drifts on %d agreeing runs, over %.0f%% and %.0f s of leg wall."
         % (
             len(computed["jobs"]),
-            len(computed["units"]),
-            unit_lanes,
             len(computed["job_max_seconds"]),
-            limit,
             DRIFT_THRESHOLD * 100,
-            MIN_UNIT_DRIFT_MS / 1000,
-            UNIT_SLOWER_STAT,
-            UNIT_FASTER_STAT,
+            MIN_DRIFT_RUNS,
+            DRIFT_THRESHOLD * 100,
+            MATERIAL_LEG_MS / 1000,
         )
     )
+    for line in shape_lines:
+        print("  %s" % line)
     return 0
 
 
@@ -2112,7 +2358,15 @@ def _run_summary(run: dict[str, Any]) -> dict[str, Any]:
     """The identity of one sampled run, so the report says WHICH runs it measured, not only how many."""
     return {
         key: run.get(key)
-        for key in ("id", "created_at", "head_branch", "event", "conclusion", "run_attempt")
+        for key in (
+            "id",
+            "created_at",
+            "updated_at",
+            "head_branch",
+            "event",
+            "conclusion",
+            "run_attempt",
+        )
     }
 
 
@@ -2286,7 +2540,25 @@ def main(argv: list[str]) -> int:
         default=None,
         help="override .ci/config/lane-durations.json's path (tests)",
     )
+    parser.add_argument(
+        "--as-of",
+        default=None,
+        metavar="ISO8601",
+        help="with --check/--refresh: sample only the runs that had completed by this UTC "
+        "time (2026-10-13T12:13:00Z), so a verdict is re-judged on the sample another run "
+        "of the check printed",
+    )
     args = parser.parse_args(argv)
+    as_of: float | None = None
+    if args.as_of is not None:
+        try:
+            stamp = datetime.fromisoformat(args.as_of)
+        except ValueError:
+            parser.error("--as-of %r is not an ISO 8601 time" % args.as_of)
+        if stamp.tzinfo is None:
+            # A time with no zone would be read in the machine's own, and the same flag would bound two samples on two machines.
+            parser.error("--as-of %r names no zone; end it in Z" % args.as_of)
+        as_of = stamp.timestamp()
 
     if args.refresh or args.check:
         lane_path = args.lane_durations or (paths.repo_root() / LANE_DURATIONS_REL_PATH)
@@ -2299,9 +2571,10 @@ def main(argv: list[str]) -> int:
                     args.branch,
                     args.refresh_limit,
                     dry_run=args.dry_run,
+                    as_of=as_of,
                 )
             return check_lane_durations(
-                lane_path, args.repo, args.workflow, args.branch, args.refresh_limit
+                lane_path, args.repo, args.workflow, args.branch, args.refresh_limit, as_of=as_of
             )
         except ghx.GhError as exc:
             print("budget_report: %s" % exc, file=sys.stderr)
