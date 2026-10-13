@@ -562,3 +562,20 @@ def test_the_common_stub_ledger_holds() -> None:
         timeout=180,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_launchable_resolves_the_program_through_pathext_on_windows(monkeypatch):
+    monkeypatch.setattr(common.shutil, "which", lambda name: r"C:\\node\\%s.cmd" % name)
+    assert common.launchable(["npm", "ci"], os_name="nt") == [r"C:\\node\\npm.cmd", "ci"]
+
+
+def test_launchable_leaves_a_program_it_cannot_find_for_the_caller_to_report(monkeypatch):
+    asked: list[str] = []
+    monkeypatch.setattr(common.shutil, "which", asked.append)
+    assert common.launchable(["npm", "ci"], os_name="nt") == ["npm", "ci"]
+    assert asked == ["npm"]
+
+
+def test_launchable_changes_nothing_off_windows(monkeypatch):
+    monkeypatch.setattr(common.shutil, "which", lambda name: "/usr/bin/" + name)
+    assert common.launchable(["npm", "ci"], os_name="posix") == ["npm", "ci"]

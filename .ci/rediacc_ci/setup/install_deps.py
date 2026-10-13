@@ -233,7 +233,7 @@ def spawn(argv: list[str], cwd: str | None = None) -> bool:
     `PermissionError` and every other `OSError` take the same arm: from the caller's point of view "the binary did not run" is one event, and bash's `Permission denied` is the same shape of line.
     """
     try:
-        return subprocess.run(argv, cwd=cwd, check=False).returncode == 0
+        return subprocess.run(common.launchable(argv), cwd=cwd, check=False).returncode == 0
     except OSError as exc:
         sys.stderr.write(
             "%s: %s\n"

@@ -168,7 +168,7 @@ def npm(args: list[str], **kwargs) -> int:
 
     `npm pack` writes the filename it created to stdout and its progress to stderr; the twin captures neither, and a port that captured either would change what a CI log contains and would hold a minutes-long global install silent until it finished.
     """
-    return subprocess.run(["npm", *args], check=False, **kwargs).returncode
+    return subprocess.run(common.launchable(["npm", *args]), check=False, **kwargs).returncode
 
 
 def main(argv: list[str]) -> int:
