@@ -169,7 +169,7 @@ export class CliRunner {
   }
 
   /** Run `rdc --config <namespace> <args>`. */
-  async run(args: string[]): Promise<CliResult> {
+  run(args: string[]): Promise<CliResult> {
     return this.exec(['--config', this.configName, ...args]);
   }
 
@@ -226,7 +226,7 @@ export class CliRunner {
   }
 
   /** Register a machine in the e2e-cli config (`machine add <name> --ip --user`). */
-  async addMachine(name: string, ip: string, user: string, port = '22'): Promise<CliResult> {
+  addMachine(name: string, ip: string, user: string, port = '22'): Promise<CliResult> {
     return this.run(['machine', 'add', name, '--ip', ip, '--user', user, '--port', port]);
   }
 }

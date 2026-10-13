@@ -104,7 +104,7 @@ export class KubeMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
   /** Install a k3s server or agent node (kube_install). */
-  async kubeInstall(opts: KubeInstallOptions): Promise<ExecResult> {
+  kubeInstall(opts: KubeInstallOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_install',
       mountPath: opts.mountPath,
@@ -121,7 +121,7 @@ export class KubeMethods {
   }
 
   /** Print the token new nodes present to join (kube_join_token). */
-  async kubeJoinToken(opts: KubeTargetOptions): Promise<ExecResult> {
+  kubeJoinToken(opts: KubeTargetOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_join_token',
       mountPath: opts.mountPath,
@@ -130,7 +130,7 @@ export class KubeMethods {
   }
 
   /** Join this machine to an existing control plane (kube_join). */
-  async kubeJoin(opts: KubeJoinOptions): Promise<ExecResult> {
+  kubeJoin(opts: KubeJoinOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_join',
       mountPath: opts.mountPath,
@@ -143,7 +143,7 @@ export class KubeMethods {
   }
 
   /** Drain and remove a node (kube_node_remove). */
-  async kubeNodeRemove(opts: KubeNodeRemoveOptions): Promise<ExecResult> {
+  kubeNodeRemove(opts: KubeNodeRemoveOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_node_remove',
       mountPath: opts.mountPath,
@@ -153,7 +153,7 @@ export class KubeMethods {
   }
 
   /** Re-extract the embedded k3s binary and restart (kube_upgrade). */
-  async kubeUpgrade(opts: KubeUpgradeOptions): Promise<ExecResult> {
+  kubeUpgrade(opts: KubeUpgradeOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_upgrade',
       mountPath: opts.mountPath,
@@ -163,7 +163,7 @@ export class KubeMethods {
   }
 
   /** Stop and remove the k3s node on this machine (kube_uninstall). */
-  async kubeUninstall(opts: KubeTargetOptions): Promise<ExecResult> {
+  kubeUninstall(opts: KubeTargetOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_uninstall',
       mountPath: opts.mountPath,
@@ -172,7 +172,7 @@ export class KubeMethods {
   }
 
   /** Print a reachable kubeconfig (kube_kubeconfig). */
-  async kubeKubeconfig(opts: KubeTargetOptions): Promise<ExecResult> {
+  kubeKubeconfig(opts: KubeTargetOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_kubeconfig',
       mountPath: opts.mountPath,
@@ -181,7 +181,7 @@ export class KubeMethods {
   }
 
   /** Check whether the API server is ready (kube_health). */
-  async kubeHealth(opts: KubeTargetOptions): Promise<ExecResult> {
+  kubeHealth(opts: KubeTargetOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_health',
       mountPath: opts.mountPath,
@@ -194,12 +194,12 @@ export class KubeMethods {
    * needs to host a whole-cluster fork of a DIFFERENT cluster (kube_fork_dest_prep).
    * Takes no params — it installs the fixed fork-dest package set.
    */
-  async kubeForkDestPrep(): Promise<ExecResult> {
+  kubeForkDestPrep(): Promise<ExecResult> {
     return this.testFunction({ function: 'kube_fork_dest_prep' });
   }
 
   /** Drain + stop a node so its image is fork/migrate-consistent (kube_prep_fork). */
-  async kubePrepFork(opts: KubePrepForkOptions): Promise<ExecResult> {
+  kubePrepFork(opts: KubePrepForkOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_prep_fork',
       mountPath: opts.mountPath,
@@ -213,7 +213,7 @@ export class KubeMethods {
    * operation=fork runs the F1-F8 PKI re-mint (fresh CA) + secret scrub + ROLE
    * rewrite; operation=migrate preserves the CA and regenerates only the leaf.
    */
-  async kubeIdentityRewrite(opts: KubeIdentityRewriteOptions): Promise<ExecResult> {
+  kubeIdentityRewrite(opts: KubeIdentityRewriteOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_identity_rewrite',
       mountPath: opts.mountPath,
@@ -235,7 +235,7 @@ export class KubeMethods {
    * so local-PV pods on a cluster-attached datastore schedule (carry-in 1: not
    * yet auto-wired at attach time, so the suites invoke the primitive).
    */
-  async kubeNodeLabel(opts: KubeNodeLabelOptions): Promise<ExecResult> {
+  kubeNodeLabel(opts: KubeNodeLabelOptions): Promise<ExecResult> {
     return this.testFunction({
       function: 'kube_node_label',
       mountPath: opts.mountPath,

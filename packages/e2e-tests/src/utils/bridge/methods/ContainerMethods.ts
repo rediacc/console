@@ -6,7 +6,7 @@ import type { ExecResult, TestFunctionOptions } from '../types';
 export class ContainerMethods {
   constructor(private readonly testFunction: (opts: TestFunctionOptions) => Promise<ExecResult>) {}
 
-  async containerStart(
+  containerStart(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -21,7 +21,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerStop(
+  containerStop(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -36,7 +36,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerRestart(
+  containerRestart(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -51,7 +51,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerLogs(
+  containerLogs(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -66,7 +66,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerExec(
+  containerExec(
     name: string,
     command: string,
     repository?: string,
@@ -83,7 +83,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerInspect(
+  containerInspect(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -98,7 +98,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerStats(
+  containerStats(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -113,7 +113,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerList(
+  containerList(
     repository?: string,
     datastorePath?: string,
     networkId?: string
@@ -126,7 +126,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerKill(
+  containerKill(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -141,7 +141,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerPause(
+  containerPause(
     name: string,
     repository?: string,
     datastorePath?: string,
@@ -156,7 +156,7 @@ export class ContainerMethods {
     });
   }
 
-  async containerUnpause(
+  containerUnpause(
     name: string,
     repository?: string,
     datastorePath?: string,

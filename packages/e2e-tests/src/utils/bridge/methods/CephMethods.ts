@@ -14,11 +14,11 @@ export class CephMethods {
   // Ceph Pool Functions
   // ===========================================================================
 
-  async cephHealth(): Promise<ExecResult> {
+  cephHealth(): Promise<ExecResult> {
     return this.testFunction({ function: 'ceph_health' });
   }
 
-  async cephPoolCreate(pool: string, pgNum?: string): Promise<ExecResult> {
+  cephPoolCreate(pool: string, pgNum?: string): Promise<ExecResult> {
     const resolvedPgNum = pgNum ?? process.env.CEPH_POOL_PG_NUM ?? DEFAULT_CEPH_POOL_PG_NUM;
     return this.testFunction({
       function: 'ceph_pool_create',
@@ -27,25 +27,25 @@ export class CephMethods {
     });
   }
 
-  async cephPoolDelete(pool: string): Promise<ExecResult> {
+  cephPoolDelete(pool: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_pool_delete',
       pool,
     });
   }
 
-  async cephPoolList(): Promise<ExecResult> {
+  cephPoolList(): Promise<ExecResult> {
     return this.testFunction({ function: 'ceph_pool_list' });
   }
 
-  async cephPoolInfo(pool: string): Promise<ExecResult> {
+  cephPoolInfo(pool: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_pool_info',
       pool,
     });
   }
 
-  async cephPoolStats(pool: string): Promise<ExecResult> {
+  cephPoolStats(pool: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_pool_stats',
       pool,
@@ -56,7 +56,7 @@ export class CephMethods {
   // Ceph Image Functions
   // ===========================================================================
 
-  async cephImageCreate(pool: string, image: string, size: string): Promise<ExecResult> {
+  cephImageCreate(pool: string, image: string, size: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_image_create',
       pool,
@@ -65,7 +65,7 @@ export class CephMethods {
     });
   }
 
-  async cephImageDelete(pool: string, image: string): Promise<ExecResult> {
+  cephImageDelete(pool: string, image: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_image_delete',
       pool,
@@ -73,14 +73,14 @@ export class CephMethods {
     });
   }
 
-  async cephImageList(pool: string): Promise<ExecResult> {
+  cephImageList(pool: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_image_list',
       pool,
     });
   }
 
-  async cephImageInfo(pool: string, image: string): Promise<ExecResult> {
+  cephImageInfo(pool: string, image: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_image_info',
       pool,
@@ -88,7 +88,7 @@ export class CephMethods {
     });
   }
 
-  async cephImageResize(pool: string, image: string, newSize: string): Promise<ExecResult> {
+  cephImageResize(pool: string, image: string, newSize: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_image_resize',
       pool,
@@ -97,7 +97,7 @@ export class CephMethods {
     });
   }
 
-  async cephImageMap(pool: string, image: string): Promise<ExecResult> {
+  cephImageMap(pool: string, image: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_image_map',
       pool,
@@ -105,7 +105,7 @@ export class CephMethods {
     });
   }
 
-  async cephImageUnmap(pool: string, image: string): Promise<ExecResult> {
+  cephImageUnmap(pool: string, image: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_image_unmap',
       pool,
@@ -118,7 +118,7 @@ export class CephMethods {
    * Maps the image, formats with specified filesystem, and unmaps.
    * Used to prepare images for COW mount by adding a filesystem.
    */
-  async cephImageFormat(
+  cephImageFormat(
     pool: string,
     image: string,
     filesystem = 'btrfs',
@@ -137,7 +137,7 @@ export class CephMethods {
   // Ceph Snapshot Functions
   // ===========================================================================
 
-  async cephSnapshotCreate(pool: string, image: string, snapshot: string): Promise<ExecResult> {
+  cephSnapshotCreate(pool: string, image: string, snapshot: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_snapshot_create',
       pool,
@@ -146,7 +146,7 @@ export class CephMethods {
     });
   }
 
-  async cephSnapshotDelete(pool: string, image: string, snapshot: string): Promise<ExecResult> {
+  cephSnapshotDelete(pool: string, image: string, snapshot: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_snapshot_delete',
       pool,
@@ -155,7 +155,7 @@ export class CephMethods {
     });
   }
 
-  async cephSnapshotList(pool: string, image: string): Promise<ExecResult> {
+  cephSnapshotList(pool: string, image: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_snapshot_list',
       pool,
@@ -163,7 +163,7 @@ export class CephMethods {
     });
   }
 
-  async cephSnapshotProtect(pool: string, image: string, snapshot: string): Promise<ExecResult> {
+  cephSnapshotProtect(pool: string, image: string, snapshot: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_snapshot_protect',
       pool,
@@ -172,7 +172,7 @@ export class CephMethods {
     });
   }
 
-  async cephSnapshotUnprotect(pool: string, image: string, snapshot: string): Promise<ExecResult> {
+  cephSnapshotUnprotect(pool: string, image: string, snapshot: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_snapshot_unprotect',
       pool,
@@ -181,7 +181,7 @@ export class CephMethods {
     });
   }
 
-  async cephSnapshotRollback(pool: string, image: string, snapshot: string): Promise<ExecResult> {
+  cephSnapshotRollback(pool: string, image: string, snapshot: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_snapshot_rollback',
       pool,
@@ -194,7 +194,7 @@ export class CephMethods {
   // Ceph Clone Functions
   // ===========================================================================
 
-  async cephCloneCreate(
+  cephCloneCreate(
     pool: string,
     image: string,
     snapshot: string,
@@ -209,7 +209,7 @@ export class CephMethods {
     });
   }
 
-  async cephCloneDelete(pool: string, clone: string): Promise<ExecResult> {
+  cephCloneDelete(pool: string, clone: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_clone_delete',
       pool,
@@ -217,7 +217,7 @@ export class CephMethods {
     });
   }
 
-  async cephCloneList(pool: string, image: string, snapshot: string): Promise<ExecResult> {
+  cephCloneList(pool: string, image: string, snapshot: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_clone_list',
       pool,
@@ -226,7 +226,7 @@ export class CephMethods {
     });
   }
 
-  async cephCloneFlatten(pool: string, clone: string): Promise<ExecResult> {
+  cephCloneFlatten(pool: string, clone: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'ceph_clone_flatten',
       pool,
@@ -238,7 +238,7 @@ export class CephMethods {
    * Mount a Ceph clone with Copy-on-Write overlay.
    * This is the CORE Ceph use case for read-write access to immutable clones.
    */
-  async cephCloneMount(
+  cephCloneMount(
     clone: string,
     mountPoint: string,
     cowSize?: string,
@@ -266,7 +266,7 @@ export class CephMethods {
    * @param pool - Ceph pool name
    * @param force - Force unmount even if busy
    */
-  async cephCloneUnmount(
+  cephCloneUnmount(
     clone: string,
     keepCow?: boolean,
     pool?: string,
