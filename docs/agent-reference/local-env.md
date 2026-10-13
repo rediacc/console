@@ -182,7 +182,8 @@ PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e --grep @real-provider
 In CI the spec is one unit of the `test-account-e2e` lane (`.ci/config/shards/test-account-e2e.json`), so it is part of `CI Complete` like every other account spec.
 The runner then reads Playwright's report and fails the leg unless the `@real-provider` test ran with status `expected`: a skip, a failure and a pass on retry all count against it.
 
-The spec's canary fails when a bumped Bitwarden pin starts returning PRF.
+The lock file also records whether the pinned extension returns PRF (`bitwarden.providesPrf`). The spec compares that with what the extension answers and runs the matching walk; when the two differ it fails with the steps to take, first of them flipping the field.
+`check:ci-real-provider-pins` fails a pull request when either pin is behind a stable upstream release that is past the release-age window, and names the bump command (`npm run real-provider:bump` in `private/account/e2e`).
 What that means, the bump procedure, the launch flags and the `agent-browser --extension` form for probing by hand are in [private/account/e2e/README.md](../../private/account/e2e/README.md), section *Real provider*.
 
 ## Run Functions (escape hatch, debugging only)

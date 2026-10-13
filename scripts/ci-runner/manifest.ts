@@ -3803,6 +3803,22 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check devcontainer pin upstream freshness',
     },
   },
+  {
+    id: 'check:ci-real-provider-pins',
+    env: {
+      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
+    run: 'npm run check:ci-real-provider-pins',
+    gate: true,
+    leaves: ['scripts/gates/check-real-provider-pin-freshness.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Check real-provider pin upstream freshness',
+    },
+  },
   // <<< gen-manifest: region 32
   {
     id: 'check:ci-embed-asset-versions',
