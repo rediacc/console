@@ -931,6 +931,23 @@ def test_planted_step_change_reds_once_the_window_agrees():
     assert len([f for f in findings if f.startswith("unit ") and "slower" in f]) == 1
 
 
+def test_a_faster_verdict_needs_a_window_and_a_slower_one_does_not():
+    """One run is no window: its only sample is its own slowest, so a speedup read from it is not judged, for the unit or for the lane's sum. A slowdown from the same single run still reds."""
+    unit = "account-e2e:01-auth/01-07-session-expiry.test.ts"
+    one = _stats([23_900.0])
+    assert br.unit_drift_findings({unit: 35_530.0}, {unit: one["p90"]}, {unit: one}) == ([], 1)
+    # CONTROL: the same speedup over three samples is a finding, unit and lane sum both.
+    three = _stats([23_700.0, 23_800.0, 23_900.0])
+    findings, _ = br.unit_drift_findings({unit: 35_530.0}, {unit: three["p90"]}, {unit: three})
+    assert len(findings) == 2
+    assert "faster" in findings[0]
+    # CONTROL: a slowdown is judged at any count.
+    slow = _stats([71_000.0])
+    findings, _ = br.unit_drift_findings({unit: 35_530.0}, {unit: slow["p90"]}, {unit: slow})
+    assert [f for f in findings if f.startswith("unit ") and "slower" in f]
+    assert [f for f in findings if f.startswith("lane ")]
+
+
 def test_a_median_move_under_the_absolute_floor_is_still_noise():
     """The floor applies to the judged statistic: a 10 s unit whose median moves 40% (4 s) is not a finding."""
     unit = "pytest:small.py"
@@ -2500,3 +2517,43 @@ def test_control_an_unkeyed_lane_duration_finding_class_is_refused(tmp_path, mon
     monkeypatch.setattr(br, "unit_drift_findings", unkeyed)
     with pytest.raises(TypeError, match="unkeyed finding"):
         br.check_lane_durations(path, limit=10, compute=_fake_compute())
+
+
+def _run_aged(days: float, now: float) -> dict:
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now - days * 86_400))
+    return {"id": 1, "created_at": stamp}
+
+
+def test_a_lane_is_unmeasurable_unless_a_run_inside_the_retention_finished_its_job():
+    now = 1_800_000_000.0
+    lane = "ops-tutorials"
+    patterns = {lane: re.compile(r"^Ops Tutorials")}
+    done = [{"name": "Ops Tutorials (1/2)", "conclusion": "success"}]
+    cut = [{"name": "Ops Tutorials (1/2)", "conclusion": "cancelled"}]
+
+    def split(runs, jobs, days=3, pats=patterns):
+        return br.split_unmeasurable_lanes([lane], runs, jobs, pats, days, now)
+
+    # Every run past the retention: nothing could hold an artifact.
+    assert split([_run_aged(4, now), _run_aged(9, now)], [done, done]) == ([], [lane])
+    # A fresh run cancelled before the lane's job finished uploads nothing either.
+    assert split([_run_aged(0.1, now), _run_aged(4, now)], [cut, done]) == ([], [lane])
+    # CONTROL: a fresh run that finished the lane's job and still left no artifact is the finding.
+    assert split([_run_aged(0.1, now), _run_aged(4, now)], [done, done]) == ([lane], [])
+    # CONTROLS, each failing closed: an unread retention record, a run with no date, a lane with no pattern.
+    assert split([_run_aged(4, now)], [done], days=None) == ([lane], [])
+    assert split([{"id": 2, "created_at": None}], [done]) == ([lane], [])
+    assert split([_run_aged(0.1, now)], [cut], pats={}) == ([lane], [])
+    assert br.split_unmeasurable_lanes([], [_run_aged(4, now)], [done], patterns, 3, now) == (
+        [],
+        [],
+    )
+
+
+def test_the_artifact_retention_is_read_from_the_committed_record(tmp_path):
+    assert br.artifact_retention_days(br.paths.repo_root()) == 3
+    assert br.artifact_retention_days(tmp_path) is None
+    record = tmp_path / br.ACTIONS_RETENTION_REL_PATH
+    record.parent.mkdir(parents=True)
+    record.write_text('{"days": true}', encoding="utf-8")
+    assert br.artifact_retention_days(tmp_path) is None
