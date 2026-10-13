@@ -66,7 +66,7 @@ RULE T: ELEVEN TWIN DEFECTS FIXED (PLAN-retire-bash-oracles, task B4)
 WHAT THIS PORT DOES NOT CLAIM, stated rather than left to a reader
 --------------------------------------------------------------------------
   THE TTY ARMS OF `devbox_exec`. `-i` and `-t` depend on whether fd 0 and fd 1 are terminals; the differential runs both sides with stdin on `/dev/null` and stdout on a capture file, so only the both-false arm is compared. The two tty arms are ported line for line and covered by in-process unit cases in `test_core_devbox.py`, not by the ledger.
-  THE HOST-FACT ARMS OF `devbox_up`. `[ -e /dev/kvm ]`, `[ -e /dev/net/tun ]` and `[[ -S /var/run/docker.sock ]]` read the real host. Both sides read the same host, so the arm the host takes is compared and the other arm of each is not; on the recording machine all three exist.
+  THE HOST-FACT ARMS OF `devbox_up`. `[ -e /dev/kvm ]`, `[ -e /dev/net/tun ]` and `[[ -S /var/run/docker.sock ]]` read the real host. The differential compares the arm the RECORDING host took (all three exist there, and its lease pool too): the driver answers `has_host_node`, `has_host_socket` and `lease_dir_ready` as that host did, since the frozen twin cannot be asked about another one. The other arm of each is covered in process by `test_core_devbox.py::test_up_drops_what_the_host_does_not_have`.
   ARITHMETIC ON A `base_port` THAT IS NOT A NUMBER. `bash_int()` covers decimal, octal and hex; anything else (a variable name, which shell arithmetic would dereference, or `08`, which it rejects) raises `DevboxError` rather than guessing.
   THAT THE CONTAINER THESE ARGV DESCRIBE REALLY SERVES. The stub farm proves the argv; `.ci/rediacc_ci/tests/gates/test_gate_devbox_slug.py` names the real-proxy claim as its blind spot 1 for the same reason.
 
@@ -1484,6 +1484,21 @@ class Devbox:
             return os.path.isdir(runtime) and os.stat(runtime).st_uid == self.uid
         return False
 
+    # THE REST OF WHAT `up` READS ABOUT THE HOST, one method per shell test, for the reason `owns_runtime_dir` has one: the differential's frozen transcripts carry the recording host's answers (all four true), and a port that asked the running host failed `up-create` and `up-existing` on the first one that lacked any of them. GitHub's runner has no `/run/user/1000` to hold the pool (run 38409515814, job 115339511423).
+    def has_host_node(self, path: str) -> bool:
+        """`[ -e <path> ]` for `/dev/kvm` and `/dev/net/tun`: present on this host, whatever it is."""
+        return os.path.exists(path)
+
+    def has_host_socket(self, path: str) -> bool:
+        """`[[ -S <path> ]]` for `/var/run/docker.sock`: a socket, after symlinks. Anything else, and a path that cannot be read, is no socket."""
+        with contextlib.suppress(OSError):
+            return stat.S_ISSOCK(os.stat(path).st_mode)
+        return False
+
+    def lease_dir_ready(self, path: str) -> bool:
+        """`[ -d <path> ] || mkdir -m 700 <path>`: the lease pool is there, made now when it was not."""
+        return os.path.isdir(path) or self.make_lease_dir(path)
+
     def missing_binds(self, *_argv: str) -> int:
         """`devbox_missing_binds`, `.ci/lib/devbox.sh:492-513`: each bind destination the existing container does NOT have mounted.
 
@@ -1863,9 +1878,9 @@ class Devbox:
             docker_gid = ""
 
         kvm_gid = ""
-        if os.path.exists("/dev/kvm"):
+        if self.has_host_node("/dev/kvm"):
             _, kvm_gid = self.value(["stat", "-c", "%g", "/dev/kvm"], err=NULL)
-        tun_dev = "/dev/net/tun" if os.path.exists("/dev/net/tun") else ""
+        tun_dev = "/dev/net/tun" if self.has_host_node("/dev/net/tun") else ""
 
         base = decimal(base_port)
         vscode_port = base + DEVBOX_OFFSET_VSCODE
@@ -1876,9 +1891,8 @@ class Devbox:
         for pair in SCRIPT_BINDS:
             source, target = pair.split(":", 1)
             binds += ["-v", "%s/%s:%s:ro" % (self.devcontainer_dir, source, target)]
-        with contextlib.suppress(OSError):
-            if stat.S_ISSOCK(os.stat("/var/run/docker.sock").st_mode):
-                binds += ["-v", "/var/run/docker.sock:/var/run/docker.sock"]
+        if self.has_host_socket("/var/run/docker.sock"):
+            binds += ["-v", "/var/run/docker.sock:/var/run/docker.sock"]
         home = self.env.get("HOME", "")
         for pair in HOME_BINDS:
             relative, mode = pair.split(":", 1)
@@ -1893,7 +1907,7 @@ class Devbox:
         lease_env: list[str] = []
         status, lease_src = self.sub(self.core_lease_src)
         self.checked(status)
-        if lease_src and (os.path.isdir(lease_src) or self.make_lease_dir(lease_src)):
+        if lease_src and self.lease_dir_ready(lease_src):
             binds += ["-v", "%s:%s" % (lease_src, DEVBOX_CORE_LEASE_DEST)]
             lease_env = ["-e", "REDIACC_CORE_LEASE_DIR=%s" % DEVBOX_CORE_LEASE_DEST]
 

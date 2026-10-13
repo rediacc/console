@@ -465,10 +465,11 @@ Run 38389205702 (PR #600, 2026-10-13) was the first on its branch in which the t
 | git identity | global config | none | 1 | a guard chain that stopped at the author check before the guard under test |
 | `CI` | unset | `true` | 1 | a gate taking its CI arm inside a test of its other arm |
 | git and load | 2.53, idle | 2.55, four busy cores | 1 | `git commit`'s detached maintenance child outliving the commit and stamping a backdated tree |
+| host paths | `/run/user/1000/rediacc-cores`, `/dev/kvm`, `/dev/net/tun`, a docker socket | no `/run/user/1000` | 2 | the lease pool bind, both `--device` words and the socket bind in a frozen `docker run` argv; found one run later (38409515814) |
 
 **The tell:** a differential fails on the runner with both sides plausible, and the differing bytes are a number, an order or a wording that no port chooses. The recorded side is then "what the twin printed on one machine".
 
-**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity instead (`devbox_shadow_driver.GOLDEN_HOST_IDS`), with one test that reads the unpinned default against the real host.
+**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity and host paths instead (`devbox_shadow_driver.GOLDEN_HOST_IDS`, `GOLDEN_HOST_NODES`), with one test per pin that reads the unpinned default against the real host.
 
 **The command that makes a local run mean something.** It runs one leg under another uid and gid, with no git identity, `CI=true`, an empty HOME and a scratch directory on ext4.
 
@@ -490,6 +491,17 @@ GNU coreutils come from Ubuntu's `gnu-coreutils` package, which installs each to
 - **`TMPDIR` has to stay short.** `tsx` binds a unix socket under it, and a path past 108 bytes fails every gate test that runs a TypeScript gate with `listen EINVAL`.
 - **Uid 1001 has no passwd entry in the namespace.** `ssh-keygen` refuses with `No user exists for uid 1001`, `gpg` finds no agent, and `ls -l` prints `1001` where the runner prints `runner`. Eleven tests in three files (`test_drills_universe_transfer.py`, `test_build_canonicalise_gpg_key.py`, `test_proxies_go_unit.py`) fail for that alone, and pass under the same `env -i` line without `unshare`.
 - **`CI=true` turns a missing tool into a refusal.** `test_gate_scrub_sentinel_empty.py` refuses without `aws`, which the runner has and a developer host need not.
+- **The filesystem is still the recording host's.** A user namespace changes the ids and nothing on disk, so `/run/user/1000`, `/dev/kvm`, `/dev/net/tun` and the docker socket all answer as they did when the golden was recorded. `test_core_devbox.py`'s `up-create` and `up-existing` passed under the command above and failed on the runner for exactly that. Each of the four reproduces the two failures alone once a mount namespace takes it away. The wrapper below runs first as the namespace's root, and the command above runs inside it.
+
+  ```bash
+  unshare --user --map-root-user --mount bash -c '
+    mount -t tmpfs tmpfs /run/user                    # no /run/user/<recorder uid>
+    mount --bind /dev/null /run/docker.sock           # a path that is no socket
+    exec "$@"' -- unshare --user --map-user=1001 --map-group=1001 env -i ...
+  ```
+
+  A device node cannot be unlinked from the host's `/dev`, so taking `/dev/kvm` away means a fresh `/dev`: bind the old one aside, mount a tmpfs with `mode=755` over it, and bind `null`, `zero`, `full`, `random`, `urandom`, `tty` and `shm` back. The default sticky mode makes every `> /dev/null` fail with `Permission denied`, and without a `devpts` of its own (`-o newinstance,ptmxmode=0666`, with `/dev/ptmx` linked to `pts/ptmx`) every pty test dies with `out of pty devices`.
+  The seam for a path is a method (`Devbox.has_host_node`, `has_host_socket`, `lease_dir_ready`, `owns_runtime_dir`) that the driver answers as the recorder did, never an `os.path` call inline.
 - **docker is outside the namespace.** A test that hands its uid to a real container gets files owned by the REAL uid 1001, which the caller cannot remove, and the next pytest session dies in its basetemp cleanup. One scratch directory per run, removed through a container, avoids it.
 - **HOME under the checkout's own path prefix** (`<repo>-home`) is folded as `<root>-home` by masks that replace the checkout first.
 

@@ -22,6 +22,8 @@ import pathlib
 import pty
 import re
 import shutil
+import socket
+import stat
 import subprocess
 import sys
 
@@ -437,6 +439,42 @@ def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
     return _without_delta_labels(old_out, scenario) == _without_delta_labels(new_out, scenario)
 
 
+DIVERGENCE_LINES = 12
+DIVERGENCE_WIDTH = 4000
+
+
+def divergence(scenario: str, old_out: str, new_out: str) -> str:
+    """The first lines the two transcripts disagree on, both sides, for the failure message.
+
+    A bare `assert equivalent(...)` prints pytest's elided repr of two transcripts tens of kilobytes long, which names no line: runs 38389205702 and 38409515814 each cost a round trip to learn WHAT diverged. A `docker run` argv is one long line, so each side is cut around the first differing column.
+    """
+    if scenario in BIND_SPELLING_SCENARIOS:
+        old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
+    old_lines = _without_delta_labels(old_out, scenario)
+    new_lines = _without_delta_labels(new_out, scenario)
+    found = [
+        "scenario %s diverged (%d twin lines, %d port lines)"
+        % (scenario, len(old_lines), len(new_lines))
+    ]
+    for index in range(max(len(old_lines), len(new_lines))):
+        old_line = old_lines[index] if index < len(old_lines) else "<no line>"
+        new_line = new_lines[index] if index < len(new_lines) else "<no line>"
+        if old_line == new_line:
+            continue
+        column = next(
+            (at for at, (a, b) in enumerate(zip(old_line, new_line, strict=False)) if a != b),
+            min(len(old_line), len(new_line)),
+        )
+        start = max(0, column - 200)
+        found.append("line %d, column %d:" % (index + 1, column))
+        found.append("  twin: %s" % old_line[start : start + DIVERGENCE_WIDTH])
+        found.append("  port: %s" % new_line[start : start + DIVERGENCE_WIDTH])
+        if len(found) > 3 * DIVERGENCE_LINES:
+            found.append("... and more")
+            break
+    return "\n".join(found)
+
+
 @pytest.mark.parametrize("scenario", SCENARIOS)
 def test_the_port_matches_the_live_twin(scenario: str) -> None:
     """The whole claim of this file, once per scenario, with the scenario's floor and its twin claims."""
@@ -452,7 +490,7 @@ def test_the_port_matches_the_live_twin(scenario: str) -> None:
     )
     if scenario in SCENARIO_CLAIMS:
         SCENARIO_CLAIMS[scenario](observations(old_out))
-    assert equivalent(scenario, old_out, new_out), "scenario %s diverged" % scenario
+    assert equivalent(scenario, old_out, new_out), divergence(scenario, old_out, new_out)
 
 
 @pytest.mark.parametrize("scenario", sorted(DELTA_LABELS))
@@ -902,6 +940,106 @@ def test_the_driver_answers_as_the_recording_host(tmp_path: pathlib.Path) -> Non
     assert box.owns_runtime_dir(str(tmp_path)) is False
 
 
+def test_up_reads_the_host_by_default(tmp_path: pathlib.Path) -> None:
+    """The driver pins the three probes `up` makes of the host, so every scenario above would still pass if a DEFAULT stopped reading it. These are the defaults, against real paths: a node, a socket, and the lease pool's `mkdir -m 700`."""
+    box = _quiet_box(io.BytesIO())
+    # `[ -e ]`: whatever this host has, and never a path that is not there.
+    assert box.has_host_node("/dev/null") is True
+    assert box.has_host_node(str(tmp_path / "missing")) is False
+    for node in driver.GOLDEN_HOST_NODES:
+        assert box.has_host_node(node) is os.path.exists(node)
+    # `[[ -S ]]`: a real socket, through a symlink too; a regular file and a missing path are not one.
+    listener = socket.socket(socket.AF_UNIX)
+    try:
+        listener.bind(str(tmp_path / "s"))
+        (tmp_path / "link").symlink_to(tmp_path / "s")
+        (tmp_path / "file").write_text("", encoding="utf-8")
+        assert box.has_host_socket(str(tmp_path / "s")) is True
+        assert box.has_host_socket(str(tmp_path / "link")) is True
+        assert box.has_host_socket(str(tmp_path / "file")) is False
+        assert box.has_host_socket(str(tmp_path / "missing")) is False
+    finally:
+        listener.close()
+    # `[ -d ] || mkdir -m 700`: made once at mode 700, an answer when it is already there, and no answer under a parent that is not.
+    pool = tmp_path / "pool"
+    assert box.lease_dir_ready(str(pool)) is True
+    assert stat.S_IMODE(pool.stat().st_mode) == 0o700
+    assert box.lease_dir_ready(str(pool)) is True
+    assert box.lease_dir_ready(str(tmp_path / "missing" / "pool")) is False
+    assert not (tmp_path / "missing").exists()
+
+
+def test_the_driver_answers_for_the_recorded_devices_and_no_others(tmp_path: pathlib.Path) -> None:
+    """`GoldenHostDevbox` says yes to exactly what the recording host had, and its lease answer never makes a directory."""
+    box = driver.GoldenHostDevbox(
+        {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent"},
+        stdout=io.BytesIO(),
+        stderr=io.BytesIO(),
+        host_ids=driver.GOLDEN_HOST_IDS,
+    )
+    assert [box.has_host_node(node) for node in driver.GOLDEN_HOST_NODES] == [True, True]
+    assert box.has_host_node("/dev/null") is False
+    assert box.has_host_socket(driver.GOLDEN_DOCKER_SOCKET) is True
+    assert box.has_host_socket(str(tmp_path)) is False
+    assert box.lease_dir_ready(driver.GOLDEN_RUNTIME_DIR + "/rediacc-cores") is True
+    assert box.lease_dir_ready(str(tmp_path / "pool")) is False
+    assert not (tmp_path / "pool").exists()
+
+
+class BareHostDevbox(driver.GoldenHostDevbox):
+    """The recording host's ids on a host with none of the four: no kvm, no tun, no docker socket, no runtime dir."""
+
+    def owns_runtime_dir(self, _runtime: str) -> bool:
+        return False
+
+    def has_host_node(self, _path: str) -> bool:
+        return False
+
+    def has_host_socket(self, _path: str) -> bool:
+        return False
+
+
+# The words `up` adds to `docker run` only where the host has the thing, as the contiguous runs the argv carries them in. 993 is the stub farm's `stat -c %g /dev/kvm`.
+HOST_ONLY_RUNS = (
+    ["-v", "/var/run/docker.sock:/var/run/docker.sock"],
+    ["-v", driver.GOLDEN_RUNTIME_DIR + "/rediacc-cores:" + devbox.DEVBOX_CORE_LEASE_DEST],
+    ["--device", "/dev/kvm"],
+    ["--device", "/dev/net/tun"],
+    ["--group-add", "993", "--cap-add", "NET_ADMIN", "--cap-add", "SYS_ADMIN"],
+    ["-e", "REDIACC_CORE_LEASE_DIR=" + devbox.DEVBOX_CORE_LEASE_DEST],
+)
+
+
+def _first_run(transcript: str, label: str) -> list[str]:
+    step = observations(transcript)[label]
+    assert status_of(step) == 0
+    return next(call for call in calls_of(step) if call[1:4] == ["run", "-d", "--name"])
+
+
+def _without_run(argv: list[str], words: list[str]) -> list[str]:
+    """`argv` with its ONE occurrence of the contiguous `words` cut out; a run that is absent or repeated fails here by name."""
+    starts = [at for at in range(len(argv)) if argv[at : at + len(words)] == words]
+    assert len(starts) == 1, "%r occurs %d time(s) in the `docker run` argv" % (words, len(starts))
+    return argv[: starts[0]] + argv[starts[0] + len(words) :]
+
+
+def test_up_drops_what_the_host_does_not_have(monkeypatch) -> None:
+    """The arm the differential cannot compare: on a host with no kvm, tun, docker socket or runtime dir, `up` still creates the devbox, and its `docker run` is the recorded one minus exactly those words.
+
+    This is also what proves the driver's pins are the ONLY way those words reach the argv: it runs on whatever host the suite is on, and the recording machine has all four.
+    """
+    # CONTROL: the same step as the recording host saw it carries every run, once. `_without_run` asserts that.
+    expected = _first_run(new_transcript("up-create"), "ok")
+    for words in HOST_ONLY_RUNS:
+        expected = _without_run(expected, words)
+    monkeypatch.setattr(driver, "GoldenHostDevbox", BareHostDevbox)
+    bare = _first_run(new_transcript("up-create"), "ok")
+    assert bare == expected
+    # The docker group's gid is the stub farm's getent answer, not a host probe: it stays.
+    assert bare.count("--group-add") == 1
+    assert "--device" not in bare
+
+
 # -- the licence, and the tools the scenarios really use ---------------------
 
 
@@ -1112,8 +1250,8 @@ def test_delta_d1_a_host_with_no_docker_group_still_creates_the_devbox() -> None
     obs = port_obs("up-create")["no-group"]
     assert status_of(obs) == 0
     run = next(call for call in calls_of(obs) if call[1:4] == ["run", "-d", "--name"])
-    # The only `--group-add` left is the kvm group's, on a host that has /dev/kvm; the docker group's is gone and its gid env is empty.
-    assert run.count("--group-add") == (1 if os.path.exists("/dev/kvm") else 0)
+    # The only `--group-add` left is the kvm group's (the driver answers as the recording host, which has /dev/kvm); the docker group's is gone and its gid env is empty.
+    assert run.count("--group-add") == 1
     assert "DOCKER_GID=" in run
     assert any("No docker group on this host" in line for line in errs_of(obs))
 
