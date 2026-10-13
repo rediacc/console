@@ -53,13 +53,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 <!-- queue:inflight:begin -->
 - Mode: stop_hook on; turbo off; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
-- Branch: 1008-1, no PR yet.
-- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-retire-bash-oracles.md, as its `Plan:` line unless the body names a plan first.
+- Branch: 1008-1, PR #600 open.
+- Plans on the PR (8):
+  - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-cd-errors-in-ci.md -- 5 of 6 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-plan-dependencies.md -- 12 of 12 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 410 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a239d663cd52c1bfb, worker:ad0f9f274a269c9cb.
-- Leased items: 2: #05829121 (worker:ad0f9f274a269c9cb, d778be9d), #6361fc5b (worker:a239d663cd52c1bfb, d778be9d).
-- Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts after this branch's PR merges.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 441 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a1937821b4fedafa6.
+- Leased items: 3: #110bf023 (worker:2119135, d778be9d), #6361fc5b (worker:bchs4ba1j, d778be9d), #ff3ab826 (worker:a1937821b4fedafa6, d778be9d).
+- Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; starts on the next branch after PR #600 merges.
 <!-- queue:inflight:end -->
 
 ## Promoted

@@ -1,13 +1,12 @@
-## SESSION d778be9d 2026-10-13T02:04:13Z
+## SESSION d778be9d 2026-10-13T02:52:26Z
 
 ## Where things stand
-Draft PR rediacc/console#600 is open on 1008-1 (submodule PRs rediacc/account#96, rediacc/renet#117). Its first CI run (38321186144, head 85613a82) was RED on one job only, Quality / Security, step "CI time budget freshness"; the watchdog cancelled the rest. The Plan implementation clock step PASSED in that run, so it is not a CI concern.
-Fixed locally and not yet pushed to the console: the budget freshness check (46be5e863, a82b9a9f2), run.ts merging a dropped gate's pass into an advanced receipt (96d1689e3, aa0afb850, 72c1e5b21), the midnight date flake (8e025f726), scp under xargs replace mode (c3ac54d75 .. 6c8a83ae9), the xargs sibling sweep for the review-file and suppression guards (c5c2557c9, 84b5a8c3a, 39a1b6b81, 5f353f99b), and today's dependency releases (2a2c12ef2; account 1384f5b, pushed).
-Open item from the sweep: #ff3ab826, a tool's output option (sort -o) is not read as a write by the review-file guard.
-Known transient: budget_report's `gh api` call can time out under load inside ci:quick (freshness:unkeyed-failure:lane-durations); the gate passes on its own.
+Draft PR rediacc/console#600 on 1008-1 (submodule PRs rediacc/account#96 at 1384f5b, rediacc/renet#117). The console head is now 9a8c475a0, pushed 2026-10-13 about 03:20Z as a red-fix push; the PR body block was synced after it.
+The first CI run (38321186144) was red on Quality / Security, step "CI time budget freshness"; the fix (46be5e863, a82b9a9f2) is in the pushed head, with the gh timeout retry (d5df1dd69), the scp and xargs guard fixes, the midnight flake fix, run.ts merge fix and today's dependency lockfiles.
+A new CI run on 9a8c475a0 is being watched by background task bchs4ba1j (log: scratchpad ci-watch-600b.log); the push hook's own watch is item #110bf023. No per-commit review finding is open.
+Item #ff3ab826 (a tool's output option is not read as a write by the review-file guard): an opus writer sub-agent (id a1937821b4fedafa6) is building `shellscan.output_landings` in scratchpad/ffclone and delivers scratchpad/ff.patch; it stays open for review feedback. Design: a non-writer table, refuse otherwise; rm/mkdir/chmod and git checkout/restore/rm/mv/reset keep today's verdict.
 
 ## Next action
-1. `worklist.py --review-commit d778be9d`; commit agent/pr/1008-1.md, STATE.md, the worklist log (PR-TASK: 8ed364fe).
-2. `npm run ci:quick` on a STILL tree (no edits, no commits while it runs); then `npx tsx scripts/ci-runner/run.ts --only <gate>` for each dropped gate; then `git push`; then `PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 600 1008-1`.
-3. Watch with `.ci/scripts/ci/ci-trace.py --wait --until-final` in the background; fix each red at its cause.
-4. At CI Complete green: stop and wait for the operator. Do not merge unasked.
+1. When the CI watch ends (0 green, 1 red, 2 no verdict, 3 head moved): on red read `.ci/scripts/ci/ci-trace.py --json` and the job's `--errors`, fix the cause, commit, pre-push (ci:quick then each dropped gate with run.ts --only), push with TURBO_PUSH_REASON='red-fix: ...'. Tick #110bf023 once the verdict is read and acted on.
+2. When ff.patch arrives: check the writer's claims against the artifact, `git apply -3`, run the hook suite and the eight hook gates, commit, review-mark, tick #ff3ab826. Hold its push while a CI run on the head is in progress and not red.
+3. At CI Complete green on the head: stop and wait for the operator. Do not merge unasked.
