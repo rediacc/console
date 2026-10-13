@@ -3406,6 +3406,429 @@ def copy_landings(run, cwd, names=COPIERS, argv=None):
     return out
 
 
+# --------------------------------------------------------------------------- where a tool's own output lands (worklist item ff3ab826) ---------------------------------------------------------------------------
+#
+# A TOOL'S OUTPUT OPTION IS A WRITE, AND THE RULE IS A TABLE OF NON-WRITERS, NOT A LIST OF WRITERS. block_review_file_shell_write read redirects, `tee`, in-place editors, copiers, `truncate`, `dd of=` and interpreter programs, so `sort -o <file>`, `curl -o <file>`, `tar -cf <file>`, `git diff --output=<file>`, `find -fprint <file>`, `sed 'w <file>'`, `uniq <in> <file>` and `touch <file>` each wrote a
+# file the guard protects and was allowed (rc 0, 2026-10-13). Listing writers cannot close that: every tool spells its output its own way and the next one is always missing. `_NON_WRITERS` lists the commands whose words are READ, with the few spellings through which each does write, and `output_landings` reads every word of a command the table does not list as a file it may write.
+# Each row is `(short write letters, long write names, key= forms, positional rule, options taking a value)`: a write letter or name takes the rest of its word or the next word as the file written (`-oX`, `-uoX`, `-o X`, `--output=X`, `--output X`, and any prefix of a long name, the way getopt_long abbreviates; an ambiguous prefix is read as the write option, which over-reads), a key form is an operand
+# `key=X` (dd's `of=`), and the positional rule names the reading for a file written with no option: "second" (every operand after the first, as `uniq IN OUT`), "find" (the long names are find's primaries, `-delete` removing what the starting points hold), "sed" (the `w`/`W` commands and `s///w` flags of the script) and "awk" (a program that redirects, pipes or calls `system`). The last field lists
+# the options whose value is not an operand, so the "second" rule counts operands as the tool does. A git row is keyed `git <verb>` and parsed after the verb. The commands another reading already judges are not listed and yield nothing here: the copiers (`run_copies`), `tee`, `truncate`, an interpreter (`interpreter_program`), a shell handed `-c` or an `eval` (their payload is walked as runs of its own) and
+# an `npx`/`npm exec` whose command was walked. `rm`, `mkdir`, `chmod` and the git verbs that rewrite the working tree are listed as reading on purpose: refusing them is a separate policy decision, and the table keeps the verdict each had. The shell builtins are listed because a word of theirs is a name, a number or an assignment (`export P=<path>`, `read f`), which a guard resolving words in the
+# run's directory would otherwise read as a file. A SHELL FUNCTION IS UNLISTED: the walk reads its body where it is defined and does not bind the call's arguments to `$1`, so `f() { touch "$1"; }; f <file>` is known only by the call's own words, and they are read as files it may write.
+_READS: tuple = ("", (), (), "", ())
+_GIT_OUTPUT: tuple = ("", ("output",), (), "", ())
+_AWK_SHORT_VALUES = ("f", "F", "v", "e", "i", "l", "E")
+_AWK_LONG_VALUES = ("file", "field-separator", "assign", "source", "include", "load", "exec")
+_AWK: tuple = (
+    "opd",
+    ("pretty-print", "profile", "dump-variables"),
+    (),
+    "awk",
+    (*_AWK_SHORT_VALUES, *_AWK_LONG_VALUES),
+)
+_SED: tuple = ("", (), (), "sed", ())
+# Commands that print what they read, or answer a question about it.
+_FILE_READERS = ("cat", "tac", "zcat", "head", "tail", "more", "wc", "nl", "stat", "ls", "file")
+_TEXT_READERS = ("diff", "cmp", "comm", "cut", "tr", "rev", "fold", "paste", "column", "od")
+_SEARCH_READERS = ("grep", "egrep", "fgrep", "zgrep", "rg", "jq", "bat", "hexdump", "strings")
+_PATH_READERS = ("basename", "dirname", "realpath", "readlink", "du", "df", "test", "[", "which")
+_SUM_READERS = ("sha256sum", "sha1sum", "sha512sum", "md5sum", "cksum", "date", "seq", "expr")
+# Shell builtins (and `sleep`), whose words are names, numbers and assignments.
+_SHELL_WORDS = ("echo", "printf", "cd", "pushd", "popd", "pwd", "true", "false", ":", "sleep")
+_SHELL_NAMES_ONLY = ("export", "declare", "local", "readonly", "typeset", "set", "unset", "let")
+_SHELL_FLOW = ("read", "mapfile", "readarray", "shift", "wait", "exit", "return", "break")
+_SHELL_QUERIES = ("continue", "type")
+# Listed to keep the verdict each had; whether to refuse them is a policy decision of its own.
+_KEPT_VERDICT = ("rm", "mkdir", "chmod")
+_GIT_READ_VERBS = ("status", "blame", "ls-files", "grep", "rev-parse", "ls-tree", "cat-file")
+_GIT_PLUMBING_READS = ("rev-list", "check-ignore", "shortlog")
+# `add` and `commit` write the index and history, never a file they name.
+_GIT_INDEX_VERBS = ("add", "commit")
+_GIT_KEPT_VERDICT = ("checkout", "restore", "rm", "mv", "reset")
+_GIT_LISTED = (*_GIT_READ_VERBS, *_GIT_PLUMBING_READS, *_GIT_INDEX_VERBS, *_GIT_KEPT_VERDICT)
+_NON_WRITERS: dict[str, tuple] = {
+    **dict.fromkeys(
+        (*_FILE_READERS, *_TEXT_READERS, *_SEARCH_READERS, *_PATH_READERS, *_SUM_READERS),
+        _READS,
+    ),
+    **dict.fromkeys((*_SHELL_WORDS, *_SHELL_NAMES_ONLY, *_SHELL_FLOW, *_SHELL_QUERIES), _READS),
+    **dict.fromkeys(_KEPT_VERDICT, _READS),
+    "sort": ("o", ("output",), (), "", ()),
+    "shuf": ("o", ("output",), (), "", ()),
+    "tree": ("o", (), (), "", ()),
+    "less": ("oO", ("log-file", "LOG-FILE"), (), "", ()),
+    "uniq": ("", (), (), "second", ("f", "s", "w", "skip-fields", "skip-chars", "check-chars")),
+    "xxd": ("", (), (), "second", ("c", "g", "l", "o", "s", "n", "R")),
+    "dd": ("", (), ("of",), "", ()),
+    "find": ("", ("fprint", "fprint0", "fprintf", "fls", "delete"), (), "find", ()),
+    "sed": _SED,
+    "gsed": _SED,
+    "awk": _AWK,
+    "gawk": _AWK,
+    "mawk": _AWK,
+    "nawk": _AWK,
+    **dict.fromkeys(("git diff", "git log", "git show", "git diff-tree"), _GIT_OUTPUT),
+    **dict.fromkeys(["git %s" % verb for verb in _GIT_LISTED], _READS),
+}
+# The commands whose writes another reading of this module places.
+_LANDS_ELSEWHERE = frozenset((*COPIERS, "tee", "truncate"))
+# A word that opens with a scheme names a page, not a file on disk.
+_LANDING_URL = re.compile(r"\A[A-Za-z][A-Za-z0-9+.-]*://")
+# How far into a short bundle a value may start; no tool has this many letters, and the cap keeps one long word from costing its length squared.
+_BUNDLE_TAILS = 1024
+_SED_SIMPLE = frozenset("=dDgGhHnNpPxzFlqQ")
+_AWK_LITERAL = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
+_AWK_COMMAND_SPLIT = re.compile(r"[\s<>|&;()]+")
+
+
+def _sed_address(script, i):
+    """The index after one sed address starting at `script[i]`, `i` itself when none starts there, or -1 for one that does not close."""
+    n = len(script)
+    if i < n and script[i] in "/\\":
+        delim = script[i]
+        i += 1
+        if delim == "\\":
+            if i >= n:
+                return -1
+            delim = script[i]
+            i += 1
+        i = _sed_delimited(script, i, delim, True)
+        while 0 <= i < n and script[i] in "IM":
+            i += 1
+        return i
+    if i < n and script[i] == "$":
+        return i + 1
+    while i < n and (script[i].isdigit() or script[i] in "~+"):
+        i += 1
+    return i
+
+
+def _sed_delimited(script, i, delim, regex):
+    """The index after the `delim` that closes the part starting at `script[i]`, or -1. A backslash escapes the next character, and in a regex a bracket expression holds the delimiter literally (`s/[/]/x/`, GNU sed 4.9)."""
+    n = len(script)
+    while i < n:
+        ch = script[i]
+        if ch == "\\":
+            i += 2
+            continue
+        if ch == delim:
+            return i + 1
+        if regex and ch == "[":
+            close = i + 1
+            if close < n and script[close] == "^":
+                close += 1
+            if close < n and script[close] == "]":
+                close += 1
+            close = script.find("]", close)
+            if close < 0:
+                return -1
+            i = close
+        i += 1
+    return -1
+
+
+def _line_end(script, i):
+    """The index of the newline that ends the line `script[i]` is on (an escaped newline continues it), else the script's length."""
+    n = len(script)
+    while i < n and script[i] != "\n":
+        i += 2 if script[i] == "\\" else 1
+    return min(i, n)
+
+
+def _sed_parsed_writes(script):
+    """The file names a sed script writes, read command by command the way GNU sed 4.9 reads it, or None when a command here is not one this reading knows."""
+    out: list[str] = []
+    n = len(script)
+    i = 0
+    while i < n:
+        if script[i] in " \t\n;}":
+            i += 1
+            continue
+        if script[i] == "#":
+            i = _line_end(script, i)
+            continue
+        i = _sed_address(script, i)
+        if i < 0:
+            return None
+        while i < n and script[i] in " \t":
+            i += 1
+        if i < n and script[i] == ",":
+            i = _sed_address(script, i + 1)
+            if i < 0:
+                return None
+        while i < n and script[i] in " \t!":
+            i += 1
+        if i >= n:
+            return None
+        cmd = script[i]
+        i += 1
+        if cmd == "{":
+            continue
+        if cmd in _SED_SIMPLE:
+            while i < n and (script[i].isdigit() or script[i] in " \t"):
+                i += 1
+            continue
+        if cmd in "aiceRr":
+            i = _line_end(script, i)
+            continue
+        if cmd in ":btTv":
+            while i < n and script[i] not in ";\n":
+                i += 1
+            continue
+        if cmd in "wW":
+            end = _line_end(script, i)
+            out.append(script[i:end].strip())
+            i = end
+            continue
+        if cmd in "sy" and i < n:
+            delim = script[i]
+            i = _sed_delimited(script, i + 1, delim, cmd == "s")
+            if i >= 0:
+                i = _sed_delimited(script, i, delim, False)
+            if i < 0:
+                return None
+            while cmd == "s" and i < n and (script[i].isdigit() or script[i] in "gpIiMme"):
+                i += 1
+            if cmd == "s" and i < n and script[i] == "w":
+                end = _line_end(script, i)
+                out.append(script[i + 1 : end].strip())
+                i = end
+            continue
+        return None
+    return out
+
+
+def _sed_writes(script):
+    """The file names a sed script writes: its `w` and `W` commands and the `w` flag of an `s` command, each taking the rest of its line. A script this reading cannot follow is read in the safe direction: everything after each `w` or `W` on its line may be a file."""
+    found = _sed_parsed_writes(script)
+    if found is not None:
+        return [name for name in found if name]
+    out: list[str] = []
+    for line in script.split("\n"):
+        out.extend(line[at + 1 :].strip() for at, ch in enumerate(line) if ch in "wW")
+    return [name for name in out if name]
+
+
+def _awk_writes(program):
+    """The strings an awk program may write to or run, or None for a program that writes nothing: one whose text outside its string literals neither redirects (`>`), pipes (`|`) nor calls `system`. For one that does, every string literal, whole (a `print > "file"` target) and split into words (a `print | "cmd"` or `system("cmd")` command line). It does not tell a comparison from a redirect, which only widens the reading."""
+    bare = _AWK_LITERAL.sub('""', program).replace("||", "")
+    if not (">" in bare or "|" in bare or "system" in bare):
+        return None
+    out: list[str] = []
+    for m in _AWK_LITERAL.finditer(program):
+        out.append(m.group(1))
+        out.extend(w for w in _AWK_COMMAND_SPLIT.split(m.group(1)) if w and w != m.group(1))
+    return out
+
+
+def _long_named(names, key):
+    """The first long name among `names` that `key` spells: itself, else one it is a prefix of. None when it spells none or is empty; a one-letter entry is a short option and never a long name."""
+    longs = [n for n in names if len(n) > 1]
+    if not key:
+        return None
+    if key in longs:
+        return key
+    return next((n for n in longs if n.startswith(key)), None)
+
+
+def _listed_parse(spec, argv):
+    """`(landings, operands, valued, dangling)` for the argv of a command `_NON_WRITERS` lists: the values of its write options and key forms, the operands, `(option, value)` for every option of the row's last field, and whether the argv ends in a write option still waiting for its value (the word xargs appends next)."""
+    letters, longs, keys, _rule, values = spec
+    out: list[str] = []
+    operands: list[str] = []
+    valued: list[tuple[str, str]] = []
+    dangling = False
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        k += 1
+        if arg == "--":
+            operands.extend(argv[k:])
+            break
+        if arg.startswith("--"):
+            key, eq, value = arg[2:].partition("=")
+            writes = _long_named(longs, key) is not None
+            named = _long_named(values, key)
+            if not writes and named is None:
+                continue
+            if not eq:
+                if k >= len(argv):
+                    dangling = writes
+                    break
+                value = argv[k]
+                k += 1
+            if writes:
+                out.append(value)
+            else:
+                valued.append((named, value))
+            continue
+        if arg.startswith("-") and len(arg) > 1:
+            for at, letter in enumerate(arg[1:], 1):
+                if letter not in letters and letter not in values:
+                    continue
+                value = arg[at + 1 :]
+                if not value:
+                    if k >= len(argv):
+                        dangling = letter in letters
+                        break
+                    value = argv[k]
+                    k += 1
+                if letter in letters:
+                    out.append(value)
+                else:
+                    valued.append((letter, value))
+                break
+            continue
+        operands.append(arg)
+    for operand in operands:
+        key, eq, value = operand.partition("=")
+        if eq and key in keys:
+            out.append(value)
+    return out, operands, valued, dangling
+
+
+def _find_landings(spec, argv):
+    """`(landings, dangling)` for a find argv: the file each `-fprint`, `-fprint0`, `-fprintf` and `-fls` names, and the starting points when `-delete` removes what they hold."""
+    primaries = spec[1]
+    out: list[str] = []
+    dangling = False
+    for k, word in enumerate(argv):
+        if not word.startswith("-") or word[1:] not in primaries:
+            continue
+        if word == "-delete":
+            out.extend(_find_starts(argv))
+        elif k + 1 < len(argv):
+            out.append(argv[k + 1])
+        else:
+            dangling = True
+    return out, dangling
+
+
+def _listed_landings(spec, argv):
+    """`(landings, fed_too)` for the argv of a listed command: every file its row says it writes, and whether a word xargs appends to this argv is one more (a write option left waiting for its value, a "second" rule that counts operands, an awk editing in place)."""
+    rule = spec[3]
+    if rule == "find":
+        return _find_landings(spec, argv)
+    out, operands, valued, dangling = _listed_parse(spec, argv)
+    fed_too = dangling
+    if rule == "second":
+        out.extend(operands[1:])
+        fed_too = True
+    elif rule == "sed":
+        for script in _sed_in_place(argv)[1]:
+            out.extend(_sed_writes(script))
+    elif rule == "awk":
+        programs = [value for name, value in valued if name in ("e", "source")]
+        from_file = any(name in ("f", "file", "E", "exec") for name, _value in valued)
+        files = operands
+        if not programs and not from_file and operands:
+            programs, files = operands[:1], operands[1:]
+        # `gawk -i inplace` rewrites every file operand.
+        if any(name in ("i", "include") and value == "inplace" for name, value in valued):
+            out.extend(files)
+            fed_too = True
+        assigned = [value.partition("=")[2] for name, value in valued if name in ("v", "assign")]
+        assigned += [f.partition("=")[2] for f in files if "=" in f]
+        for program in programs:
+            found = _awk_writes(program)
+            # A redirect to a variable (`print > out`) writes what `-v out=<file>` or an `out=<file>` operand assigned.
+            if found is not None:
+                out.extend([*found, *(a for a in assigned if a)])
+    return out, fed_too
+
+
+def _unread_forms(word):
+    """Every file a word of an unlisted command may name: the word, each tail of a short bundle (`-cfX` holds `fX` and `X`) and what follows its first `=`."""
+    forms = [word]
+    if word.startswith("-") and not word.startswith("--"):
+        forms.extend(word[at:] for at in range(2, min(len(word), _BUNDLE_TAILS)))
+    _head, eq, tail = word.partition("=")
+    if eq and tail:
+        forms.append(tail)
+    return forms
+
+
+def _git_verb_at(argv):
+    """`(index of the verb, directory its -C options compose)` for a git argv, `(None, "")` when it names no verb; `_git_invocation`'s walk, keeping the place."""
+    here = ""
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        if arg == "-C" and k + 1 < len(argv):
+            here = os.path.join(here, argv[k + 1])
+            k += 2
+        elif arg in GIT_GLOBAL_WITH_VALUE and k + 1 < len(argv):
+            k += 2
+        elif arg.startswith("-"):
+            k += 1
+        else:
+            return k, here
+    return None, ""
+
+
+def _judged_elsewhere(run, base, argv):
+    if base in _LANDS_ELSEWHERE or base == "eval" or base.startswith(INTERPRETER_NAMES):
+        return True
+    if base in SHELL_NAMES:
+        return _shell_payload(argv)[0] == "c"
+    return base in ("npx", "npm") and bool(run.launched)
+
+
+def output_landings(run, argv=None, cwd=None):
+    """`(path word, how)` for every file a walked run may write through its own words, in order, each once. `how` is "option" when the word is what a command `_NON_WRITERS` lists writes (the value of a write option or key form, or a file its positional rule names), and "unread" when the command is not listed, so every word of it, every tail of a short bundle and what follows a first `=` may be a file it writes.
+
+    A relative word is left relative, for the caller to place in the run's own directory (`run.cwd`); a git verb's is joined onto its `-C` directory first. A word that opens with a URL scheme is not a path and is left out. `argv` replaces the run's own words (a caller passes `_Run.xargv` to read `$F` as bash expands it); `cwd`, when a caller knows it, is where the hook's command starts, for a glob in an xargs feed.
+
+    WHAT xargs FEEDS IS PLACED AS xargs PLACES IT. Exact feed words appended in one invocation (`_Run.feed_words`, `_appends_once`) are parsed as the argv they complete: `echo F | xargs sort -o` is `sort -o F`, and `echo F | xargs sort` reads F. Otherwise each landing that holds a marker (`xargs_marker_candidates`) is repeated with every fed word in the marker's place, and every fed word is a landing itself when the argv leaves room for
+    an appended word to be written (`_listed_landings`). For an unlisted command every fed word is a landing, alone and in each marker's place. A `{}` in a landing of a command `find -exec` launched stands for find's starting points (`Launch.starts`).
+
+    This function calls nothing in the guards; block_review_file_shell_write calls it. A guard that adopts it tests each word with its own path predicate and may refuse "option" landings alone where it wants only the writes this table is sure of.
+    """
+    base = _base(run.name)
+    words = list(run.argv if argv is None else argv)
+    if _judged_elsewhere(run, base, words):
+        return []
+    spec = _NON_WRITERS.get(base)
+    directory = ""
+    if base == "git":
+        at, directory = _git_verb_at(words)
+        spec = None if at is None else _NON_WRITERS.get("git %s" % words[at])
+        if spec is not None and at is not None:
+            words = words[at + 1 :]
+    fed: list[str] = []
+    markers: list[str] = []
+    options = run.xargs if run.xargs is not None else ()
+    if run.feed and "xargs" in run.via:
+        markers = sorted(xargs_marker_candidates(options))
+        if run.feed_words is not None:
+            fed = list(run.feed_words)
+        else:
+            fed = _fed_candidates(run.feed.split(), *_feed_directories(run, cwd))
+    found: list[tuple[str, str]] = []
+    if spec is None:
+        placed = [w.replace(m, f) for m in markers for w in words if m in w for f in fed]
+        for word in [*words, *fed, *placed]:
+            found.extend((form, "unread") for form in _unread_forms(word))
+    elif fed and run.feed_words is not None and _appends_once(options):
+        found.extend((w, "option") for w in _listed_landings(spec, [*words, *fed])[0])
+    else:
+        landings, fed_too = _listed_landings(spec, words)
+        for word in landings:
+            found.append((word, "option"))
+            found.extend((word.replace(m, f), "option") for m in markers if m in word for f in fed)
+        if fed_too:
+            found.extend((f, "option") for f in fed)
+    starts = run.launch.starts if run.launch is not None and run.launch.launcher == "find" else ()
+    out: list[tuple[str, str]] = []
+    for word, how in found:
+        for named in starts if starts and "{}" in word else (word,):
+            placed_in = directory if spec is not None and not named.startswith("/") else ""
+            name = os.path.join(placed_in, named)
+            if name and not _LANDING_URL.match(name) and (name, how) not in out:
+                out.append((name, how))
+    return out
+
+
 # --------------------------------------------------------------------------- where a Python program writes ---------------------------------------------------------------------------
 #
 # A PYTHON PROGRAM IS JUDGED BY ITS WRITE TARGETS, NOT BY THE PATHS IT NAMES. block_review_file_shell_write learned it first (2026-10-09: a heredoc whose written CONTENT named a review path was refused). block_user_only_command_shell_write still refused any program that named the exception list and wrote anything anywhere, so a heredoc reading the list beside a scratch write was "a python3 program writing the exception
