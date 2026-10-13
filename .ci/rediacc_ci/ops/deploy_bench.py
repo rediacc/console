@@ -37,7 +37,9 @@ WORKER_NAME = "rediacc-account-bench"
 CONFIG = "wrangler.bench.toml"
 DB_NAME = "account-db-bench"
 DOMAIN = BENCH_HOST
-TURNSTILE_SITEKEY = "0x4AAAAAAC46Rczgin0T1o04"
+# Bench is test-only (operator ruling 2026-10-13): the portal is built with NO site key, so the
+# widget never renders, and wrangler.bench.toml sets TURNSTILE_ENABLED=false for the API.
+TURNSTILE_SITEKEY = ""
 PROFILE = "deploy-bench"
 MISSING = "%s missing from the deploy-bench profile"
 HELP = (
@@ -261,7 +263,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     finally:
         os.chdir(cwd)
 
-    log.step("Building account portal SPA (Turnstile sitekey: %s)" % TURNSTILE_SITEKEY)
+    log.step("Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)")
     web_dir = root / "private" / "account" / "web"
     if not (web_dir / "node_modules").is_dir():
         _run(["npm", "install"], web_dir, "npm install")

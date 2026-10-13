@@ -674,8 +674,13 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
     assert secrets["STRIPE_SECRET_KEY"] == ""
-    # Self-destruct output is the delta (the bash sent it to /dev/null); everything else is the same text.
-    assert _quiet_selfdestruct(err_b) == _quiet_selfdestruct(err_p)
+    # Self-destruct output is a delta (the bash sent it to /dev/null). The portal build line is the other: bench is built with no Turnstile sitekey since the operator ruling of 2026-10-13, and the bash still names its key.
+    build = "Building account portal SPA"
+    bash_lines = [ln for ln in _quiet_selfdestruct(err_b) if build not in ln]
+    port_lines = [ln for ln in _quiet_selfdestruct(err_p) if build not in ln]
+    assert bash_lines == port_lines
+    assert sum(build in ln for ln in _quiet_selfdestruct(err_p)) == 1
+    assert "captcha disabled on bench" in err_p
     assert "r2-secret" not in err_p
     assert "ses-secret" not in err_p
 
