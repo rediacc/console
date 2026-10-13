@@ -3653,7 +3653,7 @@ def _long_named(names, key):
 
 
 def _listed_parse(spec, argv):
-    """`(landings, operands, valued, dangling)` for the argv of a command `_NON_WRITERS` lists: the values of its write options and key forms, the operands, `(option, value)` for every option of the row's last field, and whether the argv ends in a write option still waiting for its value (the word xargs appends next)."""
+    """`(landings, operands, valued, dangling)` for the argv of a command `_NON_WRITERS` lists: the values of its write options and key forms, the operands, `(option, value)` for every option the row says takes a value (an attached-only option is never among them), and whether the argv ends in a write option still waiting for its value (the word xargs appends next)."""
     letters, longs, keys, values, attached = (
         spec.letters,
         spec.longs,
@@ -3758,6 +3758,10 @@ def _whole_word_operands(spec, argv):
     return operands
 
 
+# A print or printf whose statement goes on to a `>` or a `|` followed by something that is not a string literal, or a `system(` call: the spellings by which an awk program writes somewhere its text does not name. A redirect into a literal is read from the literal itself.
+_AWK_PRINT_REDIRECT = re.compile(r"\bprintf?\b[^;}\n]*(?:>>?|\|)\s*[^\"\s>|]|\bsystem\s*\(")
+
+
 def _awk_landings(argv, valued):
     """`(landings, in place)` for an awk argv, read WITHOUT relying on which word the option parse took for the program (review 906a4d56.1, .2): every word is read as a program might be, so a program a misplaced option value hid is still read.
 
@@ -3784,8 +3788,9 @@ def _awk_landings(argv, valued):
         # A word that is not itself a program is an option or an assignment, and every `=` in it may open the value.
         parts = word.split("=")
         out.extend("=".join(parts[at:]) for at in range(1, len(parts)))
-    if any("FILENAME" in w for w in argv):
-        out.extend(plain)
+    # A PROGRAM THAT WRITES CAN NAME ITS TARGET WITHOUT A LITERAL (review 660ec7a0.1): `print > ARGV[1]`, `print > FILENAME`, a variable built from either. Which operand it reaches is the program's own logic, so once a word redirects a print into something other than a literal, or calls `system`, every word that is neither an option nor a program is a landing. That refuses a program that reads one file and prints into another by name; it never allows one that writes the file it was handed. A `>` that compares and a `|` inside a pattern follow no print and are not redirects.
+    if any("FILENAME" in w or _AWK_PRINT_REDIRECT.search(w) for w in argv):
+        out.extend(w for w, literals in found if literals is None and not w.startswith("-"))
     return [w for w in out if w], in_place
 
 

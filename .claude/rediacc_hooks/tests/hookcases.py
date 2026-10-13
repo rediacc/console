@@ -2300,6 +2300,32 @@ STATIC: list[Case] = [
         ),
         "review-file-shell-write CONTROL: awk with an alternation and its own assignments, run inside the directory",
     ),
+    # Review 660ec7a0.1: an awk program that redirects a print names its target without a literal, so every operand is a landing. The three refusals were allowed at 660ec7a04.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk 'BEGIN{print \"x\" > ARGV[1]}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk prints into the operand it was handed",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{f=ARGV[1]; print \"x\" > f}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk prints into a variable built from its operand",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > FILENAME}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk prints into the file it reads",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk '$3 > 5 {print}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write CONTROL: a comparison is not a redirect",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk '/^### (a|b)/{p=1} p' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write CONTROL: a pattern's alternation is not a pipe",
+    ),
     case(
         "check 2 guards/block_ssh_docker.py",
         bash_json("ssh host docker ps"),

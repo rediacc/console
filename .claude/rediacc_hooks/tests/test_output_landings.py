@@ -53,7 +53,8 @@ OPTION_FORMS = [
         "an awk redirect through -v",
         "awk -v out=%s '{print > out}' /tmp/a" % R,
         "awk",
-        [(R, "option")],
+        # The print goes into a variable, so every word that is neither an option nor a program is a landing too (review 660ec7a0.1).
+        [(R, "option"), ("out=%s" % R, "option"), ("/tmp/a", "option")],
     ),
     # In place, every word that is not an option may be a file gawk rewrites: the reading does not rest on which word is the program (review 906a4d56.1).
     (
@@ -109,7 +110,7 @@ OPTION_FORMS = [
         "awk writing beside FILENAME",
         "awk '{print > (FILENAME \".bak\")}' %s" % R,
         "awk",
-        [(".bak", "option"), ('{print > (FILENAME ".bak")}', "option"), (R, "option")],
+        [(".bak", "option"), (R, "option")],
     ),
     ("xxd -ps is one flag", "xxd -ps /tmp/in %s" % R, "xxd", [(R, "option")]),
     ("xxd -len takes the next word", "xxd -len 4 /tmp/in %s" % R, "xxd", [(R, "option")]),
