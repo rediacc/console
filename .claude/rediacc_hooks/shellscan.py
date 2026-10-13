@@ -3410,23 +3410,42 @@ def copy_landings(run, cwd, names=COPIERS, argv=None):
 #
 # A TOOL'S OUTPUT OPTION IS A WRITE, AND THE RULE IS A TABLE OF NON-WRITERS, NOT A LIST OF WRITERS. block_review_file_shell_write read redirects, `tee`, in-place editors, copiers, `truncate`, `dd of=` and interpreter programs, so `sort -o <file>`, `curl -o <file>`, `tar -cf <file>`, `git diff --output=<file>`, `find -fprint <file>`, `sed 'w <file>'`, `uniq <in> <file>` and `touch <file>` each wrote a
 # file the guard protects and was allowed (rc 0, 2026-10-13). Listing writers cannot close that: every tool spells its output its own way and the next one is always missing. `_NON_WRITERS` lists the commands whose words are READ, with the few spellings through which each does write, and `output_landings` reads every word of a command the table does not list as a file it may write.
-# Each row is `(short write letters, long write names, key= forms, positional rule, options taking a value)`: a write letter or name takes the rest of its word or the next word as the file written (`-oX`, `-uoX`, `-o X`, `--output=X`, `--output X`, and any prefix of a long name, the way getopt_long abbreviates; an ambiguous prefix is read as the write option, which over-reads), a key form is an operand
-# `key=X` (dd's `of=`), and the positional rule names the reading for a file written with no option: "second" (every operand after the first, as `uniq IN OUT`), "find" (the long names are find's primaries, `-delete` removing what the starting points hold), "sed" (the `w`/`W` commands and `s///w` flags of the script) and "awk" (a program that redirects, pipes or calls `system`). The last field lists
+# Each row is a `_Writes` `(short write letters, long write names, key= forms, positional rule, options taking a value, options whose value is only attached)`: a write letter or name takes the rest of its word or the next word as the file written (`-oX`, `-uoX`, `-o X`, `--output=X`, `--output X`, and any prefix of a long name, the way getopt_long abbreviates; an ambiguous prefix is read as the write option, which over-reads), a key form is an operand
+# `key=X` (dd's `of=`), and the positional rule names the reading for a file written with no option: "second" (every operand after the first, as `uniq IN OUT`; "second-whole-words" for xxd, whose options are never bundled), "every" (every operand once a write letter is given, for tree), "find" (the long names are find's primaries, `-delete` removing what the starting points hold), "sed" (the `w`/`W` commands and `s///w` flags of the script) and "awk" (a program that redirects, pipes or calls `system`). The last field lists
 # the options whose value is not an operand, so the "second" rule counts operands as the tool does. A git row is keyed `git <verb>` and parsed after the verb. The commands another reading already judges are not listed and yield nothing here: the copiers (`run_copies`), `tee`, `truncate`, an interpreter (`interpreter_program`), a shell handed `-c` or an `eval` (their payload is walked as runs of its own) and
 # an `npx`/`npm exec` whose command was walked. `rm`, `mkdir`, `chmod` and the git verbs that rewrite the working tree are listed as reading on purpose: refusing them is a separate policy decision, and the table keeps the verdict each had. The shell builtins are listed because a word of theirs is a name, a number or an assignment (`export P=<path>`, `read f`), which a guard resolving words in the
 # run's directory would otherwise read as a file. A SHELL FUNCTION IS UNLISTED: the walk reads its body where it is defined and does not bind the call's arguments to `$1`, so `f() { touch "$1"; }; f <file>` is known only by the call's own words, and they are read as files it may write.
-_READS: tuple = ("", (), (), "", ())
-_GIT_OUTPUT: tuple = ("", ("output",), (), "", ())
-_AWK_SHORT_VALUES = ("f", "F", "v", "e", "i", "l", "E")
+#
+# AN OPTION'S VALUE IS PLACED AS THE TOOL PLACES IT, AND WHERE THAT IS NOT CERTAIN THE READING DOES NOT DEPEND ON IT (review 906a4d56.1, .2). The first table read every option value as "the rest of the word, else the next word". gawk's `-o`, `-p`, `-d`, `-L` and `-D` take a value only ATTACHED, and so do its `--pretty-print`, `--profile` and `--dump-variables` (measured on GNU Awk 5.3.2: `gawk -p '{print > "out"}' in` runs the
+# program and writes `out`, and `gawk --profile out2 '...' in` reads `out2` as the program), so the next word was swallowed as their value and the program after it was never read; `-W`, which gawk and mawk both take with a separate word, was missing, so `gawk -W lint '<program>'` read `lint` as the program. Each was allowed (rc 0). A row's `attached` field now lists the options whose value is never the next word, and
+# three readings no longer rest on the parse at all: an awk's program is looked for in EVERY word (`_awk_landings`), xxd's options are whole words decided by their first letter (`xxd -ps IN OUT` wrote OUT while a bundle reading took IN as the value of `s`), and tree, which hands each value letter of a bundle the next word in turn (`-Lo 2 OUT`), is read as writing every operand once `-o` is given. tree is not installed on
+# the host this was written on, and less is interactive, so those two rows are read from their documentation and tree's is the fail-closed reading; sort, shuf and uniq (uutils coreutils 0.8.0), sed (GNU 4.9), find (bfs 4.1.1), xxd (2025-11-26), mawk (1.3.4) and git 2.53.0's `--output` were measured against the binaries, every spelling a row reads wrote the file it names, and those rows stand.
+class _Writes(typing.NamedTuple):
+    """One row of `_NON_WRITERS`: how a listed command writes a file it names."""
+
+    letters: str = ""
+    longs: tuple = ()
+    keys: tuple = ()
+    rule: str = ""
+    values: tuple = ()
+    attached: tuple = ()
+
+
+_READS = _Writes()
+_GIT_OUTPUT = _Writes(longs=("output",))
+_AWK_SHORT_VALUES = ("f", "F", "v", "e", "i", "l", "E", "W")
 _AWK_LONG_VALUES = ("file", "field-separator", "assign", "source", "include", "load", "exec")
-_AWK: tuple = (
-    "opd",
-    ("pretty-print", "profile", "dump-variables"),
-    (),
-    "awk",
-    (*_AWK_SHORT_VALUES, *_AWK_LONG_VALUES),
+_AWK_WRITE_LONGS = ("pretty-print", "profile", "dump-variables")
+_AWK = _Writes(
+    letters="opd",
+    longs=_AWK_WRITE_LONGS,
+    rule="awk",
+    values=(*_AWK_SHORT_VALUES, *_AWK_LONG_VALUES),
+    attached=("o", "p", "d", "L", "D", *_AWK_WRITE_LONGS),
 )
-_SED: tuple = ("", (), (), "sed", ())
+_SED = _Writes(rule="sed")
+_XXD_VALUES = ("c", "g", "l", "o", "s", "n", "R")
+_XXD_LONG_VALUES = ("cols", "groupsize", "len", "offset", "seek", "name")
 # Commands that print what they read, or answer a question about it.
 _FILE_READERS = ("cat", "tac", "zcat", "head", "tail", "more", "wc", "nl", "stat", "ls", "file")
 _TEXT_READERS = ("diff", "cmp", "comm", "cut", "tr", "rev", "fold", "paste", "column", "od")
@@ -3446,21 +3465,23 @@ _GIT_PLUMBING_READS = ("rev-list", "check-ignore", "shortlog")
 _GIT_INDEX_VERBS = ("add", "commit")
 _GIT_KEPT_VERDICT = ("checkout", "restore", "rm", "mv", "reset")
 _GIT_LISTED = (*_GIT_READ_VERBS, *_GIT_PLUMBING_READS, *_GIT_INDEX_VERBS, *_GIT_KEPT_VERDICT)
-_NON_WRITERS: dict[str, tuple] = {
+_NON_WRITERS: dict[str, _Writes] = {
     **dict.fromkeys(
         (*_FILE_READERS, *_TEXT_READERS, *_SEARCH_READERS, *_PATH_READERS, *_SUM_READERS),
         _READS,
     ),
     **dict.fromkeys((*_SHELL_WORDS, *_SHELL_NAMES_ONLY, *_SHELL_FLOW, *_SHELL_QUERIES), _READS),
     **dict.fromkeys(_KEPT_VERDICT, _READS),
-    "sort": ("o", ("output",), (), "", ()),
-    "shuf": ("o", ("output",), (), "", ()),
-    "tree": ("o", (), (), "", ()),
-    "less": ("oO", ("log-file", "LOG-FILE"), (), "", ()),
-    "uniq": ("", (), (), "second", ("f", "s", "w", "skip-fields", "skip-chars", "check-chars")),
-    "xxd": ("", (), (), "second", ("c", "g", "l", "o", "s", "n", "R")),
-    "dd": ("", (), ("of",), "", ()),
-    "find": ("", ("fprint", "fprint0", "fprintf", "fls", "delete"), (), "find", ()),
+    "sort": _Writes(letters="o", longs=("output",)),
+    "shuf": _Writes(letters="o", longs=("output",)),
+    "tree": _Writes(letters="o", rule="every"),
+    "less": _Writes(letters="oO", longs=("log-file", "LOG-FILE")),
+    "uniq": _Writes(
+        rule="second", values=("f", "s", "w", "skip-fields", "skip-chars", "check-chars")
+    ),
+    "xxd": _Writes(rule="second-whole-words", values=(*_XXD_VALUES, *_XXD_LONG_VALUES)),
+    "dd": _Writes(keys=("of",)),
+    "find": _Writes(longs=("fprint", "fprint0", "fprintf", "fls", "delete"), rule="find"),
     "sed": _SED,
     "gsed": _SED,
     "awk": _AWK,
@@ -3633,7 +3654,13 @@ def _long_named(names, key):
 
 def _listed_parse(spec, argv):
     """`(landings, operands, valued, dangling)` for the argv of a command `_NON_WRITERS` lists: the values of its write options and key forms, the operands, `(option, value)` for every option of the row's last field, and whether the argv ends in a write option still waiting for its value (the word xargs appends next)."""
-    letters, longs, keys, _rule, values = spec
+    letters, longs, keys, values, attached = (
+        spec.letters,
+        spec.longs,
+        spec.keys,
+        spec.values,
+        spec.attached,
+    )
     out: list[str] = []
     operands: list[str] = []
     valued: list[tuple[str, str]] = []
@@ -3649,6 +3676,11 @@ def _listed_parse(spec, argv):
             key, eq, value = arg[2:].partition("=")
             writes = _long_named(longs, key) is not None
             named = _long_named(values, key)
+            if _long_named(attached, key) is not None:
+                # The value is only ever attached: without `=` there is none, and the next word is the command's own.
+                if writes and value:
+                    out.append(value)
+                continue
             if not writes and named is None:
                 continue
             if not eq:
@@ -3664,9 +3696,14 @@ def _listed_parse(spec, argv):
             continue
         if arg.startswith("-") and len(arg) > 1:
             for at, letter in enumerate(arg[1:], 1):
-                if letter not in letters and letter not in values:
+                if letter not in letters and letter not in values and letter not in attached:
                     continue
                 value = arg[at + 1 :]
+                if letter in attached:
+                    # The rest of the word is the value, and an empty rest is no value: the next word is never taken.
+                    if value and letter in letters:
+                        out.append(value)
+                    break
                 if not value:
                     if k >= len(argv):
                         dangling = letter in letters
@@ -3689,7 +3726,7 @@ def _listed_parse(spec, argv):
 
 def _find_landings(spec, argv):
     """`(landings, dangling)` for a find argv: the file each `-fprint`, `-fprint0`, `-fprintf` and `-fls` names, and the starting points when `-delete` removes what they hold."""
-    primaries = spec[1]
+    primaries = spec.longs
     out: list[str] = []
     dangling = False
     for k, word in enumerate(argv):
@@ -3704,9 +3741,57 @@ def _find_landings(spec, argv):
     return out, dangling
 
 
+def _whole_word_operands(spec, argv):
+    """The operands of a command whose options are whole words read by their first letter, never bundled (xxd 2025-11-26: `-ps`, `-plain` and `-postscript` are one flag, `-l 4`, `-l4` and `-len 4` one option with its value). A value option written alone, or by a long name of the row, takes the next word; any other option word takes none."""
+    operands: list[str] = []
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        k += 1
+        if arg == "--":
+            operands.extend(argv[k:])
+            break
+        if not (arg.startswith("-") and len(arg) > 1):
+            operands.append(arg)
+        elif arg[1:] in spec.values:
+            k += 1
+    return operands
+
+
+def _awk_landings(argv, valued):
+    """`(landings, in place)` for an awk argv, read WITHOUT relying on which word the option parse took for the program (review 906a4d56.1, .2): every word is read as a program might be, so a program a misplaced option value hid is still read.
+
+    Once any word redirects, pipes or calls `system` (`_awk_writes`), the landings are every string literal of every such word, what follows an `=` in any word (`-v out=<file>`, `--assign=out=<file>`, an `out=<file>` operand: the variable a `print > out` writes), and, when a word names `FILENAME`, every word that is not an option (`print > (FILENAME ".bak")` writes beside each input). A word ending in `inplace` (`-i inplace`,
+    `-iinplace`, `--include=inplace`) makes every word that is not an option a file gawk rewrites. `-W` hands gawk a long option, so `-W dump-variables=<file>` writes that file.
+    """
+    out: list[str] = []
+    for name, value in valued:
+        key, eq, target = value.partition("=")
+        if name == "W" and eq and target and _long_named(_AWK_WRITE_LONGS, key) is not None:
+            out.append(target)
+    plain = [w for w in argv if not w.startswith("-")]
+    in_place = any(w.endswith("inplace") for w in argv)
+    if in_place:
+        out.extend(plain)
+    found = [(w, _awk_writes(w)) for w in argv]
+    if all(literals is None for _word, literals in found):
+        return out, in_place
+    for word, literals in found:
+        if literals is not None:
+            # A program's own `=` signs are code, never an assignment made on the command line: reading what follows one as a file refused `awk '/a|b/{p=1} p' <record>` run from inside the review directory.
+            out.extend(literals)
+            continue
+        # A word that is not itself a program is an option or an assignment, and every `=` in it may open the value.
+        parts = word.split("=")
+        out.extend("=".join(parts[at:]) for at in range(1, len(parts)))
+    if any("FILENAME" in w for w in argv):
+        out.extend(plain)
+    return [w for w in out if w], in_place
+
+
 def _listed_landings(spec, argv):
-    """`(landings, fed_too)` for the argv of a listed command: every file its row says it writes, and whether a word xargs appends to this argv is one more (a write option left waiting for its value, a "second" rule that counts operands, an awk editing in place)."""
-    rule = spec[3]
+    """`(landings, fed_too)` for the argv of a listed command: every file its row says it writes, and whether a word xargs appends to this argv is one more (a write option left waiting for its value, a rule that counts or takes operands, an awk editing in place)."""
+    rule = spec.rule
     if rule == "find":
         return _find_landings(spec, argv)
     out, operands, valued, dangling = _listed_parse(spec, argv)
@@ -3714,26 +3799,25 @@ def _listed_landings(spec, argv):
     if rule == "second":
         out.extend(operands[1:])
         fed_too = True
+    elif rule == "second-whole-words":
+        out = _whole_word_operands(spec, argv)[1:]
+        fed_too = True
+    elif rule == "every":
+        # A write letter anywhere in a short option word: which later word it takes depends on the value letters around it, so every word that is not an option may be the file.
+        given = any(
+            w.startswith("-") and not w.startswith("--") and any(ch in spec.letters for ch in w[1:])
+            for w in argv
+        )
+        if given:
+            out = [w for w in argv if not w.startswith("-")]
+            fed_too = True
     elif rule == "sed":
         for script in _sed_in_place(argv)[1]:
             out.extend(_sed_writes(script))
     elif rule == "awk":
-        programs = [value for name, value in valued if name in ("e", "source")]
-        from_file = any(name in ("f", "file", "E", "exec") for name, _value in valued)
-        files = operands
-        if not programs and not from_file and operands:
-            programs, files = operands[:1], operands[1:]
-        # `gawk -i inplace` rewrites every file operand.
-        if any(name in ("i", "include") and value == "inplace" for name, value in valued):
-            out.extend(files)
-            fed_too = True
-        assigned = [value.partition("=")[2] for name, value in valued if name in ("v", "assign")]
-        assigned += [f.partition("=")[2] for f in files if "=" in f]
-        for program in programs:
-            found = _awk_writes(program)
-            # A redirect to a variable (`print > out`) writes what `-v out=<file>` or an `out=<file>` operand assigned.
-            if found is not None:
-                out.extend([*found, *(a for a in assigned if a)])
+        found, in_place = _awk_landings(argv, valued)
+        out.extend(found)
+        fed_too = fed_too or in_place
     return out, fed_too
 
 

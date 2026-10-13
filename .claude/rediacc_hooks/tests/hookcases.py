@@ -2222,6 +2222,84 @@ STATIC: list[Case] = [
         ),
         "review-file-shell-write CONTROL: the mark verb with evidence naming a record",
     ),
+    # Review 906a4d56.1 and .2: gawk's -o, -p and -d take a value only attached, and -W takes a separate word, so the option parse put the program in the wrong word and its redirect was never read. Every deny row was allowed (rc 0) on the base.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -p '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -p takes no separate value, the next word is the program (906a4d56.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -d '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -d takes no separate value, the next word is the program (906a4d56.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -o '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -o with a program that redirects into a review file (906a4d56.1)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk --profile '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk --profile takes its file only after = (906a4d56.1 sweep)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -W lint '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: gawk -W takes a separate word, the word after it is the program (906a4d56.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("mawk -W interactive '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        "review-file-shell-write: mawk -W takes a separate word (906a4d56.2)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("gawk -W dump-variables=agent/reviews/0930-1/a.md '{print}' /tmp/a"),
+        "review-file-shell-write: gawk -W hands over a long write option (906a4d56.2 sweep)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("xxd -ps /tmp/in agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: xxd -ps is one flag, the second operand is its output (906a4d56 sweep)",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > (FILENAME \".bak\")}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write: an awk program writes beside its input through FILENAME (906a4d56 sweep)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("gawk '{print $1}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: gawk reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("gawk -W lint '{print $1}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: gawk -W lint reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("gawk -d '{print $1}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: gawk -d reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk -F'|' '{print $2}' agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: awk splitting on a pipe reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("xxd -ps agent/reviews/0930-1/a.md"),
+        "review-file-shell-write CONTROL: xxd -ps reads a review file",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(
+            "cd agent/reviews/1008-1 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md"
+        ),
+        "review-file-shell-write CONTROL: awk with an alternation and its own assignments, run inside the directory",
+    ),
     case(
         "check 2 guards/block_ssh_docker.py",
         bash_json("ssh host docker ps"),
