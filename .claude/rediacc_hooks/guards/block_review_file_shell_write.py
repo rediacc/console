@@ -68,6 +68,17 @@ EDGE_CASES = [
     ("mv onto a review file", "mv /tmp/x.md %s" % R),
     ("cp -t names the directory", "cp -t agent/reviews/0930-1 /tmp/x.md"),
     # #5077391c: xargs appends its feed, so under `-t` a fed word is a source and without it the last one is the destination.
+    # The fed word as the file an in-place editor, tee or truncate writes. Each was allowed before: the editor's own words named no review file.
+    ("xargs feeds a review file to sed -i", "echo %s | xargs sed -i s/a/b/" % R),
+    ("xargs -I feeds a review file to sed -i", "echo %s | xargs -I{} sed -i s/a/b/ {}" % R),
+    ("xargs feeds a review file to tee", "echo %s | xargs tee" % R),
+    ("xargs feeds a review file to truncate", "echo %s | xargs truncate -s 0" % R),
+    (
+        "xargs -I feeds a review directory to truncate",
+        "echo agent/reviews/0930-1 | xargs -I{} truncate -s 0 {}/x.md",
+    ),
+    ("xargs feeds a review file to a reader", "echo %s | xargs cat" % R),
+    ("xargs feeds another file to sed -i", "echo /tmp/x.md | xargs sed -i s/a/b/"),
     ("xargs feeds a review file to cp -t elsewhere", "echo %s | xargs cp -t /tmp" % R),
     (
         "xargs feeds cp -t the review directory a source",
@@ -161,6 +172,10 @@ def _operands(argv):
 def _run_operands(run, argv):
     """`_operands`, with a `find -exec` run's `{}` read as what the find walks (#503f0ba8): `find agent/reviews -exec sed -i ... {} +` edits files under `agent/reviews`, so the find's starting points (`shellscan.Launch.starts`) stand in for `{}`, in place. A `{}` that is a copy's SOURCE is still not its last operand, so `-exec cp {} /tmp/ ';'` stays a copy out."""
     ops = _operands(argv)
+    if run.feed and "xargs" in run.via:
+        # What xargs reads becomes this command's words: appended, or in replace mode put where the marker stands. Every fed word is an operand, alone and in the place of `{}`, which over-reads and never under-reads: `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
+        fed = run.feed.split()
+        ops = ops + fed + [a.replace("{}", word) for a in ops if "{}" in a for word in fed]
     if run.launch is None or run.launch.launcher != "find":
         return ops
     out: list[str] = []

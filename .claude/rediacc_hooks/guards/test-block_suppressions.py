@@ -270,6 +270,22 @@ SHELL_CASES = [
         "sed -i 's/return os.sep/return os.sep  %s: RET504/' %s" % (NQ, KEPT),
         True,
     ),
+    # The file is a word xargs feeds in, appended or in the marker's place. Each refusal was allowed (rc 0) before.
+    (
+        "sed -i adding one to a file xargs appends",
+        "echo %s | xargs sed -i 's/return os.sep/return os.sep  %s: RET504/'" % (KEPT, NQ),
+        True,
+    ),
+    (
+        "sed -i adding one to a file xargs puts at its marker",
+        "echo %s | xargs -I{} sed -i 's/return os.sep/return os.sep  %s: RET504/' {}" % (KEPT, NQ),
+        True,
+    ),
+    (
+        "sed -i removing the marker from a file xargs appends",
+        "echo %s | xargs sed -i 's/  %s: F401//'" % (KEPT, NQ),
+        False,
+    ),
     # In place is sed's and perl's own option parse (review 3f53e99e.2 sweep): each refusal was allowed (rc 0) before.
     (
         "sed -Ei adding one",

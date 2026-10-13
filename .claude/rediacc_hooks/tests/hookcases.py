@@ -1952,6 +1952,37 @@ STATIC: list[Case] = [
         bash_json("echo /tmp/a.md | xargs cp -t agent/reviews/1008-1"),
         "review-file-shell-write: xargs feeds a source to cp -t the review directory",
     ),
+    # The fed word as the file an in-place editor, tee or truncate writes: appended, or put where the marker stands. Each refusal was allowed before, since the editor's own words named no review file.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs sed -i s/a/b/"),
+        "review-file-shell-write: xargs feeds a review file to sed -i",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs -rI{} sed -i s/a/b/ {}"),
+        "review-file-shell-write: xargs puts a review file at its marker for sed -i",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs tee"),
+        "review-file-shell-write: xargs feeds a review file to tee",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1 | xargs -I{} truncate -s 0 {}/x.md"),
+        "review-file-shell-write: xargs puts a review directory at its marker for truncate",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo agent/reviews/1008-1/x.md | xargs cat"),
+        "review-file-shell-write CONTROL: xargs feeds a review file to a reader",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("echo /tmp/x.md | xargs sed -i s/a/b/"),
+        "review-file-shell-write CONTROL: xargs feeds another file to sed -i",
+    ),
     # #e5b0540a: a relative fed glob is matched in the run's own directory, so `revi*s/...` from agent/ is the review directory (allowed before: only a name of its shape was read).
     case(
         "check 2 guards/block_review_file_shell_write.py",
