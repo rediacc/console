@@ -8,6 +8,7 @@ Python rather than a sourced bash library: Ruling 7 (2026-09-06) bans new bash u
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight buckets <wrangler-config>
 """
 
+import json
 import re
 import subprocess
 import sys
@@ -17,13 +18,37 @@ JURISDICTION = re.compile(r"^\s*jurisdiction\s*=", re.MULTILINE)
 LISTED_NAME = re.compile(r"^name:\s+(\S+)", re.MULTILINE)
 
 
+def _own_problems(node):
+    """The missing, invalid and extraneous marks `npm ls --json` puts on NODE and below, leaving out every `file:` link's subtree.
+
+    A linked package (private/account links packages/shared) is installed by the tree it lives in, the console root, which is checked as a directory of its own. Seen from the linking package its dependencies are all `missing`, whatever the state of either install.
+    """
+    found = [flag for flag in ("missing", "invalid", "extraneous") if node.get(flag)]
+    for child in (node.get("dependencies") or {}).values():
+        if str(child.get("resolved", "")).startswith("file:"):
+            continue
+        found.extend(_own_problems(child))
+    return found
+
+
+def _drifted(directory):
+    """Whether DIRECTORY's install is out of line with its lockfile. An unreadable report on a failing run counts as drift."""
+    done = subprocess.run(
+        ["npm", "ls", "--all", "--json"], cwd=directory, capture_output=True, text=True, check=False
+    )
+    if done.returncode == 0:
+        return False
+    try:
+        tree = json.loads(done.stdout)
+    except ValueError:
+        return True
+    return not isinstance(tree, dict) or bool(_own_problems(tree))
+
+
 def lockfile(dirs):
     """Refuse when `npm ls --all` reports any install out of line with its package-lock.json."""
     for directory in dirs:
-        rc = subprocess.run(
-            ["npm", "ls", "--all"], cwd=directory, capture_output=True, check=False
-        ).returncode
-        if rc != 0:
+        if _drifted(directory):
             print(
                 "✗ node_modules in %s does not match its package-lock.json (npm ls --all fails)"
                 % directory,
