@@ -262,7 +262,7 @@ def test_the_hook_renders_the_fixture_queue_not_the_real_one(gate, tmp_path):
 
 
 def test_on_a_ci_runner_the_hook_is_a_no_op(gate, tmp_path, monkeypatch):
-    """The contract the fixture above steps around: under GITHUB_ACTIONS the hook exits 0 at once and renders nothing, so an unattended model in Actions is never held by a gate no person will answer."""
+    """The contract the fixture above steps around: under GITHUB_ACTIONS the hook returns without hanging or crashing and renders nothing, so an unattended model in Actions is never held by a gate no person will answer."""
     hook = _require_hook(gate)
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     fixture_queue = tmp_path / "root" / "agent" / "plans" / "QUEUE.md"
