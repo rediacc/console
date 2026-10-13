@@ -42,12 +42,13 @@
       "findings": [
         "P-A1:agent/plans/PLAN-cd-errors-in-ci.md",
         "P-A1:agent/plans/PLAN-deferred-findings-block-merge.md",
+        "P-A1:agent/plans/PLAN-inline-suppressions.md",
         "P-A1:agent/plans/PLAN-k3s-137-and-pr-conditions.md",
         "P-A1:agent/plans/PLAN-remove-cross-session-messaging.md",
         "P-A1:agent/plans/PLAN-stop-hook-rulings-campaign.md",
         "P-A1:agent/plans/PLAN-tooling-transformation.md"
       ],
-      "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70, PLAN-k3s-137-and-pr-conditions:103, PLAN-deferred-findings-block-merge M3, PLAN-tooling-transformation W7P5-a/W7P5-c (PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab), PLAN-remove-cross-session-messaging (Steps 9, 10, 13 and one Step 12 box) and PLAN-stop-hook-rulings-campaign (a queued campaign of its own, on the clock since 2026-10-13 only because this branch ticked its two abandoned poll boxes). Each key names one plan, so a plan whose last box closes leaves this list. The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
+      "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70, PLAN-k3s-137-and-pr-conditions:103, PLAN-deferred-findings-block-merge M3, PLAN-tooling-transformation W7P5-a/W7P5-c (PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab), PLAN-remove-cross-session-messaging (Steps 9, 10, 13 and one Step 12 box), PLAN-inline-suppressions (8 boxes) and PLAN-stop-hook-rulings-campaign (a queued campaign of its own, on the clock since 2026-10-13 only because this branch ticked its two abandoned poll boxes). Each key names one plan, so a plan whose last box closes leaves this list. The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
     }
   ]
 }

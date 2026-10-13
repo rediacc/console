@@ -278,15 +278,18 @@ The golangci half belongs to WD:
   - Fix the 126 `type: ignore`; the types baseline must not grow.
   - Hand the lead a list of every leftover (file, code, verified reason).
   - Acceptance: `npm run check:ci-python-types` rc 0 with the baseline unchanged or smaller; `npm run check:ci-pytest` green; the per-path count over `.ci` and `conftest.py` is no more than the handed-over list.
-- [ ] WC1: e2e.
+- [x] WC1: e2e.
   - Add the `log.ts` logger; fix require-await, constants.ts and the deprecated members; remove the dead e2e paths from biome.json overrides #18 and #19.
   - Acceptance: `npm run check:lint:tooling` rc 0; `npx biome lint packages/e2e-tests --error-on-warnings` rc 0; `npx tsc --noEmit -p packages/e2e-tests` rc 0; `--count packages/e2e-tests` reports 0.
-- [ ] WC2: account.
+    (ticked) 2026-10-13T19:40:08Z by d778be9d: commit:6ca434160 e2e markers drained (a9ffe368e bdaa4fa05 481d05411 6ca434160); grep finds 0 marker-bearing files under packages/e2e-tests; check:lint:tooling rc=0 in pre-push run 27
+- [x] WC2: account.
   - i18n the 5 pages across every locale in `private/account/web/src/i18n/locales/`, and fix `private/account/web/src/pages/ConfigMembers.tsx:95`.
   - Acceptance: `npm run check:lint:account` rc 0; `cd private/account && npm run typecheck:web` rc 0; the account i18n gate rc 0; `--count private/account` reports 0. This is an account submodule PR.
-- [ ] WD1: renet dead and mechanical.
+    (ticked) 2026-10-13T19:40:10Z by d778be9d: commit:4f0063f11 account c6ec4ac and 3145dbe; grep finds 0 marker-bearing files under private/account; check:lint:account rc=0
+- [x] WD1: renet dead and mechanical.
   - Generator line and regeneration, the dead errchkjson/containedctx directives, unparam, gocritic, nilerr, contextcheck, and the singles.
   - Acceptance: `npm run check:ci-renet` rc 0 (golangci on linux, darwin and windows); `cd private/renet && go test ./...` green for the touched packages.
+    (ticked) 2026-10-13T19:40:12Z by d778be9d: commit:814f23f77 renet bb9c148; zero nolint; check:ci-renet rc=0 (golangci 0 issues on three GOOS)
 - [ ] WD2: renet deliberate.
   - gosec split and complexity rules, each with a `# BLOCKER:`.
   - `lint.sh` fails on a rule unused in all three GOOS runs; `run_renet.py` validates BLOCKER comments; a planted dead rule and a reasonless rule both go red.
