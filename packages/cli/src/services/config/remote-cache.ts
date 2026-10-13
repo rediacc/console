@@ -140,9 +140,24 @@ export function mergeRemoteIntoCache(
 }
 
 /**
+ * `local` with its remote pointer replaced by the one a re-enrollment produced (same store and
+ * config, new device credentials). A file that was linked elsewhere in the meantime is refused.
+ */
+function repointed(local: RdcConfig, pointer: RemoteConfig, configName: string): RdcConfig {
+  if (local.remote?.storeId !== pointer.storeId || local.remote.configId !== pointer.configId) {
+    throw new Error(`Config "${configName}" was linked elsewhere during the enrollment`);
+  }
+  return { ...local, remote: pointer };
+}
+
+/**
  * Refresh the on-disk cache of `configName` from a pulled server copy.
  * Loads the current file under lock (decrypted), merges, and saves through
  * the no-bump `updateCache` path (the storage layer re-encrypts per field).
+ *
+ * `pointer`, when given, replaces the file's remote pointer in the same write: a re-enrollment
+ * (commands/config-remote-reenroll.ts) changes the device's key id, and the pointer and the
+ * content it opened must land together.
  *
  * Returns the merged PLAINTEXT document, exactly what the cache now holds, so an in-memory
  * reader sees the same device-local pointers and merged `state` the file does.
@@ -150,11 +165,13 @@ export function mergeRemoteIntoCache(
 export async function writeRemoteCache(
   configName: string,
   pulled: RdcConfig,
-  version: number
+  version: number,
+  pointer?: RemoteConfig
 ): Promise<RdcConfig> {
   let merged: RdcConfig | undefined;
   await configFileStorage.updateCache(configName, (local) => {
-    merged = mergeRemoteIntoCache(local, pulled, version);
+    const base = pointer ? repointed(local, pointer, configName) : local;
+    merged = mergeRemoteIntoCache(base, pulled, version);
     return merged;
   });
   if (!merged) throw new Error(`Config "${configName}" cache write did not run its merge`);

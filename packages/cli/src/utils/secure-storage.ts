@@ -2,7 +2,7 @@
  * Platform-Native Secure Storage
  *
  * Stores secrets (passkey_secret) in OS-native secure storage:
- * - Linux:   Kernel keyring (keyctl)
+ * - Linux:   Kernel user keyring (keyctl @u); emptied at every restart, the device then enrolls again
  * - macOS:   Keychain (security command)
  * - Windows: DPAPI (encrypted files)
  * - Fallback: JSON file with 0o600 permissions (warning logged)
@@ -62,7 +62,7 @@ class KeyctlStorage implements SecureStorage {
     // Remove existing key if present
     await this.delete(key);
     execFileSync('keyctl', ['add', 'user', key, value, '@u'], { encoding: 'utf-8' });
-    // No timeout, passkey_secret must persist across reboots/days. The user keyring (@u) lives for the session by default; keys without an explicit timeout persist until the session ends or the key is explicitly revoked, which matches what deriveCek() expects (a missing key is fatal and asks the user to re-setup).
+    // No timeout is set, and the key still does NOT outlive a restart: `@u` is the kernel's per-UID user keyring, held in kernel memory, so a reboot (on WSL, a restart of the VM) empties it, and the kernel may also free it once the user's last process exits. deriveCek() then finds no secret, and `rdc config remote enable` enrolls the device again (config-remote-reenroll.ts). Whether the secret should live somewhere that survives a restart is the same open question as the file fallback below (DECLARED SKIP at selectBackend).
   }
 
   delete(key: string): Promise<void> {
