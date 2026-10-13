@@ -93,6 +93,10 @@ EXIT_CANNOT_RUN = 77
 # The port now takes its ids at construction (`Devbox(host_ids=...)`), and `test_core_devbox.py::test_the_host_ids_are_the_running_users_by_default` covers the default this pin replaces.
 GOLDEN_HOST_IDS = (1000, 1000)
 GOLDEN_RUNTIME_DIR = "/run/user/%d" % GOLDEN_HOST_IDS[0]
+# THE RECORDING HOST'S DEVICES AND SOCKET, pinned for the same reason. `devbox_up` adds `--device /dev/kvm`, `--device /dev/net/tun`, the docker socket bind and the lease pool bind only where the host has each, and the frozen `up-create` and `up-existing` transcripts carry all four. The port asked the running host until 2026-10-13, so those two scenarios failed wherever one was missing: on GitHub's runner the pool's parent `/run/user/1000` does not exist (run 38409515814), and a container has no `/dev/kvm`.
+# `test_core_devbox.py::test_up_reads_the_host_by_default` covers the defaults these pins replace.
+GOLDEN_HOST_NODES = ("/dev/kvm", "/dev/net/tun")
+GOLDEN_DOCKER_SOCKET = "/var/run/docker.sock"
 
 
 class GoldenHostDevbox(devbox.Devbox):
@@ -100,6 +104,16 @@ class GoldenHostDevbox(devbox.Devbox):
 
     def owns_runtime_dir(self, runtime: str) -> bool:
         return runtime == GOLDEN_RUNTIME_DIR
+
+    # The recording host had all four: `/dev/kvm`, `/dev/net/tun`, a docker socket, and the lease pool under its runtime dir. `lease_dir_ready` answers for the recorded pool ONLY, and never touches the disk: pinned to uid 1000 it would otherwise `mkdir` under a real `/run/user/1000` on whichever host ran the suite.
+    def has_host_node(self, path: str) -> bool:
+        return path in GOLDEN_HOST_NODES
+
+    def has_host_socket(self, path: str) -> bool:
+        return path == GOLDEN_DOCKER_SOCKET
+
+    def lease_dir_ready(self, path: str) -> bool:
+        return path == GOLDEN_RUNTIME_DIR + "/rediacc-cores"
 
 
 # The prefix `strip_loc` removes above, applied identically on the port side, where it is a no-op because nothing in Python emits a bash source location.
