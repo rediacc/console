@@ -40,9 +40,9 @@
     {
       "gate": "check:ci-plan-implementation",
       "findings": [
-        "P-A1:0c9ea2c3e2ce"
+        "P-A1:99bbfe3180cd"
       ],
-      "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70 (a live run on a PR), PLAN-k3s-137-and-pr-conditions:103 (E2E K8s legs green on the branch head), PLAN-deferred-findings-block-merge M3 (Quality / Branch green on the pushed head), and PLAN-tooling-transformation W7P5-a/W7P5-c (per-path K=5 ledgers, PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab). The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
+      "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70 (a live run on a PR), PLAN-k3s-137-and-pr-conditions:103 (E2E K8s legs green on the branch head), PLAN-deferred-findings-block-merge M3 (Quality / Branch green on the pushed head), and PLAN-tooling-transformation W7P5-a/W7P5-c (per-path K=5 ledgers, PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab). Since 2026-10-13 the set also holds PLAN-remove-cross-session-messaging (4 open: Steps 9, 10, 13 and one Step 12 box, which close on the full hook suite and ci:quick of this branch) and PLAN-stop-hook-rulings-campaign (14 open, on the clock only because this branch ticked its two abandoned poll boxes; it is a queued campaign of its own). The key is a hash of the open-box set, so it moves whenever a box is ticked. The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
     }
   ]
 }
