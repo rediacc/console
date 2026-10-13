@@ -171,17 +171,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 5,
-      "open_sigs": [
-        "de6e3d14"
-      ],
+      "open": 0,
+      "done": 6,
+      "open_sigs": [],
       "done_sigs": [
         "0d548135",
         "13e24899",
         "2db56250",
         "6de8b60b",
-        "c465bb53"
+        "c465bb53",
+        "de6e3d14"
       ]
     },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
@@ -452,13 +451,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 3,
-      "open_sigs": [
-        "af41ded2"
-      ],
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
       "done_sigs": [
         "2927dcf9",
+        "af41ded2",
         "cb17a5a5",
         "d72e974f"
       ]
@@ -499,11 +497,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 10,
-      "open_sigs": [
-        "bca8a2e1"
-      ],
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
       "done_sigs": [
         "50817698",
         "5122f494",
@@ -511,6 +507,7 @@
         "84613e65",
         "a120f6fd",
         "a1929226",
+        "bca8a2e1",
         "c607653c",
         "c70d11f1",
         "e6fc8a05",
@@ -543,14 +540,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 16,
-      "open_sigs": [
-        "2802d853"
-      ],
+      "open": 0,
+      "done": 17,
+      "open_sigs": [],
       "done_sigs": [
         "02f04831",
         "09b758d1",
+        "2802d853",
         "3d43a568",
         "3e40c2e9",
         "531ee97c",
@@ -907,15 +903,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 4,
-      "open_sigs": [
-        "794425ab"
-      ],
+      "open": 0,
+      "done": 5,
+      "open_sigs": [],
       "done_sigs": [
         "16ada8cb",
         "40e414ac",
         "4e01e86d",
+        "794425ab",
         "f66674d0"
       ]
     },

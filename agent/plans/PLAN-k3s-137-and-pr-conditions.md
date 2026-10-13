@@ -100,7 +100,8 @@ Both get their own worklist item.
     (ticked) 2026-10-08T10:15:25Z by d778be9d: commit:fec6008c2 scripts/gates/check-pr-condition-ledger.ts wired; selftest 25 controls; its pytest assertion fixed in commit:1364da26c
 - [x] Sweep: worklist items for the two go-deps tag holds
     (ticked) 2026-10-08T10:15:29Z by d778be9d: commit:d93a1be4c kubelet hold lifted (renet 1dbe423); the grpc and go-landlock holds stay valid
-- [ ] CI: E2E K8s, K8s Ceph and K8s Multinode SUCCEEDED on the branch head (not skipped); in-place upgrade of a 1.36 data dir checked by hand or recorded as a gap
+- [x] CI: E2E K8s, K8s Ceph and K8s Multinode SUCCEEDED on the branch head (not skipped); in-place upgrade of a 1.36 data dir checked by hand or recorded as a gap
+    (ticked) 2026-10-13T19:51:43Z by d778be9d: commit:d462ca9af PR 600 run 38451759370 on eced71537: E2E K8s 115487816638, K8s Ceph 115487816554, K8s Multinode 115487816657 success, 0 skipped; in-place 1.36 upgrade is the recorded gap (plan line 42)
 
 ## Risks
 
