@@ -855,22 +855,23 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 0,
+      "open": 8,
+      "done": 3,
       "open_sigs": [
-        "054be3a6",
         "21ec1969",
         "273478dd",
         "4ac71b3f",
         "9026a390",
-        "91808dc2",
         "b25d1127",
         "c81a3974",
         "d34570c5",
-        "dc1c77bb",
-        "f2cabb45"
+        "dc1c77bb"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "054be3a6",
+        "91808dc2",
+        "f2cabb45"
+      ]
     },
     "agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md": {
       "status": "compacted",

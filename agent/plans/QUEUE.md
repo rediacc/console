@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 13 plans done, 150 of 170 boxes done (88%).
+Promoted: 6 of 13 plans done, 153 of 170 boxes done (90%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -89,7 +89,7 @@ Promoted: 6 of 13 plans done, 150 of 170 boxes done (88%).
 | 10 | PLAN-cd-errors-in-ci.md | 5/6 | 1 open |
 | 11 | PLAN-scope-mirrors.md | 11/11 | done |
 | 12 | PLAN-lessons-registry.md | 9/9 | done |
-| 13 | PLAN-inline-suppressions.md | 0/11 | 11 open |
+| 13 | PLAN-inline-suppressions.md | 3/11 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
@@ -104,7 +104,7 @@ Promoted: 6 of 13 plans done, 150 of 170 boxes done (88%).
 10. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; 1 open, the live-run box; cd-preflight was green on four PR runs and the 10-07 replay already runs in CI (test_release_cd_preflight.py:179 and :700, Quality / Pytest (1/3)); the box closes on the first green run of that job on PR #600
 11. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): done, 11 of 11 boxes; leaves this list when PR #600 merges
 12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): done, 9 of 9 boxes; leaves this list when PR #600 merges
-13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; 11 boxes unticked; the renet, account and e2e drains are landed (renet bb9c148, account c6ec4ac and 3145dbe, console a9ffe368e to 6ca434160) and their boxes await ticks; the config and sweep patches (P0), the .claude and .ci Python patches and the shell markers are delivered and not yet landed
+13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; 3 of 11 boxes ticked (WC1 e2e, WC2 account, WD1 renet); WD2 waits on run_renet.py validating BLOCKER comments; the config and sweep patches (P0), the .claude and .ci Python patches (WA, WB) and the shell markers are delivered and not yet landed; P2 and F follow them
 
 ## Generated
 
