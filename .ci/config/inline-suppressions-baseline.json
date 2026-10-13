@@ -1754,9 +1754,6 @@
   },
   "packages/locales/site_locales.py": {
    "type-ignore union-attr": 1
-  },
-  "private/renet/build.sh": {
-   "shellcheck-disable SC2086": 2
   }
  }
 }
