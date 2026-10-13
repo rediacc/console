@@ -130,6 +130,15 @@ EDGE_CASES = [
         "a fed xargs -I local destination is local",
         "echo ./out | xargs -I{} scp host:/var/log/renet.log {}",
     ),
+    # Review 036b9e17.1: replace mode inside a bundle of short options, the marker as a source and as the destination.
+    (
+        "a bundled xargs -rI still uploads",
+        "echo bin/renet | xargs -rI{} scp {} host:/usr/local/bin/renet",
+    ),
+    (
+        "a bundled xargs -rI destination uploads",
+        "echo host:/usr/local/bin | xargs -rI{} scp bin/renet {}",
+    ),
     # Options are set aside the way getopt reads them (review f212d159.1).
     ("a trailing option does not hide the upload", "scp bin/renet host:/usr/local/bin/renet -q"),
     ("a value option before the operands", "scp -P 2222 -o BatchMode=yes bin/renet host:/p"),
@@ -202,6 +211,9 @@ def _replace_marker(options):
             return option[len("--replace=") :] or "{}"
         if option.startswith("-i"):
             return option[2:]
+        # A bundle of short options holding one of the three letters (`-rI{}`, `-0tI R`): which letter takes which value is xargs' own parse, so the marker is not named.
+        if not option.startswith("--") and re.search(r"[IJi]", option[1:]):
+            return ""
     return None
 
 
@@ -233,13 +245,12 @@ def run(ev):
         args = list(run_.argv if run_.xargv is None else run_.xargv)
         readings = [args]
         if run_.feed and "xargs" in run_.via:
-            # xargs appends its feed after scp's own words, so a fed word can be the destination (`echo host:/p | xargs scp bin/renet` uploads). In replace mode it appends nothing: each fed word stands wherever the marker is, as a source (`xargs -I{} scp {} host:/p`) or as the destination (`xargs -I{} scp bin/renet {}`), so scp's words are judged with every fed word in the marker's place. With the options or the marker unread, the literal and the appended readings are both judged.
+            # xargs appends its feed after scp's own words, so a fed word can be the destination (`echo host:/p | xargs scp bin/renet` uploads). In replace mode it appends nothing: each fed word stands wherever the marker is, as a source (`xargs -I{} scp {} host:/p`) or as the destination (`xargs -I{} scp bin/renet {}`), so scp's words are judged with every fed word in the marker's place. With no marker named (plain options, unread options, or a bundle of short ones), the literal and the appended readings are both judged.
             fed = run_.feed.split()
             marker = None if run_.xargs is None else _replace_marker(run_.xargs)
-            if run_.xargs is None or marker == "":
+            if marker is None or marker == "":
+                # The literal reading is kept beside the appended one: an option this reader took for plain may still be replace mode, and then scp's own last word is the destination.
                 readings = [args, args + fed]
-            elif marker is None:
-                readings = [args + fed]
             else:
                 readings = [[a.replace(marker, word) for a in args] for word in fed]
         if any(_uploads(reading) for reading in readings):
