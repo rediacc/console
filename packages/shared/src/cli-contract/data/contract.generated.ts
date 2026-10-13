@@ -3313,7 +3313,31 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.config.remote.disable.description",
       "label": "Disconnect from remote storage and save config locally",
-      "options": [],
+      "options": [
+        {
+          "flags": "--local",
+          "long": "local",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.disable.optionLocal",
+          "label": "Unlink on this device only, from the cached copy, without contacting the server"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
