@@ -3,8 +3,10 @@
  *
  * Stores secrets (passkey_secret) in OS-native secure storage:
  * - Linux:   Kernel user keyring (keyctl @u); emptied at every restart, the device then enrolls again
- * - macOS:   Keychain (security command)
- * - Windows: DPAPI (encrypted files)
+ * - macOS:   Keychain (security command), the value armoured as base64 so any string comes back byte-exact
+ * - Windows: DPAPI (one ciphertext file per key, named by the SHA-256 of the key)
+ *
+ * NO SECRET ON A COMMAND LINE. Every backend hands the value to its tool on standard input, never as an argument: an argument is readable by other processes for the life of the child (`ps`, procfs) and is what process-creation auditing records.
  *
  * ONE RULE ON EVERY PLATFORM (operator ruling 2026-10-13). The native backend is used only after it stored, read back and removed a throwaway key in this process. When it cannot, selection refuses with SecureStorageUnavailableError, whose message names the missing tool and the opt-in. No machine gets a disk-held secret without choosing it:
  * `REDIACC_SECRET_STORE=file` selects the file backend (a JSON file, mode 0o600, in the CLI state directory) and says so once per process on stderr.
@@ -13,7 +15,7 @@
  */
 
 import { type ExecFileSyncOptionsWithStringEncoding, execFileSync } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getRediaccDirs } from '@rediacc/shared/paths';
@@ -26,7 +28,7 @@ const SERVICE_NAME = 'rdc-config';
 
 // ─── Key allowlist (defense-in-depth) ───────────────────────────────────
 //
-// The storage key (`storageKeyId`) is SERVER-provided over the config-remote handoff, so it reaches these sinks fully untrusted. Even though every backend below now passes it as an argv element (never interpolated into a shell string), we reject anything outside a conservative allowlist so a hostile value can never reach a native tool at all. Covers the handoff storageKeyId and
+// The storage key (`storageKeyId`) is SERVER-provided over the config-remote handoff, so it reaches these sinks fully untrusted. Even though every backend below passes it as an argv element or one token of a `security -i` line (never interpolated into a shell string or a script), we reject anything outside a conservative allowlist so a hostile value can never reach a native tool at all. Covers the handoff storageKeyId and
 // the `rdc:pw:<uuid>` password-flow keys.
 const SAFE_KEY = /^[A-Za-z0-9:_-]{1,200}$/;
 
@@ -64,7 +66,7 @@ export class SecureStorageUnavailableError extends CliExitError {
 // ─── Backends ───────────────────────────────────────────────────────────
 
 /**
- * A native tool that could not do what was asked. Carries the tool's first stderr line and NEVER the command line: on a write the command line holds the secret, and Node puts it in the message of the error it raises.
+ * A native tool that could not do what was asked. Carries the tool's first stderr line and never Node's own error, whose message repeats the whole command line.
  */
 class ToolFailure extends Error {
   constructor(
@@ -96,11 +98,10 @@ const QUIET: ExecFileSyncOptionsWithStringEncoding = {
   stdio: ['ignore', 'pipe', 'ignore'],
 };
 
-/** stdout and stderr as text, so a failure can quote the tool's own words. */
-const CAPTURED: ExecFileSyncOptionsWithStringEncoding = {
-  encoding: 'utf-8',
-  stdio: ['ignore', 'pipe', 'pipe'],
-};
+/** The payload goes to the tool on stdin; stdout and stderr come back as text, so a failure can quote the tool's own words. */
+function fed(input: string): ExecFileSyncOptionsWithStringEncoding {
+  return { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], input };
+}
 
 function settle<T>(operation: () => T): Promise<T> {
   try {
@@ -151,7 +152,8 @@ class KeyctlStorage extends Backend {
     // Remove existing key if present
     this.remove(key);
     try {
-      execFileSync('keyctl', ['add', 'user', key, value, '@u'], CAPTURED);
+      // `padd` reads the payload from stdin to its end, byte for byte; `add` took it as an argument.
+      execFileSync('keyctl', ['padd', 'user', key, '@u'], fed(value));
     } catch (error) {
       throw toolFailure('keyctl', error);
     }
@@ -171,47 +173,150 @@ class KeyctlStorage extends Backend {
 }
 
 // ─── macOS: Keychain ────────────────────────────────────────────────────
+//
+// TWO PROPERTIES OF `security` SHAPE THIS BACKEND (Apple's SecurityTool source, and the first macOS run of the native suite).
+//
+// 1. `find-generic-password -w` prints the stored bytes as they are only when every byte is printable; otherwise it prints their hex digits, with nothing to tell the two apart. A value with a newline or a non-ASCII letter came back as hex.
+//    So the value is stored ARMOURED, as `rdc-b64.<parts>.<base64 of the UTF-8 bytes>`: printable ASCII only, which `security` never rewrites. Hex output is never decoded, so a value that is itself hex digits needs no guess.
+// 2. `add-generic-password` takes the password as an argument, or prompts for it through getpass(3), which reads the terminal. The one way to keep it off argv is `security -i`, which reads whole command lines from stdin.
+//    A line there is at most 4095 bytes (`MAX_LINE_LEN 4096`), and a longer one is cut and its tail run as the next command. So the base64 text is split into parts that fit, one Keychain item each: the head under service `rdc-config`, part N under `rdc-config:N`.
+//
+// LEGACY ENTRIES. Before the armour, the value was stored as given. Every value this CLI stored is base64 text (a slot secret), which can never start with `rdc-b64.`: neither `-` nor `.` is in the base64 alphabet. A head without the marker is therefore a legacy entry and is returned as it is; the next write replaces it with the armoured form.
+
+const KEYCHAIN_ARMOUR = /^rdc-b64\.(\d+)\.([A-Za-z0-9+/=]*)$/;
+/** Base64 characters per Keychain item. With the longest key (200) the command line stays under 3400 bytes. */
+const KEYCHAIN_PART_CHARS = 3072;
+/** The longest line `security -i` takes whole. */
+const SECURITY_LINE_MAX = 4095;
+/** A token `security -i` passes through untouched: no whitespace, quote or backslash, the three things its line splitter interprets. */
+const SECURITY_TOKEN = /^[A-Za-z0-9+/=:._-]+$/;
+
+function keychainService(part: number): string {
+  return part === 0 ? SERVICE_NAME : `${SERVICE_NAME}:${part}`;
+}
+
+/** One command line for `security -i`. Refuses a token the tool would reinterpret and a line it would cut, so neither can reach it. */
+function securityLine(tokens: readonly string[]): string {
+  const line = tokens.join(' ');
+  if (!tokens.every((token) => SECURITY_TOKEN.test(token)) || line.length > SECURITY_LINE_MAX) {
+    throw new Error('Refusing a `security` command line the tool would not read as written');
+  }
+  // The newline is part of the command: at EOF the tool drops a line that has none.
+  return `${line}\n`;
+}
 
 class KeychainStorage extends Backend {
   readonly type = 'keychain';
 
-  read(key: string): string | null {
+  /** The password of one item, without the newline `security` prints after it. */
+  private find(key: string, part: number): string | null {
     try {
-      const result = execFileSync(
+      const printed = execFileSync(
         'security',
-        ['find-generic-password', '-a', key, '-s', SERVICE_NAME, '-w'],
+        ['find-generic-password', '-a', key, '-s', keychainService(part), '-w'],
         QUIET
       );
-      return result.trim() || null;
+      return printed.endsWith('\n') ? printed.slice(0, -1) : printed;
     } catch {
       return null;
     }
   }
 
+  read(key: string): string | null {
+    const head = this.find(key, 0);
+    if (head === null) return null;
+    const armoured = KEYCHAIN_ARMOUR.exec(head);
+    // A legacy entry: stored as given, returned as the code that stored it returned it.
+    if (!armoured) return head.trim() || null;
+    let encoded = armoured[2];
+    for (let part = 1; part < Number(armoured[1]); part++) {
+      const next = this.find(key, part);
+      if (next === null) return null;
+      encoded += next;
+    }
+    return Buffer.from(encoded, 'base64').toString('utf-8');
+  }
+
   write(key: string, value: string): void {
-    // Delete existing entry first (update not supported directly)
+    const encoded = Buffer.from(value, 'utf-8').toString('base64');
+    const parts = encoded.match(new RegExp(`.{1,${KEYCHAIN_PART_CHARS}}`, 'g')) ?? [''];
+    // Every part of the previous value goes first: a shorter value must not leave the tail of a longer one behind.
     this.remove(key);
-    try {
-      execFileSync(
-        'security',
-        ['add-generic-password', '-a', key, '-s', SERVICE_NAME, '-w', value, '-U'],
-        CAPTURED
-      );
-    } catch (error) {
-      throw toolFailure('security', error);
+    for (const [part, chunk] of parts.entries()) {
+      const password = part === 0 ? `rdc-b64.${parts.length}.${chunk}` : chunk;
+      const line = securityLine([
+        'add-generic-password',
+        '-a',
+        key,
+        '-s',
+        keychainService(part),
+        '-U',
+        '-w',
+        password,
+      ]);
+      try {
+        // One command per process: `security -i` exits with the result of its last command.
+        execFileSync('security', ['-i'], fed(line));
+      } catch (error) {
+        throw toolFailure('security', error);
+      }
     }
   }
 
   remove(key: string): void {
-    try {
-      execFileSync('security', ['delete-generic-password', '-a', key, '-s', SERVICE_NAME], QUIET);
-    } catch {
-      // Entry doesn't exist, ok
+    // The head, then the parts in order until one is absent. A legacy entry and a short value have none.
+    for (let part = 0; ; part++) {
+      try {
+        execFileSync(
+          'security',
+          ['delete-generic-password', '-a', key, '-s', keychainService(part)],
+          QUIET
+        );
+      } catch {
+        if (part > 0) return;
+      }
     }
   }
 }
 
 // ─── Windows: DPAPI ─────────────────────────────────────────────────────
+//
+// Windows PowerShell 5.1 (`powershell.exe`, part of every supported Windows) runs one fixed script. PowerShell 7 (`pwsh`) is never called, so whether it is installed does not matter.
+//
+// - `Add-Type -AssemblyName System.Security` comes first: on .NET Framework `ProtectedData` lives in System.Security.dll, which Windows PowerShell does not load on its own. Without it every call ended in `TypeNotFound`, so no secret was ever stored on Windows and there is no earlier file format to read.
+// - The script text is a constant. Plaintext and ciphertext reach it on stdin, through `$input`, as base64; the result leaves on stdout as base64 behind a marker. Only ASCII crosses either pipe, so no console code page, BOM or line ending can change a byte, and no value can become script text.
+// - `$ErrorActionPreference='Stop'` turns any failure into a non-zero exit. The marker makes the answer unmistakable either way: output without it is a failure, whatever the exit code.
+// - `-Command` runs a string, which no execution policy governs (a policy governs script files), so none is passed.
+
+const DPAPI_MARKER = 'rdc-dpapi:';
+const DPAPI_ANSWER = /^rdc-dpapi:([A-Za-z0-9+/]*={0,2})$/;
+
+function dpapiScript(method: 'Protect' | 'Unprotect'): string {
+  return [
+    "$ErrorActionPreference='Stop'",
+    'Add-Type -AssemblyName System.Security',
+    "$data=[Convert]::FromBase64String((@($input) -join ''))",
+    `$result=[Security.Cryptography.ProtectedData]::${method}($data,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser)`,
+    `[Console]::Out.Write('${DPAPI_MARKER}'+[Convert]::ToBase64String($result))`,
+  ].join(';');
+}
+
+/** Runs the script over `bytes` and returns the bytes it answered with. */
+function dpapi(method: 'Protect' | 'Unprotect', bytes: Buffer): Buffer {
+  let printed: string;
+  try {
+    printed = execFileSync(
+      'powershell.exe',
+      ['-NonInteractive', '-NoProfile', '-Command', dpapiScript(method)],
+      fed(bytes.toString('base64'))
+    );
+  } catch (error) {
+    throw toolFailure('powershell', error);
+  }
+  const answer = DPAPI_ANSWER.exec(printed.trim());
+  if (!answer) throw new ToolFailure('powershell', false, undefined);
+  return Buffer.from(answer[1], 'base64');
+}
 
 class DpapiStorage extends Backend {
   readonly type = 'dpapi';
@@ -224,44 +329,29 @@ class DpapiStorage extends Backend {
     mkdirSync(this.keysDir, { recursive: true });
   }
 
+  /**
+   * One file per key, named by the SHA-256 of the key. Two keys never share a file, whatever they hold: the earlier name replaced `:` with `_`, so `a:b` and `a_b` were one file.
+   * A spelled-out key cannot be the name. NTFS folds case, so `A` and `a` would be one file, and an escape that tells them apart grows a 200-character key past what a Windows path holds. The file records its key instead, and a read checks it.
+   */
   private keyPath(key: string): string {
-    // Sanitize key for filesystem
-    const safeKey = key.replaceAll(/[^a-zA-Z0-9_.-]/g, '_');
-    return join(this.keysDir, `${safeKey}.dpapi`);
+    return join(this.keysDir, `${createHash('sha256').update(key, 'utf-8').digest('hex')}.dpapi`);
   }
 
   read(key: string): string | null {
     const path = this.keyPath(key);
     if (!existsSync(path)) return null;
     try {
-      const encrypted = readFileSync(path, 'utf-8');
-      // Pass the ciphertext through an env var, never interpolated into the script, so a tampered cache file cannot inject PowerShell.
-      const script =
-        '[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($env:RDC_DPAPI_ENC), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
-      const result = execFileSync('powershell', ['-NoProfile', '-Command', script], {
-        ...QUIET,
-        env: { ...process.env, RDC_DPAPI_ENC: encrypted.trim() },
-      });
-      return result.trim() || null;
+      const stored = JSON.parse(readFileSync(path, 'utf-8')) as { key?: unknown; blob?: unknown };
+      if (stored.key !== key || typeof stored.blob !== 'string') return null;
+      return dpapi('Unprotect', Buffer.from(stored.blob, 'base64')).toString('utf-8');
     } catch {
       return null;
     }
   }
 
   write(key: string, value: string): void {
-    // Pass the secret through an env var, never interpolated into the script, so a secret containing quotes/newlines cannot inject PowerShell.
-    const script =
-      '[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($env:RDC_DPAPI_VALUE), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
-    let encrypted: string;
-    try {
-      encrypted = execFileSync('powershell', ['-NoProfile', '-Command', script], {
-        ...CAPTURED,
-        env: { ...process.env, RDC_DPAPI_VALUE: value },
-      }).trim();
-    } catch (error) {
-      throw toolFailure('powershell', error);
-    }
-    writeFileSync(this.keyPath(key), encrypted, { mode: 0o600 });
+    const blob = dpapi('Protect', Buffer.from(value, 'utf-8')).toString('base64');
+    writeFileSync(this.keyPath(key), JSON.stringify({ key, blob }), { mode: 0o600 });
   }
 
   remove(key: string): void {
