@@ -92,19 +92,19 @@ Promoted: 6 of 13 plans done, 150 of 170 boxes done (88%).
 | 13 | PLAN-inline-suppressions.md | 0/11 | 11 open |
 <!-- queue:progress:end -->
 
-1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; W11-B and its integration in flight
-2. agent/plans/PLAN-deferred-findings-block-merge.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; M3 waits on Quality / Branch on the pushed head
-3. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; candidates 1, 3, 4, 6, 7 of agent/reports/consolidation-investigation-2026-10-04.md in one plan, one PR -- solo
-4. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: T9 (the enforced matrix in DESIGN-CONFIG-STORAGE.md) and T10 (live smoke)
-5. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: the 9 open boxes
-6. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: Step 12
-7. agent/plans/PLAN-config-passkey-optional.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 4 boxes open, T4 pre-deploy production query then eu deploy and Bitwarden walk-through (unblocks the org-selection chain)
-8. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 16 boxes open, R1 root-cause the nightly Console CI failure on main (PLAN-ci-verdict is done, so ci-trace works)
-9. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: ALMOST-FINISHED, 1 of 23 boxes open, R20260924.15 re-count the seven frictions on .blocklog and record before/after in Status
-10. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; W1 is the housekeeping root fix due before the 03:00Z run
-11. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): queued after the Promoted entries; eight live drifts F1-F8 predicted
-12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): extends TRAPS.md and check:ci-trap-registry with content-checked Documented-In anchors
-13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; fix in code, deliberate patterns to linter config with BLOCKER reasons
+1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
+2. agent/plans/PLAN-deferred-findings-block-merge.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; 1 open, M3 closes on wl_review.py --check and check:ci-review-resolutions at exit 0 with Quality / Branch green on the pushed head (no operator-only finding exists)
+3. agent/plans/PLAN-ci-consolidation.md -- operator /ask 2026-10-04: "Next (pos 2)"; done, 22 of 22 boxes; leaves this list when PR #600 merges
+4. agent/plans/PLAN-config-team-scoping.md -- operator /ask 2026-10-03: 1 open, T10 closure; the live smoke passed on bench on 2026-10-13 (a member of team X gets 403 team_forbidden on team Y, worker 2783794b) and local evidence is complete; T10 closes on a finished CI run's log
+5. agent/plans/PLAN-plan-dependencies.md -- operator /ask 2026-10-03: done, 12 of 12 boxes; leaves this list when PR #600 merges
+6. agent/plans/PLAN-remove-cross-session-messaging.md -- operator /ask 2026-10-03: 4 open, Step 9 (full hook suite), Step 10 (registries), the --poll box of Step 12 through the plan verbs, Step 13 (ci:quick and the live Stop check)
+7. agent/plans/PLAN-config-passkey-optional.md -- operator 2026-10-08 melt-the-list: 1 open, T4; the production query and the eu deploy are done, and by operator ruling 2026-10-13 the no-PRF walk is the CI spec 20-12 against the real Bitwarden extension (account a8cea4d), required from day one; T4 closes on its first green hosted-runner run
+8. agent/plans/PLAN-plan-per-pr-loop.md -- operator 2026-10-08 melt-the-list: 1 open, R1; the nightly red on main is root-caused (the plan_housekeeping selftest's fixed date, fixed by 2031437e7 on this branch) and R1 closes on a green scheduled run after the merge
+9. agent/plans/PLAN-stop-hook-retro-20260924.md -- operator 2026-10-08 melt-the-list: done, 23 of 23 boxes; leaves this list when PR #600 merges
+10. agent/plans/PLAN-cd-errors-in-ci.md -- operator 2026-10-08: catch CD errors at CI level; 1 open, the live-run box; cd-preflight was green on four PR runs and the 10-07 replay already runs in CI (test_release_cd_preflight.py:179 and :700, Quality / Pytest (1/3)); the box closes on the first green run of that job on PR #600
+11. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): done, 11 of 11 boxes; leaves this list when PR #600 merges
+12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): done, 9 of 9 boxes; leaves this list when PR #600 merges
+13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; 11 boxes unticked; the renet, account and e2e drains are landed (renet bb9c148, account c6ec4ac and 3145dbe, console a9ffe368e to 6ca434160) and their boxes await ticks; the config and sweep patches (P0), the .claude and .ci Python patches and the shell markers are delivered and not yet landed
 
 ## Generated
 
