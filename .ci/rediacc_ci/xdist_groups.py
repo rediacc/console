@@ -229,7 +229,7 @@ def order_longest_first(files: list[str], durations: dict[str, float], default: 
 # --------------------------------------------------------------------------
 # What remains in a group is a resource machine-wide by construction (the docstring above): a driver pinning constant ports, a fixed tmp path. `--dist loadgroup` serialises a group inside ONE pytest run only. Once the core lease split the machine fairly between concurrent runs (agent/plans/PLAN-prepush-full-cpu.md B11), two runs at 12 workers each both ran `account-shadow-fixed-ports` at once and nine of its cases failed on "port 45210 is taken ... [Errno 98] Address already in use". So every group also takes a flock named for it, beside the core lease, from its first item to its last in a worker: one process holds at most one group lock at a time, so two runs cannot deadlock on two groups taken in opposite orders, and process death releases the lock.
 
-#: How long an item waits for another run to leave its group before failing with the holder named. The largest group measured 217.3 s in one run (env-manifest, 2026-10-05); a holder that keeps it past this is hung, not busy.
+#: How long an item waits for ONE holder to leave its group before failing with that holder named. The largest group measured 217.3 s in one run (env-manifest, 2026-10-05); a holder that keeps it past this is hung, not busy. The bound is per holder: a queue of several runs taking the group in turn is busy, not hung, and on 2026-10-13 a waiter behind three writers' suites was failed as if one of them had hung.
 GROUP_LOCK_WAIT_S = 900.0
 GROUP_LOCK_POLL_S = 0.2
 
@@ -259,13 +259,17 @@ class MachineGroupLock:
         path = root / ("%s.lock" % "".join(c if c.isalnum() or c in "-_" else "_" for c in group))
         fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
         deadline = time.monotonic() + self._wait_s
+        seen = ""
         while True:
             try:
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 break
             except BlockingIOError:
+                holder = os.pread(fd, 200, 0).decode("utf-8", "replace").strip()
+                if holder != seen:
+                    # Another run has the group now: the one waited on left, so the clock starts again for this one.
+                    seen, deadline = holder, time.monotonic() + self._wait_s
                 if time.monotonic() >= deadline:
-                    holder = os.pread(fd, 200, 0).decode("utf-8", "replace").strip()
                     os.close(fd)
                     raise TimeoutError(
                         "xdist group %r is held machine-wide by another run (%s) for over %g s; "

@@ -428,6 +428,26 @@ def test_a_hung_holder_is_named_after_the_bound(tmp_path) -> None:
         holder.wait()
 
 
+def test_a_queue_of_holders_is_busy_not_hung(tmp_path) -> None:
+    """The bound is per holder. The group stays taken for 3 s against a 2 s bound, but the name in the lock file changes after 1.2 s, as it does when one run leaves and the next takes the group, so no single holder outlives the bound and the waiter gets in."""
+    holder = _hold(tmp_path, "queued", 3)
+    lock_file = tmp_path / "queued.lock"
+
+    def next_holder() -> None:
+        __import__("time").sleep(1.2)
+        lock_file.write_text("pid 1\n", encoding="utf-8")
+
+    changer = __import__("threading").Thread(target=next_holder)
+    changer.start()
+    try:
+        lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=2)
+        lock.enter("queued")
+        lock.release()
+    finally:
+        changer.join()
+        holder.wait(timeout=30)
+
+
 def test_one_process_holds_at_most_one_group(tmp_path) -> None:
     lock = xdist_groups.MachineGroupLock(root=tmp_path, wait_s=1)
     lock.enter("first")
