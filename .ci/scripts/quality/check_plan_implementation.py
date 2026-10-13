@@ -148,20 +148,31 @@ def in_scope(ledger_plans, finished_states):
     return n_plans, n_open
 
 
+def clock_key(rel):
+    """`P-A1:<rel>`, the key one plan's open boxes are carried under.
+
+    PER PLAN, NEVER OVER THE SET. Until 2026-10-13 P-A1 was one finding naming every plan on the clock, keyed by a hash of that message, so the key belonged to the set. Commit 36a1325fb ticked two boxes of a queued plan, which put that plan on the clock, and `P-A1:0c9ea2c3e2ce` became `P-A1:99bbfe3180cd` although no plan the carry named had changed.
+
+    Keyed by its own path, a plan's key holds while the plan has an open box and goes when the last one closes. A tick therefore removes a carried key or leaves it alone. The one key a tick can add belongs to a plan that was not on the clock before, and a carry is right to refuse that one.
+    """
+    return "P-A1:%s" % rel
+
+
 def clock_findings(offenders):
-    """P-A1. [] when no plan on the clock has an open box; one finding naming every plan that has.
+    """P-A1. [] when no plan on the clock has an open box; else one finding per plan that has, keyed `clock_key(rel)`.
 
     OPERATOR RULING 2026-09-26: "each new plan should be implemented, there should be no threshold to tolerate. Remove that threshold number at plan-implementation check." The descending ceiling (a baseline minus a daily drain) is gone: a plan that is not held and not finished is either fully implemented or red. `offenders` is [(rel, open)].
 
     OPERATOR RULING 2026-10-02 (worklist #508defc2, "Clock the PR's plan only"): the 2026-09-26 rule above holds unchanged, but only over the plans `clock_scope` puts on the clock, the live PR's plan and the plans this branch ticked. The caller filters `offenders` to that scope before calling here.
     """
-    if not offenders:
-        return []
-    listed = ", ".join("%s (%d)" % (rel, n) for rel, n in offenders)
     return [
-        "P-A1 OPEN BOXES: %d plan(s) on this PR's clock (the queue head and the plans this branch ticked) "
-        "are unfinished and carry open boxes: %s. There is no threshold (operator ruling "
-        "2026-09-26): implement and tick every box, or finish the plan." % (len(offenders), listed)
+        Finding(
+            "P-A1 OPEN BOXES: %s (%d) is on this PR's clock (the queue head and the plans this "
+            "branch ticked), unfinished, with open boxes. There is no threshold (operator ruling "
+            "2026-09-26): implement and tick every box, or finish the plan." % (rel, n),
+            clock_key(rel),
+        )
+        for rel, n in offenders
     ]
 
 
@@ -819,6 +830,25 @@ def controls_fired(enforce, planfile, planrec=None):
     caught(
         "C8c: the finding does not name the plan and its count",
         "a.md (1)" in " ".join(clock_findings(offenders)),
+    )
+
+    # C8f/C8g/C8h -- ONE KEY PER PLAN (2026-10-13). The key is the plan's path, so a tick that leaves the plan open cannot move it, and a plan joining the clock cannot move another plan's key.
+    def clock_keys(offs):
+        return sorted(key_of(f) for f in clock_findings(offs))
+
+    two = [("agent/plans/PLAN-a.md", 3), ("agent/plans/PLAN-b.md", 1)]
+    caught(
+        "C8f: two plans on the clock were not keyed P-A1:<rel>, one key each",
+        clock_keys(two) == ["P-A1:agent/plans/PLAN-a.md", "P-A1:agent/plans/PLAN-b.md"],
+    )
+    caught(
+        "C8g: a third plan joining the clock moved a key of the two already on it",
+        clock_keys([*two, ("agent/plans/PLAN-c.md", 1)])
+        == [*clock_keys(two), "P-A1:agent/plans/PLAN-c.md"],
+    )
+    caught(
+        "C8h: CONTROL: a plan whose last box closed kept its key",
+        clock_keys(two[:1]) == ["P-A1:agent/plans/PLAN-a.md"],
     )
     caught(
         "C8d: a held plan was not reported (P-A8)",

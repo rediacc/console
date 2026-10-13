@@ -174,7 +174,7 @@ SIGNATURES = (
         300,
     ),
     ("go-fail", "code", re.compile(r"^--- FAIL: "), "a Go test failed", 0),
-    # This repo's gates print `::finding::<rule>:<hash>` beside the finding they report (Quality / Branch on run 36974364712: `::finding::P-A1:...` under "P-A1 OPEN BOXES").
+    # This repo's gates print `::finding::<key>` beside the finding they report (Quality / Branch on run 36974364712: `::finding::P-A1:...` under "P-A1 OPEN BOXES").
     ("gate-finding", "code", re.compile(r"^::finding::\S"), "a repo gate reported a finding", 0),
     ("pytest-failed", "code", re.compile(r"^FAILED \S+::"), "a pytest case failed", 0),
     ("assertion", "code", re.compile(r"\bAssertionError\b"), "an assertion failed", 0),
