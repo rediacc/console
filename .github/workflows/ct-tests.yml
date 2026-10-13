@@ -2680,6 +2680,9 @@ jobs:
         # the @webauthn coverage-floor bundle; rediacc_ci.testrun.account_e2e derives both
         # from the leg's actual file list rather than trusting these numbers,
         # so this comment is documentation, not a contract the script relies on.
+        # The leg holding the @real-provider spec (the pinned Bitwarden extension
+        # against a throwaway Vaultwarden vault) is derived the same way, and
+        # that leg fails unless the spec ran: none skipped, none retried.
         shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2734,6 +2737,19 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('private/account/e2e/package-lock.json') }}
+      # The real-provider spec (private/account/e2e, 20-12) loads two pinned
+      # third-party artifacts: the Bitwarden extension zip and the Vaultwarden
+      # binary. private/account/e2e/real-provider.lock.json names both by
+      # version and sha256, and the spec's own fetch verifies them on every run,
+      # cached or not, so this cache saves two downloads and proves nothing.
+      # Keyed on the lock file: a pin bump changes the hash and the next run
+      # downloads the new artifacts. Every leg restores it and only the leg that
+      # holds the spec fills the directory; on the others the save step finds no
+      # path and writes nothing.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/rediacc/real-provider
+          key: real-provider-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('private/account/e2e/real-provider.lock.json') }}
       - name: Install Stripe CLI
         # Leg 1 holds the 10-stripe mutex unit (test-account-e2e.json); the
         # other three never call `stripe`, so skipping the install there is a

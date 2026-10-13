@@ -165,6 +165,26 @@ symptom this variable exists to prevent. The documented cure was producing the d
 
 After reproducing, unset `RDC_RENET_LICENSE` (or remove from your shell) so subsequent `./rdc.sh` invocations rebuild the dev-friendly nolicense renet again.
 
+## A real passkey provider in the account E2E suite
+
+`private/account/e2e/tests/20-config-storage/20-12-real-provider-bitwarden.test.ts` drives the real Bitwarden browser extension, headless, against a throwaway Vaultwarden vault, to prove on a real provider that a passkey without PRF ends in the master-password path.
+It runs the same way on a CI runner, on a host and in the devbox, because it needs nothing privileged: no container runtime, no secret, only `openssl` and Playwright's bundled Chromium.
+The two third-party artifacts are pinned by version and sha256 in `private/account/e2e/real-provider.lock.json` and verified on every run.
+
+```bash
+# In the devbox, with `./run.sh account dev` running there
+./run.sh devbox exec "./run.sh account test e2e --grep @real-provider"
+
+# What CI runs: backend, portal and suite in one command (needs the account test secrets in the environment)
+PYTHONPATH=.ci python3 -m rediacc_ci.testrun.account_e2e --grep @real-provider
+```
+
+In CI the spec is one unit of the `test-account-e2e` lane (`.ci/config/shards/test-account-e2e.json`), so it is part of `CI Complete` like every other account spec.
+The runner then reads Playwright's report and fails the leg unless the `@real-provider` test ran with status `expected`: a skip, a failure and a pass on retry all count against it.
+
+The spec's canary fails when a bumped Bitwarden pin starts returning PRF.
+What that means, the bump procedure, the launch flags and the `agent-browser --extension` form for probing by hand are in [private/account/e2e/README.md](../../private/account/e2e/README.md), section *Real provider*.
+
 ## Run Functions (escape hatch, debugging only)
 
 `rdc run` executes Rediaccfile functions remotely. It is hidden from help and MCP, and is for debugging only. Prefer the dedicated commands above. The function name is passed with `-f`.
