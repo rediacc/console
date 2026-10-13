@@ -364,10 +364,19 @@ export function registerRemoteCommands(configCommand: Command): void {
         const { configFileStorage } = await import('../adapters/config-file-storage.js');
         const config = await configFileStorage.load(configName);
 
+        // A linked config is refused only while this device can still open it. Once its credentials are gone (the keyring that held the slot secret did not outlive a reboot, the token chain died with no login to renew it, the key was rotated), enable enrolls THIS device again against the same store: `disable` needs those same credentials, so it was never a way out.
         if (hasRemoteConfig(config)) {
-          throw new ValidationError(
-            t('commands.config.remote.enable.alreadyEnabled', { name: configName })
-          );
+          const { enrollmentUsable, reenroll } = await import('./config-remote-reenroll.js');
+          if (await enrollmentUsable(config.remote, configName)) {
+            throw new ValidationError(
+              t('commands.config.remote.enable.alreadyEnabled', { name: configName })
+            );
+          }
+          await reenroll(configName, config.remote, {
+            password: Boolean(options.password),
+            apiUrl: options.apiUrl,
+          });
+          return;
         }
 
         const apiUrl = options.apiUrl ?? getSubscriptionServerUrl();
