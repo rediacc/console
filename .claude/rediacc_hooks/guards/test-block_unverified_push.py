@@ -385,6 +385,22 @@ put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
 carry(keyed(K1), keyed(K1, gate="check:lint"))
 cases.append((2, run(PUSH), "a STALE carried entry (its gate now green) refuses"))
 
+
+# NOT RUN IS NOT GREEN: the same two carries, with the second gate recorded as deferred by the lane. Refused before, as if a gate that never ran had gone green.
+def _two_carried(second):
+    return {
+        "check:fixture-ok": GM._gate_entry("ok"),
+        "check:fixture-cionly": GM._gate_entry("ciOnly"),
+        TRAILERS: GM._gate_entry("fail"),
+        "check:lint": GM._gate_entry(second),
+    }
+
+
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("deferred"))
+cases.append((0, run(PUSH), "a carried gate the lane DEFERRED is not stale"))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]}, gates=_two_carried("ok"))
+cases.append((2, run(PUSH), "CONTROL: the same carried gate recorded as ok is stale"))
+
 # The same rot on a WHOLLY GREEN receipt: nothing failing means every carried entry is stale. Measured 2026-10-02, this arm ran only on a red receipt, so the check:ci-external-links carry rode the green push of afe0503db unremarked.
 put(exitCode=0)
 carry(keyed(K1))

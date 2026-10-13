@@ -1250,6 +1250,10 @@ def dropped_verdict(receipt, tree, trees=None):
     )
 
 
+# The receipt verdicts (scripts/ci-runner/run.ts `ReceiptGate.verdict`) of a gate that did not run in the lane.
+NOT_RUN_VERDICTS = ("deferred", "ciOnly", "blocked")
+
+
 def carried_verdict(receipt, doc):
     """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs.
 
@@ -1278,7 +1282,15 @@ def carried_verdict(receipt, doc):
         ), []
 
     # STALE ENTRIES REFUSE. An excuse that outlives its failure is exactly how an allowlist rots into a permanent hole -- the npm side of this repo once carried 101 dead entries for that reason. If a carried gate is no longer failing, the entry must go before the next push.
-    stale = "".join(" %s" % g for g in sorted(carried) if g not in failed)
+    # NOT FAILING IS NOT THE SAME AS NOT RUN. The quick lane defers a slow gate whose inputs the push does not touch and records it as `deferred` (`ciOnly` and `blocked` likewise never ran); such a gate has not gone green, so its carry is not stale. Without this a push whose diff touched nothing check:ci-pytest reads was refused for carrying that gate's host-only skips (2026-10-13). A carried gate the receipt does not list at all stays stale.
+    gates = receipt.get("gates") if isinstance(receipt, dict) else None
+    gates = gates if isinstance(gates, dict) else {}
+    not_run = {
+        g
+        for g, entry in gates.items()
+        if isinstance(entry, dict) and entry.get("verdict") in NOT_RUN_VERDICTS
+    }
+    stale = "".join(" %s" % g for g in sorted(carried) if g not in failed and g not in not_run)
     if stale:
         return (
             "these gates are carried in .ci/config/carried-reds.json but are NOT failing"
