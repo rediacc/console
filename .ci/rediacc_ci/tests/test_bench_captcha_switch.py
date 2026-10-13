@@ -9,7 +9,7 @@ from pathlib import Path
 from rediacc_ci.ops import deploy_bench
 
 ROOT = Path(__file__).resolve().parents[3]
-CONFIGS = sorted((ROOT / "workers" / "account").glob("wrangler.*.toml"))
+CONFIGS = sorted((ROOT / "workers" / "account").glob("wrangler*.toml"))
 SWITCHES = ("TURNSTILE_ENABLED", "CI_MODE", "TEST_MODE")
 
 

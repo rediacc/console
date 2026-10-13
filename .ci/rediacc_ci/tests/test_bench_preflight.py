@@ -5,6 +5,7 @@ Both were paid for on 2026-09-24: a deploy applied 21 D1 migrations and then die
 
 import json
 import os
+import shlex
 import subprocess
 import sys
 
@@ -26,7 +27,10 @@ def _run(tmp_path, call, npm_ls_rc=0, listed=(), config=None, npm_ls_out=""):
     report = tmp_path / "npm-ls.json"
     report.write_text(npm_ls_out, encoding="utf-8")
     _stub(
-        bin_dir, "npm", 'if [ "$1" = ls ]; then cat %s; exit %d; fi\nexit 0\n' % (report, npm_ls_rc)
+        bin_dir,
+        "npm",
+        'if [ "$1" = ls ]; then cat %s; exit %d; fi\nexit 0\n'
+        % (shlex.quote(str(report)), npm_ls_rc),
     )
     names = "".join("name:           %s\\n" % b for b in listed)
     _stub(
@@ -103,6 +107,31 @@ def test_a_missing_dependency_beside_a_linked_package_is_still_refused(tmp_path)
     done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
     assert done.returncode == 1
     assert "does not match its package-lock.json" in done.stderr
+
+
+def test_a_mark_on_the_link_itself_is_refused(tmp_path):
+    tree = {
+        "problems": ["invalid: shared"],
+        "dependencies": {"@rediacc/shared": dict(LINKED, invalid=True)},
+    }
+    done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
+    assert done.returncode == 1
+
+
+def test_a_listed_problem_no_linked_mark_explains_is_refused(tmp_path):
+    tree = {
+        "problems": ["missing: zod", "something else"],
+        "dependencies": {"@rediacc/shared": LINKED},
+    }
+    done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
+    assert done.returncode == 1
+
+
+def test_a_file_tarball_is_not_a_link(tmp_path):
+    packed = {"resolved": "file:vendor/x-1.0.0.tgz", "dependencies": {"zod": {"missing": True}}}
+    tree = {"problems": ["missing: zod"], "dependencies": {"x": packed}}
+    done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
+    assert done.returncode == 1
 
 
 def test_control_a_clean_install_passes(tmp_path):
