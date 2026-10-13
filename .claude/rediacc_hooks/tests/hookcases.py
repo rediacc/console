@@ -2317,9 +2317,24 @@ STATIC: list[Case] = [
         "review-file-shell-write: awk prints into the file it reads",
     ),
     case(
-        "check 0 guards/block_review_file_shell_write.py",
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk 'BEGIN{print \"a;b\" > ARGV[1]}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: awk redirects after a literal that holds a semicolon",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json('awk \'BEGIN{print "x" > "" ARGV[1]}\' agent/reviews/1008-1/x.md'),
+        "review-file-shell-write: awk redirects into a target that starts with a literal",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
         bash_json("awk '$3 > 5 {print}' agent/reviews/1008-1/x.md"),
-        "review-file-shell-write CONTROL: a comparison is not a redirect",
+        "review-file-shell-write: a printing awk program that holds a > is refused, comparison or not",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk '$3 > 5' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write CONTROL: an awk program that prints nothing redirects nothing",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
