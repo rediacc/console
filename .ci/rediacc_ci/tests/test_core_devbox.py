@@ -316,16 +316,16 @@ def claims_image(obs: dict[str, list[str]]) -> None:
     # An absent one is built from Dockerfile.uid with the host's ids, tagged by the base's image id.
     # The fixture's recipe is `ARG BASE\nFROM ${BASE}\n`, so its hash is fixed; an edited recipe is a different tag.
     recipe = hashlib.sha256(b"ARG BASE\nFROM ${BASE}\n").hexdigest()[:12]
+    # The ids are the driver's pinned ones (`GOLDEN_HOST_IDS`), not this process's: the transcript is the recording host's.
     tag = "%s:uid%d-gid%d-52b359d8cc2e-%s" % (
         devbox.DEVBOX_UID_IMAGE_REPO,
-        os.geteuid(),
-        os.getegid(),
+        *driver.GOLDEN_HOST_IDS,
         recipe,
     )
     assert stdout_of(obs["run-image-derive"]) == (tag + "\n").encode()
     build = next(call for call in calls_of(obs["ensure-uid-builds"]) if call[1] == "build")
     assert build[2:4] == ["-t", tag]
-    assert "HOST_UID=%d" % os.geteuid() in build
+    assert "HOST_UID=%d" % driver.GOLDEN_HOST_IDS[0] in build
     assert build[-2].endswith("/.devcontainer/Dockerfile.uid")
     # Unreadable ids are a failure, never a silent run of the base.
     assert status_of(obs["ensure-uid-unresolved"]) == 1
@@ -580,8 +580,7 @@ def planted_value(attribute: str):
         def uid_image(self, *_argv):
             self.docker_words()
             self.write(
-                "%s:uid%d-gid%d-52b359d8cc2e\n"
-                % (devbox.DEVBOX_UID_IMAGE_REPO, os.geteuid(), os.getegid())
+                "%s:uid%d-gid%d-52b359d8cc2e\n" % (devbox.DEVBOX_UID_IMAGE_REPO, self.uid, self.gid)
             )
             return 0
 
@@ -857,6 +856,50 @@ def test_the_exec_tty_arms(stdin_tty: bool, stdout_tty: bool, flags: list[str]) 
     assert len(execs) == 1
     between = execs[0][execs[0].index("-w") + 2 : execs[0].index("-e")]
     assert between == flags
+
+
+# -- the host's ids, which the differential pins and therefore cannot see ----
+
+
+def _quiet_box(out: io.BytesIO, **kwargs) -> devbox.Devbox:
+    return devbox.Devbox(
+        {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent"},
+        stdout=out,
+        stderr=io.BytesIO(),
+        **kwargs,
+    )
+
+
+def test_the_host_ids_are_the_running_users_by_default(tmp_path: pathlib.Path) -> None:
+    """The driver pins `GOLDEN_HOST_IDS`, so every scenario above would still pass if the DEFAULT stopped being this process's effective ids. This is the test that reads the default, and the directory probe behind the lease pool, against the real host."""
+    out = io.BytesIO()
+    box = _quiet_box(out)
+    assert (box.uid, box.gid) == (os.geteuid(), os.getegid())
+    assert box.host_ids() == "%d:%d" % (os.geteuid(), os.getegid())
+    # A directory this process made is this user's; a missing one is not a directory at all.
+    assert box.owns_runtime_dir(str(tmp_path)) is True
+    assert box.owns_runtime_dir(str(tmp_path / "missing")) is False
+    # CONTROL: injected ids are the ones every reader answers with, and somebody else's directory is not theirs.
+    stranger = (os.geteuid() + 4242, os.getegid() + 4343)
+    pinned = _quiet_box(out, host_ids=stranger)
+    assert pinned.host_ids() == "%d:%d" % stranger
+    assert pinned.owns_runtime_dir(str(tmp_path)) is False
+    assert pinned.core_lease_src() == 0
+    assert out.getvalue() == b"", "a lease pool was reported under a runtime dir nobody checked"
+
+
+def test_the_driver_answers_as_the_recording_host(tmp_path: pathlib.Path) -> None:
+    """What `GoldenHostDevbox` changes, and that it changes nothing else: the recorded runtime dir is owned, every other path is not, whatever this host holds."""
+    out = io.BytesIO()
+    box = driver.GoldenHostDevbox(
+        {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent"},
+        stdout=out,
+        stderr=io.BytesIO(),
+        host_ids=driver.GOLDEN_HOST_IDS,
+    )
+    assert box.core_lease_src() == 0
+    assert out.getvalue() == (driver.GOLDEN_RUNTIME_DIR + "/rediacc-cores\n").encode()
+    assert box.owns_runtime_dir(str(tmp_path)) is False
 
 
 # -- the licence, and the tools the scenarios really use ---------------------

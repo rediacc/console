@@ -16,6 +16,7 @@ that one field by construction. `_mask` replaces it and leaves everything else b
 
 from __future__ import annotations
 
+import itertools
 import json
 import os
 import pathlib
@@ -255,13 +256,71 @@ def fixture(tmp_path: pathlib.Path, tree: dict[str, str] | None = None) -> pathl
 def _run(root: pathlib.Path, side: str, **kw):
     """One side. The twin's answer comes from its golden (PLAN-retire-bash-oracles B3); `_run_live` is how it was recorded."""
     if side == "old":
-        return diff.twin_result(
+        old, old_calls = diff.twin_result(
             TWIN_REL,
             [repr((root,)), repr(sorted(kw.items()))],
             lambda: _run_live(root, side, **kw),
             work=diff.twin_work((root,), kw),
         )
+        return old, purge_order_here(old_calls, find_listing(root))
     return _run_live(root, side, **kw)
+
+
+def find_listing(root: pathlib.Path) -> list[tuple[str, str]]:
+    """`(format, path under it)` for every file `find dist/repos/<format> -type f` prints, in `find`'s own order on THIS filesystem, formats in the twin's order."""
+    listing: list[tuple[str, str]] = []
+    for fmt in port.FORMATS:
+        if not (root / "dist" / "repos" / fmt).is_dir():
+            continue
+        prefix = "dist/repos/%s/" % fmt
+        found = subprocess.run(
+            ["find", prefix[:-1], "-type", "f"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        listing.extend((fmt, path[len(prefix) :]) for path in found.splitlines())
+    return listing
+
+
+_PURGE_URL_RE = re.compile(
+    re.escape(RELEASES_ORIGIN) + r"/(?P<fmt>[^/]+)/(?P<channel>[^/]+)/(?P<rel>.+)$"
+)
+# A URL that is no package file (the two install scripts) ranks after every file `find` printed, and is never moved.
+_UNRANKED = -1
+
+
+def purge_order_here(calls: str, listing: list[tuple[str, str]]) -> str:
+    """The recorded purge list, with each format's URLs in THIS filesystem's `find` order: what the twin would have sent here.
+
+    The twin appended one URL per line of `find -type f`, and the golden froze the order the recorder's tmpfs listed (newest entry first). ext4 lists the same directory in hash order, so on GitHub's runner the frozen list named `dists/stable/Packages.gz` before `InRelease` while the port, shelling out to the same `find`, sent the reverse: nine tests on run 38389205702.
+    ONLY THE ORDER INSIDE ONE FORMAT'S RUN MOVES, and only when every URL in the run is a file `find` printed. The set of URLs, the order of the formats, the install scripts after them and every other byte of the call log are the recording's; a recorded list naming a file this tree does not hold is left exactly as recorded, and then fails.
+    """
+    head, sep, tail = calls.rpartition("--data\t")
+    line, newline, rest = tail.partition("\n")
+    try:
+        body = json.loads(line) if sep else None
+    except ValueError:
+        return calls
+    if not isinstance(body, dict) or not isinstance(body.get("files"), list):
+        return calls
+    if json.dumps(body, separators=(",", ":")) != line:
+        return calls
+    rank = {pair: index for index, pair in enumerate(listing)}
+
+    def parts_of(url: str) -> tuple[str, str, str]:
+        match = _PURGE_URL_RE.match(url)
+        return (match["fmt"], match["channel"], match["rel"]) if match else ("", "", url)
+
+    ordered: list[str] = []
+    for _key, group in itertools.groupby(body["files"], key=lambda url: parts_of(url)[:2]):
+        ranked = [(rank.get((parts_of(url)[0], parts_of(url)[2]), _UNRANKED), url) for url in group]
+        if all(position != _UNRANKED for position, _url in ranked):
+            ranked.sort()
+        ordered.extend(url for _position, url in ranked)
+    body["files"] = ordered
+    return head + sep + json.dumps(body, separators=(",", ":")) + newline + rest
 
 
 def _run_live(
@@ -324,22 +383,9 @@ def find_urls(root: pathlib.Path, channel: str = "edge") -> list[str]:
 
     Derived by running the same `find` the twin runs, so the expectation is the filesystem's answer rather than a second implementation of the port's walk.
     """
-    urls: list[str] = []
-    for fmt in port.FORMATS:
-        directory = root / "dist" / "repos" / fmt
-        if not directory.is_dir():
-            continue
-        listing = subprocess.run(
-            ["find", "dist/repos/%s" % fmt, "-type", "f"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout
-        urls.extend(
-            (RELEASES_ORIGIN + "/%s/%s/%s") % (fmt, channel, path[len("dist/repos/%s/" % fmt) :])
-            for path in listing.splitlines()
-        )
+    urls = [
+        (RELEASES_ORIGIN + "/%s/%s/%s") % (fmt, channel, rel) for fmt, rel in find_listing(root)
+    ]
     urls.extend(
         (RELEASES_ORIGIN + "/cli/%s/%s") % (channel, name)
         for name in ("install.sh", "install.ps1")
@@ -431,6 +477,9 @@ def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) 
     expected = find_urls(root)
     old, old_calls = _run(root, "old")
     new, new_calls = _run(root, "new")
+    # THE PORT'S OWN LIST, which is the claim: it is `find`'s order here. The recorded side is read back in this filesystem's order (`purge_order_here`), so it says the same, and the agreement below says they are the same list.
+    sent = json.loads(_without_prune(new_calls).rpartition("--data\t")[2].rstrip("\n"))
+    assert sent["files"] == expected
     body = json.loads(old_calls.rpartition("--data\t")[2].rstrip("\n"))
     assert body["files"] == expected
 
@@ -442,6 +491,43 @@ def test_the_purge_list_is_finds_order_not_sorted_order(tmp_path: pathlib.Path) 
         "two package formats whose names sort against the twin's format order"
     )
     _assert_agree(old, new, "find-order", old_calls, new_calls)
+
+
+def _purge_line(urls: list[str]) -> str:
+    return "aws\ts3\tsync\ta\tb\ncurl\t-sS\t--data\t%s\n" % json.dumps(
+        {"files": urls}, separators=(",", ":")
+    )
+
+
+def test_the_recorded_purge_order_is_read_back_as_this_filesystems() -> None:
+    """`purge_order_here` in both directions, on the two orders run 38389205702 showed: tmpfs recorded `Packages.gz` first, ext4 lists `InRelease` first."""
+    apt = RELEASES_ORIGIN + "/apt/edge/"
+    recorded = [
+        apt + "dists/stable/Packages.gz",
+        apt + "InRelease",
+        RELEASES_ORIGIN + "/apk/edge/APKINDEX.tar.gz",
+        RELEASES_ORIGIN + "/cli/edge/install.sh",
+        RELEASES_ORIGIN + "/cli/edge/install.ps1",
+    ]
+    tmpfs = [("apt", "dists/stable/Packages.gz"), ("apt", "InRelease"), ("apk", "APKINDEX.tar.gz")]
+    ext4 = [("apt", "InRelease"), ("apt", "dists/stable/Packages.gz"), ("apk", "APKINDEX.tar.gz")]
+    # On the recorder's own filesystem the rewrite is the identity, which is why no local run ever needed it.
+    assert purge_order_here(_purge_line(recorded), tmpfs) == _purge_line(recorded)
+    assert purge_order_here(_purge_line(recorded), ext4) == _purge_line(
+        [recorded[1], recorded[0], *recorded[2:]]
+    )
+    # CONTROL: the FORMAT order is the twin's and never the filesystem's. A listing that names apk first moves nothing across formats.
+    assert purge_order_here(_purge_line(recorded), [tmpfs[2], *tmpfs[:2]]) == _purge_line(recorded)
+    # CONTROL: a recorded URL naming a file this tree does not hold leaves its run exactly as recorded, so the comparison still fails on it.
+    assert purge_order_here(_purge_line(recorded), ext4[:1]) == _purge_line(recorded)
+    # CONTROL: the install scripts are no `find` output, and `install.sh` stays ahead of `install.ps1` whatever a listing says.
+    assert purge_order_here(_purge_line(recorded[3:]), [("cli", "install.ps1")]) == _purge_line(
+        recorded[3:]
+    )
+    # CONTROL: a call log with no purge, or one whose body is not the compact JSON the twin sent, is returned untouched.
+    assert purge_order_here("aws\ts3\tsync\n", ext4) == "aws\ts3\tsync\n"
+    spaced = "curl\t--data\t" + json.dumps({"files": recorded[:2]}) + "\n"
+    assert purge_order_here(spaced, ext4) == spaced
 
 
 def test_a_nested_file_keeps_its_directories_in_the_url(tmp_path: pathlib.Path) -> None:

@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import typing
 
@@ -84,8 +85,25 @@ def nfpm_available() -> bool:
     return fetched.returncode == 0
 
 
-def mask_paths(text: str) -> str:
+def mask_paths(text: str, tmp: str | None = None) -> str:
+    """Every scratch directory becomes `<TMP>`: this host's first, then the two shapes a recorded answer holds.
+
+    THIS HOST'S TEMP ROOT IS MASKED BY NAME. The pattern alone knows `/tmp/<name>` and `<anything>/tmp<name>`, so under a `TMPDIR` such as `/var/tmp/run` it matched the `/tmp/run` in the MIDDLE of `/var/tmp/run/linux-packages-x` and left `/var<TMP>/linux-packages-x` behind: the differential passed only where the temp root was `/tmp` itself.
+    """
+    root = (tmp or tempfile.gettempdir()).rstrip("/")
+    text = re.sub(re.escape(root) + r"/[A-Za-z0-9._-]+", "<TMP>", text)
     return re.sub(r"/tmp/[A-Za-z0-9._-]+|/[A-Za-z0-9._/-]*/tmp[A-Za-z0-9._-]+", "<TMP>", text)
+
+
+def test_the_path_mask_follows_the_temp_root() -> None:
+    """Control first: under `/tmp` the mask is what it always was. Under a nested root the whole scratch directory is one `<TMP>`, not a root with a hole in it."""
+    recorded = "Working dir: /tmp/linux-packages-abc\nBinary: /tmp/linux-packages-abc/rdc-dummy\n"
+    masked = "Working dir: <TMP>\nBinary: <TMP>/rdc-dummy\n"
+    assert mask_paths(recorded, "/tmp") == masked
+    nested = recorded.replace("/tmp/", "/var/tmp/run/")
+    assert mask_paths(nested, "/var/tmp/run") == masked
+    # What the pattern alone does with that root, which is the defect.
+    assert mask_paths(nested, "/tmp") == masked.replace("<TMP>", "/var<TMP>/linux-packages-abc")
 
 
 def test_dry_run_matches_the_twin() -> None:

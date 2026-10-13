@@ -452,6 +452,51 @@ The reason it is a gate and not this paragraph: the stop-hook suite's own `setup
 
 **It does not follow imports transitively.** A gate that grows a helper module with its own third-party import is one hop outside what this sees.
 
+### The same shape on the pytest lane: a green run on the recording host proves nothing about the runner
+
+Run 38389205702 (PR #600, 2026-10-13) was the first on its branch in which the three `Quality / Pytest (n/3)` legs ran to the end, and 42 tests were red that had passed on every local run for weeks. None was a product defect. Each compared an answer against the host that RECORDED it, and the developer host is that recorder, so the comparison had no way to fail there.
+
+| Property | Recording host | GitHub runner | Tests | What carried it |
+|---|---|---|---|---|
+| numeric ids | 1000:1000 | 1001:1001 | 15 | `chown -R 1000:1000` in a frozen call log; `uid1000-gid1000`, `HOST_UID=1000` and `/run/user/1000` in a frozen transcript |
+| scratch filesystem | tmpfs | ext4 | 21 | `ls -l` directory sizes, `total` and column padding; the order `find` prints |
+| coreutils | uutils | GNU | 2 | `mkdir: Already exists` against `mkdir: cannot create directory` |
+| bash | 5.3.9 | 5.2.21 | 1 | the `bash_version` in a golden's header |
+| git identity | global config | none | 1 | a guard chain that stopped at the author check before the guard under test |
+| `CI` | unset | `true` | 1 | a gate taking its CI arm inside a test of its other arm |
+| git and load | 2.53, idle | 2.55, four busy cores | 1 | `git commit`'s detached maintenance child outliving the commit and stamping a backdated tree |
+
+**The tell:** a differential fails on the runner with both sides plausible, and the differing bytes are a number, an order or a wording that no port chooses. The recorded side is then "what the twin printed on one machine".
+
+**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity instead (`devbox_shadow_driver.GOLDEN_HOST_IDS`), with one test that reads the unpinned default against the real host.
+
+**The command that makes a local run mean something.** It runs one leg under another uid and gid, with no git identity, `CI=true`, an empty HOME and a scratch directory on ext4.
+
+```bash
+mkdir -p /var/tmp/runner-shape /var/tmp/runner-shape-home
+unshare --user --map-user=1001 --map-group=1001 env -i \
+  PATH="$PATH" HOME=/var/tmp/runner-shape-home USER=runner LOGNAME=runner LANG=C.UTF-8 \
+  CI=true GITHUB_ACTIONS=true GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+  TMPDIR=/var/tmp/runner-shape \
+  npm run check:ci-pytest -- --shard-manifest .ci/config/shards/quality-pytest.json --shard 2/3
+```
+
+Measured on the fix for that run, with a GNU coreutils directory first on `PATH`: the command turned 40 of the 42 red before the fix and none of them after it. The remaining two needed their condition forced, a `bash` shim answering `--version` with 5.2 and a maintenance task configured to always have work, because a namespace changes neither the bash nor the scheduler.
+
+GNU coreutils come from Ubuntu's `gnu-coreutils` package, which installs each tool as `/usr/bin/gnu<name>`; a directory of `<name>` symlinks to those, first on `PATH`, completes the shape on a uutils host.
+
+**What the simulation gets wrong, each one read as a runner failure once:**
+
+- **`TMPDIR` has to stay short.** `tsx` binds a unix socket under it, and a path past 108 bytes fails every gate test that runs a TypeScript gate with `listen EINVAL`.
+- **Uid 1001 has no passwd entry in the namespace.** `ssh-keygen` refuses with `No user exists for uid 1001`, `gpg` finds no agent, and `ls -l` prints `1001` where the runner prints `runner`. Eleven tests in three files (`test_drills_universe_transfer.py`, `test_build_canonicalise_gpg_key.py`, `test_proxies_go_unit.py`) fail for that alone, and pass under the same `env -i` line without `unshare`.
+- **`CI=true` turns a missing tool into a refusal.** `test_gate_scrub_sentinel_empty.py` refuses without `aws`, which the runner has and a developer host need not.
+- **docker is outside the namespace.** A test that hands its uid to a real container gets files owned by the REAL uid 1001, which the caller cannot remove, and the next pytest session dies in its basetemp cleanup. One scratch directory per run, removed through a container, avoids it.
+- **HOME under the checkout's own path prefix** (`<repo>-home`) is folded as `<root>-home` by masks that replace the checkout first.
+
+A failure that appears only under the namespace is checked against the job log before it is called a runner failure.
+
+**No instrument runs the suite as another host before a push.** The command above is run by hand, it changes neither the bash nor the git version nor the load, and a golden frozen tomorrow can carry a host property nobody has met yet.
+
 ## A green `packages/www` build can render the PREVIOUS version of a page
 Trap-Id: stale-content-cache-renders-old-page
 Enforced-By: JUDGMENT-ONLY

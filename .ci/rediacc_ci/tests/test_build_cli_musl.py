@@ -61,6 +61,9 @@ VENDORED = (
 
 BASH = shutil.which("bash") or "/bin/bash"
 
+# The one place the fake `sudo`'s call log carries the host's numeric ids, tab-separated as the fake writes its argv.
+CHOWN_IDS = "FAKEBIN sudo\tchown\t-R\t%d:%d\t"
+
 # `dirname`/`uname` because sourcing common.sh runs `detect_os`/`detect_arch`;
 # `mkdir`/`mv`/`rm`/`id`/`wc`/`cat`/`sed`/`sha256sum` because the twin genuinely calls them and their behaviour is deterministic, so they are REAL rather than faked. Anything not listed is ABSENT, including `docker`, `sudo` and `shasum`.
 #
@@ -286,6 +289,8 @@ def run_both(root: pathlib.Path, *, stale_output: bool = False, **kw):
         lambda: _old_side(root, stale_output=stale_output, **kw),
         work=(str(root), str(root.parent)),
     )
+    # The twin's `sudo chown -R "$(id -u):$(id -g)"` froze the recorder's ids; read back as this host's, which is what the twin would log here and what the port must log (`diff.RECORDER_IDS`).
+    old_calls = diff.recorder_ids_here(old_calls, CHOWN_IDS)
     _reset(root, stale_output=stale_output)
     new, new_calls = _run(root, "new", **kw)
     new_files = _artifacts(root)
@@ -627,6 +632,19 @@ def test_sudo_repairs_ownership_of_the_container_written_directory(tmp_path) -> 
     assert fields[1:4] == ["chown", "-R", "%d:%d" % (os.getuid(), os.getgid())]
     assert fields[4] == "%s/dist/cli/" % root
     _agree(old_t, new_t, "sudo-chown")
+    # The PORT's own ids, read off its log rather than through the agreement above: the recorded side was rewritten to this host's ids, so this line is the one that says the port asked the kernel.
+    assert (CHOWN_IDS % (os.getuid(), os.getgid())) in new_t[1]
+
+
+def test_the_recorded_ids_are_read_back_as_this_hosts() -> None:
+    """The rewrite `run_both` applies, in both directions: the recorder's ids inside the vouched-for context become the given host's, and the same digits anywhere else stay."""
+    recorded = (
+        CHOWN_IDS % diff.RECORDER_IDS
+    ) + "/w/dist/cli/\nFAKEBIN docker\t-e\tPORT=1000:1000\n"
+    here = diff.recorder_ids_here(recorded, CHOWN_IDS, ids=(1001, 1001))
+    assert here == (CHOWN_IDS % (1001, 1001)) + "/w/dist/cli/\nFAKEBIN docker\t-e\tPORT=1000:1000\n"
+    # CONTROL: on the recording host the rewrite is the identity, which is why no local run ever needed it.
+    assert diff.recorder_ids_here(recorded, CHOWN_IDS, ids=diff.RECORDER_IDS) == recorded
 
 
 # --------------------------------------------------------------------------- The pure helpers, and the planted defect ---------------------------------------------------------------------------

@@ -393,6 +393,21 @@ def stale_index_file(tmp_path):
     return index, target
 
 
+def linked_identity_env():
+    """A commit identity GitHub links, as the four git variables: the first address in the allowed set the author guard itself reads.
+
+    WHY A TEST ABOUT THE INDEX CARRIES AN IDENTITY. `git commit -m x` reaches `warn_stale_index` only after `block_unlinked_commit_author` lets it through, and that guard resolves the author from the HOST: the developer's global config holds a linked address, GitHub's runner holds none, and there the chain stopped at `git cannot resolve an author identity` before any index was read (run 38389205702). The identity is the test's, so the control below is about the index on every host.
+    """
+    allowed = json.loads((ROOT / ".ci" / "config" / "commit-identity.json").read_text("utf-8"))
+    email = allowed["identities"][0]["emails"][0]
+    return {
+        "GIT_AUTHOR_NAME": "fixture",
+        "GIT_AUTHOR_EMAIL": email,
+        "GIT_COMMITTER_NAME": "fixture",
+        "GIT_COMMITTER_EMAIL": email,
+    }
+
+
 def test_stale_index_is_pinned_out_of_the_verdict_env(tmp_path, monkeypatch):
     """Regression for the 2026-10-09 flake: the verdict env must not read the ambient index.
 
@@ -403,6 +418,8 @@ def test_stale_index_is_pinned_out_of_the_verdict_env(tmp_path, monkeypatch):
         {"tool_name": "Bash", "tool_input": {"command": "git commit -m x"}, "session_id": "idx"}
     )
     monkeypatch.setenv("GIT_INDEX_FILE", index)
+    for name, value in linked_identity_env().items():
+        monkeypatch.setenv(name, value)
     ambient = with_stubs({**os.environ, "CLAUDE_PROJECT_DIR": str(ROOT)})
     _, _, err = run_collapsed("pre-bash", payload, ambient)
     assert "STALE INDEX" in err, "the control did not build a stale index"
