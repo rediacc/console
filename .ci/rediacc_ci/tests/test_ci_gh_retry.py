@@ -37,6 +37,29 @@ def test_a_502_then_success_passes_with_one_backoff():
     assert all(kw == {"env": None, "attempts": 1} for _a, kw in runner.calls)
 
 
+def test_a_local_timeout_is_retried_like_a_502():
+    """A call killed by its own timeout prints nothing; it is transient all the same."""
+
+    class _TimesOutOnce(_Runner):
+        def __call__(self, args, **kw):
+            self.calls.append((args, kw))
+            if len(self.calls) == 1:
+                return ghx.GhResult(["gh", *args], 124, "", "", timed_out=True)
+            return ghx.GhResult(["gh", *args], 0, '{"jobs": []}', "")
+
+    runner = _TimesOutOnce()
+    result, slept = _run(runner)
+    assert result == {"jobs": []}
+    assert len(runner.calls) == 2
+    assert slept == [gh_retry.DELAY_S]
+    assert gh_retry.is_transient(gh_retry.TIMED_OUT_TEXT)
+    # CONTROL: a plain failure with no stderr is still not retried.
+    silent = _Runner((1, "", ""))
+    with pytest.raises(ghx.GhError):
+        _run(silent)
+    assert len(silent.calls) == 1
+
+
 def test_env_reaches_gh_unchanged_on_every_attempt():
     """review_budget passes a token through `env`; each retried call must carry it."""
     runner = _Runner((1, "", SERVER_ERROR), (0, "{}", ""))
