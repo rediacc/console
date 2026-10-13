@@ -1,6 +1,9 @@
 {
   "note": "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a moved module. Every `<module>: [NAME, ...]` here is one environment variable a tracked Python module reads, derived from the AST by .ci/scripts/quality/check_python_env_registry.py. A `*` prefix means the name is not a literal at the call site and the EXPRESSION is recorded instead. The gate asserts SET EQUALITY with the tree in both directions: a read missing from here reds, and so does an entry here that nothing reads -- so this file can neither be trimmed to escape a finding nor pre-loaded with one. Drain it with `--write-baseline`, which refuses any reseed that would ADD a pair even when the total shrinks. A genuinely new read must be typed: `--write-baseline --allow-new <module>:<NAME>`.",
   "modules": {
+    ".ci/rediacc_ci/__init__.py": [
+      "PYTHONPATH"
+    ],
     ".ci/rediacc_ci/build/build_cli.py": [
       "ARG_BUNDLE",
       "ARG_VERIFY"
