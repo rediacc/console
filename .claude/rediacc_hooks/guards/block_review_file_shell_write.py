@@ -172,10 +172,8 @@ def _operands(argv):
 def _run_operands(run, argv):
     """`_operands`, with a `find -exec` run's `{}` read as what the find walks (#503f0ba8): `find agent/reviews -exec sed -i ... {} +` edits files under `agent/reviews`, so the find's starting points (`shellscan.Launch.starts`) stand in for `{}`, in place. A `{}` that is a copy's SOURCE is still not its last operand, so `-exec cp {} /tmp/ ';'` stays a copy out."""
     ops = _operands(argv)
-    if run.feed and "xargs" in run.via:
-        # What xargs reads becomes this command's words: appended, or in replace mode put where the marker stands. Every fed word is an operand, alone and in the place of `{}`, which over-reads and never under-reads: `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
-        fed = run.feed.split()
-        ops = ops + fed + [a.replace("{}", word) for a in ops if "{}" in a for word in fed]
+    # What xargs reads becomes this command's words, appended or put where its marker stands, whatever the marker is (`shellscan.xargs_fed_operands`). It over-reads and never under-reads: `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
+    ops = shellscan.xargs_fed_operands(run, ops)
     if run.launch is None or run.launch.launcher != "find":
         return ops
     out: list[str] = []
