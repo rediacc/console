@@ -247,8 +247,8 @@ def file_sha256(path: pathlib.Path) -> tuple[str, str | None]:
     code, out = _capture(argv)
     if code != 0:
         return "", ""
-    # `cut -d' ' -f1`.
-    return out.split(" ", 1)[0], None
+    # `cut -d' ' -f1`, after the escape mark. GNU sha256sum starts the line with a backslash when the file NAME holds one, which is every path on a Windows runner once Python hands it the native form (the bash twin passed `/d/a/...`). Kept, that mark became part of the digest in renet-metadata.json, and the built binary refused its own assets (PR 600, Build (CLI) win-x64 on 078a550ad). A hex digest never starts with a backslash, so dropping it loses nothing.
+    return out.lstrip("\\").split(" ", 1)[0], None
 
 
 def main(argv: list[str]) -> int:
