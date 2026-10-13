@@ -219,9 +219,9 @@ test.describe
       await w1.executeViaBridge('sync');
 
       // kine-resident parent state the fork scrub must act on: a repo namespace, the ROLE ConfigMap (primary), a labeled rediacc-env Secret, a THIRD-PARTY operator secret, and an app-data marker ConfigMap.
-      const K = (args: string) => kubectlOn(w1, KC, args);
-      await K('create namespace shop');
-      await K(
+      const kubectlParent = (args: string) => kubectlOn(w1, KC, args);
+      await kubectlParent('create namespace shop');
+      await kubectlParent(
         `label ns shop ${WK_INFRA_DOMAIN}/injected=true ${WK_INFRA_DOMAIN}/repo-namespace=true ${WK_INFRA_DOMAIN}/repo=shop --overwrite`
       );
       await w1.executeViaBridge(
@@ -229,13 +229,17 @@ test.describe
           `--from-literal=REDIACC_ROLE=primary --from-literal=REDIACC_DATASTORE=${DATA_DS} --dry-run=client -o yaml | ` +
           `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`
       );
-      await K(`-n shop label configmap rediacc-role ${WK_INFRA_DOMAIN}/injected=true --overwrite`);
+      await kubectlParent(
+        `-n shop label configmap rediacc-role ${WK_INFRA_DOMAIN}/injected=true --overwrite`
+      );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create secret generic rediacc-env ` +
           `--from-literal=APP_SECRET=${APP_SECRET_VALUE} --dry-run=client -o yaml | ` +
           `sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`
       );
-      await K(`-n shop label secret rediacc-env ${WK_INFRA_DOMAIN}/injected=true --overwrite`);
+      await kubectlParent(
+        `-n shop label secret rediacc-env ${WK_INFRA_DOMAIN}/injected=true --overwrite`
+      );
       await w1.executeViaBridge(
         `sudo ${K3S} kubectl --kubeconfig ${KC} -n shop create secret generic operator-db-pass ` +
           `--from-literal=PASSWORD=hunter2 --dry-run=client -o yaml | ` +
@@ -352,22 +356,26 @@ test.describe
       expect(forkCa).toMatch(/Fingerprint=/);
       expect(forkCa).not.toBe(parentCaFingerprint);
 
-      const FK = (args: string) => kubectlOn(w2, FKC, args);
+      const kubectlFork = (args: string) => kubectlOn(w2, FKC, args);
       // (b) labeled + third-party secrets scrubbed from the fork's kine.
-      const labeled = await FK(`get secrets -A -l ${WK_INFRA_DOMAIN}/injected=true --no-headers`);
+      const labeled = await kubectlFork(
+        `get secrets -A -l ${WK_INFRA_DOMAIN}/injected=true --no-headers`
+      );
       expect(labeled.stdout.trim()).toBe('');
-      const shopSecrets = await FK('-n shop get secrets --no-headers');
+      const shopSecrets = await kubectlFork('-n shop get secrets --no-headers');
       expect(shopSecrets.stdout).not.toContain('rediacc-env');
       expect(shopSecrets.stdout).not.toContain('operator-db-pass');
 
       // (c) ROLE ConfigMap rewritten to fork.
-      const role = await FK(
+      const role = await kubectlFork(
         '-n shop get configmap rediacc-role -o jsonpath="{.data.REDIACC_ROLE}"'
       );
       expect(role.stdout.trim()).toBe('fork');
 
       // (d) kine app-data marker rode the fork (cluster state present).
-      const kineMarker = await FK('-n shop get configmap app-data -o jsonpath="{.data.marker}"');
+      const kineMarker = await kubectlFork(
+        '-n shop get configmap app-data -o jsonpath="{.data.marker}"'
+      );
       expect(kineMarker.stdout.trim()).toBe('cephprod-original');
 
       // (e) the storage marker rode the ceph clone into the fork's data datastore.

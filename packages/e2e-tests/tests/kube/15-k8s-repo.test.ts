@@ -177,7 +177,7 @@ test.describe
     };
 
     // --- CSI battery helpers (tests 7-9b) ------------------------------------- The dynamic-provisioning tests use bare Pods with their own labels/names (not the web Deployment), so they need generic apply/wait/read helpers.
-    const kubectlApply = async (yaml: string): Promise<ExecResult> => {
+    const kubectlApply = (yaml: string): Promise<ExecResult> => {
       const b64 = Buffer.from(yaml).toString('base64');
       return w1.executeViaBridge(
         `echo ${b64} | base64 -d | sudo ${K3S} kubectl --kubeconfig ${KC} apply -f -`

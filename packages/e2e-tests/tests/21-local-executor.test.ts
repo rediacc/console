@@ -12,8 +12,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 test.describe('Bridge Local Executor @bridge', () => {
   let runner: BridgeTestRunner;
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  test.beforeAll(async () => {
+  test.beforeAll(() => {
     runner = BridgeTestRunner.forWorker();
   });
 
@@ -59,8 +58,7 @@ test.describe('Bridge Local Executor @bridge', () => {
 test.describe('Renet Binary @bridge @smoke', () => {
   let runner: BridgeTestRunner;
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  test.beforeAll(async () => {
+  test.beforeAll(() => {
     runner = BridgeTestRunner.forWorker();
   });
 
