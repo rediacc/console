@@ -473,3 +473,96 @@ def test_delta_a_missing_checkout_fails_under_ci(tmp_path: pathlib.Path) -> None
     assert "submodules: true" in new.out.err
     outside_ci = drive(tmp_path, "py3", ["--skip-setup"], root=results[1].root)
     assert outside_ci.out.code == 0, "outside CI the skip is kept"
+
+
+# ---- the real-provider spec (delta 6) ----------------------------------------------------------------------------------
+
+
+def real_provider_report(counts: dict[str, int]) -> dict:
+    """The 21 `@webauthn` tests the floor wants, plus `counts` tests tagged `@real-provider` in their describe title, the way the spec tags them."""
+    report = webauthn_fixture({"expected": 21})
+    specs = [
+        {
+            "title": f"rp-{status}-{i}",
+            "tests": [{"projectName": "chromium", "status": status}],
+        }
+        for status, n in counts.items()
+        for i in range(n)
+    ]
+    report["suites"].append({"title": "the real extension @config @real-provider", "specs": specs})
+    return report
+
+
+def real_provider_root(directory: pathlib.Path, counts: dict[str, int]) -> pathlib.Path:
+    root = fixture(directory)
+    e2e = root / "private" / "account" / "e2e"
+    spec = e2e / "tests" / "20-config-storage" / "20-12-real-provider.spec.ts"
+    spec.parent.mkdir(parents=True)
+    spec.write_text("describe('x @config @real-provider')")
+    (e2e / "reports" / "e2e" / "results.json").write_text(json.dumps(real_provider_report(counts)))
+    return root
+
+
+@pytest.mark.parametrize(
+    ("counts", "verdict"),
+    [
+        ({"expected": 1}, True),
+        ({"expected": 2}, True),
+        ({}, False),
+        ({"skipped": 1}, False),
+        ({"expected": 1, "skipped": 1}, False),
+        ({"expected": 1, "unexpected": 1}, False),
+        ({"expected": 1, "flaky": 1}, False),
+    ],
+)
+def test_real_provider_verdict(
+    tmp_path: pathlib.Path, counts: dict[str, int], verdict: bool
+) -> None:
+    report = tmp_path / "results.json"
+    report.write_text(json.dumps(real_provider_report(counts)))
+    assert account_e2e.check_real_provider(report) is verdict
+    assert account_e2e.check_webauthn(report, 20), "the real-provider tests are not @webauthn tests"
+
+
+def test_real_provider_is_read_from_the_files(tmp_path: pathlib.Path) -> None:
+    plain = fixture(tmp_path / "plain") / "private/account/e2e/tests"
+    assert not account_e2e.has_real_provider([], plain), "the twin's tree holds no such spec"
+    tagged = real_provider_root(tmp_path / "tagged", {"expected": 1}) / "private/account/e2e/tests"
+    assert account_e2e.has_real_provider([], tagged)
+    assert account_e2e.has_real_provider(["20-config-storage/20-12-real-provider.spec.ts"], tagged)
+    assert not account_e2e.has_real_provider(["01-auth/a.spec.ts"], tagged), (
+        "a leg without the spec owes no proof"
+    )
+
+
+def test_delta_a_real_provider_spec_that_ran_passes(tmp_path: pathlib.Path) -> None:
+    directory = tmp_path / "tree"
+    directory.mkdir()
+    new = drive(
+        tmp_path, "py", ["--skip-setup"], root=real_provider_root(directory, {"expected": 1})
+    )
+    assert new.out.code == 0, new.out.err
+    assert "Real-provider tests ran" in new.out.out + new.out.err
+
+
+@pytest.mark.parametrize("counts", [{}, {"skipped": 1}])
+def test_delta_a_real_provider_spec_that_did_not_run_fails_the_leg(
+    tmp_path: pathlib.Path, counts: dict[str, int]
+) -> None:
+    directory = tmp_path / "tree"
+    directory.mkdir()
+    new = drive(tmp_path, "py", ["--skip-setup"], root=real_provider_root(directory, counts))
+    assert new.out.code == 1, "Playwright exited 0, and the leg still fails"
+    assert "Real-provider coverage check failed" in new.out.out + new.out.err
+
+
+def test_delta_a_grep_that_excludes_the_real_provider_spec_owes_no_proof(
+    tmp_path: pathlib.Path,
+) -> None:
+    directory = tmp_path / "tree"
+    directory.mkdir()
+    new = drive(
+        tmp_path, "py", ["--skip-setup", "--grep", "@auth"], root=real_provider_root(directory, {})
+    )
+    assert new.out.code == 0, new.out.err
+    assert "Real-provider" not in new.out.out + new.out.err
