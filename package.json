@@ -100,6 +100,7 @@
     "check:ci-embed-credits": "tsx scripts/gates/check-embed-credits.ts",
     "check:ci-embed-asset-freshness": "tsx scripts/gates/check-embed-asset-freshness.ts && tsx scripts/__tests__/github-token.control.ts",
     "check:ci-devcontainer-pins": "tsx scripts/gates/check-devcontainer-pin-freshness.ts",
+    "check:ci-real-provider-pins": "tsx scripts/gates/check-real-provider-pin-freshness.ts",
     "check:ci-unverified-downloads": "tsx scripts/gates/check-unverified-downloads.ts",
     "check:ci-embed-asset-versions": "tsx scripts/gates/check-embed-asset-versions.ts",
     "check:ci-recovery-context": "tsx scripts/gates/check-recovery-context.ts",

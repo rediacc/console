@@ -116,3 +116,22 @@ export const hasGithubToken = (
   env: NodeJS.ProcessEnv = process.env,
   read?: GhAuthTokenReader
 ): boolean => githubToken(env, read) !== undefined;
+
+/**
+ * The request headers of a GitHub REST call: the API media type, the caller's
+ * User-Agent, and the token when there is one. Without a token the request goes
+ * out anonymous (60 an hour for the whole machine), which every caller treats
+ * as could-not-check when the limit answers.
+ *
+ * NAMES THE SHAPE `check:ci-shape-duplication` found once a third pin freshness
+ * gate built the same object by hand.
+ */
+export function githubApiHeaders(userAgent: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github+json',
+    'User-Agent': userAgent,
+  };
+  const token = githubToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}

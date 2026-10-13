@@ -27,8 +27,9 @@
  * doing this collapse twice.
  *
  * Consumers here: check-deps.ts, check-actions.ts, check-embed-asset-freshness.ts,
- * check-devcontainer-pin-freshness.ts, check-docker-image-freshness.ts, and the
- * bash shim above (audit.sh, check-go-deps.sh).
+ * check-devcontainer-pin-freshness.ts, check-real-provider-pin-freshness.ts,
+ * check-docker-image-freshness.ts, and the bash shim above (audit.sh,
+ * check-go-deps.sh).
  */
 import fs from 'node:fs';
 import path from 'node:path';

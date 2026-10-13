@@ -70,7 +70,7 @@ import {
   type DevcontainerPinSource as Source,
 } from '../lib/devcontainer-pin-sources.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
-import { githubToken } from '../lib/github-token.js';
+import { githubApiHeaders } from '../lib/github-token.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
@@ -117,13 +117,8 @@ function isNewer(latest: string, pinned: string): boolean {
 }
 
 async function fetchJson(url: string): Promise<unknown> {
-  const headers: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'rediacc-devcontainer-pin-freshness',
-  };
   // Unauthenticated GitHub is 60 requests/hour per IP, which one CI runner shared between jobs can exhaust. A token raises it; its absence is not fatal because the caller treats a rate-limit as could-not-check.
-  const token = githubToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = githubApiHeaders('rediacc-devcontainer-pin-freshness');
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
   try {

@@ -71,7 +71,7 @@ import {
   type UpgradeFiles,
   upgradeComponent,
 } from '../lib/embed-pin-upgrade.js';
-import { githubToken } from '../lib/github-token.js';
+import { githubApiHeaders } from '../lib/github-token.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
@@ -115,12 +115,7 @@ function isNewer(latest: string, pinned: string): boolean {
 }
 
 async function fetchJson(url: string): Promise<unknown> {
-  const headers: Record<string, string> = {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'rediacc-embed-asset-freshness',
-  };
-  const token = githubToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const headers = githubApiHeaders('rediacc-embed-asset-freshness');
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
   try {
