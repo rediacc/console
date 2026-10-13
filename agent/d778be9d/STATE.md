@@ -1,12 +1,13 @@
-## SESSION d778be9d 2026-10-13T02:52:26Z
+## SESSION d778be9d 2026-10-13T03:01:05Z
 
 ## Where things stand
-Draft PR rediacc/console#600 on 1008-1 (submodule PRs rediacc/account#96 at 1384f5b, rediacc/renet#117). The console head is now 9a8c475a0, pushed 2026-10-13 about 03:20Z as a red-fix push; the PR body block was synced after it.
-The first CI run (38321186144) was red on Quality / Security, step "CI time budget freshness"; the fix (46be5e863, a82b9a9f2) is in the pushed head, with the gh timeout retry (d5df1dd69), the scp and xargs guard fixes, the midnight flake fix, run.ts merge fix and today's dependency lockfiles.
-A new CI run on 9a8c475a0 is being watched by background task bchs4ba1j (log: scratchpad ci-watch-600b.log); the push hook's own watch is item #110bf023. No per-commit review finding is open.
-Item #ff3ab826 (a tool's output option is not read as a write by the review-file guard): an opus writer sub-agent (id a1937821b4fedafa6) is building `shellscan.output_landings` in scratchpad/ffclone and delivers scratchpad/ff.patch; it stays open for review feedback. Design: a non-writer table, refuse otherwise; rm/mkdir/chmod and git checkout/restore/rm/mv/reset keep today's verdict.
+Draft PR rediacc/console#600 on 1008-1 (submodule PRs rediacc/account#96 at 1384f5b, rediacc/renet#117 at ecbcbc4, both pushed). The pushed console head is 9a8c475a0, pushed 2026-10-13 at about 02:52Z.
+CI run 38338925089 on that head was RED on one job: Tests + Infra / Renet (go, 1/2), three pkg/nodeteardown tests. Cause: their fixture process is pid 14464 and the scan skips its own pid, so a test binary running as pid 14464 drops the fixture. Fixed in renet ecbcbc4 (selfPID seam); the console pointer bump is ced5c9c8c, local and not yet pushed. Budget freshness passed in that run.
+Also local and unpushed: session records 3d8994ad6, the reggate ledgers 96359814d.
+Item #ff3ab826: an opus writer sub-agent (id a1937821b4fedafa6) is building `shellscan.output_landings` in scratchpad/ffclone and delivers scratchpad/ff.patch; it stays open for review feedback.
 
 ## Next action
-1. When the CI watch ends (0 green, 1 red, 2 no verdict, 3 head moved): on red read `.ci/scripts/ci/ci-trace.py --json` and the job's `--errors`, fix the cause, commit, pre-push (ci:quick then each dropped gate with run.ts --only), push with TURBO_PUSH_REASON='red-fix: ...'. Tick #110bf023 once the verdict is read and acted on.
-2. When ff.patch arrives: check the writer's claims against the artifact, `git apply -3`, run the hook suite and the eight hook gates, commit, review-mark, tick #ff3ab826. Hold its push while a CI run on the head is in progress and not red.
-3. At CI Complete green on the head: stop and wait for the operator. Do not merge unasked.
+1. `worklist.py --review-commit d778be9d`, then `npm run ci:quick` on a still tree, then `npx tsx scripts/ci-runner/run.ts --only <gate>` for each dropped gate, then `TURBO_PUSH_REASON='red-fix: ...' git push origin 1008-1`, then `PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 600 1008-1`.
+2. Watch with `.ci/scripts/ci/ci-trace.py --wait --until-final` in the background; fix each red at its cause.
+3. When ff.patch arrives: check the writer's claims against the artifact, `git apply -3`, hook suite plus the eight hook gates, commit, review-mark, tick #ff3ab826. Hold its push while a CI run on the head is in progress and not red.
+4. At CI Complete green on the head: stop and wait for the operator. Do not merge unasked.
