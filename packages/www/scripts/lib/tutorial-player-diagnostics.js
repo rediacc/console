@@ -119,8 +119,8 @@ export function reportInconclusiveCauses(devServer, resources) {
 /**
  * Wait until the player is READY TO TAKE A CLICK, not merely until its play control exists.
  *
- * WHY A FIXED SLEEP WAS REPLACED. The docs mounts build through an IntersectionObserver and a
- * dynamic `import()` of 272 KB of player, and on a dev server that import is unbundled:
+ * WHY A FIXED SLEEP WAS REPLACED. The docs mounts build on the first press of their poster
+ * (`pressToLoadPlayer` below) through a dynamic `import()` of 272 KB of player, and on a dev server that import is unbundled:
  * measured on 2026-09-09, the first route of a run compiled in 18.4s and the first navigation
  * took 8.4s, after which `wait(1200)` was nowhere near enough. The click then ran against an
  * element that did not exist yet and the whole scenario reported failures one step out of phase.
@@ -147,7 +147,7 @@ export function reportInconclusiveCauses(devServer, resources) {
  * document. The deadline is fixed once, in this process, and baked into the polled code, so an
  * attempt that evalInPage repeats after a reload still ends at the same moment: one 20 s budget.
  */
-export function waitForPlayerReady(evalInPage, budgetMs, pollMs) {
+function waitForPlayerReady(evalInPage, budgetMs, pollMs) {
   // ONE EVAL CANNOT OUTLIVE agent-browser's CDP timeout (a 120 s poll died with "CDP command timed out: Runtime.evaluate", 2026-10-05), so a budget longer than one poll is spent as a series of polls of at most `pollMs`.
   const deadline = Date.now() + budgetMs;
   let last = { ok: false, reason: 'no poll ran' };
@@ -156,6 +156,67 @@ export function waitForPlayerReady(evalInPage, budgetMs, pollMs) {
     if (last.ok) return last;
   }
   return last;
+}
+
+/** The docs mount's server-rendered play control (remark-tutorial-embed.ts); React replaces it with the player on the first press. */
+const INLINE_POSTER_PLAY = '.tutorial-video-container .tutorial-video-play';
+
+/** What the docs mount holds right now: `armed` is the hydrator's `data-observed`, set in the same pass that attaches the press listener. */
+export function inlineMountState(evalInPage) {
+  return evalInPage(`(() => {
+    const mount = document.querySelector('.tutorial-video-container[data-video-src]');
+    return {
+      clickToLoad: mount ? mount.dataset.clickToLoad ?? null : null,
+      armed: mount ? mount.dataset.observed === 'true' : false,
+      hasPoster: Boolean(document.querySelector('${INLINE_POSTER_PLAY}')),
+      hasPlayer: Boolean(document.querySelector('.tvp-root video'))
+    };
+  })()`);
+}
+
+/**
+ * Press the docs poster, then wait until the player it builds is ready (`waitForPlayerReady`).
+ *
+ * THE PRESS IS THE MOUNT (4bc0f5141, 2026-10-08): a docs tutorial page server-renders a poster
+ * and a play control with `data-click-to-load="inline"`, and tutorial-video-hydrate.ts builds the
+ * player in place on the first press and starts it. Until then the page holds no `.tvp-root` at
+ * all. This gate kept waiting for a player that mounts on load: CI run 38389205702 (job
+ * 115269631028) polled 120 s per route for a control nothing had asked for and reported
+ * `control:false, metadata:false` 23 times, on a player that worked.
+ *
+ * The press waits for `armed`, because a click that lands before the hydrator module has run
+ * reaches a button with no listener and is lost. The loop presses again whenever the mount is
+ * armed and still holds no player, which covers the two ways a press comes to nothing on a dev
+ * server: the first-visit re-optimization reloads the page back to its poster, and a failed chunk
+ * fetch re-arms the control (`armInline`). A press on a control whose listener already fired is
+ * inert, so an extra one changes nothing. Returns the readiness verdict plus `presses`.
+ */
+export function pressToLoadPlayer({ evalInPage, click, wait }, budgetMs, pollMs) {
+  const deadline = Date.now() + budgetMs;
+  let last = { ok: false, reason: 'no poll ran' };
+  let presses = 0;
+  while (Date.now() < deadline) {
+    let mount;
+    try {
+      mount = inlineMountState(evalInPage);
+    } catch (error) {
+      last = { ok: false, reason: String(error) };
+      wait(300);
+      continue;
+    }
+    if (!mount.hasPlayer) {
+      const pressed = mount.armed && mount.hasPoster ? click(INLINE_POSTER_PLAY) : null;
+      if (!pressed?.ok) {
+        last = { ok: false, reason: pressed?.reason ?? `no press yet: ${JSON.stringify(mount)}` };
+        wait(300);
+        continue;
+      }
+      presses += 1;
+    }
+    last = waitForPlayerReady(evalInPage, Math.min(pollMs, deadline - Date.now()), pollMs);
+    if (last.ok) break;
+  }
+  return { ...last, presses };
 }
 
 function pollPlayerReady(evalInPage, budgetMs) {
