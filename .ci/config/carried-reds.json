@@ -42,7 +42,7 @@
       "findings": [
         "P-A1:99bbfe3180cd"
       ],
-      "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70, PLAN-k3s-137-and-pr-conditions:103, PLAN-deferred-findings-block-merge M3, PLAN-tooling-transformation W7P5-a/W7P5-c (worklist #dccf10ab), PLAN-remove-cross-session-messaging (Steps 9, 10, 13 and one Step 12 box) and PLAN-stop-hook-rulings-campaign (a queued campaign of its own). The key is a hash of the open-box set, so it moves whenever a box is ticked. The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
+      "reason": "P-A1 lists open boxes that close only on this PR's own CI run or belong to another campaign: PLAN-cd-errors-in-ci:70, PLAN-k3s-137-and-pr-conditions:103, PLAN-deferred-findings-block-merge M3, PLAN-tooling-transformation W7P5-a/W7P5-c (PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab), PLAN-remove-cross-session-messaging (Steps 9, 10, 13 and one Step 12 box) and PLAN-stop-hook-rulings-campaign (a queued campaign of its own, on the clock since 2026-10-13 only because this branch ticked its two abandoned poll boxes). The key is a hash of the open-box set, so it moves whenever a box is ticked. The PR body carries Operational-Reason: for CI; this carry is dropped once the first run ticks the CI-only boxes."
     }
   ]
 }
