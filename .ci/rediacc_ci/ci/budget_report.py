@@ -141,6 +141,8 @@ MIN_UNIT_DRIFT_MS = 5000
 # Without per-unit stats (an old caller) both sides fall back to the p90 and the rule is the plain 25% ratio it always was. The per-lane sum below stays on p90: summing averages the outliers away (no same-day refresh moved a lane sum past 3.4%) and it is the backstop for a lane-wide slowdown.
 UNIT_SLOWER_STAT = "median"
 UNIT_FASTER_STAT = "max"
+# HOW MANY SAMPLES A "FASTER" VERDICT NEEDS. The faster side asks whether the whole window agrees, by holding the committed p90 against the slowest sample. A window of one or two runs has no slowest sample worth the name: after a stretch longer than the artifact retention, the first PR run is the only one with artifacts, and on 2026-10-13 a single run cancelled part-way reported 25 account-e2e units 33 to 55% faster and the lane's sum with them. Below this count the faster side, for a unit and for a lane's sum, is not judged; the slower side, which is what protects a leg's budget, is judged at any count.
+MIN_FASTER_SAMPLES = 3
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
 HEADROOM_JOBS = ("Validate Promotion", "Stage Artifacts")
 
@@ -275,6 +277,55 @@ def stale_sample_findings(runs: list[dict[str, Any]], now: float | None = None) 
                 % (run.get("id"), run.get("created_at"), age_days, SAMPLE_MAX_AGE_DAYS)
             )
     return findings
+
+
+ACTIONS_RETENTION_REL_PATH = ".ci/config/actions-retention.json"
+
+
+def artifact_retention_days(tree_root: Path) -> int | None:
+    """The repository's artifact retention in days, from its committed record, or None when that record cannot be read."""
+    try:
+        days = json.loads((tree_root / ACTIONS_RETENTION_REL_PATH).read_text(encoding="utf-8")).get(
+            "days"
+        )
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None
+    return days if isinstance(days, int) and not isinstance(days, bool) and days > 0 else None
+
+
+def split_unmeasurable_lanes(
+    missing: list[str],
+    runs: list[dict[str, Any]],
+    jobs_by_run: list[list[dict[str, Any]]],
+    patterns: Mapping[str, re.Pattern[str]],
+    retention_days: int | None,
+    now: float | None = None,
+) -> tuple[list[str], list[str]]:
+    """`(lanes that emitted no artifact, lanes nobody could have measured)`.
+
+    A lane with no unit-duration artifact is a finding only when one could exist: some sampled run is still inside the repository's artifact retention AND a job of that lane succeeded in it. GitHub deletes artifacts after the retention, and a run cancelled before the lane's job finished uploads none, so a sample made only of such runs says nothing about whether the lane emits an artifact. Reported as a finding, that state fails the freshness gate on the first PR after a quiet stretch, and the watchdog then cancels the very jobs whose artifacts would end it.
+
+    It fails closed: an unread retention record, a run with no readable `created_at`, and a lane with no display pattern each keep the lane a finding.
+    """
+    if not missing or retention_days is None:
+        return missing, []
+    now_epoch = time.time() if now is None else now
+    could_measure: set[str] = set()
+    for run, run_jobs in zip(runs, jobs_by_run, strict=True):
+        created = _iso_to_epoch(run.get("created_at"))
+        if created is not None and (now_epoch - created) / 86_400.0 > retention_days:
+            continue
+        for lane in missing:
+            pattern = patterns.get(lane)
+            if pattern is None or any(
+                job.get("conclusion") == "success" and pattern.match(job.get("name") or "")
+                for job in run_jobs
+            ):
+                could_measure.add(lane)
+    return (
+        [lane for lane in missing if lane in could_measure],
+        [lane for lane in missing if lane not in could_measure],
+    )
 
 
 def sample_window_param(now: float | None = None) -> str:
@@ -1533,6 +1584,23 @@ def compute_lane_durations(
         download=download,
         bucket_titles=bucket_titles,
     )
+    retention_days = artifact_retention_days(tree_root)
+    # A lane's job is keyed by the ci.yml callee id, which is not always the lane id (`VARIANT_LANE_JOBS`: ops-tutorials runs in ops-vm-provision).
+    lane_patterns = {
+        lane: patterns[job_id]
+        for lane in missing_lanes
+        if (job_id := VARIANT_LANE_JOBS.get(lane, lane)) in patterns
+    }
+    missing_lanes, unmeasurable = split_unmeasurable_lanes(
+        missing_lanes, pr_runs, pr_jobs_by_run, lane_patterns, retention_days
+    )
+    if unmeasurable:
+        log.warn(
+            "budget_report: no sampled run inside the %s-day artifact retention finished a job of %s, "
+            "so no unit-duration artifact can exist for them; these lanes are NOT measured and NOT "
+            "reported missing. The next PR run that finishes them measures them."
+            % (retention_days, ", ".join(unmeasurable))
+        )
     variant_costs, variant_legs = collect_variant_costs(
         repo,
         pr_jobs_by_run,
@@ -1670,11 +1738,14 @@ def unit_drift_findings(
     committed_sum: dict[str, float] = {}
     measured_sum: dict[str, float] = {}
     stats_by_unit = measured_stats or {}
+    thin_lanes: set[str] = set()
     for unit_id, ms in sorted(measured_units.items()):
         was = committed_units.get(unit_id)
         if was is None or ms is None:
             continue
         lane = unit_lane(unit_id)
+        if _too_few_for_faster(stats_by_unit.get(unit_id) or {}):
+            thin_lanes.add(lane)
         committed_sum[lane] = committed_sum.get(lane, 0.0) + was
         measured_sum[lane] = measured_sum.get(lane, 0.0) + ms
         f = _unit_spread_finding(unit_id, was, ms, stats_by_unit.get(unit_id) or {})
@@ -1684,10 +1755,19 @@ def unit_drift_findings(
         was, ms = committed_sum[lane], measured_sum[lane]
         if abs(ms - was) < MIN_UNIT_DRIFT_MS:
             continue
+        # A sum that fell, over units too thinly sampled to be called faster one by one, is the same thin evidence added up.
+        if ms < was and lane in thin_lanes:
+            continue
         d = drift_finding("lane %r summed unit p90" % lane, was, ms)
         if d:
             findings.append(Keyed("lane-durations:drift:lane-sum:%s" % key_part(lane), d))
     return findings, len(committed_sum)
+
+
+def _too_few_for_faster(unit_stats: Mapping[str, float]) -> bool:
+    """Whether a unit's sample is too small for the faster side (`MIN_FASTER_SAMPLES`). A unit with no recorded count is an old caller's and is judged as before."""
+    n = unit_stats.get("n")
+    return n is not None and n < MIN_FASTER_SAMPLES
 
 
 def _unit_spread_finding(
@@ -1715,6 +1795,8 @@ def _unit_spread_finding(
                 p90,
             )
         )
+    if _too_few_for_faster(unit_stats):
+        return None
     if was - slowest >= MIN_UNIT_DRIFT_MS and (was - slowest) / was > DRIFT_THRESHOLD:
         return (
             "%s: committed %.4g, and the measured %s%s is %.4g, %.0f%% faster (over the %.0f%% limit; measured p90 %.4g)."
