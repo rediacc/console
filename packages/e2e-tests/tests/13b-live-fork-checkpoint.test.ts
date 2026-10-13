@@ -49,6 +49,15 @@ down() {
 }
 `;
 
+/** Run a teardown step, ignoring a failure so the remaining steps still run. */
+async function ignoreFailure(action: () => Promise<unknown>): Promise<void> {
+  try {
+    await action();
+  } catch {
+    /* ignore */
+  }
+}
+
 test.describe
   .serial('Live Fork Checkpoint Restore @bridge @integration', () => {
     let runner: BridgeTestRunner;
@@ -107,28 +116,14 @@ test.describe
         [forkRepoName, forkNetworkId],
         [parentRepoName, parentNetworkId],
       ] as const) {
-        try {
-          await runner.repositoryDown(name, datastorePath, String(netId));
-        } catch {
-          /* ignore */
-        }
-        try {
-          await runner.repositoryUnmount(name, datastorePath);
-        } catch {
-          /* ignore */
-        }
-        try {
-          await runner.repositoryRm(name, datastorePath);
-        } catch {
-          /* ignore */
-        }
+        await ignoreFailure(() => runner.repositoryDown(name, datastorePath, String(netId)));
+        await ignoreFailure(() => runner.repositoryUnmount(name, datastorePath));
+        await ignoreFailure(() => runner.repositoryRm(name, datastorePath));
       }
-      try {
+      await ignoreFailure(async () => {
         await runner.daemonTeardown(forkNetworkId);
         await runner.daemonTeardown(parentNetworkId);
-      } catch {
-        /* ignore */
-      }
+      });
     });
 
     test('1. create and mount parent repository', async () => {

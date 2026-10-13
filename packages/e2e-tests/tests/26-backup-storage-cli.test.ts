@@ -439,6 +439,18 @@ const restoreLedger = async (cli: CliRunner, subscriptionId: string): Promise<vo
 
 // --------------------------------------------------------------------------- ACCOUNT tier — usage arithmetic, the manifest index, and the quota surface ---------------------------------------------------------------------------
 
+/** One stdout line as a snapshot record, or undefined for any other line. */
+function parseSnapshotRecord(line: string): SnapshotRecord | undefined {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('{') || !trimmed.includes('"chunksAsked"')) return undefined;
+  try {
+    return JSON.parse(trimmed) as SnapshotRecord;
+  } catch {
+    // the dispatcher's own debug JSON shares this stream
+    return undefined;
+  }
+}
+
 test.describe
   .serial('rdc backup control plane @cli @backup', () => {
     if (accountVerdict.kind === 'undeclared') {
@@ -686,19 +698,11 @@ test.describe
       };
 
       /** The verb's own records for this run, parsed from stdout alone. */
-      const recordsOf = (result: { stdout: string }): SnapshotRecord[] => {
-        const out: SnapshotRecord[] = [];
-        for (const line of result.stdout.split('\n')) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('{') || !trimmed.includes('"chunksAsked"')) continue;
-          try {
-            out.push(JSON.parse(trimmed) as SnapshotRecord);
-          } catch {
-            // the dispatcher's own debug JSON shares this stream
-          }
-        }
-        return out;
-      };
+      const recordsOf = (result: { stdout: string }): SnapshotRecord[] =>
+        result.stdout.split('\n').flatMap((line) => {
+          const record = parseSnapshotRecord(line);
+          return record ? [record] : [];
+        });
 
       test.beforeAll(async () => {
         w1 = BridgeTestRunner.forWorker(1);

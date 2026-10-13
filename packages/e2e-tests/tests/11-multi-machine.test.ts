@@ -205,7 +205,11 @@ test.describe
       const workers = runner.getWorkerVMs();
 
       for (const vm of workers) {
-        const result = await runner.deploy(testRepo, vm, DEFAULT_DATASTORE_PATH);
+        const result = await runner.pushWithOptions(testRepo, {
+          destinationType: 'machine',
+          destMachine: vm,
+          datastorePath: DEFAULT_DATASTORE_PATH,
+        });
 
         // Always log output for debugging
         console.warn(`[Deploy] To ${vm}`);

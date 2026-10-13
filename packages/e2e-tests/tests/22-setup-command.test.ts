@@ -19,8 +19,7 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
 test.describe('Setup Command @bridge', () => {
   let runner: BridgeTestRunner;
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  test.beforeAll(async () => {
+  test.beforeAll(() => {
     runner = BridgeTestRunner.forWorker();
   });
 
@@ -61,8 +60,7 @@ test.describe('Setup Command @bridge', () => {
 test.describe('Setup Command Edge Cases @bridge', () => {
   let runner: BridgeTestRunner;
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  test.beforeAll(async () => {
+  test.beforeAll(() => {
     runner = BridgeTestRunner.forWorker();
   });
 
