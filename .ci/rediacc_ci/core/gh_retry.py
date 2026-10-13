@@ -58,6 +58,19 @@ def retry_transient[T](
     return result
 
 
+# What a call cut off by its own timeout reads as. gh prints nothing when it is killed, so without this the failure text was "failed", which matches no transient pattern, and the call was never retried: on 2026-10-13 two pre-push runs in a row lost check:ci-budget-freshness to one `gh api .../jobs` call that exceeded 30 s while the lane held every core.
+TIMED_OUT_TEXT = "gateway timeout: gh did not answer within its time limit"
+
+
+def _failure_text(result: ghx.GhResult) -> str | None:
+    """None for success, else the text `is_transient` judges. A timeout is transient whatever gh printed before it was killed."""
+    if result.ok:
+        return None
+    if result.failure == ghx.FAILURE_TIMED_OUT:
+        return TIMED_OUT_TEXT
+    return result.stderr or "failed"
+
+
 def gh(
     args: list[str],
     *,
@@ -77,7 +90,7 @@ def gh(
         extra["timeout"] = timeout
     return retry_transient(
         lambda: run(args, env=env, attempts=1, **extra),
-        lambda r: None if r.ok else (r.stderr or "failed"),
+        _failure_text,
         attempts=attempts,
         sleep=sleep,
     )
