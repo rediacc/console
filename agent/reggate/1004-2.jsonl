@@ -1,0 +1,9 @@
+{"kind":"charge","sig":"79f233dfa718","why":"proven","at":"2026-10-04T17:55:57Z","br":"1004-2"}
+{"kind":"charge","sig":"cbdc03f682f3","why":"proven","at":"2026-10-05T02:28:16Z","br":"1004-2"}
+{"kind":"charge","sig":"7561d4e80d23","why":"proven","at":"2026-10-05T03:19:01Z","br":"1004-2"}
+{"kind":"charge","sig":"a30e6d9aaece","why":"proven","at":"2026-10-05T04:30:37Z","br":"1004-2"}
+{"kind":"charge","sig":"9a743a265ec1","why":"proven","at":"2026-10-05T11:01:22Z","br":"1004-2"}
+{"kind":"charge","sig":"fd9b759c542e","why":"proven","at":"2026-10-05T21:06:41Z","br":"1004-2"}
+{"kind":"charge","sig":"50c3ebb5b8ce","why":"proven","at":"2026-10-05T21:26:45Z","br":"1004-2"}
+{"kind":"debt","sig":"d872d20c5d9e","blind_spot":"Runtime behavior of background ci-trace watch processes writing to agent ledger files during CI runs and recovery scenarios is not observable by static checks; no gate currently verifies verdict writes complete","surface":"gates","artifact":"agent/ci/check-ci-trace-verdict-writes.ts","charged":7,"at":"2026-10-05T22:55:36Z","br":"1004-2"}
+{"kind":"charge","sig":"d872d20c5d9e","why":"capped","at":"2026-10-05T22:55:36Z","br":"1004-2"}
