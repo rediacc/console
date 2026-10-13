@@ -67,7 +67,8 @@ The 10-07 scheduled run 37604651929 deleted tag v1.3.1 while `cli/v1.3.1/.releas
     (ticked) 2026-10-08T12:14:58Z by d778be9d: commit:8f5ed0ca2 ci.yml cd-preflight job (soft tier of CI Complete), cd-v2 init --phase cd after Create version tag, housekeeping --checks a,c before cleanup_versions; ci_workflow_invariants pins all three; check:ci-workflow-invariants rc=0
 - [x] W5 release order (found 2026-10-08, CD run 37749637824): "Tag & Release" wrote the R2 sentinel cli/v2.2.0/.released and deployed edge, then "Validate Install (post-publish) / Linux (x64)" went red on the Rocky 9 DNF stall and the git tag job "Tag & GitHub Release" was skipped, so a sentinel existed with no tag: the bijection drift that reddened main on 10-07, created by CD itself. Make the tag and the sentinel one unit (tag before or with the sentinel, never gated behind post-publish validation), or have a validation red roll the sentinel back; add a test over the cd-v2.yml job graph that refuses a sentinel writer whose tag job can be skipped.
     (ticked) 2026-10-08T11:57:26Z by d778be9d: commit:b7930d482 the version tag is the cd-v2 init job's last step, before anything that can fail after the seal; ci_workflow_invariants refuses the old cd-v2.yml (rc 1)
-- [ ] A live run on a PR: cd-preflight green on the head, and red on a replay of the 10-07 state.
+- [x] A live run on a PR: cd-preflight green on the head, and red on a replay of the 10-07 state.
+    (ticked) 2026-10-13T19:51:13Z by d778be9d: commit:d462ca9af PR 600 run 38451759370 on eced71537: Quality / Pytest (1/3) job 115485527148 success with the 10-07 replay; operator ruling 2026-10-13 'Add a CI replay step' met by the existing tests
 
 ## What stays post-merge, and how it fails loudly
 

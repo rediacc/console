@@ -476,7 +476,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
 | `agent/plans/PLAN-biome-only-lint.md` | draft | 297 | 19 | 10 | 49663 |
 | `agent/plans/PLAN-bump-k3s-upstream-1-36-4.md` | compacted | 35 | 0 | 0 | 2420 |
-| `agent/plans/PLAN-cd-errors-in-ci.md` | approved | 85 | 1 | 5 | 8462 |
+| `agent/plans/PLAN-cd-errors-in-ci.md` | approved | 86 | 0 | 6 | 8710 |
 | `agent/plans/PLAN-chunk-store-browse-DECISION.md` | compacted | 37 | 0 | 0 | 2572 |
 | `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5233 |
 | `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4897 |
@@ -493,11 +493,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3909 |
 | `agent/plans/PLAN-config-handoff-relay-only.md` | draft | 419 | 2 | 9 | 40429 |
 | `agent/plans/PLAN-config-networkid-sync.md` | draft | 278 | 8 | 0 | 30701 |
-| `agent/plans/PLAN-config-passkey-optional.md` | approved | 132 | 1 | 3 | 15085 |
+| `agent/plans/PLAN-config-passkey-optional.md` | approved | 133 | 0 | 4 | 15413 |
 | `agent/plans/PLAN-config-sync-hardening.md` | draft | 475 | 1 | 18 | 57866 |
-| `agent/plans/PLAN-config-team-scoping.md` | draft | 244 | 1 | 10 | 31097 |
+| `agent/plans/PLAN-config-team-scoping.md` | draft | 245 | 0 | 11 | 31376 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
-| `agent/plans/PLAN-deferred-findings-block-merge.md` | approved | 248 | 1 | 16 | 28151 |
+| `agent/plans/PLAN-deferred-findings-block-merge.md` | approved | 249 | 0 | 17 | 28380 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 386 | 28 | 0 | 53190 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
@@ -519,7 +519,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-inline-suppressions.md` | approved | 310 | 8 | 3 | 39303 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
-| `agent/plans/PLAN-k3s-137-and-pr-conditions.md` | approved | 111 | 1 | 4 | 8855 |
+| `agent/plans/PLAN-k3s-137-and-pr-conditions.md` | approved | 112 | 0 | 5 | 9105 |
 | `agent/plans/PLAN-lessons-registry-followups.md` | draft | 18 | 2 | 0 | 1649 |
 | `agent/plans/PLAN-lessons-registry.md` | approved | 186 | 0 | 9 | 21395 |
 | `agent/plans/PLAN-lint-css-ci-wiring.md` | compacted | 54 | 0 | 0 | 4377 |
