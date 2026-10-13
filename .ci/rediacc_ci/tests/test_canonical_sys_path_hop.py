@@ -744,3 +744,28 @@ def test_a_relative_pythonpath_survives_a_chdir_before_a_sibling_is_spawned(tmp_
         check=False,
     )
     assert bare.returncode != 0
+
+
+@pytest.mark.parametrize(
+    ("given", "want"),
+    [("", ""), (".ci" + os.pathsep, "{root}/.ci" + os.pathsep), ("/abs/x", "/abs/x")],
+)
+def test_an_empty_pythonpath_entry_is_never_pinned(given: str, want: str) -> None:
+    """An empty entry stays empty, so no child gains the starting directory on its path; an absolute entry is untouched."""
+    root = paths.repo_root()
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    done = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import os, sys\nsys.path.insert(0, sys.argv[1])\nimport rediacc_ci\nprint(os.environ['PYTHONPATH'], end='')",
+            str(root / ".ci"),
+        ],
+        cwd=root,
+        env={**env, "PYTHONPATH": given},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr[-400:]
+    assert done.stdout == want.format(root=root)
