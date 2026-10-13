@@ -25,7 +25,7 @@ const { server, secureMem, relay, account, pushSpy, messages, active } = vi.hois
     storeId: '',
     configId: '',
     version: 0,
-    config: {} as Record<string, unknown>,
+    config: {},
     slotSecrets: new Set<string>(),
     wrappedCek: '',
     failure: null as (() => Error) | null,

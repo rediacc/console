@@ -127,7 +127,7 @@ function assertSameTarget(
  * Replace this device's credentials for the linked config with `credentials`, prove them with a
  * pull, and refresh the cache. Returns the server version now cached. See the module doc.
  */
-export async function reenrollDevice(
+async function reenrollDevice(
   credentials: DeviceCredentials,
   configName: string,
   linked: RemoteConfig
@@ -252,9 +252,11 @@ export async function reenroll(
   if (options.password) {
     const { passwordCredentials, passwordFailure } = await import('./config-remote-password.js');
     const credentials = await passwordCredentials(apiUrl);
-    version = await reenrollDevice(credentials, configName, linked).catch(async (error) => {
-      throw await passwordFailure(error);
-    });
+    version = await reenrollDevice(credentials, configName, linked).catch(
+      async (error: unknown) => {
+        throw await passwordFailure(error);
+      }
+    );
   } else {
     const { token, email } = await checkEnablePrerequisites(apiUrl);
     const payload = await runRelayHandoff(apiUrl, token, email);
