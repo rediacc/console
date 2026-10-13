@@ -22,6 +22,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-prepare-cli-assets.observations.jsonl`.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -636,3 +637,18 @@ def test_a_planted_defect_is_caught_only_by_the_artifacts(tmp_path) -> None:
     new_meta = json.loads(new_t[2]["packages/cli/dist/assets/renet-metadata.json"])
     assert sorted(old_meta["binaries"]) == ["amd64", "arm64"]
     assert sorted(new_meta["binaries"]) == ["linux-amd64", "linux-arm64"]
+
+
+def test_the_digest_of_a_file_whose_path_holds_a_backslash_carries_no_escape_mark(tmp_path):
+    """GNU sha256sum prefixes its line with a backslash for such a name; the digest must not keep it."""
+    odd = tmp_path / "back\\slash"
+    odd.mkdir()
+    target = odd / "renet-windows-amd64"
+    target.write_bytes(b"asset bytes")
+    raw = subprocess.run(
+        ["sha256sum", str(target)], capture_output=True, text=True, check=True
+    ).stdout
+    assert raw.startswith("\\"), "control: the tool does mark this name, or the test proves nothing"
+    digest, error = port.file_sha256(target)
+    assert error is None
+    assert digest == hashlib.sha256(b"asset bytes").hexdigest()
