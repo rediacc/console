@@ -2803,6 +2803,120 @@ jobs:
         run: npm run check:ci-quality-complete
 
   # ============================================================================
+  # SECURE STORAGE AGAINST THE REAL BACKENDS, one leg per OS. The CLI keeps the
+  # config-store slot secret in the kernel keyring (Linux), the Keychain (macOS)
+  # or a DPAPI blob (Windows), and until this job every test of that layer
+  # mocked the module: the unit suite ran on ubuntu only, and the macOS and
+  # Windows runners built the SEA binary and read its version.
+  #
+  # A GREEN LEG CANNOT MEAN "SKIPPED". SECURE_STORAGE_REQUIRE_NATIVE=1 turns the
+  # suite's unreachable-backend skip into a failure, and the suite writes a
+  # receipt naming the backend it exercised and how many native tests ran. The
+  # last step reads the receipt against the matrix, so a misspelled variable
+  # (no receipt) or a leg that fell back to the file backend is red.
+  #
+  # LINUX: A READABLE KEYRING. A runner job's session keyring does not link the
+  # user keyring, so `keyctl add ... @u` succeeds and the read is refused with
+  # `keyctl_read_alloc: Permission denied` (the Drills job in ct-tests.yml
+  # recorded it). `keyctl session -` starts a fresh session keyring the step
+  # owns and `keyctl link @u @s` makes @u possessed for everything it execs.
+  # Reproduced on a workstation in both directions; on a hosted runner it is
+  # UNVERIFIED until this job's first run.
+  #
+  # MACOS: a throwaway keychain is created, unlocked and made the default, so
+  # the leg does not depend on the state of the runner's login keychain.
+  # WINDOWS: the backend shells out to Windows PowerShell with -Command, which
+  # the execution policy does not govern.
+  #
+  # Its own job, not a step of quality-packages: the three legs need three
+  # runners, and no gate step lives here, so the lane tables do not list it.
+  # ============================================================================
+  quality-secure-storage:
+    name: Secure Storage (${{ matrix.backend }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    # Checkout and local tests only. No API call, no App token, no secret.
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    strategy:
+      # fail-fast: false, so a red leg does not cancel the other two operating
+      # systems before they report.
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            backend: keyctl
+          - os: macos-latest
+            backend: keychain
+          - os: windows-latest
+            backend: dpapi
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # build-packages: secure-storage.ts imports @rediacc/shared/paths through
+      # its dist/. No submodules and no natives: the module needs neither.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
+
+      # `shell: bash` runs with -eo pipefail, so any refused security call
+      # stops the step. No arguments after the path in set-keychain-settings:
+      # no lock on sleep and no lock timeout.
+      - name: Throwaway default keychain (macOS)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          keychain="$RUNNER_TEMP/secure-storage-test.keychain-db"
+          pass="$(openssl rand -hex 16)"
+          security create-keychain -p "$pass" "$keychain"
+          security set-keychain-settings "$keychain"
+          security unlock-keychain -p "$pass" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -d user -s "$keychain"
+
+      - name: keyctl is installed (Linux)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os == 'Linux' }}
+        run: |
+          command -v keyctl >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq keyutils; }
+          keyctl --version
+
+      # Linux runs inside a fresh session keyring that links the user keyring;
+      # see the block comment above this job.
+      - name: Secure storage native tests (Linux, readable keyring)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os == 'Linux' }}
+        env:
+          SECURE_STORAGE_REQUIRE_NATIVE: '1'
+          SECURE_STORAGE_NATIVE_RECEIPT: ${{ runner.temp }}/secure-storage-receipt.json
+        run: keyctl session - sh -c 'keyctl link @u @s && exec npm run test:unit --workspace=@rediacc/cli -- src/utils/__tests__/secure-storage.native.test.ts'
+
+      - name: Secure storage native tests (macOS, Windows)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && runner.os != 'Linux' }}
+        shell: bash
+        env:
+          SECURE_STORAGE_REQUIRE_NATIVE: '1'
+          SECURE_STORAGE_NATIVE_RECEIPT: ${{ runner.temp }}/secure-storage-receipt.json
+        run: npm run test:unit --workspace=@rediacc/cli -- src/utils/__tests__/secure-storage.native.test.ts
+
+      # The verdict on vacuity. The suite writes the receipt only under
+      # SECURE_STORAGE_REQUIRE_NATIVE, as one JSON line whose key order is fixed
+      # (platform, backend, reachable, declared, ran), so a missing file means
+      # the requirement never reached it and `cat` fails the step. The suite
+      # itself fails when a declared native test did not run; this step holds
+      # the backend to the matrix.
+      - name: Receipt names the native backend
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        shell: bash
+        env:
+          SECURE_STORAGE_NATIVE_RECEIPT: ${{ runner.temp }}/secure-storage-receipt.json
+        run: |
+          cat "$SECURE_STORAGE_NATIVE_RECEIPT"
+          grep -q '"backend":"${{ matrix.backend }}","reachable":true' "$SECURE_STORAGE_NATIVE_RECEIPT" || { echo "::error::the receipt does not name a reachable ${{ matrix.backend }} backend"; exit 1; }
+
+  # ============================================================================
   # THE SHARD AGGREGATOR. A matrix job reports ONE roll-up result for every leg,
   # so a leg that was never created is indistinguishable from a leg that passed:
   # drop half the `shard:` list and `Quality / Code` still reports success having

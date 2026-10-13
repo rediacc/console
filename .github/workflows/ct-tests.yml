@@ -2920,21 +2920,23 @@ jobs:
           set -o pipefail
           ./run.sh drill universe --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-universe.log"
 
-      # DECLARED, not skipped silently. Every phase of this drill enrolls a
-      # device, and enrollment writes its slot secret to the OS keyring
-      # (secure-storage.ts uses keyctl @u, for the password method as much as for
-      # passkeys). A runner job has no accessible session keyring, so the CLI
-      # fails with `keyctl_read_alloc: Permission denied` four assertions deep
-      # and blames the config store. Without this declaration the drill REDS
-      # rather than passing quietly — that is the point of the variable.
+      # RUNS FOR REAL, inside a session keyring that links the user keyring.
+      # Every phase of this drill enrolls a device, and enrollment writes its
+      # slot secret to the OS keyring (secure-storage.ts uses keyctl @u, for the
+      # password method as much as for passkeys). A runner job's own session
+      # keyring does not link @u, so `keyctl add` succeeds and the read back is
+      # refused with `keyctl_read_alloc: Permission denied`; until 2026-10-13
+      # this step declared that with DRILL_EXPECT_NO_KEYRING and the drill
+      # exited 0 having enrolled nothing. `keyctl session -` gives the drill a
+      # fresh session keyring and `keyctl link @u @s` makes @u possessed for
+      # the drill and every rdc it starts (rdc.sh execs node directly). The
+      # same wrapper as ci-quality.yml's Secure Storage (keyctl) leg. No
+      # declaration is set on purpose: a keyring that is still unreadable
+      # fails the drill's preflight, loudly, instead of skipping it.
       - name: drill transfer
-        env:
-          DRILL_EXPECT_NO_KEYRING: >-
-            GitHub runners give the job no accessible session keyring, so
-            keyctl @u is unwritable and device enrollment cannot run here
         run: |
           set -o pipefail
-          ./run.sh drill transfer --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
+          keyctl session - sh -c 'keyctl link @u @s && exec ./run.sh drill transfer --keep-work' 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
 
       # The chunk-store backup drill: session mint from a licence blob, the
       # quota boundary, lease accounting, idempotent commit, the delete-free
