@@ -463,9 +463,26 @@
         "description": "Uzak yapılandırma depolama bağlantısını yönet",
         "disable": {
           "description": "Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet",
+          "optionLocal": "Sunucuya bağlanmadan, önbellekteki kopyadan, yalnızca bu cihazda bağlantıyı kaldır",
           "notEnabled": "Uzak yapılandırma etkin değil.",
           "serverRequired": "Devre dışı bırakılamıyor: Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve devre dışı bırakma işlemi önce sunucudan en güncel kopyayı almalıdır (eski bir önbellekten devre dışı bırakmak başka bir cihazın yazdıklarını kaybettirebilir). Sunucuya ulaşılabilir olduğunda yeniden deneyin.",
+          "accessLost": "Devre dışı bırakılamıyor: yapılandırma sunucusu \"{{name}}\" yapılandırması için bu hesabı reddediyor ({{error}}) ve devre dışı bırakma işlemi önce sunucudan en güncel kopyayı almalıdır. Depoya erişim geri gelmeyecekse bağlantıyı kaldırıp bu cihazdaki önbellek kopyasını şu komutla tutun: rdc config remote disable --local",
+          "localNoCache": "\"{{name}}\" yapılandırmasının bu cihazda sunucu yapılandırmasına ait önbellek kopyası yok: buraya hiç çekilmedi ya da kopya kaldırıldı. Dosyada yalnızca bağlantı ve bu cihazın kendi ayarları var; dolayısıyla tutulacak bir şey yok ve hiçbir şey değiştirilmedi. İçerik yalnızca sunucudan gelebilir (rdc config remote enable); bunun yerine yerel dosyayı kaldırmak için şunu çalıştırın: rdc config delete {{name}}",
+          "localUnreadable": "\"{{name}}\" yapılandırmasının önbellek kopyası (sunucu sürümü {{version}}) bu cihazda açılamadı ({{error}}); bu yüzden hiçbir şey değiştirilmedi. Kopya, yapılandırmanın ana parolasıyla şifreli: parola verilirse (REDIACC_MASTER_PASSWORD) kopyanın tamamı tutulabilir; parola olmadan kopyadan burada hiçbir şey kurtarılamaz ve okunabilir kopya yalnızca sunucudadır.",
+          "localConfirm": "\"{{name}}\" yapılandırmasının {{server}} ile bağlantısı yalnızca bu cihazda kaldırılsın mı? Buradaki önbellek kopyası (sunucu sürümü {{version}}, önbelleğe alınma zamanı {{cachedAt}}) yerel yapılandırma olur. Sunucuda daha yeni veri varsa çekilmez ve sunucuda hiçbir şey değiştirilmez.",
+          "localNeedsYes": "\"{{name}}\" yapılandırmasının bağlantısını yalnızca bu cihazda kaldırmak, buradaki önbellek kopyasını (sunucu sürümü {{version}}) tutar ve sunucuda daha yeni veri varsa onu çekmez. Hiçbir şey değiştirilmedi. Etkileşimli bir terminalde onaylayın ya da komutu --yes ile yeniden çalıştırın.",
+          "localSuccess": "\"{{name}}\" yapılandırmasının bağlantısı bu cihazda kaldırıldı ve önbellek kopyasından (sunucu sürümü {{version}}) yerel yapılandırma olarak kaydedildi. Sunucuda daha yeni veri vardıysa çekilmedi. Sunucudaki kopya ve bu cihazın sunucudaki anahtar yuvası değiştirilmedi.",
+          "localSecretLeft": "Bu cihazın depo anahtarı kaldırılmadı, çünkü gizli veri deposu kullanılamıyor: {{error}}",
           "success": "Uzak yapılandırma devre dışı bırakıldı. Yapılandırma \"{{name}}\" yerel olarak kaydedildi."
+        },
+        "secretStore": {
+          "keyctlMissing": "Bu cihazın yapılandırma depolaması anahtarını tutacak yeri yok: `keyctl` kurulu değil, bu yüzden çekirdek anahtarlığına ulaşılamıyor. Hiçbir şey kaydedilmedi. keyutils paketini kurun ya da anahtarı diskte bir dosyada (0600 kipi) tutmak için REDIACC_SECRET_STORE=file ayarlayın.",
+          "keyringUnusable": "Bu cihazın yapılandırma depolaması anahtarını tutacak yeri yok: `keyctl` ile çekirdeğin kullanıcı anahtarlığına yazılan bir deneme anahtarı kaydedilip geri okunamadı. Hiçbir şey kaydedilmedi. Kullanıcı anahtarlığını bağlamayan bir oturum anahtarlığı böyle davranır (bir servis, bir konteyner, bir CI işi); `keyctl link @u @s` onu oturum için bağlar. Ya da anahtarı diskte bir dosyada (0600 kipi) tutmak için REDIACC_SECRET_STORE=file ayarlayın.",
+          "toolMissing": "Bu cihazın yapılandırma depolaması anahtarını tutacak yeri yok: `{{tool}}` çalıştırılamadı, bu yüzden {{store}} deposuna ulaşılamıyor. Hiçbir şey kaydedilmedi. `{{tool}}` komutunu yeniden PATH içine alın ya da anahtarı diskte bir dosyada tutmak için REDIACC_SECRET_STORE=file ayarlayın.",
+          "storeUnusable": "Bu cihazın yapılandırma depolaması anahtarını tutacak yeri yok: `{{tool}}` ile {{store}} deposuna yazılan bir deneme anahtarı kaydedilip geri okunamadı. Hiçbir şey kaydedilmedi. {{store}} deposunun kilidini açın veya onu onarın ya da anahtarı diskte bir dosyada tutmak için REDIACC_SECRET_STORE=file ayarlayın.",
+          "unsupportedPlatform": "Bu cihazın yapılandırma depolaması anahtarını tutacak yeri yok: {{platform}} üzerinde desteklenen yerel bir gizli veri deposu yok. Hiçbir şey kaydedilmedi. Anahtarı diskte bir dosyada (0600 kipi) tutmak için REDIACC_SECRET_STORE=file ayarlayın.",
+          "invalidChoice": "REDIACC_SECRET_STORE \"{{value}}\" olarak ayarlanmış; bu bir gizli veri deposu değil. Tek değer \"file\"; ayarlanmazsa bu sistemin yerel deposu kullanılır.",
+          "fileNotice": "REDIACC_SECRET_STORE=file: bu cihazın yapılandırma depolaması anahtarı {{path}} dosyasında (0600 kipi) tutuluyor ve yalnızca dosya izinleriyle korunuyor."
         },
         "enable": {
           "alreadyEnabled": "Yapılandırma \"{{name}}\" zaten uzak depolamaya bağlı ve bu cihaz onu açabiliyor; etkinleştirilecek bir şey yok. Bağlantıyı kesmek için şunu çalıştırın: rdc config remote disable",
@@ -496,7 +513,6 @@
           "passwordTokenNotEnrollable": "Bu API belirteci bir organizasyondaki bir kullanıcıya bağlı olmadığından bir config slot kaydedemez. Web portalından kendi hesabınızdan kişisel bir belirteç alın ve tekrar deneyin.",
           "passwordWrong": "Yapılandırmanın kilidi bu parolayla açılamadı. REDIACC_CONFIG_PASSWORD değişkenini (veya girdiğiniz parolayı) kontrol edip tekrar deneyin.",
           "received": "Aktarım alındı",
-          "reenrollConfigGone": "{{storeId}} deposu, \"{{name}}\" yapılandırmasının bağlı olduğu {{configId}} uzak yapılandırmasını artık barındırmıyor. Hiçbir şey değiştirilmedi; yerel dosya bu cihazın gördüğü son kopyadır.",
           "reenrollConfigMismatch": "Yapılandırma \"{{name}}\" şu uzak yapılandırmaya bağlı: {{linkedConfig}}. Kayıt ise şu uzak yapılandırma için onaylandı: {{offeredConfig}}. Hiçbir şey değiştirilmedi. Komutu yeniden çalıştırın ve kaydı {{linkedConfig}} için onaylayın.",
           "reenrolling": "Yapılandırma \"{{name}}\" uzak depolamaya bağlı, ancak bu cihaz onu artık açamıyor. Bu cihaz aynı depo için yeniden kaydediliyor.",
           "reenrollServerMismatch": "Yapılandırma \"{{name}}\" şu sunucuya bağlı: {{linkedUrl}}. Bu cihaz yalnızca orada yeniden kaydedilebilir; {{requestedUrl}} üzerinde kaydedilemez. Komutu --api-url olmadan yeniden çalıştırın.",
@@ -515,6 +531,7 @@
           "success": "Uzak yapılandırma etkinleştirildi. Yapılandırma \"{{name}}\" artık {{apiUrl}} ile senkronize ediliyor."
         },
         "handoffUndecryptable": "Sunucu aktarıcısı bu cihazın açamadığı bir aktarım döndürdü ({{error}}): bu çalıştırmanın ürettiğinden farklı bir anahtarla mühürlenmiş. Komutu yeniden çalıştırın ve yalnızca komutun yazdırdığı bağlantıyı açın.",
+        "storeCopyGone": "{{storeId}} deposu, \"{{name}}\" yapılandırmasının bağlı olduğu {{configId}} uzak yapılandırmasını artık barındırmıyor. Hiçbir şey değiştirilmedi; yerel dosya bu cihazın gördüğü son kopyadır. Bağlantıyı kaldırıp bu kopyayı yerel yapılandırma olarak tutmak için şunu çalıştırın: rdc config remote disable --local",
         "offlineCacheWarning": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor; \"{{config}}\" yapılandırması çevrimdışı önbellekten sunuluyor (sunucu sürümü {{version}}, {{age}} önce önbelleklendi). Sunucuya ulaşılabilir olana kadar değişiklikler kaydedilemez.",
         "offlineNoCache": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve \"{{config}}\" yapılandırmasının henüz çevrimdışı önbelleği yok. Önbelleği oluşturmak için sunucuya ulaşılabilir olduğunda \"rdc config remote refresh\" komutunu çalıştırın.",
         "passkeySecretMissing": "Bu cihaz, yapılandırma depolaması için anahtarını artık tutmuyor (Linux'ta çekirdek anahtarlığı her yeniden başlatmada boşalır). Bu cihazı şununla yeniden kaydedin: rdc config remote enable",
@@ -555,7 +572,7 @@
           "storeMismatch": "{{storeId}} yapılandırma deposu bu cihazdaki oturumun kuruluşuna ait değil, bu yüzden yapılandırma belirteci yenilenmedi. Bu yapılandırmanın sahibi olan kuruluşta oturum açın (\"rdc subscription login\") ve yeniden deneyin.",
           "staleGeneration": "Yapılandırma şifreleme anahtarı döndürüldü ve bu hesabın hiçbir anahtar yuvası yenisini açamıyor, bu yüzden yapılandırma belirteci yenilenmedi. Cihazı yeniden kaydedin: rdc config remote enable",
           "rateLimited": "Hesap sunucusu yapılandırma belirteci yenilemelerini sınırlıyor ({{error}}). Bir dakika bekleyip komutu yeniden çalıştırın.",
-          "refused": "Hesap sunucusu bu cihazın yapılandırma belirtecini yenilemedi ({{error}}). \"rdc config remote enable\" komutunu yeniden çalıştırın."
+          "refused": "Hesap sunucusu bu cihazın yapılandırma belirtecini yenilemedi ({{error}}). Bu cihazda hiçbir şey değiştirilmedi; komutu yeniden çalıştırın."
         },
         "versions": {
           "description": "Sunucuda saklanan bu yapılandırmanın önceki sürümlerini listeler",

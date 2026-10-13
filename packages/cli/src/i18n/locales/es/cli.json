@@ -463,9 +463,26 @@
         "description": "Gestionar conexión de almacenamiento remoto de configuración",
         "disable": {
           "description": "Desconectar del almacenamiento remoto y guardar configuración localmente",
+          "optionLocal": "Desvincular solo en este dispositivo, a partir de la copia en caché y sin contactar con el servidor",
           "notEnabled": "La configuración remota no está habilitada.",
           "serverRequired": "No se puede deshabilitar: el servidor de configuración {{server}} no está disponible, y deshabilitar requiere primero obtener la última copia del servidor (deshabilitar desde una caché desactualizada podría perder cambios de otro dispositivo). Vuelve a intentarlo cuando el servidor esté disponible.",
+          "accessLost": "No se puede deshabilitar: el servidor de configuración rechaza a esta cuenta para la configuración \"{{name}}\" ({{error}}), y deshabilitar requiere primero obtener la última copia del servidor. Si el acceso al almacén no va a volver, quita el vínculo y conserva la copia en caché de este dispositivo con: rdc config remote disable --local",
+          "localNoCache": "La configuración \"{{name}}\" no tiene en este dispositivo ninguna copia en caché de la configuración del servidor: nunca se descargó aquí, o la copia se eliminó. El archivo solo contiene el vínculo y los ajustes propios de este dispositivo, así que no hay nada que conservar, y no se cambió nada. El contenido solo puede venir del servidor (rdc config remote enable); para eliminar el archivo local en su lugar, ejecuta: rdc config delete {{name}}",
+          "localUnreadable": "La copia en caché de la configuración \"{{name}}\" (versión {{version}} del servidor) no se pudo abrir en este dispositivo ({{error}}), así que no se cambió nada. La copia está cifrada con la contraseña maestra de la configuración: con ella (REDIACC_MASTER_PASSWORD) se conserva la copia entera; sin ella no se puede recuperar nada de la copia aquí, y solo el servidor guarda una legible.",
+          "localConfirm": "¿Desvincular la configuración \"{{name}}\" de {{server}} solo en este dispositivo? La copia en caché que hay aquí (versión {{version}} del servidor, guardada el {{cachedAt}}) pasa a ser una configuración local. Los datos más recientes del servidor, si los hay, no se descargan, y en el servidor no se cambia nada.",
+          "localNeedsYes": "Desvincular la configuración \"{{name}}\" solo en este dispositivo conserva la copia en caché que hay aquí (versión {{version}} del servidor) y no descarga los datos más recientes del servidor, si los hay. No se cambió nada. Confirma en una terminal interactiva, o ejecuta el comando de nuevo con --yes.",
+          "localSuccess": "La configuración \"{{name}}\" quedó desvinculada en este dispositivo y guardada como configuración local a partir de la copia en caché (versión {{version}} del servidor). Los datos más recientes del servidor, si los había, no se descargaron. La copia del servidor y la ranura de clave de este dispositivo en el servidor no se modificaron.",
+          "localSecretLeft": "La clave de este dispositivo para el almacén no se eliminó, porque su almacén de secretos no se puede usar: {{error}}",
           "success": "Configuración remota deshabilitada. Configuración \"{{name}}\" guardada localmente."
+        },
+        "secretStore": {
+          "keyctlMissing": "Este dispositivo no tiene dónde guardar su clave del almacenamiento de configuración: `keyctl` no está instalado, así que el llavero del kernel queda fuera de alcance. No se guardó nada. Instala el paquete keyutils, o define REDIACC_SECRET_STORE=file para guardar la clave en un archivo en disco (modo 0600).",
+          "keyringUnusable": "Este dispositivo no tiene dónde guardar su clave del almacenamiento de configuración: una clave de prueba escrita con `keyctl` en el llavero de usuario del kernel no se pudo guardar y volver a leer. No se guardó nada. Así se comporta un llavero de sesión que no enlaza el llavero de usuario (un servicio, un contenedor, un trabajo de CI); `keyctl link @u @s` lo enlaza para la sesión. O define REDIACC_SECRET_STORE=file para guardar la clave en un archivo en disco (modo 0600).",
+          "toolMissing": "Este dispositivo no tiene dónde guardar su clave del almacenamiento de configuración: `{{tool}}` no se pudo ejecutar, así que {{store}} queda fuera de alcance. No se guardó nada. Vuelve a poner `{{tool}}` en el PATH, o define REDIACC_SECRET_STORE=file para guardar la clave en un archivo en disco.",
+          "storeUnusable": "Este dispositivo no tiene dónde guardar su clave del almacenamiento de configuración: una clave de prueba escrita en {{store}} con `{{tool}}` no se pudo guardar y volver a leer. No se guardó nada. Desbloquea o repara {{store}}, o define REDIACC_SECRET_STORE=file para guardar la clave en un archivo en disco.",
+          "unsupportedPlatform": "Este dispositivo no tiene dónde guardar su clave del almacenamiento de configuración: en {{platform}} no se admite ningún almacén de secretos nativo. No se guardó nada. Define REDIACC_SECRET_STORE=file para guardar la clave en un archivo en disco (modo 0600).",
+          "invalidChoice": "REDIACC_SECRET_STORE vale \"{{value}}\", que no es un almacén de secretos. El único valor es \"file\"; sin definir se usa el almacén nativo de este sistema.",
+          "fileNotice": "REDIACC_SECRET_STORE=file: la clave del almacenamiento de configuración de este dispositivo se guarda en {{path}} (modo 0600), protegida solo por los permisos del archivo."
         },
         "enable": {
           "alreadyEnabled": "La configuración \"{{name}}\" ya está vinculada al almacenamiento remoto y este dispositivo puede abrirla, así que no hay nada que habilitar. Para desvincularla, ejecuta: rdc config remote disable",
@@ -496,7 +513,6 @@
           "passwordTokenNotEnrollable": "Este token API no puede inscribir un config slot porque no está vinculado a un usuario dentro de una organización. Emite un token personal desde tu propia cuenta en el portal web y vuelve a intentarlo.",
           "passwordWrong": "No se pudo desbloquear la configuración con esa contraseña. Verifica REDIACC_CONFIG_PASSWORD (o la contraseña introducida) e inténtalo de nuevo.",
           "received": "Transferencia recibida",
-          "reenrollConfigGone": "El almacén {{storeId}} ya no contiene la configuración remota {{configId}}, a la que está vinculada la configuración \"{{name}}\". No se cambió nada; el archivo local es la última copia que vio este dispositivo.",
           "reenrollConfigMismatch": "La configuración \"{{name}}\" está vinculada a la configuración remota {{linkedConfig}}, pero la inscripción se aprobó para la configuración remota {{offeredConfig}}. No se cambió nada. Ejecuta el comando de nuevo y apruébala para {{linkedConfig}}.",
           "reenrolling": "La configuración \"{{name}}\" está vinculada al almacenamiento remoto, pero este dispositivo ya no puede abrirla. Se inscribe de nuevo este dispositivo en el mismo almacén.",
           "reenrollServerMismatch": "La configuración \"{{name}}\" está vinculada a {{linkedUrl}}, así que este dispositivo solo puede volver a inscribirse allí, no en {{requestedUrl}}. Ejecuta el comando de nuevo sin --api-url.",
@@ -515,6 +531,7 @@
           "success": "Configuración remota habilitada. La configuración \"{{name}}\" ahora está sincronizada con {{apiUrl}}."
         },
         "handoffUndecryptable": "El relé del servidor devolvió una entrega que este dispositivo no puede abrir ({{error}}): se selló con una clave distinta de la que generó esta ejecución. Vuelve a ejecutar el comando y abre solo el enlace que muestra.",
+        "storeCopyGone": "El almacén {{storeId}} ya no contiene la configuración remota {{configId}}, a la que está vinculada la configuración \"{{name}}\". No se cambió nada; el archivo local es la última copia que vio este dispositivo. Para quitar el vínculo y conservar esa copia como configuración local, ejecuta: rdc config remote disable --local",
         "offlineCacheWarning": "El servidor de configuración {{server}} no está disponible; sirviendo la configuración \"{{config}}\" desde la caché sin conexión (versión del servidor {{version}}, guardada en caché hace {{age}}). Los cambios no se pueden guardar hasta que el servidor esté disponible.",
         "offlineNoCache": "El servidor de configuración {{server}} no está disponible y la configuración \"{{config}}\" todavía no tiene caché sin conexión. Ejecuta \"rdc config remote refresh\" cuando el servidor esté disponible para generar la caché.",
         "passkeySecretMissing": "Este dispositivo ya no conserva su clave del almacenamiento de configuración (en Linux, el llavero del kernel se vacía en cada reinicio). Vuelve a inscribir este dispositivo con: rdc config remote enable",
@@ -555,7 +572,7 @@
           "storeMismatch": "El almacén de configuración {{storeId}} no pertenece a la organización del inicio de sesión de este dispositivo, así que el token de configuración no se renovó. Inicia sesión en la organización propietaria de esta configuración (\"rdc subscription login\") y vuelve a intentarlo.",
           "staleGeneration": "La clave de cifrado de la configuración se rotó y ninguna ranura de clave de esta cuenta abre la nueva, así que el token de configuración no se renovó. Vuelve a registrar el dispositivo con: rdc config remote enable",
           "rateLimited": "El servidor de cuentas está limitando las renovaciones de tokens de configuración ({{error}}). Espera un minuto y vuelve a ejecutar el comando.",
-          "refused": "El servidor de cuentas no renovó el token de configuración de este dispositivo ({{error}}). Ejecuta \"rdc config remote enable\" de nuevo."
+          "refused": "El servidor de cuentas no renovó el token de configuración de este dispositivo ({{error}}). No se cambió nada en este dispositivo; ejecuta el comando de nuevo."
         },
         "versions": {
           "description": "Listar las versiones anteriores de esta configuración que guarda el servidor",

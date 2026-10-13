@@ -296,6 +296,7 @@
         "envelopeDowngrade": "Config {{configId}} came back in the old envelope format after this device had already seen the new one. The server returned an old copy, so it was refused and nothing was changed on this device.",
         "legacyEnvelope": "Config {{configId}} is still stored in the old envelope format. The next change pushed from this device upgrades it.",
         "handoffUndecryptable": "The server relay returned a handoff this device cannot open ({{error}}): it was sealed to a different key than this run generated. Run the command again and open only the link it prints.",
+        "storeCopyGone": "Store {{storeId}} no longer holds remote config {{configId}}, which config \"{{name}}\" is linked to. Nothing was changed; the local file is the last copy this device saw. To drop the link and keep that copy as a local config, run: rdc config remote disable --local",
         "enable": {
           "description": "Link this config to remote encrypted storage",
           "optionApiUrl": "Account server URL",
@@ -315,7 +316,6 @@
           "reenrollSuccess": "This device is enrolled again. Config \"{{name}}\" was refreshed from the server (version {{version}}).",
           "reenrollStoreMismatch": "Config \"{{name}}\" is linked to store {{linkedStore}}, but the enrollment was approved for store {{offeredStore}}. Nothing was changed. Approve it with an account of the organization that owns this config.",
           "reenrollConfigMismatch": "Config \"{{name}}\" is linked to remote config {{linkedConfig}}, but the enrollment was approved for remote config {{offeredConfig}}. Nothing was changed. Run the command again and approve it for {{linkedConfig}}.",
-          "reenrollConfigGone": "Store {{storeId}} no longer holds remote config {{configId}}, which config \"{{name}}\" is linked to. Nothing was changed; the local file is the last copy this device saw.",
           "reenrollServerMismatch": "Config \"{{name}}\" is linked to {{linkedUrl}}, so this device can only be enrolled again there, not on {{requestedUrl}}. Run the command again without --api-url.",
           "expired": "Device code expired. Try again.",
           "handoffUnreadable": "The config handoff from the browser could not be read. Start again with: rdc config remote enable",
@@ -345,9 +345,26 @@
         },
         "disable": {
           "description": "Disconnect from remote storage and save config locally",
+          "optionLocal": "Unlink on this device only, from the cached copy, without contacting the server",
           "success": "Remote config disabled. Config \"{{name}}\" saved locally.",
           "notEnabled": "Remote config is not enabled.",
-          "serverRequired": "Cannot disable: config server {{server}} is unreachable, and disable must pull the latest server copy first (a disable from a stale cache could lose another device's writes). Retry once the server is reachable."
+          "serverRequired": "Cannot disable: config server {{server}} is unreachable, and disable must pull the latest server copy first (a disable from a stale cache could lose another device's writes). Retry once the server is reachable.",
+          "accessLost": "Cannot disable: the config server refuses this account for config \"{{name}}\" ({{error}}), and disable must pull the latest server copy first. If access to the store is not coming back, drop the link and keep the copy cached on this device with: rdc config remote disable --local",
+          "localNoCache": "Config \"{{name}}\" holds no cached copy of the server config on this device: it was never pulled here, or the copy was removed. Only the link and this device's own settings are in the file, so there is nothing to keep, and nothing was changed. The content can only come from the server (rdc config remote enable); to remove the local file instead, run: rdc config delete {{name}}",
+          "localUnreadable": "The cached copy of config \"{{name}}\" (server version {{version}}) could not be opened on this device ({{error}}), so nothing was changed. The copy is encrypted with the config's master password: with it (REDIACC_MASTER_PASSWORD) the whole cached copy can be kept; without it nothing of the copy can be recovered here, and only the server holds a readable one.",
+          "localConfirm": "Unlink config \"{{name}}\" from {{server}} on this device only? The copy cached here (server version {{version}}, cached at {{cachedAt}}) becomes a local config. Newer data on the server, if any exists, is not fetched, and nothing on the server is changed.",
+          "localNeedsYes": "Unlinking config \"{{name}}\" on this device only keeps the copy cached here (server version {{version}}) and does not fetch newer server data, if any exists. Nothing was changed. Confirm in an interactive terminal, or run the command again with --yes.",
+          "localSuccess": "Config \"{{name}}\" is unlinked on this device and saved as a local config from the cached copy (server version {{version}}). Newer server data, if any existed, was not fetched. The server copy and this device's key slot on the server were not changed.",
+          "localSecretLeft": "This device's key for the store was not removed, because its secret store cannot be used: {{error}}"
+        },
+        "secretStore": {
+          "keyctlMissing": "This device has nowhere to keep its config storage key: `keyctl` is not installed, so the kernel keyring is out of reach. Nothing was stored. Install the keyutils package, or set REDIACC_SECRET_STORE=file to keep the key in a file on disk (mode 0600) instead.",
+          "keyringUnusable": "This device has nowhere to keep its config storage key: a test key written to the kernel user keyring with `keyctl` could not be stored and read back. Nothing was stored. A session keyring that does not link the user keyring does this (a service, a container, a CI job); `keyctl link @u @s` links it for the session. Or set REDIACC_SECRET_STORE=file to keep the key in a file on disk (mode 0600) instead.",
+          "toolMissing": "This device has nowhere to keep its config storage key: `{{tool}}` could not be run, so {{store}} is out of reach. Nothing was stored. Put `{{tool}}` back on PATH, or set REDIACC_SECRET_STORE=file to keep the key in a file on disk instead.",
+          "storeUnusable": "This device has nowhere to keep its config storage key: a test key written to {{store}} with `{{tool}}` could not be stored and read back. Nothing was stored. Unlock or repair {{store}}, or set REDIACC_SECRET_STORE=file to keep the key in a file on disk instead.",
+          "unsupportedPlatform": "This device has nowhere to keep its config storage key: no native secret store is supported on {{platform}}. Nothing was stored. Set REDIACC_SECRET_STORE=file to keep the key in a file on disk (mode 0600) instead.",
+          "invalidChoice": "REDIACC_SECRET_STORE is set to \"{{value}}\", which is not a secret store. The only value is \"file\"; leave it unset for the native store of this system.",
+          "fileNotice": "REDIACC_SECRET_STORE=file: this device's config storage key is kept in {{path}} (mode 0600), protected by file permissions only."
         },
         "status": {
           "description": "Show remote connection status"
@@ -368,7 +385,7 @@
           "storeMismatch": "Config store {{storeId}} does not belong to the organization of this device's login, so the config token was not renewed. Log in to the organization that owns this config (\"rdc subscription login\") and retry.",
           "staleGeneration": "The config encryption key was rotated and none of this account's key slots opens the new one, so the config token was not renewed. Re-enroll with: rdc config remote enable",
           "rateLimited": "The account server is limiting config token renewals ({{error}}). Wait a minute and run the command again.",
-          "refused": "The account server did not renew this device's config token ({{error}}). Run \"rdc config remote enable\" again."
+          "refused": "The account server did not renew this device's config token ({{error}}). Nothing was changed on this device; run the command again."
         },
         "versions": {
           "description": "List the earlier versions of this config kept on the server",
