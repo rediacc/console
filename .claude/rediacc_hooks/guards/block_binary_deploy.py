@@ -117,6 +117,19 @@ EDGE_CASES = [
         "a fed xargs -I download stays one",
         "echo host:/var/log/renet.log | xargs -I{} scp {} ./logs/",
     ),
+    # The marker as the DESTINATION (review c3ac54d7.1): the fed word is where the copy lands.
+    (
+        "a fed xargs -I destination uploads",
+        "echo host:/usr/local/bin | xargs -I{} scp bin/renet {}",
+    ),
+    (
+        "a fed xargs -I with a spaced marker uploads",
+        "echo host:/usr/local/bin | xargs -I % scp bin/renet %",
+    ),
+    (
+        "a fed xargs -I local destination is local",
+        "echo ./out | xargs -I{} scp host:/var/log/renet.log {}",
+    ),
     # Options are set aside the way getopt reads them (review f212d159.1).
     ("a trailing option does not hide the upload", "scp bin/renet host:/usr/local/bin/renet -q"),
     ("a value option before the operands", "scp -P 2222 -o BatchMode=yes bin/renet host:/p"),
@@ -174,8 +187,22 @@ def _sudo_copy_deploy(run_, cwd):
     )
 
 
-# xargs options that put the fed words in the command's own words in place of appending them: `-I R`, `-IR`, `-i`, `--replace`, and BSD's `-J R`.
-REPLACE_MODE = ("-I", "-i", "--replace", "-J")
+# xargs options that put the fed words in the command's own words in place of appending them: `-I R`, `-IR`, `-i`, `-iR`, `--replace`, `--replace=R`, and BSD's `-J R`.
+def _replace_marker(options):
+    """The marker an xargs in replace mode substitutes, None when it appends, and "" when it replaces with a marker this reader cannot name."""
+    words = list(options)
+    for at, option in enumerate(words):
+        if option in ("-I", "-J"):
+            return words[at + 1] if at + 1 < len(words) else ""
+        if option.startswith(("-I", "-J")):
+            return option[2:]
+        if option in ("-i", "--replace"):
+            return "{}"
+        if option.startswith("--replace="):
+            return option[len("--replace=") :] or "{}"
+        if option.startswith("-i"):
+            return option[2:]
+    return None
 
 
 def _uploads(args):
@@ -206,12 +233,15 @@ def run(ev):
         args = list(run_.argv if run_.xargv is None else run_.xargv)
         readings = [args]
         if run_.feed and "xargs" in run_.via:
-            # xargs appends its feed after scp's own words, so a fed word can be the destination (`echo host:/p | xargs scp bin/renet` uploads). In replace mode it appends nothing and puts each fed line where the marker stands, so scp's own last word stays the destination (`echo bin/renet | xargs -I{} scp {} host:/p` uploads); with the options unread, both readings are judged.
-            appended = args + run_.feed.split()
-            if run_.xargs is None:
-                readings = [args, appended]
-            elif not any(o.startswith(REPLACE_MODE) for o in run_.xargs):
-                readings = [appended]
+            # xargs appends its feed after scp's own words, so a fed word can be the destination (`echo host:/p | xargs scp bin/renet` uploads). In replace mode it appends nothing: each fed word stands wherever the marker is, as a source (`xargs -I{} scp {} host:/p`) or as the destination (`xargs -I{} scp bin/renet {}`), so scp's words are judged with every fed word in the marker's place. With the options or the marker unread, the literal and the appended readings are both judged.
+            fed = run_.feed.split()
+            marker = None if run_.xargs is None else _replace_marker(run_.xargs)
+            if run_.xargs is None or marker == "":
+                readings = [args, args + fed]
+            elif marker is None:
+                readings = [args + fed]
+            else:
+                readings = [[a.replace(marker, word) for a in args] for word in fed]
         if any(_uploads(reading) for reading in readings):
             ev.warn(MESSAGE)
             return hookio.DENY
