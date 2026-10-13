@@ -313,7 +313,10 @@ def split_unmeasurable_lanes(
     could_measure: set[str] = set()
     for run, run_jobs in zip(runs, jobs_by_run, strict=True):
         created = _iso_to_epoch(run.get("created_at"))
-        if created is not None and (now_epoch - created) / 86_400.0 > retention_days:
+        if created is None:
+            # Nothing dates this run, so nothing says its artifacts are gone.
+            return missing, []
+        if (now_epoch - created) / 86_400.0 > retention_days:
             continue
         for lane in missing:
             pattern = patterns.get(lane)
@@ -1738,14 +1741,14 @@ def unit_drift_findings(
     committed_sum: dict[str, float] = {}
     measured_sum: dict[str, float] = {}
     stats_by_unit = measured_stats or {}
-    thin_lanes: set[str] = set()
+    judged_lanes: set[str] = set()
     for unit_id, ms in sorted(measured_units.items()):
         was = committed_units.get(unit_id)
         if was is None or ms is None:
             continue
         lane = unit_lane(unit_id)
-        if _too_few_for_faster(stats_by_unit.get(unit_id) or {}):
-            thin_lanes.add(lane)
+        if not _too_few_for_faster(stats_by_unit.get(unit_id) or {}):
+            judged_lanes.add(lane)
         committed_sum[lane] = committed_sum.get(lane, 0.0) + was
         measured_sum[lane] = measured_sum.get(lane, 0.0) + ms
         f = _unit_spread_finding(unit_id, was, ms, stats_by_unit.get(unit_id) or {})
@@ -1755,13 +1758,29 @@ def unit_drift_findings(
         was, ms = committed_sum[lane], measured_sum[lane]
         if abs(ms - was) < MIN_UNIT_DRIFT_MS:
             continue
-        # A sum that fell, over units too thinly sampled to be called faster one by one, is the same thin evidence added up.
-        if ms < was and lane in thin_lanes:
+        # A sum that fell, when EVERY unit in it is too thinly sampled to be called faster on its own, is the same thin evidence added up. One well-sampled unit keeps the lane's sum judged.
+        if ms < was and lane not in judged_lanes:
             continue
         d = drift_finding("lane %r summed unit p90" % lane, was, ms)
         if d:
             findings.append(Keyed("lane-durations:drift:lane-sum:%s" % key_part(lane), d))
     return findings, len(committed_sum)
+
+
+def refreshed_units(
+    committed: Mapping[str, float],
+    measured: Mapping[str, float],
+    measured_stats: Mapping[str, Mapping[str, float]],
+) -> dict[str, float]:
+    """The units a refresh writes: every measured unit replaces its committed value, except that a unit sampled fewer than `MIN_FASTER_SAMPLES` times is never LOWERED. The check does not call such a unit faster, so the refresh does not write the speedup either; a thin sample that is slower is written, since an estimate that is too low is what overfills a leg."""
+    units = dict(committed)
+    for unit_id, ms in measured.items():
+        was = committed.get(unit_id)
+        thin = _too_few_for_faster(measured_stats.get(unit_id) or {})
+        if was is not None and ms is not None and ms < was and thin:
+            continue
+        units[unit_id] = ms
+    return units
 
 
 def _too_few_for_faster(unit_stats: Mapping[str, float]) -> bool:
@@ -1901,7 +1920,10 @@ def refresh_lane_durations(
     updated["concurrency"] = existing.get("concurrency", 20)
     updated["jobs"] = {**existing.get("jobs", {}), **computed["jobs"]}
     updated["units"] = prune_units_to_manifests(
-        {**existing.get("units", {}), **computed["units"]}, repo_root_for_pruning
+        refreshed_units(
+            existing.get("units", {}), computed["units"], computed.get("unit_stats") or {}
+        ),
+        repo_root_for_pruning,
     )
     if "defaultUnitMs" in existing:
         updated["defaultUnitMs"] = existing["defaultUnitMs"]

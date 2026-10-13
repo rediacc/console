@@ -948,6 +948,37 @@ def test_a_faster_verdict_needs_a_window_and_a_slower_one_does_not():
     assert [f for f in findings if f.startswith("lane ")]
 
 
+def test_one_well_sampled_unit_keeps_a_lane_sum_judged():
+    """A lane's falling sum is set aside only when every unit in it is thinly sampled."""
+    thin, full = "account-e2e:a.test.ts", "account-e2e:b.test.ts"
+    one = _stats([20_000.0])
+    three = _stats([19_000.0, 19_500.0, 20_000.0])
+    committed = {thin: 40_000.0, full: 40_000.0}
+    measured = {thin: one["p90"], full: three["p90"]}
+    findings, _ = br.unit_drift_findings(committed, measured, {thin: one, full: three})
+    assert len([f for f in findings if f.startswith("lane ")]) == 1
+    assert len([f for f in findings if f.startswith("unit ")]) == 1
+    # CONTROL: with both units thin nothing is judged faster.
+    assert br.unit_drift_findings(
+        committed, {thin: 20_000.0, full: 20_000.0}, {thin: one, full: one}
+    ) == ([], 1)
+
+
+def test_a_refresh_never_lowers_a_unit_on_a_thin_sample():
+    one = _stats([20_000.0])
+    three = _stats([19_000.0, 19_500.0, 20_000.0])
+    committed = {"a": 40_000.0, "b": 40_000.0, "c": 10_000.0, "kept": 7.0}
+    measured = {"a": 20_000.0, "b": 20_000.0, "c": 20_000.0, "new": 5.0}
+    stats = {"a": one, "b": three, "c": one, "new": one}
+    assert br.refreshed_units(committed, measured, stats) == {
+        "a": 40_000.0,  # thin and faster: kept
+        "b": 20_000.0,  # CONTROL: a full window lowers it
+        "c": 20_000.0,  # CONTROL: thin and slower is written
+        "kept": 7.0,
+        "new": 5.0,
+    }
+
+
 def test_a_median_move_under_the_absolute_floor_is_still_noise():
     """The floor applies to the judged statistic: a 10 s unit whose median moves 40% (4 s) is not a finding."""
     unit = "pytest:small.py"
@@ -2543,6 +2574,7 @@ def test_a_lane_is_unmeasurable_unless_a_run_inside_the_retention_finished_its_j
     # CONTROLS, each failing closed: an unread retention record, a run with no date, a lane with no pattern.
     assert split([_run_aged(4, now)], [done], days=None) == ([lane], [])
     assert split([{"id": 2, "created_at": None}], [done]) == ([lane], [])
+    assert split([_run_aged(4, now), {"id": 2, "created_at": None}], [done, cut]) == ([lane], [])
     assert split([_run_aged(0.1, now)], [cut], pats={}) == ([lane], [])
     assert br.split_unmeasurable_lanes([], [_run_aged(4, now)], [done], patterns, 3, now) == (
         [],
