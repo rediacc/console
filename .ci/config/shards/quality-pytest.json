@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-13T03:32:17.864Z",
+  "generatedAt": "2026-10-13T08:58:19.659Z",
   "legs": [
     {
       "index": 1,
@@ -505,6 +505,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_retry_allowlist.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_inline.py",
+        "pytest:.ci/rediacc_ci/tests/test_bench_captcha_switch.py",
         "pytest:.ci/rediacc_ci/tests/test_bench_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_build_build_json.py",
         "pytest:.ci/rediacc_ci/tests/test_build_cli.py",
