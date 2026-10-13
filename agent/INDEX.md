@@ -541,7 +541,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rdc-readonly-mode.md` | executing | 227 | 0 | 23 | 31039 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
-| `agent/plans/PLAN-remove-cross-session-messaging.md` | draft | 365 | 13 | 0 | 40186 |
+| `agent/plans/PLAN-remove-cross-session-messaging.md` | draft | 374 | 4 | 9 | 41499 |
 | `agent/plans/PLAN-renet-fetch-hardening.md` | draft | 145 | 8 | 0 | 11973 |
 | `agent/plans/PLAN-repair-prose-style-findings.md` | draft | 52 | 0 | 6 | 5895 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
@@ -570,7 +570,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |
 | `agent/plans/PLAN-stop-hook-retro-20260924.md` | ready | 617 | 0 | 23 | 67143 |
 | `agent/plans/PLAN-stop-hook-retro-20260925.md` | ready | 259 | 0 | 10 | 25008 |
-| `agent/plans/PLAN-stop-hook-rulings-campaign.md` | draft | 103 | 16 | 1 | 9820 |
+| `agent/plans/PLAN-stop-hook-rulings-campaign.md` | draft | 106 | 14 | 3 | 10206 |
 | `agent/plans/PLAN-stop-hook-turbo.md` | approved | 189 | 0 | 23 | 30523 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |

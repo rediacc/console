@@ -91,13 +91,16 @@ Declined by the operator's ruling on #373907ed; its five boxes live unchanged in
 
 ## 6. Cron: NO
 
-Three reasons. **(1)** The cron shape is already fixed and enforced: a second work schedule is blocked at `.claude/hooks/stop/wl_checks.py line 5000 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)` and a second poll cron at `.claude/hooks/stop/wl_checks.py line 5011 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`. **(2)** A cron wakes a session to check a fact that only changes when a file changes, and this repo has paid that bill -- `.claude/hooks/stop/wl_store.py:121` records a
-pure-age rule "outpaced by the 5-minute poll cron". **(3)** A clock cannot express "once per context".
+Three reasons. **(1)** The cron shape is already fixed and enforced: a second work schedule is blocked at `.claude/hooks/stop/wl_checks.py line 5000 (blob 5a8904da5ad64d44df6a7e6095da16a81a681eff)`. **(2)** A cron wakes a session to check a fact that only changes when a file changes, and this repo has paid that bill. **(3)** A clock cannot express "once per context".
 
-- [ ] Instead, fold ONE conditional line into the existing `worklist.py --poll`, emitted only
+The two boxes below are recorded as abandoned: the inbox verb they build on and its poll cron were removed in commit 21b5e2129 (`agent/plans/PLAN-remove-cross-session-messaging.md`), and the test file that hosted the control no longer exists. The conclusion stands: no new schedule.
+
+- [x] Instead, fold ONE conditional line into the existing `worklist.py --poll`, emitted only
       when the STATE.md `## Big pieces` section disagrees with the census. A poll printing
       nothing ends the turn silently (`.claude/hooks/stop/worklist_messages.py:378`), so this
       costs no new schedule and no turn on an empty result.
-- [ ] CONTROL in `.claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py`: an agreeing
+    (ticked) 2026-10-13T05:46:20Z by d778be9d: ABANDONED, premise removed: worklist.py --poll exits 2 and .claude/rediacc_hooks/tests/test_wl_messaging_removed.py passes rc=0
+- [x] CONTROL in `.claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py`: an agreeing
       section prints NOTHING (assert empty stdout); a disagreeing one prints exactly the line.
+    (ticked) 2026-10-13T05:46:12Z by d778be9d: ABANDONED with the box above: .claude/rediacc_hooks/tests/test_wl_messaging_removed.py passes rc=0
 
