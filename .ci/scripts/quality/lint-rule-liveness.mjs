@@ -420,6 +420,10 @@ const REQUIRES_JSX = new Set([
 // --------------------------------------------------------------------------- Helpers ---------------------------------------------------------------------------
 const err = (...args) => console.error(...args);
 
+// The one text of the missing-rule refusal, shared by the throw and by the control that matches it exactly.
+const noRuleMessage = (modulePath, exportName) =>
+  `${modulePath} has no rule export '${exportName}'`;
+
 // An absent or non-rule export is a named failure, not an undefined or null rule that every probe then reports as dead or crashes on.
 const assertRuleExport = (rule, modulePath, exportName) => {
   if (
@@ -427,7 +431,7 @@ const assertRuleExport = (rule, modulePath, exportName) => {
     rule === null ||
     (typeof rule !== 'object' && typeof rule !== 'function')
   )
-    throw new Error(`${modulePath} has no rule export '${exportName}'`);
+    throw new Error(noRuleMessage(modulePath, exportName));
   return rule;
 };
 
@@ -446,7 +450,7 @@ const makeRuleLoader = (importModule) => {
 
 // Only the named refusal counts, matched exactly: any other error (a mistyped fake module, a broken loader, or a message that merely contains the refusal) is a control failure, not a refusal.
 const refusedAsNoRule = (e, modulePath, exportName) =>
-  e instanceof Error && e.message === `${modulePath} has no rule export '${exportName}'`;
+  e instanceof Error && e.message === noRuleMessage(modulePath, exportName);
 
 // The control for assertRuleExport, run on every gate run: each non-rule shape throws and both rule shapes pass, so a guard that stops refusing (or starts refusing a real rule) turns the gate red instead of letting every probe report a missing rule as dead.
 const ruleExportControlFailures = async () => {
