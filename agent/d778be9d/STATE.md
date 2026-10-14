@@ -1,13 +1,28 @@
-## SESSION d778be9d 2026-10-13T03:01:05Z
+## SESSION d778be9d 2026-10-14T22:27:29Z
 
-## Where things stand
-Draft PR rediacc/console#600 on 1008-1 (submodule PRs rediacc/account#96 at 1384f5b, rediacc/renet#117 at ecbcbc4, both pushed). The pushed console head is 9a8c475a0, pushed 2026-10-13 at about 02:52Z.
-CI run 38338925089 on that head was RED on one job: Tests + Infra / Renet (go, 1/2), three pkg/nodeteardown tests. Cause: their fixture process is pid 14464 and the scan skips its own pid, so a test binary running as pid 14464 drops the fixture. Fixed in renet ecbcbc4 (selfPID seam); the console pointer bump is ced5c9c8c, local and not yet pushed. Budget freshness passed in that run.
-Also local and unpushed: session records 3d8994ad6, the reggate ledgers 96359814d.
-Item #ff3ab826: an opus writer sub-agent (id a1937821b4fedafa6) is building `shellscan.output_landings` in scratchpad/ffclone and delivers scratchpad/ff.patch; it stays open for review feedback.
+# STATE d778be9d (2026-10-14T22:30Z)
+
+Branch 1008-1, PR rediacc/console#600 (draft), PR-TASK 8ed364fe. Submodule PRs account#96, renet#117. NOTHING pushed since eced71537; hundreds of local commits.
+
+## Operator orders in force
+- 2026-10-14 ~21:0xZ: "Make it 100% and go for /pr-babysit when you finish." (#57f0604c). Then: "Feel free to also go for /pr-merge after /pr-babysit" (merge authorized; recorded in reports/pr-babysit-1003-1.md DECISIONS).
+- /ask 20:56Z rulings landed: docker FROM leaves (d992c579c), 40-day major grace (d992c579c); 5 aged majors held to 2026-11-14 (5b60fa18f, 18837b9c7, 2aeefec96, 06f3959e2, c0f0e87cb). Pytest 4 legs kept (15aadff80).
+
+## Push is BLOCKED (#3bc16a5c, [?], operator-only)
+block_vm_unverified_push needs a VERIFIED `npm run vm:check -- --changed`. P0/P1 pass (renet stamp fixed: renet bbde0b8, 8c8b1d5, 9334b4d; console 77e188ef0, 3c2db8d47, 0d443e96c), worker registered (`./rdc.sh machine add ops-worker --ip 192.168.111.11 --user developer` in the local-only default config), fleet cold start 229 s works. P4 fails: no BWS token (~/.config/rediacc/bws-access-token absent), so `./run.sh account dev` cannot start and no token is minted. Unblock = operator places the token, or approves VM_CHECK_PUSH_REASON='vm-unavailable: ...' via an AskUserQuestion (needs a NOT_VERIFIED receipt for the final inputs: run vm:check LAST, after T13 and all renet moves).
 
 ## Next action
-1. `worklist.py --review-commit d778be9d`, then `npm run ci:quick` on a still tree, then `npx tsx scripts/ci-runner/run.ts --only <gate>` for each dropped gate, then `TURBO_PUSH_REASON='red-fix: ...' git push origin 1008-1`, then `PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 600 1008-1`.
-2. Watch with `.ci/scripts/ci/ci-trace.py --wait --until-final` in the background; fix each red at its cause.
-3. When ff.patch arrives: check the writer's claims against the artifact, `git apply -3`, hook suite plus the eight hook gates, commit, review-mark, tick #ff3ab826. Hold its push while a CI run on the head is in progress and not red.
-4. At CI Complete green on the head: stop and wait for the operator. Do not merge unasked.
+Land the worktree-guard writer (#579ab1aa) and the renet simplification writer (#88008b5c) as they report; at 00:00Z run pins T13 (npm run pins -- bump embed:csisnapshotter) and bump the renet pointer.
+
+## Sequence remaining tonight
+1. T13 at/after 2026-10-15T00:00Z (waiter br3xfzs28): `npm run pins -- bump embed:csisnapshotter`, bump renet pointer, commit, tick #c33b8946 and the pins T13 box (PLAN-pins-command.md).
+2. Land writers: #88008b5c (renet _go_build simplification, aeec935d4cc340b1d), #579ab1aa (worktree guard fail-closed, a370a0d15ad5f3820, high finding e109ab6e.1).
+3. ci:quick run 7 with GITHUB_EVENT_PATH not needed any more (dd1d1e937 reads PR body locally). Tick messaging step 13 (#c275adc4, #809a3054) on a clean run.
+4. vm:check last (account-unavailable receipt), then wait for operator on #3bc16a5c; with the answer: push renet, account (2042ea5), console with ci:quick receipt, sync_epic_block, /pr-babysit, /pr-merge.
+5. After merge: pins T11 (dispatch pins-soaked), per-PR R1 (green scheduled CI), lane-budget check 2 measurement then gate:true (#50cb9316).
+
+## Hygiene
+- Commit form: msg file in its own call, `git add` new files separately, `git commit -F msg -- <literal paths>`; one-line paragraphs; PR-TASK trailer; no Co-Authored-By.
+- Writers in UNIQUE clones under /tmp/claude-1000/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/ (scratchpad/ subdir retired).
+- Local npm now 11.21.0 (pin); ruff 0.17.0 on PATH.
+- Hint proposed: judge should honour NOT-BEFORE.
