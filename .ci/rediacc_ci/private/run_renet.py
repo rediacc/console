@@ -98,6 +98,11 @@ def _indent(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
 
 
+def _is_item(stripped: str) -> bool:
+    """A YAML sequence item: `- x`, or a bare `-` whose body follows on the next lines (review e7aa60fa.1)."""
+    return stripped == "-" or stripped.startswith("- ")
+
+
 def _rules_block(lines: list[str]) -> tuple[int, int] | None:
     """`(first, end)` line indexes of the items under `linters:` > `exclusions:` > `rules:`, or None when that path is absent."""
     path = ("linters:", "exclusions:", "rules:")
@@ -124,7 +129,7 @@ def _rules_block(lines: list[str]) -> tuple[int, int] | None:
                         body
                         and not body.startswith("#")
                         and _indent(lines[j]) <= ind
-                        and not (_indent(lines[j]) == ind and body.startswith("- "))
+                        and not (_indent(lines[j]) == ind and _is_item(body))
                     ):
                         end = j
                         break
@@ -149,7 +154,7 @@ def exclusion_rule_findings(text: str, label: str = GOLANGCI_LABEL) -> tuple[lis
     rules = 0
     for i in range(first, end):
         stripped = lines[i].strip()
-        if not stripped.startswith("- "):
+        if not _is_item(stripped):
             continue
         if item_indent is None:
             item_indent = _indent(lines[i])

@@ -1500,3 +1500,37 @@ def test_an_overlapping_ephemeral_range_is_a_refusal(tmp_path):
     clear.write_text("32768\t60999\n", encoding="utf-8")
     shadow_driver.ports_outside_ephemeral(clear)
     shadow_driver.ports_outside_ephemeral(tmp_path / "absent")
+
+
+class _LaunchedError(Exception):
+    """Raised by the stand-in for `proc.exec_replace`, which never returns."""
+
+
+def _launch_sqlite_web(monkeypatch, env):
+    seen = {}
+
+    def fake_exec(argv, *, env=None):
+        seen["argv"], seen["env"] = list(argv), env
+        raise _LaunchedError
+
+    monkeypatch.setattr(account.proc, "exec_replace", fake_exec)
+    plan = account.DbPlan(False, "/tmp/x.db", 8123, "/usr/bin/sqlite_web")
+    with pytest.raises(_LaunchedError):
+        account.db_launch(plan, env)
+    return seen
+
+
+def test_the_database_browser_binds_loopback_unless_the_dev_bind_says_otherwise(monkeypatch):
+    """Review dee5310d.2: `db_launch` reads REDIACC_DEV_BIND and defaults to loopback instead of the wildcard address."""
+    base = {"PATH": os.environ.get("PATH", "")}
+    seen = _launch_sqlite_web(monkeypatch, dict(base))
+    assert seen["argv"][seen["argv"].index("--host") + 1] == "127.0.0.1"
+    seen = _launch_sqlite_web(monkeypatch, {**base, "REDIACC_DEV_BIND": "10.1.2.3"})
+    assert seen["argv"][seen["argv"].index("--host") + 1] == "10.1.2.3"
+
+
+def test_the_database_browser_child_gets_the_environment_its_bind_was_read_from(monkeypatch):
+    """Review dee5310d.3: the bind came from the `env` argument while the exec ran under os.environ."""
+    env = {"PATH": os.environ.get("PATH", ""), "REDIACC_DEV_BIND": "10.9.8.7"}
+    seen = _launch_sqlite_web(monkeypatch, env)
+    assert seen["env"] == env

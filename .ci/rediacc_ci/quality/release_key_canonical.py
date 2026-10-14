@@ -259,6 +259,8 @@ def _gpg(
     """One gpg (or gpgconf) invocation with GNUPGHOME pinned, stderr discarded as the twin does unless `keep_stderr`."""
     env = dict(os.environ)
     env["GNUPGHOME"] = home
+    # gpg prints its messages through gettext; the "Bad passphrase" match in `_import_and_sign` reads the C-locale text only (review e0c47452.1).
+    env["LC_ALL"] = "C"
     return subprocess.run(
         [tool, *args],
         stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
@@ -463,7 +465,9 @@ def _sign_with(tmp: pathlib.Path, key: pathlib.Path, passphrase: str, tag: str) 
     home.mkdir(parents=True, exist_ok=True)
     home.chmod(0o700)
     gnupghome = str(home)
-    _gpg(["--launch", "gpg-agent"], gnupghome, capture=False, tool="gpgconf")
+    launched = _gpg(["--launch", "gpg-agent"], gnupghome, capture=False, tool="gpgconf")
+    if launched.returncode != 0:
+        return "error: gpgconf --launch gpg-agent exited %d" % launched.returncode
     try:
         return _import_and_sign(home, key, passphrase)
     finally:

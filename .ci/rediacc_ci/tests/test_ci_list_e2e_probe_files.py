@@ -1,6 +1,6 @@
 """Unit tests for `rediacc_ci.ci.list_e2e_probe_files`.
 
-No differential: this module's bash twin (`.ci/scripts/test/list-e2e-probe-files.sh`) was added and deleted inside the same task -- ruling 7 refuses new bash under `.ci` -- so there is no recorded corpus to compare against and no ledger to hold. These tests drive the module directly: a real shard-manifest-shaped JSON fixture on disk, and `$GITHUB_OUTPUT`/stdout as a tmp file or captured output.
+No differential: this module's bash twin (`.ci/scripts/test/list-e2e-probe-files.sh`) was added and deleted inside the same task -- ruling 7 refuses new bash under `.ci` -- so there is no recorded corpus to compare against and no ledger to hold. Almost every test drives the module directly: a real shard-manifest-shaped JSON fixture on disk, and `$GITHUB_OUTPUT`/stdout as a tmp file or captured output; the two that start a subprocess say so in their own docstrings.
 """
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import typing
 
 import pytest
@@ -72,6 +73,28 @@ def test_probe_units_refuse_a_bucket_the_runner_cannot_select(tmp_path: pathlib.
     write_manifest(manifest, ["e2e-workers:a.test.ts", "e2e-workers:13-x.test.ts#part9"])
     with pytest.raises(subject.UnknownBucketError, match="part9"):
         subject.probe_units(manifest)
+
+
+def test_probe_units_refuse_an_empty_bucket_after_the_separator(tmp_path: pathlib.Path) -> None:
+    """Review 729e29cc.1: `a.test.ts#` named a bucket of nothing, which became a whole-file unit with `#` in its id."""
+    manifest = tmp_path / "manifest.json"
+    write_manifest(manifest, ["e2e-workers:a.test.ts", "e2e-workers:b.test.ts#"])
+    with pytest.raises(subject.UnknownBucketError, match=r"b\.test\.ts"):
+        subject.probe_units(manifest)
+
+
+def test_the_module_imports_with_the_standard_library_only() -> None:
+    """Review 729e29cc.2: the `list-files` job installs nothing, so the module and everything it imports must load without site-packages."""
+    proc = subprocess.run(
+        [sys.executable, "-S", "-c", "import rediacc_ci.ci.list_e2e_probe_files"],
+        cwd=paths.repo_root(),
+        env={**os.environ, "PYTHONPATH": os.fspath(paths.from_root(".ci"))},
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
 
 
 def test_probe_units_deduplicate_a_unit_two_legs_name(tmp_path: pathlib.Path) -> None:
@@ -183,4 +206,5 @@ def test_the_probe_edges_selftest_runs_and_passes() -> None:
         check=False,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    assert "OK: e2e-probe-edges selftest passed" in proc.stdout + proc.stderr
+    # The script writes its OK line to stderr (e2e-probe-edges.ts), so that channel is the one checked.
+    assert "OK: e2e-probe-edges selftest passed" in proc.stderr
