@@ -955,8 +955,11 @@ def test_up_reads_the_host_by_default(tmp_path: pathlib.Path) -> None:
     for node in driver.GOLDEN_HOST_NODES:
         assert box.has_host_node(node) is os.path.exists(node)
     # `[[ -S ]]`: a real socket, through a symlink too; a regular file and a missing path are not one.
-    # A unix socket path is capped at 108 bytes and pytest's tmp_path nests several directories under TMPDIR, so the socket lives in a short directory made directly under TMPDIR, which has to stay short (docs/agent-reference/TRAPS.md).
-    short = pathlib.Path(tempfile.mkdtemp())
+    # A unix socket path is capped at 108 bytes and pytest's tmp_path nests several directories under TMPDIR (docs/agent-reference/TRAPS.md), so the socket lives in a directory of its own under the SHORTER of TMPDIR and /tmp: a long TMPDIR alone would overflow the cap (review f80bbd39.1), and /tmp alone ignores a host whose TMPDIR is the writable one (review 8f0b56be.3).
+    roots = [
+        d for d in (tempfile.gettempdir(), "/tmp") if os.path.isdir(d) and os.access(d, os.W_OK)
+    ]
+    short = pathlib.Path(tempfile.mkdtemp(dir=min(roots, key=len)))
     listener = socket.socket(socket.AF_UNIX)
     try:
         listener.bind(str(short / "s"))
