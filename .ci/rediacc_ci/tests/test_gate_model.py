@@ -585,3 +585,5 @@ def test_t9_a_bare_word_id_is_found_quoted_and_ignored_in_prose() -> None:
     assert "pins" in ids, "the bare-word id this control is about left the lock"
     assert gate_ids_in("the safety search pins the gate whose start moved", ids) == []
     assert gate_ids_in("const g = 'pins';", ids) == ["pins"]
+    # An unquoted bare word is an identifier or prose, never how code names a gate id, so it stays unreported by design.
+    assert gate_ids_in("pins = 1  # the pins gate", ids) == []

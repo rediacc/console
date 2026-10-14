@@ -155,6 +155,19 @@ def test_local_run_without_a_readable_pr_says_so(gate):
     assert not gate.pr_admits_open_boxes(gate.load_plan_gate()[0], body)
 
 
+def test_the_body_is_read_only_when_a_plan_has_open_boxes(gate):
+    reads: list = []
+
+    def reader():
+        reads.append(1)
+        return REASON_BODY, ""
+
+    assert gate.pr_body_for([], reader) == (None, "")
+    assert reads == [], "a run with every box ticked made the PR body lookup"
+    assert gate.pr_body_for([("agent/plans/PLAN-x.md", 2)], reader) == (REASON_BODY, "")
+    assert reads == [1]
+
+
 def test_github_actions_never_attempts_the_local_lookup(gate, tmp_path):
     calls: list = []
     event = tmp_path / "event.json"
