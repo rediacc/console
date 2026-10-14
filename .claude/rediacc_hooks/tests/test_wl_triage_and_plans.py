@@ -16,7 +16,6 @@ import stat
 import time
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
 
@@ -75,7 +74,7 @@ def session_start(fix) -> wlfix.Result:
     return fix.cli("--session-start", stdin=payload)
 
 
-def test_164_triage_refuses_an_empty_finding_and_appends_no_event(wl):  # noqa: F811
+def test_164_triage_refuses_an_empty_finding_and_appends_no_event(wl):
     """A rejected write is not a delivered one, so neither refusal may leave an event behind."""
     empty = triage(wl, "off", "deadbeef")
     merged = empty.out + empty.err
@@ -98,7 +97,7 @@ def test_164_triage_refuses_an_empty_finding_and_appends_no_event(wl):  # noqa: 
     assert '"ev":"add"' in events, "164 CONTROL: no add event: %s" % events[:200]
 
 
-def test_165_triage_degrades_to_a_self_assessment_and_claims_no_verdict(wl):  # noqa: F811
+def test_165_triage_degrades_to_a_self_assessment_and_claims_no_verdict(wl):
     """With no judge reachable the verb hands back all three recipes and tracks the finding, but records no verdict it did not produce."""
     got = triage(wl, "off", "deadbeef", "the fork path copies .env into the child repo")
     merged = got.out + got.err
@@ -113,7 +112,7 @@ def test_165_triage_degrades_to_a_self_assessment_and_claims_no_verdict(wl):  # 
     )
 
 
-def test_166_triage_id_refuses_another_sessions_item(wl):  # noqa: F811
+def test_166_triage_id_refuses_another_sessions_item(wl):
     """Ownership, not brokenness: the same item triaged by its OWNER reaches the degraded printout."""
     theirs = wl.cli_as("other123", "--add", "other123", "their finding")
     nid = added_id(theirs)
@@ -134,7 +133,7 @@ def test_166_triage_id_refuses_another_sessions_item(wl):  # noqa: F811
     )
 
 
-def test_167_the_triage_judge_path_records_its_verdict_and_spends_one_call(wl):  # noqa: F811
+def test_167_the_triage_judge_path_records_its_verdict_and_spends_one_call(wl):
     """A plan-subagent verdict prints the prefilled plan path and the recipe, records both, and pays the judge exactly once (no retry loop, no double spend)."""
     (wl.base / "judgecalls").write_text("", encoding="utf-8")
     shim_judge_out(wl, {"verdict": "plan-subagent", "reason": "multi-file", "plan_slug": "fix-x"})
@@ -151,7 +150,7 @@ def test_167_the_triage_judge_path_records_its_verdict_and_spends_one_call(wl): 
     assert judge_calls(wl) == 1, "judge called %d times" % judge_calls(wl)
 
 
-def test_167_control_an_inline_verdict_orders_the_fix_now_and_records_no_plan(wl):  # noqa: F811
+def test_167_control_an_inline_verdict_orders_the_fix_now_and_records_no_plan(wl):
     """CONTROL: one different verdict from the same shim takes the other branch."""
     (wl.base / "judgecalls").write_text("", encoding="utf-8")
     shim_judge_out(wl, {"verdict": "inline", "reason": "one line and one check", "plan_slug": ""})
@@ -171,7 +170,7 @@ def test_167_control_an_inline_verdict_orders_the_fix_now_and_records_no_plan(wl
     )
 
 
-def test_168_a_triaged_big_item_with_no_plan_file_on_disk_is_demanded(wl):  # noqa: F811
+def test_168_a_triaged_big_item_with_no_plan_file_on_disk_is_demanded(wl):
     """A big finding whose design was never written is demanded, with both exits named, and writing the plan silences the demand and advertises the path."""
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     with wl.events.open("a", encoding="utf-8") as handle:
@@ -224,7 +223,7 @@ def test_168_a_triaged_big_item_with_no_plan_file_on_disk_is_demanded(wl):  # no
     )
 
 
-def test_169_tick_refuses_evidence_that_is_only_an_issue_reference(wl):  # noqa: F811
+def test_169_tick_refuses_evidence_that_is_only_an_issue_reference(wl):
     """A bare issue URL cannot close a finding, and the refusal names all three doors; the SAME evidence naming its door is accepted, because the door is the exit.
 
     The gate is narrow, and the regression controls are what keep it narrow: ordinary evidence still ticks, and a URL that is not an issue reference must keep working, because the gate rides on the URL shape completion_evidence already accepts.
@@ -280,7 +279,7 @@ def test_169_tick_refuses_evidence_that_is_only_an_issue_reference(wl):  # noqa:
     )
 
 
-def test_170_session_start_lists_non_done_plans_with_no_design_docs_dir(wl):  # noqa: F811
+def test_170_session_start_lists_non_done_plans_with_no_design_docs_dir(wl):
     """Draft plans are listed, executed ones collapse to a count, and a plan with no readable Status line surfaces LOUDLY as UNKNOWN.
 
     THE CONTROL ON THE RESTRUCTURE: a design-docs directory does not exist in this fixture, and the old code RETURNED EARLY on that, which would have eaten the plans block entirely. The design-docs prose must be absent and the plans block present in the SAME output.
@@ -311,7 +310,7 @@ def test_170_session_start_lists_non_done_plans_with_no_design_docs_dir(wl):  # 
     )
 
 
-def test_171_post_compact_hands_back_the_executing_plans_status_cursor(wl):  # noqa: F811
+def test_171_post_compact_hands_back_the_executing_plans_status_cursor(wl):
     """The compacted session gets the plan listing AND the executing plan's cursor, and only that section: a done plan is never handed back and the excerpt is bounded."""
     wl.hand_now()
     plan(
@@ -335,7 +334,7 @@ def test_171_post_compact_hands_back_the_executing_plans_status_cursor(wl):  # n
     assert "not the cursor" not in out, "171 CONTROL: the excerpt is unbounded: %s" % out[:400]
 
 
-def test_172_allow_report_diet_the_guide_is_the_single_source_and_advisories_latch(wl):  # noqa: F811
+def test_172_allow_report_diet_the_guide_is_the_single_source_and_advisories_latch(wl):
     """Operator, 2026-07-31, on an allow report that had grown large although round robin was already in place.
 
     The allow report's in-flight section duplicated the guide's own in-flight rows, and week-stable advisories repeated on every full stop. Now the guide says it once, and slow-moving sections re-show only on content change or after the refresh window.

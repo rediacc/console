@@ -10,8 +10,6 @@ import json
 import subprocess
 import sys
 
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
-
 PROBE = """import importlib.util, sys
 spec = importlib.util.spec_from_file_location("wl", sys.argv[1])
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
@@ -35,7 +33,7 @@ def probe(fix, expression: str) -> str:
     return proc.stdout + proc.stderr
 
 
-def test_46_an_open_item_blocks_off_a_runner_and_47_48_the_runner_no_op(wl):  # noqa: F811
+def test_46_an_open_item_blocks_off_a_runner_and_47_48_the_runner_no_op(wl):
     """46 is the CONTROL for 47: the same worklist and the same open item, one environment variable different. Without the control, 47 would pass even if the hook had stopped blocking entirely. 48 is the other half: a value other than 'true' is not a runner."""
     wl.brief_now()
     wl.hand_now()
@@ -51,7 +49,7 @@ def test_46_an_open_item_blocks_off_a_runner_and_47_48_the_runner_no_op(wl):  # 
     wl.check("block", "OPEN worklist item", "GITHUB_ACTIONS=false still blocks")
 
 
-def test_49_two_identical_stops_are_quiet_50_the_third_fires_51_it_resets(wl):  # noqa: F811
+def test_49_two_identical_stops_are_quiet_50_the_third_fires_51_it_resets(wl):
     """49 is the CONTROL that the counter is a counter: two identical stops must NOT trip it. 50 is the fire on the third, and 51 pins that the nag is rate-limited rather than every-stop, so stop 4 is quiet again."""
     wl.brief_now()
     wl.hand_now()
@@ -65,7 +63,7 @@ def test_49_two_identical_stops_are_quiet_50_the_third_fires_51_it_resets(wl):  
     wl.check("allow", "", "the nag is rate-limited, not every-stop")
 
 
-def test_51b_control_with_only_deferrals_left_the_stuck_check_stays_quiet(wl):  # noqa: F811
+def test_51b_control_with_only_deferrals_left_the_stuck_check_stays_quiet(wl):
     """THE DEFERRAL BLIND SPOT. The stuck check used to fire on whether something remained, which counts `[?]` deferrals. A `[?]` is BY CONSTRUCTION the one shape a session cannot advance, parked on the operator's decision or on a capability only they hold, so "nothing moved" is the CORRECT outcome there rather than a stall, and the remedy the check prints (delegate to a Plan or
     Explore agent) cannot work: the constraint is authority, not knowledge. Measured 2026-08-15, the two survivors were "set four Worker secrets with the operator's Cloudflare session" and "delete the last restore path once a machine has round-tripped a repo". The only way to satisfy the check was to spawn a decorative agent, that is, to game it.
 
@@ -83,7 +81,7 @@ def test_51b_control_with_only_deferrals_left_the_stuck_check_stays_quiet(wl):  
     wl.check("allow", "", "deferral-only stop 3 does NOT demand an agent")
 
 
-def test_51c_one_open_item_alongside_the_deferral_restores_the_demand(wl):  # noqa: F811
+def test_51c_one_open_item_alongside_the_deferral_restores_the_demand(wl):
     """An open item blocks EVERY stop on its own account, so the first two assert the OTHER blocker by name: the point is that the stuck demand is absent until the third stop, and then present."""
     wl.brief_now()
     wl.hand_now()
@@ -103,7 +101,7 @@ def test_51c_one_open_item_alongside_the_deferral_restores_the_demand(wl):  # no
     )
 
 
-def test_52_a_task_changing_status_counts_as_movement(wl):  # noqa: F811
+def test_52_a_task_changing_status_counts_as_movement(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, me |")
@@ -117,7 +115,7 @@ def test_52_a_task_changing_status_counts_as_movement(wl):  # noqa: F811
     wl.check("allow", "", "moving a task resets the stuck counter")
 
 
-def test_53_a_running_background_task_exempts_it(wl):  # noqa: F811
+def test_53_a_running_background_task_exempts_it(wl):
     """An agent IS the remedy the stuck check asks for."""
     wl.brief_now()
     wl.hand_now()
@@ -129,7 +127,7 @@ def test_53_a_running_background_task_exempts_it(wl):  # noqa: F811
     wl.check("allow", "", "a live agent means the remedy is already running")
 
 
-def test_54_a_commit_moves_the_signature_and_55_buys_slack_not_immunity(wl):  # noqa: F811
+def test_54_a_commit_moves_the_signature_and_55_buys_slack_not_immunity(wl):
     """54 is THE MISSING CONTROL: a COMMIT must move the signature. Its absence is why a dead HEAD leg shipped. The hook resolved the repository from the worklist temporary directory, git returned nothing, and every commit was invisible.
 
     55 continues the same fixture, because a commit buys SLACK rather than immunity: committing every round leaves the tasks-only signature unmoved, so at twice the stuck rounds it fires. Case 54 already spent 3 stops and tasks-only fires at 6, so exactly 3 more land ON the fire rather than past its reset.
@@ -170,7 +168,7 @@ def test_54_a_commit_moves_the_signature_and_55_buys_slack_not_immunity(wl):  # 
     )
 
 
-def test_56_the_wave_c_replay_an_uncited_prose_blocker_blocks(wl):  # noqa: F811
+def test_56_the_wave_c_replay_an_uncited_prose_blocker_blocks(wl):
     """The exact line that started this, verbatim in shape."""
     wl.brief_now()
     wl.hand_now()
@@ -179,7 +177,7 @@ def test_56_the_wave_c_replay_an_uncited_prose_blocker_blocks(wl):  # noqa: F811
     wl.check("block", "carries no <path>:<line> citation", "an uncited blocker blocks")
 
 
-def test_57_citing_a_real_line_clears_it(wl):  # noqa: F811
+def test_57_citing_a_real_line_clears_it(wl):
     wl.brief_now()
     wl.hand_now()
     (wl.proj / "docs").mkdir(parents=True, exist_ok=True)
@@ -189,7 +187,7 @@ def test_57_citing_a_real_line_clears_it(wl):  # noqa: F811
     wl.check("allow", "", "a citation that resolves is accepted")
 
 
-def test_57b_a_jsonl_citation_resolves_too(wl):  # noqa: F811
+def test_57b_a_jsonl_citation_resolves_too(wl):
     """REGRESSION 2026-09-23: CITE_RE's extension alternation carried `json` but not `jsonl`, and the alternation requires an exact trailing match up to `:` -- `.jsonl:N` never matched `json` as a shorter prefix, it simply failed to match at all. Silent for months because `agent/worklist/*.jsonl` and `agent/ledgers/*.jsonl`, this hook's own store and investigation ledger, are cited
     constantly in evidence lines and tick messages, and every one of those citations was unresolvable to citation_state."""
     wl.brief_now()
@@ -206,7 +204,7 @@ def test_57b_a_jsonl_citation_resolves_too(wl):  # noqa: F811
     wl.check("allow", "", "a .jsonl citation that resolves is accepted")
 
 
-def test_58_control_a_citation_past_end_of_file_is_not_accepted(wl):  # noqa: F811
+def test_58_control_a_citation_past_end_of_file_is_not_accepted(wl):
     wl.brief_now()
     wl.hand_now()
     (wl.proj / "docs").mkdir(parents=True, exist_ok=True)
@@ -216,7 +214,7 @@ def test_58_control_a_citation_past_end_of_file_is_not_accepted(wl):  # noqa: F8
     wl.check("block", "has only 5 lines", "a fabricated line number is caught")
 
 
-def test_58b_a_citation_of_a_moved_plan_follows_its_stub(wl):  # noqa: F811
+def test_58b_a_citation_of_a_moved_plan_follows_its_stub(wl):
     """A closed plan leaves a five-line pointer, and a `<path>:<line>` citation must hop it.
 
     The stub keeps a bare path citation resolving. It does NOT keep a line citation resolving: the file is five lines, so every evidence line ever written against that plan would start reading as a fabricated line number. The control below is the same plan with a line past the TARGET's end, which must still block.
@@ -235,7 +233,7 @@ def test_58b_a_citation_of_a_moved_plan_follows_its_stub(wl):  # noqa: F811
     wl.check("allow", "", "a line citation of a moved plan resolves through its stub")
 
 
-def test_58c_control_a_citation_past_the_moved_plan_end_still_blocks(wl):  # noqa: F811
+def test_58c_control_a_citation_past_the_moved_plan_end_still_blocks(wl):
     wl.brief_now()
     wl.hand_now()
     plans = wl.proj / "agent" / "plans"
@@ -250,7 +248,7 @@ def test_58c_control_a_citation_past_the_moved_plan_end_still_blocks(wl):  # noq
     wl.check("block", "has only 40 lines", "the hop lands on the target, not on a free pass")
 
 
-def test_59_control_a_citation_to_a_file_that_does_not_exist_is_not_accepted(wl):  # noqa: F811
+def test_59_control_a_citation_to_a_file_that_does_not_exist_is_not_accepted(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #12 | Wave C autopilot | blocked, docs/nope.md:3 |")
@@ -258,7 +256,7 @@ def test_59_control_a_citation_to_a_file_that_does_not_exist_is_not_accepted(wl)
     wl.check("block", "which does not exist", "an invented path is caught")
 
 
-def test_60_a_live_background_task_exempts_the_citation_requirement(wl):  # noqa: F811
+def test_60_a_live_background_task_exempts_the_citation_requirement(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #12 | Wave C autopilot | blocked on the agent |")
@@ -267,7 +265,7 @@ def test_60_a_live_background_task_exempts_the_citation_requirement(wl):  # noqa
     wl.check("allow", "", "real machinery needs no prose citation")
 
 
-def test_61_blocked_on_the_operator_keeps_its_own_check(wl):  # noqa: F811
+def test_61_blocked_on_the_operator_keeps_its_own_check(wl):
     """Not this one."""
     wl.brief_now()
     wl.hand_now()
@@ -276,7 +274,7 @@ def test_61_blocked_on_the_operator_keeps_its_own_check(wl):  # noqa: F811
     wl.check("allow", "", "an operator blocker is not asked for a file citation")
 
 
-def test_62_the_judge_is_handed_the_cited_text_and_63_the_import_is_side_effect_free(wl):  # noqa: F811
+def test_62_the_judge_is_handed_the_cited_text_and_63_the_import_is_side_effect_free(wl):
     """62: the citation state only proves a source EXISTS, which any real file satisfies. This is the half that lets the judge check whether the source says what the session claimed.
 
     63 is the CONTROL, and it asserts about the very same output: the bare main() call meant any import executed the whole hook, and if that regresses, 62 silently tests a hook run instead of a function.
@@ -292,7 +290,7 @@ def test_62_the_judge_is_handed_the_cited_text_and_63_the_import_is_side_effect_
     assert '"decision"' not in out, "63: import executed the Stop path: %s" % out[:200]
 
 
-def test_64_control_a_citation_past_end_of_file_yields_no_excerpt_never_a_crash(wl):  # noqa: F811
+def test_64_control_a_citation_past_end_of_file_yields_no_excerpt_never_a_crash(wl):
     (wl.proj / "docs").mkdir(parents=True, exist_ok=True)
     (wl.proj / "docs" / "g.md").write_text(
         "alpha\nbravo\nLands with every stage flag off\ndelta\necho\n", encoding="utf-8"

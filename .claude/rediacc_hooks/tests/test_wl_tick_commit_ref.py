@@ -11,7 +11,6 @@ import shutil
 import subprocess
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
 def added(fix, text: str = "(deadbeef) the commit-ref item") -> str:
@@ -38,7 +37,7 @@ def state_of(fix, item: str) -> str:
     return "open" if ("#%s" % item) in got.out else "closed"
 
 
-def test_t6_a_commit_on_head_ticks(wl):  # noqa: F811
+def test_t6_a_commit_on_head_ticks(wl):
     wl.reg_repo()
     item = added(wl)
     sha = head(wl.proj)
@@ -47,7 +46,7 @@ def test_t6_a_commit_on_head_ticks(wl):  # noqa: F811
     assert state_of(wl, item) == "closed"
 
 
-def test_t6_each_nocommit_reason_ticks(wl):  # noqa: F811
+def test_t6_each_nocommit_reason_ticks(wl):
     wl.reg_repo()
     for reason in ("no-tracked-change", "research", "operator-deferred"):
         item = added(wl, "(deadbeef) a %s item" % reason)
@@ -55,7 +54,7 @@ def test_t6_each_nocommit_reason_ticks(wl):  # noqa: F811
         assert got.rc == 0, (reason, got.err[:400])
 
 
-def test_t6_a_named_door_stands_in_for_the_reason(wl):  # noqa: F811
+def test_t6_a_named_door_stands_in_for_the_reason(wl):
     """A last-resort door already says why nothing was committed (CLAUDE.md rule 2)."""
     wl.reg_repo()
     item = added(wl)
@@ -68,7 +67,7 @@ def test_t6_a_named_door_stands_in_for_the_reason(wl):  # noqa: F811
     assert got.rc == 0, got.err[:400]
 
 
-def test_t6_a_submodule_commit_ticks(wl):  # noqa: F811
+def test_t6_a_submodule_commit_ticks(wl):
     """A commit in a submodule is reachable from the submodule's HEAD, never the console's."""
     wl.reg_repo()
     sub = wl.proj / "private" / "sub"
@@ -86,7 +85,7 @@ def test_t6_a_submodule_commit_ticks(wl):  # noqa: F811
     assert got.rc == 0, got.err[:400]
 
 
-def test_t6_inverse_free_text_evidence_is_refused_and_logged(wl):  # noqa: F811
+def test_t6_inverse_free_text_evidence_is_refused_and_logged(wl):
     """The pre-T6 shape: real evidence, no commit ref."""
     wl.reg_repo()
     item = added(wl)
@@ -99,7 +98,7 @@ def test_t6_inverse_free_text_evidence_is_refused_and_logged(wl):  # noqa: F811
     assert state_of(wl, item) == "open"
 
 
-def test_t6_inverse_a_fabricated_sha_is_refused(wl):  # noqa: F811
+def test_t6_inverse_a_fabricated_sha_is_refused(wl):
     wl.reg_repo()
     item = added(wl)
     fake = "0123456789abcdef0123456789abcdef01234567"
@@ -109,7 +108,7 @@ def test_t6_inverse_a_fabricated_sha_is_refused(wl):  # noqa: F811
     assert last_refusal(wl)["why"] == "no-commit-ref"
 
 
-def test_t6_inverse_a_real_commit_off_this_branch_is_refused(wl):  # noqa: F811
+def test_t6_inverse_a_real_commit_off_this_branch_is_refused(wl):
     """A real object that HEAD does not reach: committed on another branch of the fixture repo."""
     wl.reg_repo()
     base = wl.git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
@@ -125,14 +124,14 @@ def test_t6_inverse_a_real_commit_off_this_branch_is_refused(wl):  # noqa: F811
     assert last_refusal(wl)["why"] == "no-commit-ref"
 
 
-def test_t6_inverse_a_real_sha_beside_a_fabricated_one_is_refused(wl):  # noqa: F811
+def test_t6_inverse_a_real_sha_beside_a_fabricated_one_is_refused(wl):
     wl.reg_repo()
     item = added(wl)
     got = wl.cli("--tick", wlfix.ME, item, "commit:%s commit:%s" % (head(wl.proj), "deadbee1234"))
     assert got.rc != 0, got.out[:300]
 
 
-def test_t6_inverse_an_unknown_nocommit_reason_is_refused(wl):  # noqa: F811
+def test_t6_inverse_an_unknown_nocommit_reason_is_refused(wl):
     wl.reg_repo()
     item = added(wl)
     got = wl.cli("--tick", wlfix.ME, item, "nocommit:later rc=0")
@@ -140,14 +139,14 @@ def test_t6_inverse_an_unknown_nocommit_reason_is_refused(wl):  # noqa: F811
     assert "nocommit:later is not one of the three reasons" in got.err, got.err[:400]
 
 
-def test_t6_update_keeps_free_text(wl):  # noqa: F811
+def test_t6_update_keeps_free_text(wl):
     """The rule binds the tick only: progress notes need no commit."""
     item = added(wl)
     got = wl.cli("--update", wlfix.ME, item, "half done, tests next")
     assert got.rc == 0, got.err[:400]
 
 
-def test_t6_mutation_accepting_bare_evidence_flips_the_refusal(wl):  # noqa: F811
+def test_t6_mutation_accepting_bare_evidence_flips_the_refusal(wl):
     """CONTROL: with the check planted to accept anything, the inverse case ticks. Proves the refusal above is this check's and not an incidental one."""
     wl.reg_repo()
     hooks = wl.base / "hooks"
@@ -180,7 +179,7 @@ def _digit_head(repo) -> str:
     raise AssertionError("no all-digit 9-char prefix in 5000 re-dates")
 
 
-def test_t6_an_all_digit_commit_ref_is_recorded_lengthened(wl):  # noqa: F811
+def test_t6_an_all_digit_commit_ref_is_recorded_lengthened(wl):
     """#0241c97d. `commit:<sha9>` whose nine characters are all digits ticks, and the evidence is RECORDED lengthened until it carries a letter, so a reader that skips digit runs (plan_lifecycle --move) still sees it. Red before the fix: the bare nine digits were stored."""
     wl.reg_repo()
     sha = _digit_head(wl.proj)
@@ -193,7 +192,7 @@ def test_t6_an_all_digit_commit_ref_is_recorded_lengthened(wl):  # noqa: F811
     assert "commit:%s pytest" % sha[:9] not in events, "the bare all-digit sha9 was recorded"
 
 
-def test_t6_inverse_an_all_digit_ref_nothing_resolves_is_refused_as_typed(wl):  # noqa: F811
+def test_t6_inverse_an_all_digit_ref_nothing_resolves_is_refused_as_typed(wl):
     """CONTROL: lengthening needs a commit to lengthen along; a digit ref that names none is refused, and the refusal names the token as typed."""
     wl.reg_repo()
     item = added(wl)
@@ -202,7 +201,7 @@ def test_t6_inverse_an_all_digit_ref_nothing_resolves_is_refused_as_typed(wl):  
     assert "commit:123456789 is not a commit reachable from HEAD" in got.err, got.err[:400]
 
 
-def test_t6_a_letter_bearing_ref_is_recorded_as_typed(wl):  # noqa: F811
+def test_t6_a_letter_bearing_ref_is_recorded_as_typed(wl):
     """CONTROL: only all-digit refs are rewritten."""
     wl.reg_repo()
     sha = head(wl.proj)
