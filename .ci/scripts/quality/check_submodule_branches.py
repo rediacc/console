@@ -19,7 +19,7 @@ THE LEDGER CONDITION IS MET. Driven 2026-09-08:
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import submodule_branches
 
 if __name__ == "__main__":

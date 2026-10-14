@@ -36,7 +36,7 @@ import sys
 import time
 from pathlib import Path
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls, paths
 
 ROOT = Path(os.environ.get("RESPROFILE_ROOT") or Path(__file__).resolve().parents[3])

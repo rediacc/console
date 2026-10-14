@@ -50,7 +50,7 @@ lane: quality-security
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import release_signing_coverage
 
 if __name__ == "__main__":

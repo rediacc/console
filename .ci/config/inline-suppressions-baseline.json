@@ -649,65 +649,12 @@
   ".ci/scripts/quality/check_python_control_plants.py": {
    "type-ignore attr-defined": 1
   },
-  ".ci/scripts/quality/check_release_bump_skip.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_release_key_canonical.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_release_signing_coverage.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_release_state.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_renet_tier_map.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_renet_types.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_resolved_threads.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_resprofile.py": {
    "noqa E402": 1,
-   "noqa F401": 1,
    "noqa PLC0415": 3
   },
-  ".ci/scripts/quality/check_review_comments.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_rubric_calibration.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_runner_advice.py": {
-   "noqa ARG001": 1,
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_scope_scripts_reachability.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_script_exec_bit.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_secret_reachability.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_secret_supply.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_setup_idempotency.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_shell_size.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_silent_failure_patterns.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_submodule_branches.py": {
-   "noqa F401": 1
+   "noqa ARG001": 1
   },
   ".ci/scripts/quality/check_subscription_schema.py": {
    "noqa F401": 1
