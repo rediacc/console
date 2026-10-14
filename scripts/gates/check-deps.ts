@@ -90,6 +90,8 @@ const BLOCKLIST_FILE = policyPath('.deps-upgrade-blocklist', CONSOLE_ROOT);
 const MAJOR_ALLOW_FILE = path.join(CONSOLE_ROOT, MAJOR_ALLOW_REL);
 const RELEASE_AGE_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'release-age.json');
 const MAJOR_EXCEPTIONS_FILE = policyPath('deps-major-exceptions.json', CONSOLE_ROOT);
+/** The blocklist as the fixture runs name it: repo-relative, from the one seam. */
+const BLOCKLIST_REL = path.relative(CONSOLE_ROOT, BLOCKLIST_FILE).split(path.sep).join('/');
 const MAJOR_EXCEPTIONS_REL = path
   .relative(CONSOLE_ROOT, MAJOR_EXCEPTIONS_FILE)
   .split(path.sep)
@@ -2365,6 +2367,56 @@ async function selftest(): Promise<void> {
     takenInst
   );
 
+  const twoMajors = runFixture(incident, 'upgrade', [
+    'bump',
+    'npm',
+    '--to',
+    'private/account/web:vite@8',
+    '--to',
+    'private/account/web:lucide-react@1',
+    '--major',
+    '--reason',
+    reason,
+  ]);
+  const bothInst = twoMajors.installs.join('\n');
+  expect(
+    'e2e pins: several `--to` keys move every named major in ONE transaction, so a family whose majors only converge together is not restored by its first gate',
+    twoMajors.status === 0 &&
+      /private\/account\/web :: install .*vite@8\.0\.1/.test(bothInst) &&
+      /private\/account\/web :: install .*lucide-react@1/.test(bothInst),
+    `${bothInst}\n${twoMajors.output}`
+  );
+  const comma = runFixture(incident, 'upgrade', [
+    'bump',
+    'npm',
+    '--to',
+    'private/account/web:vite@8,private/account/web:lucide-react@1',
+    '--major',
+    '--reason',
+    reason,
+  ]);
+  expect(
+    'e2e pins: a comma list names the same set as repeated `--to`',
+    comma.status === 0 && comma.installs.join('\n') === bothInst,
+    comma.installs.join('\n')
+  );
+  const badSet = runFixture(incident, 'upgrade', [
+    'bump',
+    'npm',
+    '--to',
+    'private/account/web:vite@8',
+    '--to',
+    'private/account/web:nope@9',
+    '--major',
+    '--reason',
+    reason,
+  ]);
+  expect(
+    'e2e pins: CONTROL: one unknown key among several refuses the whole run and installs nothing',
+    badSet.status === 1 && badSet.installs.length === 0 && badSet.output.includes('nope@9'),
+    badSet.output
+  );
+
   const chk = runFixture(incident, 'check');
   expect(
     'e2e check: fails, names the held majors and prints the shape',
@@ -3877,10 +3929,10 @@ async function selftest(): Promise<void> {
   ];
   const mj = runFixture(majorSpec(), 'upgrade', takeWidget);
   const mjAllow = mj.files.get('.ci/config/deps-major-allow.json');
-  const mjEx = JSON.parse(mj.files.get('.ci/policy/deps-major-exceptions.json') ?? '{}') as {
+  const mjEx = JSON.parse(mj.files.get(MAJOR_EXCEPTIONS_REL) ?? '{}') as {
     exceptions: Record<string, unknown>;
   };
-  const mjBlock = mj.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '';
+  const mjBlock = mj.files.get(BLOCKLIST_REL) ?? '';
   expect(
     'major: the net diff of a blocklisted major is the install, the dropped blocklist line with its comment, and the dropped exception, and nothing else',
     mj.status === 0 &&
@@ -3937,9 +3989,7 @@ async function selftest(): Promise<void> {
     youngMajor.status === 1 &&
       youngMajor.output.includes('inside the release-age window') &&
       youngMajor.installs.length === 0 &&
-      (youngMajor.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '').includes(
-        'widget  # BLOCKER:'
-      ),
+      (youngMajor.files.get(BLOCKLIST_REL) ?? '').includes('widget  # BLOCKER:'),
     youngMajor.output
   );
 
@@ -4026,12 +4076,12 @@ async function selftest(): Promise<void> {
       'keeper' in rmRoot.overrides &&
       !('gizmo' in rmRoot._overridesReasons) &&
       'keeper' in rmRoot._overridesReasons &&
-      !(rm.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '').includes('gizmo') &&
-      (rm.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '').includes('keeper  # BLOCKER:') &&
+      !(rm.files.get(BLOCKLIST_REL) ?? '').includes('gizmo') &&
+      (rm.files.get(BLOCKLIST_REL) ?? '').includes('keeper  # BLOCKER:') &&
       !(
         'gizmo' in
         (
-          JSON.parse(rm.files.get('.ci/policy/deps-major-exceptions.json') ?? '{}') as {
+          JSON.parse(rm.files.get(MAJOR_EXCEPTIONS_REL) ?? '{}') as {
             exceptions: object;
           }
         ).exceptions

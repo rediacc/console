@@ -7,7 +7,7 @@
  *   when <id> [--json]                     when the newest too-new release clears the window,
  *                                          with a ready worklist DEFAULT line
  *   plan <id>|--all [--json]               the rewrite a bump would make; writes nothing
- *   bump <id> [--to <v>] [--major --reason "<why>"] [--task <id>] [--json] [--out <dir>]
+ *   bump <id> [--to <v>]... [--major --reason "<why>"] [--task <id>] [--json] [--out <dir>]
  *   bump --all [--task <id>] [--json] [--out <dir>]
  *   apply-soaked [--task <id>] [--json] [--out <dir>]
  *                                          bump --all limited to patches and in-range minors
@@ -193,6 +193,8 @@ interface PinView {
   state: 'current' | 'bumpable' | 'deferred' | 'held' | 'major-only' | 'not-compared';
   current: string | null;
   target: Release | null;
+  /** The further releases of a multi-`--to` selection, planned in the same transaction as `target`. */
+  also: Release[];
   /** The newest release inside the window, when one is. */
   deferred: (Release & { clearsAt: number | null }) | null;
   verdict: Verdict | null;
@@ -201,7 +203,8 @@ interface PinView {
 }
 
 interface SelectOpts {
-  to?: string;
+  /** Release names to take; more than one is taken together (a family whose majors only converge as a set). */
+  to?: string[];
   allowMajor?: boolean;
   onlyInRange?: boolean;
 }
@@ -219,6 +222,7 @@ async function viewOf(
     state: 'not-compared',
     current: entry.kind === 'leaf' ? leafCurrent(entry, ctx) : null,
     target: null,
+    also: [],
     deferred: null,
     verdict: null,
     hold: null,
@@ -243,12 +247,14 @@ async function viewOf(
     return { ...base, state: 'held', detail: `held in ${base.hold.file}: ${base.hold.reason}` };
 
   let pool = insp.releases;
-  if (sel.to !== undefined) {
-    pool = pool.filter((r) => r.version === sel.to);
-    if (pool.length === 0)
+  const wanted = sel.to !== undefined && sel.to.length > 0 ? sel.to : null;
+  if (wanted) {
+    pool = pool.filter((r) => wanted.includes(r.version));
+    const missing = wanted.filter((v) => !pool.some((r) => r.version === v));
+    if (missing.length > 0)
       return {
         ...base,
-        detail: `not compared: ${sel.to} is not among the releases newer than ${insp.current} the source answered`,
+        detail: `not compared: ${missing.join(', ')} ${missing.length > 1 ? 'are' : 'is'} not among the releases newer than ${insp.current} the source answered`,
       };
   }
   const isMajor = (r: Release): boolean => {
@@ -256,6 +262,41 @@ async function viewOf(
     const b = majorOf(r.version);
     return a === null || b === null || a !== b;
   };
+  if (wanted && wanted.length > 1) {
+    if (entry.driver !== 'npm')
+      return {
+        ...base,
+        detail: `not compared: several --to are taken together only by the npm driver, and ${entry.id} is ${entry.driver}`,
+      };
+    const taken: Release[] = [];
+    for (const v of wanted) {
+      const r = pool.find((x) => x.version === v) as Release;
+      if (!(sel.onlyInRange ? inRange(insp.current, r.version) : sel.allowMajor || !isMajor(r)))
+        return {
+          ...base,
+          state: 'major-only',
+          detail: `${r.version} is a major or out-of-range release; \`bump ${entry.id} --major --reason "<why>"\``,
+        };
+      const j = judge(entry, r, w.nowMs, w.windowMs, w.mutant === 'ignore-soak');
+      if (!j.eligible)
+        return {
+          ...base,
+          state: 'deferred',
+          deferred: { ...r, clearsAt: j.clearsAt },
+          verdict: j,
+          detail: `${insp.current} -> ${r.version} deferred: ${j.why}`,
+        };
+      taken.push(r);
+    }
+    return {
+      ...base,
+      state: 'bumpable',
+      target: taken[0],
+      also: taken.slice(1),
+      verdict: judge(entry, taken[0], w.nowMs, w.windowMs, w.mutant === 'ignore-soak'),
+      detail: `${insp.current} -> ${taken.map((r) => r.version).join(' + ')}`,
+    };
+  }
   const admitted = pool.filter((r) =>
     sel.onlyInRange ? inRange(insp.current, r.version) : sel.allowMajor || !isMajor(r)
   );
@@ -389,7 +430,8 @@ function writeOut(w: World, outDir: string, report: unknown, drafts: RepoDraft[]
 interface Flags {
   json: boolean;
   all: boolean;
-  to?: string;
+  /** Every `--to` given, a comma list counting as several; more than one is taken in one transaction. */
+  to: string[];
   major: boolean;
   reason?: string;
   expires?: string;
@@ -402,7 +444,15 @@ interface Flags {
 }
 
 function parseFlags(argv: string[]): Flags {
-  const f: Flags = { json: false, all: false, major: false, task: null, inflight: [], pos: [] };
+  const f: Flags = {
+    json: false,
+    all: false,
+    to: [],
+    major: false,
+    task: null,
+    inflight: [],
+    pos: [],
+  };
   const val = (i: number, name: string): string => {
     const v = argv[i + 1];
     if (v === undefined || v.startsWith('--')) throw new Usage(`${name} needs a value`);
@@ -413,7 +463,12 @@ function parseFlags(argv: string[]): Flags {
     if (a === '--json') f.json = true;
     else if (a === '--all') f.all = true;
     else if (a === '--major') f.major = true;
-    else if (a === '--to') f.to = val(i++, a);
+    else if (a === '--to')
+      f.to.push(
+        ...val(i++, a)
+          .split(',')
+          .filter((x) => x !== '')
+      );
     else if (a === '--reason') f.reason = val(i++, a);
     else if (a === '--expires') f.expires = val(i++, a);
     else if (a === '--task') f.task = val(i++, a);
@@ -506,7 +561,7 @@ async function selectAndPlan(
     }
     const drv = driverFor(entry, ctx);
     try {
-      const plan = await (drv as NonNullable<typeof drv>).plan(entry, v.target, ctx);
+      const plan = await (drv as NonNullable<typeof drv>).plan(entry, v.target, ctx, v.also);
       for (const wr of plan.writes) ctx.overlay.set(keyOf(wr), wr.after);
       out.plans.push(plan);
     } catch (err) {
@@ -656,7 +711,8 @@ async function cmdBump(w: World, f: Flags, soakedOnly: boolean): Promise<number>
   if (f.major && (!f.reason || f.reason.trim().length < 10))
     throw new Usage('--major needs --reason "<why the major is safe now>"');
   const all = soakedOnly || f.all;
-  if (all && f.to) throw new Usage('--to names one pin; it does not combine with --all');
+  if (all && f.to.length > 0)
+    throw new Usage('--to names releases of one pin; it does not combine with --all');
   const entries = pick(w, f.pos[0], all);
   if (f.major)
     for (const e of entries)
@@ -1038,6 +1094,29 @@ const CASES: Record<string, Case> = {
         name: 'status: the newest eligible release is the target; one inside the window is deferred',
         ok: r.rc === 0 && v.state === 'bumpable' && v.target?.version === '1.1.0',
         detail: `rc=${r.rc} ${r.err} ${JSON.stringify(v)}`,
+      },
+    ];
+  },
+  async multito(m) {
+    const fx = fixtureTree();
+    const r = await runCli(
+      ['bump', 'embed:tool', '--to', '1.1.0', '--to', '1.2.0', '--json'],
+      withMutant(fx, m)
+    );
+    const one = await runCli(['plan', 'embed:tool', '--to', '1.1.0,1.1.0'], withMutant(fx, m));
+    return [
+      {
+        name: 'bump: several --to are refused for a driver that cannot take them as a set, and nothing is written',
+        ok:
+          r.rc === 1 &&
+          /several --to are taken together only by the npm driver/.test(`${r.out}${r.err}`) &&
+          fx.read('Dockerfile').includes('TOOL_VERSION=1.0.0'),
+        detail: `rc=${r.rc} ${r.err} ${r.out.slice(0, 600)}`,
+      },
+      {
+        name: 'plan: a comma list of two names is parsed as two (the same name twice is still two requests)',
+        ok: one.rc === 1 && /several --to/.test(`${one.out}${one.err}`),
+        detail: `rc=${one.rc} ${one.err} ${one.out.slice(0, 600)}`,
       },
     ];
   },
