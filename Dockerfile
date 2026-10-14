@@ -36,7 +36,7 @@ ARG ACCOUNT_ENTRY=on-premise          # the self-hosted account server entry
 # The one npm (.devcontainer/toolchain.env NPM_VERSION, which this build context
 # cannot reach; check:ci-lockfile asserts the two agree). The image's bundled npm is
 # not the pin, and two npm 11 minors can read and write a lockfile differently.
-ARG NPM_VERSION=11.20.0
+ARG NPM_VERSION=11.21.0
 
 # =============================================================================
 # Stage 1: account-builder
