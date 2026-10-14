@@ -18,8 +18,11 @@ const isAlive = (pid: number): boolean => {
   }
 };
 
+// A recorded pid is a positive integer above 1: NaN means it was never written, and 0, 1 or a negative value would turn a kill into a signal for the runner's own group, init or an unrelated process.
+const isRecordedPid = (pid: number): boolean => Number.isInteger(pid) && pid > 1;
+
 // Whether any process still belongs to the group led by `pid`. A group id is not reused while it has a member, so signalling the group cannot reach an unrelated process the way a bare recorded pid can after its process was reaped.
-const groupAlive = (pid: number): boolean => Number.isInteger(pid) && isAlive(-pid);
+const groupAlive = (pid: number): boolean => isRecordedPid(pid) && isAlive(-pid);
 
 type SettleOptions = {
   pending: Promise<unknown> | null;
@@ -58,14 +61,23 @@ const settleRun = async (options: SettleOptions): Promise<void> => {
         // already gone
       }
     });
-  if (Number.isInteger(renet)) kill(renet);
-  await new Promise((resolve) => realSetTimeout(resolve, options.reapWaitMs ?? 500));
-  const survivors = [
+  if (isRecordedPid(renet)) kill(renet);
+  const survivorsNow = (): string[] => [
+    ...(isRecordedPid(renet)
+      ? []
+      : ['an unrecorded process tree (no renet pid was written, so no group could be killed)']),
     ...(groupAlive(renet) ? [`process group ${renet}`] : []),
     ...[options.grandchildPid()]
-      .filter((pid) => Number.isInteger(pid) && isAlive(pid))
+      .filter((pid) => isRecordedPid(pid) && isAlive(pid))
       .map((pid) => `pid ${pid}`),
   ];
+  // Polls until the kill has landed or the reap window closes, so a slow kernel reap never reads as a survivor and a prompt one costs no fixed delay.
+  const reapDeadline = Date.now() + (options.reapWaitMs ?? 500);
+  let survivors = survivorsNow();
+  while (survivors.length > 0 && isRecordedPid(renet) && Date.now() < reapDeadline) {
+    await new Promise((resolve) => realSetTimeout(resolve, 10));
+    survivors = survivorsNow();
+  }
   throw Object.assign(
     new Error(
       survivors.length > 0
@@ -292,7 +304,12 @@ setInterval(() => {}, 1e9);`,
     const grandchild = Number.parseInt(readFileSync(grandchildFile, 'utf8'), 10);
     expect(isAlive(grandchild)).toBe(true);
     // Only the leader is recorded; the grandchild's pid stays unknown to the helper.
-    const error = await settleRun(options(dir, { renetPid: () => leader })).catch((e) => e);
+    const started = Date.now();
+    const error = await settleRun(
+      options(dir, { renetPid: () => leader, reapWaitMs: 20_000 })
+    ).catch((e) => e);
+    // A generous reap window must not be slept through: the poll ends as soon as the group is gone.
+    expect(Date.now() - started).toBeLessThan(10_000);
     expect((error as Error).message).toMatch(/killed directly/);
     expect((error as { keepDir?: boolean }).keepDir).toBe(false);
     for (let i = 0; i < 100 && isAlive(grandchild); i++) {
@@ -310,6 +327,30 @@ setInterval(() => {}, 1e9);`,
     ).catch((e) => e);
     expect((error as Error).message).toContain(`process group ${leader} is still alive`);
     expect((error as Error).message).toContain(dir);
+    expect((error as { keepDir?: boolean }).keepDir).toBe(true);
+  });
+
+  it('keeps the directory and says so when no renet pid was recorded, rather than reporting a clean kill', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ops-settle-'));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const killed: number[] = [];
+    const error = await settleRun(options(dir, { killGroup: (pgid) => killed.push(pgid) })).catch(
+      (e) => e
+    );
+    expect(killed).toEqual([]);
+    expect((error as Error).message).toContain('unrecorded process tree');
+    expect((error as Error).message).not.toContain('killed directly');
+    expect((error as { keepDir?: boolean }).keepDir).toBe(true);
+  });
+
+  it.each([0, 1, -5])('never signals a recorded pid of %i', async (pid) => {
+    const dir = mkdtempSync(join(tmpdir(), 'ops-settle-'));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const killed: number[] = [];
+    const error = await settleRun(
+      options(dir, { renetPid: () => pid, killGroup: (pgid) => killed.push(pgid) })
+    ).catch((e) => e);
+    expect(killed).toEqual([]);
     expect((error as { keepDir?: boolean }).keepDir).toBe(true);
   });
 
