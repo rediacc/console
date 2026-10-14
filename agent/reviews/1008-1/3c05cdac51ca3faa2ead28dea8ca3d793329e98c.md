@@ -21,7 +21,7 @@ Body-Sig: 929c36cb33d60afe
 ### 3c05cdac.1 [medium] cmd/renet/sandbox_gateway.go:304
 Anchor: in-diff
 Claim: mirrorNetworkID returns 0 on any os.ReadFile error, including permission denied for the SSH gateway user, so when the state mirror is unreadable the mirror-equality check and the omitted-variable ID default both vanish silently and the client's REDIACC_NETWORK_ID is accepted unchecked.
-Resolution: open
+Resolution: fixed 20a866520622cf6f3e52d77f77be0cd721bea799 | d778be9d 2026-10-14T15:05:55Z
 
 ### 3c05cdac.2 [medium] cmd/renet/sandbox_gateway.go:291
 Anchor: in-diff
