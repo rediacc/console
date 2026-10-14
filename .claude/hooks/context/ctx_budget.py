@@ -107,6 +107,16 @@ def _settings_files(project_dir):
     return out
 
 
+def _json_or_none(source):
+    """The parsed JSON of a file (a Path) or of one raw line, or None when it cannot be read or parsed."""
+    try:
+        return json.loads(
+            source.read_text(encoding="utf-8") if isinstance(source, Path) else source
+        )
+    except Exception:
+        return None
+
+
 def configured_window(project_dir):
     """(window, source) as Claude Code would resolve it, env first."""
     env = os.environ.get("CLAUDE_CODE_AUTO_COMPACT_WINDOW")
@@ -118,9 +128,9 @@ def configured_window(project_dir):
         if v:
             return max(WINDOW_MIN, min(WINDOW_MAX, v)), "env"
     for f in _settings_files(project_dir):
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-        except Exception:  # noqa: S112 -- an unreadable settings file is not this hook's problem
+        # An unreadable settings file is not this hook's problem: it yields no window and the next source is tried.
+        data = _json_or_none(f)
+        if data is None:
             continue
         v = data.get("autoCompactWindow")
         if isinstance(v, int) and WINDOW_MIN <= v <= WINDOW_MAX:
@@ -244,9 +254,9 @@ def last_usage(transcript_path):
             raw = raw_line.strip()
             if not raw or not raw.startswith(b"{"):
                 continue
-            try:
-                d = json.loads(raw)
-            except Exception:  # noqa: S112 -- a torn line is expected at a tail boundary
+            # A torn line is expected at a tail boundary.
+            d = _json_or_none(raw)
+            if d is None:
                 continue
             if not hit_boundary and _is_compact_boundary(d):
                 # Everything older than this belongs to a context that no longer exists. Stop treating it as usage; keep scanning ONLY to recover the model, which compaction does not change.

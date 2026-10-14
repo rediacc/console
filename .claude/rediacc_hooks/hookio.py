@@ -48,7 +48,7 @@ import re
 import subprocess
 
 # Re-exported so a guard does not grow a second spelling of the character classes bash means by [[:space:]]. `shellscan` owns the definitions; a guard that needs them imports them from here, and there is exactly one copy.
-from rediacc_hooks.shellscan import (  # noqa: F401
+from rediacc_hooks.shellscan import (
     BLANK,
     SPACE,
     _command_substitution,
@@ -60,6 +60,20 @@ from rediacc_hooks.shellscan import (  # noqa: F401
     _sed_out,
     _tr,
 )
+
+# The names above that guards reach as `hookio.<name>` and this module does not use itself; listing them here is what states them as re-exports.
+__all__ = [
+    "BLANK",
+    "SPACE",
+    "_command_substitution",
+    "_grep_only",
+    "_grep_out",
+    "_here_string",
+    "_printf_line",
+    "_records",
+    "_sed_out",
+    "_tr",
+]
 
 ALLOW = 0
 DENY = 2

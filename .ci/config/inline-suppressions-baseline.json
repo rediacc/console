@@ -660,21 +660,6 @@
    "noqa FLY002": 1,
    "noqa PLC0415": 1
   },
-  ".claude/hooks/context/ctx_budget.py": {
-   "noqa S112": 2
-  },
-  ".claude/hooks/context/precompact-floor.py": {
-   "noqa E731": 1
-  },
-  ".claude/hooks/post-bash/arm_ci_watch.py": {
-   "noqa E402": 2
-  },
-  ".claude/hooks/post-bash/review_commit.py": {
-   "noqa E402": 2
-  },
-  ".claude/rediacc_hooks/hookio.py": {
-   "noqa F401": 1
-  },
   ".devcontainer/Dockerfile.uid": {
    "hadolint-ignore DL3002": 1,
    "hadolint-ignore DL3006": 1,
