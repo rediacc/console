@@ -187,10 +187,16 @@ export function openJournals(root: string): Array<{ stamp: string; files: string
   const dir = journalRoot(root);
   if (!fs.existsSync(dir)) return [];
   const out: Array<{ stamp: string; files: string[] }> = [];
-  // Only directories are stamps: a lock file, its tombs or a stray .DS_Store is not a journal layout this code could misread.
+  // Only directories are stamps (a symlink to one counts, which Dirent.isDirectory() does not report): a lock file, its tombs or a stray .DS_Store is not a journal layout this code could misread.
   const stamps = fs
     .readdirSync(dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
+    .filter(
+      (e) =>
+        !e.name.startsWith('.lock') &&
+        (e.isDirectory() ||
+          (e.isSymbolicLink() &&
+            fs.statSync(path.join(dir, e.name), { throwIfNoEntry: false })?.isDirectory()))
+    )
     .map((e) => e.name)
     .sort();
   let readable = 0;
@@ -519,9 +525,31 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
   const dir = journalRoot(root);
   fs.mkdirSync(dir, { recursive: true });
   const lock = path.join(dir, '.lock');
-  // The lock appears only by a hard link from a file that already holds the pid, so a lock file never exists empty or half-written while its owner lives: one whose content is not a positive integer pid is debris from a crash and is stale, as is one naming a dead pid. A filesystem that refuses hard links falls back to an exclusive create of the lock itself.
+  // The lock appears only by a hard link from a file that already holds the pid, so a lock file never exists empty or half-written while its owner lives: one whose content is not a positive integer pid is debris from a crash and is stale, as is one naming a dead pid. A filesystem that refuses hard links falls back to a rename of that same file into the slot, made exclusive by a claim directory that only one taker can create, so the lock still appears whole.
   const tmp = `${lock}.${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
   fs.writeFileSync(tmp, `${process.pid}\n`);
+  // rename replaces its target, so exclusivity comes from the claim directory (mkdir is atomic and fails when it exists): the holder checks the slot is empty and renames the pid file in, then drops the claim. A claim a crashed taker left behind is cleared once it is older than ten seconds.
+  const claimByRename = (): void => {
+    const claim = `${lock}.claim`;
+    for (let i = 0; ; i++) {
+      try {
+        fs.mkdirSync(claim);
+        break;
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+        const age =
+          Date.now() - (fs.statSync(claim, { throwIfNoEntry: false })?.mtimeMs ?? Date.now());
+        if (i > 0 || age < 10_000) throw e;
+        fs.rmSync(claim, { recursive: true, force: true });
+      }
+    }
+    try {
+      if (fs.existsSync(lock)) throw Object.assign(new Error('lock exists'), { code: 'EEXIST' });
+      fs.renameSync(tmp, lock);
+    } finally {
+      fs.rmSync(claim, { recursive: true, force: true });
+    }
+  };
   const create = (): void => {
     try {
       fs.linkSync(tmp, lock);
@@ -529,7 +557,7 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
       const code = (err as NodeJS.ErrnoException).code;
       if (code !== 'EPERM' && code !== 'ENOTSUP' && code !== 'ENOSYS' && code !== 'EXDEV')
         throw err;
-      fs.writeFileSync(lock, `${process.pid}\n`, { flag: 'wx' });
+      claimByRename();
     }
   };
   try {
@@ -566,7 +594,7 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
           try {
             fs.linkSync(tomb, lock);
           } catch {
-            // Another taker already holds a fresh lock here, so the tomb is the only place the moved lock stays named: it is kept for inspection, not removed.
+            // The lock could not be put back (another taker filled the slot, or this filesystem has no hard links), so the tomb is the only place the moved lock stays named: it is kept for inspection, not removed.
             return null;
           }
           fs.rmSync(tomb, { force: true });

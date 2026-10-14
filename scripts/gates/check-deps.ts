@@ -1724,6 +1724,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     ...Object.keys(spec.outdated),
     ...Object.keys(spec.locks),
     ...Object.keys(spec.manifests ?? {}),
+    ...Object.keys(spec.rawManifests ?? {}),
   ];
   for (const rel of new Set(manifestDirs)) {
     // Written the way npm writes a manifest (two-space indent, trailing newline), because the override bump refuses a package.json it cannot round-trip byte for byte.
@@ -4176,6 +4177,44 @@ async function selftest(): Promise<void> {
     "remove: CONTROL: an importer under the declaring directory's own build/ or .ci/cache/ is output, not source, and does not refuse",
     outputOnly.status === 0 && outputOnly.installs.length === 1,
     outputOnly.output
+  );
+  const memberOutput = runFixture(
+    rmSpec({
+      files: {
+        'knip.jsonc': rmKnip,
+        'packages/cli/build/gen.js': "const g = require('gizmo');\nmodule.exports = g;\n",
+        'packages/cli/coverage/c.js': "const g = require('gizmo');\nmodule.exports = g;\n",
+        'packages/cli/.astro/a.js': "const g = require('gizmo');\nmodule.exports = g;\n",
+        'workers/x/.wrangler/w.js': "const g = require('gizmo');\nmodule.exports = g;\n",
+      },
+    }),
+    'upgrade',
+    ['remove', 'gizmo']
+  );
+  expect(
+    "remove: CONTROL: output a workspace member builds (build/, coverage/ beside its package.json) and generated dot directories at any depth are not sources, so the root's scan does not refuse on them",
+    memberOutput.status === 0 && memberOutput.installs.length === 1,
+    memberOutput.output
+  );
+  const noLocks = runFixture(rmSpec({ locks: {} }), 'upgrade', ['remove', 'gizmo']);
+  expect(
+    'remove: CONTROL: a registry family whose npm-lockfile scope matches no lockfile is refused as VACUOUS, not reported as nothing to do',
+    noLocks.status === 1 && noLocks.output.includes('VACUOUS') && noLocks.installs.length === 0,
+    noLocks.output
+  );
+  const rawOnly = buildFixture({
+    outdated: {},
+    locks: {},
+    rawManifests: { 'only/raw': '{"raw":true}\n' },
+  });
+  const rawOnlyText = fs.existsSync(path.join(rawOnly.root, 'only/raw/package.json'))
+    ? fs.readFileSync(path.join(rawOnly.root, 'only/raw/package.json'), 'utf8')
+    : '<absent>';
+  fs.rmSync(rawOnly.root, { recursive: true, force: true });
+  expect(
+    'fixture: a raw manifest for a directory no other fixture map names is still written',
+    rawOnlyText === '{"raw":true}\n',
+    rawOnlyText
   );
   const rmCompact = rmSpec().manifests?.[''] ?? {};
   const rawRoot = runFixture(
