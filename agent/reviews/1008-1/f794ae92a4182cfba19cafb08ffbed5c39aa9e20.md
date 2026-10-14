@@ -21,7 +21,7 @@ Body-Sig: fd7d6f7dac178e72
 ### f794ae92.1 [high] .ci/rediacc_ci/security/ci_workflow_invariants.py:1071
 Anchor: in-diff
 Claim: _PINS_MASK_RE has no test for a leading `!` (e.g. `! npm run ... apply-soaked ...`), which inverts the apply status: a failed apply leaves `rc=$?` at 0 and the job stays green, so the commit's 'any operator' claim does not hold and the check still passes this bypass.
-Resolution: open
+Resolution: fixed 3d0927e0a67dbff9d0782f116b8fd6ce2de81ca5 | d778be9d 2026-10-14T19:04:52Z
 
 ### f794ae92.2 [medium] .ci/rediacc_ci/security/ci_workflow_invariants.py:1076
 Anchor: in-diff
