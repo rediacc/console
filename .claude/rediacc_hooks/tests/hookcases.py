@@ -1657,6 +1657,40 @@ STATIC: list[Case] = [
         bash_json("perl -e 'print qw(never run git worktree add here)'"),
         "worktree-add CONTROL: a qw() sentence is not a command (fa5d11be.4)",
     ),
+    # #78afdc0b: the program text is `shellscan.interpreter_program`'s reading, so a script run BY PATH is read and python's option parse is the shared one. Each deny row was allowed (rc 0) at c5c3036c3; the scripts on disk are in test_hooks_fixtures.py.
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "python3 --check-hash-based-pycs always -c \"import os; os.system('git worktree add x')\""
+        ),
+        "worktree-add: an option's value is not the script, so the -c after it runs (#78afdc0b)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' 'import os' 'os.system(\"git worktree add x\")' > /tmp/wt-78afdc0b.py; "
+            "python3 /tmp/wt-78afdc0b.py"
+        ),
+        "worktree-add: a script the same command writes, then runs by path (#78afdc0b)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' 'print(\"never run git worktree add here\")' > /tmp/wt-78afdc0b.py; "
+            "python3 /tmp/wt-78afdc0b.py"
+        ),
+        "worktree-add CONTROL: a written script printing a sentence (#78afdc0b)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json("cp /tmp/a.py /tmp/wt-78afdc0b.py && python3 /tmp/wt-78afdc0b.py worktree add x"),
+        "worktree-add: an unreadable script on a line naming the verb is unjudgeable (#78afdc0b)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json("cp /tmp/a.py /tmp/wt-78afdc0b.py && python3 /tmp/wt-78afdc0b.py"),
+        "worktree-add CONTROL: an unreadable script on a line naming no worktree verb (#78afdc0b)",
+    ),
     # block_user_only_command and its shell twin (operator ruling 2026-10-09, #18c7e53c): no slash command or skill is user-only, except a file on the operator's exception list.
     case(
         "check 2 guards/block_user_only_command.py",
