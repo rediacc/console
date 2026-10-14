@@ -127,7 +127,9 @@
       ],
       "gates": [
         "check:actions",
-        "check:ci-actions-allowlist"
+        "check:ci-actions-allowlist",
+        "check:ci-gate-bind",
+        "check:ci-gates-lock"
       ],
       "scope": [
         {
