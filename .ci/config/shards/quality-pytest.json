@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-14T21:37:06.711Z",
+  "generatedAt": "2026-10-14T23:19:41.376Z",
   "legs": [
     {
       "index": 1,
@@ -55,6 +55,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_inline.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_pr_environment.py",
         "pytest:.ci/rediacc_ci/tests/test_bench_captcha_switch.py",
+        "pytest:.ci/rediacc_ci/tests/test_bootstrap_ruff_resolver.py",
         "pytest:.ci/rediacc_ci/tests/test_build_buildx_push_web.py",
         "pytest:.ci/rediacc_ci/tests/test_build_ensure_nfpm.py",
         "pytest:.ci/rediacc_ci/tests/test_build_prepare_cli_assets.py",

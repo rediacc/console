@@ -110,12 +110,12 @@ def shard_min_tests(of: int) -> int:
 # THIS NUMBER BOUNDS ONE LEG, NOT THE CORPUS. The 1800 -> 600 paragraph above said the unsharded invocation "inherits whatever the corpus measures on the day it is run". It did not: until 2026-09-30 the whole-corpus path read this same constant, so `npm run check:ci-pytest` with no `--shard` gave the ENTIRE corpus a one-leg budget.
 # Measured 2026-09-30 on this 24-core host at `-n 8 --dist loadgroup`, load average 7-27 from concurrent sessions: 19,487 items, 7,335 test-seconds, 1014.06s wall, 90% of the progress bar at 775s. 7,335 / 8 workers is 917s of pure work, so no packing fits 840s: two runs that day ended "did not finish within 840s" with no verdict.
 # The floor is throughput, not one pinned fixture: the 294.65s guards fixture the old `-n 8` cap cited is 233s of test time now, and the largest module is test_core_devbox.py at 1,006 test-seconds spread over all eight workers (its stub farm starts a Python interpreter per stubbed call).
-# So the whole-corpus run gets `whole_corpus_timeout_s()` instead: this leg budget times the committed manifest's leg count. The legs are balanced by measured duration, so N legs' budget is the model of the whole, and it moves with this constant rather than drifting from it. 840 x 3 = 2520s, 2.5x the measured 1014s, with room for a host capping `-n` below 8.
+# So the whole-corpus run gets `whole_corpus_timeout_s()` instead: this leg budget times the committed manifest's leg count. The legs are balanced by measured duration, so N legs' budget is the model of the whole, and it moves with this constant rather than drifting from it. 840 x 4 = 3360s, 3.3x the measured 1014s, with room for a host capping `-n` below 8.
 # CI never takes that path (ci-quality.yml passes `--shard` on every leg), which is why the whole-corpus bound is a derivation and not a second declared timer: `check:ci-inner-timeout-reachable` compares declared timers against the job ceiling, and no job ceiling applies to a run CI does not make.
 RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 840)
 
 # The `of` of `.ci/config/shards/quality-pytest.json`, pinned by a selftest control against the committed manifest so the two cannot drift apart silently.
-WHOLE_CORPUS_LEGS = 3
+WHOLE_CORPUS_LEGS = 4
 QUALITY_PYTEST_MANIFEST = ".ci/config/shards/quality-pytest.json"
 
 

@@ -125,6 +125,16 @@ GLOB_ROOTS = {
             "the same _TAILED_ROOTS glob as .claude/hooks/stop/"
         ),
     ),
+    "agent/": (
+        ("test_judge_rule_",),
+        (
+            "written by .claude/hooks/stop/wl_effort_tune.py (rules_dir = out / "
+            '"judge-rules") into each tuner run directory, agent/<me8>/effort-tune/<epoch>/'
+            "judge-rules/, and run by the effort-tuner agent's step 3 "
+            "(.claude/agents/effort-tuner.md) with the pinned pytest; no rule is named "
+            "individually"
+        ),
+    ),
 }
 
 # EXEMPT BY NAME, WITH THE REASON, AND PRINTED ON EVERY RUN. The `manual:` class of `.ci/policy/.dead-bash-allowlist`, in code rather than in a policy file because a seventeenth file in `.ci/policy/` has to be added to two POLICY_FILES lists and a README section in the same commit (see check:ci-policy-inventory), and one entry does not earn that.
