@@ -40,6 +40,7 @@ import urllib.request
 
 from rediacc_ci import paths
 from rediacc_ci.controls import controls_first
+from rediacc_ci.core import https
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -196,14 +197,15 @@ def _fake_account_control() -> bool:
             return False
 
         def ask(executor_token: str, token: str) -> tuple[int, dict]:
-            req = urllib.request.Request(  # noqa: S310 -- a loopback http:// fixture URL
+            req = https.build_request(
                 "http://127.0.0.1:%d/account/api/v1/proxy/introspect" % port,
                 data=json.dumps({"token": token}).encode(),
                 headers={"authorization": "Bearer " + executor_token},
                 method="POST",
+                http="loopback",
             )
             try:
-                with urllib.request.urlopen(req, timeout=5) as r:  # noqa: S310 -- loopback fixture
+                with https.urlopen(req, timeout=5, http="loopback") as r:
                     return r.status, json.loads(r.read())
             except urllib.error.HTTPError as e:
                 return e.code, {}

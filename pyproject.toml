@@ -358,6 +358,10 @@ ignore = [
     # BLOCKER: this file is stdlib-only because .ci/bootstrap.sh runs it by path (`python3 .ci/rediacc_ci/core_lease.py`), where rediacc_ci is not importable, so it cannot call proc.exec_replace and keeps one private exec site; its pytest wrapper and `run` verb must become the command to keep the lock descriptors open
     "S606",
 ]
+".ci/rediacc_ci/core/https.py" = [
+    # BLOCKER: this module holds the only urllib Request and urlopen sites, each reached only after check_url has refused every scheme but https (and http where the caller names it), which is the scheme check S310 asks for; every other file calls it and stays held to S310
+    "S310",
+]
 ".ci/rediacc_ci/ci/ci_diagnose.py" = [
     # BLOCKER: ci-trace.py loads this module by file path with no `.ci` on sys.path, so it cannot import rediacc_ci.core.https; its _open refuses any URL that does not start with https:// on the line before the Request
     "S310",

@@ -34,8 +34,8 @@ import urllib.error
 import urllib.request
 from typing import TYPE_CHECKING
 
+from rediacc_ci.core import https, toolchain
 from rediacc_ci.core import platform as platform_
-from rediacc_ci.core import toolchain
 from rediacc_ci.well_known import GO_DL_BASE
 
 if TYPE_CHECKING:  # pragma: no cover - both names are only ever annotations here
@@ -132,7 +132,7 @@ def _fetch(url: str, timeout: int) -> bytes | None:
     `-f` is the flag that matters and the reason this returns None on an HTTP error rather than the body: without it curl writes a 404 page to the output file and exits 0, which is how "a documented `curl` of a 404 baked an HTML error page into a signing key" (`.ci/lib/setup.sh:41-42`). `urlopen` raises on 4xx/5xx, which is `-f` by default.
     """
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310
+        with https.urlopen(url, timeout=timeout) as response:
             return response.read()
     except (urllib.error.URLError, OSError, ValueError):
         return None

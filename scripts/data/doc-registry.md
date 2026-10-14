@@ -810,7 +810,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
 | knip.jsonc | 27 | // comment |
 | package.json | 24 | JSON value |
-| pyproject.toml | 63 | # comment |
+| pyproject.toml | 64 | # comment |
 | scripts/ci-runner/gates.lock.json | 30 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 47 | JSON value |
 | scripts/data/shape-duplication-seed.json | 9 | JSON value |
@@ -854,7 +854,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/catalog | 3 | .py 3 |
 | .ci/rediacc_ci/ci | 31 | .py 31 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
-| .ci/rediacc_ci/core | 38 | .py 38 |
+| .ci/rediacc_ci/core | 39 | .py 39 |
 | .ci/rediacc_ci/deploy | 35 | .py 35 |
 | .ci/rediacc_ci/dev | 5 | .py 5 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
@@ -874,7 +874,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/security | 10 | .py 10 |
 | .ci/rediacc_ci/setup | 13 | .py 13 |
 | .ci/rediacc_ci/testrun | 11 | .py 11 |
-| .ci/rediacc_ci/tests | 379 | .py 379 |
+| .ci/rediacc_ci/tests | 380 | .py 380 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
 | .ci/rediacc_ci/tests/fixtures/ci_diagnose | 24 | .json 16, .log 8 |

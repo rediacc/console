@@ -17,24 +17,9 @@
   ".ci/rediacc_ci/core/run_verbs.py": {
    "noqa PLW0108": 1
   },
-  ".ci/rediacc_ci/deploy/turnstile_drift.py": {
-   "noqa S310": 2
-  },
-  ".ci/rediacc_ci/deploy/wait_for_preview_worker.py": {
-   "noqa S310": 2
-  },
-  ".ci/rediacc_ci/drills/lib.py": {
-   "noqa S310": 2
-  },
-  ".ci/rediacc_ci/drills/wire.py": {
-   "noqa S310": 1
-  },
   ".ci/rediacc_ci/infra/obs_mirror.py": {
    "noqa S310": 1,
    "noqa S314": 2
-  },
-  ".ci/rediacc_ci/infra/vm_bake_image.py": {
-   "noqa S310": 1
   },
   ".ci/rediacc_ci/quality/account_probes.py": {
    "noqa PLW1509": 1
@@ -42,14 +27,8 @@
   ".ci/rediacc_ci/quality/ci_watch_recipe.py": {
    "noqa BLE001": 1
   },
-  ".ci/rediacc_ci/quality/proxy_image_smoke.py": {
-   "noqa S310": 2
-  },
   ".ci/rediacc_ci/security/rdc_sh_env_check.py": {
    "noqa BLE001": 1
-  },
-  ".ci/rediacc_ci/setup/host.py": {
-   "noqa S310": 1
   },
   ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": {
    "noqa PLC0415": 2

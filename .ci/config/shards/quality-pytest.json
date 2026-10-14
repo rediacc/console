@@ -313,6 +313,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_bws_env.py",
         "pytest:.ci/rediacc_ci/tests/test_core_devbox.py",
         "pytest:.ci/rediacc_ci/tests/test_core_dockerx.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_https.py",
         "pytest:.ci/rediacc_ci/tests/test_core_lease.py",
         "pytest:.ci/rediacc_ci/tests/test_core_platform.py",
         "pytest:.ci/rediacc_ci/tests/test_core_service.py",

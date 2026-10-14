@@ -19,6 +19,8 @@ import time
 import urllib.error
 import urllib.request
 
+from rediacc_ci.core import https
+
 SELF = "rediacc_ci.deploy.wait_for_preview_worker"
 
 
@@ -32,9 +34,9 @@ def _log(icon: str, message: str) -> None:
 def _get_ok(url: str, *, timeout: float = 10.0) -> str | None:
     """`curl -fsSL <url>`, quietly: the body on 2xx, None on any failure."""
     # A named User-Agent, never urllib's default: the rediacc.workers.dev zone answers "Python-urllib/3.x" with Cloudflare's 403 "error code: 1010" (a banned browser signature), so Smoke Test Preview timed out against a worker that was serving (run for 37e6ba453, job 109606175587); curl, which the bash original used, passes.
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as resp:  # noqa: S310
+        request = https.build_request(url, headers={"User-Agent": USER_AGENT}, http="loopback")
+        with https.urlopen(request, timeout=timeout, http="loopback") as resp:
             if 200 <= resp.status < 300:
                 return resp.read().decode("utf-8", "replace")
             return None

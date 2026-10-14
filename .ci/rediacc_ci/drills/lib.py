@@ -44,6 +44,7 @@ import urllib.request
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import https
 
 if TYPE_CHECKING:
     import http.cookiejar
@@ -455,8 +456,8 @@ class Drill:
 
     def _health(self, port: str | int, timeout: float = 2.0) -> bool:
         try:
-            with urllib.request.urlopen(  # noqa: S310 -- constant http loopback URL
-                "http://127.0.0.1:%s/health" % port, timeout=timeout
+            with https.urlopen(
+                "http://127.0.0.1:%s/health" % port, timeout=timeout, http="loopback"
             ) as r:
                 return 200 <= r.status < 300
         except (OSError, urllib.error.URLError, ValueError):
@@ -621,7 +622,7 @@ class Drill:
         if jar is not None:
             handlers.append(urllib.request.HTTPCookieProcessor(jar))
         opener = urllib.request.build_opener(*handlers)
-        request = urllib.request.Request(url, data=data, method=method)  # noqa: S310 -- the drill's own http gateway URL
+        request = https.build_request(url, data=data, method=method, http="any")
         if data is not None:
             request.add_header("Content-Type", "application/json")
         try:
