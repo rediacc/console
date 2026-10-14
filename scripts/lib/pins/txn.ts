@@ -563,6 +563,8 @@ export interface LockSeams {
   whileClaimed?: () => void;
   /** How long a claim held by a live taker is waited on before giving up; 2000 ms by default. */
   claimWaitMs?: number;
+  /** How long a live taker may hold the claim before a waiter refuses by name instead of reporting a held lock; 60000 ms by default. */
+  claimCeilingMs?: number;
 }
 
 /** rename(2) refuses to replace a non-empty directory with ENOTEMPTY or EEXIST. */
@@ -575,14 +577,25 @@ const pause = (ms: number): void => {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 };
 
+/** A taker's private claim directory, `.lock.claim.<pid>.<16-hex nonce>`; it exists from the taker's start until its claim is installed, and again while the claim is dropped. */
+const STAGE_NAME = /^\.lock\.claim\.(\d+)\.[0-9a-f]{16}$/;
+/** A cleared claim, `.lock.claim.dead.<16 hex>`. */
+const TOMB_NAME = /^\.lock\.claim\.dead\.[0-9a-f]{16}$/;
+
 /**
  * Take the one-run-at-a-time lock; null when a live run holds it.
  *
  * ONE PRIMITIVE: rename(2) of a directory onto a non-empty directory fails. Every change to the lock slot happens under the claim `.lock.claim`, a directory that appears only by renaming a private directory that already holds its `owner` identity line, so a claim is never visible empty or half-written, two takers can never both install one, and none of it needs hard links. An empty `.lock.claim` is debris no taker could be holding and is replaced by that same rename.
  *
- * A claim whose owner is dead (pid gone, or the pid now belongs to a process with another start time) is cleared by renaming it to `.lock.claim.dead.<hash of its owner line>`. The owner line carries a random nonce, so that name is unique to the claim judged, and the tomb is kept: a second taker that judged the same dead claim and moves late finds the tomb occupied, its rename fails, and the live claim installed since stays where it is. A plain remove, or a tomb name of its own, would let that late taker move the live claim away.
+ * A claim whose owner is dead (pid gone, or the pid now belongs to a process with another start time) is cleared by renaming it to `.lock.claim.dead.<hash of its owner line>`. The owner line carries a random nonce, so that name is unique to the claim judged, and the tomb is kept while any other taker is in progress: a second taker that judged the same dead claim and moves late finds the tomb occupied, its rename fails, and the live claim installed since stays where it is. A plain remove, or a tomb name of its own, would let that late taker move the live claim away. A claim with no owner file, which no taker writes, is cleared the same way under a name derived from its inode, which stays unique while the tomb holds that inode.
  *
- * Under the claim, the lock file `.lock` (`<pid>\n`) and its owner line `.lock.owner` are written to private names and renamed into place, so the lock also appears whole; a stale lock is moved to `.lock.stale.<pid>.<nonce>` and checked to be the one judged, and anything else it turns out to be goes back into the slot when the slot is still empty, or stays named in its tomb.
+ * Tombs are swept by a claim holder that finds no other live taker's private claim directory: every taker keeps one from its start until it installs its claim, so a taker that judged a cleared claim and has not yet acted is always visible by it, and with none present no late move can reach a swept name. A tomb whose owner is alive is never swept.
+ *
+ * A claim held by a live owner is never taken from it, however old: the owner can resume at any time, and a stolen claim would let two takers fill the slot. A claim held longer than `claimCeilingMs` (a taker holds it for a directory listing and a few renames) is refused by name with the owner's pid, so a stopped or wedged owner is reported rather than read as a held lock.
+ *
+ * Under the claim, the lock file `.lock` (`<pid>\n`) and its owner line `.lock.owner` are written to private names and renamed into place, so the lock also appears whole; a stale lock is moved to `.lock.stale.<pid>.<fresh 16-hex nonce>` and checked to be the one judged, and anything else it turns out to be goes back into the slot when the slot is still empty, or stays named in its tomb.
+ *
+ * A claim moved aside by mistake (only when a judged claim left the slot without its tomb, as by a hand removal) goes back once the slot is free; if it cannot within the wait, the mover refuses by naming the tomb, and the claim's holder, finding its claim in a tomb at release, removes it and refuses, since another taker may have held the claim meanwhile.
  */
 export function takeLock(root: string, seams: LockSeams = {}): (() => void) | null {
   const dir = journalRoot(root);
@@ -595,54 +608,115 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
   const stage = `${claim}.${process.pid}.${nonce}`;
   const tmp = `${lock}.${process.pid}.${nonce}`;
   const ownerTmp = `${owner}.${process.pid}.${nonce}`;
+  const waitMs = seams.claimWaitMs ?? 2000;
+  const ceilingMs = seams.claimCeilingMs ?? 60_000;
+
+  /** Puts a claim moved aside by mistake back once the slot is free; a holder that already took it back leaves nothing to do. */
+  const putBack = (tomb: string, text: string | null): void => {
+    const deadline = Date.now() + waitMs;
+    for (;;) {
+      try {
+        fs.renameSync(tomb, claim);
+        return;
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT') return;
+        if (!occupied(e)) throw e;
+      }
+      if (Date.now() >= deadline)
+        throw new Error(
+          `${tomb} holds a claim moved aside by mistake (owner ${text ?? 'none'}) and ${claim} has not been free to take it back; once ${claim} is gone, run: mv ${tomb} ${claim}`
+        );
+      pause(10);
+    }
+  };
+
+  /** Moves the claim to `tomb` and keeps it there only when `judged` says the moved directory is the one judged; anything else goes back. */
+  const clear = (tomb: string, judged: (moved: string) => boolean): void => {
+    try {
+      fs.renameSync(claim, tomb);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'ENOENT' || occupied(e)) return;
+      throw e;
+    }
+    // The tomb did not exist, so nobody had moved the judged claim yet and the slot still held it; the check below is the compare half of the swap.
+    if (!judged(tomb)) putBack(tomb, readText(path.join(tomb, 'owner')));
+  };
+
+  const inode = (p: string): string | null => {
+    const st = fs.statSync(p, { throwIfNoEntry: false });
+    return st ? `${st.dev} ${st.ino}` : null;
+  };
 
   const takeClaim = (): boolean => {
-    const deadline = Date.now() + (seams.claimWaitMs ?? 2000);
+    const deadline = Date.now() + waitMs;
     let ownerless = 0;
     for (let i = 0; i < 10_000; i++) {
       try {
         fs.renameSync(stage, claim);
+        // The owner line was written before any wait for the slot; its time is the install time from here on.
+        const now = new Date();
+        fs.utimesSync(path.join(claim, 'owner'), now, now);
         return true;
       } catch (e) {
         if (!occupied(e)) throw e;
       }
-      const text = readText(path.join(claim, 'owner'));
+      const ownerFile = path.join(claim, 'owner');
+      const text = readText(ownerFile);
       if (text === null) {
-        // Read between one claim's release and the next one's install; a claim stays ownerless only when it is debris no taker wrote, and that is refused by name rather than cleared.
-        if (++ownerless > 100)
-          throw new Error(
-            `${claim} holds no owner file, which no taker writes; it is left for inspection`
-          );
-        pause(1);
+        // Read between one claim's release and the next one's install; a claim that stays ownerless is debris no taker wrote.
+        if (++ownerless <= 100) {
+          pause(1);
+          continue;
+        }
+        ownerless = 0;
+        const ino = inode(claim);
+        if (ino === null || readText(ownerFile) !== null) continue;
+        clear(
+          `${claim}.dead.${sha(Buffer.from(`inode ${ino}`)).slice(0, 16)}`,
+          (moved) => readText(path.join(moved, 'owner')) === null && inode(moved) === ino
+        );
         continue;
       }
       ownerless = 0;
-      if (identityLive(text) !== null) {
+      const pid = identityLive(text);
+      if (pid !== null) {
+        const mtime = fs.statSync(ownerFile, { throwIfNoEntry: false })?.mtimeMs;
+        const heldMs = mtime === undefined ? 0 : Date.now() - mtime;
+        if (heldMs > ceilingMs && readText(ownerFile) === text)
+          throw new Error(
+            `${claim} has been held for ${Math.round(heldMs / 1000)}s by live pid ${pid}, and a pins run holds it for milliseconds; it is never taken from a live holder. Resume or end that process (kill -CONT ${pid}, or kill ${pid}), then run again`
+          );
         if (Date.now() >= deadline) return false;
         pause(10);
         continue;
       }
       seams.afterClaimVerdict?.();
-      const tomb = `${claim}.dead.${sha(Buffer.from(text)).slice(0, 16)}`;
-      try {
-        fs.renameSync(claim, tomb);
-      } catch (e) {
-        if ((e as NodeJS.ErrnoException).code === 'ENOENT' || occupied(e)) continue;
-        throw e;
-      }
-      // The tomb did not exist, so nobody had moved the judged claim yet and the slot still held it; the check below is the compare half of the swap, and a claim that is not the judged one goes back (a claim is never empty, so the rename back cannot replace one installed meanwhile).
-      if (readText(path.join(tomb, 'owner')) !== text) {
-        try {
-          fs.renameSync(tomb, claim);
-        } catch (e) {
-          if (!occupied(e)) throw e;
-        }
-      }
+      clear(
+        `${claim}.dead.${sha(Buffer.from(text)).slice(0, 16)}`,
+        (moved) => readText(path.join(moved, 'owner')) === text
+      );
     }
     throw new Error(`${claim}: no verdict after 10000 attempts`);
   };
 
   const dropClaim = (): void => {
+    if (readText(path.join(claim, 'owner')) !== self) {
+      // Moved aside by a taker acting on a mistaken verdict: take it back out of its tomb, and refuse, since the slot was open to another taker meanwhile.
+      for (const n of fs.readdirSync(dir)) {
+        if (!TOMB_NAME.test(n) || readText(path.join(dir, n, 'owner')) !== self) continue;
+        try {
+          fs.renameSync(path.join(dir, n), stage);
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code === 'ENOENT') return dropClaim();
+          throw e;
+        }
+        fs.rmSync(stage, { recursive: true, force: true });
+        throw new Error(
+          `${claim} was moved to ${n} while this taker held it, so another taker may have held the claim too; this run's lock is released and nothing it read under the claim is trusted`
+        );
+      }
+      throw new Error(`${claim} is not the claim this taker installed; it is left in place`);
+    }
     // Renamed away whole before removal: removing the directory in place would leave it empty for a moment, and an empty claim is one any taker may replace.
     fs.renameSync(claim, stage);
     if (readText(path.join(stage, 'owner')) !== self) {
@@ -669,7 +743,7 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
       }
       if (lockHolder(text, readText(owner)) !== null) return null;
       seams.afterStaleVerdict?.();
-      const tomb = `${lock}.stale.${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
+      const tomb = `${lock}.stale.${process.pid}.${crypto.randomBytes(8).toString('hex')}`;
       try {
         fs.renameSync(lock, tomb);
       } catch (e) {
@@ -687,22 +761,42 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
     return null;
   };
 
+  /** Under the claim: a killed taker's private names (each carries its creator's pid, and no live taker uses one whose creator is dead), then, with no other taker in progress, the tombs of dead claims. Stale locks' tombs stay. */
+  const sweep = (): void => {
+    let others = false;
+    for (const n of fs.readdirSync(dir)) {
+      const m = /^\.lock(?:\.claim|\.owner)?\.(\d+)\.[0-9a-f]{16}$/.exec(n);
+      if (!m) continue;
+      if (livePid(m[1]) === null) fs.rmSync(path.join(dir, n), { recursive: true, force: true });
+      else if (STAGE_NAME.test(n)) others = true;
+    }
+    if (others) return;
+    for (const n of fs.readdirSync(dir))
+      if (TOMB_NAME.test(n) && identityLive(readText(path.join(dir, n, 'owner'))) === null)
+        fs.rmSync(path.join(dir, n), { recursive: true, force: true });
+  };
+
   try {
     fs.mkdirSync(stage);
     fs.writeFileSync(path.join(stage, 'owner'), `${self}\n`);
     if (!takeClaim()) return null;
+    let got: (() => void) | null = null;
     try {
       seams.whileClaimed?.();
-      // A taker killed mid-way leaves its private names behind; each carries its creator's pid, and no live taker can be using one whose creator is dead. The dead claims' tombs and the stale locks' tombs are not private names and stay.
-      for (const n of fs.readdirSync(dir)) {
-        const m = /^\.lock(?:\.claim|\.owner)?\.(\d+)\.[0-9a-f]{16}$/.exec(n);
-        if (m && livePid(m[1]) === null)
-          fs.rmSync(path.join(dir, n), { recursive: true, force: true });
-      }
-      return fillSlot();
-    } finally {
+      sweep();
+      got = fillSlot();
+    } catch (e) {
       dropClaim();
+      throw e;
     }
+    try {
+      dropClaim();
+    } catch (e) {
+      // A claim that cannot be dropped as installed outranks the slot's verdict, so the lock this run took is given back.
+      got?.();
+      throw e;
+    }
+    return got;
   } finally {
     fs.rmSync(stage, { recursive: true, force: true });
     fs.rmSync(tmp, { force: true });

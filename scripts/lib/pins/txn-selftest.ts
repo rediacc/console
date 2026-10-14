@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
-import { type ControlCase, runControls } from '../controls.js';
+import { type ControlCase, type RunControlsOptions, runControls } from '../controls.js';
 import {
   journalRoot,
   liveLockPid,
@@ -66,31 +66,16 @@ function noHardLinkLock(): ControlCase {
   };
 }
 
-/** Runs `body` with hard links refused (EPERM) and one-shot hooks on fs calls, restoring fs after. */
+/** Runs `body` with hard links refused (EPERM) and a hook after every successful rename, restoring fs after; the takers' race windows are reached through the LockSeams, and this hook only watches. */
 function withFs<T>(
-  hooks: {
-    rmSync?: (p: fs.PathLike) => void;
-    existsSync?: (p: fs.PathLike) => void;
-    renameSync?: (from: fs.PathLike, to: fs.PathLike) => void;
-  },
+  hooks: { renameSync?: (from: fs.PathLike, to: fs.PathLike) => void },
   body: () => T
 ): T {
   const realLink = fs.linkSync;
-  const realRm = fs.rmSync;
-  const realExists = fs.existsSync;
   const realRename = fs.renameSync;
   fs.linkSync = (): void => {
     throw Object.assign(new Error('operation not permitted'), { code: 'EPERM' });
   };
-  fs.rmSync = ((p: fs.PathLike, o?: fs.RmOptions) => {
-    hooks.rmSync?.(p);
-    return realRm(p, o);
-  }) as typeof fs.rmSync;
-  fs.existsSync = ((p: fs.PathLike) => {
-    const r = realExists(p);
-    hooks.existsSync?.(p);
-    return r;
-  }) as typeof fs.existsSync;
   fs.renameSync = ((from: fs.PathLike, to: fs.PathLike) => {
     realRename(from, to);
     hooks.renameSync?.(from, to);
@@ -100,14 +85,12 @@ function withFs<T>(
   } finally {
     fs.renameSync = realRename;
     fs.linkSync = realLink;
-    fs.rmSync = realRm;
-    fs.existsSync = realExists;
   }
 }
 
-/** Sets a path's times a minute into the past, older than any age threshold a claim could be judged by. */
-const ageMinute = (p: string): void => {
-  const t = new Date(Date.now() - 60_000);
+/** Sets a path's times `n` minutes into the past. */
+const ageMinutes = (p: string, n: number): void => {
+  const t = new Date(Date.now() - n * 60_000);
   fs.utimesSync(p, t, t);
 };
 
@@ -119,7 +102,7 @@ function staleClaimTwoTakers(): ControlCase {
   const claim = `${lock}.claim`;
   fs.mkdirSync(claim, { recursive: true });
   fs.writeFileSync(path.join(claim, 'owner'), '999999999 - dead0\n');
-  ageMinute(claim);
+  ageMinutes(claim, 1);
   const live = `${process.ppid} - feed1`;
   let peer: (() => void) | null = null;
   let peerRan = false;
@@ -140,7 +123,7 @@ function staleClaimTwoTakers(): ControlCase {
   let first: (() => void) | null = null;
   let threw = '';
   try {
-    first = withFs({ rmSync: (p) => p === claim && runPeer(), renameSync: watchMove }, () =>
+    first = withFs({ renameSync: watchMove }, () =>
       takeLock(root, { afterClaimVerdict: runPeer, claimWaitMs: 0 })
     );
   } catch (err) {
@@ -165,44 +148,197 @@ function staleClaimTwoTakers(): ControlCase {
   };
 }
 
-/** A holder that stays inside its claim longer than any age threshold keeps it: a second taker arriving then is refused, and the first holder's lock is the only one. */
+/** A live holder keeps its claim however long it holds it: a taker arriving within the ceiling is refused as a held lock, one arriving past it is refused by name with the holder's pid and the command to run, neither moves the claim, and the first holder's lock is the only one. */
 function slowLiveHolder(): ControlCase {
   const root = tmpRoot();
   const jr = journalRoot(root);
   const lock = path.join(jr, '.lock');
   const claim = `${lock}.claim`;
-  let peer: (() => void) | null = null;
+  let early: (() => void) | null = null;
+  let late: (() => void) | null = null;
+  let lateThrew = '';
   let peerRan = false;
   let peerLock = '';
+  let claimMoved = false;
   const runPeer = (): void => {
     if (peerRan) return;
     peerRan = true;
-    ageMinute(claim);
-    if (fs.existsSync(path.join(claim, 'owner'))) ageMinute(path.join(claim, 'owner'));
-    peer = takeLock(root, { claimWaitMs: 0 });
+    const mine = fs.readFileSync(path.join(claim, 'owner'), 'utf8');
+    early = takeLock(root, { claimWaitMs: 0 });
+    ageMinutes(path.join(claim, 'owner'), 2);
+    try {
+      late = takeLock(root, { claimWaitMs: 0 });
+    } catch (err) {
+      lateThrew = (err as Error).message;
+    }
+    claimMoved = fs.readFileSync(path.join(claim, 'owner'), 'utf8') !== mine;
     peerLock = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
   };
   let first: (() => void) | null = null;
   let threw = '';
   try {
-    first = withFs({ existsSync: (p) => p === lock && runPeer() }, () =>
-      takeLock(root, { whileClaimed: runPeer })
-    );
+    first = withFs({}, () => takeLock(root, { whileClaimed: runPeer }));
   } catch (err) {
     threw = (err as Error).message;
   }
   const held = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
   fs.rmSync(root, { recursive: true, force: true });
   return {
-    name: 'lock: a live holder slower than any age threshold keeps its claim, and a second taker arriving then is refused',
+    name: "lock: a live holder keeps its claim however long; a taker within the ceiling reads a held lock, one past it is refused naming the holder's pid",
     ok:
       peerRan &&
       first !== null &&
-      peer === null &&
+      early === null &&
+      late === null &&
+      lateThrew.includes(`live pid ${process.pid}`) &&
+      lateThrew.includes(`kill -CONT ${process.pid}`) &&
+      !claimMoved &&
       peerLock === '<absent>' &&
       held === `${process.pid}\n` &&
       threw === '',
-    detail: `peerRan=${peerRan} first=${first !== null} peer=${peer !== null} lockDuringHold=${JSON.stringify(peerLock)} lock=${JSON.stringify(held)} threw=${threw}`,
+    detail: `peerRan=${peerRan} first=${first !== null} early=${early !== null} late=${late !== null} lateThrew=${JSON.stringify(lateThrew)} claimMoved=${claimMoved} lockDuringHold=${JSON.stringify(peerLock)} lock=${JSON.stringify(held)} threw=${threw}`,
+  };
+}
+
+/** A non-empty claim with no owner file, which no taker writes, is cleared rather than refused on every run, and the cleared directory is swept once no other taker is in progress. */
+function ownerlessClaim(): ControlCase {
+  const root = tmpRoot();
+  const jr = journalRoot(root);
+  const lock = path.join(jr, '.lock');
+  const claim = `${lock}.claim`;
+  fs.mkdirSync(claim, { recursive: true });
+  fs.writeFileSync(path.join(claim, 'junk'), 'x\n');
+  let taken: (() => void) | null = null;
+  let threw = '';
+  try {
+    taken = takeLock(root);
+  } catch (err) {
+    threw = (err as Error).message;
+  }
+  const held = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
+  taken?.();
+  const left = fs.readdirSync(jr).filter((n) => n.startsWith('.lock.claim'));
+  fs.rmSync(root, { recursive: true, force: true });
+  return {
+    name: 'lock: an ownerless claim is cleared and swept, not refused on every run',
+    ok: taken !== null && held === `${process.pid}\n` && left.length === 0 && threw === '',
+    detail: `took=${taken !== null} lock=${JSON.stringify(held)} left=${left.join(',')} threw=${threw}`,
+  };
+}
+
+/** A taker acting on a dead claim that left the slot without its tomb (a hand removal) moves the live claim installed since; when a third claim fills the slot before the put-back, the mover refuses by naming the tomb that holds the live claim, rather than leaving it stranded unreported. */
+function putBackRefused(): ControlCase {
+  const root = tmpRoot();
+  const jr = journalRoot(root);
+  const lock = path.join(jr, '.lock');
+  const claim = `${lock}.claim`;
+  fs.mkdirSync(claim, { recursive: true });
+  fs.writeFileSync(path.join(claim, 'owner'), '999999999 - dead1\n');
+  const holder = `${process.ppid} - feed3`;
+  const third = `${process.ppid} - feed4`;
+  const install = (text: string): void => {
+    fs.mkdirSync(claim);
+    fs.writeFileSync(path.join(claim, 'owner'), `${text}\n`);
+  };
+  let tomb = '';
+  const refill = (from: fs.PathLike, to: fs.PathLike): void => {
+    if (tomb || from !== claim || !path.basename(String(to)).startsWith('.lock.claim.dead.'))
+      return;
+    tomb = String(to);
+    install(third);
+  };
+  let taken: (() => void) | null = null;
+  let threw = '';
+  try {
+    taken = withFs({ renameSync: refill }, () =>
+      takeLock(root, {
+        claimWaitMs: 50,
+        afterClaimVerdict: () => {
+          fs.rmSync(claim, { recursive: true, force: true });
+          install(holder);
+        },
+      })
+    );
+  } catch (err) {
+    threw = (err as Error).message;
+  }
+  const inTomb =
+    tomb && fs.existsSync(tomb)
+      ? fs.readFileSync(path.join(tomb, 'owner'), 'utf8').trim()
+      : '<absent>';
+  const inSlot = fs.existsSync(claim)
+    ? fs.readFileSync(path.join(claim, 'owner'), 'utf8').trim()
+    : '<absent>';
+  fs.rmSync(root, { recursive: true, force: true });
+  return {
+    name: 'lock: a mis-moved live claim that cannot go back is refused by naming its tomb, not stranded unreported',
+    ok:
+      taken === null &&
+      tomb !== '' &&
+      threw.includes(`mv ${tomb} ${claim}`) &&
+      inTomb === holder &&
+      inSlot === third,
+    detail: `took=${taken !== null} tomb=${path.basename(tomb)} inTomb=${JSON.stringify(inTomb)} inSlot=${JSON.stringify(inSlot)} threw=${threw}`,
+  };
+}
+
+/** A holder whose claim was moved into a tomb while it held it takes it back out, leaves the claim now in the slot alone, gives back the lock it took and refuses. */
+function claimMovedWhileHeld(): ControlCase {
+  const root = tmpRoot();
+  const jr = journalRoot(root);
+  const lock = path.join(jr, '.lock');
+  const claim = `${lock}.claim`;
+  const tomb = `${claim}.dead.${'12'.repeat(8)}`;
+  const other = `${process.ppid} - feed6`;
+  let taken: (() => void) | null = null;
+  let threw = '';
+  try {
+    taken = takeLock(root, {
+      whileClaimed: () => {
+        fs.renameSync(claim, tomb);
+        fs.mkdirSync(claim);
+        fs.writeFileSync(path.join(claim, 'owner'), `${other}\n`);
+      },
+    });
+  } catch (err) {
+    threw = (err as Error).message;
+  }
+  const inSlot = fs.existsSync(claim)
+    ? fs.readFileSync(path.join(claim, 'owner'), 'utf8').trim()
+    : '<absent>';
+  const tombLeft = fs.existsSync(tomb);
+  const held = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
+  fs.rmSync(root, { recursive: true, force: true });
+  return {
+    name: 'lock: a holder whose claim was moved aside takes it back out of its tomb, leaves the slot alone, gives back its lock and refuses',
+    ok:
+      taken === null &&
+      threw.includes('was moved to') &&
+      !tombLeft &&
+      inSlot === other &&
+      held === '<absent>',
+    detail: `took=${taken !== null} tombLeft=${tombLeft} inSlot=${JSON.stringify(inSlot)} lock=${JSON.stringify(held)} threw=${threw}`,
+  };
+}
+
+/** With no other taker in progress, a claim holder sweeps the tombs of dead claims and keeps a tomb whose owner is alive. */
+function deadTombsSwept(): ControlCase {
+  const root = tmpRoot();
+  const jr = journalRoot(root);
+  const deadTomb = `.lock.claim.dead.${'cd'.repeat(8)}`;
+  const liveTomb = `.lock.claim.dead.${'ef'.repeat(8)}`;
+  fs.mkdirSync(path.join(jr, deadTomb), { recursive: true });
+  fs.writeFileSync(path.join(jr, deadTomb, 'owner'), '999999999 - dead2\n');
+  fs.mkdirSync(path.join(jr, liveTomb));
+  fs.writeFileSync(path.join(jr, liveTomb, 'owner'), `${process.ppid} - feed5\n`);
+  const release = takeLock(root);
+  const left = fs.readdirSync(jr);
+  release?.();
+  fs.rmSync(root, { recursive: true, force: true });
+  return {
+    name: "lock: with no other taker in progress the dead claims' tombs are swept, a live-owned one is kept",
+    ok: release !== null && !left.includes(deadTomb) && left.includes(liveTomb),
+    detail: `left=${left.join(',')}`,
   };
 }
 
@@ -214,10 +350,15 @@ function noHardLinkPutBack(): ControlCase {
   fs.mkdirSync(jr, { recursive: true });
   fs.writeFileSync(lock, '999999999\n');
   const fresh = `${process.ppid}\n`;
+  const staleNames: string[] = [];
+  const watch = (_from: fs.PathLike, to: fs.PathLike): void => {
+    if (path.basename(String(to)).startsWith('.lock.stale.'))
+      staleNames.push(path.basename(String(to)));
+  };
   let taken: (() => void) | null = null;
   let threw = '';
   try {
-    taken = withFs({}, () =>
+    taken = withFs({ renameSync: watch }, () =>
       takeLock(root, {
         afterStaleVerdict: () => {
           fs.rmSync(lock, { force: true });
@@ -232,9 +373,15 @@ function noHardLinkPutBack(): ControlCase {
   const tombs = fs.readdirSync(jr).filter((n) => n.startsWith('.lock.stale.'));
   fs.rmSync(root, { recursive: true, force: true });
   return {
-    name: 'lock: without hard links a live lock moved aside by mistake goes back into its empty slot',
-    ok: taken === null && held === fresh && tombs.length === 0 && threw === '',
-    detail: `took=${taken !== null} lock=${JSON.stringify(held)} tombs=${tombs.length} threw=${threw}`,
+    name: 'lock: without hard links a live lock moved aside by mistake goes back into its empty slot, from a tomb named .lock.stale.<pid>.<16-hex nonce>',
+    ok:
+      taken === null &&
+      held === fresh &&
+      tombs.length === 0 &&
+      staleNames.length > 0 &&
+      staleNames.every((n) => /^\.lock\.stale\.\d+\.[0-9a-f]{16}$/.test(n)) &&
+      threw === '',
+    detail: `took=${taken !== null} lock=${JSON.stringify(held)} tombs=${tombs.length} staleNames=${staleNames.join(',')} threw=${threw}`,
   };
 }
 
@@ -341,27 +488,58 @@ function liveRunRefusesReplay(): ControlCase {
   };
 }
 
+/** The selftest's exit code: 1 with a VACUOUS line when the case list is below the floor, otherwise the controls' verdict. */
+export function txnSelftestExit(cases: ControlCase[], opts: RunControlsOptions = {}): number {
+  const err = opts.err ?? ((l: string) => console.error(l));
+  if (cases.length < MIN_TXN_CASES) {
+    err(`VACUOUS: ${cases.length} txn control(s), below the floor of ${MIN_TXN_CASES}`);
+    return 1;
+  }
+  return runControls(cases, opts) === 0 ? 0 : 1;
+}
+
+/** A case list one short of the floor exits 1 with its VACUOUS line before any control runs, and one at the floor runs its controls. */
+function floorRefusesShortRun(): ControlCase {
+  const lines: string[] = [];
+  const opts = { log: (l: string) => lines.push(l), err: (l: string) => lines.push(l) };
+  const passing = (n: number): ControlCase[] =>
+    Array.from({ length: n }, (_, i) => ({ name: `planted ${i}`, ok: true }));
+  const short = txnSelftestExit(passing(MIN_TXN_CASES - 1), opts);
+  const shortLines = lines.splice(0);
+  const full = txnSelftestExit(passing(MIN_TXN_CASES), opts);
+  return {
+    name: 'floor: a run one control short of the floor exits 1 as VACUOUS, a run at the floor runs its controls',
+    ok:
+      short === 1 &&
+      shortLines.length === 1 &&
+      shortLines[0].startsWith('VACUOUS:') &&
+      full === 0 &&
+      lines.length === MIN_TXN_CASES,
+    detail: `short=${short} shortLines=${JSON.stringify(shortLines)} full=${full} fullLines=${lines.length}`,
+  };
+}
+
 export function txnCases(): ControlCase[] {
   return [
     noHardLinkLock(),
     staleClaimTwoTakers(),
     slowLiveHolder(),
+    ownerlessClaim(),
+    putBackRefused(),
+    claimMovedWhileHeld(),
+    deadTombsSwept(),
     noHardLinkPutBack(),
     reusedPid(),
     deadTakerDebris(),
     symlinkedStamp(),
     liveRunRefusesReplay(),
+    floorRefusesShortRun(),
   ];
 }
 
 // The two directory listings above are each judged against a file the case wrote itself, so an empty listing fails its case; the floor guards the case list, so a run that drops controls is refused rather than reported green.
-const MIN_TXN_CASES = 8;
+const MIN_TXN_CASES = 13;
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const cases = txnCases();
-  if (cases.length < MIN_TXN_CASES) {
-    console.error(`VACUOUS: ${cases.length} txn control(s), below the floor of ${MIN_TXN_CASES}`);
-    process.exit(1);
-  }
-  process.exit(runControls(cases) === 0 ? 0 : 1);
+  process.exit(txnSelftestExit(txnCases()));
 }
