@@ -141,7 +141,7 @@ def configured_window(project_dir):
         if v:
             return max(WINDOW_MIN, min(WINDOW_MAX, v)), "env"
     for f in _settings_files(project_dir):
-        # An unreadable settings file is not this hook's problem: it yields no window and the next source is tried.
+        # An unreadable settings file, or one that parses to something other than an object (`[]`, `7`), is not this hook's problem: it yields no window and the next source is tried.
         data = _json_or_none(f)
         if not isinstance(data, dict):
             continue

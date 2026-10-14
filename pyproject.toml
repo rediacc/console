@@ -369,7 +369,7 @@ ignore = [
     "PLC0415",
 ]
 ".ci/rediacc_ci/core/xml_trusted.py" = [
-    # BLOCKER: this module holds the only xml.etree parse calls, and every caller passes a document it produced or verified itself (a junit file written a moment earlier, RPM repo metadata after its signature or checksum check); ElementTree expands no external entities; every other file calls it and stays held to S314
+    # BLOCKER: this module holds the only xml.etree parse calls, and every caller passes a document this repository's own CI produced or verified (a junit file written a moment earlier or an earlier run's unit-duration artifact, RPM repo metadata after its signature or checksum check); ElementTree expands no external entities; every other file calls it and stays held to S314
     "S314",
 ]
 # THE RESIDUE: one file each, every entry re-proved on every lint run by rediacc_ci.quality.lint_config_liveness.

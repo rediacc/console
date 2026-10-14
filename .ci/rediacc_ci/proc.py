@@ -382,7 +382,7 @@ def retry_command(
 def exec_replace(argv: Sequence[str], *, env: Mapping[str, str] | None = None) -> NoReturn:
     """Replace this process with `argv`, searching PATH for `argv[0]`; `env` is the child's whole environment, or this process's own when None.
 
-    THE ONE SITE for `os.exec*` in this package, so ruff's S606 (process started without a shell) is reported here once and per-file-ignored here with its reason, rather than at the twelve forwarding shims that each become the command they wrap. Raises OSError when the program cannot start, exactly as the `os` call does; nothing after a successful exec runs.
+    THE ONE SITE for `os.exec*` in this package apart from `core_lease._exec_replace`, which restates it because core_lease.py is stdlib-only and runs by path where `rediacc_ci` is not importable, so ruff's S606 (process started without a shell) is reported here once and per-file-ignored here with its reason, rather than at the twelve forwarding shims that each become the command they wrap. Raises OSError when the program cannot start, exactly as the `os` call does; nothing after a successful exec runs.
     """
     args = list(argv)
     if env is None:
