@@ -415,7 +415,7 @@ name set and an empty exclusion set rather than reporting zero findings.
 * **Its location is an implementation detail.** Two readers, both through
 `policy_path("worklist-env-registry.json")`: its own gate, and `env_manifest.load_worklist_classes`, which renders the `class` fields.
 
-The defect it exists for: a typo'd name reads as UNSET. `WORKLIST_FOCUS` defaults to `on`, so a misspelling leaves it running while the author believes it is off. The agent-hint, push-back and cadence switches were of the same shape until they moved into `agent/plans/QUEUE.md`, where a misspelled key is a reported problem instead of a silent default.
+The defect it exists for: a typo'd name reads as UNSET, so a misspelled flag that defaults to `on` leaves it running while the author believes it is off. `WORKLIST_FOCUS` was that shape until agent/plans/PLAN-stop-hook-effort.md removed it, and the agent-hint, push-back and cadence switches were too until they moved into `agent/plans/QUEUE.md`, where a misspelled key is a reported problem instead of a silent default.
 
 ---
 

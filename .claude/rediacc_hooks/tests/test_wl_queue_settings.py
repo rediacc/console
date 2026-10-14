@@ -1,4 +1,4 @@
-"""The QUEUE.md settings block: reader, writer, solo marker, the `--queue-set` verb and the RQ-SETTINGS finding (agent/plans/PLAN-stop-hook-turbo.md boxes T1, T3, T15, T23).
+"""The QUEUE.md settings block: reader, writer, solo marker, the `--queue-set` verb and the RQ-SETTINGS finding (agent/plans/PLAN-stop-hook-turbo.md boxes T1, T3, T15, T23), and the effort level that resolves into it (agent/plans/PLAN-stop-hook-effort.md box E2).
 
 The parser tests drive `wl_planqueue` directly; the verb tests drive the real CLI through `wlfix`; the gate test runs `check_plan_record.py` against a fixture root. Every FIRE has an inverse that differs by one planted fact.
 """
@@ -39,7 +39,7 @@ def block(body: str) -> str:
 
 
 ALL_KEYS = (
-    "stop_hook",
+    "effort",
     "turbo",
     "turbo_push",
     "batch_size",
@@ -47,26 +47,110 @@ ALL_KEYS = (
     "writer_cap",
     "commit_remind_min",
     "backup_push_h",
+    "judge",
     "cadence",
     "agent_hint",
     "agent_pushback",
-    "judge",
 )
+E = wlfix.import_wl("wl_effort")
 
 
 def test_defaults_when_there_is_no_settings_section():
     got, problems = PQ.settings(HEAD + TAIL)
     assert problems == []
     assert got == PQ.Settings()
-    assert (got.stop_hook, got.turbo, got.batch_size, got.writer_cap) == (True, False, 1, 4)
-    assert (got.cadence, got.agent_hint, got.agent_pushback, got.judge) == (True,) * 4
+    # The fail-safe level is `high`: every check and the full judge, as before the dial existed.
+    assert (got.effort, got.turbo, got.batch_size, got.writer_cap) == ("high", False, 1, 4)
+    assert (got.cadence, got.agent_hint, got.agent_pushback, got.judge) == (
+        True,
+        True,
+        True,
+        "full",
+    )
     assert got.notes == {}
     assert PQ.settings("") == (PQ.Settings(), [])
+
+
+# ---- the effort level (agent/plans/PLAN-stop-hook-effort.md E2) ------------------------------------
+
+
+@pytest.mark.parametrize("level", ["quiet", "low", "smart", "high", "ultra"])
+def test_every_level_resolves_its_bundle(level):
+    got, problems = PQ.settings(block("effort: %s" % level))
+    assert problems == []
+    want = E.bundle(level)
+    assert set(want) == set(E.BUNDLE_TYPES), want  # the table gives every level every switch
+    assert got.effort == level
+    for key, value in want.items():
+        assert getattr(got, key) == value, (level, key)
+    assert PQ.sources(block("effort: %s" % level))["judge"] == "effort %s" % level
+
+
+def test_the_levels_differ_where_the_plan_says_they_do():
+    by = {lv: PQ.settings(block("effort: %s" % lv))[0] for lv in E.LEVELS}
+    assert [by[lv].judge for lv in E.LEVELS] == ["off", "off", "core", "full", "full"]
+    assert [by[lv].agent_pushback for lv in E.LEVELS] == [False, False, True, True, True]
+    # ultra is high plus the throughput bundle, and nothing else.
+    assert (by["ultra"].turbo, by["ultra"].writer_cap, by["ultra"].plan_concurrency) == (
+        True,
+        15,
+        5,
+    )
+    assert by["ultra"].batch_size == 3
+    assert (
+        dataclasses.replace(
+            by["ultra"], effort="high", turbo=False, writer_cap=4, plan_concurrency=1, batch_size=1
+        )
+        == by["high"]
+    )
+
+
+def test_an_explicit_override_wins_over_the_bundle():
+    got, problems = PQ.settings(
+        block("effort: ultra\nwriter_cap: 6 -- operator cap\njudge: core\nagent_hint: off")
+    )
+    assert problems == []
+    assert (got.effort, got.turbo, got.writer_cap, got.judge, got.agent_hint) == (
+        "ultra",
+        True,
+        6,
+        "core",
+        False,
+    )
+    src = PQ.sources(block("effort: ultra\nwriter_cap: 6"))
+    assert (src["effort"], src["writer_cap"], src["turbo"]) == (
+        "QUEUE.md",
+        "QUEUE.md",
+        "effort ultra",
+    )
+    # CONTROL: without the override the bundle's value stands.
+    assert PQ.settings(block("effort: ultra"))[0].writer_cap == 15
+
+
+def test_stop_hook_is_gone_and_quiet_replaces_it():
+    got, problems = PQ.settings(block("stop_hook: off"))
+    assert any("unknown key 'stop_hook'" in p for p in problems), problems
+    assert got.effort == "high"  # an unknown line never quiets the hook
+    assert not hasattr(got, "stop_hook")
+    assert PQ.settings(block("effort: quiet"))[0].judge == "off"
+
+
+def test_an_empty_value_drops_the_override_so_the_level_decides():
+    text = block("effort: smart\nturbo: on -- why\nwriter_cap: 9")
+    new = PQ.set_settings(text, {"turbo": "", "writer_cap": ""})
+    assert "turbo:" not in new
+    assert "writer_cap:" not in new
+    got, problems = PQ.settings(new)
+    assert problems == []
+    assert (got.turbo, got.writer_cap) == (False, 4)
+    with pytest.raises(ValueError, match="unknown key"):
+        PQ.set_settings(text, {"stop_hook": ""})
 
 
 def test_the_dataclass_is_frozen_with_the_contract_fields():
     names = [f.name for f in dataclasses.fields(PQ.Settings)]
     assert names == [*ALL_KEYS, "notes"]
+    assert tuple(ALL_KEYS) == PQ.KNOWN_KEYS
     with pytest.raises(dataclasses.FrozenInstanceError):
         PQ.Settings().turbo = True  # type: ignore[misc]
 
@@ -74,20 +158,20 @@ def test_the_dataclass_is_frozen_with_the_contract_fields():
 def test_every_key_parses_and_notes_are_kept():
     got, problems = PQ.settings(
         block(
-            "stop_hook: off -- paused by the operator\nturbo: on\nbatch_size: 7\n"
+            "effort: low -- quiet for the operator\nturbo: on\nbatch_size: 7\n"
             "writer_cap: 2 -- cap -- with a second separator\ncadence: off\n"
             "agent_hint: off\nagent_pushback: off\njudge: off"
         )
     )
     assert problems == []
-    assert (got.stop_hook, got.turbo, got.batch_size, got.writer_cap) == (False, True, 7, 2)
-    assert (got.cadence, got.agent_hint, got.agent_pushback, got.judge) == (False,) * 4
+    assert (got.effort, got.turbo, got.batch_size, got.writer_cap) == ("low", True, 7, 2)
+    assert (got.cadence, got.agent_hint, got.agent_pushback, got.judge) == (False,) * 3 + ("off",)
     assert got.notes == {
-        "stop_hook": "paused by the operator",
+        "effort": "quiet for the operator",
         "writer_cap": "cap -- with a second separator",
     }
     # CONTROL: the same block with the values flipped differs, so the test reads the values.
-    other, _ = PQ.settings(block("stop_hook: on\nturbo: off\nbatch_size: 1\nwriter_cap: 4"))
+    other, _ = PQ.settings(block("effort: high\nturbo: off\nbatch_size: 1\nwriter_cap: 4"))
     assert other != got
 
 
@@ -105,13 +189,15 @@ def test_an_unknown_key_is_a_problem_and_the_rest_still_parse():
         "turbo: onn",
         "turbo: true",
         "turbo:",
-        "stop_hook: of",
+        "effort: medium",
+        "effort: off",
         "batch_size: 0",
         "batch_size: -1",
         "batch_size: two",
         "batch_size: 1.5",
         "writer_cap: 0",
         "judge: ON",
+        "judge: on",
         "turbo_push: batch_end",
         "turbo_push: PR",
         "turbo_push: on",
@@ -142,7 +228,9 @@ def test_lf7_turbo_push_and_backup_push_h_parse_render_and_default():
         assert got.notes == {"turbo_push": "why"}
         line = PQ.mode_line(got)
         assert "turbo on; turbo_push %s; batch_size 1;" % push in line, line
-        assert "commit_remind_min 15; backup_push_h %s; cadence on" % hours in line, line
+        assert "commit_remind_min 15; backup_push_h %s; judge full; cadence on" % hours in line, (
+            line
+        )
     # 0 is a value for backup_push_h (the advisory is off) and still a typo for every other integer key.
     assert PQ.settings(block("backup_push_h: 0"))[1] == []
     assert PQ.settings(block("writer_cap: 0"))[1] != []
@@ -154,10 +242,10 @@ def test_lf7_turbo_push_and_backup_push_h_parse_render_and_default():
 
 
 def test_a_duplicate_key_falls_back_to_the_default():
-    got, problems = PQ.settings(block("stop_hook: off\nstop_hook: off\nturbo: on"))
-    assert got.stop_hook is True
+    got, problems = PQ.settings(block("effort: quiet\neffort: quiet\nturbo: on"))
+    assert got.effort == "high"
     assert got.turbo is True
-    assert any("stop_hook" in p and "2 times" in p for p in problems), problems
+    assert any("effort" in p and "2 times" in p for p in problems), problems
 
 
 def test_a_line_that_is_not_key_value_is_a_problem():
@@ -181,9 +269,9 @@ def test_a_fence_outside_the_section_is_reported():
 
 
 def test_the_section_below_promoted_is_reported_and_not_read():
-    text = HEAD + TAIL + "\n## Settings\n\n```stop-hook\nturbo: on\nstop_hook: off\n```\n"
+    text = HEAD + TAIL + "\n## Settings\n\n```stop-hook\nturbo: on\neffort: quiet\n```\n"
     got, problems = PQ.settings(text)
-    assert (got.turbo, got.stop_hook) == (False, True)  # the fail-safe direction
+    assert (got.turbo, got.effort) == (False, "high")  # the fail-safe direction
     assert any("below" in p for p in problems), problems
 
 
@@ -246,13 +334,13 @@ def fence_span(text: str) -> tuple[int, int]:
 
 
 def test_set_settings_rewrites_only_the_fence_lines():
-    text = block("stop_hook: on -- keep this note\nturbo: off -- old reason\nbatch_size: 1")
+    text = block("effort: smart -- keep this note\nturbo: off -- old reason\nbatch_size: 1")
     new = PQ.set_settings(text, {"turbo": "on", "writer_cap": "2"}, note="operator test")
     lo, hi = fence_span(text)
     nlo, nhi = fence_span(new)
     assert (text[:lo], text[hi:]) == (new[:nlo], new[nhi:])  # every other byte identical
     assert new[nlo:nhi] == (
-        "stop_hook: on -- keep this note\nturbo: on -- operator test\nbatch_size: 1\n"
+        "effort: smart -- keep this note\nturbo: on -- operator test\nbatch_size: 1\n"
         "writer_cap: 2 -- operator test\n"
     )
     got, problems = PQ.settings(new)
@@ -285,7 +373,11 @@ def test_set_settings_creates_the_section_above_promoted():
     assert new.endswith(TAIL)
     lo, hi = fence_span(new)
     keys = [line.split(":")[0] for line in new[lo:hi].splitlines()]
-    assert keys == list(ALL_KEYS)  # all nine, in the documented order
+    assert keys == [
+        "effort",
+        "turbo",
+        "batch_size",
+    ]  # the level, then what was set, in KNOWN_KEYS order
     got, problems = PQ.settings(new)
     assert problems == []
     assert (got.turbo, got.batch_size) == (True, 3)
@@ -321,8 +413,9 @@ def test_set_settings_refuses_a_structurally_broken_block():
 def test_sources_name_where_each_value_comes_from():
     got = PQ.sources(block("turbo: on\nbatch_size: x"))
     assert got["turbo"] == "QUEUE.md"
-    assert got["batch_size"] == "default"  # a bad value falls back, so it is not the file's
-    assert got["judge"] == "default"
+    assert got["batch_size"] == "effort high"  # a bad value falls back to the level's bundle
+    assert got["judge"] == "effort high"
+    assert got["effort"] == "default"  # no `effort:` line: the fail-safe level
     assert set(got) == set(ALL_KEYS)
 
 
@@ -345,10 +438,12 @@ def test_the_live_queue_has_a_clean_block_and_marks_ci_consolidation_solo():
     text = (REPO / PQ.QUEUE_REL).read_text(encoding="utf-8")
     got, problems = PQ.settings(text)
     assert problems == [], problems
-    assert PQ.sources(text) == dict.fromkeys(ALL_KEYS, "QUEUE.md")
+    src = PQ.sources(text)
+    assert src["effort"] == "QUEUE.md", src  # the live block names its level
+    assert set(src.values()) <= {"QUEUE.md", "effort %s" % got.effort}, src
     assert "agent/plans/PLAN-ci-consolidation.md" in PQ.solo_plans(text)
-    # NO PIN ON A SWITCH'S VALUE. `stop_hook` is the operator's to flip (2026-10-06: off until PLAN-fast-loop.md is complete), so asserting `on` here turned check:ci-pytest red on an operator decision. The block parsing clean, with every key sourced from the file, is what this test owns.
-    assert isinstance(got.stop_hook, bool)
+    # NO PIN ON A SWITCH'S VALUE. The level is the operator's to turn, so asserting one here would turn check:ci-pytest red on an operator decision. The block parsing clean, with the level named in the file, is what this test owns.
+    assert got.effort in E.LEVELS
 
 
 # ---- the verb ----------------------------------------------------------------------------------
@@ -444,16 +539,20 @@ def test_queue_set_bare_prints_values_sources_and_problems(wl):  # noqa: F811
     assert got.rc == 0, got.err
     lines = got.out.splitlines()
     assert "turbo: on (QUEUE.md) -- operator test" in lines
-    assert "batch_size: 1 (default)" in lines  # the bad value fell back
-    assert "judge: on (default)" in lines
+    assert "batch_size: 1 (effort high)" in lines  # the bad value fell back to the bundle
+    assert "judge: full (effort high)" in lines
+    assert "effort: high (default)" in lines
     assert any(line.startswith("PROBLEM") and "turbx" in line for line in lines), got.out
     assert any(line.startswith("PROBLEM") and "batch_size" in line for line in lines), got.out
-    assert [ln.split(":")[0] for ln in lines if not ln.startswith("PROBLEM")] == list(ALL_KEYS)
-    # No file at all: every value is a default and nothing is written.
+    assert any(line.startswith("checks at effort high: ") for line in lines), got.out
+    assert [
+        ln.split(":")[0] for ln in lines if not ln.startswith(("PROBLEM", "checks at effort"))
+    ] == list(ALL_KEYS)
+    # No file at all: every value is the fail-safe level's and nothing is written.
     (wl.proj / PQ.QUEUE_REL).unlink()
     bare = wl.cli("--queue-set", wlfix.ME)
     assert bare.rc == 0
-    assert "turbo: off (default)" in bare.out
+    assert "turbo: off (effort high)" in bare.out
     assert "PROBLEM" not in bare.out
     assert not (wl.proj / PQ.QUEUE_REL).exists()
 
@@ -562,11 +661,11 @@ def test_inflight_focus_on_names_mode_pr_branch_and_owner():
     text = rendered(inflight(pr=612, focus=focus))
     assert_mode_matches(text, PQ.Settings())
     assert (
-        "- Focus: merge on PR #612 (branch 1006-2, session d778be9d, since 2026-10-06T09:00:00Z)."
+        "- Phase: merge on PR #612 (branch 1006-2, session d778be9d, since 2026-10-06T09:00:00Z)."
         in text
     )
     # The inverse differs by the one planted fact.
-    assert "- Focus: off." in rendered(inflight(pr=612))
+    assert "- Phase: build." in rendered(inflight(pr=612))
     expired = (dataclasses.replace(focus[0], expired=True),)
     assert "past its 24-hour limit" in rendered(inflight(pr=612, focus=expired))
 

@@ -3,7 +3,9 @@
 THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
 
   CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs the writer cap (`wl_roster.writer_cap`, QUEUE.md `writer_cap:`).
-  FOCUS     the session declared a PR wind-down with `worklist.py --focus <me> babysit|merge` (operator 2026-09-25, spec Y: "Finish, don't start"; agent/plans/PLAN-stop-hook-focus-mode.md). What stays is what protects the PR: CI red, a dead watch, unread reports, STATE.md near compaction and hook integrity.
+  FOCUS     the session declared a PR wind-down with `worklist.py --phase <me> babysit|merge` (operator 2026-09-25, spec Y: "Finish, don't start"; agent/plans/PLAN-stop-hook-focus-mode.md; the verb was `--focus` until agent/plans/PLAN-stop-hook-effort.md made it a phase). A phase only parks work and never adds a block. What stays is what protects the PR: CI red, a dead watch, unread reports, STATE.md near compaction and hook integrity.
+
+THE EFFORT LEVEL RUNS FIRST (wl_effort, agent/plans/PLAN-stop-hook-effort.md): it turns each check into a block, an advisory or nothing, and these profiles then park what remains. The FLOOR that blocks at every level lives in wl_floor, beside CORE, and is sealed the same way.
 
   PR_LOOP   the checkout is on the one-plan-per-PR loop (`wl_prscope.loop_state`, kind other than off-loop; operator ruling 2026-10-03, agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). The hook blocks only on the live PR's plan set, its CI and reviews, the items on that set's epics and the loop's own duties; every other check is parked and named in one queued line.
 
@@ -152,9 +154,11 @@ def parked_line(counts, cap=6):
     return names
 
 
-# ---- focus mode -------------------------------------------------------------
+# ---- the wind-down phases (`--phase babysit|merge`; `build` is the default and parks nothing) ----
 
-FOCUS_MODES = ("babysit", "merge")
+PHASE_MODES = ("babysit", "merge")
+# The phase every session is in until it declares a wind-down, and the value `--phase <me> build` writes to end one.
+BUILD = "build"
 # Advisories outside FOCUS_ADVISORY_KEYS are held and released as one digest at most this often.
 FOCUS_BATCH_MIN = 30
 # A focus older than this ends on its own (`why: expired`); re-issuing the verb renews it.
@@ -175,10 +179,10 @@ def advisory_kept(key):
     return str(key).split(":", 1)[0] in FOCUS_ADVISORY_KEYS
 
 
-def active_focus(focus_map, owned):
-    """The newest focus event over every owner key `owned(key)` accepts, or None when there is none or it is `off`.
+def active_phase(focus_map, owned):
+    """The newest phase event over every owner key `owned(key)` accepts, or None when there is none or it is `build`.
 
-    `focus_map` is `Fold.focus` ({owner8: event}); `owned` is `lambda o: C.owned_by_me(o, session_id)`, so a proven lineage edge carries focus across compaction. An event without an owner never applies (the fold drops it too): `owned_by_me(None, ...)` is True, and an untagged focus would bind every session.
+    `focus_map` is `Fold.phase` ({owner8: event}); `owned` is `lambda o: C.owned_by_me(o, session_id)`, so a proven lineage edge carries focus across compaction. An event without an owner never applies (the fold drops it too): `owned_by_me(None, ...)` is True, and an untagged focus would bind every session.
     """
     best = None
     for owner, ev in (focus_map or {}).items():
@@ -189,7 +193,7 @@ def active_focus(focus_map, owned):
             int(best.get("ns") or 0),
         ):
             best = ev
-    if best is None or best.get("mode") not in FOCUS_MODES:
+    if best is None or best.get("mode") not in PHASE_MODES:
         return None
     return best
 

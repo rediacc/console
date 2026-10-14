@@ -4,6 +4,7 @@ Fail CLOSED by contract: every error path returns an error string, and the calle
 """
 
 import copy
+import datetime
 import hashlib
 import json
 import os
@@ -46,11 +47,16 @@ JUDGE_TIMEOUT_S = int(os.environ.get("WORKLIST_JUDGE_TIMEOUT_S", "240"))
 
 
 def disabled(settings) -> bool:
-    """True when the judge is off. Env `WORKLIST_JUDGE` set to `on` or `off` overrides (the test seam); any other value is ignored and QUEUE.md `judge:` decides."""
+    """True when the judge is off. Env `WORKLIST_JUDGE` set to `on` or `off` overrides (the test seam); any other value is ignored and the resolved `judge` setting decides (`off`, `core` or `full`: the effort level's bundle, or a QUEUE.md override)."""
     env = os.environ.get("WORKLIST_JUDGE")
     if env in ("on", "off"):
         return env == "off"
-    return not settings.judge
+    return settings.judge == "off"
+
+
+def riders(settings) -> bool:
+    """True when the judge call carries its riders: the regression fix-set with its class sweep and proof obligation, the deferral audit, defer-settle, the admission check and the brave-default question. Only `judge: full` (effort high and ultra) does; `core` (effort smart) asks the judge its own question alone (agent/plans/PLAN-stop-hook-effort.md)."""
+    return not disabled(settings) and settings.judge == "full"
 
 
 # v10 VERDICT CACHE. The judge is the dominant cost of a quiet-but-tracked stop (5-20s and $0.01-0.03, measured), and its question is a function of the WORLD and the MESSAGE. An identical world signature and an identical message within the TTL is the same question about the same facts, so a cached "stop" answers it for free -- the v9 fast-path argument, one level up. Fails toward
@@ -811,8 +817,12 @@ def run_judge(
     transcript=None,
     fixset_instance=None,
     local_batch=None,
+    with_riders=True,
+    closed=None,
 ):
     """(verdict_dict, error_string). Exactly one is non-None.
+
+    `with_riders` False (`judge: core`, wl_judge.riders) asks no class sweep, proof obligation or brave-default question, fresh or outstanding: the judge answers whether stopping is honest and nothing else. `closed` is the session's recently closed items as (id, text, evidence) rows (`closed_items`): the prompt names them with their tick evidence, and a `continue` whose only order names one of them is read as stop (`settle_closed_reraise`), so finished work is not ordered again.
 
     `local_batch` is `{"finished": k, "batch": n}` while a turbo batch fills on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D6), else None: the prompt then carries M.JUDGE_LOCAL_BATCH and the sanitiser also strips an order to open a PR (LOCAL_BATCH_ORDERS).
 
@@ -836,22 +846,32 @@ def run_judge(
     fix_stop_now = is_fix_stop(extra)
     # NOTHING OF THE LEAD'S IS LEFT (agent/plans/PLAN-stop-hook-retro-20260924.md R.1): a tick-based fix-set whose every dirty file a live writer is still editing is that writer's work in flight, so no fresh sweep or proof is asked about it. The regression-gate question still is, and an outstanding demand is still followed up. A commit-based fix-set never takes this arm.
     # R20260925.2: a tick answered by its own writers' files (`item-writers`) with none of them still dirty has nothing uncommitted left to sweep or prove either; the commit that carried them is its own unit.
-    sweep_proof_fresh = fix_stop_now and not (
-        fixset_provenance in ("status-minus-live-writers", "item-writers") and not fixset_files
+    sweep_proof_fresh = (
+        with_riders
+        and fix_stop_now
+        and not (
+            fixset_provenance in ("status-minus-live-writers", "item-writers") and not fixset_files
+        )
     )
-    sweep_outstanding = CS.discharge_if_evidenced(CS.load_outstanding(), transcript)
-    sweep_extra = CS.prompt_section(sweep_proof_fresh, sweep_outstanding, transcript)
+    sweep_outstanding = (
+        CS.discharge_if_evidenced(CS.load_outstanding(), transcript) if with_riders else None
+    )
+    sweep_extra = (
+        CS.prompt_section(sweep_proof_fresh, sweep_outstanding, transcript) if with_riders else ""
+    )
     sweep_asked = "fresh" if sweep_proof_fresh else "followup"
     # THE PROOF OBLIGATION rides the same call for the same reason the class sweep does: the question is about the same fix-set the regression gate already shows the judge, and a second model call would double the cost of every fix stop.
     # DISCHARGED FROM THE TRANSCRIPT like the sweep above (R20260924.18): a shape-cluster diff the lead already ran on the demand's scope answers the follow-up. It was used raw until then, and proof STILL OWED rode 16:10:30, 16:23:57 and 16:29:10 on 2026-09-24.
-    proof_outstanding = PF.discharge_if_evidenced(PF.load_outstanding(), transcript)
-    proof_extra = PF.prompt_section(sweep_proof_fresh, proof_outstanding)
+    proof_outstanding = (
+        PF.discharge_if_evidenced(PF.load_outstanding(), transcript) if with_riders else None
+    )
+    proof_extra = PF.prompt_section(sweep_proof_fresh, proof_outstanding) if with_riders else ""
     proof_asked = "fresh" if sweep_proof_fresh else "followup"
     # THE BRAVE-DEFAULT rule rides the same call on its own trigger: a parked decision whose DEFAULT does nothing. Its trigger is the remaining list, not `extra`, so the two rules are independent and either may be asked alone.
     #
     # NOT ON A FIX STOP. A regression-gate stop is already asking the judge to rule on a fix's test coverage AND its sibling sweep; adding "and by the way, is that parked question's DEFAULT brave enough" makes one call carry three unrelated judgements, and the parked question is the one least connected to what the session just did. It is not dropped, only deferred: the trigger is
     # the remaining list, which does not go away, so the same item is asked about on the next stop that is not a fix stop.
-    brave_extra = "" if fix_stop_now else BD.prompt_section(remaining_lines)
+    brave_extra = "" if fix_stop_now or not with_riders else BD.prompt_section(remaining_lines)
     # GROUND THE SWEEP/PROOF QUESTIONS IN A REAL FILE LIST, computed by git rather than trusted from the model's own prose -- see wl_reggate.fixset_files. Injected only when the caller computed one AND a sweep/proof question is actually being asked, so an ordinary judge call carries no new tokens. `fixset_files is None` (the caller could not compute it, or this is a call site that
     # has not adopted the parameter yet) means NO claim, never "the tree is clean" -- conflating the two would accuse a fired finding of being ungrounded on missing data rather than on git's own evidence.
     ground_extra = ""
@@ -874,6 +894,13 @@ def run_judge(
         "citations": citations or "  (none cited)",
         "traps": "\n".join("  - " + h for h in (traps or [])) or "  (none recorded)",
     } + (extra or "")
+    if closed:
+        # After `extra`, never inside it, for the reason given for the local batch below.
+        prompt += M.JUDGE_CLOSED_ITEMS % "\n".join(
+            "  #%s %s\n      closed with: %s"
+            % (cid, text[:120], (evidence or "(no evidence recorded)")[:200])
+            for cid, text, evidence in closed[:CLOSED_SHOWN]
+        )
     if local_batch:
         # After `extra`, never inside it: is_fix_stop and judge_schema_for read `extra`, and this paragraph asks for no schema field.
         prompt += M.JUDGE_LOCAL_BATCH % {
@@ -1011,7 +1038,61 @@ def run_judge(
             ]
     if not fired:
         out = settle_wait_only_continue(out)
+        out = settle_closed_reraise(out, [c[0] for c in closed or ()])
     return sanitize_next_action(out, local_batch=bool(local_batch)), None
+
+
+# ---- WHAT THE JUDGE IS TOLD IS ALREADY DONE (agent/plans/PLAN-stop-hook-effort.md E5) -------------
+# The judge used to see the remaining items only, as their add text with the latest note. An item ticked a minute ago was absent rather than DONE, so a judge reading the session's message (which still talks about that work) ordered it again. It now sees the session's recently closed items with the evidence each was closed on, and a `continue` whose only order names one of them is read
+# as stop, the same deterministic rewrite settle_wait_only_continue makes for a wait-only order.
+CLOSED_HOURS = 24
+CLOSED_SHOWN = 12
+_ITEM_REF = re.compile(r"#([0-9a-f]{6,12})\b")
+
+
+def closed_items(fold, owned, now=None, hours=CLOSED_HOURS):
+    """(id, text, evidence) for the items `owned(owner)` accepts that are closed (`[x]`) and were last touched within `hours`, newest first. `text` is the item's base text, `evidence` the note it was closed with."""
+    now = now or datetime.datetime.now(datetime.UTC)
+    rows = []
+    for rec in getattr(fold, "items", None) or ():
+        if rec.get("state") != "x" or not owned(rec.get("owner")):
+            continue
+        try:
+            at = datetime.datetime.fromisoformat(str(rec.get("upd") or ""))
+        except ValueError:
+            continue
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=datetime.UTC)
+        if (now - at).total_seconds() > hours * 3600:
+            continue
+        rows.append((str(rec.get("upd") or ""), rec))
+    rows.sort(key=lambda r: r[0], reverse=True)
+    return [
+        (
+            str(r["id"]),
+            str(r.get("basetext") or r.get("text") or ""),
+            str(r.get("lastnote") or ""),
+        )
+        for _at, r in rows
+    ]
+
+
+def settle_closed_reraise(out, closed_ids):
+    """`out` with a `continue` whose next action names only closed items (`#<id>`) read as `stop`, the rewrite named in its reason; anything else unchanged."""
+    if out.get("verdict") != "continue" or not closed_ids:
+        return out
+    refs = set(_ITEM_REF.findall(out.get("next_action") or ""))
+    closed = {str(c) for c in closed_ids}
+    if not refs or not refs <= closed:
+        return out
+    out = dict(out)
+    out["verdict"] = "stop"
+    out["reason"] = (
+        "%s [read as stop: the judge said continue, but its only order names closed item(s) %s]"
+        % (out.get("reason", ""), ", ".join("#" + r for r in sorted(refs)))
+    )[:400]
+    out["next_action"] = ""
+    return out
 
 
 # A `continue` whose ONLY order is to wait contradicts itself: waiting on background work is what a legitimate stop does, and the harness wakes the session when that work exits. Seen 2026-10-05: verdict "continue", reason "Stop gate confirms pure background wait is legitimate; wake timer armed", next_action "Await worker output or timer expiry", which blocked a stop the judge's own reason allowed. Applied only when no rule placed an order this stop (a rule's order is real work and must survive), and only on the model's own next_action.
@@ -1060,8 +1141,43 @@ LOCAL_BATCH_ORDERS = (
 )
 
 
+# ---- ADVICE RULES (agent/plans/PLAN-stop-hook-effort.md E5): orders the judge may not give because a repo rule it cannot see decides them. Checked in order after FORBIDDEN_ORDERS; the first match rewrites next_action with its own message.
+#
+# THE RELEASE-AGE WINDOW FIRST. On 2026-10-14 the judge ordered "apply the 8.7.0 pin now" for a release still inside the freshness window of .ci/config/release-age.json. The judge has no publish date at stop time, and the freshness gates that do (scripts/lib/release-age.ts, through check-deps, the pin gates and go_deps) decide when a version may land, so every order to apply a version pin, bump or upgrade is treated as possibly inside the soak and stripped.
+RELEASE_AGE_REL = ".ci/config/release-age.json"
+_VERSION = r"v?\d+\.\d+(?:\.\d+)?(?:[-+][\w.]+)?"
+_PIN_ORDER = re.compile(
+    r"\b(?:apply|land|pin|bump|upgrade|update|install|move)\w*\b[^.;]{0,60}?\b%s\b|\b%s\b[^.;]{0,40}?\b(?:pin|bump|upgrade)\b"
+    % (_VERSION, _VERSION),
+    re.IGNORECASE,
+)
+
+
+def release_age_minutes(root=None):
+    """`minimum_release_age_minutes` from .ci/config/release-age.json, or None when it cannot be read (the rule still applies; the message then names the file instead of the number)."""
+    base = pathlib.Path(root) if root else pathlib.Path(__file__).resolve().parents[3]
+    try:
+        got = json.loads((base / RELEASE_AGE_REL).read_text(encoding="utf-8"))
+        return int(got["minimum_release_age_minutes"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _release_age_message(action):
+    minutes = release_age_minutes()
+    window = (
+        "%d minutes, then the next UTC midnight" % minutes
+        if minutes is not None
+        else "the window in %s" % RELEASE_AGE_REL
+    )
+    return M.V_JUDGE_RELEASE_AGE_REJECTED % (window, action[:120])
+
+
+ADVICE_RULES = ((_PIN_ORDER, _release_age_message),)
+
+
 def sanitize_next_action(out, local_batch=False):
-    """Strip an operator-only directive from a judge verdict, in place, and with `local_batch` an order to open a PR before the batch completes (LOCAL_BATCH_ORDERS).
+    """Strip an operator-only directive from a judge verdict, in place, then an order a repo rule decides (ADVICE_RULES: a version pin inside the release-age soak), and with `local_batch` an order to open a PR before the batch completes (LOCAL_BATCH_ORDERS).
 
     Matches on the ORDER, not on politeness: "merge 563" and "you should probably merge 563" are the same instruction. Deliberately narrow about `release`, since "release notes" and "the release channel" are ordinary nouns a legitimate next action may name, while "cut the release" is an order.
     """
@@ -1071,6 +1187,10 @@ def sanitize_next_action(out, local_batch=False):
     for pattern, label in FORBIDDEN_ORDERS:
         if pattern.search(action):
             out["next_action"] = M.V_JUDGE_ORDER_REJECTED % (label, action[:120])
+            return out
+    for pattern, message in ADVICE_RULES:
+        if pattern.search(action):
+            out["next_action"] = message(action)
             return out
     if local_batch:
         for pattern, _label in LOCAL_BATCH_ORDERS:

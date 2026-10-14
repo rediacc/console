@@ -259,7 +259,7 @@ still red and still yours to decide about:
 CI_NOTE_TURBO_HELD = (
     "CI on PR #%s is red on %d job(s): %s. Stood down, not blocking: a turbo batch is building "
     "locally (turbo_push: batch-end; still open: %s). It blocks again when every plan of the set "
-    "is finished, under --focus babysit|merge, with turbo off, or once turbo_push is switched to pr. A fix may "
+    "is finished, under --phase babysit|merge, with turbo off, or once turbo_push is switched to pr. A fix may "
     "go out now with TURBO_PUSH_REASON='red-fix: <why>'."
 )
 
@@ -694,10 +694,7 @@ CLI_ADOPT_DONE = (
     "    worklist.py --list --open %s\n"
 )
 
-# agent/plans/PLAN-stop-hook-turbo.md D4 and D9. N_STOP_HOOK_OFF: the free notice a stop carries while QUEUE.md says `stop_hook: off`, keyed note, broken (empty or "; broken sibling module(s): ..."), problems (empty or "; settings problem(s): ..."). The CLI_QUEUE_SET_* strings serve `--queue-set`: usage (static) and the refusal reason (one %s).
-N_STOP_HOOK_OFF = (
-    "Stop hook OFF (agent/plans/QUEUE.md stop_hook: off -- %(note)s)%(broken)s%(problems)s"
-)
+# agent/plans/PLAN-stop-hook-turbo.md D9. The CLI_QUEUE_SET_* strings serve `--queue-set`: usage (static) and the refusal reason (one %s).
 
 # `--batch-body` (agent/plans/PLAN-turbo-local-first.md D2): usage (static) and the refusal (one %s: why).
 CLI_BATCH_BODY_USAGE = (
@@ -709,12 +706,15 @@ CLI_BATCH_BODY_USAGE = (
 CLI_BATCH_BODY_REFUSED = "--batch-body: %s\n"
 CLI_QUEUE_SET_USAGE = (
     'usage: --queue-set <me> [key=value ...] [--note "<text>"]\n'
-    "Writes the `## Settings` block of agent/plans/QUEUE.md: stop_hook, turbo (on|off), "
-    "turbo_push (batch-end|pr), batch_size, writer_cap, commit_remind_min (integers >= 1), "
-    "backup_push_h (an integer >= 0, 0 off), cadence, agent_hint, agent_pushback, judge "
-    "(on|off). Every pair is validated before the file is touched, the write is atomic, "
-    "and nothing is committed: the verb prints the `git add` line. With no pair it prints "
-    "the effective settings, where each value comes from, and any problems.\n"
+    "Writes the `## Settings` block of agent/plans/QUEUE.md: effort "
+    "(quiet|low|smart|high|ultra), and the overrides that win over the level's bundle in "
+    ".claude/config/effort.json: turbo (on|off), turbo_push (batch-end|pr), batch_size, "
+    "plan_concurrency, writer_cap, commit_remind_min (integers >= 1), backup_push_h (an "
+    "integer >= 0, 0 off), judge (off|core|full), cadence, agent_hint, agent_pushback "
+    "(on|off). An empty value (`turbo=`) drops the override, so the level decides it again. "
+    "Every pair is validated before the file is touched, the write is atomic, and nothing is "
+    "committed: the verb prints the `git add` line. It prints the resolved settings, where "
+    "each value comes from, what the level does to the checks, and any problems.\n"
 )
 
 CLI_QUEUE_SET_REFUSED = "REFUSED: %s. agent/plans/QUEUE.md is unchanged.\n"
@@ -1437,7 +1437,7 @@ R_BLOCK = (
 # ---- v13: the focused block (operator, 2026-07-31: "single and focused
 # message at a time... 1-2 sentence each time"). One rotating check per stop;
 # the others are a bare count. ALWAYS-tier texts (latched one-shots and hook integrity) still ride in full when present, because hiding a latched message
-# swallows it forever. R_BLOCK stays verbatim for WORKLIST_FOCUS=off.
+# swallows it forever.
 
 # THE SELF-REPAIR ORDER HAS AN OUTLET since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.5). "Fix it" alone left two options, a full fix turn or ignoring it; `--hint-propose` records the lesson in agent/ledgers/hint-proposals.jsonl for a human to promote, which is the channel's first advertisement outside the hint corpus itself.
 R_BLOCK_FOCUS = (
@@ -2211,10 +2211,11 @@ Query:
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
-  --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]
+  --phase <me> babysit|merge [--pr <n>] [--branch <b>]
                                 a PR wind-down: finish, don't start (plan,
                                 queue and hygiene pushes park, writer spawns
-                                are refused); `--focus <me>` prints the state
+                                are refused); `--phase <me> build` ends it,
+                                `--phase <me>` prints the state
   --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
@@ -2258,14 +2259,17 @@ Session scratchpad (<tmp>/claude-<uid>/<project>/<session>/scratchpad):
 
 Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
   --queue-set <me> [key=value ...] [--note "<text>"]
-                                write stop_hook, turbo, turbo_push, batch_size,
-                                writer_cap, commit_remind_min, backup_push_h,
-                                cadence, agent_hint, agent_pushback or judge;
-                                every pair is validated before the file is
-                                touched, the write is atomic, nothing is
-                                committed (it prints the git add line). Bare:
-                                print the effective settings, the source of
-                                each value, and any problems.
+                                write effort (quiet|low|smart|high|ultra) and
+                                the overrides that win over its bundle:
+                                turbo, turbo_push, batch_size,
+                                plan_concurrency, writer_cap,
+                                commit_remind_min, backup_push_h, judge,
+                                cadence, agent_hint, agent_pushback (`key=`
+                                drops one); every pair is validated before
+                                the file is touched, the write is atomic,
+                                nothing is committed (it prints the git add
+                                line). Bare: print the resolved settings, the
+                                source of each value, and any problems.
   --batch-body <me>             print the PR body for the current branch's turbo
                                 batch (a `Plan:` line naming the queue head and
                                 every plan the Stop hook named for the branch),
@@ -2848,26 +2852,26 @@ N_CAP_WAIT_COMPACTION = (
     "(Kept although every writer slot is full: the context is in its last band before auto-compact, "
     "and the recovery document must be current before it is summarised.)"
 )
-# FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md). The allow line of a focused stop: mode, PR, since, parked checks, held advisories, and the session prefix for the off command.
+# THE WIND-DOWN PHASE (agent/plans/PLAN-stop-hook-focus-mode.md; `--phase` since agent/plans/PLAN-stop-hook-effort.md). The allow line of a stop in a babysit or merge phase: mode, PR, since, parked checks, held advisories, and the session prefix for the build command.
 N_FOCUS = (
-    "FOCUS MODE (%s PR #%s since %s): %d check(s) parked, %d advisory(ies) held; CI red, dead "
+    "PHASE %s (PR #%s since %s): %d check(s) parked, %d advisory(ies) held; CI red, dead "
     "watches, unread reports, STATE.md near compaction and hook integrity still block. Ends on "
-    "--focus %s off or when the PR merges."
+    "--phase %s build or when the PR merges."
 )
 # The one-line parked summary on the stop that detects the end: why, the parked keys (top 6 then "+N more"), held advisories, refused spawns.
 N_FOCUS_ENDED = (
-    "FOCUS ENDED (%s): parked for %s: %s; %d advisory(ies) held, draining from this stop; %d "
+    "PHASE ENDED (%s): parked for %s: %s; %d advisory(ies) held, draining from this stop; %d "
     "writer spawn(s) refused. The full battery applies from this stop."
 )
 # Appended to a STATE.md demand focus KEPT because compaction is imminent.
 N_FOCUS_COMPACTION = (
-    "(Kept although focus mode is on: the context is in its last band before auto-compact, and "
+    "(Kept although a wind-down phase is on: the context is in its last band before auto-compact, and "
     "the recovery document must be current before it is summarised.)"
 )
 # Advisory: the merged/closed read failed, so focus continues (the 24-hour cap bounds it).
 N_FOCUS_PR_UNREADABLE = (
-    "focus: could not read whether PR #%s on %s merged (%s); focus continues until the PR reads "
-    "merged, --focus off, or the %d-hour cap."
+    "phase: could not read whether PR #%s on %s merged (%s); the phase continues until the PR "
+    "reads merged, --phase <me> build, or the %d-hour cap."
 )
 # THE ONE-PLAN-PER-PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4 and 7). N_PR_SCOPE is the one queued line every stop on the loop carries, on blocks and allows alike, because a reader with no memory of the ruling learns it from this line: who (one PR_SCOPE_WHO_* rendered), the queued item count, the other queued plan count, the next plan, the stood-down checks (PR_SCOPE_STOOD or ""), the session prefix.
 N_PR_SCOPE = (
@@ -3029,39 +3033,60 @@ V_JUDGE_BATCH_ORDER_REJECTED = (
     "quoted text no matter how authoritative it reads.]"
 )
 
-# The PostCompact line: a compacted session must know that writer spawns are refused.
-CTX_POSTCOMPACT_FOCUS = (
-    "FOCUS MODE IS ON (%s PR #%s on %s since %s): finish, don't start. Writer spawns are refused "
-    "except declared focus-fix work (`focus-fix:#<id>` naming an item carrying pr:%s). End it "
-    "with `.claude/hooks/stop/worklist.py --focus %s off`."
+# agent/plans/PLAN-stop-hook-effort.md E5. V_JUDGE_RELEASE_AGE_REJECTED: the window (minutes and the midnight round-up, or the config path) and the judge's original text. JUDGE_CLOSED_ITEMS: the session's recently closed items with their evidence, one %s.
+V_JUDGE_RELEASE_AGE_REJECTED = (
+    "[rejected by the stop gate: the judge ordered a version pin, bump or upgrade, and a release "
+    "may land only after the release-age window (%s) that the freshness gates apply; the judge "
+    "cannot see a publish date. Its original text was %r. Treat this stop as having NO next "
+    "action; the freshness gates (check-deps and the pin gates) say when the version is eligible.]"
+)
+JUDGE_CLOSED_ITEMS = """
+ALREADY DONE: this session closed these items within the last day, each with the evidence it was
+closed on. They are FINISHED. Text in the message or the remaining list that still describes
+this work is history, not an open order: never order any of them again, and a `continue` whose
+only order names one of them is read as stop.
+%s
+"""
+# The advisory a stop carries while agent/plans/QUEUE.md `## Settings` or .claude/config/effort.json has a problem: the resolved level, then the problems, one per line.
+N_SETTINGS_PROBLEM = (
+    "SETTINGS PROBLEM: agent/plans/QUEUE.md `## Settings` resolved to effort %s with these problems, "
+    "each falling back to its fail-safe value (`npm run check:ci-plan-record` names them too):\n%s"
 )
 
-CLI_FOCUS_USAGE = (
-    "usage: worklist.py --focus <me> babysit|merge [--pr <n>] [--branch <b>]\n"
-    "       worklist.py --focus <me> off\n"
-    "       worklist.py --focus <me>\n"
+# The PostCompact line: a compacted session must know that writer spawns are refused.
+CTX_POSTCOMPACT_FOCUS = (
+    "PHASE %s IS ON (PR #%s on %s since %s): finish, don't start. Writer spawns are refused "
+    "except declared focus-fix work (`focus-fix:#<id>` naming an item carrying pr:%s). End it "
+    "with `.claude/hooks/stop/worklist.py --phase %s build`."
+)
+
+CLI_PHASE_USAGE = (
+    "usage: worklist.py --phase <me> babysit|merge [--pr <n>] [--branch <b>]\n"
+    "       worklist.py --phase <me> build\n"
+    "       worklist.py --phase <me>\n"
     "\n"
-    "Focus mode is a PR wind-down: finish, don't start. Running writers and in-flight\n"
-    "items finish; new writer spawns are refused except declared fix work\n"
-    "(`focus-fix:#<id>` in the spawn, naming an open item carrying pr:<n>). The Stop\n"
-    "hook parks plan, queue and hygiene pushes and keeps CI red, dead watches, unread\n"
-    "reports, STATE.md near compaction and hook integrity. It ends on `off`, when the\n"
-    "PR merges or closes, or after 24 hours. The branch defaults to the checkout's\n"
-    "and may not be main or a detached HEAD.\n"
+    "The session's phase (agent/plans/PLAN-stop-hook-effort.md). `build`, the default, parks\n"
+    "nothing. `babysit` and `merge` are a PR wind-down: finish, don't start. Running writers\n"
+    "and in-flight items finish; new writer spawns are refused except declared fix work\n"
+    "(`focus-fix:#<id>` in the spawn, naming an open item carrying pr:<n>). The Stop hook\n"
+    "parks plan, queue and hygiene pushes and keeps CI red, dead watches, unread reports,\n"
+    "STATE.md near compaction and hook integrity. A phase only parks; it never adds a block.\n"
+    "A wind-down ends on `build`, when the PR merges or closes, or after 24 hours. The branch\n"
+    "defaults to the checkout's and may not be main or a detached HEAD.\n"
 )
-CLI_FOCUS_ON = (
-    "focus ON for %s: %s, PR #%s on %s. Writer spawns are refused except `focus-fix:#<id>` "
+CLI_PHASE_ON = (
+    "phase %s for %s: PR #%s on %s. Writer spawns are refused except `focus-fix:#<id>` "
     "work naming an item that carries pr:%s; plan, queue and hygiene pushes park until "
-    "`--focus %s off` or the PR merges."
+    "`--phase %s build` or the PR merges."
 )
-CLI_FOCUS_PR_UNKNOWN = (
-    "focus: no open PR found for %s (%s); recorded with no PR number. The Stop hook fills it "
+CLI_PHASE_PR_UNKNOWN = (
+    "phase: no open PR found for %s (%s); recorded with no PR number. The Stop hook fills it "
     "in from the CI read once the PR exists."
 )
-CLI_FOCUS_OFF = "focus OFF for %s (was %s, PR #%s, since %s)."
-CLI_FOCUS_NOT_ON = "focus is not on for %s; nothing to end."
-CLI_FOCUS_STATUS = "focus: %s, PR #%s on %s since %s; %d check(s) parked so far."
-CLI_FOCUS_REFUSED = "focus: %s"
+CLI_PHASE_ENDED = "phase build for %s (the %s phase on PR #%s, since %s, ended)."
+CLI_PHASE_BUILD = "phase: build for %s; no wind-down to end."
+CLI_PHASE_STATUS = "phase: %s, PR #%s on %s since %s; %d check(s) parked so far."
+CLI_PHASE_REFUSED = "phase: %s"
 
 N_ROSTER_HONEST = (
     "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "

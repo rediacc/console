@@ -1,17 +1,17 @@
-"""Refuse a writer-class Agent spawn while this session is in focus mode, except declared babysit/merge fix work.
+"""Refuse a writer-class Agent spawn while this session is in a babysit or merge phase, except declared babysit/merge fix work.
 
-THE ASK (operator, 2026-09-25, spec Y): "Finish, don't start. Running writers and in-flight items are allowed to finish. No new writers are spawned: the pre-agent guard refuses, except for babysit/merge fix work." Plan: agent/plans/PLAN-stop-hook-focus-mode.md section 5. Focus is switched on with `worklist.py --focus <me> babysit|merge` and ends on `--focus <me> off`, when the PR merges or closes, or after 24 hours.
+THE ASK (operator, 2026-09-25, spec Y): "Finish, don't start. Running writers and in-flight items are allowed to finish. No new writers are spawned: the pre-agent guard refuses, except for babysit/merge fix work." Plan: agent/plans/PLAN-stop-hook-focus-mode.md section 5; the phase replaced the focus verb in agent/plans/PLAN-stop-hook-effort.md. The wind-down is switched on with `worklist.py --phase <me> babysit|merge` and ends on `--phase <me> build`, when the PR merges or closes, or after 24 hours. The phase only parks work and never adds a block: `build`, the default, refuses nothing here.
 
 THE DECISION, for an Agent or Task call:
-  1. no active focus for this session (the store's newest `focus` event over every owner the session owns is `off`, absent, or older than the 24-hour cap) -> ALLOW;
+  1. no wind-down for this session (the store's newest `phase` event over every owner the session owns is `build`, absent, or older than the 24-hour cap) -> ALLOW;
   2. a read-only type (`wl_roster.read_only_types`, as the cap guard) -> ALLOW;
-  3. focus mode `babysit` and subagent_type `pr-babysitter` -> ALLOW: that is the `/pr-babysit bg` loop itself;
+  3. phase `babysit` and subagent_type `pr-babysitter` -> ALLOW: that is the `/pr-babysit bg` loop itself;
   4. `focus-fix:#<item-id>` in the description or prompt, naming a store item this session owns (a non-empty owner), in state `[ ]` or `[>]`, whose text carries the focus PR's `pr:<n>` -> ALLOW. A bare label is not enough: the item is a store fact the Stop guide shows;
-  5. anything else -> DENY, with the three exits (declare fix work, park it on `worker:queue`, `--focus off`), and one row appended to `.focusrefused-<me8>.jsonl` beside the worklist, which the Stop hook's parked summary counts.
+  5. anything else -> DENY, with the three exits (declare fix work, park it on `worker:queue`, `--phase build`), and one row appended to `.focusrefused-<me8>.jsonl` beside the worklist, which the Stop hook's parked summary counts.
 
 The writer cap still applies to an allowed spawn: `block_agent_cap` runs first (ORDER 3).
 
-IT READS ONLY THE FOCUS AND LINEAGE LINES of the store (`wl_store.focus_fold`) on every Agent call, and pays for a full fold only for a `focus-fix` spawn while focused: a full fold measured ~0.75 s per call against ~0.2 s for the cap guard (the plan's 200 ms threshold, section 10).
+IT READS ONLY THE PHASE AND LINEAGE LINES of the store (`wl_store.phase_fold`) on every Agent call, and pays for a full fold only for a `focus-fix` spawn while focused: a full fold measured ~0.75 s per call against ~0.2 s for the cap guard (the plan's 200 ms threshold, section 10).
 
 FAILS OPEN WHEN IT CANNOT READ THE STORE, and says so on stderr, the same contract as the cap guard's UNCOUNTABLE: the Stop hook reads the same store on the next stop.
 
@@ -54,7 +54,7 @@ def _focus_world(_unused):
         {"ev": "add", "id": "f1a1f1a1", "at": now, "by": me8, "s": " ", "o": me8, "t": "(%s) fix the red job pr:543/fix" % me8},
         {"ev": "add", "id": "f2b2f2b2", "at": now, "by": me8, "s": " ", "o": me8, "t": "(%s) unrelated plan box" % me8},
         {"ev": "add", "id": "f3c3f3c3", "at": now, "by": _PEER, "s": " ", "o": _PEER, "t": "(%s) a peer's fix pr:543/fix" % _PEER},
-        {"ev": "focus", "at": now, "by": me8, "o": me8, "mode": "babysit", "branch": "0925-1", "pr": 543, "why": "operator"},
+        {"ev": "phase", "at": now, "by": me8, "o": me8, "mode": "babysit", "branch": "0925-1", "pr": 543, "why": "operator"},
     ]  # fmt: skip
     hookio.write_world_file(store / ("%s.jsonl" % me8), "".join(json.dumps(r) + "\n" for r in rows))
     return WORLD
@@ -98,7 +98,7 @@ EDGE_CASES = [
 ]
 
 REFUSED_FOCUS = (
-    "BLOCKED: focus mode is on (%s, PR #%s on %s, since %s). Finish, don't start: running writers\n"
+    "BLOCKED: the %s phase is on (PR #%s on %s, since %s). Finish, don't start: running writers\n"
     "and in-flight items finish, and a new %r writer is not spawned.\n"
     "\n"
     "Do one of these:\n"
@@ -107,7 +107,7 @@ REFUSED_FOCUS = (
     "    then put focus-fix:#<id> in the spawn's description or prompt\n"
     "  - park it for after the PR: --add it, then\n"
     "      .claude/hooks/stop/worklist.py --lease %s <id> +120 worker:queue\n"
-    "  - end focus: .claude/hooks/stop/worklist.py --focus %s off\n"
+    "  - end the wind-down: .claude/hooks/stop/worklist.py --phase %s build\n"
     "\n"
     "Read-only spawns (Plan, Explore, and custom types with no edit tool) are never refused.\n"
 )
@@ -167,10 +167,10 @@ def run(event):
         root = C.project_root(C.project_start({"cwd": cwd}))
         worklist = C.worklist_for(C.project_start({"cwd": cwd}))
         # THE LIGHT READ: only focus and lineage lines are parsed (a full fold costs ~0.5 s on this repo's log, on every Agent call). The lineage binding is for the PAYLOAD's session, so a compacted session keeps its focus.
-        light = S.focus_fold(worklist, root)
+        light = S.phase_fold(worklist, root)
         C.bind_lineage(session_id, light.aliases_of(session_id))
         owned = lambda o: C.owned_by_me(o, session_id)  # noqa: E731
-        focus = wl_standdown.active_focus(light.focus, owned)
+        focus = wl_standdown.active_phase(light.phase, owned)
     except Exception as exc:  # noqa: BLE001 -- fail open, and say so
         event.warn_raw(
             UNREADABLE % (session_id, "%s: %s" % (type(exc).__name__, str(exc)[:120]), kind)
