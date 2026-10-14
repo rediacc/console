@@ -144,7 +144,7 @@ function verdict(sel: Selection, views: LeafView[], mutant?: Mutant): Report {
   for (const v of of('deferred')) {
     const at = v.deferred?.clearsAt;
     const clears =
-      typeof at === 'number' && Number.isFinite(at) && !Number.isNaN(new Date(at).getTime())
+      typeof at === 'number' && !Number.isNaN(new Date(at).getTime())
         ? `, clears the window at ${new Date(at).toISOString()}`
         : '';
     out.push(`  deferred    ${v.id}: ${v.detail}${clears} (npm run pins -- when ${v.id})`);
