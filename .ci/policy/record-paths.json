@@ -140,6 +140,10 @@
         {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "reason": "The **/*.md the derivation cites (check_generated_artifacts.py:467) is a selftest control proving `**/` spans zero directories; the real run reads .ci/config/generated-artifacts.json, whose only agent/ inputs are agent/plans/** (generated-artifacts.json:55 and :138), so no file under agent/reviews/ is read and none changes its verdict."
         }
       ]
     },
