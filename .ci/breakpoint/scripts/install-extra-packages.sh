@@ -53,8 +53,9 @@ fi
 #
 # One apt-get call, not a loop: apt resolves the set together, and a loop would
 # report the first failure while leaving the rest unattempted.
-# shellcheck disable=SC2086  # word-splitting is the point: PACKAGES is a list
-if ! sudo apt-get install -y -qq $PACKAGES; then
+# PACKAGES is a whitespace-separated list, so it is split into an array first.
+read -ra package_list <<<"$PACKAGES"
+if ! sudo apt-get install -y -qq "${package_list[@]}"; then
     log_error "failed to install one or more of: $PACKAGES"
     log_error "check the exact apt package NAME -- e.g. on Ubuntu 24.04 the"
     log_error "bottom monitor is packaged as 'btm', not 'bottom'."

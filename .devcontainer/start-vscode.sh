@@ -174,8 +174,9 @@ find_binary() {
 resolve_latest_version() {
   local tag TMP_ERR
   TMP_ERR="$(mktemp)"
-  # shellcheck disable=SC2064
-  trap "rm -f '$TMP_ERR'" RETURN
+  # Expanded when the function returns, while its own local TMP_ERR is still in scope; the trap
+  # then clears itself so no later function return can act on another value of TMP_ERR.
+  trap 'rm -f -- "$TMP_ERR"; trap - RETURN' RETURN
   local body err
   err="$TMP_ERR"
   body="$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "$WK_GH_API_BASE/repos/gitpod-io/openvscode-server/releases/latest" 2>"$err")"
@@ -207,8 +208,9 @@ install_server() {
   asset="openvscode-server-v${VERSION}-linux-${arch}"
   url="https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v${VERSION}/${asset}.tar.gz"
   tmp="$(mktemp -d)"
-  # shellcheck disable=SC2064
-  trap "rm -rf '$tmp'" RETURN
+  # Expanded when the function returns, while its own local tmp is still in scope; the trap
+  # then clears itself so no later function return can act on another value of tmp.
+  trap 'rm -rf -- "$tmp"; trap - RETURN' RETURN
 
   echo "Installing OpenVSCode Server v${VERSION} (${arch}) into $INSTALL_ROOT"
   echo "  $url"

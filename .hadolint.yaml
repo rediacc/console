@@ -1,0 +1,7 @@
+# hadolint reads this file from the working directory. Inline ignore comments
+# are banned; a deliberate exception lives here. hadolint has no per-file
+# ignore, so an entry applies to every Dockerfile it is pointed at. No gate runs
+# hadolint today, so this file serves editor and manual runs.
+ignored:
+  # BLOCKER: .devcontainer/Dockerfile and .devcontainer/Dockerfile.uid both end as root on purpose (measured 2026-10-14 with hadolint 2.15.1, which reports DL3002 on exactly those two); devbox-entrypoint.sh starts as root and drops to the host uid with setpriv, so the image's last USER is the entrypoint's starting identity, not the workload's.
+  - DL3002

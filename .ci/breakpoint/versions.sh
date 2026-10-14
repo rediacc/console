@@ -22,7 +22,7 @@
 # binary needs `chmod +x`. Dropping sudo means this works in a container, on a
 # self-hosted runner with no passwordless sudo, and on a laptop.
 
-# shellcheck disable=SC2034  # every constant here is consumed by the installers
+# Every constant here is consumed by the installers (.shellcheckrc: SC2034).
 
 # =============================================================================
 # cloudflared -- https://github.com/cloudflare/cloudflared

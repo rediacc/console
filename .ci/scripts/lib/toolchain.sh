@@ -32,7 +32,7 @@ toolchain_load() {
         return 1
     }
     set -a
-    # shellcheck disable=SC1090  # path is computed; it is this repo's own pins file
+    # The path is computed; it is this repo's own pins file (.shellcheckrc: SC1090).
     . "$f"
     set +a
     REDIACC_TOOLCHAIN_LOADED=1

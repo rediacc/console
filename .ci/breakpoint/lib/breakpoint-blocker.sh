@@ -23,7 +23,7 @@
 # One BLOCKER comment immediately above each accepted path. Blank lines and
 # other comments are ignored.
 
-# shellcheck disable=SC2034  # arrays are consumed by the functions below
+# The arrays are consumed by the functions below (.shellcheckrc: SC2034).
 
 readonly BREAKPOINT_BLOCKER_MIN_LENGTH=30
 
