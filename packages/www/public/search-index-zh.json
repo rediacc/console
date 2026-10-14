@@ -4455,8 +4455,8 @@
   {
     "id": "search-18848",
     "content": "6.8 delete",
-    "body": "删除仓库及其数据。配置条目将被保留；使用 --archive-config 可将凭据移至 deletedRepositories，以便通过 'repo admin archive restore' 恢复。接受位置参数 <ref>；不带标签的名称会解析为 grand 主线，若多个仓库共用同一基础名称则会被拒绝，此时请传入 name:tag 以指定某个 fork。 rdc repo delete <ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --archive-config | 将配置条目移至 deletedRepositories 以便后续恢复 | 否 | - | | -y, --yes | 跳过确认提示 | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | | --skip-router-restart | 二进制更新后跳过重启路由服务器 | 否 | - | | --dry-run | 显示将执行的操作但不进行实际更改 | 否 | - | <a id=\"cli-local-repo-commit\"></a>",
-    "excerpt": "删除仓库及其数据。配置条目将被保留；使用 --archive-config 可将凭据移至 deletedRepositories，以便通过 'repo admin archive restore' 恢复。接受位置参数 <ref>；不带标签的名称会解析为 grand 主线，若多个仓库共用同一基础名称则...",
+    "body": "删除仓库及其数据。fork 的配置条目会移至 deletedRepositories，释放名称，并保留 GUID 以便通过 'repo admin archive restore' 恢复；grand 仓库或已推送到其他机器的仓库的条目会保留，除非传入 --archive-config。接受位置参数 <ref>；不带标签的名称会解析为 grand 主线，若多个仓库共用同一基础名称则会被拒绝，此时请传入 name:tag 以指定某个 fork。 rdc repo delete <ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --archive-config | 将配置条目移至 deletedRepositories 以便后续恢复 | 否 | - | | -y, --yes | 跳过确认提示 | 否 | - | | --debug | 启用调试输出（本地模式） | 否 | - | | --skip-router-restart | 二进制更新后跳过重启路由服务器 | 否 | - | | --dry-run | 显示将执行的操作但不进行实际更改 | 否 | - | <a id=\"cli-local-repo-commit\"></a>",
+    "excerpt": "删除仓库及其数据。fork 的配置条目会移至 deletedRepositories，释放名称，并保留 GUID 以便通过 'repo admin archive restore' 恢复；grand 仓库或已推送到其他机器的仓库的条目会保留，除非传入 --archive-config。接受位置参数...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "68-delete",
