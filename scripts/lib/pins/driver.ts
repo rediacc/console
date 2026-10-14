@@ -282,11 +282,17 @@ function fixtureDriver(name: Driver): PinDriver {
 }
 
 /**
- * The real drivers, keyed by registry driver name. Empty until T4/T6 (npm), T7 (embed,
- * devcontainer, toolchain) and T8 (actions, go-mod, os-ceph-host, ceph-image,
- * real-provider, docker) land; each adds one line here.
+ * The real drivers, keyed by registry driver name. This module never imports a driver: the
+ * drivers import it, so a table built here would be a cycle that breaks whichever module a
+ * caller loads first. scripts/lib/pins/drivers/table.ts builds the table and the CLI hands
+ * it in through registerDrivers once at startup; an entry with no registered driver answers
+ * "not compared".
  */
-const DRIVER_TABLE: Partial<Record<Driver, PinDriver>> = {};
+let DRIVER_TABLE: Partial<Record<Driver, PinDriver>> = {};
+
+export function registerDrivers(table: Partial<Record<Driver, PinDriver>>): void {
+  DRIVER_TABLE = { ...DRIVER_TABLE, ...table };
+}
 
 /** The driver for an entry; under a fixture, the fixture driver for every leaf. */
 export function driverFor(entry: PinEntry, ctx: DriverContext): PinDriver | null {

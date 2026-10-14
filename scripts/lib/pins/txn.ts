@@ -346,8 +346,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     return r.rc;
   };
 
-  // A file a step changed without declaring it is named and never restored: nothing proves
-  // the step wrote it rather than a peer session working in the same tree at that moment.
+  // A file a step changed without declaring it is named and never restored: nothing proves the step wrote it rather than a peer session working in the same tree at that moment.
   const undeclared: string[] = [];
   try {
     // 3. Writes, then steps.
@@ -359,11 +358,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     }
     saveJournal(dir, j);
     const repos = [...new Set(['.', ...[...touched.values()].map((p) => p.repo)])];
-    // A step is judged by the BYTES it changed, not by which files are dirty: a file an
-    // earlier write or step already made dirty is dirty before and after, and only its hash
-    // shows that this step rewrote it. A change is declared only by this step's own writes,
-    // never by the journal, which also holds every other plan's files. A deleted file hashes
-    // as 'absent', so a step that removes a dirty file is judged the same way.
+    // A step is judged by the BYTES it changed, not by which files are dirty: a file an earlier write or step already made dirty is dirty before and after, and only its hash shows that this step rewrote it. A change is declared only by this step's own writes, never by the journal, which also holds every other plan's files. A deleted file hashes as 'absent', so a step that removes a dirty file is judged the same way.
     const dirtyHashes = (r: string): Map<string, string> => {
       const out = new Map<string, string>();
       for (const f of dirtyPaths(path.join(o.root, r)) ?? new Set<string>()) {
@@ -464,9 +459,7 @@ export function takeLock(root: string, afterStaleVerdict?: () => void): (() => v
   const dir = journalRoot(root);
   fs.mkdirSync(dir, { recursive: true });
   const lock = path.join(dir, '.lock');
-  // The lock appears only by a hard link from a file that already holds the pid, so a lock
-  // file never exists empty or half-written while its owner lives: one whose content is not
-  // a positive integer pid is debris from a crash and is stale, as is one naming a dead pid.
+  // The lock appears only by a hard link from a file that already holds the pid, so a lock file never exists empty or half-written while its owner lives: one whose content is not a positive integer pid is debris from a crash and is stale, as is one naming a dead pid.
   const tmp = `${lock}.${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
   fs.writeFileSync(tmp, `${process.pid}\n`);
   try {

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T17:30:47.788Z",
+  "generatedAt": "2026-10-14T17:32:44.919Z",
   "legs": [
     {
       "index": 1,
@@ -39,6 +39,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_helpers.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_portable.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_paths_exist.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_pin_drivers.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_release_state_consistency.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_inject_env.py",
@@ -261,6 +262,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_nightly_status_report.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_overrides_reasons.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_pin_cli.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_pin_family_drivers.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_boxes_never_delete.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_deps.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_folders.py",

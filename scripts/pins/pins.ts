@@ -56,7 +56,9 @@ import {
   PlanRefused,
   type Release,
   readFixture,
+  registerDrivers,
 } from '../lib/pins/driver.js';
+import { realDrivers } from '../lib/pins/drivers/table.js';
 import {
   loadRegistry,
   type PinEntry,
@@ -1211,9 +1213,7 @@ const CASES: Record<string, Case> = {
     ];
   },
   async undeclaredOverPlanned(m) {
-    // A step that rewrites a file the plan itself already wrote (dirty before and after the
-    // step) is still caught, by its bytes; the rewritten file no longer holds the bytes the run
-    // wrote, so compare-and-restore names it and leaves it, and restores the other sites.
+    // A step that rewrites a file the plan itself already wrote (dirty before and after the step) is still caught, by its bytes; the rewritten file no longer holds the bytes the run wrote, so compare-and-restore names it and leaves it, and restores the other sites.
     const sneaky = 'ARG TOOL_VERSION=6.6.6\n';
     const fx = fixtureTree((f) => {
       f.steps = { 'embed:tool': [{ label: 'sneaky', run: 'sneaky', cwd: '.', writes: [] }] };
@@ -1235,8 +1235,7 @@ const CASES: Record<string, Case> = {
     ];
   },
   async deletedByStep(m) {
-    // A step that deletes a file the plan wrote hashes it as absent rather than throwing: the
-    // undeclared deletion fails the run by name, and a declared one is counted as the step's.
+    // A step that deletes a file the plan wrote hashes it as absent rather than throwing: the undeclared deletion fails the run by name, and a declared one is counted as the step's.
     const fx = fixtureTree();
     const del: Runner = (cmd, cwd) => {
       if (cmd === 'rm-dockerfile') fs.rmSync(path.join(cwd, 'Dockerfile'));
@@ -1639,6 +1638,7 @@ async function selftestCases(forced: Mutant | undefined): Promise<number> {
 }
 
 async function main(): Promise<number> {
+  registerDrivers(realDrivers());
   const argv = process.argv.slice(2);
   if (argv[0] === '--selftest') return selftest(process.env);
   const r = await runCli(argv, process.env);

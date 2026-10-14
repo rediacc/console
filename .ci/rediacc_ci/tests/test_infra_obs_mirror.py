@@ -608,3 +608,33 @@ def test_the_serve_cli_hands_the_vms_the_fleet_gateway_not_the_bridge_vm(
     assert om.main(["serve", "--dir", str(tmp_path), "--port", "8089"]) == 0
     assert out.read_text().splitlines() == ["pid=4242", "url=http://192.168.111.254:8089/"]
     assert om.VM_GATEWAY == "192.168.111.254"
+
+
+@pytest.mark.parametrize(("present", "want"), [(True, "present"), (False, "absent")])
+def test_mirror_tag_says_present_or_absent(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], present: bool, want: str
+) -> None:
+    """`npm run pins` reads this before it moves the Leap pin."""
+    monkeypatch.setattr(om, "_ensure_oras", lambda: None)
+    monkeypatch.setattr(om, "_read", lambda _p: "")
+    monkeypatch.setattr(om, "obs_fingerprint", lambda _t: "x")
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    monkeypatch.setattr(om, "tag_exists", lambda _ref, *_a: present)
+    assert om.main(["mirror-tag", "--evr", "19.2.3-lp160.4.1"]) == 0
+    assert capsys.readouterr().out == "mirror_tag=%s\n" % want
+
+
+def test_mirror_tag_never_folds_a_probe_failure_into_absent(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def broken(_ref: str, *_a: Any) -> bool:
+        raise om.BakeImageError("oras manifest fetch failed (rc=1): denied")
+
+    monkeypatch.setattr(om, "_ensure_oras", lambda: None)
+    monkeypatch.setattr(om, "_read", lambda _p: "")
+    monkeypatch.setattr(om, "obs_fingerprint", lambda _t: "x")
+    monkeypatch.setattr(om, "tag_exists", broken)
+    assert om.main(["mirror-tag", "--evr", "19.2.3-lp160.4.1"]) == 1
+    out = capsys.readouterr().out
+    assert "mirror_tag" not in out
+    assert "denied" in out

@@ -7,6 +7,7 @@ Subcommands, one per workflow step, so each `run:` stays one line:
 
   upstream  fetch the origin `repomd.xml` and its signature, gpgv it with the OBS key (after asserting the key's fingerprint equals cephpkg.go's OBSKeyFingerprint), fetch `primary`, check its checksum, and report the current ceph-common/cephadm EVR (`obs_evr`) beside the tree's pin (`pin`, .ceph-image-pin).
   capture   capture one EVR: stop on an existing tag; download and check the repodata (retried from a fresh repomd on a mid-publish mismatch); refuse an EVR `primary` does not list; derive the package set in an opensuse/leap:16.0 container; download each RPM and check it against `primary`; `rpm -K` with only the OBS key; prove the staged tree with one positive and two negative container checks; push; read back. `--stage-only --out <dir>` does everything but the registry: no tag probe, no push.
+  mirror-tag  print `mirror_tag=present` or `mirror_tag=absent` for one EVR (`--evr`), by the same probe `capture` uses; any other failure is rc 1, never "absent". `npm run pins` reads it before it moves the Leap pin.
   fetch     pull the tag for a pin into a directory and check its signature. A miss is rc 1: CI needs the mirror.
   serve     start a detached `python3 -m http.server` on every interface for the E2E VMs, which reach the runner at the fleet network's gateway (VM_GATEWAY, 192.168.111.254; 192.168.111.1 is the bridge VM), and print that URL. It answers on loopback and on the runner's own non-loopback address before it returns, so a loopback-only bind fails the step.
 
@@ -1203,6 +1204,8 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--renet", type=pathlib.Path, default=None, help="renet binary for the renet-level positive"
     )
+    p = sub.add_parser("mirror-tag")
+    p.add_argument("--evr", required=True)
     p = sub.add_parser("fetch")
     p.add_argument("--pin", required=True)
     p.add_argument("--dest", type=pathlib.Path, required=True)
@@ -1282,6 +1285,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _cmd_upstream(fingerprint)
         if args.cmd == "capture":
             return _cmd_capture(args, fingerprint)
+        if args.cmd == "mirror-tag":
+            _ensure_oras()
+            _emit({"mirror_tag": "present" if tag_exists(image_ref(args.evr)) else "absent"})
+            return 0
         if args.cmd == "fetch":
             _ensure_oras()
             repomd = fetch(args.pin, args.dest, fingerprint)
