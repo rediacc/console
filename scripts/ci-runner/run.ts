@@ -1469,6 +1469,15 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     'psFailureState: exit 2 is a usage error, not a missing pid'
   );
   require_(
+    psFailureState({
+      status: 1,
+      stdout: Buffer.from(''),
+      stderr: Buffer.from('ps: bad option'),
+    }) === '',
+    'psFailureState: a message on stderr that arrives as a Buffer leaves the pid alive'
+  );
+  // Of the cases above, the exit-1-with-stderr, exit-2 and Buffer-stderr ones fail against a check that reads any numeric status as gone. The two that follow (no status at all) pass either way; they pin the contract against a rewrite that treats every error as a missing pid.
+  require_(
     psFailureState({ code: 'ENOENT' }) === '',
     'psFailureState: a ps that cannot be spawned must leave the pid alive'
   );
