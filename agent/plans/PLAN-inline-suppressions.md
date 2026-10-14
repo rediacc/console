@@ -300,6 +300,7 @@ The golangci half belongs to WD:
   - `lint.sh` fails on a rule unused in all three GOOS runs; `run_renet.py` validates BLOCKER comments; a planted dead rule and a reasonless rule both go red.
   - Acceptance: `npm run check:ci-renet` rc 0; `--count private/renet` reports 0. This is a renet submodule PR.
     (ticked) 2026-10-14T16:27:24Z by d778be9d: renet be1d639 and console a7b511201: bash .ci/scripts/quality/lint.sh rc=0 with rules=43 entries=66 and dead on all 0, a planted dead rule and a planted dead linter go rc=1, a reasonless rule fails run_renet.py at private/renet/.golangci.yml:799; check_inline_suppressions.py --count private/renet reports 0; pytest test_private_run_renet.py 70 passed
+    (evidence) 2026-10-14 by d778be9d: npm run check:ci-renet rc=0 at f56153c61 (Renet CI completed successfully), the acceptance command the tick did not show (review 88e73c4f.1); the ledger row records the gate exists, this line records that it passed (88e73c4f.2)
 - [x] P2 lead: residual config.
   - Add WB's handed-over entries and the three helper entries with BLOCKERs, and strip the last inline markers through RUF100 in the same commit.
   - Acceptance: python-lint rc 0, including liveness; `npm run check:ci-suppression-liveness` rc 0; `npm run check:ci-inline-suppressions -- --count .ci` and `-- --count conftest.py` report 0.
