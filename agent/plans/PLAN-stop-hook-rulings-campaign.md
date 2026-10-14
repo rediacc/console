@@ -95,11 +95,11 @@ Three reasons. **(1)** The cron shape is already fixed and enforced: a second wo
 
 The two boxes below are recorded as abandoned: the inbox verb they build on and its poll cron were removed in commit 21b5e2129 (`agent/plans/PLAN-remove-cross-session-messaging.md`), and the test file that hosted the control no longer exists. The conclusion stands: no new schedule.
 
-- [x] Instead, fold ONE conditional line into the existing `worklist.py --poll`, emitted only
+- [x] Instead, fold ONE conditional line into the existing `worklist.py poll`, emitted only
       when the STATE.md `## Big pieces` section disagrees with the census. A poll printing
       nothing ends the turn silently (`.claude/hooks/stop/worklist_messages.py:378`), so this
       costs no new schedule and no turn on an empty result.
-    (ticked) 2026-10-13T05:46:20Z by d778be9d: ABANDONED, premise removed: worklist.py --poll exits 2 and .claude/rediacc_hooks/tests/test_wl_messaging_removed.py passes rc=0
+    (ticked) 2026-10-13T05:46:20Z by d778be9d: ABANDONED, premise removed: the inbox poll verb exits 2 as an unknown verb and .claude/rediacc_hooks/tests/test_wl_messaging_removed.py passes rc=0
 - [x] CONTROL in `.claude/rediacc_hooks/tests/test_wl_poll_and_waiting.py`: an agreeing
       section prints NOTHING (assert empty stdout); a disagreeing one prints exactly the line.
     (ticked) 2026-10-13T05:46:12Z by d778be9d: ABANDONED with the box above: .claude/rediacc_hooks/tests/test_wl_messaging_removed.py passes rc=0
