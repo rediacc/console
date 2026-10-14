@@ -832,7 +832,8 @@
       "*key",
       "AGE_FAIL_DAYS",
       "AGE_WARN_DAYS",
-      "CI"
+      "CI",
+      "GO_DEPS_OSV_URL"
     ],
     ".ci/rediacc_ci/quality/go_module_sync.py": [
       "PATH",

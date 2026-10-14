@@ -32,8 +32,8 @@
  *    not obtained is a RED finding that names the pin, the host and path asked,
  *    the status or error code, and that this is an upstream reachability
  *    failure. The request, the bounded retry (3 attempts, 15 s each, 2 s then
- *    4 s between them) and the finding's wording are shared with the two
- *    sibling gates in scripts/lib/pin-upstream.ts. The pins are asked
+ *    4 s between them) and the finding's wording are shared with every
+ *    external gate, in scripts/lib/upstream.ts. The pins are asked
  *    concurrently, so the worst case is 51 s.
  *  - A LISTING THAT ANSWERS AND CANNOT BE USED IS RED TOO: a 200 that is not a
  *    release list, or holds no release under the tag prefix in its newest 100,
@@ -95,9 +95,9 @@ import {
   type DevcontainerPinSource as Source,
 } from '../lib/devcontainer-pin-sources.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
-import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/pin-upstream.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
+import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');

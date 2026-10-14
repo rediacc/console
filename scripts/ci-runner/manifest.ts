@@ -3697,9 +3697,6 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-go-deps',
-    env: {
-      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
-    },
     run: 'npm run check:ci-go-deps',
     gate: true,
     leaves: ['.ci/scripts/quality/check_go_deps.py'],
@@ -3960,7 +3957,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-external-links',
     env: {
-      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
       GITHUB_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-external-links',
@@ -3976,9 +3972,6 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-dkim-notify',
-    env: {
-      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
-    },
     run: 'npm run check:ci-dkim-notify',
     gate: true,
     leaves: ['scripts/gates/check-dkim-notify.ts'],
@@ -4517,7 +4510,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:actions',
     env: {
-      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
       GITHUB_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:actions',

@@ -83,6 +83,16 @@ remaining text, which the report then prints as `  <name>: go-list exit=2 ...`.
 That is not a data structure anyone designed; it is what the gate prints today, so `_read_fields` below implements bash's rule (leading and trailing delimiter runs stripped, the LAST variable takes the remainder verbatim) rather than `str.split()`, which would re-join the remainder with single spaces.
 
 EXIT CODES ARE UNCHANGED: 0 and 1 only. The twin has no setup-error code, and 77 is reserved by the W7 contract for cannot-run.
+
+-----------------------------------------------------------------------------
+FAILS CLOSED ON EVERY CADENCE (operator ruling 2026-10-14, "Extend to all seven").
+-----------------------------------------------------------------------------
+
+This gate asks two upstreams: the Go module proxy (through `go list -u`) and OSV (`api.osv.dev`). Both go through the shared rule in `rediacc_ci.core.upstream`, the Python copy of `scripts/lib/upstream.ts`: three attempts, 2 s then 4 s between them.
+
+A `go list` that fails on the NETWORK (its stderr carries `dial tcp`, `no such host`, a timeout, or a 5xx from the proxy) is retried, and once the budget is spent it is an UPSTREAM REACHABILITY FAILURE naming the proxy host, not the toolchain-shaped probe failure the twin printed. A `go list` that fails for any other reason is the twin's probe failure exactly as before, byte for byte.
+
+An OSV that cannot be asked used to leave the demand in place with a warning ("demanding it unscreened"), so an outage turned into a "must upgrade" finding naming a version nobody had screened. It is now a module that was NOT compared, red with the same sentence. `GO_DEPS_OSV_URL` points the query at another host (a stub in the gate test). The step runs the gate with no run_external_gate wrapper, so the nightly is red too; the `no-external-quality` label on a pull request is the one hold, and the job's announcer names this gate.
 """
 
 import datetime as dt
@@ -94,13 +104,13 @@ import subprocess
 import sys
 import tempfile
 import time
-import urllib.request
 from collections.abc import Callable
+from typing import cast
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import age as agecheck
-from rediacc_ci.core import allowlist
+from rediacc_ci.core import allowlist, upstream
 from rediacc_ci.policy_paths import policy_rel
 
 # The list moved to `.ci/policy/` in W4 P2 (commit b80552370). It used to be spelled out here, on the argument that the TypeScript seam is unreachable from Python and a literal cannot half-land while there is one location at a time. The first half of that stopped being true in W4 P4a: `rediacc_ci.policy_paths` is the seam's Python twin, a pure join with the same three rules, and
@@ -127,27 +137,39 @@ PROBE_SENTINEL = "__PROBE_FAILED__"
 # `head -c 300` on the probe's stderr. A TRUNCATION, not a summary: a 4 KB Go error shows its first 300 bytes, and dropping the truncation would make the port noisier than the twin on exactly the tree where the gate fires.
 PROBE_STDERR_BYTES = 300
 
-# A CANDIDATE IS SCREENED BEFORE IT IS DEMANDED. On 2026-09-24 this gate demanded google.golang.org/grpc v1.84.0 (renet 4620d5d took the bump) while check:ci-renet's govulncheck refused that very version (GO-2026-6443, fixed only in v1.83.2 and v1.85.0-dev). Two gates contradicted each other and the renet lanes went red whichever way the module moved. A version OSV lists as affected is reported and not demanded; an OSV that cannot be asked leaves the old behaviour in place and says so, because a freshness gate that goes red on a network blip trains people to ignore it.
+# A CANDIDATE IS SCREENED BEFORE IT IS DEMANDED. On 2026-09-24 this gate demanded google.golang.org/grpc v1.84.0 (renet 4620d5d took the bump) while check:ci-renet's govulncheck refused that very version (GO-2026-6443, fixed only in v1.83.2 and v1.85.0-dev). Two gates contradicted each other and the renet lanes went red whichever way the module moved. A version OSV lists as affected is reported and not demanded. An OSV that cannot be asked is a module that was NOT compared, red (see FAILS CLOSED in the module docstring).
 OSV_QUERY_URL = "https://api.osv.dev/v1/query"
-OSV_TIMEOUT_S = 10
+OSV_URL_ENV = "GO_DEPS_OSV_URL"
 
 
-def osv_affected(path: str, version: str) -> list[str] | None:
-    """The OSV advisory ids that affect `path@version`, or None when OSV could not be asked."""
-    body = json.dumps({"package": {"name": path, "ecosystem": "Go"}, "version": version})
-    request = urllib.request.Request(
-        OSV_QUERY_URL, data=body.encode(), headers={"Content-Type": "application/json"}
-    )
+def osv_affected(path: str, version: str) -> list[str]:
+    """The OSV advisory ids that affect `path@version`. Raises upstream.NotComparedError when OSV could not be asked or answered with something that is not JSON."""
+    url = os.environ.get(OSV_URL_ENV) or OSV_QUERY_URL
+    who = "%s %s" % (path, version)
     try:
-        with urllib.request.urlopen(request, timeout=OSV_TIMEOUT_S) as response:  # noqa: S310 -- constant https URL
-            data = json.load(response)
-    except (OSError, ValueError):
-        return None
-    return sorted({v["id"] for v in data.get("vulns", []) if v.get("id")})
+        data = upstream.ask_json(
+            url, who, {"package": {"name": path, "ecosystem": "Go"}, "version": version}
+        )
+    except ValueError:
+        host = url.split("/")[2] if url.count("/") >= 2 else url
+        raise upstream.NotComparedError(
+            "an answer that is not JSON", host, "POST " + url, 1
+        ) from None
+    vulns = data.get("vulns", []) if isinstance(data, dict) else []
+    return sorted({v["id"] for v in vulns if isinstance(v, dict) and v.get("id")})
 
 
 # The seam the selftest swaps for a table, so its controls never touch the network.
-VULN_SEAM: dict[str, Callable[[str, str], list[str] | None]] = {"lookup": osv_affected}
+VULN_SEAM: dict[str, Callable[[str, str], list[str]]] = {"lookup": osv_affected}
+
+# A `go list` that failed on the network rather than in the toolchain. Matched against its stderr: `Get "https://proxy.golang.org/...": dial tcp ...`, `no such host`, a timeout, or a 5xx the proxy answered (`reading https://...: 502 Bad Gateway`).
+GO_NETWORK_RE = re.compile(
+    r"dial tcp|no such host|i/o timeout|Client\.Timeout|TLS handshake timeout|connection reset"
+    r"|connection refused|network is unreachable|: (?:408|429|5\d\d) [A-Z]"
+)
+_GO_URL_RE = re.compile(r"https?://([^/\"\s]+)")
+# The record kind a module carries when its upstream did not answer: `unanswered:<host> <finding>`.
+UNANSWERED = "unanswered:"
 
 # U+2014 appears in three of the twin's messages. Written as an escape rather than as the character so this file stays ASCII: the repo's prose rules forbid the literal, and the byte still has to reach the output because the message text is what the differential compares.
 _EM_DASH = "\u2014"
@@ -406,14 +428,31 @@ def parse_date(value: str) -> str | None:
     return proc.stdout.strip()
 
 
-def check_go_dir(
-    directory: pathlib.Path, blocked: dict[str, str], freshness: ReleaseAge
-) -> list[str]:
-    """One Go module directory. Returns `MODULE CURRENT LATEST TYPE` lines.
+def _go_network_failure(stderr: str) -> upstream.Failure | None:
+    """The upstream failure a `go list` stderr describes, or None when it failed for another reason (the toolchain, the module graph)."""
+    if not GO_NETWORK_RE.search(stderr):
+        return None
+    if "no such host" in stderr:
+        what = "network error ENOTFOUND"
+    elif "connection refused" in stderr:
+        what = "network error ECONNREFUSED"
+    elif "connection reset" in stderr:
+        what = "network error ECONNRESET"
+    elif "network is unreachable" in stderr:
+        what = "network error ENETUNREACH"
+    elif re.search(r"timeout|Timeout", stderr):
+        what = "timeout"
+    else:
+        status = re.search(r": ((?:408|429|5\d\d)) [A-Z]", stderr)
+        what = "HTTP %s" % status.group(1) if status else "network error"
+    return upstream.Failure(what, True)
 
-    TYPE is `major`, `minor`, `blocked`, `toofresh` or `vulnerable:<ids>`, or the whole line is a `__PROBE_FAILED__` sentinel. Warnings go to stderr, which does not disturb the machine-readable records this function returns.
-    """
-    try:
+
+def _go_list(directory: pathlib.Path) -> subprocess.CompletedProcess:
+    """`go list -u -m -json all`, retried under the shared rule when it fails on the network. Raises upstream.NotComparedError once that budget is spent, and OSError when `go` cannot run at all."""
+    host = ["the module proxy"]
+
+    def once() -> upstream.Answer | upstream.Failure:
         proc = subprocess.run(
             ["go", "list", "-u", "-m", "-json", "all"],
             cwd=str(directory),
@@ -422,9 +461,37 @@ def check_go_dir(
             text=True,
             check=False,
         )
+        failure = _go_network_failure(proc.stderr) if proc.returncode != 0 else None
+        if failure is None:
+            return upstream.Answer(proc)
+        seen = _GO_URL_RE.search(proc.stderr)
+        if seen:
+            host[0] = seen.group(1)
+        return failure
+
+    try:
+        answer = upstream.retry("go list -u -m -json all", host[0], directory.name, once)
+    except upstream.NotComparedError as err:
+        raise upstream.NotComparedError(
+            err.what, host[0], "go list -u -m -json all (%s)" % host[0], err.attempts
+        ) from None
+    return cast("subprocess.CompletedProcess", answer)
+
+
+def check_go_dir(
+    directory: pathlib.Path, blocked: dict[str, str], freshness: ReleaseAge
+) -> list[str]:
+    """One Go module directory. Returns `MODULE CURRENT LATEST TYPE` lines.
+
+    TYPE is `major`, `minor`, `blocked`, `toofresh` or `vulnerable:<ids>`, or the whole line is a `__PROBE_FAILED__` sentinel. Warnings go to stderr, which does not disturb the machine-readable records this function returns.
+    """
+    try:
+        proc = _go_list(directory)
     except OSError:
         # bash reports `command not found` as status 127 from the subshell.
         return ["%s go-list exit=127 go: command not found" % PROBE_SENTINEL]
+    except upstream.NotComparedError as err:
+        return ["%s - - %s%s %s" % (PROBE_SENTINEL, UNANSWERED, err.host, err)]
 
     if proc.returncode != 0:
         detail = proc.stderr.replace("\n", " ")[:PROBE_STDERR_BYTES]
@@ -474,12 +541,13 @@ def check_go_dir(
         elif get_major(latest) > get_major(current):
             records.append("%s %s %s major" % (path, current, latest))
         else:
-            advisories = VULN_SEAM["lookup"](path, latest)
-            if advisories is None:
-                log.warn(
-                    "could not ask OSV whether %s %s is affected; demanding it unscreened"
-                    % (path, latest)
+            try:
+                advisories = VULN_SEAM["lookup"](path, latest)
+            except upstream.NotComparedError as err:
+                records.append(
+                    "%s %s %s %s%s %s" % (path, current, latest, UNANSWERED, err.host, err)
                 )
+                continue
             if advisories:
                 records.append(
                     "%s %s %s vulnerable:%s" % (path, current, latest, ",".join(advisories))
@@ -565,6 +633,7 @@ def main(argv: list[str] | None = None) -> int:
     all_vulnerable: list[str] = []
     dirs_with_minor: list[str] = []
     probe_failures: list[str] = []
+    unanswered: list[tuple[str, str, str]] = []
 
     for directory in dirs:
         name = os.path.basename(directory)
@@ -573,6 +642,15 @@ def main(argv: list[str] | None = None) -> int:
         for line in check_go_dir(pathlib.Path(directory), blocked, freshness):
             path, current, latest, kind = _read_fields(line, 4)
             if not path:
+                continue
+            if kind.startswith(UNANSWERED):
+                host, _, finding = kind[len(UNANSWERED) :].partition(" ")
+                who = (
+                    name
+                    if path == PROBE_SENTINEL
+                    else "%s: %s %s -> %s" % (name, path, current, latest)
+                )
+                unanswered.append((who, host, finding))
                 continue
             if path == PROBE_SENTINEL:
                 probe_failures.append("  %s: %s %s %s" % (name, current, latest, kind))
@@ -625,6 +703,17 @@ def main(argv: list[str] | None = None) -> int:
         for line in all_vulnerable:
             print(line)
 
+    # AN UPSTREAM THAT DID NOT ANSWER IS A HARD FAILURE (operator ruling 2026-10-14), checked BEFORE the all-good path, with the sentence ci_diagnose.py reads as an outage rather than as a stale module.
+    upstream.report_unreachable(
+        "Go dependency lookup(s)",
+        unanswered,
+        "an outdated module",
+        (
+            "  (the module proxy for go list, api.osv.dev for the advisory screen), and",
+            "  re-run the failed job when this is a nightly.",
+        ),
+    )
+
     # A PROBE THAT COULD NOT RUN IS A HARD FAILURE, checked BEFORE the all-good path. Reporting "up-to-date" on the strength of a command that errored is the exact defect this guard replaces.
     if probe_failures:
         print()
@@ -635,6 +724,9 @@ def main(argv: list[str] | None = None) -> int:
             "Fix the Go toolchain or module access and re-run; the gate cannot "
             "vouch for these modules."
         )
+        return 1
+
+    if unanswered:
         return 1
 
     if not dirs_with_minor:
@@ -666,6 +758,10 @@ _STUB_GO = """\
 #!/bin/sh
 # A `go` that answers from a file instead of the network. Both implementations
 # resolve `go` through PATH, so this exercises the same call the twin makes.
+if [ "${PI_GO_FAIL:-}" = "offline" ]; then
+  echo 'go: loading module retractions for a/b@v1.0.0: Get "https://proxy.test/a/b/@v/list": dial tcp 127.0.0.1:1: connect: connection refused' >&2
+  exit 1
+fi
 if [ -n "${PI_GO_FAIL:-}" ]; then
   echo "go: some toolchain problem" >&2
   exit "${PI_GO_FAIL}"
@@ -791,6 +887,22 @@ def selftest() -> int:
 
         main_module = '{"Path":"github.com/rediacc/renet","Version":"v0.1.0","Main":true}\n'
 
+        # NO CONTROL TOUCHES THE NETWORK. The advisory screen answers from a table (empty unless a control fills it), and the retry's sleep is a no-op, so the controls that drive an unanswered upstream do not wait for real.
+        real_lookup = VULN_SEAM["lookup"]
+        real_sleep = upstream.SLEEP_SEAM["sleep"]
+        affected: dict[tuple[str, str], list[str]] = {}
+
+        def table_lookup(path: str, version: str) -> list[str]:
+            return affected.get((path, version), [])
+
+        def unreachable(_path: str, _version: str) -> list[str]:
+            raise upstream.NotComparedError(
+                "network error ECONNREFUSED", "osv.test", "POST osv.test/v1/query", 3
+            )
+
+        VULN_SEAM["lookup"] = table_lookup
+        upstream.SLEEP_SEAM["sleep"] = lambda _seconds: None
+
         clean = build("clean", None, main_module)
         ctl.check("CONTROL: a module with no updates passes", run(clean), 0)
 
@@ -801,29 +913,15 @@ def selftest() -> int:
         )
         ctl.check("PLANT: an outdated minor dep reds the gate", run(outdated), 1)
 
-        # THE ADVISORY SCREEN, with the lookup swapped for a table so no control touches the network.
-        real_lookup = VULN_SEAM["lookup"]
-        affected = {("github.com/sirupsen/logrus", "v1.10.1"): ["GO-0000-0001"]}
-
-        def table_lookup(path: str, version: str) -> list[str]:
-            return affected.get((path, version), [])
-
-        def unreachable(_path: str, _version: str) -> None:
-            return None
-
-        try:
-            VULN_SEAM["lookup"] = table_lookup
-            ctl.check(
-                "SCREEN: an affected newer version is reported, not demanded", run(outdated), 0
-            )
-            affected.clear()
-            ctl.check("SCREEN MIRROR: a clean newer version is still demanded", run(outdated), 1)
-            VULN_SEAM["lookup"] = unreachable
-            ctl.check(
-                "SCREEN MIRROR: an OSV that cannot be asked keeps the demand", run(outdated), 1
-            )
-        finally:
-            VULN_SEAM["lookup"] = real_lookup
+        # THE ADVISORY SCREEN, through the table.
+        affected[("github.com/sirupsen/logrus", "v1.10.1")] = ["GO-0000-0001"]
+        ctl.check("SCREEN: an affected newer version is reported, not demanded", run(outdated), 0)
+        affected.clear()
+        ctl.check("SCREEN MIRROR: a clean newer version is still demanded", run(outdated), 1)
+        # FAIL CLOSED (2026-10-14): an OSV that cannot be asked is a module that was NOT compared. The exit code alone cannot tell that red from a demand; `.ci/rediacc_ci/tests/gates/test_gate_go_deps_upstream.py` drives the same case against a stub and asserts the finding's words.
+        VULN_SEAM["lookup"] = unreachable
+        ctl.check("SCREEN: an OSV that cannot be asked is RED, not unscreened", run(outdated), 1)
+        VULN_SEAM["lookup"] = table_lookup
 
         major = build(
             "major",
@@ -871,6 +969,22 @@ def selftest() -> int:
             "probe-fail", None, main_module + _module_json("github.com/a/b", "v1.0.0", "v1.0.1")
         )
         ctl.check("PLANT: a go-list that exits non-zero is a FAILURE", run(probing, fail="1"), 1)
+        offline = 'go: loading module retractions for a/b@v1.0.0: Get "https://proxy.test/a/b/@v/list": dial tcp 127.0.0.1:1: connect: connection refused'
+        ctl.check(
+            "FAIL CLOSED: a go-list the proxy did not answer is a FAILURE",
+            run(probing, fail="offline"),
+            1,
+        )
+        ctl.check(
+            "NETWORK: a refused proxy connection reads as an upstream failure",
+            _go_network_failure(offline),
+            upstream.Failure("network error ECONNREFUSED", True),
+        )
+        ctl.check(
+            "NETWORK MIRROR: a toolchain error is NOT an upstream failure",
+            _go_network_failure("go: go.mod requires go >= 1.25"),
+            None,
+        )
 
         empty_probe = build("empty-probe", None, "")
         ctl.check("VACUITY: zero modules from go list is a FAILURE", run(empty_probe), 1)
@@ -932,6 +1046,8 @@ def selftest() -> int:
             freshness.is_deferred(str(int(time.time())), now=int(time.time())),
         )
 
+    VULN_SEAM["lookup"] = real_lookup
+    upstream.SLEEP_SEAM["sleep"] = real_sleep
     return 0 if ctl.report() else 1
 
 

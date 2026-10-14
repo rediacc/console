@@ -195,20 +195,20 @@ jobs:
       # full_suite: run all jobs on PR and nightly. Skip expensive
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
       full_suite: ${{ github.event_name != 'push' }}
-      # external_quality: three-state control for the externally-dependent
-      # quality gates (deps/go-deps/embed-asset/action freshness, external
-      # links, DKIM DNS, plus the audit's skip half). 'hard' on a normal PR
-      # (failures block), 'skip' on a PR carrying the no-external-quality
-      # label (offline branch work: the lookups cannot succeed at all), and
-      # 'soft' otherwise (schedule/dispatch: the gate runs and warns but
-      # cannot redden the nightly, whose reds should mean "main is broken",
-      # not "the world moved"; 5 of 8 nightlies before 2026-08-04 were red on
-      # external drift alone). Consumed by ci-quality.yml steps via the
-      # run_external_gate wrapper; push never reaches quality (full_suite).
-      # The three pin freshness gates (embed-asset, devcontainer, real-provider)
-      # honour only 'skip': they run without the wrapper, so 'soft' does not
-      # downgrade them and the nightly goes red on a stale pin or an upstream
-      # that could not be reached (operator ruling 2026-10-13).
+      # external_quality: control for the externally-dependent quality gates
+      # (npm, Go and action freshness, the three pin freshness gates, external
+      # links, DKIM DNS, plus the audit). 'hard' on a normal PR, 'skip' on a PR
+      # carrying the no-external-quality label (offline branch work: the
+      # lookups cannot succeed at all; each job's announcer names the held
+      # gates), and 'soft' on schedule/dispatch. Every external gate reads only
+      # the 'skip' half and none runs behind run_external_gate any more, so
+      # 'soft' downgrades nothing: the nightly goes red on a finding or on an
+      # upstream that could not be reached, and ci-trace.py --why names the
+      # latter `upstream-unreachable` (operator rulings 2026-10-13 and
+      # 2026-10-14, "Extend to all seven"). 'soft' stays a distinct value so
+      # the invariant in rediacc_ci.security.ci_workflow_invariants can prove
+      # no event other than pull_request resolves to 'skip'. Push never
+      # reaches quality (full_suite).
       external_quality: ${{ github.event_name != 'pull_request' && 'soft' || (contains(github.event.pull_request.labels.*.name, 'no-external-quality') && 'skip' || 'hard') }}
       # media_quality: TWO-state control for the gates that read in-flight
       # tutorial media (recorded .cast files and the transcript/audio/parity

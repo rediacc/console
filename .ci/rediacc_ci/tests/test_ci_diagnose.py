@@ -427,7 +427,7 @@ SIG_CASES = {
         "Dependency check FAILED: 2 must upgrade, 0 major(s) awaiting a decision",
         "0 FAILED, 12 passed",
     ),
-    "pin-upstream-unreachable": (
+    "upstream-unreachable": (
         "  Bitwarden CLI (pinned 2026.9.0): GET api.github.com/repos/bitwarden/clients/releases -> HTTP 503, after 3 attempt(s)",
         "? Bitwarden CLI: attempt 1 of 3 failed (HTTP 503), asking again in 2 s",
     ),
@@ -496,14 +496,14 @@ PIN_NOT_COMPARED = (
     ],
 )
 def test_a_pin_gate_that_could_not_reach_upstream_is_infra_and_named(what):
-    """The nightly red the 2026-10-13 ruling created: a pin freshness gate fails closed when upstream does not answer. Every status and error code it can print reads as `pin-upstream-unreachable`, never as an unknown, as the Bitwarden secrets row (the pin's display name and a 5xx share a line) or as the generic network row."""
+    """The nightly red the 2026-10-13 ruling created: a pin freshness gate fails closed when upstream does not answer. Every status and error code it can print reads as `upstream-unreachable`, never as an unknown, as the Bitwarden secrets row (the pin's display name and a 5xx share a line) or as the generic network row."""
     lines = [
         PIN_RETRY % (1, what, 2),
         PIN_RETRY % (2, what, 4),
         *(ln.replace("%s", what) for ln in PIN_NOT_COMPARED),
     ]
-    assert D.classify(lines) == ("infra-likely", "pin-upstream-unreachable")
-    assert "not a stale pin" in D.signature_label("pin-upstream-unreachable")
+    assert D.classify(lines) == ("infra-likely", "upstream-unreachable")
+    assert "not a finding in the tree" in D.signature_label("upstream-unreachable")
 
 
 def test_a_retry_that_cleared_before_a_stale_pin_is_not_an_infra_verdict():
@@ -523,10 +523,45 @@ def test_a_stale_pin_beside_an_unreachable_one_reads_infra_and_still_shows_the_s
     stale = "2026-10-14T03:10:04.0000000Z \u2717 1 devcontainer pin(s) are behind upstream:"
     unreachable = "2026-10-14T03:10:09.0000000Z \u2717 1 real-provider pin(s) were NOT compared with upstream:"
     lines = [stale, "2026-10-14T03:10:04.0000000Z   Bitwarden CLI: pinned 2026.9.0", unreachable]
-    assert D.classify(lines) == ("infra-likely", "pin-upstream-unreachable")
+    assert D.classify(lines) == ("infra-likely", "upstream-unreachable")
     shown = "\n".join(D.excerpt(lines))
     assert "pin(s) are behind upstream" in shown
     assert "NOT compared with upstream" in shown
+
+
+EXTERNAL_NOT_COMPARED = {
+    "check:actions": (
+        "\u2717 1 action pin(s) were NOT compared with upstream:",
+        "  actions/checkout (pinned v7.0.1): GET api.github.com/repos/actions/checkout/releases/latest -> HTTP 502, after 3 attempt(s)",
+    ),
+    "check:ci-external-links": (
+        "\u2717 1 external link(s) were NOT compared with upstream:",
+        "  https://example.org/a (docs/a.md:3): HEAD example.org/a -> timeout after 15 s, after 3 attempt(s)",
+    ),
+    "check:ci-dkim-notify": (
+        "\u2717 1 DKIM notify DNS record(s) were NOT compared with upstream:",
+        "  bounce-eu.notify.rediacc.com: MX bounce-eu.notify.rediacc.com -> DNS 8.8.8.8 ETIMEOUT, after 3 attempt(s)",
+    ),
+    "check:ci-go-deps": (
+        "\u2717 1 Go dependency lookup(s) were NOT compared with upstream:",
+        "  renet: go list -u -m -json all (proxy.golang.org) -> network error ECONNREFUSED, after 3 attempt(s)",
+    ),
+}
+
+
+@pytest.mark.parametrize("gate", sorted(EXTERNAL_NOT_COMPARED))
+def test_every_external_gate_unreachable_finding_is_infra(gate):
+    """The four gates the 2026-10-14 ruling made hard on the nightly print the same two shapes. Each shape alone, header line or item line, reads as `upstream-unreachable`."""
+    for line in EXTERNAL_NOT_COMPARED[gate]:
+        got = D._sig_hit("2026-10-14T03:10:07.0000000Z " + line)
+        assert got is not None, (gate, line)
+        assert got[0] == "upstream-unreachable", (gate, line, got)
+
+
+def test_a_broken_link_is_not_an_upstream_failure():
+    """Control: a link whose host answered 404 is a finding in the tree, and its line must not read as an outage."""
+    got = D._sig_hit("2026-10-14T03:10:07.0000000Z   BROKEN [404]: https://example.org/gone")
+    assert got is None or got[0] != "upstream-unreachable", got
 
 
 def test_the_retry_note_exclusion_is_what_keeps_that_verdict(monkeypatch):

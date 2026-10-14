@@ -15,6 +15,8 @@ TWO DEFECTS THIS COVERS.
    the gate printed "All GitHub Actions are up-to-date (14 unknown)" and exited 0.
    Fourteen unknown means fourteen UNCHECKED, so it reported freshness it had
    verified for nothing, and an offline run would have done that indefinitely.
+   Since the operator ruling of 2026-10-14 ("Extend to all seven") a PARTIAL
+   failure is fatal too; `test_gate_actions_upstream.py` drives it against a stub.
 
 WHY THIS TEST IS OFFLINE. Its first version drove the real gate four times, which needed a GitHub token, spent ~56 API calls per run, and FAILED in CI's quality-gate harness where no token exists. Worse, when the anonymous limit tripped it passed for the wrong reason: it read "nothing fresh upstream" from output that actually said "nothing could be checked", which is the very
 defect it exists to catch. Pure logic gets tested purely.
@@ -165,28 +167,23 @@ def test_deferrals_are_reported_not_silent(gate):
 
 
 def test_total_lookup_failure_is_a_failure_not_a_pass(gate):
-    """THE VACUOUS-PASS FIX. Zero resolved of N is evidence the read failed, never evidence that everything is current."""
+    """THE VACUOUS-PASS FIX, widened on 2026-10-14. Zero resolved of N is evidence the read failed, never evidence that everything is current, and so is one unresolved of N: the verdict now rests on the shared PinTally count, which fails on any action that was not compared. `test_gate_actions_upstream.py` drives both directions against a stub server; this case pins the wiring."""
     src = gate_source(gate)
-    gate.assert_contains(
-        src, "unknown.length === actions.size", "a run that resolved NOTHING is detected"
-    )
-    gate.assert_contains(
-        src, "Could not resolve the latest release for ANY", "and says so explicitly"
-    )
-    gate.assert_contains(
-        src, "Nothing was verified", "naming the reason rather than implying an all-green result"
-    )
-    gate.log_pass("a total lookup failure is reported as a failure, not as up-to-date")
+    gate.assert_contains(src, "tally.report(", "every action is accounted for by the shared tally")
+    gate.assert_contains(src, "unchecked > 0", "and any unchecked action fails the run")
+    gate.log_pass("a lookup failure is reported as a failure, not as up-to-date")
 
 
-def test_partial_failure_is_deliberately_not_fatal(gate):
-    """Scope matters: failing on ONE flaky lookup would make this the flakiest gate in CI. Only a total failure is fatal, and that choice is written down."""
-    gate.assert_contains(
-        gate_source(gate),
-        "only a TOTAL lookup failure is fatal",
-        "the narrow scope is stated where the guard lives",
+def test_a_partial_lookup_failure_is_fatal_since_the_2026_10_14_ruling(gate):
+    """The old scope ("only a TOTAL lookup failure is fatal") let a rate-limited action pass as "unknown". The operator ruled every external gate fails closed ("Extend to all seven"), so that sentence must not come back."""
+    src = gate_source(gate)
+    gate.assert_not_contains(
+        src, "only a TOTAL lookup failure is fatal", "the retired scope is gone from the source"
     )
-    gate.log_pass("a partial lookup failure stays non-fatal, by design")
+    gate.assert_contains(
+        src, "FAIL CLOSED", "the fail-closed policy is stated where the verdict lives"
+    )
+    gate.log_pass("a partial lookup failure is fatal, by ruling")
 
 
 def test_window_source_is_the_shared_release_age_config(gate):

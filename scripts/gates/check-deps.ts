@@ -22,6 +22,12 @@
  *   0 - All dependencies are up-to-date (or blocked, or too new), or upgrade succeeded with no major left undecided
  *   1 - Outdated dependencies found (check mode), a major awaits a decision, a blocklisted major is past 90 days and unexcused (or cannot be dated), a held-major exception is invalid, expired, stale or dead, a version could not be determined, an allow entry is dead, or an upgrade failed
  *
+ * ASKS THE NPM REGISTRY (`npm outdated`, and registry.npmjs.org for the
+ * packuments of uninstalled edges), so it is an external gate: the
+ * `no-external-quality` label on a pull request holds it (`when:` below) and
+ * quality-content's announcer names it. It is hard on every cadence; a registry
+ * that does not answer is a DepsProbeError, red.
+ *
  * ---- gate ----
  * step: External dependency freshness
  * needs: node
@@ -29,6 +35,7 @@
  * selftest: true
  * lane: quality-content
  * slow: true
+ * when: inputs.external_quality != 'skip'
  * ---- end gate ----
  */
 

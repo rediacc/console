@@ -97,15 +97,15 @@ STREAM_RE = re.compile(r"\bvm=(\S+)\s*$")
 
 # SIGNATURES: (id, category, pattern, label, minimum seconds or 0). Infra rows are checked before code rows, so a test that failed BECAUSE a mirror was down reads as infra. Order inside a category matters too: a Bitwarden 503 must not read as a registry 503.
 SIGNATURES = (
-    # A pin freshness gate that could not ask its upstream (scripts/lib/pin-upstream.ts, `PinTally.report`). The three pin gates are hard on the nightly since the operator ruling of 2026-10-13, so this red reaches main's scheduled run, and it must read as the upstream's failure rather than as an unknown or as a defect in the tree. FIRST, because its finding lines name a pin and a status: `Bitwarden CLI (pinned 2026.9.0): GET api.github.com/... -> HTTP 503, after 3 attempt(s)` would otherwise read as the Bitwarden secrets row below, and one that ends on ECONNREFUSED as the generic network row.
+    # An external gate that could not ask its upstream (scripts/lib/upstream.ts `reportUnreachable`, and its Python copy `rediacc_ci.core.upstream`). Every external gate is hard on the nightly since the operator rulings of 2026-10-13 and 2026-10-14 ("Extend to all seven"), so this red reaches main's scheduled run, and it must read as the upstream's failure rather than as an unknown or as a defect in the tree. FIRST, because its finding lines name a pin, a link or a record beside a status: `Bitwarden CLI (pinned 2026.9.0): GET api.github.com/... -> HTTP 503, after 3 attempt(s)` would otherwise read as the Bitwarden secrets row below, and one that ends on ECONNREFUSED as the generic network row.
     (
-        "pin-upstream-unreachable",
+        "upstream-unreachable",
         "infra",
         re.compile(
-            r"pin\(s\) were NOT compared with upstream|UPSTREAM REACHABILITY FAILURE"
-            r"|\): (?:GET|HEAD) \S+ -> .*, after \d+ attempt\(s\)"
+            r"\(s\) were NOT compared with upstream|UPSTREAM REACHABILITY FAILURE"
+            r"|: (?:GET|HEAD|POST|TXT|MX|go list) \S.* -> .*, after \d+ attempt\(s\)"
         ),
-        "a pin freshness gate could not reach its upstream (not a stale pin; re-run the job)",
+        "an external gate could not reach its upstream (not a finding in the tree; re-run the job)",
         0,
     ),
     (
@@ -779,7 +779,7 @@ def failing_step_slice(log, job):
 
 
 SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
-# A pin gate's RETRY NOTE (`? <pin>: attempt 1 of 3 failed (HTTP 503), asking again in 2 s`) is no verdict: the next attempt may have succeeded, and an infra hit outranks every code hit, so reading it would turn a stale-pin red that followed a retry into an infrastructure one. Same rule as the per-attempt lines of the pkg-install-stall row. The verdict is the finding the gate prints when the budget is spent.
+# An external gate's RETRY NOTE (`? <pin>: attempt 1 of 3 failed (HTTP 503), asking again in 2 s`) is no verdict: the next attempt may have succeeded, and an infra hit outranks every code hit, so reading it would turn a stale-pin red that followed a retry into an infrastructure one. Same rule as the per-attempt lines of the pkg-install-stall row. The verdict is the finding the gate prints when the budget is spent.
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
 
 

@@ -29,7 +29,7 @@
  *    path asked, the status or error code, and that this is an upstream
  *    reachability failure. The request, the bounded retry (3 attempts, 15 s
  *    each, 2 s then 4 s between them) and the finding's wording are shared with
- *    the two sibling gates in scripts/lib/pin-upstream.ts. The pins are asked
+ *    every external gate, in scripts/lib/upstream.ts. The pins are asked
  *    concurrently.
  *  - AN ANSWER THAT CANNOT BE USED IS RED TOO: a release with no tag, a tag
  *    list with no stable version, an rsync index with no tarball. The gate has
@@ -106,15 +106,15 @@ import {
   type UpgradeFiles,
   upgradeComponent,
 } from '../lib/embed-pin-upgrade.js';
+import { policyPath } from '../lib/policy-paths.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
   askUpstream,
   githubAsker,
   NotCompared,
   PinTally,
   UnreadableListing,
-} from '../lib/pin-upstream.js';
-import { policyPath } from '../lib/policy-paths.js';
-import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
+} from '../lib/upstream.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');

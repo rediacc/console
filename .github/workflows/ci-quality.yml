@@ -74,15 +74,14 @@ on:
       next_version:
         type: string
         required: false
-      # Three-state control for externally-dependent gates, computed by
-      # ci.yml's initialize: 'hard' (normal PR: failures block), 'skip' (PR
-      # with the no-external-quality label: steps do not run), 'soft'
-      # (schedule/dispatch: run_external_gate downgrades a failure to a
-      # ::warning:: so external drift cannot redden the nightly). Default
+      # Control for externally-dependent gates, computed by ci.yml's
+      # initialize: 'hard' (normal PR), 'skip' (PR with the no-external-quality
+      # label: the steps do not run, and each job's announcer names them) or
+      # 'soft' (schedule/dispatch). Every external gate reads only the 'skip'
+      # half and runs unwrapped, so 'soft' is as hard as 'hard': a failure,
+      # an unreachable upstream included, is red on the nightly too (operator
+      # rulings 2026-10-13 and 2026-10-14, "Extend to all seven"). Default
       # 'hard' fails closed if a caller forgets to pass it.
-      # The three pin freshness gates in quality-go read only the 'skip' half:
-      # they run unwrapped, so 'soft' is hard for them (operator ruling
-      # 2026-10-13).
       external_quality:
         type: string
         required: false
@@ -968,6 +967,12 @@ jobs:
       # `steps.setup.outcome == 'success'`; a region above that step references a
       # step that has not run, the expression is empty, and every gate in the region
       # SKIPS while the job stays green.
+      - name: Action freshness
+        id: gate_check_actions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && ((inputs.external_quality != 'skip') && matrix.shard == 2) }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run check:actions
       - name: App admin permission
         id: gate_check_ci_app_admin_perm
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1243,7 +1248,7 @@ jobs:
       - name: Write shard receipt
         if: always()
         env:
-          GATE_STEP_LOCK_MAP: '{"gate_check_ci_app_admin_perm":["check:ci-app-admin-perm"],"gate_check_ci_aws_credential_bridge":["check:ci-aws-credential-bridge"],"gate_check_ci_backup_bucket_conformance":["check:ci-backup-bucket-conformance"],"gate_check_ci_backup_manifest_shape_parity":["check:ci-backup-manifest-shape-parity"],"gate_check_ci_backup_protocol_conformance":["check:ci-backup-protocol-conformance"],"gate_check_ci_bootstrap_idempotency":["check:ci-bootstrap-idempotency"],"gate_check_ci_builder_env_contract":["check:ci-builder-env-contract"],"gate_check_ci_ceph_image_pin":["check:ci-ceph-image-pin"],"gate_check_ci_changed_selection":["check:ci-changed-selection"],"gate_check_ci_fetch_integrity":["check:ci-fetch-integrity"],"gate_check_ci_job_aggregation":["check:ci-job-aggregation"],"gate_check_ci_cli_doc_coverage":["check:ci-cli-doc-coverage"],"gate_check_cli_examples":["check:cli-examples"],"gate_check_ci_command_tree":["check:ci-command-tree"],"gate_check_ci_control_in_string":["check:ci-control-in-string"],"gate_check_ci_design_tree":["check:ci-design-tree"],"gate_check_ci_docker_npm_pins":["check:ci-docker-npm-pins"],"gate_check_ci_enumeration_vacuity":["check:ci-enumeration-vacuity"],"gate_check_ci_lint_scope_coverage":["check:ci-lint-scope-coverage"],"gate_check_ci_fetch_retry":["check:ci-fetch-retry"],"gate_check_ci_fixture_event_timestamps":["check:ci-fixture-event-timestamps"],"gate_check_ci_format_scope":["check:ci-format-scope"],"gate_check_ci_gate_bind":["check:ci-gate-bind"],"gate_check_ci_gate_cwd_independence":["check:ci-gate-cwd-independence"],"gate_check_ci_gate_test_real_file_plants":["check:ci-gate-test-real-file-plants"],"gate_check_ci_gate_tree_writes":["check:ci-gate-tree-writes"],"gate_check_ci_generated_artifacts":["check:ci-generated-artifacts"],"gate_check_ci_gen_manifest":["check:ci-gen-manifest"],"gate_check_ci_greenlight_closures":["check:ci-greenlight-closures"],"gate_check_ci_inline_suppressions":["check:ci-inline-suppressions"],"gate_check_ci_inner_timeout_reachable":["check:ci-inner-timeout-reachable"],"gate_check_ci_merge_method_prose":["check:ci-merge-method-prose"],"gate_check_ci_jq_boolean_default":["check:ci-jq-boolean-default"],"gate_check_ci_judged_rule_wiring":["check:ci-judged-rule-wiring"],"gate_check_ci_knip_blockers":["check:ci-knip-blockers"],"gate_check_lint":["check:lint","check:lint:cli","check:lint:web","check:lint:tooling","check:lint:account"],"gate_check_ci_lockfile":["check:ci-lockfile"],"gate_check_ci_git_tool_safety":["check:ci-git-tool-safety"],"gate_check_ci_model_invocable_commands":["check:ci-model-invocable-commands"],"gate_check_ci_native_rebuild":["check:ci-native-rebuild"],"gate_check_ci_naturalization_model_policy":["check:ci-naturalization-model-policy"],"gate_check_ci_no_client_key_composition":["check:ci-no-client-key-composition"],"gate_check_ci_max_lines":["check:ci-max-lines"],"gate_check_ci_package_key_budget":["check:ci-package-key-budget"],"gate_check_ci_paths_origin":["check:ci-paths-origin"],"gate_check_ci_retention_knob_parity":["check:ci-retention-knob-parity"],"gate_check_ci_rubric_calibration":["check:ci-rubric-calibration"],"gate_check_ci_runtime_imports_are_deps":["check:ci-runtime-imports-are-deps"],"gate_check_ci_schema_coverage":["check:ci-schema-coverage"],"gate_check_ci_domain_partition":["check:ci-domain-partition"],"gate_check_ci_shape_duplication":["check:ci-shape-duplication"],"gate_check_ci_shared_constant_duplication":["check:ci-shared-constant-duplication"],"gate_check_ci_step_env_parity":["check:ci-step-env-parity"],"gate_check_ci_swallowed_failures":["check:ci-swallowed-failures"],"gate_check_ci_syncpack_sources":["check:ci-syncpack-sources"],"gate_check_ci_test_scripts_reachable":["check:ci-test-scripts-reachable"],"gate_check_ci_tmpfs_health":["check:ci-tmpfs-health"],"gate_check_ci_typecheck_scope_coverage":["check:ci-typecheck-scope-coverage"],"gate_lint_unused":["lint:unused"],"gate_check_ci_peer_deps":["check:ci-peer-deps"],"gate_check_version":["check:version"],"gate_check_ci_worker_secret_names":["check:ci-worker-secret-names"],"gate_check_ci_workflows":["check:ci-workflows"],"gate_check_ci_actionlint":["check:ci-actionlint"],"gate_check_ci_workflow_orphan_step_keys":["check:ci-workflow-orphan-step-keys"],"gate_check_ci_worklist_event_builders":["check:ci-worklist-event-builders"],"gate_check_ci_worklist_path_resolution":["check:ci-worklist-path-resolution"],"gate_check_ci_www_build_token":["check:ci-www-build-token"]}'
+          GATE_STEP_LOCK_MAP: '{"gate_check_actions":["check:actions"],"gate_check_ci_app_admin_perm":["check:ci-app-admin-perm"],"gate_check_ci_aws_credential_bridge":["check:ci-aws-credential-bridge"],"gate_check_ci_backup_bucket_conformance":["check:ci-backup-bucket-conformance"],"gate_check_ci_backup_manifest_shape_parity":["check:ci-backup-manifest-shape-parity"],"gate_check_ci_backup_protocol_conformance":["check:ci-backup-protocol-conformance"],"gate_check_ci_bootstrap_idempotency":["check:ci-bootstrap-idempotency"],"gate_check_ci_builder_env_contract":["check:ci-builder-env-contract"],"gate_check_ci_ceph_image_pin":["check:ci-ceph-image-pin"],"gate_check_ci_changed_selection":["check:ci-changed-selection"],"gate_check_ci_fetch_integrity":["check:ci-fetch-integrity"],"gate_check_ci_job_aggregation":["check:ci-job-aggregation"],"gate_check_ci_cli_doc_coverage":["check:ci-cli-doc-coverage"],"gate_check_cli_examples":["check:cli-examples"],"gate_check_ci_command_tree":["check:ci-command-tree"],"gate_check_ci_control_in_string":["check:ci-control-in-string"],"gate_check_ci_design_tree":["check:ci-design-tree"],"gate_check_ci_docker_npm_pins":["check:ci-docker-npm-pins"],"gate_check_ci_enumeration_vacuity":["check:ci-enumeration-vacuity"],"gate_check_ci_lint_scope_coverage":["check:ci-lint-scope-coverage"],"gate_check_ci_fetch_retry":["check:ci-fetch-retry"],"gate_check_ci_fixture_event_timestamps":["check:ci-fixture-event-timestamps"],"gate_check_ci_format_scope":["check:ci-format-scope"],"gate_check_ci_gate_bind":["check:ci-gate-bind"],"gate_check_ci_gate_cwd_independence":["check:ci-gate-cwd-independence"],"gate_check_ci_gate_test_real_file_plants":["check:ci-gate-test-real-file-plants"],"gate_check_ci_gate_tree_writes":["check:ci-gate-tree-writes"],"gate_check_ci_generated_artifacts":["check:ci-generated-artifacts"],"gate_check_ci_gen_manifest":["check:ci-gen-manifest"],"gate_check_ci_greenlight_closures":["check:ci-greenlight-closures"],"gate_check_ci_inline_suppressions":["check:ci-inline-suppressions"],"gate_check_ci_inner_timeout_reachable":["check:ci-inner-timeout-reachable"],"gate_check_ci_merge_method_prose":["check:ci-merge-method-prose"],"gate_check_ci_jq_boolean_default":["check:ci-jq-boolean-default"],"gate_check_ci_judged_rule_wiring":["check:ci-judged-rule-wiring"],"gate_check_ci_knip_blockers":["check:ci-knip-blockers"],"gate_check_lint":["check:lint","check:lint:cli","check:lint:web","check:lint:tooling","check:lint:account"],"gate_check_ci_lockfile":["check:ci-lockfile"],"gate_check_ci_git_tool_safety":["check:ci-git-tool-safety"],"gate_check_ci_model_invocable_commands":["check:ci-model-invocable-commands"],"gate_check_ci_native_rebuild":["check:ci-native-rebuild"],"gate_check_ci_naturalization_model_policy":["check:ci-naturalization-model-policy"],"gate_check_ci_no_client_key_composition":["check:ci-no-client-key-composition"],"gate_check_ci_max_lines":["check:ci-max-lines"],"gate_check_ci_package_key_budget":["check:ci-package-key-budget"],"gate_check_ci_paths_origin":["check:ci-paths-origin"],"gate_check_ci_retention_knob_parity":["check:ci-retention-knob-parity"],"gate_check_ci_rubric_calibration":["check:ci-rubric-calibration"],"gate_check_ci_runtime_imports_are_deps":["check:ci-runtime-imports-are-deps"],"gate_check_ci_schema_coverage":["check:ci-schema-coverage"],"gate_check_ci_domain_partition":["check:ci-domain-partition"],"gate_check_ci_shape_duplication":["check:ci-shape-duplication"],"gate_check_ci_shared_constant_duplication":["check:ci-shared-constant-duplication"],"gate_check_ci_step_env_parity":["check:ci-step-env-parity"],"gate_check_ci_swallowed_failures":["check:ci-swallowed-failures"],"gate_check_ci_syncpack_sources":["check:ci-syncpack-sources"],"gate_check_ci_test_scripts_reachable":["check:ci-test-scripts-reachable"],"gate_check_ci_tmpfs_health":["check:ci-tmpfs-health"],"gate_check_ci_typecheck_scope_coverage":["check:ci-typecheck-scope-coverage"],"gate_lint_unused":["lint:unused"],"gate_check_ci_peer_deps":["check:ci-peer-deps"],"gate_check_version":["check:version"],"gate_check_ci_worker_secret_names":["check:ci-worker-secret-names"],"gate_check_ci_workflows":["check:ci-workflows"],"gate_check_ci_actionlint":["check:ci-actionlint"],"gate_check_ci_workflow_orphan_step_keys":["check:ci-workflow-orphan-step-keys"],"gate_check_ci_worklist_event_builders":["check:ci-worklist-event-builders"],"gate_check_ci_worklist_path_resolution":["check:ci-worklist-path-resolution"],"gate_check_ci_www_build_token":["check:ci-www-build-token"]}'
           STEPS_JSON: ${{ toJSON(steps) }}
           SHARD_INDEX: ${{ matrix.shard }}
           SHARD_OF: '4'
@@ -1367,12 +1372,19 @@ jobs:
         run: npm run check:ci-breakpoint-drift
 
 
-      - name: Action freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:actions
+      # External gates are hard on every cadence and fail closed (operator
+      # rulings 2026-10-13 and 2026-10-14): an action whose latest release
+      # was not obtained after three tries is red, on the nightly too. Its
+      # step, `Action freshness`, is emitted into this job's gate-bind region
+      # with the label hold as its `when:` conjunct; the no-external-quality
+      # label on a pull request is the one hold, and this announcer names the
+      # gate when it applies. It runs in every shard because gate-bind may move
+      # the gate between shards.
+      - name: Announce external gates held by label
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+          GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:actions
 
   quality-content:
     name: Content
@@ -1454,6 +1466,9 @@ jobs:
       - name: Dead service methods
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-dead-service-methods
+      - name: DKIM notify DNS
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (inputs.external_quality != 'skip') }}
+        run: npm run check:ci-dkim-notify
       - name: Docker image freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
@@ -1475,8 +1490,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_lint_rule_liveness.py
       - name: External dependency freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (inputs.external_quality != 'skip') }}
         run: npm run check:deps
+      - name: External links
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (inputs.external_quality != 'skip') }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run check:ci-external-links
       - name: i18n value types match English
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_i18n_value_types.py
@@ -1585,21 +1605,21 @@ jobs:
 
 
 
-      - name: External links
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-external-links
+      # The external gates of this job ask hosts outside the repository:
+      # check:deps the npm registry, External links every linked host, and
+      # DKIM notify DNS the public resolvers. Each one is hard on every
+      # cadence and fails closed (operator rulings 2026-10-13 and 2026-10-14,
+      # "Extend to all seven"): an upstream that did not answer after three
+      # tries is red, on the nightly too, with the sentence ci-trace.py --why
+      # reads as an outage. The no-external-quality label on a pull request
+      # is the one hold (each step carries it as its gate-bind `when:`
+      # conjunct, in this job's gate-bind region); a skipped step prints
+      # nothing by itself, so this announcer names the held gates in the log.
+      - name: Announce external gates held by label
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-
-      # Same external_quality treatment as external-links: both do live
-      # public-network lookups, so both skip on a labelled PR (offline branch
-      # work) and soften on the nightly.
-      - name: DKIM notify DNS
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-dkim-notify
-        env:
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+          GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:deps check:ci-external-links check:ci-dkim-notify
 
       # Runs unconditionally, and is NOT behind media_quality: a skipped step
       # is invisible (the job still reports success), so without this the two
@@ -2624,11 +2644,12 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
 
+      # Hard on every cadence and fails closed, like the pin gates below: a
+      # module proxy or an OSV that did not answer after three tries is red,
+      # on the nightly too. The announcer below names it under the label.
       - name: Check Go dependency freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-go-deps
-        env:
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+        run: npm run check:ci-go-deps
 
       # NOT behind external_quality: this reads only the local worktree, so
       # unlike go-deps it cannot be affected by an upstream registry being
@@ -2687,24 +2708,25 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-embed-asset-versions
 
-      # THE THREE PIN FRESHNESS GATES ARE HARD ON EVERY CADENCE (operator ruling
-      # 2026-10-13, "Everything fails closed, nightly included"). They ask
-      # upstream whether a pin is behind, and each one fails closed: a pin whose
-      # upstream answer was not obtained after three tries is a red finding
-      # that names the pin and the host (scripts/lib/pin-upstream.ts). None of
-      # them goes through run_external_gate, so `external_quality: soft` on the
-      # nightly and on a dispatch does not downgrade them: a stale pin and an
-      # unreachable upstream are red there exactly as on a pull request. The
+      # THE EXTERNAL GATES ARE HARD ON EVERY CADENCE (operator rulings
+      # 2026-10-13, "Everything fails closed, nightly included", and
+      # 2026-10-14, "Extend to all seven"). The Go dependency gate above and
+      # the three pin freshness gates below ask upstream, and each one fails
+      # closed: an upstream answer not obtained after three tries is a red
+      # finding that names the thing asked and the host
+      # (scripts/lib/upstream.ts). None of them goes through
+      # run_external_gate, so `external_quality: soft` on the nightly and on a
+      # dispatch does not downgrade them: a stale pin and an unreachable
+      # upstream are red there exactly as on a pull request. The
       # `inputs.external_quality != 'skip'` conjunct stays, so the
-      # no-external-quality label on a pull request still holds them, and the
-      # announcer below names them in the log when it does. A skipped step
-      # prints nothing by itself. `soft` and `hard` both read as enforced here,
-      # which is what the two steps after it do with them.
-      - name: Announce pin gates held by label
+      # no-external-quality label on a pull request still holds them, and
+      # this announcer names them in the log when it does. A skipped step
+      # prints nothing by itself. `soft` and `hard` both read as enforced here.
+      - name: Announce external gates held by label
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
           GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:ci-go-deps check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins
 
       # Freshness of the embedded-binary version pins vs upstream
       # (api.github.com and download.samba.org). GITHUB_TOKEN raises the API

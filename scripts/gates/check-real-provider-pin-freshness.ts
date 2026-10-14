@@ -23,7 +23,7 @@
  *    and that the comparison did not happen. A green therefore always means
  *    every pin was compared. The request, its bounded retry (3 attempts, 15 s
  *    each, 2 s then 4 s between them) and the finding's wording are shared by
- *    the three gates in scripts/lib/pin-upstream.ts. The pins are asked
+ *    every external gate, in scripts/lib/upstream.ts. The pins are asked
  *    concurrently, so the worst case is 51 s, inside the lane's 14 minutes.
  *
  * UPSTREAM ASKED: api.github.com, `GET /repos/<owner>/<repo>/releases` for
@@ -48,7 +48,7 @@
  * directly, with no run_external_gate wrapper, so its exit 1 is red on a pull
  * request, on the nightly and on a dispatch alike. The one way it does not run
  * is the `no-external-quality` label on a pull request, and the job's
- * "Announce pin gates held by label" step names this gate in the log when that
+ * "Announce external gates held by label" step names this gate in the log when that
  * happens.
  *
  * Usage:
@@ -71,8 +71,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
-import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/pin-upstream.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
+import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
 
 const CONSOLE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const LOCK_REL = 'private/account/e2e/real-provider.lock.json';
@@ -156,7 +156,7 @@ function compareVersions(a: string, b: string): number {
   return left[0] - right[0] || left[1] - right[1] || left[2] - right[2];
 }
 
-/** The repository's release list. Throws NotCompared when it was not obtained (scripts/lib/pin-upstream.ts holds the retry budget). */
+/** The repository's release list. Throws NotCompared when it was not obtained (scripts/lib/upstream.ts holds the retry budget). */
 async function fetchListing(src: PinSource): Promise<unknown> {
   if (LISTING_FIXTURE) {
     const fixture = JSON.parse(fs.readFileSync(LISTING_FIXTURE, 'utf-8')) as Record<

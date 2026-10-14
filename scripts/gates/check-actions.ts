@@ -14,37 +14,43 @@
  *   npx tsx scripts/gates/check-actions.ts --help    # Show help
  *
  * Exit codes:
- *   0 - All actions are up-to-date (or blocked)
- *   1 - Outdated actions found
+ *   0 - Every action was compared with upstream and is up-to-date, deferred or blocked
+ *   1 - Outdated actions found, or an action that was NOT compared (see below)
+ *
+ * FAILS CLOSED ON EVERY CADENCE (operator rulings 2026-10-13 and 2026-10-14,
+ * "Extend to all seven"). Each action's `GET /repos/<owner>/<repo>/releases/latest`
+ * goes through scripts/lib/upstream.ts: three attempts, 15 s each, 2 s then 4 s
+ * between them, and an action whose answer was not obtained (a network error, a
+ * timeout, a 5xx, a rate limit, a refused token) is a RED finding naming the
+ * action, the host and path, the status and the attempts, beside the sentence
+ * `UPSTREAM REACHABILITY FAILURE`. Until then a PARTIAL lookup failure was
+ * reported as "unknown" and passed, so one rate-limited action went unchecked
+ * under a green. A 404 (the repository publishes no release) and a pin with no
+ * version comment are red too: the gate cannot compare them. The step runs
+ * `npm run check:actions` with no run_external_gate wrapper, so the nightly is
+ * red as well; the `no-external-quality` label on a pull request is the one
+ * hold, and its job's announcer names this gate when it applies.
+ * `ACTIONS_API_BASE` points the requests at another host (a stub in the gate
+ * test) and drops the token.
  *
  * ---- gate ----
  * step: Action freshness
- * emit: false
- * blocker: BLOCKER: its `run:` goes through the `rediacc_ci.quality.run_external_gate` WRAPPER, which the derived run does not produce, and its `env:` block carries PROSE comments the `env-<KEY>:` grammar cannot hold.
- *     THE ENV REASON IS DEAD AND THIS LINE USED TO STATE IT. Box A1 taught the
- *     binder `env-<KEY>:` on 2026-09-08, so "gate-bind cannot emit an env block"
- *     stopped being true -- and a BLOCKER whose reason has quietly expired is the
- *     exact shape check:ci-suppression-liveness exists to refuse. Corrected to the
- *     real obstacle rather than deleted, because retiring this one is a BEHAVIOUR
- *     change and needs its own box. check-docker-image-freshness.ts was the one of
- *     the six whose ONLY obstacle was env, and it retired the same day.
  * needs: node
  * id: check:actions
- * env-EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+ * when: inputs.external_quality != 'skip'
  * env-GITHUB_TOKEN: ${{ github.token }}
  * ---- end gate ----
  */
 
 import fs from 'node:fs';
-import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectActionRefs } from '../lib/action-refs.js';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
-import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { BLUE, DIM, GREEN, NC, RED, YELLOW } from '../lib/console.js';
-import { githubToken } from '../lib/github-token.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
+import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -55,8 +61,9 @@ const args = process.argv.slice(2);
 const showHelp = args.includes('--help') || args.includes('-h');
 const verboseMode = args.includes('--verbose') || args.includes('-v');
 
-// GitHub token from environment (optional, increases rate limit)
-const GITHUB_TOKEN = githubToken();
+// The seam: another API base, a stub server in the gate test. Set, the requests carry no token (scripts/lib/upstream.ts).
+const API_BASE = process.env.ACTIONS_API_BASE || undefined;
+const askGithub = githubAsker('check-actions-script', API_BASE);
 
 interface ParsedVersion {
   major: number;
@@ -254,103 +261,35 @@ function parseWorkflowFiles(): Map<string, ActionInfo> {
 }
 
 /**
- * Fetch latest release for an action from GitHub API
+ * The latest release of `owner/repo`. Throws NotCompared when upstream did not answer, and UnreadableListing when it
+ * answered with no usable release: a 404 (the repository publishes no release, so this gate cannot compare it) or a
+ * payload without a tag.
  */
-async function fetchLatestRelease(owner: string, repo: string): Promise<GitHubRelease | null> {
-  return new Promise((resolve) => {
-    const url = `/repos/${owner}/${repo}/releases/latest`;
-
-    const options: https.RequestOptions = {
-      hostname: 'api.github.com',
-      path: url,
-      method: 'GET',
-      headers: {
-        'User-Agent': 'check-actions-script',
-        Accept: 'application/vnd.github.v3+json',
-      },
-      timeout: 10000,
-    };
-
-    if (GITHUB_TOKEN) {
-      options.headers = {
-        ...options.headers,
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-      };
+async function fetchLatestRelease(actionName: string): Promise<GitHubRelease> {
+  let json: unknown;
+  try {
+    json = await askGithub(`/repos/${actionName}/releases/latest`, actionName);
+  } catch (err) {
+    if (err instanceof NotCompared && err.status === 404) {
+      throw new UnreadableListing('publishes no GitHub release (404 on releases/latest)');
     }
-
-    const req = https.request(options, (res) => {
-      let data = '';
-
-      res.on('data', (chunk: Buffer) => {
-        data += chunk.toString();
-      });
-
-      res.on('end', () => {
-        if (res.statusCode === 200) {
-          try {
-            const json = JSON.parse(data) as {
-              tag_name: string;
-              html_url: string;
-              target_commitish: string;
-              published_at?: string;
-            };
-            resolve({
-              tag: json.tag_name,
-              url: json.html_url,
-              targetCommit: json.target_commitish,
-              publishedAt: json.published_at,
-            });
-          } catch {
-            resolve(null);
-          }
-        } else if (res.statusCode === 404) {
-          // No releases, try to get latest tag
-          resolve(null);
-        } else if (res.statusCode === 403) {
-          // Rate limited
-          console.error(
-            `${YELLOW}Rate limited by GitHub API. Set GITHUB_TOKEN for higher limits.${NC}`
-          );
-          resolve(null);
-        } else {
-          resolve(null);
-        }
-      });
-    });
-
-    req.on('error', () => {
-      resolve(null);
-    });
-
-    req.on('timeout', () => {
-      req.destroy();
-      resolve(null);
-    });
-
-    req.end();
-  });
-}
-
-/**
- * Fetch latest releases for multiple actions in parallel
- */
-async function fetchLatestReleases(
-  actions: Map<string, ActionInfo>
-): Promise<Map<string, GitHubRelease | null>> {
-  const results = new Map<string, GitHubRelease | null>();
-  const promises: Promise<void>[] = [];
-
-  for (const [actionName] of actions) {
-    const [owner, repo] = actionName.split('/');
-    promises.push(
-      fetchLatestRelease(owner, repo).then((release) => {
-        results.set(actionName, release);
-      })
-    );
+    throw err;
   }
-
-  await Promise.all(promises);
-  return results;
+  const release = json as {
+    tag_name?: unknown;
+    html_url?: unknown;
+    target_commitish?: unknown;
+    published_at?: unknown;
+  } | null;
+  if (typeof release?.tag_name !== 'string' || release.tag_name === '') {
+    throw new UnreadableListing('the latest release carries no tag_name');
+  }
+  return {
+    tag: release.tag_name,
+    url: typeof release.html_url === 'string' ? release.html_url : '',
+    targetCommit: typeof release.target_commitish === 'string' ? release.target_commitish : '',
+    publishedAt: typeof release.published_at === 'string' ? release.published_at : undefined,
+  };
 }
 
 /**
@@ -368,7 +307,8 @@ ${YELLOW}OPTIONS${NC}
   --help, -h     Show this help message
 
 ${YELLOW}ENVIRONMENT${NC}
-  GITHUB_TOKEN   GitHub token for higher API rate limits (optional)
+  GITHUB_TOKEN      GitHub token for higher API rate limits (optional)
+  ACTIONS_API_BASE  Another API base (a stub in the gate test); set, no token is sent
 
 ${YELLOW}DESCRIPTION${NC}
   Checks for outdated GitHub Actions in workflow files and fails if any
@@ -400,38 +340,47 @@ async function checkActions(): Promise<void> {
   const actions = parseWorkflowFiles();
   const blocklist = loadBlocklist();
 
+  // ZERO INPUTS IS A FAILURE. Every workflow in this repo pins third-party actions, so an empty scan means the scanner stopped seeing the tree, and a green from it would mean nothing.
   if (actions.size === 0) {
-    console.log(`${GREEN}No external actions found in workflow files${NC}`);
-    process.exit(0);
+    console.log(
+      `${RED}✗ No external actions found under .github: the gate is not seeing the tree, so its green would mean nothing${NC}`
+    );
+    process.exit(1);
   }
 
   console.log(`Found ${actions.size} unique action(s). Fetching latest versions...\n`);
 
-  const latestReleases = await fetchLatestReleases(actions);
+  const tally = new PinTally('action', actions.size);
+  const names = [...actions.keys()];
+  // Asked concurrently, so the retry budget is spent once for the run and not once per action. An action whose pin carries no version is not asked: there is nothing to compare the answer with.
+  const answers = await tally.askAll(names, (name) =>
+    actions.get(name)?.version ? fetchLatestRelease(name) : null
+  );
 
   const mustUpgrade: ActionResult[] = [];
   const deferred: ActionResult[] = [];
   const blocked: ActionResult[] = [];
   const upToDate: ActionResult[] = [];
-  const unknown: ActionResult[] = [];
 
-  for (const [actionName, info] of actions) {
-    const release = latestReleases.get(actionName);
+  for (const [index, actionName] of names.entries()) {
+    const info = actions.get(actionName) as ActionInfo;
+    const answer = answers[index];
     const blockEntry = blocklist.get(actionName);
+    const where = info.locations[0] ? `${info.locations[0].file}:${info.locations[0].line}` : '';
 
-    if (!release) {
-      unknown.push({ name: actionName, ...info });
+    if (answer === null) {
+      tally.noPin.push(`${actionName} (${where}): the pin carries no version to compare`);
       continue;
     }
+    if ('err' in answer) {
+      tally.failed(`${actionName} (pinned ${info.version})`, actionName, answer.err);
+      continue;
+    }
+    const release = answer.value;
+    tally.compared++;
 
     const latestVersion = release.tag;
-    const currentVersion = info.version;
-
-    // Skip if we couldn't determine the current version
-    if (!currentVersion) {
-      unknown.push({ name: actionName, ...info, latest: latestVersion, releaseUrl: release.url });
-      continue;
-    }
+    const currentVersion = info.version as string;
 
     // Compare versions
     const comparison = compareVersions(currentVersion, latestVersion);
@@ -463,7 +412,9 @@ async function checkActions(): Promise<void> {
 
     // Outdated - check blocklist
     if (blockEntry) {
-      // Action is blocked from upgrading
+      // Action is blocked from upgrading: held, not compared-and-current.
+      tally.compared--;
+      tally.held.push(actionName);
       blocked.push({
         name: actionName,
         ...info,
@@ -552,16 +503,6 @@ async function checkActions(): Promise<void> {
     console.log();
   }
 
-  if (unknown.length > 0 && verboseMode) {
-    console.log(`${DIM}Unknown actions (${unknown.length}):${NC}\n`);
-    for (const action of unknown) {
-      console.log(`  ${action.name}: ${action.version ?? 'unknown'}`);
-      console.log(`    Could not fetch latest release (may not use GitHub Releases)`);
-      console.log(`    Files: ${action.locations.map((l) => `${l.file}:${l.line}`).join(', ')}`);
-    }
-    console.log();
-  }
-
   if (upToDate.length > 0 && verboseMode) {
     console.log(`${GREEN}Up-to-date actions (${upToDate.length}):${NC}\n`);
     for (const action of upToDate) {
@@ -570,41 +511,22 @@ async function checkActions(): Promise<void> {
     console.log();
   }
 
-  if (hasFailure) {
+  // FAIL CLOSED. An action that was not compared (upstream did not answer, answered with no release, or the pin has no version) is a finding, and the count a green rests on must cover every action. Until 2026-10-14 only a TOTAL lookup failure was fatal and a partial one passed as "N unknown", which is the swallowed-failure shape this gate's own 2026-07-28 anti-vacuity fix named: unknown means unchecked.
+  const unchecked = tally.report({
+    sources: ".github (each action's `uses:` pin) and the repository's releases page",
+    noPinFix: [
+      '  Pin the action as `owner/repo@<40-hex sha> # vX.Y.Z` (or `@vX.Y.Z`) so the gate',
+      '  has a version to compare with the latest release.',
+    ],
+  });
+
+  if (hasFailure || unchecked > 0) {
     console.log(`${RED}GitHub Actions check FAILED${NC}`);
     process.exit(1);
   }
-
-  // ANTI-VACUITY. A gate that passes when it checked NOTHING is broken by definition, and this one did exactly that: with every GitHub API lookup rate-limited it printed "All GitHub Actions are up-to-date (14 unknown)" and exited 0. Fourteen unknown means fourteen unchecked, which is the opposite of up-to-date. Measured 2026-07-28 by running the gate without a token until the
-  // anonymous rate limit tripped.
-  //
-  // An offline or rate-limited CI run would therefore have reported freshness it never verified, indefinitely, which is the same swallowed-failure shape this repo keeps finding in its own tooling: empty evidence rendered as a clean result.
-  //
-  // Scope is deliberately narrow: only a TOTAL lookup failure is fatal. A partial one still proves something about the actions it did reach, and failing the build for one flaky lookup would make the gate the flakiest thing in CI.
-  if (actions.size > 0 && unknown.length === actions.size) {
-    console.log(
-      `${RED}✗ Could not resolve the latest release for ANY of the ${actions.size} action(s).${NC}`
-    );
-    console.log(
-      `${DIM}  Nothing was verified, so "up-to-date" would be a claim about data this run never saw.`
-    );
-    console.log(
-      '  Most likely the anonymous GitHub API rate limit: set GITHUB_TOKEN (or GH_TOKEN)'
-    );
-    console.log(
-      `  and re-run. CI already sets one, so this is usually a local-only condition.${NC}`
-    );
-    console.log(`${RED}GitHub Actions check FAILED${NC}`);
-    process.exit(1);
-  }
-
-  const summary: string[] = [];
-  if (upToDate.length > 0) summary.push(`${upToDate.length} up-to-date`);
-  if (blocked.length > 0) summary.push(`${blocked.length} blocked`);
-  if (unknown.length > 0) summary.push(`${unknown.length} unknown`);
 
   console.log(
-    `${GREEN}All GitHub Actions are up-to-date${NC}${summary.length > 0 ? ` (${summary.join(', ')})` : ''}`
+    `${GREEN}All GitHub Actions are up-to-date${NC} (${tally.shape}: ${upToDate.length} up-to-date, ${deferred.length} deferred, ${blocked.length} blocked)`
   );
   process.exit(0);
 }
