@@ -1314,11 +1314,10 @@
         "archiveOption": "設定エントリを deletedRepositories に移動して後から復元可能にする",
         "cloudBackupHint": "クラウドバックアップ（存在する場合）は削除後も残ります。孤立したクラウドバックアップを削除するには: rdc storage prune <storage> -m {{machine}}",
         "completed": "リポジトリを削除しました",
-        "configDropped": "\"{{repository}}\" の設定エントリを削除しました。",
         "configRetained": "\"{{repository}}\" の設定エントリは、バックアップと復元のために保持されました。削除するには --archive-config を付けて再実行し、続けて \"rdc repo admin archive purge {{repository}}\" を実行してください。",
         "configRetainedElsewhere": "\"{{repository}}\" の設定エントリは保持されました（送信済みのコピーが次のマシンに残っています: {{machines}}）。削除するには --archive-config を付けて再実行し、続けて \"rdc repo admin archive purge {{repository}}\" を実行してください。",
         "confirm": "\"{{machine}}\" 上のリポジトリ \"{{repository}}\" を削除しますか？コンテナ、ボリューム、暗号化イメージが破棄されます。",
-        "description": "リポジトリとそのデータを削除する。設定エントリは保持される。--archive-config を使用すると、認証情報を deletedRepositories に移動し 'repo admin archive restore' で復元可能になる。位置引数として <ref> を取る。裸の名前はグランド系列に解決されるが、同じベース名を複数のリポジトリが共有している場合は拒否されるため、フォークを対象にするには 名前:タグ を指定すること",
+        "description": "リポジトリとそのデータを削除する。フォークの設定エントリは deletedRepositories に移動し、名前が解放され、GUID は 'repo admin archive restore' で復元できる状態のまま残る。グランドリポジトリや他のマシンへプッシュ済みのリポジトリのエントリは、--archive-config を指定しない限り保持される。位置引数として <ref> を取る。裸の名前はグランド系列に解決されるが、同じベース名を複数のリポジトリが共有している場合は拒否されるため、フォークを対象にするには 名前:タグ を指定すること",
         "descriptionShort": "リポジトリとそのデータを削除する",
         "examples": {
           "basic": "リポジトリを削除する",
@@ -2354,7 +2353,7 @@
       "setupMachine": "リモートマシンでセットアップを実行"
     },
     "examples": "例:",
-    "keyConcepts": "\nKey Concepts:\n\n  アーキテクチャ\n    • 各リポジトリ = 分離された Docker 環境（専用 daemon、ループバック IP 範囲、LUKS 暗号化ストレージ）\n    • renet compose を使用する（raw docker compose は使わない）、network_mode:host と rediacc.* ラベルを自動的に注入する\n    • ストレージ: ${REDIACC_WORKING_DIR}/... への bind-mount、Docker の named volume は使わない（フォークやバックアップから除外される）\n    • eBPF バインド書き換えが IP 分離を処理する: アプリは 0.0.0.0 にバインドし、カーネルが正しいループバック IP に書き換える\n\n  ルーティング\n    • 自動ルート（フォークフレンドリー）: https://{service}.{repo}.{machine}.{baseDomain}\n    • カスタムドメイン: Traefik ラベル（traefik.enable=true）、フォークフレンドリーではない\n    • 80 番以外のポートには rediacc.service_port ラベル。ルートはデプロイ後約3秒で有効化される\n    • HTTPS: Cloudflare DNS-01 経由の自動 Let's Encrypt ワイルドカード証明書。'rdc machine infra set' で設定する --cf-dns-token が必要。未設定の場合、HTTP は動作するが HTTPS 証明書はプロビジョニングされない\n    • Grand リポジトリは *.{repo}.{machine}.{baseDomain} を取得する、最初の repo up 時に Traefik が自動的にプロビジョニングする\n    • フォークは親リポジトリのワイルドカード証明書を再利用する（プロビジョニング済み、レート制限への影響なし）\n\n  環境変数\n    • Rediaccfile シェル: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • コンテナ内: SERVICE_IP, REDIACC_NETWORK_ID（renet が自動的に注入する）\n\n  フォーク\n    • rdc repo fork <parent-ref> --tag <tag>: 新しい GUID、networkId、IP 範囲、自動ルートドメインを持つ即時 CoW クローン\n    • 親は稼働したままでよい（オンラインフォーク）。クロスマシン: まずローカルでフォークしてから rdc repo push <ref> --to <machine>\n    • リポジトリ削除後も設定エントリは残る（リポジトリは他のマシンに存在する可能性がある）",
+    "keyConcepts": "\nKey Concepts:\n\n  アーキテクチャ\n    • 各リポジトリ = 分離された Docker 環境（専用 daemon、ループバック IP 範囲、LUKS 暗号化ストレージ）\n    • renet compose を使用する（raw docker compose は使わない）、network_mode:host と rediacc.* ラベルを自動的に注入する\n    • ストレージ: ${REDIACC_WORKING_DIR}/... への bind-mount、Docker の named volume は使わない（フォークやバックアップから除外される）\n    • eBPF バインド書き換えが IP 分離を処理する: アプリは 0.0.0.0 にバインドし、カーネルが正しいループバック IP に書き換える\n\n  ルーティング\n    • 自動ルート（フォークフレンドリー）: https://{service}.{repo}.{machine}.{baseDomain}\n    • カスタムドメイン: Traefik ラベル（traefik.enable=true）、フォークフレンドリーではない\n    • 80 番以外のポートには rediacc.service_port ラベル。ルートはデプロイ後約3秒で有効化される\n    • HTTPS: Cloudflare DNS-01 経由の自動 Let's Encrypt ワイルドカード証明書。'rdc machine infra set' で設定する --cf-dns-token が必要。未設定の場合、HTTP は動作するが HTTPS 証明書はプロビジョニングされない\n    • Grand リポジトリは *.{repo}.{machine}.{baseDomain} を取得する、最初の repo up 時に Traefik が自動的にプロビジョニングする\n    • フォークは親リポジトリのワイルドカード証明書を再利用する（プロビジョニング済み、レート制限への影響なし）\n\n  環境変数\n    • Rediaccfile シェル: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • コンテナ内: SERVICE_IP, REDIACC_NETWORK_ID（renet が自動的に注入する）\n\n  フォーク\n    • rdc repo fork <parent-ref> --tag <tag>: 新しい GUID、networkId、IP 範囲、自動ルートドメインを持つ即時 CoW クローン\n    • 親は稼働したままでよい（オンラインフォーク）。クロスマシン: まずローカルでフォークしてから rdc repo push <ref> --to <machine>\n    • repo delete はフォークの設定エントリをアーカイブし（名前は解放され、GUID は復元可能なまま残る）、グランドリポジトリや他のマシンへプッシュ済みのエントリは保持する（--archive-config を付ければそれもアーカイブされる）",
     "machine": {
       "containers": "コンテナの状態のみを表示",
       "health": "CI/CD用ヘルスチェック",

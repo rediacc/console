@@ -34,21 +34,24 @@ describe('repo delete settles the config entry', () => {
     mockArchive.mockClear();
   });
 
-  it('drops a fork with no other holder, so the tag can be forked again', async () => {
+  it('archives a fork with no other holder, so the tag can be forked again and the GUID stays restorable', async () => {
     await settleConfigEntry('lva:m1', 'vm1', fork, false);
-    expect(mockRemove).toHaveBeenCalledWith('lva:m1');
-    expect(joined()).toContain('configDropped');
+    expect(mockArchive).toHaveBeenCalledWith('lva:m1');
+    expect(mockRemove).not.toHaveBeenCalled();
+    expect(joined()).toContain('archived');
+    expect(joined()).toContain('restoreHint');
     expect(joined()).not.toContain('configRetained');
   });
 
   it('ignores a push record for the machine just deleted from', async () => {
     await settleConfigEntry('lva:m1', 'vm1', { ...fork, pushState: { vm1: {} } }, false);
-    expect(mockRemove).toHaveBeenCalledWith('lva:m1');
+    expect(mockArchive).toHaveBeenCalledWith('lva:m1');
   });
 
   it('retains a fork pushed elsewhere and names the other machines', async () => {
     await settleConfigEntry('lva:m1', 'vm1', { ...fork, pushState: { vm2: {}, vm3: {} } }, false);
     expect(mockRemove).not.toHaveBeenCalled();
+    expect(mockArchive).not.toHaveBeenCalled();
     expect(joined()).toContain('configRetainedElsewhere');
     expect(joined()).toContain('vm2, vm3');
   });
