@@ -155,12 +155,6 @@
   ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/tests/test_quality_staging_tag_guard.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/xdist_groups.py": {
    "noqa PLC0415": 1
   },

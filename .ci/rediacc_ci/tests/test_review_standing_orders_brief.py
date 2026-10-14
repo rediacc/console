@@ -24,6 +24,7 @@ import re
 import subprocess
 import tempfile
 import time
+from typing import Any
 
 import pytest
 
@@ -203,7 +204,7 @@ def _render(proc: subprocess.CompletedProcess[str], root: pathlib.Path, base: pa
     )
 
 
-CASES: list[tuple[str, dict[str, object]]] = [
+CASES: list[tuple[str, dict[str, Any]]] = [
     ("rich-slice-tasks-dir-unresolvable", {"tasks": None}),
     (
         "live-worker-with-a-growing-output-file",
@@ -238,11 +239,11 @@ EMPTY_ID_CASE = "session-id-set-but-empty"
 
 
 @pytest.mark.parametrize(("name", "kwargs"), CASES, ids=[c[0] for c in CASES])
-def test_port_matches_the_twins_recorded_output(name: str, kwargs: dict[str, object]) -> None:
+def test_port_matches_the_twins_recorded_output(name: str, kwargs: dict[str, Any]) -> None:
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td) / "b"
         base.mkdir()
-        root = _fixture(base, **kwargs)  # type: ignore[arg-type]
+        root = _fixture(base, **kwargs)
         actual = _render(_run(root, base), root, base)
     expected = _golden(name)
     assert actual == expected, (
