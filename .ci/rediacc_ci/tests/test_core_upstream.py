@@ -5,6 +5,7 @@ THE TWO COPIES MUST AGREE, and nothing else would notice if they drifted: the Ty
 Proved, control first: an answer on the first attempt returns at once; a transient failure is retried up to three times with 2 s and 4 s between attempts, and each retry prints the note `ci_diagnose.py` skips; a failure that is not worth asking again raises after one attempt; the report carries both sentences the `upstream-unreachable` signature reads.
 """
 
+import http.client
 import pathlib
 import re
 
@@ -13,6 +14,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.ci import ci_diagnose
 from rediacc_ci.core import upstream
+from rediacc_ci.tests.gates import upstream_stub
 
 TS = pathlib.Path(paths.CI_DIR).parent / "scripts" / "lib" / "upstream.ts"
 
@@ -95,3 +97,33 @@ def test_the_report_carries_the_sentences_the_triage_reads(capsys):
 def test_no_item_prints_nothing(capsys):
     upstream.report_unreachable("x(s)", [], "y")
     assert capsys.readouterr().err == ""
+
+
+class _TruncatedConnection:
+    """A connection whose response ends early, which http.client reports as HTTPException and not as OSError."""
+
+    def request(self, *_args, **_kwargs) -> None:
+        return None
+
+    def getresponse(self):
+        raise http.client.IncompleteRead(b"", 10)
+
+    def close(self) -> None:
+        return None
+
+
+def test_a_truncated_response_is_a_failed_ask_not_a_traceback(slept, monkeypatch):
+    monkeypatch.setattr(upstream, "_connection", lambda _parts: _TruncatedConnection())
+    with pytest.raises(upstream.NotComparedError) as raised:
+        upstream.ask_json("https://example.test/q", "who")
+    assert "network error IncompleteRead" in str(raised.value)
+    assert "after 3 attempt(s)" in str(raised.value)
+    assert slept == [2, 4]
+
+
+def test_the_dns_stub_takes_an_mx_pair_as_a_tuple_or_a_list_and_refuses_anything_else():
+    as_tuple = upstream_stub._rdata("MX", (10, "mx.example.test"))
+    assert upstream_stub._rdata("MX", [10, "mx.example.test"]) == as_tuple
+    for bad in ("mx.example.test", (10,), (10, "a", "b")):
+        with pytest.raises(TypeError):
+            upstream_stub._rdata("MX", bad)

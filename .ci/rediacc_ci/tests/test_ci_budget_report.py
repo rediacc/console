@@ -3077,6 +3077,20 @@ def test_job_p90_plans_skips_failed_jobs_and_lanes_with_no_manifest():
     assert plans == {}
 
 
+def test_job_p90_plans_drops_a_name_with_one_sample_from_a_commit_with_no_manifest():
+    """A sample from before the lane was sharded ran another plan, so it cannot be priced against today's leg even when the other samples trace."""
+    runs = [{"id": 1, "head_sha": "new"}, {"id": 2, "head_sha": "before-sharding"}]
+    jobs = [[_plan_job("Q / X (1/2)")], [_plan_job("Q / X (1/2)")]]
+    files = {("new", ".ci/config/shards/lane-x.json"): _manifest(2, [["a"], ["b"]])}
+    plans = br.job_p90_plans(runs, jobs, _PLAN_PATTERNS, lambda sha, rel: files.get((sha, rel)))
+    assert plans == {}
+    # CONTROL: the same name traced from the one commit that has a manifest keeps its entry.
+    plans = br.job_p90_plans(
+        runs[:1], jobs[:1], _PLAN_PATTERNS, lambda sha, rel: files.get((sha, rel))
+    )
+    assert plans == {"Q / X (1/2)": [br.leg_plan_hash(["a"])]}
+
+
 def test_merged_job_p90_plans_replaces_a_remeasured_name_and_keeps_the_rest():
     existing = {"Q / X (1/2)": ["old1"], "Q / X (2/2)": ["old2"], "Other": ["k"]}
     merged = br.merged_job_p90_plans(
@@ -3104,3 +3118,21 @@ def test_refresh_lane_durations_writes_job_p90_plans(tmp_path):
     assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
     data = json.loads(path.read_text())
     assert data["job_p90_plans"] == {"Kept": ["k"], "Q / X (1/2)": ["fresh"]}
+
+
+def test_refresh_lane_durations_drops_the_plans_of_a_name_it_can_no_longer_trace(tmp_path):
+    """A re-measured name whose samples are now all untraceable must not keep the entry that described the old samples."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(
+        json.dumps(
+            {
+                "refreshed_at": "2026-01-01T00:00:00Z",
+                "concurrency": 20,
+                "job_p90_minutes": {"Q / X (1/2)": 9.0},
+                "job_p90_plans": {"Q / X (1/2)": ["stale"]},
+            }
+        )
+    )
+    compute = _fake_compute(job_p90_minutes={"Q / X (1/2)": 7.0}, job_p90_plans={})
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    assert "job_p90_plans" not in json.loads(path.read_text())

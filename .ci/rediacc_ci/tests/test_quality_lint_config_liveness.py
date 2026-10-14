@@ -149,6 +149,18 @@ def test_a_reason_does_not_leak_into_the_next_array(tmp_path, capsys) -> None:
     assert 'entry "conftest.py" BLE001 is missing' in err
 
 
+def test_an_inline_marker_is_the_reason_validated_for_its_own_line(tmp_path, capsys) -> None:
+    """A group reason above an entry does not hide a weak marker on the entry's own line."""
+    tables = LIVE_TABLES.replace(
+        '"BLE001",\n]\n\n[tool.ruff.lint.pyflakes]',
+        '"BLE001",  # BLOCKER: too short\n]\n\n[tool.ruff.lint.pyflakes]',
+    )
+    assert tables != LIVE_TABLES
+    status, _out, err = judged(build(tmp_path, tables, LIVE_FILES), capsys)
+    assert status == 1
+    assert '"conftest.py" BLE001' in err, err
+
+
 def test_an_empty_universe_is_cannot_verify_and_not_a_pass(tmp_path, capsys) -> None:
     files = dict.fromkeys(LIVE_FILES, CLEAN)
     status, out, err = judged(build(tmp_path, LIVE_TABLES, files), capsys)

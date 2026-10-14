@@ -142,7 +142,7 @@ OSV_URL_ENV = "GO_DEPS_OSV_URL"
 
 
 def osv_affected(path: str, version: str) -> list[str]:
-    """The OSV advisory ids that affect `path@version`. Raises upstream.NotComparedError when OSV could not be asked or answered with something that is not JSON."""
+    """The OSV advisory ids that affect `path@version`. Raises upstream.NotComparedError when OSV could not be asked or answered with something that is not a JSON object."""
     url = os.environ.get(OSV_URL_ENV) or OSV_QUERY_URL
     who = "%s %s" % (path, version)
     try:
@@ -154,7 +154,12 @@ def osv_affected(path: str, version: str) -> list[str]:
         raise upstream.NotComparedError(
             "an answer that is not JSON", host, "POST " + url, 1
         ) from None
-    vulns = data.get("vulns", []) if isinstance(data, dict) else []
+    if not isinstance(data, dict):
+        host = url.split("/")[2] if url.count("/") >= 2 else url
+        raise upstream.NotComparedError(
+            "an answer that is not a JSON object", host, "POST " + url, 1
+        )
+    vulns = data.get("vulns", [])
     return sorted({v["id"] for v in vulns if isinstance(v, dict) and v.get("id")})
 
 
@@ -449,7 +454,8 @@ def _go_network_failure(stderr: str) -> upstream.Failure | None:
 
 def _go_list(directory: pathlib.Path) -> subprocess.CompletedProcess[str]:
     """`go list -u -m -json all`, retried under the shared rule when it fails on the network. Raises upstream.NotComparedError once that budget is spent, and OSError when `go` cannot run at all."""
-    host = ["the module proxy"]
+    # A bare host, never a phrase: the aggregation loop splits the finding record on spaces, so a host with a space would be cut at its first word.
+    host = ["proxy.golang.org"]
 
     def once() -> upstream.Answer[subprocess.CompletedProcess[str]] | upstream.Failure:
         proc = subprocess.run(

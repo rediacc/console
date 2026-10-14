@@ -11,7 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 HERE = pathlib.Path(__file__).relative_to(ROOT)
 
 
-def _nested_pytest(cache: pathlib.Path, target: str) -> subprocess.CompletedProcess:
+def _nested_pytest(cache: pathlib.Path, target: str, *extra: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [
             sys.executable,
@@ -23,6 +23,7 @@ def _nested_pytest(cache: pathlib.Path, target: str) -> subprocess.CompletedProc
             "2",
             "--collect-only",
             "-q",
+            *extra,
             target,
         ],
         cwd=str(ROOT),
@@ -60,3 +61,18 @@ def test_an_existing_path_still_collects(tmp_path):
         control.stderr[-400:],
     )
     assert "test_an_existing_path_still_collects" in control.stdout
+
+
+def test_pyargs_names_are_modules_not_paths(tmp_path):
+    """Under --pyargs the argument is a dotted module name, which is not a file below the working directory; the refusal must leave it to pytest."""
+    module = "rediacc_ci.tests.test_named_paths"
+    control = _nested_pytest(tmp_path, module, "--pyargs")
+    assert control.returncode == 0, (
+        control.returncode,
+        control.stdout[-400:],
+        control.stderr[-400:],
+    )
+    assert "test_an_existing_path_still_collects" in control.stdout
+    # A module that is not there is still pytest's own error, not silence.
+    missing = _nested_pytest(tmp_path, "rediacc_ci.tests.no_such_module_here", "--pyargs")
+    assert missing.returncode == 4, (missing.returncode, missing.stderr[-400:])

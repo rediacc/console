@@ -1761,7 +1761,8 @@ def job_p90_plans(
                     manifests[key] = None
             manifest = manifests[key]
             if manifest is None:
-                # A lane with no manifest at that commit is not a manifest lane there: nothing to trace, and nothing recorded.
+                # No manifest at that commit: the lane was not sharded there, so this sample ran a different plan from today's leg. The name is untraced, as the docstring says.
+                untraced.add(name)
                 continue
             of_in = leg.group(2)
             index = int(leg.group(1))

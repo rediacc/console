@@ -115,7 +115,7 @@ def ask_json(url: str, who: str, body: object | None = None) -> object:
             )
             response = conn.getresponse()
             raw = response.read()
-        except OSError as exc:
+        except (OSError, http.client.HTTPException) as exc:
             return _classify_error(exc)
         finally:
             conn.close()

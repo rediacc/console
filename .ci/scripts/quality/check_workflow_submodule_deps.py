@@ -89,11 +89,31 @@ def package_test_files(workspace: str | None = None) -> list[pathlib.Path]:
 
 RUNNER_WORDS = {"run", "test", "vitest", "jest", "playwright", "npx", "npm", "exec", "--"}
 
+# Runner flags that take the next word as their value. Any other flag is read as a boolean, so a bare word after it is a filter: reading an unknown flag as value-taking let `--silent src/utils` swallow the directory and narrow the sweep.
+VALUE_FLAGS = {
+    "-t",
+    "-c",
+    "-r",
+    "-w",
+    "--testNamePattern",
+    "--reporter",
+    "--config",
+    "--project",
+    "--root",
+    "--dir",
+    "--outputFile",
+    "--shard",
+    "--pool",
+    "--environment",
+    "--mode",
+    "--workspace",
+}
+
 
 def _has_other_filter(cmd: str, names: list[str]) -> bool:
     """Whether the command also passes a directory, glob or name filter beside the test files it names.
 
-    `vitest run src/a.test.ts src/utils` runs every test under `src/utils` as well, so narrowing the sweep to `a.test.ts` would leave those unswept. Read after the first named file: a bare word there that is not a flag, a flag's value, a shell operator or another named file is a filter. A command that cannot be split reads as filtered, which keeps the whole sweep.
+    `vitest run src/a.test.ts src/utils` runs every test under `src/utils` as well, so narrowing the sweep to `a.test.ts` would leave those unswept. Read after the first named file: a bare word there that is not a flag, the value of a flag in `VALUE_FLAGS`, a shell operator or another named file is a filter. A command that cannot be split reads as filtered, which keeps the whole sweep.
     """
     try:
         tokens = shlex.split(cmd)
@@ -107,7 +127,7 @@ def _has_other_filter(cmd: str, names: list[str]) -> bool:
         if tok in {"&&", "||", ";", "|"}:
             break
         if tok.startswith("-"):
-            after_flag = "=" not in tok
+            after_flag = "=" not in tok and tok in VALUE_FLAGS
             continue
         if after_flag:
             after_flag = False
@@ -446,6 +466,11 @@ def run_controls(subs: list[str], scripts: dict[str, str]) -> list[str]:
             failures.append("a runner command that also passes a directory filter was narrowed")
         if named_test_files("vitest run src/one.test.ts -t 'a name'", ["cli"], root) != [one]:
             failures.append("a flag's value was read as a second filter")
+        # A boolean flag between the file and the directory does not consume the directory.
+        if named_test_files("vitest run src/one.test.ts --silent src/utils", ["cli"], root) != []:
+            failures.append(
+                "a boolean flag before a directory filter hid the filter, narrowing the sweep"
+            )
     # Every spelling of a workspace flag is parsed, `--workspace=@scope/pkg` included.
     spelled = named_workspaces(["npm test -w @rediacc/shared", "npm test --workspace=@rediacc/cli"])
     if spelled != ["cli", "shared"]:

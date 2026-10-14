@@ -148,7 +148,8 @@ def parse_config(text: str) -> tuple[list[Entry], list[str]]:
                 % (CONFIG, number, leftover, open_key)
             )
         inline = _BLOCKER.match(comment)
-        reason = current or (inline.group(1).strip() if inline else "")
+        # The marker on the entry's own line is the nearest reason, so it is the one validated; the group reason above covers a line that carries none.
+        reason = (inline.group(1).strip() if inline else "") or current
         for value in values:
             if table == IGNORES_TABLE:
                 entries.append(Entry(IGNORE, open_key, value, reason, number))

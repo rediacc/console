@@ -143,7 +143,7 @@
         },
         {
           "id": "check:ci-generated-artifacts",
-          "reason": "The **/*.md the derivation cites (check_generated_artifacts.py:467) is a selftest control proving `**/` spans zero directories; the real run reads .ci/config/generated-artifacts.json, whose only agent/ inputs are agent/plans/** (generated-artifacts.json:55 and :138), so no file under agent/reviews/ is read and none changes its verdict."
+          "reason": "The **/*.md the derivation cites (in check_generated_artifacts.py's selftest) is a control proving `**/` spans zero directories; the real run reads .ci/config/generated-artifacts.json, whose only agent/ inputs are its two agent/plans/** entries, so no file under agent/reviews/ is read and none changes its verdict."
         }
       ]
     },
