@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T06:09:17.442Z",
+  "generatedAt": "2026-10-14T06:43:10.734Z",
   "legs": [
     {
       "index": 1,
@@ -558,6 +558,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_wait_for_vm_ssh.py",
         "pytest:.ci/rediacc_ci/tests/test_main.py",
+        "pytest:.ci/rediacc_ci/tests/test_named_paths.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_units.py",

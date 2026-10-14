@@ -12,6 +12,7 @@ WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the
 """
 
 import os
+import pathlib
 import subprocess
 import sys
 import tempfile
@@ -300,11 +301,28 @@ def _tmp_capacity_or_exit(config: pytest.Config) -> None:
     _TMP_CAPACITY["line"] = line
 
 
+# --------------------------------------------------------------------------- A named test path that does not exist, refused up front (worklist #f0bad09d).
+#
+# Serial pytest answers a misspelled path with rc 4 and "file or directory not found", but under xdist (`-n`) the controller hands the path to the workers and the run ends "no tests ran" at rc 5 with no word of which path, which reads like an empty selection. This refuses any named path that is missing, with the same rc 4 and the path named, before collection. CONTROLLER ONLY, for the reason _TMP_CAPACITY gives. `.ci/rediacc_ci/tests/test_named_paths.py` drives a nested `pytest -n 2` and requires the refusal.
+def _named_paths_or_exit(config: pytest.Config) -> None:
+    if hasattr(config, "workerinput"):
+        return
+    base = pathlib.Path(config.invocation_params.dir)
+    missing = [
+        arg
+        for arg in config.args
+        if not arg.startswith("-") and not (base / arg.split("::", 1)[0]).exists()
+    ]
+    if missing:
+        raise pytest.UsageError("file or directory not found: %s" % ", ".join(missing))
+
+
 def pytest_configure(config: pytest.Config) -> None:
-    """Drop the harness's project root, refuse a temp filesystem below its floor, then install the write record once per process, rooted at the rootdir."""
+    """Drop the harness's project root, refuse a temp filesystem below its floor and a named path that does not exist, then install the write record once per process, rooted at the rootdir."""
     for name in HARNESS_ROOT_ENV:
         os.environ.pop(name, None)
     _tmp_capacity_or_exit(config)
+    _named_paths_or_exit(config)
     if os.environ.get(SNAPSHOT_ENV) == "0" or _AUDIT["root"] is not None:
         return
     _AUDIT["root"] = os.path.realpath(str(config.rootpath))
