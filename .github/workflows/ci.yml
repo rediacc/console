@@ -1203,13 +1203,14 @@ jobs:
 
   # ============================================================================
   # COLUMN 4C: E2E DEPENDENCY PROBE (T2.12, PLAN-ci-time-budget)
-  # Opt-in, label-gated: re-provisions one full VM topology per E2E Workers
-  # spec file to test whether the shard manifest's files are genuinely
-  # independent, the way `no-external-quality` and `no-media-quality` above
-  # read a label into `initialize`'s outputs. This one is read directly on
-  # the job `if:`, the same way `watchdog-monitor.cjs` reads `no-auto-cancel`
-  # off the PR: it is a diagnostic a human asks for, never part of the
-  # scope engine's own run_* decisions.
+  # Runs each E2E Workers spec file ALONE on its own fresh VM topology, so a
+  # file that passes only after another file's state is a red run on the PR
+  # that introduced the dependency. It runs exactly when E2E Workers runs
+  # (full_suite plus the scope engine's run_e2e_workers, the same two inputs
+  # ct-tests.yml's test-e2e-workers reads): the probe judges the files that
+  # job ships, so it has nothing to say on a run that skips them. No PR
+  # label switches it on or off (operator ruling 2026-10-14: the label was
+  # retired, and an issue is solved on the PR that causes it).
   # ============================================================================
   e2e-dependency-probe:
     name: E2E Dependency Probe
@@ -1219,10 +1220,10 @@ jobs:
     needs: [initialize]
     if: >-
       always() &&
-      github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
       needs.initialize.outputs.is_bot != 'true' &&
-      contains(github.event.pull_request.labels.*.name, 'e2e-dependency-probe')
+      needs.initialize.outputs.full_suite == 'true' &&
+      needs.initialize.outputs.run_e2e_workers != 'false'
     uses: ./.github/workflows/ct-e2e-probe.yml
     secrets:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
