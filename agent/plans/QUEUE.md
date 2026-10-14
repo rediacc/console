@@ -69,16 +69,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-biome-only-lint.md -- 13 of 29 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 578 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:ad4f40ccdc1c9b8bf.
-- Leased items: 12: #3993c728 (worker:ad4f40ccdc1c9b8bf, d778be9d), #3c36e4b5 (worker:ad4f40ccdc1c9b8bf, d778be9d), #6361fc5b (worker:ad4f40ccdc1c9b8bf, d778be9d), #97a7ced2 (worker:ad4f40ccdc1c9b8bf, d778be9d), #bd51855a (worker:ad4f40ccdc1c9b8bf, d778be9d), #c275adc4 (worker:ad4f40ccdc1c9b8bf, d778be9d), #d52ad5bb (worker:ad4f40ccdc1c9b8bf, d778be9d), #d5506fb8 (worker:bmqgcaitu, d778be9d), #e4caba69 (worker:ad4f40ccdc1c9b8bf, d778be9d), #f0bad09d (worker:ad4f40ccdc1c9b8bf, d778be9d), #f147e3e5 (worker:ad4f40ccdc1c9b8bf, d778be9d), #fe2d3ad2 (worker:ad4f40ccdc1c9b8bf, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 583 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:ad4f40ccdc1c9b8bf, worker:a3cd1357af47ec809, worker:ad2cb048b81425c59, worker:a4104daa73a232b64.
+- Leased items: 15: #3993c728 (worker:ad4f40ccdc1c9b8bf, d778be9d), #3c36e4b5 (worker:ad4f40ccdc1c9b8bf, d778be9d), #50cb9316 (worker:ad2cb048b81425c59, d778be9d), #6361fc5b (worker:ad4f40ccdc1c9b8bf, d778be9d), #6a5395a6 (worker:a3cd1357af47ec809, d778be9d), #97a7ced2 (worker:a4104daa73a232b64, d778be9d), #a9da18c8 (worker:a3cd1357af47ec809, d778be9d), #ba06a46a (worker:ad2cb048b81425c59, d778be9d), #bd51855a (worker:ad4f40ccdc1c9b8bf, d778be9d), #c275adc4 (worker:ad4f40ccdc1c9b8bf, d778be9d), #d52ad5bb (worker:ad4f40ccdc1c9b8bf, d778be9d), #e4caba69 (worker:ad4f40ccdc1c9b8bf, d778be9d), and 3 more.
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 15 plans done, 167 of 184 boxes done (90%).
+Promoted: 11 of 15 plans done, 176 of 184 boxes done (95%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -94,9 +94,9 @@ Promoted: 11 of 15 plans done, 167 of 184 boxes done (90%).
 | 10 | PLAN-cd-errors-in-ci.md | 6/6 | done |
 | 11 | PLAN-scope-mirrors.md | 11/11 | done |
 | 12 | PLAN-lessons-registry.md | 9/9 | done |
-| 13 | PLAN-inline-suppressions.md | 3/11 | 8 open |
+| 13 | PLAN-inline-suppressions.md | 6/11 | 5 open |
 | 14 | PLAN-stop-hook-effort.md | 7/7 | done |
-| 15 | PLAN-stop-hook-effort-tuning.md | 0/7 | 7 open |
+| 15 | PLAN-stop-hook-effort-tuning.md | 6/7 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges

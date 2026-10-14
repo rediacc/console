@@ -253,7 +253,7 @@ The golangci half belongs to WD:
 
 ## Tasks
 
-- [ ] P0 lead: precondition and config sweep.
+- [x] P0 lead: precondition and config sweep.
   - Precondition: part 1's gate and baseline are on the branch, and the contract (a)-(d) is confirmed.
   - Harvest every inline `-- reason` for the config-covered classes into the BLOCKER text before stripping (fact 2).
   - Write the pyproject block above, the pytest `pythonpath` and allowed-unused-imports, and create `.claude/hooks/post-bash/_hookpath.py`, `.claude/rediacc_hooks/guards/_hookpath.py` and `.ci/scripts/ci/_stoppath.py`, `.ci/scripts/quality/_stoppath.py` (empty of callers for now).
@@ -262,12 +262,15 @@ The golangci half belongs to WD:
   - Land the liveness and BLOCKER validation in `.ci/rediacc_ci/quality/python_lint.py` with its controls, `BLOCKER_FILES`, the suppressions.md rows and gen-docs.
   - Record the `-X importtime` cost of `.claude/hooks/stop/worklist.py` in the BLOCKER.
   - Acceptance: `npm run check:ci-python-lint` rc 0; `npm run check:ci-python-types` rc 0; `npm run check:ci-pytest` green with a collected count at least the pre-change count; `npm run check:ci-suppression-liveness` rc 0; `npm run check:ci-inline-suppressions -- --write-baseline` shrinks by about 657 and the gate is rc 0.
-- [ ] WA1: F811/F401 fixture move.
+    (ticked) 2026-10-14T11:00:20Z by d778be9d: commit:69dcbc031 through commit:843681b63 (suprb5 03-18) with commit:8661b6e5d (liveness and BLOCKER validation): ruff check . rc=0, check:ci-python-lint, check:ci-python-types (0 new), check:ci-suppression-liveness and check:ci-inline-suppressions rc=0 on the landed tree
+- [x] WA1: F811/F401 fixture move.
   - New `.claude/rediacc_hooks/tests/conftest.py` with `wl` and `sc`; 55 test modules lose their import and parameter markers.
   - Acceptance: `ruff check --no-cache .claude/rediacc_hooks/tests` rc 0; `python3 -m pytest .claude/rediacc_hooks/tests -q` green, with the same count as before; a hand-picked file-order run (the #6b5becd7 shape) is green.
-- [ ] WA2: the rest of `.claude`.
+    (ticked) 2026-10-14T11:00:22Z by d778be9d: commit:f73354b34 through commit:ffdc82825: conftest.py carries wl and sc; ruff check rc=0; the moved modules run 398 and 490 passed in their two batches
+- [x] WA2: the rest of `.claude`.
   - E402 hops (stop test scripts, post-bash and guard harnesses through `_hookpath`), PLC0415 in tests and harnesses, DTZ, E731, B010, ARG, S112, A002, PLW0603, and the 13 `type: ignore`.
   - Acceptance: `npm run check:ci-python-lint` and `npm run check:ci-python-types` rc 0; `npm run check:ci-pytest` green; `npm run check:ci-hook-integrity` rc 0; `npm run check:ci-inline-suppressions -- --count .claude` reports 0.
+    (ticked) 2026-10-14T11:00:24Z by d778be9d: commit:4a0e4d57b commit:2ee2d7713 commit:8c6576789 commit:02b8b9f5f: check_inline_suppressions.py --count .claude reports 0 markers in 350 files; python-lint, python-types and hook-integrity rc=0
 - [ ] WB1: `.ci` mechanical fixes.
   - F811 plant, F401, E402 (pythonpath and `_stoppath`), N818, N802, E731, ARG001/002, PLW0603, S101, SIM115, DTZ, B010, B023, A002, singles, and the S105 renames.
   - Acceptance: python-lint and python-types rc 0; `npm run check:ci-pytest` green.
