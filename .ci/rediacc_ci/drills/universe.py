@@ -20,7 +20,7 @@ from rediacc_ci import log
 from rediacc_ci.drills import lib
 
 EMAIL = "drill-universe@rediacc.io"
-PASSWORD = "DrillUniverse123!"  # noqa: S105 -- a throwaway dev-gateway login, chosen by the drill
+PASSWORD = "DrillUniverse123!"
 USAGE = "Usage: ./run.sh drill universe [--selftest] [--no-restart] [--keep-work]"
 
 

@@ -323,7 +323,7 @@ def main(
     """An unexpected exception is exit 2, never Python's default 1, which would read as drift."""
     try:
         return _main(argv, env, fetch)
-    except Exception as e:  # noqa: BLE001 - any crash is "no verdict", and says which class
+    except Exception as e:
         print(
             "::error::\u2717 turnstile drift check crashed (%s); failing closed, no verdict"
             % type(e).__name__,

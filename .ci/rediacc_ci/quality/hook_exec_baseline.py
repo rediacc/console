@@ -91,7 +91,7 @@ def _load_counter():
     parent = str(_HOOK_PKG["parent"])
     paths.on_sys_path(parent)
     try:
-        from rediacc_hooks import execcount  # noqa: PLC0415
+        from rediacc_hooks import execcount
     except ModuleNotFoundError as exc:
         raise RefusalError(
             "the counter this gate is built on is not importable from %s (%s). "

@@ -329,7 +329,7 @@ def _shellscan():
     """
     paths.on_sys_path(pathlib.Path(__file__).resolve().parents[3] / ".claude")
     try:
-        from rediacc_hooks import shellscan  # noqa: PLC0415 -- the documented hop above
+        from rediacc_hooks import shellscan
     except ImportError as exc:
         raise SystemExit(
             "check:ci-gh-retry-reads reads `gh api` through .claude/rediacc_hooks/shellscan.py "

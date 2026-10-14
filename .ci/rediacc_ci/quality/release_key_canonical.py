@@ -83,7 +83,7 @@ ROOT_ENV = "RELEASE_KEY_ROOT"
 
 # The throwaway key. Its passphrase is a literal in the twin and is a literal here: it protects nothing, and a generated one would make the "wrong passphrase" control depend on a value the reader cannot see. THE SUPPRESSION ON THE NEXT LINE IS NOT A SILENCING. bandit is right that this is a hardcoded credential; it protects a key generated and thrown away inside a temp GNUPGHOME
 # for the length of one process, and it is the twin's literal. Replacing it with a random value would cost the "wrong passphrase" control its readability and would change nothing about what is protected.
-PASSPHRASE = "gate-throwaway-passphrase"  # noqa: S105
+PASSPHRASE = "gate-throwaway-passphrase"
 KEY_UID = "Release Key Gate <gate@example.invalid>"
 
 # RFC 4880 wraps armor base64 at 64 columns. The weld produces one line far longer, and that over-long line is the structural signature Go rejects.

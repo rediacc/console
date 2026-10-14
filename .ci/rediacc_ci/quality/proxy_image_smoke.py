@@ -49,8 +49,8 @@ RENET_STAGED = ("workers", "proxy", "renet", "renet-linux-amd64")
 RENET_PREBUILT = ("private", "bin", "renet-linux-amd64")
 RENET_SOURCE = ("private", "renet")
 
-EXECUTOR_TOKEN = "rdt_image_smoke_executor"  # noqa: S105 -- a fixture token for a fake account server
-CALLER_TOKEN = "rdt_image_smoke_caller"  # noqa: S105 -- a fixture token for a fake account server
+EXECUTOR_TOKEN = "rdt_image_smoke_executor"
+CALLER_TOKEN = "rdt_image_smoke_caller"
 ACCOUNT_PORT = 9000
 EXECUTOR_PORT = 8080
 

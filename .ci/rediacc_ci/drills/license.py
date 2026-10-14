@@ -48,7 +48,7 @@ USAGE = (
     "Usage: ./run.sh drill license [--legs a,b,c,d,e,f] [--selftest] "
     "[--no-restart] [--vm <ip>] [--vm2 <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
-DRILL_PASSWORD = "DrillLicense123!"  # noqa: S105 -- a throwaway dev-gateway login
+DRILL_PASSWORD = "DrillLicense123!"
 # The activation cap this drill starts from, seeded explicitly rather than inherited from the dev server's default, so leg e asserts against a number this file owns and teardown restores that same number.
 START_MAX_ACTIVATIONS = 3
 CONFIG_NAME = "drill-license"

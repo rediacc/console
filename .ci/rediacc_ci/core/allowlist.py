@@ -439,7 +439,7 @@ class LooseCondition(NamedTuple):
 
 def _default_repo() -> str:
     # Imported here, not at module top: every other verb in this file must keep working in a checkout that cannot load the registry, and only this one needs it.
-    from rediacc_ci import well_known  # noqa: PLC0415
+    from rediacc_ci import well_known
 
     return well_known.GH_REPO
 

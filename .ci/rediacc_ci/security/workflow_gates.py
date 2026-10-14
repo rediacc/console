@@ -132,7 +132,7 @@ def _ensure_yaml(palette: _Palette) -> ModuleType | None:
     Returns the module, or None after having printed the twin's exit-2 error.
     """
     try:
-        import yaml  # noqa: PLC0415 - deliberately late, this IS the bootstrap
+        import yaml
     except ImportError:
         pass
     else:
@@ -156,7 +156,7 @@ def _ensure_yaml(palette: _Palette) -> ModuleType | None:
             site.main()
         importlib.invalidate_caches()
         try:
-            import yaml  # noqa: PLC0415
+            import yaml
         except ImportError:
             continue
         return yaml
