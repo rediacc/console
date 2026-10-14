@@ -209,6 +209,12 @@ EDGE_CASES = [
         "a directory listing filtered by a log-meeting pattern",
         "python3 -c \"import os, re; [open('agent/' + n, 'w') for n in os.listdir('agent') if re.search('pr-*.md', n)]\"",
     ),
+    # Review 0c516466.1 and .2: a listing or a shell-out the word lists missed. `os.fwalk` is a walk under a prefix, so `walk` is matched anywhere in a word; perl's `readpipe` is backticks as a function.
+    (
+        "a python fwalk filtered by a log-meeting pattern",
+        "python3 -c \"import os, re; [open(os.path.join(d, n), 'w') for d, _s, fs, _fd in os.fwalk('agent') for n in fs if re.search('pr-*.md', n)]\"",
+    ),
+    ("perl readpipe on an md glob", "perl -e 'readpipe(\"cp /dev/null agent/*.md\")'"),
     # The inert side, both directions: a program importing only `fs` that writes an md pattern list to the file its command line names writes that file, and the same program handed a log is refused by the handed arm.
     (
         "an inert program writing an md pattern list to the file it is handed",
@@ -1139,14 +1145,14 @@ _INERT_MODULES = {
     "ruby": frozenset(("json", "set", "date", "time")),
     "perl": frozenset(("strict", "warnings", "utf8", "feature")),
 }
-# What makes a program LIVE whatever it imports, matched anywhere in its text, inside literals too, so a mention over-counts life: a shell-out (`system`, `exec*`, `spawn*`, `popen`, a backtick, perl `qx`, ruby `%x`), a computed name (`eval`, `getattr`, `__import__`, `Function`, `send`, `const_get`, perl `&{...}` and `->$name`), a glob or match call (`glob`, `fnmatch`, `match`), and a directory listing a pattern can filter (`listdir`, `scandir`, `walk`, `iterdir`, `readdir`, `opendir`, ruby `Dir`, `children`).
+# What makes a program LIVE whatever it imports, matched anywhere in its text, inside literals too, so a mention over-counts life: a shell-out (`system`, `exec*`, `spawn*`, `popen`, a backtick, perl `qx` and `readpipe`, ruby `%x`), a computed name (`eval`, `getattr`, `__import__`, `Function`, `send`, `const_get`, perl `&{...}` and `->$name`), a glob or match call (`glob`, `fnmatch`, `match`), and a directory listing a pattern can filter (`listdir`, `scandir`, `walk` with every prefixed form such as `os.fwalk` and `walkSync`, `iterdir`, `readdir`, `opendir`, ruby `Dir`, `children`).
 _SHELL_OR_NAME = (
-    r"system|exec|spawn|popen|subprocess|child_process|`|\bqx\b|%x|"
+    r"system|exec|spawn|popen|subprocess|child_process|`|\bqx\b|%x|readpipe|"
     r"eval|getattr|setattr|__import__|importlib|\bvars\b|locals|\bcompile\b|\bFunction\b|"
     r"\bsend\b|const_get|instance_|\bmethod\b|&\s*[{$]|->\s*\$"
 )
 _GLOB_CALL = r"glob|fnmatch|match"
-_LISTING = r"listdir|scandir|\bwalk\b|iterdir|readdir|opendir|\bDir\b|children|each_child|\bFind\b"
+_LISTING = r"listdir|scandir|walk|iterdir|readdir|opendir|\bDir\b|children|each_child|\bFind\b"
 _LIVE = re.compile(f"{_SHELL_OR_NAME}|{_GLOB_CALL}|{_LISTING}")
 # Perl and ruby open a PIPE through a mode or a leading or trailing `|` in a string (`open(F, "ls *.md |")`), and perl's `<*.md>` is a glob with no call at all.
 _LIVE_PERL_RUBY = re.compile(r"['\"]\s*-?\||\|-?\s*['\"]|<[^<>\n]*[*?\[{][^<>\n]*>")
