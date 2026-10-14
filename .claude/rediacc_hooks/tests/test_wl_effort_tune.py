@@ -519,3 +519,20 @@ def test_t6_three_reraised_finished_items_yield_one_rule_and_its_test(tmp_path):
     assert got.returncode == 0, got.stdout + got.stderr
     assert "2 passed" in got.stdout
     assert T.judge_shapes(rows[:2]) == [], "two rows are not yet a shape"
+
+
+# Review fb45d045.1: the status-table and rule-breaking sources were rendered as `re.compile(r%r)`, so the raw prefix on repr's escaped text turned `\b` into a literal backslash and `b`, and the generated rule matched nothing.
+POSITIVES = {
+    "reraised-finished": ("Finish #0badc0de first.", ("0badc0de",)),
+    "status-table": ("List every open item by id with its state.", ()),
+    "rule-breaking": ("First ask the operator whether to proceed.", ()),
+}
+
+
+@pytest.mark.parametrize("shape", sorted(POSITIVES))
+def test_each_generated_judge_rule_matches_its_shape_and_not_its_control(shape):
+    spec = next(s for s in T.JUDGE_SHAPES if s["shape"] == shape)
+    ns: dict = {}
+    exec(compile(spec["source"], "<rule:%s>" % shape, "exec"), ns)
+    assert ns["matches"](*POSITIVES[shape]) is True
+    assert ns["matches"](*spec["control"]) is False
