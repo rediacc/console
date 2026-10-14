@@ -159,9 +159,10 @@ function extendsChain(abs: string, seen: Set<string> = new Set()): string[] {
   for (const raw of targets) {
     if (typeof raw !== 'string') continue;
     const dir = path.dirname(abs);
-    const candidates = raw.startsWith('.') || path.isAbsolute(raw)
-      ? [path.resolve(dir, raw), path.resolve(dir, `${raw}.json`)]
-      : [];
+    const candidates =
+      raw.startsWith('.') || path.isAbsolute(raw)
+        ? [path.resolve(dir, raw), path.resolve(dir, `${raw}.json`)]
+        : [];
     if (candidates.length === 0) {
       try {
         const req = createRequire(abs);
