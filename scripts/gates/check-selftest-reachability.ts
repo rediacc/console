@@ -183,9 +183,10 @@ function pythonImports(file: string, text: string, has: (f: string) => boolean):
   return out;
 }
 
-const COND_HEAD = /(?:^|[^\w$.])(?:if|while|for|with)$/;
+// `tail` holds no blanks, so `for await` reads `forawait` there.
+const COND_HEAD = /(?:^|[^\w$.])(?:if|while|for(?:await)?|with)$/;
 
-/** Whether a `/` after `tail` (the last non-blank characters of the code so far, empty at the start) starts a regex literal rather than dividing: true at the start, after an operator or opener, after a keyword that takes an operand, and after the `)` closing an `if`/`while`/`for`/`with` head (`condClose`); false after a postfix `++`/`--`, a value, or any other `)` or `]`. */
+/** Whether a `/` after `tail` (the last non-blank characters of the code so far, empty at the start) starts a regex literal rather than dividing: true at the start, after an operator or opener, after a keyword that takes an operand, and after the `)` closing an `if`/`while`/`for`/`for await`/`with` head (`condClose`); false after a postfix `++`/`--`, a value, or any other `)` or `]`. */
 function regexAllowed(tail: string, condClose: boolean): boolean {
   if (tail === '') return true;
   const last = tail[tail.length - 1] as string;
@@ -519,12 +520,27 @@ function selftestCases(): ControlCase[] {
       stripJsComments("do /a\\/\\//.test(s); import './g.js';").includes("'./g.js'"),
   });
   cases.push({
-    name: 'regexAllowed reads backward: a slash after a long text costs no copy of it',
+    name: 'a regex after a for await head is a regex, so its // does not blank the rest of the line',
+    ok:
+      stripJsComments("for await (const x of y) /a\\/\\//.test(x); import './h.js';").includes(
+        "'./h.js'"
+      ) && !stripJsComments("n = (a) / 2; // import './h.js'").includes("'./h.js'"),
+  });
+  cases.push({
+    name: 'regexAllowed reads backward: eight times the text costs far less than eight times squared',
     ok: (() => {
-      const big = 'x = a / 2;\n'.repeat(40000);
-      const t0 = Date.now();
-      stripJsComments(big);
-      return Date.now() - t0 < 2000;
+      // Linear cost scales ~8x from 5000 to 40000 lines, quadratic ~64x; a ratio holds on a loaded runner where a wall-clock limit would not.
+      const best = (n: number): number => {
+        const text = 'x = a / 2;\n'.repeat(n);
+        let min = Number.POSITIVE_INFINITY;
+        for (let k = 0; k < 3; k++) {
+          const t0 = process.hrtime.bigint();
+          stripJsComments(text);
+          min = Math.min(min, Number(process.hrtime.bigint() - t0) / 1e6);
+        }
+        return min;
+      };
+      return best(40000) < 24 * Math.max(best(5000), 1);
     })(),
   });
   expect('scripts/lib/prose-selftest.ts', true, 'a selftest named only in parenthesised prose');
