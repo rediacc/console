@@ -87,8 +87,7 @@ function extractInlineRdcCommands(content, file) {
 
     // Extract from inline backticks: `rdc machine info prod`
     BACKTICK_RDC_RE.lastIndex = 0;
-    let match;
-    while ((match = BACKTICK_RDC_RE.exec(line)) !== null) {
+    for (const match of line.matchAll(BACKTICK_RDC_RE)) {
       commands.push({ text: match[1].trim(), line: i + 1, file });
     }
   }
@@ -200,8 +199,7 @@ function extractRediaccUrls(content, file) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     REDIACC_URL_RE.lastIndex = 0;
-    let match;
-    while ((match = REDIACC_URL_RE.exec(line)) !== null) {
+    for (const match of line.matchAll(REDIACC_URL_RE)) {
       const domain = match[1].toLowerCase();
       const fullUrl = match[0];
       urls.push({ domain, fullUrl, line: i + 1, file });

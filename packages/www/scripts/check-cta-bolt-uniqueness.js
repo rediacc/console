@@ -43,8 +43,7 @@ async function findHtml(dir) {
 function countBolts(html) {
   const re = /class\s*=\s*("(?:[^"]*?)"|'(?:[^']*?)')/g;
   let count = 0;
-  let m;
-  while ((m = re.exec(html)) !== null) {
+  for (const m of html.matchAll(re)) {
     const value = m[1].slice(1, -1);
     if (/\bcta-bolt\b/.test(value)) count += 1;
   }
