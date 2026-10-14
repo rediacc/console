@@ -36,7 +36,7 @@ def test_selftest_passes() -> None:
 
 
 def test_an_untokenizable_file_names_the_line_tokenize_would() -> None:
-    """The fallback for Python tokenize cannot read numbers lines by newline only, as the tokenize path does; a form feed or \\x1c inside a line must not shift the marker's reported line."""
+    """The fallback for Python that tokenize cannot read counts lines by newline only, as the tokenize path does; a form feed or \\x1c inside a line must not shift the marker's reported line."""
     text = 'x = "unterminated\ny = "\x0c\x1c"\nz = 1  %s: B010\n' % NQ
     assert gate.locate_markers(text, "py") == [(3, "noqa", "B010")]
 

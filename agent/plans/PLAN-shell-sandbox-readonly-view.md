@@ -105,7 +105,7 @@ CI runs renet's go tests as root (`private/renet/.ci/scripts/test/run-tests.sh:4
 
 ## Follow-ups (worklist items to open, not in this plan)
 
-- **Signals and abstract unix sockets between repos.** `private/renet/pkg/sandbox/landlock.go:31` calls `RestrictPaths`, which drops the scoped set (go-landlock v0.8.1 go-landlock v0.8.1 `landlock/config.go` lines 425-432), so `LANDLOCK_SCOPE_SIGNAL` and abstract-socket scoping are never applied even on ABI 6+.
+- **Signals and abstract unix sockets between repos.** `private/renet/pkg/sandbox/landlock.go:31` calls `RestrictPaths`, which drops the scoped set (go-landlock v0.8.1 `landlock/config.go` lines 425-432), so `LANDLOCK_SCOPE_SIGNAL` and abstract-socket scoping are never applied even on ABI 6+.
 - **ptys under the `/dev` rw grant.** Repo A can likely open B's `/dev/pts/N` (inferred); narrow `/dev` or give each session its own devpts.
 - **SysV/POSIX IPC.** Shared by uid; consider `CLONE_NEWIPC`.
 - **Hiding other repos' mounts** (option C) against `stat` and name leaks.
