@@ -125,23 +125,78 @@ def test_the_stop_hook_queues_nothing_without_an_advisory_and_never_raises(monke
     assert calls == []
 
 
-def _calls_in(source: str, function: str, callee: str) -> list[ast.Call]:
+NESTED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+
+
+def _calls_in(
+    source: str, function: str, callee: str, argument_names: tuple[str, ...]
+) -> list[ast.Call]:
+    """The calls to `callee(*argument_names)` that `function` itself runs: its own body only, so a call inside a def nested in it (which never runs unless something calls that def) is not one."""
     tree = ast.parse(source)
-    return [
-        call
-        for fn in ast.walk(tree)
-        if isinstance(fn, ast.FunctionDef) and fn.name == function
-        for call in ast.walk(fn)
-        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == callee
-    ]
+    found: list[ast.Call] = []
+    for fn in ast.walk(tree):
+        if not (isinstance(fn, ast.FunctionDef) and fn.name == function):
+            continue
+        stack: list[ast.AST] = list(fn.body)
+        while stack:
+            node = stack.pop()
+            if isinstance(node, NESTED_SCOPES):
+                continue
+            stack.extend(ast.iter_child_nodes(node))
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == callee
+                and not node.keywords
+                and [a.id if isinstance(a, ast.Name) else None for a in node.args]
+                == list(argument_names)
+            ):
+                found.append(node)
+    return found
+
+
+RUN_STOP_ARGS = ("worklist", "session_id", "state_doc")
 
 
 def test_run_stop_calls_the_soaked_pins_report() -> None:
     source = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
-    assert _calls_in(source, "run_stop", "_soaked_pins_report")
+    assert _calls_in(source, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
 
 
 def test_the_call_finder_reads_the_enclosing_function_not_the_text() -> None:
     source = "def other():\n    _soaked_pins_report(a, b, c)\n\ndef run_stop():\n    return 1\n"
-    assert _calls_in(source, "other", "_soaked_pins_report")
-    assert not _calls_in(source, "run_stop", "_soaked_pins_report")
+    assert _calls_in(source, "other", "_soaked_pins_report", ("a", "b", "c"))
+    assert not _calls_in(source, "run_stop", "_soaked_pins_report", ("a", "b", "c"))
+
+
+def test_the_call_finder_needs_the_exact_arguments() -> None:
+    head = "def run_stop(worklist, session_id, state_doc):\n"
+    for call in (
+        "_soaked_pins_report()",
+        "_soaked_pins_report(worklist)",
+        "_soaked_pins_report(session_id, worklist, state_doc)",
+        "_soaked_pins_report(worklist, session_id, state_doc, extra)",
+        "_soaked_pins_report(worklist, session_id, state_doc=state_doc)",
+        "_soaked_pins_report(worklist, session_id, {})",
+    ):
+        assert not _calls_in(
+            head + "    " + call + "\n", "run_stop", "_soaked_pins_report", RUN_STOP_ARGS
+        ), call
+    good = head + "    _soaked_pins_report(worklist, session_id, state_doc)\n"
+    assert _calls_in(good, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
+
+
+def test_the_call_finder_ignores_a_call_inside_a_nested_def() -> None:
+    nested = (
+        "def run_stop(worklist, session_id, state_doc):\n"
+        "    def never_called():\n"
+        "        _soaked_pins_report(worklist, session_id, state_doc)\n"
+        "    return never_called\n"
+    )
+    assert not _calls_in(nested, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
+    inline = (
+        "def run_stop(worklist, session_id, state_doc):\n"
+        "    if worklist:\n"
+        "        _soaked_pins_report(worklist, session_id, state_doc)\n"
+    )
+    assert _calls_in(inline, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)

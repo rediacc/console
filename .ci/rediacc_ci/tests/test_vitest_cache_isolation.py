@@ -8,8 +8,12 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
+
+if TYPE_CHECKING:
+    import pathlib
 
 CACHE_RE = re.compile(r"fsModuleCachePath:\s*fileURLToPath\(\s*new URL\(\s*'([^']+)'", re.DOTALL)
 
@@ -46,11 +50,26 @@ def test_each_vitest_config_names_its_own_cache_directory():
 VITEST_CMD_RE = re.compile(r"(?<![\w.-])vitest(?![\w.-])")
 
 
-def runs_vitest(scripts: object) -> bool:
-    """True when a package.json `scripts` table names the vitest command in any script, whatever the script is called. Only the commands written in that table are read: a script that reaches vitest through a file it runs is not seen, and its workspace is covered by the config scan above instead. A name that merely contains the word (a `.vitest-cache` path, a `vitest-cache` directory, `vitest.config.ts`) is not the command."""
+SCRIPT_FILE_RE = re.compile(r"[\w./@-]+\.(?:[cm]?[jt]s|sh|py)(?![\w./-])")
+
+
+def runs_vitest(scripts: object, workspace: pathlib.Path | None = None) -> bool:
+    """True when a package.json `scripts` table names the vitest command in any script, whatever the script is called. A name that merely contains the word (a `.vitest-cache` path, a `vitest-cache` directory, `vitest.config.ts`) is not the command. With a `workspace` directory, a script file named on a command line (`node scripts/run.js`, `bash x.sh`) is read from that directory too, and counts when it names the command."""
     if not isinstance(scripts, dict):
         return False
-    return any(VITEST_CMD_RE.search(str(cmd)) for cmd in scripts.values())
+    commands = [str(cmd) for cmd in scripts.values()]
+    if any(VITEST_CMD_RE.search(cmd) for cmd in commands):
+        return True
+    if workspace is None:
+        return False
+    for cmd in commands:
+        for name in SCRIPT_FILE_RE.findall(cmd):
+            target = workspace / name
+            if target.is_file() and VITEST_CMD_RE.search(
+                target.read_text(encoding="utf-8", errors="replace")
+            ):
+                return True
+    return False
 
 
 def test_runs_vitest_reads_the_command_and_not_a_name_that_contains_it():
@@ -65,6 +84,18 @@ def test_runs_vitest_reads_the_command_and_not_a_name_that_contains_it():
     assert not runs_vitest(None)
 
 
+def test_runs_vitest_follows_a_script_file_named_in_a_command(tmp_path: pathlib.Path):
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "unit.sh").write_text('#!/bin/sh\nexec npx vitest run "$@"\n')
+    (tmp_path / "scripts" / "lint.js").write_text("console.log('lint only')\n")
+    through_file = {"test": "bash scripts/unit.sh"}
+    assert not runs_vitest(through_file)
+    assert runs_vitest(through_file, tmp_path)
+    assert runs_vitest({"test": "node ./scripts/unit.sh --ci"}, tmp_path)
+    assert not runs_vitest({"test": "node scripts/lint.js"}, tmp_path)
+    assert not runs_vitest({"test": "bash scripts/absent.sh"}, tmp_path)
+
+
 def test_each_workspace_that_runs_vitest_has_a_config():
     missing = []
     for rel in _tracked(":(glob)packages/*/package.json") + _tracked(
@@ -73,7 +104,8 @@ def test_each_workspace_that_runs_vitest_has_a_config():
         scripts = json.loads(paths.from_root(*rel.split("/")).read_text(encoding="utf-8")).get(
             "scripts"
         )
-        if runs_vitest(scripts):
+        workspace = paths.from_root(*rel.split("/")).parent
+        if runs_vitest(scripts, workspace):
             config = rel.rsplit("/", 1)[0] + "/vitest.config.ts"
             if not paths.from_root(*config.split("/")).is_file():
                 missing.append(config)

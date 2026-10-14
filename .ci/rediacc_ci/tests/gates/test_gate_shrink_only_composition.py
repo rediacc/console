@@ -72,9 +72,100 @@ PY_GUARD_FUNCS = ("write_verdict", "baseline_additions")
 PY_EXEMPT = (".ci/rediacc_ci/quality/shrink_only.py",)
 
 
-# The spellings of an argument vector an `assert` may read and still be an argv parse (see `py_offers_flag`): a bare name `argv` or `args`, or the attribute `sys.argv`. An attribute spelled `args` is not one: `CompletedProcess.args` is the command a test ran.
-ARGV_NAMES = frozenset(("argv", "args"))
-ARGV_ATTRS = frozenset(("argv",))
+# What makes a name or attribute an argument vector is where it was bound, not how it is spelled: `sys.argv`, a parameter named `argv` or `args`, the result of argparse's `parse_args` / `parse_known_args`, and anything derived from those by assignment, slicing or attribute access. `CompletedProcess.args` is the command a test ran, so a name bound from a subprocess result is not one.
+ARGV_PARAMS = frozenset(("argv", "args"))
+ARGV_ATTR = "argv"
+ARGPARSE_RESULTS = frozenset(("parse_args", "parse_known_args"))
+SEQUENCE_WRAPPERS = frozenset(("list", "tuple", "sorted", "set", "frozenset"))
+SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+
+
+def _own_nodes(scope):
+    """Every node of a scope's own body, not descending into the scopes nested in it."""
+    stack = list(ast.iter_child_nodes(scope))
+    while stack:
+        node = stack.pop()
+        yield node
+        if not isinstance(node, SCOPE_NODES):
+            stack.extend(ast.iter_child_nodes(node))
+
+
+def _target_names(target) -> list[str]:
+    if isinstance(target, ast.Name):
+        return [target.id]
+    if isinstance(target, (ast.Tuple, ast.List)):
+        return [n for elt in target.elts for n in _target_names(elt)]
+    if isinstance(target, ast.Starred):
+        return _target_names(target.value)
+    return []
+
+
+def _params(scope) -> list[str]:
+    a = getattr(scope, "args", None)
+    if not isinstance(a, ast.arguments):
+        return []
+    names = [x.arg for x in (*a.posonlyargs, *a.args, *a.kwonlyargs)]
+    names += [x.arg for x in (a.vararg, a.kwarg) if x]
+    return names
+
+
+def argv_asserts(tree) -> set[int]:
+    """The ids of the nodes inside every `assert` whose condition reads NO argument vector (see ARGV_PARAMS): those check output, so their comparisons parse nothing."""
+    skipped: set[int] = set()
+
+    def reads(expr, tainted) -> bool:
+        if isinstance(expr, ast.Name):
+            return expr.id in tainted
+        if isinstance(expr, ast.Attribute):
+            return expr.attr == ARGV_ATTR or reads(expr.value, tainted)
+        if isinstance(expr, ast.Subscript):
+            return reads(expr.value, tainted)
+        if isinstance(expr, ast.Call):
+            func = expr.func
+            if isinstance(func, ast.Attribute) and func.attr in ARGPARSE_RESULTS:
+                return True
+            if isinstance(func, ast.Name) and func.id in ARGPARSE_RESULTS:
+                return True
+            if isinstance(func, ast.Name) and func.id in SEQUENCE_WRAPPERS:
+                return any(reads(a, tainted) for a in expr.args)
+        return False
+
+    def visit(scope, inherited: dict[str, bool]) -> None:
+        bound: dict[str, bool] = {n: n in ARGV_PARAMS for n in _params(scope)}
+        assignments = []
+        for node in _own_nodes(scope):
+            if isinstance(node, ast.Assign):
+                assignments.append(
+                    ([t for tg in node.targets for t in _target_names(tg)], node.value)
+                )
+            elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)) and node.value is not None:
+                assignments.append((_target_names(node.target), node.value))
+        for names, _ in assignments:
+            for n in names:
+                bound.setdefault(n, False)
+        scoped = {**inherited, **bound}
+        # A chain (`a = sys.argv`, `b = a[1:]`) settles in as many passes as it is long.
+        for _ in range(len(assignments) + 1):
+            changed = False
+            for names, value in assignments:
+                if reads(value, {n for n, t in scoped.items() if t}):
+                    for n in names:
+                        if not scoped.get(n):
+                            scoped[n] = True
+                            changed = True
+            if not changed:
+                break
+        tainted = {n for n, t in scoped.items() if t}
+        for node in _own_nodes(scope):
+            if isinstance(node, ast.Assert) and not any(
+                reads(n, tainted) for n in ast.walk(node.test)
+            ):
+                skipped.update(id(inner) for inner in ast.walk(node.test))
+            if isinstance(node, SCOPE_NODES):
+                visit(node, scoped)
+
+    visit(tree, {})
+    return skipped
 
 
 def py_offers_flag(tree) -> bool:
@@ -86,20 +177,8 @@ def py_offers_flag(tree) -> bool:
     def is_flag(node) -> bool:
         return isinstance(node, ast.Constant) and node.value == FLAG
 
-    # An `assert` whose condition reads no argument vector checks output (a captured stream, a return value); it parses no argv, so its comparisons are skipped. One that does read one (`assert FLAG in sys.argv`) still parses the flag and is NOT skipped: the argument vector is a name spelled `argv` or `args`, or the attribute `argv`.
-    def reads_argv(test) -> bool:
-        return any(
-            (isinstance(n, ast.Name) and n.id in ARGV_NAMES)
-            or (isinstance(n, ast.Attribute) and n.attr in ARGV_ATTRS)
-            for n in ast.walk(test)
-        )
-
-    asserted = {
-        id(inner)
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Assert) and not reads_argv(node.test)
-        for inner in ast.walk(node.test)
-    }
+    # An `assert` whose condition reads no argument vector checks output (a captured stream, a return value); it parses no argv, so its comparisons are skipped. One that does read one (`assert FLAG in sys.argv`) still parses the flag and is NOT skipped.
+    asserted = argv_asserts(tree)
     for node in ast.walk(tree):
         if isinstance(node, ast.Compare) and id(node) not in asserted:
             operands = [node.left, *node.comparators]
@@ -641,12 +720,42 @@ def test_the_command_that_ran():
     assert "%s" in proc.args
 """ % (FLAG, FLAG)
 
+# A test asserting on a local named `args` that was bound from a subprocess result: a name spelled like an argument vector, bound from `CompletedProcess.args`, parses no argv.
+BOUND_FROM_PROC_PY_BODY = """import subprocess
+import sys
+
+
+def test_the_command_that_ran():
+    proc = subprocess.run([sys.executable, "gate.py", "%s"], capture_output=True, check=False)
+    args = proc.args
+    assert "%s" in args
+""" % (FLAG, FLAG)
+
 # Writers whose only argv parse is an `assert` condition. Skipping every assert would drop both off the offender list; reading argv is what makes them parses.
 ASSERT_ARGV_PY_BODIES = {
     "assert FLAG in sys.argv": """import sys
 
 assert "%s" in sys.argv, "refusing to run without the drain flag"
 print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in ctx.args (parse_args result)": """import argparse
+
+ctx = argparse.ArgumentParser().parse_args()
+assert "%s" in ctx.args
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in namespace.args (parse_known_args result)": """import argparse
+
+namespace, rest = argparse.ArgumentParser().parse_known_args()
+assert "%s" in namespace.args
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in args (a parameter)": """def main(args):
+    assert "%s" in args
+    print("unconditional reseed")
 """
     % FLAG,
     "assert any(a == FLAG for a in args)": """import sys
@@ -1195,6 +1304,10 @@ def test_control_python_assert_on_argv_is_a_writer(gate):
     if py_offers_flag(ast.parse(COMPLETED_ARGS_PY_BODY)):
         gate.log_fail(
             "CONTROL FAILED: an assert on CompletedProcess.args was read as an argv parse"
+        )
+    if py_offers_flag(ast.parse(BOUND_FROM_PROC_PY_BODY)):
+        gate.log_fail(
+            "CONTROL FAILED: an assert on a name bound from CompletedProcess.args was read as an argv parse"
         )
     gate.log_pass(
         "CONTROL: %d assert-on-argv writers are detected; an assert on a stream is not a parse"
