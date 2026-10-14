@@ -1050,6 +1050,127 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
     ]
 
 
+# THE PINS-SOAKED PINS (PLAN-pins-command T11). `pins-soaked.yml` reports soaked pins as an artifact and opens nothing: no pull request, no push, no token beyond `contents: read`. The phase reads that file and refuses any shape that could write, or that no longer runs the verb or uploads its output.
+PINS_SOAKED_KINDS = (
+    "pins-soaked-triggers",
+    "pins-soaked-permissions",
+    "pins-soaked-writes",
+    "pins-soaked-no-apply",
+    "pins-soaked-no-upload",
+)
+
+PINS_SOAKED_WORKFLOW = "CI - OBS Mirror"
+_PINS_APPLY_RE = re.compile(r"\bpins\s+--\s+apply-soaked\b")
+_PINS_WRITE_RE = re.compile(
+    r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b|\bcurl\b[^\n]*\b(POST|PUT|PATCH|DELETE)\b"
+)
+_PINS_WRITE_USES = ("app-token", "create-pull-request", "github-script", "bws-secrets")
+
+
+def _pins_triggers(doc: dict) -> dict:
+    # PyYAML reads the bare key `on` as the boolean True.
+    on = doc.get("on", doc.get(True))
+    return on if isinstance(on, dict) else {}
+
+
+def _read_only(perms: object) -> bool:
+    return isinstance(perms, dict) and perms == {"contents": "read"}
+
+
+def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
+    """(findings, shape) for pins-soaked.yml. A non-mapping document is every kind of failure at once."""
+    out: list[tuple[str, str]] = []
+    if not isinstance(doc, dict):
+        return [("pins-soaked-triggers", "<not a mapping>")], []
+    on = _pins_triggers(doc)
+    sched = on.get("schedule")
+    crons = [c.get("cron") for c in sched if isinstance(c, dict)] if isinstance(sched, list) else []
+    run_on = on.get("workflow_run")
+    watched = run_on.get("workflows") if isinstance(run_on, dict) else None
+    for missing, ok in (
+        ("schedule", bool(crons)),
+        ("workflow_dispatch", "workflow_dispatch" in on),
+        (
+            "workflow_run of %s" % PINS_SOAKED_WORKFLOW,
+            isinstance(watched, list) and PINS_SOAKED_WORKFLOW in watched,
+        ),
+    ):
+        if not ok:
+            out.append(("pins-soaked-triggers", missing))
+    if not _read_only(doc.get("permissions")):
+        out.append(("pins-soaked-permissions", "workflow level"))
+    raw_jobs = doc.get("jobs")
+    jobs: dict = raw_jobs if isinstance(raw_jobs, dict) else {}
+    applies = uploads = 0
+    for jname, job in jobs.items():
+        if not isinstance(job, dict):
+            continue
+        if "permissions" in job and not _read_only(job.get("permissions")):
+            out.append(("pins-soaked-permissions", "job %s" % jname))
+        for i, st in enumerate(_steps(job)):
+            run, uses = _text(st.get("run")), _text(st.get("uses"))
+            if _PINS_WRITE_RE.search(run) or any(w in uses for w in _PINS_WRITE_USES):
+                out.append(("pins-soaked-writes", _step_label(jname, i, st)))
+            if _PINS_APPLY_RE.search(run) and "--out" in run and "--json" in run:
+                applies += 1
+            if "actions/upload-artifact@" in uses:
+                uploads += 1
+    if not applies:
+        out.append(("pins-soaked-no-apply", "<no `pins -- apply-soaked --json --out` step>"))
+    if not uploads:
+        out.append(("pins-soaked-no-upload", "<no upload-artifact step>"))
+    return out, [
+        "%d cron(s), %d apply step(s), %d upload step(s), contents: read only"
+        % (len(crons), applies, uploads)
+    ]
+
+
+def pins_soaked_message_for(kind: str, name: str, path: str) -> str | None:
+    head = "INVARIANT-FAIL: pins-soaked: "
+    if kind == "pins-soaked-triggers":
+        return head + "%s is missing the trigger `%s`; the daily report would stop arriving." % (
+            path,
+            name,
+        )
+    if kind == "pins-soaked-permissions":
+        return (
+            head
+            + "%s (%s) grants more than `contents: read`; the workflow reports and opens nothing."
+            % (path, name)
+        )
+    if kind == "pins-soaked-writes":
+        return (
+            head
+            + "%s: %s can write (a push, commit, tag, gh call, minted token or PR action); this workflow is artifact-only."
+            % (path, name)
+        )
+    if kind == "pins-soaked-no-apply":
+        return head + "%s has %s, so it reports nothing (nothing to check cannot pass)." % (
+            path,
+            name,
+        )
+    if kind == "pins-soaked-no-upload":
+        return head + "%s has %s, so the report is lost with the runner." % (path, name)
+    return None
+
+
+def _pins_soaked_phase(pins_file: str) -> tuple[list[str], list[str]]:
+    """(errors, info lines). A missing or unparseable file is an error, never a pass."""
+    if not os.path.isfile(pins_file):
+        return [
+            "INVARIANT-FAIL: pins-soaked: no file at %s (nothing to check cannot pass)" % pins_file
+        ], []
+    try:
+        doc = load_workflow(pins_file)
+    except SetupExitError as exc:
+        return ["INVARIANT-FAIL: pins-soaked: %s" % exc.message.strip()], []
+    findings, shape = analyse_pins_soaked(doc)
+    errors = [m for k, n in findings if (m := pins_soaked_message_for(k, n, pins_file)) is not None]
+    if errors:
+        return errors, []
+    return [], ["pins-soaked holds: " + "; ".join(shape)]
+
+
 def _guarded(path: str) -> tuple[list[tuple[str, str]] | None, int]:
     """Run the analysis the way bash runs the heredoc: any failure is rc != 0.
 
@@ -1083,6 +1204,9 @@ def main(argv: list[str]) -> int:
     )
     hk_file = os.environ.get("HOUSEKEEPING_WORKFLOW_FILE") or os.path.join(
         root_dir, ".github", "workflows", "housekeeping.yml"
+    )
+    pins_file = os.environ.get("PINS_SOAKED_WORKFLOW_FILE") or os.path.join(
+        root_dir, ".github", "workflows", "pins-soaked.yml"
     )
     quality_file = os.environ.get("QUALITY_WORKFLOW_FILE") or os.path.join(
         root_dir, ".github", "workflows", "ci-quality.yml"
@@ -1125,8 +1249,9 @@ def main(argv: list[str]) -> int:
         release_errors, release_info = _release_phase(workflow_file, cd_file, action_file)
         preflight_errors, preflight_info = _preflight_phase(workflow_file, cd_file, hk_file)
         upstream_errors, upstream_info = _upstream_gate_phase(workflow_file, quality_file)
-        release_info += preflight_info + upstream_info
-        for message in release_errors + preflight_errors + upstream_errors:
+        pins_errors, pins_info = _pins_soaked_phase(pins_file)
+        release_info += preflight_info + upstream_info + pins_info
+        for message in release_errors + preflight_errors + upstream_errors + pins_errors:
             log.error(message)
             failed = 1
 

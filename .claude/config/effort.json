@@ -503,6 +503,9 @@
     },
     "effort-tune": {
       "advise": "low"
+    },
+    "soaked-pins": {
+      "advise": "smart"
     }
   },
   "tuned": {}

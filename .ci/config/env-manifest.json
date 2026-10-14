@@ -216,6 +216,7 @@
     "ci-runner": [
       "ACCOUNT_ENTRY",
       "ALLOW_STALE",
+      "APPLY_RC",
       "APP_TOKEN_OWNER",
       "APP_TOKEN_PROBE",
       "APP_TOKEN_REPOS",
@@ -350,6 +351,7 @@
       "OUTPUT_FILE",
       "OUT_DIR",
       "PENDING_RERUN",
+      "PINS_FIXTURE_FAIL",
       "PKG_BINARY_NAME",
       "PKG_DESCRIPTION",
       "PKG_HOMEPAGE",
@@ -596,6 +598,7 @@
       "OUT",
       "PAGE_LOCALE_IMPORTS_ROOT",
       "PINS_ROOT",
+      "PINS_SOAKED_WORKFLOW_FILE",
       "PI_GO_FAIL",
       "PI_GO_JSON",
       "PLAN_BOXES_BASE",

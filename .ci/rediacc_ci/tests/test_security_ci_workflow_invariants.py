@@ -1535,3 +1535,113 @@ def test_the_real_housekeeping_without_its_preflight_is_refused(tmp_path: pathli
     proc = run_real(tmp_path, HOUSEKEEPING_WORKFLOW_FILE=text)
     assert proc.returncode == 1, proc.stderr
     assert "deletes releases, tags and R2 objects with no" in proc.stderr
+
+
+def pins_doc() -> dict:
+    """A conformant pins-soaked document, built by hand: the pytest interpreter carries no PyYAML, and the real file is driven through the gate's own entry point below."""
+    return {
+        "on": {
+            "schedule": [{"cron": "30 0 * * *"}],
+            "workflow_dispatch": {},
+            "workflow_run": {"workflows": [ci_workflow_invariants.PINS_SOAKED_WORKFLOW]},
+        },
+        "permissions": {"contents": "read"},
+        "jobs": {
+            "soaked": {
+                "permissions": {"contents": "read"},
+                "steps": [
+                    {"uses": "actions/checkout@sha"},
+                    {"run": "npm run --silent pins -- apply-soaked --json --out pins-soaked/"},
+                    {"uses": "actions/upload-artifact@sha"},
+                ],
+            }
+        },
+    }
+
+
+def pins_kinds(doc: object) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_pins_soaked(doc)[0]]
+
+
+def _drop_upload(doc: dict) -> None:
+    for step in doc["jobs"]["soaked"]["steps"]:
+        if "upload-artifact" in str(step.get("uses")):
+            step["uses"] = "x/y@1"
+
+
+def _drop_apply(doc: dict) -> None:
+    steps = doc["jobs"]["soaked"]["steps"]
+    steps[:] = [s for s in steps if "apply-soaked" not in str(s.get("run"))]
+
+
+def test_the_real_pins_soaked_workflow_passes_the_gate() -> None:
+    env = {**os.environ, "PYTHONPATH": str(paths.from_root(".ci"))}
+    proc = subprocess.run(
+        [
+            "python3",
+            str(paths.from_root(".ci", "rediacc_ci", "security", "ci_workflow_invariants.py")),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert (
+        "pins-soaked holds: 1 cron(s), 1 apply step(s), 1 upload step(s)"
+        in proc.stdout + proc.stderr
+    )
+
+
+def test_a_conformant_pins_soaked_document_is_clean() -> None:
+    findings, shape = ci_workflow_invariants.analyse_pins_soaked(pins_doc())
+    assert findings == []
+    assert shape == ["1 cron(s), 1 apply step(s), 1 upload step(s), contents: read only"]
+
+
+@pytest.mark.parametrize(
+    ("mutate", "kind"),
+    [
+        (
+            lambda d: d["jobs"]["soaked"]["steps"].append({"run": "git push origin HEAD"}),
+            "pins-soaked-writes",
+        ),
+        (
+            lambda d: d["jobs"]["soaked"]["steps"].append({"run": "gh pr create --fill"}),
+            "pins-soaked-writes",
+        ),
+        (
+            lambda d: d["jobs"]["soaked"]["steps"].append({"uses": "./.github/actions/app-token"}),
+            "pins-soaked-writes",
+        ),
+        (lambda d: d.__setitem__("permissions", {"contents": "write"}), "pins-soaked-permissions"),
+        (
+            lambda d: d["jobs"]["soaked"].__setitem__(
+                "permissions", {"contents": "read", "pull-requests": "write"}
+            ),
+            "pins-soaked-permissions",
+        ),
+        (_drop_apply, "pins-soaked-no-apply"),
+        (_drop_upload, "pins-soaked-no-upload"),
+        (lambda d: d["on"].pop("schedule"), "pins-soaked-triggers"),
+        (
+            lambda d: d["on"]["workflow_run"].__setitem__("workflows", ["Other"]),
+            "pins-soaked-triggers",
+        ),
+    ],
+)
+def test_a_pins_soaked_workflow_that_could_write_or_report_nothing_is_refused(mutate, kind) -> None:
+    doc = pins_doc()
+    mutate(doc)
+    assert kind in pins_kinds(doc)
+
+
+def test_a_missing_pins_soaked_file_is_an_error_never_a_pass() -> None:
+    errors, info = ci_workflow_invariants._pins_soaked_phase("/nonexistent/pins-soaked.yml")
+    assert len(errors) == 1
+    assert "nothing to check cannot pass" in errors[0]
+    assert info == []
+
+
+def test_a_non_mapping_pins_soaked_document_is_refused() -> None:
+    assert pins_kinds([]) == ["pins-soaked-triggers"]

@@ -2547,6 +2547,16 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     return lost
 
 
+def _soaked_pins_report(worklist, session_id, state_doc):
+    """Advise that soaked pins are waiting, from the latest pins-soaked report on disk (no network). NEVER blocks and never raises."""
+    with contextlib.suppress(Exception):
+        import wl_soakedpins
+
+        text = wl_soakedpins.advisory(C.project_root(C.project_start()))
+        if text:
+            outq_add(worklist, session_id, state_doc, "soaked-pins", text, 3)
+
+
 def _resprofile_report(worklist, session_id, state_doc):
     """Report-only structural findings from the previous CI run's captures, and the tier-0 -> tier-1 fold. NEVER blocks: the judge gates an exit so "cannot decide" must not be an escape, but this describes how work was done, so "we did not measure" must never become "the stop is refused". Every failure is swallowed; the off switch is
     WORKLIST_PROFILE=off. See agent/plans/PLAN-shell-resource-profiling.md section 3."""
@@ -3078,6 +3088,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     fold = S.load(worklist, sync=True)
     state_doc = S.load_state(worklist, session_id)
     _resprofile_report(worklist, session_id, state_doc)
+    _soaked_pins_report(worklist, session_id, state_doc)
     if _cfg_problems:
         outq_add(
             worklist,

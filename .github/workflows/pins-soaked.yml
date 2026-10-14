@@ -1,0 +1,107 @@
+name: Pins Soaked
+
+run-name: "Pins soaked: ${{ github.event_name }}"
+
+# Reports the pins whose newest release has cleared the freshness window, as an artifact.
+#
+# `npm run pins -- apply-soaked` applies every soaked patch and in-range minor to this
+# checkout, runs the gates each pin names, and writes the per-repo patches, the commit
+# message drafts and report.json to pins-soaked/. The job uploads that directory and a
+# summary. It opens no pull request, pushes nothing and holds no token beyond
+# `contents: read` (operator ruling: artifact only). A session applies the result by
+# re-running `apply-soaked` on its own branch against the live tree.
+#
+# Triggers: daily after the nightly CI and housekeeping windows, on demand, and when
+# CI - OBS Mirror completes, so a mirrored Leap build is reflected within hours.
+# Green means nothing is soaked, or every soaked bump passes its gates. Red means a
+# soaked bump was refused by a gate or by the registry, or the apply failed.
+#
+# TESTING NOTE: `workflow_run` and `schedule` execute the file from the default branch,
+# so those two triggers first run after merge; workflow_dispatch from main is the
+# pre-release check. `fixture_fail` makes the run red after the artifact is uploaded,
+# which proves the red path reaches `ci-trace.py --scheduled`.
+
+on:
+  schedule:
+    - cron: '30 0 * * *' # Daily at 00:30 UTC (clear of CI '0 1', housekeeping '0 3' and promote-stable '0 6')
+  workflow_dispatch:
+    inputs:
+      fixture_fail:
+        description: 'End the run red after the artifact upload (proves the red path)'
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ["CI - OBS Mirror"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pins-soaked
+  cancel-in-progress: false
+
+jobs:
+  soaked:
+    name: Report soaked pins
+    # A failed mirror run has nothing new to report; every other trigger runs.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      PINS_FIXTURE_FAIL: ${{ inputs.fixture_fail && '1' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node-npm
+
+      - name: Install dependencies
+        run: npm ci && npm run install:natives
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Apply soaked pins to this checkout
+        id: apply
+        run: |
+          set +e
+          npm run --silent pins -- apply-soaked --json --out pins-soaked/ > pins-soaked-stdout.json
+          rc=$?
+          set -e
+          mkdir -p pins-soaked
+          mv pins-soaked-stdout.json pins-soaked/stdout.json
+          echo "rc=${rc}" >> "$GITHUB_OUTPUT"
+
+      - name: Summarise
+        env:
+          APPLY_RC: ${{ steps.apply.outputs.rc }}
+        run: |
+          jq -r --arg rc "$APPLY_RC" '
+            "## Soaked pins\n\napply-soaked exit code: \($rc)\n\n| pin | from | to | published |\n|---|---|---|---|",
+            (.pins[] | "| \(.id) | \(.from) | \(.to) | \(.published) |"),
+            (if (.pins | length) == 0 then "| (none soaked) | | | |" else empty end),
+            (.refused[] | "\nREFUSED \(.id): \(.why)"),
+            (if .failure then "\nFAILED: \(.failure)" else empty end)
+          ' pins-soaked/stdout.json >> "$GITHUB_STEP_SUMMARY" || echo "apply-soaked printed no JSON report (exit ${APPLY_RC})" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report, patches and drafts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pins-soaked
+          path: pins-soaked/
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Fail on a refused or failed apply
+        if: steps.apply.outputs.rc != '0'
+        run: |
+          echo "::error::npm run pins -- apply-soaked exited ${{ steps.apply.outputs.rc }}; see the pins-soaked artifact and job summary"
+          exit 1
+
+      - name: Fixture failure
+        if: env.PINS_FIXTURE_FAIL == '1'
+        run: |
+          echo "::error::PINS_FIXTURE_FAIL=1 (workflow_dispatch fixture_fail): ending red on purpose"
+          exit 1
