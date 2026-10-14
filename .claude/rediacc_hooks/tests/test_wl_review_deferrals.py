@@ -32,6 +32,7 @@ GIT_ENV = dict(
 RESOLUTIONS = {
     "deferred": "deferred #f32c08e6 | deadbeef 2026-10-08T08:54:08Z",
     "fixed": "fixed %s | deadbeef 2026-10-08T09:00:00Z" % ("9" * 40),
+    "open": "open",
 }
 
 
@@ -120,6 +121,22 @@ def test_fixed_clears_both_the_block_and_the_note(tmp_path):
     assert malformed == "", malformed
     assert "DEFERRED" not in note, note
     assert _pr_finish_box(st) == (True, True)
+
+
+def test_an_open_finding_named_by_a_leased_item_waits_in_the_note(tmp_path):
+    """The same stand-down for an open finding: a leased writer fixing it turns the block into a note; push still refuses it."""
+    items = {"77aa88bb": (">", "review %s [high]: guard arm" % FID)}
+    st = _state(tmp_path, "open", "high", items=items)
+    block, _malformed, note = R.stop_texts(st)
+    assert block == "", block
+    assert "OPEN [high] %s f.py:2: an item naming it is leased [>]" % FID in note, note
+    assert R.push_refusals(st) == ["blocking"]
+
+
+def test_control_an_open_finding_with_no_leased_item_blocks(tmp_path):
+    items = {"77aa88bb": (" ", "review %s [high]: guard arm" % FID)}
+    block, _malformed, _note = R.stop_texts(_state(tmp_path, "open", "high", items=items))
+    assert "OPEN PER-COMMIT REVIEW FINDING(S)" in block and FID in block, block
 
 
 @pytest.mark.parametrize("items", [None, {"f32c08e6": " "}, {"f32c08e6": ">"}])

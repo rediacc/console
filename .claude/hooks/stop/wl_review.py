@@ -2273,6 +2273,7 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(),
         "uncovered": [],
         "deferred": [],
         "deferred_in_flight": [],
+        "blocking_in_flight": [],
     }
     leased = _leased_items(items)
     dirty = _untracked_or_modified(root, d) if d.is_dir() else set()
@@ -2306,6 +2307,8 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(),
             (st["blocking"] if SEV_RANK[f.severity] >= block_rank else st["advisory"]).append(
                 (path, f)
             )
+            if SEV_RANK[f.severity] >= block_rank and any(f.id in text for text in leased.values()):
+                st["blocking_in_flight"].append((path, f))
     for label in sorted(set(repos if repos is not None else seen_repos) | set(extra_repos)):
         repo = repo_from_label(root, label)
         if not (repo / ".git").exists():
@@ -2598,14 +2601,17 @@ def stop_texts(st, limit=5):
             )
         )
     parts = []
-    if st["blocking"]:
+    # The same wait stand-down for an open finding: one named by a leased `[>]` item waits on its writer; push and merge still refuse it.
+    fixing = {f.id for _p, f in st.get("blocking_in_flight", [])}
+    open_blocking = [(p, f) for p, f in st["blocking"] if f.id not in fixing]
+    if open_blocking:
         lines = []
-        for _p, f in st["blocking"][:limit]:
+        for _p, f in open_blocking[:limit]:
             lines.append("[%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160]))
             lines.extend("    " + c for c in mark_commands(f.id))
         parts.append(
             "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it fixed, record why it is not a bug, or, for an operator-only triage, waive it with the operator's ASKED: answer:\n  %s"
-            % (st["branch"], len(st["blocking"]), "\n  ".join(lines))
+            % (st["branch"], len(open_blocking), "\n  ".join(lines))
         )
     in_flight = {f.id for _p, f in st.get("deferred_in_flight", [])}
     waiting = [(p, f) for p, f in st.get("deferred", []) if f.id not in in_flight]
@@ -2622,6 +2628,11 @@ def stop_texts(st, limit=5):
         "DEFERRED [%s] %s %s:%d: its triage item is leased [>], so this waits on the writer; push and merge still refuse it"
         % (f.severity, f.id, f.file, f.line)
         for _p, f in st.get("deferred_in_flight", [])
+    ]
+    note_lines += [
+        "OPEN [%s] %s %s:%d: an item naming it is leased [>], so this waits on the writer; push and merge still refuse it"
+        % (f.severity, f.id, f.file, f.line)
+        for _p, f in st.get("blocking_in_flight", [])
     ]
     note = (
         ("Per-commit reviews on %s:\n  %s" % (st["branch"], "\n  ".join(note_lines)))
