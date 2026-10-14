@@ -253,11 +253,15 @@ def run(command, root, gh, broken=False):
 
 
 def _declared_defect():
-    for line in GUARD.read_text(encoding="utf-8").split("\n"):
-        if line.startswith("DEFECT = "):
-            # literal_eval refuses anything but a literal, so a later non-literal DEFECT line is an error and not code that runs (review 411ed6cd.1).
-            return ast.literal_eval(line[len("DEFECT = ") :])
-    raise SystemExit("no DEFECT line in %s" % GUARD)
+    # EVERY `DEFECT = ` line is parsed (review 17d335f2.1): literal_eval refuses anything but a literal, so a non-literal line anywhere is an error and not code that runs (review 411ed6cd.1), and a second line is refused because the guard module would run the LAST one while the harness planted the first.
+    found = [
+        ast.literal_eval(line[len("DEFECT = ") :])
+        for line in GUARD.read_text(encoding="utf-8").split("\n")
+        if line.startswith("DEFECT = ")
+    ]
+    if len(found) != 1:
+        raise SystemExit("%d DEFECT lines in %s, want exactly 1" % (len(found), GUARD))
+    return found[0]
 
 
 DEFECT = _declared_defect()
