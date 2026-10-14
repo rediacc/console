@@ -241,6 +241,7 @@ function putBackRefused(): ControlCase {
     fs.writeFileSync(path.join(claim, 'owner'), `${text}\n`);
   };
   let tomb = '';
+  // withFs runs the real rename first, so by the time this hook fires the judged claim is already in its tomb and the slot is free for the replacement.
   const refill = (from: fs.PathLike, to: fs.PathLike): void => {
     if (tomb || from !== claim || !path.basename(String(to)).startsWith('.lock.claim.dead.'))
       return;
@@ -340,12 +341,15 @@ function movedDeadClaimIsHarmless(): ControlCase {
   } catch (err) {
     threw = (err as Error).message;
   }
+  const tombs = fs.existsSync(jr)
+    ? fs.readdirSync(jr).filter((n) => n.startsWith('.lock.claim.dead.'))
+    : [];
   taken?.();
   fs.rmSync(root, { recursive: true, force: true });
   return {
     name: 'lock: a different dead claim moved by mistake is left in its tomb, not reported as a live claim stranded',
-    ok: moved && threw === '',
-    detail: `moved=${moved} took=${taken !== null} threw=${threw}`,
+    ok: moved && threw === '' && tombs.length > 0,
+    detail: `moved=${moved} took=${taken !== null} tombs=${tombs.length} threw=${threw}`,
   };
 }
 

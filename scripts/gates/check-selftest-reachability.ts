@@ -183,20 +183,52 @@ function pythonImports(file: string, text: string, has: (f: string) => boolean):
   return out;
 }
 
+/**
+ * `text` with its JS/TS comments blanked (newlines kept), found by one scan that tracks string state. A commented-out import is no edge; a `//` or `/*` inside a quoted string or template (a glob path, a URL) opens nothing; a `/*` inside a line comment opens nothing; `\r` does not stop a line comment from ending at its `\n`. A quote left open at a line end closes there, so a stray apostrophe in a regex literal cannot swallow the rest of the file.
+ */
+export function stripJsComments(text: string): string {
+  let out = '';
+  let i = 0;
+  let quote = '';
+  const blank = (s: string): string => s.replace(/[^\n]/g, ' ');
+  while (i < text.length) {
+    const c = text[i] as string;
+    const two = text.slice(i, i + 2);
+    if (quote) {
+      if (c === '\\') {
+        out += text.slice(i, i + 2);
+        i += 2;
+        continue;
+      }
+      if (c === quote || (c === '\n' && quote !== '`')) quote = '';
+      out += c;
+      i++;
+    } else if (two === '//') {
+      const end = text.indexOf('\n', i);
+      const stop = end === -1 ? text.length : end;
+      out += blank(text.slice(i, stop));
+      i = stop;
+    } else if (two === '/*') {
+      const end = text.indexOf('*/', i + 2);
+      const stop = end === -1 ? text.length : end + 2;
+      out += blank(text.slice(i, stop));
+      i = stop;
+    } else {
+      if (c === "'" || c === '"' || c === '`') quote = c;
+      out += c;
+      i++;
+    }
+  }
+  return out;
+}
+
 /** The JS/TS files `text` imports by a relative specifier. */
 function jsImports(file: string, text: string, has: (f: string) => boolean): string[] {
   const out: string[] = [];
   const dir = path.posix.dirname(file);
   const spec =
     /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*|\bnew\s+URL\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g;
-  // A commented-out import is no edge: whole comment lines, block comments (interior lines need no leading marker) and a trailing line comment after code are all dropped. A comment opener counts only at a line start or after whitespace or punctuation, so a glob such as './src/**/*.ts' or a URL does not open one.
-  const comment = COMMENT(file);
-  const code = text
-    .replace(/(?<![^\s;{}(),])\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
-    .split('\n')
-    .filter((line) => !comment.test(line))
-    .map((line) => line.replace(/(?<![^\s;{}(),])\/\/.*$/, ''))
-    .join('\n');
+  const code = stripJsComments(text);
   for (const m of code.matchAll(spec)) {
     const p = path.posix.normalize(path.posix.join(dir, m[1] ?? ''));
     const stem = p.replace(/\.[cm]?js$/, '');
@@ -331,6 +363,13 @@ function selftestCases(): ControlCase[] {
       '*/',
       "run(); // import { w } from '../lib/trailing-commented-selftest.js';",
       "const glob = './src/**/*.ts'; /* closes later */",
+      '// see /* notes, a line comment that opens no block',
+      "import { real } from '../lib/after-line-comment-selftest.js';",
+      "const note = 'a */ b'; /* swallowed? */",
+      "x=/* import './nowhere.js' */ 1;",
+      "const u = ' //'; import q from '../lib/after-string-slashes-selftest.js';",
+      "const g = './a/*/*.ts'; import r from '../lib/after-glob-selftest.js';",
+      'const crlf = 1; // import { c } from "../lib/crlf-commented-selftest.js";\r',
       "const run = spawnSync('tsx', [path.join(ROOT, 'scripts/lib/spawned-selftest.ts')]);",
       'process.argv.includes("--selftest");',
     ].join('\n'),
@@ -340,6 +379,10 @@ function selftestCases(): ControlCase[] {
     'scripts/lib/commented-import-selftest.ts': 'console.log(1);\n',
     'scripts/lib/block-commented-selftest.ts': 'console.log(1);\n',
     'scripts/lib/trailing-commented-selftest.ts': 'console.log(1);\n',
+    'scripts/lib/after-line-comment-selftest.ts': 'console.log(1);\n',
+    'scripts/lib/after-string-slashes-selftest.ts': 'console.log(1);\n',
+    'scripts/lib/after-glob-selftest.ts': 'console.log(1);\n',
+    'scripts/lib/crlf-commented-selftest.ts': 'console.log(1);\n',
     'scripts/lib/orphan-selftest.ts': 'console.log(1);\n',
     'scripts/lib/prose-selftest.ts': 'console.log(1);\n',
     'scripts/lib/handler.ts': "if (process.argv.includes('--selftest')) run();\n",
@@ -393,6 +436,29 @@ function selftestCases(): ControlCase[] {
     true,
     'a selftest imported only in a trailing line comment'
   );
+  expect(
+    'scripts/lib/crlf-commented-selftest.ts',
+    true,
+    'a selftest imported only in a trailing comment on a CRLF line'
+  );
+  expect(
+    'scripts/lib/after-line-comment-selftest.ts',
+    false,
+    'an import after a line comment that holds a block opener'
+  );
+  expect(
+    'scripts/lib/after-string-slashes-selftest.ts',
+    false,
+    'an import after a string that holds two slashes'
+  );
+  expect('scripts/lib/after-glob-selftest.ts', false, 'an import after a glob string');
+  cases.push({
+    name: 'a block opener after = , in a glob string, or in a line comment is read by string state',
+    ok:
+      !stripJsComments("x=/* import './a' */ 1;").includes("'./a'") &&
+      stripJsComments("const g = './s/*/*.ts'; import './b.js';").includes("'./b.js'") &&
+      stripJsComments('// see /* a\nimport "./c.js";').includes('"./c.js"'),
+  });
   expect('scripts/lib/prose-selftest.ts', true, 'a selftest named only in parenthesised prose');
   expect('.ci/rediacc_ci/quality/mod_c.py', true, 'a --selftest handler nothing imports');
   expect('scripts/lib/handler.ts', true, 'a --selftest handler nothing names');

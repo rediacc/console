@@ -18,7 +18,7 @@ const isAlive = (pid: number): boolean => {
   }
 };
 
-// A recorded pid is a positive integer above 1: NaN means it was never written, and 0, 1 or a negative value would turn a kill into a signal for the runner's own group (0), every process the user may signal (-1, the group form of pid 1) or an unrelated process.
+// A recorded pid is a positive integer above 1: NaN means it was never written, and 0, 1 or a negative value would turn a kill into a signal for the runner's own group (0), every process the user may signal (-1, the kill broadcast sentinel, not a group) or an unrelated process.
 const isRecordedPid = (pid: number): boolean => Number.isInteger(pid) && pid > 1;
 
 // Whether any process still belongs to the group led by `pid`. A group id is not reused while it has a member, so signalling the group cannot reach an unrelated process the way a bare recorded pid can after its process was reaped.

@@ -182,11 +182,13 @@ export interface Pin {
   text: string;
 }
 
-/** `FROM <image>:<tag>` pins, ignoring build stages and our own ghcr.io images. */
+/** `FROM [--flag=value ...] <image>:<tag>` pins, ignoring build stages and our own ghcr.io images. A FROM whose image is a variable (`$ARG`) or carries no tag has no literal pin to check and is not returned. */
 export function parsePins(src: string, file: string): Pin[] {
   const out: Pin[] = [];
   src.split('\n').forEach((raw, i) => {
-    const m = raw.match(/^\s*FROM\s+([A-Za-z0-9._/-]+):([A-Za-z0-9._-]+)/);
+    const m = raw.match(
+      /^\s*FROM\s+(?:--[A-Za-z0-9-]+=\S+\s+)*([A-Za-z0-9._/-]+):([A-Za-z0-9._-]+)/
+    );
     if (!m) return;
     const [, image, tag] = m;
     // Our own published images are not an upstream freshness question; they are outputs.
@@ -345,7 +347,7 @@ export function unclaimedPins(pins: Pin[], entries: PinEntry[]): string[] {
     .filter((p) => leafFor(p, entries) === null)
     .map(
       (p) =>
-        `${p.file}:${p.line}  ${p.image}:${p.tag}: no docker leaf of .ci/config/pins.json has a site matching this FROM line; add one (driver docker, source dockerhub with image ${p.image}, a version site whose match covers the line; image:proxy-node is the shape) so \`npm run pins -- bump <its id>\` can move it`
+        `${p.file}:${p.line}  ${p.image}:${p.tag}: no docker leaf of .ci/config/pins.json has a site matching this FROM line; add one (driver docker, source dockerhub with image ${p.image}, a version site whose match covers the whole line text, including any leading whitespace or --platform flag; image:proxy-node is the shape) so \`npm run pins -- bump <its id>\` can move it`
     );
 }
 
@@ -362,6 +364,18 @@ function selftest(): { bad: number; total: number } {
     'X'
   );
   check('a FROM pin is parsed', pins.length === 1 && pins[0].image === 'node');
+  const flagged = parsePins(
+    'FROM --platform=$BUILDPLATFORM node:20 AS build\nFROM --platform=linux/amd64 --other=x golang:1.26\nFROM $BASE:1\n',
+    'F'
+  );
+  check(
+    'CONTROL: a FROM with --flag=value options is still parsed (an unparsed one is neither claimed nor checked)',
+    flagged.length === 2 && flagged[0].image === 'node' && flagged[1].image === 'golang'
+  );
+  check(
+    'an indented FROM is parsed with its whitespace kept, so a leaf match must cover it',
+    parsePins('  FROM node:20\n', 'F')[0]?.text === '  FROM node:20'
+  );
   check(
     'our OWN ghcr images are not treated as upstream pins',
     !pins.some((p) => p.image.includes('rediacc'))
@@ -645,7 +659,7 @@ async function main(): Promise<void> {
   }
   console.log(
     `${GREEN}✓${NC} ${checked} Docker Hub pin(s) checked, ${checked - stale.length} current, ` +
-      `${stale.length} known-stale and baselined. No NEW staleness. ${pins.length} FROM line(s), each claimed by a docker leaf.`
+      `${stale.length} known-stale and baselined. No NEW staleness. ${pins.length} literal image:tag FROM line(s) (variable-image FROMs carry no pin), each claimed by a docker leaf.`
   );
 }
 
