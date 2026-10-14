@@ -6,10 +6,13 @@ No differential: this module's bash twin (`.ci/scripts/test/list-e2e-probe-files
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import typing
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.ci import list_e2e_probe_files as subject
 
 if typing.TYPE_CHECKING:
@@ -162,3 +165,22 @@ def test_main_returns_1_when_the_manifest_is_missing(
 
     assert subject.main([]) == 1
     assert capsys.readouterr().err != ""
+
+
+def test_the_probe_edges_selftest_runs_and_passes() -> None:
+    """Worklist #d168ab86: `scripts/ci-runner/e2e-probe-edges.ts --selftest` carries the probe's edge-proposal controls (control, inverse, no-predecessor, consecutive, buckets, vacuous), and nothing ran it, so a broken proposer stayed green. A missing tsx is a failure, never a skip."""
+    tsx = paths.from_root("node_modules", ".bin", "tsx")
+    script = paths.from_root("scripts", "ci-runner", "e2e-probe-edges.ts")
+    assert os.access(tsx, os.X_OK), (
+        "tsx not installed at %s; run npm install && npm run install:natives" % tsx
+    )
+    proc = subprocess.run(
+        [os.fspath(tsx), os.fspath(script), "--selftest"],
+        cwd=paths.repo_root(),
+        capture_output=True,
+        text=True,
+        timeout=300,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "OK: e2e-probe-edges selftest passed" in proc.stdout + proc.stderr
