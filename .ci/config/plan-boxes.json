@@ -1694,12 +1694,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 6,
-      "open_sigs": [
-        "1323232f"
-      ],
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
       "done_sigs": [
+        "1323232f",
         "271af786",
         "6b8f6f9e",
         "89d81247",
