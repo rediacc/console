@@ -830,8 +830,13 @@ async function main() {
     const key = `${modulePath}#${exportName}`;
     if (!rulesByModule.has(key)) {
       const rule = (await import(path.join(ROOT, modulePath)))[exportName];
-      // A missing export is a named failure, not an undefined rule that every probe then reports as dead or crashes on (review 40894873.3).
-      if (rule === undefined) throw new Error(`${modulePath} has no export '${exportName}'`);
+      // An absent or non-rule export is a named failure, not an undefined or null rule that every probe then reports as dead or crashes on.
+      if (
+        rule === undefined ||
+        rule === null ||
+        (typeof rule !== 'object' && typeof rule !== 'function')
+      )
+        throw new Error(`${modulePath} has no rule export '${exportName}'`);
       rulesByModule.set(key, rule);
     }
     return rulesByModule.get(key);
