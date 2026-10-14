@@ -10,11 +10,13 @@ name: Console CT - E2E Dependency Probe
 # e2e-probe-edges.ts turn "failed alone" into a proposed `needs` edge.
 #
 # NEVER TOUCHES THE MANIFEST. This workflow only measures and reports; a
-# human (the plan's lead) reviews the aggregate job's printed/uploaded edges
-# and applies them to unit-enumerators.ts by hand. Opt-in via the PR label
-# `e2e-dependency-probe` (see ci.yml's call site) because it re-provisions
-# one full VM topology per file -- expensive to run on every push, cheap to
-# skip.
+# human reviews the aggregate job's printed/uploaded edges and applies them
+# to unit-enumerators.ts by hand. A file that fails alone fails its leg, and
+# ci.yml's CI Complete reads this call's result as soft-required, so the PR
+# that introduces a hidden dependency between spec files is the one that goes
+# red. ci.yml calls it whenever E2E Workers runs (no PR label gates it, ruling
+# 2026-10-14); it re-provisions one full VM topology per file, which is the
+# price of that verdict on every such run.
 #
 # MIRRORS ct-tests.yml's `test-e2e-workers` JOB, deliberately, one distro
 # (ubuntu-24.04) and one file per leg instead of a shard's worth: same

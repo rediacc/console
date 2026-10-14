@@ -28,10 +28,10 @@
  *      entries. Every OTHER runner job in `ci.yml` and its callees is judged on its whole-job
  *      p90 (`job_p90_minutes`, keyed by Actions display name and mapped back per call site
  *      by `displayNamePattern`), against 12 or against its `JOB_BUDGET_CAPS` ceiling (the
- *      2026-09-28 ruling); a job with no p90 is UNCHECKED, which is a finding, unless
- *      `LABEL_GATED_JOBS` names it and every call site really needs that PR label (printed
- *      as "not measured" every run). A priced lane's matrix legs are judged in the lane and
- *      skipped here.
+ *      2026-09-28 ruling); a job with no p90 is UNCHECKED, which is a finding with
+ *      no exception: a job a PR runs is measured from a PR run (operator ruling 2026-10-14
+ *      retired the one label-gated exception with the label itself). A priced lane's matrix
+ *      legs are judged in the lane and skipped here.
  *   3. Single unit: a unit whose own cost plus the lane's fixed cost exceeds 12 minutes
  *      is red even alone, "indivisible", unless `LANE_BUDGET_EXEMPTIONS` names it (D-W3).
  *      An exemption whose test file or job has gone is itself a finding.
@@ -106,7 +106,7 @@
  * needs: node
  * selftest: true
  * emit: false
- * blocker: the live run's one remaining finding is check 2 on the three E2E Probe jobs (aggregate, list-files, probe-file), which run only on a PR labelled e2e-dependency-probe and have no measured p90 yet; #591 carries the label, and the budget_report --refresh after its run lets this line, the manifest's gate: true and the quality-code step land together (worklist #eaddeba0)
+ * blocker: the live run's one remaining finding is check 2 UNCHECKED on the three E2E Probe jobs (aggregate, list-files, probe-file), which now run on every run that runs E2E Workers and have no measured p90 yet; a budget_report --refresh --branch <PR branch> after that PR's first run measures them, and then this line, the manifest's gate: true and the quality-code step land together
  * why: a CI leg that quietly grows past 12 minutes is invisible until the pipeline as a
  *   whole misses its 35-minute target (D-W1); this asserts the committed duration estimates
  *   against both ceilings before that happens on a real runner
@@ -137,7 +137,6 @@ import {
   shardManifestPath,
 } from '../ci-runner/shard-manifest.js';
 import { LANE_ENUMERATORS } from '../ci-runner/unit-enumerators.js';
-import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
@@ -791,101 +790,6 @@ export function checkTwoPartition(
     else judged.push(...samples);
   }
   return { judged, unchecked };
-}
-
-/**
- * LABEL-GATED JOBS, check 2's one named exception (2026-10-14). A job reached only through a caller whose `if:` requires a PR label never runs in the PR-full sample `budget_report.py --refresh` measures, so it has no p90 and check 2 calls it UNCHECKED on every run, a finding no change to the job can clear. An entry here turns that UNCHECKED into a "not measured" line printed on every run; it never excuses a p90 that exists, which is judged like any other job.
- *
- * LIVENESS IS IN-GATE: an entry is refused when its reason fails the shared BLOCKER rules, when a job it names is defined nowhere, and when ANY call site of a job reaches it without that label in a purely conjunctive `if:` (`labelGateOf`), because then a PR without the label runs it and its cost is the pipeline's. check 7 still holds each job to `timeout-minutes` of 15 or less. Nothing is added without a reason that names how the job gets measured.
- */
-export interface LabelGatedJobs {
-  label: string;
-  jobs: readonly string[];
-  reason: string;
-}
-export const LABEL_GATED_JOBS: readonly LabelGatedJobs[] = [
-  {
-    label: 'e2e-dependency-probe',
-    jobs: ['list-files', 'probe-file', 'aggregate'],
-    reason:
-      'BLOCKER: ct-e2e-probe.yml re-provisions one VM topology per E2E Workers spec file, so ci.yml runs it only on a PR labelled e2e-dependency-probe and the PR-full sample never holds it. Its jobs carry timeout-minutes 5, 15 and 10 (check 7). A green labelled PR run followed by budget_report.py --refresh gives them a p90, and from then on check 2 judges them.',
-  },
-];
-
-/** The PR label a job's own `if:` requires, as an un-negated `contains(github.event.pull_request.labels.*.name, '<label>')` in an expression with no `||`, or null. Reads the job's block in `text` (two-space job keys under `jobs:`). Pure. */
-export function labelGateOf(text: string, jobId: string): string | null {
-  const lines = text.split('\n');
-  const start = lines.findIndex((l) => l === `  ${jobId}:` || l.startsWith(`  ${jobId}: `));
-  if (start < 0) return null;
-  const block: string[] = [];
-  for (const line of lines.slice(start + 1)) {
-    if (/^ {0,2}[A-Za-z0-9_-]+:/.test(line)) break;
-    block.push(line);
-  }
-  const at = block.findIndex((l) => /^ {4}if:/.test(l));
-  if (at < 0) return null;
-  const expr = [block[at]?.replace(/^ {4}if:\s*/, '') ?? ''];
-  for (const line of block.slice(at + 1)) {
-    if (/^ {4}\S/.test(line)) break;
-    expr.push(line.trim());
-  }
-  const joined = expr.join(' ');
-  if (joined.includes('||')) return null;
-  // A negation reaches the call through any number of opening parentheses: `!(contains(...))` requires the label ABSENT.
-  if (/!\s*\(*\s*contains\(\s*github\.event\.pull_request\.labels/.test(joined)) return null;
-  const m =
-    /(^|[^!])contains\(\s*github\.event\.pull_request\.labels\.\*\.name\s*,\s*'([^']+)'\s*\)/.exec(
-      joined
-    );
-  return m === null ? null : (m[2] as string);
-}
-
-/**
- * Check 2's UNCHECKED set, less the jobs a live LABEL_GATED_JOBS entry covers, plus every finding about the table itself. `gates` maps each runner job id to the label gate of each of its call sites (null for an ungated site). Pure.
- */
-export function labelGatedPartition(
-  unchecked: readonly string[],
-  gates: ReadonlyMap<string, readonly (string | null)[]>,
-  table: readonly LabelGatedJobs[] = LABEL_GATED_JOBS
-): { unchecked: string[]; notMeasured: string[]; findings: string[] } {
-  const findings: string[] = [];
-  const covered = new Set<string>();
-  for (const entry of table) {
-    const bad = entry.reason.startsWith('BLOCKER:')
-      ? validateBlockerQuality(
-          entry.label,
-          entry.reason.replace(/^BLOCKER:\s*/, ''),
-          'check-lane-budget.ts'
-        )?.message
-      : 'the reason does not start with "BLOCKER:"';
-    if (bad !== undefined) {
-      findings.push(`LABEL_GATED_JOBS entry for label ${entry.label}: ${bad}`);
-      continue;
-    }
-    for (const job of entry.jobs) {
-      const sites = gates.get(job);
-      if (sites === undefined) {
-        findings.push(
-          `LABEL_GATED_JOBS names job ${job} under label ${entry.label}, which no workflow defines. Delete it.`
-        );
-        continue;
-      }
-      const open = sites.filter((g) => g !== entry.label).length;
-      if (open > 0) {
-        findings.push(
-          `LABEL_GATED_JOBS names job ${job} under label ${entry.label}, but ${open} of its ${sites.length} call site(s) ` +
-            'run it without that label, so every PR pays for it. Delete the entry: a job a PR runs must be measured.'
-        );
-        continue;
-      }
-      covered.add(job);
-    }
-  }
-  return {
-    unchecked: unchecked.filter((j) => !covered.has(j)),
-    notMeasured: unchecked.filter((j) => covered.has(j)),
-    findings,
-  };
 }
 
 /** The matrix leg index a display name carries: "(3/3)", "(ubuntu-24.04, 2/8)", "(1)". 1 when there is none (an unsharded job is a leg of one). */
@@ -2318,20 +2222,15 @@ async function main(): Promise<number> {
   const timeoutSites = new Map<string, TimeoutSite>();
   // Check 8 reads each workflow once, like check 7: every file the walk reaches, ci.yml included.
   const walkedTexts = new Map<string, string>();
-  // Per runner job id, the PR label each of its call sites requires (null: none), for LABEL_GATED_JOBS.
-  const labelGates = new Map<string, (string | null)[]>();
   const walk = (
     file: string,
     text: string,
     chain: readonly string[],
-    stack: readonly string[],
-    gate: string | null = null
+    stack: readonly string[]
   ): boolean => {
     walkedTexts.set(file, text);
     for (const j of workflowJobs(text)) {
-      const siteGate = gate ?? labelGateOf(text, j.id);
       if (j.uses === null) {
-        labelGates.set(j.id, [...(labelGates.get(j.id) ?? []), siteGate]);
         runnerJobSet.add(j.id);
         sites.push({ id: j.id, pattern: displayNamePattern(chain, j.name, j.hasMatrix) });
         timeoutSites.set(`${file}\0${j.id}`, {
@@ -2346,7 +2245,7 @@ async function main(): Promise<number> {
       const callee = workflows[j.uses] ?? readOr(ROOT, j.uses, `the ${j.uses} workflow`);
       if (callee === null) return false;
       workflows[j.uses] = callee;
-      if (!walk(j.uses, callee, [...chain, j.name], [...stack, file], siteGate)) return false;
+      if (!walk(j.uses, callee, [...chain, j.name], [...stack, file])) return false;
     }
     return true;
   };
@@ -2661,14 +2560,7 @@ async function main(): Promise<number> {
   }
 
   // Check 2 over every runner job that is not a priced lane, by the display names budget_report measured it under. A priced lane's matrix legs were judged above, per leg, and are skipped here.
-  const { judged: judgedSamples, unchecked: rawUnchecked } = checkTwoPartition(
-    runnerJobs,
-    priced,
-    samplesFor
-  );
-  const labelGated = labelGatedPartition(rawUnchecked, labelGates);
-  const unchecked = labelGated.unchecked;
-  findings.push(...labelGated.findings);
+  const { judged: judgedSamples, unchecked } = checkTwoPartition(runnerJobs, priced, samplesFor);
   const judgedJobs = new Set(judgedSamples.map((x) => x.job));
   findings.push(...judgeJobSamples(judgedSamples));
   if (unchecked.length > 0) {
@@ -2755,7 +2647,6 @@ async function main(): Promise<number> {
     `parallel: ${parallelLanes.join(', ') || 'none'}, ` +
     `gate-step priced: ${gateStepNotes.join('; ') || 'none'}, ` +
     `measured under a plan that no longer ships, set aside until the next refresh: ${setAside.join(', ') || 'none'}, ` +
-    `label-gated and not measured (LABEL_GATED_JOBS): ${labelGated.notMeasured.join(', ') || 'none'}, ` +
     `${judgedJobs.size}/${runnerJobs.length - priced.size} other job(s) judged ` +
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s), ` +
@@ -3493,80 +3384,6 @@ async function selftest(): Promise<number> {
           .map((l) => legPlanHash(l.ids));
         return Object.values(plans).some((ran) => ran.some((h) => committed.includes(h)));
       })(),
-    },
-    // --- check 2: LABEL_GATED_JOBS, the one named exception to UNCHECKED -----------
-    {
-      name: 'labelGateOf reads the label a conjunctive job if: requires, and nothing else',
-      ok: (() => {
-        const wf = (cond: string) =>
-          `on: pull_request\njobs:\n  probe:\n    name: P\n    if: >-\n      always() &&\n      ${cond}\n    uses: ./.github/workflows/x.yml\n  next:\n    runs-on: x\n`;
-        const label = "contains(github.event.pull_request.labels.*.name, 'lbl')";
-        return (
-          labelGateOf(wf(label), 'probe') === 'lbl' &&
-          labelGateOf(wf(`${label} || github.event_name == 'push'`), 'probe') === null &&
-          labelGateOf(wf(`!${label}`), 'probe') === null &&
-          labelGateOf(wf(`!(${label})`), 'probe') === null &&
-          labelGateOf(wf(`! ( ${label} )`), 'probe') === null &&
-          labelGateOf(wf(label), 'next') === null &&
-          labelGateOf(wf(label), 'absent') === null
-        );
-      })(),
-    },
-    {
-      name: 'COVERS: a declared job every call site of which needs the label leaves UNCHECKED for the not-measured line',
-      ok: (() => {
-        const r = labelGatedPartition(
-          ['probe', 'other'],
-          new Map([
-            ['probe', ['lbl']],
-            ['other', [null]],
-          ]),
-          [{ label: 'lbl', jobs: ['probe'], reason: LABEL_GATED_JOBS[0]?.reason ?? '' }]
-        );
-        return (
-          r.findings.length === 0 &&
-          JSON.stringify(r.unchecked) === '["other"]' &&
-          JSON.stringify(r.notMeasured) === '["probe"]'
-        );
-      })(),
-    },
-    {
-      name: 'FIRES: a declared job one call site runs WITHOUT the label is a finding and stays UNCHECKED',
-      ok: (() => {
-        const r = labelGatedPartition(['probe'], new Map([['probe', ['lbl', null]]]), [
-          { label: 'lbl', jobs: ['probe'], reason: LABEL_GATED_JOBS[0]?.reason ?? '' },
-        ]);
-        return (
-          r.findings.some((f) => f.includes('1 of its 2 call site(s)')) &&
-          JSON.stringify(r.unchecked) === '["probe"]'
-        );
-      })(),
-    },
-    {
-      name: 'FIRES: a declared job no workflow defines, and a reason that fails the BLOCKER rules, are findings',
-      ok: (() => {
-        const gone = labelGatedPartition([], new Map(), [
-          { label: 'lbl', jobs: ['gone'], reason: LABEL_GATED_JOBS[0]?.reason ?? '' },
-        ]);
-        const lazy = labelGatedPartition(['probe'], new Map([['probe', ['lbl']]]), [
-          { label: 'lbl', jobs: ['probe'], reason: 'BLOCKER: tbd' },
-        ]);
-        return (
-          gone.findings.some((f) => f.includes('no workflow defines')) &&
-          lazy.findings.length === 1 &&
-          JSON.stringify(lazy.unchecked) === '["probe"]'
-        );
-      })(),
-    },
-    {
-      name: 'CONTROL (live): every LABEL_GATED_JOBS reason passes the shared BLOCKER rules',
-      ok:
-        LABEL_GATED_JOBS.length > 0 &&
-        labelGatedPartition(
-          [],
-          new Map(LABEL_GATED_JOBS.flatMap((e) => e.jobs.map((j) => [j, [e.label]] as const))),
-          LABEL_GATED_JOBS
-        ).findings.length === 0,
     },
     // --- check 8: one job per workflow stages the embed assets --------------------
     {

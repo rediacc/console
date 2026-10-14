@@ -50,7 +50,7 @@ FASTPATH_SKIPS = {
     "RESULT_LABEL_GUIDE": "skipped",
     # breakpoint-lifecycle's if: excludes pointer_bump_only, so it skips here too
     "RESULT_BREAKPOINT_LIFECYCLE": "skipped",
-    # e2e-dependency-probe runs only on a PR carrying its label, so every other run skips it
+    # e2e-dependency-probe runs only when E2E Workers runs (full_suite and run_e2e_workers), so a scoped-out run skips it
     "RESULT_E2E_DEPENDENCY_PROBE": "skipped",
 }
 
