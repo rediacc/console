@@ -70,10 +70,10 @@ TRACE_MARKER = "--- trace ---\n"
 
 # A 64-character lower-case hex run, which is what the recording `docker` writes for a build context and the only value in the corpus that is content-derived.
 DIGEST_RE = re.compile(r"\b[0-9a-f]{64}\b")
-DIGEST_TOKEN = "<sha256>"  # noqa: S105 -- a mask token, not a credential
+DIGEST_TOKEN = "<sha256>"
 
 # The token the scratch directory folds to. Distinct from `frozen.mask_root`'s `<root>` and `<base>`, because this one sits outside the repository entirely and folding it to the same name would hide a port that mounted the wrong one of the two.
-SCRATCH_TOKEN = "<scratch>"  # noqa: S105 -- a mask token, not a credential
+SCRATCH_TOKEN = "<scratch>"
 
 
 def normalise(text: str, base: pathlib.Path) -> str:

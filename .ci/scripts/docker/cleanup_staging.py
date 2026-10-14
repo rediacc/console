@@ -13,7 +13,7 @@ THE MUTATION THIS ONE PERFORMS IS THE ONLY IRREVERSIBLE ONE OF THE THREE: a `gh 
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.docker import cleanup_staging as port
 
 if __name__ == "__main__":

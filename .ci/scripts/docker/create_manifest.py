@@ -9,7 +9,7 @@ THE LIVE TARGET. `.github/workflows/ci-build-docker.yml` names this path at its 
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.docker import create_manifest as port
 
 if __name__ == "__main__":

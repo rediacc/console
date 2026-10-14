@@ -307,7 +307,7 @@ def test_the_token_is_stripped_of_carriage_returns_before_the_child_sees_it(
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         root,
-        CLOUDFLARE_API_TOKEN="\nto\rk\n",  # noqa: S106 -- a fixture value that authenticates nowhere
+        CLOUDFLARE_API_TOKEN="\nto\rk\n",
     )
     assert old.returncode == 0, old.stderr
     assert "  token='tok'\n" in old_calls

@@ -34,8 +34,8 @@ TWIN_REL = ".ci/scripts/build/canonicalise-gpg-key.sh"
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / ".ci" / "rediacc_ci" / "build" / "canonicalise_gpg_key.py"
 
-PASSPHRASE = "test-pass-w7p6"  # noqa: S105 -- not a secret, a throwaway fixture value
-WRONG_PASSPHRASE = "not-the-right-one"  # noqa: S105 -- ditto
+PASSPHRASE = "test-pass-w7p6"
+WRONG_PASSPHRASE = "not-the-right-one"
 
 
 def _gpg(

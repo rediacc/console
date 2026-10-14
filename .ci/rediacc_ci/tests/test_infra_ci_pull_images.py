@@ -58,7 +58,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 # A socket that does not exist, identical on both sides. See the module docstring.
 NOWHERE_DAEMON = "unix:///nonexistent/rediacc-ci-pull-images-fixture.sock"
 
-TOKEN = "fixture-token"  # noqa: S105 -- a throwaway fixture value that authenticates nowhere
+TOKEN = "fixture-token"
 ACTOR = "fixture-actor"
 
 FAKE_DOCKER = """#!/usr/bin/python3

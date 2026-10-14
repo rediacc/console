@@ -52,7 +52,7 @@ NOTICE = paths.from_root(".ci", "config", "bws-rotation-notice.txt")
 FIXTURE_CLIENT = "fixture-client-one"
 FIXTURE_TOKEN = "0.%s.fixture-secret:fixture-key" % FIXTURE_CLIENT
 # The token "already installed", so check 3 has two different things to compare.
-INSTALLED_TOKEN = "0.fixture-client-zero.old-secret:old-key"  # noqa: S105 -- fixture, exists in no store
+INSTALLED_TOKEN = "0.fixture-client-zero.old-secret:old-key"
 
 
 def _load_module():

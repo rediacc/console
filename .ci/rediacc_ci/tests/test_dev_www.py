@@ -61,7 +61,7 @@ TRACE_MARKER = "--- trace ---\n"
 
 # A 64-character lower-case hex run, which is what `ensure_deps` writes into its stamp and the only value in the corpus that is path-derived.
 STAMP_RE = re.compile(r"\b[0-9a-f]{64}\b")
-STAMP_TOKEN = "<sha256>"  # noqa: S105 -- a mask token, not a credential
+STAMP_TOKEN = "<sha256>"
 
 # The one scenario whose stderr is reduced rather than compared, and the reduction. Bash reports a missing command as `<file>: line <n>: npm: command not found`; a line number inside a shell file is neither reproducible by a port nor worth reproducing, so what survives is that the message names the program. The EXIT CODE is compared verbatim, which is the part callers act on.
 REDUCED_STDERR = {"no-npm"}
