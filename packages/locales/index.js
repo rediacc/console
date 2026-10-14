@@ -3,14 +3,14 @@
  *
  * Before this package there were 31 copies of this list in the console tree alone, in five
  * different orderings, plus more in the submodules and the gitignored Python repos. They
- * drifted: `eslint.config.js` carried 8, two media gates carried 10, `VIDEO_LANGS` carried
+ * drifted: the lint config carried 8, two media gates carried 10, `VIDEO_LANGS` carried
  * 11, and nothing could tell a deliberate subset from a stale copy.
  *
  * Plain ESM with a hand-written `.d.ts`, and NO build step, on purpose. The consumers
- * include `eslint.config.js` (runs before any build), eleven `node`-run `.js` scripts, an
+ * include eleven `node`-run `.js` scripts, an
  * Astro/Vite app, `tsx` scripts, two Cloudflare workers and the CLI bundle. Anything that
- * resolved through a `dist/` — `packages/shared` does — would need a build before eslint
- * could load it. A bare specifier into a workspace package resolves for all of them via
+ * resolved through a `dist/` — `packages/shared` does — would need a build before a
+ * build-less consumer could load it. A bare specifier into a workspace package resolves for all of them via
  * Node's upward `node_modules` walk, with no ordering constraint at all.
  *
  * Adding a locale here is deliberately a multi-file change: `Record<Language, string>` in

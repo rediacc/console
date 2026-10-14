@@ -29,7 +29,7 @@ THE EXIT-CODE CONTRACT, WHICH IS NOT AN INVENTION. Every producer in the tree al
 
     124  timed out       common.sh:260, wl_git.py:107, wl_reggate.py:761
     127  could not spawn wl_git.py:110, wl_reggate.py:763
-    137  SIGKILL         appears in PROSE only (scripts/eslint-heap.sh:14). Nothing
+    137  SIGKILL         appears in PROSE only (the retired eslint heap wrapper). Nothing
                          in the repo branches on it, so nothing here produces it.
 
 `scripts/ci-runner/pool.ts:38-40` writes the convention down: "1 is a finding, 2 is usage, 124 is a timeout, 127 is not-found (which is a genuine breakage, not a considered 'cannot run')". 77 is the separate "could not run" code and belongs to gates, not to this layer.

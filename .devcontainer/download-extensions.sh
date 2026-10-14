@@ -15,7 +15,6 @@ mkdir -p "$EXTENSIONS_DIR"
 # All extensions verified available on Open-VSX
 EXTENSIONS=(
 	"biomejs.biome"
-	"dbaeumer.vscode-eslint"
 	"GitHub.vscode-github-actions"
 	"ms-playwright.playwright"
 	"astro-build.astro-vscode"

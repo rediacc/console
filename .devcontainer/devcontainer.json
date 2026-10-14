@@ -66,7 +66,6 @@
     "vscode": {
       "extensions": [
         "biomejs.biome",
-        "dbaeumer.vscode-eslint",
         "GitHub.vscode-github-actions",
         "ms-playwright.playwright",
         "astro-build.astro-vscode",

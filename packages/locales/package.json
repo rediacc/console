@@ -3,7 +3,7 @@
   "version": "0.0.0-dev",
   "private": true,
   "type": "module",
-  "description": "The single declaration of the site's locale set. Buildless on purpose: eslint.config.js and eleven node-run .js scripts consume it before any build step exists.",
+  "description": "The single declaration of the site's locale set. Buildless on purpose: eleven node-run .js scripts consume it before any build step exists.",
   "main": "./index.js",
   "types": "./index.d.ts",
   "exports": {

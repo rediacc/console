@@ -61,7 +61,7 @@ Fixes #(issue number)
 ## Code Quality
 - [ ] Code follows project style guidelines
 - [ ] TypeScript types properly defined
-- [ ] No ESLint warnings/errors
+- [ ] No Biome lint warnings/errors
 - [ ] Components follow React best practices
 - [ ] Redux state management follows patterns
 
