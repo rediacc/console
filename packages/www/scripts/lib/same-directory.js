@@ -22,6 +22,8 @@ const ignoresCase = (p) => {
   const probe = cased(p);
   if (!probe) return false;
   try {
+    // A probe that moved up to an ancestor answers for the ancestor's volume, so the directory itself must sit on the same device; a mount point below it (a case-sensitive volume under a case-insensitive parent) gives no answer, and nothing folds.
+    if (probe.rest !== '' && fs.statSync(p).dev !== fs.statSync(probe.dir).dev) return false;
     fs.realpathSync(path.join(probe.dir, probe.swapped, probe.rest));
     return !fs.readdirSync(probe.dir).includes(probe.swapped);
   } catch {
