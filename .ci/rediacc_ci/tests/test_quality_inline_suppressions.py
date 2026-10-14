@@ -7,7 +7,6 @@ Marker fixtures are assembled from halves, so this file never holds a literal ma
 
 from __future__ import annotations
 
-import json
 import subprocess
 from typing import TYPE_CHECKING
 
@@ -121,18 +120,61 @@ def test_count_reads_its_pathspec(
     assert gate.main(["--count"], root=root) == 2
 
 
-def test_write_baseline_refuses_growth_and_allows_a_drain(tmp_path: pathlib.Path) -> None:
-    path = tmp_path / "baseline.json"
-    two = {"a.py": gate.count_markers("x = 1  %s: F401\ny = 2  %s: F401\n" % (NQ, NQ), "py")}
-    one = {"a.py": gate.count_markers("x = 1  %s: F401\n" % NQ, "py")}
-    swapped = {"a.py": gate.count_markers("x = 1  %s: B010\n" % NQ, "py")}
+def test_the_gate_holds_zero_and_refuses_a_baseline_file(
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Box F of PLAN-inline-suppressions: zero markers, and NO baseline. Each verdict is driven through the real `main` on one root, in both directions, so a gate that went green on anything (or red on everything) fails here.
 
-    assert gate.write_baseline(path, two, first_seed=False) == 1, "no file, no --first-seed"
-    assert not path.exists()
-    assert gate.write_baseline(path, two, first_seed=True) == 0
-    assert gate.write_baseline(path, one, first_seed=False) == 0, "a drain is allowed"
-    before = path.read_text(encoding="utf-8")
-    # The composition trap: one F401 drained and one B010 added keeps the TOTAL at one.
-    assert gate.write_baseline(path, swapped, first_seed=False) == 1
-    assert path.read_text(encoding="utf-8") == before
-    assert json.loads(before)["counts"] == {"a.py": {"noqa F401": 1}}
+    The console floor is lowered for the temporary root and `CI` is removed so the absent submodules are NOT CHECKED rather than a refusal; `test_a_near_empty_root_is_vacuous_not_clean` holds the real floor.
+    """
+    root = _repo(tmp_path, {"a.py": "x = 1\n", "b.ts": "export const y = 2;\n"})
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr(gate, "MIN_CONSOLE_FILES", 1)
+
+    assert gate.main([], root=root) == 0
+    out = capsys.readouterr().out
+    assert "0 markers, no baseline" in out
+    assert "2 code file(s) read" in out
+
+    # RED: a baseline file at the retired path fails even when it is empty and untracked.
+    baseline = root / gate.RETIRED_BASELINE_REL
+    baseline.parent.mkdir(parents=True)
+    baseline.write_text('{"counts": {}}\n', encoding="utf-8")
+    assert gate.main([], root=root) == 1
+    captured = capsys.readouterr()
+    assert "admits no baseline" in captured.err
+    assert "no baseline" not in captured.out
+    baseline.unlink()
+    assert gate.main([], root=root) == 0
+    capsys.readouterr()
+
+    # RED: a planted marker is named by file and line.
+    (root / "a.py").write_text("x = 1\nimport json  %s: F401\n" % NQ, encoding="utf-8")
+    assert gate.main([], root=root) == 1
+    err = capsys.readouterr().err
+    assert "a.py:2: %s: F401" % NQ in err
+    assert "1 inline suppression marker(s) in 1 file(s)" in err
+
+
+def test_a_retired_or_unknown_flag_is_refused_not_ignored(
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`--write-baseline` once wrote the file; silently running the gate instead would read as a successful write, and writing would re-create what box F deleted."""
+    root = _repo(tmp_path, {"a.py": "x = 1\n"})
+    monkeypatch.delenv("CI", raising=False)
+    monkeypatch.setattr(gate, "MIN_CONSOLE_FILES", 1)
+    assert gate.main(["--write-baseline"], root=root) == 2
+    assert "--write-baseline is retired" in capsys.readouterr().err
+    assert not (root / gate.RETIRED_BASELINE_REL).exists()
+    assert gate.main(["--write-baseline", "--first-seed"], root=root) == 2
+    assert gate.main(["--bogus"], root=root) == 2
+    assert "unknown argument(s): --bogus" in capsys.readouterr().err
+    assert gate.main(["--count", "a.py", "--bogus"], root=root) == 2
+    assert gate.main(["--selftest", "--count"], root=root) == 2
+    # CONTROL: the supported spellings still run.
+    assert gate.main(["--selftest"], root=root) == 0
+    assert gate.main(["--count", "a.py"], root=root) == 0

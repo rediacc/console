@@ -209,19 +209,6 @@
       "reason": "A baseline, not a render: removing a guard is a deliberate act and the baseline is drained by hand in the same commit, so there is no generator a refusal could print."
     },
     {
-      "id": "inline-suppressions",
-      "title": "Inline suppression baseline",
-      "when": "pre-push",
-      "outputs": [".ci/config/inline-suppressions-baseline.json"],
-      "inputs": [".ci/scripts/quality/check_inline_suppressions.py"],
-      "generator": ".ci/scripts/quality/check_inline_suppressions.py --write-baseline",
-      "gate": "check:ci-inline-suppressions",
-      "deterministic": true,
-      "hand_reviewed": true,
-      "measured_s": 7.4,
-      "reason": "Shrink-only: `--write-baseline` records a drain and refuses growth, and a new suppression is fixed, never baselined, so the command must not be offered as the fix for a refused commit. Its inputs are every source file in the tree; the glob names only the gate."
-    },
-    {
       "id": "gate-bind",
       "title": "Workflow steps bound from gate headers",
       "when": "pre-push",

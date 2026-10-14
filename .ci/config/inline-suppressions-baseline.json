@@ -1,4 +1,0 @@
-{
- "note": "SHRINK-ONLY. Inline lint and type suppression markers that existed when operator ruling 2026-10-08 banned them, counted per (file, marker kind, code), never by line. Written only by `.ci/scripts/quality/check_inline_suppressions.py --write-baseline`, which refuses any growth. Fix the code; a deliberate project-wide exception is a per-file entry in the linter's own config with a BLOCKER: reason (docs/agent-reference/suppressions.md). The goal state is an empty map.",
- "counts": {}
-}
