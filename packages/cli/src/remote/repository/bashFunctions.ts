@@ -51,7 +51,7 @@ status() {
   echo "Team:       \${REDIACC_TEAM:-not set}"
   echo "Machine:    \${REDIACC_MACHINE:-not set}"
   echo "Repository: \${REDIACC_REPOSITORY:-not set}"
-  echo "Datastore:  \${REDIACC_DATASTORE:-not set}"
+  echo "Datastore:  \${REDIACC_DATASTORE_PATH:-not set}"
   echo ""
   echo "=== Docker Info ==="
   echo "Socket:     \${DOCKER_SOCKET:-/var/run/docker.sock}"

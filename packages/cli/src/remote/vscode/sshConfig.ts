@@ -195,7 +195,7 @@ export function addMachineSSHConfigEntry(opts: AddMachineSSHConfigOptions): stri
     REDIACC_MACHINE: opts.machineName,
   };
   if (opts.teamName) setEnv.REDIACC_TEAM = opts.teamName;
-  if (opts.datastore) setEnv.REDIACC_DATASTORE = opts.datastore;
+  if (opts.datastore) setEnv.REDIACC_DATASTORE_PATH = opts.datastore;
   addSSHConfigEntry({
     host: hostName,
     hostname: opts.host,

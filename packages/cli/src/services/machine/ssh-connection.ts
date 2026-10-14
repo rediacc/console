@@ -110,7 +110,7 @@ function buildRepositoryEnvFromVault(
     REDIACC_NETWORK_ID: networkId,
     REDIACC_NETWORK_MODE: networkMode,
     REDIACC_REPO_TAG: tag,
-    REDIACC_DATASTORE: datastore,
+    REDIACC_DATASTORE_PATH: datastore,
     REDIACC_DATASTORE_USER: universalUser,
     REDIACC_IMMOVABLE: immovable,
     DOCKER_DATA: `${datastore}${repositoryPath}`,
@@ -136,7 +136,7 @@ function buildMachineEnvFromVault(
     environment: {
       REDIACC_TEAM: teamName,
       REDIACC_MACHINE: machineName,
-      REDIACC_DATASTORE: datastore,
+      REDIACC_DATASTORE_PATH: datastore,
       REDIACC_DATASTORE_USER: universalUser,
     },
     workingDirectory: datastore,

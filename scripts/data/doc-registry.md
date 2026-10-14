@@ -1835,7 +1835,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_CONFIG` | product-runtime | - |
 | `REDIACC_CONFIG_PASSWORD` | secret | - |
 | `REDIACC_DAEMON_DEBUG` | tombstone | - |
-| `REDIACC_DATASTORE` | product-runtime | - |
+| `REDIACC_DATASTORE_PATH` | product-runtime | - |
 | `REDIACC_DEBUG` | product-runtime | - |
 | `REDIACC_DEFAULT_OUTPUT` | product-runtime | - |
 | `REDIACC_DEV_BIND` | harness | - |
