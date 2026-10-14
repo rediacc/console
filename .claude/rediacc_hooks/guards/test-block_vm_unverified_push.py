@@ -82,6 +82,10 @@ G.plant_receipt(
     tree=G._git(REVERTED_VERIFIED, "rev-parse", "%s^{tree}" % G.TIP_BRANCH),
 )
 ESC_TIP = built("vmc-reverted")
+ESC_MIRROR = built("vmc-docs-only")
+# `G.TIP_BRANCH` touched but already pushed: its remote-tracking ref names its tip, so `--all` sends nothing of it.
+SYNCED_TIP = built("vmc-reverted")
+G._git(SYNCED_TIP, "update-ref", "refs/remotes/origin/%s" % G.TIP_BRANCH, G.TIP_BRANCH)
 TIP = G.TIP_BRANCH
 TIP_PUSH = "git push origin %s:refs/heads/x" % TIP
 
@@ -222,6 +226,121 @@ CASES = [
         False,
         "",
     ),
+    # ---- every branch, a glob refspec, a mirror
+    (
+        "--all, another branch touched",
+        "git push --all origin",
+        REVERTED,
+        None,
+        None,
+        True,
+        "pushed as `refs/heads/%s`" % TIP,
+    ),
+    ("--all with no remote named", "git push --all", REVERTED, None, None, True, TIP),
+    (
+        "--branches, another branch touched",
+        "git push --branches origin",
+        REVERTED,
+        None,
+        None,
+        True,
+        TIP,
+    ),
+    (
+        "--all, every differing tip VERIFIED",
+        "git push --all origin",
+        REVERTED_VERIFIED,
+        None,
+        None,
+        False,
+        "",
+    ),
+    (
+        "--all, the touched branch already pushed",
+        "git push --all origin",
+        SYNCED_TIP,
+        None,
+        None,
+        False,
+        "",
+    ),
+    ("--all to another remote", "git push --all elsewhere", SYNCED_TIP, None, None, True, TIP),
+    ("--all, docs only", "git push --all origin", DOCS, None, None, False, ""),
+    (
+        "--all to a URL remote",
+        "git push --all https://example.invalid/c.git",
+        REVERTED,
+        None,
+        None,
+        True,
+        TIP,
+    ),
+    (
+        "a glob refspec",
+        "git push origin 'refs/heads/*:refs/heads/*'",
+        REVERTED,
+        None,
+        None,
+        True,
+        "pushed as `refs/heads/%s`" % TIP,
+    ),
+    (
+        "a forced glob refspec",
+        "git push origin '+refs/heads/vm-*:refs/heads/vm-*'",
+        REVERTED,
+        None,
+        None,
+        True,
+        TIP,
+    ),
+    (
+        "a glob matching only synced main",
+        "git push origin 'refs/heads/ma*:refs/heads/ma*'",
+        REVERTED,
+        None,
+        None,
+        False,
+        "",
+    ),
+    (
+        "a glob git cannot enumerate",
+        "git push origin 'refs/heads/*/*:refs/heads/*/*'",
+        DOCS,
+        None,
+        None,
+        True,
+        "(unknown) the glob refspec",
+    ),
+    (
+        "--mirror, nothing touched",
+        "git push --mirror origin",
+        DOCS,
+        None,
+        None,
+        True,
+        "(mirror) every local ref",
+    ),
+    ("--mirror, no remote named", "git push --mirror", DOCS, None, None, True, "--mirror"),
+    (
+        "--mirror then --no-mirror",
+        "git push --mirror --no-mirror origin 1008-1",
+        DOCS,
+        None,
+        None,
+        False,
+        "",
+    ),
+    ("--mirror, a dry run", "git push --mirror --dry-run origin", DOCS, None, None, False, ""),
+    ("--all, a dry run", "git push --all -n origin", REVERTED, None, None, False, ""),
+    (
+        "--mirror into a submodule",
+        "git -C private/renet push --mirror origin",
+        DOCS,
+        None,
+        None,
+        False,
+        "",
+    ),
     # ---- the receipt
     ("VERIFIED for this tree", PUSH, CLI_VERIFIED, None, None, False, ""),
     ("VERIFIED, carried by a docs commit", PUSH, ADVANCED, None, None, False, ""),
@@ -312,7 +431,34 @@ CASES = [
         False,
         "",
     ),
+    (
+        "--mirror, deadline answered",
+        (R % ("deadline: " + DEADLINE + ASK)) + "git push --mirror origin",
+        ESC_MIRROR,
+        ANSWERED,
+        None,
+        False,
+        "",
+    ),
     # ---- the escape, refused
+    (
+        "--mirror, vm-unavailable answered",
+        (R % ("vm-unavailable: " + UNAVAIL + ASK)) + "git push --mirror origin",
+        DOCS,
+        ANSWERED,
+        None,
+        True,
+        "only `not-runtime` or `deadline` admits it",
+    ),
+    (
+        "--mirror, an ASKED matching no answer",
+        (R % ("deadline: " + DEADLINE + ASK_ELSEWHERE)) + "git push --mirror origin",
+        DOCS,
+        ANSWERED,
+        None,
+        True,
+        "matches no AskUserQuestion answer",
+    ),
     (
         "vm-unavailable with no receipt at all",
         (R % ("vm-unavailable: " + UNAVAIL + ASK)) + PUSH,
@@ -542,6 +688,15 @@ if [r.get("head") for r in tip_rows] != [tip_sha]:
     fails += 1
 else:
     print("ledger: the escape for %s names the pushed commit %s" % (TIP, tip_sha[:12]))
+# A mirror escape records the push it admitted, with no single commit or tree to name.
+mirror_rows = [json.loads(line) for line in ledger_lines(ESC_MIRROR)]
+if [(r.get("head"), r.get("tree"), r.get("kind"), r.get("hits")) for r in mirror_rows] != [
+    ("", "", "deadline", G.MIRROR_HITS)
+]:
+    print("*** FAIL *** the --mirror escape recorded %r" % mirror_rows)
+    fails += 1
+else:
+    print("ledger: the --mirror escape is recorded with no head and its mirror hit")
 for quiet in (CLI_NONE, CLI_VERIFIED, ADVANCED, STALE_NV, DOCS, REVERTED, REVERTED_VERIFIED):
     if ledger_lines(quiet):
         print("*** FAIL *** a world with no admitted escape wrote %r" % ledger_lines(quiet))
