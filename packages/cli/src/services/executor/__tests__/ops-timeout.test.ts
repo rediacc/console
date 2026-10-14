@@ -19,6 +19,9 @@ describe('ops-executor timeout kills the process tree', () => {
   let dir: string;
   let fakeRenet: string;
   let gcPidFile: string;
+  let termFile: string;
+  // The in-flight executor run, so a failed readiness wait still ends the process tree it started.
+  let pending: Promise<unknown> | null;
 
   const alive = (pid: number): boolean => {
     try {
@@ -43,6 +46,19 @@ describe('ops-executor timeout kills the process tree', () => {
       return null; // not written yet
     }
   };
+  // The fake renet appends to this file when SIGTERM reaches it, so the test sees the signal itself and not only its absence of effect.
+  const waitForSigterm = async (): Promise<boolean> => {
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      try {
+        if (readFileSync(termFile, 'utf8').length > 0) return true;
+      } catch {
+        // not delivered yet
+      }
+      await realSleep(10);
+    }
+    return false;
+  };
   const readGrandchildPid = async (): Promise<number> => {
     const deadline = Date.now() + 10_000;
     for (let pid = tryReadGrandchildPid(); ; pid = tryReadGrandchildPid()) {
@@ -55,13 +71,15 @@ describe('ops-executor timeout kills the process tree', () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'ops-timeout-'));
     gcPidFile = join(dir, 'grandchild.pid');
+    termFile = join(dir, 'sigterm.mark');
+    pending = null;
     fakeRenet = join(dir, 'fake-renet');
     // Fake renet: ignore SIGTERM (wedged), spawn a grandchild in the SAME process group (default, not detached) that also ignores SIGTERM and hangs, then hang too. Only a group-wide SIGKILL ends it. The grandchild records its own pid once its handler is in place.
     writeFileSync(
       fakeRenet,
       `#!/usr/bin/env node
 const { spawn } = require('node:child_process');
-process.on('SIGTERM', () => {});
+process.on('SIGTERM', () => { require('node:fs').appendFileSync(${JSON.stringify(termFile)}, 'term\\n'); });
 const grandchild = "process.on('SIGTERM',()=>{}); require('node:fs').writeFileSync(" + JSON.stringify(${JSON.stringify(gcPidFile)}) + ", String(process.pid)); setInterval(()=>{}, 1e9)";
 spawn(process.execPath, ['-e', grandchild], { stdio: 'ignore' });
 setInterval(() => {}, 1e9);
@@ -73,7 +91,12 @@ setInterval(() => {}, 1e9);
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // A run still in flight (the readiness wait threw) is ended through the executor's own timers: the timeout sends SIGTERM and the grace window then sends the group SIGKILL.
+    if (pending) {
+      vi.advanceTimersByTime(60_000);
+      await pending;
+    }
     vi.useRealTimers();
     vi.restoreAllMocks();
     rmSync(dir, { recursive: true, force: true });
@@ -96,13 +119,14 @@ setInterval(() => {}, 1e9);
       () => undefined,
       (error: unknown) => error
     );
+    pending = rejection;
 
     const gcPid = await readGrandchildPid();
     expect(alive(gcPid)).toBe(true);
 
     // The timeout elapses: SIGTERM goes to the group, and both processes ignore it.
     vi.advanceTimersByTime(500);
-    await new Promise((resolve) => setImmediate(resolve));
+    expect(await waitForSigterm()).toBe(true);
     expect(settled).toBe(false);
     expect(alive(gcPid)).toBe(true);
 
