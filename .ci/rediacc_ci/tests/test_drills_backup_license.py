@@ -980,7 +980,7 @@ def test_the_bash_preclean_heredoc_equals_the_ports_script() -> None:
 def test_the_run_verbs_route_license_and_backup_to_the_ports() -> None:
     assert run_verbs.DRILL_MODULES["license"] == "rediacc_ci.drills.license"
     assert run_verbs.DRILL_MODULES["backup"] == "rediacc_ci.drills.backup"
-    assert list(run_verbs.DRILL_ARMS) == ["universe", "transfer", "license", "backup"]
+    assert list(run_verbs.DRILL_ARMS) == ["universe", "transfer", "license", "backup", "vmcheck"]
 
 
 # ---------------------------------------------------------------------- Ceph is asked of the workers (Rule T 6)

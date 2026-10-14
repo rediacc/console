@@ -35,7 +35,7 @@ GOLDEN_USAGE = {
     ),
     "fix": "Usage: ./run.sh fix [format|lint|shell|all]",
 }
-GOLDEN_DRILL_USAGE = "Usage: ./run.sh drill [universe|transfer|license|backup] [--selftest]"
+GOLDEN_DRILL_USAGE = "Usage: ./run.sh drill [universe|transfer|license|backup|vmcheck] [--selftest]"
 
 
 def noting(log: list, item, result=0):
@@ -509,12 +509,14 @@ def test_the_drills_and_worktree_import_their_module_and_pass_their_argv_through
     assert rv.drill_main(["transfer", "--selftest"]) == 7
     assert rv.drill_main(["license"]) == 7
     assert rv.drill_main(["backup", "--selftest"]) == 7
+    assert rv.drill_main(["vmcheck", "--changed"]) == 7
     assert rv.worktree_main(["list"]) == 7
     assert seen == [
         ("rediacc_ci.drills.universe", ["--keep-work"]),
         ("rediacc_ci.drills.transfer", ["--selftest"]),
         ("rediacc_ci.drills.license", []),
         ("rediacc_ci.drills.backup", ["--selftest"]),
+        ("rediacc_ci.drills.vm_check", ["--changed"]),
         ("rediacc_ci.dev.worktree", ["list"]),
     ]
 
