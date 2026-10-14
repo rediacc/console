@@ -27,6 +27,7 @@ import importlib.util
 import pathlib
 import re
 import shutil
+import typing
 
 import pytest
 
@@ -373,7 +374,7 @@ def test_the_port_refuses_a_now_it_cannot_read(ft_ok):
     """
     shim = ra.ReleaseAge(ft_ok)
     with pytest.raises(ValueError, match="invalid literal for int"):
-        shim.is_release_deferred(1756000000, "1756100000x", 86400)  # type: ignore[arg-type]
+        shim.is_release_deferred(1756000000, typing.cast("int", "1756100000x"), 86400)
     # A real integer still works, so the refusal is not blanket.
     assert shim.is_release_deferred(1756000000, 1756100000, 86400) is True
 

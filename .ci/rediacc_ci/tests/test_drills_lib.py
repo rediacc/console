@@ -369,7 +369,7 @@ def test_gateway_port_alive_and_wait_started_read_the_state_file(
         )
         assert drill.gateway_port() == str(port)
         assert drill.gateway_alive()
-        drill.note = lambda *_a: None  # type: ignore[method-assign]
+        monkeypatch.setattr(drill, "note", lambda *_a: None)
         drill.wait_gateway_started(int(time.time()))
         assert drill.gateway_port_cached == str(port)
         assert drill.server_url() == "http://127.0.0.1:%d" % port
@@ -398,9 +398,9 @@ def test_stop_gateway_kills_the_whole_process_group(
     monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
     drill = lib.Drill("t")
     drill.init()
-    drill.note = lambda *_a: None  # type: ignore[method-assign]
-    drill.step = lambda *_a: None  # type: ignore[method-assign]
-    drill.wait_gateway_started = lambda *_a: None  # type: ignore[method-assign]
+    monkeypatch.setattr(drill, "note", lambda *_a: None)
+    monkeypatch.setattr(drill, "step", lambda *_a: None)
+    monkeypatch.setattr(drill, "wait_gateway_started", lambda *_a: None)
     try:
         drill.restart_gateway()
         for _ in range(50):
@@ -424,8 +424,8 @@ def test_wait_started_names_a_gateway_that_exited(
     monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
     drill = lib.Drill("t")
     drill.init()
-    drill.note = lambda *_a: None  # type: ignore[method-assign]
-    drill.step = lambda *_a: None  # type: ignore[method-assign]
+    monkeypatch.setattr(drill, "note", lambda *_a: None)
+    monkeypatch.setattr(drill, "step", lambda *_a: None)
     try:
         with pytest.raises(lib.GatewayError):
             drill.restart_gateway()

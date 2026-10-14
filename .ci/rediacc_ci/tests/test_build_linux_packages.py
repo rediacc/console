@@ -24,10 +24,12 @@ THE ONE DELIBERATE DIVERGENCE IS TESTED, NOT HIDDEN. `test_an_unset_next_version
 treatment for a missing delegate in `test_a_missing_delegate_agrees_on_127_and_not_on_the_diagnostic`.
 """
 
+import os
 import pathlib
 import re
 import shutil
 import subprocess
+from typing import Any
 
 import pytest
 
@@ -259,7 +261,7 @@ def recorded(name: str) -> dict[str, object]:
 
 
 # Fixture and run keywords per recorded case. The ids are the golden names.
-CASE_KW: dict[str, tuple[dict[str, object], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "no-musl-binaries-glibc-fallback": ({}, {}),
     "both-musl-binaries-preferred-for-apk": (
         {
@@ -297,8 +299,8 @@ def drive(
 ) -> dict[str, object]:
     """Run the PORT over one recorded case's fixture."""
     fixture_kw, run_kw = CASE_KW[name]
-    root = _fixture(tmp_path / name[:24], port_source=port_source, **fixture_kw)  # type: ignore[arg-type]
-    return _run(PORT_REL, root, **run_kw)  # type: ignore[arg-type]
+    root = _fixture(tmp_path / name[:24], port_source=port_source, **fixture_kw)
+    return _run(PORT_REL, root, **run_kw)
 
 
 def compare(tmp_path: pathlib.Path, name: str, *, port_source: str | None = None) -> dict:
@@ -477,8 +479,6 @@ def test_invocations_is_lazy_so_the_f_test_happens_per_pair(tmp_path):
     cli.mkdir(parents=True)
     (cli / "rdc-linux-x64").write_text("x", encoding="utf-8")
     (cli / "rdc-linux-arm64").write_text("x", encoding="utf-8")
-
-    import os  # noqa: PLC0415 -- one chdir, scoped to this case
 
     previous = os.getcwd()
     os.chdir(tmp_path)

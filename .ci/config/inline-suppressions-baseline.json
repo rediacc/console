@@ -149,40 +149,8 @@
   ".ci/rediacc_ci/tests/regolden.py": {
    "noqa PLC0415": 2
   },
-  ".ci/rediacc_ci/tests/test_build_linux_packages.py": {
-   "noqa PLC0415": 1,
-   "type-ignore arg-type": 2
-  },
-  ".ci/rediacc_ci/tests/test_ci_cancel_older_runs.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_ci_dispatch_watchdog.py": {
-   "type-ignore arg-type": 2
-  },
   ".ci/rediacc_ci/tests/test_ci_github_status.py": {
    "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/tests/test_ci_initialize.py": {
-   "type-ignore arg-type": 2
-  },
-  ".ci/rediacc_ci/tests/test_core_lease.py": {
-   "type-ignore arg-type": 2,
-   "type-ignore attr-defined": 7
-  },
-  ".ci/rediacc_ci/tests/test_core_release_age.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py": {
-   "type-ignore attr-defined": 5
-  },
-  ".ci/rediacc_ci/tests/test_docker_create_manifest.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_drills_lib.py": {
-   "type-ignore method-assign": 6
-  },
-  ".ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py": {
-   "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/tests/test_housekeeping_cleanup_github_deployments.py": {
    "type-ignore arg-type": 1

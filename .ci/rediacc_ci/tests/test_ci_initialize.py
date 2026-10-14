@@ -29,7 +29,7 @@ import re
 import shlex
 import shutil
 import stat
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict, Unpack
 
 from rediacc_ci.ci import generate_tag
 from rediacc_ci.ci import initialize as port
@@ -234,6 +234,13 @@ def minbin(tmp_path: pathlib.Path) -> pathlib.Path:
     return bindir
 
 
+class FixtureKwargs(TypedDict, total=False):
+    """The knobs `fixture_root` takes, for the callers that forward them."""
+
+    sentinel: bool
+    docker: bool
+
+
 def fixture_root(
     tmp_path: pathlib.Path,
     side: str,
@@ -300,7 +307,7 @@ def run_both(
     output: str | None = None,
     tty: str | None = None,
     timeout: float = 60,
-    **fixture_kwargs: object,
+    **fixture_kwargs: Unpack[FixtureKwargs],
 ) -> tuple[tuple[int, str, str], tuple[int, str, str], dict[str, str | None]]:
     """Build one fixture per side, run both, and normalise the roots away.
 
@@ -315,7 +322,7 @@ def run_both(
     )
     files.update(frozen)
     for side in ("new",):
-        root = fixture_root(tmp_path, side, **fixture_kwargs)  # type: ignore[arg-type]
+        root = fixture_root(tmp_path, side, **fixture_kwargs)
         call_log = root / "calls.log"
         call_log.write_text("", encoding="utf-8")
         argv = list(args) + (["--output", output] if output is not None else [])
@@ -355,7 +362,7 @@ def _old_side(tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kw
 
     def side(which: str):
         def run():
-            root = fixture_root(tmp_path, "old", **fixture_kwargs)  # type: ignore[arg-type]
+            root = fixture_root(tmp_path, "old", **fixture_kwargs)
             call_log = root / "calls.log"
             call_log.write_text("", encoding="utf-8")
             argv = list(args) + (["--output", output] if output is not None else [])
