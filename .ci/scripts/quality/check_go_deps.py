@@ -60,7 +60,7 @@ when: inputs.external_quality != 'skip'
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import go_deps
 
 if __name__ == "__main__":

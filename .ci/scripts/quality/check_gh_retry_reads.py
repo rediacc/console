@@ -18,7 +18,7 @@ why: one HTTP 502 failed CI Complete on PR #597 (run 37507913738), and an audit 
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import gh_retry_reads, gh_retry_shell
 
 _PYTHON_ONLY = ("--write-baseline", "--init-baseline")

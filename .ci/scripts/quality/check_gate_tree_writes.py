@@ -14,7 +14,7 @@ why: A gate that writes the shared tree without an exclusive tree: claim runs be
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import gate_tree_writes
 
 if __name__ == "__main__":

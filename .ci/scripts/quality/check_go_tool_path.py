@@ -38,7 +38,7 @@ why: Console's own scripts already use the right shape -- toolchain.sh installs
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import go_tool_path
 
 if __name__ == "__main__":

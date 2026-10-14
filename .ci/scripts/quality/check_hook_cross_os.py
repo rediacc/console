@@ -17,7 +17,7 @@ why: .claude/rediacc_hooks has exactly one platform seam today and nothing was
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import hook_cross_os
 
 if __name__ == "__main__":

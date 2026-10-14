@@ -28,7 +28,7 @@ lane: quality-go
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import go_module_sync
 
 if __name__ == "__main__":

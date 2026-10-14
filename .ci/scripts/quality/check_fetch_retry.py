@@ -28,7 +28,7 @@ import pathlib
 import re
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls
 
 # THIS HOP STAYS HAND-WRITTEN, AND IT IS THE ONE EXCEPTION IN THIS DIRECTORY. Every other `.claude/hooks/stop` and sibling-directory hop under `.ci/scripts/quality` now goes through `rediacc_ci.paths.on_sys_path`. This one cannot, and the reason is a ruff rule rather than a taste: E402 EXEMPTS a `sys.path` mutation that precedes a module-level import, and exempts nothing

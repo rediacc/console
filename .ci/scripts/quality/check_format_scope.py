@@ -33,7 +33,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("FORMAT_SCOPE_ROOT") or Path(__file__).resolve().parents[3])

@@ -20,7 +20,7 @@ why: an environment variable is an undeclared input, and nothing in this tree co
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import env_manifest
 
 if __name__ == "__main__":
