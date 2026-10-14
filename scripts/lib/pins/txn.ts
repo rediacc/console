@@ -144,7 +144,10 @@ export interface RestoreOutcome {
 
 /**
  * Give every file this run wrote its before-bytes back, but only while it still holds the
- * bytes the run wrote. Anything else is a later edit and is named, not overwritten.
+ * bytes the run wrote. Anything else is a later edit and is named, not overwritten. A file
+ * already holding its before-bytes (a replayed journal's earlier pass) is skipped silently.
+ * A file a killed step had in flight is kept and named too unless `take` names it, since the
+ * journal never recorded what that step wrote.
  */
 export function compareAndRestore(
   root: string,
@@ -165,9 +168,12 @@ export function compareAndRestore(
         out.inflight.push(k);
         continue;
       }
-    } else if (mutant !== 'blind-restore' && now !== f.wrote) {
-      out.leftAlone.push(k);
-      continue;
+    } else {
+      if (now === (f.before === null ? 'absent' : sha(Buffer.from(f.before, 'base64')))) continue;
+      if (mutant !== 'blind-restore' && now !== f.wrote) {
+        out.leftAlone.push(k);
+        continue;
+      }
     }
     if (f.before === null) fs.rmSync(abs, { force: true });
     else fs.writeFileSync(abs, Buffer.from(f.before, 'base64'));
@@ -181,7 +187,12 @@ export function openJournals(root: string): Array<{ stamp: string; files: string
   const dir = journalRoot(root);
   if (!fs.existsSync(dir)) return [];
   const out: Array<{ stamp: string; files: string[] }> = [];
-  const stamps = fs.readdirSync(dir).sort();
+  // Only directories are stamps: a lock file, its tombs or a stray .DS_Store is not a journal layout this code could misread.
+  const stamps = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .sort();
   let readable = 0;
   for (const stamp of stamps) {
     const f = path.join(dir, stamp, 'journal.json');
@@ -213,8 +224,13 @@ export function restoreJournal(
 ): RestoreOutcome {
   const dir = path.join(journalRoot(root), stamp);
   const file = path.join(dir, 'journal.json');
-  if (path.basename(stamp) !== stamp || !fs.existsSync(file))
+  if (path.basename(stamp) !== stamp || stamp === '.' || stamp === '..' || !fs.existsSync(file))
     throw new RestoreRefused(`no journal ${stamp} under ${journalRoot(root)}`);
+  const holder = liveLockPid(root);
+  if (holder !== null)
+    throw new RestoreRefused(
+      `a live run (pid ${holder}) holds ${path.join(journalRoot(root), '.lock')}; its in-flight step files are not a killed run's to restore`
+    );
   const j = JSON.parse(fs.readFileSync(file, 'utf8')) as Journal;
   if (j.state !== 'writing')
     throw new RestoreRefused(
@@ -469,19 +485,57 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
   return res;
 }
 
+/** The pid a lock file's text names when that process is alive (a pid that exists but is not ours to signal counts as alive); null for debris or a dead pid. */
+function livePid(text: string): number | null {
+  const pid = /^\d+$/.test(text) ? Number(text) : 0;
+  if (!Number.isSafeInteger(pid) || pid <= 0) return null;
+  try {
+    process.kill(pid, 0);
+    return pid;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM' ? pid : null;
+  }
+}
+
+/** The live pid holding the one-run-at-a-time lock, or null when nobody does. */
+export function liveLockPid(root: string): number | null {
+  try {
+    return livePid(fs.readFileSync(path.join(journalRoot(root), '.lock'), 'utf8').trim());
+  } catch {
+    return null;
+  }
+}
+
+/** Test seams for the stale-lock race windows. */
+export interface LockSeams {
+  /** Runs between judging a lock stale and clearing it, the window a second taker races in. */
+  afterStaleVerdict?: () => void;
+  /** Runs between moving the judged lock aside and putting a mis-moved fresh lock back. */
+  afterMove?: () => void;
+}
+
 /** Take the one-run-at-a-time lock; null when a live run holds it. */
-/** `afterStaleVerdict` is a test seam: it runs between judging a lock stale and clearing it, the window a second taker races in. */
-export function takeLock(root: string, afterStaleVerdict?: () => void): (() => void) | null {
+export function takeLock(root: string, seams: LockSeams = {}): (() => void) | null {
   const dir = journalRoot(root);
   fs.mkdirSync(dir, { recursive: true });
   const lock = path.join(dir, '.lock');
-  // The lock appears only by a hard link from a file that already holds the pid, so a lock file never exists empty or half-written while its owner lives: one whose content is not a positive integer pid is debris from a crash and is stale, as is one naming a dead pid.
+  // The lock appears only by a hard link from a file that already holds the pid, so a lock file never exists empty or half-written while its owner lives: one whose content is not a positive integer pid is debris from a crash and is stale, as is one naming a dead pid. A filesystem that refuses hard links falls back to an exclusive create of the lock itself.
   const tmp = `${lock}.${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
   fs.writeFileSync(tmp, `${process.pid}\n`);
+  const create = (): void => {
+    try {
+      fs.linkSync(tmp, lock);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== 'EPERM' && code !== 'ENOTSUP' && code !== 'ENOSYS' && code !== 'EXDEV')
+        throw err;
+      fs.writeFileSync(lock, `${process.pid}\n`, { flag: 'wx' });
+    }
+  };
   try {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        fs.linkSync(tmp, lock);
+        create();
         return () => fs.rmSync(lock, { force: true });
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
@@ -491,18 +545,8 @@ export function takeLock(root: string, afterStaleVerdict?: () => void): (() => v
         } catch {
           continue;
         }
-        const pid = /^\d+$/.test(text) ? Number(text) : 0;
-        let alive = false;
-        if (Number.isSafeInteger(pid) && pid > 0) {
-          try {
-            process.kill(pid, 0);
-            alive = true;
-          } catch (e) {
-            alive = (e as NodeJS.ErrnoException).code === 'EPERM';
-          }
-        }
-        if (alive) return null;
-        afterStaleVerdict?.();
+        if (livePid(text) !== null) return null;
+        seams.afterStaleVerdict?.();
         // A stale lock is cleared by renaming it to a name only this taker uses, never by a plain remove: two takers that both judged the same lock stale would otherwise each remove one, and the second remove would delete the first taker's fresh lock. A rename moves one file once, so only one taker gets it; that taker then checks the file it moved is the one it judged, and puts a fresh lock it moved by mistake straight back.
         const tomb = `${lock}.stale.${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
         try {
@@ -511,6 +555,7 @@ export function takeLock(root: string, afterStaleVerdict?: () => void): (() => v
           if ((e as NodeJS.ErrnoException).code === 'ENOENT') continue;
           throw e;
         }
+        seams.afterMove?.();
         let moved = '';
         try {
           moved = fs.readFileSync(tomb, 'utf8').trim();
@@ -521,7 +566,8 @@ export function takeLock(root: string, afterStaleVerdict?: () => void): (() => v
           try {
             fs.linkSync(tomb, lock);
           } catch {
-            // Another taker already holds a fresh lock; the one moved here stays named in the tomb file.
+            // Another taker already holds a fresh lock here, so the tomb is the only place the moved lock stays named: it is kept for inspection, not removed.
+            return null;
           }
           fs.rmSync(tomb, { force: true });
           return null;

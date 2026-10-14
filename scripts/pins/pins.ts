@@ -863,6 +863,8 @@ export async function runCli(
     w = makeWorld(env);
     const f = parseFlags(argv.slice(1));
     const verb = argv[0];
+    if (f.inflight.length > 0 && !(verb === 'verify' && f.restore))
+      throw new Usage('--inflight only goes with `verify --restore <stamp>`');
     let rc: number;
     if (verb === 'status') rc = await cmdStatus(w, f);
     else if (verb === 'when') rc = await cmdWhen(w, f);
@@ -912,7 +914,6 @@ function sh(cwd: string, ...args: string[]): void {
 /** Every fixture tree the selftest made, removed when it ends. */
 const FIXTURE_ROOTS: string[] = [];
 
-/** A fixture console with a nested private/renet repo, both committed; `tune` edits the fixture JSON. */
 /** Two takers judge the same dead-pid lock stale; the second one wins the window and holds a fresh lock before the first clears. The first must then stand down and leave the fresh lock in place, not remove it and take the lock too. */
 function lockRaceCase(root: string): { name: string; ok: boolean; detail: string } {
   const lock = path.join(root, '.ci/cache/pins/.lock');
@@ -920,9 +921,11 @@ function lockRaceCase(root: string): { name: string; ok: boolean; detail: string
   fs.rmSync(lock, { force: true });
   fs.writeFileSync(lock, '999999999\n');
   const fresh = `${process.ppid}\n`;
-  const release = takeLock(root, () => {
-    fs.rmSync(lock, { force: true });
-    fs.writeFileSync(lock, fresh);
+  const release = takeLock(root, {
+    afterStaleVerdict: () => {
+      fs.rmSync(lock, { force: true });
+      fs.writeFileSync(lock, fresh);
+    },
   });
   const held = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
   if (release) release();
@@ -934,6 +937,63 @@ function lockRaceCase(root: string): { name: string; ok: boolean; detail: string
   };
 }
 
+/** A taker moves a fresh live lock aside by mistake and a third taker links its own lock before the first can put it back: the third taker's lock stays, and the moved one stays named in its tomb file instead of being deleted. */
+function lockMisMoveCase(root: string): { name: string; ok: boolean; detail: string } {
+  const dir = path.join(root, '.ci/cache/pins');
+  const lock = path.join(dir, '.lock');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.rmSync(lock, { force: true });
+  fs.writeFileSync(lock, '999999999\n');
+  const mine = `${process.pid}\n`;
+  const owner = `${process.ppid}\n`;
+  const release = takeLock(root, {
+    afterStaleVerdict: () => {
+      fs.rmSync(lock, { force: true });
+      fs.writeFileSync(lock, owner);
+    },
+    afterMove: () => fs.writeFileSync(lock, mine),
+  });
+  const held = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
+  const tombs = fs.readdirSync(dir).filter((n) => n.startsWith('.lock.stale.'));
+  const kept = tombs.map((n) => fs.readFileSync(path.join(dir, n), 'utf8'));
+  for (const n of tombs) fs.rmSync(path.join(dir, n), { force: true });
+  fs.rmSync(lock, { force: true });
+  return {
+    name: 'lock: a mis-moved live lock whose slot a third taker filled stays named in its tomb, not deleted',
+    ok: release === null && held === mine && kept.length === 1 && kept[0] === owner,
+    detail: `took=${release !== null} lock=${JSON.stringify(held)} tombs=${JSON.stringify(kept)}`,
+  };
+}
+
+/** A filesystem that refuses hard links (EPERM) still yields a lock, by an exclusive create. */
+function lockNoHardLinkCase(root: string): { name: string; ok: boolean; detail: string } {
+  const lock = path.join(root, '.ci/cache/pins/.lock');
+  fs.mkdirSync(path.dirname(lock), { recursive: true });
+  fs.rmSync(lock, { force: true });
+  const real = fs.linkSync;
+  fs.linkSync = (): void => {
+    throw Object.assign(new Error('operation not permitted'), { code: 'EPERM' });
+  };
+  let release: (() => void) | null = null;
+  let threw = '';
+  try {
+    release = takeLock(root);
+  } catch (err) {
+    threw = (err as Error).message;
+  } finally {
+    fs.linkSync = real;
+  }
+  const held = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
+  if (release) release();
+  fs.rmSync(lock, { force: true });
+  return {
+    name: 'lock: a filesystem that refuses hard links still takes the lock, by an exclusive create',
+    ok: release !== null && held === `${process.pid}\n`,
+    detail: `threw=${threw} lock=${JSON.stringify(held)}`,
+  };
+}
+
+/** A fixture console with a nested private/renet repo, both committed; `tune` edits the fixture JSON. */
 function fixtureTree(tune: (fx: Fixture) => void = () => {}): Fx {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));
   FIXTURE_ROOTS.push(root);
@@ -1472,6 +1532,136 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async restoreEdges(m) {
+    const fx = fixtureTree();
+    const jroot = path.join(fx.root, '.ci/cache/pins');
+    const before = (rel: string): string => Buffer.from(fx.read(rel)).toString('base64');
+    const sha256 = (t: string): string => crypto.createHash('sha256').update(t).digest('hex');
+    const journal = (state: string, files: object): string =>
+      JSON.stringify({ stamp: 'x', state, pins: ['embed:tool'], files });
+    // A journal with one file the run wrote and one a killed step had in flight.
+    const dockerBefore = before('Dockerfile');
+    const creditsBefore = before('credits.json');
+    const orig = fx.read('Dockerfile');
+    fx.write('Dockerfile', 'half-written\n');
+    fx.write('credits.json', '{ "edited": 1 }\n');
+    fs.mkdirSync(path.join(jroot, 'replay'), { recursive: true });
+    fs.writeFileSync(
+      path.join(jroot, 'replay', 'journal.json'),
+      journal('writing', {
+        Dockerfile: {
+          repo: '.',
+          file: 'Dockerfile',
+          before: dockerBefore,
+          wrote: sha256('half-written\n'),
+        },
+        'credits.json': {
+          repo: '.',
+          file: 'credits.json',
+          before: creditsBefore,
+          wrote: null,
+          inflight: true,
+        },
+      })
+    );
+    const first = await runCli(['verify', '--restore', 'replay'], withMutant(fx, m));
+    const second = await runCli(
+      ['verify', '--restore', 'replay', '--inflight', 'credits.json'],
+      withMutant(fx, m)
+    );
+    // A live run's lock: its stamp is not a killed run's to restore.
+    fx.write('Dockerfile', 'live step output\n');
+    fs.mkdirSync(path.join(jroot, 'livejob'), { recursive: true });
+    fs.writeFileSync(
+      path.join(jroot, 'livejob', 'journal.json'),
+      journal('writing', {
+        Dockerfile: {
+          repo: '.',
+          file: 'Dockerfile',
+          before: dockerBefore,
+          wrote: null,
+          inflight: true,
+        },
+      })
+    );
+    fs.writeFileSync(path.join(jroot, '.lock'), `${process.ppid}\n`);
+    const live = await runCli(['verify', '--restore', 'livejob'], withMutant(fx, m));
+    const liveBytes = fx.read('Dockerfile');
+    fs.rmSync(path.join(jroot, '.lock'), { force: true });
+    // '..' is not a stamp: it would read journal.json from the journal root's parent.
+    fs.writeFileSync(path.join(fx.root, '.ci/cache/journal.json'), journal('writing', {}));
+    const dots = await runCli(['verify', '--restore', '..'], withMutant(fx, m));
+    const dot = await runCli(['verify', '--restore', '.'], withMutant(fx, m));
+    // A stray entry beside the journals is not a layout the reader no longer knows.
+    const clean = fixtureTree();
+    fs.mkdirSync(path.join(clean.root, '.ci/cache/pins'), { recursive: true });
+    fs.writeFileSync(path.join(clean.root, '.ci/cache/pins/.DS_Store'), 'x');
+    const stray = await runCli(['verify'], withMutant(clean, m));
+    return [
+      {
+        name: 'verify --restore: a replayed journal does not list files its earlier pass restored as changed since',
+        ok:
+          first.rc === 1 &&
+          second.rc === 0 &&
+          !second.out.includes('left alone') &&
+          fx.read('credits.json') === '{}\n' &&
+          orig.length > 0,
+        detail: `first ${first.rc} ${first.out} ${first.err} | second ${second.rc} ${second.out} ${second.err}`,
+      },
+      {
+        name: 'verify --restore: a stamp whose run still holds the lock is refused, its files untouched',
+        ok: live.rc === 1 && live.err.includes('holds') && liveBytes === 'live step output\n',
+        detail: `${live.rc} ${live.err} ${liveBytes}`,
+      },
+      {
+        name: "verify --restore: '.' and '..' are refused as stamps",
+        ok:
+          dots.rc === 1 &&
+          dot.rc === 1 &&
+          dots.err.includes('no journal ..') &&
+          dot.err.includes('no journal .'),
+        detail: `${dots.rc} ${dots.err} | ${dot.rc} ${dot.err}`,
+      },
+      {
+        name: 'verify: a stray file in the journal root is skipped, not read as an unknown layout',
+        ok: stray.rc === 0,
+        detail: `${stray.rc} ${stray.err}`,
+      },
+    ];
+  },
+  async majorWording(m) {
+    const major = [{ version: '2.0.0', published: '2026-09-01T00:00:00Z' }];
+    const refuse = fixtureTree((fx) => {
+      fx.releases['embed:tool'] = major;
+    });
+    const reg = JSON.parse(refuse.read('.ci/config/pins.json')) as {
+      entries: Array<{ safety: { major: string } }>;
+    };
+    reg.entries[0].safety.major = 'refuse';
+    refuse.write('.ci/config/pins.json', `${JSON.stringify(reg, null, 2)}\n`);
+    const assisted = fixtureTree((fx) => {
+      fx.releases['embed:tool'] = major;
+    });
+    const a = await runCli(['status', 'embed:tool', '--json'], withMutant(refuse, m));
+    const b = await runCli(['status', 'embed:tool', '--json'], withMutant(assisted, m));
+    const va = (JSON.parse(a.out) as { pins: PinView[] }).pins[0];
+    const vb = (JSON.parse(b.out) as { pins: PinView[] }).pins[0];
+    return [
+      {
+        name: 'status: a major-only pin that refuses majors says it moves by hand, with no --major hint',
+        ok:
+          va.state === 'major-only' &&
+          va.detail.includes('refuses a major bump') &&
+          !va.detail.includes('--major'),
+        detail: JSON.stringify(va),
+      },
+      {
+        name: 'status: a major-only pin that allows an assisted major names the `bump --major --reason` line',
+        ok: vb.state === 'major-only' && vb.detail.includes('--major --reason'),
+        detail: JSON.stringify(vb),
+      },
+    ];
+  },
   async restoreDone(m) {
     const fx = fixtureTree();
     const r = await runCli(['bump', 'embed:tool', '--json'], withMutant(fx, m));
@@ -1535,6 +1725,8 @@ const CASES: Record<string, Case> = {
         detail: `${live.rc} ${live.err} kept=${kept}`,
       },
       lockRaceCase(fx.root),
+      lockMisMoveCase(fx.root),
+      lockNoHardLinkCase(fx.root),
     ];
   },
   async submodule(m) {
@@ -1700,6 +1892,11 @@ const CASES: Record<string, Case> = {
     const live = await runCli(['status'], { PINS_MUTANT: 'no-restore' });
     const major = await runCli(['bump', 'embed:tool', '--major'], withMutant(fx, m));
     const verb = await runCli(['frobnicate'], withMutant(fx, m));
+    const strayVerify = await runCli(['verify', '--inflight', 'credits.json'], withMutant(fx, m));
+    const strayBump = await runCli(
+      ['bump', 'embed:tool', '--inflight', 'credits.json'],
+      withMutant(fx, m)
+    );
     return [
       {
         name: 'a mutant outside a fixture is refused',
@@ -1708,6 +1905,14 @@ const CASES: Record<string, Case> = {
       },
       { name: '--major without --reason is refused', ok: major.rc === 2, detail: major.err },
       { name: 'an unknown verb is a usage error', ok: verb.rc === 2, detail: verb.err },
+      {
+        name: '--inflight outside `verify --restore` is a usage error, not a silently plain run',
+        ok:
+          strayVerify.rc === 2 &&
+          strayBump.rc === 2 &&
+          strayBump.err.includes('--inflight only goes with'),
+        detail: `${strayVerify.rc} ${strayVerify.err} | ${strayBump.rc} ${strayBump.err}`,
+      },
     ];
   },
   async cli(m) {
