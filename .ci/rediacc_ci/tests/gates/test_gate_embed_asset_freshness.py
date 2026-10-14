@@ -185,6 +185,12 @@ def test_a_source_absent_from_the_fixture_is_red(gate, tmp_path):
         "every source is a finding",
     )
     gate.assert_contains(result.err, "k3s (pinned ", "the finding names the pin")
+    gate.assert_contains(
+        result.err, "fixture k3s -> no entry in the fixture", "the miss says what was absent"
+    )
+    gate.assert_not_contains(
+        result.err, "attempt(s)", "a fixture lookup makes no request, so it claims no attempt"
+    )
     gate.assert_not_contains(result.out, "Every embed-asset pin", "no green line is printed")
     gate.log_pass("a source that was not compared is red")
 

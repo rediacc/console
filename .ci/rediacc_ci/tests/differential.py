@@ -722,7 +722,8 @@ def twin_tuple(
 
 
 _PYTEST_TMP_RE = re.compile(r"/[^\s:'\"]*?/pytest-\d+/(?:popen-gw\d+/)?[^/\s:'\"]+")
-_TMP_DIR_TAIL = r"/(?:popen-gw\d+/)?[^/\s:'\"]+"
+# pytest numbers every per-test directory (`<test name>0`, `<test name>1`), so a component that does not end in a digit is somebody's data: under `--basetemp=.` a printed `./src/x.py` must not fold to one token.
+_TMP_DIR_TAIL = r"/(?:popen-gw\d+/)?[\w.-]*\d(?![\w.-])"
 # A run's explicit --basetemp, set by the root conftest's pytest_configure. pytest then puts tmp_path straight under that directory, with no pytest-<N> level for _PYTEST_TMP_RE to find (worklist #ad157280: 48 goldens of test_core_release_state_validator missed their fold under --basetemp).
 _BASETEMP_RES: list[re.Pattern[str]] = []
 

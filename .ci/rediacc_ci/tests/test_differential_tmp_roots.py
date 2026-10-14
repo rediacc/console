@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+import os
+import pathlib
+import tempfile
+
 import pytest
 
 from rediacc_ci.tests import differential as diff
@@ -29,3 +33,29 @@ def test_a_tmp_path_under_an_explicit_basetemp_is_folded():
 
 def test_control_without_set_basetemp_the_same_path_is_not_folded():
     assert diff.pytest_tmp_roots(f"{BT}/test_x0/out.json") == ()
+
+
+def test_a_directory_that_pytest_did_not_number_is_not_folded():
+    """Under a basetemp that holds real files (`--basetemp=.`), a path below a plain directory stays itself."""
+    diff.set_basetemp(BT)
+    assert diff.pytest_tmp_roots(f"{BT}/src/x.py {BT}/docs/readme.md") == ()
+
+
+def test_a_symlinked_basetemp_is_folded_in_its_resolved_form_too():
+    # Outside pytest's own `pytest-<N>` tree: under tmp_path the default pattern would fold tmp_path itself, and the case would no longer isolate the basetemp forms.
+    with tempfile.TemporaryDirectory(prefix="bt-") as top:
+        real = pathlib.Path(top) / "real-bt"
+        real.mkdir()
+        link = pathlib.Path(top) / "link-bt"
+        os.symlink(real, link)
+        _assert_both_forms(link)
+
+
+def _assert_both_forms(link):
+    diff.set_basetemp(link)
+    spelled = f"{os.path.abspath(link)}/test_x0/out.json"
+    resolved = f"{os.path.realpath(link)}/test_y0/out.json"
+    assert diff.pytest_tmp_roots(spelled, resolved) == (
+        f"{os.path.abspath(link)}/test_x0",
+        f"{os.path.realpath(link)}/test_y0",
+    )

@@ -26,6 +26,7 @@ import time
 import pytest
 
 from rediacc_ci import log
+from rediacc_ci.core import upstream
 from rediacc_ci.quality import go_deps
 from rediacc_ci.tests import differential as diff
 
@@ -309,3 +310,24 @@ def test_check_entry_age_control_a_fresh_entry_is_silent_and_passes(
 
 def test_selftest_passes() -> None:
     assert go_deps.selftest() == 0
+
+
+def test_a_go_list_network_failure_without_a_url_names_a_host_without_a_space(
+    tmp_path, monkeypatch
+) -> None:
+    """The finding record is split on spaces, so a host phrase would be cut at its first word."""
+    monkeypatch.setitem(upstream.SLEEP_SEAM, "sleep", lambda _s: None)
+    failed = subprocess.CompletedProcess([], 1, "", "dial tcp: lookup proxy: no such host")
+    monkeypatch.setattr(go_deps.subprocess, "run", lambda *_a, **_k: failed)
+    with pytest.raises(upstream.NotComparedError) as raised:
+        go_deps._go_list(tmp_path)
+    assert " " not in raised.value.host
+    assert raised.value.host in str(raised.value)
+
+
+def test_an_osv_answer_that_is_not_an_object_is_not_compared(monkeypatch) -> None:
+    """Valid JSON that is not an object says nothing about advisories; reading it as 'none' would demand an unscreened version."""
+    monkeypatch.setattr(upstream, "ask_json", lambda *_a, **_k: ["unexpected"])
+    with pytest.raises(upstream.NotComparedError) as raised:
+        go_deps.osv_affected("example.test/dep", "v1.1.0")
+    assert "not a JSON object" in str(raised.value)

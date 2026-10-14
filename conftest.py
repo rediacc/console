@@ -309,6 +309,9 @@ def _tmp_capacity_or_exit(config: pytest.Config) -> None:
 def _named_paths_or_exit(config: pytest.Config) -> None:
     if hasattr(config, "workerinput"):
         return
+    # Under --pyargs the positional arguments are dotted module names, which pytest resolves itself.
+    if config.getoption("pyargs", False):
+        return
     base = pathlib.Path(config.invocation_params.dir)
     missing = [
         arg

@@ -647,6 +647,12 @@ def test_the_recorded_ids_are_read_back_as_this_hosts() -> None:
     assert diff.recorder_ids_here(recorded, CHOWN_IDS, ids=diff.RECORDER_IDS) == recorded
 
 
+def test_the_recorded_ids_default_to_the_effective_ids() -> None:
+    """With no `ids`, the rewrite uses the ids `$(id -u):$(id -g)` reports in the process, the effective ones, so a set-id process reads back what the twin would have printed."""
+    recorded = CHOWN_IDS % diff.RECORDER_IDS
+    assert diff.recorder_ids_here(recorded, CHOWN_IDS) == CHOWN_IDS % (os.geteuid(), os.getegid())
+
+
 # --------------------------------------------------------------------------- The pure helpers, and the planted defect ---------------------------------------------------------------------------
 
 
