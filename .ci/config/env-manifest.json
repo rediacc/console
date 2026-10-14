@@ -283,7 +283,6 @@
       "EDGE_VERSION",
       "EVENT_NAME",
       "EXECUTION_FILE",
-      "EXTERNAL_QUALITY_MODE",
       "FORCE",
       "FORCE_FULL_CI",
       "FULL_CI_LABEL",

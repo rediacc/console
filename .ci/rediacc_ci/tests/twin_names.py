@@ -81,7 +81,6 @@ _ELSEWHERE = {
     "core.blocker_validator": "blocker-validator",
     "review.standing_orders_brief": "standing-orders-brief",
     "quality.announce_gate_skips": "announce-gate-skips",
-    "quality.run_external_gate": "run-external-gate",
     "quality.eslint_heap": "eslint-heap",
     "quality.mutate_check": "check-mutate-check",
     "quality.pool_writer_safety": "check-pool-writer-safety",

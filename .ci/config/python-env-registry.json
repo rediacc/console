@@ -973,10 +973,6 @@
       "NO_COLOR",
       "PR_NUMBER"
     ],
-    ".ci/rediacc_ci/quality/run_external_gate.py": [
-      "EXTERNAL_QUALITY_MODE",
-      "GITHUB_STEP_SUMMARY"
-    ],
     ".ci/rediacc_ci/quality/setup_idempotency.py": [
       "NO_COLOR"
     ],

@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2822,
- "files": 691,
+ "count": 2821,
+ "files": 690,
  "by_rule": {
-  "R1": 1543,
+  "R1": 1542,
   "R11": 149,
   "R14": 1,
   "R18": 13,
@@ -401,11 +401,6 @@
   ".ci/rediacc_ci/quality/rubric_calibration.py": {
    "R7": [
     "fddd65ac95800c42"
-   ]
-  },
-  ".ci/rediacc_ci/quality/run_external_gate.py": {
-   "R1": [
-    "b991955905c45525"
    ]
   },
   ".ci/rediacc_ci/quality/secret_supply.py": {
