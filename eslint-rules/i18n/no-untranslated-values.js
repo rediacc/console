@@ -86,6 +86,62 @@ const needsTranslation = (value) => {
 // Rule-option default: values shorter than this are too small to judge as "identical to English" (product names, "OK", punctuation).
 const DEFAULT_MIN_LENGTH = 3;
 
+/**
+ * Check if a value matches any allowed pattern
+ */
+function isAllowed(allowedPatterns, value) {
+  return allowedPatterns.some((pattern) => pattern.test(value));
+}
+
+/**
+ * Recursively check all values in a JSON object
+ */
+function checkStringValue(env, value, fullPath) {
+  const { context, englishTranslations, allowedPatterns, minLength } = env;
+  const strValue = value.value;
+
+  // Skip short strings
+  if (strValue.length < minLength) return;
+
+  // Skip if it doesn't need translation
+  if (!needsTranslation(strValue)) return;
+
+  // Skip allowed patterns
+  if (isAllowed(allowedPatterns, strValue)) return;
+
+  // Check if identical to English
+  const englishValue = englishTranslations.get(fullPath);
+  if (englishValue && strValue === englishValue) {
+    context.report({
+      node: value,
+      messageId: 'untranslated',
+      data: {
+        key: fullPath,
+        value: strValue.length > 50 ? `${strValue.slice(0, 47)}...` : strValue,
+      },
+    });
+  }
+}
+
+function checkObject(env, node, prefix = '') {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+    if (!key) continue;
+
+    const fullPath = joinPath(prefix, key);
+    const value = member.value;
+
+    if (value?.type === 'Object') {
+      // Recursively check nested objects
+      checkObject(env, value, fullPath);
+    } else if (value?.type === 'String') {
+      checkStringValue(env, value, fullPath);
+    }
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUntranslatedValues = {
   meta: {
@@ -147,65 +203,12 @@ export const noUntranslatedValues = {
     // Load English translations
     const englishTranslations = loadEnglishTranslations(absoluteLocalesDir, namespace);
 
-    /**
-     * Check if a value matches any allowed pattern
-     */
-    const isAllowed = (value) => {
-      return allowedPatterns.some((pattern) => pattern.test(value));
-    };
-
-    /**
-     * Recursively check all values in a JSON object
-     */
-    const checkStringValue = (value, fullPath) => {
-      const strValue = value.value;
-
-      // Skip short strings
-      if (strValue.length < minLength) return;
-
-      // Skip if it doesn't need translation
-      if (!needsTranslation(strValue)) return;
-
-      // Skip allowed patterns
-      if (isAllowed(strValue)) return;
-
-      // Check if identical to English
-      const englishValue = englishTranslations.get(fullPath);
-      if (englishValue && strValue === englishValue) {
-        context.report({
-          node: value,
-          messageId: 'untranslated',
-          data: {
-            key: fullPath,
-            value: strValue.length > 50 ? `${strValue.slice(0, 47)}...` : strValue,
-          },
-        });
-      }
-    };
-
-    const checkObject = (node, prefix = '') => {
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-
-        const key = memberKey(member);
-        if (!key) continue;
-
-        const fullPath = joinPath(prefix, key);
-        const value = member.value;
-
-        if (value?.type === 'Object') {
-          // Recursively check nested objects
-          checkObject(value, fullPath);
-        } else if (value?.type === 'String') {
-          checkStringValue(value, fullPath);
-        }
-      }
-    };
+    const env = { context, englishTranslations, allowedPatterns, minLength };
 
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(env, node.body);
         }
       },
     };

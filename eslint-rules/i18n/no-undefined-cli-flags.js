@@ -78,6 +78,50 @@ export const loadValidFlags = () => {
   return flags;
 };
 
+/** Extract the leading `--flag` from a whitespace-delimited token, after
+ *  stripping surrounding markdown/quote/punctuation characters. */
+function flagOf(token) {
+  const cleaned = token.replace(LEADING_TOKEN_CHARS, '').replace(TRAILING_TOKEN_CHARS, '');
+  const m = cleaned.match(/^(--[a-z][a-z0-9-]*)/);
+  return m ? m[1] : null;
+}
+
+/** Report every unregistered `--flag` token in one locale string. */
+function checkStringValue(env, value, fullPath) {
+  const { context, exemptFlags, exemptKeyPrefixes, validFlags } = env;
+  if (exemptKeyPrefixes.some((prefix) => fullPath.startsWith(prefix))) return;
+
+  const reported = new Set();
+  for (const token of value.value.split(/\s+/)) {
+    const flag = flagOf(token);
+    if (!flag) continue;
+    if (validFlags.has(flag) || exemptFlags.has(flag)) continue;
+    if (reported.has(flag)) continue;
+    reported.add(flag);
+    context.report({
+      node: value,
+      messageId: 'undefinedFlag',
+      data: { key: fullPath, flag },
+    });
+  }
+}
+
+function checkObject(env, node, prefix = '') {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+    const key = memberKey(member);
+    if (!key) continue;
+    const fullPath = joinPath(prefix, key);
+    const value = member.value;
+
+    if (value?.type === 'Object') {
+      checkObject(env, value, fullPath);
+    } else if (value?.type === 'String') {
+      checkStringValue(env, value, fullPath);
+    }
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUndefinedCliFlags = {
   meta: {
@@ -118,55 +162,12 @@ export const noUndefinedCliFlags = {
     const exemptKeyPrefixes = options.exemptKeyPrefixes || [];
     const validFlags = loadValidFlags();
 
-    const isExemptKey = (key) => exemptKeyPrefixes.some((prefix) => key.startsWith(prefix));
-
-    /** Extract the leading `--flag` from a whitespace-delimited token, after
-     *  stripping surrounding markdown/quote/punctuation characters. */
-    const flagOf = (token) => {
-      const cleaned = token.replace(LEADING_TOKEN_CHARS, '').replace(TRAILING_TOKEN_CHARS, '');
-      const m = cleaned.match(/^(--[a-z][a-z0-9-]*)/);
-      return m ? m[1] : null;
-    };
-
-    /** Report every unregistered `--flag` token in one locale string. */
-    const checkStringValue = (value, fullPath) => {
-      if (isExemptKey(fullPath)) return;
-
-      const reported = new Set();
-      for (const token of value.value.split(/\s+/)) {
-        const flag = flagOf(token);
-        if (!flag) continue;
-        if (validFlags.has(flag) || exemptFlags.has(flag)) continue;
-        if (reported.has(flag)) continue;
-        reported.add(flag);
-        context.report({
-          node: value,
-          messageId: 'undefinedFlag',
-          data: { key: fullPath, flag },
-        });
-      }
-    };
-
-    const checkObject = (node, prefix = '') => {
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-        const key = memberKey(member);
-        if (!key) continue;
-        const fullPath = joinPath(prefix, key);
-        const value = member.value;
-
-        if (value?.type === 'Object') {
-          checkObject(value, fullPath);
-        } else if (value?.type === 'String') {
-          checkStringValue(value, fullPath);
-        }
-      }
-    };
+    const env = { context, exemptFlags, exemptKeyPrefixes, validFlags };
 
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(env, node.body);
         }
       },
     };

@@ -33,6 +33,58 @@ function loadEnglishTranscript(transcriptsDir, castFile) {
 // Rule-option default: values shorter than this are too small to judge as "identical to English" (product names, "OK", punctuation).
 const DEFAULT_MIN_LENGTH = 3;
 
+function visitObjectNode(node, onMember) {
+  for (const member of objectMembers(node)) {
+    if (member.type === 'Member') onMember(member);
+  }
+}
+
+function getStringMemberValue(objNode, keyName) {
+  let result = null;
+  visitObjectNode(objNode, (member) => {
+    if (memberKey(member) !== keyName) return;
+    if (member.value?.type === 'String') result = member.value.value;
+  });
+  return result;
+}
+
+/** The `events` array of a transcript document, or null. */
+function findEventsArray(objNode) {
+  let eventsArray = null;
+  visitObjectNode(objNode, (member) => {
+    if (memberKey(member) === 'events' && member.value?.type === 'Array') {
+      eventsArray = member.value;
+    }
+  });
+  return eventsArray;
+}
+
+/** Report one event whose text is byte-identical to the English cast. */
+function checkEvent(env, element, index) {
+  const { context, englishEvents, minLength } = env;
+  // @eslint/json wraps every array entry in an `Element` node whose
+  // `value` is the real node. Comparing the WRAPPER against 'Object' made this rule inert: `element.type` is 'Element' for every entry, so the walk returned before it ever looked at an event.
+  const eventNode = element?.type === 'Element' ? element.value : element;
+  if (eventNode?.type !== 'Object') return;
+
+  const text = getStringMemberValue(eventNode, 'text');
+  if (typeof text !== 'string' || text.trim().length < minLength) return;
+
+  const enText = englishEvents.get(index);
+  if (typeof enText !== 'string' || enText.trim().length < minLength) return;
+
+  if (text.trim() !== enText.trim()) return;
+
+  context.report({
+    node: eventNode,
+    messageId: 'untranslated',
+    data: {
+      index: String(index),
+      value: text.length > 50 ? `${text.slice(0, 47)}...` : text,
+    },
+  });
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUntranslatedTutorialTranscriptValues = {
   meta: {
@@ -81,65 +133,18 @@ export const noUntranslatedTutorialTranscriptValues = {
 
     const englishEvents = loadEnglishTranscript(absoluteTranscriptsDir, castFile);
 
-    function visitObjectNode(node, onMember) {
-      for (const member of objectMembers(node)) {
-        if (member.type === 'Member') onMember(member);
-      }
-    }
-
-    function getStringMemberValue(objNode, keyName) {
-      let result = null;
-      visitObjectNode(objNode, (member) => {
-        if (memberKey(member) !== keyName) return;
-        if (member.value?.type === 'String') result = member.value.value;
-      });
-      return result;
-    }
-
-    /** The `events` array of a transcript document, or null. */
-    function findEventsArray(objNode) {
-      let eventsArray = null;
-      visitObjectNode(objNode, (member) => {
-        if (memberKey(member) === 'events' && member.value?.type === 'Array') {
-          eventsArray = member.value;
-        }
-      });
-      return eventsArray;
-    }
-
-    /** Report one event whose text is byte-identical to the English cast. */
-    function checkEvent(element, index) {
-      // @eslint/json wraps every array entry in an `Element` node whose
-      // `value` is the real node. Comparing the WRAPPER against 'Object' made this rule inert: `element.type` is 'Element' for every entry, so the walk returned before it ever looked at an event.
-      const eventNode = element?.type === 'Element' ? element.value : element;
-      if (!eventNode || eventNode.type !== 'Object') return;
-
-      const text = getStringMemberValue(eventNode, 'text');
-      if (typeof text !== 'string' || text.trim().length < minLength) return;
-
-      const enText = englishEvents.get(index);
-      if (typeof enText !== 'string' || enText.trim().length < minLength) return;
-
-      if (text.trim() !== enText.trim()) return;
-
-      context.report({
-        node: eventNode,
-        messageId: 'untranslated',
-        data: {
-          index: String(index),
-          value: text.length > 50 ? `${text.slice(0, 47)}...` : text,
-        },
-      });
-    }
+    const env = { context, englishEvents, minLength };
 
     return {
       Document(node) {
-        if (!node?.body || node.body.type !== 'Object') return;
+        if (node?.body?.type !== 'Object') return;
 
         const eventsArray = findEventsArray(node.body);
         if (!eventsArray || !Array.isArray(eventsArray.elements)) return;
 
-        eventsArray.elements.forEach(checkEvent);
+        eventsArray.elements.forEach((element, index) => {
+          checkEvent(env, element, index);
+        });
       },
     };
   },

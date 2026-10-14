@@ -81,6 +81,47 @@ const loadEnglishTranslations = (localesDir, namespace) => {
   }
 };
 
+/** Report every flag token this translation invented. */
+function checkStringValue(env, value, fullPath) {
+  const { context, englishTranslations, validFlags } = env;
+  const englishValue = englishTranslations.get(fullPath);
+  if (!englishValue) return;
+
+  const englishFlags = extractFlags(englishValue);
+  const reported = new Set();
+  for (const flag of extractFlags(value.value)) {
+    if (englishFlags.has(flag)) continue; // shared with en → not the translator's doing
+    if (validFlags.has(flag)) continue; // a real flag → allowed
+    if (reported.has(flag)) continue;
+    reported.add(flag);
+    context.report({
+      node: value,
+      messageId: 'mangledFlag',
+      data: {
+        key: fullPath,
+        flag,
+        englishFlags: [...englishFlags].join(', ') || '(none)',
+      },
+    });
+  }
+}
+
+function checkObject(env, node, prefix = '') {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+    const key = memberKey(member);
+    if (!key) continue;
+    const fullPath = joinPath(prefix, key);
+    const value = member.value;
+
+    if (value?.type === 'Object') {
+      checkObject(env, value, fullPath);
+    } else if (value?.type === 'String') {
+      checkStringValue(env, value, fullPath);
+    }
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const cliFlagConsistency = {
   meta: {
@@ -123,49 +164,11 @@ export const cliFlagConsistency = {
     const englishTranslations = loadEnglishTranslations(absoluteLocalesDir, namespace);
     const validFlags = loadValidFlags();
 
-    /** Report every flag token this translation invented. */
-    const checkStringValue = (value, fullPath) => {
-      const englishValue = englishTranslations.get(fullPath);
-      if (!englishValue) return;
-
-      const englishFlags = extractFlags(englishValue);
-      const reported = new Set();
-      for (const flag of extractFlags(value.value)) {
-        if (englishFlags.has(flag)) continue; // shared with en → not the translator's doing
-        if (validFlags.has(flag)) continue; // a real flag → allowed
-        if (reported.has(flag)) continue;
-        reported.add(flag);
-        context.report({
-          node: value,
-          messageId: 'mangledFlag',
-          data: {
-            key: fullPath,
-            flag,
-            englishFlags: [...englishFlags].join(', ') || '(none)',
-          },
-        });
-      }
-    };
-
-    const checkObject = (node, prefix = '') => {
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-        const key = memberKey(member);
-        if (!key) continue;
-        const fullPath = joinPath(prefix, key);
-        const value = member.value;
-
-        if (value?.type === 'Object') {
-          checkObject(value, fullPath);
-        } else if (value?.type === 'String') {
-          checkStringValue(value, fullPath);
-        }
-      }
-    };
+    const env = { context, englishTranslations, validFlags };
 
     return {
       Document(node) {
-        if (node.body?.type === 'Object') checkObject(node.body);
+        if (node.body?.type === 'Object') checkObject(env, node.body);
       },
     };
   },
