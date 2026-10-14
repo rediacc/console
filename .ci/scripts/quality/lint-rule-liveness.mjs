@@ -829,7 +829,10 @@ async function main() {
   const loadRule = async (modulePath, exportName) => {
     const key = `${modulePath}#${exportName}`;
     if (!rulesByModule.has(key)) {
-      rulesByModule.set(key, (await import(path.join(ROOT, modulePath)))[exportName]);
+      const rule = (await import(path.join(ROOT, modulePath)))[exportName];
+      // A missing export is a named failure, not an undefined rule that every probe then reports as dead or crashes on (review 40894873.3).
+      if (rule === undefined) throw new Error(`${modulePath} has no export '${exportName}'`);
+      rulesByModule.set(key, rule);
     }
     return rulesByModule.get(key);
   };
@@ -1001,7 +1004,7 @@ async function main() {
     // ---------------------------------------------------------------------
     const controlFailures = [];
 
-    // 1. in-config mode: sorted-keys on already-sorted input (severity forced on, since the rule is off by documented decision).
+    // 1. override path: sorted-keys on already-sorted input (severity forced on through an override, since the rule is off by documented decision).
     {
       const probe = new HostLinter({ 'i18n/sorted-keys': [] });
       const { fired } = firedRuleIds(
@@ -1011,7 +1014,22 @@ async function main() {
         })
       );
       if (fired.has('i18n/sorted-keys')) {
-        controlFailures.push("in-config: i18n/sorted-keys 'fired' on ALREADY-SORTED input");
+        controlFailures.push("override: i18n/sorted-keys 'fired' on ALREADY-SORTED input");
+      }
+    }
+
+    // 1b. in-config mode proper (review 40894873.1): the shared instance with NO overrides, which runs every table entry in scope for the file. Sorted JSON is clean for every rule the table runs there.
+    {
+      const { fired } = firedRuleIds(
+        await inConfig.lintText(JSON.stringify({ a: '1', b: '2' }, null, 2), {
+          filePath: path.join(ROOT, 'packages/www/src/i18n/translations/tr.json'),
+          warnIgnored: false,
+        })
+      );
+      for (const rule of fired) {
+        controlFailures.push(
+          `in-config: ${rule} 'fired' on ALREADY-SORTED input with no overrides`
+        );
       }
     }
 
@@ -1230,7 +1248,7 @@ async function main() {
       `${matrixKeys.size} enabled custom/i18n rule(s) each fired on a planted violation ` +
         `(${registered.size} registered, ${knownOff.length} off by documented decision, ` +
         `${Object.keys(KNOWN_UNREACHABLE).length} enabled-but-unreachable and recorded); ` +
-        `${2 + isolatedRuleIds.length} negative controls stayed silent; ${elapsed}s`
+        `${3 + isolatedRuleIds.length} negative controls stayed silent; ${elapsed}s`
     );
     // The reach counts are printed rather than merely asserted: a reader can see at a glance that the sweep resolved real files, instead of taking a silent pass as proof that it ran.
     console.log(
