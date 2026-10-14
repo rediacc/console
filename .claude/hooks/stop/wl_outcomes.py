@@ -82,9 +82,10 @@ def read_rows(path):
     """Every JSON object line of `path`; a torn, foreign or non-UTF-8 line is skipped, a missing file is []."""
     out = []
     with contextlib.suppress(OSError):
-        for line in pathlib.Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
+        for raw in pathlib.Path(path).read_bytes().splitlines():
+            # A UnicodeDecodeError is a ValueError, so a line that is not UTF-8 is skipped whole and never kept with a replacement character in it.
             with contextlib.suppress(ValueError):
-                row = json.loads(line)
+                row = json.loads(raw.decode("utf-8"))
                 if isinstance(row, dict):
                     out.append(row)
     return out

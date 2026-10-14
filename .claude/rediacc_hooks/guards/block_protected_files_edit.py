@@ -147,6 +147,10 @@ def run(ev):
     if after is None:
         return hookio.ALLOW
     if not after.strip():
+        # A write that leaves a file blank which is already blank changes nothing, like the restore check's already-at-HEAD exemption (review 7359200f.1).
+        current = _current_text(path)
+        if current is not None and not current.strip():
+            return hookio.ALLOW
         ev.warn_raw(MESSAGE % (tool, "empty", shown))
         return hookio.DENY
     head = _head_text(path)
