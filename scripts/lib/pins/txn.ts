@@ -440,7 +440,8 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
 }
 
 /** Take the one-run-at-a-time lock; null when a live run holds it. */
-export function takeLock(root: string): (() => void) | null {
+/** `afterStaleVerdict` is a test seam: it runs between judging a lock stale and clearing it, the window a second taker races in. */
+export function takeLock(root: string, afterStaleVerdict?: () => void): (() => void) | null {
   const dir = journalRoot(root);
   fs.mkdirSync(dir, { recursive: true });
   const lock = path.join(dir, '.lock');
@@ -473,7 +474,31 @@ export function takeLock(root: string): (() => void) | null {
           }
         }
         if (alive) return null;
-        fs.rmSync(lock, { force: true });
+        afterStaleVerdict?.();
+        // A stale lock is cleared by renaming it to a name only this taker uses, never by a plain remove: two takers that both judged the same lock stale would otherwise each remove one, and the second remove would delete the first taker's fresh lock. A rename moves one file once, so only one taker gets it; that taker then checks the file it moved is the one it judged, and puts a fresh lock it moved by mistake straight back.
+        const tomb = `${lock}.stale.${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
+        try {
+          fs.renameSync(lock, tomb);
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code === 'ENOENT') continue;
+          throw e;
+        }
+        let moved = '';
+        try {
+          moved = fs.readFileSync(tomb, 'utf8').trim();
+        } catch {
+          moved = '';
+        }
+        if (moved !== text) {
+          try {
+            fs.linkSync(tomb, lock);
+          } catch {
+            // Another taker already holds a fresh lock; the one moved here stays named in the tomb file.
+          }
+          fs.rmSync(tomb, { force: true });
+          return null;
+        }
+        fs.rmSync(tomb, { force: true });
       }
     }
     return null;
