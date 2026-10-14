@@ -175,7 +175,7 @@ FETCH_ATTEMPTS = 3
 FETCH_BACKOFF_SECONDS = 5
 
 
-class Exit(Exception):  # noqa: N818 -- this is a control flow signal, not an error report
+class ExitError(Exception):
     """`set -e` firing inside a helper: stop, with this status, printing nothing."""
 
     def __init__(self, code: int) -> None:
@@ -271,7 +271,7 @@ def write_output(key: str, value: str, output_file: str) -> None:
                 % (sys.argv[0], WRITE_OUTPUT_LINE, output_file, err.strerror)
             )
             sys.stderr.flush()
-            raise Exit(1) from err
+            raise ExitError(1) from err
     print("%s=%s" % (key, value), flush=True)
 
 
@@ -440,7 +440,7 @@ def main(argv: list[str]) -> int:
 
     try:
         return run(check_only, output_file)
-    except Exit as stop:
+    except ExitError as stop:
         return stop.code
 
 

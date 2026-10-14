@@ -98,7 +98,7 @@ _FENCE_OPENER = re.compile(
 _FENCE_CLOSER = re.compile(r"^%s%s%s$" % (_WS_CLASS, _FENCE_TICKS, _WS_CLASS))
 
 
-class Done(Exception):  # noqa: N818 -- a control-flow signal, not an error
+class DoneError(Exception):
     """End the arm with this exit code."""
 
     def __init__(self, code: int) -> None:
@@ -463,7 +463,7 @@ def emit(output_path: str, go: str, pr: str, head_sha: str, last_sha: str, reaso
         "go=%s pr=%s head=%s last=%s -- %s"
         % (go, pr or "?", head_sha or "?", last_sha or "<none>", reason)
     )
-    raise Done(0)
+    raise DoneError(0)
 
 
 def _write_prompt(output_path: str, turns: int, prompt: str) -> None:
@@ -498,7 +498,7 @@ def _resolve_workflow_run(output_path: str) -> tuple[str, str, str]:
         ]
     )
     if rc != 0:
-        raise Done(rc)
+        raise DoneError(rc)
     if not pr_json:
         emit(output_path, "false", "", "", "", "no open PR currently at this head SHA")
     try:
@@ -581,7 +581,7 @@ def run_gate() -> int:
         pr, head_sha, head_ref = _resolve_pull_request(output_path)
     else:
         log.error("Unsupported EVENT_NAME: %s" % (event or "unset"))
-        raise Done(1)
+        raise DoneError(1)
 
     slug = pr_labels.branch_slug(head_ref)
     if not slug:
@@ -590,11 +590,11 @@ def run_gate() -> int:
     repo = _repo()
     reports_posted, rc = review_report_count(repo, pr)
     if rc != 0:
-        raise Done(rc)
+        raise DoneError(rc)
     # Fetched ONCE: the cap needs the chargeable total and the per-head ceiling needs this head's row.
     states, rc = review_attempt_states(repo, pr)
     if rc != 0:
-        raise Done(rc)
+        raise DoneError(rc)
     attempts_spent = review_budget.chargeable_attempts(states)
 
     # The per-head ceiling is checked BEFORE the cap so the message names the real reason: free infra re-attempts are not charged, so without it one head could be retried forever.
@@ -704,7 +704,7 @@ def run_gate() -> int:
         prompt = render_prompt(template, fields)
     except ValueError as err:
         log.error("%s; $GITHUB_OUTPUT left without a prompt" % err)
-        raise Done(1) from err
+        raise DoneError(1) from err
     turns = turns_for(loc, diff_files)
     log.info("diff size %d lines in %d files -> review_turns=%d" % (loc, diff_files, turns))
     _write_prompt(output_path, turns, prompt)
@@ -747,7 +747,7 @@ def run_post_report() -> int:
         ]
     )
     if rc != 0:
-        raise Done(rc)
+        raise DoneError(rc)
     log.info("Posted review report for %s (%d chars)" % (head_sha[:7], len(report)))
     return 0
 
@@ -964,13 +964,13 @@ def run_mark() -> int:
             "review step reported success but posted NOTHING in the last hour (or the "
             "comments could not be read); refusing to mark %s, so it stays retryable" % head_sha[:7]
         )
-        raise Done(1)
+        raise DoneError(1)
 
     body = marker_body(head_sha, cost_line(_result_record(execution_file)))
     comment_id = last_marker_id(repo, pr)
     rc = _upsert(repo, pr, comment_id, body)
     if rc != 0:
-        raise Done(rc)
+        raise DoneError(rc)
     if comment_id:
         log.info("Updated marker comment %s -> %s" % (comment_id, head_sha[:7]))
     else:
@@ -999,7 +999,7 @@ def main(argv: list[str]) -> int:
     except common.RefusalError as refusal:
         refusal.report()
         return refusal.code
-    except Done as done:
+    except DoneError as done:
         return done.code
 
 

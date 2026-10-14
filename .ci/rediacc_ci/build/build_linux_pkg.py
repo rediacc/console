@@ -159,7 +159,7 @@ PACKAGE_GLOBS = ("*.deb", "*.rpm", "*.apk", "*.pkg.tar.zst")
 BASH_ECHO_OPTION = re.compile(r"-[neE]+\Z")
 
 
-class Refusal(Exception):  # noqa: N818 - named for what the twin does
+class RefusalError(Exception):
     """A `log_error ...; exit N`, or a bare `set -e` death when `lines` is empty.
 
     DEFECT 2 is the reason the empty case exists: the twin genuinely exits non-zero having printed nothing, and a port that invented a message there would be describing a better program than the one that runs.
@@ -229,9 +229,9 @@ def _capture_or_die(argv: list[str]) -> str:
     except OSError:
         message, code = _exec_failure(argv[0], 277)
         print(message, file=sys.stderr, flush=True)
-        raise Refusal(code) from None
+        raise RefusalError(code) from None
     if proc.returncode != 0:
-        raise Refusal(proc.returncode)
+        raise RefusalError(proc.returncode)
     return proc.stdout.decode("utf-8", errors="replace").rstrip("\n") if proc.stdout else ""
 
 
@@ -278,14 +278,16 @@ def parse_args(argv: list[str]) -> tuple[dict[str, str], bool, bool]:
         if flag in flags:
             key = flags[flag]
             if not rest:
-                raise Refusal(1, "%s: line %d: $2: unbound variable" % (sys.argv[0], lines[key]))
+                raise RefusalError(
+                    1, "%s: line %d: $2: unbound variable" % (sys.argv[0], lines[key])
+                )
             values[key] = rest.pop(0)
         elif flag == "--dry-run":
             dry_run = True
         elif flag in ("-h", "--help"):
             return values, dry_run, True
         else:
-            raise Refusal(1, "✗ Unknown option: %s" % flag)
+            raise RefusalError(1, "✗ Unknown option: %s" % flag)
     return values, dry_run, False
 
 
@@ -307,7 +309,7 @@ def package_filename(fmt: str, version: str, arch_names: tuple[str, str, str, st
 def require_file(path: str) -> None:
     """`common.sh:151-157`, verbatim."""
     if not pathlib.Path(path).is_file():
-        raise Refusal(1, "✗ Required file '%s' does not exist" % path)
+        raise RefusalError(1, "✗ Required file '%s' does not exist" % path)
 
 
 def require_cmd(cmd: str) -> None:
@@ -315,7 +317,7 @@ def require_cmd(cmd: str) -> None:
     twin, and a second "label" argument some callers pass is silently discarded;
     this script passes one argument at both call sites, so the quirk is latent here and is not reproduced as an interface."""
     if shutil.which(cmd) is None:
-        raise Refusal(1, "✗ Required command '%s' is not available" % cmd)
+        raise RefusalError(1, "✗ Required command '%s' is not available" % cmd)
 
 
 def fingerprint(key_file: str) -> str:
@@ -335,7 +337,7 @@ def fingerprint(key_file: str) -> str:
     )
     if proc.returncode != 0:
         # DEFECT 2: `set -e` on the pipeline's status, no message, gpg's code.
-        raise Refusal(proc.returncode)
+        raise RefusalError(proc.returncode)
     for line in proc.stdout.decode("utf-8", errors="replace").split("\n"):
         fields = line.split(":")
         if fields and fields[0] == "fpr":
@@ -353,7 +355,7 @@ def _run(argv: list[str], line: int, **kw) -> None:
         message, code = _exec_failure(argv[0], line)
         print(message, file=sys.stderr, flush=True)
     if code != 0:
-        raise Refusal(code)
+        raise RefusalError(code)
 
 
 def _exec_failure(command: str, line: int) -> tuple[str, int]:
@@ -418,7 +420,7 @@ def _setup_gpg_signing(fmt: str, build_dir: str, root: pathlib.Path) -> None:
         want_fpr = fingerprint(public_key_file)
         have_fpr = fingerprint(key_file)
         if not want_fpr or not have_fpr or want_fpr != have_fpr:
-            raise Refusal(
+            raise RefusalError(
                 1,
                 "✗ signing key %s is not the published public key %s (%s); a %s "
                 "signed with it would fail verification on every client"
@@ -455,7 +457,7 @@ def _report_unsigned(fmt: str) -> None:
         # this used to read was deleted on 2026-09-05, so `${{ secrets.X }}`
         # resolved to "" -- indistinguishable here from "no signing wanted".
         if os.environ.get("RELEASE_SIGNING_REQUIRED", "0") == SIGNING_REQUIRED_ON:
-            raise Refusal(
+            raise RefusalError(
                 1,
                 "✗ RELEASE_SIGNING_REQUIRED=1 but RELEASE_GPG_PRIVATE_KEY is empty "
                 "or unset -- refusing to ship an UNSIGNED %s. An empty value here means "
@@ -496,7 +498,7 @@ def build(argv: list[str]) -> int:
     # `:75-80`. The FIRST missing one wins; the loop exits rather than collecting.
     for name in ("BINARY", "VERSION", "ARCH", "FORMAT"):
         if not values[name]:
-            raise Refusal(1, "✗ Missing required argument: --%s" % name.lower())
+            raise RefusalError(1, "✗ Missing required argument: --%s" % name.lower())
 
     binary = values["BINARY"]
     version = values["VERSION"]
@@ -505,12 +507,12 @@ def build(argv: list[str]) -> int:
     output_dir = values["OUTPUT"]
 
     if fmt not in FORMATS:
-        raise Refusal(
+        raise RefusalError(
             1,
             "✗ Invalid format '%s'. Must be one of: deb, rpm, apk, archlinux" % fmt,
         )
     if arch not in ARCH_MAP:
-        raise Refusal(
+        raise RefusalError(
             1,
             "✗ Invalid architecture '%s'. Must be one of: amd64, arm64, x86_64, aarch64" % arch,
         )
@@ -621,14 +623,14 @@ def _build_in(
     )
     built_pkg = found.split("\n")[0] if found else ""
     if not built_pkg:
-        raise Refusal(1, "✗ nfpm produced no output file")
+        raise RefusalError(1, "✗ nfpm produced no output file")
 
     _run(["cp", built_pkg, os.path.join(output_dir, pkg_file)], 286)
 
     # DEFECT 4: unreachable, because the `cp` above is unguarded under `set -e`. Kept so the two files read the same way.
     target = pathlib.Path(output_dir) / pkg_file
     if not target.is_file():
-        raise Refusal(1, "✗ Package build failed: %s not found" % pkg_file)
+        raise RefusalError(1, "✗ Package build failed: %s not found" % pkg_file)
 
     package_size = target.stat().st_size
     log.info("Package built: %s (%dKB)" % (pkg_file, package_size // 1024))
@@ -654,7 +656,7 @@ def _name_predicates() -> list[str]:
 def main(argv: list[str]) -> int:
     try:
         return build(argv)
-    except Refusal as refusal:
+    except RefusalError as refusal:
         for line in refusal.lines:
             print(line, file=sys.stderr, flush=True)
         return refusal.code

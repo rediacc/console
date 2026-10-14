@@ -65,7 +65,7 @@ def test_probe_files_reads_every_leg(tmp_path: pathlib.Path) -> None:
 def test_probe_files_refuses_a_vacuous_manifest(tmp_path: pathlib.Path) -> None:
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"legs": []}), encoding="utf-8")
-    with pytest.raises(subject.Vacuous, match="VACUOUS"):
+    with pytest.raises(subject.VacuousError, match="VACUOUS"):
         subject.probe_files(manifest)
 
 

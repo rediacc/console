@@ -99,18 +99,18 @@ def usage(prog: str) -> str:
     )
 
 
-class HelpRequested(Exception):  # noqa: N818
+class HelpRequestedError(Exception):
     """`-h | --help`: usage on stdout, exit 0."""
 
 
-class UnboundVariable(Exception):  # noqa: N818
+class UnboundVariableError(Exception):
     """One `set -u` death, in bash's wording, on stderr, exit 1."""
 
     def __init__(self, name: str, line: int) -> None:
         super().__init__("%s: line %d: %s: unbound variable" % (sys.argv[0], line, name))
 
 
-class Refusal(Exception):  # noqa: N818
+class RefusalError(Exception):
     """A `log_error` followed by `exit 1`."""
 
 
@@ -136,7 +136,7 @@ def parse_args(argv: list[str]) -> Options:
         flag = argv[i]
         if flag in ("--image", "--image-path", "--from", "--to"):
             if i + 1 >= len(argv):
-                raise UnboundVariable("$2", UNBOUND_LINES[flag])
+                raise UnboundVariableError("$2", UNBOUND_LINES[flag])
             value = argv[i + 1]
             if flag == "--image":
                 opts.image_name = value
@@ -160,9 +160,9 @@ def parse_args(argv: list[str]) -> Options:
             opts.dry_run = "true"
             i += 1
         elif flag in ("-h", "--help"):
-            raise HelpRequested
+            raise HelpRequestedError
         else:
-            raise Refusal("Unknown option: %s" % flag)
+            raise RefusalError("Unknown option: %s" % flag)
     return opts
 
 
@@ -172,15 +172,15 @@ def validate(opts: Options) -> None:
     `--from` and `--to` are demanded BEFORE the target-selection checks, so `retag-image.sh --all --image api` with no tags reports the missing `--from` rather than the mutual exclusion.
     """
     if not opts.from_tag:
-        raise Refusal("--from is required")
+        raise RefusalError("--from is required")
     if not opts.to_tag:
-        raise Refusal("--to is required")
+        raise RefusalError("--to is required")
     if opts.image_name and opts.image_path:
-        raise Refusal("--image and --image-path are mutually exclusive")
+        raise RefusalError("--image and --image-path are mutually exclusive")
     if opts.retag_all and (opts.image_name or opts.image_path):
-        raise Refusal("--all is mutually exclusive with --image / --image-path")
+        raise RefusalError("--all is mutually exclusive with --image / --image-path")
     if not opts.retag_all and not opts.image_name and not opts.image_path:
-        raise Refusal("--image, --image-path, or --all required")
+        raise RefusalError("--image, --image-path, or --all required")
 
 
 def _flush() -> None:
@@ -293,13 +293,13 @@ def main(argv: list[str]) -> int:
     try:
         opts = parse_args(argv)
         validate(opts)
-    except HelpRequested:
+    except HelpRequestedError:
         print(usage(sys.argv[0]), flush=True)
         return 0
-    except UnboundVariable as exc:
+    except UnboundVariableError as exc:
         print(str(exc), file=sys.stderr, flush=True)
         return 1
-    except Refusal as exc:
+    except RefusalError as exc:
         log.error(str(exc))
         return 1
 

@@ -1252,8 +1252,8 @@ def test_a_planted_defect_is_caught(tmp_path) -> None:
     root = fixture(
         tmp_path / "b",
         port_source=source.replace(
-            "        raise Refusal(proc.returncode)",
-            '        raise Refusal(1, "\u2717 could not read the key")',
+            "        raise RefusalError(proc.returncode)",
+            '        raise RefusalError(1, "\u2717 could not read the key")',
         ),
         public_key="BADKEY\n",
     )

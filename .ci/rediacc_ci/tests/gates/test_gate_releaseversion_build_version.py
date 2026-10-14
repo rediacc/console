@@ -41,7 +41,7 @@ mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 try:
     mod._check_doctor_json(sys.argv[3], sys.argv[2])
-except mod.Refusal as refusal:
+except mod.RefusalError as refusal:
     for line in refusal.lines:
         mod.log.error(line)
     raise SystemExit(refusal.code)

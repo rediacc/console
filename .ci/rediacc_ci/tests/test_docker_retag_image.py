@@ -21,10 +21,12 @@ THE TWO STALENESS ALARMS THAT READ THE TWIN'S SOURCE ARE GONE, and the goldens r
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
 import typing
+from typing import Any
 
 import pytest
 
@@ -193,7 +195,7 @@ def mask(text: str, root: pathlib.Path) -> str:
 ONE = ["--image", "api", "--from", "a", "--to", "b"]
 SKIP = [*ONE, "--skip-if-exists"]
 
-CASE_KW: dict[str, tuple[list[str], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[list[str], dict[str, Any]]] = {
     "help": (["--help"], {}),
     "no-from": (["--image", "api"], {}),
     "from-beats-the-all-exclusivity": (["--all", "--image", "api"], {}),
@@ -273,7 +275,7 @@ def drive(
 ) -> tuple[int, str, str, str]:
     args, kw = CASE_KW[name]
     root = fixture(tmp_path, port_source=port_source)
-    proc, calls = _run(root, "new", args, **kw)  # type: ignore[arg-type]
+    proc, calls = _run(root, "new", args, **kw)
     merged = bool(kw.get("merged"))
     return (
         proc.returncode,
@@ -598,7 +600,7 @@ def test_validate_raises_in_the_twins_order() -> None:
     opts = port.Options()
     opts.retag_all = True
     opts.image_name = "api"
-    with pytest.raises(port.Refusal, match=r"^--from is required$"):
+    with pytest.raises(port.RefusalError, match=r"^--from is required$"):
         port.validate(opts)
 
 
@@ -616,7 +618,6 @@ def test_dry_run_is_the_string_true_and_nothing_else(monkeypatch) -> None:
 
 def test_the_published_images_are_still_constants_shs() -> None:
     """The image list is shared with constants.sh and not in the registry, so drift between it and the port's copy is still a live risk."""
-    import re  # noqa: PLC0415 -- one alarm, scoped to this case
 
     text = CONSTANTS.read_text(encoding="utf-8")
     images = re.search(r"^readonly PUBLISH_IMAGES=\((.*)\)$", text, re.MULTILINE)
