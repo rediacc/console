@@ -138,14 +138,21 @@ function saveJournal(dir: string, j: Journal): void {
 export interface RestoreOutcome {
   restored: string[];
   leftAlone: string[];
+  /** Files a killed step had in flight that no longer hold their before-bytes: the run never recorded what it wrote, so they are named and kept unless the operator names them in `take`. */
+  inflight: string[];
 }
 
 /**
  * Give every file this run wrote its before-bytes back, but only while it still holds the
  * bytes the run wrote. Anything else is a later edit and is named, not overwritten.
  */
-export function compareAndRestore(root: string, j: Journal, mutant: Mutant | null): RestoreOutcome {
-  const out: RestoreOutcome = { restored: [], leftAlone: [] };
+export function compareAndRestore(
+  root: string,
+  j: Journal,
+  mutant: Mutant | null,
+  take: ReadonlySet<string> = new Set()
+): RestoreOutcome {
+  const out: RestoreOutcome = { restored: [], leftAlone: [], inflight: [] };
   if (mutant === 'no-restore') return out;
   for (const [k, f] of Object.entries(j.files)) {
     if (f.wrote === null && f.inflight !== true) continue;
@@ -153,6 +160,11 @@ export function compareAndRestore(root: string, j: Journal, mutant: Mutant | nul
     const now = sha(readBytes(abs));
     if (f.inflight === true) {
       if (now === (f.before === null ? 'absent' : sha(Buffer.from(f.before, 'base64')))) continue;
+      // A killed step never recorded what it wrote, so a partial write and a later edit look the same: the file is named and kept unless the operator names it to take its before-bytes back.
+      if (!take.has(k) && !take.has(f.file)) {
+        out.inflight.push(k);
+        continue;
+      }
     } else if (mutant !== 'blind-restore' && now !== f.wrote) {
       out.leftAlone.push(k);
       continue;
@@ -187,7 +199,11 @@ export class RestoreRefused extends Error {}
  * 'refused' one has nothing of its own left on disk, so replaying either would undo bytes a
  * later run or edit put there.
  */
-export function restoreJournal(root: string, stamp: string): RestoreOutcome {
+export function restoreJournal(
+  root: string,
+  stamp: string,
+  take: ReadonlySet<string> = new Set()
+): RestoreOutcome {
   const dir = path.join(journalRoot(root), stamp);
   const file = path.join(dir, 'journal.json');
   if (path.basename(stamp) !== stamp || !fs.existsSync(file))
@@ -197,9 +213,12 @@ export function restoreJournal(root: string, stamp: string): RestoreOutcome {
     throw new RestoreRefused(
       `journal ${stamp} is '${j.state}', not a run killed mid-write; only 'writing' journals replay`
     );
-  const out = compareAndRestore(root, j, null);
-  j.state = 'restored';
-  saveJournal(dir, j);
+  const out = compareAndRestore(root, j, null, take);
+  // A journal with in-flight files still named stays 'writing', so the operator can replay it with those files taken once they are inspected.
+  if (out.inflight.length === 0) {
+    j.state = 'restored';
+    saveJournal(dir, j);
+  }
   return out;
 }
 
