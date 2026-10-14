@@ -156,11 +156,12 @@ function addRemoteRsyncArgs(
   universalUser?: string
 ): void {
   if (universalUser) {
+    // A repo key's renet sandbox-gateway admits a privileged receive only when every owner and group maps to the universal user and no device or special file is created (private/renet cmd/renet/sandbox_gateway_transfer.go), hence --chown and --no-D.
     args.push('--rsync-path', 'sudo rsync');
     if (options.isUpload) {
       args.push('--chown', `${universalUser}:${universalUser}`);
     }
-    args.push('--numeric-ids', '--no-links');
+    args.push('--numeric-ids', '--no-links', '--no-D');
   } else if (options.remoteRsyncPath) {
     args.push('--rsync-path', options.remoteRsyncPath);
   }
@@ -195,7 +196,7 @@ function addSyncModeArgs(
  * @param dryRun - Whether this is a dry-run
  * @returns Array of rsync arguments
  */
-function buildRsyncArgs(
+export function buildRsyncArgs(
   options: {
     mirror?: boolean;
     verify?: boolean;
