@@ -23,6 +23,8 @@ import importlib.util
 import pathlib
 import re
 
+import wl_effort
+
 QUEUE_REL = "agent/plans/QUEUE.md"
 PROMOTED_HEADING = "## Promoted"
 GENERATED_HEADING = "## Generated"
@@ -87,19 +89,26 @@ def ordered(text: str) -> list[str]:
 
 
 # ------------------------------------------------------------ the settings block
-# agent/plans/PLAN-stop-hook-turbo.md D1/D2: `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value of the key (hook on, turbo off).
+# agent/plans/PLAN-stop-hook-turbo.md D1/D2: `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value of the key.
+#
+# agent/plans/PLAN-stop-hook-effort.md: the block names ONE `effort` level, and every other value resolves as effort -> that level's bundle in .claude/config/effort.json (`wl_effort.bundle`) -> an explicit line in the fence, which wins. A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check, as before the dial existed. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
 
 SETTINGS_HEADING = "## Settings"
 SETTINGS_FENCE = "stop-hook"
-BOOL_KEYS = ("stop_hook", "turbo", "cadence", "agent_hint", "agent_pushback", "judge")
+EFFORT_KEY = "effort"
+BOOL_KEYS = ("turbo", "cadence", "agent_hint", "agent_pushback")
 INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap", "commit_remind_min", "backup_push_h")
 # Integer keys for which 0 is a value (it turns the feature off) rather than a typo.
 ZERO_OK_KEYS = ("backup_push_h",)
-# Keys whose value is one word from a fixed set (agent/plans/PLAN-turbo-local-first.md LF-W1).
-CHOICE_KEYS = {"turbo_push": ("batch-end", "pr")}
-# The render order of a new block.
+# Keys whose value is one word from a fixed set (agent/plans/PLAN-turbo-local-first.md LF-W1; the effort plan's levels and judge modes).
+CHOICE_KEYS = {
+    EFFORT_KEY: wl_effort.LEVELS,
+    "turbo_push": ("batch-end", "pr"),
+    "judge": wl_effort.JUDGE_MODES,
+}
+# The fence keys, in the render order of a new block and of the in-flight mode line: the level, then the switches a level's bundle sets that the operator overrides in practice. A literal tuple: check:ci-scope-mirrors reads it as the oracle of CLAUDE.md's `pr.queue-switches` list.
 SETTINGS_KEYS = (
-    "stop_hook",
+    "effort",
     "turbo",
     "turbo_push",
     "batch_size",
@@ -107,11 +116,11 @@ SETTINGS_KEYS = (
     "writer_cap",
     "commit_remind_min",
     "backup_push_h",
-    "cadence",
-    "agent_hint",
-    "agent_pushback",
     "judge",
 )
+# Bundle switches that are no longer fence keys of their own and survive only as an explicit override line: the level decides them.
+OVERRIDE_ONLY_KEYS = ("cadence", "agent_hint", "agent_pushback")
+KNOWN_KEYS = SETTINGS_KEYS + OVERRIDE_ONLY_KEYS
 NOTE_SEP = " -- "
 _FIELD_NOTE = re.compile(r"[ \t]--[ \t]")
 _SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
@@ -119,9 +128,9 @@ _SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
 
 @dataclasses.dataclass(frozen=True)
 class Settings:
-    """The effective switches. `notes` maps a key to the note after ` -- ` on its line."""
+    """The effective switches, resolved from the effort level, its bundle and the fence's overrides. `notes` maps a key to the note after ` -- ` on its line. The field defaults are the `high` bundle, the fail-safe level."""
 
-    stop_hook: bool = True
+    effort: str = wl_effort.FAILSAFE
     turbo: bool = False
     # Under turbo, when the batch is pushed (agent/plans/PLAN-turbo-local-first.md): `batch-end` holds every commit locally until the batch completes, then pushes and opens the PR once; `pr` is the earlier behaviour, a PR open while the batch fills. Read only when turbo is on.
     turbo_push: str = "batch-end"
@@ -132,10 +141,11 @@ class Settings:
     commit_remind_min: int = 15
     # Hours the oldest unpushed commit may age before the hook advises a backup push with no PR (PLAN-turbo-local-first.md D4); 0 turns the advisory off.
     backup_push_h: int = 4
+    # `off`, `core` (the judge without riders: no regression sweep, deferral audit, settle or admission sections) or `full`.
+    judge: str = "full"
     cadence: bool = True
     agent_hint: bool = True
     agent_pushback: bool = True
-    judge: bool = True
     notes: dict = dataclasses.field(default_factory=dict)
 
 
@@ -158,7 +168,28 @@ def _value(key: str, raw: str):
         if raw not in CHOICE_KEYS[key]:
             raise ValueError("%s: expected %s, got %r" % (key, "|".join(CHOICE_KEYS[key]), raw))
         return raw
-    raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(SETTINGS_KEYS)))
+    raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
+
+
+def resolve(level: str, overrides: dict) -> tuple[Settings, list[str]]:
+    """(settings, problems) for `level` with `overrides` ({key: typed value}) on top of its bundle. A bundle value that does not type-check is dropped with a problem, so the field keeps the fail-safe default."""
+    problems: list[str] = []
+    table, why = wl_effort.load()
+    if why:
+        problems.append(why)
+    values: dict = {}
+    for key, raw in wl_effort.bundle(level, table).items():
+        if key not in KNOWN_KEYS or key == EFFORT_KEY:
+            problems.append("%s: bundle %s sets unknown key %r" % (wl_effort.TABLE_REL, level, key))
+            continue
+        shown = ("on" if raw else "off") if isinstance(raw, bool) else str(raw)
+        try:
+            values[key] = _value(key, shown)
+        except ValueError as exc:
+            problems.append("%s: bundle %s: %s" % (wl_effort.TABLE_REL, level, exc))
+    values.update(overrides)
+    values[EFFORT_KEY] = level
+    return dataclasses.replace(_DEFAULTS, **values), problems
 
 
 def _split_line(line: str) -> tuple[str, str, str | None] | None:
@@ -247,8 +278,8 @@ def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
     values: dict = {}
     notes: dict = {}
     for key, rows in found.items():
-        if key not in SETTINGS_KEYS:
-            problems.append("unknown key %r (known: %s)" % (key, ", ".join(SETTINGS_KEYS)))
+        if key not in KNOWN_KEYS:
+            problems.append("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
         elif len(rows) > 1:
             problems.append("%s: set %d times; the default is used" % (key, len(rows)))
         else:
@@ -259,7 +290,11 @@ def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
                 continue
             if rows[0][1]:
                 notes[key] = rows[0][1]
-    return dataclasses.replace(_DEFAULTS, notes=notes, **values), problems, set(values)
+    effort_set = EFFORT_KEY in values
+    level = values.pop(EFFORT_KEY, wl_effort.FAILSAFE)
+    got, resolved = resolve(level, values)
+    present = set(values) | ({EFFORT_KEY} if effort_set else set())
+    return dataclasses.replace(got, notes=notes), problems + resolved, present
 
 
 def settings(text: str) -> tuple[Settings, list[str]]:
@@ -269,9 +304,13 @@ def settings(text: str) -> tuple[Settings, list[str]]:
 
 
 def sources(text: str) -> dict[str, str]:
-    """Per key, `QUEUE.md` when the block sets it validly, else `default`."""
-    _got, _problems, present = _parse(text)
-    return {k: "QUEUE.md" if k in present else "default" for k in SETTINGS_KEYS}
+    """Per key, where its value came from: `QUEUE.md` when the block sets it validly, `effort <level>` when the level's bundle does, else `default`."""
+    got, _problems, present = _parse(text)
+    bundled = wl_effort.bundle(got.effort)
+    return {
+        k: "QUEUE.md" if k in present else "effort %s" % got.effort if k in bundled else "default"
+        for k in KNOWN_KEYS
+    }
 
 
 def settings_for(root, rev: str = "") -> tuple[Settings, list[str]]:
@@ -310,10 +349,14 @@ def _line(key: str, value, note: str | None) -> str:
 
 
 def set_settings(text: str, updates: dict[str, str], note: str | None = None) -> str:
-    """`text` with `updates` ({key: raw value}) written into the settings fence. Only the fence's lines change: an updated key's line is replaced (later duplicates of it dropped), a key the block lacks is appended, every other byte stays. An absent section is created above `## Promoted` with every key of SETTINGS_KEYS in order.
+    """`text` with `updates` ({key: raw value}) written into the settings fence. Only the fence's lines change: an updated key's line is replaced (later duplicates of it dropped), a key the block lacks is appended, every other byte stays. An EMPTY value removes the key's line, so the level's bundle decides it again. An absent section is created above `## Promoted` with the `effort` line and the updated keys.
 
     `note` is attached to every updated key. Without it, an updated key keeps its note when its value is unchanged and loses it when the value changes (a stale reason is worse than none). ValueError, nothing written, for an unknown key, a bad value, a multi-line note, or a structurally broken block (section below Promoted, a second or unclosed fence)."""
-    typed = {k: _value(k, v) for k, v in updates.items()}
+    drop = {k for k, v in updates.items() if not str(v).strip()}
+    for key in drop:
+        if key not in KNOWN_KEYS:
+            raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
+    typed = {k: _value(k, v) for k, v in updates.items() if k not in drop}
     if note is not None:
         note = note.strip()
         if "\n" in note or "\r" in note:
@@ -330,8 +373,13 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
         return notes.get(key) if typed[key] == getattr(cur, key) else None
 
     if block is None:
-        merged = {k: typed.get(k, getattr(_DEFAULTS, k)) for k in SETTINGS_KEYS}
-        lines = [_line(k, merged[k], note_for(k) if k in typed else None) for k in SETTINGS_KEYS]
+        merged = dict(typed)
+        merged.setdefault(EFFORT_KEY, wl_effort.FAILSAFE)
+        lines = [
+            _line(k, merged[k], note_for(k) if k in typed else None)
+            for k in KNOWN_KEYS
+            if k in merged
+        ]
         section = "%s\n\n```%s\n%s\n```\n\n" % (SETTINGS_HEADING, SETTINGS_FENCE, "\n".join(lines))
         prom = re.search(r"(?m)^%s[ \t]*$" % re.escape(PROMOTED_HEADING), text)
         if prom:
@@ -342,6 +390,8 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
     done: set[str] = set()
     for line in text[block[0] : block[1]].splitlines(keepends=True):
         row = _split_line(line)
+        if row is not None and row[0] in drop:
+            continue
         if row is not None and row[0] in typed:
             if row[0] not in done:
                 done.add(row[0])
@@ -350,7 +400,7 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
         out.append(line)
     out.extend(
         _line(key, typed[key], note_for(key)) + "\n"
-        for key in SETTINGS_KEYS
+        for key in KNOWN_KEYS
         if key in typed and key not in done
     )
     return text[: block[0]] + "".join(out) + text[block[1] :]
@@ -662,7 +712,7 @@ def problems(root, update: bool = False) -> list[str]:
 # done/total box ratio and its state. Every count is read from the plan files by `rediacc_hooks.plan_gate.open_boxes`, the merge gate's rule (parser count against raw line count, a `Moved-To:` stub followed); an entry whose file is gone is looked for under `agent/plans/_done/`, the rule `block_turbo_early_push` uses. `.ci/config/plan-boxes.json` is the committed second reading of the same boxes and
 # check:ci-plan-boxes holds it equal to the files, so the block cannot disagree with the registry without one of the two gates going red.
 #
-# A LEDGER, NOT RUNTIME STATE. Its inputs are tracked files, so a clean CI checkout reproduces it: `want` renders it and `problems` (check:ci-plan-record RQ) compares it, so a hand edit or a missed render is a finding. It self-heals locally: `refresh` (the plan verbs, through `wl_planrec.refresh_index`) and `refresh_inflight` (every Stop-hook run, `--queue-set` and `--focus`) both re-render it.
+# A LEDGER, NOT RUNTIME STATE. Its inputs are tracked files, so a clean CI checkout reproduces it: `want` renders it and `problems` (check:ci-plan-record RQ) compares it, so a hand edit or a missed render is a finding. It self-heals locally: `refresh` (the plan verbs, through `wl_planrec.refresh_index`) and `refresh_inflight` (every Stop-hook run, `--queue-set` and `--phase`) both re-render it.
 
 PROGRESS_DONE_DIR = "agent/plans/_done/"
 
@@ -821,7 +871,7 @@ def with_fresh_progress(root, text: str) -> str:
 # each plan got there, the branch's work that belongs to no plan in that set, live writers and leased items, and the next plan with the reason it is next.
 #
 # RUNTIME STATE, NOT A LEDGER. Its inputs (the PR, the focus events, the roster, the leases) live outside the tracked tree, so a clean CI checkout cannot reproduce it, and it is never compared: `render` copies every byte outside the generated block, so `problems` and `--update` neither read nor rewrite this one (`test_inflight_block_is_never_compared_by_the_queue_gate` in .claude/rediacc_hooks/tests/test_wl_queue_settings.py proves both). `refresh_inflight` is its only writer: the Stop hook
-# (`wl_checks.run_stop`) and the verbs that change a mode (`worklist.py --queue-set`, `--focus`) call it, and a merge or a branch cut is picked up by the stop that follows it. The block carries no clock, so a stop that changed nothing writes nothing. A stop renders its own session's writers; leases and focus events are read for every session.
+# (`wl_checks.run_stop`) and the verbs that change a mode (`worklist.py --queue-set`, `--phase`) call it, and a merge or a branch cut is picked up by the stop that follows it. The block carries no clock, so a stop that changed nothing writes nothing. A stop renders its own session's writers; leases and focus events are read for every session.
 
 INFLIGHT_HEADING = "## In flight"
 INF_BEGIN = "<!-- queue:inflight:begin -->"
@@ -830,12 +880,12 @@ _INF_BLOCK = re.compile(
     r"(?ms)^%s[ \t]*$\n?(.*?)^%s[ \t]*$" % (re.escape(INF_BEGIN), re.escape(INF_END))
 )
 INFLIGHT_INTRO = (
-    "What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. "
+    "What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. "
     "It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit."
 )
 # The labels the mode line is read back by (`inflight_mode`).
 MODE_LABEL = "- Mode: "
-FOCUS_LABEL = "- Focus: "
+FOCUS_LABEL = "- Phase: "
 _LIST_MAX = 12
 
 
@@ -902,9 +952,9 @@ def _onoff(value: bool) -> str:
 
 
 def mode_line(settings: Settings) -> str:
-    """`- Mode: stop_hook on; turbo off; batch_size 3; ...`, every key of `SETTINGS_KEYS` in order."""
+    """`- Mode: effort smart; turbo off; batch_size 3; ...`, every key of `KNOWN_KEYS` in order, as resolved."""
     parts = []
-    for key in SETTINGS_KEYS:
+    for key in KNOWN_KEYS:
         value = getattr(settings, key)
         parts.append("%s %s" % (key, _onoff(value) if isinstance(value, bool) else value))
     return MODE_LABEL + "; ".join(parts) + "."
@@ -950,7 +1000,7 @@ def render_inflight(inf: InFlight) -> str:
             + "."
         )
     else:
-        out.append(FOCUS_LABEL + "off.")
+        out.append(FOCUS_LABEL + "build.")
     import wl_prscope as P  # noqa: PLC0415 -- the loop kinds
 
     if inf.kind == P.LIVE:
@@ -1096,8 +1146,8 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
     if loop is None:
         loop = P.loop_state(root, worklist, session_id, settings=settings)
     focus = []
-    for owner, ev in sorted((fold.focus or {}).items()):
-        if not isinstance(ev, dict) or ev.get("mode") not in wl_standdown.FOCUS_MODES:
+    for owner, ev in sorted((fold.phase or {}).items()):
+        if not isinstance(ev, dict) or ev.get("mode") not in wl_standdown.PHASE_MODES:
             continue
         focus.append(
             FocusLine(

@@ -31,6 +31,7 @@ import wl_common
 import wl_core as C
 import wl_defersettle
 import wl_deflect
+import wl_effort
 import wl_git
 import wl_hints
 import wl_histfirst
@@ -1247,7 +1248,11 @@ def outq_add(
 
     Returns True when an entry was added or refreshed, False when the call was absorbed (unchanged content inside its refresh window, or already queued). The return value is for the suite and for a caller that wants to skip building an expensive body; nothing in run_stop needs it.
 
-    PERSISTS ON EVERY CALL, deliberately. Six of run_stop's emit paths do not save the state doc before emitting, so a "save at the end" contract would lose exactly what this queue exists to keep. The cost is at most about ten tempfile+os.replace writes on a path that already runs git and gh subprocesses."""
+    PERSISTS ON EVERY CALL, deliberately. Six of run_stop's emit paths do not save the state doc before emitting, so a "save at the end" contract would lose exactly what this queue exists to keep. The cost is at most about ten tempfile+os.replace writes on a path that already runs git and gh subprocesses.
+
+    THE EFFORT LEVEL GATES IT (agent/plans/PLAN-stop-hook-effort.md): a key whose `advise` level in .claude/config/effort.json is above the level `run_stop` activated is not queued at all, and the call returns False."""
+    if not wl_effort.advises(key, wl_effort.active()):
+        return False
     q = _outq(state_doc)
     items = q["items"]
     sig = hashlib.sha1(text.encode("utf-8", "replace")).hexdigest()[:12]
@@ -1976,7 +1981,7 @@ def handle_post_compact(event):
             or "  (nothing open, in flight or deferred)",
         )
         # FOCUS MODE survives compaction in the store; the compacted session must know that writer spawns are refused.
-        _pc_focus = wl_standdown.active_focus(_fold.focus, lambda o: C.owned_by_me(o, sid))
+        _pc_focus = wl_standdown.active_phase(_fold.phase, lambda o: C.owned_by_me(o, sid))
         if _pc_focus:
             msg += "\n\n" + M.CTX_POSTCOMPACT_FOCUS % (
                 _pc_focus.get("mode"),
@@ -2571,6 +2576,10 @@ def _resprofile_report(worklist, session_id, state_doc):
         )
 
 
+# The STATE.md verdicts that, inside the late context band, make compaction due: the recovery document is not current (wl_floor.FLOOR_WHEN_COMPACTING, and the stand-down profiles' compaction keys).
+_COMPACTION_ASTATES = ("missing", "thin", "bloated", "aimless", "stale", "waitled", "no-dir")
+
+
 def _ctx_late_band(session_id):
     """True when this session's context sits in the LATE band (~2% before auto-compact, ctx_budget.BANDS).
 
@@ -2861,7 +2870,7 @@ def turbo_build_parks(state, root, on_loop, focus):
 
     Building means: the loop governs, turbo is on, `turbo_push` is `batch-end`, and the batch is not complete. Complete is `live_batch_ready` over `_set_finished`, the predicate the pr-finish merge offer uses, so the red blocks again on the stop that would offer the merge. `turbo_push: pr` works its batch on the open PR, whose CI is then the batch's own verification, so nothing is parked there.
 
-    FOCUS GOVERNS: `--focus babysit|merge` declares the PR is being landed, so an active focus parks nothing and wl_standdown.FOCUS keeps `ci-red` as before.
+    FOCUS GOVERNS: `--phase babysit|merge` declares the PR is being landed, so an active focus parks nothing and wl_standdown.FOCUS keeps `ci-red` as before.
 
     AN UNKNOWN SET PARKS NOTHING (`_set_unreadable`): the stand-down needs a readable set with an open box, never the mere absence of a finished one.
     """
@@ -2941,7 +2950,7 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
     focus = None
     why = ""
     with contextlib.suppress(Exception):
-        focus = wl_standdown.active_focus(fold.focus, owned)
+        focus = wl_standdown.active_phase(fold.phase, owned)
     if focus:
         if wl_standdown.expired(focus):
             why = "expired"
@@ -2967,11 +2976,11 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
                 )
         if why:
             with contextlib.suppress(Exception):
-                S.focus_event(
+                S.phase_event(
                     worklist,
                     me8,
                     focus.get("o") or me8,
-                    "off",
+                    wl_standdown.BUILD,
                     branch=focus.get("branch"),
                     pr=focus.get("pr"),
                     why=why,
@@ -2987,13 +2996,13 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
         if not why:
             # Ended by the verb (or replaced by a newer on-event): the newest owned event says why.
             newest: dict[str, Any] = max(
-                (e for o, e in (fold.focus or {}).items() if o and owned(o)),
+                (e for o, e in (fold.phase or {}).items() if o and owned(o)),
                 key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)),
                 default={},
             )
             why = (
                 str(newest.get("why") or "operator")
-                if newest.get("mode") == "off"
+                if newest.get("mode") == wl_standdown.BUILD
                 else "replaced by a new focus"
             )
         ended = focus_ended_line(sd, why, _focus_refused_count(worklist, me8, sd.get("focus_at")))
@@ -3052,10 +3061,21 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE SWITCHBOARD (agent/plans/PLAN-stop-hook-turbo.md D3), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: judge, cadence, agent hint, writer cap and turbo all come from here.
     _cfg, _cfg_problems = wl_planqueue.settings_for(root)
     _writer_cap = wl_roster.writer_cap(root)
+    # THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), active for every outq_add of this stop; each violation is weighed against it once, below, before the stand-down profiles.
+    wl_effort.activate(_cfg.effort)
 
     fold = S.load(worklist, sync=True)
     state_doc = S.load_state(worklist, session_id)
     _resprofile_report(worklist, session_id, state_doc)
+    if _cfg_problems:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "settings-problem",
+            M.N_SETTINGS_PROBLEM % (_cfg.effort, "\n".join("  " + p for p in _cfg_problems)),
+            1,
+        )
 
     archived, orphaned = [], []
     # Dead-session cleanup runs before classification so a tombstoned item is invisible to this very pass. Never let it break the gate.
@@ -3083,7 +3103,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             sticky=True,
         )
 
-    # ---- FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 3), resolved before classification: a PR wind-down the session declared with `--focus`. Expiry first, then the cheap merged/closed read; an end writes the `off` event, and this stop then runs the full battery. The parked summary is queued on the stop that sees the end, whoever ended it.
+    # ---- FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 3), resolved before classification: a PR wind-down the session declared with `--phase`. Expiry first, then the cheap merged/closed read; an end writes the `off` event, and this stop then runs the full battery. The parked summary is queued on the stop that sees the end, whoever ended it.
     _focus, _focus_ended = focus_resolve(root, worklist, session_id, me8, fold, state_doc)
 
     lines = fold.lines()
@@ -4288,7 +4308,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- blindness must not grant slack
         qstate, qdetail = "unknown", None
     queue_note = ""
-    # FOCUS MODE ARMS BOTH PR READS from the focus's own branch: `--focus` declared the PR this session's (agent/plans/PLAN-stop-hook-focus-mode.md section 3).
+    # FOCUS MODE ARMS BOTH PR READS from the focus's own branch: `--phase` declared the PR this session's (agent/plans/PLAN-stop-hook-focus-mode.md section 3).
     _focus_ref = str((_focus or {}).get("branch") or "") or None
     # THE LIVE PR ARMS THEM TOO (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): on a `live` loop state the PR's branch is the ref when neither focus nor the explicit WORKLIST_PUBLISH_REF override names one. `owned` lifts ci_trouble's multi-session skip only when the PR's own plan names this session as Owner, so a peer's PR keeps the skip.
     _ci_ref, _ci_owned = ci_arming(root, session_id, _focus_ref, _loop)
@@ -4398,7 +4418,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             _ci_info = cidetail.get("info") if "info" in cidetail else cidetail
             _ci_pr = _ci_info.get("pr") if isinstance(_ci_info, dict) else None
             if _ci_pr:
-                S.focus_event(
+                S.phase_event(
                     worklist,
                     me8,
                     _focus.get("o") or me8,
@@ -5299,9 +5319,20 @@ def run_stop(event, event_ok, worklist, hook_file):
         wl_admit.record_hits(worklist, session_id, admit_hits, admit_sig)
         state_doc["admit_tier_r"] = admit_sig
 
-    # Saved EAGERLY. The state doc is bookkeeping that must survive every exit
-    # below, and one of them (the WORKLIST_FOCUS=off block) emits without
-    # saving at all -- exactly the shape that made the output queue lose latched sections before it was moved to compute-time persistence.
+    # ---- THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), applied ONCE, here, after every check has had its say and before the roster's honest suppression and the stand-down profiles: each violation blocks, rides the advisory queue in its place, or is dropped, by its threshold in .claude/config/effort.json. The FLOOR (wl_floor) blocks at every level, and STATE.md joins it while compaction is due.
+    _compaction_due = astate in _COMPACTION_ASTATES and _ctx_late_band(session_id)
+    _effort_kept = []
+    for _ev in violations:
+        _ew = wl_effort.verdict(_ev[0], _cfg.effort, compaction_due=_compaction_due)
+        if _ew == wl_effort.BLOCK:
+            _effort_kept.append(_ev)
+        elif _ew == wl_effort.ADVISE:
+            outq_add(worklist, session_id, state_doc, _ev[0], _ev[2], 2)
+    violations = _effort_kept
+    if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
+        bgwait_due = False  # turned down by the level, not delivered
+
+    # Saved EAGERLY. The state doc is bookkeeping that must survive every exit below, several of which emit without saving -- exactly the shape that made the output queue lose latched sections before it was moved to compute-time persistence.
     S.save_state(worklist, session_id, state_doc)
     # ---- THE ROSTER'S HONEST SUPPRESSION (wl_roster.ROSTER_SUPPRESSES), in ONE place, just ahead of the cadence gate so every check has had its say. An HONEST roster means every item in flight is leased to a live worker the hook verified itself, so the pushes that exist to ask "is the waiting real" have their answer. Only those keys drop: CI red, pr-finish, the
     # judge tier and every integrity check still block, and the roster's own cap and ping keys were added above in every state. `agent-state` drops only for `stale`; `bg-report` only when no task outside the roster (a shell the OS did not confirm, a teammate) is running and no harness task is actionable, because those keep their 15-minute check-in.
@@ -5356,15 +5387,6 @@ def run_stop(event, event_ok, worklist, hook_file):
     )
     _pr_scope_stood: dict[str, int] = {}
     if _profile is not None:
-        _compaction_due = astate in (
-            "missing",
-            "thin",
-            "bloated",
-            "aimless",
-            "stale",
-            "waitled",
-            "no-dir",
-        ) and _ctx_late_band(session_id)
 
         def _keeps(v):
             if _profile is wl_standdown.PR_LOOP and v[0] in TURBO_KEEPS:
@@ -5461,8 +5483,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             worklist, session_id, state_doc, "prscope-broken", M.N_PR_SCOPE_BROKEN % _loop_err, 1
         )
     if bgwait_due:
-        # Delivered for real (this stop emits it either way below), so the stamp the next check-in prints is banked here and saved eagerly:
-        # the WORKLIST_FOCUS=off block path emits without saving.
+        # Delivered for real (this stop emits it either way below), so the stamp the next check-in prints is banked here and saved eagerly: the block paths emit without saving.
         state_doc.setdefault("bgwait", {})["fired"] = C.stamp_now()
         S.save_state(worklist, session_id, state_doc)
 
@@ -5584,31 +5605,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         onboard_marker = onboard.load_marker(session_id) if onboard else {}
         if onboard_marker.get("state") == "delivered":
             extras += "\n\n" + M.N_ONBOARD_DELIVERED % onboard_marker.get("epoch")
-        if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
-            # EVERY violation is rendered on this path, so every display latch is genuinely spent. Saved explicitly because this branch emits (and therefore exits) without reaching the save below -- the same trap the queue's compute-time persistence was moved for.
-            spend_display_latches([k for k, _a, _t in violations])
-            S.save_state(worklist, session_id, state_doc)
-            blocklog(worklist, me8, violations[0][0], [k for k, _a, _t in violations[1:]])
-            C.emit(
-                {
-                    "systemMessage": "Stop hook: %d check(s) failed, continuing. %s%s"
-                    % (
-                        len(violations),
-                        violations[0][2].split("\n")[0][:110],
-                        sysmsg_tail,
-                    ),
-                    "decision": "block",
-                    "reason": M.R_BLOCK
-                    % (
-                        len(violations),
-                        "\n\n".join("  " + t for _k, _a, t in violations),
-                        hook_file,
-                    )
-                    + extras
-                    + guide_tail,
-                }
-            )
-        # ---- v13 FOCUSED BLOCK (default). One rotating check per stop, the ALWAYS tier in full when present, everything else a bare count. The guide deliberately does NOT ride blocks any more (operator, 2026-07-31, superseding the v11 every-full-stop mandate); the wakeup section that used to ride beside it is gone entirely as of v18. The guide still leads every allow stop, and
+        # ---- v13 FOCUSED BLOCK, the one block shape (the WORKLIST_FOCUS=off dump of every violation was removed by agent/plans/PLAN-stop-hook-effort.md; the effort level is the one dial). One rotating check per stop, the ALWAYS tier in full when present, everything else a bare count. The guide deliberately does NOT ride blocks any more (operator, 2026-07-31, superseding the v11 every-full-stop mandate); the wakeup section that used to ride beside it is gone entirely as of v18. The guide still leads every allow stop, and
         # the one check that needs store data (no-remaining) carries its own slice inside its text. Rotation is LRU over check KEYS: prune what is no longer outstanding, serve the least-recently-served, break ties by the battery's own order (which is already severity-shaped). Worst-case wait for any rotating check is (distinct outstanding checks - 1) stops.
         focus = state_doc.setdefault("focus", {})
         seq = int(focus.get("seq") or 0) + 1
@@ -5722,8 +5719,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     for k in [k for k in audit_cache if k not in fold.by_id]:
         del audit_cache[k]  # its item is gone; a banked verdict for it is litter
     audit_batch = []
-    # The deferral audit rides the judge call, which a cap-saturated wait and focus mode skip.
-    if not wl_judge.disabled(_cfg) and not _in_standdown:
+    # The deferral audit rides the judge call, which a cap-saturated wait and focus mode skip, and is one of the riders a `judge: core` level (effort smart) leaves off.
+    _riders = wl_judge.riders(_cfg)
+    if _riders and not _in_standdown:
         for r in sorted(
             deferred_recs,
             key=lambda r: (-(C.stamp_age_min(r.get("upd", "")) or 0), r.get("id", "")),
@@ -5747,8 +5745,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     settle_batch = []
     with contextlib.suppress(Exception):
         settle_batch = wl_defersettle.build_batch(
-            root, state_doc, deferred_recs, disabled=wl_judge.disabled(_cfg) or _in_standdown
+            root, state_doc, deferred_recs, disabled=not _riders or _in_standdown
         )
+    # `judge: core` (effort smart, agent/plans/PLAN-stop-hook-effort.md): the judge answers its own question and nothing rides it, so the regression fix-set and the admission check wait for a level that runs riders. Neither is lost: the fix-set marker advances only when a fix-set settles, and Tier R already banked the admission hit above.
+    if not _riders:
+        reg_signals, admit_hits = [], []
     # ADMISSION DETECTOR (wl_admit.py). The prefilter runs on every stop, above the block exit, and is measured at under 0.4 ms with zero tokens, firing on ~1% of real turns. It decides only whether to SPEND a model call; it is never the last word on a negative, because the regexes provably miss the euphemistic phrasings.
     #
     # Tier R recorded the hit up there, before anything that can fail. A hit banked only after a successful verdict would vanish exactly when the judge times out, which is when the record matters most.
@@ -5933,6 +5934,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                     (str(root), list(reg_ids)) if reg_fixset_provenance == "diff-tree" else None
                 ),
                 local_batch=_judge_local_batch(_loop, root),
+                with_riders=_riders,
+                closed=wl_judge.closed_items(fold, lambda o: C.owned_by_me(o, session_id)),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.

@@ -1,0 +1,504 @@
+{
+  "$why": [
+    "The Stop hook's one effort dial (agent/plans/PLAN-stop-hook-effort.md). agent/plans/QUEUE.md `## Settings` names a level, `effort: quiet|low|smart|high|ultra`, each a superset of the one before; this file says what each level turns on.",
+    "`bundles` gives each level its switch values. Settings resolve as effort, then this bundle, then an explicit key in the QUEUE.md fence, which wins (`wl_planqueue.settings`).",
+    "`checks` gives every Stop-hook check key exactly once. A blocking key (a `vadd` in wl_checks.py) carries `block` and `advise`: it blocks at `block` and above, rides the advisory queue from `advise` up to the level below `block`, and is off below `advise`. An advisory-only key (an `outq_add`) carries `advise` alone. A FLOOR key is the string `floor`: it blocks at every level, and the set is the literal in .claude/hooks/stop/wl_floor.py, not this file.",
+    "Kept honest by the effort-table rule of `npm run check:ci-plan-record`: every key the hook can produce appears once, no unknown key, every FLOOR key is `floor` and nothing else is, and `block` is never below `advise`."
+  ],
+  "levels": [
+    "quiet",
+    "low",
+    "smart",
+    "high",
+    "ultra"
+  ],
+  "bundles": {
+    "quiet": {
+      "turbo": false,
+      "turbo_push": "batch-end",
+      "batch_size": 1,
+      "plan_concurrency": 1,
+      "writer_cap": 4,
+      "commit_remind_min": 15,
+      "backup_push_h": 4,
+      "cadence": true,
+      "judge": "off",
+      "agent_hint": false,
+      "agent_pushback": false
+    },
+    "low": {
+      "turbo": false,
+      "turbo_push": "batch-end",
+      "batch_size": 1,
+      "plan_concurrency": 1,
+      "writer_cap": 4,
+      "commit_remind_min": 15,
+      "backup_push_h": 4,
+      "cadence": true,
+      "judge": "off",
+      "agent_hint": false,
+      "agent_pushback": false
+    },
+    "smart": {
+      "turbo": false,
+      "turbo_push": "batch-end",
+      "batch_size": 1,
+      "plan_concurrency": 1,
+      "writer_cap": 4,
+      "commit_remind_min": 15,
+      "backup_push_h": 4,
+      "cadence": true,
+      "judge": "core",
+      "agent_hint": true,
+      "agent_pushback": true
+    },
+    "high": {
+      "turbo": false,
+      "turbo_push": "batch-end",
+      "batch_size": 1,
+      "plan_concurrency": 1,
+      "writer_cap": 4,
+      "commit_remind_min": 15,
+      "backup_push_h": 4,
+      "cadence": true,
+      "judge": "full",
+      "agent_hint": true,
+      "agent_pushback": true
+    },
+    "ultra": {
+      "turbo": true,
+      "turbo_push": "batch-end",
+      "batch_size": 3,
+      "plan_concurrency": 5,
+      "writer_cap": 15,
+      "commit_remind_min": 15,
+      "backup_push_h": 4,
+      "cadence": true,
+      "judge": "full",
+      "agent_hint": true,
+      "agent_pushback": true
+    }
+  },
+  "checks": {
+    "hook-blind": "floor",
+    "event-unparseable": "floor",
+    "cl-shape": "floor",
+    "adhoc-watch": "floor",
+    "adhoc-watch-broken": "floor",
+    "trapguard-errors": "floor",
+    "ci-red": "floor",
+    "ci-unreadable": "floor",
+    "roster-dead": "floor",
+    "roster-cap": "floor",
+    "unread-reports": "floor",
+    "wake-timer": "floor",
+    "open-items": {
+      "block": "low",
+      "advise": "low"
+    },
+    "plan-unimplemented": {
+      "block": "low",
+      "advise": "low"
+    },
+    "pr-finish": {
+      "block": "low",
+      "advise": "low"
+    },
+    "pr-review": {
+      "block": "low",
+      "advise": "low"
+    },
+    "commit-review": {
+      "block": "low",
+      "advise": "low"
+    },
+    "turbo-next": {
+      "block": "low",
+      "advise": "low"
+    },
+    "loop-next": {
+      "block": "low",
+      "advise": "low"
+    },
+    "focus-pr-items": {
+      "block": "low",
+      "advise": "low"
+    },
+    "defer-expired": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "undefaulted": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "completion": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "unjustified": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "bg-report": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "cl-owner": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "agent-pushback": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "giveup-claim": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "ladder-investigate": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "ladder-gone": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "ladder-idle": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "ladder-resolve": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "unconfirmed": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "roster-silent": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "scheduled-red": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "pr-unreadable": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "ci-waiting": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "commit-review-malformed": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "plan-fidelity": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "agent-bootstrap": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "pending-ask": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "stuck": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "idle-stall": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "unblocked-claim": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "uncited": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "phantom-gate": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "unstated": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "mislabelled": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "loop-died": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "broken-schedule": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "many-work-crons": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "roster-unleased": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "queue-slot": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "roster-concurrency": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "plan-adopted": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "cl-producing": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "cl-flip": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "cl-waves": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "found-not-fixed": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "deferred-finding": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "deflected-finding": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "no-remaining": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "out-of-sync": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "agent-state": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "agent-absent": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "sweep-moment": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "intent-expired": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "plan-drift": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "stale-local": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "diverged": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "submodule": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "pr-stale": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "solo-grind": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "idle": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "bg-orphan": {
+      "block": "high",
+      "advise": "smart"
+    },
+    "ci-report": {
+      "advise": "low"
+    },
+    "ci-queue": {
+      "advise": "low"
+    },
+    "ci-verdict": {
+      "advise": "low"
+    },
+    "ci-hold": {
+      "advise": "low"
+    },
+    "focus-ended": {
+      "advise": "low"
+    },
+    "focus-pr-unreadable": {
+      "advise": "low"
+    },
+    "prscope-broken": {
+      "advise": "low"
+    },
+    "commit-review-note": {
+      "advise": "low"
+    },
+    "receipt-behind": {
+      "advise": "low"
+    },
+    "commit-remind": {
+      "advise": "low"
+    },
+    "backup-push": {
+      "advise": "low"
+    },
+    "main-push-unreadable": {
+      "advise": "low"
+    },
+    "github-status": {
+      "advise": "low"
+    },
+    "github-recovered": {
+      "advise": "low"
+    },
+    "archived": {
+      "advise": "low"
+    },
+    "plan-pr-open": {
+      "advise": "low"
+    },
+    "settings-problem": {
+      "advise": "low"
+    },
+    "ladder": {
+      "advise": "smart"
+    },
+    "defer-settle": {
+      "advise": "smart"
+    },
+    "audit": {
+      "advise": "smart"
+    },
+    "claim-check": {
+      "advise": "smart"
+    },
+    "reg-capped": {
+      "advise": "smart"
+    },
+    "reg-flood": {
+      "advise": "smart"
+    },
+    "reg-forgot": {
+      "advise": "smart"
+    },
+    "reg-queue": {
+      "advise": "smart"
+    },
+    "reg-settled": {
+      "advise": "smart"
+    },
+    "sweep-ungrounded": {
+      "advise": "smart"
+    },
+    "scheduled-green": {
+      "advise": "smart"
+    },
+    "scheduled-red-bug": {
+      "advise": "smart"
+    },
+    "scheduled-red-peer": {
+      "advise": "smart"
+    },
+    "scheduled-unreadable": {
+      "advise": "smart"
+    },
+    "phantom-identity": {
+      "advise": "smart"
+    },
+    "phantom-blind": {
+      "advise": "smart"
+    },
+    "planfid-degraded": {
+      "advise": "smart"
+    },
+    "orphans": {
+      "advise": "smart"
+    },
+    "handoff": {
+      "advise": "smart"
+    },
+    "unblocked": {
+      "advise": "smart"
+    },
+    "cl-foreign": {
+      "advise": "smart"
+    },
+    "cl-foreign-waves": {
+      "advise": "smart"
+    },
+    "cl-door": {
+      "advise": "smart"
+    },
+    "trapfires-retire": {
+      "advise": "smart"
+    },
+    "ask-refusals": {
+      "advise": "smart"
+    },
+    "shapedup": {
+      "advise": "smart"
+    },
+    "plan-tasks": {
+      "advise": "smart"
+    },
+    "plan-backlog": {
+      "advise": "smart"
+    },
+    "agent-hint": {
+      "advise": "smart"
+    },
+    "agent-corpus-err": {
+      "advise": "smart"
+    },
+    "hint-corpus-err": {
+      "advise": "high"
+    },
+    "hint-proposals": {
+      "advise": "high"
+    },
+    "resprofile": {
+      "advise": "high"
+    },
+    "shapedup-wide": {
+      "advise": "high"
+    },
+    "shapedup-wide-note": {
+      "advise": "high"
+    }
+  }
+}

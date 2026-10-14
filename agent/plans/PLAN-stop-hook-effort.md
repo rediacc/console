@@ -1,6 +1,7 @@
 # PLAN: one effort level for the Stop hook
 
 Status: approved. Operator /ask 2026-10-14: "Yes, as proposed (Recommended)" and "smart (Recommended)" for this session once it lands.
+Owner: d778be9d
 Depends-On: no-dep -- related, not ordered: PLAN-stop-hook-focus-mode.md and PLAN-stop-hook-turbo.md describe the switches this plan folds in
 Operator ask (2026-10-14, verbatim): "Honestly disabling/enabling the stop hook, different options for focus, turbo etc. Can't we bind them into a single "effort"? Maybe: smart, low, high, ultra/turbo etc. Can you investigate and brainstorm? Maybe we can also have a modifiable list, to move some of the checks/tasks between the options instead of that complex switchings." <!-- style-ok -->
 Approach: clean break. The replaced keys, the WORKLIST_FOCUS variable and the --focus verb go; no shims, no dual paths.

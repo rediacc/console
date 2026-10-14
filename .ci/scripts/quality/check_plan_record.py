@@ -41,6 +41,19 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       second fence or the section below `## Promoted` is a finding, because
       the reader silently falls back to the default of that key. A missing
       section is all defaults and no finding. `--update` leaves the block alone.
+  RE  THE EFFORT TABLE IS HONEST (agent/plans/PLAN-stop-hook-effort.md E1).
+      `.claude/config/effort.json` gives every check key the Stop hook can
+      produce exactly one threshold: the keys are DERIVED by AST
+      (`wl_effort.produced_keys`: every literal `vadd` and `outq_add` key, and
+      wl_checklist's per-slug `_ckey` classes), never listed by hand, so a new
+      check with no row is a finding and a row for a check that no longer
+      exists is too. Every FLOOR key (`wl_floor.FLOOR`, the sealed literal) is
+      `floor` and no other key is; `block` is never below `advise`; a blocking
+      key carries `block`, an advisory-only key does not; every level's bundle
+      sets every switch with the right type. `--effort-table [<path>]` judges
+      that rule alone, against the real table or a planted copy, in about a
+      second; `--selftest` plants an unknown key, a missing key, a demoted
+      FLOOR key and `block` below `advise`, and each must red.
   R9  THE CROSS-REFERENCE HEADERS RESOLVE (W12 P3.4b). `Supersedes:`, `Extends:`
       and `Related:` were taught to PARSE by P3.4a -- `wl_planrec.HEADER_FIELD_KEYS`
       lists them so a `# PLAN: ...` heading is not read as a field -- and nothing
@@ -161,6 +174,7 @@ paths.on_sys_path(pathlib.Path(__file__).resolve().parent)
 
 try:
     import wl_checks as CK
+    import wl_effort as EF
     import wl_planfile as PF
     import wl_planindex as PI
     import wl_planqueue as PQ
@@ -1034,6 +1048,109 @@ def census_report(root, out=sys.stdout, err=sys.stderr):
 #
 # R8, RQ and RQ-SETTINGS are a pure function of the tracked files under `agent/`: no history, no ledger. That is what lets them run from a bare export of a tree, which is how the same three rules judge the working tree, HEAD's bytes (`committed_problems`) and a commit's index (`--rendered-only`, from the pre-commit hook).
 RENDERED_ONLY = "--rendered-only"
+EFFORT_TABLE = "--effort-table"
+
+
+def effort_problems(root, table_path=None):
+    """(problems, note) for RE: the effort table at `table_path` (default `root`'s) against the keys the Stop hook at `root` produces. A scan that finds no blocking or no advisory key is a finding, never a pass."""
+    path = pathlib.Path(table_path) if table_path else pathlib.Path(root) / EF.TABLE_REL
+    table, why = EF.load(path)
+    if table is None:
+        return ["RE: %s" % why], ""
+    blocking, advisory = EF.produced_keys(paths.hooks_stop_dir(root))
+    if not blocking or not advisory:
+        return [
+            "RE: the key scan of %s found %d blocking and %d advisory key(s); a table judged "
+            "against an empty scan would pass for nothing"
+            % (paths.hooks_stop_dir(root), len(blocking), len(advisory))
+        ], ""
+    note = "RE: %d blocking and %d advisory key(s) derived, %d table row(s), %d FLOOR" % (
+        len(blocking),
+        len(advisory),
+        len(table.get("checks") or {}),
+        len(EF.wl_floor.FLOOR),
+    )
+    return ["RE: %s" % p for p in EF.table_problems(table, blocking, advisory)], note
+
+
+def effort_table_only(root, argv):
+    """`--effort-table [<path>]`: RE alone. Exit 0 or 1."""
+    at = argv.index(EFFORT_TABLE)
+    path = argv[at + 1] if at + 1 < len(argv) and not argv[at + 1].startswith("-") else None
+    problems, note = effort_problems(root, path)
+    if problems:
+        print("✗ effort table: %d problem(s):" % len(problems), file=sys.stderr)
+        for p in problems:
+            print("    %s" % p, file=sys.stderr)
+        return 1
+    print(
+        "✓ effort table: %s; every key once, the FLOOR marked floor, no block below advise." % note
+    )
+    return 0
+
+
+def selftest_effort():
+    """RE's controls: the real table is silent, and each planted copy reds with its own finding. Returns the number of failed controls."""
+    bad = 0
+
+    def ck(label, ok, detail=""):
+        nonlocal bad
+        print(f"  {'PASS' if ok else 'FAIL'}  {label}")
+        if not ok:
+            bad += 1
+            if detail:
+                print(f"        {detail}")
+
+    table, why = EF.load(ROOT / EF.TABLE_REL)
+    if table is None:
+        ck("RE: the real effort table reads", False, why)
+        return bad
+    blocking, advisory = EF.produced_keys(paths.hooks_stop_dir(ROOT))
+    ck(
+        "RE CONTROL: the key scan finds blocking and advisory keys",
+        bool(blocking) and bool(advisory),
+    )
+    clean = EF.table_problems(table, blocking, advisory)
+    ck("RE: the real table is silent", clean == [], "; ".join(clean[:3]))
+
+    def planted(label, mutate, needle):
+        copy = json.loads(json.dumps(table))
+        mutate(copy)
+        got = EF.table_problems(copy, blocking, advisory)
+        ck(label, any(needle in p for p in got), "; ".join(got[:3]) or "(silent)")
+
+    floor_key = min(EF.wl_floor.FLOOR)
+    graded = next(
+        k for k, v in sorted(table["checks"].items()) if isinstance(v, dict) and "block" in v
+    )
+    planted(
+        "RE: an unknown key reds",
+        lambda t: t["checks"].__setitem__("no-such-check", {"block": "high", "advise": "smart"}),
+        "no-such-check is not a key the hook produces",
+    )
+    planted(
+        "RE: a missing key reds",
+        lambda t: t["checks"].pop(graded),
+        "%s is produced by the hook and missing" % graded,
+    )
+    planted(
+        "RE: a demoted FLOOR key reds",
+        lambda t: t["checks"].__setitem__(floor_key, {"block": "smart", "advise": "low"}),
+        "%s is a FLOOR key" % floor_key,
+    )
+    planted(
+        "RE: block below advise reds",
+        lambda t: t["checks"].__setitem__(graded, {"block": "low", "advise": "high"}),
+        "blocks at low, below its advise level high",
+    )
+    planted(
+        "RE: a bundle switch of the wrong type reds",
+        lambda t: t["bundles"]["smart"].__setitem__("turbo", "on"),
+        "bundles.smart.turbo: expected bool",
+    )
+    return bad
+
+
 AGENT_DIR = "agent"
 
 
@@ -2105,8 +2222,10 @@ def main(argv):
         return census_report(ROOT)
     if RENDERED_ONLY in argv:
         return rendered_only(ROOT, update=update)
+    if EFFORT_TABLE in argv:
+        return effort_table_only(ROOT, argv)
     print("plan records: controls first, then the verdict")
-    if selftest() + selftest_committed():
+    if selftest() + selftest_committed() + selftest_effort():
         print(
             "✗ instrument control failed; every verdict below would be meaningless",
             file=sys.stderr,
@@ -2175,6 +2294,8 @@ def main(argv):
     problems.extend(rendered)
     rc_problems, rc_note = committed_problems(ROOT)
     problems.extend(rc_problems)
+    re_problems, re_note = effort_problems(ROOT)
+    problems.extend(re_problems)
 
     # ---- THE ADVISORY CENSUS ------------------------------------------------- IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it wherever some unrelated rule failed is a window nobody can reason about, and the candidates say nothing about R1..R8 either way.
     #
@@ -2217,7 +2338,7 @@ def main(argv):
         f"opening the plans). {rc_note}. R9: {n_xref} plan(s) carry a "
         f"{'/'.join(HEADER_XREF_KEYS)} header and every pointer in one resolves. "
         f"RB: {n_rb_judged} plan(s) judged, no started plan without a box, "
-        f"{len(rb_warnings)} not-started plan(s) warned."
+        f"{len(rb_warnings)} not-started plan(s) warned. {re_note}, every key once."
     )
     if n_records == 0:
         print(

@@ -1689,6 +1689,24 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-stop-hook-effort.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "0248d91c",
+        "1c90ccae",
+        "1cdbf17e",
+        "403645b1",
+        "69d6168a",
+        "77c85d1d",
+        "f0e32992"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-hook-focus-mode.md": {
       "status": "draft",
       "owner": "d778be9d",

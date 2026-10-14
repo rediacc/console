@@ -1,7 +1,7 @@
 {
   "$why": [
     "Every WORKLIST_* environment name this repository reads, in one place, so that a name nobody reads and a read nobody registered are both findings.",
-    "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_FOCUS today, and until 2026-10-04 WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK and WORKLIST_CADENCE, which moved to agent/plans/QUEUE.md -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
+    "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_FOCUS until 2026-10-14 (removed by agent/plans/PLAN-stop-hook-effort.md), and until 2026-10-04 WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK and WORKLIST_CADENCE, which moved to agent/plans/QUEUE.md -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
     "Measured 2026-09-09 against the bash corpus that has since been ported to pytest: 133 live names across 60 tracked files at 183 read sites. The plan box said 134, which is the GREP answer; one of those, WORKLIST_EMAIL, appeared only in a comment describing a name that no longer existed, which is why this scanner counts READS rather than greps.",
     "Enforced by check:ci-worklist-env-registry, both directions. The name set and each name's default spellings are DERIVED from the code by the gate and pinned here, so this file cannot drift into being a description of what somebody once intended. `kind`, `class` and `why` are the authored fields, and the gate checks each against the derived shape or its allowed set.",
     "`class` (harness or gate-seam) is the field `.ci/config/env-manifest.json` is rendered from: every WORKLIST_* member of its shard lists is generated from this file, which makes this file the one authored home of a WORKLIST_* name. `foreign_reads` holds the names read only where this scan cannot look (a TypeScript gate), each with its reader and a reason, and the gate proves the reader still names it. Register a name with `npm run env:register -- <module> <NAME> --class <c> --kind <k> --default <spelling>... [--why <w>]`, which writes this file, re-renders the manifest and runs the three registry gates."
@@ -24,6 +24,9 @@
         "FOCUS_MAX_HOURS": 24
       },
       "why": "the stand-down keep-lists (the cap-saturated wait and focus mode) decide which checks still block while the session is told to wait; a variable that retuned a list or the focus batch and expiry limits would be exactly the escape hatch the roster rules out"
+    },
+    ".claude/hooks/stop/wl_floor.py": {
+      "why": "the Stop hook's FLOOR, the checks that block at every effort level (agent/plans/PLAN-stop-hook-effort.md); a variable that shrank it would be the off switch the effort dial replaced, so the set is a literal here and .claude/config/effort.json may only mark its keys `floor`"
     },
     ".claude/rediacc_hooks/guards/block_focus_spawn.py": {
       "why": "the PreToolUse half of focus mode: it refuses writer spawns while a PR wind-down is declared, and an environment read here would let a spawn bypass the focus the Stop hook enforces"
@@ -346,14 +349,6 @@
       "defaults": [
         "'10'"
       ]
-    },
-    "WORKLIST_FOCUS": {
-      "kind": "flag",
-      "class": "harness",
-      "defaults": [
-        "'on'"
-      ],
-      "why": "FAIL-OPEN ON A TYPO: defaults to `on`, and the fail-open direction is OFF, not on. wl_checks.py:5484 checks it only on the path where every violation is about to be rendered (the fail-safe reggate emit); a misspelled name reads as unset, the default `on` applies, and the caller gets the full render it already asked for by default -- a typo here cannot silently suppress output, only fail to suppress it."
     },
     "WORKLIST_GUIDE_MAX": {
       "kind": "tuning",

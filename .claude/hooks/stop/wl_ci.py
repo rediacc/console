@@ -1184,7 +1184,7 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
 
     A NEW failure set (new head SHA, or a different set of failing jobs) re-arms the budget: a new red is worth interrupting for exactly once more.
 
-    FOCUS MODE ARMS IT (agent/plans/PLAN-stop-hook-focus-mode.md section 3): the caller passes the focus's `ref` and `owned=True`. `--focus` is the session declaring the PR its own, which is the one fact the multi-session skip below could not know, so that skip does not apply. Both exits above still do.
+    FOCUS MODE ARMS IT (agent/plans/PLAN-stop-hook-focus-mode.md section 3): the caller passes the focus's `ref` and `owned=True`. `--phase` is the session declaring the PR its own, which is the one fact the multi-session skip below could not know, so that skip does not apply. Both exits above still do.
 
     `hold` IS THE CALLER SAYING THIS STOP WILL NOT BLOCK ON THE RED (operator ruling 2026-10-13: a turbo batch building locally stands `ci-red` down, wl_checks.turbo_build_parks). A `trouble` verdict then leaves the block budget unspent and reports the count as it stands. Without that the stood-down stops would burn the CI_MAX_BLOCKS ceiling, and the red could never block once the batch completes. Acknowledgement and an already spent budget still read `downgraded`.
     """

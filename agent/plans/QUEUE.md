@@ -4,43 +4,46 @@ The ordered queue of plans the plan-per-PR loop pulls from (box L2 of agent/plan
 
 Two lists, read in this order. `## Promoted` is hand-ordered by the operator and wins; no tool writes its entries, and an entry leaves it by hand when its PR merges. `## Generated` is rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` from live tracked plans with at least one open box: prerequisites first (`Depends-On:`, task refs and sub-plans like `PLAN-x.A0.md`, each prerequisite pulled ahead to the rank of what needs it), then held plans after unheld ones, prerequisites excepted, then in-progress plans before not-started ones, then operator Priority, AI Priority and path. Plans with no open box are listed under `### Not queued` with the reason, never as entries. Regenerate with `npm run check:ci-plan-record -- --update`; the same gate fails while the section is stale.
 
-`## In flight`, between `## Settings` and `## Promoted`, says what the loop is working on now: the effective switches, every active focus, the live branch and its PR, each plan in the PR's plan set with its box progress and how it joined (the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite), the branch's epics outside that set, live writers, leased items, and the next plan with its reason. The Stop hook and the `--queue-set` and `--focus` verbs render it between its markers from runtime state; no gate compares it, and no number in it is a list entry.
+`## In flight`, between `## Settings` and `## Promoted`, says what the loop is working on now: the effective switches, every session's wind-down phase, the live branch and its PR, each plan in the PR's plan set with its box progress and how it joined (the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite), the branch's epics outside that set, live writers, leased items, and the next plan with its reason. The Stop hook and the `--queue-set` and `--phase` verbs render it between its markers from runtime state; no gate compares it, and no number in it is a list entry.
 
-The progress block directly under `## Promoted` is generated, between the `queue:progress` markers: an overall line (plans done, boxes done, percentage) and one row per entry, keyed by the entry's own number, with its done/total box ratio. The counts come from the plan files by the merge gate's rule (`rediacc_hooks.plan_gate.open_boxes`, a `Moved-To:` stub followed), which check:ci-plan-boxes holds equal to `.ci/config/plan-boxes.json`. The Stop hook re-renders it on every run, as do `--queue-set`, `--focus` and the plan verbs (`--plan-tick`, `--plan-investigate`, `--plan-compact`, `--plan-revive`); `npm run check:ci-plan-record` fails while it disagrees with the plans, and `npm run check:ci-plan-record -- --update` rewrites it. Edit the entries below the block, never the block.
+The progress block directly under `## Promoted` is generated, between the `queue:progress` markers: an overall line (plans done, boxes done, percentage) and one row per entry, keyed by the entry's own number, with its done/total box ratio. The counts come from the plan files by the merge gate's rule (`rediacc_hooks.plan_gate.open_boxes`, a `Moved-To:` stub followed), which check:ci-plan-boxes holds equal to `.ci/config/plan-boxes.json`. The Stop hook re-renders it on every run, as do `--queue-set`, `--phase` and the plan verbs (`--plan-tick`, `--plan-investigate`, `--plan-compact`, `--plan-revive`); `npm run check:ci-plan-record` fails while it disagrees with the plans, and `npm run check:ci-plan-record -- --update` rewrites it. Edit the entries below the block, never the block.
 
 Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note>`. Only numbered entries inside the two sections are read; the progress block holds table rows, never entries.
 
 ## Settings
 
-The switchboard for the Stop hook, read by `.claude/hooks/stop/wl_planqueue.py` (`settings`). One fenced block, `key: value` per line, an optional ` -- <note>` carrying the operator's reason. A missing key or a bad value falls back to the fail-safe default (hook on, turbo off) and `npm run check:ci-plan-record` names the problem. Change it with `worklist.py --queue-set <me> key=value ... [--note "<text>"]`, then commit this file.
+The switchboard for the Stop hook, read by `.claude/hooks/stop/wl_planqueue.py` (`settings`). One fenced block, `key: value` per line, an optional ` -- <note>` carrying the operator's reason. It names one `effort` level (agent/plans/PLAN-stop-hook-effort.md); every other value resolves as that level's bundle in `.claude/config/effort.json`, then an explicit line here, which wins. A missing or bad `effort:` line is `high`, every check as before the dial existed, and any other bad line falls back to the level's value; `npm run check:ci-plan-record` names the problem. Change it with `worklist.py --queue-set <me> key=value ... [--note "<text>"]` (`key=` drops an override), then commit this file.
 
-What each key does (default in brackets):
+The levels, each a superset of the one before:
 
-- `stop_hook` (on): the whole Stop hook. `off` allows every stop with one notice and runs no check.
+- `quiet`: the FLOOR only (`.claude/hooks/stop/wl_floor.py`: the hook cannot see, a broken watch, CI red or unreadable, a dead or over-cap writer, an unread report, a wait with no wake-up timer, STATE.md when compaction is due). No judge. There is no off switch; this is the quietest the hook gets.
+- `low`: plus the mission: open items, the PR's plan, its finish line, its reviews, the turbo and loop orders.
+- `smart`: plus owed work and record integrity; `no-remaining` and `out-of-sync` only advise; the judge runs without riders.
+- `high`: every check, the full judge with its riders.
+- `ultra`: `high` plus the throughput bundle (turbo on, writer_cap 15, plan_concurrency 5, batch_size 3).
+
+`.claude/config/effort.json` gives every check its threshold (`{"block": <level>, "advise": <level>}`, or `floor`); moving a check between levels is an edit there, which the effort-table rule of `npm run check:ci-plan-record` keeps complete.
+
+The overrides (each level's bundle value in brackets for `high`):
+
 - `turbo` (off): `off` keeps one plan per PR. `on` hands each free writer slot the next eligible queued plan, which joins the live PR's `Plan:` line, and keeps going until turbo is switched off.
+- `turbo_push` (batch-end): under turbo, when the push and the PR happen. `batch-end` verifies the batch locally and pushes once when it completes, so the branch has no PR and no CI run until then. `pr` keeps the earlier behaviour: the PR opens at the first push and the batch joins it.
 - `batch_size` (1): under turbo, the minimum number of finished plans before the PR is offered for merge. The merge itself never refuses a shorter PR.
 - `plan_concurrency` (1): under turbo, the most unfinished plans in flight at once. The PR's own unfinished plans and the plans live writers serve count against it, so a free writer slot opens a new plan only below this ceiling.
 - `writer_cap` (4): the most writer agents live at once. A spawn beyond it is refused (`block_agent_cap`), and the Stop hook blocks on a roster above it.
 - `commit_remind_min` (15): minutes without a commit, while this session's own edits are still uncommitted, before the Stop hook and the post-tool hook remind it to commit the verified unit. A reminder, never a block (agent/plans/PLAN-fast-loop.md Part 2).
-- `cadence` (on): lets a stop through after a demand when the session has reported something new, so the hook does not demand on every stop. Always-tier checks still block.
-- `agent_hint` (on): names a specialist agent (`.claude/agents/*.md`) that matches the open work, including once after each compaction.
-- `agent_pushback` (on): blocks a stop that declares work out of reach ("cannot be done here"), once per claim, and names the specialist agent that fits it when one clears the hint's confidence floor.
-- `judge` (on): the LLM judge that reviews a stop when work remains. The env var `WORKLIST_JUDGE=on|off` overrides it, for tests.
-- `turbo_push` (batch-end): under turbo, when the push and the PR happen. `batch-end` verifies the batch locally and pushes once when it completes, so the branch has no PR and no CI run until then. `pr` keeps the earlier behaviour: the PR opens at the first push and the batch joins it.
 - `backup_push_h` (4): under `turbo_push: batch-end`, the age in hours of the oldest unpushed commit that makes the hook advise a backup push (`git push -u origin <branch>`, no PR, so no CI run). `0` turns the advice off.
+- `judge` (full): `off`, `core` (the LLM judge answers whether stopping is honest, with no regression sweep, proof, deferral audit, settle or admission riders) or `full`. The env var `WORKLIST_JUDGE=on|off` overrides it, for tests.
+- `cadence`, `agent_hint`, `agent_pushback` (on): not fence keys of their own any more; the level decides them, and a line here still overrides. `cadence` lets a stop through after a demand when the session has reported something new; `agent_hint` names a specialist agent that matches the open work; `agent_pushback` blocks a stop that declares work out of reach and names the agent that fits.
 
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-stop_hook: off -- operator 2026-10-14T07:0xZ: let's disable stop hook
+effort: smart -- operator 2026-10-14: "smart (Recommended)", agent/plans/PLAN-stop-hook-effort.md
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
 writer_cap: 15 -- operator 2026-10-04: parallel limit 15
-cadence: on
-agent_hint: on
-agent_pushback: on
-judge: on
 commit_remind_min: 15 -- operator 2026-10-06: PLAN-fast-loop Part 2 default
 turbo_push: batch-end -- operator 2026-10-08: turbo completes plans locally, one push per batch
 backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
@@ -48,13 +51,13 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 
 ## In flight
 
-What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
+What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook off; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
-- Focus: off.
+- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
+- Phase: build.
 - Branch: 1008-1, PR #600 open.
-- Plans on the PR (8):
+- Plans on the PR (10):
   - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo batch claim on the `Plan:` line
@@ -63,17 +66,19 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-biome-only-lint.md -- 13 of 29 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 568 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a7b4270c8fa0716b4, worker:add58fd3bf2c14ef5.
-- Leased items: 13: #3993c728 (worker:a7b4270c8fa0716b4, d778be9d), #3c36e4b5 (worker:a7b4270c8fa0716b4, d778be9d), #6361fc5b (worker:a7b4270c8fa0716b4, d778be9d), #69b8a73b (worker:add58fd3bf2c14ef5, d778be9d), #97a7ced2 (worker:a7b4270c8fa0716b4, d778be9d), #ad11a8df (worker:add58fd3bf2c14ef5, d778be9d), #bd51855a (worker:a7b4270c8fa0716b4, d778be9d), #c275adc4 (worker:a7b4270c8fa0716b4, d778be9d), #d52ad5bb (worker:a7b4270c8fa0716b4, d778be9d), #e4caba69 (worker:add58fd3bf2c14ef5, d778be9d), #f0bad09d (worker:b133luood, d778be9d), #f147e3e5 (worker:a7b4270c8fa0716b4, d778be9d), and 1 more.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 578 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:ad4f40ccdc1c9b8bf.
+- Leased items: 12: #3993c728 (worker:ad4f40ccdc1c9b8bf, d778be9d), #3c36e4b5 (worker:ad4f40ccdc1c9b8bf, d778be9d), #6361fc5b (worker:ad4f40ccdc1c9b8bf, d778be9d), #97a7ced2 (worker:ad4f40ccdc1c9b8bf, d778be9d), #bd51855a (worker:ad4f40ccdc1c9b8bf, d778be9d), #c275adc4 (worker:ad4f40ccdc1c9b8bf, d778be9d), #d52ad5bb (worker:ad4f40ccdc1c9b8bf, d778be9d), #d5506fb8 (worker:bmqgcaitu, d778be9d), #e4caba69 (worker:ad4f40ccdc1c9b8bf, d778be9d), #f0bad09d (worker:ad4f40ccdc1c9b8bf, d778be9d), #f147e3e5 (worker:ad4f40ccdc1c9b8bf, d778be9d), #fe2d3ad2 (worker:ad4f40ccdc1c9b8bf, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 14 plans done, 160 of 177 boxes done (90%).
+Promoted: 10 of 15 plans done, 160 of 184 boxes done (86%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -91,6 +96,7 @@ Promoted: 10 of 14 plans done, 160 of 177 boxes done (90%).
 | 12 | PLAN-lessons-registry.md | 9/9 | done |
 | 13 | PLAN-inline-suppressions.md | 3/11 | 8 open |
 | 14 | PLAN-stop-hook-effort.md | 0/7 | 7 open |
+| 15 | PLAN-stop-hook-effort-tuning.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
@@ -107,6 +113,7 @@ Promoted: 10 of 14 plans done, 160 of 177 boxes done (90%).
 12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): done, 9 of 9 boxes; leaves this list when PR #600 merges
 13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; 3 of 11 boxes ticked (WC1 e2e, WC2 account, WD1 renet); WD2 waits on run_renet.py validating BLOCKER comments; the config and sweep patches (P0), the .claude and .ci Python patches (WA, WB) and the shell markers are delivered and not yet landed; P2 and F follow them
 14. agent/plans/PLAN-stop-hook-effort.md -- operator /ask 2026-10-14 (#d5506fb8): one effort level (quiet/low/smart/high/ultra) replaces the stop_hook, focus and turbo switches, with check thresholds in .claude/config/effort.json; "implement PLAN-stop-hook-effort.md now"; 0 of 7 boxes, writer on E1-E6
+15. agent/plans/PLAN-stop-hook-effort-tuning.md -- operator 2026-10-14 (asked to plan it and then ask the implementation questions; /ask: tuner runs near compaction at about 85% through a sub-agent, demotions by one batched /ask, work = a commit or tick within 3 stops, promotions auto-apply): the effort table tunes itself from measured outcomes; depends on entry 14; 0 of 7 boxes
 
 ## Generated
 

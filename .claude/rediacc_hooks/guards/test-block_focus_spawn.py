@@ -51,7 +51,7 @@ def world(focus="babysit", focus_age_min=1.0, off=False, fix_state=" ", owner=ME
     if focus:
         rows.append(
             {
-                "ev": "focus",
+                "ev": "phase",
                 "at": stamp(focus_age_min),
                 "by": owner,
                 "o": owner,
@@ -67,11 +67,11 @@ def world(focus="babysit", focus_age_min=1.0, off=False, fix_state=" ", owner=ME
     if off:
         rows.append(
             {
-                "ev": "focus",
+                "ev": "phase",
                 "at": stamp(0),
                 "by": ME,
                 "o": ME,
-                "mode": "off",
+                "mode": "build",
                 "branch": "0925-1",
                 "pr": 543,
                 "why": "operator",
@@ -118,15 +118,15 @@ def refused_rows():
 
 # (name, world kwargs, spawn kwargs, want_rc, stderr needle or "" for silence)
 CASES: list[tuple[str, dict[str, Any], dict[str, Any], int, str]] = [
-    ("a writer spawn in focus is refused", {}, {"kind": "general-purpose"}, 2, "focus mode is on"),
-    ("the refusal names the three exits", {}, {"kind": "gate-author"}, 2, "--focus cafe0000 off"),
+    ("a writer spawn in focus is refused", {}, {"kind": "general-purpose"}, 2, "phase is on"),
+    ("the refusal names the three exits", {}, {"kind": "gate-author"}, 2, "--phase cafe0000 build"),
     ("no focus: the writer is allowed", {"focus": ""}, {"kind": "general-purpose"}, 0, ""),
-    ("focus ended by off: allowed", {"off": True}, {"kind": "general-purpose"}, 0, ""),
+    ("focus ended by build: allowed", {"off": True}, {"kind": "general-purpose"}, 0, ""),
     ("an expired focus (25h) is not enforced", {"focus_age_min": 1500}, {"kind": "general-purpose"}, 0, ""),
     ("an Explore spawn in focus is allowed", {}, {"kind": "Explore"}, 0, ""),
     ("a Plan spawn in focus is allowed", {}, {"kind": "Plan"}, 0, ""),
     ("pr-babysitter in babysit focus is allowed", {}, {"kind": "pr-babysitter"}, 0, ""),
-    ("pr-babysitter in merge focus is refused", {"focus": "merge"}, {"kind": "pr-babysitter"}, 2, "focus mode is on"),
+    ("pr-babysitter in merge focus is refused", {"focus": "merge"}, {"kind": "pr-babysitter"}, 2, "phase is on"),
     ("declared fix work on a linked owned item is allowed", {}, {"kind": "general-purpose", "prompt": "focus-fix:#aa11aa11 go"}, 0, ""),
     ("fix work on an in-flight item is allowed", {"fix_state": ">"}, {"kind": "general-purpose", "prompt": "focus-fix:aa11aa11"}, 0, ""),
     ("fix label on an unlinked item is refused", {}, {"kind": "general-purpose", "prompt": "focus-fix:#bb22bb22"}, 2, "does not carry pr:543"),
@@ -134,11 +134,11 @@ CASES: list[tuple[str, dict[str, Any], dict[str, Any], int, str]] = [
     ("fix label on a peer's item is refused", {}, {"kind": "general-purpose", "prompt": "focus-fix:#cc33cc33"}, 2, "does not own"),
     ("fix label on a ticked item is refused", {"fix_state": "x"}, {"kind": "general-purpose", "prompt": "focus-fix:#aa11aa11"}, 2, "not open or in flight"),
     ("fix label on an unknown id is refused", {}, {"kind": "general-purpose", "prompt": "focus-fix:#abcdef99"}, 2, "no item in the store"),
-    ("a predecessor's focus binds this session through lineage", {"owner": OLD[:8], "lineage": True}, {"kind": "general-purpose"}, 2, "focus mode is on"),
+    ("a predecessor's focus binds this session through lineage", {"owner": OLD[:8], "lineage": True}, {"kind": "general-purpose"}, 2, "phase is on"),
     ("a predecessor's focus with no lineage edge does not bind", {"owner": OLD[:8]}, {"kind": "general-purpose"}, 0, ""),
     ("another session's spawn sees no focus", {}, {"kind": "general-purpose", "session": "feed1234-0000"}, 0, ""),
     ("a non-Agent payload is ignored", {}, {"kind": "general-purpose", "tool": "Bash"}, 0, ""),
-    ("the Task tool name is guarded too", {}, {"kind": "general-purpose", "tool": "Task"}, 2, "focus mode is on"),
+    ("the Task tool name is guarded too", {}, {"kind": "general-purpose", "tool": "Task"}, 2, "phase is on"),
 ]  # fmt: skip
 
 

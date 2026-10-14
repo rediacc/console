@@ -169,7 +169,7 @@ def _planqueue():
 
 
 def settings_at(root: str, rev: str = ""):
-    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; one that exists but cannot be read is all defaults and a problem; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: hook on, turbo off, batch 1."""
+    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; one that exists but cannot be read is all defaults and a problem; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: effort high, turbo off, batch 1."""
     try:
         pq = _planqueue()
     except ImportError as exc:
@@ -190,7 +190,7 @@ def _default_settings():
     import types  # noqa: PLC0415
 
     return types.SimpleNamespace(
-        stop_hook=True,
+        effort="high",
         turbo=False,
         turbo_push="batch-end",
         batch_size=1,
@@ -201,7 +201,7 @@ def _default_settings():
         cadence=True,
         agent_hint=True,
         agent_pushback=True,
-        judge=True,
+        judge="full",
         notes={},
     )
 

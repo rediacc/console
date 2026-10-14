@@ -222,7 +222,7 @@ def _plan_hold(fold, item_id, session_id):
 
 
 def _refresh_inflight(sid):
-    """Re-render agent/plans/QUEUE.md's in-flight block after a verb changed a mode (`--queue-set`, `--focus`). The writers are the PreToolUse guard's estimate, since a verb has no Stop event. Runtime state only: a failure is one stderr line, never the verb's exit code."""
+    """Re-render agent/plans/QUEUE.md's in-flight block after a verb changed a mode (`--queue-set`, `--phase`). The writers are the PreToolUse guard's estimate, since a verb has no Stop event. Runtime state only: a failure is one stderr line, never the verb's exit code."""
     try:
         import wl_planqueue as PQ  # noqa: PLC0415
         import wl_roster  # noqa: PLC0415
@@ -243,42 +243,50 @@ def _refresh_inflight(sid):
         )
 
 
-def _focus_cli(argv):
-    """`worklist.py --focus <me> babysit|merge|off [--pr <n>] [--branch <b>]`, or `--focus <me>` for the state (agent/plans/PLAN-stop-hook-focus-mode.md section 1)."""
+def _phase_cli(argv):
+    """`worklist.py --phase <me> babysit|merge [--pr <n>] [--branch <b>]`, `--phase <me> build`, or `--phase <me>` for the state (agent/plans/PLAN-stop-hook-effort.md; the wind-down itself is agent/plans/PLAN-stop-hook-focus-mode.md section 1)."""
     import wl_standdown  # noqa: PLC0415
 
     me = argv[0] if argv else ""
     if not C.PREFIX_RE.match(me or "") or len(argv) > 6:
-        _die2(M.CLI_FOCUS_USAGE)
+        _die2(M.CLI_PHASE_USAGE)
     _identity_or_die(me, _die2)
     root = C.project_root(C.project_start())
     wl = C.worklist_for(C.project_start())
     fold = S.load(wl, sync=False)
     sid = C.resolve_session_id() or me
-    cur = wl_standdown.active_focus(fold.focus, lambda o: C.owned_by_me(o, sid))
+    cur = wl_standdown.active_phase(fold.phase, lambda o: C.owned_by_me(o, sid))
     if len(argv) == 1:
         if cur is None:
-            print(M.CLI_FOCUS_NOT_ON % me)
+            print(M.CLI_PHASE_BUILD % me)
             return
         parked = (S.load_state(wl, sid).get("standdown") or {}).get("parked") or {}
         print(
-            M.CLI_FOCUS_STATUS
+            M.CLI_PHASE_STATUS
             % (cur.get("mode"), cur.get("pr") or "?", cur.get("branch"), cur.get("at"), len(parked))
         )
         return
     mode = argv[1]
-    if mode == "off":
+    if mode == wl_standdown.BUILD:
         if len(argv) != 2:
-            _die2(M.CLI_FOCUS_USAGE)
+            _die2(M.CLI_PHASE_USAGE)
         if cur is None:
-            print(M.CLI_FOCUS_NOT_ON % me)
+            print(M.CLI_PHASE_BUILD % me)
             return
-        S.focus_event(wl, me, me, "off", branch=cur.get("branch"), pr=cur.get("pr"), why="operator")
-        print(M.CLI_FOCUS_OFF % (me, cur.get("mode"), cur.get("pr") or "?", cur.get("at")))
+        S.phase_event(
+            wl,
+            me,
+            me,
+            wl_standdown.BUILD,
+            branch=cur.get("branch"),
+            pr=cur.get("pr"),
+            why="operator",
+        )
+        print(M.CLI_PHASE_ENDED % (me, cur.get("mode"), cur.get("pr") or "?", cur.get("at")))
         _refresh_inflight(sid)
         return
-    if mode not in wl_standdown.FOCUS_MODES:
-        _die2(M.CLI_FOCUS_USAGE)
+    if mode not in wl_standdown.PHASE_MODES:
+        _die2(M.CLI_PHASE_USAGE)
     pr, branch, i = None, "", 2
     while i < len(argv):
         if argv[i] == "--pr" and i + 1 < len(argv) and argv[i + 1].lstrip("#").isdigit():
@@ -286,16 +294,16 @@ def _focus_cli(argv):
         elif argv[i] == "--branch" and i + 1 < len(argv) and argv[i + 1].strip():
             branch = argv[i + 1].strip()
         else:
-            _die2(M.CLI_FOCUS_USAGE)
+            _die2(M.CLI_PHASE_USAGE)
         i += 2
     # The raw ref, not C.git_branch's slug: this names the PR's head ref on GitHub.
     branch = branch or C._git(root, "symbolic-ref", "--short", "-q", "HEAD") or ""
     if not branch or branch in ("main", "master", "HEAD"):
         _die2(
-            M.CLI_FOCUS_REFUSED
+            M.CLI_PHASE_REFUSED
             % (
-                "focus needs a PR branch, and %s is not one (pass --branch <pr-head-ref>)"
-                % (branch or "a detached HEAD")
+                "a %s phase needs a PR branch, and %s is not one (pass --branch <pr-head-ref>)"
+                % (mode, branch or "a detached HEAD")
             )
         )
     note = ""
@@ -308,11 +316,11 @@ def _focus_cli(argv):
         if not err and isinstance(data, list) and data and isinstance(data[0], dict):
             pr = data[0].get("number")
         else:
-            note = M.CLI_FOCUS_PR_UNKNOWN % (branch, err or "gh returned no open PR")
-    S.focus_event(wl, me, me, mode, branch=branch, pr=pr, why="operator")
+            note = M.CLI_PHASE_PR_UNKNOWN % (branch, err or "gh returned no open PR")
+    S.phase_event(wl, me, me, mode, branch=branch, pr=pr, why="operator")
     if note:
         print(note)
-    print(M.CLI_FOCUS_ON % (me, mode, pr or "?", branch, pr or "<n>", me))
+    print(M.CLI_PHASE_ON % (mode, me, pr or "?", branch, pr or "<n>", me))
     _refresh_inflight(sid)
 
 
@@ -1465,7 +1473,7 @@ def _item_cli(argv, worklist):
             _qsid = C.resolve_session_id() or me
             # FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 1): starting the work is exactly what focus forbids, so the free-slot refusal would leave work refused at spawn with nowhere to park. The spawn guard's own message says to park it here.
             _focused = (
-                wl_standdown.active_focus(fold.focus, lambda o: C.owned_by_me(o, _qsid)) is not None
+                wl_standdown.active_phase(fold.phase, lambda o: C.owned_by_me(o, _qsid)) is not None
             )
             busy = wl_roster.live_writers_estimate(os.getcwd(), me)
             _writer_cap = wl_roster.writer_cap(C.project_root(C.project_start()))
@@ -2120,15 +2128,7 @@ def _queue_set_cli(argv):
             )
             sys.exit(2)
     if not pairs and note is None:
-        got, problems = PQ.settings_for(root)
-        src = PQ.sources(text or "")
-        for key in PQ.SETTINGS_KEYS:
-            shown = getattr(got, key)
-            shown = ("on" if shown else "off") if isinstance(shown, bool) else shown
-            extra = (" -- %s" % got.notes[key]) if key in got.notes else ""
-            print("%s: %s (%s)%s" % (key, shown, src[key], extra))
-        for problem in problems:
-            print("PROBLEM %s" % problem)
+        _print_resolved(PQ, root, text or "")
         return
     if not pairs:
         sys.stderr.write(M.CLI_QUEUE_SET_REFUSED % "--note needs at least one key=value")
@@ -2141,59 +2141,43 @@ def _queue_set_cli(argv):
     if new != text:
         R.write_atomic(path, new)
         _refresh_inflight(C.resolve_session_id() or me)
-    got, problems = PQ.settings_for(root)
-    for key in pairs:
-        shown = getattr(got, key)
-        shown = ("on" if shown else "off") if isinstance(shown, bool) else shown
-        print("%s: %s (QUEUE.md)" % (key, shown))
-    for problem in problems:
-        print("PROBLEM %s" % problem)
+    _print_resolved(PQ, root, new)
     print("git add %s" % PQ.QUEUE_REL)
 
 
-def _stop_hook_off():
-    """(note, problems) when `agent/plans/QUEUE.md` `## Settings` says `stop_hook: off`, else None. Any doubt (an unusable wl_planqueue or wl_core, an unreadable file, a malformed or duplicated `stop_hook` line) keeps the hook ON: the switch only turns the hook off on purpose."""
-    try:
-        import wl_planqueue as PQ  # noqa: PLC0415 -- sibling, probed not assumed
-
-        root = C.project_root(C.project_start()) or os.getcwd()
-        got, problems = PQ.settings_for(root)
-        if got.stop_hook:
-            return None
-        return got.notes.get("stop_hook", ""), problems
-    except Exception:  # noqa: BLE001 -- any doubt keeps the hook on
-        return None
-
-
-def _stop_hook_off_message(note, problems):
-    """The one free notice the OFF path emits: the switch and its note, the sibling modules that failed to import, the settings problems."""
-    broken = (
-        "; broken sibling module(s): %s"
-        % "; ".join("%s: %s" % (k, v) for k, v in sorted(_BROKEN.items()))
-        if _BROKEN
-        else ""
-    )
-    found = "; settings problem(s): %s" % " | ".join(problems) if problems else ""
-    fields = {"note": note or "no reason recorded", "broken": broken, "problems": found}
-    try:
-        return M.N_STOP_HOOK_OFF % fields
-    except Exception:  # noqa: BLE001 -- the notice must survive a broken catalogue
-        return (
-            "Stop hook OFF (agent/plans/QUEUE.md stop_hook: off -- %(note)s)%(broken)s%(problems)s"
-            % fields
+def _print_resolved(pq, root, text):
+    """The resolved settings, one `key: value (source)` line each in KNOWN_KEYS order, then what the level does to the checks (agent/plans/PLAN-stop-hook-effort.md) and any problem. `pq` is wl_planqueue, which carries wl_effort."""
+    effort = pq.wl_effort
+    got, problems = pq.settings_for(root)
+    src = pq.sources(text)
+    for key in pq.KNOWN_KEYS:
+        shown = getattr(got, key)
+        shown = ("on" if shown else "off") if isinstance(shown, bool) else shown
+        extra = (" -- %s" % got.notes[key]) if key in got.notes else ""
+        print("%s: %s (%s)%s" % (key, shown, src[key], extra))
+    rows = effort.level_keys(effort.load()[0], got.effort)
+    print(
+        "checks at effort %s: %d block (%d of them the FLOOR, at every level), %d advise instead, "
+        "%d off; advisories: %d shown, %d hidden (%s)"
+        % (
+            got.effort,
+            len(rows[effort.BLOCK]),
+            len(effort.wl_floor.FLOOR),
+            len(rows[effort.ADVISE]),
+            len(rows[effort.OFF]),
+            len(rows["shown"]),
+            len(rows["hidden"]),
+            effort.TABLE_REL,
         )
+    )
+    for problem in problems:
+        print("PROBLEM %s" % problem)
 
 
 def main():
     # FIRST STATEMENT, DELIBERATELY. `claude -p` runs this hook again; the guard is the only thing that works (--settings with empty hooks does not).
     if os.environ.get("STOPHOOK_CHILD"):
         sys.exit(0)
-
-    # OPERATOR SWITCH, the Stop path only (a bare invocation; every verb passes arguments). `agent/plans/QUEUE.md` `## Settings` `stop_hook: off` allows every stop without running a check, and the stop carries one free notice naming the switch (agent/plans/PLAN-stop-hook-turbo.md D4). Committed and visible rather than an env var, so it survives restarts and a peer session sees the same state. Unreadable, missing or malformed means ON: the switch can only turn the hook off on purpose.
-    if len(sys.argv) == 1:
-        _off = _stop_hook_off()
-        if _off is not None:
-            _emit({"systemMessage": _stop_hook_off_message(*_off)})
 
     # BEFORE every other arm. Asking a tool how to use it must never reach the Stop-hook path, which reads stdin as JSON and, finding none, emits a block telling the caller they have a hook bug. That happened, and the answer to "how do I use this" was a wall of unrelated advice.
     if sys.argv[1:2] and sys.argv[1] in ("--help", "-h", "help"):
@@ -2724,8 +2708,8 @@ def main():
             )
         )
         return
-    if sys.argv[1:2] == ["--focus"]:
-        _focus_cli(sys.argv[2:])
+    if sys.argv[1:2] == ["--phase"]:
+        _phase_cli(sys.argv[2:])
         return
     if sys.argv[1:2] == ["--brief"]:
         # Same class as --loop above, same fix.
