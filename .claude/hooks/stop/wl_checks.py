@@ -1792,6 +1792,16 @@ def guided_slice(
                         % (rid_t, age, txt, me_arg, rid),
                     )
                 )
+            elif C.not_before_pending(rec["line"], rec.get("upd", "")):
+                held = C.NOT_BEFORE.findall(rec["line"])[-1]
+                rows.append(
+                    (
+                        4,
+                        key,
+                        "  - [?] #%s (age %s, held NOT-BEFORE:%s) %s\n        operator may answer; its DEFAULT cannot run before %s"
+                        % (rid_t, age, held, txt, held),
+                    )
+                )
             elif upd is not None and upd >= S.DEFER_WINDOW_MIN:
                 rows.append(
                     (

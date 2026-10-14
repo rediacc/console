@@ -363,6 +363,10 @@ def test_an_aged_default_held_by_a_future_not_before_is_not_demanded(wl):
     _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:%s DEFAULT: bump it" % soon)
     got = run_stop(wl)
     assert "defer-expired" not in keys_of(wl, got), reason(got)[:1500]
+    # The worklist guide carries the same rule: a held deferral is not told to execute its DEFAULT.
+    guide = probe(wl, None)["guide"]
+    assert "#dq000002 WINDOW CLOSED" not in guide, guide[:2000]
+    assert "held NOT-BEFORE:%s" % soon in guide, guide[:2000]
 
 
 def test_an_aged_default_whose_not_before_has_passed_is_demanded(wl):
