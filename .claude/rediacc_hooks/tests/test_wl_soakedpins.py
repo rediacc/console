@@ -125,13 +125,14 @@ def test_the_stop_hook_queues_nothing_without_an_advisory_and_never_raises(monke
     assert calls == []
 
 
-NESTED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+# A class body runs when the function around it runs, so it is walked; the defs and lambdas inside it are not.
+NESTED_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
 
 
 def _calls_in(
     source: str, function: str, callee: str, argument_names: tuple[str, ...]
 ) -> list[ast.Call]:
-    """The calls to `callee(*argument_names)` that `function` itself runs: its own body only, so a call inside a def nested in it (which never runs unless something calls that def) is not one."""
+    """The calls to `callee(*argument_names)` that `function` itself runs: its own body, class bodies included (they run with it), but not a def or lambda nested in it (which never runs unless something calls it)."""
     tree = ast.parse(source)
     found: list[ast.Call] = []
     for fn in ast.walk(tree):
@@ -200,3 +201,19 @@ def test_the_call_finder_ignores_a_call_inside_a_nested_def() -> None:
         "        _soaked_pins_report(worklist, session_id, state_doc)\n"
     )
     assert _calls_in(inline, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
+
+
+def test_the_call_finder_walks_a_class_body_but_not_its_methods():
+    in_class = (
+        "def run_stop(worklist, session_id, state_doc):\n"
+        "    class Holder:\n"
+        "        _soaked_pins_report(worklist, session_id, state_doc)\n"
+    )
+    assert _calls_in(in_class, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
+    in_method = (
+        "def run_stop(worklist, session_id, state_doc):\n"
+        "    class Holder:\n"
+        "        def method(self):\n"
+        "            _soaked_pins_report(worklist, session_id, state_doc)\n"
+    )
+    assert not _calls_in(in_method, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
