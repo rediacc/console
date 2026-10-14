@@ -1609,6 +1609,7 @@ def test_fetch_runs_drops_a_fork_pull_request_run(monkeypatch):
         {"id": 1, "created_at": "2026-09-20T00:00:00Z", "head_repository": {"full_name": "o/r"}},
         {"id": 2, "created_at": "2026-09-21T00:00:00Z", "head_repository": {"full_name": "x/r"}},
         {"id": 3, "created_at": "2026-09-19T00:00:00Z"},
+        {"id": 4, "created_at": "2026-09-18T00:00:00Z", "head_repository": None},
     ]
     monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: {"workflow_runs": runs})
     result = br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 5)
