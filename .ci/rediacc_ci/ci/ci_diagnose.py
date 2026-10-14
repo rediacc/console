@@ -97,6 +97,17 @@ STREAM_RE = re.compile(r"\bvm=(\S+)\s*$")
 
 # SIGNATURES: (id, category, pattern, label, minimum seconds or 0). Infra rows are checked before code rows, so a test that failed BECAUSE a mirror was down reads as infra. Order inside a category matters too: a Bitwarden 503 must not read as a registry 503.
 SIGNATURES = (
+    # A pin freshness gate that could not ask its upstream (scripts/lib/pin-upstream.ts, `PinTally.report`). The three pin gates are hard on the nightly since the operator ruling of 2026-10-13, so this red reaches main's scheduled run, and it must read as the upstream's failure rather than as an unknown or as a defect in the tree. FIRST, because its finding lines name a pin and a status: `Bitwarden CLI (pinned 2026.9.0): GET api.github.com/... -> HTTP 503, after 3 attempt(s)` would otherwise read as the Bitwarden secrets row below, and one that ends on ECONNREFUSED as the generic network row.
+    (
+        "pin-upstream-unreachable",
+        "infra",
+        re.compile(
+            r"pin\(s\) were NOT compared with upstream|UPSTREAM REACHABILITY FAILURE"
+            r"|\): (?:GET|HEAD) \S+ -> .*, after \d+ attempt\(s\)"
+        ),
+        "a pin freshness gate could not reach its upstream (not a stale pin; re-run the job)",
+        0,
+    ),
     (
         "bitwarden-5xx",
         "infra",
@@ -172,6 +183,14 @@ SIGNATURES = (
         re.compile(r"\[setup\] (\S+) end \d+ \((\d+)s\)"),
         "a renet setup phase ran long",
         300,
+    ),
+    # A pin freshness gate's confirmed finding: upstream was asked, answered, and holds a newer release past the release-age window. The fix is a bump in the tree, which is why this is a code row. `pin(s) are behind upstream` is the line all three gates print.
+    (
+        "pin-stale",
+        "code",
+        re.compile(r"\bpin\(s\) are behind upstream\b"),
+        "a pinned version is behind upstream (the message names the bump command)",
+        0,
     ),
     ("go-fail", "code", re.compile(r"^--- FAIL: "), "a Go test failed", 0),
     # This repo's gates print `::finding::<key>` beside the finding they report (Quality / Branch on run 36974364712: `::finding::P-A1:...` under "P-A1 OPEN BOXES").
@@ -760,10 +779,14 @@ def failing_step_slice(log, job):
 
 
 SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
+# A pin gate's RETRY NOTE (`? <pin>: attempt 1 of 3 failed (HTTP 503), asking again in 2 s`) is no verdict: the next attempt may have succeeded, and an infra hit outranks every code hit, so reading it would turn a stale-pin red that followed a retry into an infrastructure one. Same rule as the per-attempt lines of the pkg-install-stall row. The verdict is the finding the gate prints when the budget is spent.
+RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
 
 
 def _sig_hit(line):
     body = SHORT_TS_RE.sub("", TS_RE.sub("", line, count=1), count=1)
+    if RETRY_NOTE_RE.search(body):
+        return None
     for sid, cat, rx, label, min_s in SIGNATURES:
         m = rx.search(body)
         if not m:
