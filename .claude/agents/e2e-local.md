@@ -83,6 +83,18 @@ The `<sha>` in the artifact name is the **merge** sha for a PR run, not your bra
 
 Read CI results at **JOB level**, never run level: a `cancelled` job did not run, and in a run summary that is indistinguishable from a pass.
 
+## vm:check: the push proof for VM-facing changes
+
+`npm run vm:check -- --changed` drives the repo shell, sync, SFTP and VS Code paths of `rdc` against the ops VMs and writes the receipt that `block_vm_unverified_push` reads. A push whose range touches `packages/cli/src/remote/`, `services/repo/repo-key-deployment.ts`, or a renet pointer move into `cmd/renet/sandbox_*`, `pkg/sandbox/`, `pkg/orchestration/` or `pkg/reporuntime/` needs a VERIFIED receipt for its tree (the trigger is `.ci/rediacc_ci/drills/vm_check_trigger.py`). With no hit, `--changed` prints the no-op line, writes nothing and exits 0.
+
+Modes: a running fleet (bridge .1 and worker .11 up) is reused and never sent `ops down`; a stopped one is started with `ops up --basic` and taken down again at the end. `--os <image>` must match a reused fleet. The run works on two `vmc-` forks of one grand (`--parent`), never on the grand itself.
+
+Verdicts: VERIFIED exit 0, FAILED exit 1 (a V1.x assertion failed), NOT_VERIFIED exit 77 (the check could not judge). A run with no assertion is never VERIFIED. NOT_VERIFIED classes: `fleet-busy`, `no-kvm`, `fleet-unavailable`, `fleet-os-mismatch`, `worker-not-in-config`, `renet-build-mismatch`, `account-unavailable`, `parent-grand-missing`, `agent-policy-refused`, `vscode-absent`, `no-assertions`, `teardown-failed`, `crashed`.
+
+Teardown runs in `finally`, also on SIGINT and SIGTERM: `vscode cleanup`, `repo delete` of the run's forks, a `repo list` proving neither tag remains, then the lock. Anything left behind is named in the receipt and turns VERIFIED into NOT_VERIFIED `teardown-failed`. Receipts live in `.ci/cache/vm-check/` (`receipt.json` plus one archive per tree).
+
+The escape is the operator's: `VM_CHECK_PUSH_REASON='<vm-unavailable|not-runtime|deadline>: <why, 40+ chars> ASKED:<YYYY-MM-DDTHH:MM>Z'` on the push, where the minute matches an AskUserQuestion answer in the transcript; `vm-unavailable` also needs a NOT_VERIFIED receipt for the same inputs. Each admitted escape is a line in `agent/ledgers/vm-check-push-reasons.jsonl`.
+
 ## Standing rules
 
 - Teardown is `./rdc.sh ops down`, and it is not automatic. VMs persist.
