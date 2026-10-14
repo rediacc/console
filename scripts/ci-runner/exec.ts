@@ -134,6 +134,17 @@ export function liveGates(now: number = Date.now()): { id: string; ms: number; p
 }
 
 /**
+ * What a failed `ps -o stat= -p <pid>` says about the pid: 'Z' (gone) only for ps's own "no such process" answer, exit status 1 with nothing on either stream. Any other failure (a missing ps, a spawn error, a signal, exit status 2, or a message on stderr such as BSD's illegal-option usage line) tells nothing about the pid, so it stays alive ('').
+ */
+export function psFailureState(err: unknown): string {
+  const e = err as { status?: unknown; stdout?: unknown; stderr?: unknown };
+  const text = (v: unknown): string =>
+    typeof v === 'string' ? v : Buffer.isBuffer(v) ? v.toString('utf8') : '';
+  const quiet = text(e.stdout).trim() === '' && text(e.stderr).trim() === '';
+  return e.status === 1 && quiet ? 'Z' : '';
+}
+
+/**
  * Whether a process is still running, which is not what `kill(pid, 0)` answers: that succeeds for a ZOMBIE, a process that has exited but whose parent has not yet waited on it. A gate killed with its group is orphaned and reparented to the nearest subreaper (an agent harness, a supervisor, a container init), and that reaper may wait only every second or so, or never; the pipes the gate held are already closed by then, so the runner exits and a caller probing the pid sees a "live" process that is dead. Measured with a reaper that waits every 1.5 s: the runner selftest's "the timed-out gate must be dead" failed although the gate was long gone, and passed again under an init that reaps at once. A zombie counts as gone. Linux reads the state from /proc; elsewhere `ps` does.
  */
 export function processAlive(pid: number): boolean {
@@ -155,13 +166,12 @@ export function processAlive(pid: number): boolean {
     try {
       state = execFileSync('ps', ['-o', 'stat=', '-p', String(pid)], {
         encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
+        stdio: ['ignore', 'pipe', 'pipe'],
       })
         .trim()
         .slice(0, 1);
     } catch (psError) {
-      // ps exits 1 when no such pid exists; a missing or broken ps tells nothing, so the pid stays alive.
-      state = typeof (psError as { status?: unknown }).status === 'number' ? 'Z' : '';
+      state = psFailureState(psError);
     }
   }
   return state !== 'Z';
