@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import pathlib
 import re
+from typing import Any
 
 import pytest
 
@@ -72,7 +73,7 @@ def run_port(
     return render(returncode, stdout, stderr, written)
 
 
-CASES: list[tuple[str, dict[str, object]]] = [
+CASES: list[tuple[str, dict[str, Any]]] = [
     (
         "hard-mode-names-the-enforced-count",
         {
@@ -139,9 +140,9 @@ CASES: list[tuple[str, dict[str, object]]] = [
 
 @pytest.mark.parametrize(("name", "kwargs"), CASES, ids=[c[0] for c in CASES])
 def test_port_matches_the_twins_recorded_output(
-    tmp_path: pathlib.Path, name: str, kwargs: dict[str, object]
+    tmp_path: pathlib.Path, name: str, kwargs: dict[str, Any]
 ) -> None:
-    actual = run_port(tmp_path, **kwargs)  # type: ignore[arg-type]
+    actual = run_port(tmp_path, **kwargs)
     expected = frozen.read(SLUG, name)
     assert as_twin(actual) == expected, "%s diverged from the twin's recorded bytes:\n%s\n%s" % (
         name,

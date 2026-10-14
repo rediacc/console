@@ -29,7 +29,7 @@ HEAD_OK = [
 def _populate(
     world: h.World,
     *,
-    renet_ok: bool = True,
+    renet_ok: bool | None = True,
     plane: bool = True,
     generator: str | None = "Refusing to generate a unit that would back up nothing",
 ) -> None:
@@ -144,7 +144,7 @@ def test_a_renet_without_the_verbs_fails_in_both(world: h.World) -> None:
 
 
 def test_a_missing_renet_and_plane_fail_in_both(world: h.World) -> None:
-    _populate(world, renet_ok=None, plane=False)  # type: ignore[arg-type]
+    _populate(world, renet_ok=None, plane=False)
     world.set_routes(HEAD_OK)
     b, p, _, _ = _both(world, **STORE)
     _same(b, p)

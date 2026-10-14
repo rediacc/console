@@ -30,6 +30,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from typing import Any
 
 import pytest
 
@@ -307,13 +308,13 @@ CASES = [
 
 
 @pytest.mark.parametrize(("name", "kwargs"), CASES, ids=[c[0] for c in CASES])
-def test_port_and_twin_agree(name: str, kwargs: dict[str, object]) -> None:
+def test_port_and_twin_agree(name: str, kwargs: dict[str, Any]) -> None:
     """Same fixture, both subjects: same exit, same streams, same calls, same .env."""
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
-        root_a = _fixture(base / "a", **kwargs)  # type: ignore[arg-type]
+        root_a = _fixture(base / "a", **kwargs)
         old, old_calls, old_env = _run("old", root_a)
-        root_b = _fixture(base / "b", **kwargs)  # type: ignore[arg-type]
+        root_b = _fixture(base / "b", **kwargs)
         new, new_calls, new_env = _run("new", root_b)
 
         assert new.returncode == old.returncode, (
@@ -484,9 +485,9 @@ def test_planted_defect_is_caught_by_this_differential() -> None:
 
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
-        kwargs = {"curl_never": True, "logs_rc": 42}
-        old, _, _ = _run("old", _fixture(base / "a", **kwargs))  # type: ignore[arg-type]
-        new, _, _ = _run("new", _fixture(base / "b", port_source=broken, **kwargs))  # type: ignore[arg-type]
+        kwargs: dict[str, Any] = {"curl_never": True, "logs_rc": 42}
+        old, _, _ = _run("old", _fixture(base / "a", **kwargs))
+        new, _, _ = _run("new", _fixture(base / "b", port_source=broken, **kwargs))
         assert old.returncode == 42, "the twin must exit with the logs command's status"
         assert new.returncode != old.returncode, (
             "PLANT DID NOT FIRE: the differential cannot see a suppressed exit status"

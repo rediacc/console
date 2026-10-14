@@ -30,6 +30,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from typing import Any
 
 import pytest
 
@@ -303,7 +304,7 @@ def _live(
     )
 
 
-CASES: list[tuple[str, dict[str, object], dict[str, str] | None]] = [
+CASES: list[tuple[str, dict[str, Any], dict[str, str] | None]] = [
     ("happy-healthy-first-probe", {}, None),
     (
         "healthy-after-five-probes-prints-the-15s-line",
@@ -356,13 +357,13 @@ CASES: list[tuple[str, dict[str, object], dict[str, str] | None]] = [
 
 @pytest.mark.parametrize(("name", "kwargs", "secrets"), CASES, ids=[c[0] for c in CASES])
 def test_port_and_twin_agree(
-    name: str, kwargs: dict[str, object], secrets: dict[str, str] | None
+    name: str, kwargs: dict[str, Any], secrets: dict[str, str] | None
 ) -> None:
     with tempfile.TemporaryDirectory() as td:
         base = pathlib.Path(td)
-        root_a = _fixture(base / "a", **kwargs)  # type: ignore[arg-type]
+        root_a = _fixture(base / "a", **kwargs)
         old, old_calls, old_env, old_gho = _run("old", root_a, secrets=secrets)
-        root_b = _fixture(base / "b", **kwargs)  # type: ignore[arg-type]
+        root_b = _fixture(base / "b", **kwargs)
         new, new_calls, new_env, new_gho = _run("new", root_b, secrets=secrets)
 
         assert new.returncode == old.returncode, (

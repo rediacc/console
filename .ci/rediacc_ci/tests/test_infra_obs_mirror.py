@@ -478,7 +478,12 @@ def test_capture_stage_only_touches_no_registry(tmp_path: pathlib.Path) -> None:
 def test_capture_refuses_an_evr_absent_from_primary(tmp_path: pathlib.Path) -> None:
     derived: list[str] = []
     deps = _deps(Net(origin_files()), FakeRun([(1, "", "not found")]))
-    deps.derive = lambda _c, _s: derived.append("ran") or []  # type: ignore[func-returns-value]
+
+    def derive(_c, _s):
+        derived.append("ran")
+        return []
+
+    deps.derive = derive
     with pytest.raises(om.MirrorError, match="does not list"):
         om.capture("19.2.3-lp160.2.95", tmp_path / "out", False, _ctx(tmp_path), FPR, deps)
     assert derived == []

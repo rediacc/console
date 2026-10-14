@@ -1360,34 +1360,6 @@
       "message": "Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")"
     },
     {
-      "id": "6a768073c88e3885",
-      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 2 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"list[str]\""
-    },
-    {
-      "id": "9f55f14727baddc4",
-      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 2 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"str | None\""
-    },
-    {
-      "id": "3779d7b06d361ef0",
-      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 3 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"list[str]\""
-    },
-    {
-      "id": "d148aeb13fa780f5",
-      "file": ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py",
-      "code": "arg-type",
-      "count": 1,
-      "message": "Argument 3 to \"run_port\" has incompatible type \"**dict[str, object]\"; expected \"str | None\""
-    },
-    {
       "id": "730744f0a6c503ac",
       "file": ".ci/rediacc_ci/tests/test_quality_compose_env.py",
       "code": "var-annotated",
