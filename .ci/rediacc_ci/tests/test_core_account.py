@@ -1327,7 +1327,7 @@ def test_delta_l1_seed_demo_reaches_its_could_not_reach_branch(
     """Defect L1, fixed: an unreachable gateway prints the message the twin wrote and could never reach, and ends 1."""
     monkeypatch.setenv("CONSOLE_ROOT_DIR", str(tmp_path))
 
-    def capture(argv, *, quiet_err=False):  # noqa: ARG001 -- the stand-in for `_capture`'s signature
+    def capture(argv, **_kwargs):
         return (0, '{"email":"x"}') if argv[0] == "jq" else (7, "")
 
     monkeypatch.setattr(account_lifecycle, "_capture", capture)
@@ -1344,7 +1344,7 @@ def test_delta_l2_a_state_file_without_the_key_is_not_a_silent_death(monkeypatch
     (tmp_path / ".account-state").write_text("started=1\n", encoding="utf-8")
     seen = []
 
-    def capture(argv, *, quiet_err=False):  # noqa: ARG001 -- the stand-in for `_capture`'s signature
+    def capture(argv, **_kwargs):
         seen.append(argv)
         return (0, "x") if argv[0] == "jq" else (7, "")
 
@@ -1382,7 +1382,7 @@ def _drive_credentials(monkeypatch, *, seed: str, hostname: tuple[int, str]) -> 
     monkeypatch.setattr(account_lifecycle, "_run", lambda _argv, **_kw: 0)
     monkeypatch.setattr(account_lifecycle, "_sleep", lambda _s: None)
 
-    def capture(argv, *, quiet_err=False):  # noqa: ARG001 -- the stand-in for `_capture`'s signature
+    def capture(argv, **_kwargs):
         if argv[0] == "openssl":
             return 0, "abcd1234abcd1234"
         if argv[0] == "hostname":

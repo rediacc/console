@@ -262,7 +262,7 @@ class MockServer:
         shutil.rmtree(self.directory, ignore_errors=True)
 
 
-def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin takes no arguments
+def main(_argv: list[str]) -> int:
     install_sh = paths.repo_root() / INSTALL_SH_REL
     if not install_sh.is_file():
         print("FAIL: install.sh not found at %s" % install_sh, file=sys.stderr, flush=True)

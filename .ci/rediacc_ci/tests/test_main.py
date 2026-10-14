@@ -264,11 +264,11 @@ def test_a_broken_registration_raises_rather_than_reporting_a_typo() -> None:
         cli.main(["ghost"], table=(row,))
 
 
-def _returns_none(argv):  # noqa: ARG001 -- the handler signature is the point
+def _returns_none(_argv):
     return None
 
 
-def _returns_a_string(argv):  # noqa: ARG001 -- the handler signature is the point
+def _returns_a_string(_argv):
     return "fine"
 
 

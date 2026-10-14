@@ -27,8 +27,7 @@
    "noqa S314": 2
   },
   ".ci/rediacc_ci/ci/ci_diagnose.py": {
-   "noqa ARG002": 1,
-   "noqa PLC0415": 3,
+   "noqa PLC0415": 1,
    "noqa S310": 1
   },
   ".ci/rediacc_ci/ci/gate_ledger.py": {
@@ -41,9 +40,6 @@
   ".ci/rediacc_ci/ci/github_status.py": {
    "noqa PLC0415": 2,
    "noqa S310": 1
-  },
-  ".ci/rediacc_ci/ci/profiler_panel.py": {
-   "noqa ARG001": 1
   },
   ".ci/rediacc_ci/ci/profiler_sampler_linux.py": {
    "noqa SIM115": 2
@@ -101,9 +97,6 @@
   },
   ".ci/rediacc_ci/deploy/wait_for_preview_worker.py": {
    "noqa S310": 2
-  },
-  ".ci/rediacc_ci/deploy/write_once_guard_check.py": {
-   "noqa ARG001": 1
   },
   ".ci/rediacc_ci/dev/www.py": {
    "noqa S606": 1
@@ -213,9 +206,6 @@
   ".ci/rediacc_ci/quality/worklist_env_registry.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/release/install_sh_config_check.py": {
-   "noqa ARG001": 1
-  },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
    "noqa DTZ006": 1
   },
@@ -223,7 +213,6 @@
    "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/security/rdc_sh_env_check.py": {
-   "noqa ARG001": 1,
    "noqa BLE001": 1
   },
   ".ci/rediacc_ci/security/workflow_gates.py": {
@@ -255,9 +244,6 @@
   ".ci/rediacc_ci/tests/differential.py": {
    "noqa PLC0415": 4
   },
-  ".ci/rediacc_ci/tests/gates/conftest.py": {
-   "noqa ARG001": 1
-  },
   ".ci/rediacc_ci/tests/gates/harness.py": {
    "noqa PLC0415": 1
   },
@@ -267,17 +253,8 @@
   ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": {
    "noqa PLC0415": 7
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_doc_region_parity.py": {
-   "noqa ARG001": 2
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py": {
    "type-ignore attr-defined": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_fetch_depth_safety.py": {
-   "noqa ARG001": 2
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_greenlight_closure_trace.py": {
-   "noqa ARG001": 1
   },
   ".ci/rediacc_ci/tests/gates/test_gate_incremental_receipt.py": {
    "noqa E402": 1
@@ -291,9 +268,6 @@
   },
   ".ci/rediacc_ci/tests/gates/test_gate_trap_registry.py": {
    "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_harness.py": {
-   "noqa ARG001": 1
   },
   ".ci/rediacc_ci/tests/regolden.py": {
    "noqa PLC0415": 2
@@ -321,9 +295,6 @@
   ".ci/rediacc_ci/tests/test_ci_initialize.py": {
    "type-ignore arg-type": 2
   },
-  ".ci/rediacc_ci/tests/test_core_account.py": {
-   "noqa ARG001": 3
-  },
   ".ci/rediacc_ci/tests/test_core_lease.py": {
    "type-ignore arg-type": 2,
    "type-ignore attr-defined": 7
@@ -345,12 +316,6 @@
   },
   ".ci/rediacc_ci/tests/test_docker_create_manifest.py": {
    "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_drills_backup_license.py": {
-   "noqa ARG002": 2,
-   "noqa E731": 1,
-   "type-ignore assignment": 1,
-   "type-ignore override": 1
   },
   ".ci/rediacc_ci/tests/test_drills_lib.py": {
    "type-ignore method-assign": 6
@@ -382,9 +347,6 @@
   ".ci/rediacc_ci/tests/test_infra_wait_for_vm_ssh.py": {
    "noqa E731": 1
   },
-  ".ci/rediacc_ci/tests/test_main.py": {
-   "noqa ARG001": 2
-  },
   ".ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py": {
    "type-ignore arg-type": 1
   },
@@ -406,9 +368,6 @@
   },
   ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py": {
    "noqa E731": 1
-  },
-  ".ci/rediacc_ci/tests/test_private_run_renet.py": {
-   "noqa ARG001": 1
   },
   ".ci/rediacc_ci/tests/test_proc.py": {
    "noqa B023": 1
@@ -457,9 +416,6 @@
   },
   ".ci/rediacc_ci/tests/test_release_check_soak_period.py": {
    "noqa DTZ005": 1
-  },
-  ".ci/rediacc_ci/tests/test_release_install_sh_config_check.py": {
-   "noqa ARG001": 1
   },
   ".ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py": {
    "noqa E731": 1
@@ -548,9 +504,6 @@
   ".ci/scripts/quality/check_resprofile.py": {
    "noqa E402": 1,
    "noqa PLC0415": 3
-  },
-  ".ci/scripts/quality/check_runner_advice.py": {
-   "noqa ARG001": 1
   },
   ".ci/scripts/quality/check_tree_shape.py": {
    "noqa FLY002": 1,

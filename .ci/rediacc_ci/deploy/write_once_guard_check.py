@@ -211,7 +211,7 @@ CASES = (
 )
 
 
-def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin takes no arguments
+def main(_argv: list[str]) -> int:
     temp = pathlib.Path(tempfile.mkdtemp())
     try:
         harness = Harness(temp)

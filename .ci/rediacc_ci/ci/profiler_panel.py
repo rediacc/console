@@ -102,7 +102,7 @@ def _gt(size: int, budget: str) -> bool:
         return False
 
 
-def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin ignores its arguments
+def main(_argv: list[str]) -> int:
     sample_file = _env("PROFILER_SAMPLE_FILE")
     strict = _env("PROFILER_STRICT", "false")
     wall_s = _env("PROFILER_WALL_S", "0")

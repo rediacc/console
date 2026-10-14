@@ -296,7 +296,7 @@ def test_assert_vacuous_tree_fails_accepts_a_refusing_gate_and_rejects_a_permiss
     inner.assert_vacuous_tree_fails(refusing, tmp_path / "good", "nothing to assert", "must refuse")
     gate.assert_eq(len(inner.passes), 1, "a gate that refuses an empty tree passes the check")
 
-    def permissive(path):  # noqa: ARG001
+    def permissive(_path):
         return harness.RunResult(0, "all good\n", "")
 
     with pytest.raises(harness.GateAssertionError, match="must refuse"):

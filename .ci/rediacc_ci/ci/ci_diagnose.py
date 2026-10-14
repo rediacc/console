@@ -14,6 +14,7 @@ THE SCHEMA, `ci-verdict/v1`, is the contract with the publisher and with every s
 from __future__ import annotations
 
 import datetime
+import importlib.util
 import json
 import os
 import pathlib
@@ -263,7 +264,6 @@ def _full(repo, path):
 
 def _gh_retry():
     """`rediacc_ci.core.gh_retry`, imported on first use. This module is loaded by path (no `.ci` on sys.path), so `.ci` is put there through the canonical resolver, `rediacc_ci.paths.on_sys_path`, itself loaded by file: importing it by name would already need the hop (test_canonical_sys_path_hop)."""
-    import importlib.util  # noqa: PLC0415 - only this lookup needs it
 
     ci_root = pathlib.Path(__file__).resolve().parents[2]
     spec = importlib.util.spec_from_file_location(
@@ -336,13 +336,12 @@ class GhFetcher:
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ARG002
+    def redirect_request(self, _req, _fp, _code, _msg, _headers, _newurl):
         return None
 
 
 def _gh_api_base():
     """WK_GH_API_BASE from the literal registry. Loaded by file because this module is itself loaded by path from ci-trace, which puts no `.ci` on sys.path."""
-    import importlib.util  # noqa: PLC0415 - only this lookup needs it
 
     path = pathlib.Path(__file__).resolve().parents[1] / "well_known.py"
     spec = importlib.util.spec_from_file_location("rediacc_ci_ci_diagnose_well_known", path)

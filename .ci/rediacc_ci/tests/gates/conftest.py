@@ -18,7 +18,7 @@ _OUTCOME = pytest.StashKey[str]()
 
 
 @pytest.hookimpl(wrapper=True)
-def pytest_runtest_makereport(item, call):  # noqa: ARG001
+def pytest_runtest_makereport(item):
     report = yield
     if report.when == "call":
         item.stash[_OUTCOME] = report.outcome

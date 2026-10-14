@@ -685,7 +685,7 @@ def harvest(branch, event, limit):
     return run_ids, rows
 
 
-def refresh(root, baseline_path, workflow_dir, branch, event, limit):  # noqa: ARG001 -- `root` is the call shape the gate tests drive
+def refresh(baseline_path, workflow_dir, branch, event, limit):
     """Rewrite the baseline from harvested annotations. Network lives HERE."""
     # BEFORE the network, and before anything is written: a file whose format this gate cannot read is a file it must not merge into either.
     try:
@@ -788,7 +788,7 @@ def main(argv=None):
         return 1
 
     if args.refresh:
-        return refresh(root, baseline_path, workflow_dir, args.branch, args.event, args.runs)
+        return refresh(baseline_path, workflow_dir, args.branch, args.event, args.runs)
 
     try:
         baseline = load_baseline(baseline_path)

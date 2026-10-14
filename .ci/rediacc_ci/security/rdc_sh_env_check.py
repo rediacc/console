@@ -362,7 +362,7 @@ def layer_two(tally: Tally, fix: pathlib.Path, rdc_sh: pathlib.Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin takes no arguments
+def main(_argv: list[str]) -> int:
     rdc_sh = paths.repo_root() / "rdc.sh"
     if not rdc_sh.is_file():
         print("FAIL: rdc.sh not found at %s" % rdc_sh, file=sys.stderr, flush=True)
