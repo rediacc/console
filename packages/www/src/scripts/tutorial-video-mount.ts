@@ -59,6 +59,18 @@ function parseSources(raw: string | undefined): Record<string, SourceSet> | unde
   }
 }
 
+export async function mountPlayers(els: HTMLElement[]) {
+  const containers = els;
+  if (containers.length === 0) return;
+
+  // Both in one tick: the stylesheet is a quarter of the component chunk's size, so it never lengthens the critical path, and awaiting it means the first frame of player DOM is already styled rather than merely usually styled.
+  const [, { default: TutorialVideoPlayer }] = await Promise.all([
+    ensurePlayerStyles(),
+    import('../components/TutorialVideoPlayer'),
+  ]);
+  for (const el of containers) mountPlayer(el, TutorialVideoPlayer);
+}
+
 function mountPlayer(
   el: HTMLElement,
   TutorialVideoPlayer: typeof import('../components/TutorialVideoPlayer').default
@@ -93,16 +105,4 @@ function mountPlayer(
       sources,
     })
   );
-}
-
-export async function mountPlayers(els: HTMLElement[]) {
-  const containers = els;
-  if (containers.length === 0) return;
-
-  // Both in one tick: the stylesheet is a quarter of the component chunk's size, so it never lengthens the critical path, and awaiting it means the first frame of player DOM is already styled rather than merely usually styled.
-  const [, { default: TutorialVideoPlayer }] = await Promise.all([
-    ensurePlayerStyles(),
-    import('../components/TutorialVideoPlayer'),
-  ]);
-  for (const el of containers) mountPlayer(el, TutorialVideoPlayer);
 }

@@ -774,9 +774,7 @@
       }
     },
     {
-      "includes": [
-        "scripts/gates/check-docs-untranslated-text.ts"
-      ],
+      "includes": ["scripts/gates/check-docs-untranslated-text.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -786,9 +784,7 @@
       }
     },
     {
-      "includes": [
-        "eslint-rules/i18n/shared/key-extractor.js"
-      ],
+      "includes": ["eslint-rules/i18n/shared/key-extractor.js"],
       "linter": {
         "rules": {
           "suspicious": {
