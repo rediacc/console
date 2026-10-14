@@ -252,10 +252,11 @@ def _bypassing_go_builds(text: str) -> list[str]:
     code = "\n".join(ln for ln in outside.splitlines() if not ln.lstrip().startswith("#"))
     joined = re.sub(r"\\\n\s*", " ", code)
     # `go`, `/usr/local/go/bin/go`, `"go"`, `'go'`, `$(go ...)`, `` `go ...` ``, then `build`.
-    # A global flag and its value may sit between `go` and the verb: `go -C "$dir" build`.
+    # Global flags may sit between `go` and the verb: `-C <dir>` with any value spelling (`"$(pwd)"`, `$(pwd)`, `=/x`), or a bare flag. Only flags are stepped over, so a verb's own value (`go -C "$d" test -tags build`) never reads as the verb.
     go_build = re.compile(
         r"""(?:^|[\s;&|(`])["']?(?:[^\s;&|()`"']*/)?go["']?"""
-        r"""(?:\s+-[^\s;&|()`]*(?:\s+[^\s;&|()`]+)*?)?\s+["']?build\b"""
+        r"""(?:\s+(?:-C(?:=|\s+)(?:"[^"]*"|'[^']*'|[^\s;&|]+)|-[A-Za-z][^\s;&|()`"']*))*"""
+        r"""\s+["']?build\b"""
     )
     return [ln for ln in joined.splitlines() if go_build.search(ln)]
 
@@ -277,6 +278,8 @@ def _bypassing_go_builds(text: str) -> list[str]:
         "go -C=/x build ./cmd/renet",
         "go -C /x build ./cmd/renet",
         "GOFLAGS= go -C /x -v build ./cmd/renet",
+        'go -C "$(pwd)" build ./cmd/renet',
+        "go -C $(pwd) build ./cmd/renet",
     ],
 )
 def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
@@ -291,6 +294,8 @@ def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
         "go generate ./pkg/ebpf/...",
         "go version -m bin/renet",
         "go -C /x generate ./pkg/ebpf/...",
+        'go -C "$dir" test -tags build ./...',
+        "go test -tags build ./...",
         '_go_build() (\n    go build "$@"\n)',
     ],
 )
