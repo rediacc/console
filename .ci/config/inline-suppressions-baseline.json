@@ -178,33 +178,14 @@
   ".ci/rediacc_ci/setup/tools.py": {
    "type-ignore arg-type": 1
   },
-  ".ci/rediacc_ci/tests/differential.py": {
-   "noqa PLC0415": 4
-  },
   ".ci/rediacc_ci/tests/gates/harness.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_agent_session_archival.py": {
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": {
-   "noqa PLC0415": 7
+   "noqa PLC0415": 2
   },
   ".ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py": {
    "type-ignore attr-defined": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_incremental_receipt.py": {
-   "noqa E402": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_plan_citations.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_plan_deps.py": {
-   "noqa E402": 1,
-   "noqa PLC0415": 2
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_trap_registry.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/tests/regolden.py": {
    "noqa PLC0415": 2
@@ -213,21 +194,14 @@
    "noqa PLC0415": 1,
    "type-ignore arg-type": 2
   },
-  ".ci/rediacc_ci/tests/test_build_pkg_repo.py": {
-   "noqa PLC0415": 1,
-   "type-ignore assignment": 2
-  },
   ".ci/rediacc_ci/tests/test_ci_cancel_older_runs.py": {
    "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_ci_diagnose.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/tests/test_ci_dispatch_watchdog.py": {
    "type-ignore arg-type": 2
   },
   ".ci/rediacc_ci/tests/test_ci_github_status.py": {
-   "noqa PLC0415": 5
+   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/tests/test_ci_initialize.py": {
    "type-ignore arg-type": 2
@@ -236,14 +210,8 @@
    "type-ignore arg-type": 2,
    "type-ignore attr-defined": 7
   },
-  ".ci/rediacc_ci/tests/test_core_platform.py": {
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/tests/test_core_release_age.py": {
    "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_deploy_verify_stable_endpoints.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py": {
    "type-ignore attr-defined": 5
@@ -253,9 +221,6 @@
   },
   ".ci/rediacc_ci/tests/test_drills_lib.py": {
    "type-ignore method-assign": 6
-  },
-  ".ci/rediacc_ci/tests/test_gate_ledger.py": {
-   "noqa PLC0415": 6
   },
   ".ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py": {
    "type-ignore arg-type": 1
@@ -306,9 +271,6 @@
   ".ci/rediacc_ci/tests/test_proxies_unit_tests.py": {
    "type-ignore call-overload": 6
   },
-  ".ci/rediacc_ci/tests/test_prsignals_pins.py": {
-   "noqa E402": 2
-  },
   ".ci/rediacc_ci/tests/test_quality_agent_session_archival.py": {
    "type-ignore arg-type": 1
   },
@@ -324,23 +286,11 @@
   ".ci/rediacc_ci/tests/test_quality_staging_tag_guard.py": {
    "type-ignore arg-type": 1
   },
-  ".ci/rediacc_ci/tests/test_review_clean_ledger.py": {
-   "noqa E402": 1
-  },
-  ".ci/rediacc_ci/tests/test_review_review_table.py": {
-   "noqa E402": 1
-  },
   ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
    "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/tests/test_setup_tools.py": {
    "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_tree_tripwire.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/tests/test_twin_goldens.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/xdist_groups.py": {
    "noqa PLC0415": 1

@@ -13,6 +13,7 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.gates.test_gate_plan_folders import _force_digit_prefix
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_citations.py")
 
@@ -165,7 +166,6 @@ def test_the_exclusion_is_scoped_to_the_moved_plan(gate, tmp_path):
 
 def _digit_cited_plan(tmp_path, line: str) -> tuple[pathlib.Path, str]:
     """A plan committed at a base, then `line` added under its box. Returns (root, base). `{d9}` in `line` becomes the 9-character, ALL-DIGIT abbreviation of a real commit on this history (re-dated until it is one, the shape #e9852315 drew by chance)."""
-    from rediacc_ci.tests.gates.test_gate_plan_folders import _force_digit_prefix  # noqa: PLC0415
 
     root = _init(tmp_path)
     _write(root, "agent/PLAN-digits.md", "# PLAN: digits\nStatus: in-progress\n\n- [ ] T1 a box\n")

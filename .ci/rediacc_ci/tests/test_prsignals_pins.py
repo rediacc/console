@@ -9,14 +9,12 @@ import pathlib
 import re
 
 import pytest
+import wl_prreview
+import wl_prsignals as S
 
 from rediacc_ci import paths
 from rediacc_ci.core import review_budget
 from rediacc_ci.review import claude_review_gate, pr_labels, review_status, review_table
-
-paths.on_sys_path(paths.hooks_stop_dir())
-import wl_prreview  # noqa: E402
-import wl_prsignals as S  # noqa: E402
 
 HEAD = "4d3b950c524781f7854ae64e8f9b186c2e334737"
 OTHER = "a0f482ca8" + "0" * 31

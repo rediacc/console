@@ -20,6 +20,7 @@ EVERY REFUSAL CASE HAS ITS MIRROR: the same fixture with the one refused fact ch
 """
 
 import datetime
+import json as _json
 import pathlib
 import shutil
 import sys
@@ -419,8 +420,6 @@ def seed_reviews(
 
 
 def _s2_gate(root, bindir, merged, *argv, ci=False, with_gh=True, raw=""):
-    import json as _json  # noqa: PLC0415
-
     path = "%s:%s" % (bindir, "/usr/bin:/bin") if with_gh else "/usr/bin:/bin"
     return harness.run(
         [sys.executable, str(GATE), *argv],

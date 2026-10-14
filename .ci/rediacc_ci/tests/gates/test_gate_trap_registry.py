@@ -28,6 +28,7 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.quality import plan_lifecycle
+from rediacc_ci.quality import trap_registry as T
 from rediacc_ci.quality import trap_registry as registry_mod
 from rediacc_ci.tests.gates import harness
 
@@ -435,7 +436,6 @@ def test_the_real_corpus_is_over_its_own_floor(gate):
 
 def test_a_guard_the_dispatcher_globs_is_live():
     """#ac65ada7: settings.json -> chain-head.sh -> dispatch.py -> `guards.stems()` is three hops and names no guard file, so `file:` on a live guard was rejected. A guard the dispatcher admits is live; a per-guard test harness beside it is not."""
-    from rediacc_ci.quality import trap_registry as T  # noqa: PLC0415
 
     registry = T.Registry(T.resolve_seams(paths.repo_root(), env={}))
     assert registry.file_is_live(".claude/rediacc_hooks/guards/block_raw_ci_read.py")

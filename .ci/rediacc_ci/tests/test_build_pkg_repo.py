@@ -40,10 +40,12 @@ the TRACKED files would point them at the real repository's `.ci/keys/`.
 """
 
 import gzip
+import os
 import pathlib
 import re
 import shutil
 import subprocess
+import typing
 
 import pytest
 
@@ -575,8 +577,8 @@ def _assert_agree(old: dict[str, object], new: dict[str, object]) -> None:
             old[field],
             new[field],
         )
-    old_art: dict[str, object] = old["artifacts"]  # type: ignore[assignment]
-    new_art: dict[str, object] = new["artifacts"]  # type: ignore[assignment]
+    old_art = typing.cast("dict[str, object]", old["artifacts"])
+    new_art = typing.cast("dict[str, object]", new["artifacts"])
     only_old = sorted(set(old_art) - set(new_art))
     only_new = sorted(set(new_art) - set(old_art))
     assert not only_old, "paths the twin wrote and the port did not: %r" % (only_old,)
@@ -861,8 +863,6 @@ def test_source_common_exports_what_sourcing_the_library_would(monkeypatch):
     monkeypatch.delenv("CI_ARCH", raising=False)
     monkeypatch.delenv("CI_TEMP", raising=False)
     build_pkg_repo.source_common()
-
-    import os  # noqa: PLC0415 -- read back the same way the children would
 
     expected = [common.detect_os(), common.detect_arch()]
     assert [os.environ["CI_OS"], os.environ["CI_ARCH"]] == expected, expected

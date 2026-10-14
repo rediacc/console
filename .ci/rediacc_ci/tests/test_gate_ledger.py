@@ -7,19 +7,23 @@ NO NETWORK and NO REAL LEDGER: every ledger lives under `tmp_path`, `fold_ci` is
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import multiprocessing
 import os
 import pathlib
+import re
 import sys
 import threading
 import time
 from typing import Any
 
 import pytest
+import wl_store
 
 from rediacc_ci import gitx, paths
+from rediacc_ci.ci import budget_report, gate_model
 from rediacc_ci.ci import gate_ledger as L
 from rediacc_ci.core import jsonl_append
 
@@ -130,16 +134,12 @@ def test_control_without_the_heal_the_next_line_is_lost(tmp_path: pathlib.Path) 
 
 
 def test_wl_store_appends_through_the_lifted_helper(tmp_path: pathlib.Path) -> None:
-    paths.on_sys_path(paths.hooks_stop_dir())
-    import wl_store  # noqa: PLC0415 -- the hook module, on its own path
-
     p = tmp_path / "e.jsonl"
     p.write_bytes(b"{")
     wl_store._append_lines(str(p), str(tmp_path / "e.lock"), [{"ev": 1}])
     assert p.read_text() == '{\n{"ev":1}\n'
     mod = wl_store._jsonl_append()
     assert pathlib.Path(mod.__file__).resolve() == pathlib.Path(jsonl_append.__file__).resolve()
-    import ast  # noqa: PLC0415
 
     tree = ast.parse(pathlib.Path(wl_store.__file__).read_text(encoding="utf-8"))
     fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_append_lines")
@@ -512,8 +512,6 @@ def _job(
 
 
 def test_ci_rows_attribution() -> None:
-    import re  # noqa: PLC0415
-
     steps = {
         "x:solo": ("j", "Solo"),
         "x:s1": ("j", "Shared"),
@@ -556,10 +554,6 @@ def test_ci_rows_attribution() -> None:
 
 
 def test_fold_ci_is_idempotent_and_unknown_is_a_failure(tmp_path: pathlib.Path) -> None:
-    import re  # noqa: PLC0415
-
-    from rediacc_ci.ci import budget_report  # noqa: PLC0415
-
     root = paths.repo_root()
     patterns = budget_report.lane_display_patterns(root)
     picked = None
@@ -881,7 +875,6 @@ def test_finding_keys_reads_the_runner_alphabet_only() -> None:
 
 def test_the_pytest_host_is_derived_from_the_key_emitter() -> None:
     """The step that runs the suites is the one whose leaves include the module printing `pytest-fail:` keys. CONTROL: matching on path coverage instead finds several gates whose globs merely contain the tests directory, and each would judge every test gate from its own unrelated step."""
-    from rediacc_ci.ci import gate_model  # noqa: PLC0415
 
     root = paths.repo_root()
     steps, tests = L.lock_ci(root)

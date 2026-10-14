@@ -19,6 +19,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import bash_dialect
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import regolden
 
@@ -232,7 +233,6 @@ def test_bash_integer_phrase_follows_the_comparing_bash() -> None:
 
 def test_golden_answer_unfolds_for_the_host_reading_it(monkeypatch) -> None:
     """End to end through the real reader and a real golden: the recorder's identity is a token on disk, and the reader puts THIS host's back. Anti-vacuity: the corpus must actually carry a token, or the rule is exercised by nothing real."""
-    from rediacc_ci.core import bash_dialect  # noqa: PLC0415
 
     carried = [p for p in GOLDENS if diff.USER_MARK in p.read_text(encoding="utf-8")]
     assert carried, "no twin golden carries %s; the ls rule guards nothing" % diff.USER_MARK
