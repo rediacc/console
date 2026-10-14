@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { processAlive } from './exec';
 import { GATES, type GateSpec } from './manifest';
 import { type CoreBudget, type GateCost, planAdmission } from './pool';
 import { type ModelV1, planRanking, type RankingDecision, WALL_SLACK_MS } from './rank';
@@ -498,13 +499,7 @@ export async function learnedSelftest(): Promise<{
       const longPid = Number(
         fs.existsSync(stopped.pidFile) ? fs.readFileSync(stopped.pidFile, 'utf8').trim() : 'NaN'
       );
-      let longAlive = false;
-      try {
-        process.kill(longPid, 0);
-        longAlive = true;
-      } catch {
-        longAlive = false;
-      }
+      const longAlive = processAlive(longPid);
       check(
         /^ranking: ON /m.test(stopped.out),
         `T8: the fixture model must rank the run, output: ${stopped.out.slice(0, 600)}`

@@ -10,7 +10,8 @@
  *
  * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { KILL_GRACE_MS } from './gate-timeout';
@@ -130,6 +131,35 @@ export function liveGates(now: number = Date.now()): { id: string; ms: number; p
   return [...LIVE.values()]
     .sort((a, b) => a.started - b.started)
     .map((g) => ({ id: g.id, ms: now - g.started, pgid: g.pgid }));
+}
+
+/**
+ * Whether a process is still running, which is not what `kill(pid, 0)` answers: that succeeds for a ZOMBIE, a process that has exited but whose parent has not yet waited on it. A gate killed with its group is orphaned and reparented to the nearest subreaper (an agent harness, a supervisor, a container init), and that reaper may wait only every second or so, or never; the pipes the gate held are already closed by then, so the runner exits and a caller probing the pid sees a "live" process that is dead. Measured with a reaper that waits every 1.5 s: the runner selftest's "the timed-out gate must be dead" failed although the gate was long gone, and passed again under an init that reaps at once. A zombie counts as gone. Linux reads the state from /proc; elsewhere `ps` does.
+ */
+export function processAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM';
+  }
+  let state = '';
+  try {
+    const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+    state = stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3);
+  } catch {
+    try {
+      state = execFileSync('ps', ['-o', 'stat=', '-p', String(pid)], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
+        .trim()
+        .slice(0, 1);
+    } catch {
+      state = '';
+    }
+  }
+  return state !== 'Z';
 }
 
 /** Signal one gate's whole process group; false when it is already gone. */
