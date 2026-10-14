@@ -565,8 +565,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-state-md-session-isolation.md` | compacted | 40 | 0 | 0 | 2556 |
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
-| `agent/plans/PLAN-stop-hook-effort-tuning.md` | approved | 32 | 7 | 0 | 7021 |
-| `agent/plans/PLAN-stop-hook-effort.md` | approved | 37 | 7 | 0 | 5876 |
+| `agent/plans/PLAN-stop-hook-effort-tuning.md` | approved | 33 | 7 | 0 | 7037 |
+| `agent/plans/PLAN-stop-hook-effort.md` | approved | 44 | 0 | 7 | 7484 |
 | `agent/plans/PLAN-stop-hook-focus-mode.md` | draft | 354 | 0 | 8 | 36634 |
 | `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 179 | 1 | 14 | 42868 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |

@@ -78,7 +78,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 15 plans done, 160 of 184 boxes done (86%).
+Promoted: 11 of 15 plans done, 167 of 184 boxes done (90%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -95,7 +95,7 @@ Promoted: 10 of 15 plans done, 160 of 184 boxes done (86%).
 | 11 | PLAN-scope-mirrors.md | 11/11 | done |
 | 12 | PLAN-lessons-registry.md | 9/9 | done |
 | 13 | PLAN-inline-suppressions.md | 3/11 | 8 open |
-| 14 | PLAN-stop-hook-effort.md | 0/7 | 7 open |
+| 14 | PLAN-stop-hook-effort.md | 7/7 | done |
 | 15 | PLAN-stop-hook-effort-tuning.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 

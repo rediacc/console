@@ -2,6 +2,7 @@
 
 Status: approved. Operator 2026-10-14: "let's plan for it and then ask your questions for implementation options." <!-- style-ok -->
 Depends-On: PLAN-stop-hook-effort.md
+Owner: d778be9d
 Operator ask (2026-10-14, verbatim): "How we can make the "smart" mode smarter/auto-improved by the AI contextes like you each time? What do you think? I'm not asking for a specific task from you. I'm asking for all the sessions for the future contexes as well." <!-- style-ok -->
 Operator /ask answers (2026-10-14): tuner timing "what about at the end of each context when we detect the session is close to compaction (i.e. 85% is full?) So, we can use the context's experience to employ a sub-agent to improve/implement and test."; demotions "One /ask with the diff preview (Recommended)"; work signal "A commit or tick naming the item, within 3 stops (Recommended)"; promotions "Yes, auto-apply and report (Recommended)". <!-- style-ok -->
 Approach: clean break; the outcome ledger and the tuner are new, and nothing in the effort table changes without the rules below.
