@@ -420,6 +420,44 @@ const REQUIRES_JSX = new Set([
 // --------------------------------------------------------------------------- Helpers ---------------------------------------------------------------------------
 const err = (...args) => console.error(...args);
 
+// An absent or non-rule export is a named failure, not an undefined or null rule that every probe then reports as dead or crashes on.
+const assertRuleExport = (rule, modulePath, exportName) => {
+  if (
+    rule === undefined ||
+    rule === null ||
+    (typeof rule !== 'object' && typeof rule !== 'function')
+  )
+    throw new Error(`${modulePath} has no rule export '${exportName}'`);
+  return rule;
+};
+
+// The control for assertRuleExport, run on every gate run: each non-rule shape throws and both rule shapes pass, so a guard that stops refusing (or starts refusing a real rule) turns the gate red instead of letting every probe report a missing rule as dead.
+const ruleExportControlFailures = () => {
+  const failures = [];
+  for (const [label, value] of [
+    ['undefined', undefined],
+    ['null', null],
+    ['a number', 3],
+    ['a string', 'x'],
+  ]) {
+    try {
+      assertRuleExport(value, 'control.js', 'r');
+      failures.push(`a ${label} export was admitted as a rule`);
+    } catch {}
+  }
+  for (const [label, value] of [
+    ['an object', { create() {} }],
+    ['a function', () => ({})],
+  ]) {
+    try {
+      assertRuleExport(value, 'control.js', 'r');
+    } catch {
+      failures.push(`${label} rule export was refused`);
+    }
+  }
+  return failures;
+};
+
 /**
  * The universe used to come from walking eslint.config.js's `plugins`/`rules`
  * blocks (last-match-wins across 6 modules). It now comes from
@@ -794,6 +832,12 @@ async function main() {
     await sourceRulesUniverse();
   const host = await import(path.join(ROOT, 'scripts/lib/rule-host.ts'));
 
+  const exportControl = ruleExportControlFailures();
+  if (exportControl.length > 0) {
+    err(`CONTROL FAILED: assertRuleExport: ${exportControl.join('; ')}`);
+    return 1;
+  }
+
   if (!Array.isArray(RULE_IDS) || !Array.isArray(RULE_INSTANCES)) {
     err(
       'VACUOUS INPUT: scripts/data/source-rules.ts did not export RULE_IDS/RULE_INSTANCES arrays'
@@ -830,14 +874,7 @@ async function main() {
     const key = `${modulePath}#${exportName}`;
     if (!rulesByModule.has(key)) {
       const rule = (await import(path.join(ROOT, modulePath)))[exportName];
-      // An absent or non-rule export is a named failure, not an undefined or null rule that every probe then reports as dead or crashes on.
-      if (
-        rule === undefined ||
-        rule === null ||
-        (typeof rule !== 'object' && typeof rule !== 'function')
-      )
-        throw new Error(`${modulePath} has no rule export '${exportName}'`);
-      rulesByModule.set(key, rule);
+      rulesByModule.set(key, assertRuleExport(rule, modulePath, exportName));
     }
     return rulesByModule.get(key);
   };
