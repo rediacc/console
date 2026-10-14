@@ -1059,6 +1059,7 @@ REAL_JOB = {
     "check:ci-real-provider-pins": "quality-go",
     "check:ci-go-deps": "quality-go",
     "check:actions": "quality-code",
+    "check:ci-pin-freshness": "quality-code",
     "check:ci-external-links": "quality-content",
     "check:ci-dkim-notify": "quality-content",
     "check:deps": "quality-content",
@@ -1244,9 +1245,14 @@ def test_the_real_workflow_holds_every_external_gate_hard(tmp_path: pathlib.Path
             "check:deps",
         ),
         (
-            " no-external-quality check:actions\n",
-            " no-external-quality check:ci-gate-bind\n",
+            " no-external-quality check:actions check:ci-pin-freshness\n",
+            " no-external-quality check:ci-pin-freshness\n",
             "check:actions",
+        ),
+        (
+            " no-external-quality check:actions check:ci-pin-freshness\n",
+            " no-external-quality check:actions\n",
+            "check:ci-pin-freshness",
         ),
     ],
 )

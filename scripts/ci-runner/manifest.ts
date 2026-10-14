@@ -4472,6 +4472,21 @@ export const GATES: readonly GateSpec[] = [
       step: 'Action freshness',
     },
   },
+  {
+    id: 'check:ci-pin-freshness',
+    env: {
+      GITHUB_TOKEN: '${{ github.token }}',
+    },
+    run: 'npm run check:ci-pin-freshness',
+    gate: true,
+    leaves: ['scripts/gates/check-pin-freshness.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Pin upstream freshness',
+    },
+  },
   // >>> gen-manifest: region 43
   {
     id: 'check:ci-jq-boolean-default',

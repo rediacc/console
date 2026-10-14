@@ -4812,6 +4812,23 @@
     }
   },
   {
+    "id": "check:ci-pin-freshness",
+    "env": {
+      "GITHUB_TOKEN": "${{ github.token }}"
+    },
+    "run": "npm run check:ci-pin-freshness",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-pin-freshness.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Pin upstream freshness"
+    }
+  },
+  {
     "id": "check:ci-jq-boolean-default",
     "run": "npm run check:ci-jq-boolean-default",
     "gate": true,

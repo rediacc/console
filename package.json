@@ -112,6 +112,7 @@
     "check:ci-swallowed-failures": ".ci/scripts/quality/check_swallowed_failures.py",
     "check:ci-ceph-image-pin": "tsx scripts/gates/check-ceph-image-pin.ts",
     "check:ci-pin-registry": "tsx scripts/gates/check-pin-registry.ts --selftest && tsx scripts/gates/check-pin-registry.ts",
+    "check:ci-pin-freshness": "tsx scripts/gates/check-pin-freshness.ts --selftest && tsx scripts/gates/check-pin-freshness.ts",
     "check:ci-naturalization-model-policy": "tsx scripts/gates/check-naturalization-model-policy.ts",
     "check:ci-script-exec-bit": ".ci/scripts/quality/check_script_exec_bit.py",
     "check:env-credential-drift": "tsx scripts/gates/check-env-credential-drift.ts --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile credential-drift -- tsx scripts/gates/check-env-credential-drift.ts",

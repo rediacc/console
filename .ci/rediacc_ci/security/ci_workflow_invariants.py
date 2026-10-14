@@ -64,7 +64,7 @@ THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a f
     a preflight step precedes every `cleanup_versions` step in its job, and
     neither carries an `if:` that would run the cleanup past a red preflight.
 
-THE EXTERNAL-GATE PINS (operator rulings 2026-10-13, "Everything fails closed, nightly included", and 2026-10-14, "Extend to all seven") ride the same phase and read a fifth file, `ci-quality.yml` (`QUALITY_WORKFLOW_FILE` overrides it). Every gate that asks a host outside the repository (`UPSTREAM_GATES`: the three pin freshness gates, actions, external links, DKIM, Go dependencies and npm dependencies) is hard on a pull request, on the nightly and on a dispatch.
+THE EXTERNAL-GATE PINS (operator rulings 2026-10-13, "Everything fails closed, nightly included", and 2026-10-14, "Extend to all seven") ride the same phase and read a fifth file, `ci-quality.yml` (`QUALITY_WORKFLOW_FILE` overrides it). Every gate that asks a host outside the repository (`UPSTREAM_GATES`: the four pin freshness gates, actions, external links, DKIM, Go dependencies and npm dependencies) is hard on a pull request, on the nightly and on a dispatch.
 `analyse_upstream_gates` refuses: a gate with no step; an `if:` other than the lane guard plus the label hold (a gate-bind shard conjunct `matrix.shard == N` is allowed, since it cannot tell one cadence from another); a job whose announcer does not name the gate under `no-external-quality`; and a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
 
 WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
@@ -804,6 +804,7 @@ UPSTREAM_GATES = (
     "check:ci-devcontainer-pins",
     "check:ci-real-provider-pins",
     "check:actions",
+    "check:ci-pin-freshness",
     "check:ci-external-links",
     "check:ci-dkim-notify",
     "check:ci-go-deps",

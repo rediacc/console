@@ -215,6 +215,7 @@ export function planLeafSites(
         : rewriteRegexSite(cur, site, value);
     texts.set(k, { p: { repo: site.repo, file: site.file }, text: next });
     changes.push(`${k}: ${site.role} ${was[0]} -> ${value}${n > 1 ? ` (${n} lines)` : ''}`);
+    // tree-write: safe the partial-write mutant, set only under a PINS_ROOT and PINS_FIXTURE fixture tree (pins.ts makeWorld refuses it otherwise), so ctx.root is that fixture
     if (ctx.mutant === 'partial-write') fs.writeFileSync(absOf(ctx.root, site), next);
   }
   return {
