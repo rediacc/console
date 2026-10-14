@@ -4071,6 +4071,25 @@ async function selftest(): Promise<void> {
       rmImported.rootManifest.includes('"gizmo": "^1.0.0"'),
     rmImported.output
   );
+  for (const [where, file] of [
+    ['scripts/', 'scripts/tool.ts'],
+    ['a tests directory', 'packages/cli/tests/use.test.ts'],
+  ] as const) {
+    const deep = runFixture(
+      rmSpec({
+        files: { 'knip.jsonc': rmKnip, [file]: "const g = require('gizmo/sub');\nexport { g };\n" },
+      }),
+      'upgrade',
+      ['remove', 'gizmo']
+    );
+    expect(
+      `remove: a package still imported from ${where} (outside src/ and the top level) is refused naming the file`,
+      deep.status === 1 &&
+        deep.output.includes(`still imported by ${file}`) &&
+        deep.installs.length === 0,
+      deep.output
+    );
+  }
   const rmNone = runFixture(rmSpec(), 'upgrade', ['remove', 'ghost']);
   expect(
     'remove: CONTROL: a package no manifest declares is refused',

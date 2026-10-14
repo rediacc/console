@@ -539,11 +539,19 @@ function importersOf(pkg: string, dirs: string[]): string[] {
   const esc = pkg.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
   const re = new RegExp(`(?:from|import|require\\()\\s*\\(?\\s*['"]${esc}(?:/[^'"]*)?['"]`);
   const out: string[] = [];
+  // Every JS and TS source under the declaring directory, at any depth: an importer under scripts/, tests/ or e2e/ keeps the package in use as much as one under src/. Build output and dependency trees are not sources.
   for (const d of dirs)
-    for (const f of globSync(['src/**/*.{ts,tsx,js,jsx,mjs,cjs}', '*.{ts,js,mjs,cjs}'], {
+    for (const f of globSync(['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'], {
       cwd: d,
       posix: true,
-      ignore: ['**/node_modules/**', '**/dist/**'],
+      ignore: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/build/**',
+        '**/coverage/**',
+        '**/.astro/**',
+        '.ci/cache/**',
+      ],
     }).sort())
       if (re.test(fs.readFileSync(path.join(d, f), 'utf8'))) out.push(path.join(d, f));
   return out;
