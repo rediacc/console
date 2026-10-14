@@ -64,11 +64,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 11 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-biome-only-lint.md -- 10 of 29 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-biome-only-lint.md -- 11 of 29 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 548 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a8161ddd224b9af16, worker:a44d5bdf0587508ad, worker:aaaa06f7673b08e43, worker:a143c81a24688893d.
-- Leased items: 11: #3993c728 (worker:a44d5bdf0587508ad, d778be9d), #3c36e4b5 (worker:a44d5bdf0587508ad, d778be9d), #6361fc5b (worker:a44d5bdf0587508ad, d778be9d), #73ad9627 (worker:aaaa06f7673b08e43, d778be9d), #89f0238f (worker:a8161ddd224b9af16, d778be9d), #bd51855a (worker:a44d5bdf0587508ad, d778be9d), #c275adc4 (worker:a44d5bdf0587508ad, d778be9d), #d52ad5bb (worker:a44d5bdf0587508ad, d778be9d), #e4caba69 (worker:a143c81a24688893d, d778be9d), #f147e3e5 (worker:a44d5bdf0587508ad, d778be9d), #fe2d3ad2 (worker:a44d5bdf0587508ad, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 554 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:abb8c06191c213fb8, worker:a7b4270c8fa0716b4.
+- Leased items: 13: #3993c728 (worker:a7b4270c8fa0716b4, d778be9d), #3c36e4b5 (worker:a7b4270c8fa0716b4, d778be9d), #6361fc5b (worker:a7b4270c8fa0716b4, d778be9d), #6f1c311f (worker:abb8c06191c213fb8, d778be9d), #97a7ced2 (worker:bwunbekjr, d778be9d), #ad11a8df (worker:abb8c06191c213fb8, d778be9d), #bd51855a (worker:a7b4270c8fa0716b4, d778be9d), #c1627dfc (worker:abb8c06191c213fb8, d778be9d), #c275adc4 (worker:a7b4270c8fa0716b4, d778be9d), #d52ad5bb (worker:a7b4270c8fa0716b4, d778be9d), #e4caba69 (worker:bwunbekjr, d778be9d), #f147e3e5 (worker:a7b4270c8fa0716b4, d778be9d), and 1 more.
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
@@ -123,7 +123,7 @@ Promoted: 10 of 13 plans done, 159 of 170 boxes done (93%).
 10. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
 11. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
 12. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-13. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (11 of 29 boxes ticked)
+13. agent/plans/PLAN-biome-only-lint.md -- P3, draft, in progress (13 of 29 boxes ticked)
 14. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
 15. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 16. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
