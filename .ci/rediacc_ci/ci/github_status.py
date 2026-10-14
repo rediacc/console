@@ -143,8 +143,6 @@ def cache_path() -> pathlib.Path:
 
 def fetch_summary() -> bytes:
     """One GET of summary.json, bounded by `FETCH_TIMEOUT_S`. Raises on any failure; `read` turns that into a stale or unknown answer."""
-    # Imported here, not at the top: urllib.request costs ~50 ms to import, and every hook-side caller loads this module without ever fetching.
-
     req = urllib.request.Request(
         SUMMARY_URL,
         headers={"User-Agent": "rediacc-ci-github-status", "Accept": "application/json"},

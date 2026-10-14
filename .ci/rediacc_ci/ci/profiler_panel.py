@@ -103,6 +103,7 @@ def _gt(size: int, budget: str) -> bool:
 
 
 def main(_argv: list[str]) -> int:
+    """The twin ignores its arguments: every input arrives through the PROFILER_* environment."""
     sample_file = _env("PROFILER_SAMPLE_FILE")
     strict = _env("PROFILER_STRICT", "false")
     wall_s = _env("PROFILER_WALL_S", "0")

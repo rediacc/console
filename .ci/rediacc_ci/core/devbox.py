@@ -1606,7 +1606,6 @@ class Devbox:
         NEVER FAILS: it returns 0 whether the routes converge, the container stops, or the ceiling passes, because a slow but healthy service must not turn `devbox_up` into a failure. Past `DEVBOX_READY_NOMINAL_S` (90) it says so once and keeps going; at `DEVBOX_READY_CEILING_S` (300) it stops waiting.
         A spinner on a terminal (stderr a tty, NO_COLOR unset, not CI); otherwise one plain line every ten seconds. `sleep 1` is the external the transcript records.
         """
-
         cid = self._opt(argv, 0)
         if not cid:
             status, cid = self.sub(self.container_id)

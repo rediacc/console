@@ -24,9 +24,6 @@ from rediacc_ci.tests.gates import harness
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_housekeeping.py")
 CFG = paths.from_root(".ci", "config", "plan-lifecycle.json")
 
-# The filler corpus is IDENTICAL in every case -- 32 plans committed today, there only to clear the gate's 30-plan floor -- so it is built ONCE and copied. Doing it per case cost a git init, 32 writes and a commit thirteen times over. Module-scoped rather than a pytest fixture: several cases nest it inside their OWN tmp_path (`make_repo` copies it under a per-case root), and a
-# plain lazy path keeps that copy step identical to the bash original's `cp -r "$TEMPLATE" "$d"`.
-
 
 def _run(*argv, cwd=None, env=None):
     result = harness.run(list(argv), cwd=cwd, env=env)
@@ -35,6 +32,8 @@ def _run(*argv, cwd=None, env=None):
     return result
 
 
+# The filler corpus is IDENTICAL in every case -- 32 plans committed today, there only to clear the gate's 30-plan floor -- so it is built ONCE and copied. Doing it per case cost a git init, 32 writes and a commit thirteen times over. Module-scoped rather than a pytest fixture: several cases nest it inside their OWN tmp_path (`make_repo` copies it under a per-case root), and a
+# plain lazy path keeps that copy step identical to the bash original's `cp -r "$TEMPLATE" "$d"`.
 @functools.cache
 def _template():
     # Module-cached, so no single test owns it; a pid-stamped run dir is removed at exit and swept by the next run when this one was killed first.

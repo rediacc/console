@@ -113,7 +113,7 @@ IMAGES_GREP = "(rediacc|REPOSITORY)"
 # `jq 'del(.auths["ghcr.io"])'`, verbatim.
 JQ_DEL_GHCR = 'del(.auths["ghcr.io"])'
 
-# S105 fires on the NAME, not the value: it sees `TOKEN` and calls the string a hardcoded password. It is the twin's error TEXT (line 30), which has to stay byte-identical, and there is nothing secret in it. Same suppression, same reason, as `release_key_canonical.py:149` and `test_build_canonicalise_gpg_key.py:49`.
+# The twin's error TEXT (line 30), which has to stay byte-identical; there is nothing secret in it.
 MISSING_AUTH_MSG = "GITHUB_TOKEN environment variable is required"
 MISSING_ACTOR = "GITHUB_ACTOR environment variable is required"
 
