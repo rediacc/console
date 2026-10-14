@@ -63,6 +63,7 @@ THAT NUMBER IS CHECKED, not typed and left. A control parses this module's own A
 from __future__ import annotations
 
 import ast
+import fnmatch
 import json
 import os
 import pathlib
@@ -125,7 +126,7 @@ GLOB_ROOTS = {
             "the same _TAILED_ROOTS glob as .claude/hooks/stop/"
         ),
     ),
-    "agent/": (
+    "agent/*/effort-tune/*/judge-rules/": (
         ("test_judge_rule_",),
         (
             "written by .claude/hooks/stop/wl_effort_tune.py (rules_dir = out / "
@@ -407,13 +408,21 @@ def import_targets(source: str, importer: str, pyset: frozenset[str]) -> set[str
 def glob_discovered(paths: list[str], root: pathlib.Path, roots: dict | None = None) -> set[str]:
     out: set[str] = set()
     for groot, (prefixes, _reason) in (GLOB_ROOTS if roots is None else roots).items():
-        if not (root / groot).is_dir():
+        # A root with a `*` names a directory shape (fnmatch on the file's own directory, `*` one segment), so it admits only that shape rather than everything beneath its first literal segment.
+        shaped = "*" in groot
+        if not (any(p.is_dir() for p in root.glob(groot)) if shaped else (root / groot).is_dir()):
             raise RefusalError(
                 "declared glob root %s does not exist; the declaration is stale and the "
                 "files it vouched for would now be reported dead" % groot
             )
         for rel in paths:
-            if rel.startswith(groot) and os.path.basename(rel).startswith(prefixes):
+            here = os.path.dirname(rel) + "/"
+            inside = (
+                fnmatch.fnmatchcase(here, groot) and here.count("/") == groot.count("/")
+                if shaped
+                else rel.startswith(groot)
+            )
+            if inside and os.path.basename(rel).startswith(prefixes):
                 out.add(rel)
     return out
 
@@ -877,6 +886,27 @@ def selftest(verbose: bool = False) -> int:
             ["g/other.py"],
         )
 
+        # A `*` root admits its directory shape only: not a deeper or shallower directory under the same first segment.
+        root = _fixture(
+            tmp / "glob-shape",
+            {
+                "a/s1/t/e1/r/test_x.py": "X = 1\n",
+                "a/test_x.py": "X = 1\n",
+                "a/s1/test_x.py": "X = 1\n",
+                "a/s1/t/e1/r/deep/test_x.py": "X = 1\n",
+            },
+        )
+        c.check(
+            "route glob: a `*` root admits its shape and nothing else under the same segment",
+            sorted(
+                f["file"]
+                for f in scan(
+                    root, glob_roots={"a/*/t/*/r/": (("test_",), "a reason")}, manual={}
+                ).findings
+            ),
+            ["a/s1/t/e1/r/deep/test_x.py", "a/s1/test_x.py", "a/test_x.py"],
+        )
+
         root = _fixture(tmp / "glob-gone", orphan)
         c.truthy(
             "a declared glob root that does not exist is a REFUSAL",
@@ -994,7 +1024,10 @@ def selftest(verbose: bool = False) -> int:
         here = paths.repo_root()
         for groot in GLOB_ROOTS:
             c.truthy(
-                "declared glob root %s exists in the real tree" % groot, (here / groot).is_dir()
+                "declared glob root %s exists in the real tree" % groot,
+                any(p.is_dir() for p in here.glob(groot))
+                if "*" in groot
+                else (here / groot).is_dir(),
             )
         for name in MANUAL_ENTRY_POINTS:
             c.truthy("exempt-by-name %s exists in the real tree" % name, (here / name).is_file())
