@@ -143,18 +143,14 @@ function writeVSCodeSettings(settings: Record<string, unknown>, settingsPath?: s
 const DEFAULT_DATASTORE_PATH = WK_DATASTORE_PATH;
 
 /**
- * Gets the server install path from environment or default
- * Matches Python CLI's use of REDIACC_DATASTORE_USER env var
+ * Gets the server install path: the given datastore path, else REDIACC_DATASTORE, else the default datastore.
+ * REDIACC_DATASTORE_USER names the universal user, never a path, so it is not read here.
  *
  * @param datastorePath - Optional override path
  * @returns Server install path
  */
-function getServerInstallPath(datastorePath?: string): string {
-  // Check environment variable first (matches Python behavior)
-  const envPath = process.env.REDIACC_DATASTORE_USER ?? process.env.REDIACC_DATASTORE;
-
-  // Use provided path, then env, then default
-  const basePath = datastorePath ?? envPath ?? DEFAULT_DATASTORE_PATH;
+export function getServerInstallPath(datastorePath?: string): string {
+  const basePath = datastorePath ?? process.env.REDIACC_DATASTORE ?? DEFAULT_DATASTORE_PATH;
 
   return `${basePath}/.vscode-server`;
 }
