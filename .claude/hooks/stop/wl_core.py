@@ -85,6 +85,17 @@ def parse_stamp(stamp):
     return None
 
 
+# A deferral whose DEFAULT cannot run before a given instant (a release-age window, a scheduled date) says so with `NOT-BEFORE:<ISO8601Z>`; its autonomy window does not close before then.
+NOT_BEFORE = re.compile(r"\bNOT-BEFORE:[ \t]*(\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?Z)")
+
+
+def not_before_pending(line):
+    """True while the line's latest NOT-BEFORE: instant is still in the future."""
+    stamps = NOT_BEFORE.findall(line or "")
+    when = parse_stamp(stamps[-1]) if stamps else None
+    return when is not None and utcnow() < when
+
+
 def stamp_age_min(stamp):
     when = parse_stamp(stamp)
     if when is None:

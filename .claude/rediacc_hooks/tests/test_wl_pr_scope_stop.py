@@ -336,6 +336,38 @@ def test_sc5_an_expired_default_outside_the_epic_still_blocks(wl):
     assert "defer-expired" in keys_of(wl, got), reason(got)[:1500]
 
 
+def _plant_aged_deferral(wl, text):
+    with wl.events.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "ev": "add",
+                    "id": "dq000002",
+                    "at": stamp(130),
+                    "by": wlfix.ME,
+                    "s": "?",
+                    "o": wlfix.ME,
+                    "t": text,
+                }
+            )
+            + "\n"
+        )
+
+
+def test_an_aged_default_held_by_a_future_not_before_is_not_demanded(wl):
+    loop_world(wl)
+    _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:2999-01-01T00:00Z DEFAULT: bump it")
+    got = run_stop(wl)
+    assert "defer-expired" not in keys_of(wl, got), reason(got)[:1500]
+
+
+def test_an_aged_default_whose_not_before_has_passed_is_demanded(wl):
+    loop_world(wl)
+    _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:2000-01-01T00:00Z DEFAULT: bump it")
+    got = run_stop(wl)
+    assert "defer-expired" in keys_of(wl, got), reason(got)[:1500]
+
+
 def test_sc5_a_dead_lease_outside_the_epic_still_blocks(wl):
     loop_world(wl)
     plant_dead_lease(wl, "eeee0005", "bdead0001")
