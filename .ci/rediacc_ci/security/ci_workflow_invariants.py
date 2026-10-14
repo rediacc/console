@@ -1065,10 +1065,27 @@ _PINS_APPLY_RE = re.compile(r"\bpins\s+--\s+apply-soaked\b")
 _PINS_WRITE_RE = re.compile(
     r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b|\bcurl\b[^\n]*\b(POST|PUT|PATCH|DELETE)\b"
 )
-# Any secret reaching the job (workflow or job `env:`, a reusable workflow's `secrets:`, a step's `with:` or `env:`). The workflow needs none, so the check does not judge which secret could write; the default GITHUB_TOKEN, read-only under `contents: read`, is the one exemption.
-_PINS_SECRET_RE = re.compile(r"\bsecrets\.(?!GITHUB_TOKEN\b)\w+")
-# The apply step publishes its exit code as the `rc` step output.
-_PINS_RC_OUT_RE = re.compile(r"\brc=[^\n]*\$GITHUB_OUTPUT\b")
+# Any reference to the secrets context outside the steps list or inside any step field (`run:` included): `secrets.NAME`, `secrets['NAME']`, or the whole context as a function argument such as `toJSON(secrets)`. The workflow needs no secret, so the check does not judge which one could write; the default GITHUB_TOKEN, read-only under `contents: read`, is the one exemption.
+_PINS_SECRET_RE = re.compile(r"\bsecrets(?:\.(?!GITHUB_TOKEN\b)\w+|\s*\[|\s*[),])")
+_PINS_RC_CAPTURE_RE = re.compile(r"^\s*rc=\$\?\s*$")
+_PINS_RC_OUT_RE = re.compile(r"""\brc=\$\{?rc\}?"?\s*>>\s*"?\$\{?GITHUB_OUTPUT\}?""")
+
+
+def _pins_publishes_rc(run: str) -> bool:
+    """True when the apply command's own exit status becomes the `rc` step output: the apply line has no `||` that could mask it, the next non-blank line is `rc=$?`, and a later line writes `rc=$rc` to $GITHUB_OUTPUT."""
+    lines = run.split("\n")
+    for i, line in enumerate(lines):
+        if not _PINS_APPLY_RE.search(line):
+            continue
+        if "||" in line:
+            return False
+        rest = [ln for ln in lines[i + 1 :] if ln.strip()]
+        return (
+            bool(rest)
+            and bool(_PINS_RC_CAPTURE_RE.match(rest[0]))
+            and any(_PINS_RC_OUT_RE.search(ln) for ln in rest[1:])
+        )
+    return False
 
 
 def _pins_red_if_re(step_id: str) -> re.Pattern[str]:
@@ -1114,35 +1131,31 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         out.append(("pins-soaked-permissions", "workflow level"))
     raw_jobs = doc.get("jobs")
     jobs: dict = raw_jobs if isinstance(raw_jobs, dict) else {}
-    if _PINS_SECRET_RE.search(_text(doc.get("env"))):
-        out.append(("pins-soaked-writes", "workflow env"))
+    if _PINS_SECRET_RE.search(_text({k: v for k, v in doc.items() if k != "jobs"})):
+        out.append(("pins-soaked-writes", "workflow level"))
     applies = uploads = reds = 0
     for jname, job in jobs.items():
         if not isinstance(job, dict):
             continue
-        if _PINS_SECRET_RE.search(_text(job.get("env"))):
-            out.append(("pins-soaked-writes", "job %s env" % jname))
-        secrets = job.get("secrets")
-        if secrets == "inherit" or _PINS_SECRET_RE.search(_text(secrets)):
-            out.append(("pins-soaked-writes", "job %s secrets" % jname))
+        # env, container, services and the rest of the job outside its steps; a `secrets:` block of any form hands secrets to a called workflow.
+        outside = {k: v for k, v in job.items() if k != "steps"}
+        if "secrets" in job or _PINS_SECRET_RE.search(_text(outside)):
+            out.append(("pins-soaked-writes", "job %s" % jname))
         steps = list(_steps(job))
         apply_ids = [
             _text(st.get("id"))
             for st in steps
-            if _PINS_APPLY_RE.search(_text(st.get("run")))
-            and _text(st.get("id"))
-            and _PINS_RC_OUT_RE.search(_text(st.get("run")))
+            if _text(st.get("id")) and _pins_publishes_rc(_text(st.get("run")))
         ]
         red_ifs = [_pins_red_if_re(sid) for sid in apply_ids]
         if "permissions" in job and not _read_only(job.get("permissions")):
             out.append(("pins-soaked-permissions", "job %s" % jname))
         for i, st in enumerate(steps):
             run, uses = _text(st.get("run")), _text(st.get("uses"))
-            passed = _text(st.get("with")) + _text(st.get("env"))
             if (
                 _PINS_WRITE_RE.search(run)
                 or any(w in uses for w in _PINS_WRITE_USES)
-                or _PINS_SECRET_RE.search(passed)
+                or _PINS_SECRET_RE.search(_text(st))
             ):
                 out.append(("pins-soaked-writes", _step_label(jname, i, st)))
             cond = _text(st.get("if"))
@@ -1160,7 +1173,7 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         out.append(
             (
                 "pins-soaked-no-red-path",
-                "<no `if: steps.<apply id>.outputs.rc != '0'` step ending in `exit 1`, where the apply step has an id and writes rc= to $GITHUB_OUTPUT>",
+                "<no `if: steps.<apply id>.outputs.rc != '0'` step ending in `exit 1`, where the apply step has an id, runs `rc=$?` on the line after the apply with no `||` on it, and writes rc=$rc to $GITHUB_OUTPUT>",
             )
         )
     return out, [
