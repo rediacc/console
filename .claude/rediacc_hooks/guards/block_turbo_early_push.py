@@ -75,7 +75,7 @@ def _git(path, *argv, env_date=None):
 
 
 FIXTURE_QUEUE = (
-    "# Queue\n\n## Settings\n\n```stop-hook\nturbo: %s\nbackup_push_h: 4\n```\n\n"
+    "# Queue\n\n## Settings\n\n```stop-hook\neffort: high\nturbo: %s\nbackup_push_h: 4\n```\n\n"
     "## Promoted\n\n1. agent/plans/PLAN-fx-a.md -- a fixture plan\n"
 )
 FIXTURE_PLAN = (

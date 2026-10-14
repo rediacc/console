@@ -50,7 +50,9 @@ PLAN_OPEN = "agent/plans/PLAN-fx-open.md"
 PLAN_DONE2 = "agent/plans/PLAN-fx-done2.md"
 QUEUE_REL = "agent/plans/QUEUE.md"
 # The turbo switch (agent/plans/PLAN-stop-hook-turbo.md T6): `turbo: on` is committed at the PR head and `turbo: off` sits in the working tree, so a guard that read the working tree would refuse what the head admits.
-QUEUE_TURBO = "# Plan queue\n\n## Settings\n\n```stop-hook\nturbo: %s\n```\n\n## Promoted\n\n"
+QUEUE_TURBO = (
+    "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nturbo: %s\n```\n\n## Promoted\n\n"
+)
 PLANS = {
     PLAN_DONE: "# PLAN-fx-done\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n- [x] B the second box is finished and ticked\n",
     PLAN_OPEN: "# PLAN-fx-open\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n- [ ] B the second box is still open on this branch\n",
