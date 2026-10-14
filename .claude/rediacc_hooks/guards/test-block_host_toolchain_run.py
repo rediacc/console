@@ -575,7 +575,7 @@ for tool in ("aws", "bw", "bws"):
 # One case below does exactly that, because the end-to-end path deserves one; the rest use a fixture root, which is also what makes the refusal cases affordable to enumerate.
 #
 # THE PARSER IS STILL THE REAL ONE. The fixture supplies only the file; `_ci_seams` reaches rediacc_ci.core.allowlist out of this checkout, so a harness copy of the BLOCKER grammar never gets a chance to disagree with the one every gate uses.
-# The hop itself goes through the canonical `.claude` helper, rediacc_hooks/syspath.py, loaded BY PATH the same way runtmp is above, because `rediacc_hooks` is not importable by name until it has run.
+# The hop itself is made by `_hookpath` (imported above), which loads the canonical `.claude` helper, rediacc_hooks/syspath.py, BY PATH the same way runtmp is above, because `rediacc_hooks` is not importable by name until it has run.
 
 GUARD = guards.load("block_host_toolchain_run")
 

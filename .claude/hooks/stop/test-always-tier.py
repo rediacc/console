@@ -154,6 +154,7 @@ def always_keys(tree):
 
 def main():
     sys.path.insert(0, str(HERE))
+    # The module under test, imported here so the hop above has run.
     import wl_checks
 
     tree = ast.parse(CHECKS.read_text(encoding="utf-8"))

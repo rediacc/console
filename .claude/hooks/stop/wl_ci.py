@@ -670,6 +670,7 @@ def _load_diagnose():
         spec.loader.exec_module(mod)
         return mod
     except Exception:
+        # A broken diagnoser is not a verdict: the caller reads None as "no diagnosis" and the Stop hook goes on.
         return None
 
 

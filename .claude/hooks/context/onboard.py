@@ -339,6 +339,7 @@ def stop_modules():
         syspath = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(syspath)
         syspath.on_sys_path(stop_dir)
+        # After the hop above, and inside this function: the PostToolUse path imports this module and must not load the worklist store.
         import wl_core
         import wl_store
     except ImportError as exc:

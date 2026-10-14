@@ -328,6 +328,7 @@ def _on_exit() -> None:
         if rec is not None:
             append(rec)
     except BaseException:
+        # An instrument must never change the thing it measures: a failure here is dropped, whatever it is.
         pass
 
 

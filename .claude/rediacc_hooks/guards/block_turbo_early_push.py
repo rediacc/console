@@ -56,6 +56,7 @@ UNREAD = "block-turbo-early-push: %s; this push passed UNEXAMINED."
 
 
 def _git(path, *argv, env_date=None):
+    # Fixture builders only; the imports stay inside the function that builds them.
     import os
     import subprocess
 

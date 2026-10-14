@@ -255,6 +255,7 @@ def _declared_defect():
     namespace: dict[str, object] = {}
     for line in GUARD.read_text(encoding="utf-8").split("\n"):
         if line.startswith("DEFECT = "):
+            # Trusted: the line is the guard's own one-line literal.
             exec(line, namespace)
     return namespace["DEFECT"]
 

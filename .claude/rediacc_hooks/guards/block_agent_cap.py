@@ -88,6 +88,7 @@ def run(event):
     cwd = str(doc.get("cwd") or event.cwd)
     session_id = str(doc.get("session_id") or "")
     syspath.on_sys_path(STOP_DIR)
+    # Loaded only for an Agent call, never for the other chains this file's hook serves.
     import wl_core as C
     import wl_roster
 
