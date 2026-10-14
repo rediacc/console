@@ -10,6 +10,7 @@ import type { Driver } from '../registry.js';
 import { createDevcontainerDriver } from './devcontainer.js';
 import { createEmbedDriver } from './embed.js';
 import { T8_DRIVERS } from './index.js';
+import { npmDriver } from './npm.js';
 import { createToolchainDriver } from './toolchain.js';
 import { networkUpstream } from './toolchain-upstream.js';
 
@@ -17,6 +18,7 @@ export function realDrivers(): Partial<Record<Driver, PinDriver>> {
   const upstream = networkUpstream();
   return {
     ...T8_DRIVERS,
+    npm: npmDriver,
     embed: createEmbedDriver(upstream),
     devcontainer: createDevcontainerDriver(upstream),
     toolchain: createToolchainDriver(upstream),

@@ -12,8 +12,9 @@
 # (invoked from scripts/gates/check-deps.ts): each line needs a 30+ char reason
 # that does not match the banned-phrase list. Blank line = end of group.
 #
-# To upgrade a blocked package: remove its line from this file and run
-#   npm run check:deps -- --upgrade
+# To upgrade a blocked package, run
+#   npm run pins -- bump npm --to <package>@<line> --major --reason "<why now>"
+# which removes the line (and any exception for it) in the same change.
 #
 # A LINE HOLDS A MAJOR FOR 90 DAYS, NOT FOREVER (operator ruling 2026-10-01).
 # check-deps.ts ages every blocklisted breaking bump from the first stable,

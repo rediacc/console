@@ -253,6 +253,13 @@ export interface TxnResult {
   changes: RepoChange[];
 }
 
+/** NPM_VERSION as .devcontainer/toolchain.env declares it right now; null when the file or the line is absent. */
+function pinnedNpmNow(root: string): string | null {
+  const f = path.join(root, '.devcontainer/toolchain.env');
+  const m = fs.existsSync(f) ? /^NPM_VERSION=(\S+)$/m.exec(fs.readFileSync(f, 'utf8')) : null;
+  return m ? m[1] : null;
+}
+
 const canonicalCmd = (v: string): string =>
   `npx -y npm@${v} install --package-lock-only --ignore-scripts`;
 
@@ -398,21 +405,23 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
       .filter(([, f]) => path.basename(f.file) === 'package-lock.json' && f.wrote !== null)
       .map(([k, f]) => ({ k, f }));
     if (changedLocks.length > 0 && o.mutant !== 'no-canonical') {
-      if (!o.npmVersion)
+      // The pinned npm AFTER the writes: a run that moves NPM_VERSION itself (toolchain:npm) must canonicalise under the new npm, since the lockfiles its steps wrote were produced by it and check:ci-lockfile compares against the pin the tree now declares.
+      const npmVersion = pinnedNpmNow(o.root) ?? o.npmVersion;
+      if (!npmVersion)
         throw new Error(
           'NPM_VERSION is missing from .devcontainer/toolchain.env; refusing to run an ambient npm'
         );
       for (const { k, f } of changedLocks) {
         f.inflight = true;
         saveJournal(dir, j);
-        const rc = run(canonicalCmd(o.npmVersion), path.join(f.repo, path.dirname(f.file)));
+        const rc = run(canonicalCmd(npmVersion), path.join(f.repo, path.dirname(f.file)));
         markWrote(k);
         if (rc !== 0) throw new Error(`the canonical lockfile pass failed for ${k} (rc=${rc})`);
       }
       if (changedLocks.some(({ f }) => f.repo === '.' && f.file === 'package-lock.json')) {
-        if (run(`npx -y npm@${o.npmVersion} ci`, '.') !== 0)
+        if (run(`npx -y npm@${npmVersion} ci`, '.') !== 0)
           throw new Error('npm ci failed after the root lockfile changed');
-        if (run(`npx -y npm@${o.npmVersion} run install:natives`, '.') !== 0)
+        if (run(`npx -y npm@${npmVersion} run install:natives`, '.') !== 0)
           throw new Error('npm run install:natives failed after npm ci');
       }
       saveJournal(dir, j);
