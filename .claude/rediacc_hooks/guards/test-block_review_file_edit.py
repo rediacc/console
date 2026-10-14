@@ -235,6 +235,15 @@ SHELL_CASES = [
     ("a value option after the operands", "cp /tmp/x.md %s -S .bak" % R, True),
     ("xargs appends the destination", "echo agent/reviews/0930-1/ | xargs cp /tmp/x.md", True),
     ("cp -t out of the directory", "cp -t /tmp %s" % R, False),
+    # A glob or brace spells the directory without the word (#7094b75e): each refusal was allowed (rc 0) before, the first two by the text prefilter.
+    ("a fed glob under cd", "cd agent && echo revi*s/0930-1/x.md | xargs cp /tmp/a.md", True),
+    ("a ? glob under cd", "cd agent && cp /tmp/a.md revi?ws/0930-1/", True),
+    ("a bracket glob", "cp /tmp/a.md agent/revie[w]s/0930-1/", True),
+    ("a brace", "cp /tmp/a.md agent/{reviews,x}/0930-1/", True),
+    ("a redirect through two globs", "echo x > ag*/rev*/0930-1/new.md", True),
+    ("a glob read out", "cat agent/revi*s/0930-1/clean.jsonl > /tmp/x", False),
+    ("a glob in arithmetic text", "echo 3*4 > /tmp/x", False),
+    ("a brace elsewhere", "cp /tmp/a.md /tmp/{a,b}/c.md", False),
     # Every way Python fills a template (review 6dcf79c7.1-.2): each refusal was allowed (rc 0) before.
     (
         "str.format with a keyword field",

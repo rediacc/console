@@ -11,6 +11,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 """
 
 import ast
+import fnmatch
 import itertools
 import re
 import shlex
@@ -50,7 +51,7 @@ MESSAGE = (
     "\n"
     "  close a finding:  .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> fixed <sha>\n"
     "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> not-a-bug <evidence path:line>\n"
-    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> deferred #<item>\n"
+    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z\n"
     "  re-review:        python3 .claude/hooks/stop/wl_review.py --run <sha> --branch <branch>\n"
     "  record them:      .claude/hooks/stop/worklist.py --review-commit <me>\n"
 )
@@ -161,9 +162,28 @@ EDGE_CASES = [
 def _is_review(word, cwd=None):
     if not word:
         return False
-    if REVIEW_WORD.search(word):
-        return True
-    return bool(cwd and REVIEW_WORD.search(str(cwd).rstrip("/") + "/" + word))
+    return any(
+        REVIEW_WORD.search(form) or (cwd and REVIEW_WORD.search(str(cwd).rstrip("/") + "/" + form))
+        for form in _review_forms(word)
+    )
+
+
+_GLOB = frozenset("*?[")
+
+
+def _review_forms(word):
+    """The word, and what bash may make of it on the way to a review path (#7094b75e): each brace alternative (`agent/{reviews,x}/`), with every globbed segment that could match `agent` or `reviews` read as that name (`agent/revi*s/`, `revie[w]s` under `cd agent`). Read by shape, never against the disk, so a glob that does not match yet still counts."""
+    forms = [word]
+    for alt in shellscan._brace_alternatives(word) if "{" in word else [word]:
+        segments = alt.split("/")
+        options = [
+            [s, *(n for n in ("agent", "reviews") if fnmatch.fnmatchcase(n, s))]
+            if any(ch in s for ch in _GLOB)
+            else [s]
+            for s in segments
+        ]
+        forms.extend("/".join(p) for p in itertools.islice(itertools.product(*options), 64))
+    return forms
 
 
 def _operands(argv):
@@ -193,7 +213,7 @@ def _offending(cmd, depth=0, cwd=None):
             "a command nested more than %d programs deep that names the review directory"
             % MAX_DEPTH
         )
-    hits = [t for t in shellscan.write_targets(cmd) if _is_review(t)]
+    hits = [t for t in shellscan.write_targets(cmd) if _is_review(t, cwd)]
     if hits:
         return "redirect into %s" % hits[0]
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i`, `cp` or interpreter that `find -exec` or `npx -c` starts writes the same review file, so the runs are `shellscan.every_run`.
@@ -478,9 +498,11 @@ def run(ev):
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
-    # A script run by path names the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named.
-    if "reviews" not in cmd and not any(
-        "reviews" in text for text in shellscan.interpreter_scripts(cmd, cwd)
+    # A script run by path names the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named. A glob or brace can spell the directory without the word (`echo revi*s/... | xargs cp ...` under `cd agent`, #7094b75e), so a command holding one is read too.
+    if (
+        "reviews" not in cmd
+        and not any(ch in cmd for ch in "*?[{")
+        and not any("reviews" in text for text in shellscan.interpreter_scripts(cmd, cwd))
     ):
         return hookio.ALLOW
     what = _offending(cmd, cwd=cwd)
