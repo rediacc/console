@@ -18,7 +18,7 @@ const isAlive = (pid: number): boolean => {
   }
 };
 
-// A recorded pid is a positive integer above 1: NaN means it was never written, and 0, 1 or a negative value would turn a kill into a signal for the runner's own group, init or an unrelated process.
+// A recorded pid is a positive integer above 1: NaN means it was never written, and 0, 1 or a negative value would turn a kill into a signal for the runner's own group (0), every process the user may signal (-1, the group form of pid 1) or an unrelated process.
 const isRecordedPid = (pid: number): boolean => Number.isInteger(pid) && pid > 1;
 
 // Whether any process still belongs to the group led by `pid`. A group id is not reused while it has a member, so signalling the group cannot reach an unrelated process the way a bare recorded pid can after its process was reaped.
@@ -71,7 +71,7 @@ const settleRun = async (options: SettleOptions): Promise<void> => {
       .filter((pid) => isRecordedPid(pid) && isAlive(pid))
       .map((pid) => `pid ${pid}`),
   ];
-  // Polls until the kill has landed or the reap window closes, so a slow kernel reap never reads as a survivor and a prompt one costs no fixed delay.
+  // Polls until the kill has landed or the reap window closes: a reap that clears inside the window is not reported and a prompt one costs no fixed delay, while a process still dying when the window closes is reported as a survivor.
   const reapDeadline = Date.now() + (options.reapWaitMs ?? 500);
   let survivors = survivorsNow();
   while (survivors.length > 0 && isRecordedPid(renet) && Date.now() < reapDeadline) {
