@@ -73,6 +73,8 @@ POLICY_FILES: tuple[str, ...] = (
     # It is reached through policy_path() from that guard and nowhere else, and it ships EMPTY: no aws, bw or bws consumer in this tree needs a TTY.
     ".host-toolchain-exceptions",
     ".language-policy-allowlist",
+    # 2026-10-14. The hold list of the toolchain and docker pins of .ci/config/pins.json, written by `npm run pins -- hold`; check:ci-pin-freshness enforces its liveness in-gate.
+    ".pins-upgrade-blocklist",
     ".plan-housekeeping-allowlist",
     ".profiler-coverage-allowlist",
     ".runner-advice-allowlist",

@@ -1,0 +1,9 @@
+{
+  "$comment": [
+    "How long a newer major may sit above a pin before check:ci-pin-freshness turns red, in DAYS, counted from the first release on that major line (operator ruling 2026-10-14T20:56Z).",
+    "Under the grace a newer major is printed and passes; at or past it the gate is red until the pin is bumped with `npm run pins -- bump <id> --major --reason \"<why>\"` or held with an expiry through `npm run pins -- hold <id> --reason \"<why>\" --expires YYYY-MM-DD`.",
+    "A major whose first release cannot be dated is red at once (fail closed).",
+    "Read by scripts/lib/pins/status.ts getMajorGraceMs, which throws on a missing file or key rather than reading it as zero. The release-age window beside it (.ci/config/release-age.json) is a different rule: it holds a too-new release back, this one stops an old major from waiting forever."
+  ],
+  "major_grace_days": 40
+}

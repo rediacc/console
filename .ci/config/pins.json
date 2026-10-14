@@ -1309,7 +1309,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync",
@@ -1383,7 +1385,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync",
@@ -1435,7 +1439,9 @@
         "mode": "assisted",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1472,7 +1478,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1502,7 +1510,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1532,7 +1542,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1562,7 +1574,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1603,7 +1617,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1645,7 +1661,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1719,7 +1737,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1786,7 +1806,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1853,7 +1875,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [
         "check:ci-toolchain-pins",
         "check:ci-toolchain-env-dockerfile-sync"
@@ -1902,7 +1926,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [],
       "sites": [
         {
@@ -1939,7 +1965,9 @@
         "mode": "release-age",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [],
       "sites": [
         {
@@ -2099,7 +2127,9 @@
         "mode": "assisted",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [],
       "sites": [
         {
@@ -2133,7 +2163,9 @@
         "mode": "assisted",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [],
       "sites": [
         {
@@ -2160,7 +2192,9 @@
         "mode": "assisted",
         "major": "assisted"
       },
-      "holds": [],
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
       "gates": [],
       "sites": [
         {
@@ -2169,6 +2203,230 @@
           "role": "version",
           "match": "^FROM (?<value>mcr\\.microsoft\\.com/\\S+)$",
           "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:node-alpine",
+      "kind": "leaf",
+      "name": "node alpine image for the on-premise image and the account server",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "NODE_IMAGE",
+          "expect": 1
+        },
+        {
+          "repo": "private/account",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "NODE_IMAGE",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:cli-alpine",
+      "kind": "leaf",
+      "name": "alpine image for the rdc native CLI container",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "alpine"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/Dockerfile.native",
+          "role": "version",
+          "arg": "ALPINE_IMAGE",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:cloud-switch-python",
+      "kind": "leaf",
+      "name": "python image for the cloud-switch template's web container",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "python"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/networking/cloud-switch/web/Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>python:\\S+)$",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:proxy-node",
+      "kind": "leaf",
+      "name": "node image for the proxy worker's build and runtime stages",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "workers/proxy/Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>node:\\S+)(?: AS build)?$",
+          "expect": 2
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:renet-ubuntu",
+      "kind": "leaf",
+      "name": "ubuntu image for the renet target and its rsync, zot and k3s stages",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "ubuntu"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "TARGET_IMAGE",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>ubuntu:\\S+) AS (?:rsync-builder|zot-downloader|k3s-downloader)-(?:amd64|arm64)$",
+          "expect": 6
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile.native",
+          "role": "version",
+          "arg": "BASE_IMAGE",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:renet-csi-golang",
+      "kind": "leaf",
+      "name": "golang image for renet's CSI sidecar build stage",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "golang"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>golang:\\S+) AS csi-builder$",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:renet-debian",
+      "kind": "leaf",
+      "name": "debian image for renet's CRIU source and build stages",
+      "driver": "docker",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: the tag is the Debian codename bookworm, which carries no version number, so no newer tag of its shape can be named and the driver has nothing to compare; a move to the next Debian release is a codename change made with the CRIU build it compiles, by hand in its own change"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>debian:\\S+) AS criu-(?:source|builder-amd64|builder-arm64)$",
+          "expect": 3
         }
       ],
       "derive": [],

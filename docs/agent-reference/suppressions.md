@@ -39,6 +39,7 @@ so a grep for `.deps-upgrade-blocklist` will find the name in code that is corre
 | Go dep upgrade blocklist | `.ci/policy/.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check_go_deps.py` |
 | Embed-asset upgrade blocklist | `.ci/policy/.embed-assets-upgrade-blocklist` | `scripts/gates/check-embed-asset-freshness.ts` |
 | GitHub Actions upgrade blocklist | `.ci/policy/.actions-upgrade-blocklist` | `scripts/gates/check-actions.ts` |
+| Toolchain and docker pin holds (`npm run pins -- hold`) | `.ci/policy/.pins-upgrade-blocklist` | `scripts/lib/pins/status.ts` `holdOf`; liveness in-gate in `scripts/gates/check-pin-freshness.ts` |
 | Breakpoint drift acceptance | `.ci/breakpoint/.breakpoint-drift-accept` | `.ci/breakpoint/scripts/check-breakpoint-drift.sh` |
 | Dead-bash discovery allowlist | `.ci/policy/.dead-bash-allowlist` | `scripts/gates/check-dead-bash.ts` |
 | CI parity exemptions (direction-tagged) | `.ci/policy/.ci-parity-exempt` | `scripts/gates/check-ci-parity.ts` |

@@ -324,6 +324,7 @@ export const BLOCKER_FILES: readonly string[] = Object.freeze([
   '.go-deps-upgrade-blocklist',
   '.host-toolchain-exceptions',
   '.language-policy-allowlist',
+  '.pins-upgrade-blocklist',
   '.plan-housekeeping-allowlist',
   '.profiler-coverage-allowlist',
   '.runner-advice-allowlist',
