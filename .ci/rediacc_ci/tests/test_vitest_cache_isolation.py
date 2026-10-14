@@ -6,14 +6,11 @@ vitest's default cache is `node_modules/.vitest-cache`, shared by every workspac
 from __future__ import annotations
 
 import json
+import pathlib
 import re
 import subprocess
-from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
-
-if TYPE_CHECKING:
-    import pathlib
 
 CACHE_RE = re.compile(r"fsModuleCachePath:\s*fileURLToPath\(\s*new URL\(\s*'([^']+)'", re.DOTALL)
 
@@ -47,14 +44,31 @@ def test_each_vitest_config_names_its_own_cache_directory():
         seen[target] = rel
 
 
-VITEST_CMD_RE = re.compile(r"(?<![\w.-])vitest(?![\w.-])")
+# The command, not a module path: `vitest/config` and `vitest/node` are imports, so a following '/' ends the match like a '.' or '-' does.
+VITEST_CMD_RE = re.compile(r"(?<![\w.-])vitest(?![\w./-])")
 
 
 SCRIPT_FILE_RE = re.compile(r"[\w./@-]+\.(?:[cm]?[jt]s|sh|py)(?![\w./-])")
 
+# Script files read per workspace, so a cycle or a deep chain ends.
+MAX_SCRIPT_FILES = 50
+
+
+def _inside(workspace: pathlib.Path, name: str) -> pathlib.Path | None:
+    """The file a command names under the workspace, or None for an absolute path, a `..` segment or anything that resolves outside it (a symlink included)."""
+    rel = pathlib.PurePosixPath(name)
+    if rel.is_absolute() or ".." in rel.parts:
+        return None
+    target = workspace / rel
+    try:
+        target.resolve().relative_to(workspace.resolve())
+    except ValueError:
+        return None
+    return target if target.is_file() else None
+
 
 def runs_vitest(scripts: object, workspace: pathlib.Path | None = None) -> bool:
-    """True when a package.json `scripts` table names the vitest command in any script, whatever the script is called. A name that merely contains the word (a `.vitest-cache` path, a `vitest-cache` directory, `vitest.config.ts`) is not the command. With a `workspace` directory, a script file named on a command line (`node scripts/run.js`, `bash x.sh`) is read from that directory too, and counts when it names the command."""
+    """True when a package.json `scripts` table names the vitest command in any script, whatever the script is called. A name that merely contains the word (a `.vitest-cache` path, a `vitest-cache` directory, `vitest.config.ts`, an import path such as `vitest/config`) is not the command. With a `workspace` directory, a script file named on a command line (`node scripts/run.js`, `bash x.sh`) is read from that directory too, and so is every script file that one names in turn, each file once and at most MAX_SCRIPT_FILES in all; a name that is absolute or leaves the workspace is not read."""
     if not isinstance(scripts, dict):
         return False
     commands = [str(cmd) for cmd in scripts.values()]
@@ -62,13 +76,17 @@ def runs_vitest(scripts: object, workspace: pathlib.Path | None = None) -> bool:
         return True
     if workspace is None:
         return False
-    for cmd in commands:
-        for name in SCRIPT_FILE_RE.findall(cmd):
-            target = workspace / name
-            if target.is_file() and VITEST_CMD_RE.search(
-                target.read_text(encoding="utf-8", errors="replace")
-            ):
-                return True
+    visited: set[pathlib.Path] = set()
+    queue = [name for cmd in commands for name in SCRIPT_FILE_RE.findall(cmd)]
+    while queue and len(visited) < MAX_SCRIPT_FILES:
+        target = _inside(workspace, queue.pop(0))
+        if target is None or target.resolve() in visited:
+            continue
+        visited.add(target.resolve())
+        text = target.read_text(encoding="utf-8", errors="replace")
+        if VITEST_CMD_RE.search(text):
+            return True
+        queue.extend(SCRIPT_FILE_RE.findall(text))
     return False
 
 
@@ -94,6 +112,38 @@ def test_runs_vitest_follows_a_script_file_named_in_a_command(tmp_path: pathlib.
     assert runs_vitest({"test": "node ./scripts/unit.sh --ci"}, tmp_path)
     assert not runs_vitest({"test": "node scripts/lint.js"}, tmp_path)
     assert not runs_vitest({"test": "bash scripts/absent.sh"}, tmp_path)
+
+
+def test_runs_vitest_ignores_an_import_path_and_a_name_outside_the_workspace(
+    tmp_path: pathlib.Path,
+):
+    workspace = tmp_path / "ws"
+    (workspace / "scripts").mkdir(parents=True)
+    (workspace / "scripts" / "cfg.js").write_text("import { defineConfig } from 'vitest/config';\n")
+    (tmp_path / "other.sh").write_text("npx vitest run\n")
+    (tmp_path / "abs.sh").write_text("npx vitest run\n")
+    assert not runs_vitest({"build": "node scripts/cfg.js"}, workspace)
+    assert not runs_vitest({"t": "bash ../other.sh"}, workspace)
+    assert not runs_vitest({"t": "bash scripts/../../other.sh"}, workspace)
+    assert not runs_vitest({"t": "bash %s" % (tmp_path / "abs.sh")}, workspace)
+    (workspace / "link.sh").symlink_to(tmp_path / "other.sh")
+    assert not runs_vitest({"t": "bash link.sh"}, workspace)
+
+
+def test_runs_vitest_follows_script_files_transitively_and_ends_on_a_cycle(
+    tmp_path: pathlib.Path,
+):
+    (tmp_path / "a.sh").write_text("bash b.sh\n")
+    (tmp_path / "b.sh").write_text("node c.js\n")
+    (tmp_path / "c.js").write_text("run('npx vitest run')\n")
+    assert runs_vitest({"t": "bash a.sh"}, tmp_path)
+    (tmp_path / "x.sh").write_text("bash y.sh\n")
+    (tmp_path / "y.sh").write_text("bash x.sh\n")
+    assert not runs_vitest({"t": "bash x.sh"}, tmp_path)
+    for i in range(MAX_SCRIPT_FILES + 5):
+        (tmp_path / ("n%d.sh" % i)).write_text("bash n%d.sh\n" % (i + 1))
+    (tmp_path / ("n%d.sh" % (MAX_SCRIPT_FILES + 5))).write_text("npx vitest run\n")
+    assert not runs_vitest({"t": "bash n0.sh"}, tmp_path)
 
 
 def test_each_workspace_that_runs_vitest_has_a_config():

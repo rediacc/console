@@ -114,12 +114,21 @@ def argv_asserts(tree) -> set[int]:
     skipped: set[int] = set()
 
     def reads(expr, tainted) -> bool:
+        # A value is an argument vector when any operand it is built from is one: concatenation, unpacking, `or`/`and`, a conditional, a display. A call result is untainted unless it is a sequence wrapper or argparse result, a method called ON a tainted receiver (`sys.argv.copy()`), or a call handed a tainted positional argument that is returned whole by a wrapper; any other call (`build_args()`, `run(argv)`) is untainted by design, because its result is as often the output of a run as an argv and counting it would put every test that passes `argv` on to a subprocess helper on the offender list.
         if isinstance(expr, ast.Name):
             return expr.id in tainted
         if isinstance(expr, ast.Attribute):
             return expr.attr == ARGV_ATTR or reads(expr.value, tainted)
-        if isinstance(expr, ast.Subscript):
+        if isinstance(expr, (ast.Subscript, ast.Starred)):
             return reads(expr.value, tainted)
+        if isinstance(expr, ast.BinOp):
+            return reads(expr.left, tainted) or reads(expr.right, tainted)
+        if isinstance(expr, ast.BoolOp):
+            return any(reads(v, tainted) for v in expr.values)
+        if isinstance(expr, ast.IfExp):
+            return reads(expr.body, tainted) or reads(expr.orelse, tainted)
+        if isinstance(expr, (ast.List, ast.Tuple, ast.Set)):
+            return any(reads(e, tainted) for e in expr.elts)
         if isinstance(expr, ast.Call):
             func = expr.func
             if isinstance(func, ast.Attribute) and func.attr in ARGPARSE_RESULTS:
@@ -128,6 +137,8 @@ def argv_asserts(tree) -> set[int]:
                 return True
             if isinstance(func, ast.Name) and func.id in SEQUENCE_WRAPPERS:
                 return any(reads(a, tainted) for a in expr.args)
+            if isinstance(func, ast.Attribute):
+                return reads(func.value, tainted)
         return False
 
     def visit(scope, inherited: dict[str, bool]) -> None:
@@ -756,6 +767,34 @@ print("unconditional reseed")
     "assert FLAG in args (a parameter)": """def main(args):
     assert "%s" in args
     print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (argv = sys.argv + extra)": """import sys
+
+argv = sys.argv + ["--extra"]
+assert "%s" in argv
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (args = [*sys.argv])": """import sys
+
+args = [*sys.argv]
+assert "%s" in args
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (args = sys.argv or [])": """import sys
+
+args = sys.argv or []
+assert "%s" in args
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (args = sys.argv.copy())": """import sys
+
+args = sys.argv.copy()
+assert "%s" in args
+print("unconditional reseed")
 """
     % FLAG,
     "assert any(a == FLAG for a in args)": """import sys
