@@ -410,5 +410,13 @@ if (!fs.statSync(outDir, { throwIfNoEntry: false })?.isDirectory()) {
   process.exit(2);
 }
 
+// The tracked copies are written only under --write-public, which the tree-write pragmas above declare; --out naming that same directory would write them past the declaration.
+if (!writePublic && fs.realpathSync(outDir) === fs.realpathSync(path.join(projectRoot, 'public'))) {
+  console.error(
+    `✗ --out must not name the tracked public/ directory; use --write-public.\n${USAGE}`
+  );
+  process.exit(2);
+}
+
 // The boolean is the verdict; exiting 0 on failure made a lost index invisible to both the CLI caller and the build integration.
 process.exit(generateSearchIndex(outDir) ? 0 : 1);
