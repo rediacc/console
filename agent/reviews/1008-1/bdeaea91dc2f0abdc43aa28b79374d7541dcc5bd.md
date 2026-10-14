@@ -36,7 +36,7 @@ Resolution: not-a-bug | operator ruling 2026-10-13: 'You can disable it for AI a
 ### bdeaea91.4 [low] .ci/rediacc_ci/tests/test_bench_captcha_switch.py:39
 Anchor: in-diff
 Claim: test_deploy_secrets_never_push_the_switch greps the source text for the literal "TURNSTILE_ENABLED": and does not inspect the built secrets payload, so a switch sent under a different quoting or a computed key passes the test.
-Resolution: open
+Resolution: fixed 2315a9bd0d6a7c8471bc6e3b0a837915e428434f | d778be9d 2026-10-14T05:18:29Z
 
 ### bdeaea91.5 [low] workers/account/wrangler.bench.toml:31
 Anchor: in-diff

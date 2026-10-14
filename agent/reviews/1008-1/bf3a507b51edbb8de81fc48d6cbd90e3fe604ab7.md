@@ -21,9 +21,9 @@ Body-Sig: c5306ede6aac4ff2
 ### bf3a507b.1 [medium] .ci/config/carried-reds.json:50
 Anchor: in-diff
 Claim: The reason says 'Each key names one plan, so a plan whose last box closes leaves this list', but the commit message states a carried plan that closes leaves a stale key in the carry until the line is deleted, so the reason misdescribes the carry's behaviour.
-Resolution: open
+Resolution: not-a-bug | .ci/config/carried-reds.json:20 rule 4 refuses a carried key that is no longer emitted, so 'a plan that closes drops out of this list' states the exit the guard forces; the key is deleted by the author at that point | d778be9d 2026-10-14T05:18:29Z
 
 ### bf3a507b.2 [low] .ci/rediacc_ci/tests/test_quality_plan_implementation.py:1
 Anchor: in-diff
 Claim: No case uses a plan path containing digits, yet the new keys embed the path and the docstring says log.finding_key masks digits; the six real carried paths (e.g. PLAN-k3s-137-...) are only checked by the gate run, not by a pytest case.
-Resolution: open
+Resolution: not-a-bug | .ci/scripts/quality/check_plan_implementation.py:158 builds the key as 'P-A1:%s' % rel without log.finding_key, so digits are never masked; the six carried paths (e.g. PLAN-k3s-137-...) are the literal keys read back by gate_ledger in test_quality_plan_implementation.py | d778be9d 2026-10-14T05:18:29Z
