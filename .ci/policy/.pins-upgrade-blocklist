@@ -19,3 +19,5 @@
 #   <key>  # BLOCKER: <why the pin is held back and when to revisit> (expires YYYY-MM-DD)
 #
 # Empty by default: nothing is held.
+
+npm  # BLOCKER: npm 12 has not been evaluated against this repo's lockfile pass, overrides handling and ignore-scripts hardening; held so the operator schedules the major move rather than an unattended overnight session (expires 2026-11-14)
