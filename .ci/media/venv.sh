@@ -130,8 +130,7 @@ ensure_generative_venv() {
         python3 -m venv "$venv_dir"
     fi
 
-    # BLOCKER: the venv activation script is generated at runtime by `python3 -m venv` into a dynamic path; shellcheck cannot follow it statically and never could
-    # shellcheck disable=SC1091
+    # The activation script is generated at runtime by `python3 -m venv` (.shellcheckrc: SC1091).
     source "$venv_dir/bin/activate"
 
     if [[ ! -f "$stamp_file" ]] || [[ "$(cat "$stamp_file" 2>/dev/null || true)" != "$content_hash" ]]; then
@@ -141,8 +140,7 @@ ensure_generative_venv() {
             deactivate || true
             rm -rf "$venv_dir"
             python3 -m venv "$venv_dir"
-            # BLOCKER: the venv activation script is generated at runtime by `python3 -m venv` into a dynamic path; shellcheck cannot follow it statically and never could
-            # shellcheck disable=SC1091
+            # The activation script is generated at runtime by `python3 -m venv` (.shellcheckrc: SC1091).
             source "$venv_dir/bin/activate"
             install_generative_python_deps "$gen_dir" "$stamp_file" "$content_hash"
         fi

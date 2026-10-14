@@ -88,9 +88,9 @@ if [ ! -d "$DEVBOX_WORKSPACE" ]; then
   exit 1
 fi
 
-token_args="--without-connection-token"
+token_args=(--without-connection-token)
 if [ -n "$CONNECTION_TOKEN" ]; then
-  token_args="--connection-token $CONNECTION_TOKEN"
+  token_args=(--connection-token "$CONNECTION_TOKEN")
 fi
 
 log "starting openvscode-server on :$DEVBOX_PORT for $DEVBOX_WORKSPACE"
@@ -126,7 +126,9 @@ target_home="$(getent passwd "$HOST_UID" | cut -d: -f6)"
 # something says otherwise", and a devbox that mostly serves automation may
 # never have a client that says otherwise. `--telemetry-level off` is documented
 # there as equivalent to --disable-telemetry.
-vscode_args="--host 0.0.0.0 --port $DEVBOX_PORT $token_args --telemetry-level off"
+vscode_args=(--host 0.0.0.0 --port "$DEVBOX_PORT" "${token_args[@]}" --telemetry-level off)
+# The `su -c` path takes one command string, so the array is re-quoted for it.
+printf -v vscode_args_str '%q ' "${vscode_args[@]}"
 
 # Bring the HTTP services up alongside VS Code. BEFORE the exec, because the
 # exec replaces this process -- anything queued after it never runs. Launched as
@@ -152,12 +154,10 @@ fi
 
 # --init-groups so the supplementary groups (docker) actually apply.
 if command -v setpriv >/dev/null 2>&1; then
-  # shellcheck disable=SC2086
   exec env HOME="$target_home" USER="$CONTAINER_USER" LOGNAME="$CONTAINER_USER" \
     setpriv --reuid "$HOST_UID" --regid "$HOST_GID" --init-groups \
-    openvscode-server $vscode_args --default-folder "$DEVBOX_WORKSPACE"
+    openvscode-server "${vscode_args[@]}" --default-folder "$DEVBOX_WORKSPACE"
 fi
 
-# shellcheck disable=SC2086
 exec su -s /bin/bash "$CONTAINER_USER" -c \
-  "exec openvscode-server $vscode_args --default-folder '$DEVBOX_WORKSPACE'"
+  "exec openvscode-server ${vscode_args_str}--default-folder '$DEVBOX_WORKSPACE'"

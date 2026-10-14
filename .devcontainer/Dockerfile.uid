@@ -29,7 +29,6 @@
 # BASE has the published tag as its default only so the reference is never
 # empty; devbox_ensure_uid_image always passes it explicitly.
 ARG BASE=ghcr.io/rediacc/devcontainer:latest
-# hadolint ignore=DL3006
 FROM ${BASE}
 
 ARG HOST_UID
@@ -37,8 +36,8 @@ ARG HOST_GID
 
 # Root on purpose, and it is the base's own last USER too: the RUN below needs
 # it, and devbox-entrypoint.sh starts as root and drops to vscode with setpriv.
-# hadolint ignore=DL3002,DL3066
-USER root
+# The numeric id keeps the user resolvable without /etc/passwd (DL3066).
+USER 0
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN : "${HOST_UID:?build arg HOST_UID is required}" \
     && : "${HOST_GID:?build arg HOST_GID is required}" \

@@ -1,21 +1,6 @@
 {
  "note": "SHRINK-ONLY. Inline lint and type suppression markers that existed when operator ruling 2026-10-08 banned them, counted per (file, marker kind, code), never by line. Written only by `.ci/scripts/quality/check_inline_suppressions.py --write-baseline`, which refuses any growth. Fix the code; a deliberate project-wide exception is a per-file entry in the linter's own config with a BLOCKER: reason (docs/agent-reference/suppressions.md). The goal state is an empty map.",
  "counts": {
-  ".ci/bootstrap.sh": {
-   "shellcheck-disable SC2064": 1
-  },
-  ".ci/breakpoint/lib/breakpoint-blocker.sh": {
-   "shellcheck-disable SC2034": 1
-  },
-  ".ci/breakpoint/scripts/install-extra-packages.sh": {
-   "shellcheck-disable SC2086": 1
-  },
-  ".ci/breakpoint/versions.sh": {
-   "shellcheck-disable SC2034": 1
-  },
-  ".ci/media/venv.sh": {
-   "shellcheck-disable SC1091": 2
-  },
   ".ci/rediacc_ci/check_pytest.py": {
    "noqa S314": 1
   },
@@ -162,9 +147,6 @@
    "noqa E402": 1,
    "noqa PLC0415": 6
   },
-  ".ci/scripts/lib/toolchain.sh": {
-   "shellcheck-disable SC1090": 1
-  },
   ".ci/scripts/quality/check_agent_hint_liveness.py": {
    "noqa PLC0415": 1
   },
@@ -189,17 +171,6 @@
   },
   ".ci/scripts/quality/check_tree_shape.py": {
    "noqa PLC0415": 1
-  },
-  ".devcontainer/Dockerfile.uid": {
-   "hadolint-ignore DL3002": 1,
-   "hadolint-ignore DL3006": 1,
-   "hadolint-ignore DL3066": 1
-  },
-  ".devcontainer/devbox-entrypoint.sh": {
-   "shellcheck-disable SC2086": 2
-  },
-  ".devcontainer/start-vscode.sh": {
-   "shellcheck-disable SC2064": 2
   }
  }
 }

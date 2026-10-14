@@ -254,8 +254,9 @@ install_uv() {
     }
     url="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${triple}.tar.gz"
     tmp="$(mktemp -d)" || return 1
-    # shellcheck disable=SC2064  # expand tmp NOW so the trap removes this dir, not a later value
-    trap "rm -rf '$tmp'" RETURN
+    # Expanded when the function returns, while its own local tmp is still in scope; the trap
+    # then clears itself so no later function return can act on another value of tmp.
+    trap 'rm -rf -- "$tmp"; trap - RETURN' RETURN
     # STDERR. This function's STDOUT is the resolved binary path, captured by
     # the caller; a progress line on stdout would be concatenated into it.
     echo "bootstrap: downloading uv ${UV_VERSION} for ${triple}" >&2

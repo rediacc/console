@@ -1,0 +1,8 @@
+# shellcheck reads this file for every script below it, so an editor or a bare
+# `shellcheck` run judges the way `check:ci-shell-lint` does (its `-e` list in
+# .ci/rediacc_ci/security/shellcheck.py carries the same three codes). Inline
+# disable comments are banned; a deliberate exception lives here.
+
+# BLOCKER: SC1090 and SC1091 only say that a sourced file cannot be followed statically; the sourced paths are computed at runtime (the toolchain pins file, the `python3 -m venv` activate script) and there is nothing to follow.
+# BLOCKER: SC2034 cannot see across files; the constants and arrays in the sourced config files (.ci/breakpoint/versions.sh, breakpoint.conf, lib/breakpoint-blocker.sh) are consumed by the scripts that source them.
+disable=SC1090,SC1091,SC2034
