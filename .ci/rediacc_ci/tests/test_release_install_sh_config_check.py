@@ -175,7 +175,7 @@ def assert_same(
 # --------------------------------------------------------------------------- The green path ---------------------------------------------------------------------------
 
 
-def test_real_tree_agrees(tmp_path: pathlib.Path) -> None:  # noqa: ARG001 -- symmetry
+def test_real_tree_agrees() -> None:
     old = _twin(ROOT)
     new = _run(PORT, ROOT)
     assert old.returncode == 0, old.stderr

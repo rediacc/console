@@ -140,7 +140,7 @@ def tool(name: str, fix: str) -> str:
     return harness.require_tool(name, fix)
 
 
-def npx(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
+def npx() -> str:
     return tool(
         "npx",
         "install Node 22 (the version .devcontainer/toolchain.env pins), or run this "
@@ -148,7 +148,7 @@ def npx(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
     )
 
 
-def git(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
+def git() -> str:
     return tool("git", "install git")
 
 
@@ -214,7 +214,7 @@ def import_closure(gate) -> list[pathlib.Path]:
 
 def tracked_index(gate) -> tuple[set[str], set[str]]:
     """(every tracked file, every directory that contains one), repo-relative."""
-    listing = harness.run([git(gate), "-C", str(ROOT), "ls-files", "-z"], timeout=600)
+    listing = harness.run([git(), "-C", str(ROOT), "ls-files", "-z"], timeout=600)
     if listing.rc != 0:
         gate.log_fail("git ls-files failed, so nothing can be derived: %s" % listing.err)
     files = {name for name in listing.out.split("\0") if name}
@@ -303,7 +303,7 @@ def copy_tracked(gate, fixture: pathlib.Path, pathspecs: list[str]) -> int:
     Built from the repository's own TRACKED files, because the providers read real shapes: a gates lock they refuse when it is malformed, the hook wiring in `.claude/settings.json`, files carrying `BLOCKER:`, and a `.ci` subtree. Hand-rolled stand-ins would drift from those shapes and the test would then be proving something about the stand-ins.
     """
     listing = harness.run(
-        [git(gate), "-C", str(ROOT), "ls-files", "-z", "--", *pathspecs],
+        [git(), "-C", str(ROOT), "ls-files", "-z", "--", *pathspecs],
         timeout=600,
     )
     if listing.rc != 0:
@@ -350,18 +350,18 @@ def copy_tracked(gate, fixture: pathlib.Path, pathspecs: list[str]) -> int:
     return copied
 
 
-def run_gate(gate, *argv: str) -> harness.RunResult:
+def run_gate(*argv: str) -> harness.RunResult:
     """The gate, always from the REPO root, exactly as the twin runs it."""
-    return harness.run([npx(gate), "tsx", str(GATE), *argv], cwd=ROOT, timeout=600)
+    return harness.run([npx(), "tsx", str(GATE), *argv], cwd=ROOT, timeout=600)
 
 
-def run_fixgen(gate, fixture: pathlib.Path, *argv: str) -> harness.RunResult:
+def run_fixgen(fixture: pathlib.Path, *argv: str) -> harness.RunResult:
     """The FIXTURE's COPY of the generator, so `--write` can only reach the fixture.
 
     gen-docs roots itself at its own parent directory (scripts/gen/gen-docs.ts:74), which is what makes running the copy a containment boundary and not a convention.
     """
     return harness.run(
-        [npx(gate), "tsx", str(fixture / "scripts" / "gen" / "gen-docs.ts"), *argv],
+        [npx(), "tsx", str(fixture / "scripts" / "gen" / "gen-docs.ts"), *argv],
         cwd=ROOT,
         timeout=600,
     )
@@ -384,7 +384,7 @@ def build_fixture(gate, tmp_path: pathlib.Path):
         copied,
     )
 
-    binary = git(gate)
+    binary = git()
     # The index first: every provider enumerates with `git ls-files`, so a fixture that is not yet a repository makes them THROW rather than report, which reads as a broken gate instead of a broken fixture.
     #
     # `--initial-branch=main`: a bare-or-not fixture whose HEAD points at a branch the
@@ -419,7 +419,7 @@ def build_fixture(gate, tmp_path: pathlib.Path):
             )
         )
 
-    listed = run_fixgen(gate, fixture, "--list")
+    listed = run_fixgen(fixture, "--list")
     if listed.rc != 0:
         explain_fixture_gap(gate, fixture, listed)
         gate.log_error(listed.err)
@@ -448,7 +448,7 @@ def build_fixture(gate, tmp_path: pathlib.Path):
     stagedoc = harness.run([binary, "-C", str(fixture), "add", "--", "REGISTRY.md"])
     if stagedoc.rc != 0:
         gate.log_fail("A. could not stage the fixture document: %s" % stagedoc.err)
-    written = run_fixgen(gate, fixture, "--write")
+    written = run_fixgen(fixture, "--write")
     if written.rc != 0:
         explain_fixture_gap(gate, fixture, written)
         gate.log_error(written.err)
@@ -492,7 +492,7 @@ def test_a_the_fixture_is_real_every_declared_provider_yields_rows(gate, tmp_pat
 
 def test_b_the_gate_accepts_a_freshly_generated_tree(gate, tmp_path):
     fixture, _document, providers, _pristine, _shape = build_fixture(gate, tmp_path)
-    result = run_gate(gate, "--root", str(fixture))
+    result = run_gate("--root", str(fixture))
     if result.rc != 0:
         gate.log_error(result.err)
         gate.log_fail("B. the gate red on a tree the generator had just written")
@@ -516,7 +516,7 @@ def test_c_one_perturbed_cell_turns_it_red_and_is_named(gate, tmp_path):
     lines[index] = lines[index].replace("| ", "| PERTURBED ", 1)
     document.write_text("\n".join(lines), encoding="utf-8")
 
-    result = run_gate(gate, "--root", str(fixture))
+    result = run_gate("--root", str(fixture))
     if result.rc == 0:
         gate.log_fail("C. CONTROL DID NOT FIRE: the gate passed over a perturbed generated row")
     gate.assert_contains(result.err, "REGISTRY.md", "C. the finding never named the file")
@@ -536,13 +536,13 @@ def test_d_restoring_the_document_restores_the_green(gate, tmp_path):
     lines, index = first_data_row(gate, document)
     lines[index] = lines[index].replace("| ", "| PERTURBED ", 1)
     document.write_text("\n".join(lines), encoding="utf-8")
-    if run_gate(gate, "--root", str(fixture)).rc == 0:
+    if run_gate("--root", str(fixture)).rc == 0:
         gate.log_fail("D. the perturbation this case restores from did not turn the gate red")
 
     document.write_text(pristine, encoding="utf-8")
     if document.read_text(encoding="utf-8") != pristine:
         gate.log_fail("D. restore failed; the fixture is not what it was")
-    result = run_gate(gate, "--root", str(fixture))
+    result = run_gate("--root", str(fixture))
     if result.rc != 0:
         gate.log_fail("D. still red after restoring: %s" % result.err)
     gate.log_pass("D. restored, and the gate is green again")
@@ -561,7 +561,7 @@ def test_e_the_same_rows_in_a_different_order_are_reported_as_a_move(gate, tmp_p
         gate.log_fail("E. no table with two data rows found")
     document.write_text("\n".join(lines), encoding="utf-8")
 
-    result = run_gate(gate, "--root", str(fixture))
+    result = run_gate("--root", str(fixture))
     if result.rc == 0:
         gate.log_fail("E. CONTROL DID NOT FIRE: a reordered table passed")
     gate.assert_contains(result.err, "MOVED", "E. a reorder was not reported as a move")
@@ -587,7 +587,7 @@ def test_f_a_document_that_loses_its_markers(gate, tmp_path):
     del lines[open_at]
     document.write_text("\n".join(lines), encoding="utf-8")
 
-    generated = run_fixgen(gate, fixture)
+    generated = run_fixgen(fixture)
     if generated.rc != 0:
         explain_fixture_gap(gate, fixture, generated)
         gate.log_error(generated.err)
@@ -598,7 +598,7 @@ def test_f_a_document_that_loses_its_markers(gate, tmp_path):
     if not any(line.startswith("ok ") for line in generated.out.splitlines()):
         gate.log_fail("F. gen-docs exited 0 without naming a target, which is a different defect")
 
-    result = run_gate(gate, "--root", str(fixture))
+    result = run_gate("--root", str(fixture))
     if result.rc == 0:
         gate.log_fail("F. CONTROL DID NOT FIRE: the gate passed over a provider no region uses")
     gate.assert_contains(
@@ -622,7 +622,7 @@ def test_g_a_marker_a_human_reads_but_the_parser_refuses(gate, tmp_path):
         gate.log_fail("G. no marker to indent")
     document.write_text("\n".join(lines), encoding="utf-8")
 
-    result = run_gate(gate, "--root", str(fixture))
+    result = run_gate("--root", str(fixture))
     if result.rc == 0:
         gate.log_fail("G. CONTROL DID NOT FIRE: an indented marker passed as if it were a region")
     gate.assert_contains(
@@ -630,7 +630,7 @@ def test_g_a_marker_a_human_reads_but_the_parser_refuses(gate, tmp_path):
     )
 
     document.write_text(pristine, encoding="utf-8")
-    if run_gate(gate, "--root", str(fixture)).rc != 0:
+    if run_gate("--root", str(fixture)).rc != 0:
         gate.log_fail("G. the fixture did not come back to green")
     gate.log_pass("G. an indented marker is reported as a region the generator cannot see")
 
@@ -638,12 +638,12 @@ def test_g_a_marker_a_human_reads_but_the_parser_refuses(gate, tmp_path):
 def test_h_a_root_with_no_markdown_is_a_failure(gate, tmp_path):
     empty = tmp_path / "empty"
     empty.mkdir(parents=True, exist_ok=True)
-    binary = git(gate)
+    binary = git()
     harness.run([binary, "-C", str(empty), "init", "-q", "--initial-branch=main", "."])
     (empty / "readme.txt").write_text("not markdown\n", encoding="utf-8")
     harness.run([binary, "-C", str(empty), "add", "--", "readme.txt"])
 
-    result = run_gate(gate, "--root", str(empty))
+    result = run_gate("--root", str(empty))
     if result.rc == 0:
         gate.log_fail(
             "H. CONTROL DID NOT FIRE: the gate was green over a tree with nothing to check"
@@ -653,7 +653,7 @@ def test_h_a_root_with_no_markdown_is_a_failure(gate, tmp_path):
 
 
 def test_i_the_selftest_is_green_and_still_plants_its_defects(gate):
-    result = run_gate(gate, "--selftest")
+    result = run_gate("--selftest")
     if result.rc != 0:
         gate.log_error(result.out)
         gate.log_fail("I. the gate's own selftest failed")

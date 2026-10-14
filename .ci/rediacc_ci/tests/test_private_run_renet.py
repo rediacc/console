@@ -507,7 +507,7 @@ def test_main_exports_renet_test_pkgs_from_the_named_leg_before_invoking_ci_sh(
     class _Completed:
         returncode = 0
 
-    def fake_run(argv, check=False):  # noqa: ARG001 -- part of subprocess.run's signature
+    def fake_run(argv, **_kwargs):
         captured["argv"] = argv
         captured["RENET_TEST_PKGS"] = os.environ.get("RENET_TEST_PKGS")
         return _Completed()

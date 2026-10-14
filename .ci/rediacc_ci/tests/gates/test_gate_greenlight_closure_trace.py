@@ -48,7 +48,7 @@ ENGINE = ROOT / ".ci" / "scripts" / "ci" / "greenlight.cjs"
 CHECKER_PATH = pathlib.Path(__file__).resolve().parent / "trace_checker.cjs.fixture"
 
 
-def node(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
+def node() -> str:
     return harness.require_tool(
         "node",
         "install Node 22 (the version .devcontainer/toolchain.env pins), or run this "
@@ -60,7 +60,7 @@ def table_json(gate, directory: pathlib.Path) -> pathlib.Path:
     """CLOSURES as data, which is what makes the mutation controls possible without ever editing the engine."""
     result = harness.run(
         [
-            node(gate),
+            node(),
             "-e",
             (
                 "const { CLOSURES } = require(process.argv[1]);"
@@ -96,7 +96,7 @@ def write_checker(gate, directory: pathlib.Path) -> pathlib.Path:
 
 def trace(gate, table: pathlib.Path) -> harness.RunResult:
     checker = write_checker(gate, table.parent)
-    return harness.run([node(gate), str(checker), str(ROOT), str(table)], timeout=600)
+    return harness.run([node(), str(checker), str(ROOT), str(table)], timeout=600)
 
 
 def derived(text: str, index: int, key: str | None = None) -> list[str]:
@@ -117,7 +117,7 @@ def mutate_table(gate, source: pathlib.Path, target: pathlib.Path, program: str)
 
     THE MUTATION IS DONE IN NODE, not in Python's `json`, and that is deliberate: the table is produced by `JSON.stringify` and consumed by `JSON.parse`, so a rewrite in a third serializer would be a third opinion about the same bytes.
     """
-    result = harness.run([node(gate), "-e", program, str(source), str(target)])
+    result = harness.run([node(), "-e", program, str(source), str(target)])
     if result.rc != 0:
         gate.log_fail(
             "the table mutation did not apply, so the control below would pass for the "

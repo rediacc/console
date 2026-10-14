@@ -636,7 +636,7 @@ module.harvest = exploded
 workflow_dir = pathlib.Path(sys.argv[3])
 sys.exit(
     module.refresh(
-        workflow_dir.parent, pathlib.Path(sys.argv[2]), workflow_dir, "main", "", 8
+        pathlib.Path(sys.argv[2]), workflow_dir, "main", "", 8
     )
 )
 """
@@ -698,7 +698,7 @@ workflow_dir = pathlib.Path(sys.argv[3])
 module.harvest = lambda *a, **k: (["9001"], rows)
 sys.exit(
     module.refresh(
-        workflow_dir.parent, pathlib.Path(sys.argv[2]), workflow_dir, "main", "", 8
+        pathlib.Path(sys.argv[2]), workflow_dir, "main", "", 8
     )
 )
 """

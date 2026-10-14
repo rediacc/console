@@ -659,7 +659,12 @@ def test_delta_the_gateway_does_not_inherit_the_sandbox_and_the_store_env_reache
 
 
 class _Patcher(lib.Drill):
-    def account_patch_subscription(self, *_args: object) -> str:  # type: ignore[override]
+    def account_patch_subscription(self, *_args: object) -> str:
+        raise OSError("connection refused")
+
+
+class _BackupPatcher(backup.BackupDrill):
+    def account_patch_subscription(self, *_args: object) -> str:
         raise OSError("connection refused")
 
 
@@ -682,7 +687,7 @@ def test_delta_a_failed_subscription_restore_is_reported(
         assert "restoring the subscription" in err
         assert "connection refused" in err
         sub = backup.Backup(backup.BackupDrill("backup"), backup.Options())
-        sub.d = _Patcher("backup")  # type: ignore[assignment]
+        sub.d = _BackupPatcher("backup")
         sub.admin_jar, sub.subscription_id, sub.quota_lowered = (
             http.cookiejar.CookieJar(),
             "sub",
@@ -711,10 +716,10 @@ class _FakeLicense(license_drill.License):
     def license_status(self) -> str:
         return self.status_text
 
-    def activate_repo_for(self, machine_id: str) -> str:  # noqa: ARG002
+    def activate_repo_for(self, _machine_id: str) -> str:
         return self.activate_text
 
-    def ssh_out(self, host: str, command: str, stdin: str | None = None) -> tuple[int, str]:  # noqa: ARG002
+    def ssh_out(self, _host: str, _command: str, _stdin: str | None = None) -> tuple[int, str]:
         return 0, "own-id\n"
 
 
@@ -972,7 +977,10 @@ def test_the_bash_preclean_heredoc_equals_the_ports_script() -> None:
         .replace("${VM_RENET}", "renet")
     )
     ours = license_drill.preclean_script("renet")
-    squash = lambda s: re.sub(r"\s+", " ", s.replace("%%", "%")).strip()  # noqa: E731
+
+    def squash(s):
+        return re.sub(r"\s+", " ", s.replace("%%", "%")).strip()
+
     assert squash(expanded) == squash(ours)
 
 

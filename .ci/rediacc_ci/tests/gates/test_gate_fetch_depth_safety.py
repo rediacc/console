@@ -92,11 +92,11 @@ PINNED_SHORT_RE = re.compile(r" -b [A-Za-z]")
 SHALLOW_AWARE = ("is-shallow-repository", "/shallow", "isShallow")
 
 
-def git(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
+def git() -> str:
     return harness.require_tool("git", "install git")
 
 
-def node(gate) -> str:  # noqa: ARG001 - `gate` keeps every caller uniform
+def node() -> str:
     return harness.require_tool(
         "node",
         "install Node 22 (the version .devcontainer/toolchain.env pins), or run this "
@@ -159,13 +159,13 @@ def shallow_aware(path: pathlib.Path) -> bool:
     return any(token in text for token in SHALLOW_AWARE)
 
 
-def is_shallow(gate, directory: pathlib.Path) -> bool:
-    probe = harness.run([git(gate), "-C", str(directory), "rev-parse", "--is-shallow-repository"])
+def is_shallow(directory: pathlib.Path) -> bool:
+    probe = harness.run([git(), "-C", str(directory), "rev-parse", "--is-shallow-repository"])
     return probe.out.strip() == "true"
 
 
-def commit_count(gate, directory: pathlib.Path) -> int:
-    probe = harness.run([git(gate), "-C", str(directory), "rev-list", "--count", "HEAD"])
+def commit_count(directory: pathlib.Path) -> int:
+    probe = harness.run([git(), "-C", str(directory), "rev-list", "--count", "HEAD"])
     return int(probe.out.strip()) if probe.rc == 0 and probe.out.strip().isdigit() else 0
 
 
@@ -177,7 +177,7 @@ def make_fixture(gate, directory: pathlib.Path) -> pathlib.Path:
 
     So the default branch is pinned in three places (both inits and an explicit `symbolic-ref`, because which of them a given git honours has changed across versions), and the commit count is a hard precondition rather than a hope.
     """
-    binary = git(gate)
+    binary = git()
     origin = directory / "origin"
     work = directory / "work"
     clone = directory / "clone"
@@ -205,7 +205,7 @@ def make_fixture(gate, directory: pathlib.Path) -> pathlib.Path:
     run("-C", str(clone), "config", "user.name", "t")
 
     # PRECONDITION, not a case: a fixture shallower than the --depth this gate tests cannot demonstrate anything, and a broken one must never pass.
-    count = commit_count(gate, clone)
+    count = commit_count(clone)
     if count < FIXTURE_COMMITS:
         gate.log_fail(
             "FIXTURE BROKEN: %s holds %d commit(s), expected %d -- every verdict below "
@@ -214,7 +214,7 @@ def make_fixture(gate, directory: pathlib.Path) -> pathlib.Path:
     return clone
 
 
-def detect_changed_files(gate, clone: pathlib.Path) -> harness.RunResult:
+def detect_changed_files(clone: pathlib.Path) -> harness.RunResult:
     """The REAL entry point. `detectChangedFiles` is what `validate:translation-freshness` calls, and `tryFetchBaseRef` is private to the module, so this drives the thing that actually runs in CI.
 
     `TRANSLATION_FRESHNESS_CHANGED_FILES` is UNSET rather than left inherited: the module short-circuits on it, and inheriting a value from an outer run would make the fetch this whole file is about never happen.
@@ -226,7 +226,7 @@ def detect_changed_files(gate, clone: pathlib.Path) -> harness.RunResult:
     }
     return harness.run(
         [
-            node(gate),
+            node(),
             "--input-type=module",
             "-e",
             "import { detectChangedFiles } from '%s';\n"
@@ -241,10 +241,10 @@ def detect_changed_files(gate, clone: pathlib.Path) -> harness.RunResult:
 def test_the_pre_fix_command_truncates_a_full_clone(gate, tmp_path):
     # CONTROL: the fixture must be able to SHOW the defect. Without this every case below is a check that cannot fail.
     clone = make_fixture(gate, tmp_path / "plant")
-    before = commit_count(gate, clone)
+    before = commit_count(clone)
     harness.run(
         [
-            git(gate),
+            git(),
             "-C",
             str(clone),
             "fetch",
@@ -255,11 +255,11 @@ def test_the_pre_fix_command_truncates_a_full_clone(gate, tmp_path):
         ],
         timeout=600,
     )
-    after = commit_count(gate, clone)
-    if not (is_shallow(gate, clone) and after < before):
+    after = commit_count(clone)
+    if not (is_shallow(clone) and after < before):
         gate.log_fail(
             "CONTROL: the pre-fix command did NOT truncate the fixture (shallow=%s %d -> %d)"
-            % (is_shallow(gate, clone), before, after)
+            % (is_shallow(clone), before, after)
         )
     gate.log_pass(
         "CONTROL: the pre-fix command truncates a full clone (%d -> %d commits)" % (before, after)
@@ -268,17 +268,17 @@ def test_the_pre_fix_command_truncates_a_full_clone(gate, tmp_path):
 
 def test_detect_changed_files_leaves_a_full_clone_full(gate, tmp_path):
     clone = make_fixture(gate, tmp_path / "real")
-    binary = git(gate)
+    binary = git()
     harness.run([binary, "-C", str(clone), "checkout", "--quiet", "-b", "feature"])
     (clone / "g.txt").write_text("change\n", encoding="utf-8")
     harness.run([binary, "-C", str(clone), "add", "g.txt"])
     harness.run([binary, "-C", str(clone), "commit", "--quiet", "-m", "feature commit"])
-    before = commit_count(gate, clone)
+    before = commit_count(clone)
     if not MODULE.is_file():
         gate.log_fail("the module under test is missing: %s" % MODULE)
-    detect_changed_files(gate, clone)
-    after = commit_count(gate, clone)
-    if is_shallow(gate, clone):
+    detect_changed_files(clone)
+    after = commit_count(clone)
+    if is_shallow(clone):
         gate.log_fail(
             "detectChangedFiles SHALLOWIFIED a full clone (%d -> %d commits) -- the "
             "--depth must be conditional on the clone already being shallow" % (before, after)
@@ -290,7 +290,7 @@ def test_an_already_shallow_clone_is_still_handled(gate, tmp_path):
     # CONTROL ON THE FIX: the depth was an optimisation for exactly this case, and removing it everywhere would be the other kind of wrong.
     directory = tmp_path / "shallow"
     make_fixture(gate, directory)
-    binary = git(gate)
+    binary = git()
     clone = directory / "clone"
     harness.run(["rm", "-rf", str(clone)])
     harness.run(
@@ -309,16 +309,16 @@ def test_an_already_shallow_clone_is_still_handled(gate, tmp_path):
     )
     harness.run([binary, "-C", str(clone), "config", "user.email", "t@example.com"])
     harness.run([binary, "-C", str(clone), "config", "user.name", "t"])
-    if not is_shallow(gate, clone):
+    if not is_shallow(clone):
         gate.log_fail("CONTROL: the shallow fixture is not shallow, so the case proves nothing")
-    result = detect_changed_files(gate, clone)
+    result = detect_changed_files(clone)
     if result.rc != 0:
         gate.log_fail("an already-shallow clone now fails (exit %d)" % result.rc)
     gate.log_pass("CONTROL: an already-shallow clone is still handled (exit 0)")
 
 
 def tracked(gate, *globs: str) -> list[str]:
-    result = harness.run([git(gate), "-C", str(ROOT), "ls-files", *globs], timeout=600)
+    result = harness.run([git(), "-C", str(ROOT), "ls-files", *globs], timeout=600)
     if result.rc != 0:
         gate.log_fail("git ls-files failed, so the sweep has no corpus: %s" % result.err)
     return [line for line in result.out.splitlines() if line]
