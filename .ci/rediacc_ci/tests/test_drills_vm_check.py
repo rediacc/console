@@ -868,3 +868,17 @@ def test_the_npm_script_and_the_drill_table_name_this_module() -> None:
     assert scripts["vm:check"] == "PYTHONPATH=.ci python3 -m rediacc_ci.drills.vm_check"
     assert run_verbs.DRILL_MODULES["vmcheck"] == "rediacc_ci.drills.vm_check"
     assert "id: 'vm:check'" in (root / "scripts/ci-runner/manifest.ts").read_text()
+
+
+def test_an_rdc_failure_is_named_by_its_json_error_not_its_progress_lines() -> None:
+    """`-o json` puts the error on stdout and progress on stderr; the reason read stderr alone (2026-10-14T23:53Z)."""
+    envelope = json.dumps(
+        {
+            "success": False,
+            "errors": [{"code": "LOCAL_EXECUTION_FAILED", "message": "SSH connection error"}],
+        }
+    )
+    res = vm_check.Result(1, envelope, 'Starting CLI\nListing repositories on "w"...\n')
+    assert vm_check.rdc_failure(res) == "SSH connection error"
+    assert vm_check.rdc_failure(vm_check.Result(1, "", "a\nb\nboom\n")) == "a | b | boom"
+    assert vm_check.rdc_failure(vm_check.Result(1, "plain failure\n", "")) == "plain failure"
