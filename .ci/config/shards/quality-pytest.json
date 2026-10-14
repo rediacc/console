@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T16:52:59.101Z",
+  "generatedAt": "2026-10-14T17:30:47.788Z",
   "legs": [
     {
       "index": 1,
@@ -634,6 +634,7 @@
         "pytest:.ci/rediacc_ci/tests/test_version_bump.py",
         "pytest:.ci/rediacc_ci/tests/test_version_inject_env.py",
         "pytest:.ci/rediacc_ci/tests/test_version_resolve_version.py",
+        "pytest:.ci/rediacc_ci/tests/test_vitest_cache_isolation.py",
         "pytest:.ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
         "pytest:.ci/rediacc_ci/tests/test_wl_proc.py",
         "pytest:.ci/rediacc_ci/tests/test_worklist_state_stdin.py",
