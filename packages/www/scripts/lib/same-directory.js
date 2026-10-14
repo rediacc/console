@@ -4,13 +4,26 @@ import path from 'node:path';
 const swapCase = (s) =>
   [...s].map((c) => (c === c.toLowerCase() ? c.toUpperCase() : c.toLowerCase())).join('');
 
-// Whether the volume holding this directory ignores case, found by asking for the directory under a spelling with its last segment's case swapped: only a case-insensitive volume resolves it. Case-sensitive volumes (Linux, or a case-sensitive APFS volume) keep two directories that differ only by case apart.
+// The deepest segment of the path with letters whose case can be swapped, as the directory holding it, its name, the swapped name and the path below it. A trailing segment such as `2024` has no case, so the probe moves up to the nearest segment that does.
+const cased = (p) => {
+  let cur = p;
+  for (;;) {
+    const dir = path.dirname(cur);
+    if (dir === cur) return null;
+    const name = path.basename(cur);
+    const swapped = swapCase(name);
+    if (swapped !== name) return { dir, name, swapped, rest: path.relative(cur, p) };
+    cur = dir;
+  }
+};
+
+// Whether the volume holding this directory ignores case, found by asking for the directory under a spelling with one segment's case swapped: a case-insensitive volume resolves it, yet lists only the stored spelling. A case-sensitive volume (Linux, or a case-sensitive APFS volume) either fails the lookup or, when a sibling that differs only by case exists, resolves it and lists it as its own entry, so the listing is what tells the two apart.
 const ignoresCase = (p) => {
-  const swapped = path.join(path.dirname(p), swapCase(path.basename(p)));
-  if (swapped === p) return false;
+  const probe = cased(p);
+  if (!probe) return false;
   try {
-    fs.realpathSync(swapped);
-    return true;
+    fs.realpathSync(path.join(probe.dir, probe.swapped, probe.rest));
+    return !fs.readdirSync(probe.dir).includes(probe.swapped);
   } catch {
     return false;
   }

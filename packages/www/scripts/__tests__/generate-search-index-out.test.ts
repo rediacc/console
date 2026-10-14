@@ -68,10 +68,12 @@ describe('sameDirectory', () => {
 });
 
 describe('inode 0 on a case-folding platform', () => {
-  // Every directory reports inode 0; `resolve` maps a path to the spelling the volume would find (identity on a case-sensitive one).
-  const withInodeZero = (body: () => boolean, resolve: (p: string) => string = (p) => p) => {
-    const realStat = fs.statSync;
-    const realReal = fs.realpathSync;
+  // Every directory reports inode 0. `resolve` maps a path to the spelling the volume would find for stat and realpath (identity on a case-sensitive one); `resolveReal` overrides realpath alone, for a volume whose realpath keeps the spelling it was given.
+  const withInodeZero = (
+    body: () => boolean,
+    resolve: (p: string) => string = (p) => p,
+    resolveReal: (p: string) => string = (p) => realReal(resolve(p))
+  ) => {
     const statDesc = Object.getOwnPropertyDescriptor(fs, 'statSync');
     const pathDesc = Object.getOwnPropertyDescriptor(fs, 'realpathSync');
     (fs as { statSync: unknown }).statSync = ((p: fs.PathLike) => {
@@ -79,7 +81,7 @@ describe('inode 0 on a case-folding platform', () => {
       return Object.assign(Object.create(Object.getPrototypeOf(s)), s, { ino: 0 });
     }) as typeof fs.statSync;
     (fs as { realpathSync: unknown }).realpathSync = Object.assign(
-      (p: fs.PathLike) => realReal(resolve(String(p))),
+      (p: fs.PathLike) => resolveReal(String(p)),
       { native: realReal.native }
     );
     try {
@@ -89,30 +91,80 @@ describe('inode 0 on a case-folding platform', () => {
       if (pathDesc) Object.defineProperty(fs, 'realpathSync', pathDesc);
     }
   };
-  const upper = path.join(scratch, 'Pub');
-  const lower = path.join(scratch, 'pub');
-  fs.mkdirSync(upper);
-  fs.mkdirSync(lower);
+  const realStat = fs.statSync;
+  const realReal = fs.realpathSync;
 
-  it('keeps two directories that differ only by case apart on a case-sensitive volume', () => {
-    expect(withInodeZero(() => sameDirectory(upper, lower, 'darwin'))).toBe(false);
-    expect(withInodeZero(() => sameDirectory(upper, lower, 'win32'))).toBe(false);
-  });
+  // A case-insensitive volume: each segment finds the entry whose name matches ignoring case, and the stored spelling is returned.
+  const insensitive = (p: string): string => {
+    let cur = path.parse(p).root;
+    for (const part of path.relative(cur, p).split(path.sep).filter(Boolean)) {
+      const hit = fs.readdirSync(cur).find((n) => n.toLowerCase() === part.toLowerCase());
+      cur = path.join(cur, hit ?? part);
+    }
+    return cur;
+  };
+  // Whether a lookup finds the entry at all, without canonicalizing its spelling.
+  const keepsSpelling = (p: string): string => {
+    realReal(insensitive(p));
+    return p;
+  };
 
-  it('CONTROL: calls two spellings of one directory equal when the volume ignores case', () => {
+  // Names differing only by case coexist only on a case-sensitive volume; a case-insensitive host (macOS, Windows) skips the tests that need both.
+  const caseSensitive = (() => {
+    const probe = path.join(scratch, 'CaseProbe');
+    fs.mkdirSync(probe);
+    return !fs.existsSync(path.join(scratch, 'caseprobe'));
+  })();
+  const makePair = (upperName: string, lowerName: string): [string, string] => {
+    const upper = path.join(scratch, upperName);
+    const lower = path.join(scratch, lowerName);
+    fs.mkdirSync(upper);
+    fs.mkdirSync(lower);
+    return [upper, lower];
+  };
+
+  it.skipIf(!caseSensitive)(
+    'keeps two directories that differ only by case apart on a case-sensitive volume',
+    () => {
+      const [upper, lower] = makePair('Pub', 'pub');
+      expect(withInodeZero(() => sameDirectory(upper, lower, 'darwin'))).toBe(false);
+      expect(withInodeZero(() => sameDirectory(upper, lower, 'win32'))).toBe(false);
+    }
+  );
+
+  it.skipIf(!caseSensitive)(
+    'keeps them apart when the fully case-swapped spelling also exists as a sibling',
+    () => {
+      const [upper, lower] = makePair('PUB2', 'pub2');
+      const mixed = path.join(scratch, 'Pub2');
+      fs.mkdirSync(mixed);
+      expect(withInodeZero(() => sameDirectory(upper, lower, 'darwin'))).toBe(false);
+      expect(withInodeZero(() => sameDirectory(lower, upper, 'win32'))).toBe(false);
+    }
+  );
+
+  it('CONTROL: folds two spellings of one directory when the volume ignores case and its realpath keeps the spelling given', () => {
     const dir = path.join(scratch, 'Only');
     fs.mkdirSync(dir);
-    // A case-insensitive volume: a spelling that differs by case finds the one entry.
-    const insensitive = (p: string): string => {
-      const hit = fs
-        .readdirSync(path.dirname(p))
-        .find((n) => n.toLowerCase() === path.basename(p).toLowerCase());
-      return hit ? path.join(path.dirname(p), hit) : p;
-    };
-    const same = withInodeZero(
-      () => sameDirectory(dir, path.join(scratch, 'only'), 'darwin'),
-      insensitive
+    const other = path.join(scratch, 'only');
+    // The two realpaths differ here, so the equality short-circuit cannot answer and the fold decides.
+    expect(keepsSpelling(other)).not.toBe(keepsSpelling(dir));
+    expect(
+      withInodeZero(() => sameDirectory(dir, other, 'darwin'), insensitive, keepsSpelling)
+    ).toBe(true);
+    // A platform that does not default to case-insensitive volumes never folds.
+    expect(
+      withInodeZero(() => sameDirectory(dir, other, 'linux'), insensitive, keepsSpelling)
+    ).toBe(false);
+  });
+
+  it('folds when the last segment has no letters, probing the nearest segment that has', () => {
+    const site = path.join(scratch, 'Site');
+    fs.mkdirSync(path.join(site, '2024'), { recursive: true });
+    const a = path.join(site, '2024');
+    const b = path.join(scratch, 'site', '2024');
+    expect(withInodeZero(() => sameDirectory(a, b, 'darwin'), insensitive, keepsSpelling)).toBe(
+      true
     );
-    expect(same).toBe(true);
   });
 });
