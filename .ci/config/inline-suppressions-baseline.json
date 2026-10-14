@@ -741,48 +741,6 @@
   ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py": {
    "noqa DTZ005": 2
   },
-  ".claude/rediacc_hooks/guards/test-block_agent_cap.py": {
-   "noqa PLC0415": 2,
-   "type-ignore arg-type": 1,
-   "type-ignore union-attr": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": {
-   "noqa E402": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_missing_npm_script.py": {
-   "noqa E402": 2,
-   "type-ignore arg-type": 1,
-   "type-ignore union-attr": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_plan_box_rewrite.py": {
-   "noqa PLC0415": 2
-  },
-  ".claude/rediacc_hooks/guards/test-block_plan_concurrency.py": {
-   "noqa PLC0415": 2
-  },
-  ".claude/rediacc_hooks/guards/test-block_plan_without_depends.py": {
-   "noqa PLC0415": 2
-  },
-  ".claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_raw_ci_read.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_review_file_edit.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_second_branch.py": {
-   "noqa DTZ005": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_unscoped_formatter_run.py": {
-   "noqa E402": 2,
-   "type-ignore arg-type": 1,
-   "type-ignore union-attr": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_unverified_push.py": {
-   "type-ignore index": 1
-  },
   ".claude/rediacc_hooks/hookio.py": {
    "noqa F401": 1
   },

@@ -5,26 +5,22 @@ Both directions, because a one-sided control is satisfiable by a broken guard: o
 """
 
 import ast
-import importlib.util
 import json
 import pathlib
 import subprocess
 import sys
 import typing
 
+import _hookpath
+
+from rediacc_hooks import hookio
+from rediacc_hooks.guards import block_unscoped_formatter_run as guard
+
 HERE = pathlib.Path(__file__).resolve()
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
 STEM = "block_unscoped_formatter_run"
 GUARD_ARGV = [sys.executable, DISPATCH, STEM]
 
-_SYSPATH = importlib.util.spec_from_file_location(
-    "rediacc_hooks_syspath", HERE.parents[1] / "syspath.py"
-)
-_syspath = importlib.util.module_from_spec(_SYSPATH)  # type: ignore[arg-type]
-_SYSPATH.loader.exec_module(_syspath)  # type: ignore[union-attr]
-_syspath.on_sys_path(str(HERE.parents[2]))
-from rediacc_hooks import hookio  # noqa: E402
-from rediacc_hooks.guards import block_unscoped_formatter_run as guard  # noqa: E402
 
 ROOT = hookio.repo_root()
 

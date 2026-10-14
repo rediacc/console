@@ -347,6 +347,8 @@ ignore = [
 allowed-unused-imports = [
     # BLOCKER: `_cipath` is imported by every path-invoked entry point for its one side effect, putting `.ci` on sys.path; a function call there would be a statement and make every later import E402 (measured, .ci/scripts/quality/_cipath.py docstring)
     "_cipath",
+    # BLOCKER: `_hookpath` is imported by every path-invoked guard harness under .claude/rediacc_hooks/guards for its one side effect, putting `.claude` on sys.path so `rediacc_hooks` resolves; a function call there would be a statement and make every later import E402 (.claude/rediacc_hooks/guards/_hookpath.py docstring)
+    "_hookpath",
 ]
 
 [tool.ruff.format]

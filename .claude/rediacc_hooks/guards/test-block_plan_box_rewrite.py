@@ -10,6 +10,7 @@ IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER against a real git checkout buil
 THE DEFECT IS PROVEN HERE TOO. After the cases, the guard's source is loaded with its declared `DEFECT` planted and run in-process on the same worlds; at least one answer must change, and every refusal case must turn into an allow, or this suite's green does not depend on the verdict line.
 """
 
+import ast
 import atexit
 import importlib.util
 import json
@@ -354,8 +355,6 @@ def run_case(cmd, root):
 
 def _outside_defect(src):
     """`src` with the top-level `DEFECT` assignment removed, so the needle search cannot be satisfied by the declaration itself."""
-    import ast  # noqa: PLC0415 -- only the planted-defect control needs it
-
     cut = [
         n
         for n in ast.parse(src).body
@@ -429,7 +428,7 @@ def main():
     pkg = importlib.util.module_from_spec(spec_)
     sys.modules["rediacc_hooks"] = pkg
     spec_.loader.exec_module(pkg)
-    from rediacc_hooks import hookio  # noqa: PLC0415 -- the package is registered just above
+    hookio = importlib.import_module("rediacc_hooks.hookio")
 
     good: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
     exec(compile(SOURCE, str(GUARD), "exec"), good)
