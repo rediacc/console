@@ -356,10 +356,11 @@ def completed_by(run: dict[str, Any], as_of: float | None) -> bool:
 
 
 def from_this_repo(run: dict[str, Any], repo: str) -> bool:
-    """Whether `run` was built from a branch of `repo` itself. A pull request from a fork is a run of this workflow too, and its unit-duration artifacts are written by code the repository did not review, so they are never parsed (`xml_trusted` names that boundary). A run that names no head repository is admitted: the API always names one, and a bare record carries no other repository's claim."""
-    head = run.get("head_repository")
-    name = head.get("full_name") if isinstance(head, dict) else None
-    return not isinstance(name, str) or name == repo
+    """Whether `run` was built from a branch of `repo` itself. A pull request from a fork is a run of this workflow too, and its unit-duration artifacts are written by code the repository did not review, so they are never parsed (`xml_trusted` names that boundary). A run whose `head_repository` is present but null or unnamed is dropped: GitHub reports null for a pull-request run whose fork was deleted, and that run was still built from fork code. A record with no `head_repository` key at all carries no other repository's claim and is admitted."""
+    if "head_repository" not in run:
+        return True
+    head = run["head_repository"]
+    return isinstance(head, dict) and head.get("full_name") == repo
 
 
 def fetch_runs(
@@ -1177,7 +1178,7 @@ def _gates_lock_problem(root: Path) -> str | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        # ValueError is both json.JSONDecodeError and UnicodeDecodeError (bytes that are not UTF-8), review a80e54c6.1.
+        # ValueError is the base class of both json.JSONDecodeError and UnicodeDecodeError (bytes that are not UTF-8).
         return "%s cannot be read (%s)" % (GATES_LOCK_REL_PATH, exc)
     if not isinstance(data, list):
         return "%s is not a list" % GATES_LOCK_REL_PATH
