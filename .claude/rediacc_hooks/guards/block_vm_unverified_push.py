@@ -4,7 +4,11 @@ THE ORDER (operator /ask ASKED:2026-10-14T17:19Z, option (c) "Script plus a push
 
 WHAT IS TOUCHED is never decided here. `rediacc_ci.drills.vm_check_trigger.changed_paths(root, base, "push", tip)` is the only definition of the trigger, shared with the script, and is imported through `syspath.import_from_ci` (`.ci` on sys.path only for the import). The base is `push_base` (`@{push}`, `origin/<branch>`, `@{upstream}`, then `origin/main`, merged with the pushed tip). A renet range that cannot be computed (an old gitlink commit missing from the local private/renet) is UNKNOWN, and unknown counts as touched: it is listed among the hits, never dropped. A push base that cannot be resolved is unknown in the same way.
 
-EVERY PUSHED COMMIT IS JUDGED ON ITS OWN. A command can send several commits: two pushes with different sources, or one push naming several refspecs. Each refspec's source (a bare ref is its own source, `+` dropped, a glob or no refspec at all reads as HEAD) is resolved to a commit, and each distinct commit gets its own range, tree and receipt. Judging only HEAD would admit a pushed commit carrying a trigger change that HEAD reverts. A source git cannot resolve is named on stderr and skipped, since git refuses to push it as well.
+EVERY PUSHED COMMIT IS JUDGED ON ITS OWN. A command can send several commits: two pushes with different sources, or one push naming several refspecs. Each refspec's source (a bare ref is its own source, `+` dropped, no refspec at all reads as HEAD) is resolved to a commit, and each distinct commit gets its own range, tree and receipt. Judging only HEAD would admit a pushed commit carrying a trigger change that HEAD reverts. A source git cannot resolve is named on stderr and skipped, since git refuses to push it as well.
+
+`--all` (`--branches`) AND GLOB REFSPECS send every matching local ref, so the refs are enumerated with one `git for-each-ref` (`_enumerated`): every branch for `--all`, every ref a glob source matches for a glob (one `*`, which crosses `/` as it does in git; an unqualified glob is also tried under `refs/` and `refs/heads/`, a superset of git's match). A ref whose tip equals its remote-tracking counterpart (`refs/remotes/<remote>/<branch>` for a `refs/heads/` destination, the remote being the push's own, else `branch.<b>.pushRemote`, `remote.pushDefault`, `branch.<b>.remote`, `origin`) sends nothing and is not judged; a ref with no counterpart (a URL remote, a tag, another namespace) is judged. Each judged tip takes the per-commit path above. A ref set that cannot be enumerated (`for-each-ref` failing, a glob git would call invalid, a tip that is no commit) is UNKNOWN and counts as touched: it is refused like a range with no receipt, never skipped.
+
+`--mirror` IS REFUSED OUTRIGHT, touched or not. It sends every ref, deletes each remote ref missing here and forces each diverged one, so no receipt for one tree can speak for it. Only the escape admits it, and only as `not-runtime` or `deadline`: `vm-unavailable` names a NOT_VERIFIED attempt for one tree, which a push of every ref has none of. An unenumerable ref set is judged the same way.
 
 THE RECEIPT is judged by `vm_check_receipt.admit(root, tree, inputs(root, tree))`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, admits. A later commit outside the trigger keeps the digest, so it costs no new VM run.
 
@@ -20,7 +24,7 @@ THE ESCAPE is an environment assignment on the push itself, read from the shared
 
 THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 62 is the last pre-bash slot, so every other guard has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
 
-SCOPE, as `block_unverified_push` draws it: a command-position `git push` in this checkout. NOT judged: a `--dry-run` push; a delete push (`--delete`, `:<ref>`); a push whose source is exactly `origin/main` (the GitLab mirror push of /pr-merge step 6b, `block_unverified_push.pushes_only_origin_main`); a submodule push (the console pointer push carries the range); another repository, by `-C`, `cd` or the payload's `cwd`.
+SCOPE, as `block_unverified_push` draws it: a command-position `git push` in this checkout. NOT judged: a `--dry-run` push (a `--mirror` or `--all` one too, since it publishes nothing); a delete push (`--delete`, `:<ref>`); a push whose source is exactly `origin/main` (the GitLab mirror push of /pr-merge step 6b, `block_unverified_push.pushes_only_origin_main`), which a `--mirror` push never is; a submodule push (the console pointer push carries the range); another repository, by `-C`, `cd` or the payload's `cwd`.
 
 THE OPERATOR. There is no override beyond the ASKED escape: the operator's own `!` command never reaches PreToolUse.
 
@@ -290,6 +294,13 @@ EDGE_CASES = [
     ("a scratch repo", "git -C /tmp push origin x"),
     ("two pushes of two commits", "git push origin %s:refs/heads/x && %s" % (TIP_BRANCH, _PUSH)),
     ("two refspecs in one push", "git push origin 1008-1:1008-1 %s:refs/heads/x" % TIP_BRANCH),
+    ("every branch", "git push --all origin"),
+    ("a glob refspec", "git push origin 'refs/heads/*:refs/heads/*'"),
+    ("a mirror push", "git push --mirror origin"),
+    (
+        "a mirror push, escaped",
+        "%s='deadline: %s%s' git push --mirror origin" % (REASON_ENV, _DEADLINE, _ASK),
+    ),
 ]
 
 
@@ -320,40 +331,150 @@ def _pushes(cmd, root, base):
             # A submodule (its pointer push carries the range) or another repository.
             continue
         line = " ".join(["git", "push", *args])
-        if PUSH.pushes_only_origin_main(root, [line]):
+        # Before the origin/main exemption: a mirror push is never the GitLab copy of main.
+        if not _mirrors(args) and PUSH.pushes_only_origin_main(root, [line]):
             continue
         out.append((line, run.env.get(REASON_ENV), args))
     return out
 
 
-def _sources(args):
-    """Every source one push sends, in order: each refspec's left side (a bare ref is its own source, a leading `+` dropped), HEAD for a glob or when no refspec is named. A `:dst` delete inside a mixed push sends nothing."""
-    specs = shellscan.git_push_args(args).operands[1:]
-    out = []
+def _mirrors(args):
+    return shellscan.git_push_args(args).on("mirror")
+
+
+def _remote(root, parsed):
+    """The configured remote name a push sends to, "" when it is a URL or no remote this checkout knows (then no ref has a remote-tracking counterpart)."""
+    name = parsed.operands[0] if parsed.operands else parsed.last("repo")
+    if not name:
+        branch = commit_policy.current_branch(root)
+        keys = ["remote.pushDefault"]
+        if branch:
+            keys = ["branch.%s.pushRemote" % branch, *keys, "branch.%s.remote" % branch]
+        for key in keys:
+            name = commit_policy.git(["config", "--get", key], cwd=root)
+            if name:
+                break
+        name = name or "origin"
+    if commit_policy.git(["config", "--get", "remote.%s.url" % name], cwd=root):
+        return name
+    return ""
+
+
+def _glob_match(pattern, refname):
+    """The part of `refname` the one `*` of `pattern` stands for, None when it does not match."""
+    head, _star, tail = pattern.partition("*")
+    if len(refname) < len(head) + len(tail):
+        return None
+    if not (refname.startswith(head) and refname.endswith(tail)):
+        return None
+    return refname[len(head) : len(refname) - len(tail)]
+
+
+def _enumerated(root, parsed, globs):
+    """[(label, commit-or-None, why-unknown)] for every ref `--all` or the glob refspecs `globs` send whose tip differs from its remote-tracking counterpart.
+
+    A tip that is not a commit, an invalid glob and a `for-each-ref` that fails each come back as one entry with no commit and the reason, so the caller counts it as touched.
+    """
+    listing = commit_policy.git(
+        ["for-each-ref", "--format=%(refname)%09%(objectname)%09%(*objectname)"], cwd=root
+    )
+    if listing is None:
+        return [("(the refs this push sends)", None, "git for-each-ref could not list the refs")]
+    refs: dict[str, str] = {}
+    for row in listing.split("\n"):
+        name, _, rest = row.partition("\t")
+        obj, _, peeled = rest.partition("\t")
+        if name:
+            refs[name] = peeled or obj
+    remote = _remote(root, parsed)
+    # (src pattern, dst pattern); `--all` is the glob refs/heads/* onto itself.
+    pairs = [("refs/heads/*", "refs/heads/*")] if parsed.on("all") or parsed.on("branches") else []
+    out: list[tuple[str, str | None, str]] = []
+    for spec in globs:
+        src, colon, dst = spec.lstrip("+").partition(":")
+        dst = dst if colon else src
+        if src.count("*") != 1 or dst.count("*") != 1:
+            out.append((spec, None, "the glob refspec `%s` cannot be enumerated" % spec))
+            continue
+        pairs.append((src, dst))
+        if not src.startswith("refs/"):
+            pairs.extend(("%s%s" % (p, src), dst) for p in ("refs/", "refs/heads/"))
+    seen: set[str] = set()
+    for src, dst in pairs:
+        for name, tip in refs.items():
+            matched = _glob_match(src, name)
+            if matched is None or name in seen:
+                continue
+            seen.add(name)
+            target = dst.replace("*", matched)
+            branch = target.removeprefix("refs/heads/") if target.startswith("refs/heads/") else ""
+            if remote and branch and refs.get("refs/remotes/%s/%s" % (remote, branch)) == tip:
+                continue
+            commit = commit_policy.git(
+                ["rev-parse", "-q", "--verify", "%s^{commit}" % tip], cwd=root
+            )
+            if not commit:
+                out.append((name, None, "the tip of `%s` is no commit" % name))
+                continue
+            out.append((name, commit, ""))
+    return out
+
+
+def _sources(root, args):
+    """[(label, commit-or-None, why-unknown)] for every source one push sends, in order.
+
+    A refspec's left side is its source (a bare ref is its own, a leading `+` dropped), HEAD when no refspec is named, and a `:dst` delete inside a mixed push sends nothing; each is resolved here, and one git cannot resolve comes back with no commit and no reason. `--all` and glob refspecs are enumerated by `_enumerated`.
+    """
+    parsed = shellscan.git_push_args(args)
+    specs = parsed.operands[1:]
+    every = parsed.on("all") or parsed.on("branches")
+    globs = [s for s in specs if "*" in s]
+    out = _enumerated(root, parsed, globs) if every or globs else []
+    named = []
     for spec in specs:
         src = spec.lstrip("+").split(":", 1)[0]
-        if not src and ":" in spec:
+        if "*" in spec or (not src and ":" in spec):
             continue
-        out.append("HEAD" if not src or "*" in src else src)
-    return out or ["HEAD"]
+        named.append(src or "HEAD")
+    if not named and not every and not globs:
+        named = ["HEAD"]
+    for src in named:
+        commit = commit_policy.git(["rev-parse", "-q", "--verify", "%s^{commit}" % src], cwd=root)
+        out.append((src, commit or None, ""))
+    return out
+
+
+MIRROR_HITS = [
+    (
+        "(mirror) every local ref is sent, each remote ref missing here is deleted and each "
+        "diverged one forced, so no receipt for one tree covers it"
+    )
+]
 
 
 def _tips(root, pushes):
-    """({commit: (the source as spelled, [indexes into `pushes` sending it])}, [sources git cannot resolve]), every distinct pushed commit once, in order."""
+    """({commit: (the source as spelled, [indexes into `pushes` sending it])}, [sources git cannot resolve], [(label, hits, [indexes])] judged blind), every distinct pushed commit once, in order.
+
+    The blind entries are the pushes no tree describes: a `--mirror` push, and a ref set that cannot be enumerated. Each is refused unless its push carries an admitted escape.
+    """
     tips: dict[str, tuple[str, list[int]]] = {}
     unresolved: list[str] = []
+    blind: list[tuple[str, list[str], list[int]]] = []
     for index, (_line, _reason, args) in enumerate(pushes):
-        for src in _sources(args):
-            commit = commit_policy.git(
-                ["rev-parse", "-q", "--verify", "%s^{commit}" % src], cwd=root
-            )
+        if _mirrors(args):
+            blind.append(("--mirror", MIRROR_HITS, [index]))
+            continue
+        for src, commit, unknown in _sources(root, args):
+            if unknown:
+                blind.append((src, ["(unknown) %s" % unknown], [index]))
+                continue
             if not commit:
                 unresolved.append(src)
                 continue
             _label, sending = tips.setdefault(commit, (src, []))
             if index not in sending:
                 sending.append(index)
-    return tips, unresolved
+    return tips, unresolved, blind
 
 
 def _hits(trigger, root, tip):
@@ -434,6 +555,12 @@ def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
         )
         return None, unproven, None
     attempt = None
+    if kind == "vm-unavailable" and tree is None:
+        blind = (
+            "`vm-unavailable` names a NOT_VERIFIED attempt for one tree, and this push sends "
+            "refs no single tree describes; only `not-runtime` or `deadline` admits it"
+        )
+        return None, blind, None
     if kind == "vm-unavailable":
         attempt = _not_verified_attempt(receipt_mod, root, tree, digest)
         if attempt is None:
@@ -461,7 +588,8 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt):
         "branch": commit_policy.current_branch(root),
         "head": commit,
         "tree": tree,
-        "renet": commit_policy.git(["rev-parse", "%s:%s" % (tree, RENET)], cwd=root) or "",
+        "renet": (tree and commit_policy.git(["rev-parse", "%s:%s" % (tree, RENET)], cwd=root))
+        or "",
         "kind": kind,
         "why": why,
         "asked": asked.group(0)[len("ASKED:") :] if asked else "",
@@ -505,6 +633,20 @@ Each admitted escape is appended to %(ledger)s.
 The operator's own `!` command does not pass through this guard.
 """
 
+BLIND_REFUSAL = """BLOCKED: this push sends refs that no vm:check receipt can describe (`%(src)s`).
+
+Why:
+%(hits)s
+Push the branches one by one (`git push origin <branch>`), so each pushed commit is judged
+against its own receipt, or have the operator decide, naming the minute of that answer:
+
+%(lines)s    %(env)s='<not-runtime|deadline>: <why, %(min)d+ chars> ASKED:<YYYY-MM-DDTHH:MM>Z' git push ...
+
+`vm-unavailable` does not admit it: its NOT_VERIFIED attempt covers one tree.
+Each admitted escape is appended to %(ledger)s.
+The operator's own `!` command does not pass through this guard.
+"""
+
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
@@ -524,12 +666,33 @@ def run(ev):
         ev.warn(UNEXAMINED % ("the vm-check trigger or receipt module could not import (%s)" % exc))
         return hookio.ALLOW
     root_path = pathlib.Path(root)
-    tips, unresolved = _tips(root, pushes)
+    tips, unresolved, blind = _tips(root, pushes)
     for src in unresolved:
         ev.warn(UNEXAMINED % ("git could not name the pushed commit of `%s`" % src))
 
     rows = []
     blocks = []
+    for label, hits, sending in blind:
+        refusals = []
+        for index in sending:
+            line, reason, _args = pushes[index]
+            kind, why, _attempt = _judge_reason(ev, reason, receipt_mod, root_path, None, "")
+            if kind is None:
+                refusals.append("  %s\n    escape refused: %s\n" % (line, why))
+                continue
+            rows.append(_row(root, "", "", kind, why, reason, hits, None))
+        if refusals:
+            blocks.append(
+                BLIND_REFUSAL
+                % {
+                    "src": label,
+                    "hits": "".join("  %s\n" % h for h in hits),
+                    "lines": "".join(refusals) + "\n",
+                    "env": REASON_ENV,
+                    "min": MIN_WHY,
+                    "ledger": LEDGER_REL,
+                }
+            )
     for commit, (src, sending) in tips.items():
         tree = commit_policy.git(["rev-parse", "%s^{tree}" % commit], cwd=root)
         if not tree:
