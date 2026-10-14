@@ -221,7 +221,7 @@ BROKEN_RUNNER = (
     "src = open(%r, encoding='utf-8').read()\n"
     "old, new = %r\n"
     "import ast\n"
-    "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
+    "cut = [n for n in ast.walk(ast.parse(src)) if isinstance(n, ast.Assign)"
     " and any(isinstance(t, ast.Name) and t.id == 'DEFECT' for t in n.targets)]\n"
     "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
     " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
@@ -252,12 +252,14 @@ def run(command, root, gh, broken=False):
     return proc.returncode != 0, proc.stderr
 
 
-def _declared_defect():
-    # EVERY `DEFECT = ` line is parsed (review 17d335f2.1): literal_eval refuses anything but a literal, so a non-literal line anywhere is an error and not code that runs (review 411ed6cd.1), and a second line is refused because the guard module would run the LAST one while the harness planted the first.
+def _declared_defect(source=None):
+    # Every assignment to `DEFECT`, at any depth, is parsed from the syntax tree. literal_eval refuses anything but a literal, so a non-literal assignment is an error and not code that runs. Exactly one is required: the guard module would run the last of several while the harness planted the first, and an indented one is still code the module runs.
+    text = GUARD.read_text(encoding="utf-8") if source is None else source
     found = [
-        ast.literal_eval(line[len("DEFECT = ") :])
-        for line in GUARD.read_text(encoding="utf-8").split("\n")
-        if line.startswith("DEFECT = ")
+        ast.literal_eval(node.value)
+        for node in ast.walk(ast.parse(text))
+        if isinstance(node, ast.Assign)
+        and any(isinstance(t, ast.Name) and t.id == "DEFECT" for t in node.targets)
     ]
     if len(found) != 1:
         raise SystemExit("%d DEFECT lines in %s, want exactly 1" % (len(found), GUARD))
@@ -267,6 +269,28 @@ def _declared_defect():
 DEFECT = _declared_defect()
 
 fails = 0
+# The exactly-one rule refuses zero, two and an indented second assignment, and reads a single one.
+for label, source, refused in (
+    ("zero DEFECT lines", "x = 1\n", True),
+    ("two DEFECT lines", 'DEFECT = ("a", "b")\nDEFECT = ("c", "d")\n', True),
+    (
+        "indented second DEFECT line",
+        'DEFECT = ("a", "b")\nif True:\n    DEFECT = ("c", "d")\n',
+        True,
+    ),
+    ("one DEFECT line", 'DEFECT = ("a", "b")\n', False),
+):
+    try:
+        _declared_defect(source)
+        got = False
+    except SystemExit:
+        got = True
+    fails += got != refused
+    print(
+        "%-56s want=%-8s got=%-8s %s"
+        % (label, refused, got, "ok" if got == refused else "*** FAIL ***")
+    )
+
 blocked = 0
 for name, command, root, gh, want in CASES:
     got, err = run(command, root, gh)
