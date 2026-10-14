@@ -296,7 +296,8 @@ def _json_field(config: pathlib.Path, expression: str) -> str:
         with config.open(encoding="utf-8") as handle:
             account = json.load(handle)["account"]
         return expression_value(account, expression)
-    except Exception:  # noqa: BLE001 -- the twin swallows every failure the same way
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        # The twin swallows every failure of reading the file, parsing it or finding the key the same way.
         return "PARSE_ERR"
 
 

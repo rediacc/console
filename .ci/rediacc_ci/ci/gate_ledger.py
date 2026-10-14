@@ -39,8 +39,10 @@ from concurrent.futures import Future
 from concurrent.futures import TimeoutError as FuturesTimeout
 from typing import TYPE_CHECKING, Any
 
-from rediacc_ci import gitx, log, paths
+from rediacc_ci import check_pytest, gitx, log, paths
+from rediacc_ci.ci import budget_report, ci_diagnose
 from rediacc_ci.core import jsonl_append
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -715,8 +717,6 @@ def finding_keys(lines: Iterable[str]) -> list[str]:
 
 def lock_ci(root: pathlib.Path) -> tuple[dict[str, tuple[str, str]], dict[str, str]]:
     """({gate: (job id, step)} for step gates, {gate: test path} for test gates), from the lock."""
-    from rediacc_ci.ci import budget_report  # noqa: PLC0415 -- fold-ci only
-
     steps = budget_report.load_gate_ci_steps(root)
     tests: dict[str, str] = {}
     try:
@@ -884,8 +884,6 @@ LEG_RE = re.compile(r"\((\d+)/(\d+)\)\s*$")
 
 def shard_legs(root: pathlib.Path) -> Callable[[str], set[str] | None]:
     """`legs(job display name)`: the test paths the pytest leg `(k/n)` collects per the committed shard manifest, None for an unsharded job, and the EMPTY set when the manifest's leg count is not `n` (a run from before a reshard judges no test gate rather than the wrong ones)."""
-    from rediacc_ci import check_pytest  # noqa: PLC0415 -- the manifest path is defined there
-
     try:
         doc = json.loads((root / check_pytest.QUALITY_PYTEST_MANIFEST).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -911,8 +909,6 @@ def pytest_hosts(
     root: pathlib.Path, tests: dict[str, str], steps: dict[str, tuple[str, str]]
 ) -> set[str]:
     """The step gates whose lock `leaves` include the module that EMITS `pytest-fail:` keys (`rediacc_ci.check_pytest`): those steps run the suites the test gates live in. Derived from the emitter's own path, not from a gate name; a path-coverage rule was tried first and matched seven gates whose globs merely contain the tests directory."""
-    from rediacc_ci import check_pytest  # noqa: PLC0415
-
     if not tests:
         return set()
     emitter = paths.relative_to_root(check_pytest.__file__, root=root)
@@ -952,8 +948,6 @@ def fold_ci(
     """Fold completed CI runs into the ledger, idempotently (`ci:<run>:<attempt>` in seen.idx). Exit 1 when any read failed: an unread run is UNCHECKED, never folded as clean.
 
     Runs already in seen.idx are skipped BEFORE any read. Only the `max_unseen` NEWEST unseen runs are read (older ones are counted, not UNCHECKED: the next fold takes them), their job lists are fetched by a `workers` pool, and one progress line per run goes to stderr. A run whose read is not done when `deadline_s` passes is UNCHECKED and named, so the fold ends instead of hanging."""
-    from rediacc_ci.ci import budget_report, ci_diagnose  # noqa: PLC0415 -- fold-ci only
-
     fetch_runs = fetch_runs or budget_report.fetch_runs
     fetch_jobs = fetch_jobs or budget_report.fetch_jobs
     steps, tests = lock_ci(root)
@@ -1001,7 +995,7 @@ def fold_ci(
     for event in CI_EVENTS:
         try:
             runs.extend(fetch_runs(repo, CI_WORKFLOW, event, None, "completed", limit))
-        except Exception as exc:  # noqa: BLE001 -- any read failure is reported as UNCHECKED
+        except (RuntimeError, OSError, ValueError) as exc:  # a failed read is reported as UNCHECKED
             unchecked.append("runs(%s): %s" % (event, _why(exc)))
     runs = list({r.get("id"): r for r in runs}.values())
     ensure_dir(d)
@@ -1032,7 +1026,7 @@ def fold_ci(
                 return None, "deadline", 0.0
             try:
                 return fetch_jobs(repo, int(run["id"])), "", clock() - t
-            except (Exception, SystemExit) as exc:  # noqa: BLE001
+            except (RuntimeError, OSError, ValueError, SystemExit) as exc:
                 # SystemExit too: left to the future it would re-raise in the reader and exit the folding process.
                 return None, _why(exc), clock() - t
 
@@ -1196,8 +1190,6 @@ def main(argv: list[str] | None = None) -> int:
         if d is None:
             log.error("gate_ledger fold-ci: the ledger is OFF (CI=true and no $%s)" % LEDGER_ENV)
             return 1
-        from rediacc_ci.well_known import GH_REPO  # noqa: PLC0415
-
         return fold_ci(
             d,
             root,

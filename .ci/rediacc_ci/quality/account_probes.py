@@ -27,12 +27,9 @@ THE THREE ASSERTIONS ARE INDEPENDENT AND ALL THREE RUN, because a run that stopp
 THE LISTENER IS `python3 -m http.server`, spawned as a child rather than served in-process: the control demonstrates that a REAL socket on a REAL port answers curl, and a same-process server shares the interpreter with the code asserting about it. The readiness loop is `curl`, 50 attempts, 0.1s apart, because the probe under test speaks HTTP through curl and the readiness check has to prove HTTP is being answered, not merely that a port is open.
 """
 
-import contextlib
-import ctypes
 import os
 import pathlib
 import re
-import signal
 import socket
 import subprocess
 import sys
@@ -165,10 +162,9 @@ def start_listener(port: int) -> subprocess.Popen:
     A CHILD PROCESS, not an in-process server. See the port notes: the control is worth something only if it demonstrates a real socket answering real HTTP, and a thread inside this interpreter shares its fate with the code asserting about it.
     """
     return subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
+        [sys.executable, "-c", _LISTENER_BOOT, str(port)],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        preexec_fn=_die_with_parent,  # noqa: PLW1509 - see the comment below
     )
 
 
@@ -179,16 +175,15 @@ def start_listener(port: int) -> subprocess.Popen:
 #
 # It got worse the moment this suite went parallel: `check:ci-pytest` now runs under `-n 8`, so a killed run strands up to eight workers' worth of listeners instead of one process's worth.
 #
-# `preexec_fn` runs in the child between fork and exec. It is documented as
-# unsafe in a threaded parent, which is why it carries the noqa above rather
-# than a silent suppression: this helper is called from single-threaded gate and test code, and the alternative (a wrapper process, or a reaper) costs more than the two lines it saves. If this is ever called from a thread, replace it
-# with a process-group kill rather than removing the protection.
-def _die_with_parent() -> None:
-    """prctl(PR_SET_PDEATHSIG, SIGKILL). Best effort: Linux-only, never fatal."""
-    # Suppressed wholesale, deliberately: this runs between fork and exec, so a raise here would kill the spawn rather than the listener. A platform without libc or without prctl simply keeps the old behaviour.
-    with contextlib.suppress(Exception):
-        # 1 is PR_SET_PDEATHSIG. Named here rather than imported because Python has no binding for it and the number is part of the kernel ABI.
-        ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, signal.SIGKILL)
+# THE CHILD ARMS ITSELF. This used to be a `preexec_fn`, which runs between fork and exec and is documented as unsafe in a threaded parent (ruff PLW1509). The listener now starts through a short bootstrap that calls prctl as its first act and then runs `http.server` as `__main__`, so nothing runs between fork and exec and the parent's threads no longer matter. The window between exec and the prctl call is a few milliseconds of interpreter start-up.
+_LISTENER_BOOT = """
+import contextlib, ctypes, runpy, signal, sys
+# Best effort, never fatal: a platform without libc or without prctl keeps the old behaviour. 1 is PR_SET_PDEATHSIG; Python has no binding for it and the number is part of the kernel ABI.
+with contextlib.suppress(Exception):
+    ctypes.CDLL("libc.so.6", use_errno=True).prctl(1, signal.SIGKILL)
+sys.argv = ["http.server", sys.argv[1], "--bind", "127.0.0.1"]
+runpy.run_module("http.server", run_name="__main__", alter_sys=True)
+"""
 
 
 def main(argv: list[str] | None = None) -> int:

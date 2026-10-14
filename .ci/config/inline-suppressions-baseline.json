@@ -1,42 +1,4 @@
 {
  "note": "SHRINK-ONLY. Inline lint and type suppression markers that existed when operator ruling 2026-10-08 banned them, counted per (file, marker kind, code), never by line. Written only by `.ci/scripts/quality/check_inline_suppressions.py --write-baseline`, which refuses any growth. Fix the code; a deliberate project-wide exception is a per-file entry in the linter's own config with a BLOCKER: reason (docs/agent-reference/suppressions.md). The goal state is an empty map.",
- "counts": {
-  ".ci/rediacc_ci/ci/gate_ledger.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 5
-  },
-  ".ci/rediacc_ci/ci/gate_model.py": {
-   "noqa PLC0415": 2
-  },
-  ".ci/rediacc_ci/core/run_verbs.py": {
-   "noqa PLW0108": 1
-  },
-  ".ci/rediacc_ci/quality/account_probes.py": {
-   "noqa PLW1509": 1
-  },
-  ".ci/rediacc_ci/quality/ci_watch_recipe.py": {
-   "noqa BLE001": 1
-  },
-  ".ci/rediacc_ci/security/rdc_sh_env_check.py": {
-   "noqa BLE001": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": {
-   "noqa PLC0415": 2
-  },
-  ".ci/rediacc_ci/tests/test_ci_github_status.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/xdist_groups.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/scripts/ci/ci-trace.py": {
-   "noqa E402": 1
-  },
-  ".ci/scripts/quality/check_plan_record.py": {
-   "noqa BLE001": 1
-  }
- }
+ "counts": {}
 }
