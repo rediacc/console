@@ -1553,7 +1553,7 @@ def pins_doc() -> dict:
                     {"uses": "actions/checkout@sha"},
                     {
                         "id": "apply",
-                        "run": "npm run --silent pins -- apply-soaked --json --out pins-soaked/",
+                        "run": 'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
                     },
                     {"uses": "actions/upload-artifact@sha"},
                     {"if": "steps.apply.outputs.rc != '0'", "run": "echo failed\nexit 1"},
@@ -1581,6 +1581,54 @@ def _drop_apply(doc: dict) -> None:
 def _drop_red_path(doc: dict) -> None:
     steps = doc["jobs"]["soaked"]["steps"]
     steps[:] = [s for s in steps if "outputs.rc" not in str(s.get("if"))]
+
+
+def _red_if(doc: dict, cond: str) -> None:
+    for step in doc["jobs"]["soaked"]["steps"]:
+        if "outputs.rc" in str(step.get("if")):
+            step["if"] = cond
+
+
+@pytest.mark.parametrize(
+    "cond",
+    [
+        "steps.apply.outputs.rc != '0'",
+        'steps.apply.outputs.rc != "0"',
+        "steps.apply.outputs.rc != 0",
+    ],
+)
+def test_the_red_path_condition_may_quote_the_zero_either_way_or_not_at_all(cond) -> None:
+    doc = pins_doc()
+    _red_if(doc, cond)
+    assert pins_kinds(doc) == []
+
+
+def test_a_red_path_watching_another_step_is_no_red_path() -> None:
+    doc = pins_doc()
+    _red_if(doc, "steps.other.outputs.rc != '0'")
+    assert pins_kinds(doc) == ["pins-soaked-no-red-path"]
+
+
+def test_an_apply_step_that_never_publishes_rc_has_no_red_path() -> None:
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"][1]["run"] = (
+        "npm run --silent pins -- apply-soaked --json --out pins-soaked/"
+    )
+    assert pins_kinds(doc) == ["pins-soaked-no-red-path"]
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda d: d.__setitem__("env", {"T": "${{ secrets.DEPLOY_KEY }}"}),
+        lambda d: d["jobs"]["soaked"].__setitem__("secrets", {"key": "${{ secrets.DEPLOY_KEY }}"}),
+        lambda d: d["jobs"]["soaked"].__setitem__("secrets", "inherit"),
+    ],
+)
+def test_a_secret_through_the_workflow_env_or_a_secrets_block_is_refused(mutate) -> None:
+    doc = pins_doc()
+    mutate(doc)
+    assert pins_kinds(doc) == ["pins-soaked-writes"]
 
 
 def test_the_default_token_in_with_is_not_a_write_secret() -> None:
