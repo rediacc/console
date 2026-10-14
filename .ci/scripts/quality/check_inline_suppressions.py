@@ -8,7 +8,7 @@ Operator ruling 2026-10-08 banned inline suppressions (a Python `noq[a]` comment
     check_inline_suppressions.py --write-baseline       record a drain; refuses any growth
     check_inline_suppressions.py --count <path>...      markers under each path prefix; a path with no code file read is refused, never 0
 
-THE `_cipath` IMPORT TAKES A NAME AND USES IT, which is the one difference from every sibling entry point here. They spell it `import _cipath` with an unused-import marker on the line, and this gate exists to refuse that marker. `CI_DIR` anchors the repository root on this file's own location, so the gate answers the same from any working directory.
+THE `_cipath` IMPORT TAKES A NAME AND USES IT, which is the one difference from every sibling entry point here. They spell it `import _cipath` for the side effect alone, which ruff accepts because `lint.pyflakes.allowed-unused-imports` in pyproject.toml names the module. `CI_DIR` anchors the repository root on this file's own location, so the gate answers the same from any working directory.
 
 `needs: submodules` IS LOAD-BEARING: private/renet and private/account are in scope, and a lane that does not check them out would turn their half of the scan into a refusal (CI) or a silent gap (a lane without the check).
 

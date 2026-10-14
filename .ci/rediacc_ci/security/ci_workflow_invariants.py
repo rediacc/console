@@ -1063,7 +1063,7 @@ def _guarded(path: str) -> tuple[list[tuple[str, str]] | None, int]:
         sys.stderr.write(exc.message)
         sys.stderr.flush()
         return None, 2
-    except BaseException:  # noqa: BLE001 - a heredoc's traceback is exit 1
+    except BaseException:
         traceback.print_exc()
         sys.stderr.flush()
         return None, 1

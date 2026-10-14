@@ -2,8 +2,10 @@
 
 Imported for its SIDE EFFECT, once per entry point:
 
-    import _cipath  # noqa: F401
+    import _cipath
     from rediacc_ci.quality import <mod>
+
+The line carries no marker: `lint.pyflakes.allowed-unused-imports` in the root pyproject.toml names `_cipath`, with its BLOCKER reason, so ruff does not report the import as unused.
 
 Eighty-one entry points carried a byte-identical copy of the insert below and not one of them said why. The three questions that copy raised, each answered here once instead of nowhere eighty-one times:
 

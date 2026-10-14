@@ -229,7 +229,7 @@ class Drill:
         for label, action in (("shim", self.stop_shim), ("gateway", self.stop_gateway)):
             try:
                 action()
-            except Exception as exc:  # noqa: BLE001 -- teardown must finish
+            except Exception as exc:
                 log.warn("teardown: stopping the %s failed: %s" % (label, exc))
         work = self.work
         if work and work.is_dir() and not self.keep_work:

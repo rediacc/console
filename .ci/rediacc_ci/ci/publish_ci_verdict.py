@@ -353,7 +353,7 @@ def compute(
         )
         if not isinstance(d, dict):
             raise TypeError("diagnose returned %s, not a dict" % type(d).__name__)
-    except Exception as exc:  # noqa: BLE001 -- the whole point: post `unknown`, never crash
+    except Exception as exc:
         d = unknown_verdict(
             run_id, attempt, head_sha, "%s: %s" % (type(exc).__name__, str(exc)[:300])
         )
@@ -364,7 +364,7 @@ def compute(
         d["attempt"] = _int_or(attempt)
     try:
         rendered = mod.render(d, budget_lines=RENDER_BUDGET_LINES)
-    except Exception as exc:  # noqa: BLE001 -- a render bug must not lose the verdict
+    except Exception as exc:
         log.warn("render failed (%s: %s); posting the fallback summary" % (type(exc).__name__, exc))
         rendered = _fallback_render(d)
     return d, rendered

@@ -352,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     try:
         return apply(dict(os.environ), paths.repo_root())
-    except Exception as exc:  # noqa: BLE001 -- advisory: a label never fails CI
+    except Exception as exc:
         log.warn("pr_labels failed (%s: %s); nothing more applied" % (type(exc).__name__, exc))
         return 0
 

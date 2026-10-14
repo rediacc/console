@@ -199,6 +199,11 @@ ignore = [
     # to skip the rule's real hits. Every OTHER file in this repo is still held
     # to S311.
     "S311",
+    # BLOCKER: a test fixture carries a credential-shaped value (a mask token, a throwaway key that exists in no store and authenticates nowhere) because the code under test has to handle one; S105 and S106 stay on for every file outside a collected test tree
+    "S105",
+    "S106",
+    # BLOCKER: a differential test compiles and execs the source text of the module under test, or a planted mutant of it, into a scratch namespace, because the claim it proves is about the deployed text and an imported copy cannot carry a mutation
+    "S102",
 ]
 "**/rediacc_hooks/guards/test-*.py" = [
     # BLOCKER: a per-guard control harness is a script named `test-<guard stem>.py`, the exact name check_hook_integrity credits with both directions, so the hyphen N999 objects to is required by a gate and nothing imports the file as a module
@@ -232,6 +237,8 @@ ignore = [
     # (.claude/hooks/pre-bash/) there is no __init__.py and ruff did not treat
     # them as modules.
     "N999",
+    # BLOCKER: a guard harness execs the guard's own source text, or a one-line literal lifted out of it, into a scratch namespace, so each control runs against the deployed bytes and a planted mutant of them and never against an imported copy
+    "S102",
 ]
 "**/hooks/{stop,context}/test-*.py" = [
     # BLOCKER: the Stop-hook and context control scripts seed `random.Random(seed)` to drive a sampling algorithm deterministically, which produces no secret; they sit outside a `tests/` directory, so the test-tree entry above does not reach them
@@ -244,6 +251,102 @@ ignore = [
     # files use a `control(label, got, want)` helper rather than bare
     # `assert`, so that rule never fires on this class.
     "S311",
+]
+# THE HOOK PROGRAMS. `.claude/hooks/**` is the Stop hook, the context hooks and
+# the post-tool hooks, each a script settings.json runs on a turn; the
+# `.claude/rediacc_hooks` entries below it name the runtime half of that package
+# one file or one guard prefix at a time, so its tests and its guard harnesses
+# stay held to both rules.
+".claude/hooks/**/*.py" = [
+    # BLOCKER: the hook modules import a sibling inside the function that needs it, for three reasons the stripped markers gave: the wl_* import graph is cyclic (wl_liveness and wl_roster import each other), an optional sibling is probed so its absence never blocks a stop or an edit, and every hook invocation pays for whatever its module imports at top level; measured 2026-10-13 in .claude/hooks/stop, `python3 -X importtime -c 'import worklist'` costs 174 ms cumulative and already loads 52 of the 60 wl_* modules
+    "PLC0415",
+    # BLOCKER: a hook that raises breaks the tool call or wedges the stop it rides on, so a handler here turns an unexpected exception into the hook's own stated answer (silence on an advisory surface, a named could-not-read on a check) instead of a traceback; narrowing the except would turn an unknown failure in a fact-gatherer into a crashed turn
+    "BLE001",
+]
+".claude/rediacc_hooks/commit_policy.py" = [
+    # BLOCKER: a guard chain loads on every tool call and the git-level hooks load commit_policy by file, so a module only one branch needs (the Bash lexer for a command payload, a Stop-hook module for a push, a merge or a plan edit) is imported inside that branch, where the other chains never pay for it or depend on it, and the Stop directory is on sys.path only inside that window
+    "PLC0415",
+    # BLOCKER: a guard has to reach a verdict, so an unexpected exception becomes the guard's own stated answer (allow and say so where the surface is advisory or a registry is unreadable, refuse by name where an unverifiable state must not pass) instead of a traceback that bricks every later tool call
+    "BLE001",
+]
+".claude/rediacc_hooks/plan_gate.py" = [
+    # BLOCKER: a guard chain loads on every tool call and the git-level hooks load commit_policy by file, so a module only one branch needs (the Bash lexer for a command payload, a Stop-hook module for a push, a merge or a plan edit) is imported inside that branch, where the other chains never pay for it or depend on it, and the Stop directory is on sys.path only inside that window
+    "PLC0415",
+    # BLOCKER: a guard has to reach a verdict, so an unexpected exception becomes the guard's own stated answer (allow and say so where the surface is advisory or a registry is unreadable, refuse by name where an unverifiable state must not pass) instead of a traceback that bricks every later tool call
+    "BLE001",
+]
+".claude/rediacc_hooks/guards/block_*.py" = [
+    # BLOCKER: a guard chain loads on every tool call and the git-level hooks load commit_policy by file, so a module only one branch needs (the Bash lexer for a command payload, a Stop-hook module for a push, a merge or a plan edit) is imported inside that branch, where the other chains never pay for it or depend on it, and the Stop directory is on sys.path only inside that window
+    "PLC0415",
+    # BLOCKER: a guard has to reach a verdict, so an unexpected exception becomes the guard's own stated answer (allow and say so where the surface is advisory or a registry is unreadable, refuse by name where an unverifiable state must not pass) instead of a traceback that bricks every later tool call
+    "BLE001",
+]
+".claude/rediacc_hooks/hookio.py" = [
+    # BLOCKER: a guard chain loads on every tool call and the git-level hooks load commit_policy by file, so a module only one branch needs (the Bash lexer for a command payload, a Stop-hook module for a push, a merge or a plan edit) is imported inside that branch, where the other chains never pay for it or depend on it, and the Stop directory is on sys.path only inside that window
+    "PLC0415",
+]
+".claude/rediacc_hooks/dispatch.py" = [
+    # BLOCKER: a guard has to reach a verdict, so an unexpected exception becomes the guard's own stated answer (allow and say so where the surface is advisory or a registry is unreadable, refuse by name where an unverifiable state must not pass) instead of a traceback that bricks every later tool call
+    "BLE001",
+]
+".claude/rediacc_hooks/guards/warn_*.py" = [
+    # BLOCKER: a guard has to reach a verdict, so an unexpected exception becomes the guard's own stated answer (allow and say so where the surface is advisory or a registry is unreadable, refuse by name where an unverifiable state must not pass) instead of a traceback that bricks every later tool call
+    "BLE001",
+]
+# THE `.ci` PROGRAMS WHOSE JOB IS TO SURVIVE THEIR OWN FAILURE, one file each.
+# Every other `.ci` file is held to BLE001 and narrows its except.
+".ci/rediacc_ci/ci/publish_ci_verdict.py" = [
+    # BLOCKER: a verdict or status publisher has to post `unknown` rather than crash, because a crash or a render bug loses the verdict the run already produced, and a status note or sample must never change or break the caller it reports for
+    "BLE001",
+]
+".ci/rediacc_ci/ci/github_status.py" = [
+    # BLOCKER: a verdict or status publisher has to post `unknown` rather than crash, because a crash or a render bug loses the verdict the run already produced, and a status note or sample must never change or break the caller it reports for
+    "BLE001",
+]
+".ci/scripts/ci/ci-trace.py" = [
+    # BLOCKER: a verdict or status publisher has to post `unknown` rather than crash, because a crash or a render bug loses the verdict the run already produced, and a status note or sample must never change or break the caller it reports for
+    "BLE001",
+]
+".ci/rediacc_ci/review/pr_labels.py" = [
+    # BLOCKER: the PR label and the review table are advisory output, and an advisory step never fails CI, so any failure while rendering one is reported and swallowed
+    "BLE001",
+]
+".ci/rediacc_ci/review/review_table.py" = [
+    # BLOCKER: the PR label and the review table are advisory output, and an advisory step never fails CI, so any failure while rendering one is reported and swallowed
+    "BLE001",
+]
+".ci/rediacc_ci/security/workflow_gates.py" = [
+    # BLOCKER: the bash heredoc this replaced exited 1 on any traceback, so the port catches every exception at that one boundary to translate it into the same exit 1 the workflow already keys on
+    "BLE001",
+]
+".ci/rediacc_ci/security/ci_workflow_invariants.py" = [
+    # BLOCKER: the bash heredoc this replaced exited 1 on any traceback, so the port catches every exception at that one boundary to translate it into the same exit 1 the workflow already keys on
+    "BLE001",
+]
+".ci/rediacc_ci/testrun/install_methods.py" = [
+    # BLOCKER: an install test or phase that raises is a FAILED test, recorded and counted, and must not end the run before the remaining methods and platforms are tried
+    "BLE001",
+]
+".ci/rediacc_ci/testrun/linux_packages.py" = [
+    # BLOCKER: an install test or phase that raises is a FAILED test, recorded and counted, and must not end the run before the remaining methods and platforms are tried
+    "BLE001",
+]
+".ci/rediacc_ci/drills/lib.py" = [
+    # BLOCKER: a drill's teardown has to finish whatever one step raises, so a step's failure is reported by name and the steps after it (the gateway, the work directory) still run
+    "BLE001",
+]
+"conftest.py" = [
+    # BLOCKER: the root conftest's audit hook records which test wrote into the tree, and an audit hook that raises aborts the operation it audits, where a lost record is only a weaker attribution
+    "BLE001",
+]
+
+# NAMES, NOT FILES: a module imported only for what its import DOES. Held to the
+# same two rules as the table above by the same reader: a `# BLOCKER:` reason,
+# and at least one `import <name>` ruff would otherwise report as F401.
+[tool.ruff.lint.pyflakes]
+allowed-unused-imports = [
+    # BLOCKER: `_cipath` is imported by every path-invoked entry point for its one side effect, putting `.ci` on sys.path; a function call there would be a statement and make every later import E402 (measured, .ci/scripts/quality/_cipath.py docstring)
+    "_cipath",
 ]
 
 [tool.ruff.format]

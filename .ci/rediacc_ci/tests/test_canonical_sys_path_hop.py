@@ -429,7 +429,7 @@ def test_the_detector_fires_and_does_not_over_fire() -> None:
     assert hops("import sys\nsys.path.extend(['/x'])\n"), "extend is a hop too"
 
     canonical = (
-        "import _cipath  # noqa: F401\n"
+        "import _cipath\n"
         "from rediacc_ci import paths\n\n"
         "paths.on_sys_path(paths.hooks_stop_dir())\n"
     )

@@ -54,7 +54,6 @@
    "noqa S105": 1
   },
   ".ci/rediacc_ci/ci/github_status.py": {
-   "noqa BLE001": 4,
    "noqa PLC0415": 2,
    "noqa S310": 1
   },
@@ -69,9 +68,6 @@
   },
   ".ci/rediacc_ci/ci/profiler_sampler_linux.py": {
    "noqa SIM115": 2
-  },
-  ".ci/rediacc_ci/ci/publish_ci_verdict.py": {
-   "noqa BLE001": 2
   },
   ".ci/rediacc_ci/ci/scope_reconcile_shadow.py": {
    "type-ignore arg-type": 1
@@ -159,7 +155,6 @@
    "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/drills/lib.py": {
-   "noqa BLE001": 1,
    "noqa S101": 1,
    "noqa S310": 2
   },
@@ -280,12 +275,6 @@
   ".ci/rediacc_ci/review/claude_review_gate.py": {
    "noqa N818": 1
   },
-  ".ci/rediacc_ci/review/pr_labels.py": {
-   "noqa BLE001": 1
-  },
-  ".ci/rediacc_ci/review/review_table.py": {
-   "noqa BLE001": 1
-  },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
    "noqa DTZ006": 1
   },
@@ -293,7 +282,6 @@
    "noqa N818": 1
   },
   ".ci/rediacc_ci/security/ci_workflow_invariants.py": {
-   "noqa BLE001": 1,
    "noqa N818": 1,
    "noqa PLC0415": 1,
    "noqa UP020": 1,
@@ -308,7 +296,6 @@
    "noqa BLE001": 1
   },
   ".ci/rediacc_ci/security/workflow_gates.py": {
-   "noqa BLE001": 1,
    "noqa PLC0415": 2
   },
   ".ci/rediacc_ci/setup/ctx.py": {
@@ -334,12 +321,6 @@
   },
   ".ci/rediacc_ci/testrun/e2e.py": {
    "noqa S101": 1
-  },
-  ".ci/rediacc_ci/testrun/install_methods.py": {
-   "noqa BLE001": 2
-  },
-  ".ci/rediacc_ci/testrun/linux_packages.py": {
-   "noqa BLE001": 1
   },
   ".ci/rediacc_ci/testrun/rdc_update.py": {
    "noqa S101": 1
@@ -953,9 +934,6 @@
    "noqa F401": 1
   },
   ".ci/scripts/quality/check_python_gate_deps.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_python_lint.py": {
    "noqa F401": 1
   },
   ".ci/scripts/quality/check_python_types.py": {
@@ -1742,7 +1720,6 @@
    "shellcheck-disable SC2064": 2
   },
   "conftest.py": {
-   "noqa BLE001": 1,
    "noqa PLC0415": 1,
    "type-ignore attr-defined": 2
   },

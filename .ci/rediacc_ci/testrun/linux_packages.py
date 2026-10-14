@@ -138,7 +138,7 @@ class Suite:
         log.step(f"TEST: {name}")
         try:
             ok = fn()
-        except Exception as exc:  # noqa: BLE001 - a phase that raises is a failed phase, not a crashed run
+        except Exception as exc:
             log.error(f"{type(exc).__name__}: {exc}")
             ok = False
         if ok:
