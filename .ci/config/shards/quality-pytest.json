@@ -588,7 +588,6 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_content_quality.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_devbox_exec.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_e2e_coverage.py",
-        "pytest:.ci/rediacc_ci/tests/test_quality_eslint_heap.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_gh_reads_check_scripts.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_git_op_conditionals.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_hook_integrity.py",

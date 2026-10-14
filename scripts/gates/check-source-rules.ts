@@ -12,8 +12,6 @@ import { execFileSync } from 'node:child_process';
  * needs: node
  * selftest: true
  * lane: quality-code
- * emit: false
- * blocker: the Biome-only lint migration (PLAN-biome-only-lint) is unfinished: 20 files still carry eslint-disable tokens nothing honours, so this gate stays red until that plan clears them; it runs by hand until then (2026-09-26)
  * why: eslint-rules/ has no type-aware or esquery-dependent rule (finding #4 of PLAN-biome-only-lint.md), so it can run on a small host instead of ESLint; nothing else proves the host and the rules still agree with what ESLint reported before ESLint is retired.
  * ---- end gate ----
  */
@@ -32,7 +30,7 @@ import { type Finding, type RuleModule, runJsonRule, runSourceRule } from '../li
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-// Mirrors eslint-rules/__tests__/config-resolution-differential.mjs's own corpus definition, so this gate's tuples and the Phase 0 snapshot are drawn from the identical file set.
+// The corpus definition the Phase 0 ESLint snapshot was drawn from (the differential tool that produced it is retired with ESLint), so this gate's tuples and that snapshot cover the identical file set.
 const LINT_ROOTS = [
   'packages',
   'scripts',

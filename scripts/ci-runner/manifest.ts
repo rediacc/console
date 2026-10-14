@@ -32,9 +32,9 @@ import type { GateSpec } from './gate-spec.js';
  * so a half-populated path table would be worse than an empty one.
  *
  * TWO OMISSIONS, both deliberate:
- *   - `lint` (package.json:142) has no entry. check:lint is the same eslint
- *     invocation plus --max-warnings 0 plus a biome lint, so it strictly
- *     subsumes it, and the duplicate cost 120.9s measured (plan finding F1).
+ *   - `lint` (package.json) has no entry. check:lint is the same biome
+ *     invocation plus --error-on-warnings, so it strictly subsumes it, and the
+ *     duplicate cost 120.9s measured (plan finding F1) when it was eslint.
  *     The package.json key stays as a developer convenience; it just leaves the
  *     gate set.
  *   - check:ci-chain-parity and check:ci-gate-reachability are gone entirely:
@@ -74,92 +74,11 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // One biome process over the whole tree: `biome lint . --error-on-warnings` measured 3-4 s wall (PLAN-biome-only-lint, 2026-10-14), against 244.9 s for the four eslint shards it replaces, so there is nothing left to shard and the gate is a plain fast gate. The per-file overrides, the GritQL plugins and the file allowlist all live in biome.json, whose scope .ci/scripts/quality/check_lint_scope_coverage.py holds in place.
     id: 'check:lint',
     run: 'npm run check:lint',
-    slow: true, // 244.9s measured
-    // gate:false since 2026-09-06. One eslint process over every root measured 166.5s and
-    // pinned one scheduler slot for the whole of it, so this is now the AGGREGATE of four sharded scripts, each scheduled on its own below. Measured the same day: the four run concurrently in 87.5s wall, about 1.90x -- NOT the 3.0x a per-root serial sum predicts,
-    // because four eslint processes contend and each costs 30-40% more concurrently than
-    // alone. The identical baseline re-measured 225.6s forty minutes later, so the ratio is a range and never a threshold. The body and `leaves` stay BYTE-IDENTICAL so the 'Lint' step still resolves to both leaves for every shard (R3), and CI keeps one step. WHAT HOLDS THE SHARDS HONEST: .ci/scripts/quality/check_lint_scope_coverage.py follows the `npm run` links out of this key
-    // and unions the roots it finds, so deleting a shard, or a root from a shard, reds on the files that stopped being linted. It deliberately does not hard-code the shard names, because a hard-coded list of four would silently stop counting a fifth.
-    gate: false,
-    // NO WIDTH DECLARED (agent/plans/PLAN-prepush-full-cpu.md PF5, 2026-10-05): the hand-typed `weight: 2` is retired, and the pool budgets this gate at its measured cpu/wall. eslint 9.39 runs single-threaded unless told `--concurrency <n>`, a knob this gate's script does not pass yet; biome, the one other tool here, honours RAYON_NUM_THREADS (measured: 101% CPU at 1, 1004% unset) and is about 1.5s of the run.
-    heavy: true,
-    // eslint no longer runs directly: check:lint calls .ci/rediacc_ci/quality/eslint_heap.py,
-    // which clamps the heap downward only when the host cannot honour the requested size (never raises -- CI keeps its full request) and then
-    // execs eslint itself. The leaf is the wrapper, not the tool it wraps.
-    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py', 'biome'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
-      step: 'Lint',
-    },
-  },
-  {
-    id: 'check:lint:cli',
-    run: 'npm run check:lint:cli',
-    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
-    cores: { min: 1, max: 4 },
-    slow: true, // 65.1s alone / 87.5s in the concurrent four
     gate: true,
-    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
-    heavy: true,
-    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
-      step: 'Lint',
-    },
-  },
-  {
-    id: 'check:lint:web',
-    run: 'npm run check:lint:web',
-    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
-    cores: { min: 1, max: 4 },
-    slow: true, // 60.8s alone / 83.2s in the concurrent four
-    gate: true,
-    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
-    heavy: true,
-    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
-      step: 'Lint',
-    },
-  },
-  {
-    id: 'check:lint:tooling',
-    run: 'npm run check:lint:tooling',
-    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
-    cores: { min: 1, max: 4 },
-    slow: true, // measured in the concurrent four; retier from the reference worktree
-    gate: true,
-    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
-    heavy: true,
-    leaves: ['.ci/rediacc_ci/quality/eslint_heap.py'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-code',
-      step: 'Lint',
-    },
-  },
-  {
-    id: 'check:lint:account',
-    run: 'npm run check:lint:account',
-    // ELASTIC, up to 4: eslint_heap.py passes `--concurrency=$CI_RUNNER_CORES` (memory-capped). Measured on packages/cli, 2026-10-05: 1 worker 98 s, 4 workers 53 s, 8 workers 56 s at twice the CPU and 21.9 GB, 16 workers 95 s at 41.9 GB, so the grant stops where the wall stops falling (PLAN-prepush-full-cpu PF5).
-    cores: { min: 1, max: 4 },
-    slow: true, // measured in the concurrent four; retier from the reference worktree
-    gate: true,
-    // NO WIDTH DECLARED (PF5, 2026-10-05): measured cpu/wall, for the reason on check:lint.
-    heavy: true,
-    // TWO leaves, not one: this shard alone chains `biome lint private/account/` after
-    // eslint. Landing it with the other three shards' single leaf reddened
-    // check:ci-parity hygiene immediately, which is the split-turns-hygiene-red case the proposal warned about and the reason leaves are derived with resolveLeaves rather than copied between sibling entries.
-    leaves: ['biome', '.ci/rediacc_ci/quality/eslint_heap.py'],
+    leaves: ['biome'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -2786,8 +2705,8 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-lint-scope-coverage',
     slow: true, // 163.0s measured
     gate: true,
-    // Its corpus is every tracked js/ts file, so the five extension globs are load-bearing rather than decorative: a NEW source file under a directory no lint root reaches is exactly the failure this gate exists to catch. package.json carries the root lists it
-    // follows; eslint.config.js and biome.json carry the ignore and allowlist halves.
+    // Its corpus is every tracked js/ts file, so the five extension globs are load-bearing rather than decorative: a NEW source file under a directory no lint root reaches is exactly the failure this gate exists to catch. package.json carries the lint commands whose
+    // arguments it inspects; biome.json carries the allowlist and the ignore half.
     paths: [
       '**/*.js',
       '**/*.cjs',
@@ -2795,7 +2714,6 @@ export const GATES: readonly GateSpec[] = [
       '**/*.ts',
       '**/*.tsx',
       'package.json',
-      'eslint.config.js',
       'biome.json',
       '.ci/scripts/quality/check_lint_scope_coverage.py',
       '.gitignore',
@@ -3593,8 +3511,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-account-layer-isolation',
     slow: true, // 10.8s measured
     gate: true,
-    heavy: true,
-    leaves: ['eslint'],
+    leaves: ['biome'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4813,15 +4730,16 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // Source-authored lint rules on the oxc/momoa host (PLAN-biome-only-lint). Registered so gate-bind resolves its id, but not a gate and not a CI step yet: its header says emit: false with the same blocker.
+    // Source-authored lint rules on the oxc/momoa host (PLAN-biome-only-lint): the custom/* and i18n/* rule modules under eslint-rules/, run without ESLint. Also refuses any eslint-disable token left in scope, since nothing honours one any more.
     id: 'check:ci-source-rules',
     run: 'npm run check:ci-source-rules',
-    gate: false,
+    gate: true,
     leaves: ['scripts/gates/check-source-rules.ts'],
     ci: {
-      kind: 'local-only',
-      blocker:
-        'BLOCKER: the Biome-only lint migration (PLAN-biome-only-lint) is unfinished: 20 files still carry eslint-disable tokens nothing honours, so this gate is red until that plan clears them; it runs by hand until then (2026-09-26).',
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Source-authored lint rules, host-run',
     },
   },
   {

@@ -32,93 +32,9 @@
   {
     "id": "check:lint",
     "run": "npm run check:lint",
-    "slow": true,
-    "gate": false,
-    "heavy": true,
+    "gate": true,
     "leaves": [
-      ".ci/rediacc_ci/quality/eslint_heap.py",
       "biome"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Lint"
-    }
-  },
-  {
-    "id": "check:lint:cli",
-    "run": "npm run check:lint:cli",
-    "cores": {
-      "min": 1,
-      "max": 4
-    },
-    "slow": true,
-    "gate": true,
-    "heavy": true,
-    "leaves": [
-      ".ci/rediacc_ci/quality/eslint_heap.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Lint"
-    }
-  },
-  {
-    "id": "check:lint:web",
-    "run": "npm run check:lint:web",
-    "cores": {
-      "min": 1,
-      "max": 4
-    },
-    "slow": true,
-    "gate": true,
-    "heavy": true,
-    "leaves": [
-      ".ci/rediacc_ci/quality/eslint_heap.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Lint"
-    }
-  },
-  {
-    "id": "check:lint:tooling",
-    "run": "npm run check:lint:tooling",
-    "cores": {
-      "min": 1,
-      "max": 4
-    },
-    "slow": true,
-    "gate": true,
-    "heavy": true,
-    "leaves": [
-      ".ci/rediacc_ci/quality/eslint_heap.py"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-code",
-      "step": "Lint"
-    }
-  },
-  {
-    "id": "check:lint:account",
-    "run": "npm run check:lint:account",
-    "cores": {
-      "min": 1,
-      "max": 4
-    },
-    "slow": true,
-    "gate": true,
-    "heavy": true,
-    "leaves": [
-      "biome",
-      ".ci/rediacc_ci/quality/eslint_heap.py"
     ],
     "ci": {
       "kind": "step",
@@ -2930,7 +2846,6 @@
       "**/*.ts",
       "**/*.tsx",
       "package.json",
-      "eslint.config.js",
       "biome.json",
       ".ci/scripts/quality/check_lint_scope_coverage.py",
       ".gitignore",
@@ -3821,9 +3736,8 @@
     "run": "npm run check:ci-account-layer-isolation",
     "slow": true,
     "gate": true,
-    "heavy": true,
     "leaves": [
-      "eslint"
+      "biome"
     ],
     "ci": {
       "kind": "step",
@@ -5157,13 +5071,15 @@
   {
     "id": "check:ci-source-rules",
     "run": "npm run check:ci-source-rules",
-    "gate": false,
+    "gate": true,
     "leaves": [
       "scripts/gates/check-source-rules.ts"
     ],
     "ci": {
-      "kind": "local-only",
-      "blocker": "BLOCKER: the Biome-only lint migration (PLAN-biome-only-lint) is unfinished: 20 files still carry eslint-disable tokens nothing honours, so this gate is red until that plan clears them; it runs by hand until then (2026-09-26)."
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Source-authored lint rules, host-run"
     }
   },
   {
