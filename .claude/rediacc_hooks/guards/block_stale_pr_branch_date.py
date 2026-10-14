@@ -78,7 +78,8 @@ EDGE_CASES = [
     ),
     (
         "a head carrying the machine's LOCAL today",
-        "gh pr create --draft --head %s-9 --fill" % datetime.datetime.now().strftime("%m%d"),  # noqa: DTZ005
+        "gh pr create --draft --head %s-9 --fill"
+        % datetime.datetime.now().astimezone().strftime("%m%d"),
     ),
 ]
 
@@ -161,7 +162,7 @@ def _stale(branch, cwd):
     # LOCAL, not UTC. The twin is a bare `date +%m%d`, which is local time
     # honouring TZ; `datetime.now(tz=UTC)` ignores TZ and was wrong by a day for
     # two hours every night east of Greenwich. See the clock note in the module docstring for the measurement.
-    today = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- see above
+    today = datetime.datetime.now().astimezone().strftime("%m%d")
     if br_date == today:
         return ""
 

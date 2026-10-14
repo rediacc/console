@@ -726,21 +726,6 @@
   ".claude/hooks/stop/wl_store.py": {
    "noqa PLW0603": 1
   },
-  ".claude/rediacc_hooks/guards/block_focus_spawn.py": {
-   "noqa E731": 1
-  },
-  ".claude/rediacc_hooks/guards/block_plan_box_rewrite.py": {
-   "noqa PLW0603": 1
-  },
-  ".claude/rediacc_hooks/guards/block_plan_without_depends.py": {
-   "noqa E731": 1
-  },
-  ".claude/rediacc_hooks/guards/block_second_branch.py": {
-   "noqa DTZ005": 1
-  },
-  ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py": {
-   "noqa DTZ005": 2
-  },
   ".claude/rediacc_hooks/hookio.py": {
    "noqa F401": 1
   },

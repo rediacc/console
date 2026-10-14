@@ -318,7 +318,10 @@ def _freeze(before, after, rel, doc):
     """Why the result breaks the operator freeze, or "". `before` is the on-disk header (None for a new file)."""
     was = before.priority if before is not None else None
     now = after.priority
-    norm = lambda t: " ".join((t or "").split())  # noqa: E731
+
+    def norm(t):
+        return " ".join((t or "").split())
+
     if was is not None and was.operator:
         same = (
             now is not None
