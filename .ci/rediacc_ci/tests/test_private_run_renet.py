@@ -77,6 +77,22 @@ NEEDED = (
 
 SHELL_PREFIX = re.compile(r"^[^\n]*?: line \d+: ", re.MULTILINE)
 
+# A golangci config whose one exclusion rule carries a BLOCKER reason the quality rules accept. Every fixture with the submodule present gets it, because `all` and `quality` read the config before `ci.sh` runs and the recorded goldens show a run that passed that check.
+GOLANGCI_OK = """version: "2"
+linters:
+  default: all
+  settings:
+    funlen:
+      lines: 150
+  exclusions:
+    generated: lax
+    rules:
+      # BLOCKER: a fixture rule whose reason is long enough and names why the pattern is right.
+      - path: _test\\.go$
+        linters:
+          - funlen
+"""
+
 
 def _mask(text: str, root: pathlib.Path, tmp: pathlib.Path) -> str:
     text = SHELL_PREFIX.sub("<shell>: ", text)
@@ -116,6 +132,8 @@ def _fixture(
 
     renet_ci = root / "private" / "renet" / ".ci"
     renet_ci.mkdir(parents=True)
+    if marker != "none":
+        (root / "private" / "renet" / ".golangci.yml").write_text(GOLANGCI_OK, encoding="utf-8")
     target = renet_ci / "ci.sh"
     if marker == "dir":
         target.mkdir()
@@ -537,3 +555,115 @@ def test_main_without_shard_flags_never_touches_renet_test_pkgs(monkeypatch):
 
     assert rc == 0
     assert "RENET_TEST_PKGS" not in os.environ
+
+
+# ---------------------------------------------------------------------------
+# PLAN-inline-suppressions WD2: every `linters.exclusions.rules` item in `private/renet/.golangci.yml` carries a `# BLOCKER:` reason. NEW behaviour with no twin, so these drive the pure reader and, for the end-to-end refusal, the port over a fixture tree whose recording `ci.sh` must stay unreached.
+# ---------------------------------------------------------------------------
+
+
+def _with_rule(comment: str) -> str:
+    """GOLANGCI_OK plus a second rule under `comment` (raw lines, already indented)."""
+    return (
+        GOLANGCI_OK + comment + "      - path: pkg/x\\.go$\n        linters:\n          - nestif\n"
+    )
+
+
+def test_the_fixture_config_reads_clean_with_one_rule():
+    assert port_module.exclusion_rule_findings(GOLANGCI_OK, "f.yml") == ([], 1)
+
+
+def test_a_planted_reasonless_rule_is_red():
+    findings, rules = port_module.exclusion_rule_findings(
+        _with_rule("      # nested ifs are fine here\n"), "f.yml"
+    )
+    assert rules == 2
+    assert len(findings) == 1
+    assert "f.yml:" in findings[0]
+    assert "carries no `# BLOCKER: <reason>` comment" in findings[0]
+    assert "pkg/x" in findings[0]
+
+
+def test_a_reason_the_quality_rules_refuse_is_red():
+    findings, _rules = port_module.exclusion_rule_findings(
+        _with_rule("      # BLOCKER: legacy\n"), "f.yml"
+    )
+    assert len(findings) == 1
+    assert "pkg/x" in findings[0]
+
+
+def test_a_blank_line_ends_the_comment_run_so_a_reason_never_reaches_the_next_rule():
+    text = GOLANGCI_OK.replace(
+        "      - path: _test",
+        "      # BLOCKER: a reason long enough to pass the quality rules here.\n\n      - path: _test",
+    ).replace(
+        "      # BLOCKER: a fixture rule whose reason is long enough and names why the pattern is right.\n",
+        "",
+    )
+    findings, rules = port_module.exclusion_rule_findings(text, "f.yml")
+    assert rules == 1
+    assert len(findings) == 1
+    assert "carries no" in findings[0]
+
+
+def test_a_multi_line_reason_is_joined_and_a_plain_comment_above_it_is_kept_out():
+    text = _with_rule(
+        "      # A note that is not the reason.\n      # BLOCKER: the nesting follows the tool's output grammar,\n      #   one case per field of its report.\n"
+    )
+    assert port_module.exclusion_rule_findings(text, "f.yml") == ([], 2)
+
+
+def test_no_rules_list_is_a_finding_not_a_pass():
+    findings, rules = port_module.exclusion_rule_findings(
+        'version: "2"\nlinters:\n  default: all\n', "f.yml"
+    )
+    assert rules == 0
+    assert findings
+    assert "no linters.exclusions.rules list" in findings[0]
+
+
+def test_an_empty_rules_list_cannot_verify():
+    text = "linters:\n  exclusions:\n    rules:\n    warn-unused: true\n"
+    findings, rules = port_module.exclusion_rule_findings(text, "f.yml")
+    assert rules == 0
+    assert findings
+    assert "CANNOT VERIFY" in findings[-1]
+
+
+def test_an_exclusions_key_nested_deeper_is_not_the_rules_list():
+    """`linters.settings.<linter>.exclusions` is a linter setting, not golangci's exclusion rules, and must not be read as them."""
+    text = "linters:\n  settings:\n    x:\n      exclusions:\n        rules:\n          - path: a\n"
+    findings, rules = port_module.exclusion_rule_findings(text, "f.yml")
+    assert rules == 0
+    assert findings
+
+
+def test_a_missing_config_is_a_finding(tmp_path):
+    findings = port_module.check_exclusion_rules(tmp_path)
+    assert len(findings) == 1
+    assert "cannot be read" in findings[0]
+
+
+@pytest.mark.parametrize("stage", ["quality", "all"])
+def test_main_refuses_a_reasonless_rule_before_ci_sh_runs(tmp_path, stage):
+    root = _fixture(tmp_path)
+    (root / "private" / "renet" / ".golangci.yml").write_text(
+        _with_rule("      # nested ifs are fine here\n"), encoding="utf-8"
+    )
+    out = _run(PORT_REL, root, tmp_path, _binder(tmp_path), argv=(stage,))
+    assert out["exit"] == 1
+    assert out["calls"] == [], "ci.sh ran although an exclusion rule had no BLOCKER reason"
+    assert "private/renet/.golangci.yml:" in str(out["stderr"]) + str(out["stdout"])
+
+
+def test_the_test_stage_does_not_read_the_lint_config(tmp_path):
+    """THE CONTROL on the refusal: `test` runs no golangci-lint, so the same broken config does not stop it."""
+    root = _fixture(tmp_path)
+    (root / "private" / "renet" / ".golangci.yml").write_text(
+        _with_rule("      # nested ifs are fine here\n"), encoding="utf-8"
+    )
+    out = _run(PORT_REL, root, tmp_path, _binder(tmp_path), argv=("test",))
+    assert out["exit"] == 0
+    calls = out["calls"]
+    assert isinstance(calls, list)
+    assert len(calls) == 1
