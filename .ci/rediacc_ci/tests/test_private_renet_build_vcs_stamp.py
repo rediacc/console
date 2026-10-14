@@ -191,6 +191,42 @@ def test_a_broken_gitlink_fails_naming_the_missing_gitdir(tmp_path: pathlib.Path
     ), res.stderr
 
 
+def test_a_gitlink_without_a_final_newline_is_read(tmp_path: pathlib.Path) -> None:
+    """git reads `gitdir: <path>` with no trailing newline, so the helper must too."""
+    sub, sub_head, _outer, env = _fixture(tmp_path)
+    link = (sub / ".git").read_text(encoding="utf-8")
+    assert link.endswith("\n")
+    (sub / ".git").write_text(link.rstrip("\n"), encoding="utf-8")
+    out = tmp_path / "nonl.bin"
+    _build_sh_go_build(sub, out, env)
+    assert _stamp(out, env) == (sub_head, "false")
+
+
+@pytest.mark.parametrize("content", ["", "\n", "not a gitlink\n", "gitdir:\n", "gitdir: \n"])
+def test_a_gitlink_file_without_a_gitdir_line_is_refused(
+    tmp_path: pathlib.Path, content: str
+) -> None:
+    sub, _sub_head, _outer, env = _fixture(tmp_path)
+    (sub / ".git").write_text(content, encoding="utf-8")
+    res = _build_sh_run(sub, tmp_path / "x.bin", env)
+    assert "_go_build" in res.stdout, "the helper must have loaded and been called"
+    assert res.returncode != 0
+    assert f"build.sh: {sub}/.git is a file without a 'gitdir: <path>' line" in res.stderr, (
+        res.stderr
+    )
+
+
+def test_a_gitdir_that_is_a_file_is_refused(tmp_path: pathlib.Path) -> None:
+    sub, _sub_head, _outer, env = _fixture(tmp_path)
+    (sub / "notadir").write_text("x\n", encoding="utf-8")
+    (sub / ".git").write_text("gitdir: notadir\n", encoding="utf-8")
+    res = _build_sh_run(sub, tmp_path / "x.bin", env)
+    assert res.returncode != 0
+    assert f"{sub}/.git names gitdir {sub}/notadir, which is not a directory" in res.stderr, (
+        res.stderr
+    )
+
+
 def test_a_foreign_cwd_still_builds_renet_with_renets_stamp(tmp_path: pathlib.Path) -> None:
     """The helper cds to renet's root, so the caller's cwd neither breaks the build nor its stamp."""
     sub, sub_head, _outer, env = _fixture(tmp_path)
@@ -216,7 +252,11 @@ def _bypassing_go_builds(text: str) -> list[str]:
     code = "\n".join(ln for ln in outside.splitlines() if not ln.lstrip().startswith("#"))
     joined = re.sub(r"\\\n\s*", " ", code)
     # `go`, `/usr/local/go/bin/go`, `"go"`, `'go'`, `$(go ...)`, `` `go ...` ``, then `build`.
-    go_build = re.compile(r"""(?:^|[\s;&|(`])["']?(?:[^\s;&|()`"']*/)?go["']?\s+["']?build\b""")
+    # A global flag and its value may sit between `go` and the verb: `go -C "$dir" build`.
+    go_build = re.compile(
+        r"""(?:^|[\s;&|(`])["']?(?:[^\s;&|()`"']*/)?go["']?"""
+        r"""(?:\s+-[^\s;&|()`]*(?:\s+[^\s;&|()`]+)*?)?\s+["']?build\b"""
+    )
     return [ln for ln in joined.splitlines() if go_build.search(ln)]
 
 
@@ -233,6 +273,10 @@ def _bypassing_go_builds(text: str) -> list[str]:
         "go \\\n    build ./cmd/renet",
         "# a comment ending in a backslash \\\ngo build ./cmd/renet",
         "true && go\tbuild ./cmd/renet",
+        'go -C "$dir" build ./cmd/renet',
+        "go -C=/x build ./cmd/renet",
+        "go -C /x build ./cmd/renet",
+        "GOFLAGS= go -C /x -v build ./cmd/renet",
     ],
 )
 def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
@@ -246,6 +290,7 @@ def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
         "# go build ./cmd/renet",
         "go generate ./pkg/ebpf/...",
         "go version -m bin/renet",
+        "go -C /x generate ./pkg/ebpf/...",
         '_go_build() (\n    go build "$@"\n)',
     ],
 )
