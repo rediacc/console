@@ -153,6 +153,8 @@ function extendsChain(abs: string, seen: Set<string> = new Set()): string[] {
   } catch {
     return [];
   }
+  // A config that parses to null or a scalar names no `extends` (review 389237d5.3).
+  if (typeof value !== 'object' || value === null) return [];
   const ext = (value as { extends?: unknown }).extends;
   const targets = typeof ext === 'string' ? [ext] : Array.isArray(ext) ? ext : [];
   const out: string[] = [];
@@ -164,11 +166,14 @@ function extendsChain(abs: string, seen: Set<string> = new Set()): string[] {
         ? [path.resolve(dir, raw), path.resolve(dir, `${raw}.json`)]
         : [];
     if (candidates.length === 0) {
-      try {
-        const req = createRequire(abs);
-        candidates.push(req.resolve(raw), req.resolve(`${raw}.json`));
-      } catch {
-        // resolved below as absent
+      const req = createRequire(abs);
+      // Each spelling resolves on its own (review 389237d5.1): a bare specifier without the `.json` suffix throws, and that must not drop the suffixed candidate.
+      for (const spelling of [raw, `${raw}.json`]) {
+        try {
+          candidates.push(req.resolve(spelling));
+        } catch {
+          // resolved below as absent
+        }
       }
     }
     const hit = candidates.find((c) => fs.existsSync(c) && fs.statSync(c).isFile());
@@ -631,6 +636,42 @@ async function selftest(): Promise<number> {
       );
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
+    }
+
+    // THE EXTENDS CHAIN, link by link (review 389237d5.1-.3): a relative link, an absolute one, a bare specifier that only resolves with `.json` appended, and a config that parses to null.
+    const cdir = fs.mkdtempSync(path.join(os.tmpdir(), 'typecheck-extends-'));
+    try {
+      const pkg = path.join(cdir, 'node_modules', 'fx-base');
+      fs.mkdirSync(pkg, { recursive: true });
+      fs.writeFileSync(path.join(pkg, 'package.json'), '{"name":"fx-base","version":"1.0.0"}');
+      fs.writeFileSync(path.join(pkg, 'base.json'), '{}');
+      fs.writeFileSync(path.join(cdir, 'rel.json'), '{}');
+      fs.writeFileSync(path.join(cdir, 'abs.json'), '{}');
+      fs.writeFileSync(path.join(cdir, 'bare.json'), '{"extends":"fx-base/base"}');
+      fs.writeFileSync(path.join(cdir, 'multi.json'), '{"extends":["./rel",""]}');
+      fs.writeFileSync(
+        path.join(cdir, 'absolute.json'),
+        JSON.stringify({ extends: path.join(cdir, 'abs.json') })
+      );
+      fs.writeFileSync(path.join(cdir, 'null.json'), 'null');
+      check(
+        extendsChain(path.join(cdir, 'bare.json')).includes(path.join(pkg, 'base.json')),
+        'extends: a bare specifier that resolves only with .json appended must be followed'
+      );
+      check(
+        extendsChain(path.join(cdir, 'multi.json')).includes(path.join(cdir, 'rel.json')),
+        'extends: an array link without the suffix must be followed'
+      );
+      check(
+        extendsChain(path.join(cdir, 'absolute.json')).includes(path.join(cdir, 'abs.json')),
+        'extends: an absolute link must be followed'
+      );
+      check(
+        extendsChain(path.join(cdir, 'null.json')).length === 0,
+        'extends CONTROL: a config that parses to null names no link and must not throw'
+      );
+    } finally {
+      fs.rmSync(cdir, { recursive: true, force: true });
     }
 
     // THE STAMP IS SOUND ONLY IF EVERY KIND OF INPUT CHANGE RE-CHECKS. Each case changes one kind of input after a clean, stamped run and requires the next run to RE-CHECK (and, where the change is an error, to FAIL); the unchanged case requires a SKIP, or the stamp saves nothing and the cases prove nothing about it. Fixture mtimes are set into the past because a stamp refuses inputs modified inside its own run window.
