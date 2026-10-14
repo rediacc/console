@@ -106,6 +106,7 @@ export const SELFTESTS: Readonly<Record<string, Standalone>> = {
   },
   'scripts/gates/check-env-credential-drift.ts': { args: ['--selftest'] },
   '.ci/scripts/quality/check_proxy_image_smoke.py': { args: ['--selftest'] },
+  '.ci/scripts/housekeeping/retire-shadowed-secrets.py': { args: ['--selftest'] },
 };
 
 /** Where the table and the tree disagree over the pins selftests. */
