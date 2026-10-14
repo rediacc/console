@@ -271,16 +271,18 @@ The golangci half belongs to WD:
   - E402 hops (stop test scripts, post-bash and guard harnesses through `_hookpath`), PLC0415 in tests and harnesses, DTZ, E731, B010, ARG, S112, A002, PLW0603, and the 13 `type: ignore`.
   - Acceptance: `npm run check:ci-python-lint` and `npm run check:ci-python-types` rc 0; `npm run check:ci-pytest` green; `npm run check:ci-hook-integrity` rc 0; `npm run check:ci-inline-suppressions -- --count .claude` reports 0.
     (ticked) 2026-10-14T11:00:24Z by d778be9d: commit:4a0e4d57b commit:2ee2d7713 commit:8c6576789 commit:02b8b9f5f: check_inline_suppressions.py --count .claude reports 0 markers in 350 files; python-lint, python-types and hook-integrity rc=0
-- [ ] WB1: `.ci` mechanical fixes.
+- [x] WB1: `.ci` mechanical fixes.
   - F811 plant, F401, E402 (pythonpath and `_stoppath`), N818, N802, E731, ARG001/002, PLW0603, S101, SIM115, DTZ, B010, B023, A002, singles, and the S105 renames.
   - Acceptance: python-lint and python-types rc 0; `npm run check:ci-pytest` green.
-- [ ] WB2: `.ci` judgement work.
+    (ticked) 2026-10-14T12:08:45Z by d778be9d: commit:3573afd17 through commit:fa983477c with the suprb5 28-41 series: python-lint and python-types rc=0 (0 new), check_inline_suppressions.py --count .ci reports 0 markers in 1255 files
+- [x] WB2: `.ci` judgement work.
   - Hoist PLC0415, proving each kept-lazy import with a failing `python3 -c 'import X'` or an optional dependency.
   - Narrow BLE001.
   - Add the three funnel helpers (S310, S606, S314), with one inline marker each.
   - Fix the 126 `type: ignore`; the types baseline must not grow.
   - Hand the lead a list of every leftover (file, code, verified reason).
   - Acceptance: `npm run check:ci-python-types` rc 0 with the baseline unchanged or smaller; `npm run check:ci-pytest` green; the per-path count over `.ci` and `conftest.py` is no more than the handed-over list.
+    (ticked) 2026-10-14T12:08:48Z by d778be9d: commit:dee5310da (exec_replace), commit:1bf85a711 (https funnel, redirect check in 19fb3dae7), commit:26bbd72a7 (xml funnel), commit:fa983477c (hoists, BLE001): python-types baseline 648 findings, 0 new, 0 grown; the touched modules tests 521 and 148 passed
 - [x] WC1: e2e.
   - Add the `log.ts` logger; fix require-await, constants.ts and the deprecated members; remove the dead e2e paths from biome.json overrides #18 and #19.
   - Acceptance: `npm run check:lint:tooling` rc 0; `npx biome lint packages/e2e-tests --error-on-warnings` rc 0; `npx tsc --noEmit -p packages/e2e-tests` rc 0; `--count packages/e2e-tests` reports 0.
@@ -297,9 +299,10 @@ The golangci half belongs to WD:
   - gosec split and complexity rules, each with a `# BLOCKER:`.
   - `lint.sh` fails on a rule unused in all three GOOS runs; `run_renet.py` validates BLOCKER comments; a planted dead rule and a reasonless rule both go red.
   - Acceptance: `npm run check:ci-renet` rc 0; `--count private/renet` reports 0. This is a renet submodule PR.
-- [ ] P2 lead: residual config.
+- [x] P2 lead: residual config.
   - Add WB's handed-over entries and the three helper entries with BLOCKERs, and strip the last inline markers through RUF100 in the same commit.
   - Acceptance: python-lint rc 0, including liveness; `npm run check:ci-suppression-liveness` rc 0; `npm run check:ci-inline-suppressions -- --count .ci` and `-- --count conftest.py` report 0.
+    (ticked) 2026-10-14T12:08:51Z by d778be9d: commit:3573afd17 and commit:d2ba79652: the leftovers are pyproject per-file-ignores with BLOCKER reasons, check:ci-python-lint (liveness) and check:ci-suppression-liveness rc=0, --count .ci and --count conftest.py both 0
 - [ ] F lead: close the gate.
   - Write `.ci/config/inline-suppressions-baseline.json` at zero, and switch `check:ci-inline-suppressions` to "no baseline allowed": a present baseline file is itself a failure.
   - Lift the "20 files still carry eslint-disable tokens" BLOCKER on the stale-directive gate (`scripts/ci-runner/manifest.ts`, `scripts/ci-runner/gates.lock.json`), since its reason is now false. Delete `ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES` and the rule-141 ignores. These files are in `PLAN-biome-only-lint` Owns, so coordinate.
