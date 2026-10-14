@@ -120,7 +120,7 @@ def configured_window(project_dir):
     for f in _settings_files(project_dir):
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001, S112 -- an unreadable settings file is not this hook's problem
+        except Exception:  # noqa: S112 -- an unreadable settings file is not this hook's problem
             continue
         v = data.get("autoCompactWindow")
         if isinstance(v, int) and WINDOW_MIN <= v <= WINDOW_MAX:
@@ -246,7 +246,7 @@ def last_usage(transcript_path):
                 continue
             try:
                 d = json.loads(raw)
-            except Exception:  # noqa: BLE001, S112 -- a torn line is expected at a tail boundary
+            except Exception:  # noqa: S112 -- a torn line is expected at a tail boundary
                 continue
             if not hit_boundary and _is_compact_boundary(d):
                 # Everything older than this belongs to a context that no longer exists. Stop treating it as usage; keep scanning ONLY to recover the model, which compaction does not change.
@@ -312,7 +312,7 @@ def state_file(session_id):
 def load_state(session_id):
     try:
         return json.loads(state_file(session_id).read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001 -- absent or corrupt both mean "no band announced yet"
+    except Exception:
         return {"epoch": 0, "band": -1}
 
 
@@ -342,7 +342,7 @@ def cleanup_stale_state_files(grace_hours=24, now=None):
                     deleted.append(f.name)
             except OSError:
                 continue
-    except Exception as exc:  # noqa: BLE001 -- a sweep failure must never break save_state
+    except Exception as exc:
         log_error("cleanup_stale_state_files", exc)
     return len(deleted), total, deleted
 
@@ -362,7 +362,7 @@ def save_state(session_id, data):
                     "cleanup_stale_state_files",
                     Exception("swept %d of %d stale state file(s): %s" % (deleted, total, names)),
                 )
-        except Exception as exc:  # noqa: BLE001 -- fire-and-forget, save_state must still succeed
+        except Exception as exc:
             log_error("cleanup_stale_state_files", exc)
 
 
@@ -380,7 +380,7 @@ def log_error(where, exc):
         )
         with open(state_dir() / "errors.log", "a", encoding="utf-8") as fh:
             fh.write(line)
-    except Exception:  # noqa: BLE001 -- nothing left to do if even this fails
+    except Exception:
         pass
 
 
@@ -390,13 +390,13 @@ def read_event():
         return {}
     try:
         raw = sys.stdin.read()
-    except Exception:  # noqa: BLE001
+    except Exception:
         return {}
     if not raw.strip():
         return {}
     try:
         return json.loads(raw)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return {}
 
 

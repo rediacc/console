@@ -59,9 +59,9 @@ def remind(doc, now=None):
     now = time.time() if now is None else now
     syspath = _load_syspath()
     syspath.on_sys_path(syspath.STOP_DIR)
-    import wl_core as C  # noqa: PLC0415 -- only an edit tool needs the Stop modules
-    import wl_store as S  # noqa: PLC0415
-    import wl_uncommitted as U  # noqa: PLC0415
+    import wl_core as C
+    import wl_store as S
+    import wl_uncommitted as U
 
     session = str(doc.get("session_id") or "")
     root = C.project_root(C.project_start(doc))
@@ -94,7 +94,7 @@ def main(stdin=None, stdout=None):
         text = remind(doc)
         if text:
             stdout.write(render(text))
-    except Exception:  # noqa: BLE001 -- advisory: never fail the chain
+    except Exception:
         pass
     return 0
 

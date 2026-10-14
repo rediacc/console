@@ -56,7 +56,7 @@ def run(cmd, cwd, timeout=15):
             check=False,
         )
         return p.stdout
-    except Exception as exc:  # noqa: BLE001 -- a missing git or a slow store must not break compaction
+    except Exception as exc:
         B.log_error("precompact-floor/run:%s" % cmd[0], exc)
         return ""
 
@@ -166,7 +166,7 @@ def main():
             "Preserve these paths and ids exactly as written; they are how the session resumes."
         )
         sys.stdout.write(" ".join(parts) + "\n")
-    except Exception as exc:  # noqa: BLE001 -- never break a compaction
+    except Exception as exc:
         B.log_error("precompact-floor", exc)
 
 

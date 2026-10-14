@@ -46,7 +46,7 @@ def classify(cmd):
         return ""
     syspath = _load_syspath()
     syspath.on_sys_path(syspath.CLAUDE_DIR)
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- only a candidate command needs the lexer
+    from rediacc_hooks import shellscan
 
     scanned = shellscan.scan_target(cmd)
     if RECEIPT_COMMAND.search(scanned):
@@ -60,9 +60,9 @@ def push_note(doc):
     """The hold note for a `git push` payload, or "" when the cached run is not in progress-and-not-red."""
     syspath = _load_syspath()
     syspath.on_sys_path(syspath.STOP_DIR)
-    import wl_core as C  # noqa: PLC0415 -- only a push needs the Stop modules
-    import wl_loopspeed as L  # noqa: PLC0415
-    import worklist_messages as M  # noqa: PLC0415
+    import wl_core as C
+    import wl_loopspeed as L
+    import worklist_messages as M
 
     root = C.project_root(C.project_start(doc))
     worklist = C.worklist_for(C.project_start(doc))
@@ -77,12 +77,12 @@ def receipt_note(doc):
     """N_RECEIPT_EARLY, or "" while a turbo local batch is still filling (agent/plans/PLAN-turbo-local-first.md D4): no push is due before the batch completes, so "a stop with unpushed commits" is not a reason to build a receipt then."""
     syspath = _load_syspath()
     syspath.on_sys_path(syspath.STOP_DIR)
-    import worklist_messages as M  # noqa: PLC0415
+    import worklist_messages as M
 
     try:
-        import wl_checks  # noqa: PLC0415 -- only a receipt run needs the loop state
-        import wl_core as C  # noqa: PLC0415
-        import wl_prscope  # noqa: PLC0415
+        import wl_checks
+        import wl_core as C
+        import wl_prscope
 
         start = C.project_start(doc)
         root = C.project_root(start)
@@ -91,7 +91,7 @@ def receipt_note(doc):
         )
         if wl_checks.local_batch_open(state, root):
             return ""
-    except Exception:  # noqa: BLE001 -- advisory: an unreadable loop state keeps the note
+    except Exception:
         pass
     return M.N_RECEIPT_EARLY
 
@@ -127,7 +127,7 @@ def main(stdin=None, stdout=None):
         text = note_for(doc) if isinstance(doc, dict) else ""
         if text:
             stdout.write(render(text))
-    except Exception:  # noqa: BLE001 -- advisory: never fail the chain
+    except Exception:
         pass
     return 0
 

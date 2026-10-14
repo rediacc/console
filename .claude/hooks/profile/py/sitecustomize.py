@@ -32,14 +32,14 @@ def _root():
         for _ in range(5):
             p = os.path.dirname(p)
         return p if p and p != "/" else None
-    except BaseException:  # noqa: BLE001 -- silence is this file's contract
+    except BaseException:
         return None
 
 
 def _in_scope(root):
     try:
         c = os.path.realpath(os.getcwd())
-    except BaseException:  # noqa: BLE001 -- silence is this file's contract
+    except BaseException:
         return False
     return c == root or c.startswith(root + os.sep)
 
@@ -51,7 +51,7 @@ def _shape(root):
     try:
         r = os.path.realpath(s)
         rel = r[len(root) + 1 :] if r.startswith(root + os.sep) else "<external>"
-    except BaseException:  # noqa: BLE001 -- silence is this file's contract
+    except BaseException:
         rel = "<external>"
     if not s or s in ("-c", "-"):
         rel = "<inline>"
@@ -70,7 +70,7 @@ def _proc_int(path, keys):
                 k, _, v = line.partition(":")
                 if k in keys:
                     out[k] = int(v.split()[0])
-    except BaseException:  # noqa: BLE001 -- silence is this file's contract
+    except BaseException:
         pass
     return out
 
@@ -86,7 +86,7 @@ def _run_delay_ns():
         with open("/proc/self/schedstat") as fh:
             f = fh.read().split()
         return int(f[1]) if len(f) >= 3 else None
-    except BaseException:  # noqa: BLE001 -- silence is this file's contract
+    except BaseException:
         return None
 
 
@@ -128,7 +128,7 @@ def _on_exit(root, day_dir):
             os.write(fd, rec.encode())
         finally:
             os.close(fd)
-    except BaseException:  # noqa: BLE001 -- silence is this file's contract
+    except BaseException:
         pass
 
 
@@ -147,7 +147,7 @@ def _install():
         os.makedirs(d, exist_ok=True)
         os.environ[_ARMED] = "1"
         atexit.register(_on_exit, root, d)
-    except BaseException:  # noqa: BLE001 -- silence is this file's contract
+    except BaseException:
         pass
 
 
