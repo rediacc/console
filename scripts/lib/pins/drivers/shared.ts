@@ -210,6 +210,10 @@ export function listFiles(root: string, repo: string, globs: string[]): string[]
     };
     walk('');
   }
+  if (all.length === 0)
+    throw new Error(
+      `VACUOUS: ${dir} lists no file at all (git and the directory walk both found none), so a match of ${globs.join(', ')} proves nothing`
+    );
   const res2 = globs.map(globRe);
   return all.filter((f) => res2.some((re) => re.test(f))).sort();
 }

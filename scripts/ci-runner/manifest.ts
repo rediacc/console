@@ -2240,6 +2240,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // THE PINS COMMAND, registered for the reason shard:place is: a hand-written package.json key counts against check:ci-package-key-budget, which refuses growth, and `npm run pins` is an operator verb that belongs to the registry rather than beside it. gate:false because its bump and apply verbs WRITE; the scheduler never runs it.
+    id: 'pins',
+    run: 'npm run pins',
+    gate: false,
+    leaves: ['scripts/pins/pins.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: a writer, not a validation. CI judges the pin registry through check:ci-pin-registry and the pins core through its pytest; a quality step here would claim CI bumps pins on behalf of the author.',
+    },
+  },
+  {
     id: 'check:ci-syncpack-sources',
     run: 'npm run check:ci-syncpack-sources',
     gate: true,

@@ -13,7 +13,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { WK_GH_API_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { type ControlCase, runControls } from '../../controls.js';
+import { policyPath } from '../../policy-paths.js';
 import { keyOf, type PinPlan, PlanRefused } from '../driver.js';
 import { type Runner, runTransaction } from '../txn.js';
 import { createEmbedDriver, EMBED_MUTANTS, type EmbedMutant } from './embed.js';
@@ -30,7 +32,7 @@ import {
   stubUpstream,
 } from './toolchain-fixture.js';
 
-const GH = 'https://api.github.com';
+const GH = WK_GH_API_BASE;
 const RAW = 'https://raw.githubusercontent.com';
 const SNAP = 'kubernetes-csi/external-snapshotter';
 const CRD_DIR = 'private/renet/pkg/kube/csidriver/crds';
@@ -62,7 +64,7 @@ const tree = (blocklist = '# fixture blocklist\n'): string =>
   makeTree(treeFiles(), {
     'package.json': '{ "name": "fixture", "private": true }\n',
     '.ci/.keep': '',
-    '.ci/policy/.embed-assets-upgrade-blocklist': blocklist,
+    [policyPath('.embed-assets-upgrade-blocklist', '.')]: blocklist,
   });
 
 const live = (rel: string): string => fs.readFileSync(path.join(LIVE_ROOT, rel), 'utf8');

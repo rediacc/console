@@ -304,8 +304,8 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow |
 |---|---|---|---|
-| (all lanes) | 361 | 349 | 63 |
-| local-only (CI never runs it) | 18 | 11 | 6 |
+| (all lanes) | 362 | 349 | 63 |
+| local-only (CI never runs it) | 19 | 11 | 6 |
 | step / build-renet | 1 | 1 | 0 |
 | step / quality-branch | 10 | 10 | 3 |
 | step / quality-code | 103 | 103 | 14 |

@@ -181,12 +181,19 @@ export function openJournals(root: string): Array<{ stamp: string; files: string
   const dir = journalRoot(root);
   if (!fs.existsSync(dir)) return [];
   const out: Array<{ stamp: string; files: string[] }> = [];
-  for (const stamp of fs.readdirSync(dir).sort()) {
+  const stamps = fs.readdirSync(dir).sort();
+  let readable = 0;
+  for (const stamp of stamps) {
     const f = path.join(dir, stamp, 'journal.json');
     if (!fs.existsSync(f)) continue;
+    readable++;
     const j = JSON.parse(fs.readFileSync(f, 'utf8')) as Journal;
     if (j.state === 'writing') out.push({ stamp, files: Object.keys(j.files) });
   }
+  if (stamps.length > 0 && readable === 0)
+    throw new Error(
+      `VACUOUS: ${dir} holds ${stamps.length} stamp entries and not one journal.json, so "no unfinished run" would be read off a layout this code no longer knows`
+    );
   return out;
 }
 

@@ -47,6 +47,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { WK_CEPH_IMAGE_REPO } from '../../packages/shared/src/config/well-known.generated.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PIN_FILE = path.join(ROOT, 'private/renet/.ceph-image-pin');
@@ -198,17 +199,17 @@ function selftest(): boolean {
     },
     {
       name: 'CONTROL: a floating tag IS reported',
-      ok: isFloatingTag('quay.io/ceph/ceph:v19.2.6'),
+      ok: isFloatingTag(`${WK_CEPH_IMAGE_REPO}:v19.2.6`),
     },
     {
       name: 'a dated tag is NOT reported (control)',
-      ok: !isFloatingTag('quay.io/ceph/ceph:v19.2.6-20260818'),
+      ok: !isFloatingTag(`${WK_CEPH_IMAGE_REPO}:v19.2.6-20260818`),
     },
     {
       name: 'reads the Go constant',
       ok:
-        goPinnedImage('const CephImagePin = "quay.io/ceph/ceph:v19.2.6-20260818"') ===
-        'quay.io/ceph/ceph:v19.2.6-20260818',
+        goPinnedImage(`const CephImagePin = "${WK_CEPH_IMAGE_REPO}:v19.2.6-20260818"`) ===
+        `${WK_CEPH_IMAGE_REPO}:v19.2.6-20260818`,
     },
     {
       name: 'CONTROL: a missing Go constant is undefined, not an empty match',
