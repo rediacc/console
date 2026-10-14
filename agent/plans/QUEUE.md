@@ -73,7 +73,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 13 plans done, 160 of 170 boxes done (94%).
+Promoted: 10 of 14 plans done, 160 of 177 boxes done (90%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -90,6 +90,7 @@ Promoted: 10 of 13 plans done, 160 of 170 boxes done (94%).
 | 11 | PLAN-scope-mirrors.md | 11/11 | done |
 | 12 | PLAN-lessons-registry.md | 9/9 | done |
 | 13 | PLAN-inline-suppressions.md | 3/11 | 8 open |
+| 14 | PLAN-stop-hook-effort.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
@@ -105,6 +106,7 @@ Promoted: 10 of 13 plans done, 160 of 170 boxes done (94%).
 11. agent/plans/PLAN-scope-mirrors.md -- operator /ask 2026-10-04 (#e70faed1): done, 11 of 11 boxes; leaves this list when PR #600 merges
 12. agent/plans/PLAN-lessons-registry.md -- operator /ask 2026-10-04 (#077d85c1): done, 9 of 9 boxes; leaves this list when PR #600 merges
 13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; 3 of 11 boxes ticked (WC1 e2e, WC2 account, WD1 renet); WD2 waits on run_renet.py validating BLOCKER comments; the config and sweep patches (P0), the .claude and .ci Python patches (WA, WB) and the shell markers are delivered and not yet landed; P2 and F follow them
+14. agent/plans/PLAN-stop-hook-effort.md -- operator /ask 2026-10-14 (#d5506fb8): one effort level (quiet/low/smart/high/ultra) replaces the stop_hook, focus and turbo switches, with check thresholds in .claude/config/effort.json; "implement PLAN-stop-hook-effort.md now"; 0 of 7 boxes, writer on E1-E6
 
 ## Generated
 
@@ -127,15 +129,14 @@ Promoted: 10 of 13 plans done, 160 of 170 boxes done (94%).
 16. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 18. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-19. agent/plans/PLAN-stop-hook-effort.md -- P1, approved, not started
-20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-23. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+19. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+20. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+21. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+22. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+25. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
