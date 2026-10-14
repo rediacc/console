@@ -21,6 +21,8 @@ gone" rather than as "nobody looked".
 NO `xdist_group`. Every case is a short-lived `node -e` subprocess or a file read; nothing is bound and no module global moves.
 """
 
+import json
+
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
@@ -236,3 +238,69 @@ def test_no_auto_cancel_label_exempts_a_pr_run(gate):
         "CONTROL: another label must not exempt it",
     )
     gate.log_pass("no-auto-cancel exempts a PR run; other labels do not")
+
+
+CAUSE_JS = """
+const w = require(process.argv[1]);
+const a = JSON.parse(process.argv[2]);
+const v = w.evaluateCancelExemption({ runEvent: a.event, labels: a.labels, cause: a.cause });
+process.stdout.write(v.exempt ? "exempt" : "cancel");
+"""
+
+
+def exempt_for(gate, event: str, labels: list[str], cause: str | None) -> str:
+    args = {"event": event, "labels": labels}
+    if cause is not None:
+        args["cause"] = cause
+    return node_eval(gate, CAUSE_JS, json.dumps(args))
+
+
+def test_the_label_is_read_from_the_module(gate):
+    gate.log_test("ANTI-VACUITY: the label name under test is the module's own")
+    name = node_eval(gate, "process.stdout.write(require(process.argv[1]).NO_AUTO_CANCEL_LABEL)")
+    gate.assert_eq(name, "no-auto-cancel", "the hold-open label is still named no-auto-cancel")
+    labels_file = paths.from_root(".github", "labels.yml").read_text(encoding="utf-8")
+    gate.assert_contains(
+        labels_file,
+        "- name: %s\n" % name,
+        ".github/labels.yml declares the label the watchdog reads",
+    )
+    gate.log_pass("the watchdog reads %s and labels.yml declares it" % name)
+
+
+def test_the_label_holds_back_a_failure_cancel_but_not_a_budget_cancel(gate):
+    gate.log_test("the label answers for a FAILED job only; a time budget is not its question")
+    held = ["no-auto-cancel"]
+    gate.assert_eq(
+        exempt_for(gate, "pull_request", held, "failure"), "exempt", "failure: held open"
+    )
+    gate.assert_eq(
+        exempt_for(gate, "pull_request", held, "budget"),
+        "cancel",
+        "a budget cancel is not held back by the label",
+    )
+    gate.assert_eq(
+        exempt_for(gate, "pull_request", held, None),
+        "exempt",
+        "a call site that names no cause keeps the run open (the label is not bypassed by omission)",
+    )
+    gate.assert_eq(
+        exempt_for(gate, "pull_request", held, "Budget"),
+        "exempt",
+        "only the exact budget cause passes the label",
+    )
+    gate.assert_eq(
+        exempt_for(gate, "pull_request", [], "failure"), "cancel", "CONTROL: no label, it cancels"
+    )
+    gate.log_pass("the label exempts a failure cancel and yields to a budget cancel")
+
+
+def test_the_event_exemption_covers_a_budget_cancel_too(gate):
+    gate.log_test("CONTROL: a budget cancel would still rewrite the nightly's conclusion")
+    for event in ("schedule", "workflow_dispatch"):
+        gate.assert_eq(
+            exempt_for(gate, event, [], "budget"),
+            "exempt",
+            "%s stays cancel-exempt whatever the cause" % event,
+        )
+    gate.log_pass("schedule and workflow_dispatch are exempt from budget cancels as before")

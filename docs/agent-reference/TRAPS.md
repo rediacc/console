@@ -563,7 +563,7 @@ Trap-Id: matrix-fail-fast-beats-the-label
 Enforced-By: JUDGMENT-ONLY
 Residue: Checked 2026-08-27: check-ci-workflow-invariants.sh asserts nothing about `fail-fast`, so no gate reads it. The serial half (a red build skipping every downstream job) is not expressible as a workflow invariant at all.
 
-The label cannot reach it. Matrix fail-fast cancels every sibling before the watchdog is ever consulted, so on a branch being driven to green each round surfaces one failure instead of the whole surface.
+The label cannot reach it, and neither can `no-auto-cancel`, which has done the same job since 2026-09-27 (`ci-gates.md`, *PR labels*). Matrix fail-fast cancels every sibling before the watchdog is ever consulted, so on a branch being driven to green each round surfaces one failure instead of the whole surface.
 
 `ci-build-docker.yml` and `ci-build-renet.yml` set `fail-fast: false`; `ci-build-cli.yml` and `ci-ops-test.yml` did not until 2026-07-30.
 
