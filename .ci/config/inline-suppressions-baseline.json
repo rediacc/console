@@ -1303,8 +1303,8 @@
    "noqa PLC0415": 2
   },
   ".claude/hooks/stop/worklist.py": {
-   "noqa BLE001": 15,
-   "noqa PLC0415": 35
+   "noqa BLE001": 13,
+   "noqa PLC0415": 34
   },
   ".claude/hooks/trapguard/dispatch.py": {
    "noqa BLE001": 3
