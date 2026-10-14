@@ -39,7 +39,7 @@ BASH = shutil.which("bash") or "/bin/bash"
 
 SLUG = "cleanup-stale-d1"
 
-TOKEN = "fixture-cloudflare-token"  # noqa: S105 -- a throwaway fixture value that authenticates nowhere
+TOKEN = "fixture-cloudflare-token"
 ACCOUNT = "fixture-account-id"
 
 # Far in the past and far in the future, so no selection can turn on the gap between the recording's clock and the replay's. See the module docstring.

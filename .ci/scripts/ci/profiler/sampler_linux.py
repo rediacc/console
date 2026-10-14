@@ -6,7 +6,7 @@ The logic lives in `rediacc_ci.ci.profiler_sampler_linux`; this file is the path
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.ci import profiler_sampler_linux
 
 if __name__ == "__main__":

@@ -56,7 +56,7 @@ NOWHERE_DAEMON = "unix:///nonexistent/rediacc-docker-pull-ghcr-fixture.sock"
 IMAGE = "registry.invalid/rediacc/renet:fixture"
 LATEST = "registry.invalid/rediacc/renet:latest"
 
-TOKEN = "fixture-token"  # noqa: S105 -- a throwaway fixture value that authenticates nowhere
+TOKEN = "fixture-token"
 ACTOR = "fixture-actor"
 
 FAKE_DOCKER = """#!/usr/bin/python3

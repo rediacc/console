@@ -48,8 +48,8 @@ BASH = shutil.which("bash") or "/bin/bash"
 JQ = shutil.which("jq")
 
 # Throwaway values. They authenticate nowhere, and the fakes never leave the machine, but they are pinned so that a leaked real `gh` would be using a token that cannot possibly work.
-GH_TOKEN = "fixture-gh-token"  # noqa: S105 -- a fixture value, not a credential
-CF_TOKEN = "fixture-cf-token"  # noqa: S105 -- a fixture value, not a credential
+GH_TOKEN = "fixture-gh-token"
+CF_TOKEN = "fixture-cf-token"
 CF_ACCOUNT = "fixture-account"
 R2_ENDPOINT = "https://fixture.r2.example/"
 

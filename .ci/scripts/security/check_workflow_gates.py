@@ -6,7 +6,7 @@ The logic lives in `rediacc_ci.security.workflow_gates`; this file exists so the
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.security import workflow_gates
 
 if __name__ == "__main__":

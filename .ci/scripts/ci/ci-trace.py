@@ -241,7 +241,7 @@ def _run_snapshot(root, run_id):
         )
     try:
         d = json.loads(out.stdout)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None, None, "unparseable run payload for %s" % run_id, ""
     return d.get("status"), d.get("conclusion"), d.get("jobs") or [], d.get("workflowName") or ""
 
@@ -276,7 +276,7 @@ def _root_cause_lines(root, run_id):
     """`--why`'s rendering for one run, indented under a --run verdict; one line saying so when the diagnosis cannot be read. Never raises."""
     try:
         d = D.diagnose(_fetcher(root), run_id)
-    except Exception as exc:  # noqa: BLE001 -- a broken diagnosis never changes the verdict
+    except Exception as exc:
         return ["  why: unreadable (%s: %s)" % (type(exc).__name__, exc)]
     return [
         "  why: " + ln.strip() if i == 0 else ln for i, ln in enumerate(D.render(d).splitlines())
@@ -339,7 +339,7 @@ def _read_progress(root, run_id):
         return None
     try:
         jobs, _err = D.run_jobs(_fetcher(root), run_id)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
     return run_progress(run_id, jobs) if jobs else None
 
@@ -469,7 +469,7 @@ def _github_note(green=False):
         return ""
     try:
         return _gs().surface(session=_GH_SESSION, green=green)
-    except Exception:  # noqa: BLE001 -- a status note never changes or breaks a verdict
+    except Exception:
         return ""
 
 
@@ -487,7 +487,7 @@ def _gh_tick(as_json):
         _GH_SAMPLES.append((when, st.state, [c["name"] for c in st.components]))
         if st.state in ("degraded", "recovering") and prev != st.state and not as_json:
             print("  %s" % gs.line(st))
-    except Exception:  # noqa: BLE001 -- a status sample never changes or breaks a wait
+    except Exception:
         return
 
 
@@ -497,7 +497,7 @@ def _gh_transitions(as_json, stream=None):
         return
     try:
         text = _gs().transitions_text(_GH_SAMPLES)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return
     if text:
         print("  %s" % text, file=stream or sys.stdout)
@@ -634,7 +634,7 @@ def _pr_signals(root, payload):
             comments, head, pr, payload.get("ref") or "", head_date
         )
         out["state"] = "ok"
-    except Exception as exc:  # noqa: BLE001 -- information, never a reason to lose the verdict
+    except Exception as exc:
         out["error"] = "%s: %s" % (type(exc).__name__, exc)
     return out
 
@@ -1422,7 +1422,7 @@ def verb_scheduled(root, workflow, as_json):
         if workflow:
             return _verb_scheduled_workflow(root, wl_schedred, workflow, as_json)
         data = wl_schedred.refresh(root, wl_core.worklist_for(root), force=True)
-    except Exception as exc:  # noqa: BLE001 -- a broken reader is no verdict, never a green
+    except Exception as exc:
         print(
             "no-verdict: the scheduled-run reader failed: %s: %s" % (type(exc).__name__, exc),
             file=sys.stderr,
@@ -1907,7 +1907,7 @@ def _record_final(root, ref, payload, verdict, args, diag=None):
             summary=D.render(record),
             source="ci-trace",
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         print("ci-trace: the branch verdict cache was not written: %s" % exc, file=sys.stderr)
     if args.worklist_item and args.session:
         cause = record.get("cause") or {}
@@ -2083,7 +2083,7 @@ def _selftest():
                 contextlib.redirect_stderr(err),
             ):
                 _fold_into_gate_ledger("/tmp/ci-trace-root")
-        except Exception:  # noqa: BLE001 -- the control is that nothing escapes
+        except Exception:
             raised = True
         check(
             "CONTROL: an OSError from Popen prints one line and raises nothing",
