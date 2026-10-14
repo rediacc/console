@@ -658,7 +658,7 @@ def test_delta_evidence_lines_are_always_newline_terminated() -> None:
 
 
 def test_a_drill_request_does_not_follow_a_redirect_to_ftp():
-    """Review 1bf85a71.2 (moved here by review d74d5457.2, a drills case must not make the core https tests import the drills package): `wire.http_bytes` and the drill client built their own opener, so only the first URL was checked; both now open through `https.build_opener`."""
+    """`wire.http_bytes` and the drill client opened through an opener of their own, so only the first URL was checked and a redirect to ftp was followed; both now open through `https.build_opener`. The case lives here, not beside the core https tests, so those tests never import the drills package."""
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
