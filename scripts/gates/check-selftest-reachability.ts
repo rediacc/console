@@ -183,12 +183,18 @@ function pythonImports(file: string, text: string, has: (f: string) => boolean):
   return out;
 }
 
-/** Whether a `/` after `before` starts a regex literal rather than dividing: true at the start, after an operator or opener, or after a keyword that takes an operand. */
-function regexAllowed(before: string): boolean {
-  const t = before.trimEnd();
-  if (t === '') return true;
-  if (/[(,=:[!&|?{};+\-*%<>~^]$/.test(t)) return true;
-  return /(?:^|[^\w$.])(?:return|typeof|case|in|of|void|delete|throw|yield|await)$/.test(t);
+const COND_HEAD = /(?:^|[^\w$.])(?:if|while|for|with)$/;
+
+/** Whether a `/` after `tail` (the last non-blank characters of the code so far, empty at the start) starts a regex literal rather than dividing: true at the start, after an operator or opener, after a keyword that takes an operand, and after the `)` closing an `if`/`while`/`for`/`with` head (`condClose`); false after a postfix `++`/`--`, a value, or any other `)` or `]`. */
+function regexAllowed(tail: string, condClose: boolean): boolean {
+  if (tail === '') return true;
+  const last = tail[tail.length - 1] as string;
+  if (last === ')') return condClose;
+  if ((last === '+' || last === '-') && tail[tail.length - 2] === last) return false;
+  if ('(,=:[!&|?{};+-*%<>~^'.includes(last)) return true;
+  return /(?:^|[^\w$.])(?:return|typeof|case|in|of|void|delete|throw|yield|await|else|do)$/.test(
+    tail
+  );
 }
 
 /** The index just past the regex literal opening at `start`, or past the `/` alone when the line holds no closing one. */
@@ -212,36 +218,45 @@ export function stripJsComments(text: string): string {
   let out = '';
   let i = 0;
   let quote = '';
+  let tail = '';
+  let condClose = false;
+  const heads: boolean[] = [];
+  const emit = (piece: string): void => {
+    out += piece;
+    tail = (tail + piece).trimEnd().slice(-16);
+  };
   const blank = (s: string): string => s.replace(/[^\n]/g, ' ');
   while (i < text.length) {
     const c = text[i] as string;
     const two = text.slice(i, i + 2);
     if (quote) {
       if (c === '\\') {
-        out += text.slice(i, i + 2);
+        emit(text.slice(i, i + 2));
         i += 2;
         continue;
       }
       if (c === quote || (c === '\n' && quote !== '`')) quote = '';
-      out += c;
+      emit(c);
       i++;
-    } else if (c === '/' && two !== '//' && two !== '/*' && regexAllowed(out)) {
+    } else if (c === '/' && two !== '//' && two !== '/*' && regexAllowed(tail, condClose)) {
       const stop = regexEnd(text, i);
-      out += text.slice(i, stop);
+      emit(text.slice(i, stop));
       i = stop;
     } else if (two === '//') {
       const end = text.indexOf('\n', i);
       const stop = end === -1 ? text.length : end;
-      out += blank(text.slice(i, stop));
+      emit(blank(text.slice(i, stop)));
       i = stop;
     } else if (two === '/*') {
       const end = text.indexOf('*/', i + 2);
       const stop = end === -1 ? text.length : end + 2;
-      out += blank(text.slice(i, stop));
+      emit(blank(text.slice(i, stop)));
       i = stop;
     } else {
       if (c === "'" || c === '"' || c === '`') quote = c;
-      out += c;
+      if (c === '(') heads.push(COND_HEAD.test(tail));
+      else if (c === ')') condClose = heads.pop() ?? false;
+      emit(c);
       i++;
     }
   }
@@ -491,6 +506,26 @@ function selftestCases(): ControlCase[] {
       stripJsComments("const r = /https?:\\/\\//; import './d.js';").includes("'./d.js'") &&
       stripJsComments("const q = a / b; // import './e.js'").includes("'./e.js'") === false &&
       stripJsComments("x = [/\\//, 1]; import './f.js';").includes("'./f.js'"),
+  });
+  cases.push({
+    name: 'a division after a postfix ++ or -- is not a regex, and a regex after an if/while head or else/do is',
+    ok:
+      !stripJsComments("n = i++ / 2; // import './g.js'").includes("'./g.js'") &&
+      !stripJsComments("n = i-- / 2; // import './g.js'").includes("'./g.js'") &&
+      !stripJsComments("n = (a + b) / 2; // import './g.js'").includes("'./g.js'") &&
+      !stripJsComments("n = a[0] / 2; // import './g.js'").includes("'./g.js'") &&
+      stripJsComments("if (ok) /https?:\\/\\//.test(s); import './g.js';").includes("'./g.js'") &&
+      stripJsComments("else /https?:\\/\\//.test(s); import './g.js';").includes("'./g.js'") &&
+      stripJsComments("do /a\\/\\//.test(s); import './g.js';").includes("'./g.js'"),
+  });
+  cases.push({
+    name: 'regexAllowed reads backward: a slash after a long text costs no copy of it',
+    ok: (() => {
+      const big = 'x = a / 2;\n'.repeat(40000);
+      const t0 = Date.now();
+      stripJsComments(big);
+      return Date.now() - t0 < 2000;
+    })(),
   });
   expect('scripts/lib/prose-selftest.ts', true, 'a selftest named only in parenthesised prose');
   expect('.ci/rediacc_ci/quality/mod_c.py', true, 'a --selftest handler nothing imports');

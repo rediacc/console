@@ -1890,6 +1890,11 @@ const CASES: Record<string, Case> = {
 
     const late = fixtureTree((x) => x.commands.push(regenCmd));
     const rLate = await runCli(['bump', 'embed:tool', '--task', 'cafe1234'], withMutant(late, m));
+    const lateBase = fixtureTree();
+    const rLateBase = await runCli(
+      ['bump', 'embed:tool', '--task', 'cafe1234'],
+      withMutant(lateBase, m)
+    );
 
     const bad = fixtureTree((x) => x.commands.push({ ...regenCmd, rc: 1 }));
     const rBad = await hold(bad);
@@ -1940,8 +1945,9 @@ const CASES: Record<string, Case> = {
         ok:
           rLate.rc === 0 &&
           rLate.err.includes('docs/generated.md was regenerated after the gates ran') &&
-          !rPlain.err.includes('after the gates ran'),
-        detail: `rc=${rLate.rc} ${rLate.err}`,
+          rLateBase.rc === 0 &&
+          !rLateBase.err.includes('after the gates ran'),
+        detail: `rc=${rLate.rc} ${rLate.err} | plain bump rc=${rLateBase.rc} ${rLateBase.err}`,
       },
       {
         name: 'hold: a failing regeneration fails the run loudly and drafts no commit line',
