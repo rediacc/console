@@ -260,6 +260,10 @@ def _offending(engine, cmd, cwd):
                 )
                 if grew:
                     return "%s -i adding %s" % (name, _render(engine, grew))
+        # A script run DIRECTLY by its shebang is the interpreter it names (#7ab88f34, as in block_review_file_shell_write): no interpreter word stands in the command, and the program would otherwise run unread.
+        shebang = shellscan.shebang_interpreter(run, cwd)
+        if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
+            name = shebang
         if name.startswith(INTERPRETERS):
             ops = _operands(argv)
             code = " ".join(argv)

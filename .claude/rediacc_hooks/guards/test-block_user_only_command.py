@@ -379,6 +379,19 @@ SHELL_CASES = [
         % (C, K),
         True,
     ),
+    # #7ab88f34: the same script run DIRECTLY by the shebang its writer put on its first line. The file does not exist when the hook runs, so its first line was read from the disk, named nothing, and the program ran unread (rc 0).
+    (
+        "a script written and run directly by its shebang in one command",
+        "cat > tools/later_direct.py <<'EOF'\n#!/usr/bin/env python3\nimport pathlib\npathlib.Path(%r).write_text('---\\n%s: true\\n---\\n')\nEOF\nchmod +x tools/later_direct.py; ./tools/later_direct.py"
+        % (C, K),
+        True,
+    ),
+    (
+        "a script written and run directly by its shebang that only reads",
+        "cat > tools/later_reader.py <<'EOF'\n#!/usr/bin/env python3\nimport pathlib\nprint(pathlib.Path(%r).read_text())\nEOF\nchmod +x tools/later_reader.py; ./tools/later_reader.py"
+        % C,
+        False,
+    ),
     (
         "a script copied in and run, the command naming the directory",
         "cp /tmp/nowhere.py tools/commands-tool.py && python3 tools/commands-tool.py",
