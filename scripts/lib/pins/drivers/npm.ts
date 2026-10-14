@@ -454,10 +454,14 @@ function projectDirs(
   ctx: DriverContext
 ): Array<{ repo: string; dir: string; abs: string }> {
   const out: Array<{ repo: string; dir: string; abs: string }> = [];
+  const absent: string[] = [];
   for (const sc of entry.scope ?? []) {
     if (sc.scanner !== 'npm-lockfile') continue;
     const base = path.join(ctx.root, sc.repo);
-    if (!fs.existsSync(base)) continue;
+    if (!fs.existsSync(base)) {
+      absent.push(sc.repo);
+      continue;
+    }
     for (const pat of sc.files)
       for (const f of globSync(pat, { cwd: base, posix: true }).sort()) {
         const dir = path.posix.dirname(f) === '.' ? '' : path.posix.dirname(f);
@@ -467,7 +471,7 @@ function projectDirs(
   // VACUOUS guard: a family that scopes npm lockfiles yet enumerates none would let every plan and every removal report "nothing to do" over an empty corpus.
   if (out.length === 0 && (entry.scope ?? []).some((sc) => sc.scanner === 'npm-lockfile'))
     throw new PlanRefused(
-      `${entry.id}: VACUOUS: the npm-lockfile scope matched no package-lock.json under ${ctx.root}, so nothing was judged`
+      `${entry.id}: VACUOUS: the npm-lockfile scope matched no package-lock.json under ${ctx.root}${absent.length > 0 ? ` (repo checkout absent: ${absent.join(', ')})` : ''}, so nothing was judged`
     );
   return out;
 }
@@ -566,24 +570,47 @@ function importersOf(pkg: string, dirs: string[]): string[] {
   const re = new RegExp(`(?:from|import|require\\()\\s*\\(?\\s*['"]${esc}(?:/[^'"]*)?['"]`);
   const out: string[] = [];
   // Every JS and TS source under the declaring directory, at any depth: an importer under scripts/, tests/ or e2e/ keeps the package in use as much as one under src/. Build output and dependency trees are not sources.
-  for (const d of dirs)
+  for (const d of dirs) {
+    const hasManifest = new Map<string, boolean>();
+    // build/ and coverage/ are output only beside a package.json, the directory that builds them, at any depth (a workspace member's output is walked from the root scan too); a source folder that happens to be named build/ elsewhere still counts.
+    const isOutput = (rel: string): boolean => {
+      const parts = rel.split('/');
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (parts[i] !== 'build' && parts[i] !== 'coverage') continue;
+        const owner = parts.slice(0, i).join('/');
+        let has = hasManifest.get(owner);
+        if (has === undefined) {
+          has = fs.existsSync(path.join(d, owner, 'package.json'));
+          hasManifest.set(owner, has);
+        }
+        if (has) return true;
+      }
+      return false;
+    };
     for (const f of globSync(['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'], {
       cwd: d,
       posix: true,
-      // Dot directories (.ci/, .storybook/) hold sources too.
+      // Dot directories (.ci/, .storybook/) hold sources too, except the generated ones named here.
       dot: true,
-      // Output directories are skipped only where the declaring directory itself builds them: a source folder that happens to be named build/ deeper down still counts.
+      // dist/ and the generated dot directories are skipped at any depth.
       ignore: [
         '**/node_modules/**',
         '**/dist/**',
         '**/.git/**',
-        'build/**',
-        'coverage/**',
-        '.astro/**',
-        '.ci/cache/**',
+        '**/.astro/**',
+        '**/.wrangler/**',
+        '**/.next/**',
+        '**/.turbo/**',
+        '**/.svelte-kit/**',
+        '**/.vite/**',
+        '**/.cache/**',
+        '**/.build_cache/**',
+        '**/.ci/cache/**',
       ],
     }).sort())
-      if (re.test(fs.readFileSync(path.join(d, f), 'utf8'))) out.push(path.join(d, f));
+      if (!isOutput(f) && re.test(fs.readFileSync(path.join(d, f), 'utf8')))
+        out.push(path.join(d, f));
+  }
   return out;
 }
 
