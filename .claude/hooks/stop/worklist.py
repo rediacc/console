@@ -112,7 +112,7 @@ for _name in (
 ):
     try:
         _MODS[_name] = __import__(_name)
-    except Exception as _exc:  # noqa: BLE001 -- a broken sibling must not crash the probe
+    except Exception as _exc:
         _BROKEN[_name] = "%s: %s" % (type(_exc).__name__, _exc)
         _MODS[_name] = _BrokenModule(_name)
 
@@ -120,7 +120,7 @@ for _name in (
 LKG: Any
 try:
     import wl_lkg as LKG
-except Exception:  # noqa: BLE001 -- without it the crash block below fires exactly as before
+except Exception:
     LKG = None
 # The Stop payload exactly as read, so a crashed stop can be replayed against the snapshot; and whether this process is running the Stop path at all.
 _RUN = {"raw": "", "stop": False}
@@ -207,13 +207,13 @@ def _plan_hold(fold, item_id, session_id):
     if rec is None:
         return [], ""
     try:
-        import wl_planconc as X  # noqa: PLC0415 -- read only for a queue lease beside a free slot
-        import wl_planorder as PO  # noqa: PLC0415
+        import wl_planconc as X
+        import wl_planorder as PO
 
         root = C.project_root(C.project_start())
         live = X.live_plans(os.getcwd(), session_id, fold)
         got = PO.hold(rec, live, PO.xinfo_for(root))
-    except Exception as exc:  # noqa: BLE001 -- a plan read never widens the queue; it leaves the refusal
+    except Exception as exc:
         print("plan-concurrency: not judged (%s: %s)" % (type(exc).__name__, exc), file=sys.stderr)
         return [], ""
     if got is None:
@@ -224,8 +224,8 @@ def _plan_hold(fold, item_id, session_id):
 def _refresh_inflight(sid):
     """Re-render agent/plans/QUEUE.md's in-flight block after a verb changed a mode (`--queue-set`, `--phase`). The writers are the PreToolUse guard's estimate, since a verb has no Stop event. Runtime state only: a failure is one stderr line, never the verb's exit code."""
     try:
-        import wl_planqueue as PQ  # noqa: PLC0415
-        import wl_roster  # noqa: PLC0415
+        import wl_planqueue as PQ
+        import wl_roster
 
         start = C.project_start()
         root = C.project_root(start)
@@ -236,7 +236,7 @@ def _refresh_inflight(sid):
             sid,
             writers=None if rows is None else [r["id"] for r in rows],
         )
-    except Exception as exc:  # noqa: BLE001 -- runtime state must never fail a verb
+    except Exception as exc:
         sys.stderr.write(
             "in-flight block of agent/plans/QUEUE.md not refreshed: %s: %s\n"
             % (type(exc).__name__, exc)
@@ -245,7 +245,7 @@ def _refresh_inflight(sid):
 
 def _phase_cli(argv):
     """`worklist.py --phase <me> babysit|merge [--pr <n>] [--branch <b>]`, `--phase <me> build`, or `--phase <me>` for the state (agent/plans/PLAN-stop-hook-effort.md; the wind-down itself is agent/plans/PLAN-stop-hook-focus-mode.md section 1)."""
-    import wl_standdown  # noqa: PLC0415
+    import wl_standdown
 
     me = argv[0] if argv else ""
     if not C.PREFIX_RE.match(me or "") or len(argv) > 6:
@@ -308,7 +308,7 @@ def _phase_cli(argv):
         )
     note = ""
     if pr is None:
-        import wl_gh  # noqa: PLC0415
+        import wl_gh
 
         data, err = wl_gh.call(
             ["pr", "list", "--head", branch, "--state", "open", "--json", "number"], cwd=root
@@ -347,7 +347,7 @@ def _read_document(seconds: float = STATE_STDIN_WAIT_SECONDS):
         # No real fd (a StringIO harness, pytest capture): there is no pipe to block on, so the plain read cannot hang.
         try:
             return sys.stdin.read(), True
-        except Exception:  # noqa: BLE001 - any read failure here means no body
+        except Exception:
             return "", False
 
     deadline = time.monotonic() + seconds
@@ -363,7 +363,7 @@ def _read_document(seconds: float = STATE_STDIN_WAIT_SECONDS):
             break
     try:
         return sys.stdin.read(), True
-    except Exception:  # noqa: BLE001 - any read failure here means no body
+    except Exception:
         return "", False
 
 
@@ -397,7 +397,7 @@ def _read_event():
         # No real fd (pytest capture, a StringIO harness): a plain read cannot block on a pipe that does not exist.
         try:
             raw = sys.stdin.read()
-        except Exception:  # noqa: BLE001 - any read failure here means no event
+        except Exception:
             return {}, False
     else:
         with contextlib.suppress(OSError, ValueError):
@@ -552,7 +552,7 @@ def _planrec_cli(argv):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
     _identity_or_die(me, die)
 
-    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+    import wl_planrec as R
 
     root = C.project_root(C.project_start())
     if len(argv) == 2:
@@ -661,7 +661,7 @@ def _planwhy_cli(argv):
     if not rest:
         die(M.CLI_PLANWHY_USAGE)
 
-    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+    import wl_planrec as R
 
     root = C.project_root(C.project_start())
     target = rest[0]
@@ -772,7 +772,7 @@ def _review_cli(argv):
         print(msg, file=sys.stderr)
         sys.exit(2)
 
-    import wl_review as RV  # noqa: PLC0415 -- sibling, loaded only for these verbs
+    import wl_review as RV
 
     if len(argv) < 2:
         die(RV.VERB_USAGE)
@@ -853,7 +853,7 @@ def _plantick_cli(argv):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
     _identity_or_die(me, die)
 
-    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+    import wl_planrec as R
 
     root = C.project_root(C.project_start())
     if len(argv) == 2:
@@ -928,7 +928,7 @@ def _planinvestigate_cli(argv):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
     _identity_or_die(me, die)
 
-    import wl_planrec as R  # noqa: PLC0415 -- sibling, probed not assumed
+    import wl_planrec as R
 
     root = C.project_root(C.project_start())
     rest = list(argv[2:])
@@ -1019,7 +1019,7 @@ def _planinvestigate_cli(argv):
 
 def _lead_transcript(me):
     """The lead session's own transcript path, or None: `<projects>/<munged root>/<session>.jsonl`, beside its `subagents/` directory. `ASKED:` tick evidence is checked against it (agent/plans/PLAN-stop-hook-retro-20260924.md R.8)."""
-    import wl_roster  # noqa: PLC0415
+    import wl_roster
 
     sub = wl_roster.session_subagents_dir(os.getcwd(), C.resolve_session_id() or me)
     return str(sub.parent.with_suffix(".jsonl")) if sub is not None else None
@@ -1054,7 +1054,7 @@ def commit_ref_problem(root, text):
     """None when `text` carries a valid commit ref, else (kind, token): ("missing", "") for no ref at all, or a CLI_TICK_COMMIT_REF_DETAIL key and the offending token.
 
     `commit:<sha>` must name a commit that `merge-base --is-ancestor <sha> HEAD` accepts in `root` or one of its submodules, so a fabricated or foreign sha is refused. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim."""
-    import wl_git  # noqa: PLC0415 -- sibling, only for this verb
+    import wl_git
 
     shas = [m.group(1).lower() for m in COMMIT_REF_RE.finditer(text or "")]
     reasons = [m.group(1) for m in NOCOMMIT_RE.finditer(text or "")]
@@ -1083,8 +1083,8 @@ def citable_tick_evidence(root, text):
     """`text` with every all-digit `commit:<sha>` lengthened until it carries a letter (#0241c97d), resolved in the same repositories `commit_ref_problem` accepts. About 1 in 69 nine-character abbreviations is all digits, and a reader that skips digit runs (`plan_lifecycle.unfenced_tokens`) would not see the evidence once it is quoted into a plan. Text with no all-digit ref is returned as is, without loading anything."""
     if not any(m.group(1).isdigit() for m in COMMIT_REF_RE.finditer(text or "")):
         return text
-    import wl_git  # noqa: PLC0415 -- sibling, only for this verb
-    import wl_planrec as R  # noqa: PLC0415 -- sibling, only for this verb
+    import wl_git
+    import wl_planrec as R
 
     repos = [str(root), *(os.path.join(str(root), p) for p, _b in wl_git.submodules(str(root)))]
     return R.citable_commit_refs(root, text, repos)
@@ -1197,7 +1197,7 @@ def _item_cli(argv, worklist):
             # The rows carry their plan rank inside each band (agent/plans/PLAN-plan-priority-concurrency.md T9), and an item a live plan holds says so. The live plans are the spawn guard's own estimate; a read that fails leaves the rows unannotated, never missing.
             _live = None
             with contextlib.suppress(Exception):
-                import wl_planconc as X  # noqa: PLC0415 -- read only for this listing
+                import wl_planconc as X
 
                 _live = X.live_plans(os.getcwd(), C.resolve_session_id() or me or None, fold)
             print(
@@ -1240,7 +1240,7 @@ def _item_cli(argv, worklist):
                 print("REFUSED: %s" % _berr, file=sys.stderr)
                 sys.exit(2)
         # A NEAR-DUPLICATE WARNS, and still adds (R20260925.7): on 2026-09-24 #48bc48b4 re-tracked #91224636's finding 49 seconds later. The matcher is the plan-box one, so "similar" means what a box-to-item match means.
-        import wl_planfile as PF  # noqa: PLC0415 -- sibling, only for this verb
+        import wl_planfile as PF
 
         fold = S.load(worklist, sync=True)
         mine = [
@@ -1265,7 +1265,7 @@ def _item_cli(argv, worklist):
         return
     if mode == "--status":
         # THE PARALLEL-WRITER ROSTER'S ANSWER TO ITS 20-MINUTE PING (wl_roster.status_verb). Before the item_id parse because it takes an AGENT id or `all`, never an item. It is hook code reading the worker's transcript, not the lead typing a claim, and a read that finds no growth and nothing in flight is recorded SILENT without resetting the clock.
-        import wl_roster  # noqa: PLC0415 -- sibling, loaded only for this verb
+        import wl_roster
 
         text, rc = wl_roster.status_verb(
             worklist, me, argv[2], session_id=C.resolve_session_id() or me
@@ -1336,7 +1336,7 @@ def _item_cli(argv, worklist):
         # IS THE PREMISE ALREADY FALSE (wl_defersettle). One classifier call, made only when Python found a checkable fact; it REFUSES only on a confident `settled` and never writes the store. Every failure falls through to the creation below, because a classifier error must never block a --defer.
         try:
             _ds, _ds_err = DS.classify_one(root, rest, just)
-        except Exception:  # noqa: BLE001 -- fail open: create the deferral exactly as before
+        except Exception:
             _ds, _ds_err = None, "classifier raised"
         if _ds and _ds.get("verdict") == "settled" and not _ds_err:
             die(M.CLI_DEFER_ALREADY_SETTLED % (_ds["fact_cite"], _ds["reason"]))
@@ -1441,7 +1441,7 @@ def _item_cli(argv, worklist):
         _held_by: list[str] = []
         if wm == "worker:queue":
             # QUEUED BEHIND THE CAP, accepted only when the cap really is full: otherwise the queue would be an escape hatch for work that could start now.
-            import wl_roster  # noqa: PLC0415
+            import wl_roster
 
             _hold = wl_roster.hold_target({"lease_note": " ".join(argv[4:])})
             if _hold:
@@ -1468,7 +1468,7 @@ def _item_cli(argv, worklist):
                         "session. Release that lease first"
                         % (", ".join("#" + r["id"] for r in _holders), wl_roster.HOLD_MAX)
                     )
-            import wl_standdown  # noqa: PLC0415
+            import wl_standdown
 
             _qsid = C.resolve_session_id() or me
             # FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 1): starting the work is exactly what focus forbids, so the free-slot refusal would leave work refused at spawn with nowhere to park. The spawn guard's own message says to park it here.
@@ -1648,7 +1648,7 @@ def _annotated_running(ids, me):
             with contextlib.suppress(OSError):
                 st = os.stat(os.path.join(base, i + ".output"))
                 facts[i] = int((time.time() - st.st_mtime) / 60.0)
-    except Exception:  # noqa: BLE001 -- an annotation must never break the lease
+    except Exception:
         facts = {}
 
     out = []
@@ -1749,8 +1749,8 @@ def _migrate_cli(argv):
         if not paths:
             sys.stderr.write(M.CLI_MIGRATE_USAGE)
             sys.exit(2)
-        import wl_checks as WC  # noqa: PLC0415 -- only this branch needs the header parser
-        import wl_planfile as PF  # noqa: PLC0415 -- same, FINISHED_STATES only
+        import wl_checks as WC
+        import wl_planfile as PF
 
         updated_re = re.compile(r"^(\*{0,2}Updated\*{0,2}:\s*)\d{4}-\d{2}-\d{2}", re.MULTILINE)
         today = time.strftime("%Y-%m-%d", time.gmtime())
@@ -1896,7 +1896,7 @@ def _adopt_cli(argv):
         sys.exit(2)
 
     # Imported HERE, not at module scope, and deliberately: wl_lineage opens and mmaps transcripts, and every other verb in this CLI -- run ~880 times by the case suite alone -- has no use for it. One verb pays for it.
-    import wl_lineage  # noqa: PLC0415
+    import wl_lineage
 
     sid = C.resolve_session_id() or me
     projects = C.projects_dir(C.project_root(os.getcwd()))
@@ -2017,7 +2017,7 @@ def _teammate_idle_cli():
     A record with NO name is still written, keyed by agent id. It costs one line and it is the only evidence available that this hook fires here AT ALL, which as of 2026-08-23 is unobserved for Agent-tool subagents. A feature that silently writes nothing when the event does not fire is indistinguishable from one that is working, which is the whole class of error this item exists to
     remove.
     """
-    import wl_store as S  # noqa: PLC0415 -- sibling, probed not assumed
+    import wl_store as S
 
     raw = "" if sys.stdin.isatty() else sys.stdin.read()
     try:
@@ -2065,7 +2065,7 @@ def _batch_body_cli(argv):
         sys.stderr.write(M.CLI_BATCH_BODY_USAGE)
         sys.exit(2)
     _identity_or_die(argv[1], _die2)
-    import wl_prscope  # noqa: PLC0415 -- sibling, probed not assumed; carries the plan_gate hop
+    import wl_prscope
 
     plan_gate, commit_policy = wl_prscope._hooks_pkg()
     root = str(C.project_root(C.project_start()) or os.getcwd())
@@ -2094,8 +2094,8 @@ def _queue_set_cli(argv):
         sys.exit(2)
     me = argv[1]
     _identity_or_die(me, _die2)
-    import wl_planqueue as PQ  # noqa: PLC0415 -- sibling, probed not assumed
-    import wl_planrec as R  # noqa: PLC0415 -- the one atomic writer
+    import wl_planqueue as PQ
+    import wl_planrec as R
 
     pairs: dict[str, str] = {}
     note = None
@@ -2183,7 +2183,7 @@ def main():
     if sys.argv[1:2] and sys.argv[1] in ("--help", "-h", "help"):
         try:
             print(M.USAGE)
-        except Exception:  # noqa: BLE001 -- help must not crash on a broken catalogue
+        except Exception:
             print(USAGE_FALLBACK % "; ".join(sorted(_BROKEN)))
         return
 
@@ -2279,7 +2279,7 @@ def main():
             outgoing_stamp = ""
             if had_prev:
                 with contextlib.suppress(Exception):
-                    import wl_planrec as _R  # noqa: PLC0415 -- optional; a stamp never gates a write
+                    import wl_planrec as _R
 
                     outgoing_stamp = _R.pointer_stamp(
                         root, str(target.relative_to(pathlib.Path(root)))
@@ -2368,7 +2368,7 @@ def main():
             doc = S.load_state(wl, prefix)
             doc["state_sig"] = S.state_items_sig(S.load(wl, sync=False), prefix)
             S.save_state(wl, prefix, doc)
-        except Exception:  # noqa: BLE001 -- the sig is an optimisation, never a gate on writing
+        except Exception:
             pass
         print(
             "STATE.md section written for %s (%d chars)%s\n"
@@ -2385,7 +2385,7 @@ def main():
         sys.stderr.write(M.CLI_PUBLISH_USAGE)
         sys.exit(2)
     if len(sys.argv) > 2 and sys.argv[1] == "--publish":
-        import wl_epic as E  # noqa: PLC0415 -- sibling, probed not assumed
+        import wl_epic as E
 
         me = sys.argv[2]
         _identity_or_die(me, _die2)
@@ -2397,7 +2397,7 @@ def main():
         # asks for a branch instead of writing agent/pr/HEAD.md (the same reason wl_core.git_branch gives).
         branch = sys.argv[3] if len(sys.argv) > 3 else ""
         if branch == "":
-            import subprocess  # noqa: PLC0415 -- only this default needs it, and the module imports it nowhere else
+            import subprocess
 
             try:
                 head = subprocess.run(
@@ -2465,7 +2465,7 @@ def main():
         sys.exit(2)
     if len(sys.argv) > 3 and sys.argv[1] == "--epic":
         # Epics live in a SIDECAR, never the event log, because compact() folds the log to md/add/lease and would destroy a novel event kind.
-        import wl_epic as E  # noqa: PLC0415 -- sibling, probed not assumed
+        import wl_epic as E
 
         me = sys.argv[2]
         _identity_or_die(me, _die2)
@@ -2549,7 +2549,7 @@ def main():
         sys.exit(2)
     if sys.argv[1:2] == ["--git"] and len(sys.argv) < 3:
         # Bare verb matched on argv[1] ALONE, the same shape as --state and --roundlog below and for the same measured reason: a bare verb that falls through to the hook path hangs forever reading stdin.
-        from wl_git import USAGE as GIT_USAGE  # noqa: PLC0415 -- sibling, probed not assumed
+        from wl_git import USAGE as GIT_USAGE
 
         sys.stderr.write(GIT_USAGE)
         sys.exit(2)
@@ -2557,7 +2557,7 @@ def main():
         # The mediated submodule / force-push capability, delegated whole the way --reports is, because it is far too large to inline here.
         #
         # It drives git through subprocess, which the pre-bash guards never see, so a raw leased force push typed on a command line stays blocked while this path works. That is deliberate: the guard stays strict and the safety lives in the module's own checks, not in permission.
-        import wl_git  # noqa: PLC0415 -- sibling, probed not assumed
+        import wl_git
 
         sys.exit(wl_git.main(sys.argv[2:]))
     if sys.argv[1:2] == ["--roundlog"] and len(sys.argv) < 3:
@@ -2778,7 +2778,7 @@ def main():
         # ALWAYS EXITS 0, and never blocks. `TeammateIdle` supports blocking -- exit 2 prevents the teammate going idle and it keeps working -- and that power is deliberately unused here. Pinning a teammate the lead did not ask to keep working is a worse failure than the one this closes, and a crash in a journal writer must never become one.
         try:
             _teammate_idle_cli()
-        except Exception as exc:  # noqa: BLE001 -- see above: never block a teammate
+        except Exception as exc:
             sys.stderr.write("teammate-idle journal skipped: %s\n" % exc)
         return
     if sys.argv[1:2] == ["--import-tmp"]:
@@ -2822,7 +2822,7 @@ def main():
         _reassign_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--reports"]:
-        import wl_report  # noqa: PLC0415 -- sibling, probed not assumed (see SIBLING IMPORTS above)
+        import wl_report
 
         rest = sys.argv[2:]
         # `--reports --all` MUST work, and it did not: the dispatcher forwarded `--all` as if it were a MODE, and wl_report answered "unknown mode --all" (exit 2). It matters more than a papercut because that exact flag was in the announcement broadcast to other sessions, so the first thing a peer tried, on our instructions, failed. Anything that is not a mode is a modifier, and
@@ -2949,7 +2949,7 @@ if __name__ == "__main__":
         ):
             LKG.snapshot()
         raise
-    except BaseException as _crash:  # noqa: BLE001 - a bare crash must not become an allow
+    except BaseException as _crash:
         import traceback
 
         if _RUN["stop"] and LKG is not None and not os.environ.get("WORKLIST_LKG_CHILD"):

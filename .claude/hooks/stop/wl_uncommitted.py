@@ -194,7 +194,7 @@ def own_dirty(root, state_doc, now=None):
 
 def remind_min(root):
     """`commit_remind_min` of the root's QUEUE.md `## Settings` (default 15)."""
-    import wl_planqueue  # noqa: PLC0415 -- only a reminder evaluation needs the settings
+    import wl_planqueue
 
     return int(wl_planqueue.settings_for(root)[0].commit_remind_min)
 
@@ -227,7 +227,7 @@ def evaluate(root, transcript_path, state_doc, now=None, minutes=None):
 
 def render(facts):
     """The reminder text for `evaluate`'s facts (the template is `worklist_messages.N_COMMIT_REMIND`)."""
-    import worklist_messages as M  # noqa: PLC0415 -- the catalogue is the one home of wording
+    import worklist_messages as M
 
     shown = facts["files"][:LIST_CAP]
     rest = facts["count"] - len(shown)

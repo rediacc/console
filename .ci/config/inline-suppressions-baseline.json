@@ -708,61 +708,23 @@
   ".claude/hooks/stop/wl_profile.py": {
    "type-ignore attr-defined": 1
   },
-  ".claude/hooks/stop/wl_prreview.py": {
-   "noqa BLE001": 1,
-   "noqa PLC0415": 3
-  },
   ".claude/hooks/stop/wl_prscope.py": {
    "noqa DTZ005": 1,
-   "noqa PLC0415": 3,
    "type-ignore arg-type": 1,
    "type-ignore union-attr": 1
-  },
-  ".claude/hooks/stop/wl_reggate.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 1
   },
   ".claude/hooks/stop/wl_report.py": {
-   "noqa BLE001": 1,
-   "noqa PLC0415": 2,
    "noqa S112": 1
   },
-  ".claude/hooks/stop/wl_resprofile.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 4
-  },
-  ".claude/hooks/stop/wl_ressample.py": {
-   "noqa PLC0415": 4
-  },
   ".claude/hooks/stop/wl_review.py": {
-   "noqa BLE001": 5,
-   "noqa E731": 2,
-   "noqa PLC0415": 14
+   "noqa E731": 2
   },
   ".claude/hooks/stop/wl_roster.py": {
-   "noqa BLE001": 7,
-   "noqa PLC0415": 25,
    "type-ignore arg-type": 1,
    "type-ignore union-attr": 1
   },
-  ".claude/hooks/stop/wl_roundlog.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_schedred.py": {
-   "noqa BLE001": 6,
-   "noqa PLC0415": 3
-  },
   ".claude/hooks/stop/wl_store.py": {
-   "noqa BLE001": 8,
-   "noqa PLC0415": 6,
    "noqa PLW0603": 1
-  },
-  ".claude/hooks/stop/wl_uncommitted.py": {
-   "noqa PLC0415": 2
-  },
-  ".claude/hooks/stop/worklist.py": {
-   "noqa BLE001": 13,
-   "noqa PLC0415": 34
   },
   ".claude/rediacc_hooks/commit_policy.py": {
    "noqa BLE001": 1,

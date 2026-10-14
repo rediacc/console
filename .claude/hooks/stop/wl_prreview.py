@@ -543,7 +543,7 @@ ATTEMPT_TOKENS = frozenset({FAILED_RUN, "exhausted", "outage", "stale"})
 def attempt_note(runner: Runner, repo: str, number: int, head: str) -> str:
     """Lines naming the newest review-attempt comment on `head` (its class and the action it asks for), or "" when there is none or it cannot be read. Never raises: the generic text is the fallback."""
     try:
-        import wl_prsignals as S  # noqa: PLC0415 -- sibling, loaded only when a wait ends badly
+        import wl_prsignals as S
 
         comments = _gh_list(
             runner, "issue comments", "repos/%s/issues/%d/comments" % (repo, number)
@@ -672,8 +672,8 @@ def cmd_draft(pr: int | None, runner: Runner) -> int:
 
 def default_items() -> dict[str, tuple[str, ...]]:
     """{item id: (state, text, triage verdict)} from the worklist fold, the same fold `worklist.py --review-mark` supplies."""
-    import wl_core as C  # noqa: PLC0415 -- sibling, loaded only when a waiver is checked
-    import wl_store as S  # noqa: PLC0415
+    import wl_core as C
+    import wl_store as S
 
     fold = S.load(C.worklist_for(C.project_start()), sync=False)
     return {
@@ -774,7 +774,7 @@ def validate(
             if fold is None and not unreadable:
                 try:
                     fold = items()
-                except Exception as exc:  # noqa: BLE001 -- an unreadable worklist refuses the waiver, it does not crash the verb
+                except Exception as exc:
                     unreadable = str(exc) or type(exc).__name__
             if fold is None:
                 # Every waiver is refused for the read failure, not only the first: an empty stand-in fold would call the later items missing.

@@ -43,10 +43,10 @@ DEFAULT_WRITER_CAP = 4
 def writer_cap(root) -> int:
     """The writer cap in force at `root`: QUEUE.md's `writer_cap:`, else 4. Any read trouble keeps the default."""
     try:
-        import wl_planqueue  # noqa: PLC0415
+        import wl_planqueue
 
         return int(wl_planqueue.settings_for(root)[0].writer_cap)
-    except Exception:  # noqa: BLE001 -- the cap must never crash a stop or a spawn guard
+    except Exception:
         return DEFAULT_WRITER_CAP
 
 
@@ -156,7 +156,7 @@ def queue_holder_plans(verdict):
 
 def queue_held_skip(live, xinfo, held):
     """The concurrency skip for one stop: a queued item whose writer the plan-concurrency spawn guard would refuse right now (a live exclusive plan, or a live plan owning the same files). Each hold is recorded in `held` ({id: reason}) for queue-slot's "held back" lines and the concurrency-saturated wait. `live` None (the plans could not be read) holds nothing."""
-    import wl_planorder as PO  # noqa: PLC0415 -- read only when a queue exists
+    import wl_planorder as PO
 
     def skip(rec, _by_id, _session_id):
         got = PO.hold(rec, live, xinfo) if live is not None else None
@@ -208,7 +208,7 @@ def session_subagents_dir(cwd, session_id):
 
     A PREFIX resolves only when exactly one session directory carries it; an ambiguous prefix is "cannot tell", never a guess. A full session id whose directory does not exist yet is a session that has spawned nothing, which is an honest zero and is returned as the (absent) path.
     """
-    import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+    import wl_report as RPT
 
     if not session_id:
         return None
@@ -347,7 +347,7 @@ def _epoch(stamp):
 
 
 def last_record(jsonl):
-    import wl_liveness as L  # noqa: PLC0415 -- wl_liveness imports this module lazily too
+    import wl_liveness as L
 
     if jsonl is None:
         return None
@@ -395,7 +395,7 @@ def proven_finished(jsonl, now, name="", cwd="", session_id=""):
 
     The same one-directional test `wl_liveness._record_is_idle` makes: every ambiguous shape reads as working, because a false "finished" would hide a live writer from the cap.
     """
-    import wl_liveness as L  # noqa: PLC0415
+    import wl_liveness as L
 
     mtime = _mtime(jsonl)
     if mtime is None:
@@ -464,13 +464,13 @@ def scan_transcript(jsonl, ent):
 
 def subagent_stop_at(start, aid):
     """Epoch of the newest SubagentStop capture for this agent in the report store, or None."""
-    import wl_report as RPT  # noqa: PLC0415
+    import wl_report as RPT
 
     rid = RPT.short_id(aid)
     newest = None
     try:
         entries = RPT.read_index(RPT.store_root(start))
-    except Exception:  # noqa: BLE001 -- a report store is evidence, never a crash
+    except Exception:
         return None
     for e in entries:
         ident = str(e.get("id") or "")
@@ -582,7 +582,7 @@ def transcript_waiting(jsonl, now):
     """The shell id an agent is WAITING on, read from its transcript alone, or "".
 
     For the callers with no fresh Stop event (the spawn guard, `--lease worker:queue`, `--status`): an agent whose last record ended the turn, written inside WAIT_HORIZON_MIN, with a background shell still armed. 2026-09-24: without this the estimate counted such an agent as finished until the next stop refreshed the event, so `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4."""
-    import wl_liveness as L  # noqa: PLC0415
+    import wl_liveness as L
 
     mt = _mtime(jsonl)
     if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
@@ -687,7 +687,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         if w == LH.LEAD_WORKER:
             # worker:lead (P2.1) is no agent and fills no writer slot; it is covered exactly while a task of this session is live, the same fact classify_items reads.
             if verdicts is None:
-                import wl_liveness as L  # noqa: PLC0415
+                import wl_liveness as L
 
                 verdicts = L.verify_background(list(shells.values()))
             if ls in ("fresh", "expired") and LH.lead_covered(running, verdicts):
@@ -719,8 +719,8 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     xinfo = None
     order_key = queue_order
     try:
-        import wl_planconc as X  # noqa: PLC0415
-        import wl_planorder as PO  # noqa: PLC0415
+        import wl_planconc as X
+        import wl_planorder as PO
 
         order_ctx, plan_error = PO.context(root)
         order_key = PO.item_key(order_ctx, age=queue_order)
@@ -736,7 +736,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             for w in [aid, *ancestors(aid, metas)]:
                 served.update(p for p in (X.item_plan(r) for r in leases.get(w, ())) if p)
             plan_serving[aid] = served
-    except Exception as exc:  # noqa: BLE001 -- the roster must never crash on a plan read
+    except Exception as exc:
         plan_holders = None
         plan_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     conc_held: dict[str, str] = {}
@@ -775,7 +775,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 (covered if coverer else leased_dead).append((r["id"], w, coverer))
         elif w and w in workflows:
             # A WORKFLOW LEASE is covered by its agents' stream (agent/plans/PLAN-stop-hook-continuity.md P1.9). It is in the event, so "no meta and not in the event" was simply false and dropped the roster to UNKNOWN.
-            import wl_liveness as L  # noqa: PLC0415
+            import wl_liveness as L
 
             wf = L.workflow_stream(cwd, session_id, workflows[w].get("name"))
             if wf is not None and wf[0] < STATUS_PING_MIN:
@@ -784,7 +784,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 unknown.extend((r["id"], w, "workflow with no fresh agent stream") for r in recs)
         elif w and w in shells:
             if verdicts is None:
-                import wl_liveness as L  # noqa: PLC0415
+                import wl_liveness as L
 
                 verdicts = L.verify_background(list(shells.values()))
             if (verdicts or {}).get(w) == "suspect":
@@ -990,7 +990,7 @@ def _run_operands(run, shellscan):
 
     AN IN-PLACE EDIT IS ASKED OF `shellscan.in_place_edit` (#6378e10e), the guards' own option parse for sed, gsed and perl. The hand-rolled sed reader this replaces counted any `i` in any single-dash word, so `sed -e 's/i/x/' f` (an `i` inside an attached script) read as in place, while `perl -pi -e ... f` was never asked at all and its file never reached the fix-set.
     """
-    import posixpath  # noqa: PLC0415 -- stdlib, only on the Bash arm
+    import posixpath
 
     name = posixpath.basename(str(run.name or ""))
     argv = [str(a) for a in run.argv or []]
@@ -1018,7 +1018,7 @@ def _run_operands(run, shellscan):
 
 def _norm_under(path, base, root):
     """`path` joined to the absolute directory `base`, normalised, and made relative to `root`; None for a path that cannot name a repo file (the root itself, or an unknowable operand whose literal part is the root)."""
-    import posixpath  # noqa: PLC0415
+    import posixpath
 
     m = _UNEXPANDABLE.search(path)
     if m:
@@ -1038,7 +1038,7 @@ def bash_write_paths(cmd, cwd, root):
 
     Three routes: an output redirect (the lexer's per-run writes, the same answer `shellscan.write_targets` gives, with the run's own directory), the path operands of `BASH_WRITE_VERBS` and `git rm|mv`, and the repo-path string literals of a Python heredoc or `-c` body that writes, unlinks or moves a file. Every path is joined to the `cd` in force for its clause and then to `cwd`, the directory the call ran in. A directory operand is returned as the directory and covers its subtree (`wl_reggate._covers`). An unknowable operand (`"$f"`, `*.json`) is cut back to its literal directory. Never raises: an unlexable command writes nothing it can prove.
     """
-    import posixpath  # noqa: PLC0415
+    import posixpath
 
     if not cmd or not _BASH_MAYBE_WRITES.search(cmd):
         return set()
@@ -1049,7 +1049,7 @@ def bash_write_paths(cmd, cwd, root):
         )  # the lexer's own walk, the same entry commit_policy.git_runs reads
         runs = list(analysis.runs)
         loose = shellscan.write_targets(cmd)
-    except Exception:  # noqa: BLE001 -- a command the lexer cannot read proves no write
+    except Exception:
         return set()
     base_cwd = str(cwd or root)
     out, seen_writes = set(), []
@@ -1090,7 +1090,7 @@ def _heredoc_bodies(shellscan, cmd):
     lexer = shellscan._Lexer(cmd)
     try:
         lexer.tokens()
-    except Exception:  # noqa: BLE001 -- an unlexable command has no readable heredoc
+    except Exception:
         return []
     return [
         lexer.src[h.body_start : h.body_end]
@@ -1101,7 +1101,7 @@ def _heredoc_bodies(shellscan, cmd):
 
 def _shellscan():
     """`rediacc_hooks.shellscan`, the guards' lexer, reached with `.claude` on sys.path the way that package expects."""
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     # The ONE canonical hop for .claude code (.claude/rediacc_hooks/syspath.py), loaded by file path because
     # this module lives outside the rediacc_hooks package (test_canonical_sys_path_hop).
@@ -1110,7 +1110,7 @@ def _shellscan():
     syspath = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
     spec.loader.exec_module(syspath)  # type: ignore[union-attr]
     syspath.on_sys_path(syspath.CLAUDE_DIR)
-    from rediacc_hooks import shellscan  # noqa: PLC0415
+    from rediacc_hooks import shellscan
 
     return shellscan
 
@@ -1212,10 +1212,10 @@ def live_writer_paths(cwd, session_id, event, now=None, fold=None):
                 continue
             live.add(aid)
         if fold is None:
-            import wl_store as S  # noqa: PLC0415
+            import wl_store as S
 
             fold = S.load(C.worklist_for(start), sync=False)
-        import wl_reggate as RG  # noqa: PLC0415 -- wl_reggate imports nothing of the roster
+        import wl_reggate as RG
 
         pending, by_tick = set(), {}
         for rec in getattr(fold, "items", None) or []:
@@ -1229,7 +1229,7 @@ def live_writer_paths(cwd, session_id, event, now=None, fold=None):
             elif rec.get("state") not in LH.CLOSED_STATES:
                 pending |= set(workers)
         return WriterPaths(paths_of(lineage(live | pending)), by_tick)
-    except Exception:  # noqa: BLE001 -- subtracting nothing keeps the demand, the safe side
+    except Exception:
         return WriterPaths()
 
 
@@ -1329,7 +1329,7 @@ def live_estimate(cwd, session_id, now=None):
 
 
 def _short(aid):
-    import wl_report as RPT  # noqa: PLC0415
+    import wl_report as RPT
 
     return RPT.short_id(aid)
 
@@ -1341,11 +1341,11 @@ def _completed_since(sub_dir, since):
     """
     if since is None or sub_dir is None:
         return {}
-    import wl_report as RPT  # noqa: PLC0415
+    import wl_report as RPT
 
     try:
         ids, _cur = RPT.delivered_ids(sub_dir.parent.with_suffix(".jsonl"), require_result=False)
-    except Exception:  # noqa: BLE001 -- an unreadable transcript drops nobody, the safe side for a cap
+    except Exception:
         return {}
     return {k: v for k, v in ids.items() if v > since}
 
@@ -1365,7 +1365,7 @@ def live_writers_estimate(cwd, session_id, now=None):
 
 def _tail_facts(jsonl):
     """(last assistant text, last tool call with its target) from a bounded tail of the transcript."""
-    import wl_report as RPT  # noqa: PLC0415
+    import wl_report as RPT
 
     text, tool = "", ""
     for raw in reversed(RPT._bounded_lines(jsonl, TAIL_BYTES)):
@@ -1416,8 +1416,8 @@ def status_verb(worklist, me, target, session_id=None, cwd=None, now=None):
 
     Returns (text, rc). A status RESETS the 20-minute clock only when the transcript grew since the previous status (or, with no previous one, moved inside the ping window) or a tool call is in flight; otherwise it is recorded `silent` and the next stop raises `roster-silent`. The lead reads; the hook decides what the read proves.
     """
-    import wl_store as S  # noqa: PLC0415
-    import worklist_messages as M  # noqa: PLC0415
+    import wl_store as S
+    import worklist_messages as M
 
     now = time.time() if now is None else now
     session_id = session_id or me
@@ -1573,7 +1573,7 @@ def explain_lastevent(prefix):
 
     The in-tree way to rerun an incident: it reads the `.lastevent-<prefix>.json` sidecar the Stop hook wrote, folds the store without syncing, loads the state doc without saving it, and prints what `roster()` concludes.
     """
-    import wl_store as S  # noqa: PLC0415
+    import wl_store as S
 
     start = C.project_start()
     worklist = C.worklist_for(start)

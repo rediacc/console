@@ -666,7 +666,7 @@ def _jsonl_append():
     global _JSONL_APPEND  # noqa: PLW0603 -- a per-process module cache
     if _JSONL_APPEND is not None:
         return _JSONL_APPEND
-    import importlib.util  # noqa: PLC0415 -- only the write path needs it
+    import importlib.util
 
     here = pathlib.Path(__file__).resolve()
     linked = pathlib.Path(__file__).absolute().parents[2] / "rediacc_hooks"
@@ -775,7 +775,7 @@ def _branch_of(root):
     if key not in _BRANCH_CACHE:
         try:
             _BRANCH_CACHE[key] = C.git_branch(root) or ""
-        except Exception:  # noqa: BLE001 -- a branch is context, never a reason to lose an event
+        except Exception:
             _BRANCH_CACHE[key] = ""
     return _BRANCH_CACHE[key]
 
@@ -790,7 +790,7 @@ def host_hash():
             _HOST_CACHE["h"] = hashlib.sha1(
                 socket.gethostname().encode("utf-8", "replace")
             ).hexdigest()[:8]
-        except Exception:  # noqa: BLE001
+        except Exception:
             _HOST_CACHE["h"] = "unknown0"
     return _HOST_CACHE["h"]
 
@@ -1499,7 +1499,7 @@ def classify_items(
             else:
                 # Fail closed: an expired or malformed lease is an open item. The line names BLOCKED_BY as the remedy for an item that is really waiting on another.
                 # worklist_messages is imported HERE, not at module top: worklist.py survives a broken messages module for its query modes (see its FAILURE MODE note), and wl_store sits under every one of them.
-                import worklist_messages as M  # noqa: PLC0415
+                import worklist_messages as M
 
                 add_open(
                     rec, M.N_LEASE_FAILED_CLOSED % (disp, ls, str(session_id or "")[:8], rec["id"])
@@ -1558,13 +1558,13 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
             age_min = (C.utcnow() - when).total_seconds() / 60.0
             if age_min <= SESSION_BRIEF_STALE_MIN:
                 return "live", "session brief refreshed %d min ago" % age_min
-    except Exception:  # noqa: BLE001 -- a brief is evidence, never a crash
+    except Exception:
         pass
 
     # 3. its transcript on this machine.
     try:
         h = owner_age_hours(p, projects_dir)
-    except Exception:  # noqa: BLE001
+    except Exception:
         h = None
     if h is not None and h * 60.0 <= LIVE_MIN:
         return "live", "transcript written %d min ago" % (h * 60.0)
@@ -1584,7 +1584,7 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
     if newest_host and newest_host == mine_host:
         try:
             age_min = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 60.0
-        except Exception:  # noqa: BLE001
+        except Exception:
             age_min = None
         if age_min is not None and age_min <= LIVE_MIN:
             return "live", "wrote to the store %d min ago on this machine" % age_min
@@ -1740,7 +1740,7 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
         if newest:
             try:
                 old_enough = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 3600.0 >= dead_h
-            except Exception:  # noqa: BLE001
+            except Exception:
                 old_enough = False
         if verdict in ("idle", "remote", "unknown") and old_enough:
             clear.append(f)
@@ -1755,7 +1755,7 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
     # bytes that were never committed is not a promise of recovery, and saying `git show` about it would be a recovery recipe that returns nothing.
     stamps = []
     with contextlib.suppress(Exception):
-        import wl_planrec as _R  # noqa: PLC0415 -- optional; a stamp never gates a compaction
+        import wl_planrec as _R
 
         # dict.fromkeys, not a set: the compactor's OWN file is in `clear` and is also the target, and printing it twice reads as two different files.
         for f in dict.fromkeys([*clear, target]):
@@ -2054,9 +2054,9 @@ def plan_candidates(root):
     `plan_owner` (a real file read) runs only over the short list the census already narrowed to box-carrying, in-scope plans -- never over all 96.
     """
     # wl_checks imports wl_planindex, which imports wl_store (this module), so importing any of the three at module level here would cycle.
-    import wl_checks  # noqa: PLC0415
-    import wl_planfile  # noqa: PLC0415
-    import wl_planindex  # noqa: PLC0415
+    import wl_checks
+    import wl_planfile
+    import wl_planindex
 
     min_open = int(os.environ.get("WORKLIST_MIGRATE_PLAN_MIN_OPEN", "1"))
     rows, state, _detail = wl_planindex.index_census(root)
@@ -2750,7 +2750,7 @@ def world_sig(root, worklist, session_id, fold=None, transcript_path=None):
             for r in sorted(f.items, key=lambda x: x["id"])
             if C.owned_by_me(r.get("owner"), session_id)
         )
-    except Exception:  # noqa: BLE001 -- an unreadable store must still yield a stable key
+    except Exception:
         items = "unreadable"
     blob = "|".join(
         [
@@ -2781,6 +2781,6 @@ def report_items_sig(fold, session_id):
             for r in sorted(fold.items, key=lambda x: x["id"])
             if C.owned_by_me(r.get("owner"), session_id)
         ]
-    except Exception:  # noqa: BLE001 -- an unreadable store must still yield a stable key
+    except Exception:
         mine = ["unreadable"]
     return hashlib.sha1("|".join(mine).encode("utf-8", "replace")).hexdigest()[:16]
