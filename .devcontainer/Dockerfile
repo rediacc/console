@@ -357,7 +357,8 @@ USER vscode
 ARG GOPLS_VERSION=0.23.0
 ARG DLV_VERSION=1.27.2
 # staticcheck ships TWO names for one build: the GitHub release is tagged
-# with a calendar version while the Go module version is STATICCHECK_VERSION below (v-prefixed). `go install` speaks module
+# with a calendar version while the Go module version is STATICCHECK_VERSION below (written without the
+# leading v, which the install line adds). `go install` speaks module
 # versions, so that is what is pinned here; the freshness gate cannot compare
 # the two numbering schemes, which is why staticcheck is absent from
 # devcontainer-pin-sources.ts.

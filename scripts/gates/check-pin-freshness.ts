@@ -144,7 +144,9 @@ function verdict(sel: Selection, views: LeafView[], mutant?: Mutant): Report {
   for (const v of of('deferred')) {
     const at = v.deferred?.clearsAt;
     const clears =
-      typeof at === 'number' ? `, clears the window at ${new Date(at).toISOString()}` : '';
+      typeof at === 'number' && Number.isFinite(at) && !Number.isNaN(new Date(at).getTime())
+        ? `, clears the window at ${new Date(at).toISOString()}`
+        : '';
     out.push(`  deferred    ${v.id}: ${v.detail}${clears} (npm run pins -- when ${v.id})`);
   }
   for (const v of of('held')) out.push(`  held        ${v.id}: ${v.detail}`);
@@ -368,6 +370,39 @@ async function selftest(): Promise<number> {
           l.includes(`npm run pins -- when ${DEFERRED}`)
       ),
       when.out.join('\n')
+    );
+
+    // An unrenderable instant (NaN, or past the Date range) must not make the report itself throw.
+    const bad = (at: number): string[] | null => {
+      try {
+        return verdict(
+          { judged: [], byFamily: [], noSource: [] },
+          [
+            {
+              id: DEFERRED,
+              state: 'deferred',
+              current: '1.0.0',
+              detail: '1.0.0 -> 1.0.1 deferred: held by the driver',
+              deferred: { clearsAt: at },
+            },
+          ],
+          'empty-passes'
+        ).out;
+      } catch {
+        return null;
+      }
+    };
+    const badOut = [Number.NaN, 8.64e15 + 1].map(bad);
+    add(
+      'DEFERRED: an unrenderable instant still prints the leaf and its `pins when` line',
+      badOut.every(
+        (o) =>
+          o?.some(
+            (l) =>
+              l.includes(`npm run pins -- when ${DEFERRED}`) && !l.includes('clears the window')
+          ) === true
+      ),
+      JSON.stringify(badOut)
     );
 
     const empty = verdict({ judged: [], byFamily: [], noSource: [] }, []);
