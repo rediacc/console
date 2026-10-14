@@ -14,6 +14,7 @@ docstring gives.
 from __future__ import annotations
 
 import pathlib
+from typing import Any
 
 import pytest
 
@@ -112,7 +113,7 @@ def compare(
     return returncode, stdout, stderr
 
 
-CASES: list[tuple[str, dict[str, object]]] = [
+CASES: list[tuple[str, dict[str, Any]]] = [
     ("caller-pre-checks", {"files": {CALLER_REL: GUARDED}}),
     ("caller-passes-literal", {"files": {".ci/scripts/release/x.sh": LITERAL}}),
     ("the-2026-09-06-defect", {"files": {CALLER_REL: UNGUARDED}}),
@@ -159,9 +160,9 @@ COLON_NOISE = ("→", "grep:")
 
 @pytest.mark.parametrize(("name", "kwargs"), CASES, ids=[c[0] for c in CASES])
 def test_port_matches_the_twins_recorded_output(
-    tmp_path: pathlib.Path, name: str, kwargs: dict[str, object]
+    tmp_path: pathlib.Path, name: str, kwargs: dict[str, Any]
 ) -> None:
-    root = build(tmp_path, **kwargs)  # type: ignore[arg-type]
+    root = build(tmp_path, **kwargs)
     noise = COLON_NOISE if name == "a-colon-in-a-caller-path" else NOISE
     returncode, _, _ = compare(root, name, noise=noise)
     assert returncode == EXPECTED_EXIT[name], "the recorded verdict moved"
