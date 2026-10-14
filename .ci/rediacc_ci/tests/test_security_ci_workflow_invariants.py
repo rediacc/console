@@ -1609,6 +1609,20 @@ def test_a_red_path_watching_another_step_is_no_red_path() -> None:
     assert pins_kinds(doc) == ["pins-soaked-no-red-path"]
 
 
+@pytest.mark.parametrize(
+    "run",
+    [
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/ || true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\necho "rc=0" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\ntrue\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+    ],
+)
+def test_an_rc_output_that_is_not_the_apply_exit_status_is_no_red_path(run) -> None:
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"][1]["run"] = run
+    assert pins_kinds(doc) == ["pins-soaked-no-red-path"]
+
+
 def test_an_apply_step_that_never_publishes_rc_has_no_red_path() -> None:
     doc = pins_doc()
     doc["jobs"]["soaked"]["steps"][1]["run"] = (
@@ -1623,6 +1637,14 @@ def test_an_apply_step_that_never_publishes_rc_has_no_red_path() -> None:
         lambda d: d.__setitem__("env", {"T": "${{ secrets.DEPLOY_KEY }}"}),
         lambda d: d["jobs"]["soaked"].__setitem__("secrets", {"key": "${{ secrets.DEPLOY_KEY }}"}),
         lambda d: d["jobs"]["soaked"].__setitem__("secrets", "inherit"),
+        lambda d: d["jobs"]["soaked"].__setitem__("secrets", "${{ toJSON(secrets) }}"),
+        lambda d: d["jobs"]["soaked"].__setitem__(
+            "container", {"image": "x", "credentials": {"password": "${{ secrets.REG }}"}}
+        ),
+        lambda d: d["jobs"]["soaked"].__setitem__(
+            "services", {"db": {"image": "x", "env": {"P": "${{ secrets['DB'] }}"}}}
+        ),
+        lambda d: d["jobs"]["soaked"]["steps"].append({"run": "./tool ${{ secrets.DEPLOY_KEY }}"}),
     ],
 )
 def test_a_secret_through_the_workflow_env_or_a_secrets_block_is_refused(mutate) -> None:
