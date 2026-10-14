@@ -188,8 +188,11 @@ def stats(rows, now=None, window_days=WINDOW_DAYS, table=None):
         if row.get("miss") and verdict != "block":
             slot["miss_quiet"] += 1
             slot["miss_ids"].append(str(row.get("id") or ""))
+        # ONLY A RETUNED KEY DROPS ITS OLDER ROWS. The recorded verdict is not always the table's: an advisory the hook queued for a key the table BLOCKS (a parked or stood-down check) is recorded as `advise`, so comparing every row with the table hid 8 of the first 12 real rows (2026-10-14). A row is set aside only when its key was tuned after the row was decided and the tuned table gives another verdict.
+        tuned_at = _parse((((table or {}).get("tuned") or {}).get(key) or {}).get("tuned_at"))
         if (
-            table is not None
+            tuned_at is not None
+            and when < tuned_at
             and row.get("level") in wl_effort.LEVELS
             and wl_effort.verdict(key, row["level"], table) != verdict
         ):
