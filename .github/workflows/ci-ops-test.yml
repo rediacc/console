@@ -383,7 +383,7 @@ jobs:
       # every shard automatically. Deliberately INSIDE ops-vm-provision: a
       # separate job means a second runner reprovisioning the cluster
       # (~14 min); sharding this job already pays that cost 6 times over for
-      # the parallelism, and a further split would only add a 6th.
+      # the parallelism, and a further split would only add a 7th.
       - name: "Tutorial prep: add second worker"
         # ssh-keys, delta-transfer, and live-migration use a second machine.
         # Idempotent over the --basic cluster: existing VMs are left alone,

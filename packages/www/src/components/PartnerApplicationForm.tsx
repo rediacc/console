@@ -230,7 +230,7 @@ const PartnerApplicationForm: React.FC = () => {
       captchaUnavailable: t(`${NS}.errors.captchaUnavailable`),
       captcha: t(`${NS}.errors.captcha`),
     });
-    if (blocked) {
+    if (blocked !== null) {
       setState('error');
       setErrorMsg(blocked);
       return;

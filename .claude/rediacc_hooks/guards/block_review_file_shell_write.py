@@ -176,13 +176,20 @@ def _review_forms(word):
     forms = [word]
     for alt in shellscan._brace_alternatives(word) if "{" in word else [word]:
         segments = alt.split("/")
-        options = [
-            [s, *(n for n in ("agent", "reviews") if fnmatch.fnmatchcase(n, s))]
-            if any(ch in s for ch in _GLOB)
-            else [s]
-            for s in segments
+        forms.append(alt)
+        # LINEAR IN THE SEGMENTS, never a product of them: the review directory is one segment read as `reviews`, or two neighbours read as `agent` and `reviews`, and every other segment stays as typed. A capped product dropped the reading of `agent/revi*s/*/*/*/*/*/f.md` that sits past its 64th combination (review c6dc18ec.1).
+        reads = [
+            [
+                n
+                for n in ("agent", "reviews")
+                if any(ch in seg for ch in _GLOB) and fnmatch.fnmatchcase(n, seg)
+            ]
+            for seg in segments
         ]
-        forms.extend("/".join(p) for p in itertools.islice(itertools.product(*options), 64))
+        for i, names in enumerate(reads):
+            forms.extend("/".join([*segments[:i], name, *segments[i + 1 :]]) for name in names)
+            if "agent" in names and i + 1 < len(reads) and "reviews" in reads[i + 1]:
+                forms.append("/".join([*segments[:i], "agent", "reviews", *segments[i + 2 :]]))
     return forms
 
 

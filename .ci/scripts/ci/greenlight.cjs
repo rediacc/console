@@ -600,7 +600,7 @@ function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) 
       wantGitlinks: want,
       wantClosureHash,
     });
-    trail.push({ run_id: candidate?.runId, ...verdict });
+    trail.push({ run_id: candidate?.runId ?? null, ...verdict });
     if (verdict.usable) {
       return { greenlit: true, runId: candidate.runId, reason: verdict.reason, trail };
     }

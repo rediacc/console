@@ -1713,7 +1713,7 @@ function planInstalls(
       for (const pkg of inRange) group.checks.push({ pkg, workspace });
       updates.set(key, group);
     }
-    // RANGE STYLE IS KEPT (worklist #22aa3ff6). `npm install name@x` saves `^x` whatever the manifest declared, so on 2026-10-14 private/account's exact `zod: "4.6.5"` came back as `^4.6.7`. An exact pin installs in its own step with --save-exact; every other range keeps npm's default prefix.
+    // AN EXACT PIN IS KEPT (worklist #22aa3ff6). `npm install name@x` saves `^x` whatever the manifest declared, so on 2026-10-14 private/account's exact `zod: "4.6.5"` came back as `^4.6.7`. An exact pin installs in its own step with --save-exact. Every other out-of-range package (a caret, a tilde, a comparator) installs with npm's default prefix, so a `~x` or `>=x` range is rewritten to `^x`; the selftest pins that.
     const exact = outOfRange.filter((p) => EXACT_VERSION_RE.test(ranges[p.name] ?? ''));
     const ranged = outOfRange.filter((p) => !exact.includes(p));
     for (const [group, extra] of [
@@ -3177,6 +3177,7 @@ function selftest(): void {
         '@typescript-eslint/parser': '^8.70.1',
         'eslint-plugin-sonarjs': '^4.2.1',
         pinned: '1.0.0',
+        tilded: '~1.2.3',
         vite: '^6.4.2',
         tsx: '^4.21.0',
       },
@@ -3196,6 +3197,7 @@ function selftest(): void {
         pk('@typescript-eslint/parser', '8.70.1', '8.71.0'),
         pk('eslint-plugin-sonarjs', '4.2.1', '4.2.2'),
         pk('pinned', '1.0.0', '1.0.1'),
+        pk('tilded', '1.2.3', '1.3.0'),
         { ...pk('vite', '6.4.2', '8.0.1'), allowKey: 'vite@8' },
         pk('tsx', '4.22.1', '4.23.15'),
       ],
@@ -3212,11 +3214,11 @@ function selftest(): void {
       'packages/www (install) :: install -w=packages/www --save-exact tsx@4.23.15',
       'private/account (update) :: update react-hook-form',
       'root (install) :: install --save-exact pinned@1.0.1',
-      'root (install) :: install vite@8.0.1',
+      'root (install) :: install tilded@1.3.0 vite@8.0.1',
       'root (update) :: update -w=packages/cli --include-workspace-root tsx typescript-eslint @typescript-eslint/parser eslint-plugin-sonarjs',
     ];
     expect(
-      'planner: an in-range bump is `npm update <names>`, ONE call per lockfile covering every workspace and the root, an out-of-range one `npm install name@exact` per manifest, judged per manifest range, in EVERY manifest that declares the package (tsx: root and both workspaces), and an exact pin (pinned, www tsx) installs with --save-exact so it stays exact',
+      'planner: an in-range bump is `npm update <names>`, ONE call per lockfile covering every workspace and the root, an out-of-range one `npm install name@exact` per manifest, judged per manifest range, in EVERY manifest that declares the package (tsx: root and both workspaces), and an exact pin (pinned, www tsx) installs with --save-exact so it stays exact, while an out-of-range tilde (tilded) installs with the default prefix',
       JSON.stringify(shown) === JSON.stringify(want),
       `got:\n${shown.join('\n')}\nwant:\n${want.join('\n')}`
     );
