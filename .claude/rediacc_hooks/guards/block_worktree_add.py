@@ -228,8 +228,16 @@ def _bundle(family, word, following):
     return codes, False
 
 
+# A SCRIPT OPERAND THAT IS THE PROCESS'S OWN STDIN IS A STDIN PROGRAM (review 0d227c80.2). `python3 /dev/stdin <<'EOF'` runs the heredoc exactly as `python3 - <<'EOF'` does, so it is judged by the program text the command line holds, not refused as a descriptor the hook cannot read. Only an absolute spelling counts: a relative word that resolves to /dev/stdin stays a descriptor `_unread_reason` refuses, so the two readers never disagree about which run reads stdin. /dev/fd/N for any other N is still a descriptor.
+STDIN_PATHS = ("/dev/stdin", "/dev/fd/0", "/proc/self/fd/0")
+
+
+def _stdin_path(word):
+    return word.startswith("/") and os.path.normpath(word) in STDIN_PATHS
+
+
 def _eval_program(family, args):
-    """`("c", code)`, `("stdin", None)` or `("file", None)` for a node/perl/ruby argv. Perl and ruby bundle `-e` (`-ne`, `-le`, `-esystem(...)`) and take several, which run as one program."""
+    """`("c", code)`, `("stdin", None)` or `("file", None)` for a node/perl/ruby argv. Perl and ruby bundle `-e` (`-ne`, `-le`, `-esystem(...)`) and take several, which run as one program. A script operand naming the process's own stdin (`_stdin_path`) is "stdin"."""
     codes: list[str] = []
     i = 0
     while i < len(args):
@@ -238,11 +246,13 @@ def _eval_program(family, args):
         if word == "--":
             if codes or following is None:
                 break
-            return ("file", None)
+            return ("stdin", None) if _stdin_path(following) else ("file", None)
         if word == "-":
             break
         if not word.startswith("-"):
-            return ("c", "\n".join(codes)) if codes else ("file", None)
+            if codes:
+                return ("c", "\n".join(codes))
+            return ("stdin", None) if _stdin_path(word) else ("file", None)
         if family == "node":
             if word in EVAL_FLAGS["node"]:
                 if following is not None:
@@ -276,6 +286,8 @@ def _program_of(name, args):
     if family == "python":
         # The option parse `shellscan.interpreter_program` reads with (#78afdc0b): the private one this replaced stepped over `--check-hash-based-pycs` alone, read its value as the script and never saw the `-c` after it.
         kind, code = shellscan._program_parse(name.rsplit("/", 1)[-1], args)
+        if kind == "file" and _stdin_path(code):
+            kind = "stdin"
         mode = {"inline": "c", "stdin": "stdin"}.get(kind, kind)
         return (family, mode, code if mode == "c" else None)
     mode, code = _eval_program(family, args)
@@ -307,10 +319,41 @@ def _stdin_texts(redirs, upstream):
     return out
 
 
-def interpreter_programs(cmd, depth=0):
+# A FILE ON STDIN IS A SCRIPT ON DISK (0d227c80 sibling). `_stdin_texts` reads only text the command line holds, so `python3 - < p.py`, `cat p.py | python3 -`, `{ python3 -; } < p.py` and `bash < x.sh` ran a file holding `git worktree add` with rc 0 (2026-10-15) while `python3 p.py` was refused. `_stdin_files` names every file a stdin program is read from: a `<` or `<>` redirect on descriptor 0, and the file operands and stdin redirect of a `cat` feeding the pipe. `_redirect_verdict` reads each under the rules a script run by path is read by.
+STDIN_REDIRECTS = ("<", "<>")
+
+
+def _stdin_files(redirs, upstream):
+    """The words naming each file a command reads on stdin, as far as the command line names them: its own `<`/`<>` redirect on descriptor 0, and what a `cat` in front of it reads (its file operands, or its own stdin redirect)."""
+    out = [
+        shellscan._word_value(redir.target)
+        for redir in redirs
+        if redir.op in STDIN_REDIRECTS
+        and redir.fd in (None, "0")
+        and redir.heredoc is None
+        and redir.target is not None
+    ]
+    if upstream is None or upstream[0] != "cmd":
+        return out
+    words, _ = shellscan._strip_prefixes([t for t in upstream[1] if isinstance(t, shellscan._Word)])
+    if not words or shellscan._word_value(words[0]).rsplit("/", 1)[-1] != "cat":
+        return out
+    out.extend(_stdin_files([t for t in upstream[1] if isinstance(t, shellscan._Redir)], None))
+    operands = False
+    for word in (shellscan._word_value(w) for w in words[1:]):
+        if word == "--" and not operands:
+            operands = True
+        elif word != "-" and (operands or not word.startswith("-")):
+            out.append(word)
+    return out
+
+
+def interpreter_programs(cmd, depth=0, files=None):
     """Every `(family, program text)` `cmd` hands an interpreter: `python3 -c`, `node -e`, `perl -e`, `ruby -e`, and each of them reading a heredoc, a here-string or a piped `cat`/`echo` as its program.
 
     It walks the same token structure `shellscan._analyse` walks (subshells, brace groups, pipelines, `$(...)`, the prefix commands `_strip_prefixes` drops), and descends into a shell's own payload (`sh -c`, `bash <<EOF`, `eval`), because `sh -c "python3 - <<EOF ..."` is the same program one level down. `_Run` records argv but not redirects, which is why this cannot read `_analyse(cmd).runs` alone: a heredoc is a redirect.
+
+    A group's stdin (`{ ...; } < f`, `(...) <<EOF`, `cat f | { ...; }`) is the stdin of the first command of each pipeline inside it. When `files` is a list, each `(family, word)` naming a FILE a stdin program is read from (`_stdin_files`) is appended to it, `family` being "shell" for a shell reading its script on stdin; `_redirect_verdict` reads those, since a file's text is not the command line's.
     """
     out: list[tuple[str, str]] = []
     if depth > MAX_PROGRAM_DEPTH or cmd == "":
@@ -329,12 +372,18 @@ def interpreter_programs(cmd, depth=0):
             if part.parts:
                 words_subs(part.parts)
 
-    def element(stage, upstream):
+    def element(stage, upstream, inherited):
+        group_redirs, group_upstream = inherited
+        if upstream is None:
+            upstream = group_upstream
         if stage[0] in ("sub", "brace"):
-            walk(stage[1])
+            own = [
+                t for t in (stage[2] if len(stage) > 2 else []) if isinstance(t, shellscan._Redir)
+            ]
+            walk(stage[1], (own + group_redirs, upstream))
             return
         words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
-        redirs = [t for t in stage[1] if isinstance(t, shellscan._Redir)]
+        redirs = [t for t in stage[1] if isinstance(t, shellscan._Redir)] + group_redirs
         for word in words:
             words_subs(word.parts)
         words, _ = shellscan._strip_prefixes(words)
@@ -350,28 +399,35 @@ def interpreter_programs(cmd, depth=0):
                 out.append((family, code))
             elif mode == "stdin":
                 out.extend((family, text_of(item)) for item in _stdin_texts(redirs, upstream))
+                if files is not None:
+                    files.extend((family, word) for word in _stdin_files(redirs, upstream))
         elif base in shellscan.SHELL_NAMES:
             mode, payload = shellscan._shell_payload(argv)
             if mode == "c" and payload is not None:
-                out.extend(interpreter_programs(payload, depth + 1))
+                out.extend(interpreter_programs(payload, depth + 1, files))
             elif mode == "stdin":
                 for item in _stdin_texts(redirs, upstream):
-                    out.extend(interpreter_programs(text_of(item), depth + 1))
+                    out.extend(interpreter_programs(text_of(item), depth + 1, files))
+                if files is not None:
+                    files.extend(("shell", word) for word in _stdin_files(redirs, upstream))
         elif base == "eval":
-            out.extend(interpreter_programs(" ".join(argv), depth + 1))
+            out.extend(interpreter_programs(" ".join(argv), depth + 1, files))
         else:
             # A LAUNCHER'S COMMAND (#503f0ba8): `find . -exec python3 -c '...' \;` and `npx -c '...'` hand an interpreter its program one level down, so the launched command is walked as a command line of its own, quoted back so its program text stays one word.
             for how, launched in shellscan._launched(base, argv):
                 src = launched if how == "text" else shellscan._quote_argv(launched)
-                out.extend(interpreter_programs(src, depth + 1))
+                out.extend(interpreter_programs(src, depth + 1, files))
 
-    def walk(items):
+    def walk(items, inherited=((), None)):
         for item in items:
             if item[0] == "sep":
                 continue
             stages = item[1]
             for pos, stage in enumerate(stages):
-                element(stage, stages[pos - 1] if pos else None)
+                if pos:
+                    element(stage, stages[pos - 1], ([], None))
+                else:
+                    element(stage, None, (list(inherited[0]), inherited[1]))
 
     walk(shellscan._parse(toks))
     return out
@@ -510,8 +566,13 @@ def _unread_reason(run_, cmd, cwd):
     path = _script_operand(run_, cmd, cwd)
     if not path:
         return None
+    # A NUL IN THE PATH FAILS CLOSED (review 0d227c80.1). `os.stat` raises ValueError for it, which escaped this function; the dispatcher counts a crash as no decision, so the run was allowed. Failing open is wrong too: bash cuts a word at its first NUL (`printf '%s|' $'ab\0cd'` prints `ab|`, measured on bash 5.2), so `python3 $'p.py\0x'` runs p.py while the hook would stat a path that names no file. The hook cannot know which file runs, so the run is refused; no script path a person types holds a NUL.
+    if "\0" in path:
+        return "a path holding a NUL byte"
     if path.startswith(("<(", ">(")):
         return "a process substitution"
+    if _reads_stdin_operand(run_):
+        return None
     target = shellscan._script_path(path, run_.cwd, cwd)
     if target in shellscan._written_scripts(cmd, run_, cwd):
         return None
@@ -536,14 +597,79 @@ def _unread_reason(run_, cmd, cwd):
                 reason = "larger than the %d bytes the hook reads" % shellscan._SCRIPT_MAX
     except FileNotFoundError:
         return None
-    except OSError as exc:
-        reason = "unreadable (%s)" % (exc.strerror or type(exc).__name__)
-    if reason is None:
+    except (OSError, ValueError) as exc:
+        reason = "unreadable (%s)" % (getattr(exc, "strerror", None) or type(exc).__name__)
+    if reason is None or _tracked_unchanged(target):
         return None
+    return reason
+
+
+def _tracked_unchanged(target):
+    """`shellscan._tracked_unchanged`, False when the file cannot be asked about."""
     try:
-        return None if shellscan._tracked_unchanged(target) else reason
-    except OSError:
-        return reason
+        return shellscan._tracked_unchanged(target)
+    except (OSError, ValueError):
+        return False
+
+
+def _reads_stdin_operand(run_):
+    """Is `run_` an interpreter whose script operand is its own stdin (`_stdin_path`)? Its program is the text `interpreter_programs` hands `_program_verdict`, so the by-path readers skip it."""
+    if not run_.name.rsplit("/", 1)[-1].startswith(shellscan.INTERPRETER_NAMES):
+        return False
+    kind, value = shellscan._program_parse(run_.name.rsplit("/", 1)[-1], list(run_.argv))
+    if kind != "file" or not _stdin_path(value):
+        return False
+    # Both readers must agree: the operand is skipped only when `interpreter_programs` reads this run's stdin as its program.
+    program = _program_of(run_.name, list(run_.argv))
+    return program is not None and program[1] == "stdin"
+
+
+def _stdin_file(target):
+    """`(reason, text)` for a file a stdin program is read from: `reason` names why it cannot be read in full (as `_unread_reason` does), `text` is its content, and both are None for a file that does not exist, a directory (nothing is read from it), and /dev/null."""
+    if DESCRIPTOR_PATH.match(target):
+        return "a descriptor the shell supplies", None
+    try:
+        mode = os.stat(target).st_mode
+        if stat.S_ISDIR(mode):
+            return None, None
+        if not stat.S_ISREG(mode):
+            if os.path.realpath(target) == os.devnull:
+                return None, None
+            return "not a regular file", None
+        if os.path.getsize(target) > shellscan._SCRIPT_MAX:
+            return "larger than the %d bytes the hook reads" % shellscan._SCRIPT_MAX, None
+        with open(target, "rb") as handle:
+            return None, handle.read().decode("utf-8", "replace")
+    except FileNotFoundError:
+        return None, None
+    except (OSError, ValueError) as exc:
+        return "unreadable (%s)" % (getattr(exc, "strerror", None) or type(exc).__name__), None
+
+
+def _redirect_verdict(family, word, cmd, cwd, depth):
+    """The arm a file fed to a stdin program trips (`_stdin_files`), read under the rules a script run by path is read by: what an earlier run of `cmd` writes into it, and the file on disk, are both judged as `_file_verdict` judges a script; one that cannot be read in full is "unread"; a tracked file unchanged from HEAD is reviewed code and passes; one that does not exist fails open. A relative word is resolved in every directory a run of `cmd` executes in, the over-reading direction, because the walk that finds the redirect does not follow `cd`."""
+    if "\0" in word or word.startswith(("<(", ">(")):
+        return "unread"
+    if _stdin_path(word):
+        # The shell's own stdin: no file the hook can name, the same as no redirect at all.
+        return None
+    written = shellscan._written_scripts(cmd, None, cwd)
+    dirs = {None} | {run_.cwd for run_ in shellscan.every_run(cmd)}
+    for run_cwd in sorted(dirs, key=lambda d: d or ""):
+        target = shellscan._script_path(word, run_cwd, cwd)
+        if target in written:
+            if written[target] is None:
+                if _could_spell(cmd):
+                    return "unjudgeable"
+            else:
+                verdict = _file_verdict(family, written[target], depth + 1)
+                if verdict:
+                    return verdict
+        reason, text = _stdin_file(target)
+        verdict = "unread" if reason else (_file_verdict(family, text, depth + 1) if text else None)
+        if verdict and not _tracked_unchanged(target):
+            return verdict
+    return None
 
 
 # A string handed to one of these is Python, judged as a program one level down.
@@ -757,8 +883,13 @@ def _program_verdict(cmd, depth, cwd=None):
     """The arm a program `cmd` hands an interpreter trips, to MAX_PROGRAM_DEPTH programs deep: the texts `interpreter_programs` finds in the command line, then every script it runs BY PATH (`_script_verdict`)."""
     if depth >= MAX_PROGRAM_DEPTH:
         return None
-    for family, code in interpreter_programs(cmd):
+    files: list[tuple[str, str]] = []
+    for family, code in interpreter_programs(cmd, files=files):
         verdict = _code_verdict(family, code, depth + 1)
+        if verdict:
+            return verdict
+    for family, word in files:
+        verdict = _redirect_verdict(family, word, cmd, cwd, depth)
         if verdict:
             return verdict
     return _script_verdict(cmd, depth, cwd)
@@ -776,6 +907,9 @@ def _script_verdict(cmd, depth, cwd):
     for run_ in shellscan.every_run(cmd):
         if _unread_reason(run_, cmd, cwd):
             return "unread"
+        if _reads_stdin_operand(run_):
+            # Judged by its stdin program (`_program_verdict`); opening /dev/stdin here would read the hook's own input.
+            continue
         text, kind = shellscan.interpreter_program(run_, cmd, cwd)
         family = _interpreter_name(run_.name) or _interpreter_name(
             shellscan.shebang_interpreter(run_, cwd) or ""
@@ -846,7 +980,8 @@ PROGRAM_NOTE = (
 )
 
 SCRIPT_MESSAGE = (
-    "❌ BLOCKED: this runs a script by path whose text names `worktree` together with `add` "
+    "❌ BLOCKED: this runs a script, by path or read on stdin from a file, whose text "
+    "names `worktree` together with `add` "
     "or `create`, and the script is untracked or differs from HEAD. Such a script is refused "
     "whatever it does with the words, because no reading of what a file can execute is "
     "complete. Hand the command to the operator to run with the `!` prefix, or drop the "
@@ -860,9 +995,10 @@ UNJUDGEABLE_MESSAGE = (
 )
 
 UNREAD_MESSAGE = (
-    "❌ BLOCKED: this runs a script by path that this hook could not read in full (larger than "
-    "the hook reads, unreadable, a directory or zip an interpreter runs, or a descriptor such as "
-    "`<(...)` or /dev/fd/N), and the script is untracked or differs from HEAD, so whether it runs "
+    "❌ BLOCKED: this runs a script, by path or read on stdin from a file, that this "
+    "hook could not read in full (larger than the hook reads, unreadable, a directory or zip an "
+    "interpreter runs, a path holding a NUL byte, or a descriptor such as `<(...)` or /dev/fd/N), "
+    "and the script is untracked or differs from HEAD, so whether it runs "
     "`git worktree add` cannot be judged. Hand the command to the operator to run with the `!` "
     "prefix, which bypasses this hook, or run a script the hook can read."
 )
