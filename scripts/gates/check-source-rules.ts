@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 /**
  * The host gate for `eslint-rules/`: runs the SAME rule modules `scripts/data/source-rules.ts` describes, over the real tree, without ESLint.
  *
- * WHY THIS IS SAFE TO TRUST. PLAN-biome-only-lint.md Phase 0 recorded, while ESLint still runs the real config: (a) ESLint's own resolved config for every tracked path, filtered to the rule ids this gate owns, and (b) the `(file, line, column, ruleId)` tuples ESLint reports on HEAD and on one planted defect per rule -- the same probes `.ci/scripts/quality/lint-rule-liveness.mjs` uses, reused here rather than re-invented. `--differential <dir>` replays those same probes through `scripts/lib/rule-host.ts` and the same whole-tree corpus, and diffs the tuples byte for byte against that saved snapshot. `--config-differential <dir>` checks the OTHER half of the same claim -- not just "same findings" but "same rule turned on, with the same options, on the same paths" -- by diffing `matchingInstances()` against (a)'s snapshot directly, with exactly two documented exceptions (see `isExplainedScopeMismatch` and `fillBenignDefaults`) rather than a silent tolerance.
+ * WHY THIS IS SAFE TO TRUST. PLAN-biome-only-lint.md Phase 0 recorded, while ESLint still runs the real config: (a) ESLint's own resolved config for every tracked path, filtered to the rule ids this gate owns, and (b) the `(file, line, column, ruleId)` tuples ESLint reports on HEAD and on one planted defect per rule -- the same probes `.ci/scripts/quality/lint-rule-liveness.mjs` uses, reused here rather than re-invented. `--differential <dir>` replays those same probes through `scripts/lib/rule-host.ts` and the same whole-tree corpus, and diffs the tuples byte for byte against that saved snapshot. `--config-differential <dir>` checks the OTHER half of the same claim -- not just "same findings" but "same rule turned on, with the same options, on the same paths" -- by diffing `matchingInstances()` against (a)'s snapshot directly, with exactly one documented exception (`fillBenignDefaults`) rather than a silent tolerance.
  *
  * SUPPRESSION REFUSAL. `reportUnusedDisableDirectives` dies with ESLint, and nothing else in this repo's toolchain understands an `eslint-disable` comment once it does. Rather than let one sit inert and misleading, this gate refuses ANY `eslint-disable`/`eslint-enable` token left in the files it scans -- the refusal the rule map (row 130) assigns this gate.
  *
@@ -378,7 +378,8 @@ function buildProbes(): Probe[] {
       exportName: 'noHardcodedText',
       filePath: 'private/account/web/src/pages/Activity.tsx',
       bad: 'export const A = () => <div>Hello world</div>;\n',
-      good: 'export const A = () => <div>{t("common.hello")}</div>;\n',
+      // The character references are the rule-host decoding control: oxc-parser keeps `&mdash;` raw, and without `decodeJsxEntities` its letters make this clean sibling fire.
+      good: 'export const A = () => <div title="&copy;">{t("common.hello")} &mdash; &#8212; &#x2014;</div>;\n',
     },
     {
       ruleId: 'custom/no-unawaited-drizzle-terminator',
@@ -740,40 +741,6 @@ function fillBenignDefaults(ruleId: string, options: unknown[]): unknown[] {
 }
 
 /**
- * The 5 real `eslint-disable custom/no-hardcoded-text` file headers in the
- * current tree (`private/account/web/src/pages/*.tsx`, none with an inline
- * reason). ESLint's `calculateConfigForFile` resolves STATIC config only -- it
- * has no notion of a disable comment inside the file -- so its snapshot shows
- * this rule ON for all 5. `scripts/data/source-rules.ts`'s own `ignores` list
- * for `custom/no-hardcoded-text` (rule map row 141) replicates what the
- * disable comment actually suppressed at lint time by scoping the rule OFF for
- * these paths instead, which is by design, not a gap. Any OTHER path, or any
- * other rule id, where the host's on/off state disagrees with this snapshot is
- * NOT covered by this exception and fails the gate.
- */
-const ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES = new Set([
-  'private/account/web/src/pages/ConfigMemberAccept.tsx',
-  'private/account/web/src/pages/ConfigMembers.tsx',
-  'private/account/web/src/pages/ConfigSetup.tsx',
-  'private/account/web/src/pages/ConfigStorage.tsx',
-  'private/account/web/src/pages/admin/ConfigAdmin.tsx',
-]);
-
-function isExplainedScopeMismatch(
-  filePath: string,
-  ruleId: string,
-  eslintOn: boolean,
-  hostOn: boolean
-): boolean {
-  return (
-    ruleId === 'custom/no-hardcoded-text' &&
-    eslintOn &&
-    !hostOn &&
-    ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES.has(filePath)
-  );
-}
-
-/**
  * `custom/no-unused-underscore-var` and `custom/e2e-expect-expect` are NEW
  * host rule ids (PLAN-biome-only-lint.md's H3): they port
  * `@typescript-eslint/no-unused-vars` and `playwright/expect-expect`, whose
@@ -836,7 +803,6 @@ async function configDifferential(dir: string): Promise<number> {
       const eslintOn = expected.has(ruleId);
       const hostOn = actual.has(ruleId);
       if (eslintOn !== hostOn) {
-        if (isExplainedScopeMismatch(entry.path, ruleId, eslintOn, hostOn)) continue;
         bad++;
         problems.push(
           `${entry.path} :: ${ruleId} :: ESLint ${eslintOn ? 'enables' : 'does not enable'}, host ${hostOn ? 'enables' : 'does not enable'} it`
