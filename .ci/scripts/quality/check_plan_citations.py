@@ -86,7 +86,7 @@ import subprocess
 import sys
 import tempfile
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import paths
 from rediacc_ci import shacite as SC
 from rediacc_ci.quality import plan_lifecycle as PL

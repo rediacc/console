@@ -60,7 +60,7 @@ import subprocess
 import sys
 import tempfile
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.core import allowlist, blocker_validator
 from rediacc_ci.policy_paths import policy_path

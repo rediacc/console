@@ -87,7 +87,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls, paths
 from rediacc_ci.quality import plan_lifecycle as PL
 

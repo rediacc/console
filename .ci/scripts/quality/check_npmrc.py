@@ -48,7 +48,7 @@ why: `.npmrc` must keep ignore-scripts and allow-git=none and must not carry
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import npmrc
 
 if __name__ == "__main__":

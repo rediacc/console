@@ -623,65 +623,14 @@
   ".ci/scripts/quality/check_hint_corpus.py": {
    "noqa PLC0415": 2
   },
-  ".ci/scripts/quality/check_host_toolchain_coverage.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_inner_timeout_reachable.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_job_timeout_headroom.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_judged_rule_wiring.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_label_inventory.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_label_references.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_language_policy.py": {
-   "noqa F401": 1,
    "noqa N818": 1
   },
-  ".ci/scripts/quality/check_literal_sources.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_lockfile.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_mutate_check.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_no_app_admin_perm.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_no_otlp_creds.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_npmrc.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_peer_deps.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_pipefail_grep_q.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_plan_boxes.py": {
-   "noqa F401": 1,
    "noqa PLC0415": 1
   },
-  ".ci/scripts/quality/check_plan_citations.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_plan_deps.py": {
-   "noqa F401": 1,
    "noqa PLC0415": 2
-  },
-  ".ci/scripts/quality/check_plan_folders.py": {
-   "noqa F401": 1
   },
   ".ci/scripts/quality/check_plan_housekeeping.py": {
    "noqa F401": 1

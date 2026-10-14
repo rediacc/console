@@ -106,7 +106,7 @@ import subprocess
 import sys
 import typing
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls, paths
 
 paths.on_sys_path(paths.hooks_stop_dir())

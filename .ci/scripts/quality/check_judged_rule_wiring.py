@@ -23,7 +23,7 @@ import re
 import sys
 import tempfile
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
