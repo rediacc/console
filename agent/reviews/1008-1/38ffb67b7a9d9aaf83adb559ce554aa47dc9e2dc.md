@@ -21,4 +21,4 @@ Body-Sig: de722222e440a3ee
 ### 38ffb67b.1 [low] agent/plans/QUEUE.md:98
 Anchor: in-diff
 Claim: The old entry 4 named T9 (the enforced matrix) and T10 as open; the new entry lists only T10 as open and never says T9 closed, so a reader cannot tell whether T9 was finished or dropped from the note.
-Resolution: open
+Resolution: fixed 50f1b1e0b4ce6dcd8deb246a3e89b174a11faa49 | d778be9d 2026-10-14T05:18:16Z
