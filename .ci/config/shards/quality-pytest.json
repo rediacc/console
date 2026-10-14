@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T06:43:10.734Z",
+  "generatedAt": "2026-10-14T09:47:09.059Z",
   "legs": [
     {
       "index": 1,
@@ -108,6 +108,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_verify_stable_endpoints.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
+        "pytest:.ci/rediacc_ci/tests/test_differential_tmp_roots.py",
         "pytest:.ci/rediacc_ci/tests/test_doc_env_manifest_region.py",
         "pytest:.ci/rediacc_ci/tests/test_doc_providers_test_path.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_create_manifest.py",
@@ -424,6 +425,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_checklists.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_effort.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_epic_plan.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_event_store.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_gh.py",
@@ -646,6 +648,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_idle_and_evidence.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_state.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_messaging_removed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_priority.py",

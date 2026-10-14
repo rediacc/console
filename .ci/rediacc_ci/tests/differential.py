@@ -714,14 +714,27 @@ def twin_tuple(
 
 
 _PYTEST_TMP_RE = re.compile(r"/[^\s:'\"]*?/pytest-\d+/(?:popen-gw\d+/)?[^/\s:'\"]+")
+_TMP_DIR_TAIL = r"/(?:popen-gw\d+/)?[^/\s:'\"]+"
+# A run's explicit --basetemp, set by the root conftest's pytest_configure. pytest then puts tmp_path straight under that directory, with no pytest-<N> level for _PYTEST_TMP_RE to find (worklist #ad157280: 48 goldens of test_core_release_state_validator missed their fold under --basetemp).
+_BASETEMP_RES: list[re.Pattern[str]] = []
+
+
+def set_basetemp(basetemp: str | os.PathLike[str] | None) -> None:
+    """Fold the per-test directories under an explicit `--basetemp` too, in both its spelled and resolved forms."""
+    _BASETEMP_RES.clear()
+    if not basetemp:
+        return
+    forms = {os.path.abspath(basetemp), os.path.realpath(basetemp)}
+    _BASETEMP_RES.extend(re.compile(re.escape(form) + _TMP_DIR_TAIL) for form in sorted(forms))
 
 
 def pytest_tmp_roots(*values: str) -> tuple[str, ...]:
     """The per-test pytest `tmp_path` directories named anywhere in `values`, as fold roots: a harness that passes paths as plain strings (an `--out` file, an env value) still records a machine-independent golden."""
     found: dict[str, None] = {}
     for value in values:
-        for match in _PYTEST_TMP_RE.findall(str(value)):
-            found[match] = None
+        for pattern in (_PYTEST_TMP_RE, *_BASETEMP_RES):
+            for match in pattern.findall(str(value)):
+                found[match] = None
     return tuple(found)
 
 
