@@ -8,6 +8,8 @@
  *                                          with a ready worklist DEFAULT line
  *   plan <id>|--all [--json]               the rewrite a bump would make; writes nothing
  *   bump <id> [--to <v>]... [--major --reason "<why>"] [--task <id>] [--json] [--out <dir>]
+ *                                          one --reason covers every major the run's --to names,
+ *                                          since the run is one transaction with one commit subject
  *   bump --all [--task <id>] [--json] [--out <dir>]
  *   apply-soaked [--task <id>] [--json] [--out <dir>]
  *                                          bump --all limited to patches and in-range minors
@@ -259,13 +261,15 @@ function parseFlags(argv: string[]): Flags {
     if (a === '--json') f.json = true;
     else if (a === '--all') f.all = true;
     else if (a === '--major') f.major = true;
-    else if (a === '--to')
-      f.to.push(
-        ...val(i++, a)
-          .split(',')
-          .filter((x) => x !== '')
-      );
-    else if (a === '--reason') f.reason = val(i++, a);
+    else if (a === '--to') {
+      const named = val(i++, a)
+        .split(',')
+        .filter((x) => x !== '');
+      // An empty value (an unset shell variable) names nothing, and taking it as absent would turn the run into a plain bump.
+      if (named.length === 0)
+        throw new Usage('--to needs a version or key; an empty value names none');
+      f.to.push(...named);
+    } else if (a === '--reason') f.reason = val(i++, a);
     else if (a === '--expires') f.expires = val(i++, a);
     else if (a === '--task') f.task = val(i++, a);
     else if (a === '--out') f.out = val(i++, a);
@@ -505,7 +509,9 @@ function subjectOf(plans: PinPlan[], verb: string): string {
 
 async function cmdBump(w: World, f: Flags, soakedOnly: boolean): Promise<number> {
   if (f.major && (!f.reason || f.reason.trim().length < 10))
-    throw new Usage('--major needs --reason "<why the major is safe now>"');
+    throw new Usage(
+      '--major needs --reason "<why the major is safe now>", one reason covering every major the run moves'
+    );
   const all = soakedOnly || f.all;
   if (all && f.to.length > 0)
     throw new Usage('--to names releases of one pin; it does not combine with --all');
@@ -1691,6 +1697,8 @@ const CASES: Record<string, Case> = {
     const live = await runCli(['status'], { PINS_MUTANT: 'no-restore' });
     const major = await runCli(['bump', 'embed:tool', '--major'], withMutant(fx, m));
     const verb = await runCli(['frobnicate'], withMutant(fx, m));
+    const emptyTo = await runCli(['bump', 'embed:tool', '--to', ''], withMutant(fx, m));
+    const commaTo = await runCli(['bump', 'embed:tool', '--to', ','], withMutant(fx, m));
     const strayVerify = await runCli(['verify', '--inflight', 'credits.json'], withMutant(fx, m));
     const strayBump = await runCli(
       ['bump', 'embed:tool', '--inflight', 'credits.json'],
@@ -1704,6 +1712,15 @@ const CASES: Record<string, Case> = {
       },
       { name: '--major without --reason is refused', ok: major.rc === 2, detail: major.err },
       { name: 'an unknown verb is a usage error', ok: verb.rc === 2, detail: verb.err },
+      {
+        name: 'an empty --to ("" or ",") is a usage error, not a plain bump, and nothing is written',
+        ok:
+          emptyTo.rc === 2 &&
+          commaTo.rc === 2 &&
+          emptyTo.err.includes('--to needs a version') &&
+          fx.read('Dockerfile').includes('TOOL_VERSION=1.0.0'),
+        detail: `${emptyTo.rc} ${emptyTo.err} ${emptyTo.out.slice(0, 300)} | ${commaTo.rc} ${commaTo.err}`,
+      },
       {
         name: '--inflight outside `verify --restore` is a usage error, not a silently plain run',
         ok:
