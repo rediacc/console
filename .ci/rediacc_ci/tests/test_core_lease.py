@@ -17,14 +17,12 @@ import subprocess
 import sys
 import threading
 import time
-from typing import TYPE_CHECKING
+import typing
+from typing import Protocol
 
 import pytest
 
 from rediacc_ci import core_lease
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 MODULE = pathlib.Path(core_lease.__file__).resolve()
 TOKENS = 4
@@ -155,15 +153,15 @@ PARTIAL_GAP_S = 0.015
 def scenario_partial_release(lease: Lease) -> list[str]:
     """A waiter that wakes while a holder's 3 tokens are freed one at a time, polling much faster than they are freed, still ends with all 3."""
     mod = load_module(lease.module)
-    mod.WAIT_POLL_SECONDS = PARTIAL_POLL_S  # type: ignore[attr-defined]
-    pool = mod.Pool(lease.pool, TOKENS)  # type: ignore[attr-defined]
+    mod.WAIT_POLL_SECONDS = PARTIAL_POLL_S
+    pool = mod.Pool(lease.pool, TOKENS)
     pool.ensure()
     holder = pool.try_acquire(3, 3)
     other = pool.try_acquire(1, 1)
     if len(holder) != 3 or len(other) != 1:
         return ["setup: holder got %d and other %d, want 3 and 1" % (len(holder), len(other))]
     waiting = threading.Event()
-    got: list[object] = []
+    got: list[core_lease.Token] = []
 
     def wait_for_tokens() -> None:
         got.extend(pool.acquire(1, 3, wait=True, timeout=ANSWER_S, on_wait=waiting.set))
@@ -181,7 +179,7 @@ def scenario_partial_release(lease: Lease) -> list[str]:
     freer.start()
     freer.join(ANSWER_S)
     waiter.join(ANSWER_S * 2)
-    pool.release([*got, *other])  # type: ignore[arg-type]
+    pool.release([*got, *other])
     if len(got) != 3:
         return ["a waiter woken by tokens freed one by one took %d, want 3" % len(got)]
     return []
@@ -190,14 +188,14 @@ def scenario_partial_release(lease: Lease) -> list[str]:
 def scenario_partial_release_silent(lease: Lease) -> list[str]:
     """The same partial release with a waiter that passes no on_wait callback: it blocks just the same, so it must settle just the same (review finding e2a16724.1)."""
     mod = load_module(lease.module)
-    mod.WAIT_POLL_SECONDS = PARTIAL_POLL_S  # type: ignore[attr-defined]
-    pool = mod.Pool(lease.pool, TOKENS)  # type: ignore[attr-defined]
+    mod.WAIT_POLL_SECONDS = PARTIAL_POLL_S
+    pool = mod.Pool(lease.pool, TOKENS)
     pool.ensure()
     holder = pool.try_acquire(3, 3)
     other = pool.try_acquire(1, 1)
     if len(holder) != 3 or len(other) != 1:
         return ["setup: holder got %d and other %d, want 3 and 1" % (len(holder), len(other))]
-    got: list[object] = []
+    got: list[core_lease.Token] = []
     waiter = threading.Thread(
         target=lambda: got.extend(pool.acquire(1, 3, wait=True, timeout=ANSWER_S))
     )
@@ -207,7 +205,7 @@ def scenario_partial_release_silent(lease: Lease) -> list[str]:
         time.sleep(PARTIAL_GAP_S)
         pool.release([token])
     waiter.join(ANSWER_S * 2)
-    pool.release([*got, *other])  # type: ignore[arg-type]
+    pool.release([*got, *other])
     if len(got) != 3:
         return [
             "a waiter with no on_wait, woken by tokens freed one by one, took %d, want 3" % len(got)
@@ -287,7 +285,14 @@ RACE_PROBERS = 4
 RACE_S = 2.0
 
 
-def load_module(path: pathlib.Path) -> object:
+class LeaseModule(Protocol):
+    """The two names of a by-path copy of `core_lease` that the scenarios read and set."""
+
+    WAIT_POLL_SECONDS: float
+    Pool: type[core_lease.Pool]
+
+
+def load_module(path: pathlib.Path) -> LeaseModule:
     name = "core_lease_under_test_%d" % abs(hash(str(path)))
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None
@@ -295,13 +300,13 @@ def load_module(path: pathlib.Path) -> object:
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
     spec.loader.exec_module(mod)
-    return mod
+    return typing.cast("LeaseModule", mod)
 
 
 def scenario_probe_race(lease: Lease) -> list[str]:
     """`free` probes running beside an acquirer never make it come back short: every whole-pool acquire over a free pool gets the whole pool."""
     mod = load_module(lease.module)
-    pool = mod.Pool(lease.pool, RACE_TOKENS)  # type: ignore[attr-defined]
+    pool = mod.Pool(lease.pool, RACE_TOKENS)
     pool.ensure()
     race_args = [str(RACE_TOKENS), str(RACE_S + 1.0)]
     probers = [
@@ -330,20 +335,22 @@ def scenario_probe_race(lease: Lease) -> list[str]:
     return []
 
 
-def broker_asker(
-    lease: Lease, label: str
-) -> Callable[[dict[str, object]], dict[str, object] | None]:
-    broker = lease.spawn("broker", "--label", label)
+class Asker:
+    """One broker process and the request/answer line protocol on its pipes."""
 
-    def ask(req: dict[str, object]) -> dict[str, object] | None:
-        assert broker.stdin is not None
-        broker.stdin.write(json.dumps(req) + "\n")
-        broker.stdin.flush()
-        line = readline(broker, ANSWER_S)
+    def __init__(self, proc: subprocess.Popen[str]) -> None:
+        self.proc = proc
+
+    def __call__(self, req: dict[str, object]) -> dict[str, object] | None:
+        assert self.proc.stdin is not None
+        self.proc.stdin.write(json.dumps(req) + "\n")
+        self.proc.stdin.flush()
+        line = readline(self.proc, ANSWER_S)
         return None if line is None else json.loads(line)
 
-    ask.proc = broker  # type: ignore[attr-defined]
-    return ask
+
+def broker_asker(lease: Lease, label: str) -> Asker:
+    return Asker(lease.spawn("broker", "--label", label))
 
 
 def scenario_runs_registered(lease: Lease) -> list[str]:
@@ -358,7 +365,7 @@ def scenario_runs_registered(lease: Lease) -> list[str]:
         reply = ask({"op": "free"})
         if not reply or reply.get("runs") != 2:
             fails.append("%s broker's free reply is %r, want runs 2" % (name, reply))
-    kill9(first.proc)  # type: ignore[attr-defined]
+    kill9(first.proc)
     reply = second({"op": "free"})
     if not reply or reply.get("runs") != 1:
         fails.append(

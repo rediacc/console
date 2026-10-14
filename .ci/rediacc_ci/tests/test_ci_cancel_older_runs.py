@@ -30,7 +30,7 @@ import shlex
 import shutil
 import stat
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -212,7 +212,7 @@ THREE_CANDIDATES = json.dumps(
     }
 )
 
-CASE_KW: dict[str, tuple[tuple[str, ...], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[tuple[str, ...], dict[str, Any]]] = {
     "no-github-run-id": ((), {"env_extra": {"GITHUB_RUN_ID": None}}),
     "an-empty-github-run-id": ((), {"env_extra": {"GITHUB_RUN_ID": ""}}),
     "a-missing-repository": ((), {"env_extra": {"GITHUB_REPOSITORY": None}}),
@@ -337,7 +337,7 @@ def drive(
         tmp_path,
         command or ("python3 -m %s" % MODULE),
         *args,
-        **kw,  # type: ignore[arg-type]
+        **kw,
     )
     root = tmp_path / "fakebin"
     return (

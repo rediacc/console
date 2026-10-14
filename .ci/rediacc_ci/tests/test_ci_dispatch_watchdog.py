@@ -31,7 +31,7 @@ import shlex
 import shutil
 import stat
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -119,7 +119,7 @@ def write_nogh(root: pathlib.Path) -> pathlib.Path:
 
 BASE_ARGS = ("--run-id", "1", "--generation", "1", "--head-ref", "m", "--pr-number", "3")
 
-CASE_KW: dict[str, tuple[tuple[str, ...], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[tuple[str, ...], dict[str, Any]]] = {
     "an-explicit-head-ref": (
         ("--run-id", "123", "--generation", "2", "--pr-number", "7", "--head-ref", "feat/x"),
         {},
@@ -288,7 +288,7 @@ def run(
     args, kw = CASE_KW[name]
     quoted = " ".join(shlex.quote(a) for a in args)
     extra = dict(BASE)
-    extra.update(kw.get("env_extra") or {})  # type: ignore[arg-type]
+    extra.update(kw.get("env_extra") or {})
     root = nogh_dir if kw.get("nogh") else bindir
     resolved = (
         str(root) if kw.get("nogh") else "%s:%s" % (root, os.environ.get("PATH", "/usr/bin:/bin"))
@@ -300,7 +300,7 @@ def run(
     return diff.bash_streams(
         "%s %s" % (command, quoted),
         env=diff.env_for(**env),
-        tty=kw.get("tty"),  # type: ignore[arg-type]
+        tty=kw.get("tty"),
         timeout=30,
     )
 

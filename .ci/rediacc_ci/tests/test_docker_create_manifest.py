@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import typing
+from typing import Any
 
 import pytest
 
@@ -177,7 +178,7 @@ def mask(text: str, root: pathlib.Path) -> str:
     return frozen.mask_root(masked, root)
 
 
-CASE_KW: dict[str, tuple[list[str], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[list[str], dict[str, Any]]] = {
     "help": (["--help"], {}),
     "image-and-image-path-together": (
         ["--image", "api", "--image-path", "ghcr.io/acme/api", "--tag", "1"],
@@ -247,7 +248,7 @@ def drive(
 ) -> tuple[int, str, str, str]:
     args, kw = CASE_KW[name]
     root = fixture(tmp_path, port_source=port_source)
-    proc, calls = _run(root, "new", args, **kw)  # type: ignore[arg-type]
+    proc, calls = _run(root, "new", args, **kw)
     merged = bool(kw.get("merged"))
     return (
         proc.returncode,

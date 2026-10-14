@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import typing
+from typing import Any
 
 import pytest
 
@@ -185,7 +186,7 @@ UNKNOWN_ERROR_BODY = (
 )
 
 # Every recorded case: the argv the subject is given, and the fake's knobs.
-CASE_KW: dict[str, tuple[list[str], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[list[str], dict[str, Any]]] = {
     "the-request-shape": (["--branch", "feature-x"], {}),
     "only-the-named-branch": (["--branch", "feature-x"], {"FAKE_PER_PAGE": "6"}),
     "a-branch-with-no-deployments": (["--branch", "nothing-here"], {}),
@@ -256,7 +257,7 @@ def recorded(name: str) -> tuple[int, str, str, list[str]]:
 
 def drive(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):
     args, kw = CASE_KW[name]
-    return _run(subject or PORT, tmp_path, args, **kw)  # type: ignore[arg-type]
+    return _run(subject or PORT, tmp_path, args, **kw)
 
 
 def compare(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):

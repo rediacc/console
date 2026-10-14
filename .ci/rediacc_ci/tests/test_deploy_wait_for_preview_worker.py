@@ -15,6 +15,7 @@ from __future__ import annotations
 import http.server
 import pathlib
 import threading
+import typing
 import urllib.error
 import urllib.request
 
@@ -31,12 +32,23 @@ COLD_BODY = b'{"error":"cold"}'
 EMPTY_KEYS_BODY = b'{"e2e":{"keys":[]}}'
 
 
+class _Stub(http.server.HTTPServer):
+    """The stub server: the probe `mode` and the `/server-info` hit count the handler reads and bumps."""
+
+    mode: str = "steady"
+    n: int = 0
+
+
 class _Handler(http.server.BaseHTTPRequestHandler):
+    @property
+    def stub(self) -> _Stub:
+        return typing.cast("_Stub", self.server)
+
     def log_message(self, fmt: str, *args: object) -> None:
         pass
 
     def do_GET(self) -> None:
-        mode = self.server.mode  # type: ignore[attr-defined]
+        mode = self.stub.mode
         # "cf1010" answers the way the rediacc.workers.dev Cloudflare zone does: urllib's default "Python-urllib/3.x" gets a
         # 403 "error code: 1010" (a banned browser signature), anything else is served as "steady".
         if mode == "cf1010":
@@ -53,8 +65,8 @@ class _Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b'{"status":"ok"}')
             return
         if self.path.endswith("/server-info"):
-            self.server.n += 1  # type: ignore[attr-defined]
-            n = self.server.n  # type: ignore[attr-defined]
+            self.stub.n += 1
+            n = self.stub.n
             if mode == "steady":
                 good = True
             elif mode == "flap":
@@ -83,10 +95,10 @@ class _Handler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
 
-def _start_stub(mode: str) -> tuple[http.server.HTTPServer, threading.Thread]:
-    server = http.server.HTTPServer(("127.0.0.1", 0), _Handler)
-    server.mode = mode  # type: ignore[attr-defined]
-    server.n = 0  # type: ignore[attr-defined]
+def _start_stub(mode: str) -> tuple[_Stub, threading.Thread]:
+    server = _Stub(("127.0.0.1", 0), _Handler)
+    server.mode = mode
+    server.n = 0
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, thread

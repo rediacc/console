@@ -772,13 +772,6 @@
       "message": "Item \"None\" of \"str | None\" has no attribute \"count\""
     },
     {
-      "id": "a05db6adb43d0422",
-      "file": ".ci/rediacc_ci/tests/test_ci_dispatch_watchdog.py",
-      "code": "call-overload",
-      "count": 1,
-      "message": "No overload variant of \"update\" of \"MutableMapping\" matches argument type \"object\""
-    },
-    {
       "id": "ad0f68ce646a1452",
       "file": ".ci/rediacc_ci/tests/test_ci_initialize.py",
       "code": "arg-type",
