@@ -72,8 +72,9 @@ PY_GUARD_FUNCS = ("write_verdict", "baseline_additions")
 PY_EXEMPT = (".ci/rediacc_ci/quality/shrink_only.py",)
 
 
-# The spellings of an argument vector an `assert` may read and still be an argv parse (see `py_offers_flag`).
+# The spellings of an argument vector an `assert` may read and still be an argv parse (see `py_offers_flag`): a bare name `argv` or `args`, or the attribute `sys.argv`. An attribute spelled `args` is not one: `CompletedProcess.args` is the command a test ran.
 ARGV_NAMES = frozenset(("argv", "args"))
+ARGV_ATTRS = frozenset(("argv",))
 
 
 def py_offers_flag(tree) -> bool:
@@ -85,11 +86,11 @@ def py_offers_flag(tree) -> bool:
     def is_flag(node) -> bool:
         return isinstance(node, ast.Constant) and node.value == FLAG
 
-    # An `assert` whose condition reads no argument vector checks output (a captured stream, a return value); it parses no argv, so its comparisons are skipped. One that does read one (`assert FLAG in sys.argv`) still parses the flag and is NOT skipped: the argument vector is any name or attribute spelled `argv` or `args`.
+    # An `assert` whose condition reads no argument vector checks output (a captured stream, a return value); it parses no argv, so its comparisons are skipped. One that does read one (`assert FLAG in sys.argv`) still parses the flag and is NOT skipped: the argument vector is a name spelled `argv` or `args`, or the attribute `argv`.
     def reads_argv(test) -> bool:
         return any(
             (isinstance(n, ast.Name) and n.id in ARGV_NAMES)
-            or (isinstance(n, ast.Attribute) and n.attr in ARGV_NAMES)
+            or (isinstance(n, ast.Attribute) and n.attr in ARGV_ATTRS)
             for n in ast.walk(test)
         )
 
@@ -629,6 +630,16 @@ def test_the_flag_refuses():
     assert proc.returncode == 1, "run it again with %s --first-seed"
     assert "%s" not in proc.stderr
 ''' % (FLAG, FLAG, FLAG, FLAG)
+
+# A test asserting on the command a subprocess ran (`CompletedProcess.args`): it parses no argv.
+COMPLETED_ARGS_PY_BODY = """import subprocess
+import sys
+
+
+def test_the_command_that_ran():
+    proc = subprocess.run([sys.executable, "gate.py", "%s"], capture_output=True, check=False)
+    assert "%s" in proc.args
+""" % (FLAG, FLAG)
 
 # Writers whose only argv parse is an `assert` condition. Skipping every assert would drop both off the offender list; reading argv is what makes them parses.
 ASSERT_ARGV_PY_BODIES = {
@@ -1181,6 +1192,10 @@ def test_control_python_assert_on_argv_is_a_writer(gate):
         )
     if py_offers_flag(ast.parse(STRING_ONLY_PY_BODY)):
         gate.log_fail("CONTROL FAILED: an assert on a captured stream was read as an argv parse")
+    if py_offers_flag(ast.parse(COMPLETED_ARGS_PY_BODY)):
+        gate.log_fail(
+            "CONTROL FAILED: an assert on CompletedProcess.args was read as an argv parse"
+        )
     gate.log_pass(
         "CONTROL: %d assert-on-argv writers are detected; an assert on a stream is not a parse"
         % len(ASSERT_ARGV_PY_BODIES)

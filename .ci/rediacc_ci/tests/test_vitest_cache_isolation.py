@@ -43,16 +43,37 @@ def test_each_vitest_config_names_its_own_cache_directory():
         seen[target] = rel
 
 
+VITEST_CMD_RE = re.compile(r"(?<![\w.-])vitest(?![\w.-])")
+
+
+def runs_vitest(scripts: object) -> bool:
+    """True when a package.json `scripts` table names the vitest command in any script, whatever the script is called. Only the commands written in that table are read: a script that reaches vitest through a file it runs is not seen, and its workspace is covered by the config scan above instead. A name that merely contains the word (a `.vitest-cache` path, a `vitest-cache` directory, `vitest.config.ts`) is not the command."""
+    if not isinstance(scripts, dict):
+        return False
+    return any(VITEST_CMD_RE.search(str(cmd)) for cmd in scripts.values())
+
+
+def test_runs_vitest_reads_the_command_and_not_a_name_that_contains_it():
+    assert runs_vitest({"test": "vitest run"})
+    assert runs_vitest({"unit": "npx vitest --coverage"})
+    assert runs_vitest({"t": "node_modules/.bin/vitest run"})
+    assert runs_vitest({"all": "npm run x && vitest"})
+    assert not runs_vitest({"clean": "rm -rf node_modules/.vitest-cache"})
+    assert not runs_vitest({"clean": "rm -rf node_modules/vitest-cache-web"})
+    assert not runs_vitest({"lint": "eslint vitest.config.ts"})
+    assert not runs_vitest({})
+    assert not runs_vitest(None)
+
+
 def test_each_workspace_that_runs_vitest_has_a_config():
     missing = []
     for rel in _tracked(":(glob)packages/*/package.json") + _tracked(
         ":(glob)workers/*/package.json"
     ):
         scripts = json.loads(paths.from_root(*rel.split("/")).read_text(encoding="utf-8")).get(
-            "scripts", {}
+            "scripts"
         )
-        # Any script that runs vitest counts, whatever it is named: an indirection such as "test": "npm run x" reaches vitest through the script it names.
-        if any(re.search(r"\bvitest\b", str(cmd)) for cmd in scripts.values()):
+        if runs_vitest(scripts):
             config = rel.rsplit("/", 1)[0] + "/vitest.config.ts"
             if not paths.from_root(*config.split("/")).is_file():
                 missing.append(config)
