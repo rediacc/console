@@ -69,9 +69,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 794 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a975f0cbf80dfcbd4, worker:a48d80587a06d7d5d, worker:a3b0d3eff8ba52170.
-- Leased items: 10: #50cb9316 (worker:bjti7ixw4, d778be9d), #6361fc5b (worker:bjti7ixw4, d778be9d), #66e2e0ef (worker:a975f0cbf80dfcbd4, d778be9d), #809a3054 (worker:bjti7ixw4, d778be9d), #97a7ced2 (worker:bjti7ixw4, d778be9d), #97b9af80 (worker:a48d80587a06d7d5d, d778be9d), #9b2100de (worker:a0ed61cca0c1f42ba, d778be9d), #c275adc4 (worker:bjti7ixw4, d778be9d), #d5c182eb (worker:a3b0d3eff8ba52170, d778be9d), #fe2d3ad2 (worker:a975f0cbf80dfcbd4, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 805 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 5 live of writer_cap 15 (session d778be9d): worker:a48d80587a06d7d5d, worker:a7889ef4fee7688e3, worker:a02b2efee4b730102, worker:a8b5272cd54d0c30f, worker:adb215d8c782f250f.
+- Leased items: 13: #4aa4e8f2 (worker:a7889ef4fee7688e3, d778be9d), #50cb9316 (worker:a7889ef4fee7688e3, d778be9d), #6361fc5b (worker:a7889ef4fee7688e3, d778be9d), #66e2e0ef (worker:a48d80587a06d7d5d, d778be9d), #759e0ca5 (worker:a48d80587a06d7d5d, d778be9d), #809a3054 (worker:a7889ef4fee7688e3, d778be9d), #8315d613 (worker:a7889ef4fee7688e3, d778be9d), #97a7ced2 (worker:a8b5272cd54d0c30f, d778be9d), #97b9af80 (worker:a48d80587a06d7d5d, d778be9d), #9b2100de (worker:a02b2efee4b730102, d778be9d), #c275adc4 (worker:a7889ef4fee7688e3, d778be9d), #fa76892c (worker:adb215d8c782f250f, d778be9d), and 1 more.
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
