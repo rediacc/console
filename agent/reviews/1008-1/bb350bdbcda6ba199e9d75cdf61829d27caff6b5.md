@@ -31,4 +31,4 @@ Resolution: not-a-bug | e2e has no direct typescript dependency, so only its emb
 ### bb350bdb.3 [medium] package.json:65
 Anchor: in-diff
 Claim: The root toolchain moves from TypeScript 6.0.3 to 7.0.2 (the lock also drops the tsserver bin), but the commit only verifies tsc on private/account, typecheck:web and check:ci-lockfile; lint and any tool that loads tsserver or the typescript JS API are not exercised.
-Resolution: open
+Resolution: not-a-bug | package.json:65 (private/account) ^7.0.2 and the console tree agrees (package.json:436); measured here with tsc 7.0.2: tsc --noEmit rc=0 on account, account/web, packages/cli, provisioning, e2e-tests and workers/proxy; biome lint reads no tsc | d778be9d 2026-10-14T14:56:32Z

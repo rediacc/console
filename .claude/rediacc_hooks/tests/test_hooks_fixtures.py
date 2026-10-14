@@ -9,10 +9,11 @@ import pathlib
 import re
 import shutil
 import subprocess
+import sys
 
 import pytest
 
-from rediacc_hooks import dispatch
+from rediacc_hooks import dispatch, shellscan
 from rediacc_hooks.tests import hookblocks, hookcases
 from rediacc_hooks.wellknown import ACCOUNT_REPO, CLAUDE_CODE_URL, GH_REPO
 
@@ -1054,6 +1055,35 @@ def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
         "worktree-add CONTROL: a tracked, unchanged script is reviewed code and is not read",
     )
     block.done()
+
+
+def test_shebang_interpreter_does_not_open_a_named_pipe(tmp_path):
+    """Review 05c4df4d.4: a FIFO named as a command word is not a script, and opening it would block the hook until a writer appears."""
+    fifo = tmp_path / "pipe.py"
+    os.mkfifo(fifo)
+    program = (
+        "import sys\nfrom rediacc_hooks import shellscan\n"
+        "run = next(iter(shellscan.every_run(sys.argv[1])))\n"
+        "print(shellscan.shebang_interpreter(run, None))\n"
+    )
+    done = subprocess.run(
+        [sys.executable, "-c", program, str(fifo)],
+        cwd=str(ROOT / ".claude"),
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == "None"
+
+
+def test_program_prefilter_admits_a_script_behind_a_wrapper_word():
+    """Review 05c4df4d.3: `timeout 5 ./wt.py` and `nohup ./long.py` name a script by path, so the pre-filter must start the lexer for them."""
+    for cmd in ("timeout 5 ./wt.py", "nohup ./long.py", "env X=1 /tmp/s.py", "sudo ../x/y.py"):
+        assert shellscan.PROGRAM_PREFILTER.search(cmd), cmd
+    # CONTROL: a command with no path word and no interpreter word is still skipped.
+    assert not shellscan.PROGRAM_PREFILTER.search("git status --short")
 
 
 def test_block_worktree_add_unjudgeable_script_is_not_said_to_hold_a_verb():

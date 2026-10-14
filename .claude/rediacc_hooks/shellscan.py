@@ -5684,6 +5684,9 @@ def shebang_interpreter(run, cwd=None):
         return None
     target = _script_path(run.name, run.cwd, cwd)
     try:
+        # A named pipe or device is not a script: opening a FIFO would block the hook until a writer appears (review 05c4df4d.4).
+        if not os.path.isfile(target):
+            return None
         with open(target, "rb") as handle:
             first = handle.readline(256).decode("utf-8", "replace")
     except OSError:
@@ -5698,7 +5701,7 @@ def shebang_interpreter(run, cwd=None):
 
 
 def _shebang_program(run, cwd):
-    """`(text, "file")` for a script run directly by path whose shebang names an interpreter, read under the rules a script handed to an interpreter is; `(None, None)` for anything else."""
+    """`(text, "file")` for a script run directly by path whose shebang names an interpreter, read under the rules a script handed to an interpreter is; `(None, "unjudgeable")` when it is larger than `_SCRIPT_MAX`; `(None, None)` for anything else (a tracked and unchanged script, a missing one, a shebang naming no interpreter)."""
     if shebang_interpreter(run, cwd) is None:
         return None, None
     text, state = _script_file_text(run.name, run.cwd, cwd)
@@ -5709,9 +5712,9 @@ def _shebang_program(run, cwd):
     return None, None
 
 
-# What a guard's pre-filter reads before it starts the lexer for a program: a command that names an interpreter, or one whose command word is a path (a script run directly, `_shebang_program`).
+# What a guard's pre-filter reads before it starts the lexer for a program: a command that names an interpreter, or one with a word that is a path (a script run directly, `_shebang_program`, including behind a wrapper word such as `timeout 5 ./wt.py` or `nohup ./long.py`, review 05c4df4d.3).
 PROGRAM_PREFILTER = re.compile(
-    r"python|node|perl|ruby|deno|bun|tsx|(?:^|[;&|(\n])\s*(?:\./|\.\./|/|[\w.@+-]+/)"
+    r"python|node|perl|ruby|deno|bun|tsx|(?:^|[;&|(`\s])(?:\./|\.\./|/|[\w.@+-]+/)"
 )
 
 

@@ -36,6 +36,12 @@ _SCRIPTS = pathlib.Path(tempfile.mkdtemp(prefix="test-review-file-scripts-"))
 atexit.register(shutil.rmtree, str(_SCRIPTS), True)
 WRITER = _SCRIPTS / "writer.py"
 WRITER.write_text("import pathlib\npathlib.Path(%r).write_text('x')\n" % R, encoding="utf-8")
+# The same writer run DIRECTLY by its shebang (review 05c4df4d.2): no interpreter word in the command.
+DIRECT_WRITER = _SCRIPTS / "direct_writer.py"
+DIRECT_WRITER.write_text(
+    "#!/usr/bin/env python3\n" + WRITER.read_text(encoding="utf-8"), encoding="utf-8"
+)
+DIRECT_WRITER.chmod(0o755)
 READER = _SCRIPTS / "reader.py"
 READER.write_text("import pathlib\nprint(pathlib.Path(%r).read_text())\n" % R, encoding="utf-8")
 # A directory symlink whose target is a review directory (review 3f53e99e.1 sweep).
@@ -307,6 +313,8 @@ SHELL_CASES = [
         True,
     ),
     ("a python script by path that only reads", "python3 %s" % READER, False),
+    ("a script run directly by its shebang writing a review file", str(DIRECT_WRITER), True),
+    ("the same script behind timeout", "timeout 5 %s" % DIRECT_WRITER, True),
     # The interpreter's own options, parsed as it parses them (review 63ee61e3.1): each refusal was allowed (rc 0) before.
     ("python -E then the script", "python3 -E %s" % WRITER, True),
     ("python -W takes its own value", "python3 -W ignore %s" % WRITER, True),
