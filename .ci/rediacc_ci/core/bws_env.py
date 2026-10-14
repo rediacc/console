@@ -95,7 +95,7 @@ import time
 from collections.abc import Mapping
 from typing import Any
 
-from rediacc_ci import paths
+from rediacc_ci import paths, proc
 from rediacc_ci.core import env as envfile
 
 # The one credential that cannot come from the store, named once so callers and tests refer to it by symbol rather than re-spelling it.
@@ -1151,7 +1151,8 @@ def _exec_verb(argv: list[str]) -> int:
     sys.stdout.flush()
     sys.stderr.flush()
     try:
-        os.execvpe(cmd[0], cmd, child)  # noqa: S606 -- the child IS the product: its env carries the values, no shell ever sees them
+        # The child IS the product: its env carries the values, and no shell ever sees them.
+        proc.exec_replace(cmd, env=child)
     except OSError as exc:
         print(
             "rediacc_ci.core.bws_env: exec: cannot run %s: %s" % (cmd[0], exc.strerror),

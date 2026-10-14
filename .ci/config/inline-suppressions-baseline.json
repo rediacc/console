@@ -14,36 +14,14 @@
   ".ci/rediacc_ci/ci/gate_model.py": {
    "noqa PLC0415": 2
   },
-  ".ci/rediacc_ci/core/account.py": {
-   "noqa S104": 2,
-   "noqa S606": 2
-  },
-  ".ci/rediacc_ci/core/bws_env.py": {
-   "noqa S606": 1
-  },
-  ".ci/rediacc_ci/core/local_common.py": {
-   "noqa S606": 1
-  },
   ".ci/rediacc_ci/core/run_verbs.py": {
    "noqa PLW0108": 1
-  },
-  ".ci/rediacc_ci/core_lease.py": {
-   "noqa S606": 2
   },
   ".ci/rediacc_ci/deploy/turnstile_drift.py": {
    "noqa S310": 2
   },
-  ".ci/rediacc_ci/deploy/upload_media_to_r2.py": {
-   "noqa S606": 1
-  },
   ".ci/rediacc_ci/deploy/wait_for_preview_worker.py": {
    "noqa S310": 2
-  },
-  ".ci/rediacc_ci/dev/www.py": {
-   "noqa S606": 1
-  },
-  ".ci/rediacc_ci/docker/run_in_image.py": {
-   "noqa S606": 1
   },
   ".ci/rediacc_ci/drills/lib.py": {
    "noqa S310": 2
@@ -61,14 +39,8 @@
   ".ci/rediacc_ci/quality/account_probes.py": {
    "noqa PLW1509": 1
   },
-  ".ci/rediacc_ci/quality/browser_smoke.py": {
-   "noqa S606": 1
-  },
   ".ci/rediacc_ci/quality/ci_watch_recipe.py": {
    "noqa BLE001": 1
-  },
-  ".ci/rediacc_ci/quality/page_density.py": {
-   "noqa S606": 1
   },
   ".ci/rediacc_ci/quality/proxy_image_smoke.py": {
    "noqa S310": 2
@@ -78,9 +50,6 @@
   },
   ".ci/rediacc_ci/setup/host.py": {
    "noqa S310": 1
-  },
-  ".ci/rediacc_ci/setup/machine.py": {
-   "noqa S606": 1
   },
   ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": {
    "noqa PLC0415": 2

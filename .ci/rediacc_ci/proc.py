@@ -70,8 +70,8 @@ import shutil
 import signal
 import subprocess
 import time
-from collections.abc import Mapping
-from typing import IO, Any, TypedDict
+from collections.abc import Mapping, Sequence
+from typing import IO, Any, NoReturn, TypedDict
 
 # The codes, named once. See the module docstring for where each already lives.
 TIMEOUT_RC = 124
@@ -379,6 +379,17 @@ def retry_command(
     return outcome.last
 
 
+def exec_replace(argv: Sequence[str], *, env: Mapping[str, str] | None = None) -> NoReturn:
+    """Replace this process with `argv`, searching PATH for `argv[0]`; `env` is the child's whole environment, or this process's own when None.
+
+    THE ONE SITE for `os.exec*` in this package, so ruff's S606 (process started without a shell) is reported here once and per-file-ignored here with its reason, rather than at the twelve forwarding shims that each become the command they wrap. Raises OSError when the program cannot start, exactly as the `os` call does; nothing after a successful exec runs.
+    """
+    args = list(argv)
+    if env is None:
+        os.execvp(args[0], args)
+    os.execvpe(args[0], args, dict(env))
+
+
 def which(name: str, env: dict[str, str] | None = None) -> str | None:
     """The absolute path of `name` on PATH, or None.
 
@@ -402,6 +413,7 @@ __all__ = [
     "RunKwargs",
     "TextRunKwargs",
     "backoff_delays",
+    "exec_replace",
     "retry_command",
     "retry_with_backoff",
     "run",

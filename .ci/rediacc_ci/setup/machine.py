@@ -34,7 +34,7 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, proc
 from rediacc_ci.core import bws_env
 from rediacc_ci.core import env as envfile
 from rediacc_ci.setup import bridge, githooks, host, phases
@@ -124,7 +124,7 @@ def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str,
     probe.info("Applying your docker group membership to this run (no logout needed)")
     os.environ["REDIACC_DOCKER_GROUP_REEXEC"] = "1"
     command = shlex.join([str(root / "run.sh"), "setup", *argv])
-    os.execvp("sg", ["sg", "docker", "-c", command])  # noqa: S606
+    proc.exec_replace(["sg", "docker", "-c", command])
 
 
 # --------------------------------------------------------------------------- the report ---------------------------------------------------------------------------

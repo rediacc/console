@@ -55,7 +55,7 @@ import shutil
 import subprocess
 import sys
 
-from rediacc_ci import paths
+from rediacc_ci import paths, proc
 
 SELF = "page-density.py"
 
@@ -104,7 +104,7 @@ def docker_argv(root: str, image: str) -> list[str]:
 def _exec(argv: list[str]) -> int:
     """`exec argv`. Returns 127 with bash's own exit code if it cannot start."""
     try:
-        os.execvp(argv[0], argv)  # noqa: S606 -- forwarding exec, same shape as the twin's
+        proc.exec_replace(argv)
     except OSError:
         # bash: `<script>: line NN: exec: npx: not found`, exit 127. The prefix carries a line number this port does not reproduce; see the module docstring's divergence 2.
         print("%s: exec: %s: not found" % (SELF, argv[0]), file=sys.stderr)

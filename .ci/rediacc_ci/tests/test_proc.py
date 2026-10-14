@@ -483,3 +483,41 @@ def test_describe_does_not_say_killed_for_an_ordinary_failure():
 def test_subprocess_is_reachable_at_all():
     """ANTI-VACUITY for every case in this file."""
     assert subprocess.run(["true"], check=False, capture_output=True).returncode == 0
+
+
+def _exec_child(code: str) -> subprocess.CompletedProcess:
+    """Run `code` in a fresh interpreter with `.ci` importable, so `exec_replace` really replaces a process."""
+    ci = str(pathlib.Path(proc.__file__).resolve().parent.parent)
+    return subprocess.run(
+        [
+            "python3",
+            "-c",
+            "import sys; sys.path.insert(0, %r)\nfrom rediacc_ci import proc\n%s" % (ci, code),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_exec_replace_becomes_the_command_and_keeps_its_exit_status():
+    """The child never reaches the line after the call, and the command's own exit status is the child's."""
+    done = _exec_child(
+        "proc.exec_replace(['sh', '-c', 'echo replaced; exit 7'])\nprint('NOT REACHED')"
+    )
+    assert done.stdout == "replaced\n"
+    assert done.returncode == 7
+
+
+def test_exec_replace_hands_the_given_environment_to_the_command_and_nothing_else():
+    done = _exec_child(
+        "proc.exec_replace(['sh', '-c', 'echo \"$PROBE:${HOME-unset}\"'], env={'PROBE': 'x', 'PATH': '/usr/bin:/bin'})"
+    )
+    assert done.stdout == "x:unset\n"
+
+
+def test_exec_replace_raises_oserror_for_a_program_that_cannot_start():
+    done = _exec_child(
+        "try:\n    proc.exec_replace(['/nonexistent/program'])\nexcept OSError as exc:\n    print(type(exc).__name__)"
+    )
+    assert done.stdout == "FileNotFoundError\n"
