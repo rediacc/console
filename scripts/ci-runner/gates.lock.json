@@ -1402,6 +1402,20 @@
     }
   },
   {
+    "id": "check:ci-pin-registry",
+    "run": "npm run check:ci-pin-registry",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-pin-registry.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Pin registry covers every pin"
+    }
+  },
+  {
     "id": "check:ci-ceph-image-pin",
     "run": "npm run check:ci-ceph-image-pin",
     "gate": true,

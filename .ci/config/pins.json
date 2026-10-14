@@ -1,0 +1,2504 @@
+{
+  "version": 1,
+  "submodules": {
+    "scanned": [
+      "private/renet",
+      "private/account"
+    ],
+    "unscanned": [
+      {
+        "path": "private/homebrew-tap",
+        "reason": "BLOCKER: the tap's formula carries the rdc release version and its archive sha256, written by the CD release job from the git tag; it is a release output, not a pinned third-party version"
+      },
+      {
+        "path": "private/elite",
+        "reason": "BLOCKER: CI checkouts do not init private/elite and no build or gate reads a version from it, so a pin there would bind nothing the registry could bump"
+      }
+    ]
+  },
+  "literalExclude": [
+    {
+      "repo": ".",
+      "glob": "agent/**",
+      "reason": "BLOCKER: agent/ holds session records (worklists, reviews, plans) that quote a version as the history of a bump; rewriting them on the next bump would falsify the record, so they are never copies"
+    }
+  ],
+  "entries": [
+    {
+      "id": "npm",
+      "kind": "family",
+      "name": "npm trees",
+      "driver": "npm",
+      "source": {
+        "type": "npm-registry",
+        "package": "*"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "allow-file"
+      },
+      "holds": [
+        ".ci/policy/.deps-upgrade-blocklist",
+        ".ci/config/deps-major-allow.json",
+        ".ci/policy/deps-major-exceptions.json"
+      ],
+      "gates": [
+        "check:deps",
+        "check:ci-lockfile"
+      ],
+      "scope": [
+        {
+          "scanner": "npm-lockfile",
+          "repo": ".",
+          "files": [
+            "package-lock.json",
+            "workers/*/package-lock.json"
+          ]
+        },
+        {
+          "scanner": "npm-lockfile",
+          "repo": "private/account",
+          "files": [
+            "package-lock.json",
+            "web/package-lock.json",
+            "e2e/package-lock.json"
+          ]
+        }
+      ],
+      "sites": [],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "go-mod",
+      "kind": "family",
+      "name": "Go modules",
+      "driver": "go-mod",
+      "source": {
+        "type": "go-list",
+        "module": "all"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "refuse"
+      },
+      "holds": [
+        ".ci/policy/.go-deps-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-go-deps",
+        "check:ci-go-module-sync"
+      ],
+      "scope": [
+        {
+          "scanner": "go-mod",
+          "repo": "private/renet",
+          "files": [
+            "go.mod"
+          ]
+        },
+        {
+          "scanner": "go-mod",
+          "repo": ".",
+          "files": [
+            ".ci/scripts/private/license-mint/go.mod"
+          ]
+        }
+      ],
+      "sites": [],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "actions",
+      "kind": "family",
+      "name": "GitHub Actions",
+      "driver": "actions",
+      "source": {
+        "type": "github-tags",
+        "repo": "actions/checkout"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.actions-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:actions",
+        "check:ci-actions-allowlist"
+      ],
+      "scope": [
+        {
+          "scanner": "action-uses",
+          "repo": ".",
+          "files": [
+            ".github/**"
+          ]
+        },
+        {
+          "scanner": "action-uses",
+          "repo": ".",
+          "files": [
+            ".ci/breakpoint/workflow/*.yml"
+          ]
+        }
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "scripts/gate-bind.ts",
+          "role": "sha:upload-artifact",
+          "match": "^\\s+'actions/upload-artifact@(?<value>[0-9a-f]{40})  # v",
+          "label": "scripts/gate-bind.ts UPLOAD_ARTIFACT_PIN",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/actions-allowlist.json",
+          "role": "sha:bitwarden-sm-action",
+          "match": "^\\s+\"bitwarden/sm-action@(?<value>[0-9a-f]{40})\"",
+          "label": ".ci/config/actions-allowlist.json bitwarden/sm-action pattern",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "docker",
+      "kind": "family",
+      "name": "Docker base images",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        "scripts/data/docker-image-freshness-baseline.json"
+      ],
+      "gates": [
+        "check:ci-docker-image-freshness"
+      ],
+      "scope": [
+        {
+          "scanner": "from-image",
+          "repo": ".",
+          "files": [
+            "Dockerfile",
+            "packages/**/Dockerfile*",
+            "workers/**/Dockerfile*"
+          ]
+        },
+        {
+          "scanner": "from-image",
+          "repo": "private/renet",
+          "files": [
+            "Dockerfile",
+            "Dockerfile.native"
+          ]
+        },
+        {
+          "scanner": "from-image",
+          "repo": "private/account",
+          "files": [
+            "Dockerfile"
+          ]
+        }
+      ],
+      "sites": [],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "embed:criu",
+      "kind": "leaf",
+      "name": "CRIU",
+      "driver": "embed",
+      "source": {
+        "type": "github-release",
+        "repo": "checkpoint-restore/criu"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.embed-assets-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-embed-asset-freshness",
+        "check:ci-embed-credits"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "CRIU_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "commit",
+          "arg": "CRIU_COMMIT",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "version",
+          "json": "/components/criu/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "commit",
+          "json": "/components/criu/source/commit",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/generate-embed-credits.ts",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": "private/renet",
+              "file": "pkg/embed/credits_data.go"
+            },
+            {
+              "repo": ".",
+              "file": "packages/cli/src/data/third-party-credits.json"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
+      "id": "embed:rsync",
+      "kind": "leaf",
+      "name": "rsync",
+      "driver": "embed",
+      "source": {
+        "type": "rsync-index"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.embed-assets-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-embed-asset-freshness",
+        "check:ci-embed-credits"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "RSYNC_VERSION",
+          "expect": 2
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "sha256:source",
+          "arg": "RSYNC_SHA256",
+          "expect": 2
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "version",
+          "json": "/components/rsync/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "sha256:source",
+          "json": "/components/rsync/source/sha256",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/generate-embed-credits.ts",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": "private/renet",
+              "file": "pkg/embed/credits_data.go"
+            },
+            {
+              "repo": ".",
+              "file": "packages/cli/src/data/third-party-credits.json"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
+      "id": "embed:zot",
+      "kind": "leaf",
+      "name": "zot",
+      "driver": "embed",
+      "source": {
+        "type": "github-release",
+        "repo": "project-zot/zot"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.embed-assets-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-embed-asset-freshness",
+        "check:ci-embed-credits"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "ZOT_VERSION",
+          "expect": 2
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "sha256:amd64",
+          "arg": "ZOT_SHA256_AMD64",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "ZOT_SHA256_ARM64",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "version",
+          "json": "/components/zot/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "sha256:amd64",
+          "json": "/components/zot/arches/amd64/sha256",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "sha256:arm64",
+          "json": "/components/zot/arches/arm64/sha256",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/generate-embed-credits.ts",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": "private/renet",
+              "file": "pkg/embed/credits_data.go"
+            },
+            {
+              "repo": ".",
+              "file": "packages/cli/src/data/third-party-credits.json"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
+      "id": "embed:k3s",
+      "kind": "leaf",
+      "name": "k3s",
+      "driver": "embed",
+      "source": {
+        "type": "github-release",
+        "repo": "k3s-io/k3s"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.embed-assets-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-embed-asset-freshness",
+        "check:ci-embed-credits"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "K3S_VERSION",
+          "expect": 2
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "sha256:amd64",
+          "arg": "K3S_SHA256_AMD64",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "K3S_SHA256_ARM64",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "version",
+          "json": "/components/k3s/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "sha256:amd64",
+          "json": "/components/k3s/arches/amd64/sha256",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "sha256:arm64",
+          "json": "/components/k3s/arches/arm64/sha256",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/embed/embed.go",
+          "role": "version",
+          "match": "^const AssetK3sVersion = \"(?<value>[^\"]*)\"",
+          "label": "pkg/embed/embed.go AssetK3sVersion",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/generate-embed-credits.ts",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": "private/renet",
+              "file": "pkg/embed/credits_data.go"
+            },
+            {
+              "repo": ".",
+              "file": "packages/cli/src/data/third-party-credits.json"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
+      "id": "embed:csiprovisioner",
+      "kind": "leaf",
+      "name": "csi-provisioner",
+      "driver": "embed",
+      "source": {
+        "type": "github-release",
+        "repo": "kubernetes-csi/external-provisioner"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.embed-assets-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-embed-asset-freshness",
+        "check:ci-embed-credits"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "CSIPROVISIONER_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "commit",
+          "arg": "CSIPROVISIONER_COMMIT",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "version",
+          "json": "/components/csiprovisioner/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "commit",
+          "json": "/components/csiprovisioner/source/commit",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/kube/csidriver/units.go",
+          "role": "version",
+          "match": "\\bProvisionerVersion\\s*=\\s*\"v(?<value>[^\"]*)\"",
+          "label": "pkg/kube/csidriver/units.go ProvisionerVersion",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/kube/csidriver/testdata/rediacc-csi-provisioner.service",
+          "role": "version",
+          "match": "CSI external-provisioner \\(v(?<value>[^,)]*),",
+          "label": "the csi-provisioner unit golden",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "docs/design/spec/09-csi-driver.md",
+          "role": "version",
+          "match": "^\\| `rediacc-csi-provisioner\\.service` \\| embedded `csi-provisioner` \\(external-provisioner \\*\\*v(?<value>[^*]+)\\*\\*\\)",
+          "label": "docs/design/spec/09-csi-driver.md unit table",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/generate-embed-credits.ts",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": "private/renet",
+              "file": "pkg/embed/credits_data.go"
+            },
+            {
+              "repo": ".",
+              "file": "packages/cli/src/data/third-party-credits.json"
+            }
+          ]
+        }
+      ],
+      "literals": [
+        {
+          "re": "external-provisioner[^\\n]{0,24}?\\bv(?<value>\\d+\\.\\d+\\.\\d+)"
+        }
+      ]
+    },
+    {
+      "id": "embed:csisnapshotter",
+      "kind": "leaf",
+      "name": "csi-snapshotter",
+      "driver": "embed",
+      "source": {
+        "type": "github-release",
+        "repo": "kubernetes-csi/external-snapshotter"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.embed-assets-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-embed-asset-freshness",
+        "check:ci-embed-credits"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "CSISNAPSHOTTER_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "commit",
+          "arg": "CSISNAPSHOTTER_COMMIT",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "version",
+          "json": "/components/csisnapshotter/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "commit",
+          "json": "/components/csisnapshotter/source/commit",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/kube/csidriver/units.go",
+          "role": "version",
+          "match": "\\bSnapshotterVersion\\s*=\\s*\"v(?<value>[^\"]*)\"",
+          "label": "pkg/kube/csidriver/units.go SnapshotterVersion",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/kube/csidriver/testdata/rediacc-csi-snapshotter.service",
+          "role": "version",
+          "match": "CSI external-snapshotter \\(v(?<value>[^,)]*),",
+          "label": "the csi-snapshotter unit golden",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "docs/design/spec/09-csi-driver.md",
+          "role": "version",
+          "match": "^\\| `rediacc-csi-snapshotter\\.service` \\| embedded `csi-snapshotter` \\(external-snapshotter \\*\\*v(?<value>[^*]+)\\*\\*\\)",
+          "label": "docs/design/spec/09-csi-driver.md unit table",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/generate-embed-credits.ts",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": "private/renet",
+              "file": "pkg/embed/credits_data.go"
+            },
+            {
+              "repo": ".",
+              "file": "packages/cli/src/data/third-party-credits.json"
+            }
+          ]
+        }
+      ],
+      "literals": [
+        {
+          "re": "external-snapshotter[^\\n]{0,24}?\\bv(?<value>\\d+\\.\\d+\\.\\d+)"
+        }
+      ]
+    },
+    {
+      "id": "embed:snapshotcontroller",
+      "kind": "leaf",
+      "name": "snapshot-controller",
+      "driver": "embed",
+      "source": {
+        "type": "github-release",
+        "repo": "kubernetes-csi/external-snapshotter"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.embed-assets-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-embed-asset-freshness",
+        "check:ci-embed-credits"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "SNAPSHOTCONTROLLER_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "version",
+          "json": "/components/snapshotcontroller/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "embed-assets.lock.json",
+          "role": "commit",
+          "json": "/components/snapshotcontroller/source/commit",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/kube/csidriver/units.go",
+          "role": "version",
+          "match": "\\bSnapshotControllerVersion\\s*=\\s*\"v(?<value>[^\"]*)\"",
+          "label": "pkg/kube/csidriver/units.go SnapshotControllerVersion",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/kube/csidriver/testdata/rediacc-csi-snapshot-controller.service",
+          "role": "version",
+          "match": "CSI snapshot-controller \\(v(?<value>[^,)]*),",
+          "label": "the snapshot-controller unit golden",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "docs/design/spec/09-csi-driver.md",
+          "role": "version",
+          "match": "^\\| `rediacc-csi-snapshot-controller\\.service` \\| embedded `snapshot-controller` \\(external-snapshotter \\*\\*v(?<value>[^*]+)\\*\\*\\)",
+          "label": "docs/design/spec/09-csi-driver.md unit table",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/generate-embed-credits.ts",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": "private/renet",
+              "file": "pkg/embed/credits_data.go"
+            },
+            {
+              "repo": ".",
+              "file": "packages/cli/src/data/third-party-credits.json"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:bw",
+      "kind": "leaf",
+      "name": "Bitwarden CLI",
+      "driver": "devcontainer",
+      "source": {
+        "type": "github-release",
+        "repo": "bitwarden/clients",
+        "tagPrefix": "cli-v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-devcontainer-pins"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "BW_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:amd64",
+          "arg": "BW_SHA256_AMD64",
+          "expect": 1,
+          "asset": "bw-linux-{version}.zip"
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "BW_SHA256_ARM64",
+          "expect": 1,
+          "asset": "bw-linux-arm64-{version}.zip"
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:bws",
+      "kind": "leaf",
+      "name": "Bitwarden Secrets Manager CLI",
+      "driver": "devcontainer",
+      "source": {
+        "type": "github-release",
+        "repo": "bitwarden/sdk-sm",
+        "tagPrefix": "bws-v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-devcontainer-pins"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "BWS_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:amd64",
+          "arg": "BWS_SHA256_AMD64",
+          "expect": 1,
+          "asset": "bws-x86_64-unknown-linux-gnu-{version}.zip"
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "BWS_SHA256_ARM64",
+          "expect": 1,
+          "asset": "bws-aarch64-unknown-linux-gnu-{version}.zip"
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:gopls",
+      "kind": "leaf",
+      "name": "gopls (Go language server)",
+      "driver": "devcontainer",
+      "source": {
+        "type": "github-release",
+        "repo": "golang/tools",
+        "tagPrefix": "gopls/v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-devcontainer-pins"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "GOPLS_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:dlv",
+      "kind": "leaf",
+      "name": "Delve (Go debugger)",
+      "driver": "devcontainer",
+      "source": {
+        "type": "github-release",
+        "repo": "go-delve/delve",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-devcontainer-pins"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "DLV_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:golangcilint",
+      "kind": "leaf",
+      "name": "golangci-lint",
+      "driver": "devcontainer",
+      "source": {
+        "type": "github-release",
+        "repo": "golangci/golangci-lint",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-devcontainer-pins"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "GOLANGCILINT_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": ".ci/scripts/quality/lint.sh",
+          "role": "version",
+          "match": "^GOLANGCI_VERSION=\"(?<value>[^\"]+)\"",
+          "label": "private/renet .ci/scripts/quality/lint.sh GOLANGCI_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:staticcheck",
+      "kind": "leaf",
+      "name": "staticcheck",
+      "driver": "devcontainer",
+      "source": {
+        "type": "go-list",
+        "module": "honnef.co/go/tools"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "STATICCHECK_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:goimports",
+      "kind": "leaf",
+      "name": "goimports",
+      "driver": "devcontainer",
+      "source": {
+        "type": "go-list",
+        "module": "golang.org/x/tools"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "GOIMPORTS_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:codex",
+      "kind": "leaf",
+      "name": "Codex CLI",
+      "driver": "devcontainer",
+      "source": {
+        "type": "npm-registry",
+        "package": "@openai/codex"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "CODEX_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:gemini-cli",
+      "kind": "leaf",
+      "name": "Gemini CLI",
+      "driver": "devcontainer",
+      "source": {
+        "type": "npm-registry",
+        "package": "@google/gemini-cli"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "GEMINI_CLI_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:glab",
+      "kind": "leaf",
+      "name": "GitLab CLI",
+      "driver": "devcontainer",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: glab is published on gitlab.com (gitlab-org/cli releases), and the source types the pins drivers read cover GitHub, npm, PyPI, the Go proxy and three image registries but no GitLab release API; a gitlab source type is the change that watches it"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "GLAB_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:amd64",
+          "arg": "GLAB_SHA256_AMD64",
+          "expect": 1,
+          "asset": "glab_{version}_linux_amd64.deb"
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "GLAB_SHA256_ARM64",
+          "expect": 1,
+          "asset": "glab_{version}_linux_arm64.deb"
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:btm",
+      "kind": "leaf",
+      "name": "bottom",
+      "driver": "devcontainer",
+      "source": {
+        "type": "github-release",
+        "repo": "ClementTsang/bottom",
+        "tagPrefix": ""
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "BTM_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:amd64",
+          "arg": "BTM_SHA256_AMD64",
+          "expect": 1,
+          "asset": "bottom_{version}-1_amd64.deb"
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "BTM_SHA256_ARM64",
+          "expect": 1,
+          "asset": "bottom_{version}-1_arm64.deb"
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:agent-browser",
+      "kind": "leaf",
+      "name": "agent-browser",
+      "driver": "devcontainer",
+      "source": {
+        "type": "npm-registry",
+        "package": "agent-browser"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "AGENT_BROWSER_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/docker/web/Dockerfile",
+          "role": "version",
+          "arg": "AGENT_BROWSER_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "devcontainer:openvscode",
+      "kind": "leaf",
+      "name": "OpenVSCode Server",
+      "driver": "devcontainer",
+      "source": {
+        "type": "github-release",
+        "repo": "gitpod-io/openvscode-server",
+        "tagPrefix": "openvscode-server-v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "OPENVSCODE_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:x64",
+          "arg": "OPENVSCODE_SHA256_X64",
+          "expect": 1,
+          "asset": "openvscode-server-v{version}-linux-x64.tar.gz"
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "OPENVSCODE_SHA256_ARM64",
+          "expect": 1,
+          "asset": "openvscode-server-v{version}-linux-arm64.tar.gz"
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/start-vscode.sh",
+          "role": "version",
+          "match": "^DEFAULT_VERSION=\"(?<value>[^\"]+)\"",
+          "label": ".devcontainer/start-vscode.sh DEFAULT_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:go",
+      "kind": "leaf",
+      "name": "Go toolchain",
+      "driver": "toolchain",
+      "source": {
+        "type": "go-dl"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync",
+        "check:ci-go-module-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "GO_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "GO_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:amd64",
+          "arg": "GO_SHA256_AMD64",
+          "asset": "go{version}.linux-amd64.tar.gz",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "sha256:arm64",
+          "arg": "GO_SHA256_ARM64",
+          "asset": "go{version}.linux-arm64.tar.gz",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "go.mod",
+          "role": "version",
+          "match": "^go (?<value>\\S+)$",
+          "label": "private/renet/go.mod go directive",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/scripts/private/license-mint/go.mod",
+          "role": "version",
+          "match": "^go (?<value>\\S+)$",
+          "label": ".ci/scripts/private/license-mint/go.mod go directive",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": [
+        {
+          "re": "(?<![\\w.])(?:go ?|GO_VERSION=)?(?<value>1\\.\\d+\\.\\d+)(?![\\w.])"
+        }
+      ]
+    },
+    {
+      "id": "toolchain:npm",
+      "kind": "leaf",
+      "name": "npm",
+      "driver": "toolchain",
+      "source": {
+        "type": "npm-registry",
+        "package": "npm"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync",
+        "check:ci-lockfile"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "NPM_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "NPM_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "workers/proxy/Dockerfile",
+          "role": "version",
+          "arg": "NPM_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": "private/account",
+          "file": "Dockerfile",
+          "role": "version",
+          "arg": "NPM_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:node",
+      "kind": "leaf",
+      "name": "Node.js major",
+      "driver": "toolchain",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: NODE_VERSION is the Node major line CI installs (24, operator ruling 2026-10-01), a line chosen by the operator with NODE_VERSION_MIN and the engines fields, and never a release-age bump; setup-node resolves the newest patch of that line on every run"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "NODE_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "arg": "NODE_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:ruff",
+      "kind": "leaf",
+      "name": "ruff",
+      "driver": "toolchain",
+      "source": {
+        "type": "pypi",
+        "package": "ruff"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "RUFF_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:mypy",
+      "kind": "leaf",
+      "name": "mypy",
+      "driver": "toolchain",
+      "source": {
+        "type": "pypi",
+        "package": "mypy"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "MYPY_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:pyyaml",
+      "kind": "leaf",
+      "name": "PyYAML",
+      "driver": "toolchain",
+      "source": {
+        "type": "pypi",
+        "package": "PyYAML"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "PYYAML_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:pytest",
+      "kind": "leaf",
+      "name": "pytest",
+      "driver": "toolchain",
+      "source": {
+        "type": "pypi",
+        "package": "pytest"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "PYTEST_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:pytest-xdist",
+      "kind": "leaf",
+      "name": "pytest-xdist",
+      "driver": "toolchain",
+      "source": {
+        "type": "pypi",
+        "package": "pytest-xdist"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "PYTEST_XDIST_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:uv",
+      "kind": "leaf",
+      "name": "uv",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "astral-sh/uv",
+        "tagPrefix": ""
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "UV_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-x86-64",
+          "env": "UV_SHA256_LINUX_X86_64",
+          "asset": "uv-x86_64-unknown-linux-gnu.tar.gz",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-aarch64",
+          "env": "UV_SHA256_LINUX_AARCH64",
+          "asset": "uv-aarch64-unknown-linux-gnu.tar.gz",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:darwin-x86-64",
+          "env": "UV_SHA256_DARWIN_X86_64",
+          "asset": "uv-x86_64-apple-darwin.tar.gz",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:darwin-aarch64",
+          "env": "UV_SHA256_DARWIN_AARCH64",
+          "asset": "uv-aarch64-apple-darwin.tar.gz",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:shfmt",
+      "kind": "leaf",
+      "name": "shfmt",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "mvdan/sh",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "SHFMT_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:linux-amd64",
+          "match": "^readonly SHFMT_SHA256_LINUX_AMD64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHFMT_SHA256_LINUX_AMD64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:linux-arm64",
+          "match": "^readonly SHFMT_SHA256_LINUX_ARM64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHFMT_SHA256_LINUX_ARM64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:darwin-amd64",
+          "match": "^readonly SHFMT_SHA256_DARWIN_AMD64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHFMT_SHA256_DARWIN_AMD64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:darwin-arm64",
+          "match": "^readonly SHFMT_SHA256_DARWIN_ARM64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHFMT_SHA256_DARWIN_ARM64",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:shellcheck",
+      "kind": "leaf",
+      "name": "ShellCheck",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "koalaman/shellcheck",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "SHELLCHECK_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:linux-aarch64",
+          "match": "^readonly SHELLCHECK_SHA256_LINUX_AARCH64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHELLCHECK_SHA256_LINUX_AARCH64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:linux-x86-64",
+          "match": "^readonly SHELLCHECK_SHA256_LINUX_X86_64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHELLCHECK_SHA256_LINUX_X86_64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:darwin-x86-64",
+          "match": "^readonly SHELLCHECK_SHA256_DARWIN_X86_64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHELLCHECK_SHA256_DARWIN_X86_64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:darwin-aarch64",
+          "match": "^readonly SHELLCHECK_SHA256_DARWIN_AARCH64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh SHELLCHECK_SHA256_DARWIN_AARCH64",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:actionlint",
+      "kind": "leaf",
+      "name": "actionlint",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "rhysd/actionlint",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "ACTIONLINT_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:linux-amd64",
+          "match": "^readonly ACTIONLINT_SHA256_LINUX_AMD64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh ACTIONLINT_SHA256_LINUX_AMD64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:linux-arm64",
+          "match": "^readonly ACTIONLINT_SHA256_LINUX_ARM64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh ACTIONLINT_SHA256_LINUX_ARM64",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:nfpm",
+      "kind": "leaf",
+      "name": "nfpm",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "goreleaser/nfpm",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "version",
+          "match": "^readonly NFPM_VERSION=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh NFPM_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "sha256:linux-x86-64",
+          "match": "^readonly NFPM_SHA256_LINUX_X86_64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh NFPM_SHA256_LINUX_X86_64",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "toolchain:wrangler",
+      "kind": "leaf",
+      "name": "wrangler (global install in CD)",
+      "driver": "toolchain",
+      "source": {
+        "type": "npm-registry",
+        "package": "wrangler"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "version",
+          "match": "^readonly WRANGLER_VERSION=\"(?<value>[^\"]+)\"",
+          "label": ".ci/config/constants.sh WRANGLER_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "breakpoint:cloudflared",
+      "kind": "leaf",
+      "name": "cloudflared",
+      "driver": "breakpoint",
+      "source": {
+        "type": "github-release",
+        "repo": "cloudflare/cloudflared",
+        "tagPrefix": ""
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-breakpoint-drift"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "version",
+          "match": "^readonly BREAKPOINT_CLOUDFLARED_VERSION=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_CLOUDFLARED_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "sha256:x64",
+          "match": "^readonly BREAKPOINT_CLOUDFLARED_SHA256_X64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_CLOUDFLARED_SHA256_X64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "sha256:arm64",
+          "match": "^readonly BREAKPOINT_CLOUDFLARED_SHA256_ARM64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_CLOUDFLARED_SHA256_ARM64",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "breakpoint:tmate",
+      "kind": "leaf",
+      "name": "tmate",
+      "driver": "breakpoint",
+      "source": {
+        "type": "github-release",
+        "repo": "tmate-io/tmate",
+        "tagPrefix": ""
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-breakpoint-drift"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "version",
+          "match": "^readonly BREAKPOINT_TMATE_VERSION=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_TMATE_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "sha256:x64",
+          "match": "^readonly BREAKPOINT_TMATE_SHA256_X64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_TMATE_SHA256_X64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "sha256:arm64",
+          "match": "^readonly BREAKPOINT_TMATE_SHA256_ARM64=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_TMATE_SHA256_ARM64",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "breakpoint:caddy",
+      "kind": "leaf",
+      "name": "caddy",
+      "driver": "breakpoint",
+      "source": {
+        "type": "dockerhub",
+        "image": "caddy"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-breakpoint-drift"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "version",
+          "match": "^readonly BREAKPOINT_CADDY_VERSION=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_CADDY_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/breakpoint/versions.sh",
+          "role": "digest",
+          "match": "^readonly BREAKPOINT_CADDY_DIGEST=\"(?<value>[^\"]+)\"",
+          "label": ".ci/breakpoint/versions.sh BREAKPOINT_CADDY_DIGEST",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:ci-node",
+      "kind": "leaf",
+      "name": "node image for the CI render and web containers",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/docker/render/Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>node:\\S+)$",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/docker/web/Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>node:\\S+)$",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:cuda",
+      "kind": "leaf",
+      "name": "CUDA runtime image for the TTS container",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "nvidia/cuda"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/media/tts/Dockerfile",
+          "role": "version",
+          "match": "^ARG CUDA_TAG=(?<value>\\S+)$",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "image:devcontainer-base",
+      "kind": "leaf",
+      "name": "devcontainer base image",
+      "driver": "docker",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: the base is served by mcr.microsoft.com, whose tag list no pins source type reads (dockerhub and quay-tags cover the two registries the other images use); a series move of this image is a devcontainer rebuild the operator schedules"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/Dockerfile",
+          "role": "version",
+          "match": "^FROM (?<value>mcr\\.microsoft\\.com/\\S+)$",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "ceph-image",
+      "kind": "leaf",
+      "name": "Ceph container image",
+      "driver": "ceph-image",
+      "source": {
+        "type": "quay-tags",
+        "image": "quay.io/ceph/ceph"
+      },
+      "safety": {
+        "mode": "same-host-version",
+        "major": "refuse"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-ceph-image-pin"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": ".ceph-image-pin",
+          "role": "image",
+          "match": "^image=(?<value>\\S+)$",
+          "label": ".ceph-image-pin image=",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/ceph/provisioner.go",
+          "role": "image",
+          "match": "^const CephImagePin = \"(?<value>[^\"]+)\"",
+          "label": "pkg/infra/ceph/provisioner.go CephImagePin",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": ".ceph-image-pin",
+          "role": "host-version",
+          "match": "^host-version=(?<value>\\S+)$",
+          "label": ".ceph-image-pin host-version=",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": ".ceph-image-pin",
+          "role": "review",
+          "match": "^review=(?<value>\\S+)$",
+          "label": ".ceph-image-pin review=",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "os:ubuntu-ceph",
+      "kind": "leaf",
+      "name": "Ceph host packages on Ubuntu noble",
+      "driver": "os-ceph-host",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: this host's ceph-common moves with host-version, which is the Ceph image pin's decision (a host-version move is an operator decision, PLAN-pins-command survey item 6); the distro repository is read by the pkg matrix legs, not by a pins source"
+      },
+      "safety": {
+        "mode": "same-host-version",
+        "major": "refuse"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-ceph-image-pin"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/cephpkg/cephpkg.go",
+          "role": "version",
+          "match": "^\\t\"ubuntu\":\\s+\"(?<value>[^\"]+)\",$",
+          "label": "pkg/infra/cephpkg/cephpkg.go hostPins[\"ubuntu\"]",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": ".ceph-image-pin",
+          "role": "version",
+          "match": "^host\\.ubuntu=(?<value>\\S+)$",
+          "label": ".ceph-image-pin host.ubuntu",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/ceph_install_profile_test.go",
+          "role": "version",
+          "match": "install ceph-common=(?<value>\\d[^\"\\s]*ubuntu[^\"\\s]*)\"",
+          "label": "cmd/renet/ceph_install_profile_test.go",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/ceph_install_bounded_test.go",
+          "role": "version",
+          "match": "install ceph-common=(?<value>\\d[^\"\\s]*ubuntu[^\"\\s]*?)\\\\n",
+          "label": "cmd/renet/ceph_install_bounded_test.go",
+          "expect": 2
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "os:fedora-43-ceph",
+      "kind": "leaf",
+      "name": "Ceph host packages on Fedora 43",
+      "driver": "os-ceph-host",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: this host's ceph-common moves with host-version, which is the Ceph image pin's decision (a host-version move is an operator decision, PLAN-pins-command survey item 6); the distro repository is read by the pkg matrix legs, not by a pins source"
+      },
+      "safety": {
+        "mode": "same-host-version",
+        "major": "refuse"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-ceph-image-pin"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/cephpkg/cephpkg.go",
+          "role": "version",
+          "match": "^\\t\"fedora-43\":\\s+\"(?<value>[^\"]+)\",$",
+          "label": "pkg/infra/cephpkg/cephpkg.go hostPins[\"fedora-43\"]",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": ".ceph-image-pin",
+          "role": "version",
+          "match": "^host\\.fedora-43=(?<value>\\S+)$",
+          "label": ".ceph-image-pin host.fedora-43",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/ceph_install_profile_test.go",
+          "role": "version",
+          "match": "ceph-common-(?<value>\\d[\\w.:~+-]*\\.fc43)",
+          "label": "cmd/renet/ceph_install_profile_test.go",
+          "expect": 2
+        },
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/ceph_install_profile_test.go",
+          "role": "version",
+          "match": "cephadm-(?<value>\\d[\\w.:~+-]*\\.fc43)",
+          "label": "cmd/renet/ceph_install_profile_test.go cephadm",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "os:el10-ceph",
+      "kind": "leaf",
+      "name": "Ceph host packages on EL10 (CentOS Storage SIG)",
+      "driver": "os-ceph-host",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: this host's ceph-common moves with host-version, which is the Ceph image pin's decision (a host-version move is an operator decision, PLAN-pins-command survey item 6); the distro repository is read by the pkg matrix legs, not by a pins source"
+      },
+      "safety": {
+        "mode": "same-host-version",
+        "major": "refuse"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-ceph-image-pin"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/cephpkg/cephpkg.go",
+          "role": "version",
+          "match": "^\\t\"el10\":\\s+\"(?<value>[^\"]+)\",$",
+          "label": "pkg/infra/cephpkg/cephpkg.go hostPins[\"el10\"]",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": ".ceph-image-pin",
+          "role": "version",
+          "match": "^host\\.el10=(?<value>\\S+)$",
+          "label": ".ceph-image-pin host.el10",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "os:opensuse-16.0-ceph",
+      "kind": "leaf",
+      "name": "Ceph host packages on openSUSE Leap 16.0 (OBS)",
+      "driver": "os-ceph-host",
+      "source": {
+        "type": "obs-repomd"
+      },
+      "safety": {
+        "mode": "mirror-tag",
+        "major": "refuse"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-ceph-image-pin"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/cephpkg/cephpkg.go",
+          "role": "version",
+          "match": "^\\t\"opensuse-16\\.0\":\\s+\"(?<value>[^\"]+)\",$",
+          "label": "pkg/infra/cephpkg/cephpkg.go hostPins[\"opensuse-16.0\"]",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": ".ceph-image-pin",
+          "role": "version",
+          "match": "^host\\.opensuse-16\\.0=(?<value>\\S+)$",
+          "label": ".ceph-image-pin host.opensuse-16.0",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/ceph_install_profile_test.go",
+          "role": "version",
+          "match": "zypper -n install --no-recommends ceph-common=(?<value>[^\"]+)\"",
+          "label": "cmd/renet/ceph_install_profile_test.go",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": [
+        {
+          "re": "(?<value>\\d+\\.\\d+\\.\\d+-lp160(?:\\.\\d+)+)"
+        }
+      ]
+    },
+    {
+      "id": "real-provider:bitwarden",
+      "kind": "leaf",
+      "name": "Bitwarden browser extension (real-provider spec)",
+      "driver": "real-provider",
+      "source": {
+        "type": "github-release",
+        "repo": "bitwarden/clients",
+        "tagPrefix": "browser-v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-real-provider-pins"
+      ],
+      "sites": [
+        {
+          "repo": "private/account",
+          "file": "e2e/real-provider.lock.json",
+          "role": "version",
+          "json": "/bitwarden/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/account",
+          "file": "e2e/real-provider.lock.json",
+          "role": "sha256",
+          "json": "/bitwarden/sha256",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "real-provider:vaultwarden",
+      "kind": "leaf",
+      "name": "vaultwarden (real-provider spec)",
+      "driver": "real-provider",
+      "source": {
+        "type": "github-release",
+        "repo": "dani-garcia/vaultwarden",
+        "tagPrefix": ""
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [],
+      "gates": [
+        "check:ci-real-provider-pins"
+      ],
+      "sites": [
+        {
+          "repo": "private/account",
+          "file": "e2e/real-provider.lock.json",
+          "role": "version",
+          "json": "/vaultwarden/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/account",
+          "file": "e2e/real-provider.lock.json",
+          "role": "digest",
+          "json": "/vaultwarden/indexDigest",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    }
+  ],
+  "ignores": [
+    {
+      "scanner": "dockerfile-arg",
+      "repo": ".",
+      "file": "Dockerfile",
+      "match": "^ARG VITE_APP_VERSION=",
+      "reason": "BLOCKER: VITE_APP_VERSION is the console's own release version, injected at build time from the git tag (docs/agent-reference/versioning.md); `latest` is its unset default, not a pinned third-party version"
+    },
+    {
+      "scanner": "from-image",
+      "repo": ".",
+      "file": ".devcontainer/Dockerfile.uid",
+      "match": "^ARG BASE=ghcr\\.io/rediacc/devcontainer:",
+      "reason": "BLOCKER: the base is the repository's own devcontainer image, built from .devcontainer/Dockerfile by ci-build-docker; its third-party pins are the devcontainer entries, and this tag only names the build output"
+    },
+    {
+      "scanner": "pin-lock-json",
+      "repo": ".",
+      "file": "scripts/ci-runner/gates.lock.json",
+      "reason": "BLOCKER: gates.lock.json is the generated gate schedule (npm run gen:gates-lock), named .lock.json for the lock it takes on gate order; it carries no upstream version"
+    },
+    {
+      "scanner": "literal",
+      "repo": ".",
+      "file": ".ci/rediacc_ci/tests/gates/test_gate_embed_asset_freshness.py",
+      "reason": "BLOCKER: the gate test builds a fixture tree whose versions are chosen inputs to the upgrade path under test, independent of the real pin; moving them with a bump would change what the test exercises"
+    },
+    {
+      "scanner": "literal",
+      "repo": ".",
+      "file": "docs/design/spec/09-csi-driver.md",
+      "match": "verified current at research time|VolumeGroupSnapshot",
+      "reason": "BLOCKER: these spec 09 lines record what the research found current on its date (the open-questions list); the unit table above them is the live copy and is a site"
+    },
+    {
+      "scanner": "literal",
+      "repo": "private/renet",
+      "file": "Dockerfile",
+      "match": "both declare `go 1\\.26\\.0`",
+      "reason": "BLOCKER: the comment records the go directive measured in that release when the csi-builder base was chosen; a bump re-measures it rather than renaming the version"
+    },
+    {
+      "scanner": "literal",
+      "repo": "private/renet",
+      "file": "pkg/kube/csidriver/crds.go",
+      "match": "client/config/crd",
+      "reason": "BLOCKER: names the external-snapshotter release the embedded VolumeSnapshot CRDs were vendored from; it moves only when the CRDs are re-vendored from the new tag, which a version bump alone does not do (PLAN-pins-command survey item 4)"
+    }
+  ]
+}

@@ -63,6 +63,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
+from rediacc_ci.core import pins
 from rediacc_ci.infra import obs_mirror
 from rediacc_ci.infra.vm_bake_image import BakeImageError
 
@@ -366,12 +367,9 @@ def check_drift(
 
 # The only event on which check_upstream can fail (plan section 5, Q5: red on the nightly only).
 UPSTREAM_EVENT = "schedule"
-# The three places a Leap pin bump touches, all in the renet submodule.
-PIN_SITES = (
-    'pkg/infra/cephpkg/cephpkg.go hostPins["opensuse-16.0"]',
-    ".ceph-image-pin host.opensuse-16.0",
-    "cmd/renet/ceph_install_profile_test.go",
-)
+# The places a Leap pin bump touches, all in the renet submodule: the os:opensuse-16.0-ceph entry of
+# .ci/config/pins.json, whose site count check:ci-pin-registry holds to the tree.
+PIN_SITES = pins.site_labels("os:opensuse-16.0-ceph")
 
 
 def obs_upstream_evr() -> str:

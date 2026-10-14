@@ -144,6 +144,22 @@
         {
           "id": "check:ci-generated-artifacts",
           "reason": "The **/*.md the derivation cites (in check_generated_artifacts.py's selftest) is a control proving `**/` spans zero directories; the real run reads .ci/config/generated-artifacts.json, whose only agent/ inputs are its two agent/plans/** entries, so no file under agent/reviews/ is read and none changes its verdict."
+        },
+        {
+          "id": "check:ci-devcontainer-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-embed-asset-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-pin-registry",
+          "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
+        },
+        {
+          "id": "check:ci-suppression-liveness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     },
@@ -245,6 +261,22 @@
         {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
+        },
+        {
+          "id": "check:ci-devcontainer-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-embed-asset-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-pin-registry",
+          "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
+        },
+        {
+          "id": "check:ci-suppression-liveness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     },
@@ -333,6 +365,22 @@
         {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
+        },
+        {
+          "id": "check:ci-devcontainer-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-embed-asset-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-pin-registry",
+          "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
+        },
+        {
+          "id": "check:ci-suppression-liveness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     },
@@ -423,6 +471,24 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:732 (root) agent/"
+        }
+      ],
+      "notReaders": [
+        {
+          "id": "check:ci-devcontainer-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-embed-asset-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-pin-registry",
+          "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
+        },
+        {
+          "id": "check:ci-suppression-liveness",
+          "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     }
