@@ -89,7 +89,7 @@ def _stub_dir(tmp_path, stubs):
 # WHY THEY EXIST, and the control that demanded them. Roughly half these guards read local git state -- a branch name, whether the branch is ahead of its remote, whether a worktree is dirty. Run against THIS checkout they all take one branch of their logic, whichever branch this worktree happens to be in, and `test_every_guard_discriminates` then reports the guard as answering identically on every case. That is not a nuisance: it is the control saying the comparison could not have failed. `block_merge_with_unpushed` was the first port to trip it, on the first run, because no `origin/<branch>` ref exists in a feature worktree and the guard fails open on every input.
 #
 # So a module names the git worlds its twin distinguishes, the harness builds each one ONCE per session, and both sides are pointed at it through CLAUDE_PROJECT_DIR. The repositories are built with `git init`, never cloned and never fetched: no network, and nothing outside the temporary directory is read or written.
-FIXTURE_TOKEN = "{FIXTURE:%s}"  # noqa: S105
+FIXTURE_TOKEN = "{FIXTURE:%s}"
 
 
 # A HOME no host owns. FOUND 2026-09-30 (#0c7d2263's sweep of the world builders): `GIT_CONFIG_GLOBAL=/dev/null` stops git reading `~/.gitconfig`, but NOT `$XDG_CONFIG_HOME/git/ignore` and `.../attributes`, which git reads by default whatever the global config says, so a `git add -A` in a fixture honoured this machine's personal ignore list. And an inherited `GIT_DIR`, `GIT_INDEX_FILE` or `GIT_WORK_TREE` (a pytest run from inside a git hook sets them) would point
@@ -568,7 +568,7 @@ def edge_cases(module):
         "__builtins__": dict(vars(builtins), __import__=_frozen_import),
     }
     with _pinned_tz(EDGE_CLOCK_TZ):
-        exec(compile(source, module.__file__, "exec"), namespace)  # noqa: S102
+        exec(compile(source, module.__file__, "exec"), namespace)
     return namespace.get("EDGE_CASES", [])
 
 
@@ -1161,7 +1161,7 @@ def assert_defect_is_caught(tmp_path, fixture_work, stem):
         "__name__": "broken_%s" % stem,
         "__file__": str(broken_path),
     }
-    exec(compile(broken_src, str(broken_path), "exec"), namespace)  # noqa: S102
+    exec(compile(broken_src, str(broken_path), "exec"), namespace)
     # The broken copy reads the SAME frozen clock as the good one, or a clock-reading port would "change its answer" on today's date rather than on its planted defect, and this control would pass for the wrong reason.
     if stem in CLOCK_READERS:
         namespace["datetime"] = FROZEN_DATETIME

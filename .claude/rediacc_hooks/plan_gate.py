@@ -46,7 +46,7 @@ def queue(root: str) -> list[str]:
     try:
         text = (pathlib.Path(root) / QUEUE_REL).read_text(encoding="utf-8")
         syspath.on_sys_path(STOP_DIR)
-        import wl_planqueue  # noqa: PLC0415 -- the one reader of the queue's format
+        import wl_planqueue
     except (OSError, ImportError):
         return []
     return wl_planqueue.ordered(text)
@@ -163,7 +163,7 @@ def _read(root: str, rel: str, rev: str) -> str | None:
 
 def _planqueue():
     syspath.on_sys_path(STOP_DIR)
-    import wl_planqueue  # noqa: PLC0415 -- the one reader of the queue's format and its settings block
+    import wl_planqueue
 
     return wl_planqueue
 
@@ -187,7 +187,7 @@ def settings_at(root: str, rev: str = ""):
 
 def _default_settings():
     """A stand-in carrying the fail-safe values when wl_planqueue cannot import."""
-    import types  # noqa: PLC0415
+    import types
 
     return types.SimpleNamespace(
         effort="high",
@@ -237,11 +237,11 @@ def open_boxes(root: str, rel: str, rev: str = "") -> tuple[int, int, str]:
         return 0, 0, "`%s` does not exist" % where
     try:
         syspath.on_sys_path(STOP_DIR)
-        import wl_planfile  # noqa: PLC0415 -- loaded only for a merge decision
+        import wl_planfile
 
         parsed_open, parsed_done = wl_planfile.plan_boxes(text)
         raw_open, raw_done = wl_planfile.raw_box_counts(text)
-    except Exception as exc:  # noqa: BLE001 -- unverifiable is refused, never allowed
+    except Exception as exc:
         return 0, 0, "the plan parser could not run (%s: %s)" % (type(exc).__name__, exc)
     opened = max(len(parsed_open), raw_open)
     done = max(len(parsed_done), raw_done)
@@ -252,7 +252,7 @@ def open_boxes(root: str, rel: str, rev: str = "") -> tuple[int, int, str]:
 
 def _plandeps():
     syspath.on_sys_path(STOP_DIR)
-    import wl_plandeps  # noqa: PLC0415 -- the one home of the Depends-On grammar and its graph
+    import wl_plandeps
 
     return wl_plandeps
 
@@ -282,7 +282,7 @@ def pr_plan_set(root: str, body: str | None, rev: str = "") -> tuple[tuple[str, 
     try:
         deps = _plandeps()
         graph = deps.Graph.load(root)
-    except Exception as exc:  # noqa: BLE001 -- a graph that cannot load hides every prerequisite
+    except Exception as exc:
         problems.append(
             "the plan dependency graph could not load (%s: %s)" % (type(exc).__name__, exc)
         )
@@ -380,8 +380,8 @@ def next_turbo(
         return []
     try:
         pq = _planqueue()
-        import wl_planconc  # noqa: PLC0415 -- the concurrency rules the spawn guard applies
-        import wl_planenforce  # noqa: PLC0415 -- the held rule P-A1 shares
+        import wl_planconc
+        import wl_planenforce
     except ImportError:
         return []
     solos = pq.solo_plans(text)
@@ -406,7 +406,7 @@ def next_turbo(
             verdict = wl_planconc.spawn_verdict(
                 {_base(rel)}, busy, lambda b: wl_planconc.plan_x(root, b)
             )
-        except Exception:  # noqa: BLE001 -- a verdict that cannot be reached is no pick
+        except Exception:
             return False
         return verdict.allow
 
@@ -447,14 +447,14 @@ TURBO_NAMED_SUFFIX = ".turbo-named.json"
 def _named_path(root: str) -> pathlib.Path:
     """The record of the plans the Stop hook named under turbo, beside the worklist store (`wl_core.worklist_for`), so it is per checkout and never committed."""
     syspath.on_sys_path(STOP_DIR)
-    import wl_core  # noqa: PLC0415 -- the store's own location rule
+    import wl_core
 
     return wl_core.worklist_for(root).with_suffix(TURBO_NAMED_SUFFIX)
 
 
 def record_turbo_named(root: str, branch: str, plans) -> None:
     """Add `plans` to the turbo names recorded for `branch` (D5: a plan joins the PR when the hook names it; `refresh_pr_body` appends the record to the body's `Plan:` line on the next push). Written atomically; a failure is silent, since the hook names the plan again on the next stop."""
-    import json  # noqa: PLC0415
+    import json
 
     if not branch or not plans:
         return
@@ -474,17 +474,17 @@ def record_turbo_named(root: str, branch: str, plans) -> None:
         tmp = path.with_suffix(path.suffix + ".tmp")
         tmp.write_text(json.dumps(doc, sort_keys=True) + "\n", encoding="utf-8")
         os.replace(tmp, path)
-    except Exception:  # noqa: BLE001 -- a record that cannot be written is named again next stop
+    except Exception:
         pass
 
 
 def turbo_named(root: str, branch: str) -> list[str]:
     """The plans the Stop hook named under turbo for `branch`, in naming order; [] when none or unreadable."""
-    import json  # noqa: PLC0415
+    import json
 
     try:
         doc = json.loads(_named_path(root).read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001 -- nothing recorded reads as nothing named
+    except Exception:
         return []
     got = doc.get(branch) if isinstance(doc, dict) else None
     return [p for p in got or [] if isinstance(p, str) and PLAN_PATH.match(p)]

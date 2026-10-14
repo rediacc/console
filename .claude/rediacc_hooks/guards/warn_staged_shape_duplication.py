@@ -387,7 +387,7 @@ def run(ev):
     deadline = time.monotonic() + _deadline_s()
     try:
         return _probe_commit(ev, deadline)
-    except Exception as exc:  # noqa: BLE001 -- an advisory may never fail a commit
+    except Exception as exc:
         _speak(ev, CANNOT % ("the guard raised %s: %s" % (type(exc).__name__, exc)))
         return hookio.ALLOW
 

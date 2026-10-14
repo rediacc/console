@@ -166,7 +166,7 @@ def _declared_defect():
     namespace: dict[str, object] = {}
     for line in GUARD.read_text(encoding="utf-8").split("\n"):
         if line.startswith("DEFECT = "):
-            exec(line, namespace)  # noqa: S102 -- the guard's own one-line literal
+            exec(line, namespace)
     return namespace["DEFECT"]
 
 

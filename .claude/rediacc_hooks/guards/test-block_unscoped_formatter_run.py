@@ -176,7 +176,7 @@ mutant = head + "\n" + tail.replace(old, new)
 if mutant == source:
     fails += 1
     print("*** FAIL *** planting the DEFECT changed nothing, so the mutation below proves nothing")
-exec(compile(mutant, guard.__file__, "exec"), namespace)  # noqa: S102
+exec(compile(mutant, guard.__file__, "exec"), namespace)
 flipped = still = 0
 for _name, cmd, want in CASES:
     if want is None:

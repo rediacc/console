@@ -764,44 +764,27 @@
    "noqa PLC0415": 2
   },
   ".claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py": {
-   "noqa PLC0415": 1,
-   "noqa S102": 1
+   "noqa PLC0415": 1
   },
   ".claude/rediacc_hooks/guards/test-block_raw_ci_read.py": {
-   "noqa PLC0415": 1,
-   "noqa S102": 1
+   "noqa PLC0415": 1
   },
   ".claude/rediacc_hooks/guards/test-block_review_file_edit.py": {
-   "noqa PLC0415": 1,
-   "noqa S102": 1
+   "noqa PLC0415": 1
   },
   ".claude/rediacc_hooks/guards/test-block_second_branch.py": {
-   "noqa DTZ005": 1,
-   "noqa S102": 1
+   "noqa DTZ005": 1
   },
   ".claude/rediacc_hooks/guards/test-block_unscoped_formatter_run.py": {
    "noqa E402": 2,
-   "noqa S102": 1,
    "type-ignore arg-type": 1,
    "type-ignore union-attr": 1
   },
-  ".claude/rediacc_hooks/guards/test-block_untagged_commit.py": {
-   "noqa S102": 1
-  },
   ".claude/rediacc_hooks/guards/test-block_unverified_push.py": {
-   "noqa S102": 1,
    "type-ignore index": 1
   },
-  ".claude/rediacc_hooks/guards/warn_staged_shape_duplication.py": {
-   "noqa BLE001": 1
-  },
   ".claude/rediacc_hooks/hookio.py": {
-   "noqa F401": 1,
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/plan_gate.py": {
-   "noqa BLE001": 5,
-   "noqa PLC0415": 10
+   "noqa F401": 1
   },
   ".claude/rediacc_hooks/tests/regolden.py": {
    "noqa E402": 5
@@ -819,22 +802,13 @@
   ".claude/rediacc_hooks/tests/test_guards_differential.py": {
    "noqa A002": 1,
    "noqa B010": 6,
-   "noqa PLC0415": 1,
-   "noqa S102": 2,
-   "noqa S105": 1
+   "noqa PLC0415": 1
   },
   ".claude/rediacc_hooks/tests/test_plan_gate.py": {
    "noqa PLC0415": 4
   },
   ".claude/rediacc_hooks/tests/test_post_bash_differential.py": {
    "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/tests/test_review_commit_hook.py": {
-   "noqa S102": 1
-  },
-  ".claude/rediacc_hooks/tests/test_shellscan_differential.py": {
-   "noqa S102": 1,
-   "noqa S105": 1
   },
   ".claude/rediacc_hooks/tests/test_wl_advisories_rotation.py": {
    "noqa F401": 1,
