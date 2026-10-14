@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T04:05:53.720Z",
+  "generatedAt": "2026-10-14T04:17:21.722Z",
   "legs": [
     {
       "index": 1,
@@ -448,6 +448,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_scratch.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_turbo_ci_red.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_wake.py"
       ]
     },

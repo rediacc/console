@@ -9,6 +9,8 @@ THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list ra
 
 FOCUS governs over CAP_WAIT, and both over PR_LOOP: each is a narrower declaration. FOCUS is the operator's explicit one, and its judge skip already covers the cap wait's.
 
+A TURBO BATCH BUILDING LOCALLY narrows PR_LOOP by one check, the red CI (operator ruling 2026-10-13). That set and its predicate live in wl_checks beside the turbo arm (`TURBO_BUILD_PARKS`, `turbo_build_parks`), as `TURBO_KEEPS` does, because the predicate reads the queue settings and the plan boxes and this module reads nothing. FOCUS governs there too: an active focus parks nothing of it.
+
 SEALED. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`: it reads no environment variable and imports only the standard library, and `FOCUS_BATCH_MIN` / `FOCUS_MAX_HOURS` are pinned as literals. A knob that retuned a keep-list would be exactly the escape hatch the roster rules out.
 
 EACH KEY LITERAL APPEARS EXACTLY ONCE IN THIS FILE, so every mutation control that removes one line (`mutated_hook` asserts the count is 1) is unambiguous, and the producer scan in test_wl_cap_wait.py c9 / test_wl_focus.py f13 stays meaningful. `pr-finish` is kept by several profiles in different tiers, so it is named once through `_PR_FINISH`; `defer-expired` likewise through `_DEFER_EXPIRED`.

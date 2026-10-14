@@ -1157,7 +1157,7 @@ def ci_queue_state(root, worklist, session_id):
     return state, detail
 
 
-def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=False):
+def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=False, hold=False):
     """(state, detail) -- is the open PR in trouble nobody is on?
 
     state: unset | multi-session | no-pr | ok | pending | cancelled | watched | soft |
@@ -1185,6 +1185,8 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     A NEW failure set (new head SHA, or a different set of failing jobs) re-arms the budget: a new red is worth interrupting for exactly once more.
 
     FOCUS MODE ARMS IT (agent/plans/PLAN-stop-hook-focus-mode.md section 3): the caller passes the focus's `ref` and `owned=True`. `--focus` is the session declaring the PR its own, which is the one fact the multi-session skip below could not know, so that skip does not apply. Both exits above still do.
+
+    `hold` IS THE CALLER SAYING THIS STOP WILL NOT BLOCK ON THE RED (operator ruling 2026-10-13: a turbo batch building locally stands `ci-red` down, wl_checks.turbo_build_parks). A `trouble` verdict then leaves the block budget unspent and reports the count as it stands. Without that the stood-down stops would burn the CI_MAX_BLOCKS ceiling, and the red could never block once the batch completes. Acknowledgement and an already spent budget still read `downgraded`.
     """
     ref = ref or os.environ.get("WORKLIST_PUBLISH_REF", "")
     if not ref:
@@ -1276,6 +1278,8 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     }
     if acked or blocks >= CI_MAX_BLOCKS:
         return "downgraded", detail
+    if hold:
+        return "trouble", detail
     # Not a cache (no TTL), but written atomically like one: a half-written marker would reset the block budget.
     wl_gh.cache_write(marker_p, {"sig": sig, "blocks": blocks + 1})
     detail["n"] = blocks + 1
@@ -1400,6 +1404,25 @@ def ci_rows_text(rows, _info):
             # WHY THIS RED IS NOT A CARRIED ONE, so a carry that stopped matching (a new key, a corrupt file) is named rather than inferred.
             out.append("        not carried: %s" % carry["why"])
     return "\n".join(out)
+
+
+def ci_rows_line(rows, cap=6):
+    """The failing jobs as ONE line, for a red that is reported and not blocked on: per job its name, conclusion, failing step, run id with attempt, and the job id `ci-trace.py --job <id> --errors` takes. At most `cap` jobs, then "+N more"."""
+    out = []
+    for r in rows[:cap]:
+        bits = ["%s %s" % (r["name"], r["conclusion"])]
+        if r.get("step"):
+            bits.append("failing step: %s" % r["step"])
+        if r.get("run"):
+            bits.append(
+                "run %s%s" % (r["run"], " attempt %s" % r["attempt"] if r.get("attempt") else "")
+            )
+        if r.get("job"):
+            bits.append("job %s" % r["job"])
+        out.append(", ".join(bits))
+    if len(rows) > cap:
+        out.append("+%d more" % (len(rows) - cap))
+    return "; ".join(out)
 
 
 def submodule_pointer_moves(root):

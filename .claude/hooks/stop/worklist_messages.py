@@ -255,6 +255,14 @@ time(s) for this failure set%s, so it will not block again for this set. It is
 still red and still yours to decide about:
 %s"""
 
+# ONE LINE, NOT A BLOCK (operator ruling 2026-10-13): a turbo batch is building locally under `turbo_push: batch-end`, so the red on the open PR is reported on every stop and holds none (wl_checks.turbo_build_parks). Args: PR, the failed job count, the jobs on one line (wl_ci.ci_rows_line), the batch plans still open.
+CI_NOTE_TURBO_HELD = (
+    "CI on PR #%s is red on %d job(s): %s. Stood down, not blocking: a turbo batch is building "
+    "locally (turbo_push: batch-end; still open: %s). It blocks again when every plan of the set "
+    "is finished, under --focus babysit|merge, with turbo off, or under turbo_push: pr. A fix may "
+    "go out now with TURBO_PUSH_REASON='red-fix: <why>'."
+)
+
 # ONE LINE, NOT A BLOCK (worklist #e3fca920): every failed job failed only on findings the PR carries on purpose, so there is nothing new to fix or watch. Args: PR, the carried keys, the carry file, the jobs, and a live-run suffix.
 CI_NOTE_CARRIED = "CI on PR #%s is red only on carried finding(s) %s; carried in %s (job(s): %s%s)."
 

@@ -2844,6 +2844,34 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
 TURBO_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
 # The turbo arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
 TURBO_KEEPS = frozenset({"turbo-next"})
+# The keys a turbo batch that is still building locally stands down (operator ruling 2026-10-13: turbo is for local implementation, so a red on the open PR does not hold a stop until the prompted plans are complete). Each is reported on every stop instead, and blocks again the moment `turbo_build_parks` is empty.
+TURBO_BUILD_PARKS = frozenset({"ci-red"})
+
+
+def _set_unreadable(state, root):
+    """True when the plan set proves nothing about open work: it is empty, or a plan's boxes cannot be read. `_set_finished` is False for both, which is right for a merge offer and wrong for a stand-down: an unknown set must not park a check."""
+    if not state.plans:
+        return True
+    plan_gate = wl_prscope._hooks_pkg()[0]
+    return any(plan_gate.open_boxes(root, rel)[2] for rel in state.plans)
+
+
+def turbo_build_parks(state, root, on_loop, focus):
+    """TURBO_BUILD_PARKS while a turbo batch is building locally, else the empty set (operator ruling 2026-10-13).
+
+    Building means: the loop governs, turbo is on, `turbo_push` is `batch-end`, and the batch is not complete. Complete is `live_batch_ready` over `_set_finished`, the predicate the pr-finish merge offer uses, so the red blocks again on the stop that would offer the merge. `turbo_push: pr` works its batch on the open PR, whose CI is then the batch's own verification, so nothing is parked there.
+
+    FOCUS GOVERNS: `--focus babysit|merge` declares the PR is being landed, so an active focus parks nothing and wl_standdown.FOCUS keeps `ci-red` as before.
+
+    AN UNKNOWN SET PARKS NOTHING (`_set_unreadable`): the stand-down needs a readable set with an open box, never the mere absence of a finished one.
+    """
+    if focus or not on_loop or state is None or not getattr(state, "turbo", False):
+        return frozenset()
+    if turbo_push_mode(state) != "batch-end":
+        return frozenset()
+    if live_batch_ready(state, _set_finished(state, root)) or _set_unreadable(state, root):
+        return frozenset()
+    return TURBO_BUILD_PARKS
 
 
 def turbo_next_text(state, root, writers):
@@ -4346,6 +4374,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
 
     ci_report = ""
+    # A TURBO BATCH BUILDING LOCALLY STANDS THE RED DOWN (operator ruling 2026-10-13), decided before the CI read so a stood-down stop does not spend the red's block budget (wl_ci.ci_trouble `hold`). A predicate that raises parks nothing: the red blocks as it did before the ruling.
+    _turbo_parks: frozenset = frozenset()
+    with contextlib.suppress(Exception):
+        _turbo_parks = turbo_build_parks(_loop, root, _on_loop, _focus)
+    _turbo_stood: set[str] = set()
     try:
         cistate, cidetail = wl_ci.ci_trouble(
             root,
@@ -4355,6 +4388,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             (last_msg or "") + "\n" + "\n".join(deferred),
             ref=_ci_ref,
             owned=_ci_owned,
+            hold="ci-red" in _turbo_parks,
         )
     except Exception as exc:  # noqa: BLE001 -- a broken CI check must SAY SO, not vanish
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
@@ -4392,7 +4426,16 @@ def run_stop(event, event_ok, worklist, hook_file):
         _histkind, _hist = wl_histfirst.apply_verdict(root, _rows, None)
         if _histkind == "fire":
             _txt = "%s\n\n%s" % (_txt, _hist)
-        if cistate == "trouble":
+        if cistate == "trouble" and "ci-red" in _turbo_parks:
+            # Reported, not blocked on: one line on every stop while the red stands (ci_report rides each block's extras and the allow queue at refresh_min=0), and the key joins this stop's stood-down set for the N_PR_SCOPE line.
+            _turbo_stood.add("ci-red")
+            ci_report = M.CI_NOTE_TURBO_HELD % (
+                _pr,
+                len(cidetail["hard"]),
+                wl_ci.ci_rows_line(cidetail["hard"]),
+                _open_in_set(_loop, root),
+            )
+        elif cistate == "trouble":
             vadd(
                 "ci-red",
                 True,
@@ -5328,7 +5371,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 return True
             return wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
 
-        _dropped = sorted({v[0] for v in violations if not _keeps(v)})
+        # `_turbo_stood` holds the keys a building turbo batch stood down before they became violations (TURBO_BUILD_PARKS); they are counted with the profile's own drops.
+        _dropped = sorted({v[0] for v in violations if not _keeps(v)} | _turbo_stood)
         violations = [v for v in violations if _keeps(v)]
         if _compaction_due:
             _cnote = M.N_FOCUS_COMPACTION if _focus else M.N_CAP_WAIT_COMPACTION
