@@ -1057,6 +1057,76 @@ def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
     block.done()
 
 
+# A SCRIPT THAT MENTIONS THE PHRASE IS NOT A SCRIPT THAT RUNS IT. `python3 test-block_x.py` was refused with the worktree-add message because the test file lists `"git worktree add /tmp/wt"` as a case (2026-10-15, worklist #8c8529b1); the same path stored in a variable passed. A file is judged by the calls it makes, a command line by its text.
+FILE_MENTIONS = {
+    "table.py": 'CASES = [("plain", "git worktree add /tmp/wt main", True)]\nprint(len(CASES))\n',
+    "argv_table.py": 'CASES = [["git", "worktree", "add", "x"], ("run", "./run.sh worktree create x")]\n',
+    "check.py": 'def check(c):\n    return len(c)\ncheck("git worktree add /tmp/x")\n',
+    "port_table.py": (
+        "from rediacc_ci.dev import worktree\nCASES = [['create', 'x']]\n"
+        "print(worktree.__doc__, CASES)\n"
+    ),
+    "table.js": 'const cases = ["git worktree add /tmp/x", ["git", "worktree", "add"]];\nconsole.log(cases);\n',
+    "table.pl": 'my @cases = ("git worktree add /tmp/x");\nprint scalar(@cases);\n',
+}
+FILE_RUNS = {
+    "system.py": "import os\nos.system('git worktree add /tmp/x')\n",
+    "argv.py": "import subprocess\nsubprocess.run(['git', 'worktree', 'add', '/tmp/x'])\n",
+    "named.py": "import os\ncmd = 'git worktree add /tmp/x'\nos.system(cmd)\n",
+    "named_argv.py": "import subprocess\nargv = ['git', 'worktree', 'add', 'x']\nsubprocess.check_call(argv)\n",
+    "alias.py": "from subprocess import run as go\ngo('git worktree add /tmp/x', shell=True)\n",
+    "wrapper.py": "import subprocess\ndef sh(c):\n    subprocess.run(c, shell=True)\nsh('git worktree add /tmp/x')\n",
+    "keyword.py": "import subprocess\nsubprocess.run(args=['git', 'worktree', 'add', 'x'])\n",
+    "port.py": "from rediacc_ci.dev import worktree\nworktree.main(['create', 'x'])\n",
+    "port_cmd.py": "from rediacc_ci.dev import worktree\nworktree.cmd_create(None)\n",
+    "run.js": 'require("child_process").execSync("git worktree add /tmp/x");\n',
+    "run.pl": 'system("git", "worktree", "add", "/tmp/x");\n',
+    "unparsable.py": "import os\nos.system('git worktree add /tmp/x'\n",
+}
+
+
+@pytest.mark.xdist_group("hooks-fixtures")
+def test_block_worktree_add_judges_a_script_by_its_calls_not_its_text(tmp_path):
+    block = hookblocks.Block("worktree-add-file-calls")
+    spec_deny = "check 2 guards/block_worktree_add.py"
+    spec_allow = "check 0 guards/block_worktree_add.py"
+    interpreter = {".py": "python3", ".js": "node", ".pl": "perl"}
+    for name, text in {**FILE_MENTIONS, **FILE_RUNS}.items():
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    for name in FILE_MENTIONS:
+        run_ = "%s %s" % (interpreter[os.path.splitext(name)[1]], tmp_path / name)
+        block.check(
+            spec_allow, bash_json(run_), "worktree-add CONTROL: a file that only lists it: " + name
+        )
+    for name in FILE_RUNS:
+        run_ = "%s %s" % (interpreter[os.path.splitext(name)[1]], tmp_path / name)
+        block.check(spec_deny, bash_json(run_), "worktree-add: a file that runs it: " + name)
+    # The same file run from a cd, and directly by its shebang.
+    block.check(
+        spec_allow,
+        bash_json("cd %s && python3 table.py" % tmp_path),
+        "worktree-add CONTROL: a mentioning file from a cd",
+    )
+    mention = tmp_path / "direct_mention.py"
+    mention.write_text("#!/usr/bin/env python3\n" + FILE_MENTIONS["table.py"], encoding="utf-8")
+    mention.chmod(0o755)
+    block.check(
+        spec_allow, bash_json(str(mention)), "worktree-add CONTROL: a mentioning file by shebang"
+    )
+    # A command line is still judged by its text, whatever file it also runs.
+    block.check(
+        spec_deny,
+        bash_json("git worktree add /tmp/x && python3 %s" % (tmp_path / "table.py")),
+        "worktree-add: the command line itself is git worktree add",
+    )
+    block.check(
+        spec_deny,
+        bash_json("python3 %s; git worktree add /tmp/x" % (tmp_path / "table.py")),
+        "worktree-add: a real add after a mentioning file",
+    )
+    block.done()
+
+
 def test_shebang_interpreter_does_not_open_a_named_pipe(tmp_path):
     """Review 05c4df4d.4: a FIFO named as a command word is not a script, and opening it would block the hook until a writer appears."""
     fifo = tmp_path / "pipe.py"

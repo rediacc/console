@@ -532,6 +532,15 @@ SHELL_CASES = [
         "git push origin --force 'refs/heads/*/*:refs/heads/q/*/*'",
         False,
     ),
+    # A ref verb's separate-form option value is a message or a ref, not a program or path: it is dropped with the positionals, where a remote verb's is judged.
+    ("update-ref -m message that is a glob", "git update-ref -m '*/*' refs/heads/q HEAD", False),
+    ("tag -m message that is a glob", "git tag -m '*/*' v1", False),
+    ("push -o value that is a glob, a remote verb", "git push -o '*/*' origin main", True),
+    (
+        "update-ref -m naming the directory is still an option",
+        "git update-ref -m=%s refs/x HEAD" % R,
+        True,
+    ),
     ("clone into a glob that reads as the directory", "git clone . '*/*'", True),
     ("worktree add at a glob that reads as the directory", "git worktree add '*/*'", True),
 ]
