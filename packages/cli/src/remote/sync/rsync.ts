@@ -156,7 +156,7 @@ function addRemoteRsyncArgs(
   universalUser?: string
 ): void {
   if (universalUser) {
-    // A repo key's renet sandbox-gateway admits a privileged receive only when every owner and group maps to the universal user and no device or special file is created (private/renet cmd/renet/sandbox_gateway_transfer.go), hence --chown and --no-D.
+    // A repo key's renet sandbox-gateway admits a privileged receive only when every owner and group maps to the universal user and no device or special file is created (private/renet cmd/renet/sandbox_gateway_transfer.go). An upload is the remote receive, hence --chown (a download's receiver is local and needs none); --no-D rides both directions beside --no-links, so a privileged sync never carries devices or specials either way.
     args.push('--rsync-path', 'sudo rsync');
     if (options.isUpload) {
       args.push('--chown', `${universalUser}:${universalUser}`);

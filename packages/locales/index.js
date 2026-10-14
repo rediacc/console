@@ -7,11 +7,11 @@
  * 11, and nothing could tell a deliberate subset from a stale copy.
  *
  * Plain ESM with a hand-written `.d.ts`, and NO build step, on purpose. The consumers
- * include eleven `node`-run `.js` scripts, an
- * Astro/Vite app, `tsx` scripts, two Cloudflare workers and the CLI bundle. Anything that
- * resolved through a `dist/` — `packages/shared` does — would need a build before a
- * build-less consumer could load it. A bare specifier into a workspace package resolves for all of them via
- * Node's upward `node_modules` walk, with no ordering constraint at all.
+ * include eleven `node`-run `.js` scripts, an Astro/Vite app, `tsx` scripts, two
+ * Cloudflare workers and the CLI bundle. Anything that resolved through a `dist/` —
+ * `packages/shared` does — would need a build before a build-less consumer could load
+ * it. A bare specifier into a workspace package resolves for all of them via Node's
+ * upward `node_modules` walk, with no ordering constraint at all.
  *
  * Adding a locale here is deliberately a multi-file change: `Record<Language, string>` in
  * `packages/www/src/i18n/language-utils.ts` and friends will stop compiling until every
