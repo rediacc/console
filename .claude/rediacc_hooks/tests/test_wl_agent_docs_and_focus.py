@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_run, ci_setup
 from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 if TYPE_CHECKING:
     import pathlib
@@ -74,7 +73,7 @@ def state_doc(fix) -> dict:
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
 
-def test_153a_a_missing_agent_dir_blocks_with_the_bootstrap_once_as_a_wall(wl):  # noqa: F811
+def test_153a_a_missing_agent_dir_blocks_with_the_bootstrap_once_as_a_wall(wl):
     """T1/T2, decision 5: block with the exact bootstrap commands, NEVER auto-create (the RULES.md copy-forward is a judgement call a hook must not make). The WALL is shown once per branch per session, latched on agent_boot_told; the follow-up is a one-liner that keeps blocking without repeating itself."""
     wl.brief_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
@@ -107,7 +106,7 @@ def test_153a_a_missing_agent_dir_blocks_with_the_bootstrap_once_as_a_wall(wl): 
     wl.check("allow", "", "T1 CONTROL: dir present plus a fresh STATE.md allows, no bootstrap text")
 
 
-def test_153b_t7a_an_unsigned_thirty_minute_document_is_adopted(wl):  # noqa: F811
+def test_153b_t7a_an_unsigned_thirty_minute_document_is_adopted(wl):
     """A second session arriving on a branch has no recorded signature for the document the first session wrote; the old pure-age fallback would order an immediate rewrite, reproducing the churn the redesign fixes. Adoption is bounded (60m) and fires ONLY on an "ok" verdict."""
     wl.brief_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
@@ -119,7 +118,7 @@ def test_153b_t7a_an_unsigned_thirty_minute_document_is_adopted(wl):  # noqa: F8
     assert state_doc(wl).get("state_sig"), "T7a: no state_sig was banked on the ok verdict"
 
 
-def test_153b_t7b_an_unsigned_ninety_minute_document_stays_stale(wl):  # noqa: F811
+def test_153b_t7b_an_unsigned_ninety_minute_document_stays_stale(wl):
     """Banking the signature on a "stale" verdict would let the next stop compare cur_sig against a signature recorded DURING the block and allow: a gate that clears itself without a rewrite. T7b is the anti-vacuity control, and it must block TWICE running."""
     wl.brief_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
@@ -149,7 +148,7 @@ def test_153b_t7b_an_unsigned_ninety_minute_document_stays_stale(wl):  # noqa: F
     wl.check("allow", "", "T7b CONTROL: a real --state rewrite clears it")
 
 
-def test_153b2_a_peers_item_does_not_stale_my_document_but_my_own_does(wl):  # noqa: F811
+def test_153b2_a_peers_item_does_not_stale_my_document_but_my_own_does(wl):
     """C12, the v18 bug this pins. state_world_sig hashed EVERY item regardless of owner, so with ~48 agents in one worktree any peer --add/--tick moved the key. A check whose contract is "an unchanged world never stales it" then degenerated into "fires every 15 minutes", indistinguishable from wall-clock at the point of observation, which is what made the WRONG fix (raise the
     limit) look obvious. v17 had already scoped world_sig this way; state_world_sig was left behind.
 
@@ -181,7 +180,7 @@ def test_153b2_a_peers_item_does_not_stale_my_document_but_my_own_does(wl):  # n
     )
 
 
-def test_153c_a_detached_head_enforces_and_the_branch_cannot_change_the_verdict(wl):  # noqa: F811
+def test_153c_a_detached_head_enforces_and_the_branch_cannot_change_the_verdict(wl):
     """T9, INVERTED 2026-08-18, and the inversion is the point. This case used to assert the opposite, that no resolvable branch made the STATE.md check REPORT-ONLY (operator decision 2026-07-30), because the document's path needed a branch to resolve. HEAD detaches during every interactive rebase and this operator rebase-merges everything, so that exemption meant the one artifact
     designed to survive compaction went unenforced for the whole of a rebase.
 
@@ -209,7 +208,7 @@ def test_153c_a_detached_head_enforces_and_the_branch_cannot_change_the_verdict(
     )
 
 
-def test_153d_trap_titles_feed_the_judge_and_bodies_and_subheadings_never_do(wl):  # noqa: F811
+def test_153d_trap_titles_feed_the_judge_and_bodies_and_subheadings_never_do(wl):
     """T10/T11: the judge sees `##` titles only; bodies, `###` and absent files are safe."""
     store = wlfix.import_wl("wl_store")
     messages = wlfix.import_wl("worklist_messages")
@@ -239,7 +238,7 @@ def test_153d_trap_titles_feed_the_judge_and_bodies_and_subheadings_never_do(wl)
     )
 
 
-def test_153f_the_live_traps_file_is_not_silently_truncated(wl):  # noqa: F811
+def test_153f_the_live_traps_file_is_not_silently_truncated(wl):
     """WHY A LIVE-FILE CASE AND NOT ONLY FIXTURES. The old cap was the literal 40 and TRAPS.md reached exactly 40 on 2026-08-23, one entry from invisibility, with no warning anywhere: the list simply ended and the judge saw a corpus that looked complete.
 
     A fixture case cannot notice that, because a fixture never grows. This one compares the parser against the REAL file and reds the day the corpus outgrows the cap.
@@ -286,7 +285,7 @@ def test_153f_the_live_traps_file_is_not_silently_truncated(wl):  # noqa: F811
     assert not any("further entries" in head for head in got_at), "CONTROL: at-cap grew a sentinel"
 
 
-def test_154_next_wakeups_is_gone_from_both_emit_paths(wl):  # noqa: F811
+def test_154_next_wakeups_is_gone_from_both_emit_paths(wl):
     """Operator, 2026-08-04: "we don't need to print next wakeup times. We should just track the hook moments and notify/warn when needed. let's go for efficient ai context usage". The section printed every task's next firing on every full stop.
 
     154b shares this fixture and follows in sequence, because the FOCUS=off dump-all block carried the section too and must not any more.
@@ -324,7 +323,7 @@ def test_154_next_wakeups_is_gone_from_both_emit_paths(wl):  # noqa: F811
     )
 
 
-def test_154c_an_unparseable_schedule_is_still_named(wl):  # noqa: F811
+def test_154c_an_unparseable_schedule_is_still_named(wl):
     """THE SURVIVING WARNING. An unparseable schedule is invisible to every other cron check, so deleting the display must not delete this."""
     wl.brief_now()
     wl.hand_now()
@@ -338,7 +337,7 @@ def test_154c_an_unparseable_schedule_is_still_named(wl):  # noqa: F811
     assert "BROKEN fixture." in got.out, got.out[:260]
 
 
-def test_154c_control_valid_schedules_raise_no_warning(wl):  # noqa: F811
+def test_154c_control_valid_schedules_raise_no_warning(wl):
     """CONTROL: with every schedule valid the warning is silent, so it reports a real defect rather than firing on any cron list at all."""
     wl.brief_now()
     wl.hand_now()
@@ -351,7 +350,7 @@ def test_154c_control_valid_schedules_raise_no_warning(wl):  # noqa: F811
     )
 
 
-def test_155_supervised_must_correlate_to_the_live_worker_not_just_be_fresh(wl):  # noqa: F811
+def test_155_supervised_must_correlate_to_the_live_worker_not_just_be_fresh(wl):
     """Real review finding (PR #546, comment 3686791985): the freshest `[>]` item across ALL in-flight records was taken as proof of supervision, with no check that it names the SAME worker as the one in live_bg.
 
     Two leases: one tracking bw1 (the actual watched job) gone STALE past the threshold, one tracking an UNRELATED worker zz9 kept FRESH. The unrelated fresh one must NOT excuse the stale one, which is exactly the forgotten-watch case this exemption exists to exclude.
@@ -429,7 +428,7 @@ def test_155_supervised_must_correlate_to_the_live_worker_not_just_be_fresh(wl):
     )
 
 
-def test_155b_control_the_correlated_lease_being_fresh_does_supervise(wl):  # noqa: F811
+def test_155b_control_the_correlated_lease_being_fresh_does_supervise(wl):
     """CONTROL: a fresh lease correlated to the live worker DOES supervise."""
     wl.env["WORKLIST_STUCK_ROUNDS"] = "1"
     wl.brief_now()
@@ -480,7 +479,7 @@ def test_155b_control_the_correlated_lease_being_fresh_does_supervise(wl):  # no
     )
 
 
-def test_156_focus_surfaces_one_rotating_check_per_stop_in_lru_order(wl):  # noqa: F811
+def test_156_focus_surfaces_one_rotating_check_per_stop_in_lru_order(wl):
     """v13 FOCUS. Two rotating checks outstanding (an open item and a stale brief). Stop 1 surfaces exactly one; stop 2 surfaces the OTHER; stop 3 cycles back. The header counts what is held back, so nothing is silently forgotten."""
     wl.hand_now()
     wl.env["WORKLIST_STUCK_ROUNDS"] = "99"
@@ -508,7 +507,7 @@ def test_156_focus_surfaces_one_rotating_check_per_stop_in_lru_order(wl):  # noq
     assert ("OPEN worklist item" in third) == one_open, "156b: rotation did not cycle back (LRU)"
 
 
-def test_156c_control_focus_off_restores_the_dump_all_block(wl):  # noqa: F811
+def test_156c_control_focus_off_restores_the_dump_all_block(wl):
     """The control for the whole feature: the same two-check fixture names BOTH checks in one block, one quoted and the other named on its own line (the WORKLIST_FOCUS=off dump that used to quote both was removed by agent/plans/PLAN-stop-hook-effort.md)."""
     wl.hand_now()
     wl.add_item("- [ ] (deadbeef) open thing")
@@ -519,7 +518,7 @@ def test_156c_control_focus_off_restores_the_dump_all_block(wl):  # noqa: F811
     assert "2 check(s) outstanding" in got.out, got.out[:300]
 
 
-def test_156d_the_always_tier_rides_every_focused_block(wl):  # noqa: F811
+def test_156d_the_always_tier_rides_every_focused_block(wl):
     """CI-red is latched (its block budget is spent at compute time), so hiding it behind rotation would swallow it forever. It must appear IN ADDITION to the one rotating check."""
     ci_setup(wl)
     ci_status_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))

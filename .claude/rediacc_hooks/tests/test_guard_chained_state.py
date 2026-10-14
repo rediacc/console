@@ -19,7 +19,6 @@ import subprocess
 from rediacc_hooks import dispatch, hookio, shellscan
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 from rediacc_hooks.wellknown import GH_ORIGIN, RENET_REPO
 
 STALE_UNRELATED = 60
@@ -346,7 +345,7 @@ def test_untagged_guard_names_the_publish_that_would_have_written_the_epic(tmp_p
 # --------------------------------------------------------------------------- worklist.py --publish ---------------------------------------------------------------------------
 
 
-def test_publish_defaults_to_heads_branch(wl, tmp_path):  # noqa: F811
+def test_publish_defaults_to_heads_branch(wl, tmp_path):
     repo = _repo(tmp_path / "pub", branch="t-1")
     (repo / "seed").write_text("s\n", encoding="utf-8")
     _git(repo, "add", "-A")
@@ -368,7 +367,7 @@ def test_publish_defaults_to_heads_branch(wl, tmp_path):  # noqa: F811
     assert not (repo / "agent" / "pr" / "HEAD.md").exists()
 
 
-def test_publish_explicit_branch_still_wins(wl, tmp_path):  # noqa: F811
+def test_publish_explicit_branch_still_wins(wl, tmp_path):
     repo = _repo(tmp_path / "pub", branch="t-1")
     (repo / "seed").write_text("s\n", encoding="utf-8")
     _git(repo, "add", "-A")

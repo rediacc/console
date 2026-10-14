@@ -41,6 +41,7 @@ RUNNING THE DEEP SWEEP. `REDIACC_GUARD_DIFF_FULL=1` feeds EVERY payload to
 EVERY guard instead of the cross sample. `regolden.py` always runs this way, since a golden built from the default sample would have no record for a payload a later default-mode run might legitimately ask about.
 """
 
+import ast
 import builtins
 import contextlib
 import datetime
@@ -323,7 +324,7 @@ def host_hookio(stem, work):
     root = pathlib.Path(fixture_path(work, name))
     shim = types.ModuleType("hookio")
     shim.__dict__.update(vars(hookio))
-    setattr(shim, "repo_root", lambda: root)  # noqa: B010 -- a ModuleType attribute mypy cannot see
+    shim.__dict__["repo_root"] = lambda: root
     return shim
 
 
@@ -336,11 +337,11 @@ def host_world(stem, work):
         return
     module = guards.load(stem)
     saved = module.hookio
-    setattr(module, "hookio", shim)  # noqa: B010 -- a guard module attribute mypy types as a module
+    module.__dict__["hookio"] = shim
     try:
         yield
     finally:
-        setattr(module, "hookio", saved)  # noqa: B010
+        module.__dict__["hookio"] = saved
 
 
 _FIXTURES = {}
@@ -506,7 +507,7 @@ class _FrozenDateTime(datetime.datetime):
 
 FROZEN_DATETIME = types.ModuleType("datetime")
 FROZEN_DATETIME.__dict__.update(vars(datetime))
-setattr(FROZEN_DATETIME, "datetime", _FrozenDateTime)  # noqa: B010 -- a ModuleType attribute mypy cannot see
+FROZEN_DATETIME.__dict__["datetime"] = _FrozenDateTime
 
 
 def _reads_clock(module):
@@ -539,17 +540,17 @@ def frozen_clock(stem):
         yield
         return
     module = guards.load(stem)
-    setattr(module, "datetime", FROZEN_DATETIME)  # noqa: B010 -- a guard module attribute mypy types as str
+    module.__dict__["datetime"] = FROZEN_DATETIME
     try:
         yield
     finally:
-        setattr(module, "datetime", datetime)  # noqa: B010 -- see the swap above
+        module.__dict__["datetime"] = datetime
 
 
-def _frozen_import(name, globals=None, locals=None, fromlist=(), level=0):  # noqa: A002
+def _frozen_import(name, namespace_globals=None, namespace_locals=None, fromlist=(), level=0):
     if name == "datetime" and level == 0:
         return FROZEN_DATETIME
-    return builtins.__import__(name, globals, locals, fromlist, level)
+    return builtins.__import__(name, namespace_globals, namespace_locals, fromlist, level)
 
 
 def edge_cases(module):
@@ -1122,7 +1123,6 @@ def _outside_defect(src: str, *names: str) -> str:
 
     `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
     """
-    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
 
     wanted = names or ("DEFECT",)
     cut = [

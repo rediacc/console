@@ -984,7 +984,7 @@ def test_protected_branch_reads_push_the_way_git_does(world, control, want, othe
     ],
 )
 def test_unrecorded_reviews_reads_publishing_the_way_git_does(args, publishes):
-    from rediacc_hooks.guards import block_push_with_unrecorded_reviews as guard  # noqa: PLC0415
+    guard = importlib.import_module("rediacc_hooks.guards.block_push_with_unrecorded_reviews")
 
     run = shellscan._analyse("git " + " ".join(args)).runs[-1]
     assert guard._publishes(run) is publishes
@@ -1003,7 +1003,7 @@ def test_unrecorded_reviews_reads_publishing_the_way_git_does(args, publishes):
     ],
 )
 def test_delete_only_reads_push_the_way_git_does(scan, deletes_only):
-    from rediacc_hooks.guards import block_unverified_push as guard  # noqa: PLC0415
+    guard = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 
     assert guard.every_push_deletes_only(scan) is deletes_only
 
@@ -1018,7 +1018,7 @@ def test_delete_only_reads_push_the_way_git_does(scan, deletes_only):
     ],
 )
 def test_push_source_reads_push_the_way_git_does(line, source):
-    from rediacc_hooks.guards import block_unverified_push as guard  # noqa: PLC0415
+    guard = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 
     assert guard.push_source(line) == source
 
@@ -1064,7 +1064,7 @@ def test_post_bash_push_destinations_read_the_way_git_does(hook, cmd, branches):
     ],
 )
 def test_shape_probe_reads_commit_the_way_git_does(cmd, paths, working_tree):
-    from rediacc_hooks.guards import warn_staged_shape_duplication as guard  # noqa: PLC0415
+    guard = importlib.import_module("rediacc_hooks.guards.warn_staged_shape_duplication")
 
     assert guard._pathspecs(cmd) == paths
     assert guard._takes_working_tree(cmd) is working_tree

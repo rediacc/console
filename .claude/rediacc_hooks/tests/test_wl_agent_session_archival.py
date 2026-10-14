@@ -17,7 +17,6 @@ import subprocess
 import sys
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 ARCHIVED = """Session cafe1234 finished the chunk-store cold-path cutover weeks ago and has not been seen since. Its directory is the kind this gate archives: abandoned by the hook's own oracle, well past the grace period, and holding nothing anybody is still editing.
 
@@ -56,7 +55,7 @@ def roster(fix) -> str:
     return proc.stdout
 
 
-def _abandoned_peer(wl) -> None:  # noqa: F811
+def _abandoned_peer(wl) -> None:
     """A peer directory whose owner is past the dead horizon, with no transcript.
 
     `WORKLIST_PROJECTS_DIR` is pointed at an EMPTY directory on purpose: it is the same pin `check_agent_session_archival.py` makes by passing `projects_dir=""`, so `owner_age_hours` finds nothing and the oracle falls back to the section's own heading stamp. Without it the verdict would depend on whichever transcripts happen to sit on the machine running the suite.
@@ -72,7 +71,7 @@ def _abandoned_peer(wl) -> None:  # noqa: F811
     wl.task(7, "pending", "thing")
 
 
-def test_the_fixture_really_produces_an_abandoned_peer(wl):  # noqa: F811
+def test_the_fixture_really_produces_an_abandoned_peer(wl):
     """THE CONTROL FOR THE TWO CASES BELOW. An absence proves nothing until the presence is established: without this, a fixture that quietly stopped writing a peer directory would satisfy the archival case for a reason that has nothing to do with archiving."""
     _abandoned_peer(wl)
     out = roster(wl)
@@ -86,7 +85,7 @@ def test_the_fixture_really_produces_an_abandoned_peer(wl):  # noqa: F811
     )
 
 
-def test_an_archived_session_leaves_the_peer_roster_entirely(wl):  # noqa: F811
+def test_an_archived_session_leaves_the_peer_roster_entirely(wl):
     """THE POINT OF THE WHOLE DESIGN. `--move` renames the directory away and leaves nothing, so the session stops being a peer -- which is the result the stop-hook note has been unable to reach on its own, because nothing may prune another session's directory as a hook side effect.
 
     The directory is removed rather than only its STATE.md: that is what `git mv agent/cafe1234 agent/archive/<label>/cafe1234` really does, and `agent_session_dirs` enumerates DIRECTORIES, so deleting only the file would leave a differently-shaped tree from the one the verb produces.
@@ -105,7 +104,7 @@ def test_an_archived_session_leaves_the_peer_roster_entirely(wl):  # noqa: F811
     )
 
 
-def test_a_same_named_stub_resurrects_the_archived_session(wl):  # noqa: F811
+def test_a_same_named_stub_resurrects_the_archived_session(wl):
     """THE REJECTED DESIGN, PLANTED. A stub left at the old path is read by `agent_state_parse` as an unowned legacy section stamped at the file's own mtime, re-attributed to the directory by `agent_peer_sections`, and reported as the FRESHEST peer in the tree -- minutes old, and no longer ABANDONED, so this gate's own count loses it too.
 
     This is why `--move` leaves nothing behind, and the assertion is the one that would have to change if anyone ever added a stub: it fails LOUDLY, naming the resurrection, instead of the archived session quietly reappearing in the roster.
