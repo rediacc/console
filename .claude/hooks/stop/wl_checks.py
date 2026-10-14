@@ -4044,11 +4044,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                     % (
                         r["id"],
                         S.brief_text(r, 150),
-                        (" [%s]" % C.not_before_problem(r["line"], r.get("upd", "")))
-                        if C.not_before_problem(r["line"], r.get("upd", ""))
-                        else "",
+                        (" [%s]" % problem) if problem else "",
                     )
                     for r in shown
+                    for problem in [C.not_before_problem(r["line"], r.get("upd", ""))]
                 ),
                 ""
                 if len(expired) <= len(shown)
