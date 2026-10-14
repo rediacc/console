@@ -65,6 +65,7 @@ SPECIMENS = {
     "gate-author": "write a regression gate, drain its baseline, and verify the three-point wiring in the ci-runner manifest",
     "www-site": "restyle the solution page hero and the docs layout in the Astro marketing site",
     "test-advisor": "this fix landed and nothing stops it coming back, decide which regression surface owns it",
+    "effort-tuner": "the effort tuner is due near compaction: measure which checks led to work and propose new thresholds from the outcome ledger",
 }
 
 # Neutral haystacks. Every one of them is ordinary work that no specialist owns. They run inline on EVERY invocation, never behind a flag: a control you have to remember to run is how a control stops controlling anything.

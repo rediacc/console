@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T10:50:08.884Z",
+  "generatedAt": "2026-10-14T10:52:17.805Z",
   "legs": [
     {
       "index": 1,
@@ -200,6 +200,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_commit_remind.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_continuity_surface.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_core_blocking.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_effort_tune.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_epic_render.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_focus.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_hints.py",

@@ -2859,6 +2859,10 @@ def main():
     if sys.argv[1:2] == ["--retro-brief"]:
         _retro_brief_cli(sys.argv[1:])
         return
+    if sys.argv[1:2] and sys.argv[1] in ("--effort-propose", "--effort-answer"):
+        # agent/plans/PLAN-stop-hook-effort-tuning.md T2 and T5; wl_checks carries the tuner.
+        root = C.project_root(C.project_start())
+        sys.exit(CK.wl_effort_tune.cli(sys.argv[1:], root, _identity_or_die))
     if sys.argv[1:2] == ["--prune-scratch"]:
         _prune_scratch_cli(sys.argv[1:])
         return

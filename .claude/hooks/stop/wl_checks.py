@@ -32,6 +32,7 @@ import wl_core as C
 import wl_defersettle
 import wl_deflect
 import wl_effort
+import wl_effort_tune
 import wl_git
 import wl_hints
 import wl_histfirst
@@ -5343,6 +5344,13 @@ def run_stop(event, event_ok, worklist, hook_file):
         last_msg,
         _compaction_due,
     )
+    # THE EFFORT TUNER, once per context near compaction (agent/plans/PLAN-stop-hook-effort-tuning.md T4): queued HERE, above every block exit, so a session that keeps blocking near compaction still gets it (the block digest delivers a one-line advisory outright); STICKY and priority 1, so it waits in the queue until a stop delivers it, and the request is recorded only once it is queued.
+    with contextlib.suppress(Exception):  # an advisory must never wedge a stop
+        _tune = wl_effort_tune.request_due(root, session_id)
+        if _tune and outq_add(
+            worklist, session_id, state_doc, "effort-tune", _tune[0], 1, sticky=True
+        ):
+            wl_effort_tune.mark_requested(root, session_id, _tune[1], _tune[2])
     _effort_kept = []
     for _ev in violations:
         _ew = wl_effort.verdict(_ev[0], _cfg.effort, compaction_due=_compaction_due)

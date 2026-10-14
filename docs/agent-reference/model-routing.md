@@ -33,13 +33,15 @@ What the oracle argument got right is still true in the negative direction: with
 What it got wrong is the converse. An oracle bounds the failures it was built to catch, and a port is not only its case count: it is also what the port silently dropped, what it renamed on the way, and what it touched outside the two files it was told it owned. A green differential says nothing about any of those.
 That is the gap the operator's ruling closes, and it closes it by removing the dispatch rather than by adding another check.
 
-## The 13 subagent_type definitions: zero frontmatter changes
+## The 14 subagent_type definitions: zero frontmatter changes
 
 A `subagent_type` is defined by DOMAIN. The model is decided by SHAPE. A domain spans both shapes, so frontmatter is the wrong place to encode a shape rule. `i18n-guardian` covers both a 12-locale pipeline run (its own mechanism, above) and diagnosing why a cross-locale gate fired (judgment, Opus).
 `gate-author` writes gates, and every mode of it is now a session-default dispatch: writing a brand-new anti-vacuity gate and porting an existing bash gate-test to pytest both produce an artifact, and ruling 1 puts the second one back on the session default alongside the first.
 
 `.claude/agents/test-advisor.md` is the exception, and stays `model: haiku`. Its domain is a bounded classification ("which of six CI surfaces does this belong on"), so its shape is constant and it produces a recommendation rather than an artifact, which makes a frontmatter default meaningful.
 It is the template for any future agent that earns a Haiku default: read-only, constant shape, not cheap subject matter.
+
+`.claude/agents/effort-tuner.md` is `model: sonnet`, the second exception. Its shape is constant too: it runs `wl_effort_tune.py run`, tests the candidate table against the effort-table gate and the generated judge-rule tests, and weighs the numbers against the session's observations. The script and the gate are the oracle, so the judgment left is reading evidence across a few files, which is Sonnet's tier (ruling 2), and it writes nothing outside its own run directory.
 
 The mechanism for the Haiku slice is the per-call `model` override on the `Agent` tool.
 
