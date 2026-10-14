@@ -56,6 +56,7 @@
   "files": {
     "includes": [
       "scripts/**/*.js",
+      "scripts/**/*.cjs",
       "scripts/**/*.ts",
       "packages/**/*.ts",
       "packages/**/*.tsx",
@@ -63,6 +64,7 @@
       "packages/**/*.mjs",
       "packages/**/*.cjs",
       "packages/www/scripts/**/*.js",
+      "packages/locales/*.js",
       "packages/www/public/**/*.js",
       ".ci/**/*.js",
       ".ci/**/*.cjs",
@@ -379,7 +381,7 @@
       }
     },
     {
-      "includes": ["scripts/**/*.ts"],
+      "includes": ["scripts/**/*.ts", "scripts/**/*.cjs"],
       "linter": {
         "rules": {
           "suspicious": {

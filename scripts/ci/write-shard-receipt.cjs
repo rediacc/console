@@ -35,7 +35,7 @@
 
 'use strict';
 
-const fs = require('fs');
+const fs = require('node:fs');
 
 function writeUnitsReceipt() {
   const units = JSON.parse(process.env.UNITS_JSON);
