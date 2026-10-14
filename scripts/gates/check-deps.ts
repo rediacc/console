@@ -53,18 +53,45 @@ import {
   verifyAllBlockers,
 } from '../lib/blocker-validator.js';
 import { BLUE, GREEN, joinReport, NC, RED, YELLOW } from '../lib/console.js';
+import {
+  executeInstalls,
+  pinningHolders,
+  updateMismatches,
+  upgradeChildEnv,
+  verifyUpdatedVersions,
+} from '../lib/deps/execute.js';
+import { planPinSync, syncPinGroups } from '../lib/deps/pin-sync.js';
+import {
+  freshnessCutoffMs,
+  type InstallStep,
+  planInstalls,
+  satisfiesRange,
+} from '../lib/deps/plan.js';
+import {
+  CONSOLE_ROOT,
+  compareVersions,
+  DAY_MS,
+  FIXTURE_ROOT,
+  isBreakingBump,
+  type LockEntry,
+  MAJOR_ALLOW_REL,
+  MUTANT,
+  type PackageInfo,
+  parseRange,
+  parseVersion,
+  printPackage,
+  rangeAdmits,
+  rangeFloorMajor,
+  readLockPackages,
+  releaseLine,
+  utcDay,
+} from '../lib/deps/shared.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// CHECK_DEPS_ROOT is the selftest's seam: it points the whole gate (manifests, lockfiles, blocklist, allow file, release-age config) at a synthetic fixture tree so the --upgrade path can be driven end to end without touching the real one. When it is set, changelog lookups are skipped too, because a fixture never needs them and they are the only network call left.
-const FIXTURE_ROOT = process.env.CHECK_DEPS_ROOT;
-const CONSOLE_ROOT = FIXTURE_ROOT
-  ? path.resolve(FIXTURE_ROOT)
-  : path.resolve(__dirname, '..', '..');
 const BLOCKLIST_FILE = policyPath('.deps-upgrade-blocklist', CONSOLE_ROOT);
 const MAJOR_ALLOW_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'deps-major-allow.json');
-const MAJOR_ALLOW_REL = '.ci/config/deps-major-allow.json';
 const RELEASE_AGE_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'release-age.json');
 const MAJOR_EXCEPTIONS_FILE = policyPath('deps-major-exceptions.json', CONSOLE_ROOT);
 const MAJOR_EXCEPTIONS_REL = path
@@ -72,9 +99,7 @@ const MAJOR_EXCEPTIONS_REL = path
   .split(path.sep)
   .join('/');
 // The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder; `skip-pin-sync` skips the .syncpackrc.json pinVersion rewrite after an upgrade (worklist #3b831146), so the selftest can prove its syncpack-style check finds the group left behind. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
-const MUTANT = process.env.CHECK_DEPS_MUTANT;
 const MUTANTS = ['ignore-clock', 'split-update', 'update-first', 'skip-pin-sync'];
-const DAY_MS = 86_400_000;
 /** A blocklisted major fails at this age, measured from the first release of the first line past `current`. */
 const HOLD_DEADLINE_DAYS = 90;
 /** ... and warns from this age. */
@@ -86,13 +111,6 @@ const EXCEPTION_MAX_DAYS = 30;
 const args = process.argv.slice(2);
 const showHelp = args.includes('--help') || args.includes('-h');
 const upgradeMode = args.includes('--upgrade') || args.includes('-u');
-
-interface ParsedVersion {
-  major: number;
-  minor: number;
-  patch: number;
-  prerelease: string | null;
-}
 
 interface BlocklistEntry {
   reason: string;
@@ -109,16 +127,6 @@ interface OutdatedPackageInfo {
 /** What `npm outdated --json` really emits: an ARRAY per package when several workspaces depend on it. */
 type RawOutdated = Record<string, OutdatedPackageInfo | OutdatedPackageInfo[]>;
 
-interface PackageInfo {
-  name: string;
-  current: string;
-  latest: string;
-  wanted?: string;
-  reason?: string;
-  /** The allow key that authorised a breaking upgrade, when one did. */
-  allowKey?: string;
-}
-
 interface MajorAllowEntry {
   key: string;
   scope: string | null;
@@ -134,49 +142,6 @@ interface Categorized {
   heldMajor: PackageInfo[];
   /** Allow keys that authorised something in this pass, for the liveness check. */
   allowUsed: Set<string>;
-}
-
-/**
- * Parse a semver version string into components
- */
-function parseVersion(version: string): ParsedVersion | null {
-  const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
-  if (!match) return null;
-  return {
-    major: Number.parseInt(match[1], 10),
-    minor: Number.parseInt(match[2], 10),
-    patch: Number.parseInt(match[3], 10),
-    prerelease: match[4] || null,
-  };
-}
-
-/** Numeric order of two versions; unparseable ones sort as equal so a caller keeps its first pick. */
-function compareVersions(a: string, b: string): number {
-  const va = parseVersion(a);
-  const vb = parseVersion(b);
-  if (!va || !vb) return 0;
-  return va.major - vb.major || va.minor - vb.minor || va.patch - vb.patch;
-}
-
-/**
- * The caret line a version belongs to: '8' for 8.x, '0.575' for 0.575.x, '0.0.3' for 0.0.3. Two versions on different lines are a breaking move under npm's own caret semantics, which is why 0.575 -> 1.48 (lucide-react) counts exactly like 6 -> 8 (vite). Null when the version does not parse.
- */
-function releaseLine(version: string): string | null {
-  const v = parseVersion(version);
-  if (!v) return null;
-  if (v.major > 0) return String(v.major);
-  if (v.minor > 0) return `0.${v.minor}`;
-  return `0.0.${v.patch}`;
-}
-
-/**
- * True when moving current -> latest leaves the caret range. An unparseable version on either side counts as breaking: the cost of holding a version the gate cannot classify is one manual decision, the cost of applying it blind is a surprise major.
- */
-function isBreakingBump(current: string, latest: string): boolean {
-  const lc = releaseLine(current);
-  const ll = releaseLine(latest);
-  if (!lc || !ll) return true;
-  return lc !== ll;
 }
 
 /** The allow key a reader would add to take this breaking upgrade in this manifest. */
@@ -243,42 +208,6 @@ function categorizePackages(
 
 // Cache for changelog URLs to avoid duplicate fetches
 const changelogCache = new Map<string, string | null>();
-
-/**
- * Find which workspace packages contain a given dependency
- */
-function findWorkspacesWithPackage(packageName: string, root: string = CONSOLE_ROOT): string[] {
-  const workspaces: string[] = [];
-  const packagesDir = path.join(root, 'packages');
-
-  if (!fs.existsSync(packagesDir)) return workspaces;
-
-  for (const dir of fs.readdirSync(packagesDir)) {
-    const pkgPath = path.join(packagesDir, dir, 'package.json');
-    if (!fs.existsSync(pkgPath)) continue;
-
-    try {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')) as {
-        dependencies?: Record<string, string>;
-        devDependencies?: Record<string, string>;
-        peerDependencies?: Record<string, string>;
-      };
-      const allDeps = {
-        ...pkg.dependencies,
-        ...pkg.devDependencies,
-        ...pkg.peerDependencies,
-      };
-
-      if (packageName in allDeps) {
-        workspaces.push(dir);
-      }
-    } catch {
-      // Skip invalid package.json files
-    }
-  }
-
-  return workspaces;
-}
 
 /**
  * Load and parse the blocklist file. Uses the shared BLOCKER-aware parser
@@ -363,28 +292,6 @@ function loadMajorAllow(): MajorAllowEntry[] {
     process.exit(1);
   }
   return entries;
-}
-
-/** The `packages` map of a manifest's package-lock.json, or null when there is none. */
-/** One `packages` entry of a package-lock.json: the resolved version and the ranges that installed copy itself declares. */
-interface LockEntry {
-  version?: string;
-  dependencies?: Record<string, string>;
-  optionalDependencies?: Record<string, string>;
-  peerDependencies?: Record<string, string>;
-}
-
-function readLockPackages(dir: string): Record<string, LockEntry> | null {
-  const lockPath = path.join(dir, 'package-lock.json');
-  if (!fs.existsSync(lockPath)) return null;
-  try {
-    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf-8')) as {
-      packages?: Record<string, LockEntry>;
-    };
-    return lock.packages ?? null;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -918,132 +825,6 @@ function firstReleaseOfLine(doc: Packument, line: string): { version: string; ms
 }
 
 // ---------------------------------------------------------------------------
-// Range evaluator, for peer-range blockers and engines.node. `satisfiesRange` above handles single shapes only and `semver` is not a direct dependency, so this is in-file. It understands `||` sets of space-separated comparators (`^ ~ >= > <= < =`, bare and x-range versions, partials such as `^9.7` and `>=10.4`) and REFUSES anything else (hyphen ranges, tags, URLs) by returning null: a range it cannot read is never passed.
-// ---------------------------------------------------------------------------
-
-type Triple = [number, number, number];
-interface Bound {
-  op: '>=' | '>' | '<' | '<=';
-  v: Triple;
-}
-/** One `||` alternative: every bound must hold. `[]` admits everything. */
-type RangeSet = Bound[];
-
-const NEVER: Bound = { op: '<', v: [0, 0, 0] };
-const COMPARATOR_RE =
-  /^(<=|>=|<|>|=|\^|~>?)?v?(\d+|[xX*])(?:\.(\d+|[xX*]))?(?:\.(\d+|[xX*]))?(-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
-
-function cmpTriple(a: Triple, b: Triple): number {
-  return a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
-}
-
-function parseComparator(text: string): Bound[] | null {
-  const m = text.match(COMPARATOR_RE);
-  if (!m) return null;
-  const op = (m[1] ?? '').replace('~>', '~');
-  const parts: number[] = [];
-  for (const raw of [m[2], m[3], m[4]]) {
-    if (raw === undefined || /^[xX*]$/.test(raw)) break;
-    parts.push(Number.parseInt(raw, 10));
-  }
-  const n = parts.length;
-  const pre = Boolean(m[5]) && n === 3;
-  const [M = 0, mi = 0, p = 0] = parts;
-  const base: Triple = [M, mi, p];
-  const nextOf = (k: number): Triple =>
-    k === 1 ? [M + 1, 0, 0] : k === 2 ? [M, mi + 1, 0] : [M, mi, p + 1];
-  // A prerelease comparator is judged only against STABLE versions here, so `>=X-pre` is `>=X`, `<=X-pre` is `<X`, and an exact `X-pre` admits no stable version at all.
-  switch (op) {
-    case '':
-    case '=':
-      if (n === 0) return [];
-      if (n < 3)
-        return [
-          { op: '>=', v: base },
-          { op: '<', v: nextOf(n) },
-        ];
-      return pre
-        ? [NEVER]
-        : [
-            { op: '>=', v: base },
-            { op: '<=', v: base },
-          ];
-    case '>=':
-      return n === 0 ? [] : [{ op: '>=', v: base }];
-    case '>':
-      if (n === 0) return [NEVER];
-      if (n < 3) return [{ op: '>=', v: nextOf(n) }];
-      return [{ op: pre ? '>=' : '>', v: base }];
-    case '<':
-      return n === 0 ? [NEVER] : [{ op: '<', v: base }];
-    case '<=':
-      if (n === 0) return [];
-      if (n < 3) return [{ op: '<', v: nextOf(n) }];
-      return [{ op: pre ? '<' : '<=', v: base }];
-    case '~':
-      if (n === 0) return [];
-      return [
-        { op: '>=', v: base },
-        { op: '<', v: nextOf(n === 1 ? 1 : 2) },
-      ];
-    case '^': {
-      if (n === 0) return [];
-      const upper: Triple =
-        M > 0 || n === 1 ? [M + 1, 0, 0] : mi > 0 || n === 2 ? [0, mi + 1, 0] : [0, 0, p + 1];
-      return [
-        { op: '>=', v: base },
-        { op: '<', v: upper },
-      ];
-    }
-    default:
-      return null;
-  }
-}
-
-/** Parse a range into its `||` alternatives, or null when any part of it is not understood. */
-function parseRange(range: string): RangeSet[] | null {
-  const sets: RangeSet[] = [];
-  for (const alt of range.split('||')) {
-    const text = alt.trim().replace(/(<=|>=|<|>|=|\^|~>?)\s+/g, '$1');
-    if (/\s-\s/.test(alt)) return null;
-    const bounds: Bound[] = [];
-    if (text !== '') {
-      for (const tok of text.split(/\s+/)) {
-        const b = parseComparator(tok);
-        if (!b) return null;
-        bounds.push(...b);
-      }
-    }
-    sets.push(bounds);
-  }
-  return sets;
-}
-
-/** True when the STABLE `version` satisfies one of the parsed alternatives. */
-function rangeAdmits(sets: RangeSet[], version: string): boolean {
-  const pv = parseVersion(version);
-  if (!pv || pv.prerelease) return false;
-  const t: Triple = [pv.major, pv.minor, pv.patch];
-  return sets.some((set) =>
-    set.every((b) => {
-      const c = cmpTriple(t, b.v);
-      return b.op === '>=' ? c >= 0 : b.op === '>' ? c > 0 : b.op === '<' ? c < 0 : c <= 0;
-    })
-  );
-}
-
-/** The lowest major a parsed range admits at all, i.e. the major of its lowest lower bound (0 when an alternative has none). */
-function rangeFloorMajor(sets: RangeSet[]): number {
-  let floor = Number.POSITIVE_INFINITY;
-  for (const set of sets) {
-    let lo = 0;
-    for (const b of set) if (b.op === '>=' || b.op === '>') lo = Math.max(lo, b.v[0]);
-    floor = Math.min(floor, lo);
-  }
-  return floor === Number.POSITIVE_INFINITY ? 0 : floor;
-}
-
-// ---------------------------------------------------------------------------
 // Held-major exceptions (.ci/policy/deps-major-exceptions.json).
 // ---------------------------------------------------------------------------
 
@@ -1066,11 +847,6 @@ const EXCEPTION_KEY_RE = /^(?:([^:\s]+):)?((?:@[^@/\s:]+\/)?[^@/\s:]+)$/;
 const OWNER_RE = /^[A-Za-z0-9._@-]{3,}$/;
 const LINE_RE = /^\d+(?:\.\d+){0,2}$/;
 const ENTRY_FIELDS = new Set(['owner', 'reason', 'blocker', 'expires']);
-
-/** Start of the UTC day containing `ms`. */
-function utcDay(ms: number): number {
-  return Math.floor(ms / DAY_MS) * DAY_MS;
-}
 
 const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
@@ -1447,34 +1223,6 @@ async function partitionByReleaseAge(
   return { installable, tooNew };
 }
 
-/** Format the `name: current -> latest (major)` summary for one package. */
-function formatPackage(pkg: PackageInfo): string {
-  const majorTag = isBreakingBump(pkg.current, pkg.latest) ? ' (major)' : '';
-  return `${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`;
-}
-
-/**
- * Print one package line plus its optional reason/changelog. `suffix` annotates
- * the line (e.g. " (blocked)" or " (account)"); `changelogUrls` is omitted in
- * upgrade mode where changelogs aren't fetched.
- */
-function printPackage(
-  pkg: PackageInfo,
-  opts: { suffix?: string; changelogUrls?: Map<string, string | null> } = {}
-): void {
-  console.log(`  ${formatPackage(pkg)}${opts.suffix ?? ''}`);
-  if (pkg.reason) {
-    console.log(`    Reason: ${pkg.reason}`);
-  }
-  if (pkg.allowKey) {
-    console.log(`    Allowed by: ${MAJOR_ALLOW_REL} "${pkg.allowKey}"`);
-  }
-  const changelog = opts.changelogUrls?.get(pkg.name);
-  if (changelog) {
-    console.log(`    Changelog: ${changelog}`);
-  }
-}
-
 /**
  * Print a labeled group of packages (header + each line). Returns early when the
  * group is empty so callers don't need their own length guards.
@@ -1491,681 +1239,6 @@ function printPackageGroup(
     printPackage(pkg, opts);
   }
   console.log();
-}
-
-interface InstallStep {
-  cwd: string;
-  args: string[];
-  label: string;
-  packages: PackageInfo[];
-  /** For an `(update)` step: every (package, declaring workspace) pair the freshness guard checks, `workspace` being the `packages/<ws>` path where npm may have nested a copy, absent for the root manifest. Defaults to `packages`, hoisted. */
-  checks?: Array<{ pkg: PackageInfo; workspace?: string }>;
-  /** An exact-pin `overrides` entry that would hold the package where it is: executeInstalls moves it to the judged version before npm runs. */
-  overrideBump?: { file: string; name: string; from: string; to: string };
-  /** Set when an override makes the step unsafe to apply: executeInstalls reports this and runs nothing. */
-  refused?: string;
-}
-
-/** The project-level `overrides` that pin a package itself, by name: a string value, or the `"."` key of an object value. Keys with a version selector (`name@range`) and nested parent scopes target transitive copies only and are left out. */
-function readDirectOverrides(dir: string): Map<string, string> {
-  const out = new Map<string, string>();
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')) as {
-      overrides?: Record<string, unknown>;
-    };
-    for (const [key, value] of Object.entries(pkg.overrides ?? {})) {
-      if (typeof value === 'string') out.set(key, value);
-      else if (typeof value === 'object' && value !== null) {
-        const self = (value as Record<string, unknown>)['.'];
-        if (typeof self === 'string') out.set(key, self);
-      }
-    }
-  } catch {
-    // An unreadable manifest has no overrides this planner can honour; npm itself will refuse it loudly.
-  }
-  return out;
-}
-
-const EXACT_VERSION_RE = /^\d+\.\d+\.\d+$/;
-
-/**
- * Move one `overrides` entry in a package.json, refusing any file it cannot rewrite byte for byte (npm's own two-space form with a trailing newline), so nothing but that one value ever changes. Returns an error line, or null plus an advisory when the `_overridesReasons` note still names the old version. The note itself is never rewritten: it is the human justification check:ci-overrides-reasons enforces, and only a human can say why the new version is the right floor.
- */
-function applyOverrideBump(b: NonNullable<InstallStep['overrideBump']>): {
-  error: string | null;
-  advisory: string | null;
-} {
-  const rel = path.relative(CONSOLE_ROOT, b.file) || 'package.json';
-  let text: string;
-  let pkg: { overrides?: Record<string, unknown>; _overridesReasons?: Record<string, unknown> };
-  try {
-    text = fs.readFileSync(b.file, 'utf-8');
-    pkg = JSON.parse(text) as typeof pkg;
-  } catch (e) {
-    return { error: `cannot read ${rel}: ${(e as Error).message}`, advisory: null };
-  }
-  if (`${JSON.stringify(pkg, null, 2)}\n` !== text) {
-    return {
-      error: `${rel} is not in npm's two-space JSON form, so its override is not rewritten blind; set overrides["${b.name}"] to "${b.to}" by hand, then run \`npm update ${b.name}\``,
-      advisory: null,
-    };
-  }
-  const overrides = pkg.overrides ?? {};
-  const current = overrides[b.name];
-  const self =
-    typeof current === 'object' && current !== null
-      ? (current as Record<string, unknown>)['.']
-      : current;
-  if (self !== b.from) {
-    return {
-      error: `${rel} overrides["${b.name}"] is no longer "${b.from}" (it changed after the plan was made); re-run the upgrade`,
-      advisory: null,
-    };
-  }
-  if (typeof current === 'object' && current !== null) {
-    (current as Record<string, unknown>)['.'] = b.to;
-  } else {
-    overrides[b.name] = b.to;
-  }
-  fs.writeFileSync(b.file, `${JSON.stringify(pkg, null, 2)}\n`);
-  const note = pkg._overridesReasons?.[b.name];
-  const advisory =
-    typeof note === 'string' && note.includes(b.from)
-      ? `${rel} _overridesReasons["${b.name}"] still names ${b.from}; the override is now ${b.to}. Update the note before committing.`
-      : null;
-  return { error: null, advisory };
-}
-
-/** The ranges a manifest declares for what it installs (dependencies, devDependencies, optionalDependencies). Peer ranges are left out: they say what a consumer must bring, not what this manifest installs. Empty when the manifest is missing or unreadable. */
-function readDeclaredRanges(dir: string): Record<string, string> {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8')) as {
-      dependencies?: Record<string, string>;
-      devDependencies?: Record<string, string>;
-      optionalDependencies?: Record<string, string>;
-    };
-    return { ...pkg.optionalDependencies, ...pkg.devDependencies, ...pkg.dependencies };
-  } catch {
-    return {};
-  }
-}
-
-/**
- * True when `version` satisfies the declared `range`. Only the shapes the scanned manifests use are understood: `^x.y.z`, `~x.y.z`, an exact `x.y.z`, and `*`. Anything else (a `file:` spec, a compound range, a prerelease target) answers false, which keeps the package on the pinned `npm install name@version` path the gate always used.
- */
-function satisfiesRange(range: string | undefined, version: string): boolean {
-  if (range === undefined) return false;
-  const r = range.trim();
-  const target = parseVersion(version);
-  if (!target || target.prerelease) return false;
-  if (r === '*' || r === 'x') return true;
-  const m = r.match(/^([\^~]?)(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/);
-  if (!m) return false;
-  const [, op, baseText] = m;
-  const base = parseVersion(baseText);
-  if (!base) return false;
-  if (op === '') return compareVersions(version, baseText) === 0 && !base.prerelease;
-  if (compareVersions(version, baseText) < 0) return false;
-  if (op === '~') return target.major === base.major && target.minor === base.minor;
-  return releaseLine(version) === releaseLine(baseText);
-}
-
-/**
- * The newest publish time a release can have and still be actionable at `nowMs`: the inverse of scripts/lib/release-age.ts's rule (a release published at P is actionable from startOfNextUtcDay(P + window)), so P qualifies exactly when P < startOfUtcDay(now) - window. Every planned npm step passes it as `--before`, because the gate judges only the packages it names: `npm update vitest` re-resolves vitest's whole subtree, and on 2026-10-02 it pulled vite 8.3.2 (published 2026-10-01T10:17Z, 14 h old) into private/account/package-lock.json as a transitive dependency the freshness window never saw. The selftest proves this agrees with isWithinFreshnessWindow on both sides of the boundary. Null when the window is off.
- */
-function freshnessCutoffMs(nowMs: number, minReleaseAgeMs: number): number | null {
-  if (minReleaseAgeMs <= 0) return null;
-  return utcDay(nowMs) - minReleaseAgeMs - 1;
-}
-
-/**
- * Build the npm invocations for the packages cleared to upgrade. Pure apart from reading manifests, so the selftest can assert what WOULD run.
- *
- * TWO VERBS, chosen per manifest by the range it already declares. A target the declared range already allows (`^8.70.1` -> 8.71.0) is planned as `npm update <names>`: that is the only verb npm resolves a pinned sibling family with (typescript-eslint pins its @typescript-eslint/* siblings exactly, so on 2026-09-30 `npm install typescript-eslint@8.71.0 @typescript-eslint/parser@8.71.0 ...` failed ERESOLVE against the installed 8.70.1 family, while `npm update` of the same names succeeded). `npm update` takes the highest version the range allows, which is the judged `latest` unless a newer in-range version was published after this run's freshness check; executeInstalls therefore verifies every `(update)` step against the lockfile and fails it when npm resolved anything but the exact version judged (see verifyUpdatedVersions). A target outside the declared range (an allow-listed major, an exact pin) still installs as `name@<the exact latest judged>`, never `name@latest`, for the same freshness reason. The input is only ever `mustUpgrade`, which categorizePackages never lets a held major into.
- *
- * ONE `npm update` PER LOCKFILE (2026-10-02). Each manifest's packages are still judged against that manifest's own range, but every in-range bump of one npm project (the console root and its workspaces, or one private/ manifest) runs as a SINGLE `npm update -w=<every workspace holding one> [--include-workspace-root] <every name>`. The per-workspace split this replaced (`npm update -w=packages/cli vitest @vitest/ui ...`, then `-w=packages/www ...`, one call each) could never move a family that moves in lockstep: @vitest/coverage-v8@5.0.2 and @vitest/ui@5.0.2 declare an EXACT peer `vitest@"5.0.2"`, npm had nested a coverage-v8 copy in four workspaces, and a `-w` call does not touch another workspace's nested copy, so each per-workspace call met the other workspaces' pins and failed ERESOLVE (6 of 9 steps on 2026-10-02, while the one combined call resolved in 7 s on npm 11.20.0). A lockfile is one ideal tree, so the coupling is decided by npm's resolver over the whole of it, not re-derived here from peer ranges: any grouping finer than the lockfile would have to reproduce that resolver (transitive peers, nesting, hoisting), and one call per lockfile is a superset of every such group. An `-w` scope does not stop a named update moving a HOISTED copy anyway (measured on npm 11.20.0: `npm update -w=packages/a picomatch` moved a picomatch only packages/b declares), so the split never isolated the workspaces it claimed to. Out-of-range targets stay per manifest (`npm install -w=packages/<ws> name@exact`), because `install` adds the package to every workspace it is given.
- *
- * INSTALL BEFORE UPDATE, PER LOCKFILE (2026-10-08). Within one project the out-of-range `npm install` steps run first and the project's single `npm update` after them. The reverse order, which this replaced, ran the update while the OLD version of an allow-listed sibling was still installed: @opentelemetry/sdk-node 0.222.0 (and its 0.x experimental family) pins @opentelemetry/core, resources and sdk-metrics EXACTLY at 2.11.0, so `npm update -w=packages/cli @opentelemetry/core ...` kept 2.11.0, the freshness guard failed the step (judged 2.12.0, installed 2.11.0) in the console root and in private/account alike, and only the install of sdk-node@0.223.0 that ran after it released the pin. Installing first moves the pinning sibling, so the update then resolves the judged version in the same run. When no allow entry moves the sibling, the update still cannot land; verifyUpdatedVersions then names the lockfile entry that pins it (a held-back package, not a freshness breach).
- *
- * AN OVERRIDE DECIDES WHAT NPM RESOLVES (worklist #d8fef08a). A package the project's `overrides` pins to a range that excludes the judged version cannot move by `npm update` or `npm install`: on 2026-10-01 the root pinned fast-xml-parser to 5.11.1, `npm update -w=packages/www fast-xml-parser` stayed on 5.11.1, and the freshness guard failed the step. Such a package leaves the ordinary steps. When the override is an exact version and every declaring manifest's range admits the target, the step moves the override to the judged version (applyOverrideBump) and runs `npm update <name>` in the project root, which re-resolves every copy the override governs (measured on npm 11.20.0: `npm update` honours a changed override, while `npm install --package-lock-only` exits 0 without applying it). Any other override that excludes the target (a bounded range, a range this gate cannot read, a declared range that excludes the target too) is a refused step: moving it is a decision about the bound, not a freshness bump. An override that admits the target, or a `$name` reference to the root's own range, changes nothing here.
- */
-function planInstalls(
-  root: string,
-  rootPackages: PackageInfo[],
-  privateGroups: Array<{ dir: string; name: string; packages: PackageInfo[] }>,
-  /** `freshnessCutoffMs` for this run: every step gets `--before=<it>` so npm resolves no transitive release the window has not cleared. */
-  beforeMs: number | null = null
-): InstallStep[] {
-  const steps: InstallStep[] = [];
-  const spec = (p: PackageInfo) => `${p.name}@${p.latest}`;
-  /** Overridden packages by `<cwd>\0<name>`, gathered across every manifest that declares them, then planned once per project. */
-  const overridden = new Map<
-    string,
-    { cwd: string; label: string; pkg: PackageInfo; value: string; problems: string[] }
-  >();
-  /** In-range bumps by project (keyed by `cwd`), collected across its manifests and run as one `npm update` per project. */
-  const updates = new Map<
-    string,
-    {
-      cwd: string;
-      label: string;
-      workspaces: string[];
-      root: boolean;
-      checks: Array<{ pkg: PackageInfo; workspace?: string }>;
-    }
-  >();
-  /** Out-of-range bumps, one `install` step per manifest, emitted BEFORE the project's update (see the INSTALL BEFORE UPDATE note above). */
-  const installs: InstallStep[] = [];
-  /** Every project (`cwd`) in the order its first manifest was planned, so the steps keep the root-then-private/ order. */
-  const cwdOrder: string[] = [];
-  /** One manifest's packages: in-range targets join the project's single `update`, the rest become an `install` step. */
-  const plan = (
-    cwd: string,
-    manifestDir: string,
-    flags: string[],
-    label: string,
-    allPkgs: PackageInfo[],
-    workspace?: string
-  ) => {
-    if (!cwdOrder.includes(cwd)) cwdOrder.push(cwd);
-    const ranges = readDeclaredRanges(manifestDir);
-    const overrides = readDirectOverrides(cwd);
-    const pkgs = allPkgs.filter((p) => {
-      const value = overrides.get(p.name);
-      if (value === undefined || value.startsWith('$')) return true;
-      const sets = parseRange(value);
-      if (sets && rangeAdmits(sets, p.latest)) return true;
-      const key = `${cwd}\0${p.name}`;
-      const entry = overridden.get(key) ?? {
-        cwd,
-        label: cwd === root ? 'root' : label,
-        pkg: p,
-        value,
-        problems: [],
-      };
-      const manifestRel = path.relative(root, path.join(manifestDir, 'package.json'));
-      if (!EXACT_VERSION_RE.test(value)) {
-        entry.problems.push(
-          `overrides["${p.name}"] is "${value}", which excludes the judged ${p.latest}; only an exact-version pin is moved automatically`
-        );
-      } else if (ranges[p.name] !== undefined && !satisfiesRange(ranges[p.name], p.latest)) {
-        entry.problems.push(
-          `${manifestRel} declares ${p.name} "${ranges[p.name]}", which excludes the judged ${p.latest} as well as the override "${value}"`
-        );
-      }
-      overridden.set(key, entry);
-      return false;
-    });
-    const inRange = pkgs.filter((p) => satisfiesRange(ranges[p.name], p.latest));
-    const outOfRange = pkgs.filter((p) => !inRange.includes(p));
-    if (inRange.length > 0) {
-      // The split-update mutant (fixture runs only, see MUTANTS) keys the group per manifest, which is the planner this replaced.
-      const key = MUTANT === 'split-update' && FIXTURE_ROOT ? `${cwd}\0${workspace ?? ''}` : cwd;
-      const group = updates.get(key) ?? {
-        cwd,
-        label: cwd === root && !(MUTANT === 'split-update' && FIXTURE_ROOT) ? 'root' : label,
-        workspaces: [],
-        root: false,
-        checks: [],
-      };
-      if (workspace) group.workspaces.push(workspace);
-      else group.root = true;
-      for (const pkg of inRange) group.checks.push({ pkg, workspace });
-      updates.set(key, group);
-    }
-    // AN EXACT PIN IS KEPT (worklist #22aa3ff6). `npm install name@x` saves `^x` whatever the manifest declared, so on 2026-10-14 private/account's exact `zod: "4.6.5"` came back as `^4.6.7`. An exact pin installs in its own step with --save-exact. Every other out-of-range package (a caret, a tilde, a comparator) installs with npm's default prefix, so a `~x` or `>=x` range is rewritten to `^x`; the selftest pins that such a package installs WITHOUT `--save-exact`.
-    const exact = outOfRange.filter((p) => EXACT_VERSION_RE.test(ranges[p.name] ?? ''));
-    const ranged = outOfRange.filter((p) => !exact.includes(p));
-    for (const [group, extra] of [
-      [ranged, []],
-      [exact, ['--save-exact']],
-    ] as const) {
-      if (group.length === 0) continue;
-      installs.push({
-        cwd,
-        args: ['install', ...flags, ...extra, ...group.map(spec)],
-        label: `${label} (install)`,
-        packages: group,
-      });
-    }
-  };
-
-  const byWorkspace = new Map<string, PackageInfo[]>();
-  const rootDeclared: PackageInfo[] = [];
-  const rootRanges = readDeclaredRanges(root);
-  for (const pkg of rootPackages) {
-    const workspaces = findWorkspacesWithPackage(pkg.name, root);
-    // EVERY MANIFEST THAT DECLARES IT. A package the root declares AND a workspace declares used to go to the workspaces only: on 2026-09-26 packages/cli's tsx became ^4.23.15 while the root's stayed ^4.21.0 (locked 4.22.1), and the gate stayed red until a hand bump.
-    if (workspaces.length === 0 || rootRanges[pkg.name] !== undefined) rootDeclared.push(pkg);
-    for (const ws of workspaces) {
-      const existing = byWorkspace.get(ws) ?? [];
-      existing.push(pkg);
-      byWorkspace.set(ws, existing);
-    }
-  }
-  for (const [ws, pkgs] of byWorkspace) {
-    plan(
-      root,
-      path.join(root, 'packages', ws),
-      [`-w=packages/${ws}`],
-      `packages/${ws}`,
-      pkgs,
-      `packages/${ws}`
-    );
-  }
-  if (rootDeclared.length > 0) plan(root, root, [], 'root', rootDeclared);
-  for (const { dir, name, packages } of privateGroups) {
-    if (packages.length === 0) continue;
-    plan(dir, dir, [], name, packages);
-  }
-  const updateSteps: InstallStep[] = [];
-  for (const { cwd, label, workspaces, root: withRoot, checks } of updates.values()) {
-    const wsFlags = [...new Set(workspaces)].sort().map((ws) => `-w=${ws}`);
-    const names = [...new Set(checks.map((c) => c.pkg.name))];
-    updateSteps.push({
-      cwd,
-      args: [
-        'update',
-        ...wsFlags,
-        ...(wsFlags.length > 0 && withRoot ? ['--include-workspace-root'] : []),
-        ...names,
-      ],
-      label: `${label} (update)`,
-      packages: names.map((n) => checks.find((c) => c.pkg.name === n)!.pkg),
-      checks,
-    });
-  }
-  if (MUTANT === 'update-first' && FIXTURE_ROOT) {
-    // The update-first mutant (fixture runs only, see MUTANTS): every update, then every install, the order this replaced.
-    steps.push(...updateSteps, ...installs);
-  } else {
-    for (const cwd of cwdOrder) {
-      steps.push(...installs.filter((st) => st.cwd === cwd));
-      steps.push(...updateSteps.filter((st) => st.cwd === cwd));
-    }
-  }
-  const finish = (all: InstallStep[]): InstallStep[] => {
-    if (beforeMs === null) return all;
-    const flag = `--before=${new Date(beforeMs).toISOString()}`;
-    return all.map((st) => (st.refused ? st : { ...st, args: [...st.args, flag] }));
-  };
-  for (const { cwd, label, pkg, value, problems } of overridden.values()) {
-    const file = path.join(cwd, 'package.json');
-    if (problems.length > 0) {
-      const dirRel = path.relative(root, cwd) || '.';
-      steps.push({
-        cwd,
-        args: [],
-        label: `${label} (override)`,
-        packages: [pkg],
-        refused: `${[...new Set(problems)].join('; ')}. Move the override (and its _overridesReasons note) and any declared range by hand, then run \`npm update ${pkg.name}\` in ${dirRel}.`,
-      });
-      continue;
-    }
-    steps.push({
-      cwd,
-      args: ['update', pkg.name],
-      label: `${label} (override)`,
-      packages: [pkg],
-      overrideBump: { file, name: pkg.name, from: value, to: pkg.latest },
-    });
-  }
-  return finish(steps);
-}
-
-/**
- * The environment a planned npm step runs in: this process's, minus any inherited npm loglevel. `npm run -s check:deps -- --upgrade` exports `npm_config_loglevel=silent` to this script, and a child npm that inherits it prints NOTHING when it fails; on 2026-09-30 that turned an ERESOLVE into a bare "Some upgrades failed". Without the variable the child falls back to .npmrc or npm's default level, so its own error reaches the terminal.
- */
-function upgradeChildEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...base };
-  for (const key of Object.keys(env)) {
-    if (key.toLowerCase() === 'npm_config_loglevel') delete env[key];
-  }
-  return env;
-}
-
-/**
- * FRESHNESS-WINDOW GUARD for `npm update`. That verb takes the highest version the declared range allows, so a version published after this run's release-age check (.ci/config/release-age.json) could land without ever being judged, which is exactly the smash-and-grab release the window exists to stop. After an `(update)` step, every (package, declaring workspace) pair in it must resolve in the step's lockfile to the EXACT version the gate judged: the workspace's nested copy (`packages/<ws>/node_modules/<name>`) when npm placed one there, else the hoisted `node_modules/<name>`. Returns one line per package that does not, empty when all match. Pure, so the selftest drives it directly.
- */
-function verifyUpdatedVersions(
-  step: InstallStep,
-  lock: Record<string, LockEntry> | null
-): string[] {
-  return updateMismatches(step, lock).map((m) => m.line);
-}
-
-/**
- * The installed copies in `lock` whose own declared range for `name` admits the version npm kept but not the judged one, as `<name>@<version> requires "<range>"`. This is how an exact-pinning sibling shows up: @opentelemetry/sdk-node@0.222.0 requires @opentelemetry/core "2.11.0", so no `npm update` of core can reach 2.12.0 while that sdk-node is installed. Pure, so the selftest drives it directly.
- */
-function pinningHolders(
-  lock: Record<string, LockEntry> | null,
-  name: string,
-  kept: string,
-  judged: string
-): string[] {
-  const out: string[] = [];
-  for (const [key, entry] of Object.entries(lock ?? {})) {
-    const holder = key.slice(key.lastIndexOf('node_modules/') + 'node_modules/'.length);
-    if (!key.includes('node_modules/') || holder === name) continue;
-    for (const deps of [entry.dependencies, entry.optionalDependencies, entry.peerDependencies]) {
-      const range = deps?.[name];
-      if (range === undefined) continue;
-      const sets = parseRange(range);
-      if (sets && rangeAdmits(sets, kept) && !rangeAdmits(sets, judged)) {
-        out.push(`${holder}@${entry.version ?? '?'} requires "${range}"`);
-      }
-    }
-  }
-  return [...new Set(out)];
-}
-
-/**
- * Every checked package of an `(update)` step that did not resolve to its judged version, split by what that means. `held` is a package npm left on an OLDER version than judged: nothing unjudged landed, the update simply could not move it, and `holders` names the installed copies whose declared range pins it (pinningHolders). Anything else (a newer version, or a package missing from the lockfile) is a freshness-window breach.
- */
-function updateMismatches(
-  step: InstallStep,
-  lock: Record<string, LockEntry> | null
-): Array<{ line: string; held: boolean }> {
-  const out: Array<{ line: string; held: boolean }> = [];
-  const seen = new Set<string>();
-  const checks: Array<{ pkg: PackageInfo; workspace?: string }> =
-    step.checks ?? step.packages.map((p) => ({ pkg: p }));
-  for (const { pkg, workspace } of checks) {
-    const nested = workspace ? lock?.[`${workspace}/node_modules/${pkg.name}`] : undefined;
-    const resolved = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
-    if (resolved === pkg.latest) continue;
-    const held =
-      resolved !== undefined &&
-      parseVersion(resolved) !== null &&
-      parseVersion(pkg.latest) !== null &&
-      compareVersions(resolved, pkg.latest) < 0;
-    const holders = held ? pinningHolders(lock, pkg.name, resolved, pkg.latest) : [];
-    const line =
-      `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}` +
-      (held
-        ? holders.length > 0
-          ? `; held back by ${holders.join(', ')}`
-          : "; held back, and no installed copy in package-lock.json pins it, so npm's own output above is the reason"
-        : '');
-    if (seen.has(line)) continue;
-    seen.add(line);
-    out.push({ line, held });
-  }
-  return out;
-}
-
-const SYNCPACK_RC = path.join(CONSOLE_ROOT, '.syncpackrc.json');
-const SYNCPACK_PIN_RE = /^\^(\d+\.\d+\.\d+)$/;
-
-/**
- * The manifests syncpack lints, mirroring `source` in .syncpackrc.json: the root, every packages/* and private/account. Fixture roots read the same shape.
- */
-function syncpackSourceDirs(): string[] {
-  const dirs = ['', 'private/account'];
-  try {
-    for (const d of fs.readdirSync(path.join(CONSOLE_ROOT, 'packages'), { withFileTypes: true })) {
-      if (d.isDirectory()) dirs.push(`packages/${d.name}`);
-    }
-  } catch {
-    // No packages/ directory: only the root and private/account are sources.
-  }
-  return dirs.map((d) => path.join(CONSOLE_ROOT, d));
-}
-
-/**
- * Move the `pinVersion` of every .syncpackrc.json versionGroup whose literal `dependencies` include a package the upgrade moved (worklist #3b831146: on 2026-10-08 --upgrade took @opentelemetry 0.222 -> 0.223 and left the "0.x line in lockstep" group at ^0.222.0, so check:version failed on the next run). `moved` maps a package to the version the upgrade installed; `declared` is the dependency ranges of each source manifest. Pure, so the selftest drives it without a file.
- *
- * Refuses (an error, no text) a rc file that is not in the exact form it would rewrite (JSON.stringify two-space plus a trailing newline), a pin that is not a plain caret range, and a group whose members do not all sit on the moved line: a member the manifests declare that did not move (or whose range this gate cannot read) is named as a laggard, because pinning the group would only trade one syncpack failure for another. Glob entries in `dependencies` are not expanded: only literal names are synced, and a caret-pinned group whose glob entry covers a package that moved past the pin is an error naming the group (a hand edit), never a silent skip. The group `label` is never touched (check-syncpack-reasons.ts keys on it).
- */
-function globToRegExp(glob: string): RegExp {
-  const body = glob
-    .split(/([*?])/)
-    .map((part) =>
-      part === '*' ? '.*' : part === '?' ? '.' : part.replace(/[.+^${}()|[\]\\]/g, '\\$&')
-    )
-    .join('');
-  return new RegExp(`^${body}$`);
-}
-
-function planPinSync(
-  text: string,
-  moved: Map<string, string>,
-  declared: Record<string, string>[]
-): { text: string | null; groups: number; involved: number; rewrites: string[]; errors: string[] } {
-  const out = {
-    text: null as string | null,
-    groups: 0,
-    involved: 0,
-    rewrites: [] as string[],
-    errors: [] as string[],
-  };
-  let rc: { versionGroups?: Record<string, unknown>[] };
-  try {
-    rc = JSON.parse(text) as typeof rc;
-  } catch (e) {
-    out.errors.push(`.syncpackrc.json is not valid JSON: ${(e as Error).message}`);
-    return out;
-  }
-  const groups = rc.versionGroups ?? [];
-  out.groups = groups.length;
-  groups.forEach((group, i) => {
-    const pin = group.pinVersion;
-    const deps = group.dependencies;
-    if (typeof pin !== 'string' || !Array.isArray(deps)) return;
-    const members = deps.filter((d): d is string => typeof d === 'string' && !/[*?!]/.test(d));
-    const movedMembers = members.filter((d) => moved.has(d));
-    const label = typeof group.label === 'string' ? group.label : `versionGroups[${i}]`;
-    const globs = deps.filter(
-      (d): d is string => typeof d === 'string' && /[*?]/.test(d) && !d.startsWith('!')
-    );
-    // Literal members are handled by the rewrite below, so a glob entry only matters for a moved package it covers that no literal entry names.
-    const globMoved = [...moved.keys()].filter(
-      (name) => !members.includes(name) && globs.some((g) => globToRegExp(g).test(name))
-    );
-    // A glob entry cannot be expanded against the manifests here, so a moved package it covers past the pin (or past the line a literal member moves it to) is named for a hand edit, whether or not the group also has a moved literal member; a group pinned to anything but a caret range (a `*` group) holds no line to keep.
-    const gm = pin.match(SYNCPACK_PIN_RE);
-    const pinLine = movedMembers.reduce<string | null>(
-      (a, d) => {
-        const v = moved.get(d) as string;
-        return a === null || compareVersions(v, a) > 0 ? v : a;
-      },
-      gm ? gm[1] : null
-    );
-    const globBest = globMoved.reduce<string | null>(
-      (a, n) =>
-        a === null || compareVersions(moved.get(n) as string, a) > 0 ? (moved.get(n) as string) : a,
-      null
-    );
-    const globPast =
-      gm !== null &&
-      globBest !== null &&
-      pinLine !== null &&
-      compareVersions(globBest, pinLine) > 0;
-    if (globPast) {
-      out.involved++;
-      out.errors.push(
-        `group "${label}" covers ${globMoved.map((n) => `${n}@${moved.get(n)}`).join(', ')} through a glob entry, which is not expanded, so its pin ${pin} is not moved${movedMembers.length > 0 ? ` (its literal members ${movedMembers.map((n) => `${n}@${moved.get(n)}`).join(', ')} moved too, and are not rewritten either)` : ''}; set its pinVersion by hand`
-      );
-    }
-    if (movedMembers.length === 0) return;
-    if (globPast) return;
-    out.involved++;
-    const m = pin.match(SYNCPACK_PIN_RE);
-    if (!m) {
-      out.errors.push(
-        `group "${label}" pins "${pin}", which is not a plain caret range, so it is not rewritten blind; set its pinVersion by hand to the line ${movedMembers.map((d) => `${d}@${moved.get(d)}`).join(', ')} moved to`
-      );
-      return;
-    }
-    const lines = new Map<string, string[]>();
-    const note = (line: string | null, who: string) => {
-      const key = line ?? 'unreadable';
-      lines.set(key, [...(lines.get(key) ?? []), who]);
-    };
-    for (const d of members) {
-      const target = moved.get(d);
-      if (target !== undefined) {
-        note(releaseLine(target), `${d}@${target} (moved)`);
-        continue;
-      }
-      for (const ranges of declared) {
-        const range = ranges[d];
-        if (range === undefined) continue;
-        const base = range.match(/^[\^~]?(\d+\.\d+\.\d+)$/);
-        note(base ? releaseLine(base[1]) : null, `${d} "${range}" (not moved)`);
-      }
-    }
-    if (lines.size > 1) {
-      const [first, ...rest] = [...lines.entries()].sort((a, b) => b[1].length - a[1].length);
-      out.errors.push(
-        `group "${label}" has members on different lines, so its pin ${pin} is not moved: ${first[1].join(', ')} vs ${rest.map(([, who]) => who.join(', ')).join('; ')}. Move the laggards to the same line (or allow-list them), then re-run.`
-      );
-      return;
-    }
-    const best = movedMembers
-      .map((d) => moved.get(d) as string)
-      .reduce((a, b) => (compareVersions(a, b) >= 0 ? a : b));
-    const next = `^${best}`;
-    if (next === pin || compareVersions(best, m[1]) < 0) return;
-    group.pinVersion = next;
-    out.rewrites.push(`group "${label}": pinVersion "${pin}" -> "${next}"`);
-  });
-  if (out.rewrites.length > 0) {
-    const fresh = JSON.parse(text) as unknown;
-    if (`${JSON.stringify(fresh, null, 2)}\n` !== text) {
-      out.errors.push(
-        '.syncpackrc.json is not in the two-space JSON form, so its pin groups are not rewritten blind; set each pinVersion above by hand'
-      );
-      return out;
-    }
-    out.text = `${JSON.stringify(rc, null, 2)}\n`;
-  }
-  return out;
-}
-
-/**
- * After a successful --upgrade, bring the syncpack pin groups along with the packages the steps moved. Returns false (naming each group) when a group cannot be moved safely, so the run stays red instead of leaving check:version to fail later.
- */
-function syncPinGroups(steps: InstallStep[]): boolean {
-  const moved = new Map<string, string>();
-  for (const step of steps) {
-    if (step.refused) continue;
-    for (const p of step.packages) {
-      const prev = moved.get(p.name);
-      if (prev === undefined || compareVersions(p.latest, prev) > 0) moved.set(p.name, p.latest);
-    }
-  }
-  if (moved.size === 0) return true;
-  if (MUTANT === 'skip-pin-sync') return true;
-  let text: string;
-  try {
-    text = fs.readFileSync(SYNCPACK_RC, 'utf-8');
-  } catch (e) {
-    if (FIXTURE_ROOT) return true;
-    console.error(
-      `${RED}✗${NC} cannot read .syncpackrc.json to move its pin groups: ${(e as Error).message}`
-    );
-    return false;
-  }
-  const plan = planPinSync(text, moved, syncpackSourceDirs().map(readDeclaredRanges));
-  // A plan with no text rewrote nothing (it carries only errors), so it neither prints nor counts rewrites it did not make.
-  const written = plan.text !== null ? plan.rewrites : [];
-  if (plan.text !== null) fs.writeFileSync(SYNCPACK_RC, plan.text);
-  console.log(
-    `\n${BLUE}syncpack pin groups:${NC} ${plan.groups} groups, ${plan.involved} hold a moved package, ${written.length} rewritten`
-  );
-  for (const r of written) console.log(`  .syncpackrc.json ${r}`);
-  if (plan.errors.length === 0) return true;
-  console.error(
-    `${RED}✗${NC} ${plan.errors.length} syncpack pin group(s) not moved (check:version stays red until each is):`
-  );
-  for (const e of plan.errors) console.error(`  ${e}`);
-  return false;
-}
-
-/** Run the planned steps, printing what each one takes, and name every step that failed with its exact command and exit status. An `(update)` step that exits 0 still fails when verifyUpdatedVersions finds a version the gate did not judge. */
-function executeInstalls(steps: InstallStep[]): boolean {
-  if (steps.length === 0) {
-    console.log(`${GREEN}No packages to upgrade${NC}`);
-    return true;
-  }
-  const failures: string[] = [];
-  const advisories: string[] = [];
-  const env = upgradeChildEnv();
-  for (const step of steps) {
-    if (step.refused) {
-      failures.push(
-        `  ${step.label}: ${step.packages.map((p) => `${p.name} ${p.current} -> ${p.latest}`).join(', ')} not applied: ${step.refused}`
-      );
-      continue;
-    }
-    console.log(`${BLUE}Upgrading ${step.packages.length} package(s) in ${step.label}...${NC}`);
-    console.log(`  \`npm ${step.args.join(' ')}\`\n`);
-    for (const pkg of step.packages) printPackage(pkg);
-    console.log();
-    if (step.overrideBump) {
-      const b = step.overrideBump;
-      const bumped = applyOverrideBump(b);
-      if (bumped.error) {
-        failures.push(`  ${step.label}: ${bumped.error}`);
-        continue;
-      }
-      console.log(
-        `  overrides["${b.name}"]: "${b.from}" -> "${b.to}" in ${path.relative(CONSOLE_ROOT, b.file) || 'package.json'}\n`
-      );
-      if (bumped.advisory) advisories.push(bumped.advisory);
-    }
-    const result = spawnSync('npm', step.args, {
-      cwd: step.cwd,
-      stdio: 'inherit',
-      shell: true,
-      env,
-    });
-    if (result.status !== 0) {
-      const why = result.error
-        ? `could not start: ${result.error.message}`
-        : result.signal
-          ? `killed by ${result.signal}`
-          : `exit status ${result.status}`;
-      failures.push(
-        `  ${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'} (${why})` +
-          (step.overrideBump
-            ? `; overrides["${step.overrideBump.name}"] was already moved to "${step.overrideBump.to}", so package.json and the lockfile disagree until it succeeds`
-            : '')
-      );
-      continue;
-    }
-    if (step.args[0] !== 'update') continue;
-    const mismatches = updateMismatches(step, readLockPackages(step.cwd));
-    const stepRef = `${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'}`;
-    const unjudged = mismatches.filter((m) => !m.held);
-    const heldBack = mismatches.filter((m) => m.held);
-    if (unjudged.length > 0) {
-      failures.push(
-        `  ${stepRef} resolved a version the gate did not judge (freshness-window guard, .ci/config/release-age.json):\n` +
-          unjudged.map((m) => `      ${m.line}`).join('\n') +
-          '\n    package.json and package-lock.json in that directory now hold the unjudged version; revert them there before committing.'
-      );
-    }
-    if (heldBack.length > 0) {
-      failures.push(
-        `  ${stepRef} left ${heldBack.length} package(s) below the judged version (npm kept the installed one, so nothing unjudged landed):\n` +
-          heldBack.map((m) => `      ${m.line}`).join('\n') +
-          `\n    A package an installed sibling pins exactly moves only with that sibling: take the sibling's bump (an allow entry in ${MAJOR_ALLOW_REL} when it is a held major, which --upgrade installs before this update), or wait for a sibling release that admits the judged version.`
-      );
-    }
-  }
-  for (const a of advisories) console.log(`\n${YELLOW}${a}${NC}`);
-  if (failures.length === 0) {
-    console.log(`\n${GREEN}Upgrades completed${NC}`);
-    return true;
-  }
-  console.error(`\n${RED}✗${NC} ${failures.length} of ${steps.length} upgrade step(s) failed:`);
-  for (const f of failures) console.error(f);
-  console.error(
-    '  The npm error for each is printed above its step; re-run that command to see it again.'
-  );
-  return false;
 }
 
 /**
