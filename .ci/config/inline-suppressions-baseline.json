@@ -17,7 +17,6 @@
    "shellcheck-disable SC1091": 2
   },
   ".ci/rediacc_ci/check_pytest.py": {
-   "noqa PLC0415": 1,
    "noqa S314": 1
   },
   ".ci/rediacc_ci/ci/budget_report.py": {
@@ -35,7 +34,7 @@
    "noqa PLC0415": 2
   },
   ".ci/rediacc_ci/ci/github_status.py": {
-   "noqa PLC0415": 2,
+   "noqa PLC0415": 1,
    "noqa S310": 1
   },
   ".ci/rediacc_ci/ci/scope_reconcile_shadow.py": {
@@ -55,7 +54,6 @@
    "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/core/bws_env.py": {
-   "noqa PLC0415": 1,
    "noqa S606": 1
   },
   ".ci/rediacc_ci/core/jsonl_append.py": {
@@ -64,14 +62,10 @@
   ".ci/rediacc_ci/core/local_common.py": {
    "noqa S606": 1
   },
-  ".ci/rediacc_ci/core/platform.py": {
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/core/release_age.py": {
    "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/core/run_verbs.py": {
-   "noqa PLC0415": 2,
    "noqa PLW0108": 1
   },
   ".ci/rediacc_ci/core_lease.py": {
@@ -132,17 +126,8 @@
   ".ci/rediacc_ci/proc.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/quality/account_env_retired.py": {
-   "noqa PLC0415": 2
-  },
   ".ci/rediacc_ci/quality/account_probes.py": {
    "noqa PLW1509": 1
-  },
-  ".ci/rediacc_ci/quality/actions_vars.py": {
-   "noqa PLC0415": 3
-  },
-  ".ci/rediacc_ci/quality/agent_session_archival.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/quality/browser_smoke.py": {
    "noqa S606": 1
@@ -155,36 +140,18 @@
    "type-ignore arg-type": 1,
    "type-ignore list-item": 1
   },
-  ".ci/rediacc_ci/quality/hook_cross_os.py": {
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/quality/hook_exec_baseline.py": {
    "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/quality/page_density.py": {
    "noqa S606": 1
   },
-  ".ci/rediacc_ci/quality/plant_proofs.py": {
-   "noqa PLC0415": 3
-  },
   ".ci/rediacc_ci/quality/proxy_image_smoke.py": {
    "noqa S105": 2,
    "noqa S310": 2
   },
-  ".ci/rediacc_ci/quality/python_env_registry.py": {
-   "noqa PLC0415": 3
-  },
   ".ci/rediacc_ci/quality/release_key_canonical.py": {
    "noqa S105": 1
-  },
-  ".ci/rediacc_ci/quality/secret_supply.py": {
-   "noqa PLC0415": 5
-  },
-  ".ci/rediacc_ci/quality/vendored_blocker_derivation.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/quality/worklist_env_registry.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/security/ci_workflow_invariants.py": {
    "noqa PLC0415": 1
@@ -202,7 +169,6 @@
    "noqa S310": 1
   },
   ".ci/rediacc_ci/setup/machine.py": {
-   "noqa PLC0415": 2,
    "noqa S606": 1
   },
   ".ci/rediacc_ci/setup/shadow_driver.py": {
@@ -442,10 +408,6 @@
   },
   ".devcontainer/start-vscode.sh": {
    "shellcheck-disable SC2064": 2
-  },
-  "conftest.py": {
-   "noqa PLC0415": 1,
-   "type-ignore attr-defined": 2
   },
   "packages/locales/site_locales.py": {
    "type-ignore union-attr": 1

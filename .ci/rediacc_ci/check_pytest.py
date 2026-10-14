@@ -56,6 +56,7 @@ import sys
 import tempfile
 import time
 import tomllib
+import xml.etree.ElementTree as ET
 
 # THE HOP, WRITTEN BY HAND EXACTLY ONCE. This file is a script, so it cannot
 # import the module that would put its own package on sys.path until its package
@@ -327,7 +328,6 @@ def junit_finding_keys(junit: pathlib.Path) -> list[str]:
 
     WHY THIS GATE KEYS ITS FINDINGS (2026-10-05). It used to emit none, so the only way to carry its four host-specific skips was `findings: "*"`, and that wildcard also carried seven real failures through a push. With a key per test the carry names exactly what it excuses, and a new failure is a new key the push guard refuses. The node is `<classname>::<name>`, with the xdist `@group` suffix dropped so a serial and a parallel run agree, and characters outside the key alphabet written as `#`.
     """
-    import xml.etree.ElementTree as ET  # noqa: PLC0415 -- only a red run reads its junit
 
     try:
         root = ET.parse(junit).getroot()  # noqa: S314 -- this run's own junit, written by pytest a moment ago

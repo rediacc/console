@@ -81,10 +81,13 @@ Exit 1 on any finding or refusal, 2 on a failed control.
 from __future__ import annotations
 
 import ast
+import copy
+import io
 import json
 import pathlib
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
@@ -653,7 +656,6 @@ def _quiet(fn, *args, **kwargs):
 
     The write-path controls DRIVE refusals, and a refusal writes `\u2717 Refusing to write the baseline` to the default logger. Left alone, a fully GREEN selftest scrolls three of those past the reader, which is the shape that teaches people to skim a gate's output. Capturing also upgrades the controls: they assert the message a human would act on, not just the rc.
     """
-    import io  # noqa: PLC0415
 
     buf = io.StringIO()
     log.reset(stream=buf, colour=False)
@@ -675,8 +677,6 @@ def _refuses(root) -> bool:
 @git_isolated
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
-    import copy  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
 

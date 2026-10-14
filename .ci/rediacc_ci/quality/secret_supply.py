@@ -111,15 +111,19 @@ Exit 1 on any finding or refusal, 2 on a failed control.
 
 from __future__ import annotations
 
+import copy
 import json
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
+from rediacc_ci.core import bws_env
 
 SPEC_REL = ".ci/config/secret-supply.json"
 MANIFEST_REL = ".ci/config/env-manifest.json"
@@ -421,7 +425,6 @@ def evaluate_consumers(spec, vault: set[str]) -> list[str]:
 
     The specs are parsed by `bws_env.parse_spec`, imported rather than re-typed, so a line cannot mean one thing here and another at run time.
     """
-    from rediacc_ci.core import bws_env  # noqa: PLC0415
 
     findings = []
     for profile in sorted(spec["consumers"]):
@@ -782,7 +785,6 @@ _MANIFEST["shards"]["secret"].append("FIX_ALIAS")
 
 def _fixture(tmp, spec=None, manifest=None, vault_map=None, dotenv=None):
     """A real git repository, because the evidence check reads `git ls-files`."""
-    import copy  # noqa: PLC0415
 
     root = pathlib.Path(tmp)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
@@ -820,9 +822,6 @@ def _findings(root) -> list[str]:
 @git_isolated
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
-    import copy  # noqa: PLC0415
-    import shutil  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
 

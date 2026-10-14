@@ -96,6 +96,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from rediacc_ci import paths
+from rediacc_ci.core import env as envfile
 
 # The one credential that cannot come from the store, named once so callers and tests refer to it by symbol rather than re-spelling it.
 #
@@ -959,7 +960,6 @@ def _compare_verb(path: str, raw_specs: list[str]) -> int:
 
     The file is parsed by `rediacc_ci.core.env.parse`, the same unquoting `env_file_load` applies, so a quoted value compares as the string a consumer received. With no SPEC every name the file assigns is compared under its own name.
     """
-    from rediacc_ci.core import env as envfile  # noqa: PLC0415
 
     try:
         local = envfile.read_pairs(path, missing_ok=False)

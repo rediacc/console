@@ -77,6 +77,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
@@ -776,7 +777,6 @@ def _fixture(tmp, py=_FIXTURE_PY, sh=_FIXTURE_SH, registry=None, sealed=_FIXTURE
 @git_isolated
 def selftest():
     """True when a control failed, which is what `controls_first` expects."""
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
 

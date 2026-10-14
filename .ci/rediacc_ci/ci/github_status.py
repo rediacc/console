@@ -58,6 +58,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -119,7 +120,8 @@ class Status:
 def _core_lease():
     """`rediacc_ci.core_lease`, or the sibling file loaded by path: the Stop hook and ci-trace load THIS module by file, where the package is not importable by name."""
     try:
-        from rediacc_ci import core_lease  # noqa: PLC0415 -- the fallback below needs the failure
+        # The fallback below needs the failure, so the import stays here.
+        from rediacc_ci import core_lease  # noqa: PLC0415
 
         return core_lease
     except ImportError:
@@ -142,7 +144,6 @@ def cache_path() -> pathlib.Path:
 def fetch_summary() -> bytes:
     """One GET of summary.json, bounded by `FETCH_TIMEOUT_S`. Raises on any failure; `read` turns that into a stale or unknown answer."""
     # Imported here, not at the top: urllib.request costs ~50 ms to import, and every hook-side caller loads this module without ever fetching.
-    import urllib.request  # noqa: PLC0415
 
     req = urllib.request.Request(
         SUMMARY_URL,

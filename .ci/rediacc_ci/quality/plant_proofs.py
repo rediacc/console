@@ -146,13 +146,15 @@ There is deliberately NO `> 0` floor on the unproven count. That is the clause t
 """
 
 import hashlib
+import io
 import json
 import pathlib
 import re
 import subprocess
+import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import controls_first, git_isolated
+from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
 
 BASELINE_REL = ".ci/config/plant-proof-baseline.json"
 KEY = "plants"
@@ -1269,7 +1271,6 @@ def _fixture(tmp, *, sh=_SH_PLAIN, ts=_TS_PLAIN, baseline=None, delegate=True, s
 
 def _quiet(fn, *args, **kwargs):
     """Run `fn`, returning `(result, everything it logged)` and printing none of it."""
-    import io  # noqa: PLC0415
 
     buf = io.StringIO()
     log.reset(stream=buf, colour=False)
@@ -1290,9 +1291,6 @@ def _refuses(root):
 @git_isolated
 def selftest():
     """True when a control FAILED, which is what `controls_first` expects."""
-    import tempfile  # noqa: PLC0415
-
-    from rediacc_ci.controls import Checker, plant  # noqa: PLC0415
 
     check = Checker()
 

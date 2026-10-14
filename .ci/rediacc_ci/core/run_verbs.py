@@ -24,8 +24,10 @@ import sys
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING
 
+from rediacc_ci import __main__ as entry
 from rediacc_ci import log, paths
 from rediacc_ci.core import account, account_lifecycle, devbox, local_common, service, toolchain
+from rediacc_ci.quality import submodule_branches
 from rediacc_ci.security import shfmt
 from rediacc_ci.well_known import DEV_USER_EMAIL, WEB_IMAGE_REPO
 
@@ -472,7 +474,6 @@ def quality_shell() -> int:
 def quality_submodules() -> int:
     log.step("Checking submodule branch alignment")
     # Lazy: the gate's imports are not needed by any other verb.
-    from rediacc_ci.quality import submodule_branches  # noqa: PLC0415
 
     _flush()
     return submodule_branches.main([])
@@ -609,7 +610,6 @@ SUBCOMMAND_TABLES: dict[str, Mapping[str, object]] = {
 def arms(table: tuple | None = None) -> list[str]:
     """What this package dispatches, as sorted `TOP <verb>` and `SUB <verb>/<sub>` lines: every row of the VERBS table, then every key of the tables above. The gate test compares this inventory with the one `help` documents."""
     # Lazy: `__main__` imports nothing at module scope, and its handlers import this module.
-    from rediacc_ci import __main__ as entry  # noqa: PLC0415
 
     lines = {"TOP " + name for name in entry.names(table)}
     for verb, arm_table in SUBCOMMAND_TABLES.items():
