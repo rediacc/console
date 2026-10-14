@@ -32,3 +32,7 @@ touched.
 ## 5. The commit is the safety net
 
 Committed work survives; uncommitted work does not, and the tree usually holds uncommitted work from other sessions. Never `git checkout`, `restore`, `stash` or `clean` to undo a mistake of this session's own making; repair forward instead, with a new commit when the mistake is already committed (no amending).
+
+## 6. The Stop hook runs at one effort level
+
+How hard the Stop hook pushes is one `effort` level in `agent/plans/QUEUE.md` `## Settings` (`quiet` < `low` < `smart` < `high` < `ultra`), and `.claude/config/effort.json` says which check blocks or advises at each. The level is the operator's dial, not a way past a block; the FLOOR (the hook cannot see, CI red, a dead writer, an unread report, a wait with no wake-up timer) blocks at every level. A PR wind-down is a phase, `worklist.py --phase <me> babysit|merge`, which only parks work and ends with `--phase <me> build` or the merge.

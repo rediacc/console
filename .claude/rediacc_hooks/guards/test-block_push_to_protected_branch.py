@@ -98,7 +98,9 @@ PLANS = {
 # The turbo world (agent/plans/PLAN-stop-hook-turbo.md T6): `turbo: on` committed in QUEUE.md at the pushed sha, `turbo: off` in the working tree only, so a guard that read the working tree would refuse what the pushed commit admits.
 PLAN_DONE2 = "agent/plans/PLAN-fx-done2.md"
 QUEUE_REL = "agent/plans/QUEUE.md"
-QUEUE_TURBO = "# Plan queue\n\n## Settings\n\n```stop-hook\nturbo: %s\n```\n\n## Promoted\n\n"
+QUEUE_TURBO = (
+    "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nturbo: %s\n```\n\n## Promoted\n\n"
+)
 
 
 def _make_live(
