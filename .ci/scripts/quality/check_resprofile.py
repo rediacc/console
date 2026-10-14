@@ -35,7 +35,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import time as _t
 from pathlib import Path
 
 import _cipath
@@ -152,7 +151,7 @@ def selftest() -> int:
             Path(td)
             / "full"
             / str(ROOT).lstrip("/").replace("/", "-")
-            / _t.strftime("%Y-%m-%d", _t.gmtime())
+            / time.strftime("%Y-%m-%d", time.gmtime())
         )
         day.mkdir(parents=True)
         (day / "bash.jsonl").write_text('{"shape":"sh:x"}\n\n{"shape":"sh:y"}\n', encoding="utf-8")

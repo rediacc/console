@@ -478,8 +478,6 @@ def quality_shell() -> int:
 
 def quality_submodules() -> int:
     log.step("Checking submodule branch alignment")
-    # Lazy: the gate's imports are not needed by any other verb.
-
     _flush()
     return submodule_branches.main([])
 
@@ -614,8 +612,6 @@ SUBCOMMAND_TABLES: dict[str, Mapping[str, object]] = {
 
 def arms(table: tuple | None = None) -> list[str]:
     """What this package dispatches, as sorted `TOP <verb>` and `SUB <verb>/<sub>` lines: every row of the VERBS table, then every key of the tables above. The gate test compares this inventory with the one `help` documents."""
-    # Lazy: `__main__` imports nothing at module scope, and its handlers import this module.
-
     lines = {"TOP " + name for name in entry.names(table)}
     for verb, arm_table in SUBCOMMAND_TABLES.items():
         lines.update("SUB %s/%s" % (verb, sub) for sub in arm_table)

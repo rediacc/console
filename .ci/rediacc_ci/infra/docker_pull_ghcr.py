@@ -101,7 +101,7 @@ LATEST_TAIL = "Image requested: %s"
 
 LATEST_ALLOWED_WARNING = "Using :latest tag (builds were skipped due to no private repo access)"
 
-# S105 fires on the NAME (`TOKEN`), not the value. This is the twin's error text at line 58 and must stay byte-identical; nothing here is a credential.
+# The twin's error text at line 58, which must stay byte-identical; nothing here is a credential.
 MISSING_AUTH_MSG = "GitHub token required (--token or GITHUB_TOKEN environment variable)"
 MISSING_ACTOR = "GitHub actor required (--actor or GITHUB_ACTOR environment variable)"
 

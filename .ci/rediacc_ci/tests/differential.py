@@ -395,9 +395,7 @@ def host_unfold(
     identity: tuple[str, str] | None = None,
     dialect: tuple[str, str] | None = None,
 ) -> str:
-    """Compare time: each token becomes THIS host's spelling. `dialect` is (arith clause, integer phrase), defaulting to what the bash on PATH prints."""
-    # Imported here: one bash probe, paid only when a golden is read.
-
+    """Compare time: each token becomes THIS host's spelling. `dialect` is (arith clause, integer phrase), defaulting to what the bash on PATH prints (one bash probe, paid only when a golden is read)."""
     user, group = identity or host_identity()
     if dialect is None:
         dialect = (bash_dialect.arith_syntax_error(), bash_dialect.integer_expected())
@@ -722,7 +720,7 @@ def twin_tuple(
 
 
 _PYTEST_TMP_RE = re.compile(r"/[^\s:'\"]*?/pytest-\d+/(?:popen-gw\d+/)?[^/\s:'\"]+")
-# pytest numbers every per-test directory (`<test name>0`, `<test name>1`), so a component that does not end in a digit is somebody's data: under `--basetemp=.` a printed `./src/x.py` must not fold to one token.
+# pytest numbers every per-test directory (`<test name>0`, `<test name>1`), so a component that does not end in a digit is somebody's data and is not folded: under `--basetemp=.` a printed `./src/x.py` stays as it is. A directory whose own name ends in a digit (`./v2/x.py`) is indistinguishable from a numbered one and does fold.
 _TMP_DIR_TAIL = r"/(?:popen-gw\d+/)?[\w.-]*\d(?![\w.-])"
 # A run's explicit --basetemp, set by the root conftest's pytest_configure. pytest then puts tmp_path straight under that directory, with no pytest-<N> level for _PYTEST_TMP_RE to find (worklist #ad157280: 48 goldens of test_core_release_state_validator missed their fold under --basetemp).
 _BASETEMP_RES: list[re.Pattern[str]] = []

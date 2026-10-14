@@ -178,15 +178,16 @@ function bufferCarriesVersionReference(buf: Buffer, pin: string): boolean {
 const VERSION_TOKEN = /\bv?\d+\.\d+(?:\.\d+)?[\w.+-]*/;
 
 /**
- * Components proven probeable on real staged assets (2026-08-15). If one of
- * these is staged and comes back UNPROBED, the gate has gone quiet on something
+ * Components proven probeable on real staged assets (rsync and criu on 2026-08-15;
+ * the CSI sidecars once renet's Dockerfile stamped their version, commit 63f3ff54 of
+ * private/renet). If one of these is staged and comes back UNPROBED, the gate has gone quiet on something
  * it used to check, which is how a check decays into decoration. That is a
  * failure, not a shrug.
  */
 const MUST_STAY_PROBEABLE = new Set([
   'rsync',
   'criu',
-  // The CSI sidecars joined once renet's Dockerfile stamped `-X main.version=v<tag>` (worklist #669ed286); before that they answered `<binary> unknown` and a wrong one went unnoticed.
+  // The CSI sidecars joined once renet's Dockerfile stamped `-X main.version=v<tag>` (private/renet commit 63f3ff54); before that they answered `<binary> unknown` and a wrong one went unnoticed.
   'csiprovisioner',
   'csisnapshotter',
   'snapshotcontroller',
@@ -235,7 +236,7 @@ async function probeAsset(
         if (statesVersion(out, pin)) {
           return { component, asset, pin, verdict: 'match', detail: `ran \`${flag}\`` };
         }
-        // A MISMATCH needs evidence of a DIFFERENT version, never merely the absence of ours. The CSI sidecars were the case that taught this: built without version ldflags, they answered `--version` with `<binary> unknown` and carried no version token at all (renet's Dockerfile has stamped `main.version` since #669ed286). Calling that a mismatch would red-flag a perfectly good asset, and a gate that cries wolf on healthy input gets disabled,
+        // A MISMATCH needs evidence of a DIFFERENT version, never merely the absence of ours. The CSI sidecars were the case that taught this: built without version ldflags, they answered `--version` with `<binary> unknown` and carried no version token at all (renet's Dockerfile has stamped `main.version` since private/renet commit 63f3ff54). Calling that a mismatch would red-flag a perfectly good asset, and a gate that cries wolf on healthy input gets disabled,
         // which is worse than not having it.
         if (VERSION_TOKEN.test(out)) {
           return {

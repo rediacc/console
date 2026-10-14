@@ -1769,7 +1769,7 @@ def job_p90_plans(
                     manifests[key] = None
             manifest = manifests[key]
             if manifest is None:
-                # No manifest at that commit: the lane was not sharded there, so this sample ran a different plan from today's leg. The name is untraced, as the docstring says.
+                # No usable manifest at that commit (the lane was not sharded there, git could not show the file, or it does not parse), so this sample cannot be matched to today's leg. The name is untraced, as the docstring says.
                 untraced.add(name)
                 continue
             of_in = leg.group(2)
