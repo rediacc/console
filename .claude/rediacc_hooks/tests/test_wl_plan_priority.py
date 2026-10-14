@@ -24,7 +24,6 @@ from rediacc_hooks.tests.test_wl_roster import (
     verdict,
     write_plan,
 )
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # One subprocess answers every picker at once, against the fixture store and plan tree, exactly as the hook would fold them.
 PROBE = r"""
@@ -124,7 +123,7 @@ def dependency_world(fix, y_status: str = "in-progress", with_z: bool = False) -
         plant_item(fix, "a0000003", linked(z, "ITEM_Z"), age_min=30)
 
 
-def test_o1_a_dependency_comes_before_the_plan_that_needs_it(wl):  # noqa: F811
+def test_o1_a_dependency_comes_before_the_plan_that_needs_it(wl):
     dependency_world(wl)
     got = probe(wl)
     assert got["problem"] == "", got["problem"]
@@ -134,7 +133,7 @@ def test_o1_a_dependency_comes_before_the_plan_that_needs_it(wl):  # noqa: F811
     assert order_of(guide(wl), ["ITEM_X", "ITEM_Y"]) == ["ITEM_Y", "ITEM_X"]
 
 
-def test_o1c_control_with_the_dependency_finished_the_urgent_plan_leads(wl):  # noqa: F811
+def test_o1c_control_with_the_dependency_finished_the_urgent_plan_leads(wl):
     dependency_world(wl, y_status="done")
     got = probe(wl)
     assert order_of("\n".join(got["open"]), ["ITEM_X", "ITEM_Y"]) == ["ITEM_X", "ITEM_Y"], got[
@@ -143,7 +142,7 @@ def test_o1c_control_with_the_dependency_finished_the_urgent_plan_leads(wl):  # 
     assert order_of(guide(wl), ["ITEM_X", "ITEM_Y"]) == ["ITEM_X", "ITEM_Y"]
 
 
-def test_o1i_inheritance_the_blocker_takes_its_dependents_rank_past_an_unrelated_p1(wl):  # noqa: F811
+def test_o1i_inheritance_the_blocker_takes_its_dependents_rank_past_an_unrelated_p1(wl):
     """Without inheritance a P0 plan blocked on a P3 waits behind every unrelated P1 (decision D6)."""
     dependency_world(wl, with_z=True)
     got = probe(wl)
@@ -152,7 +151,7 @@ def test_o1i_inheritance_the_blocker_takes_its_dependents_rank_past_an_unrelated
     assert order_of(guide(wl), words) == ["ITEM_Y", "ITEM_Z", "ITEM_X"]
 
 
-def test_o1s_the_stop_hooks_own_open_rows_carry_the_order(wl):  # noqa: F811
+def test_o1s_the_stop_hooks_own_open_rows_carry_the_order(wl):
     """The wiring, not just the library: the idle-stall rows are `classify_items`' open list as run_stop computed it."""
     wl.brief_now()
     wl.hand_now()
@@ -174,7 +173,7 @@ def operator_world(fix, a_priority: str) -> None:
     plant_item(fix, "b0000002", linked(a, "ITEM_A"), age_min=10)
 
 
-def test_o2_an_operator_p2_comes_before_an_ai_p0(wl):  # noqa: F811
+def test_o2_an_operator_p2_comes_before_an_ai_p0(wl):
     operator_world(wl, "P2 (operator)")
     got = probe(wl)
     assert order_of("\n".join(got["open"]), ["ITEM_A", "ITEM_B"]) == ["ITEM_A", "ITEM_B"], got[
@@ -183,7 +182,7 @@ def test_o2_an_operator_p2_comes_before_an_ai_p0(wl):  # noqa: F811
     assert order_of(guide(wl), ["ITEM_A", "ITEM_B"]) == ["ITEM_A", "ITEM_B"]
 
 
-def test_o2c_control_both_ai_the_more_urgent_level_leads(wl):  # noqa: F811
+def test_o2c_control_both_ai_the_more_urgent_level_leads(wl):
     operator_world(wl, "P2")
     got = probe(wl)
     assert order_of("\n".join(got["open"]), ["ITEM_A", "ITEM_B"]) == ["ITEM_B", "ITEM_A"], got[
@@ -194,7 +193,7 @@ def test_o2c_control_both_ai_the_more_urgent_level_leads(wl):  # noqa: F811
 # ---- o3: age breaks a tie -------------------------------------------------------------------------
 
 
-def test_o3_equal_rank_the_older_item_leads_and_the_queue_uses_its_lease_age(wl):  # noqa: F811
+def test_o3_equal_rank_the_older_item_leads_and_the_queue_uses_its_lease_age(wl):
     p = write_plan(wl, "p", priority="P1")
     plant_item(wl, "c0000001", linked(p, "ITEM_NEW"), age_min=5)
     plant_item(wl, "c0000002", linked(p, "ITEM_OLD"), age_min=40)
@@ -210,7 +209,7 @@ def test_o3_equal_rank_the_older_item_leads_and_the_queue_uses_its_lease_age(wl)
 # ---- o4: an unlinked item is an AI P2 (decision D3) ----------------------------------------------
 
 
-def test_o4_an_unlinked_item_sits_between_a_p1_plan_and_a_p3_plan(wl):  # noqa: F811
+def test_o4_an_unlinked_item_sits_between_a_p1_plan_and_a_p3_plan(wl):
     hi = write_plan(wl, "hi", priority="P1")
     lo = write_plan(wl, "lo", priority="P3")
     plant_item(wl, "d0000001", linked(lo, "ITEM_LO"), age_min=50)
@@ -230,7 +229,7 @@ def test_o4_an_unlinked_item_sits_between_a_p1_plan_and_a_p3_plan(wl):  # noqa: 
 # ---- o5: the guide shows the rank, and never reorders a band --------------------------------------
 
 
-def test_o5_the_guide_tags_linked_rows_and_a_dead_lease_still_leads(wl):  # noqa: F811
+def test_o5_the_guide_tags_linked_rows_and_a_dead_lease_still_leads(wl):
     op = write_plan(wl, "op", priority="P1 (operator)")
     low = write_plan(wl, "low", priority="P3")
     plant_item(wl, "e0000001", linked(op, "ITEM_OP"), age_min=5)
@@ -264,7 +263,7 @@ def test_o5_the_guide_tags_linked_rows_and_a_dead_lease_still_leads(wl):  # noqa
     assert order_of(out, ["DEAD_LOW", "LIVE_OP"]) == ["DEAD_LOW", "LIVE_OP"], out[:2000]
 
 
-def test_o5b_a_blocked_plan_is_tagged_and_an_unreadable_order_says_so(wl):  # noqa: F811
+def test_o5b_a_blocked_plan_is_tagged_and_an_unreadable_order_says_so(wl):
     dependency_world(wl)
     out = guide(wl)
     assert "#a0000001 [P0 op, dep-blocked]" in out, out[:1500]
@@ -277,7 +276,7 @@ def test_o5b_a_blocked_plan_is_tagged_and_an_unreadable_order_says_so(wl):  # no
 # ---- the roster's live plans agree with the spawn guard's ------------------------------------------
 
 
-def test_h1_the_rosters_lease_half_matches_live_plans(wl):  # noqa: F811
+def test_h1_the_rosters_lease_half_matches_live_plans(wl):
     """`wl_planorder.holders` restates `wl_planconc.live_plans`' lease half for the roster; on one fold the two must agree, or the guard and the queue would disagree about who holds a plan."""
     e = write_plan(wl, "e", conc="exclusive -- regenerates every golden file")
     f = write_plan(wl, "f")
@@ -296,7 +295,7 @@ def test_h1_the_rosters_lease_half_matches_live_plans(wl):  # noqa: F811
 # ---- mutation controls: each case above depends on the term it names --------------------------------
 
 
-def test_m1_without_the_blocked_term_o1_fails(wl):  # noqa: F811
+def test_m1_without_the_blocked_term_o1_fails(wl):
     dependency_world(wl)
     stop = mutated_stop(
         wl,
@@ -310,7 +309,7 @@ def test_m1_without_the_blocked_term_o1_fails(wl):  # noqa: F811
     )
 
 
-def test_m2_with_the_op_and_ai_terms_swapped_o2_fails(wl):  # noqa: F811
+def test_m2_with_the_op_and_ai_terms_swapped_o2_fails(wl):
     operator_world(wl, "P2 (operator)")
     stop = mutated_stop(
         wl,
@@ -324,7 +323,7 @@ def test_m2_with_the_op_and_ai_terms_swapped_o2_fails(wl):  # noqa: F811
     )
 
 
-def test_m3_without_the_guides_rank_term_the_guide_falls_back_to_fold_order(wl):  # noqa: F811
+def test_m3_without_the_guides_rank_term_the_guide_falls_back_to_fold_order(wl):
     # The operator world, not the dependency world: there X's item WAITS on Y's plan and lands in a later band whatever the rank term says.
     operator_world(wl, "P2 (operator)")
     mutated_stop(
@@ -338,7 +337,7 @@ def test_m3_without_the_guides_rank_term_the_guide_falls_back_to_fold_order(wl):
     )
 
 
-def test_m4_without_the_stops_order_key_its_open_rows_fall_back_to_fold_order(wl):  # noqa: F811
+def test_m4_without_the_stops_order_key_its_open_rows_fall_back_to_fold_order(wl):
     wl.brief_now()
     wl.hand_now()
     dependency_world(wl, with_z=True)
@@ -355,7 +354,7 @@ def test_m4_without_the_stops_order_key_its_open_rows_fall_back_to_fold_order(wl
     )
 
 
-def test_m5_without_the_queues_rank_the_oldest_lease_leads_again(wl):  # noqa: F811
+def test_m5_without_the_queues_rank_the_oldest_lease_leads_again(wl):
     hi = write_plan(wl, "hi", priority="P1")
     lo = write_plan(wl, "lo", priority="P3")
     plant_lease(wl, "d0000004", "queue", lease_age_min=50, text=linked(lo, "Q_LO"))
@@ -415,7 +414,7 @@ def held_probe(fix) -> dict:
     return got
 
 
-def test_h2_an_unheld_p2_sorts_before_a_held_p0(wl):  # noqa: F811
+def test_h2_an_unheld_p2_sorts_before_a_held_p0(wl):
     held = write_plan(wl, "heldp0", status="held", priority="P0")
     free = write_plan(wl, "freep2", priority="P2")
     plant_item(wl, "a1000001", linked(held, "ITEM_HELD"), age_min=50)
@@ -429,7 +428,7 @@ def test_h2_an_unheld_p2_sorts_before_a_held_p0(wl):  # noqa: F811
     )
 
 
-def test_h2p_a_held_prerequisite_of_an_unheld_plan_sorts_before_it(wl):  # noqa: F811
+def test_h2p_a_held_prerequisite_of_an_unheld_plan_sorts_before_it(wl):
     """The prerequisite inherits the least-held value of what needs it, so it still leads its unheld dependent and an unrelated unheld plan of lower rank."""
     pre = write_plan(wl, "heldpre", status="held", priority="P3")
     need = write_plan(wl, "needer", priority="P1", dep=pre)
@@ -439,7 +438,7 @@ def test_h2p_a_held_prerequisite_of_an_unheld_plan_sorts_before_it(wl):  # noqa:
     assert got["ranked"].index(pre) < got["ranked"].index(other), got
 
 
-def test_h2c_control_equal_held_keeps_op_then_ai_order(wl):  # noqa: F811
+def test_h2c_control_equal_held_keeps_op_then_ai_order(wl):
     ai0 = write_plan(wl, "heldai0", status="held", priority="P0")
     op3 = write_plan(wl, "heldop3", status="held", priority="P3 (operator)")
     ai2 = write_plan(wl, "heldai2", status="held", priority="P2")

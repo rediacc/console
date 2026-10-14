@@ -13,7 +13,6 @@ import shutil
 import time
 
 from rediacc_hooks.tests.test_wl_judge_fixset_scope import timeout_fix_world
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
 def blocklog_rows(fix) -> list[dict]:
@@ -23,7 +22,7 @@ def blocklog_rows(fix) -> list[dict]:
     return [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
 
 
-def test_r10_a_battery_block_writes_one_row_naming_its_keys(wl):  # noqa: F811
+def test_r10_a_battery_block_writes_one_row_naming_its_keys(wl):
     """CONTROL: before R.10 no block left a row."""
     wl.brief_now()
     wl.hand_now()
@@ -38,7 +37,7 @@ def test_r10_a_battery_block_writes_one_row_naming_its_keys(wl):  # noqa: F811
     assert "no-remaining" in keys, rows[0]
 
 
-def test_r10_inverse_an_allowed_stop_writes_no_row(wl):  # noqa: F811
+def test_r10_inverse_an_allowed_stop_writes_no_row(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("all done")
@@ -47,7 +46,7 @@ def test_r10_inverse_an_allowed_stop_writes_no_row(wl):  # noqa: F811
     assert blocklog_rows(wl) == []
 
 
-def test_r10_a_judge_block_carries_the_judge_flags(wl):  # noqa: F811
+def test_r10_a_judge_block_carries_the_judge_flags(wl):
     timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
     got = wl.runj()
     assert got.decision == "block", got.out[:300]
@@ -108,7 +107,7 @@ def retro_items(fix) -> list[str]:
     return [ln for ln in fix.wl_events().splitlines() if "stop-hook retro" in ln and '"add"' in ln]
 
 
-def test_r12_post_compact_orders_the_retro_once(wl):  # noqa: F811
+def test_r12_post_compact_orders_the_retro_once(wl):
     """CONTROL: before R.12 the PostCompact briefing carried no retro order and wrote no row."""
     wl.plant_state("## Next action\n\nkeep going")
     wl.append_transcript(boundary(False))
@@ -127,13 +126,13 @@ def test_r12_post_compact_orders_the_retro_once(wl):  # noqa: F811
     assert len(ledger_rows(wl)) == 1
 
 
-def test_r12_the_missing_state_arm_orders_after_the_write(wl):  # noqa: F811
+def test_r12_the_missing_state_arm_orders_after_the_write(wl):
     wl.append_transcript(boundary(False))
     text = compact(wl)
     assert "After you write STATE.md" in text, text[-600:]
 
 
-def test_r12_a_subagent_event_orders_nothing(wl):  # noqa: F811
+def test_r12_a_subagent_event_orders_nothing(wl):
     """CONTROL: the agent_id guard. Without it this event writes a row and carries the order."""
     wl.plant_state("## Next action\n\nkeep going")
     text = compact(wl, agent_id="agent_01xyz", agent_type="Explore")
@@ -141,7 +140,7 @@ def test_r12_a_subagent_event_orders_nothing(wl):  # noqa: F811
     assert ledger_rows(wl) == []
 
 
-def test_r13_one_ordered_row_is_one_owned_item_across_two_stops(wl):  # noqa: F811
+def test_r13_one_ordered_row_is_one_owned_item_across_two_stops(wl):
     """CONTROL: before R.13 an ordered row produced no item at all."""
     wl.brief_now()
     wl.hand_now()
@@ -159,7 +158,7 @@ def test_r13_one_ordered_row_is_one_owned_item_across_two_stops(wl):  # noqa: F8
     assert tracked[0]["band"] == "early", tracked
 
 
-def test_r13_an_allowed_world_without_a_ledger_adds_nothing(wl):  # noqa: F811
+def test_r13_an_allowed_world_without_a_ledger_adds_nothing(wl):
     """INVERSE: no ordered row, no item, no ledger file."""
     wl.brief_now()
     wl.hand_now()
@@ -169,7 +168,7 @@ def test_r13_an_allowed_world_without_a_ledger_adds_nothing(wl):  # noqa: F811
     assert not ledger(wl).exists()
 
 
-def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):  # noqa: F811
+def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):
     """CONTROL: before R.13 the verb did not exist."""
     plan = wl.proj / "agent" / "plans" / "PLAN-stop-hook-demo.md"
     plan.parent.mkdir(parents=True, exist_ok=True)
@@ -211,14 +210,14 @@ def test_r13_retro_brief_prints_the_id_and_the_previous_range_end(wl):  # noqa: 
     assert len(retro_items(wl)) == 1
 
 
-def test_r13_retro_brief_refuses_an_unknown_band(wl):  # noqa: F811
+def test_r13_retro_brief_refuses_an_unknown_band(wl):
     got = wl.cli("--retro-brief", "deadbeef", "sometime")
     assert got.rc == 2, got.err
     assert "early, late, post-compact" in got.err, got.err
     assert not ledger(wl).exists()
 
 
-def test_r13_a_tick_with_the_plan_path_writes_the_saved_row(wl):  # noqa: F811
+def test_r13_a_tick_with_the_plan_path_writes_the_saved_row(wl):
     """CONTROL: before R.13 a ticked retro item left no saved row."""
     plan = wl.proj / RETRO_PLAN
     plan.parent.mkdir(parents=True, exist_ok=True)
@@ -241,7 +240,7 @@ def test_r13_a_tick_with_the_plan_path_writes_the_saved_row(wl):  # noqa: F811
     assert len([r for r in ledger_rows(wl) if r["ev"] == "saved"]) == 1
 
 
-def test_r13_a_leased_item_writes_the_dispatched_row_once(wl):  # noqa: F811
+def test_r13_a_leased_item_writes_the_dispatched_row_once(wl):
     """CONTROL: before R.13 a lease on the retro item left no dispatched row."""
     plant_rows(wl, ordered("early", 0, 500))
     wl.cli("--retro-brief", "deadbeef", "early")
@@ -296,7 +295,7 @@ def ctx_fresh(fix):
     return json.loads(path.read_text(encoding="utf-8")).get("ctx_fresh")
 
 
-def test_r16_a_subagent_compaction_in_the_measured_shape_orders_nothing(wl):  # noqa: F811
+def test_r16_a_subagent_compaction_in_the_measured_shape_orders_nothing(wl):
     """CONTROL, the payload measured at 19:01:44Z: the LEAD's session_id and transcript_path, NO agent_id, and the boundary only in a subagents/agent-X.jsonl. Before R.16 this wrote the lead's post-compact row, carried the order and stamped the lead's ctx_fresh."""
     wl.plant_state("## Next action\n\nkeep going")
     plant_subagent_boundary(wl)
@@ -307,7 +306,7 @@ def test_r16_a_subagent_compaction_in_the_measured_shape_orders_nothing(wl):  # 
     assert text.startswith("This compaction is sub-agent a149262d8b6a1601f's"), text[:300]
 
 
-def test_r16_inverse_a_lead_boundary_orders_one_row(wl):  # noqa: F811
+def test_r16_inverse_a_lead_boundary_orders_one_row(wl):
     wl.plant_state("## Next action\n\nkeep going")
     plant_subagent_boundary(wl)
     wl.append_transcript(boundary(False))
@@ -318,7 +317,7 @@ def test_r16_inverse_a_lead_boundary_orders_one_row(wl):  # noqa: F811
     assert "sub-agent" not in text[:200], text[:200]
 
 
-def test_r16_an_old_lead_boundary_is_unknown_and_orders_nothing(wl):  # noqa: F811
+def test_r16_an_old_lead_boundary_is_unknown_and_orders_nothing(wl):
     """The Decision: an owner that cannot be determined orders no retro and leaves ctx_fresh alone. The lead's own boundary 16:25Z was 2.5 hours old at 19:01Z."""
     wl.plant_state("## Next action\n\nkeep going")
     wl.append_transcript(boundary(False, ago=9000))
@@ -329,7 +328,7 @@ def test_r16_an_old_lead_boundary_is_unknown_and_orders_nothing(wl):  # noqa: F8
     assert "sub-agent" not in text[:200], text[:200]
 
 
-def test_r16_mutant_the_agent_id_only_guard_lets_the_control_write_a_row(wl, tmp_path):  # noqa: F811
+def test_r16_mutant_the_agent_id_only_guard_lets_the_control_write_a_row(wl, tmp_path):
     """MUTANT: revert handle_post_compact's attribution to R.12's `not event.get("agent_id")` guard in a copy of the stop directory; the measured-shape control then writes the lead's row again."""
     src = wl.hook.parent
     dst = tmp_path / "hooks" / "stop"
@@ -353,7 +352,7 @@ def test_r16_mutant_the_agent_id_only_guard_lets_the_control_write_a_row(wl, tmp
     assert [(r["ev"], r["band"]) for r in ledger_rows(wl)] == [("ordered", "post-compact")]
 
 
-def test_r17_the_brief_window_starts_at_the_last_saved_retro(wl):  # noqa: F811
+def test_r17_the_brief_window_starts_at_the_last_saved_retro(wl):
     """CONTROL: before R.17 the window and `since` started at the newest `ordered` row, here the unreviewed post-compact at 12:00Z, which hid the 11:00Z block."""
     wl.stem(".blocklog-deadbeef.jsonl").write_text(
         json.dumps({"at": "2026-09-24T11:00:00Z", "key": "unreviewed", "named": [], "judge": {}})
@@ -375,7 +374,7 @@ def test_r17_the_brief_window_starts_at_the_last_saved_retro(wl):  # noqa: F811
     assert "reviewed: 1" not in got.out.replace("unreviewed: 1", ""), got.out
 
 
-def test_r17_a_voided_pair_gets_no_item_and_can_be_ordered_again(wl):  # noqa: F811
+def test_r17_a_voided_pair_gets_no_item_and_can_be_ordered_again(wl):
     """CONTROL: before R.17 there was no `voided` event, so sync tracked the misattributed row and the dedupe key stayed taken."""
     plant_rows(wl, ordered("post-compact", 0, 500))
     spec = importlib.util.spec_from_file_location(
@@ -420,21 +419,21 @@ def session_start(fix, source: str) -> None:
     assert got.rc == 0, got.err[:300]
 
 
-def test_session_start_compact_of_a_subagent_leaves_ctx_fresh_alone(wl):  # noqa: F811
+def test_session_start_compact_of_a_subagent_leaves_ctx_fresh_alone(wl):
     """CONTROL: before the fix handle_session_start called mark_context_fresh for source=compact with no attribution, so a sub-agent's compaction stamped the lead's ctx_fresh here even after R.16 gated handle_post_compact."""
     plant_subagent_boundary(wl)
     session_start(wl, "compact")
     assert ctx_fresh(wl) is None, ctx_fresh(wl)
 
 
-def test_session_start_compact_of_the_lead_marks_ctx_fresh(wl):  # noqa: F811
+def test_session_start_compact_of_the_lead_marks_ctx_fresh(wl):
     plant_subagent_boundary(wl)
     wl.append_transcript(boundary(False))
     session_start(wl, "compact")
     assert (ctx_fresh(wl) or {}).get("why") == "session-start:compact", ctx_fresh(wl)
 
 
-def test_session_start_of_a_new_session_still_marks_ctx_fresh(wl):  # noqa: F811
+def test_session_start_of_a_new_session_still_marks_ctx_fresh(wl):
     """A startup or resume is always the lead's own: no attribution is asked for."""
     plant_subagent_boundary(wl)
     session_start(wl, "startup")

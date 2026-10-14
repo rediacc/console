@@ -15,7 +15,6 @@ import time
 import pytest
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 SR = wlfix.import_wl("wl_schedred")
 GH = wlfix.import_wl("wl_gh")
@@ -634,7 +633,7 @@ def _stop_world(fix):
     return shim, env
 
 
-def test_the_stop_blocks_the_claimant_then_goes_quiet_after_add(wl):  # noqa: F811
+def test_the_stop_blocks_the_claimant_then_goes_quiet_after_add(wl):
     shim, env = _stop_world(wl)
     first = wl.run(env)
     assert "SCHEDULED RED ON MAIN, UNTRACKED" in first.out, first.out[:2000]
@@ -656,14 +655,14 @@ def test_the_stop_blocks_the_claimant_then_goes_quiet_after_add(wl):  # noqa: F8
     assert shim.calls("actions/runs?event=schedule"), "the read really ran"
 
 
-def test_the_stop_is_silent_on_a_green_main(wl):  # noqa: F811
+def test_the_stop_is_silent_on_a_green_main(wl):
     shim, env = _stop_world(wl)
     serve(shim, [run(GREEN_RUN, conclusion="success")])
     got = wl.check_quiet("SCHEDULED RED", result=wl.run(env))
     assert "owned by session" not in got.out
 
 
-def test_the_stop_fixture_without_origin_makes_no_call(wl):  # noqa: F811
+def test_the_stop_fixture_without_origin_makes_no_call(wl):
     wl.setup()
     wl.brief_now()
     shim = Gh(wl.base)
@@ -672,7 +671,7 @@ def test_the_stop_fixture_without_origin_makes_no_call(wl):  # noqa: F811
     assert shim.calls("actions/runs") == []
 
 
-def test_the_session_start_hook_prints_the_cached_red_with_no_call(wl):  # noqa: F811
+def test_the_session_start_hook_prints_the_cached_red_with_no_call(wl):
     wl.setup()
     shim = Gh(wl.base)
     env = dict(wl.env, PATH="%s%s%s" % (shim.bindir, os.pathsep, wl.env.get("PATH", "")))
@@ -947,7 +946,7 @@ def _stop_world_main_red(fix):
     return shim, env
 
 
-def test_the_stop_blocks_on_a_red_main_push_run_with_its_root_cause(wl):  # noqa: F811
+def test_the_stop_blocks_on_a_red_main_push_run_with_its_root_cause(wl):
     _shim, env = _stop_world_main_red(wl)
     first = wl.run(env)
     assert first.decision == "block"

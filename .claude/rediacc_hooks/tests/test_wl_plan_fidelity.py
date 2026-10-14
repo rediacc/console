@@ -19,7 +19,6 @@ import time
 from rediacc_ci import runtmp
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 PLAN_EXECUTING = "# PLAN: the thing\nStatus: executing\n"
 PLAN_DONE = "# PLAN: the thing\nStatus: done\n"
@@ -133,7 +132,7 @@ def tick_n(fix, count: int, plan: str, label: str = "work %d that outran the pla
         fix.cli("--tick", wlfix.ME, ident, "landed, suite green, exit 0 nocommit:research")
 
 
-def test_215_a_plan_the_work_has_moved_past_is_flagged(wl):  # noqa: F811
+def test_215_a_plan_the_work_has_moved_past_is_flagged(wl):
     """PLAN DRIFT: the session is bound to its own committed design record.
 
     The gap the operator named: plans were surfaced at SessionStart and PostCompact and NOWHERE else, so a session could work all day while the committed plan describing that work went stale. `plan_records()` existed; nothing on the stop path called it. The plan is backdated and the work moved after it, because the trigger is the work and never the clock: a plan a week old on a
@@ -147,7 +146,7 @@ def test_215_a_plan_the_work_has_moved_past_is_flagged(wl):  # noqa: F811
     wl.check("block", "PLAN-thing.md", "215: a plan the work has moved past is flagged")
 
 
-def test_215a_one_tick_is_not_a_plan_going_stale(wl):  # noqa: F811
+def test_215a_one_tick_is_not_a_plan_going_stale(wl):
     """CONTROL, and the three arms chain because each rewrites the plan the one before it left.
 
     215a: the threshold is what makes the exit real. Without this control the check could go back to firing on any movement, which is the unsatisfiable version. 215b: without it the check could be firing on the mere existence of a plan file, which would make it noise within a day. 215c: demanding edits to history is how a check earns its way into being ignored.
@@ -173,7 +172,7 @@ def test_215a_one_tick_is_not_a_plan_going_stale(wl):  # noqa: F811
     assert "PLAN-thing.md" not in wl.run().out, "215c CONTROL: a done plan was flagged"
 
 
-def test_215d_a_project_with_no_plan_directory_says_nothing(wl):  # noqa: F811
+def test_215d_a_project_with_no_plan_directory_says_nothing(wl):
     wl.say("answer\n\n## Remaining\n- stuff")
     wl.brief_now()
     wl.hand_now()
@@ -183,7 +182,7 @@ def test_215d_a_project_with_no_plan_directory_says_nothing(wl):  # noqa: F811
     )
 
 
-def test_216_an_unknown_plan_carries_a_description_and_file_pointers(wl):  # noqa: F811
+def test_216_an_unknown_plan_carries_a_description_and_file_pointers(wl):
     """An UNKNOWN status told the one reader who has no context precisely nothing: that the plan cannot be parsed, full stop. It now carries the plan's title and the files it keeps referring to, so a new or compacted session knows what to open first.
 
     216b CONTROL: a plan's own path is not a pointer to anywhere useful, and a file mentioned once is a passing reference rather than the subject. 216c CONTROL: the orientation is for UNKNOWN specifically, and on every row it would just be noise on plans whose state is already clear.
@@ -209,7 +208,7 @@ def test_216_an_unknown_plan_carries_a_description_and_file_pointers(wl):  # noq
     assert "opens:" not in out, "216c CONTROL: a readable status got orientation noise"
 
 
-def test_217_intent_answers_the_two_status_question_checks_and_nothing_else(wl):  # noqa: F811
+def test_217_intent_answers_the_two_status_question_checks_and_nothing_else(wl):
     """An intent is a statement of PLAN. Its whole legitimate power is answering the checks whose entire content is what the session is doing (brief and agent-state) and reordering attention. It is never evidence.
 
     217b is decisive in the plan: an intent must NOT satisfy the TICK-EVIDENCE gate, because if an intent could close an item the ledger becomes a record of intentions. 217c: covered keys sort LAST but stay in `violations`, so the header count stays truthful.
@@ -241,7 +240,7 @@ def test_217_intent_answers_the_two_status_question_checks_and_nothing_else(wl):
     )
 
 
-def test_217d_an_expired_intent_becomes_its_own_violation(wl):  # noqa: F811
+def test_217d_an_expired_intent_becomes_its_own_violation(wl):
     """This is what stops `--intent` being a mute button: going quiet has a horizon, and outliving it while the work is still open is itself the finding.
 
     NO open item on purpose. The focused block surfaces ONE rotating check, so an open item here would win the rotation and the case would score whichever check happened to be picked rather than the expiry.
@@ -268,7 +267,7 @@ def test_217d_an_expired_intent_becomes_its_own_violation(wl):  # noqa: F811
     )
 
 
-def test_217e_an_expired_intent_covering_only_closed_work_stays_quiet(wl):  # noqa: F811
+def test_217e_an_expired_intent_covering_only_closed_work_stays_quiet(wl):
     """V_INTENT_EXPIRED tells the reader that what it covered is still outstanding, and until v18 the check never verified that. It fired live on an intent whose one covered item had been ticked WITH EVIDENCE, so the message asserted something demonstrably false. This is 217d's control: same expired intent, same horizon, and the ONLY difference is that the covered item is
     closed. 217d keeps firing because its `covers` names "open-items", which resolves to no record, and unresolvable is deliberately NOT treated as done."""
     wl.say("answer\n\n## Remaining\n- stuff")
@@ -289,7 +288,7 @@ def test_217e_an_expired_intent_covering_only_closed_work_stays_quiet(wl):  # no
     )
 
 
-def test_210_an_old_brief_never_blocks_whether_or_not_the_world_moved(wl):  # noqa: F811
+def test_210_an_old_brief_never_blocks_whether_or_not_the_world_moved(wl):
     """Rewritten 2026-09-24 when the `brief` check was deleted (agent/plans/PLAN-stop-hook-continuity.md P1.1): the hook stamps the brief itself, so neither an unchanged world nor a moved one can block on it. Before, 210b blocked with "session brief is stale" once the world moved."""
     wl.say("answer\n\n## Remaining\n- nothing open")
     wl.hand_now()
@@ -300,7 +299,7 @@ def test_210_an_old_brief_never_blocks_whether_or_not_the_world_moved(wl):  # no
     wl.check_absent("allow", "session brief", "an old brief once the world has moved")
 
 
-def test_218_update_on_a_deferral_carries_its_default_forward(wl):  # noqa: F811
+def test_218_update_on_a_deferral_carries_its_default_forward(wl):
     """The trap this pins: the rendered line carries only the MOST RECENT update, so an `--update` that omitted DEFAULT: made the deferral's default INVISIBLE, and the next stop blocked on a `[?]` that provably had one when it was written. Found live, by the session that wrote this.
 
     Refusing the update was the first fix and case 141 killed it: a refresh is the exit that is always available, and the aged-deferral rung tells a session to refresh. So the default is carried forward and the carry is ANNOUNCED. The defect was silence, not the exit.
@@ -318,7 +317,7 @@ def test_218_update_on_a_deferral_carries_its_default_forward(wl):  # noqa: F811
     assert "DEFAULT: take the left fork" in wl.cli("--list").out, "218: the default was lost"
 
 
-def test_218b_an_open_item_is_untouched_by_the_deferral_default_rule(wl):  # noqa: F811
+def test_218b_an_open_item_is_untouched_by_the_deferral_default_rule(wl):
     """CONTROL: without it, 218 could pass because `--update` announces a carry for EVERYTHING. The only difference here is the item's state."""
     ident = added_id(wl.cli("--add", wlfix.ME, "ordinary open work"))
     got = wl.cli("--update", wlfix.ME, ident, "made progress")
@@ -519,7 +518,7 @@ def plant_plan(fix) -> None:
     )
 
 
-def test_220_an_approved_plan_tracked_as_two_umbrella_items_blocks(wl):  # noqa: F811
+def test_220_an_approved_plan_tracked_as_two_umbrella_items_blocks(wl):
     """220a rides here: the bash ran it with no `setup` of its own, so the deferral exit is asserted against the very token 220's block just printed."""
     wl.say("seeded the round")
     wl.brief_now()
@@ -559,7 +558,7 @@ def test_220_an_approved_plan_tracked_as_two_umbrella_items_blocks(wl):  # noqa:
     )
 
 
-def test_220b_faithful_true_settles_and_is_never_asked_again(wl):  # noqa: F811
+def test_220b_faithful_true_settles_and_is_never_asked_again(wl):
     wl.say("seeded the round")
     wl.brief_now()
     plant_plan(wl)
@@ -587,7 +586,7 @@ def test_220b_faithful_true_settles_and_is_never_asked_again(wl):  # noqa: F811
     )
 
 
-def test_220c_the_instrument_blind_no_approved_plan_same_accusing_shim(wl):  # noqa: F811
+def test_220c_the_instrument_blind_no_approved_plan_same_accusing_shim(wl):
     """Deliberately NO plan. Same umbrella items, same shim that would accuse."""
     wl.say("seeded the round")
     wl.brief_now()
@@ -609,7 +608,7 @@ def test_220c_the_instrument_blind_no_approved_plan_same_accusing_shim(wl):  # n
     assert planfid_calls(wl) == 0, "220c: a call was spent with no approved plan"
 
 
-def test_220d_a_decomposed_worklist_never_reaches_the_model_at_all(wl):  # noqa: F811
+def test_220d_a_decomposed_worklist_never_reaches_the_model_at_all(wl):
     wl.say("seeded the round")
     wl.brief_now()
     plant_plan(wl)
@@ -633,7 +632,7 @@ def test_220d_a_decomposed_worklist_never_reaches_the_model_at_all(wl):  # noqa:
     assert planfid_calls(wl) == 0, "220d: a decomposed worklist still reached the model"
 
 
-def test_220e_an_invented_item_id_cannot_manufacture_a_block(wl):  # noqa: F811
+def test_220e_an_invented_item_id_cannot_manufacture_a_block(wl):
     """Both axes hallucinated at once: an id no item carries, and a plan task that appears nowhere in the plan. Neither survives verification, so no evidence is left and the check must not block on the model's word alone."""
     wl.say("seeded the round")
     wl.brief_now()
@@ -658,7 +657,7 @@ def test_220e_an_invented_item_id_cannot_manufacture_a_block(wl):  # noqa: F811
     assert planfid_calls(wl) >= 1, "220e: the model was never asked, so nothing was refused"
 
 
-def test_220f_a_broken_judge_degrades_it_does_not_wall_the_session_in(wl):  # noqa: F811
+def test_220f_a_broken_judge_degrades_it_does_not_wall_the_session_in(wl):
     wl.say("seeded the round")
     wl.brief_now()
     plant_plan(wl)
@@ -676,7 +675,7 @@ def test_220f_a_broken_judge_degrades_it_does_not_wall_the_session_in(wl):  # no
     )
 
 
-def test_220h_a_failed_tier_two_call_is_recorded_not_just_reported(wl):  # noqa: F811
+def test_220h_a_failed_tier_two_call_is_recorded_not_just_reported(wl):
     """The `wl_checks` call sites are INVISIBLE to `wl_planfid`'s own selftest, so this is their only coverage: delete either one and the module controls stay green. The error branch specifically, because a judge that could not be reached is exactly the outcome nobody currently counts."""
     wl.say("seeded the round")
     wl.brief_now()
@@ -732,7 +731,7 @@ def test_221_docs_drift_counts_an_uncommitted_doc_edit():
     )
 
 
-def test_227_an_adopted_plan_with_untracked_boxes_blocks(wl):  # noqa: F811
+def test_227_an_adopted_plan_with_untracked_boxes_blocks(wl):
     """An ADOPTED plan is an order: its untracked boxes block in the mission tier, while a plan the session merely owns stays an advisory."""
     wl.say("answer\n\n## Remaining\n- nothing")
     wl.brief_now()
@@ -741,7 +740,7 @@ def test_227_an_adopted_plan_with_untracked_boxes_blocks(wl):  # noqa: F811
     wl.check("block", "WAS ADOPTED BY THIS SESSION", "227: an adopted plan's boxes are ordered")
 
 
-def test_227b_the_same_plan_merely_owned_is_only_an_advisory(wl):  # noqa: F811
+def test_227b_the_same_plan_merely_owned_is_only_an_advisory(wl):
     """CONTROL: never a block."""
     wl.say("answer\n\n## Remaining\n- nothing")
     wl.brief_now()

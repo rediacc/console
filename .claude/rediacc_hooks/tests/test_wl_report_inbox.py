@@ -22,8 +22,6 @@ import subprocess
 import sys
 import time
 
-import pytest
-
 from rediacc_hooks.tests import wlfix
 
 HERE = wlfix.STOP_DIR
@@ -147,17 +145,6 @@ class Scratch:
             with contextlib.suppress(OSError):
                 handle.close()
         self.handles = []
-
-
-@pytest.fixture
-def sc(tmp_path):
-    """The base for every scratch universe, captured ONCE.
-
-    Deriving it from TMPDIR at call time instead would nest each case inside the previous case's TMPDIR, and the slugified worklist name (which embeds the whole absolute path) then grows until it trips ENAMETOOLONG a dozen cases in, which is exactly what the first run of the bash suite did.
-    """
-    scratch = Scratch(tmp_path / "case")
-    yield scratch
-    scratch.close_handles()
 
 
 def body_of(path: pathlib.Path) -> str:

@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import re
 
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
-
 # The demand's own words, present whether the stop quotes it in full or names it on one line.
 DEMAND = "no '## Remaining' section"
 
@@ -33,7 +31,7 @@ def banked_world(fix) -> str:
     return found.group(1)
 
 
-def test_r4_a_task_flip_and_a_commit_do_not_redemand_the_report(wl):  # noqa: F811
+def test_r4_a_task_flip_and_a_commit_do_not_redemand_the_report(wl):
     """CONTROL: before R.4 both moved `st_sig`, and the short reply below drew `no-remaining`."""
     banked_world(wl)
     wl.task(8, "completed", "shell watch")
@@ -44,7 +42,7 @@ def test_r4_a_task_flip_and_a_commit_do_not_redemand_the_report(wl):  # noqa: F8
     assert DEMAND not in got.out, got.out[:1200]
 
 
-def test_r4_inverse_ticking_an_owned_item_redemands_the_report(wl):  # noqa: F811
+def test_r4_inverse_ticking_an_owned_item_redemands_the_report(wl):
     item = banked_world(wl)
     ticked = wl.cli("--tick", "deadbeef", item, "landed, suite green, exit 0 nocommit:research")
     assert ticked.rc == 0, ticked.err[:300]

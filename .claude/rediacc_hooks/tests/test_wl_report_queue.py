@@ -15,11 +15,12 @@ import random
 import time
 from typing import Any
 
+import pytest
+
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_run, ci_running, ci_setup
 from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
 from rediacc_hooks.tests.test_wl_guide_and_deferrals import shim_judge_out
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # The four class-2 sections the outq fixture holds on one stop. PLANTED in the queue since 2026-09-24: three of the four producers that used to fire here (`agent-peers`, `others`, `others-items`) were deleted with the peer listing (agent/plans/PLAN-stop-hook-continuity.md P0.3), and what these cases measure is the drain -- its budget, its tail, its priority order -- not any one producer.
 OUTQ_SECTIONS = (
@@ -116,7 +117,7 @@ def bg_watch(fix, ident: str, description: str = "long watch") -> str:
     )
 
 
-def test_173_three_of_four_sections_are_released_and_the_tail_counts_the_rest(wl):  # noqa: F811
+def test_173_three_of_four_sections_are_released_and_the_tail_counts_the_rest(wl):
     """FOUR class-2 sections fire, THREE are released (the fixed per-stop budget), and the tail states how many are waiting. Which three release is randomized, so the assertion is a count, robust to whichever three the lottery picks."""
     outq_fixture(wl)
     got = wl.run()
@@ -127,7 +128,7 @@ def test_173_three_of_four_sections_are_released_and_the_tail_counts_the_rest(wl
     assert "(1 more report section(s) queued" in got.out, got.out[:400]
 
 
-def test_173_control_the_leftover_releases_on_the_very_next_stop(wl):  # noqa: F811
+def test_173_control_the_leftover_releases_on_the_very_next_stop(wl):
     """CONTROL: the one section the budget could not fit on stop 1 is not lost, it surfaces on stop 2 with nothing left queued -- proving the cap delays rather than drops."""
     outq_fixture(wl)
     wl.run()
@@ -138,7 +139,8 @@ def test_173_control_the_leftover_releases_on_the_very_next_stop(wl):  # noqa: F
     assert "more report section(s) queued" not in got.out, got.out[:400]
 
 
-def test_174_changed_content_re_enqueues_at_a_new_seq_rather_than_keeping_its_place(wl):  # noqa: F811, ARG001
+@pytest.mark.usefixtures("wl")
+def test_174_changed_content_re_enqueues_at_a_new_seq_rather_than_keeping_its_place():
     """UNIT-LEVEL: the operator's "changed content re-enqueues at its priority" is a property of `outq_add`'s bookkeeping, not of drain order (drain order is now randomized within a class, so a position-based assertion would prove nothing). Touching an already-queued key's body must bump its `seq`, which is
     what sends it to the back of its own class."""
     checks = wlfix.import_wl("wl_checks")
@@ -159,7 +161,7 @@ def test_174_changed_content_re_enqueues_at_a_new_seq_rather_than_keeping_its_pl
         checks.S.save_state = saved_save
 
 
-def test_175_the_class_0_ci_note_is_released_ahead_of_the_older_class_2_advisory(wl):  # noqa: F811
+def test_175_the_class_0_ci_note_is_released_ahead_of_the_older_class_2_advisory(wl):
     """Priority beats the same-class lottery: an actionable CI note is rendered ahead of an older advisory queued at a lower priority, both fitting under the fixed 3-per-stop budget so the assertion is about ORDER, not exclusion.
 
     PLANTED DEFECT, run 2026-07-31: outq_drain's sort key was changed from (prio, seq) to (seq,). Both legs failed, the first reporting the worklist advisory in the released slot while the CI note was the one left queued, which is the inversion exactly. A priority ladder nobody has watched invert is a ladder nobody knows is wired up.
@@ -259,7 +261,7 @@ def test_181_control_same_tier_selection_is_genuinely_randomized_not_a_fixed_ord
         checks.S.save_state = saved_save
 
 
-def test_177_the_judge_line_is_a_stamp_unless_the_context_is_fresh_or_the_reason_changed(wl):  # noqa: F811
+def test_177_the_judge_line_is_a_stamp_unless_the_context_is_fresh_or_the_reason_changed(wl):
     """Operator, 2026-07-31: the approval reason was reprinted on every stop.
 
     It now rides a stop whose context was just rebuilt (SessionStart, PostCompact) or whose reason genuinely changed, and every other stop gets the bare stamp. The verdict cache is pinned OFF so every stop pays a fresh call: a cached verdict would make the cache, not the signature latch, the thing under test.
@@ -343,7 +345,7 @@ def test_177_the_judge_line_is_a_stamp_unless_the_context_is_fresh_or_the_reason
     )
 
 
-def test_179_the_bgwait_latch_resets_when_the_wait_ends(wl):  # noqa: F811
+def test_179_the_bgwait_latch_resets_when_the_wait_ends(wl):
     """v17. THE BUG: the clock was only written inside the wait state, so leaving it froze the stamp. Re-entering an hour later found it 60 minutes old and fired the roster demand on the FIRST stop back, which is the exact thing the silent seed exists to prevent."""
     wl.brief_now()
     wl.hand_now()

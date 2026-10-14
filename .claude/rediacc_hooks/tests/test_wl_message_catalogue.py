@@ -15,7 +15,6 @@ import subprocess
 import sys
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
 def run_script(script, argv: list[str], env: dict, stdin: str = "") -> wlfix.Result:
@@ -373,7 +372,7 @@ def test_117d_a_mixed_keyed_and_positional_string_fails():
     )
 
 
-def test_118_a_missing_catalogue_fails_closed_and_spares_the_query_modes(wl):  # noqa: F811
+def test_118_a_missing_catalogue_fails_closed_and_spares_the_query_modes(wl):
     """The import is guarded so a broken worklist_messages.py cannot become the old crash-reads-as-ALLOW hole: message USE raises into the crash handler (block, naming the catalogue), while --path, which uses no messages, keeps working for the scripts that call it."""
     nocat = wl.base / "nocat"
     (nocat / "proj" / ".git").mkdir(parents=True, exist_ok=True)
