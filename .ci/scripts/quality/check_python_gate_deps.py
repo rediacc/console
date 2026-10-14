@@ -27,7 +27,7 @@ import re
 import sys
 import tempfile
 
-import _cipath  # noqa: F401
+import _cipath
 import yaml
 from rediacc_ci import paths as ci_paths
 

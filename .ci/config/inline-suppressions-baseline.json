@@ -632,71 +632,22 @@
   ".ci/scripts/quality/check_plan_deps.py": {
    "noqa PLC0415": 2
   },
-  ".ci/scripts/quality/check_plan_housekeeping.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_plan_implementation.py": {
    "noqa BLE001": 4,
-   "noqa F401": 1,
    "noqa PLC0415": 10,
    "noqa PLW0603": 2
   },
   ".ci/scripts/quality/check_plan_record.py": {
-   "noqa BLE001": 1,
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_plant_proofs.py": {
-   "noqa F401": 1
+   "noqa BLE001": 1
   },
   ".ci/scripts/quality/check_policy_inventory.py": {
-   "noqa F401": 1,
    "type-ignore attr-defined": 1
-  },
-  ".ci/scripts/quality/check_pool_writer_safety.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_portal_sitekey_guard.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_pr_description.py": {
-   "noqa F401": 1
   },
   ".ci/scripts/quality/check_pr_head_ref_completeness.py": {
    "type-ignore import-untyped": 1
   },
-  ".ci/scripts/quality/check_probe_parity.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_profiler_coverage.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_prose_style.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_proxy_image_smoke.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_python_control_plants.py": {
-   "noqa F401": 1,
    "type-ignore attr-defined": 1
-  },
-  ".ci/scripts/quality/check_python_env_registry.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_python_gate_deps.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_python_types.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_rdc_native.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_record_paths.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_regions_sync.py": {
-   "noqa F401": 1
   },
   ".ci/scripts/quality/check_release_bump_skip.py": {
    "noqa F401": 1

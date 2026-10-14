@@ -18,7 +18,7 @@ why: an environment read is an undeclared input, and until this landed nothing
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import python_env_registry
 
 if __name__ == "__main__":

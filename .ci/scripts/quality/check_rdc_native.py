@@ -20,7 +20,7 @@ why: the `--native` SEA build left rdc.sh for rediacc_ci.native, and two things
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import rdc_native
 
 if __name__ == "__main__":
