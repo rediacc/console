@@ -432,7 +432,20 @@ const assertRuleExport = (rule, modulePath, exportName) => {
 };
 
 // The control for assertRuleExport, run on every gate run: each non-rule shape throws and both rule shapes pass, so a guard that stops refusing (or starts refusing a real rule) turns the gate red instead of letting every probe report a missing rule as dead.
-const ruleExportControlFailures = () => {
+// The rule loader the gate runs, built over an importer so the control below drives this same code with fake modules: one import per module and export, cached, and every export passed through assertRuleExport.
+const makeRuleLoader = (importModule) => {
+  const rulesByModule = new Map();
+  return async (modulePath, exportName) => {
+    const key = `${modulePath}#${exportName}`;
+    if (!rulesByModule.has(key)) {
+      const rule = (await importModule(modulePath))[exportName];
+      rulesByModule.set(key, assertRuleExport(rule, modulePath, exportName));
+    }
+    return rulesByModule.get(key);
+  };
+};
+
+const ruleExportControlFailures = async () => {
   const failures = [];
   for (const [label, value] of [
     ['undefined', undefined],
@@ -454,6 +467,24 @@ const ruleExportControlFailures = () => {
     } catch {
       failures.push(`${label} rule export was refused`);
     }
+  }
+  // The same two directions through makeRuleLoader, so a loader that stops calling assertRuleExport turns this control red too.
+  const fakeModules = {
+    'null.js': { r: null },
+    'scalar.js': { r: 3 },
+    'rule.js': { r: { create() {} } },
+  };
+  const load = makeRuleLoader(async (modulePath) => fakeModules[modulePath]);
+  for (const modulePath of ['null.js', 'scalar.js']) {
+    try {
+      await load(modulePath, 'r');
+      failures.push(`the rule loader admitted the non-rule export of ${modulePath}`);
+    } catch {}
+  }
+  try {
+    await load('rule.js', 'r');
+  } catch {
+    failures.push('the rule loader refused a real rule export');
   }
   return failures;
 };
@@ -832,7 +863,7 @@ async function main() {
     await sourceRulesUniverse();
   const host = await import(path.join(ROOT, 'scripts/lib/rule-host.ts'));
 
-  const exportControl = ruleExportControlFailures();
+  const exportControl = await ruleExportControlFailures();
   if (exportControl.length > 0) {
     err(`CONTROL FAILED: assertRuleExport: ${exportControl.join('; ')}`);
     return 1;
@@ -869,15 +900,7 @@ async function main() {
   }
 
   // The host-backed stand-in for the ESLint instance this gate used to drive. With no `overrides` it runs every table entry in scope for the file (the "in-config" mode); with `overrides` ({ruleId: options[]}) it runs exactly those rules, whether or not the table enables them -- how a parked rule, an option-dir probe and an isolated specimen are all reached.
-  const rulesByModule = new Map();
-  const loadRule = async (modulePath, exportName) => {
-    const key = `${modulePath}#${exportName}`;
-    if (!rulesByModule.has(key)) {
-      const rule = (await import(path.join(ROOT, modulePath)))[exportName];
-      rulesByModule.set(key, assertRuleExport(rule, modulePath, exportName));
-    }
-    return rulesByModule.get(key);
-  };
+  const loadRule = makeRuleLoader((modulePath) => import(path.join(ROOT, modulePath)));
   const camel = (name) => name.replace(/-([a-z])/g, (_m, c) => c.toUpperCase());
   const targetFor = async (ruleId, options) => {
     const info = ruleInstancesById.get(ruleId)?.[0];
