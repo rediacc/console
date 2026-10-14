@@ -67,11 +67,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-biome-only-lint.md -- 13 of 29 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 678 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a6f5efbc0860ba78c, worker:a369f2d58a6a023ea, worker:af530e57167b55be2.
-- Leased items: 13: #50cb9316 (worker:ad2cb048b81425c59, d778be9d), #5f43e8c8 (worker:afffb5d695cb04740, d778be9d), #6361fc5b (worker:ad4f40ccdc1c9b8bf, d778be9d), #6a5395a6 (worker:b92oyk4pj, d778be9d), #97a7ced2 (worker:af530e57167b55be2, d778be9d), #a5a1f981 (worker:afffb5d695cb04740, d778be9d), #a6372961 (worker:a369f2d58a6a023ea, d778be9d), #ba06a46a (worker:ad2cb048b81425c59, d778be9d), #c275adc4 (worker:ad4f40ccdc1c9b8bf, d778be9d), #cba857c9 (worker:afffb5d695cb04740, d778be9d), #df0c59ce (worker:a369f2d58a6a023ea, d778be9d), #e4caba69 (worker:a6f5efbc0860ba78c, d778be9d), and 1 more.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 707 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a8c91b48cb758089e.
+- Leased items: 10: #1a2593ff (worker:a8c91b48cb758089e, d778be9d), #1fa4e8e9 (worker:a8c91b48cb758089e, d778be9d), #50cb9316 (worker:ad2cb048b81425c59, d778be9d), #6361fc5b (worker:ad4f40ccdc1c9b8bf, d778be9d), #66e2e0ef (worker:bl6jvbn38, d778be9d), #809a3054 (worker:bl6jvbn38, d778be9d), #97a7ced2 (worker:bl6jvbn38, d778be9d), #c275adc4 (worker:bl6jvbn38, d778be9d), #fc6ca43b (worker:a8c91b48cb758089e, d778be9d), #fe2d3ad2 (worker:ad4f40ccdc1c9b8bf, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 

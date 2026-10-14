@@ -516,7 +516,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-github-pr-review-restore.md` | approved | 128 | 0 | 13 | 35928 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-inline-suppressions.md` | approved | 316 | 2 | 9 | 40874 |
+| `agent/plans/PLAN-inline-suppressions.md` | approved | 316 | 2 | 9 | 40916 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-k3s-137-and-pr-conditions.md` | approved | 112 | 0 | 5 | 9105 |
@@ -566,7 +566,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-always-tier.md` | compacted | 39 | 0 | 0 | 3145 |
 | `agent/plans/PLAN-stop-hook-cadence.md` | compacted | 38 | 0 | 0 | 2622 |
 | `agent/plans/PLAN-stop-hook-effort-tuning.md` | approved | 40 | 0 | 7 | 8755 |
-| `agent/plans/PLAN-stop-hook-effort.md` | approved | 44 | 0 | 7 | 7484 |
+| `agent/plans/PLAN-stop-hook-effort.md` | approved | 44 | 0 | 7 | 7658 |
 | `agent/plans/PLAN-stop-hook-focus-mode.md` | draft | 354 | 0 | 8 | 36634 |
 | `agent/plans/PLAN-stop-hook-one-plan-scope.md` | approved | 179 | 1 | 14 | 42868 |
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |
