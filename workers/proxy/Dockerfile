@@ -12,7 +12,7 @@
 # The one npm (.devcontainer/toolchain.env NPM_VERSION, outside this build context;
 # check:ci-lockfile asserts the two agree). node:24-slim bundles its own npm 11
 # minor, and `npm ci` below reads a lockfile written by exactly the pinned one.
-ARG NPM_VERSION=11.20.0
+ARG NPM_VERSION=11.21.0
 
 FROM node:24-slim AS build
 ARG NPM_VERSION
