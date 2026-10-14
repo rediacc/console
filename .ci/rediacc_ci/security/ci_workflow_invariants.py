@@ -1086,16 +1086,18 @@ _PINS_RC_OUT_RE = re.compile(
     r"""^\s*echo\s+"?rc=\$\{?rc\}?"?\s*>>\s*"?\$\{?GITHUB_OUTPUT\}?"?\s*$"""
 )
 _PINS_RC_WORD_RE = re.compile(r"\brc\b")
+# The apply line starts with the command itself, so no prefix (`!`, `time`, `if`, `exec`, an assignment) can change or invert its status.
+_PINS_APPLY_START_RE = re.compile(r"^\s*npm\s+run\b")
 _PINS_NOT_COMMAND_RE = re.compile(r"^\s*(#|echo\b|printf\b)")
 
 
 def _pins_publishes_rc(run: str) -> bool:
-    """True when the apply command's own exit status becomes the `rc` step output: nothing on the apply line can mask it (`_PINS_MASK_RE`), the next non-blank line is `rc=$?`, a later line is exactly `echo "rc=$rc" >> "$GITHUB_OUTPUT"` with nothing else on it, and no line after the capture other than that write names `rc`, so nothing can reassign it. A comment or echo naming the verb is not the apply line."""
+    """True when the apply command's own exit status becomes the `rc` step output: the apply line starts with `npm run` and nothing on it can mask the status (`_PINS_MASK_RE`), the next non-blank line is `rc=$?`, a later line is exactly `echo "rc=$rc" >> "$GITHUB_OUTPUT"` with nothing else on it, and no line after the capture other than that write names `rc`, so nothing can reassign it. A comment or echo naming the verb is not the apply line."""
     lines = run.split("\n")
     for i, line in enumerate(lines):
         if not _PINS_APPLY_RE.search(line) or _PINS_NOT_COMMAND_RE.match(line):
             continue
-        if _PINS_MASK_RE.search(line):
+        if _PINS_MASK_RE.search(line) or not _PINS_APPLY_START_RE.match(line):
             return False
         rest = [ln for ln in lines[i + 1 :] if ln.strip()]
         if not rest or not _PINS_RC_CAPTURE_RE.match(rest[0]):
