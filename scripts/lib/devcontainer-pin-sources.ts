@@ -1,7 +1,7 @@
 /**
  * The devcontainer pin inventory: each third-party tool pinned by an
  * `ARG <BASE>_VERSION` in .devcontainer/Dockerfile that a gate should watch, and
- * where its upstream releases live.
+ * where its upstream releases live, READ FROM THE PIN REGISTRY.
  *
  * Extracted from scripts/gates/check-devcontainer-pin-freshness.ts for the same reason
  * embed-asset-sources.ts was extracted from its gate: that script calls main() at
@@ -13,18 +13,14 @@
  * BW_VERSION -> "bw" and GLAB_VERSION -> "glab", but AGENT_BROWSER_VERSION does
  * not match at all and would need the shared parser widened first.
  *
- * WHY NOT EVERY PIN. The devcontainer image also pins glab (1.90.0), bottom
- * (0.12.3), agent-browser (0.26.0), openvscode-server (1.109.5) and a ttyd image
- * tag, and none of them is watched by anything either. They are absent here on
- * purpose, not by oversight: every one is already behind upstream, so seeding
- * them would turn the change that introduced this gate into a "bump five
- * unrelated tools" change nobody asked for, and a gate that is red on the day it
- * lands is a gate somebody disables. Adding one later is one entry plus,
- * ideally, its hashArgs. That is the whole migration.
- *
- * (That paragraph opened "WHY ONLY ONE ENTRY" when this file held bw alone. The
- * count has moved twice since; the REASONING is what was worth keeping, so only
- * the heading changed.)
+ * WHERE THE LIST LIVES. The `devcontainer:<tool>` entries of .ci/config/pins.json
+ * are the inventory, and this gate watches the ones whose entry lists
+ * `check:ci-devcontainer-pins` in its `gates`. The image also pins staticcheck,
+ * goimports, codex, gemini-cli, glab, bottom, agent-browser and openvscode-server;
+ * each is a registry entry too, unwatched here because every one was already
+ * behind upstream when this gate landed and a gate red on the day it lands is a
+ * gate somebody disables. Watching one is adding the gate id to its entry, plus
+ * `sha256:<arch>` sites with an `asset` when it carries hashes.
  *
  * THE GO TOOLS, added when .devcontainer/Dockerfile stopped installing them at
  * `@latest`. Three of the five are watchable and two are not, and the two are
@@ -48,6 +44,8 @@
  * the prefix those 89 releases carry -- the same monorepo problem tagPrefix was
  * built for below, which is why it needed no new machinery.
  */
+
+import { entriesFor, loadRegistry, type PinEntry } from './pins/registry.js';
 
 /* NOT exported: `DevcontainerPinSource.hashArgs` is its only reference, and it is in
    this file. knip runs with `--treat-config-hints-as-errors`, so an export nobody
@@ -84,46 +82,38 @@ export interface DevcontainerPinSource {
   hashArgs?: Record<string, DevcontainerPinHashArg>;
 }
 
-export const DEVCONTAINER_PIN_SOURCES: DevcontainerPinSource[] = [
-  {
-    base: 'bw',
-    display: 'Bitwarden CLI',
-    repo: 'bitwarden/clients',
-    tagPrefix: 'cli-v',
-    hashArgs: {
-      amd64: { arg: 'BW_SHA256_AMD64', asset: (v) => `bw-linux-${v}.zip` },
-      arm64: { arg: 'BW_SHA256_ARM64', asset: (v) => `bw-linux-arm64-${v}.zip` },
-    },
-  },
-  {
-    base: 'bws',
-    display: 'Bitwarden Secrets Manager CLI',
-    repo: 'bitwarden/sdk-sm',
-    tagPrefix: 'bws-v',
-    hashArgs: {
-      amd64: { arg: 'BWS_SHA256_AMD64', asset: (v) => `bws-x86_64-unknown-linux-gnu-${v}.zip` },
-      arm64: { arg: 'BWS_SHA256_ARM64', asset: (v) => `bws-aarch64-unknown-linux-gnu-${v}.zip` },
-    },
-  },
-  // The Go tools below carry NO hashArgs, and that is the documented "a pin with no hashes simply omits it" case rather than an oversight: `go install` verifies every module against the Go checksum database, which is a stronger guarantee than a sha256 we recorded ourselves. .ci/scripts/lib/toolchain.sh makes the identical argument for shfmt.
-  {
-    base: 'gopls',
-    display: 'gopls (Go language server)',
-    repo: 'golang/tools',
-    // NOT "v". Every release in this repo is a gopls one, and its tag is `gopls/v0.23.0` -- the module version with a directory prefix. Stripping exactly this prefix is what yields the value the Dockerfile ARG holds.
-    tagPrefix: 'gopls/v',
-  },
-  {
-    base: 'dlv',
-    display: 'Delve (Go debugger)',
-    repo: 'go-delve/delve',
-    tagPrefix: 'v',
-  },
-  {
-    // GOLANGCILINT_VERSION, no underscore: parseDockerfileVersions' base is /[A-Z0-9]+/, so a GOLANGCI_LINT_VERSION ARG would not be parsed and this entry would match nothing. See the note in .devcontainer/Dockerfile.
-    base: 'golangcilint',
-    display: 'golangci-lint',
-    repo: 'golangci/golangci-lint',
-    tagPrefix: 'v',
-  },
-];
+const DOCKERFILE = '.devcontainer/Dockerfile';
+
+function toSource(e: PinEntry): DevcontainerPinSource {
+  const fail = (why: string): never => {
+    throw new Error(`.ci/config/pins.json ${e.id}: ${why}`);
+  };
+  const own = e.sites.filter((s) => s.repo === '.' && s.file === DOCKERFILE && s.arg);
+  const version = own.find((s) => s.role === 'version')?.arg;
+  if (!version?.endsWith('_VERSION'))
+    fail(`needs a version site on ARG <BASE>_VERSION in ${DOCKERFILE}`);
+  if (e.source.type !== 'github-release' || !e.source.repo || e.source.tagPrefix === undefined)
+    fail('the devcontainer gate reads a github-release source with a repo and a tagPrefix');
+  const hashArgs: Record<string, DevcontainerPinHashArg> = {};
+  for (const s of own.filter((x) => x.role.startsWith('sha256:'))) {
+    const template = s.asset ?? fail(`site ARG ${s.arg} has no asset filename`);
+    hashArgs[s.role.slice('sha256:'.length)] = {
+      arg: s.arg as string,
+      asset: (v) => template.replaceAll('{version}', v),
+    };
+  }
+  return {
+    base: (version as string).slice(0, -'_VERSION'.length).toLowerCase(),
+    display: e.name,
+    repo: e.source.repo as string,
+    tagPrefix: e.source.tagPrefix as string,
+    ...(Object.keys(hashArgs).length > 0 ? { hashArgs } : {}),
+  };
+}
+
+export const DEVCONTAINER_PIN_SOURCES: DevcontainerPinSource[] = entriesFor(
+  loadRegistry(),
+  'devcontainer'
+)
+  .filter((e) => e.gates.includes('check:ci-devcontainer-pins'))
+  .map(toSource);

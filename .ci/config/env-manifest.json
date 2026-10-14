@@ -595,6 +595,7 @@
       "MEDIA_COVERAGE_FILE",
       "OUT",
       "PAGE_LOCALE_IMPORTS_ROOT",
+      "PINS_ROOT",
       "PI_GO_FAIL",
       "PI_GO_JSON",
       "PLAN_BOXES_BASE",

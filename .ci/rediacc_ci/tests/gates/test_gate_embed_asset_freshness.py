@@ -565,6 +565,11 @@ FIXTURE_UNITS = (
 FIXTURE_GOLDEN = "[Unit]\nDescription=Rediacc CSI external-provisioner (v6.3.0, node-deployment)\n"
 UNITS = "pkg/kube/csidriver/units.go"
 GOLDEN = "pkg/kube/csidriver/testdata/rediacc-csi-provisioner.service"
+# The snapshotter pair's unit goldens: their embed:<base> registry entries list them as sites, so an upgrade of either moves them and refuses when one is absent.
+SNAP_GOLDENS = {
+    "pkg/kube/csidriver/testdata/rediacc-csi-snapshotter.service": "[Unit]\nDescription=Rediacc CSI external-snapshotter (v8.6.0, node-deployment)\n",
+    "pkg/kube/csidriver/testdata/rediacc-csi-snapshot-controller.service": "[Unit]\nDescription=Rediacc CSI snapshot-controller (v8.6.0, distributed)\n",
+}
 
 
 def make_renet(tmp_path):
@@ -576,6 +581,8 @@ def make_renet(tmp_path):
     )
     (renet / UNITS).write_text(FIXTURE_UNITS, encoding="utf-8")
     (renet / GOLDEN).write_text(FIXTURE_GOLDEN, encoding="utf-8")
+    for rel, text in SNAP_GOLDENS.items():
+        (renet / rel).write_text(text, encoding="utf-8")
     return renet
 
 

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T10:52:17.805Z",
+  "generatedAt": "2026-10-14T15:32:15.485Z",
   "legs": [
     {
       "index": 1,
@@ -91,6 +91,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_common.py",
         "pytest:.ci/rediacc_ci/tests/test_core_gate_controls.py",
         "pytest:.ci/rediacc_ci/tests/test_core_ghx.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_pins.py",
         "pytest:.ci/rediacc_ci/tests/test_core_ports.py",
         "pytest:.ci/rediacc_ci/tests/test_core_review_budget.py",
         "pytest:.ci/rediacc_ci/tests/test_core_run_verbs.py",

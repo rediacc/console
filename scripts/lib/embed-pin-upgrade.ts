@@ -15,6 +15,8 @@
  * never leaves the pin at the old value.
  */
 
+import { compile, entriesFor, idName, loadRegistry } from './pins/registry.js';
+
 export interface Fetchers {
   /** Commit sha a tag points at (annotated tags dereferenced). */
   commitOf(repo: string, tag: string): Promise<string>;
@@ -60,48 +62,25 @@ const SHA256_SOURCES: Record<
 interface ConstSite {
   /** Path relative to private/renet. */
   file: string;
-  /** Group 1 = text kept before the version, group 2 (optional) = text kept after. */
+  /** The registry site's regex; its `value` group is the version, spelled without whatever prefix (a `v`) the site keeps outside the group. */
   re: RegExp;
-  /** The version as the site spells it. */
-  render: (version: string) => string;
 }
 
-/** Source and golden files that spell a pinned version outside the Dockerfile and the lockfile. A bump that finds no match REFUSES: the site moved and this table is stale. */
-export const SOURCE_CONSTS: Record<string, ConstSite[]> = {
-  k3s: [
-    {
-      file: 'pkg/embed/embed.go',
-      re: /(const AssetK3sVersion = ")[^"]*(")/,
-      render: (v) => v,
-    },
-  ],
-  csiprovisioner: [
-    {
-      file: 'pkg/kube/csidriver/units.go',
-      re: /(\bProvisionerVersion\s*=\s*")[^"]*(")/,
-      render: (v) => `v${v}`,
-    },
-    {
-      file: 'pkg/kube/csidriver/testdata/rediacc-csi-provisioner.service',
-      re: /(CSI external-provisioner \()[^,)]*(,)/,
-      render: (v) => `v${v}`,
-    },
-  ],
-  csisnapshotter: [
-    {
-      file: 'pkg/kube/csidriver/units.go',
-      re: /(\bSnapshotterVersion\s*=\s*")[^"]*(")/,
-      render: (v) => `v${v}`,
-    },
-  ],
-  snapshotcontroller: [
-    {
-      file: 'pkg/kube/csidriver/units.go',
-      re: /(\bSnapshotControllerVersion\s*=\s*")[^"]*(")/,
-      render: (v) => `v${v}`,
-    },
-  ],
-};
+/**
+ * Source and golden files that spell a pinned version outside the Dockerfile and the lockfile: every
+ * `match` site with role `version` an `embed:<base>` entry of .ci/config/pins.json places in
+ * private/renet. A bump that finds no match REFUSES: the site moved and its registry entry is stale.
+ */
+export const SOURCE_CONSTS: Record<string, ConstSite[]> = Object.fromEntries(
+  entriesFor(loadRegistry(), 'embed')
+    .map((e): [string, ConstSite[]] => [
+      idName(e),
+      e.sites
+        .filter((x) => x.repo === 'private/renet' && x.match !== undefined && x.role === 'version')
+        .map((x) => ({ file: x.file, re: compile(x.match as string, 'gmd') })),
+    ])
+    .filter(([, sites]) => sites.length > 0)
+);
 
 export const CONST_FILES: string[] = [
   ...new Set(Object.values(SOURCE_CONSTS).flatMap((sites) => sites.map((s) => s.file))),
@@ -322,16 +301,19 @@ export async function upgradeComponent(
     const text = consts[site.file];
     if (text === undefined)
       return fail(`${site.file} is absent, so its pinned version cannot be moved`);
-    if (!site.re.test(text)) {
+    const spans = [...text.matchAll(site.re)].map((m) => m.indices?.groups?.value);
+    if (spans.length === 0 || spans.some((x) => x === undefined)) {
       return fail(
-        `${site.file} no longer matches ${site.re}; update SOURCE_CONSTS in scripts/lib/embed-pin-upgrade.ts`
+        `${site.file} no longer matches ${site.re}; update the embed:${base} site in .ci/config/pins.json`
       );
     }
-    consts[site.file] = text.replace(
-      site.re,
-      (_m, pre: string, post: string | undefined) => `${pre}${site.render(latest)}${post ?? ''}`
-    );
-    changes.push(`${site.file} = ${site.render(latest)}`);
+    let next = text;
+    // Right to left, so an earlier span's offsets stay valid after a later one is rewritten.
+    for (const [start, end] of (spans as [number, number][]).reverse()) {
+      next = next.slice(0, start) + latest + next.slice(end);
+    }
+    consts[site.file] = next;
+    changes.push(`${site.file} = ${latest}`);
   }
 
   return {

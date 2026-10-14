@@ -2,7 +2,7 @@
 /**
  * Embed-asset upstream freshness gate.
  *
- * renet embeds pinned upstream binaries — criu, rsync, rclone, zot, k3s and the
+ * renet embeds pinned upstream binaries — criu, rsync, zot, k3s and the
  * CSI sidecars — whose versions live as `ARG <BASE>_VERSION=` in
  * private/renet/Dockerfile (the single source of truth; check-embed-credits.ts
  * keeps embed.go + the credits inventories consistent with them). Nothing,
@@ -68,7 +68,8 @@
  * --upgrade moves EVERY pin tied to a stale component, not just its VERSION ARG:
  * the Dockerfile `_COMMIT` / `_SHA256[_<ARCH>]` ARGs (resolved from the upstream
  * tag or the release's published checksum file), embed-assets.lock.json, and the
- * Go constants in scripts/lib/embed-pin-upgrade.ts SOURCE_CONSTS. A pin it cannot
+ * Go constants and unit goldens its `embed:<base>` entry in .ci/config/pins.json
+ * places in private/renet (SOURCE_CONSTS in scripts/lib/embed-pin-upgrade.ts). A pin it cannot
  * resolve (rsync publishes no checksum file) makes it REFUSE that component and
  * exit 1; it never leaves a half-moved pin behind.
  *   npm run check:ci-embed-asset-freshness
