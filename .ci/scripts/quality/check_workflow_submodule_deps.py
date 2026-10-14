@@ -266,7 +266,9 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
                 swept_named.update(sweep)
             else:
                 swept_whole = True
-                sweep = [path for ws in (workspaces or [None]) for path in package_test_files(ws)]
+                # No workspace named means every package, which package_test_files spells as None.
+                scopes: list[str | None] = list(workspaces) or [None]
+                sweep = [path for ws in scopes for path in package_test_files(ws)]
             for path in sweep:
                 try:
                     # SCANNED: a test runner really does execute these.

@@ -105,7 +105,6 @@ import sys
 import tempfile
 import time
 from collections.abc import Callable
-from typing import cast
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
@@ -448,11 +447,11 @@ def _go_network_failure(stderr: str) -> upstream.Failure | None:
     return upstream.Failure(what, True)
 
 
-def _go_list(directory: pathlib.Path) -> subprocess.CompletedProcess:
+def _go_list(directory: pathlib.Path) -> subprocess.CompletedProcess[str]:
     """`go list -u -m -json all`, retried under the shared rule when it fails on the network. Raises upstream.NotComparedError once that budget is spent, and OSError when `go` cannot run at all."""
     host = ["the module proxy"]
 
-    def once() -> upstream.Answer | upstream.Failure:
+    def once() -> upstream.Answer[subprocess.CompletedProcess[str]] | upstream.Failure:
         proc = subprocess.run(
             ["go", "list", "-u", "-m", "-json", "all"],
             cwd=str(directory),
@@ -475,7 +474,7 @@ def _go_list(directory: pathlib.Path) -> subprocess.CompletedProcess:
         raise upstream.NotComparedError(
             err.what, host[0], "go list -u -m -json all (%s)" % host[0], err.attempts
         ) from None
-    return cast("subprocess.CompletedProcess", answer)
+    return answer
 
 
 def check_go_dir(

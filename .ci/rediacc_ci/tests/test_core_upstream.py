@@ -70,7 +70,10 @@ def test_a_failure_not_worth_asking_again_raises_after_one(slept):
 
 
 def test_a_failure_that_clears_returns_the_answer(slept):
-    answers = [upstream.Failure("network error ECONNRESET", True), upstream.Answer("ok")]
+    answers: list[upstream.Answer[str] | upstream.Failure] = [
+        upstream.Failure("network error ECONNRESET", True),
+        upstream.Answer("ok"),
+    ]
     assert upstream.retry("GET h/p", "h", "pin", lambda: answers.pop(0)) == "ok"
     assert slept == [2]
 
