@@ -78,7 +78,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 12 of 15 plans done, 180 of 184 boxes done (97%).
+Promoted: 12 of 16 plans done, 180 of 197 boxes done (91%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -97,6 +97,7 @@ Promoted: 12 of 15 plans done, 180 of 184 boxes done (97%).
 | 13 | PLAN-inline-suppressions.md | 9/11 | 2 open |
 | 14 | PLAN-stop-hook-effort.md | 7/7 | done |
 | 15 | PLAN-stop-hook-effort-tuning.md | 7/7 | done |
+| 16 | PLAN-pins-command.md | 0/13 | 13 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
@@ -114,6 +115,7 @@ Promoted: 12 of 15 plans done, 180 of 184 boxes done (97%).
 13. agent/plans/PLAN-inline-suppressions.md -- operator /ask 2026-10-08T10:48Z (#575d2992): ban inline lint/type suppressions; 3 of 11 boxes ticked (WC1 e2e, WC2 account, WD1 renet); WD2 waits on run_renet.py validating BLOCKER comments; the config and sweep patches (P0), the .claude and .ci Python patches (WA, WB) and the shell markers are delivered and not yet landed; P2 and F follow them
 14. agent/plans/PLAN-stop-hook-effort.md -- operator /ask 2026-10-14 (#d5506fb8): one effort level (quiet/low/smart/high/ultra) replaces the stop_hook, focus and turbo switches, with check thresholds in .claude/config/effort.json; "implement PLAN-stop-hook-effort.md now"; 0 of 7 boxes, writer on E1-E6
 15. agent/plans/PLAN-stop-hook-effort-tuning.md -- operator 2026-10-14 (asked to plan it and then ask the implementation questions; /ask: tuner runs near compaction at about 85% through a sub-agent, demotions by one batched /ask, work = a commit or tick within 3 stops, promotions auto-apply): the effort table tunes itself from measured outcomes; depends on entry 14; 0 of 7 boxes
+16. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it; 0 of 13 boxes
 
 ## Generated
 

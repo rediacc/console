@@ -996,6 +996,30 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-pins-command.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "097e0d3c",
+        "1f683ad5",
+        "44a5af15",
+        "52428dc8",
+        "52effe0e",
+        "6a2b2863",
+        "99b34656",
+        "a50a6173",
+        "a730821d",
+        "b5c0c73b",
+        "d5abc71e",
+        "eb613c95",
+        "fcbd1cc2"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-plan-compaction-bindings.md": {
       "status": "approved",
       "owner": "d778be9d",
