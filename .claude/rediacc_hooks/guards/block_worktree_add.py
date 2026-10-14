@@ -17,9 +17,9 @@ create and easy to forget, and each one is a place uncommitted work can silently
 
 import ast
 import itertools
+import os
 import re
 import shlex
-import sys
 from typing import Any
 
 from rediacc_hooks import hookio, shellscan
@@ -400,102 +400,92 @@ def _joined(seq):
     return " ".join(shlex.quote(e) if e is not None else "X" for e in seq)
 
 
-# A FILE MAY MENTION THE PHRASE ONLY WHEN IT HAS NO WAY TO RUN A COMMAND. A program the command line itself holds (`-c`, a heredoc) is judged by every string it carries, because the command line IS the program. A script run BY PATH may merely list the phrase as data (a guard's own test table holds `"git worktree add /tmp/wt"` as a case, and `python3 test-x.py` was refused for its text although it ran nothing, 2026-10-15), so a file is read in two steps.
+# A SCRIPT RUN BY PATH THAT NAMES THE PHRASE IS REFUSED, WHATEVER IT DOES WITH IT. A program the command line itself holds (`-c`, a heredoc, a here-string) is judged by every string it carries, because the command line IS the program. A script read from disk (`python3 x.py`, `node x.js`, `./x.py` by its shebang, `bash x.sh`, `source x.sh`, `./x.sh`) is refused when its text names `worktree` together with `add` or `create` (`_names_phrase`), and otherwise judged as a `-c` program is.
 #
-# First: can the file run a command at all (`_python_can_run`, `_text_can_run`)? Any exec primitive, an alias of one, a same-file wrapper of one (its body names the primitive), `shell=` anywhere, a dynamic reach the reading cannot resolve (getattr, eval, exec, __import__, vars, ...), an import of a module whose purpose is running code, or a call into a module of another file says yes. A file that says no runs nothing and is allowed whatever its strings spell.
+# NO QUESTION OF WHETHER THE FILE CAN RUN ANYTHING. An earlier reading allowed a file that mentioned the phrase when a deny list of exec primitives, dynamic reaches and code-running modules found no way for it to run a command. Every round of review found a stdlib road the list missed (`operator.methodcaller("system", ...)(os)`, `timeit.timeit`, `doctest`, `zipimport`, `functools.partial`), so the list could not be completed and the guard failed open on whatever it lacked. A test that cannot be completed is not a guard.
 #
-# Second, for a file that can: every string, argv list and folded concatenation in it is judged exactly as a `-c` program is, wherever it sits. WHICH string reaches WHICH call is deliberately not traced: a for-loop target, tuple unpacking, a comprehension, a walrus, a default, a container element, an f-string and a concatenation each carry a string into a call where a name-binding trace does not follow it, and a trace that misses one shape is an open guard. The price, stated: a file that both runs something and lists the phrase as data is refused, which an operator's `!` command settles.
-EXEC_CALLS = frozenset(
-    (
-        "system",
-        "popen",
-        "popen2",
-        "popen3",
-        "run",
-        "call",
-        "check_call",
-        "check_output",
-        "Popen",
-        "getoutput",
-        "getstatusoutput",
-        "spawn",
-        "spawnl",
-        "spawnle",
-        "spawnlp",
-        "spawnlpe",
-        "spawnv",
-        "spawnve",
-        "spawnvp",
-        "spawnvpe",
-        "execl",
-        "execle",
-        "execlp",
-        "execlpe",
-        "execv",
-        "execve",
-        "execvp",
-        "execvpe",
-        "posix_spawn",
-        "posix_spawnp",
-        "startfile",
-        "create_subprocess_exec",
-        "create_subprocess_shell",
-    )
-)
-# A reach the reading cannot resolve: whatever these return may be an exec primitive.
-DYNAMIC_NAMES = frozenset(
-    (
-        "getattr",
-        "eval",
-        "exec",
-        "compile",
-        "__import__",
-        "import_module",
-        "globals",
-        "locals",
-        "vars",
-        "__builtins__",
-        "__dict__",
-        "__getattribute__",
-        "__subclasses__",
-        "breakpoint",
-        "run_path",
-        "run_module",
-    )
-)
-RUNNERS = EXEC_CALLS | DYNAMIC_NAMES
+# THE COST, stated: a script that only lists the phrase as data (a guard's own test table) is refused while it is untracked or differs from HEAD. A tracked script unchanged from HEAD is reviewed code and is not read at all (`shellscan._tracked_unchanged`), so the repository's own test files still run; an edited one is read again, and the operator's `!` prefix runs it. OUT OF REACH: a script that spells neither word, building `worktree`, `add` or `create` from pieces at run time.
+PHRASE_VERB = re.compile(r"(?<![a-z])(?:add|create)(?![a-z])")
+# Quotes and backslashes go before the search, so an adjacent-literal split (`'work''tree'`, `"a""dd"`, `work\tree`) reads as the word it spells.
+PHRASE_NOISE = re.compile(r"[\"'`\\]")
+
+
+def _names_phrase(text):
+    """Does a script's text name `worktree` together with `add` or `create`, in any case, anywhere in the file?"""
+    bare = PHRASE_NOISE.sub("", text).lower()
+    return "worktree" in bare and bool(PHRASE_VERB.search(bare))
+
+
+# The word after `bash`/`sh` options that is the script it runs: what `shellscan._shell_payload` calls a "file" operand.
+SHELL_VALUE_LONG = ("--rcfile", "--init-file")
+SOURCE_WORDS = (".", "source")
+
+
+def _shell_operand(argv):
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        if arg in ("--", "-"):
+            k += 1
+            break
+        if arg.startswith("--"):
+            k += 2 if arg in SHELL_VALUE_LONG else 1
+            continue
+        if len(arg) > 1 and arg[0] in "-+":
+            k += 2 if ("o" in arg[1:] or "O" in arg[1:]) else 1
+            continue
+        break
+    return argv[k] if k < len(argv) else None
+
+
+def _shell_script_path(run_, cmd, cwd):
+    """The script a shell run reads by path: `bash x.sh`, `source x.sh`, `. x.sh`, or `./x.sh` run directly whose shebang names no interpreter `shellscan.interpreter_program` reads (a shell, or none). None for anything else."""
+    base = run_.name.rsplit("/", 1)[-1]
+    argv = list(run_.argv)
+    if base.startswith(shellscan.INTERPRETER_NAMES):
+        return None
+    if base in shellscan.SHELL_NAMES:
+        return _shell_operand(argv) if shellscan._shell_payload(argv)[0] == "file" else None
+    if base in SOURCE_WORDS:
+        return argv[0] if argv else None
+    if "/" in run_.name and shellscan.shebang_interpreter(run_, cwd, cmd) is None:
+        return run_.name
+    return None
+
+
+def _shell_script(run_, cmd, cwd):
+    """`(text, kind)` for a shell script run by path, read under the rules `shellscan.interpreter_program` reads an interpreter's script by: what an earlier run of the same command wrote into it, else the file on disk, a tracked and unchanged one exempt. A file that does not exist, and a compiled binary, are `(None, None)`. The phrase is searched before git is asked whether the file is tracked, so a script that does not name it costs no `git status`."""
+    path = _shell_script_path(run_, cmd, cwd)
+    if not path:
+        return None, None
+    target = shellscan._script_path(path, run_.cwd, cwd)
+    written = shellscan._written_scripts(cmd, run_, cwd)
+    if target in written:
+        return (written[target], "file") if written[target] is not None else (None, "unjudgeable")
+    try:
+        # A named pipe or device is not a script, and opening one could block the hook.
+        if not os.path.isfile(target):
+            return None, None
+        with open(target, "rb") as handle:
+            if handle.read(4) == b"\x7fELF":
+                return None, None
+            if os.path.getsize(target) > shellscan._SCRIPT_MAX:
+                return (
+                    (None, None) if shellscan._tracked_unchanged(target) else (None, "unjudgeable")
+                )
+            handle.seek(0)
+            text = handle.read().decode("utf-8", "replace")
+    except OSError:
+        return None, None
+    if not (_names_phrase(text) or _could_spell(text.lower())) or shellscan._tracked_unchanged(
+        target
+    ):
+        return None, None
+    return text, "file"
+
+
+# A string handed to one of these is Python, judged as a program one level down.
 EVALUATORS = ("eval", "exec", "compile")
-# Modules whose import alone counts: their purpose is running a command or code. `os` is not one (most files import it for `os.path`); its exec primitives are caught by name.
-EXEC_MODULES = frozenset(
-    (
-        "subprocess",
-        "_posixsubprocess",
-        "pty",
-        "commands",
-        "popen2",
-        "sh",
-        "pexpect",
-        "plumbum",
-        "invoke",
-        "fabric",
-        "ctypes",
-        "cffi",
-        "runpy",
-        "importlib",
-        "code",
-        "codeop",
-        "pickle",
-        "_pickle",
-        "cPickle",
-        "marshal",
-        "shelve",
-        "dill",
-        "builtins",
-        "__builtin__",
-        "posix",
-        "nt",
-    )
-)
 # The words a string fills an unknown piece of a built string with: a concatenation, an f-string or a format whose known text names `worktree` is judged as if the unknown part completed the phrase.
 FILLS = ("add", "worktree", "worktree add")
 PLACEHOLDER = re.compile(r"%[-#0 +]*\d*(?:\.\d+)?[sdirfx]|\{[^{}]*\}|\$\{[^{}]*\}|#\{[^{}]*\}")
@@ -507,50 +497,6 @@ def _callee(node):
     if isinstance(func, ast.Attribute):
         return func.attr
     return func.id if isinstance(func, ast.Name) else ""
-
-
-def _top(module):
-    return (module or "").split(".")[0]
-
-
-def _python_can_run(tree):
-    """Has the file any way to run a command? Conservative by design: a name or attribute spelling an exec primitive or a dynamic reach anywhere (called, aliased, passed to `map`), `shell=` set to anything but a false constant, an import of an EXEC_MODULES module, an import of an exec primitive under any name, a star import from another file, or a use of a name imported from another file (a dunder read such as `mod.__doc__` excepted)."""
-    stdlib = sys.stdlib_module_names
-    foreign: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if _top(alias.name) in EXEC_MODULES:
-                    return True
-                if _top(alias.name) not in stdlib:
-                    foreign.add(alias.asname or _top(alias.name))
-        elif isinstance(node, ast.ImportFrom):
-            if _top(node.module) in EXEC_MODULES or any(a.name in RUNNERS for a in node.names):
-                return True
-            if node.level or _top(node.module) not in stdlib:
-                if any(a.name == "*" for a in node.names):
-                    return True
-                foreign.update(a.asname or a.name for a in node.names)
-        elif isinstance(node, ast.keyword) and node.arg == "shell":
-            if not (isinstance(node.value, ast.Constant) and not node.value.value):
-                return True
-        elif (isinstance(node, ast.Name) and node.id in RUNNERS) or (
-            isinstance(node, ast.Attribute) and node.attr in RUNNERS
-        ):
-            return True
-    if not foreign:
-        return False
-    inert = {
-        id(node.value)
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Attribute)
-        and node.attr.startswith("__")
-        and node.attr.endswith("__")
-    }
-    return any(
-        isinstance(node, ast.Name) and node.id in foreign and id(node) not in inert
-        for node in ast.walk(tree)
-    )
 
 
 FOLDS = (ast.BinOp, ast.JoinedStr, ast.Call)
@@ -625,17 +571,15 @@ def _filled_sequences(sequences, mentions):
                 yield [fill if e is None else e for e in seq]
 
 
-def _python_verdict(code, depth, file=False):
-    """The arm a Python program text trips, or None. `file` is a script run by path, allowed outright when `_python_can_run` finds no way to run a command, and otherwise read like a `-c` program. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
+def _python_verdict(code, depth):
+    """The arm a Python program text trips, or None. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
     try:
         tree = ast.parse(code)
-        if file and not _python_can_run(tree):
-            return None
         mentions = "worktree" in code
         folds = _python_folds(tree, mentions)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         # fa5d11be.3: a program nested past the parser's recursion limit, or too large for it, is read like Python that does not parse: by the regex reading, which neither recurses nor allocates a tree. Not fail-open (its literals and argv shapes are still judged) and not a blanket refusal (a deep data structure is not a worktree add).
-        return _text_verdict(code, depth, file)
+        return _text_verdict(code, depth)
     strings = []
     for node in ast.walk(tree):
         value = _const_str(node)
@@ -684,21 +628,10 @@ def _python_verdict(code, depth, file=False):
     return None
 
 
-# How a node, perl or ruby file (or Python that does not parse) can run a command, read by regex. The words in TEXT_RUNNER count wherever they sit, a comment included; the common words in TEXT_CALL count only in call position, so a comment saying "run the tests" does not. A backtick is a command span in perl and ruby and a template in node, and counts either way.
-TEXT_RUNNER = re.compile(
-    r"`|\b(system|exec\w*|spawn\w*|popen\w*|fork|capture\w*|check_call|check_output|Popen|readpipe|"
-    r"qx|eval|instance_eval|class_eval|module_eval|send|public_send|__send__|Function|Open3|PTY|"
-    r"child_process|IPC|require|import|syscall|getattr|__import__|subprocess|shell_exec|passthru|proc_open)\b|%x\s*[^\w\s]"
-)
-TEXT_CALL = re.compile(r"""\b(run|call|open|load|do|binding)\b[ \t]*(?:[(\[{'"`$@%.]|q[qwx]?\b)""")
 # A literal that is one piece of a built string: a concatenation operator (`+`, perl `.`, `<<`, `.concat(`) beside it, or an interpolation inside it.
 TEXT_JOIN_AFTER = re.compile(r"\s*(?:\+|\.(?![\w.])|<<|\.concat\b)")
 TEXT_JOIN_BEFORE = re.compile(r"(?:\+|(?<![\w.])\.|<<)\s*$")
 TEXT_INTERPOLATION = re.compile(r"\$\{[^{}]*\}|#\{[^{}]*\}|[$@]\w+")
-
-
-def _text_can_run(code):
-    return bool(TEXT_RUNNER.search(code) or TEXT_CALL.search(code))
 
 
 def _text_literals(code):
@@ -716,10 +649,8 @@ def _text_literals(code):
             yield from _filled(UNKNOWN + built, mentions)
 
 
-def _text_verdict(code, depth, file=False):
-    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse. `file` is a script run by path, allowed outright when `_text_can_run` finds no way to run a command, and otherwise read like a `-e` program."""
-    if file and not _text_can_run(code):
-        return None
+def _text_verdict(code, depth):
+    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse."""
     for literal in _text_literals(code):
         verdict = shell_verdict(literal, depth)
         if verdict:
@@ -745,10 +676,19 @@ def _direct_verdict(cmd):
     return None
 
 
-def _code_verdict(family, code, depth, file=False):
+def _code_verdict(family, code, depth):
     if family == "python":
-        return _python_verdict(code, depth, file)
-    return _text_verdict(code, depth, file)
+        return _python_verdict(code, depth)
+    return _text_verdict(code, depth)
+
+
+def _file_verdict(family, text, depth):
+    """The arm a script run by path trips: "script" when its text names the phrase (`_names_phrase`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
+    if _names_phrase(text):
+        return "script"
+    if family == "shell":
+        return shell_verdict(text, depth)
+    return _code_verdict(family, text, depth)
 
 
 def _program_verdict(cmd, depth, cwd=None):
@@ -763,17 +703,24 @@ def _program_verdict(cmd, depth, cwd=None):
 
 
 # A SCRIPT RUN BY PATH IS A PROGRAM TOO (#78afdc0b). `interpreter_programs` reads only what the command line itself holds (`-c`, `-e`, a heredoc, a here-string, a pipe), so `python3 scratch/wt.py` whose file runs `git worktree add` was allowed (rc 0, 2026-10-14) while the same text as `python3 - <<EOF` was refused. `shellscan.interpreter_program` is the reading the shell-write guards share: what an earlier run of the same command wrote into the script, else the file on disk;
-# a script tracked and unchanged from HEAD is reviewed code and is not read, and one that does not exist fails open. An "unjudgeable" script (written from a source the walk cannot read, or past its size cap) is refused when the command itself could spell the banned verb, the pre-filter `shell_verdict` applies inside a program.
+# a script tracked and unchanged from HEAD is reviewed code and is not read, and one that does not exist fails open. A shell script run by path (`bash x.sh`, `source x.sh`, `./x.sh`) is read by `_shell_script` under the same rules. An "unjudgeable" script (written from a source the walk cannot read, or past its size cap) is refused when the command itself could spell the banned verb, the pre-filter `shell_verdict` applies inside a program.
+# `shellscan.PROGRAM_PREFILTER` admits an interpreter word or a path word; a shell reading a script named without a slash (`bash x.sh`, `source x.sh`) is neither.
+SHELL_SCRIPT_PREFILTER = re.compile(r"\b(?:sh|bash|dash|zsh|ash|ksh|source)\b|(?:^|[\s;&|(`])\.\s")
+
+
 def _script_verdict(cmd, depth, cwd):
-    if not shellscan.PROGRAM_PREFILTER.search(cmd):
+    if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
     for run_ in shellscan.every_run(cmd):
         text, kind = shellscan.interpreter_program(run_, cmd, cwd)
+        family = _interpreter_name(run_.name) or _interpreter_name(
+            shellscan.shebang_interpreter(run_, cwd) or ""
+        )
+        if kind not in ("file", "unjudgeable"):
+            text, kind = _shell_script(run_, cmd, cwd)
+            family = "shell"
         if kind == "file" and text:
-            family = _interpreter_name(run_.name) or _interpreter_name(
-                shellscan.shebang_interpreter(run_, cwd) or ""
-            )
-            verdict = _code_verdict(family, text, depth + 1, file=True)
+            verdict = _file_verdict(family, text, depth + 1)
             if verdict:
                 return verdict
         elif kind == "unjudgeable" and _could_spell(cmd):
@@ -832,6 +779,14 @@ PROGRAM_NOTE = (
     "It was found inside the program text this command hands an interpreter (`python3 -c`, "
     "a heredoc or here-string on stdin, `node -e`, `perl -e`, `ruby -e`, or a script run by "
     "path): code an interpreter runs is the same decision as the command typed at the shell."
+)
+
+SCRIPT_MESSAGE = (
+    "❌ BLOCKED: this runs a script by path whose text names `worktree` together with `add` "
+    "or `create`, and the script is untracked or differs from HEAD. Such a script is refused "
+    "whatever it does with the words, because no reading of what a file can execute is "
+    "complete. Hand the command to the operator to run with the `!` prefix, or drop the "
+    "phrase from a script that does not need it."
 )
 
 UNJUDGEABLE_MESSAGE = (
@@ -954,6 +909,7 @@ def run(ev):
         "run.sh": RUN_SH_MESSAGE,
         "port": PORT_MESSAGE,
         "unjudgeable": UNJUDGEABLE_MESSAGE,
+        "script": SCRIPT_MESSAGE,
     }
     verdict = _direct_verdict(cmd)
     if verdict:
@@ -961,7 +917,9 @@ def run(ev):
         return hookio.DENY
     verdict = _program_verdict(cmd, 0, ev.field("cwd") or None)
     if verdict:
-        # An unjudgeable script found nothing: the note says where a worktree verb was found, so it is for the other verdicts only (review 6f52f7ff.4).
-        ev.warn(messages[verdict] + ("" if verdict == "unjudgeable" else " " + PROGRAM_NOTE))
+        # An unjudgeable script found nothing, and a script naming the phrase was refused for its text: the note says where a worktree verb was found, so it is for the other verdicts only (review 6f52f7ff.4).
+        ev.warn(
+            messages[verdict] + ("" if verdict in ("unjudgeable", "script") else " " + PROGRAM_NOTE)
+        )
         return hookio.DENY
     return hookio.ALLOW
