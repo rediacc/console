@@ -20,6 +20,7 @@ import tempfile
 import pytest
 from rediacc_ci import xdist_groups
 from rediacc_ci.core import tmp_capacity
+from rediacc_ci.tests import differential
 
 # The sweep of basetemps a KILLED run left, for every test in both pytest roots; see that module for why it is a plugin rather than code here.
 # The second: a directory pytest collects twice in one run gets its conftest fixtures both times (worklist #6b5becd7; the module says when pytest does that).
@@ -323,6 +324,7 @@ def pytest_configure(config: pytest.Config) -> None:
         os.environ.pop(name, None)
     _tmp_capacity_or_exit(config)
     _named_paths_or_exit(config)
+    differential.set_basetemp(config.option.basetemp)
     if os.environ.get(SNAPSHOT_ENV) == "0" or _AUDIT["root"] is not None:
         return
     _AUDIT["root"] = os.path.realpath(str(config.rootpath))
