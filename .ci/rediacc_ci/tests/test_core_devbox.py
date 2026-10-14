@@ -26,6 +26,7 @@ import socket
 import stat
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -456,6 +457,11 @@ def divergence(scenario: str, old_out: str, new_out: str) -> str:
         "scenario %s diverged (%d twin lines, %d port lines)"
         % (scenario, len(old_lines), len(new_lines))
     ]
+    if scenario in NEWLINE_SCENARIOS:
+        # equivalent() accepts a slug label whose input holds a newline when the port answers as the twin does with that newline spelled `!`; the raw lines below do not apply that rule, so a pair listed here can be one it accepts.
+        found.append(
+            "(raw lines; a slug label with a newline in its input differs by rule, see _newline_delta_holds)"
+        )
     for index in range(max(len(old_lines), len(new_lines))):
         old_line = old_lines[index] if index < len(old_lines) else "<no line>"
         new_line = new_lines[index] if index < len(new_lines) else "<no line>"
@@ -949,17 +955,20 @@ def test_up_reads_the_host_by_default(tmp_path: pathlib.Path) -> None:
     for node in driver.GOLDEN_HOST_NODES:
         assert box.has_host_node(node) is os.path.exists(node)
     # `[[ -S ]]`: a real socket, through a symlink too; a regular file and a missing path are not one.
+    # A unix socket path is capped at 108 bytes and pytest's tmp_path can be longer under a long TMPDIR (docs/agent-reference/TRAPS.md), so the socket lives in a short directory of its own.
+    short = pathlib.Path(tempfile.mkdtemp(dir="/tmp"))
     listener = socket.socket(socket.AF_UNIX)
     try:
-        listener.bind(str(tmp_path / "s"))
-        (tmp_path / "link").symlink_to(tmp_path / "s")
-        (tmp_path / "file").write_text("", encoding="utf-8")
-        assert box.has_host_socket(str(tmp_path / "s")) is True
-        assert box.has_host_socket(str(tmp_path / "link")) is True
-        assert box.has_host_socket(str(tmp_path / "file")) is False
-        assert box.has_host_socket(str(tmp_path / "missing")) is False
+        listener.bind(str(short / "s"))
+        (short / "link").symlink_to(short / "s")
+        (short / "file").write_text("", encoding="utf-8")
+        assert box.has_host_socket(str(short / "s")) is True
+        assert box.has_host_socket(str(short / "link")) is True
+        assert box.has_host_socket(str(short / "file")) is False
+        assert box.has_host_socket(str(short / "missing")) is False
     finally:
         listener.close()
+        shutil.rmtree(short, ignore_errors=True)
     # `[ -d ] || mkdir -m 700`: made once at mode 700, an answer when it is already there, and no answer under a parent that is not.
     pool = tmp_path / "pool"
     assert box.lease_dir_ready(str(pool)) is True

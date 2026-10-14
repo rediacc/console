@@ -168,7 +168,7 @@ After reproducing, unset `RDC_RENET_LICENSE` (or remove from your shell) so subs
 ## A real passkey provider in the account E2E suite
 
 `private/account/e2e/tests/20-config-storage/20-12-real-provider-bitwarden.test.ts` drives the real Bitwarden browser extension, headless, against a throwaway Vaultwarden vault, to prove on a real provider that a passkey without PRF ends in the master-password path.
-It runs the same way on a CI runner, on a host and in the devbox, because it needs nothing privileged: no container runtime, no secret, only `openssl` and Playwright's bundled Chromium.
+It runs the same way on a CI runner, on a host and in the devbox, because the spec itself needs nothing privileged: no container runtime, no secret, only `openssl` and Playwright's bundled Chromium. The account backend and portal that the CI command starts need the account test secrets.
 The two third-party artifacts are pinned by version and sha256 in `private/account/e2e/real-provider.lock.json` and verified on every run.
 
 ```bash

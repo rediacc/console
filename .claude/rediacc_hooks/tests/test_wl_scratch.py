@@ -73,7 +73,7 @@ def packs_of(clone: pathlib.Path) -> list[str]:
 def test_a_fixture_commit_leaves_no_writer_behind(tmp_path, monkeypatch):
     """The fixture's `git commit` starts no maintenance, even when a maintenance task has work to do.
 
-    The environment hands every git a `loose-objects` task that runs at one loose object, which a fresh commit always has. Without `maintenance.auto=false` the detached child repacks under `.git/objects/pack` AFTER `commit` has returned (measured 20 of 20 on git 2.53.0), which is the writer that stamped a backdated tree. The pack is the evidence either way: none ever appears behind `GIT`, and one does behind the same commit without the switch.
+    The environment hands every git a `loose-objects` task that runs at one loose object, which a fresh commit always has. Without `maintenance.auto=false` the detached child repacks under `.git/objects/pack` AFTER `commit` has returned (measured 20 of 20 on git 2.53.0), which is the writer that stamped a backdated tree. The pack is the evidence either way: none appears behind `GIT` within the half second the test waits, and one does behind the same commit without the switch (the control polls up to 30 s for it, so the wait is not what hides it).
     """
     for index, (key, value) in enumerate(
         (("maintenance.loose-objects.enabled", "true"), ("maintenance.loose-objects.auto", "1"))

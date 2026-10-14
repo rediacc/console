@@ -86,9 +86,9 @@
     "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py is SEEDED from one local run (37 tests, 9.10 s, 2026-09-29, box B3),",
     "not a CI p90: 8a0fdc995 added the file after the last --refresh, and an unpriced unit fails the gate's STABLE control.",
     "'units' pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py is SEEDED the same way (17 tests, 0.28 s, 2026-09-29, boxes B4/B5).",
-    "'units' github.com/rediacc/renet/pkg/infra/{aptretry,pkgset} are SEEDED from go's own elapsed on one local run (19.149 s, 0.004 s, 2026-09-29; renet 99ebeca, 226bf35); aptretry's behavior tests wait on real timeouts.",
-    "'units' github.com/rediacc/renet/pkg/infra/cephpkg is SEEDED the same way (0.026 s on one local run, 2026-09-29; renet b7e55e6).",
-    "'units' pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py is SEEDED from one local run's summed testcase times (36 tests, 69 ms, 2026-09-29, box P6).",
+    "'units' github.com/rediacc/renet/pkg/infra/{aptretry,pkgset} were SEEDED from go's own elapsed on one local run (19.149 s, 0.004 s, 2026-09-29; renet 99ebeca, 226bf35); aptretry's behavior tests wait on real timeouts. Every --refresh since replaces the seed with the measured p90, so the stored number is the latest sample, not the seed.",
+    "'units' github.com/rediacc/renet/pkg/infra/cephpkg was SEEDED the same way (0.026 s on one local run, 2026-09-29; renet b7e55e6) and is re-measured by every --refresh.",
+    "'units' pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py was SEEDED from one local run's summed testcase times (36 tests, 69 ms, 2026-09-29, box P6) and is re-measured by every --refresh.",
     "'job_p90_minutes' 'Renet pkg scope', 'Renet pkg matrix (<distro>)' and 'E2E Ceph Workers non-apt (<distro>)' are SEEDED, not measured (box P6 of PLAN-renet-ceph-gpu-non-apt.md; P7 replaces them with 5 nightly runs):",
     "the matrix legs from one local Docker run of renet_pkg_matrix.py per distro (95-147 s, 2026-09-29) plus about 3 minutes of runner setup and the renet build, the Ceph Workers legs from plan section 4 (ubuntu's 12.5 plus the rpm download and Docker CE on 2 Ceph nodes, 13-15)."
   ],

@@ -496,7 +496,7 @@ GNU coreutils come from Ubuntu's `gnu-coreutils` package, which installs each to
   ```bash
   unshare --user --map-root-user --mount bash -c '
     mount -t tmpfs tmpfs /run/user                    # no /run/user/<recorder uid>
-    mount --bind /dev/null /run/docker.sock           # a path that is no socket
+    mount --bind /dev/null /var/run/docker.sock       # a path that is no socket (the file must exist; a host without the socket needs no mount)
     exec "$@"' -- unshare --user --map-user=1001 --map-group=1001 env -i ...
   ```
 

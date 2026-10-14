@@ -534,3 +534,16 @@ def test_secs_prints_bash_integers_not_python_floats() -> None:
     assert port.secs(10.0) == "10"
     assert port.secs(20.0) == "20"
     assert port.secs(2.5) == "2.5"
+
+
+def test_spawn_starts_the_program_launchable_resolved(monkeypatch) -> None:
+    """On Windows `launchable` turns `npm` into `npm.cmd`; the child must be started from that list, not from the caller's. The lookup is replaced here because the real one only acts when `os.name` is `nt`."""
+    started: list[list[str]] = []
+    monkeypatch.setattr(port.common, "launchable", lambda argv: [r"C:\node\npm.cmd", *argv[1:]])
+    monkeypatch.setattr(
+        port.subprocess,
+        "run",
+        lambda argv, **_kw: started.append(argv) or subprocess.CompletedProcess(argv, 0),
+    )
+    assert port.spawn(["npm", "ci"]) is True
+    assert started == [[r"C:\node\npm.cmd", "ci"]]
