@@ -29,14 +29,14 @@ export class OpsVMExecutor {
   /**
    * Check if a VM is reachable via ping
    */
-  async isVMReachable(ip: string, timeoutSeconds = 2): Promise<boolean> {
+  isVMReachable(ip: string, timeoutSeconds = 2): Promise<boolean> {
     return this.sshExecutor.isReachable(ip, timeoutSeconds);
   }
 
   /**
    * Check if SSH is available on a VM
    */
-  async isSSHReady(ip: string): Promise<boolean> {
+  isSSHReady(ip: string): Promise<boolean> {
     return this.sshExecutor.isSSHReady(ip, {
       connectTimeout: 5,
       quiet: true,
@@ -46,7 +46,7 @@ export class OpsVMExecutor {
   /**
    * Wait for a VM to be ready (ping + SSH)
    */
-  async waitForVM(ip: string, timeoutMs = 120000): Promise<boolean> {
+  waitForVM(ip: string, timeoutMs = 120000): Promise<boolean> {
     return this.sshExecutor.waitForHost(ip, timeoutMs);
   }
 

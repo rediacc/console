@@ -157,7 +157,7 @@ export class SSHExecutor {
     const escapedCommand = this.escapeForSSH(command);
     const sshCmd = `ssh ${sshOpts} ${user}@${host} "${escapedCommand}"`;
 
-    return this.executeCommand(sshCmd, timeout);
+    return await this.executeCommand(sshCmd, timeout);
   }
 
   /**
@@ -186,7 +186,7 @@ export class SSHExecutor {
     // Two-hop SSH command: Host -> Bridge -> Target. Inner ssh runs on the bridge VM where `-i <host-path>` is invalid (see getInnerSSHOptions doc comment). Drop `-i` for the inner hop.
     const sshCmd = `ssh ${outerOpts} ${user}@${bridge} "ssh ${innerOpts} ${user}@${target} \\"${escapedForTarget}\\""`;
 
-    return this.executeCommand(sshCmd, timeout);
+    return await this.executeCommand(sshCmd, timeout);
   }
 
   /**
@@ -210,7 +210,7 @@ export class SSHExecutor {
 
     const scpCmd = `scp ${scpOpts} "${localPath}" ${user}@${host}:${remotePath}`;
 
-    return this.executeCommand(scpCmd, timeout);
+    return await this.executeCommand(scpCmd, timeout);
   }
 
   /**
@@ -234,7 +234,7 @@ export class SSHExecutor {
 
     const scpCmd = `scp ${scpOpts} ${user}@${host}:${remotePath} "${localPath}"`;
 
-    return this.executeCommand(scpCmd, timeout);
+    return await this.executeCommand(scpCmd, timeout);
   }
 
   /**

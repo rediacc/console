@@ -245,7 +245,7 @@ export function analyzeGateHeader(source: string): GateHeader | HeaderProblem | 
 
   // `when` IS A CONJUNCT AND MAY NOT REACH FOR A STEP. See the field's own comment: a `steps.` reference is how a gate would reach around the setup guard and judge its own prerequisites, which is invariant 11 re-opened through a side door.
   const when = fields.get('when');
-  if (when !== undefined && when.includes('steps.')) {
+  if (when?.includes('steps.')) {
     return {
       error:
         `when: ${when} references \`steps.\`. The standard guard already handles step ` +

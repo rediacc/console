@@ -57,6 +57,22 @@ function collectExampleIssues(
   return { missingKeys, strayValues };
 }
 
+/** Every command and option descriptionKey that the given bundle does not define. */
+function missingDescriptionKeys(bundle: Record<string, string>): string[] {
+  const missing: string[] = [];
+  for (const cmd of CLI_CONTRACT.commands) {
+    if (cmd.descriptionKey && !(cmd.descriptionKey in bundle)) {
+      missing.push(`${cmd.pathKey} -> ${cmd.descriptionKey}`);
+    }
+    for (const opt of cmd.options) {
+      if (opt.descriptionKey && !(opt.descriptionKey in bundle)) {
+        missing.push(`${cmd.pathKey} --${opt.long} -> ${opt.descriptionKey}`);
+      }
+    }
+  }
+  return missing;
+}
+
 describe('CLI contract', () => {
   it('contract.json parses against the schema', () => {
     expect(() => parseCliContract(contractJson)).not.toThrow();
@@ -94,19 +110,7 @@ describe('CLI contract', () => {
     const path = fileURLToPath(new URL('../data/i18n/en.json', import.meta.url));
     const en: Record<string, string> = JSON.parse(readFileSync(path, 'utf-8'));
 
-    const missing: string[] = [];
-    for (const cmd of CLI_CONTRACT.commands) {
-      if (cmd.descriptionKey && !(cmd.descriptionKey in en)) {
-        missing.push(`${cmd.pathKey} -> ${cmd.descriptionKey}`);
-      }
-      for (const opt of cmd.options) {
-        if (opt.descriptionKey && !(opt.descriptionKey in en)) {
-          missing.push(`${cmd.pathKey} --${opt.long} -> ${opt.descriptionKey}`);
-        }
-      }
-    }
-
-    expect(missing).toEqual([]);
+    expect(missingDescriptionKeys(en)).toEqual([]);
   });
 
   it('falls back to the English label when a key is missing or null', () => {

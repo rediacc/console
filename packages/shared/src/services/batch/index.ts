@@ -125,6 +125,16 @@ export class BatchProcessor<T> {
 
     let completed = 0;
     const total = request.items.length;
+    const reportProgress = (currentBatch: number): void => {
+      request.onProgress?.({
+        total,
+        completed,
+        failed: failed.length,
+        percentage: Math.round((completed / total) * 100),
+        currentBatch,
+        totalBatches: batches.length,
+      });
+    };
 
     // Process batches with concurrency limit
     for (let i = 0; i < batches.length; i += this.config.maxConcurrent) {
@@ -144,22 +154,10 @@ export class BatchProcessor<T> {
           successful.push(...batch);
           completed += batch.length;
 
-          // Report progress
-          if (request.onProgress) {
-            request.onProgress({
-              total,
-              completed,
-              failed: failed.length,
-              percentage: Math.round((completed / total) * 100),
-              currentBatch: actualBatchIndex + 1,
-              totalBatches: batches.length,
-            });
-          }
+          reportProgress(actualBatchIndex + 1);
 
           // Batch complete callback
-          if (request.onBatchComplete) {
-            request.onBatchComplete(actualBatchIndex, results);
-          }
+          request.onBatchComplete?.(actualBatchIndex, results);
         } catch (error) {
           // Mark all items in batch as failed
           batch.forEach((item) => {
@@ -171,16 +169,7 @@ export class BatchProcessor<T> {
           completed += batch.length;
 
           // Report progress even for failures
-          if (request.onProgress) {
-            request.onProgress({
-              total,
-              completed,
-              failed: failed.length,
-              percentage: Math.round((completed / total) * 100),
-              currentBatch: actualBatchIndex + 1,
-              totalBatches: batches.length,
-            });
-          }
+          reportProgress(actualBatchIndex + 1);
         }
       });
 

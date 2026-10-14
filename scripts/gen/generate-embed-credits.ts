@@ -60,7 +60,7 @@ export interface Lockfile {
 }
 
 /** Components in a stable, declaration-independent order. */
-function orderedComponents(lock: Lockfile): Array<[string, LockComponent]> {
+function orderedComponents(lock: Lockfile): [string, LockComponent][] {
   return Object.entries(lock.components).sort(([a], [b]) => a.localeCompare(b));
 }
 
@@ -105,7 +105,7 @@ export function renderJson(lock: Lockfile): string {
   const existing = JSON.parse(fs.readFileSync(CREDITS_JSON, 'utf-8')) as {
     _comment: string;
     gplWrittenOffer: string;
-    components: Array<Record<string, unknown>>;
+    components: Record<string, unknown>[];
   };
 
   // Preserve non-embedded entries (Node.js runtime, bundled npm deps) verbatim
@@ -138,7 +138,7 @@ export function renderJson(lock: Lockfile): string {
   )}\n`;
 }
 
-export function generatedArtifacts(lock: Lockfile): Array<[string, string]> {
+export function generatedArtifacts(lock: Lockfile): [string, string][] {
   return [
     [CREDITS_GO, renderGo(lock)],
     [CREDITS_JSON, renderJson(lock)],

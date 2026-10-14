@@ -124,14 +124,14 @@ export class OpsManager {
   /**
    * Check if a VM is reachable via ping
    */
-  async isVMReachable(ip: string, timeoutSeconds = 2): Promise<boolean> {
+  isVMReachable(ip: string, timeoutSeconds = 2): Promise<boolean> {
     return this.vmExecutor.isVMReachable(ip, timeoutSeconds);
   }
 
   /**
    * Check if SSH is available on a VM
    */
-  async isSSHReady(ip: string): Promise<boolean> {
+  isSSHReady(ip: string): Promise<boolean> {
     return this.vmExecutor.isSSHReady(ip);
   }
 
@@ -184,7 +184,7 @@ export class OpsManager {
   /**
    * Run a renet ops command
    */
-  async runOpsCommand(
+  runOpsCommand(
     subcommands: string[],
     args: string[] = [],
     timeoutMs = 300000
@@ -196,7 +196,7 @@ export class OpsManager {
    * Run a renet ops command with additional environment variables.
    * The manager's group env is applied first; the caller's extraEnv overrides it.
    */
-  async runOpsCommandWithEnv(
+  runOpsCommandWithEnv(
     subcommands: string[],
     args: string[] = [],
     extraEnv: Record<string, string> = {},
@@ -213,14 +213,14 @@ export class OpsManager {
   /**
    * Get ops status
    */
-  async getStatus(): Promise<CommandResult> {
+  getStatus(): Promise<CommandResult> {
     return this.vmLifecycle.getStatus();
   }
 
   /**
    * Start VMs using ops scripts
    */
-  async startVMs(
+  startVMs(
     options: { force?: boolean; basic?: boolean; parallel?: boolean } = {}
   ): Promise<{ success: boolean; stdout: string; stderr: string }> {
     return this.vmLifecycle.startVMs(options);
@@ -229,35 +229,35 @@ export class OpsManager {
   /**
    * Stop all VMs
    */
-  async stopVMs(): Promise<{ success: boolean; stdout: string; stderr: string }> {
+  stopVMs(): Promise<{ success: boolean; stdout: string; stderr: string }> {
     return this.vmLifecycle.stopVMs();
   }
 
   /**
    * Wait for a VM to be ready (ping + SSH)
    */
-  async waitForVM(ip: string, timeoutMs = 120000): Promise<boolean> {
+  waitForVM(ip: string, timeoutMs = 120000): Promise<boolean> {
     return this.vmExecutor.waitForVM(ip, timeoutMs);
   }
 
   /**
    * Wait for all VMs to be ready
    */
-  async waitForAllVMs(timeoutMs = 180000): Promise<boolean> {
+  waitForAllVMs(timeoutMs = 180000): Promise<boolean> {
     return this.vmLifecycle.waitForAllVMs(timeoutMs);
   }
 
   /**
    * Wait for worker VMs to be ready
    */
-  async waitForWorkerVMs(timeoutMs = 180000): Promise<boolean> {
+  waitForWorkerVMs(timeoutMs = 180000): Promise<boolean> {
     return this.vmLifecycle.waitForWorkerVMs(timeoutMs);
   }
 
   /**
    * Ensure VMs are running - start them if not
    */
-  async ensureVMsRunning(
+  ensureVMsRunning(
     options: { basic?: boolean } = {}
   ): Promise<{ success: boolean; wasStarted: boolean; message: string }> {
     return this.vmLifecycle.ensureVMsRunning(options, this.areAllVMsReady.bind(this));
@@ -266,38 +266,35 @@ export class OpsManager {
   /**
    * Execute a command on a remote VM via SSH
    */
-  async executeOnVM(ip: string, command: string, timeoutMs = 60000): Promise<CommandResult> {
+  executeOnVM(ip: string, command: string, timeoutMs = 60000): Promise<CommandResult> {
     return this.vmExecutor.executeOnVM(ip, command, timeoutMs);
   }
 
   /**
    * Execute a command on all worker VMs in parallel
    */
-  async executeOnAllWorkers(
-    command: string,
-    timeoutMs = 60000
-  ): Promise<Map<string, CommandResult>> {
+  executeOnAllWorkers(command: string, timeoutMs = 60000): Promise<Map<string, CommandResult>> {
     return this.vmExecutor.executeOnMultipleVMs(this.getWorkerVMIps(), command, timeoutMs);
   }
 
   /**
    * Check if renet is installed on a VM
    */
-  async isRenetInstalledOnVM(ip: string): Promise<boolean> {
+  isRenetInstalledOnVM(ip: string): Promise<boolean> {
     return this.vmExecutor.isRenetInstalledOnVM(ip);
   }
 
   /**
    * Get renet version on a VM
    */
-  async getRenetVersionOnVM(ip: string): Promise<string | null> {
+  getRenetVersionOnVM(ip: string): Promise<string | null> {
     return this.vmExecutor.getRenetVersionOnVM(ip);
   }
 
   /**
    * Soft reset VMs by force restarting them.
    */
-  async resetVMs(): Promise<{ success: boolean; duration: number }> {
+  resetVMs(): Promise<{ success: boolean; duration: number }> {
     return this.vmLifecycle.resetVMs();
   }
 

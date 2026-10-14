@@ -62,7 +62,7 @@ export class OpsVMLifecycle {
   /**
    * Get ops status
    */
-  async getStatus(): Promise<{ stdout: string; stderr: string; code: number }> {
+  getStatus(): Promise<{ stdout: string; stderr: string; code: number }> {
     return this.commandRunner.runWithEnv(['status'], [], this.groupEnv, 30000);
   }
 
