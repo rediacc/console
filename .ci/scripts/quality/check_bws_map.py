@@ -108,7 +108,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import workflows
 
 # IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the `account-dev` profile actually binds, and a second copy of the nine names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.

@@ -35,7 +35,7 @@ lane: quality-packages
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import cli_contract
 
 if __name__ == "__main__":

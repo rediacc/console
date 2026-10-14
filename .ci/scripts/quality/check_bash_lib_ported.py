@@ -15,7 +15,7 @@ why: account.sh reached 22 of 22 ported functions on 2026-09-24 by a hand count;
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import bash_lib_migration_complete
 
 if __name__ == "__main__":

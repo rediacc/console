@@ -31,7 +31,7 @@ import re
 import sys
 from pathlib import Path
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls
 from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO
