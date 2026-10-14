@@ -531,10 +531,8 @@ class Analyzer {
       const more = r.spawns.filter(
         (sp) => /\.([cm]?js|ts)$/.test(sp.file) && !r.modules.includes(sp.file)
       );
-      if (more.length === 0) {
-        r.spawns = r.spawns.filter((sp) => !/\.([cm]?js|ts)$/.test(sp.file));
-        return r;
-      }
+      // A JS/TS spawn stays in `spawns` after joining the closure: the orchestrator adds its argv to the entry's invocations (a write in the child gated on a flag the parent passes is reached) and does not re-enter the file. Until 2026-10-14 it was filtered out here, so `--write` passed from one JS module to another was never seen and the child's gated write read MODE-GATED.
+      if (more.length === 0) return r;
       entries = [...entries, ...more.map((sp) => sp.file)];
     }
     return new GroupWalk(this).run(entries);

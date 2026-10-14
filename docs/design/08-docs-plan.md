@@ -67,7 +67,7 @@ before the reshape would be throwaway work. P4 must NOT try to clear it. P7 must
 (`packages/www/scripts/validate-translation-freshness.js`): en docs change → all 12 locale twins must be updated + `sourceHash` restamped (16-hex sha256 of title/description/category/body). NEW en page → all 12 twins must exist OR the en path goes on the pending/EXCLUDED list (the sanctioned deferral; the fork blog already uses it). `check-i18n-naturalization` is JSON-only (does
 not scan docs .md).
 - **Search index**: ANY docs/blog add/edit → regenerate
-`packages/www/public/search-index*.json` (`cd packages/www && node scripts/generate-search-index.js`) or `check:ci-search-index` reds.
+`packages/www/public/search-index*.json` (`cd packages/www && node scripts/generate-search-index.js --write-public`) or `check:ci-search-index` reds.
 - Other gates: `check-locale-tutorial-assets` only fires for pages embedding `.cast`;
 `check-solution-videos` is solutions-pages-only; docs frontmatter schema requires title/description/category (blog category is a strict enum).
 

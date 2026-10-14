@@ -4468,10 +4468,6 @@
     "id": "check:ci-search-index",
     "run": "npm run check:ci-search-index",
     "gate": true,
-    "mutex": [
-      "tree:repo"
-    ],
-    "writesTree": "regenerates the tracked packages/www/public search-index files in place and restores them from a temp backup",
     "leaves": [
       "scripts/gates/check-search-index-freshness.ts"
     ],

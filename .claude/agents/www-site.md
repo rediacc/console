@@ -41,8 +41,7 @@ tied to rediacc/console#519 (fabricated social proof). **Do not sweep it up.**
 
 ## Build hazards - read before you run a build
 
-**`npm run build:www` deletes 14 TRACKED files from the shared tree.** `astro.config.mjs:26` runs `scripts/generate-search-index.js` on `astro:build:start`; it resolves output to `packages/www/public/` (**never the outDir**), `fs.unlinkSync`s every `search-index*.json` at `:82`, then rewrites them. All 14 are in `git ls-files`. During that window every dev server 404s on
-`/search-index-<lang>.json`. The `catch {}` in `astro.config.mjs:28` means a lost index still exits 0. The `mutex: ['www-dist']` that looks like protection is a process-local `Set` and holds nothing between two agents.
+**The search index is written into the build output, never into `public/`.** `astro.config.mjs` runs `scripts/generate-search-index.js --out <outDir>` on `astro:build:done`, overwriting the copies Astro took from `public/`. The 14 tracked `public/search-index*.json` files change only through `node scripts/generate-search-index.js --write-public`, and `check:ci-search-index` reds when they are stale. Until 2026-10-14 every build deleted and rewrote them in the shared tree, and `check:ci-gate-tree-writes` now follows the astro config so a hook that writes the tree again is red. The `mutex: ['www-dist']` that looks like protection is a process-local `Set` and holds nothing between two agents.
 
 **`.astro/` is hardcoded and shared.** `node_modules/astro/dist/core/config/settings.js:21` derives it from `config.root` with no override. A concurrent `astro build` rewrites `content-modules.mjs`, `content.d.ts` and `collections/` under a running dev server.
 

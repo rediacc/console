@@ -77,7 +77,7 @@ cd private/renet && go build ./... && go vet ./... && go fmt ./...
                                      # REQUIRED after CLI changes that storyboards/scripts invoke via plain `rdc`
 
 # Close-out
-cd packages/www && node scripts/generate-search-index.js   # after any www content edit
+cd packages/www && node scripts/generate-search-index.js --write-public   # after any www content edit
 npm run ci                                                  # full local gate suite
 ./rdc.sh ops down                                           # tear down lab: ONLY at the very end
 ```
