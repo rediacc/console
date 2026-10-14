@@ -243,6 +243,8 @@ def _rotation_check(root) -> None:
         [str(root / "run.sh"), "rotation", "check", "--for=bench"],
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
+        errors="replace",
     ) as proc:
         for line in proc.stderr or ():
             sys.stderr.write(line)
@@ -260,9 +262,16 @@ def _rotation_check(root) -> None:
         )
     if rc != 1:
         raise DeployError("rotation check failed with exit %d, so refusing to push secrets" % rc)
+    unchecked = _could_not_check_lines("".join(seen))
     raise DeployError(
         "rotation drift detected, so refusing to push stale secrets to bench\n"
-        "fix: run `./run.sh rotation rotate <slug>` for the credentials that drifted"
+        + (
+            "".join("  not checked, " + line + "\n" for line in unchecked)
+            + "the credentials above were also NOT read, so nothing was compared for them\n"
+            if unchecked
+            else ""
+        )
+        + "fix: run `./run.sh rotation rotate <slug>` for the credentials that drifted"
     )
 
 

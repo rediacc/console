@@ -23,8 +23,10 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import sys
 import tempfile
+from collections.abc import Iterable
 
 import yaml
 
@@ -85,6 +87,36 @@ def package_test_files(workspace: str | None = None) -> list[pathlib.Path]:
     ]
 
 
+RUNNER_WORDS = {"run", "test", "vitest", "jest", "playwright", "npx", "npm", "exec", "--"}
+
+
+def _has_other_filter(cmd: str, names: list[str]) -> bool:
+    """Whether the command also passes a directory, glob or name filter beside the test files it names.
+
+    `vitest run src/a.test.ts src/utils` runs every test under `src/utils` as well, so narrowing the sweep to `a.test.ts` would leave those unswept. Read after the first named file: a bare word there that is not a flag, a flag's value, a shell operator or another named file is a filter. A command that cannot be split reads as filtered, which keeps the whole sweep.
+    """
+    try:
+        tokens = shlex.split(cmd)
+    except ValueError:
+        return True
+    start = next((i for i, tok in enumerate(tokens) if tok in names), None)
+    if start is None:
+        return False
+    after_flag = False
+    for tok in tokens[start:]:
+        if tok in {"&&", "||", ";", "|"}:
+            break
+        if tok.startswith("-"):
+            after_flag = "=" not in tok
+            continue
+        if after_flag:
+            after_flag = False
+            continue
+        if tok not in names and tok not in RUNNER_WORDS:
+            return True
+    return False
+
+
 def named_test_files(cmd: str, workspaces: list[str], repo: pathlib.Path | None = None) -> list:
     """The test files a runner command names outright, or [] when it names none.
 
@@ -92,7 +124,7 @@ def named_test_files(cmd: str, workspaces: list[str], repo: pathlib.Path | None 
     """
     repo = repo or REPO
     names = re.findall(r"(?<![\w./-])([\w./-]+\.test\.tsx?)\b", cmd)
-    if not names:
+    if not names or _has_other_filter(cmd, names):
         return []
     found = []
     for name in names:
@@ -154,6 +186,20 @@ def symlinked_reads(text: str, repo: pathlib.Path | None = None) -> list[str]:
     return out
 
 
+def named_workspaces(commands: Iterable[str]) -> list[str]:
+    """The workspace names (`-w X`, `--workspace X`, `--workspace=@scope/X`) the walked commands name, sorted, scope removed.
+
+    EVERY workspace named, not the first one found. A caller's command set is a SET, so picking one was nondeterministic: run-unit.sh names @rediacc/shared and @rediacc/cli, and whenever the set yielded shared first the CLI's tests went unswept and the gate passed a replay of the exact bug it was written for.
+    """
+    return sorted(
+        {
+            m.group(1)
+            for cmd in commands
+            for m in re.finditer(r"(?:-w\s+|--workspace[=\s])(?:@[\w-]+/)?([\w-]+)", cmd)
+        }
+    )
+
+
 def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[str, str, bool]]:
     """(label, text, scannable) for everything a job's commands can reach.
 
@@ -162,7 +208,8 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
     seen_cmds: set[str] = set()
     seen_files: set[pathlib.Path] = set()
     out: list[tuple[str, str, bool]] = []
-    swept_tests = False
+    swept_whole = False
+    swept_named: set[pathlib.Path] = set()
 
     # The queue carries the scannable flag with each entry. Without it a script BODY popped off the queue was relabelled "<step run:>" and scanned as though the job had typed it, which put every false positive straight back after they had just been removed.
     queue = [(c, 0, True) for c in commands]
@@ -210,22 +257,16 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
             queue.append((body, depth + 1, False))
 
         # THE HOP THAT MATTERS. A test runner reaches files no step names. Only a command the job RUNS triggers the sweep. Letting a walked script body trigger it made every job that transitively mentions vitest sweep all 227 test files, which flagged eight jobs that never run a test.
-        if not swept_tests and scannable and TEST_RUNNERS.search(cmd):
-            swept_tests = True
-            # Scope to the workspace the job named, if it named one. The -w flag may sit on the invoking command rather than the resolved script, so look across everything walked so far. EVERY workspace named, not the first one found. seen_cmds is a SET, so picking one was nondeterministic: run-unit.sh names @rediacc/shared and @rediacc/cli, and whenever the set yielded shared
-            # first the CLI's tests went unswept and the gate passed a replay of the exact bug it was written for.
-            workspaces = sorted(
-                {
-                    m.group(1)
-                    for cmd_seen in seen_cmds
-                    for m in re.finditer(
-                        r"(?:-w\s+|--workspace[=\s])(?:@[\w-]+/)?([\w-]+)", cmd_seen
-                    )
-                }
-            )
-            sweep = named_test_files(cmd, workspaces) or [
-                path for ws in (workspaces or [None]) for path in package_test_files(ws)
-            ]
+        if scannable and not swept_whole and TEST_RUNNERS.search(cmd):
+            workspaces = named_workspaces(seen_cmds)
+            named = named_test_files(cmd, workspaces)
+            if named:
+                # A command that names its files sweeps those, and ONLY those: a later whole-workspace runner command in the same job is still swept in full.
+                sweep = [path for path in named if path not in swept_named]
+                swept_named.update(sweep)
+            else:
+                swept_whole = True
+                sweep = [path for ws in (workspaces or [None]) for path in package_test_files(ws)]
             for path in sweep:
                 try:
                     # SCANNED: a test runner really does execute these.
@@ -398,6 +439,15 @@ def run_controls(subs: list[str], scripts: dict[str, str]) -> list[str]:
             failures.append("a named test file that does not exist still narrowed the sweep")
         if named_test_files("vitest run", ["cli"], root) != []:
             failures.append("a runner command naming no file was narrowed")
+        # A directory or name filter beside the file runs more than the file, so the sweep is not narrowed.
+        if named_test_files("vitest run src/one.test.ts src/utils", ["cli"], root) != []:
+            failures.append("a runner command that also passes a directory filter was narrowed")
+        if named_test_files("vitest run src/one.test.ts -t 'a name'", ["cli"], root) != [one]:
+            failures.append("a flag's value was read as a second filter")
+    # Every spelling of a workspace flag is parsed, `--workspace=@scope/pkg` included.
+    spelled = named_workspaces(["npm test -w @rediacc/shared", "npm test --workspace=@rediacc/cli"])
+    if spelled != ["cli", "shared"]:
+        failures.append(f"workspace flags were parsed as {spelled}, not ['cli', 'shared']")
 
     # A path OUTSIDE the repository is never a repo file, however it is spelled (2026-10-11: an absolute `/tmp/...sh` token that existed on disk crashed the gate). Planted outside a fake repo root that holds one real script, so the in-repo direction is asserted too.
     with tempfile.TemporaryDirectory() as tmp:

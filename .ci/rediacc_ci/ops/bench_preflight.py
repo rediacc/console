@@ -28,19 +28,36 @@ def _is_link(node):
     return resolved.startswith("file:") and not resolved.endswith(ARCHIVES)
 
 
-def _marks(node, linked=False):
-    """(own, linked): the missing, invalid and extraneous marks `npm ls --json` puts on NODE and below, split by whether they sit strictly inside a linked directory.
+def _marks(node, linked=False, name=None):
+    """(own, inside): the missing, invalid and extraneous marks `npm ls --json` puts on NODE and below. OWN counts those that belong to this install; INSIDE lists the dependency names marked strictly inside a linked directory.
 
     A linked package (private/account links packages/shared) is installed by the tree it lives in, the console root, which is checked as a directory of its own. Seen from the linking package its dependencies are all `missing`, whatever the state of either install. A mark on the link itself is this install's.
     """
     here = sum(1 for flag in MARKS if node.get(flag))
-    own, inside = (0, here) if linked else (here, 0)
+    own, inside = (0, [name] * here) if linked else (here, [])
     below = linked or _is_link(node)
-    for child in (node.get("dependencies") or {}).values():
-        child_own, child_inside = _marks(child, below)
+    for child_name, child in (node.get("dependencies") or {}).items():
+        child_own, child_inside = _marks(child, below, child_name)
         own += child_own
         inside += child_inside
     return own, inside
+
+
+PROBLEM_NAME = re.compile(r"^\w+:\s+((?:@[^/\s@,]+/)?[^@\s,]+)")
+
+
+def _explained(problems, inside):
+    """Whether every problem line names a dependency that carries a mark inside a linked directory, one mark per problem.
+
+    Counting alone would excuse `missing: zod` (a real defect of this install) whenever some other dependency sat marked inside a linked directory, so each problem is matched to a mark by the package name it opens with.
+    """
+    unspent = list(inside)
+    for problem in problems:
+        found = PROBLEM_NAME.match(str(problem))
+        if not found or found.group(1) not in unspent:
+            return False
+        unspent.remove(found.group(1))
+    return True
 
 
 def _drifted(directory):
@@ -61,8 +78,8 @@ def _drifted(directory):
     if not isinstance(tree, dict):
         return True
     own, inside = _marks(tree)
-    listed = len(tree.get("problems") or [])
-    return own > 0 or inside == 0 or listed > inside
+    problems = tree.get("problems") or []
+    return own > 0 or not inside or not _explained(problems, inside)
 
 
 def lockfile(dirs):

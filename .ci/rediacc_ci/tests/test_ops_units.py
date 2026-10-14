@@ -185,6 +185,34 @@ def test_a_rotation_check_refuses_on_could_not_check_naming_the_credential_and_c
     assert "drift detected" not in message
 
 
+def test_a_drift_exit_that_also_could_not_check_names_the_unchecked_credential(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Exit 1 wins over exit 2, but a credential that was never read must not vanish from the refusal.
+    _fake_check(monkeypatch, 1, "x otlp-eu drifted\n" + _UNCHECKED)
+    with pytest.raises(deploy_bench.DeployError) as caught:
+        deploy_bench._rotation_check(Path("."))
+    message = str(caught.value)
+    assert "rotation drift detected" in message
+    assert "not checked, otlp-bench: observability query failed: ssh exit 255" in message
+
+
+def test_the_rotation_check_stderr_is_decoded_as_utf8_whatever_the_locale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The check prints non-ASCII markers; the locale encoding of a runner must not decide whether the deploy sees them.
+    seen: dict[str, object] = {}
+
+    def popen(*_args: object, **kwargs: object) -> _FakeCheck:
+        seen.update(kwargs)
+        return _FakeCheck(0, "")
+
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", popen)
+    deploy_bench._rotation_check(Path("."))
+    assert seen["encoding"] == "utf-8"
+    assert seen["errors"] == "replace"
+
+
 def test_a_rotation_check_has_no_way_to_proceed_unchecked() -> None:
     # No parameter, flag or environment name may reopen the bench exception that let an unchecked push through.
     assert list(inspect.signature(deploy_bench._rotation_check).parameters) == ["root"]
@@ -226,5 +254,14 @@ def test_deploy_bench_is_the_only_caller_of_rotation_check() -> None:
 def _invokes_rotation_check(path: Path) -> bool:
     text = path.read_text(errors="ignore")
     return bool(re.search(r"\[[^\]]*\"rotation\",\s*\"check\"", text)) or bool(
-        re.search(r"^\s*[^#\n]*run\.sh\s+rotation\s+check", text, re.MULTILINE)
+        re.search(r"^\s*[^#\n]*run\.sh[\"']?\s+rotation\s+check", text, re.MULTILINE)
     )
+
+
+def test_the_caller_guard_sees_a_quoted_run_sh(tmp_path: Path) -> None:
+    # Control for the guard above: a quoted `run.sh" rotation check` is still an invoker.
+    quoted = tmp_path / "caller.sh"
+    quoted.write_text('"$ROOT/run.sh" rotation check --for=bench\n')
+    assert _invokes_rotation_check(quoted)
+    quoted.write_text("# ./run.sh rotation check is documented here\n")
+    assert not _invokes_rotation_check(quoted)
