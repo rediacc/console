@@ -12,7 +12,8 @@
  *   apply-soaked [--task <id>] [--json] [--out <dir>]
  *                                          bump --all limited to patches and in-range minors
  *   hold <id> --reason "<why>" [--expires YYYY-MM-DD] [--task <id>]
- *   verify [--restore <stamp>] [--json]    every leaf site matches its count and agrees;
+ *   verify [--restore <stamp> [--inflight <file>]...] [--json]
+ *                                          every leaf site matches its count and agrees;
  *                                          no run was killed mid-write
  *   --selftest                             the fixture controls and their mutants
  *
@@ -386,11 +387,13 @@ interface Flags {
   task: string | null;
   out?: string;
   restore?: string;
+  /** Files a killed step had in flight that `verify --restore` may give their before-bytes back, once the operator has inspected them. */
+  inflight: string[];
   pos: string[];
 }
 
 function parseFlags(argv: string[]): Flags {
-  const f: Flags = { json: false, all: false, major: false, task: null, pos: [] };
+  const f: Flags = { json: false, all: false, major: false, task: null, inflight: [], pos: [] };
   const val = (i: number, name: string): string => {
     const v = argv[i + 1];
     if (v === undefined || v.startsWith('--')) throw new Usage(`${name} needs a value`);
@@ -407,6 +410,7 @@ function parseFlags(argv: string[]): Flags {
     else if (a === '--task') f.task = val(i++, a);
     else if (a === '--out') f.out = val(i++, a);
     else if (a === '--restore') f.restore = val(i++, a);
+    else if (a === '--inflight') f.inflight.push(val(i++, a));
     else if (a.startsWith('--')) throw new Usage(`unknown flag ${a}`);
     else f.pos.push(a);
   }
@@ -713,7 +717,7 @@ function cmdVerify(w: World, f: Flags): number {
   if (f.restore) {
     let r: ReturnType<typeof restoreJournal>;
     try {
-      r = restoreJournal(w.root, f.restore);
+      r = restoreJournal(w.root, f.restore, new Set(f.inflight));
     } catch (err) {
       if (!(err instanceof RestoreRefused)) throw err;
       w.err.push(`REFUSED: ${err.message}`);
@@ -722,6 +726,12 @@ function cmdVerify(w: World, f: Flags): number {
     w.out.push(`restored: ${r.restored.join(', ') || '(none)'}`);
     if (r.leftAlone.length)
       w.out.push(`left alone (changed since the run wrote them): ${r.leftAlone.join(', ')}`);
+    if (r.inflight.length) {
+      w.err.push(
+        `in flight when the run was killed, and changed since (a partial write or a later edit, which the journal cannot tell apart), so kept: ${r.inflight.join(', ')}; inspect each, then \`npm run pins -- verify --restore ${f.restore} --inflight <file>\` gives its before-bytes back`
+      );
+      return 1;
+    }
     return 0;
   }
   const findings: string[] = [];
@@ -1263,8 +1273,7 @@ const CASES: Record<string, Case> = {
     ];
   },
   async killedInStep(m) {
-    // A run killed while a step runs: the journal on disk at that instant must already claim
-    // the step's declared files, so `verify --restore` puts them back.
+    // A run killed while a step runs: the journal on disk at that instant already claims the step's declared files. Their bytes after the kill could be the step's partial write or a later edit, and the journal cannot tell which, so `verify --restore` names them and keeps them; `--inflight <file>` gives one its before-bytes back once inspected.
     const fx = fixtureTree();
     const jroot = path.join(fx.root, '.ci/cache/pins');
     const kill: Runner = (cmd, cwd) => {
@@ -1282,19 +1291,33 @@ const CASES: Record<string, Case> = {
       ]),
       directTxn(fx, 'live', kill, m)
     );
-    fx.write('credits.json', '{ "half": true\n');
+    fx.write('credits.json', '{ "edited": "by hand after the kill" }\n');
     const named = await runCli(['verify'], withMutant(fx, m));
-    const rest = await runCli(['verify', '--restore', 'killed'], withMutant(fx, m));
+    const kept = await runCli(['verify', '--restore', 'killed'], withMutant(fx, m));
+    const keptBytes = fx.read('credits.json');
+    const taken = await runCli(
+      ['verify', '--restore', 'killed', '--inflight', 'credits.json'],
+      withMutant(fx, m)
+    );
     return [
       {
-        name: "verify --restore: a run killed inside a step gets that step's declared files back",
+        name: 'verify --restore: a file a killed step had in flight and that changed since is named and kept, never overwritten',
         ok:
           named.err.includes('journal killed') &&
-          rest.rc === 0 &&
-          /^restored: .*\bcredits\.json\b/m.test(rest.out) &&
+          kept.rc === 1 &&
+          kept.err.includes('in flight when the run was killed') &&
+          kept.err.includes('credits.json') &&
+          keptBytes === '{ "edited": "by hand after the kill" }\n',
+        detail: `rc=${kept.rc} ${kept.out} ${kept.err} | ${keptBytes}`,
+      },
+      {
+        name: 'verify --restore --inflight: the named in-flight file gets its before-bytes back, and the journal closes',
+        ok:
+          taken.rc === 0 &&
+          /^restored: .*\bcredits\.json\b/m.test(taken.out) &&
           fx.read('credits.json') === '{}\n' &&
           fx.read('Dockerfile').includes('TOOL_VERSION=1.0.0'),
-        detail: `${named.err} | rc=${rest.rc} ${rest.out} ${rest.err} | ${fx.read('credits.json')}`,
+        detail: `rc=${taken.rc} ${taken.out} ${taken.err} | ${fx.read('credits.json')}`,
       },
     ];
   },
