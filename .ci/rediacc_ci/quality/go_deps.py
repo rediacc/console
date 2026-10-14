@@ -622,10 +622,11 @@ def plan_json(root: pathlib.Path) -> int:
             path, current, latest, kind = _read_fields(line, 4)
             if not path:
                 continue
-            if path == PROBE_SENTINEL:
-                doc["probeFailures"].append("%s: %s" % (name, line))
-            elif kind.startswith(UNANSWERED):
+            # The unanswered kind is read first, as the gate does: a probe whose upstream did not answer carries PROBE_SENTINEL as its path too.
+            if kind.startswith(UNANSWERED):
                 doc["unanswered"].append("%s: %s" % (name, line))
+            elif path == PROBE_SENTINEL:
+                doc["probeFailures"].append("%s: %s" % (name, line))
             else:
                 records.append(
                     {
