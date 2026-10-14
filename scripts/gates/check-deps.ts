@@ -91,7 +91,7 @@ import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BLOCKLIST_FILE = policyPath('.deps-upgrade-blocklist', CONSOLE_ROOT);
-const MAJOR_ALLOW_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'deps-major-allow.json');
+const MAJOR_ALLOW_FILE = path.join(CONSOLE_ROOT, MAJOR_ALLOW_REL);
 const RELEASE_AGE_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'release-age.json');
 const MAJOR_EXCEPTIONS_FILE = policyPath('deps-major-exceptions.json', CONSOLE_ROOT);
 const MAJOR_EXCEPTIONS_REL = path
