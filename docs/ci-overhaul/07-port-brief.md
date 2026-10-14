@@ -94,7 +94,7 @@ Scans: every tracked `test-*` / `test_*` file under the roots named by `.ci/scri
 | Root or file | Declared by | Test files | Registry | pytest |
 |---|---|---|---|---|
 | `.ci/rediacc_ci/tests` | orphan gate + pytest | 370 | 0 | 370 |
-| `.ci/rediacc_ci/tests/gates` | pytest testpaths | 177 | 11 | 166 |
+| `.ci/rediacc_ci/tests/gates` | pytest testpaths | 178 | 11 | 167 |
 | `.claude/hooks` | orphan gate | 22 | 0 | 0 |
 | `.claude/rediacc_hooks/tests` | orphan gate + pytest | 103 | 0 | 103 |
 | (unregistered) `.claude/hooks/context/test-context-bands.py` | - | 1 | 0 | 0 |

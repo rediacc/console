@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T15:32:15.485Z",
+  "generatedAt": "2026-10-14T16:52:59.101Z",
   "legs": [
     {
       "index": 1,
@@ -260,6 +260,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_venv.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_nightly_status_report.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_overrides_reasons.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_pin_cli.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_boxes_never_delete.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_deps.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plan_folders.py",
