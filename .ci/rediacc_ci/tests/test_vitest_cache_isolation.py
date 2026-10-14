@@ -44,8 +44,8 @@ def test_each_vitest_config_names_its_own_cache_directory():
         seen[target] = rel
 
 
-# The command, not a module path: `vitest/config` and `vitest/node` are imports, so a following '/' ends the match like a '.' or '-' does.
-VITEST_CMD_RE = re.compile(r"(?<![\w.-])vitest(?![\w./-])")
+# The command, not a module path: `vitest/config` and `vitest/node` are imports, so a following '/' ends the match like a '.' or '-' does. The package's own entry files (`vitest/vitest.mjs`, `vitest/dist/cli.js`) are the command run by path.
+VITEST_CMD_RE = re.compile(r"(?<![\w.-])vitest(?:/vitest\.m?js|/dist/cli\.m?js)?(?![\w./-])")
 
 
 SCRIPT_FILE_RE = re.compile(r"[\w./@-]+\.(?:[cm]?[jt]s|sh|py)(?![\w./-])")
@@ -95,6 +95,9 @@ def test_runs_vitest_reads_the_command_and_not_a_name_that_contains_it():
     assert runs_vitest({"unit": "npx vitest --coverage"})
     assert runs_vitest({"t": "node_modules/.bin/vitest run"})
     assert runs_vitest({"all": "npm run x && vitest"})
+    assert runs_vitest({"t": "node node_modules/vitest/vitest.mjs run"})
+    assert runs_vitest({"t": "node node_modules/vitest/dist/cli.js run"})
+    assert not runs_vitest({"t": "node scripts/x.js node_modules/vitest/config"})
     assert not runs_vitest({"clean": "rm -rf node_modules/.vitest-cache"})
     assert not runs_vitest({"clean": "rm -rf node_modules/vitest-cache-web"})
     assert not runs_vitest({"lint": "eslint vitest.config.ts"})

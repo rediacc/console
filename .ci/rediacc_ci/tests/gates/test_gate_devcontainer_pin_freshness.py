@@ -506,3 +506,20 @@ def test_blocklist_accepts_valid_reason(gate, tmp_path):
         0, result, "a blocklist entry with a substantive BLOCKER reason must be accepted"
     )
     gate.log_pass("well-formed blocklist entry is accepted")
+
+
+def test_pins_driver_selftest_holds_the_version_and_hash_properties_upgrade_proved(gate):
+    """The retired `--upgrade` cases (the version and both sha256 ARGs moving together, and a release missing one digest refused) live in the devcontainer pins driver's selftest, which no other gate runs. Running it here keeps them proved: it must exit 0 and print a PASS line for each."""
+    npx = harness.require_tool(
+        "npx", "install node; the selftest is a TypeScript program driven through tsx"
+    )
+    result = harness.run(
+        [npx, "tsx", "scripts/lib/pins/drivers/devcontainer-selftest.ts"], cwd=paths.repo_root()
+    )
+    gate.assert_exit(0, result, "the devcontainer pins driver selftest must pass")
+    for line in (
+        "bw: the version and both sha256 ARGs move together, by the asset filenames the registry names",
+        "bw: a release with no digest for one hashed asset is refused, not moved with a stale hash",
+    ):
+        gate.assert_contains(result.out, "PASS  " + line, "the selftest proves: " + line)
+    gate.log_pass("the devcontainer driver selftest proves the retired upgrade properties")
