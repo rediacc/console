@@ -1036,7 +1036,7 @@ def _norm_under(path, base, root):
 def bash_write_paths(cmd, cwd, root):
     """Every repo-relative path a Bash command writes, deletes or moves, read from what bash would RUN (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1).
 
-    Three routes: an output redirect (the lexer's per-run writes, the same answer `shellscan.write_targets` gives, with the run's own directory), the path operands of `BASH_WRITE_VERBS` and `git rm|mv`, and the repo-path string literals of a Python heredoc or `-c` body that writes, unlinks or moves a file. Every path is joined to the `cd` in force for its clause and then to `cwd`, the directory the call ran in. A directory operand is returned as the directory and covers its subtree (`wl_reggate._covers`). An unknowable operand (`"$f"`, `*.json`) is cut back to its literal directory. Never raises: an unlexable command writes nothing it can prove.
+    Three routes: an output redirect (the lexer's per-run writes, the same answer `shellscan.write_targets` gives, with the run's own directory), the path operands of `BASH_WRITE_VERBS` and `git rm|mv`, and the repo-path string literals of a Python program (its `-c` value, the heredoc it reads as stdin, or a script it runs by path, `_python_text`) that writes, unlinks or moves a file. Every path is joined to the `cd` in force for its clause and then to `cwd`, the directory the call ran in. A directory operand is returned as the directory and covers its subtree (`wl_reggate._covers`). An unknowable operand (`"$f"`, `*.json`) is cut back to its literal directory. Never raises: an unlexable command writes nothing it can prove.
     """
     import posixpath
 
@@ -1068,35 +1068,26 @@ def bash_write_paths(cmd, cwd, root):
         for operand in _run_operands(run, shellscan):
             add(operand, run.cwd)
         if posixpath.basename(str(run.name or "")).startswith("python"):
-            argv = [str(a) for a in run.argv or []]
-            body = argv[argv.index("-c") + 1] if "-c" in argv[:-1] else ""
-            py_bodies.append((body, run.cwd))
+            py_bodies.append((_python_text(shellscan, run, cmd, base_cwd), run.cwd))
     for target in loose:
         # A redirect on a brace group or a subshell belongs to no simple command, so only write_targets sees it.
         if target not in seen_writes:
             add(target, None)
-    if py_bodies:
-        heredocs = _heredoc_bodies(shellscan, cmd)
-        for body, run_cwd in py_bodies:
-            for text in [body, *heredocs]:
-                if text and _PY_WRITES.search(text):
-                    for lit in _PY_PATH_LIT.findall(text):
-                        if "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit):
-                            add(lit, run_cwd)
+    for text, run_cwd in py_bodies:
+        if text and _PY_WRITES.search(text):
+            for lit in _PY_PATH_LIT.findall(text):
+                if "/" in lit or re.search(r"\.[A-Za-z0-9]{1,8}$", lit):
+                    add(lit, run_cwd)
     return {p for p in out if p not in ("/dev/null", "/dev/stdout", "/dev/stderr")}
 
 
-def _heredoc_bodies(shellscan, cmd):
-    lexer = shellscan._Lexer(cmd)
+def _python_text(shellscan, run, cmd, cwd):
+    """The program a Python run executes, as `shellscan.interpreter_program` reads it for the guards (#78afdc0b): the `-c` value in any spelling (`-Ic`, `-cCODE`), the heredocs only when it reads its program from stdin, or a script passed BY PATH. The reader this replaced took a bare `-c` only and added every heredoc in the command to every Python run, so `cat > notes.md <<EOF` quoting a write counted for `python3 tool.py`, while the script itself was never read. "" for a program it cannot read."""
     try:
-        lexer.tokens()
+        text, _kind = shellscan.interpreter_program(run, cmd, cwd)
     except Exception:
-        return []
-    return [
-        lexer.src[h.body_start : h.body_end]
-        for h in lexer.heredocs
-        if h.body_start is not None and h.body_end is not None
-    ]
+        return ""
+    return text or ""
 
 
 def _shellscan():

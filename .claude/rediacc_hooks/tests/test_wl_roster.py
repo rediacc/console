@@ -1673,3 +1673,37 @@ def test_r11_an_in_place_edit_is_read_by_the_guards_parse(tmp_path, cmd, want):
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout) == want, cmd
+
+
+# #78afdc0b: a Python run's program is `shellscan.interpreter_program`'s reading, the one the guards share. The private reader took a bare `-c` only and added every heredoc in the command to every Python run: a script run BY PATH was never read, `-Ic` was missed, and a heredoc written to a notes file counted as the program of an unrelated script. Each row marked `was` answered that at c5c3036c3.
+PROGRAM_CASES = [
+    # (command, the paths written, what the private reader answered)
+    ("python3 scratch/writes.py", ["docs/out.md"], []),
+    ("cd scratch && python3 writes.py", ["scratch/docs/out.md"], []),
+    ("python3 -Ic \"open('docs/a.md', 'w')\"", ["docs/a.md"], []),
+    (
+        "cat > notes.md <<'EOF'\nopen('docs/q.md', 'w')\nEOF\npython3 scratch/reads.py",
+        ["notes.md"],
+        ["docs/q.md", "notes.md"],
+    ),
+    ("python3 - <<'EOF'\nopen('docs/h.md', 'w').write('x')\nEOF", ["docs/h.md"], ["docs/h.md"]),
+    ("python3 scratch/reads.py", [], []),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want", "was"), PROGRAM_CASES)
+def test_78afdc0b_a_python_program_is_read_as_the_guards_read_it(tmp_path, cmd, want, was):
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    (scratch / "writes.py").write_text(
+        "import pathlib\npathlib.Path('docs/out.md').write_text('x')\n", encoding="utf-8"
+    )
+    (scratch / "reads.py").write_text("print(open('docs/in.md').read())\n", encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, "-c", WRITE_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == want, (cmd, "was", was)
