@@ -46,7 +46,8 @@ RUNNER_OWNERS = frozenset({"subprocess", "harness", "proc"})
 def _annotate_parents(tree: ast.AST) -> None:
     for node in ast.walk(tree):
         for child in ast.iter_child_nodes(node):
-            child.parent = node  # type: ignore[attr-defined]
+            # The `ast` stubs declare no `parent`, but nodes take arbitrary attributes; the readers use `getattr`.
+            vars(child)["parent"] = node
 
 
 def _is_runner_call(node: ast.AST) -> bool:

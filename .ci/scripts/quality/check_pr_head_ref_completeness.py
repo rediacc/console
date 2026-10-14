@@ -97,7 +97,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WORKFLOWS_DIR = REPO_ROOT / ".github" / "workflows"

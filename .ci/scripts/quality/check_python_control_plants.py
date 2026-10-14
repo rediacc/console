@@ -86,7 +86,8 @@ def control_region_functions(tree: ast.AST) -> set[str]:
 def _annotate(tree: ast.AST) -> None:
     for node in ast.walk(tree):
         for child in ast.iter_child_nodes(node):
-            child.parent = node  # type: ignore[attr-defined]
+            # The `ast` stubs declare no `parent`, but nodes take arbitrary attributes; the readers use `getattr`.
+            vars(child)["parent"] = node
 
 
 def _enclosing_control(node: ast.AST, regions: set[str]) -> bool:

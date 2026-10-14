@@ -385,6 +385,8 @@ def _classify_api(rest: list[Token]) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 
 _Func = ast.FunctionDef | ast.AsyncFunctionDef
+# What a name is bound to: an expression, or the `+=` statement that extends it.
+_Bound = ast.expr | ast.AugAssign
 
 
 def _callee_name(call: ast.Call) -> str | None:
@@ -419,7 +421,7 @@ class _Module:
         for node in self.nodes:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self.funcs_by_name.setdefault(node.name, []).append(node)
-        self._assign_cache: dict[int, dict[str, list[ast.expr]]] = {}
+        self._assign_cache: dict[int, dict[str, list[_Bound]]] = {}
         self.retry_targets = self._retry_targets()
         self.aliases = self._aliases()
 
@@ -540,7 +542,7 @@ class _Module:
                 return None
         return None
 
-    def _assigns(self, name: str, fn: ast.AST) -> list[ast.expr]:
+    def _assigns(self, name: str, fn: ast.AST) -> list[_Bound]:
         """Values assigned to `name` directly in `fn` (nested defs excluded), in source order; `+=` values come back wrapped as AugAssign.
 
         INDEXED once per scope. The first version re-walked the scope for every lookup, and a lookup happens for every Name argument of every call, against the MODULE scope too: quadratic in module size, and one gate run took over 20 s across 554 modules (measured 2026-10-06).
@@ -552,10 +554,10 @@ class _Module:
         return index.get(name, [])
 
     @staticmethod
-    def _index_scope(fn: ast.AST) -> dict[str, list[ast.expr]]:
-        found: dict[str, list[tuple[int, ast.expr]]] = {}
+    def _index_scope(fn: ast.AST) -> dict[str, list[_Bound]]:
+        found: dict[str, list[tuple[int, _Bound]]] = {}
 
-        def add(name: str, line: int, value: ast.expr) -> None:
+        def add(name: str, line: int, value: _Bound) -> None:
             found.setdefault(name, []).append((line, value))
 
         stack = list(ast.iter_child_nodes(fn))
@@ -579,7 +581,7 @@ class _Module:
             elif isinstance(n, ast.AnnAssign) and isinstance(n.target, ast.Name) and n.value:
                 add(n.target.id, n.lineno, n.value)
             elif isinstance(n, ast.AugAssign) and isinstance(n.target, ast.Name):
-                add(n.target.id, n.lineno, n)  # type: ignore[arg-type]
+                add(n.target.id, n.lineno, n)
             stack.extend(ast.iter_child_nodes(n))
         return {k: [v for _, v in sorted(rows, key=lambda r: r[0])] for k, rows in found.items()}
 
@@ -612,7 +614,7 @@ class _Module:
             for scope in [*scopes, self.tree]:
                 values = self._assigns(expr.id, scope)
                 if not values:
-                    if scope is not self.tree and self._param_of(expr.id, [scope]):  # type: ignore[list-item]
+                    if isinstance(scope, _Func) and self._param_of(expr.id, [scope]):
                         return None
                     continue
                 base: list[Token] | None = None

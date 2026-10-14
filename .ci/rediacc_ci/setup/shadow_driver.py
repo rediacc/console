@@ -58,6 +58,7 @@ import os
 import pathlib
 import subprocess
 import sys
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
@@ -311,7 +312,7 @@ def _trace_ctx(root: pathlib.Path, env: dict[str, str], sink: list[str]) -> Ctx:
     """A `Ctx` whose `run` records the two inline phases instead of running them."""
 
     class TracingCtx(Ctx):
-        def run(self, argv, *, timeout=None, stdin_text=None):  # type: ignore[override]
+        def run(self, argv, *, timeout=None, stdin_text=None):
             joined = " ".join(argv)
             if "init-submodules.sh" in joined:
                 sink.append("init-submodules.sh")
@@ -333,7 +334,6 @@ def new_phase_trace(
     """
     sink: list[str] = []
     saved_host = {name: getattr(host, name) for name in PY_FOR.values()}
-    saved_call, saved_capture = bridge.call, bridge.capture
 
     def stub(key: str):
         def inner(_ctx):
@@ -367,16 +367,16 @@ def new_phase_trace(
             if bash_name == "setup_docker_probe":
                 continue
             setattr(host, py_name, stub(bash_name))
-        bridge.call = stub_call  # type: ignore[assignment]
-        bridge.capture = stub_capture  # type: ignore[assignment]
         options = machine.Options(start=start)
         ctx = _trace_ctx(root, env, sink)
-        rc, _, _ = _capture(lambda logger: machine.run_setup(_relog(ctx, logger), options, {}))
+        with (
+            mock.patch.object(bridge, "call", stub_call),
+            mock.patch.object(bridge, "capture", stub_capture),
+        ):
+            rc, _, _ = _capture(lambda logger: machine.run_setup(_relog(ctx, logger), options, {}))
     finally:
         for name, value in saved_host.items():
             setattr(host, name, value)
-        bridge.call = saved_call  # type: ignore[assignment]
-        bridge.capture = saved_capture  # type: ignore[assignment]
     return rc, sink
 
 

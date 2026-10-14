@@ -16,10 +16,16 @@ import json
 import os
 from typing import TYPE_CHECKING, Any
 
+if TYPE_CHECKING:
+    from types import ModuleType
+
+fcntl: ModuleType | None
 try:
-    import fcntl
+    import fcntl as _fcntl
 except ImportError:  # Windows: no POSIX advisory locking
-    fcntl = None  # type: ignore[assignment]
+    fcntl = None
+else:
+    fcntl = _fcntl
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
