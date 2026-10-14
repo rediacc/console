@@ -819,7 +819,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
 | knip.jsonc | 27 | // comment |
 | package.json | 23 | JSON value |
-| pyproject.toml | 65 | # comment |
+| pyproject.toml | 66 | # comment |
 | scripts/ci-runner/gates.lock.json | 31 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 47 | JSON value |
 | scripts/data/shape-duplication-seed.json | 10 | JSON value |

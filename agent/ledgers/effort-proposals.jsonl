@@ -1,0 +1,5 @@
+{"at": "2026-10-14T14:05:35Z", "epoch": 66, "fraction": 0.879, "id": "ep-cc89bf63", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-14T18:09:44Z", "epoch": 67, "fraction": 0.89, "id": "ep-a04eeed5", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-14T22:09:31Z", "epoch": 68, "fraction": 0.854, "id": "ep-759a7605", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-14T22:42:13Z", "direction": "promote", "from": {"advise": "smart", "block": "high"}, "id": "ep-77f2fc28", "key": "no-remaining", "kind": "applied", "run": "e68", "session": "d778be9d", "to": {"advise": "smart", "block": "smart"}}
+{"at": "2026-10-14T22:42:13Z", "direction": "promote", "from": {"advise": "smart"}, "id": "ep-57a39ca7", "key": "plan-backlog", "kind": "applied", "run": "e68", "session": "d778be9d", "to": {"advise": "low"}}
