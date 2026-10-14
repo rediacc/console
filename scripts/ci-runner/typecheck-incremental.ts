@@ -16,20 +16,21 @@
  *
  * THE STAMP: A PROJECT WHOSE INPUTS ARE UNCHANGED SINCE ITS LAST CLEAN RUN IS NOT RE-RUN. Warm incremental tsc still rebuilds the whole program (5-6 s and about 8 CPU-s per project), which put this gate at 25-29 s in the lane and over check:ci-gate-manifest's tier ceiling. After a run exits 0, a stamp records every input that run could have read, and the next run skips the project only when all of them still match:
  *   - every file in the program, as `tsc --listFiles` printed it on that clean run (lib files, node_modules declarations, the workspace dist), by size and mtime, falling back to a sha1 of the content when the mtime moved;
- *   - the ROOT file set, re-expanded from the include/exclude globs by tsc's own config parser on every run, so a NEW file the globs pick up is a change even though no stamped file moved;
+ *   - the ROOT file set, re-expanded from the include/exclude globs by `tsc --showConfig` on every run, so a NEW file the globs pick up is a change even though no stamped file moved;
  *   - the tsconfig and its whole `extends` chain, the nearest package.json above every program file (an `exports` or `types` change re-routes resolution without touching a listed file), and the root and project lockfiles plus node_modules/.package-lock.json (an install can add an `@types` package that tsc includes automatically);
  *   - the TypeScript version and the exact tsc arguments.
  * A run that fails deletes the stamp, so a red project is re-checked until it is green. A clean run whose output names no program file writes NO stamp: a stamp over zero files would match forever, which is a vacuous green.
  *
  * RESIDUAL, named rather than hidden: a module-resolution lookup that FAILED quietly on the clean run (a candidate path probed and absent, then a later candidate used) is not recorded, so a file appearing at an earlier candidate outside the root globs, the lockfiles and the stamped package.json files would be missed; and a content change that keeps both size and mtime identical is read as unchanged, as make and `tsc -b` read it. The full `check:types` in CI runs uncached and is the backstop for both.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ts from 'typescript';
+import { evaluate, parse as momoaParse } from '@humanwhocodes/momoa';
 import { grantedCores } from './lease-client';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -142,31 +143,64 @@ function unchanged(abs: string, want: FileStamp | null): boolean {
   return sha1(fs.readFileSync(abs)) === want.sha1;
 }
 
-/** Root files (the include/exclude expansion) and the config chain, from tsc's own parser. Undefined on any config error, which makes the project run. */
+/** A tsconfig's `extends` targets: relative paths resolve beside the file, bare specifiers (`astro/tsconfigs/strict`) through node resolution from it. */
+function extendsChain(abs: string, seen: Set<string> = new Set()): string[] {
+  if (seen.has(abs)) return [];
+  seen.add(abs);
+  let value: unknown;
+  try {
+    value = evaluate(momoaParse(fs.readFileSync(abs, 'utf-8'), { mode: 'jsonc' }));
+  } catch {
+    return [];
+  }
+  const ext = (value as { extends?: unknown }).extends;
+  const targets = typeof ext === 'string' ? [ext] : Array.isArray(ext) ? ext : [];
+  const out: string[] = [];
+  for (const raw of targets) {
+    if (typeof raw !== 'string') continue;
+    const dir = path.dirname(abs);
+    const candidates = raw.startsWith('.') || path.isAbsolute(raw)
+      ? [path.resolve(dir, raw), path.resolve(dir, `${raw}.json`)]
+      : [];
+    if (candidates.length === 0) {
+      try {
+        const req = createRequire(abs);
+        candidates.push(req.resolve(raw), req.resolve(`${raw}.json`));
+      } catch {
+        // resolved below as absent
+      }
+    }
+    const hit = candidates.find((c) => fs.existsSync(c) && fs.statSync(c).isFile());
+    if (hit !== undefined) out.push(hit, ...extendsChain(hit, seen));
+  }
+  return out;
+}
+
+/**
+ * Root files (the include/exclude expansion) and the config chain. TypeScript 7 ships no JavaScript compiler API, so the roots come from tsc's own `--showConfig` (its `files` array is the expanded include/exclude set) and the chain from reading each `extends` link. Undefined on any config error, which makes the project run.
+ */
 export function projectShape(
   cwd: string,
   config: string
 ): { roots: string[]; configs: string[] } | undefined {
   const abs = path.resolve(cwd, config);
+  const tsc = tscPath(REPO_ROOT);
+  if (tsc === undefined) return undefined;
+  const r = spawnSync(process.execPath, [tsc, '--showConfig', '-p', abs], {
+    cwd,
+    encoding: 'utf-8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (r.status !== 0) return undefined;
   try {
-    const parsed = ts.getParsedCommandLineOfConfigFile(
-      abs,
-      {},
-      {
-        ...ts.sys,
-        onUnRecoverableConfigFileDiagnostic: () => {
-          throw new Error('unrecoverable tsconfig');
-        },
-      }
-    );
-    if (parsed === undefined || parsed.errors.length > 0) return undefined;
+    const shown = JSON.parse(r.stdout) as { files?: unknown };
+    if (!Array.isArray(shown.files)) return undefined;
     return {
-      roots: [...parsed.fileNames].map((f) => path.resolve(path.dirname(abs), f)).sort(),
-      configs: [
-        abs,
-        ...((parsed.options.configFile as ts.TsConfigSourceFile | undefined)?.extendedSourceFiles ??
-          []),
-      ],
+      roots: shown.files
+        .filter((f): f is string => typeof f === 'string')
+        .map((f) => path.resolve(path.dirname(abs), f))
+        .sort(),
+      configs: [abs, ...extendsChain(abs)],
     };
   } catch {
     return undefined;
@@ -399,45 +433,6 @@ function runTsc(tsc: string, step: TscStep, cwd: string): Promise<StepResult> {
 /** One `check` step behind the stamp: skipped when nothing it reads changed, else run with `--listFiles` so a clean run can be stamped and a red one un-stamped. */
 type TscRunner = (tsc: string, step: TscStep, cwd: string) => Promise<StepResult>;
 
-/**
- * tsc's own command line run IN THIS PROCESS: `executeCommandLine` is exactly what bin/tsc calls, with a `sys` that captures output and the exit status. For the selftest only, whose fixtures cost about 0.37 s each as a spawn, almost all of it loading the compiler, and about a tenth of that here; the stamp cases spawned 13 times and put this gate's selftest at 6.5 s standalone and most of its 20 s in a saturated lane. It is a runtime export absent from typescript.d.ts, so `inProcessRunner()` answers undefined when an upgrade removes it and the selftest falls back to spawning.
- */
-function inProcessRunner(): TscRunner | undefined {
-  const exec = (ts as unknown as { executeCommandLine?: unknown }).executeCommandLine;
-  if (typeof exec !== 'function') return undefined;
-  return (_tsc, step, cwd) => {
-    const started = Date.now();
-    let output = '';
-    let code: number | null = null;
-    const prev = process.cwd();
-    process.chdir(cwd);
-    try {
-      const sys: ts.System = {
-        ...ts.sys,
-        // PINNED, not inherited: the compiler kept the FIRST call's directory across calls, so a second fixture read the first one's tsconfig (found by this selftest on its first in-process run).
-        getCurrentDirectory: () => cwd,
-        resolvePath: (p: string) => path.resolve(cwd, p),
-        write: (text: string) => {
-          output += text;
-        },
-        writeOutputIsTTY: () => false,
-        exit: (status?: number) => {
-          code = status ?? 0;
-        },
-      };
-      (exec as (s: ts.System, cb: () => void, args: readonly string[]) => void)(sys, () => {}, [
-        ...step.args,
-      ]);
-    } catch (err) {
-      output += String(err);
-      code = code ?? 1;
-    } finally {
-      process.chdir(prev);
-    }
-    return Promise.resolve({ step, code, ms: Date.now() - started, output });
-  };
-}
-
 async function runChecked(
   tsc: string,
   step: TscStep,
@@ -609,8 +604,7 @@ async function selftest(): Promise<number> {
         `declare const process: { env: Record<string, string | undefined> };\n${bad}`
       );
       const step = checkStep('probe', 'tsconfig.json', path.join(dir, '.cache'));
-      // The COLD run is a real spawn, so the wrapper the real run uses is under test; the warm and fixed runs go in-process (see inProcessRunner) to keep this selftest cheap in a saturated lane.
-      const later = inProcessRunner() ?? runTsc;
+      const later = runTsc;
       const cold = await runTsc(tsc, step, dir);
       const warm = await later(tsc, step, dir);
       check(
@@ -667,12 +661,7 @@ async function selftest(): Promise<number> {
       );
       put('src/a.ts', "export const a: string = 'a';\n");
       const step = checkStep('stamp', 'tsconfig.json', path.join(sdir, '.cache'));
-      const inProcess = inProcessRunner();
-      check(
-        inProcess !== undefined,
-        'typescript no longer exports executeCommandLine at runtime; the stamp cases below fall back to spawning tsc (slower, still sound). Update inProcessRunner().'
-      );
-      const run = () => runChecked(tsc, step, sdir, inProcess ?? runTsc);
+      const run = () => runChecked(tsc, step, sdir, runTsc);
       const first = await run();
       check(
         first.code === 0 && first.unchanged !== true,
