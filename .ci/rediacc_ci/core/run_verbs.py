@@ -310,9 +310,14 @@ def service_main(argv: list[str]) -> int:
     return dispatch("service", SERVICE_ARMS, argv)
 
 
+def _account_db(rest: list[str]) -> int:
+    """`account.db(rest)`, looked up when the arm runs, so a substituted `account.db` is the one called."""
+    return account.db(rest)
+
+
 ACCOUNT_ARMS: dict[str, Arm] = {
     "dev": lambda _rest: account_lifecycle.main(["dev"]),
-    "db": lambda rest: account.db(rest),  # noqa: PLW0108 -- late binding, so a substituted `account.db` is the one called
+    "db": _account_db,
     "test": lambda rest: account_lifecycle.main(["test", *rest]),
     "stop": lambda _rest: account.stop(),
     "reset": lambda _rest: account_lifecycle.main(["reset"]),

@@ -190,7 +190,8 @@ def load_registry(path: pathlib.Path):
             return None
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-    except Exception:  # noqa: BLE001 -- reported by the caller as a failure, never silently passed
+    except (OSError, SyntaxError, ImportError):
+        # Reported by the caller as a failure, never silently passed.
         return None
     return module if hasattr(module, "ci_read_match") else None
 

@@ -107,7 +107,7 @@ def load_modules():
     boxes_gate = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(boxes_gate)
-    except Exception as exc:
+    except (OSError, SyntaxError, ImportError) as exc:
         die(f"cannot load check_plan_boxes.py ({exc}); P-A0 has no oracle to ask")
     for fn in (
         "scan",
@@ -187,7 +187,7 @@ def load_plan_gate():
     paths.on_sys_path(HOOK_PKG_PARENT)
     try:
         from rediacc_hooks import plan_gate
-    except Exception as exc:
+    except (ImportError, SyntaxError, OSError) as exc:
         return None, "cannot import rediacc_hooks.plan_gate from %s (%s)" % (HOOK_PKG_PARENT, exc)
     return plan_gate, ""
 

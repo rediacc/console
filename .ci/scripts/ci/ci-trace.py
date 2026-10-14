@@ -38,11 +38,13 @@ import time
 import urllib.parse
 from unittest import mock
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+# THE sys.path HOP, stated rather than hidden. wl_ci lives with the Stop hook because that is where it is consumed on every turn. Copying its ~200 lines of rollup/classify logic here would recreate exactly the duplication this script exists to end -- the nine divergent copies above. One import, one truth. The hop is the first statement after the imports so the import that needs it stays in the import block (ruff reads an `os.environ` or `sys.path.insert` statement there as part of it, and any other statement, `REPO_ROOT = ...` included, as the end of the block).
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / ".claude" / "hooks" / "stop"))
+import wl_ci
+import wl_core
+import wl_prsignals
 
-# THE sys.path HOP, stated rather than hidden. wl_ci lives with the Stop hook because that is where it is consumed on every turn. Copying its ~200 lines of rollup/classify logic here would recreate exactly the duplication this script exists to end -- the nine divergent copies above. One import, one truth.
-sys.path.insert(0, str(REPO_ROOT / ".claude" / "hooks" / "stop"))
-import wl_ci  # noqa: E402
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 # The registry reader is loaded by file: this script has no `.ci` hop and the canonical-hop ledger pins the one it has.
 _WK_SPEC = importlib.util.spec_from_file_location(
@@ -613,8 +615,6 @@ def _pr_signals(root, payload):
     head = payload.get("head") or ""
     out = {"state": "unreadable", "pr": pr, "head": head, "signals": [], "error": ""}
     try:
-        import wl_prsignals
-
         fetch = _fetcher(root)
         comments: list[dict] = []
         for page in range(1, SIGNALS_MAX_PAGES + 1):
@@ -645,8 +645,6 @@ def _signals_text(state, signals=None):
     """The PR SIGNALS block for `state`; `signals` narrows it to a subset (the in-wait news)."""
     if state["state"] != "ok":
         return "PR SIGNALS: unreadable (%s)" % (state.get("error") or "?")
-    import wl_prsignals
-
     return wl_prsignals.render(
         state["signals"] if signals is None else signals, state["pr"], state["head"]
     )
@@ -1418,7 +1416,6 @@ def _verb_scheduled_workflow(root, sched, name, as_json):
 def verb_scheduled(root, workflow, as_json):
     """--scheduled [--workflow X]: 0 all green, 1 any red, 2 unreadable, empty or unknown."""
     try:
-        import wl_core
         import wl_schedred
 
         if workflow:
@@ -1900,7 +1897,6 @@ def _record_final(root, ref, payload, verdict, args, diag=None):
     headline = D.render(record).splitlines()[0]
     try:
         import wl_civerdict
-        import wl_core
 
         worklist = wl_core.worklist_for(root)
         wl_civerdict.write_cache(

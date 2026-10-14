@@ -44,7 +44,9 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import gitx, log, paths
+from rediacc_ci.ci import ci_diagnose
 from rediacc_ci.ci import gate_ledger as L
+from rediacc_ci.well_known import GH_REPO
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -215,9 +217,6 @@ class Obs:
 @functools.cache
 def infra_categories() -> frozenset[str]:
     """ci_diagnose's infrastructure and stopped-job categories, read from that module: `infra-likely` plus every cancel category it maps to."""
-    # The module costs ~100 ms of import and only this lookup reads it.
-    from rediacc_ci.ci import ci_diagnose  # noqa: PLC0415
-
     return frozenset(
         {
             c
@@ -1346,12 +1345,8 @@ def refresh(
     with L.held(d / "refresh.lock"):
         if backfill and L.backfill(d, root, []) != 0:
             partial.append("backfill")
-        if ci:
-            # The registry loads at import and a sparse checkout may lack it, so only this branch pays for it.
-            from rediacc_ci.well_known import GH_REPO  # noqa: PLC0415
-
-            if L.fold_ci(d, root, repo=GH_REPO) != 0:
-                partial.append("fold-ci")
+        if ci and L.fold_ci(d, root, repo=GH_REPO) != 0:
+            partial.append("fold-ci")
         rows, bad = L.read_rows(d)
         lock = load_lock(root)
         b = build(rows, lock, root, now=now, malformed=bad)

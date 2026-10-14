@@ -48,7 +48,7 @@ import secrets
 import socket
 import time
 
-from rediacc_ci import paths
+from rediacc_ci import core_lease, paths
 
 # The source, as path PARTS rather than a joined string, so a component is greppable on its own and the separator is the platform's.
 LOCK_SUBDIR = ("scripts", "ci-runner", "gates.lock.json")
@@ -236,8 +236,6 @@ GROUP_LOCK_POLL_S = 0.2
 
 def group_lock_dir() -> pathlib.Path:
     """`groups/` beside the core lease's tokens, so a devbox and its host share one set (the lease directory is bound into the devbox)."""
-    from rediacc_ci import core_lease  # noqa: PLC0415 -- only a grouped run needs it
-
     return core_lease.lease_dir() / "groups"
 
 

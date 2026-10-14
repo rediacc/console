@@ -1370,7 +1370,8 @@ def selftest():
     with tempfile.TemporaryDirectory() as td:
         try:
             root, rel, clean, before = build_fixture(td)
-        except Exception as exc:  # noqa: BLE001 -- a broken fixture must be LOUD
+        except (OSError, subprocess.SubprocessError, ValueError, KeyError) as exc:
+            # A broken fixture must be LOUD.
             ck("the fixture builds at all", False, repr(exc))
             return 1
         ledger = json.loads((root / R.LEDGER_REL).read_text(encoding="utf-8"))

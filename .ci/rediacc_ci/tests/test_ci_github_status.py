@@ -18,6 +18,7 @@ import time
 from typing import TYPE_CHECKING
 
 import pytest
+import wl_checks as wl_checks_module
 
 from rediacc_ci import paths
 from rediacc_ci.ci import github_status as gs
@@ -306,11 +307,7 @@ def trace():
 
 @pytest.fixture
 def wl_checks():
-    paths.on_sys_path(paths.from_root(".claude"))
-    paths.on_sys_path(paths.from_root(".claude", "hooks", "stop"))
-    import wl_checks  # noqa: PLC0415
-
-    return wl_checks
+    return wl_checks_module
 
 
 def _post(cmd, session="sess-a"):

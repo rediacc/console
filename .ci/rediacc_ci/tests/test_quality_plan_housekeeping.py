@@ -24,9 +24,9 @@ So every case below runs the REAL sed or the REAL bash against the Python.
 import datetime as dt
 import pathlib
 import subprocess
-import sys
 
 import pytest
+import wl_planrec
 
 from rediacc_ci import log, paths
 from rediacc_ci.quality import plan_housekeeping as hk
@@ -329,12 +329,6 @@ def test_the_config_mirror_equals_wl_planrec_record_states_both_directions() -> 
     stop = paths.CI_DIR.parent / ".claude" / "hooks" / "stop"
     if not (stop / "wl_planrec.py").is_file():
         pytest.skip("no %s in this checkout, so the mirror has no origin to compare against" % stop)
-
-    sys.path.insert(0, str(stop))
-    try:
-        import wl_planrec  # noqa: PLC0415 -- the sys.path hop above is what makes it importable
-    finally:
-        sys.path.remove(str(stop))
 
     mirror = set(hk.record_states(CONFIG))
     origin = set(wl_planrec.RECORD_STATES)

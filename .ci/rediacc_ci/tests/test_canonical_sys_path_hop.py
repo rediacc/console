@@ -150,12 +150,11 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".ci/rediacc_ci/setup/port_parity.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/shadow_driver.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/tools.py": ("c1e552fa19e9",),
-    ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": ("758c2fce7c63",),
     # -- The three `FRESH` lines below ARRIVED AFTER PRE-A1. Not a fix this control was allowed to make: all three were UNCOMMITTED work belonging to a writer running concurrently with it, and editing another writer's live files is how a tree with no safety net loses work. Sorted in place rather than grouped, so the table stays regenerable and a reader diffing it sees a stable
     # order.
     ".ci/rediacc_ci/tests/test_wl_proc.py": ("a885259827b2",),  # FRESH
     ".ci/rediacc_ci/tests/test_worklist_state_stdin.py": ("a885259827b2",),  # FRESH
-    ".ci/scripts/ci/ci-trace.py": ("aab727b40885",),
+    ".ci/scripts/ci/ci-trace.py": ("022cec69eb9d",),
     ".claude/hooks/context/band-notice.py": ("0f4656206187",),
     ".claude/hooks/context/epoch-reset.py": ("0f4656206187",),
     ".claude/hooks/context/onboard.py": ("0f4656206187",),

@@ -278,7 +278,8 @@ def test_the_verbs_are_served_by_these_ports_and_the_legacy_dispatcher_is_gone()
     verbs = (root / ".ci/rediacc_ci/core/run_verbs.py").read_text(encoding="utf-8")
     for needle in (
         '"dev": lambda _rest: account_lifecycle.main(["dev"])',
-        '"db": lambda rest: account.db(rest)',
+        '"db": _account_db',
+        "return account.db(rest)",
         '"stop": lambda _rest: account.stop()',
         '"totp": lambda rest: account.totp(',
         "account.rotation(argv)",
