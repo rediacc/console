@@ -260,16 +260,20 @@ function dirtyState(root: string): Map<string, { hash: string; added: boolean }>
 }
 
 /**
- * Regenerates the generated doc regions after a verb's writes landed. A hold moves the row counts in .ci/policy/README.md and scripts/data/doc-registry.md, and a bump can move any region that quotes a version, so the regeneration runs after every verb that wrote; a no-op when nothing moved. Returns the files the run changed that were clean beforehand (they belong in the commit), the files it changed that already held another session's edits (they do not), and the command record. A tree without the generator, or a fixture without a matching command, skips it.
+ * Regenerates the generated doc regions after a verb's writes landed. A hold moves the row counts in .ci/policy/README.md and scripts/data/doc-registry.md, and a bump can move any region that quotes a version, so the regeneration runs after every verb that wrote; a no-op when nothing moved. Returns the files the run changed that were clean beforehand (they belong in the commit), the files it changed that already held another session's edits (they do not), and the command record. A file this run itself wrote (`written`) is never foreign, whatever it held before; one of those that regeneration moved again is returned in `late`, as is every file it added to the commit, because the gates ran before it. A tree without the generator, or a fixture without a matching command, skips it.
  */
-function regenDocs(w: World): {
+function regenDocs(
+  w: World,
+  written: ReadonlySet<string>
+): {
   record: CommandRecord | null;
   changed: string[];
   added: string[];
   foreign: string[];
+  late: string[];
   failure: string | null;
 } {
-  const none = { record: null, changed: [], added: [], foreign: [], failure: null };
+  const none = { record: null, changed: [], added: [], foreign: [], late: [], failure: null };
   const has = w.fixture
     ? w.fixture.commands.some((c) => new RegExp(c.match).test(REGEN_CMD))
     : fs.existsSync(path.join(w.root, 'scripts/gen/gen-docs.ts'));
@@ -289,16 +293,19 @@ function regenDocs(w: World): {
   const changed: string[] = [];
   const added: string[] = [];
   const foreign: string[] = [];
+  const late: string[] = [];
   for (const [file, now] of after) {
     const was = before.get(file);
     if (was?.hash === now.hash) continue;
-    if (was) foreign.push(file);
+    if (was && written.has(file)) late.push(file);
+    else if (was) foreign.push(file);
     else {
       changed.push(file);
+      late.push(file);
       if (now.added) added.push(file);
     }
   }
-  return { record, changed, added, foreign, failure: null };
+  return { record, changed, added, foreign, late, failure: null };
 }
 
 /** The epic id a commit on this branch carries: the one `PR-TASK:` id of agent/pr/<branch>.md, the snapshot block_untagged_commit validates a trailer against. Null when the branch has none or several (the caller then names the ids and asks for --task). */
@@ -570,10 +577,15 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   }
   let regenFailure: string | null = null;
   let foreignDocs: string[] = [];
+  let lateDocs: string[] = [];
   if (res.ok) {
-    const g = regenDocs(w);
+    const g = regenDocs(
+      w,
+      new Set(res.changes.filter((c) => c.repo === '.').flatMap((c) => c.paths))
+    );
     regenFailure = g.failure;
     foreignDocs = g.foreign;
+    lateDocs = g.late;
     if (g.record) res.commands.push(g.record);
     if (g.changed.length > 0) {
       const home = res.changes.find((c) => c.repo === '.');
@@ -603,6 +615,11 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
     w.err.push(
       `note: ${d} was regenerated but already held another session's edits, so it is not in the commit line`
     );
+  if (res.ok && res.gates)
+    for (const d of lateDocs)
+      w.err.push(
+        `note: ${d} was regenerated after the gates ran, so the gate run did not see its final bytes`
+      );
   if (!res.ok) {
     w.err.push(`FAILED: ${res.failure}`);
     if (res.restored.length) w.err.push(`restored: ${res.restored.join(', ')}`);
@@ -1865,6 +1882,15 @@ const CASES: Record<string, Case> = {
     peer.write('docs/generated.md', 'rows: 5, and a peer is mid-edit\n');
     const rPeer = await hold(peer);
 
+    // A file this run wrote is the run's own even when regeneration moves it again.
+    const own = fixtureTree((x) =>
+      x.commands.push({ ...regenCmd, writes: { '.ci/policy/.fixture-blocklist': 'regenerated\n' } })
+    );
+    const rOwn = await hold(own);
+
+    const late = fixtureTree((x) => x.commands.push(regenCmd));
+    const rLate = await runCli(['bump', 'embed:tool', '--task', 'cafe1234'], withMutant(late, m));
+
     const bad = fixtureTree((x) => x.commands.push({ ...regenCmd, rc: 1 }));
     const rBad = await hold(bad);
 
@@ -1900,6 +1926,22 @@ const CASES: Record<string, Case> = {
           rPeer.err.includes('docs/generated.md was regenerated but already held') &&
           !/commit -F \S+ -- .*docs\/generated\.md/.test(rPeer.out),
         detail: `rc=${rPeer.rc} ${rPeer.err} ${rPeer.out}`,
+      },
+      {
+        name: 'hold: a file the run wrote itself is not reported as holding another session edit, and stays in the commit line',
+        ok:
+          rOwn.rc === 0 &&
+          !rOwn.err.includes('already held') &&
+          /commit -F \S+ -- .*\.fixture-blocklist/.test(rOwn.out),
+        detail: `rc=${rOwn.rc} ${rOwn.err} ${rOwn.out}`,
+      },
+      {
+        name: 'bump: a doc regenerated after the gates ran is named as unseen by them',
+        ok:
+          rLate.rc === 0 &&
+          rLate.err.includes('docs/generated.md was regenerated after the gates ran') &&
+          !rPlain.err.includes('after the gates ran'),
+        detail: `rc=${rLate.rc} ${rLate.err}`,
       },
       {
         name: 'hold: a failing regeneration fails the run loudly and drafts no commit line',
