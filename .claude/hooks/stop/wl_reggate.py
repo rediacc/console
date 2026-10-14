@@ -304,7 +304,7 @@ def _diff_tree_files(root, sha):
     """
     try:
         files = C._git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
-    except Exception:  # noqa: BLE001 -- a hint must never raise into the stop path
+    except Exception:
         return []
     if files:
         return [f.strip() for f in files if f.strip()]
@@ -313,7 +313,7 @@ def _diff_tree_files(root, sha):
         files = C._git(
             root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
         ).splitlines()
-    except Exception:  # noqa: BLE001
+    except Exception:
         return []
     return [f.strip() for f in files if f.strip()]
 
@@ -419,7 +419,7 @@ def _hook_refresh_only(root, rel):
     """True when the dirty `rel` is agent/plans/QUEUE.md and its only difference from HEAD lies inside the `## In flight` markers, which the Stop hook itself rewrites on every stop (wl_planqueue.refresh_inflight, 94e9221b0). That rewrite is the hook's runtime state, not the session's work, and counting it put the proof and sweep questions on every stop (test_r1_a_live_writers_edit_asks_no_sweep_or_proof). Any other change to the file keeps it in the fix-set."""
     if rel != QUEUE_REL:
         return False
-    import wl_planqueue as Q  # noqa: PLC0415 -- stdlib-only sibling, imported where needed
+    import wl_planqueue as Q
 
     try:
         now = (pathlib.Path(root) / rel).read_text(encoding="utf-8")

@@ -830,7 +830,7 @@ def append_clean(root, branch, review, line=None):
 
     One `os.write` of the whole line on an `O_APPEND` descriptor, after re-reading the ledger under the lock, so two reviewer children (`max_concurrent`) and two sessions sharing the checkout neither tear a line nor write a sha twice. `line` overrides the codec, for the migration's round-trip test only.
     """
-    import fcntl  # noqa: PLC0415 -- POSIX only, as _mark_lock
+    import fcntl
 
     path = ledger_path(root, branch)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1562,7 +1562,7 @@ class _Tree:
         return self._blobs[path]
 
     def ast(self, path):
-        import ast  # noqa: PLC0415 -- only the oracle parses Python
+        import ast
 
         if path not in self._asts:
             src = self.text(path)
@@ -1605,7 +1605,7 @@ class _Tree:
 
 def _py_bindings(nodes, fn=None):
     """{name: line} bound directly in one scope: the statements in `nodes` (plus `fn`'s parameters), not descending into nested functions, classes or lambdas, whose own names ARE bindings here. Imports bind their alias or their first segment."""
-    import ast  # noqa: PLC0415
+    import ast
 
     bound: dict[str, int] = {}
 
@@ -1646,7 +1646,7 @@ def _py_bindings(nodes, fn=None):
 
 
 def _type_checking_test(test):
-    import ast  # noqa: PLC0415
+    import ast
 
     return (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING") or (
         isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING"
@@ -1655,7 +1655,7 @@ def _type_checking_test(test):
 
 def _py_scopes(tree, line):
     """The scopes a name used at `line` resolves through, innermost first: (bindings, node) for each enclosing function (and a class body the line sits in directly), then the module."""
-    import ast  # noqa: PLC0415
+    import ast
 
     chain = []
 
@@ -1687,7 +1687,7 @@ def _py_scopes(tree, line):
 
 def _py_import_of(tree, name):
     """How `name` is bound by an import anywhere in the file: ("module", dotted, level) for `import a.b as name` / `from p import name` (which may be a submodule), else None."""
-    import ast  # noqa: PLC0415
+    import ast
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -1703,7 +1703,7 @@ def _py_import_of(tree, name):
 
 def _py_attr_declared(tree, attr):
     """The line where `attr` is declared as an attribute anywhere in `tree`: a class member (def, assignment, annotation), a `__slots__` string, `<expr>.attr = ...`, or an argparse `add_argument("--attr")` / `dest="attr"`. 0 when none."""
-    import ast  # noqa: PLC0415
+    import ast
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
@@ -1785,14 +1785,14 @@ _STDLIB_ACTS_ON_IMPORT = frozenset(
 
 def _stdlib_has(dotted, attrs):
     """True when stdlib module `dotted` has the attribute chain `attrs`. Imports only a module in `sys.stdlib_module_names`, never a third-party one."""
-    import importlib  # noqa: PLC0415
+    import importlib
 
     top = dotted.split(".")[0]
     if top not in getattr(sys, "stdlib_module_names", ()) or top in _STDLIB_ACTS_ON_IMPORT:
         return False
     try:
         obj = importlib.import_module(dotted)
-    except Exception:  # noqa: BLE001 -- a stdlib module that will not import proves nothing
+    except Exception:
         return False
     for a in attrs:
         if not hasattr(obj, a):
@@ -1803,7 +1803,7 @@ def _stdlib_has(dotted, attrs):
 
 def _py_verify(tree_obj, path, line, ident):
     """Evidence text when `ident` provably exists for code at `path:line`, else ""."""
-    import builtins  # noqa: PLC0415
+    import builtins
 
     tree = tree_obj.ast(path)
     if tree is None:
@@ -1860,7 +1860,7 @@ def _py_verify(tree_obj, path, line, ident):
         return ""
     # Not a module: an object's attribute, declared in this file or in a repo module it imports.
     places = [path]
-    import ast  # noqa: PLC0415
+    import ast
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
@@ -1971,7 +1971,7 @@ def refute_existence(tree_obj, finding):
     for ident in idents:
         try:
             proof = lookup(ident)
-        except Exception:  # noqa: BLE001 -- an oracle that breaks proves nothing, so the finding stays open
+        except Exception:
             return ""
         if not proof:
             return ""
@@ -2004,7 +2004,7 @@ def resolve_claude():
 
 def claude_reviewer(prompt, cfg, log=print):
     """(structured_output, why, cost) from one tool-less, schema-constrained haiku call. One retry when the answer carries no structured output. `cost` sums every call made ({"usd", "calls", "seconds"}), or is None when the CLI reported no cost; run_review writes it as the record's `Cost:` line."""
-    import wl_proc  # noqa: PLC0415 -- only the child ever calls the model; the stop directory is sys.path[0] for the script and already on the path for every importer
+    import wl_proc
 
     workdir = (
         pathlib.Path(os.environ.get("TMPDIR") or tempfile.gettempdir())
@@ -2030,7 +2030,7 @@ def claude_reviewer(prompt, cfg, log=print):
         "--max-budget-usd",
         str(cfg["budget_usd"]),
     ]
-    import wl_judge  # noqa: PLC0415 -- same reason as wl_proc above
+    import wl_judge
 
     def _call():
         return wl_proc.run(argv, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir))
@@ -2100,7 +2100,7 @@ def _writing_test(root):
     try:
         policy = _load_commit_policy(root)
         cfg = policy.load_config(str(root)) if policy is not None else None
-    except Exception:  # noqa: BLE001 -- an unreadable policy caps nothing
+    except Exception:
         return None
     if policy is None:
         return None
@@ -2120,7 +2120,7 @@ def _no_review_skip(root, message, paths):
         return False
     try:
         cfg = policy.load_config(str(root))
-    except Exception:  # noqa: BLE001 -- an unreadable policy means review it
+    except Exception:
         return False
     eligible, _offenders = policy.no_review_eligible(paths, cfg)
     return bool(eligible)
@@ -2628,7 +2628,7 @@ def session_start_line(root, branch, cfg=None):
         return ""
     try:
         st = branch_state(root, branch, cfg)
-    except Exception as exc:  # noqa: BLE001 -- a SessionStart must never fail on this
+    except Exception as exc:
         return "Per-commit reviews for %s could not be read (%s: %s)." % (
             branch,
             type(exc).__name__,
@@ -2983,7 +2983,7 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
 
 @contextlib.contextmanager
 def _mark_lock(sha):
-    import fcntl  # noqa: PLC0415 -- POSIX only, and only the verb needs it
+    import fcntl
 
     with open(state_dir() / "locks" / ("%s.mark" % sha), "a+", encoding="utf-8") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)
@@ -3269,7 +3269,7 @@ def migration_snapshot(root):
 
 def _drop_ledger_lines(path, shas):
     """Remove the lines naming `shas` from one ledger under its flock, keeping every other line byte for byte: the migration's undo, which must not lose a line a live reviewer appended meanwhile. An emptied ledger is deleted."""
-    import fcntl  # noqa: PLC0415 -- POSIX only, as append_clean
+    import fcntl
 
     with open(path, "r+", encoding="utf-8") as fh:
         fcntl.flock(fh, fcntl.LOCK_EX)

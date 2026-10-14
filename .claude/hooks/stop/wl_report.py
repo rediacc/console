@@ -331,7 +331,7 @@ def _foreign_and_stale(entry, reader):
 
 def _still_waiting(entry):
     """True while the agent behind an interim capture is still waiting on a shell of its own, read from its transcript alone (wl_roster.transcript_waiting)."""
-    import wl_roster  # noqa: PLC0415 -- wl_roster imports this module lazily too
+    import wl_roster
 
     path = str(entry.get("transcript") or "")
     if not path:
@@ -653,7 +653,7 @@ def handle_subagent_stop(event):
     body = assemble_body(sends, final)
     interim = ""
     if tx == "ok":
-        import wl_roster  # noqa: PLC0415 -- wl_roster imports this module lazily too
+        import wl_roster
 
         with contextlib.suppress(Exception):
             interim = wl_roster.transcript_waiting(pathlib.Path(transcript), time.time())
@@ -970,7 +970,7 @@ def scan(store, start, idle_min=None):
                     sends=len(sends),
                     tx="ok",  # scan globbed this file, so it resolves by construction
                 )
-            except Exception:  # noqa: BLE001, S112 -- deliberate, see the comment above:
+            except Exception:  # noqa: S112 -- deliberate, see the comment above:
                 # one bad agent must not abort the whole pass, and a narrower tuple would let an unforeseen shape kill every entry sorted after it.
                 continue
             if entry:

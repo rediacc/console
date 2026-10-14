@@ -331,11 +331,11 @@ _FIXTURE_ENV = {**os.environ, "WORKLIST_PROFILE": "off"}
 
 
 def selftest() -> int:
-    import shutil  # noqa: PLC0415
-    import subprocess  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
+    import shutil
+    import subprocess
+    import tempfile
 
-    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
+    import wl_common
 
     check = wl_common.Checker("indent")
 

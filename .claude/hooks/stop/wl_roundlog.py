@@ -113,7 +113,7 @@ def _selftest():
 
     Every one of these is a property the 2026-08-19 truncation violated, or a way a naive fix for it would break something else.
     """
-    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
+    import wl_common
 
     check = wl_common.Checker()
 

@@ -30,7 +30,7 @@ def _hooks_pkg():
     syspath = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
     spec.loader.exec_module(syspath)  # type: ignore[union-attr]
     syspath.on_sys_path(syspath.CLAUDE_DIR)
-    from rediacc_hooks import commit_policy, plan_gate  # noqa: PLC0415
+    from rediacc_hooks import commit_policy, plan_gate
 
     return plan_gate, commit_policy
 
@@ -71,7 +71,7 @@ class LoopState:
 
 
 def _plan_epics(rel):
-    import wl_epic  # noqa: PLC0415 -- SC3 adds plan_epics in parallel; absent reads as empty
+    import wl_epic
 
     return wl_epic.plan_epics(rel)
 
@@ -160,7 +160,7 @@ def loop_state(
     root, worklist, session_id, today=None, epics=None, gh=True, settings=None, live=None
 ):
     """The `LoopState` for the checkout at `root`. `today` (MMDD) and `epics` (rel -> item ids) are the test seams; `gh=False` skips the next-branch name's PR-head read. `settings` is the stop's `wl_planqueue.Settings` (read from `root` when None); `live` is `(live_plans, writers)` for the turbo picks, None leaving them empty for `with_turbo` to fill."""
-    import wl_ci  # noqa: PLC0415 -- the one PR read
+    import wl_ci
 
     plan_gate, commit_policy = _hooks_pkg()
     top = _console_top(commit_policy, root)

@@ -305,8 +305,8 @@ def prune(root: Path | None = None, keep_days: int = RAW_RETENTION_DAYS) -> list
 
     The rollup and RANK.md live at the ROOT, not inside a day folder, so pruning raw captures never costs a ranked number -- fold() has already extracted them. Measured 2026-09-03: one day of real use is 32 MB / 2,363 files, so an unbounded corpus is ~1 GB a month of data whose only consumer already read it.
     """
-    import re  # noqa: PLC0415
-    import shutil  # noqa: PLC0415
+    import re
+    import shutil
 
     base = root or stats_root()
     if base is None or not base.is_dir():
@@ -327,7 +327,7 @@ def _on_exit() -> None:
         rec = record()
         if rec is not None:
             append(rec)
-    except BaseException:  # noqa: BLE001 -- an instrument must never change the thing it measures
+    except BaseException:
         pass
 
 
@@ -343,15 +343,15 @@ def install() -> None:
             if v is not None:
                 _PSI0[name] = v
         atexit.register(_on_exit)
-    except BaseException:  # noqa: BLE001
+    except BaseException:
         pass
 
 
 def selftest() -> int:
     """Control-first, on a scratch store. Returns the failure count."""
-    import shutil  # noqa: PLC0415
+    import shutil
 
-    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
+    import wl_common
 
     check = wl_common.Checker("indent")
 

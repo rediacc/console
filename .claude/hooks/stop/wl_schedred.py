@@ -314,7 +314,7 @@ def _diagnosis(root, owner, name, run_id):
             "%s/%s" % (owner, name), cwd=str(root), timeout=20, attempts=2, pause=2
         )
         d = diag.diagnose(fetch, run_id)
-    except Exception:  # noqa: BLE001 -- a diagnosis is detail; the red stands without it
+    except Exception:
         return {}, False
     if d.get("verdict") in (None, "unknown"):
         return {}, False
@@ -454,7 +454,7 @@ def refresh(root, worklist, force=False, now=None):
                 doc["push"], doc["push_diag"] = prow, pdiag
         wl_gh.cache_write(cache_path(worklist), doc)
         return doc
-    except Exception as exc:  # noqa: BLE001 -- information and a bounded block, never a crash
+    except Exception as exc:
         return {
             "state": "unreadable",
             "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
@@ -494,7 +494,7 @@ def recent_runs(root, stem, limit=5):
                 _run_row(wf, run if done else dict(run, conclusion=None), in_flight=not done)
             )
         return out, ""
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return [], "%s: %s" % (type(exc).__name__, str(exc)[:160])
 
 
@@ -590,11 +590,11 @@ def _claim_stale(worklist, doc, run_id, now):
     if not isinstance(doc, dict) or doc.get("run") != run_id or not doc.get("sid8"):
         return True
     try:
-        import wl_store as S  # noqa: PLC0415 -- only the claim path needs the briefs
+        import wl_store as S
 
         limit = S.SESSION_BRIEF_STALE_MIN * 60.0
         when, _t = S.read_briefs(worklist).get(str(doc["sid8"]), (None, ""))
-    except Exception:  # noqa: BLE001
+    except Exception:
         return False
     if when is not None:
         return (C.utcnow() - when).total_seconds() > limit
@@ -775,16 +775,16 @@ def session_start_line(worklist):
         if not rows:
             return ""
         try:
-            import wl_store as S  # noqa: PLC0415
+            import wl_store as S
 
             items = S.load(pathlib.Path(worklist), sync=False).items
-        except Exception:  # noqa: BLE001
+        except Exception:
             items = []
         age_s = max(0.0, time.time() - float(doc.get("at") or 0))
         stale = (
             " [cache %d h old, stale]" % (age_s // 3600) if age_s > SESSION_START_STALE_S else ""
         )
-        import worklist_messages as M  # noqa: PLC0415 -- the catalogue owns the wording
+        import worklist_messages as M
 
         lines = []
         for row in rows:
@@ -802,5 +802,5 @@ def session_start_line(worklist):
                 )
             )
         return "\n".join(lines)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return ""
