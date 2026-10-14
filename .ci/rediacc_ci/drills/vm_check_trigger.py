@@ -78,7 +78,10 @@ def make_git(cwd: pathlib.Path) -> Callable[[Sequence[str]], str | None]:
     def run(args: Sequence[str]) -> str | None:
         try:
             proc = subprocess.run(
-                ["git", "-C", str(cwd), *args], capture_output=True, text=True, check=False
+                ["git", "-C", str(cwd), "-c", "core.quotePath=false", *args],
+                capture_output=True,
+                text=True,
+                check=False,
             )
         except OSError:
             return None
@@ -87,6 +90,15 @@ def make_git(cwd: pathlib.Path) -> Callable[[Sequence[str]], str | None]:
         return proc.stdout.rstrip("\n")
 
     return run
+
+
+def _submodule_git(root: pathlib.Path) -> Callable[[Sequence[str]], str | None] | None:
+    """A runner inside the checked-out `private/renet`, or None. An empty directory is not a checkout: git would walk up to the console repository and answer for it."""
+    sub = root / RENET_SUBMODULE
+    git = make_git(sub)
+    if not (sub / ".git").exists() or git(["rev-parse", "--git-dir"]) is None:
+        return None
+    return git
 
 
 def _lines(text: str | None) -> list[str]:
@@ -102,9 +114,8 @@ def _renet_range(
     root: pathlib.Path, old: str, new: str, mode: Mode
 ) -> tuple[list[str], str | None]:
     """(changed renet paths, why the range is unknown or None). `new` is ignored in worktree mode."""
-    sub = root / RENET_SUBMODULE
-    subgit = make_git(sub)
-    if not (sub / ".git").exists() or subgit(["rev-parse", "--git-dir"]) is None:
+    subgit = _submodule_git(root)
+    if subgit is None:
         return [], "private/renet is not checked out"
     if not old:
         return [], "the old side has no private/renet gitlink"
@@ -131,9 +142,9 @@ def _renet_worktree_moved(root: pathlib.Path, old: str, changed: Sequence[str]) 
     """True when the submodule HEAD differs from `old`, or its worktree has edits or untracked files."""
     if RENET_SUBMODULE in changed:
         return True
-    subgit = make_git(root / RENET_SUBMODULE)
-    head = subgit(["rev-parse", "HEAD"])
-    if head is None:
+    subgit = _submodule_git(root)
+    head = subgit(["rev-parse", "HEAD"]) if subgit else None
+    if subgit is None or head is None:
         return False
     return head != old or bool(subgit(["status", "--porcelain"]))
 
@@ -279,7 +290,8 @@ def inputs_of_worktree(root: pathlib.Path) -> str | None:
         entry = _worktree_entry(root, rel)
         if entry is not None:
             lines.append(entry)
-    pointer = make_git(root / RENET_SUBMODULE)(["rev-parse", "HEAD"]) or ""
+    subgit = _submodule_git(root)
+    pointer = (subgit(["rev-parse", "HEAD"]) if subgit else None) or ""
     return _digest(lines, pointer)
 
 
