@@ -11,7 +11,7 @@ Owns: .claude/config/effort.json, .claude/hooks/stop/wl_planqueue.py, .claude/ho
 
 ## Design (from the read-only investigation of 2026-10-14)
 
-Today: 12 switches in the QUEUE.md `## Settings` fence (parsed at wl_planqueue.py:94-101), a per-session `--focus babysit|merge` (worklist.py:246-280, keep-list wl_standdown.py:123), two automatic stand-down profiles (CAP_WAIT, PR_LOOP; wl_standdown.py:120-129), about 130 env knobs (.ci/policy/worklist-env-registry.json), about 75 blocking check keys (registry wl_checks.py:3709) and 52 advisory keys (outq_add, wl_checks.py:1243). `stop_hook: off` returns before every check (worklist.py:2192-2196), safety checks included, and it was flipped 10 times between 2026-10-04 and 2026-10-14.
+Today: 12 switches in the QUEUE.md `## Settings` fence (parsed at .claude/hooks/stop/wl_planqueue.py:94-101), a per-session `--focus babysit|merge` (.claude/hooks/stop/worklist.py:246-280, keep-list .claude/hooks/stop/wl_standdown.py:123), two automatic stand-down profiles (CAP_WAIT, PR_LOOP; .claude/hooks/stop/wl_standdown.py:120-129), about 130 env knobs (.ci/policy/worklist-env-registry.json), about 75 blocking check keys (registry .claude/hooks/stop/wl_checks.py:3709) and 52 advisory keys (outq_add, .claude/hooks/stop/wl_checks.py:1243). `stop_hook: off` returns before every check (.claude/hooks/stop/worklist.py:2192-2196), safety checks included, and it was flipped 10 times between 2026-10-04 and 2026-10-14.
 
 Levels, each a superset of the one before:
 - `quiet`: the FLOOR only (hook-blind, event-unparseable, cl-shape, adhoc-watch*, trapguard-errors, ci-red, ci-unreadable, roster-dead, roster-cap, unread-reports, wake-timer, agent-state and agent-absent when compaction is due). Judge off. Replaces `stop_hook: off`.
@@ -20,11 +20,11 @@ Levels, each a superset of the one before:
 - `high`: every check as today; full judge with riders.
 - `ultra`: high plus the throughput bundle (turbo on, writer_cap 15, plan_concurrency 5, batch_size 3).
 
-`.claude/config/effort.json` holds one threshold per check key, `{"block": "<level>", "advise": "<level>"}` or `"floor"`, and each level's switch bundle. Settings resolve as effort, then bundle, then explicit per-key overrides in the QUEUE.md fence, into the one Settings object every guard already reads (plan_gate.settings_at, plan_gate.py:171). The FLOOR is a literal frozenset in a sealed module beside wl_standdown.CORE, read from no environment variable.
+`.claude/config/effort.json` holds one threshold per check key, `{"block": "<level>", "advise": "<level>"}` or `"floor"`, and each level's switch bundle. Settings resolve as effort, then bundle, then explicit per-key overrides in the QUEUE.md fence, into the one Settings object every guard already reads (plan_gate.settings_at, .claude/rediacc_hooks/plan_gate.py:171). The FLOOR is a literal frozenset in a sealed module beside wl_standdown.CORE, read from no environment variable.
 
 Focus becomes `phase: build|babysit|merge`, a per-session overlay that only parks work and never adds a block. CAP_WAIT and PR_LOOP stay automatic.
 
-The judge also gets two fixes found in this session: it is fed each item's state and latest tick evidence, not only its add text, so finished work is not re-raised; and sanitize_next_action (wl_judge.py:1063) consults a rule list starting with the release-age window (.ci/config/release-age.json), so it cannot advise pinning a release inside its soak.
+The judge also gets two fixes found in this session: it is fed each item's state and latest tick evidence, not only its add text, so finished work is not re-raised; and sanitize_next_action (.claude/hooks/stop/wl_judge.py:1063) consults a rule list starting with the release-age window (.ci/config/release-age.json), so it cannot advise pinning a release inside its soak.
 
 ## Tasks
 

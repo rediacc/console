@@ -285,12 +285,12 @@ The golangci half belongs to WD:
     (ticked) 2026-10-14T12:08:48Z by d778be9d: commit:dee5310da (exec_replace), commit:1bf85a711 (https funnel, redirect check in 19fb3dae7), commit:26bbd72a7 (xml funnel), commit:fa983477c (hoists, BLE001): python-types baseline 648 findings, 0 new, 0 grown; the touched modules tests 521 and 148 passed
 - [x] WC1: e2e.
   - Add the `log.ts` logger; fix require-await, constants.ts and the deprecated members; remove the dead e2e paths from biome.json overrides #18 and #19.
-  - Acceptance: `npm run check:lint:tooling` rc 0; `npx biome lint packages/e2e-tests --error-on-warnings` rc 0; `npx tsc --noEmit -p packages/e2e-tests` rc 0; `--count packages/e2e-tests` reports 0.
-    (ticked) 2026-10-13T19:40:08Z by d778be9d: commit:6ca434160 e2e markers drained (a9ffe368e bdaa4fa05 481d05411 6ca434160); grep finds 0 marker-bearing files under packages/e2e-tests; check:lint:tooling rc=0 in pre-push run 27
+  - Acceptance: `npm run check:lint` (the tooling shard then) rc 0; `npx biome lint packages/e2e-tests --error-on-warnings` rc 0; `npx tsc --noEmit -p packages/e2e-tests` rc 0; `--count packages/e2e-tests` reports 0.
+    (ticked) 2026-10-13T19:40:08Z by d778be9d: commit:6ca434160 e2e markers drained (a9ffe368e bdaa4fa05 481d05411 6ca434160); grep finds 0 marker-bearing files under packages/e2e-tests; the tooling lint shard rc=0 in pre-push run 27
 - [x] WC2: account.
   - i18n the 5 pages across every locale in `private/account/web/src/i18n/locales/`, and fix `private/account/web/src/pages/ConfigMembers.tsx:95`.
-  - Acceptance: `npm run check:lint:account` rc 0; `cd private/account && npm run typecheck:web` rc 0; the account i18n gate rc 0; `--count private/account` reports 0. This is an account submodule PR.
-    (ticked) 2026-10-13T19:40:10Z by d778be9d: commit:4f0063f11 account c6ec4ac and 3145dbe; grep finds 0 marker-bearing files under private/account; check:lint:account rc=0
+  - Acceptance: `npm run check:lint` (the account shard then) rc 0; `cd private/account && npm run typecheck:web` rc 0; the account i18n gate rc 0; `--count private/account` reports 0. This is an account submodule PR.
+    (ticked) 2026-10-13T19:40:10Z by d778be9d: commit:4f0063f11 account c6ec4ac and 3145dbe; grep finds 0 marker-bearing files under private/account; the account lint shard rc=0
 - [x] WD1: renet dead and mechanical.
   - Generator line and regeneration, the dead errchkjson/containedctx directives, unparam, gocritic, nilerr, contextcheck, and the singles.
   - Acceptance: `npm run check:ci-renet` rc 0 (golangci on linux, darwin and windows); `cd private/renet && go test ./...` green for the touched packages.
