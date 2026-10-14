@@ -1,7 +1,8 @@
-"""Inline lint and type suppression markers: the ONE scanner, the gate, and its shrink-only baseline.
+"""Inline lint and type suppression markers: the ONE scanner, and the gate that holds the tree to zero.
 
-WHY THIS EXISTS. Operator ruling 2026-10-08: "statements like '# noq[a]: B010' should be banned: a) with hooks to avoid future edits/inserts b) with CI, fix the existing ones." An inline suppression is a lint finding the author decided not to fix, recorded where no gate reads the reason. This module is the enforcement half. The existing debt (about 2,000 Python markers, ~200 TS/Go/shell
-markers in console, 161 in private/renet and 6 in private/account on the day it landed) is frozen in `.ci/config/inline-suppressions-baseline.json` and may only SHRINK; the cleanup is a separate plan.
+WHY THIS EXISTS. Operator ruling 2026-10-08: "statements like '# noq[a]: B010' should be banned: a) with hooks to avoid future edits/inserts b) with CI, fix the existing ones." An inline suppression is a lint finding the author decided not to fix, recorded where no gate reads the reason. This module is the enforcement half.
+
+ZERO, AND NO BASELINE. The debt on the day the ban landed (about 2,000 Python markers, ~200 TS/Go/shell markers in console, 161 in private/renet and 6 in private/account) was frozen in a shrink-only baseline and drained to zero by agent/plans/PLAN-inline-suppressions.md, whose box F (2026-10-14) deleted that file. Every marker is now a finding, and a file at the old baseline path is a finding too (`baseline_refusal`): a gate that tolerates a baseline can be re-seeded, and a re-seed is how a ban quietly becomes a freeze again.
 
 ONE SCANNER, TWO CLIENTS. `.ci/scripts/quality/check_inline_suppressions.py` (the CI gate) and `.claude/rediacc_hooks/guards/block_suppressions.py` plus `block_suppressions_shell_write.py` (the pre-edit and pre-bash hooks) all call `count_markers` below. A hook with its own private regex drifts from the gate, and the drift always runs the same way: the hook grows lenient, the gate stays strict, and the
 difference shows up as a CI failure nobody could reproduce at the keystroke.
@@ -20,15 +21,13 @@ WIDER THAN THE ORIGINAL ASK, said out loud: shellcheck and hadolint directives w
 
 WHAT IS DELIBERATELY NOT A MARKER: `# pragma: no cove[r]` (a coverage exclusion, not a lint finding being silenced), `# fmt: off`/`skip` (a formatter instruction), `eslint-enable` and `biome-ignore-end` (they CLOSE a suppression rather than open one), and anything in Markdown or JSON (an example is how a rule is taught).
 
-THE BASELINE IS KEYED ON (file, kind, code) WITH A COUNT, never a line number: a line number churns when anything above it moves, and a baseline that churns gets regenerated wholesale, which silently re-absorbs fresh findings. A count per key survives a move and cannot hide an addition, because the addition raises the count. The write path is `shrink_only.write_verdict` over an expansion of those counts into ids, so "the set only
-loses members" is the same shared decision every Python shrink-only gate here makes.
+COUNTS FOR THE HOOKS, LINES FOR THE READER. `count_markers` keys on (kind, code) with a count, never a line, because the pre-edit hooks compare a file before and after an edit, and a move is not growth. The gate's refusal names each marker by file AND line (`locate_markers`); both read one match stream (`_iter_matches`), so the two cannot disagree about what a marker is.
 """
 
 from __future__ import annotations
 
 import collections
 import io
-import json
 import os
 import re
 import subprocess
@@ -38,7 +37,6 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
 from rediacc_ci.core import common
-from rediacc_ci.quality import shrink_only
 
 if TYPE_CHECKING:
     import pathlib
@@ -46,7 +44,8 @@ if TYPE_CHECKING:
 
 Counts = collections.Counter[tuple[str, str]]
 
-BASELINE_REL = ".ci/config/inline-suppressions-baseline.json"
+# The path the drained baseline lived at. It must NOT exist (`baseline_refusal`).
+RETIRED_BASELINE_REL = ".ci/config/inline-suppressions-baseline.json"
 
 # The repositories scanned, as (label, path relative to the root, the marker whose presence proves a checkout). The two submodules are the ones carrying code a linter reads; private/elite (4 shell files, 0 markers) and private/homebrew-tap (a formula) are other repositories' business and are printed as out of scope on every run rather than silently skipped.
 SCOPE = (
@@ -187,9 +186,10 @@ def _eslint_codes(rest: str) -> list[str]:
     return _codes(body)
 
 
-def _add_matches(
-    counts: Counts, text: str, patterns: Iterable[tuple[re.Pattern[str], str]]
-) -> None:
+def _matches(
+    text: str, patterns: Iterable[tuple[re.Pattern[str], str]]
+) -> Iterator[tuple[int, str, str]]:
+    """(offset in `text`, kind, code) for every code of every directive in `text`."""
     for pattern, kind in patterns:
         for match in pattern.finditer(text):
             groups = match.groupdict()
@@ -201,16 +201,41 @@ def _add_matches(
             else:
                 codes = _codes(groups.get("codes") or None)
             for code in codes:
-                counts[(label, code)] += 1
+                yield match.start(), label, code
 
 
-def _python_comments(text: str) -> Iterator[str] | None:
-    """Every COMMENT token in `text`, or None when `tokenize` cannot read it."""
+def _python_comments(text: str) -> list[tuple[int, str]] | None:
+    """(line, text) of every COMMENT token in `text`, or None when `tokenize` cannot read it."""
     try:
         tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
     except (tokenize.TokenError, IndentationError, SyntaxError):
         return None
-    return (tok.string for tok in tokens if tok.type == tokenize.COMMENT)
+    return [(tok.start[0], tok.string) for tok in tokens if tok.type == tokenize.COMMENT]
+
+
+_PATTERNS_BY_LANGUAGE = {
+    "js": _JS_PATTERNS,
+    "go": _GO_PATTERNS,
+    "sh": _SH_PATTERNS,
+    "docker": _DOCKER_PATTERNS,
+}
+
+
+def _iter_matches(text: str, language: str, *, raw: bool = False) -> Iterator[tuple[int, str, str]]:
+    """(1-based line, kind, code) for every marker in `text`, read as `language`: the ONE stream both `count_markers` and `locate_markers` read."""
+    if language == "py":
+        comments = None if raw else _python_comments(text)
+        if comments is None:
+            comments = list(enumerate(text.splitlines(), start=1))
+        for line, comment in comments:
+            for _offset, kind, code in _matches(comment, _PY_PATTERNS):
+                yield line, kind, code
+        return
+    patterns = _PATTERNS_BY_LANGUAGE.get(language)
+    if patterns is None:
+        return
+    for offset, kind, code in _matches(text, patterns):
+        yield text.count("\n", 0, offset) + 1, kind, code
 
 
 def count_markers(text: str, language: str, *, raw: bool = False) -> Counts:
@@ -218,24 +243,14 @@ def count_markers(text: str, language: str, *, raw: bool = False) -> Counts:
 
     `raw=True` skips Python tokenization and reads every line, which is what a caller wants when `text` is not a Python FILE at all -- a fragment, or a program whose STRING literals are the content it is about to write (the pre-bash guard).
     """
-    counts: Counts = collections.Counter()
-    if language == "py":
-        comments = None if raw else _python_comments(text)
-        if comments is None:
-            for line in text.splitlines():
-                _add_matches(counts, line, _PY_PATTERNS)
-        else:
-            for comment in comments:
-                _add_matches(counts, comment, _PY_PATTERNS)
-    elif language == "js":
-        _add_matches(counts, text, _JS_PATTERNS)
-    elif language == "go":
-        _add_matches(counts, text, _GO_PATTERNS)
-    elif language == "sh":
-        _add_matches(counts, text, _SH_PATTERNS)
-    elif language == "docker":
-        _add_matches(counts, text, _DOCKER_PATTERNS)
-    return counts
+    return collections.Counter(
+        (kind, code) for _line, kind, code in _iter_matches(text, language, raw=raw)
+    )
+
+
+def locate_markers(text: str, language: str) -> list[tuple[int, str, str]]:
+    """Sorted (line, kind, code) for every marker in `text`: what the gate's refusal prints."""
+    return sorted(_iter_matches(text, language))
 
 
 def count_any_language(text: str) -> Counts:
@@ -303,6 +318,7 @@ class Scan:
 
     def __init__(self) -> None:
         self.counts: dict[str, Counts] = {}
+        self.located: dict[str, list[tuple[int, str, str]]] = {}
         self.files_by_language: collections.Counter[str] = collections.Counter()
         self.files_by_repo: collections.Counter[str] = collections.Counter()
         self.unreadable: list[str] = []
@@ -333,9 +349,10 @@ def scan_repo(root: pathlib.Path, label: str, prefix: str, scan: Scan) -> None:
         scan.files_by_language[language] += 1
         scan.files_by_repo[label] += 1
         scan.read.append(key)
-        found = count_markers(text, language)
-        if found:
-            scan.counts[key] = found
+        located = locate_markers(text, language)
+        if located:
+            scan.located[key] = located
+            scan.counts[key] = collections.Counter((kind, code) for _line, kind, code in located)
 
 
 def scan_tree(root: pathlib.Path, env: dict[str, str] | None = None) -> Scan:
@@ -349,111 +366,29 @@ def scan_tree(root: pathlib.Path, env: dict[str, str] | None = None) -> Scan:
     return scan
 
 
-# --------------------------------------------------------------------------- the baseline ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- the retired baseline ---------------------------------------------------------------------------
 
 
 def flatten(counts: dict[str, Counts]) -> dict[str, dict[str, int]]:
-    """The baseline's on-disk shape: {file: {"kind code": n}}, sorted, so a diff of the file is readable."""
+    """{file: {"kind code": n}}, sorted: the readable shape of a scan's counts."""
     return {
         path: {"%s %s" % kv: n for kv, n in sorted(per.items())}
         for path, per in sorted(counts.items())
     }
 
 
-def unflatten(raw: dict[str, dict[str, int]]) -> dict[str, Counts]:
-    out: dict[str, Counts] = {}
-    for path, per in raw.items():
-        found: Counts = collections.Counter()
-        for key, n in per.items():
-            kind, _, code = key.partition(" ")
-            found[(kind, code)] = int(n)
-        out[path] = found
-    return out
+def baseline_refusal(root: pathlib.Path) -> str | None:
+    """The refusal for a baseline file that exists, or None when it is absent.
 
-
-def expand_ids(counts: dict[str, Counts]) -> list[str]:
-    """One id per marker occurrence, `path::kind code#i`, so a COUNT baseline can go through the shared SET decision unchanged: a count that rises is a new id, and nothing else is."""
-    return [
-        "%s::%s %s#%d" % (path, kind, code, i)
-        for path, per in sorted(counts.items())
-        for (kind, code), n in sorted(per.items())
-        for i in range(1, n + 1)
-    ]
-
-
-def compare(baseline: dict[str, Counts], current: dict[str, Counts]) -> tuple[list[str], list[str]]:
-    """(grew, shrank): human lines for every (file, kind, code) whose count rose, and every one whose count fell."""
-    grew: list[str] = []
-    shrank: list[str] = []
-    for path in sorted(set(baseline) | set(current)):
-        old = baseline.get(path, collections.Counter())
-        new = current.get(path, collections.Counter())
-        for key in sorted(set(old) | set(new)):
-            before, after = old.get(key, 0), new.get(key, 0)
-            line = "%s: %s  (%d -> %d)" % (path, render_marker(*key), before, after)
-            if after > before:
-                grew.append(line)
-            elif after < before:
-                shrank.append(line)
-    return grew, shrank
-
-
-def read_baseline(path: pathlib.Path) -> dict[str, Counts] | None:
-    if not path.is_file():
+    The baseline drained to zero on 2026-10-14 (PLAN-inline-suppressions box F) and was deleted, so the gate holds the tree to ZERO with nothing in between. A file at the old path, whatever it holds, is a way back to "frozen debt is fine": a seeded copy would be read by nothing, and an empty one invites the next `--write-baseline` to fill it. Its presence is the finding.
+    """
+    if not (root / RETIRED_BASELINE_REL).exists():
         return None
-    doc = json.loads(path.read_text(encoding="utf-8"))
-    return unflatten(doc.get("counts", {}))
-
-
-NOTE = (
-    "SHRINK-ONLY. Inline lint and type suppression markers that existed when operator ruling "
-    "2026-10-08 banned them, counted per (file, marker kind, code), never by line. Written only "
-    "by `.ci/scripts/quality/check_inline_suppressions.py --write-baseline`, which refuses any "
-    "growth. Fix the code; a deliberate project-wide exception is a per-file entry in the "
-    "linter's own config with a BLOCKER: reason (docs/agent-reference/suppressions.md). The goal "
-    "state is an empty map."
-)
-
-
-def write_baseline(path: pathlib.Path, current: dict[str, Counts], *, first_seed: bool) -> int:
-    previous = read_baseline(path)
-    old_ids = expand_ids(previous or {})
-    new_ids = expand_ids(current)
-    added = shrink_only.baseline_additions(old_ids, new_ids)
-    verdict = shrink_only.write_verdict(
-        baseline_exists=previous is not None, first_seed=first_seed, additions=added
+    return (
+        "%s exists. The inline-suppressions baseline was drained to zero and retired on "
+        "2026-10-14; the gate admits no baseline, empty or not. Delete the file and fix any "
+        "marker it was meant to hold." % RETIRED_BASELINE_REL
     )
-    if verdict == "missing-baseline":
-        print(
-            "Refusing to write the baseline: %s does not exist. With no previous baseline "
-            "nothing checks what is absorbed, so deleting the file would switch this rule off. "
-            "A genuine first seed says so: --write-baseline --first-seed." % BASELINE_REL,
-            file=sys.stderr,
-        )
-        return 1
-    if verdict == "would-grow":
-        print(
-            "Refusing to write the baseline: it would GAIN %d marker(s) not in the current one:"
-            % len(added),
-            file=sys.stderr,
-        )
-        grew, _ = compare(previous or {}, current)
-        for line in grew[:40]:
-            print("    %s" % line, file=sys.stderr)
-        print(
-            "  The baseline shrinks. It never grows. Remove the marker and fix the code.\n"
-            "  Do not add it to the baseline.",
-            file=sys.stderr,
-        )
-        return 1
-    body = {"note": NOTE, "counts": flatten(current)}
-    path.write_text(json.dumps(body, indent=1, sort_keys=False) + "\n", encoding="utf-8")
-    drained = len(set(old_ids) - set(new_ids))
-    print(
-        "baseline written: %d marker(s) in %d file(s) (%d before, %d drained, 0 added)"
-        % (len(new_ids), len(current), len(old_ids), drained)
-    )
-    return 0
 
 
 # --------------------------------------------------------------------------- the selftest ---------------------------------------------------------------------------
@@ -584,57 +519,51 @@ def _selftest_cases() -> list[tuple[str, bool, str]]:
         "language: a Dockerfile variant is docker", language_for("deploy/Dockerfile.ci") == "docker"
     )
 
-    base = {"a.py": collections.Counter({("noqa", "F401"): 2})}
-    same = {"a.py": collections.Counter({("noqa", "F401"): 2})}
-    more = {"a.py": collections.Counter({("noqa", "F401"): 2, ("noqa", "B010"): 1})}
-    less = {"a.py": collections.Counter({("noqa", "F401"): 1})}
-    grew, shrank = compare(base, same)
+    py_three = 'x = 1\n"""%s: B010 in a docstring"""\ny = 2  %s: F401\n' % (_NQ, _NQ)
     check(
-        "CONTROL baseline: an untouched tree is silent", grew == [] and shrank == [], (grew, shrank)
-    )
-    grew, shrank = compare(base, more)
-    check(
-        "baseline: a planted marker is growth",
-        len(grew) == 1 and "B010" in grew[0] and shrank == [],
-        grew,
-    )
-    grew, shrank = compare(base, less)
-    check(
-        "baseline: a removed marker is a drain to record", grew == [] and len(shrank) == 1, shrank
-    )
-    swapped = {"a.py": collections.Counter({("noqa", "F401"): 1, ("noqa", "B010"): 1})}
-    grew, shrank = compare(base, swapped)
-    check(
-        "baseline CONTROL: a swap of one code for another is growth AND a drain, not a wash",
-        len(grew) == 1 and len(shrank) == 1,
-    )
-    moved = {"b.py": collections.Counter({("noqa", "F401"): 2})}
-    grew, _ = compare(base, moved)
-    check("baseline: a marker moved to another FILE is growth there", len(grew) == 1)
-    check(
-        "write path: growth is refused by the shared decision",
-        shrink_only.write_verdict(
-            baseline_exists=True,
-            first_seed=False,
-            additions=shrink_only.baseline_additions(expand_ids(base), expand_ids(more)),
-        )
-        == "would-grow",
+        "locate python: the marker is named on its own line",
+        locate_markers(py_three, "py") == [(3, "noqa", "F401")],
+        locate_markers(py_three, "py"),
     )
     check(
-        "CONTROL write path: a drain is allowed",
-        shrink_only.write_verdict(
-            baseline_exists=True,
-            first_seed=False,
-            additions=shrink_only.baseline_additions(expand_ids(base), expand_ids(less)),
-        )
-        is None,
+        "CONTROL locate python: a docstring line is never located",
+        all(line != 2 for line, _k, _c in locate_markers(py_three, "py")),
     )
     check(
-        "write path: a missing baseline is refused without --first-seed",
-        shrink_only.write_verdict(baseline_exists=False, first_seed=False, additions=[])
-        == "missing-baseline",
+        "locate python: an untokenizable file still names the line",
+        locate_markers('s = """open\nx = 1  %s: E501\n' % _NQ, "py") == [(2, "noqa", "E501")],
     )
-    check("round trip: flatten then unflatten is the identity", unflatten(flatten(more)) == more)
+    js_two = "const a = 1;\n// %s-next-line no-undef, no-console\nfoo();\n" % _ESL
+    check(
+        "locate js: each rule of a directive is named on the directive's line",
+        locate_markers(js_two, "js")
+        == [(2, "eslint-disable", "no-console"), (2, "eslint-disable", "no-undef")],
+        locate_markers(js_two, "js"),
+    )
+    check(
+        "locate go: a nolint on line 3",
+        locate_markers("package x\n\nf() %s:gosec\n" % _NOL, "go") == [(3, "nolint", "gosec")],
+    )
+    sh_two = "echo a\nb  %s=SC2086\n" % _SC
+    check(
+        "locate shell: a match that starts at the space before the hash stays on its line",
+        locate_markers(sh_two, "sh") == [(2, "shellcheck-disable", "SC2086")],
+        locate_markers(sh_two, "sh"),
+    )
+    samples = ((py_three, "py"), (js_two, "js"), (sh_two, "sh"))
+    check(
+        "CONTROL locate and count read one stream: their totals agree in every language",
+        all(
+            collections.Counter((k, c) for _l, k, c in locate_markers(text, lang))
+            == count_markers(text, lang)
+            and count_markers(text, lang)
+            for text, lang in samples
+        ),
+    )
+    check(
+        "flatten: the readable shape is {file: {kind code: n}}",
+        flatten({"a.py": collections.Counter({("noqa", "F401"): 2})}) == {"a.py": {"noqa F401": 2}},
+    )
     check(
         "growth(): an untouched count is not growth, a raised one is",
         growth(collections.Counter({("noqa", "X1"): 1}), collections.Counter({("noqa", "X1"): 1}))
@@ -672,7 +601,28 @@ REMEDY = """\
   Fix the code the linter is pointing at. For a deliberate, project-wide exception,
   add a per-file entry to the linter's own config (pyproject.toml per-file-ignores,
   biome.json overrides, .golangci.yml exclusions) carrying a BLOCKER: reason, per
-  docs/agent-reference/suppressions.md. Do not add the marker to the baseline."""
+  docs/agent-reference/suppressions.md. There is no baseline to hold the marker,
+  and none may be created."""
+
+USAGE = "usage: check_inline_suppressions.py [--selftest | --count <pathspec>...]"
+
+
+def argv_refusal(argv: list[str]) -> str | None:
+    """Why `argv` is refused, or None. An argument this gate does not know is a refusal, never ignored: the gate once ignored `--count`'s pathspecs and printed the whole-tree verdict for each (item 3993c728), and a retired `--write-baseline` that silently ran the gate would read as a successful write."""
+    if "--write-baseline" in argv or "--first-seed" in argv:
+        return (
+            "--write-baseline is retired: the inline-suppressions baseline drained to zero and "
+            "was deleted on 2026-10-14, and the gate admits no baseline. Remove the marker and "
+            "fix the code."
+        )
+    if "--selftest" in argv:
+        return None if argv == ["--selftest"] else "--selftest takes no other argument"
+    if argv and argv[0] != "--count":
+        return "unknown argument(s): %s" % " ".join(argv)
+    stray = [a for a in argv[1:] if a.startswith("--")]
+    if stray:
+        return "unknown argument(s) after --count: %s" % " ".join(stray)
+    return None
 
 
 def count_specs(argv: list[str]) -> list[str] | None:
@@ -725,6 +675,10 @@ def report_counts(scan: Scan, specs: list[str]) -> int:
 
 
 def main(argv: list[str], root: pathlib.Path | None = None) -> int:
+    refusal = argv_refusal(argv)
+    if refusal is not None:
+        print("inline-suppressions: %s\n%s" % (refusal, USAGE), file=sys.stderr)
+        return 2
     if "--selftest" in argv:
         return selftest()
     root = root if root is not None else paths.repo_root()
@@ -766,68 +720,30 @@ def main(argv: list[str], root: pathlib.Path | None = None) -> int:
         )
         return 1
 
-    current = scan.counts
-    # A repository that was not checked out locally keeps its baseline entries as they are: it was not read, so it can neither grow nor drain.
-    baseline_path = root / BASELINE_REL
-    if "--write-baseline" in argv:
-        previous = read_baseline(baseline_path) or {}
-        for label in scan.not_checked:
-            for path, per in previous.items():
-                if path.startswith(label + "/"):
-                    current[path] = per
-        return write_baseline(baseline_path, current, first_seed="--first-seed" in argv)
-
-    baseline = read_baseline(baseline_path)
-    if baseline is None:
-        print(
-            "inline-suppressions: %s is missing; there is nothing to hold the tree to."
-            % BASELINE_REL,
-            file=sys.stderr,
-        )
-        return 1
-    for label in scan.not_checked:
-        baseline = {p: c for p, c in baseline.items() if not p.startswith(label + "/")}
-
-    grew, shrank = compare(baseline, current)
-    total = sum(sum(c.values()) for c in current.values())
+    total = sum(len(found) for found in scan.located.values())
     shape = "%d code file(s) read (%s) in %s" % (
         sum(scan.files_by_repo.values()),
         ", ".join("%s %d" % kv for kv in sorted(scan.files_by_language.items())),
         ", ".join("%s %d" % kv for kv in scan.files_by_repo.items()),
     )
     rc = 0
-    if grew:
-        print("✗ %d NEW inline suppression marker(s):" % len(grew), file=sys.stderr)
-        for line in grew:
-            print("    %s" % line, file=sys.stderr)
+    baseline = baseline_refusal(root)
+    if baseline is not None:
+        print("✗ %s" % baseline, file=sys.stderr)
+        rc = 1
+    if total:
+        print(
+            "✗ %d inline suppression marker(s) in %d file(s):" % (total, len(scan.located)),
+            file=sys.stderr,
+        )
+        for path, found in sorted(scan.located.items()):
+            for line, kind, code in found:
+                print("    %s:%d: %s" % (path, line, render_marker(kind, code)), file=sys.stderr)
         print(REMEDY, file=sys.stderr)
         rc = 1
-    if shrank:
-        print(
-            "✗ %d baselined marker count(s) went DOWN. Good; now record the drain in the same commit:"
-            % len(shrank),
-            file=sys.stderr,
-        )
-        for line in shrank[:40]:
-            print("    %s" % line, file=sys.stderr)
-        if len(shrank) > 40:
-            print("    ... and %d more" % (len(shrank) - 40), file=sys.stderr)
-        print(
-            "  Run: .ci/scripts/quality/check_inline_suppressions.py --write-baseline",
-            file=sys.stderr,
-        )
-        rc = 1
     if rc == 0:
-        print(
-            "✓ inline suppressions: %d marker(s) in %d file(s), all baselined, none added"
-            % (total, len(current))
-        )
+        print("✓ inline suppressions: 0 markers, no baseline")
     print("  %s" % shape)
-    by_kind: collections.Counter[str] = collections.Counter()
-    for per in current.values():
-        for (kind, _code), n in per.items():
-            by_kind[kind] += n
-    print("  by kind: %s" % ", ".join("%s %d" % kv for kv in by_kind.most_common()))
     if scan.not_checked:
         print(
             "  NOT CHECKED (not checked out here; a hard failure in CI): %s"

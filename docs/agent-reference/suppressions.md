@@ -14,6 +14,12 @@ A suppression whose stated reason does not hold is worse than no suppression at 
 Worked example (2026-08-05). A Go dependency bump deleted an API renet used, and blocklisting the module at its 0.x line looked reasonable: it would keep emitted telemetry byte-identical while the migration waited. Checking what actually flowed through the call site showed every attribute was already a string, so the "keeps behaviour identical" reason was vacuous — there was no
 behaviour to preserve. The 3-line migration was strictly better, and the suppression would have parked an untrue reason in the tree indefinitely. **Verify the reason before you write it, the same way you would verify a gate's finding.**
 
+### Inline markers are not a mechanism
+
+An inline lint or type suppression (a Python `noqa`, `type: ignore` or `pylint: disable` comment, a TypeScript `@ts-` directive, an `eslint-disable` or `biome-ignore` comment, a Go `nolint`, a shellcheck or hadolint directive) is banned outright (operator ruling 2026-10-08), so none of them appears in the table below.
+`check:ci-inline-suppressions` holds console, private/renet and private/account to zero markers and names each one it finds by file and line. Its shrink-only baseline drained to zero and was deleted (agent/plans/PLAN-inline-suppressions.md box F, 2026-10-14); a file at the old path, `.ci/config/inline-suppressions-baseline.json`, is itself a failure, and `--write-baseline` is refused.
+The pre-edit and pre-bash guards (`block_suppressions.py`, `block_suppressions_shell_write.py`) refuse an edit that adds a marker, through the same scanner. A deliberate exception is a per-file entry in the linter's own config carrying a `BLOCKER:` reason, read by the rows below.
+
 ### Current sites
 
 **WHICH mechanisms exist is derived, not listed.** The authority is the `suppressions` region of [`scripts/data/doc-registry.md`](../../scripts/data/doc-registry.md), rewritten from the tree by `npx tsx scripts/gen/gen-docs.ts --write`: every tracked non-source, non-prose file carrying a `BLOCKER:` line, with its comment form. A new allowlist appears there the moment it exists,
