@@ -8,6 +8,7 @@ The whole gate is covered by `.ci/shadow/w7p2-toolchain-pins.observations.jsonl`
 
 import os
 import pathlib
+import subprocess
 
 import pytest
 
@@ -121,3 +122,51 @@ def test_a9_executes_the_pin_rather_than_reading_it(
         encoding="utf-8",
     )
     assert mod.pin_from_bare_source(mutant, "shellcheck") == ""
+
+
+def _a1_tree(tmp_path: pathlib.Path, mypy: str, versions: str) -> pathlib.Path:
+    """A git tree holding the pins file and the vendored breakpoint versions file, both tracked (A1 reads `git ls-files`)."""
+    root = tmp_path / "tree"
+    (root / ".devcontainer").mkdir(parents=True)
+    (root / ".devcontainer" / "toolchain.env").write_text(
+        "RUFF_VERSION=0.17.0\nMYPY_VERSION=%s\n" % mypy, encoding="utf-8"
+    )
+    (root / ".ci" / "breakpoint").mkdir(parents=True)
+    (root / ".ci" / "breakpoint" / "versions.sh").write_text(versions, encoding="utf-8")
+    for argv in (["init", "-q"], ["add", "-A"]):
+        subprocess.run(["git", "-C", str(root), *argv], check=True, capture_output=True)
+    return root
+
+
+def _a1(root: pathlib.Path, capsys: pytest.CaptureFixture[str]) -> tuple[int, str]:
+    report = mod.Report({"RED": "", "GREEN": "", "NC": ""})
+    mod.check_a1(report, root, root / ".devcontainer" / "toolchain.env")
+    out = capsys.readouterr()
+    return report.fails, out.out + out.err
+
+
+TMATE = 'readonly BREAKPOINT_TMATE_VERSION="2.4.0"\n'
+
+
+def test_a1_excuses_the_named_coincidence_and_prints_it(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fails, text = _a1(_a1_tree(tmp_path, "2.4.0", TMATE), capsys)
+    assert fails == 0, text
+    assert "A1 coincidence (exempt by name): .ci/breakpoint/versions.sh MYPY_VERSION=2.4.0" in text
+
+
+def test_a1_still_reports_a_real_restatement_beside_the_coincidence(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fails, text = _a1(_a1_tree(tmp_path, "2.4.0", TMATE + 'readonly MYPY_PIN="2.4.0"\n'), capsys)
+    assert fails == 1, text
+    assert ".ci/breakpoint/versions.sh restates MYPY_VERSION=2.4.0" in text
+
+
+def test_a1_reports_a_coincidence_entry_that_excuses_nothing(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fails, text = _a1(_a1_tree(tmp_path, "2.3.1", TMATE), capsys)
+    assert fails == 1, text
+    assert "the A1 coincidence entry for MYPY_VERSION excuses nothing" in text
