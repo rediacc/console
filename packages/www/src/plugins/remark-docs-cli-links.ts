@@ -23,6 +23,43 @@ function getFrontmatter(file: RemarkFile): Frontmatter {
   return astro?.frontmatter ?? {};
 }
 
+function isShellFence(node: Code): boolean {
+  return !!node.lang && SHELL_FENCE_LANGS.has(node.lang.toLowerCase());
+}
+
+function isRdcLine(line: string): boolean {
+  const trimmed = line.trim();
+  return !!trimmed && !trimmed.startsWith('#') && trimmed.startsWith('rdc');
+}
+
+function buildCommandLink(command: string, language: string, seen: Set<string>): string | null {
+  const parsed = parseRdcCommand(command);
+  if (!parsed.ok || parsed.rootOnly || !parsed.entry) return null;
+
+  const label = `rdc ${parsed.commandPath}`;
+  if (seen.has(label)) return null;
+  seen.add(label);
+
+  const href = `/${language}/docs/${parsed.entry.slug}#${parsed.entry.anchorId}`;
+  return `<a href="${href}" data-cli-ref-link="true" data-cli-ref-title="${label}">${label}</a>`;
+}
+
+function collectCommandLinks(lines: string[], language: string): string[] {
+  const commands: string[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!isRdcLine(lines[i])) continue;
+
+    const { command, endIndex } = mergeContinuationLines(lines, i);
+    i = endIndex;
+
+    const link = buildCommandLink(command, language, seen);
+    if (link) commands.push(link);
+  }
+  return commands;
+}
+
 export function remarkDocsCliLinks() {
   return function transformer(tree: Root, file: RemarkFile) {
     const { category, language = 'en' } = getFrontmatter(file);
@@ -32,32 +69,9 @@ export function remarkDocsCliLinks() {
 
     visit(tree, 'code', (node: Code, index, parent) => {
       if (index === undefined || !parent) return;
-      if (!node.lang || !SHELL_FENCE_LANGS.has(node.lang.toLowerCase())) return;
+      if (!isShellFence(node)) return;
 
-      const lines = node.value.split(/\r?\n/);
-      const commands: string[] = [];
-      const seen = new Set<string>();
-
-      for (let i = 0; i < lines.length; i++) {
-        const trimmed = lines[i].trim();
-        if (!trimmed || trimmed.startsWith('#') || !trimmed.startsWith('rdc')) continue;
-
-        const { command, endIndex } = mergeContinuationLines(lines, i);
-        i = endIndex;
-
-        const parsed = parseRdcCommand(command);
-        if (!parsed.ok || parsed.rootOnly || !parsed.entry) continue;
-
-        const label = `rdc ${parsed.commandPath}`;
-        if (seen.has(label)) continue;
-        seen.add(label);
-
-        const href = `/${language}/docs/${parsed.entry.slug}#${parsed.entry.anchorId}`;
-        commands.push(
-          `<a href="${href}" data-cli-ref-link="true" data-cli-ref-title="${label}">${label}</a>`
-        );
-      }
-
+      const commands = collectCommandLinks(node.value.split(/\r?\n/), language);
       if (commands.length === 0) return;
 
       const html = `<div class="cli-ref-links"><span class="cli-ref-links-label">${t('documentation.cliReferenceLabel')}</span> ${commands.join(' · ')}</div>`;

@@ -69,7 +69,11 @@ function onKeyDown(e: KeyboardEvent): void {
     return;
   }
   if (e.key !== 'Tab') return;
-  const focusable = root.querySelectorAll<HTMLElement>(FOCUSABLE);
+  trapTab(e, root);
+}
+
+function trapTab(e: KeyboardEvent, container: HTMLElement): void {
+  const focusable = container.querySelectorAll<HTMLElement>(FOCUSABLE);
   if (focusable.length === 0) return;
   const first = focusable[0];
   const last = focusable[focusable.length - 1];

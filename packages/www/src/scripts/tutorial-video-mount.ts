@@ -47,6 +47,54 @@ export function whenVideoAppears(
   });
 }
 
+type SourceSet = TutorialSourceSet;
+
+/** A malformed or absent attribute leaves `sources` undefined. */
+function parseSources(raw: string | undefined): Record<string, SourceSet> | undefined {
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as Record<string, SourceSet>;
+  } catch {
+    return undefined;
+  }
+}
+
+function mountPlayer(
+  el: HTMLElement,
+  TutorialVideoPlayer: typeof import('../components/TutorialVideoPlayer').default
+) {
+  if (el.dataset.hydrated) return;
+  el.dataset.hydrated = 'true';
+
+  const src = el.dataset.videoSrc ?? '';
+  const posterSrc = el.dataset.posterSrc ?? '';
+  const subtitlesSrc = el.dataset.subtitlesSrc ?? '';
+  const chaptersSrc = el.dataset.chaptersSrc ?? '';
+  const wordsSrc = el.dataset.wordsSrc ?? '';
+  // The portrait cut, which only the solution videos ship. Empty means "no portrait cut", and the player then uses the landscape one at every width.
+  const verticalSrc = el.dataset.verticalSrc ?? '';
+  const title = el.dataset.title ?? '';
+  const lang = (el.dataset.lang ?? document.documentElement.lang) || 'en';
+  // One JSON attribute holding <locale> -> {mp4, poster, vtt, chapters, words}, written
+  // by remark-tutorial-embed.ts at build time. A malformed or absent attribute leaves `sources` undefined, and the player then renders without a language picker on the five URLs above -- exactly the behaviour it had before the picker existed.
+  const sources = parseSources(el.dataset.sources);
+
+  const root = createRoot(el);
+  root.render(
+    createElement(TutorialVideoPlayer, {
+      src,
+      posterSrc,
+      subtitlesSrc,
+      chaptersSrc,
+      wordsSrc,
+      verticalSrc,
+      title,
+      lang,
+      sources,
+    })
+  );
+}
+
 export async function mountPlayers(els: HTMLElement[]) {
   const containers = els;
   if (containers.length === 0) return;
@@ -56,45 +104,5 @@ export async function mountPlayers(els: HTMLElement[]) {
     ensurePlayerStyles(),
     import('../components/TutorialVideoPlayer'),
   ]);
-  type SourceSet = TutorialSourceSet;
-
-  containers.forEach((el) => {
-    if (el.dataset.hydrated) return;
-    el.dataset.hydrated = 'true';
-
-    const src = el.dataset.videoSrc ?? '';
-    const posterSrc = el.dataset.posterSrc ?? '';
-    const subtitlesSrc = el.dataset.subtitlesSrc ?? '';
-    const chaptersSrc = el.dataset.chaptersSrc ?? '';
-    const wordsSrc = el.dataset.wordsSrc ?? '';
-    // The portrait cut, which only the solution videos ship. Empty means "no portrait cut", and the player then uses the landscape one at every width.
-    const verticalSrc = el.dataset.verticalSrc ?? '';
-    const title = el.dataset.title ?? '';
-    const lang = (el.dataset.lang ?? document.documentElement.lang) || 'en';
-    // One JSON attribute holding <locale> -> {mp4, poster, vtt, chapters, words}, written
-    // by remark-tutorial-embed.ts at build time. A malformed or absent attribute leaves `sources` undefined, and the player then renders without a language picker on the five URLs above -- exactly the behaviour it had before the picker existed.
-    let sources: Record<string, SourceSet> | undefined;
-    if (el.dataset.sources) {
-      try {
-        sources = JSON.parse(el.dataset.sources) as Record<string, SourceSet>;
-      } catch {
-        sources = undefined;
-      }
-    }
-
-    const root = createRoot(el);
-    root.render(
-      createElement(TutorialVideoPlayer, {
-        src,
-        posterSrc,
-        subtitlesSrc,
-        chaptersSrc,
-        wordsSrc,
-        verticalSrc,
-        title,
-        lang,
-        sources,
-      })
-    );
-  });
+  for (const el of containers) mountPlayer(el, TutorialVideoPlayer);
 }
