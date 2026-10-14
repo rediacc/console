@@ -28,7 +28,6 @@ from rediacc_hooks.tests.test_wl_roster import (
     verdict,
     write_plan,
 )
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 SAID = "all four writer slots are live; the rest is queued\n\n## Remaining\n- queued behind the writer cap"
 CONTINUE = {"verdict": "continue", "reason": "do the next action", "next_action": "sweep the class"}
@@ -77,7 +76,7 @@ def stop(fix, extra: dict | None = None):
     return fix.runj(env)
 
 
-def test_c1_saturated_plus_queued_allows_and_the_judge_is_never_called(wl):  # noqa: F811
+def test_c1_saturated_plus_queued_allows_and_the_judge_is_never_called(wl):
     saturated(wl)
     capturing_judge(wl, CONTINUE)
     got = stop(wl)
@@ -91,7 +90,7 @@ def test_c1_saturated_plus_queued_allows_and_the_judge_is_never_called(wl):  # n
     )
 
 
-def test_c1_control_three_live_writers_block_on_the_free_slot(wl):  # noqa: F811
+def test_c1_control_three_live_writers_block_on_the_free_slot(wl):
     saturated(wl, live=3)
     capturing_judge(wl, CONTINUE)
     got = stop(wl)
@@ -100,7 +99,7 @@ def test_c1_control_three_live_writers_block_on_the_free_slot(wl):  # noqa: F811
     assert "CAP-SATURATED WAIT" not in got.out, got.out[:800]
 
 
-def test_c2_an_open_item_breaks_the_wait(wl):  # noqa: F811
+def test_c2_an_open_item_breaks_the_wait(wl):
     saturated(wl)
     wl.add_item("- [ ] (deadbeef) a plain open item the lead could do now")
     got = stop(wl)
@@ -108,7 +107,7 @@ def test_c2_an_open_item_breaks_the_wait(wl):  # noqa: F811
     assert "CAP-SATURATED WAIT" not in got.out, got.out[:800]
 
 
-def test_c3_the_late_band_with_no_state_doc_keeps_the_state_demand(wl):  # noqa: F811
+def test_c3_the_late_band_with_no_state_doc_keeps_the_state_demand(wl):
     saturated(wl)
     doc = wl.proj / "agent" / wlfix.ME / "STATE.md"
     if doc.exists():
@@ -123,7 +122,7 @@ def test_c3_the_late_band_with_no_state_doc_keeps_the_state_demand(wl):  # noqa:
     assert early.decision == "allow", wl.why("c3-early", "allow", early, "CAP-SATURATED WAIT")
 
 
-def test_c4_a_lease_on_a_finished_worker_still_blocks(wl):  # noqa: F811
+def test_c4_a_lease_on_a_finished_worker_still_blocks(wl):
     saturated(wl)
     mk_sub(wl, "a1000000000000009", "general-purpose", 30, last="end_turn", running=False)
     plant_lease(wl, "dead1", "a1000000000000009")
@@ -132,7 +131,7 @@ def test_c4_a_lease_on_a_finished_worker_still_blocks(wl):  # noqa: F811
     assert "LEASED TO A FINISHED WORKER" in got.out, got.out[:900]
 
 
-def test_c5_an_expired_default_still_executes(wl):  # noqa: F811
+def test_c5_an_expired_default_still_executes(wl):
     saturated(wl)
     with wl.events.open("a", encoding="utf-8") as fh:
         fh.write(
@@ -154,7 +153,7 @@ def test_c5_an_expired_default_still_executes(wl):  # noqa: F811
     assert "DEFAULT" in got.out, got.out[:900]
 
 
-def test_c7_queue_leases_renew_only_while_the_cap_is_full(wl):  # noqa: F811
+def test_c7_queue_leases_renew_only_while_the_cap_is_full(wl):
     """A queue lease near expiry is renewed at 4/4 and left alone at 3/4 (where queue-slot names it)."""
     saturated(wl, queued=0)
     with wl.events.open("a", encoding="utf-8") as fh:
@@ -187,7 +186,7 @@ def test_c7_queue_leases_renew_only_while_the_cap_is_full(wl):  # noqa: F811
     assert renewed[-1]["until"] > until(100), renewed[-1]
 
 
-def test_c7_control_no_renewal_below_the_cap(wl):  # noqa: F811
+def test_c7_control_no_renewal_below_the_cap(wl):
     saturated(wl, live=3, queued=0)
     with wl.events.open("a", encoding="utf-8") as fh:
         for ev in (
@@ -219,7 +218,7 @@ def test_c7_control_no_renewal_below_the_cap(wl):  # noqa: F811
     assert not renewed, "c7-control: a queue lease was renewed with a free slot: %s" % renewed
 
 
-def test_c8_the_quiet_ladder_never_fires_on_a_queue_lease(wl):  # noqa: F811
+def test_c8_the_quiet_ladder_never_fires_on_a_queue_lease(wl):
     """Below the cap too: a queue lease has no worker that can go quiet (step 1)."""
     saturated(wl, live=3, queued=1, queue_age_min=95)
     got = stop(wl)
@@ -267,7 +266,7 @@ def test_c9_every_kept_key_has_a_producer():
     assert not missing, "keep-list keys with no producer: %s" % missing
 
 
-def test_c10_the_verdict_counts_four_live_writers(wl):  # noqa: F811
+def test_c10_the_verdict_counts_four_live_writers(wl):
     saturated(wl)
     v = verdict(wl)
     assert len(v["writers"]) == 4, v["writers"]
@@ -304,7 +303,7 @@ def mutated_hook(fix, filename: str, old: str, new: str) -> None:
         pkg.symlink_to(wlfix.STOP_DIR.parents[1] / "rediacc_hooks")
 
 
-def test_m1_without_roster_dead_in_the_keep_list_a_dead_lease_stands_down(wl):  # noqa: F811
+def test_m1_without_roster_dead_in_the_keep_list_a_dead_lease_stands_down(wl):
     saturated(wl)
     mk_sub(wl, "a1000000000000009", "general-purpose", 30, last="end_turn", running=False)
     plant_lease(wl, "dead1", "a1000000000000009")
@@ -316,7 +315,7 @@ def test_m1_without_roster_dead_in_the_keep_list_a_dead_lease_stands_down(wl):  
     assert got.decision == "allow", "m1: expected the mutated wait to allow: %s" % got.out[:400]
 
 
-def test_m2_without_defer_expired_in_the_keep_list_an_expired_default_stands_down(wl):  # noqa: F811
+def test_m2_without_defer_expired_in_the_keep_list_an_expired_default_stands_down(wl):
     saturated(wl)
     with wl.events.open("a", encoding="utf-8") as fh:
         fh.write(
@@ -340,7 +339,7 @@ def test_m2_without_defer_expired_in_the_keep_list_an_expired_default_stands_dow
     )
 
 
-def test_m3_without_the_late_band_read_the_compaction_case_stands_down(wl):  # noqa: F811
+def test_m3_without_the_late_band_read_the_compaction_case_stands_down(wl):
     saturated(wl)
     (wl.proj / "agent" / wlfix.ME / "STATE.md").unlink()
     mutated_hook(
@@ -353,7 +352,7 @@ def test_m3_without_the_late_band_read_the_compaction_case_stands_down(wl):  # n
     assert got.decision == "allow", "m3: expected the mutated wait to allow: %s" % got.out[:400]
 
 
-def test_m4_without_the_open_items_term_an_open_item_stands_down(wl):  # noqa: F811
+def test_m4_without_the_open_items_term_an_open_item_stands_down(wl):
     saturated(wl)
     wl.add_item("- [ ] (deadbeef) a plain open item the lead could do now")
     mutated_hook(
@@ -368,7 +367,7 @@ def test_m4_without_the_open_items_term_an_open_item_stands_down(wl):  # noqa: F
     )
 
 
-def test_m5_with_an_unreachable_cap_the_saturated_case_is_judged_again(wl):  # noqa: F811
+def test_m5_with_an_unreachable_cap_the_saturated_case_is_judged_again(wl):
     saturated(wl)
     capturing_judge(wl, CONTINUE)
     mutated_hook(
@@ -401,7 +400,7 @@ def held_queue(fix, unheld: bool = False) -> None:
         plant_lease(fix, "e2000002", "queue", lease_age_min=20, text=linked(e, "startable"))
 
 
-def test_c11_every_queued_item_held_is_a_concurrency_saturated_wait(wl):  # noqa: F811
+def test_c11_every_queued_item_held_is_a_concurrency_saturated_wait(wl):
     held_queue(wl)
     capturing_judge(wl, CONTINUE)
     got = stop(wl)
@@ -412,7 +411,7 @@ def test_c11_every_queued_item_held_is_a_concurrency_saturated_wait(wl):  # noqa
     assert not (wl.base / "prompt.txt").exists(), "c11: the judge was consulted in the wait"
 
 
-def test_c11_control_one_unheld_queued_item_blocks_on_the_free_slot(wl):  # noqa: F811
+def test_c11_control_one_unheld_queued_item_blocks_on_the_free_slot(wl):
     held_queue(wl, unheld=True)
     capturing_judge(wl, CONTINUE)
     got = stop(wl)
@@ -423,7 +422,7 @@ def test_c11_control_one_unheld_queued_item_blocks_on_the_free_slot(wl):  # noqa
     assert "CONCURRENCY-SATURATED WAIT" not in got.out, got.out[:900]
 
 
-def test_c11_the_verdict_says_every_queued_item_is_held(wl):  # noqa: F811
+def test_c11_the_verdict_says_every_queued_item_is_held(wl):
     held_queue(wl)
     v = verdict(wl)
     assert [i for i, _why in v["queue_conc_held"]] == ["f2000000", "f2000001"], v
@@ -431,7 +430,7 @@ def test_c11_the_verdict_says_every_queued_item_is_held(wl):  # noqa: F811
     assert v["queued"] == 2, v
 
 
-def test_m6_without_the_concurrency_term_the_held_queue_is_judged_again(wl):  # noqa: F811
+def test_m6_without_the_concurrency_term_the_held_queue_is_judged_again(wl):
     held_queue(wl)
     capturing_judge(wl, CONTINUE)
     mutated_hook(
@@ -445,7 +444,7 @@ def test_m6_without_the_concurrency_term_the_held_queue_is_judged_again(wl):  # 
     assert (wl.base / "prompt.txt").exists(), "m6: with the wait off, the judge should be consulted"
 
 
-def test_c12_a_held_queue_lease_renews_beside_a_free_slot(wl):  # noqa: F811
+def test_c12_a_held_queue_lease_renews_beside_a_free_slot(wl):
     """It waits on the holder, not on the lead: letting it expire into an open item would demand a start the spawn guard refuses."""
     held_queue(wl)
     near = until(10)

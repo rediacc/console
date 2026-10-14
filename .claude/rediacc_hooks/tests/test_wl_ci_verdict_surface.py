@@ -12,10 +12,10 @@ import subprocess
 import sys
 
 import pytest
+import wl_gh
 
 from rediacc_hooks import hookio
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
 CV = wlfix.import_wl("wl_civerdict")
@@ -257,7 +257,7 @@ def _stop_env(extra=None):
     return env
 
 
-def test_the_stop_hook_shows_the_verdict_once_per_session(wl):  # noqa: F811
+def test_the_stop_hook_shows_the_verdict_once_per_session(wl):
     wl.setup()
     wl.brief_now()
     CV.write_cache(
@@ -272,7 +272,7 @@ def test_the_stop_hook_shows_the_verdict_once_per_session(wl):  # noqa: F811
     assert "CI VERDICT for" in peer.out, "a second session gets its own notice: %s" % peer.out[:800]
 
 
-def test_the_stop_hook_stays_silent_without_a_verdict(wl):  # noqa: F811
+def test_the_stop_hook_stays_silent_without_a_verdict(wl):
     wl.setup()
     wl.brief_now()
     got = wl.run(_stop_env())
@@ -572,7 +572,6 @@ def test_open_pr_exists_reads_gh_count_and_fails_open_when_unanswered(tmp_path, 
 
 def test_open_pr_exists_reads_through_the_shared_bounded_read(monkeypatch, tmp_path):
     """The default read is wl_gh.read_raw, the hooks' one gh read with the transient retry (check:ci-gh-retry-reads), not a one-shot subprocess."""
-    import wl_gh  # noqa: PLC0415
 
     seen = []
 

@@ -18,7 +18,6 @@ import sys
 import time
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # --- the checklist bodies the cases plant -----------------------------------
 
@@ -212,7 +211,7 @@ print("TEXT", "THIS IS A HOOK BUG" in v[0][2])
 """
 
 
-def test_191_root_resolution_must_not_walk_into_a_repo_nested_in_the_repo(wl):  # noqa: F811
+def test_191_root_resolution_must_not_walk_into_a_repo_nested_in_the_repo(wl):
     """THE DEFECT, measured live on 2026-08-06: the Stop event's cwd is wherever the session last worked, and this tree holds repos INSIDE the repo, submodules (private/renet) and gitignored non-submodule siblings (private/growth). Every root resolution started from that cwd, so project_root() stopped at the NESTED repo and the branch check read ITS branch: a session on 0804-1 was
     ordered to bootstrap agent/main/ because private/growth happened to be on main.
 
@@ -275,7 +274,7 @@ def test_191_root_resolution_must_not_walk_into_a_repo_nested_in_the_repo(wl):  
     )
 
 
-def test_193_zero_overhead_a_repo_with_no_checklist_never_hears_the_word(wl):  # noqa: F811
+def test_193_zero_overhead_a_repo_with_no_checklist_never_hears_the_word(wl):
     """The cost claim in wl_checklist's docstring is that a repo keeping no handoffs pays one glob and says nothing. That is only half a control: a silent gate and a dead gate look identical from here, so the second leg plants one checklist into the SAME fixture and demands the words appear."""
     wl.say("done for now")
     wl.brief_now()
@@ -293,7 +292,7 @@ def test_193_zero_overhead_a_repo_with_no_checklist_never_hears_the_word(wl):  #
     assert "handoff" in got.out.lower(), dead
 
 
-def test_194_a_missing_deliverable_blocks_its_owner_then_the_flip_is_all_that_remains(wl):  # noqa: F811
+def test_194_a_missing_deliverable_blocks_its_owner_then_the_flip_is_all_that_remains(wl):
     """194: producing plus a missing deliverable blocks its OWNER, and the row names the file and the verdict. 194b continues on the same world: with everything verified, ONE step is left and it is the status flip."""
     wl.say("done for now")
     wl.brief_now()
@@ -317,7 +316,7 @@ def test_194_a_missing_deliverable_blocks_its_owner_then_the_flip_is_all_that_re
     assert "DO NOT VERIFY" not in got.out, flip
 
 
-def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # noqa: F811
+def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):
     """195: another session's producing handoff rides the report and blocks nobody, and a LIVE owner gets no adoption hint, which would be a land grab. 195b continues on the same world with the owner's transcript DEAD: projects_dir is the transcript's own directory (wl_checks.py:1678), so an aged cafe0000*.jsonl beside the fixture transcript is exactly what owner_age_hours reads.
     Planted rather than mocked, for that reason.
     """
@@ -367,7 +366,7 @@ def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # 
     )
 
 
-def test_196_a_ticked_box_does_not_save_a_deliverable_that_is_not_on_disk(wl):  # noqa: F811
+def test_196_a_ticked_box_does_not_save_a_deliverable_that_is_not_on_disk(wl):
     """196: the file is the truth, the tick is bookkeeping. The wave is claimed by a peer rather than ticked, so the deliverable check is the ONLY thing that can speak here and the control below is a real allow instead of a different violation wearing the same fixture. 196b continues: EMPTY is not MISSING, and the row says which."""
     wl.say("done for now")
     wl.brief_now()
@@ -389,7 +388,7 @@ def test_196_a_ticked_box_does_not_save_a_deliverable_that_is_not_on_disk(wl):  
     wl.check("allow", "", "196b CONTROL: a non-empty file clears the check entirely")
 
 
-def test_197_an_uncovered_wave_blocks_then_the_add_moves_it_into_the_open_items_check(wl):  # noqa: F811
+def test_197_an_uncovered_wave_blocks_then_the_add_moves_it_into_the_open_items_check(wl):
     """197: an UNCOVERED wave blocks and carries its own one-command exit. 197b continues on the same world and asserts DISJOINTNESS, not merely absence: the cl-waves needle must go while the open item it created appears, because a gate that stopped firing AND took the work with it would look identical from a one-needle assertion."""
     wl.say("done for now")
     wl.brief_now()
@@ -410,7 +409,7 @@ def test_197_an_uncovered_wave_blocks_then_the_add_moves_it_into_the_open_items_
     assert "cl:demo/w1" in got.out, disjoint
 
 
-def test_197c_a_peers_item_covers_the_wave_for_everybody(wl):  # noqa: F811
+def test_197c_a_peers_item_covers_the_wave_for_everybody(wl):
     """Which is the point: once ANY session claims the wave, the redundant block on the others lifts."""
     wl.say("done for now")
     wl.brief_now()
@@ -425,7 +424,7 @@ def test_197c_a_peers_item_covers_the_wave_for_everybody(wl):  # noqa: F811
     assert '"decision": "block"' not in got.out, claimed
 
 
-def test_198_done_but_unticked_the_store_settled_it_and_the_box_did_not(wl):  # noqa: F811
+def test_198_done_but_unticked_the_store_settled_it_and_the_box_did_not(wl):
     """A ticked store item with an unticked box is called out, with the box to tick named."""
     wl.say("done for now")
     wl.brief_now()
@@ -441,7 +440,7 @@ def test_198_done_but_unticked_the_store_settled_it_and_the_box_did_not(wl):  # 
     assert "tick '- [x] w1' in agent/programs/demo/CHECKLIST.md" in got.out, settled
 
 
-def test_198c_a_wave_closed_through_a_door_must_not_be_told_to_tick_its_box(wl):  # noqa: F811
+def test_198c_a_wave_closed_through_a_door_must_not_be_told_to_tick_its_box(wl):
     """A door-closed wave is covered and correctly unticked, so demanding a tick would demand a FALSE one for work no session did."""
     wl.say("done for now")
     wl.brief_now()
@@ -463,7 +462,7 @@ def test_198c_a_wave_closed_through_a_door_must_not_be_told_to_tick_its_box(wl):
     )
 
 
-def test_198d_control_the_same_wave_without_a_door_still_demands_its_tick(wl):  # noqa: F811
+def test_198d_control_the_same_wave_without_a_door_still_demands_its_tick(wl):
     """198d is the CONTROL for 198c: it fires, so 198c passes because of the door and not because the check went silent. 198b continues on the same world: every box ticked under 'executing' means the status is stale, and the checklist is asked for the last edit it needs."""
     wl.say("done for now")
     wl.brief_now()
@@ -486,7 +485,7 @@ def test_198d_control_the_same_wave_without_a_door_still_demands_its_tick(wl):  
     )
 
 
-def test_199_done_is_inactive_and_is_gated_on_being_honestly_done(wl):  # noqa: F811
+def test_199_done_is_inactive_and_is_gated_on_being_honestly_done(wl):
     """199: a genuinely done handoff costs a later session nothing at all, while 'done' with an unticked wave is a lie the next session would believe. 199b continues on the same world: 'superseded' is the terminal escape and adjudicates nothing, so an abandoned program stops costing anything the moment it says so."""
     wl.say("done for now")
     wl.brief_now()
@@ -513,7 +512,7 @@ def test_199_done_is_inactive_and_is_gated_on_being_honestly_done(wl):  # noqa: 
     assert '"decision": "block"' not in got.out, abandoned
 
 
-def test_200_the_shape_gate_collects_every_defect_and_scopes_itself_to_the_bad_file(wl):  # noqa: F811
+def test_200_the_shape_gate_collects_every_defect_and_scopes_itself_to_the_bad_file(wl):
     """One error per stop would cost one turn per typo, so the parser collects them all. The clean checklist alongside is the control: a malformed file must not smear its verdict over its neighbours."""
     wl.say("done for now")
     wl.brief_now()
@@ -539,7 +538,7 @@ def test_200_the_shape_gate_collects_every_defect_and_scopes_itself_to_the_bad_f
     assert "agent/programs/good/CHECKLIST.md" not in got.out, smear
 
 
-def test_202_an_unreadable_checklist_fails_closed_under_its_own_slug(wl):  # noqa: F811
+def test_202_an_unreadable_checklist_fails_closed_under_its_own_slug(wl):
     """A chmod-000 checklist is the instrument: the ADJUDICATION (which reads) must fail closed into the ALWAYS-tier unreadable violation. The key it fails closed UNDER is asserted too, and it is per-slug (`cl-shape:locked`) for the reason case 204 pins: one unreadable checklist must not evict a second one from the rotation.
 
     The stat-only `checklists_sig` half of this case went with the poll fast path on 2026-09-24.
@@ -565,7 +564,7 @@ def test_202_an_unreadable_checklist_fails_closed_under_its_own_slug(wl):  # noq
     locked.unlink()
 
 
-def test_203_session_start_hands_a_new_session_the_live_checklists(wl):  # noqa: F811
+def test_203_session_start_hands_a_new_session_the_live_checklists(wl):
     """The listing carries status, owner and both progress fractions, and the CONTROL that follows keeps a settled checklist out of it: a done handoff is not context anyone needs handed back."""
     cldeliver(wl, "docs/demo/README.md", "the readme")
     clfile(wl, "demo", CL_SESSION_START)

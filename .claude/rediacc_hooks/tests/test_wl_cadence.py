@@ -18,7 +18,6 @@ import sys
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import additem, cldeliver, clfile, pyprobe
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # --- the checklist bodies the cases plant -----------------------------------
 
@@ -161,7 +160,7 @@ def pa_hook(fix, question: str, header: str) -> subprocess.CompletedProcess:
     )
 
 
-def test_211_a_door_parked_wave_is_reported_never_blocked_on(wl):  # noqa: F811
+def test_211_a_door_parked_wave_is_reported_never_blocked_on(wl):
     """`_wave_rows` deliberately emits nothing for a wave whose covering items were all closed through a door: the work did not happen, no session can make it happen, and demanding a tick would be demanding a lie. That reasoning is right, and it skipped the wave into TOTAL silence: no violation, and its item is `[x]` so it has also left `--list --open`. Nothing surfaced it again,
     ever.
 
@@ -188,7 +187,7 @@ def test_211_a_door_parked_wave_is_reported_never_blocked_on(wl):  # noqa: F811
     )
 
 
-def test_211c_control_closed_without_a_door_is_a_different_thing_entirely(wl):  # noqa: F811
+def test_211c_control_closed_without_a_door_is_a_different_thing_entirely(wl):
     """An item ticked by DOING the work leaves the wave genuinely done-but-unticked, which is a VIOLATION with its own exit, not a door advisory. If this case ever starts printing the advisory, the door detector has stopped reading doors and is matching every closed item."""
     wl.say("done for now\n\n## Remaining\n- nothing")
     wl.brief_now()
@@ -203,7 +202,7 @@ def test_211c_control_closed_without_a_door_is_a_different_thing_entirely(wl):  
     assert "door:" not in got.out, doorless
 
 
-def test_213_the_block_counter_is_session_scoped(wl):  # noqa: F811
+def test_213_the_block_counter_is_session_scoped(wl):
     """It was a single shared `.blocks` for the whole worktree. With roughly 48 addressable sessions here, one peer's clean allow deleted another session's judge streak and one peer's block inflated it, so every decision keyed off the streak was reading someone else's work. Fixed before the cadence lands, because the cadence's cap is the next thing to key off block streaks.
 
     213b CONTROL continues on the same world, and it is the whole point: plant a peer's streak, take one more stop, and it must survive byte for byte. Under the old shared file this stop would have overwritten or deleted it.
@@ -225,7 +224,7 @@ def test_213_the_block_counter_is_session_scoped(wl):  # noqa: F811
     assert survived == "7", "213b CONTROL: peer streak became %r" % survived
 
 
-def test_214_the_cadence_stands_down_for_one_turn_after_being_answered(wl):  # noqa: F811
+def test_214_the_cadence_stands_down_for_one_turn_after_being_answered(wl):
     """The operator's ask was one report or update, then one turn for other work. The acceptance test is the plan's own sentence, that the cadence must make it easier to be HEARD and not easier to STOP, so every guard below exists because the naive version fails it. These are the ONLY cases that exercise the cadence: `run` defaults it off.
 
     THE FIXTURE CHANGED ON 2026-08-27 and the change is the case's subject now, so read this before "restoring" it. It used to be an OPEN ITEM plus a live worker, and it pinned that a session holding open work could be handed its quiet turn. The operator asked for the opposite, since the pause message fired far too often and should be the last chance rather than the first. Guard
@@ -246,7 +245,7 @@ def test_214_the_cadence_stands_down_for_one_turn_after_being_answered(wl):  # n
     assert "still outstanding" in got.out, paused
 
 
-def test_214b_guard_b_an_unchanged_message_buys_nothing(wl):  # noqa: F811
+def test_214b_guard_b_an_unchanged_message_buys_nothing(wl):
     """Without this a session emits an empty turn after every block and gets a free allow every other stop, which is the exact regression the cadence must not be. No `say` between the two stops here, so the assistant message is byte-identical.
 
     The same non-actionable fixture as 214, for the same reason: with an open item the pause is refused by guard (E) and this case would pass without ever exercising guard B, green, and proving nothing about the thing it is named after.
@@ -266,7 +265,7 @@ def test_214b_guard_b_an_unchanged_message_buys_nothing(wl):  # noqa: F811
     )
 
 
-def test_214c_guard_a_the_always_tier_defeats_the_pause(wl):  # noqa: F811
+def test_214c_guard_a_the_always_tier_defeats_the_pause(wl):
     """The integrity tier is the reason this machinery exists. A session that just answered still does not get a quiet turn while something urgent is outstanding. Non-actionable fixture, as 214: otherwise guard (E) refuses the pause first and this case stops testing guard A at all.
 
     STDERR IS CAPTURED, NOT DISCARDED. This case failed once in CI with an EMPTY output and passed locally at 735/0, and a discarded stderr is precisely why that was undiagnosable: an empty stdout looks identical whether the hook decided to allow or died before deciding. A test that cannot say WHICH of those happened sends its reader guessing at a difference the machine already
@@ -288,7 +287,7 @@ def test_214c_guard_a_the_always_tier_defeats_the_pause(wl):  # noqa: F811
     )
 
 
-def test_214d_a_clean_stop_consumes_the_debt(wl):  # noqa: F811
+def test_214d_a_clean_stop_consumes_the_debt(wl):
     """The hook owes a quiet turn to a session it just interrupted, not a voucher redeemable whenever that session next happens to be blocked. Found by case 3619: block, clean allow, new item, and the new item was silently paused.
 
     Non-actionable fixture, as 214. The debt is spent by DROPPING the finding line rather than by ticking an item, which is the same three-stop shape: violation, clean stop, violation again.
@@ -310,7 +309,7 @@ def test_214d_a_clean_stop_consumes_the_debt(wl):  # noqa: F811
     )
 
 
-def test_214e_the_kill_switch_restores_the_old_behaviour_exactly(wl):  # noqa: F811
+def test_214e_the_kill_switch_restores_the_old_behaviour_exactly(wl):
     """The kill switch has to work, or there is no way back if this proves wrong in daily use. Non-actionable fixture, as 214: with an open item this stop would block under guard (E) whatever the kill switch said, so the case could not tell the switch working from the switch being ignored."""
     wl.settings(cadence="off")
     wl.say(CADENCE_ANSWER)
@@ -324,7 +323,7 @@ def test_214e_the_kill_switch_restores_the_old_behaviour_exactly(wl):  # noqa: F
     )
 
 
-def test_214f_guard_e_actionable_work_in_hand_refuses_the_pause(wl):  # noqa: F811
+def test_214f_guard_e_actionable_work_in_hand_refuses_the_pause(wl):
     """The other half of 214, and the operator's actual complaint: the pause fired far too often when there was plenty in hand. This is 214's ORIGINAL fixture, verbatim: an open item plus a live worker, so the always-tier idle-stall gate stands down (a background worker is running) and `open-items` is the only outstanding check, rotating and therefore pausable under every guard
     except (E). Before (E) this stop was PAUSED, which is the exact turn the operator wanted back. Now it demands.
 
@@ -346,7 +345,7 @@ def test_214f_guard_e_actionable_work_in_hand_refuses_the_pause(wl):  # noqa: F8
     assert "but this stop is YOURS" not in got.out, survived
 
 
-def test_214g_guard_f_an_unfinished_mission_refuses_the_pause(wl):  # noqa: F811
+def test_214g_guard_f_an_unfinished_mission_refuses_the_pause(wl):
     """The operator's sentence, made executable: there should be a list of what has to be shown with this order, and until every one of them is checked off no stop may claim the turn for itself.
 
     Guard (E) already refuses the pause while there is an open item, a pending task or a live lease, but that is a non-empty queue, which is not the same fact as the job being done. The fixture below has an EMPTY board and an unticked program wave: nothing actionable in the worklist sense, and the thing the session was handed is plainly unfinished. Before (F) this stop was handed
@@ -369,7 +368,7 @@ def test_214g_guard_f_an_unfinished_mission_refuses_the_pause(wl):  # noqa: F811
     assert "but this stop is YOURS" not in got.out, survived
 
 
-def test_214h_control_the_same_fixture_with_the_mission_settled_still_pauses(wl):  # noqa: F811
+def test_214h_control_the_same_fixture_with_the_mission_settled_still_pauses(wl):
     """Without this, 214g is satisfied by a hook that had simply stopped pausing. The wave is ticked and the checklist flipped done, so the only thing left is a rotating nag with nothing actionable behind it, which is 214's own shape."""
     wl.settings(cadence="on")
     wl.brief_now()
@@ -387,7 +386,7 @@ def test_214h_control_the_same_fixture_with_the_mission_settled_still_pauses(wl)
     assert "still outstanding" in got.out, swallowed
 
 
-def test_222_the_idle_stall_gate_an_open_item_nobody_carrying_it_nothing_moved(wl):  # noqa: F811
+def test_222_the_idle_stall_gate_an_open_item_nobody_carrying_it_nothing_moved(wl):
     """WHY (operator, 2026-08-26): stopping with remaining items while there is neither a background agent nor a running monitor or shell is very annoying, and those items were plainly not blocked on a dependency or on a question.
 
     `open-items` already existed and was already a violation: it is in the ROTATING tier, which is what the cadence above is allowed to pause (case 214 pins exactly that). So the observed loop was legal: block, say something new, get a pause, repeat. The v21 gate is the ALWAYS-tier backstop for the one shape where a pause is never right, and the controls below are the whole point:
@@ -416,7 +415,7 @@ def test_222_the_idle_stall_gate_an_open_item_nobody_carrying_it_nothing_moved(w
     )
 
 
-def test_222b_control_an_item_ticked_between_the_two_stops_is_silent(wl):  # noqa: F811
+def test_222b_control_an_item_ticked_between_the_two_stops_is_silent(wl):
     """The single most important control. If this ever starts firing, the gate has stopped measuring progress and is just counting open items."""
     wl.say("answer\n\n## Remaining\n- two things")
     wl.brief_now()
@@ -435,7 +434,7 @@ def test_222b_control_an_item_ticked_between_the_two_stops_is_silent(wl):  # noq
     wl.check_quiet("ACTIONABLE WORK IN HAND", "222b CONTROL: real progress leaves the gate silent")
 
 
-def test_222c_control_an_item_moved_to_a_deferral_with_a_default_is_silent(wl):  # noqa: F811
+def test_222c_control_an_item_moved_to_a_deferral_with_a_default_is_silent(wl):
     """Parking a decision on the operator is a legitimate stop."""
     wl.say("answer\n\n## Remaining\n- the decision")
     wl.brief_now()
@@ -453,7 +452,7 @@ def test_222c_control_an_item_moved_to_a_deferral_with_a_default_is_silent(wl): 
     )
 
 
-def test_222d_control_every_item_leased_to_a_live_worker_is_silent(wl):  # noqa: F811
+def test_222d_control_every_item_leased_to_a_live_worker_is_silent(wl):
     """A live lease is not a stall."""
     wl.say("answer\n\n## Remaining\n- delegated")
     wl.brief_now()
@@ -469,7 +468,7 @@ def test_222d_control_every_item_leased_to_a_live_worker_is_silent(wl):  # noqa:
     wl.check_quiet("ACTIONABLE WORK IN HAND", "222d CONTROL: a live lease is not a stall")
 
 
-def test_222e_control_an_open_item_with_a_running_worker_is_silent(wl):  # noqa: F811
+def test_222e_control_an_open_item_with_a_running_worker_is_silent(wl):
     """Narrower than 222d on purpose: the operator's complaint names the absence of a background agent, so a session that HAS one is supervising, not stalling."""
     wl.say("answer\n\n## Remaining\n- the thing")
     wl.brief_now()
@@ -484,7 +483,7 @@ def test_222e_control_an_open_item_with_a_running_worker_is_silent(wl):  # noqa:
     )
 
 
-def test_222f_the_cadence_cannot_pause_the_idle_stall_gate(wl):  # noqa: F811
+def test_222f_the_cadence_cannot_pause_the_idle_stall_gate(wl):
     """The regression this whole gate exists for: an open item with NOBODY carrying it. Byte for byte case 214f's fixture, except no background worker, which is what moves the refusal from the rotating `open-items` check to the always-tier idle-stall gate, and that is exactly the needle below. This comment named case 214 until 2026-08-27; 214's fixture is non-actionable now, and
     214f inherited the open-item-plus-worker shape.
     """
@@ -503,7 +502,7 @@ def test_222f_the_cadence_cannot_pause_the_idle_stall_gate(wl):  # noqa: F811
     )
 
 
-def test_222g_the_tell_a_remaining_line_claiming_the_item_is_unblocked(wl):  # noqa: F811
+def test_222g_the_tell_a_remaining_line_claiming_the_item_is_unblocked(wl):
     """The specific admission the operator caught: a claim that an item has no blocker, written into the very section that is supposed to explain why the work has stopped."""
     wl.say("answer\n\n## Remaining\n- #a1 finish the migration -- blocked on: nothing, next up")
     wl.brief_now()
@@ -517,7 +516,7 @@ def test_222g_the_tell_a_remaining_line_claiming_the_item_is_unblocked(wl):  # n
     )
 
 
-def test_222h_control_writing_about_the_phrase_does_not_trip_it(wl):  # noqa: F811
+def test_222h_control_writing_about_the_phrase_does_not_trip_it(wl):
     """The V_FOUND_NOT_FIXED precedent: a gate that cannot survive being described is too broad, and every message discussing this check quotes its own trigger."""
     wl.say(
         "answer\n\n## Remaining\n- the gate now refuses a line reading `blocked on: nothing` -- see the new case"
@@ -531,7 +530,7 @@ def test_222h_control_writing_about_the_phrase_does_not_trip_it(wl):  # noqa: F8
     )
 
 
-def test_222i_control_a_bare_nothing_remaining_is_not_a_claim(wl):  # noqa: F811
+def test_222i_control_a_bare_nothing_remaining_is_not_a_claim(wl):
     """An empty Remaining LIST is the opposite of asserting that a listed item has no blocker. Matching it would fire the gate on the cleanest report shape in the suite."""
     wl.say("answer\n\n## Remaining\n- nothing")
     wl.brief_now()
@@ -544,7 +543,7 @@ def test_222i_control_a_bare_nothing_remaining_is_not_a_claim(wl):  # noqa: F811
     )
 
 
-def test_222j_the_failure_path_a_raising_gate_must_not_wedge_or_wave_through(wl):  # noqa: F811
+def test_222j_the_failure_path_a_raising_gate_must_not_wedge_or_wave_through(wl):
     """A check that throws is worse than one that is absent (case 99 makes the same point for the hook as a whole). Both guards are exercised: the wrapper at the call site, and `closed_sig`'s own swallow.
 
     THE META-CONTROL is the second assertion: the planted raise really was reachable. Without it, this case passes on a rewrite that matched nothing.
@@ -583,7 +582,7 @@ def test_222j_the_failure_path_a_raising_gate_must_not_wedge_or_wave_through(wl)
     )
 
 
-def test_223_the_pending_ask_gate_an_ask_announced_and_never_made(wl):  # noqa: F811
+def test_223_the_pending_ask_gate_an_ask_announced_and_never_made(wl):
     """THE COST, as a sequence rather than an argument. A session writes `two questions for you` and stops. The operator spends a turn saying to ask. The session calls AskUserQuestion, and the pre-ask guard refuses it as something CLAUDE.md already answers. The removable cost is THE OPERATOR'S TURN, and a Stop hook that blocks is the only place in the chain that reaches it: every
     later hook runs after the turn is gone.
 
@@ -611,7 +610,7 @@ def test_223_the_pending_ask_gate_an_ask_announced_and_never_made(wl):  # noqa: 
     wl.check("block", "answer it yourself from the code", "223: it offers settling it")
 
 
-def test_223b_control_the_same_message_with_the_ask_actually_made_is_silent(wl):  # noqa: F811
+def test_223b_control_the_same_message_with_the_ask_actually_made_is_silent(wl):
     """One byte of fixture state apart from 223: an assistant record whose only block is a tool_use for AskUserQuestion, in the same turn. `used_tool` exists for this; `say` writes text blocks only, so before it there was no way to fixture a session that called the tool and this control could not have been written."""
     wl.brief_now()
     wl.hand_now()
@@ -620,7 +619,7 @@ def test_223b_control_the_same_message_with_the_ask_actually_made_is_silent(wl):
     wl.check_quiet("YOU ANNOUNCED A QUESTION", "223b CONTROL: asking it satisfies the gate")
 
 
-def test_223c_control_the_same_message_with_a_defer_this_turn_is_silent(wl):  # noqa: F811
+def test_223c_control_the_same_message_with_a_defer_this_turn_is_silent(wl):
     """The second exit. The baseline stop is deliberate: without it the fixture would be silenced by `defer_created`'s first-sight leniency instead of by the deferral, and the case would pass without exercising the signature at all."""
     wl.brief_now()
     wl.hand_now()
@@ -638,7 +637,7 @@ def test_223c_control_the_same_message_with_a_defer_this_turn_is_silent(wl):  # 
     )
 
 
-def test_223cc_a_rhetorical_closing_question_no_longer_blocks(wl):  # noqa: F811
+def test_223cc_a_rhetorical_closing_question_no_longer_blocks(wl):
     """PLAN-stop-hook-overhaul.md section 1.2: the bare `ln.endswith("?")` + `you`/`your` matcher (`CLOSING_QUESTION_RE`) is deleted. Its own comment called it "the loosest of the two", and it fired on any second-person closing line ending in `?` whether or not it was actually asking for something -- "Should the operator care about this?" is a rhetorical aside, not an announced
     ask, and the deleted matcher could not tell the two apart.
     """
@@ -654,7 +653,7 @@ def test_223cc_a_rhetorical_closing_question_no_longer_blocks(wl):  # noqa: F811
     )
 
 
-def test_223cd_control_want_me_to_still_blocks_after_the_deletion(wl):  # noqa: F811
+def test_223cd_control_want_me_to_still_blocks_after_the_deletion(wl):
     """The other half of section 1.2's CONTROL: deleting the loose matcher must not have taken the shape-anchored one with it. `ASK_ANNOUNCEMENT_RE`'s `want me to` clause is untouched by this box."""
     wl.brief_now()
     wl.hand_now()
@@ -666,7 +665,7 @@ def test_223cd_control_want_me_to_still_blocks_after_the_deletion(wl):  # noqa: 
     )
 
 
-def test_223d_control_writing_about_the_gate_does_not_trip_it(wl):  # noqa: F811
+def test_223d_control_writing_about_the_gate_does_not_trip_it(wl):
     """The V_FOUND_NOT_FIXED precedent, and the reason `wl_core.strip_quoted_spans` is shared rather than copied: every message describing this gate quotes its own triggers, and a gate that cannot survive being written about is too broad."""
     wl.brief_now()
     wl.hand_now()
@@ -678,7 +677,7 @@ def test_223d_control_writing_about_the_gate_does_not_trip_it(wl):  # noqa: F811
     )
 
 
-def test_223e_control_an_ordinary_completion_report_is_silent(wl):  # noqa: F811
+def test_223e_control_an_ordinary_completion_report_is_silent(wl):
     """A plain report is not an announcement."""
     wl.brief_now()
     wl.hand_now()
@@ -690,7 +689,7 @@ def test_223e_control_an_ordinary_completion_report_is_silent(wl):  # noqa: F811
     )
 
 
-def test_223h_control_a_declarative_your_call_close_is_not_an_announcement(wl):  # noqa: F811
+def test_223h_control_a_declarative_your_call_close_is_not_an_announcement(wl):
     """Review-found live, twice in one session: a closing sentence saying that merging is the operator's call, and not something to do autonomously, fired this gate, and neither instance was an unasked question. Both are a settled-fact close, not a solicitation. The copula is what makes it declarative."""
     wl.brief_now()
     wl.hand_now()
@@ -703,7 +702,7 @@ def test_223h_control_a_declarative_your_call_close_is_not_an_announcement(wl): 
     )
 
 
-def test_223i_a_standalone_your_call_announcement_still_fires(wl):  # noqa: F811
+def test_223i_a_standalone_your_call_announcement_still_fires(wl):
     """The regression control for the fix above: narrowing the copula-attached form must not silence the alternative entirely."""
     wl.brief_now()
     wl.hand_now()
@@ -717,7 +716,7 @@ def test_223i_a_standalone_your_call_announcement_still_fires(wl):  # noqa: F811
     )
 
 
-def test_223j_control_a_declarative_decisions_yours_close_does_not_fire(wl):  # noqa: F811
+def test_223j_control_a_declarative_decisions_yours_close_does_not_fire(wl):
     """SWEEP: the SAME class in `decisions...yours`, `let me know` and `want me to`. Found by sweeping `ASK_ANNOUNCEMENT_RE`'s other alternatives for the exact defect class the declarative close fixed, after a judge demanded the sweep: a phrase that can ALSO be used declaratively (citing an existing fact or rule) rather than as a live solicitation. All three fired on real prose
     before this fix.
     """
@@ -731,7 +730,7 @@ def test_223j_control_a_declarative_decisions_yours_close_does_not_fire(wl):  # 
     )
 
 
-def test_223j_a_standalone_decisions_yours_lead_in_still_fires(wl):  # noqa: F811
+def test_223j_a_standalone_decisions_yours_lead_in_still_fires(wl):
     """The positive half of the sweep: the same alternative, with no copula in front of it, is a live solicitation and still fires."""
     wl.brief_now()
     wl.hand_now()
@@ -745,7 +744,7 @@ def test_223j_a_standalone_decisions_yours_lead_in_still_fires(wl):  # noqa: F81
     )
 
 
-def test_223j_control_reported_speech_about_a_convention_does_not_fire(wl):  # noqa: F811
+def test_223j_control_reported_speech_about_a_convention_does_not_fire(wl):
     """Reported speech about an existing convention (say, says or said before the trigger) is a citation, not a request."""
     wl.brief_now()
     wl.hand_now()
@@ -757,7 +756,7 @@ def test_223j_control_reported_speech_about_a_convention_does_not_fire(wl):  # n
     )
 
 
-def test_223j_a_genuine_let_me_know_if_request_still_fires(wl):  # noqa: F811
+def test_223j_a_genuine_let_me_know_if_request_still_fires(wl):
     """The positive half: `let me know if` as a live request still fires."""
     wl.brief_now()
     wl.hand_now()
@@ -771,7 +770,7 @@ def test_223j_a_genuine_let_me_know_if_request_still_fires(wl):  # noqa: F811
     )
 
 
-def test_223j_control_a_negated_want_me_to_citing_a_constraint_does_not_fire(wl):  # noqa: F811
+def test_223j_control_a_negated_want_me_to_citing_a_constraint_does_not_fire(wl):
     """A negated `want me to` citing an existing constraint is a citation, not an offer."""
     wl.brief_now()
     wl.hand_now()
@@ -781,7 +780,7 @@ def test_223j_control_a_negated_want_me_to_citing_a_constraint_does_not_fire(wl)
     wl.check_quiet("YOU ANNOUNCED A QUESTION", "223j CONTROL: a negated form citing a constraint")
 
 
-def test_223j_control_never_want_me_to_citing_a_standing_rule_does_not_fire(wl):  # noqa: F811
+def test_223j_control_never_want_me_to_citing_a_standing_rule_does_not_fire(wl):
     """The same negation in its `never` form, citing a standing rule."""
     wl.brief_now()
     wl.hand_now()
@@ -793,7 +792,7 @@ def test_223j_control_never_want_me_to_citing_a_standing_rule_does_not_fire(wl):
     )
 
 
-def test_223j_a_genuine_want_me_to_offer_still_fires(wl):  # noqa: F811
+def test_223j_a_genuine_want_me_to_offer_still_fires(wl):
     """The positive half: `want me to` with no negation is a live offer and still fires."""
     wl.brief_now()
     wl.hand_now()
@@ -805,7 +804,7 @@ def test_223j_a_genuine_want_me_to_offer_still_fires(wl):  # noqa: F811
     )
 
 
-def test_223f_the_pending_ask_gate_is_not_shadowed_by_another_always_tier_violation(wl):  # noqa: F811
+def test_223f_the_pending_ask_gate_is_not_shadowed_by_another_always_tier_violation(wl):
     """Violations are gathered and emitted as ONE block, and the always tier is printed in full while everything else becomes a bare count. So a gate that computes correctly and is then swallowed by an earlier emit looks green forever. This fires the pending-ask gate WHILE idle-stall is live and demands BOTH texts, the only assertion that can tell computed from delivered."""
     wl.brief_now()
     wl.hand_now()
@@ -820,7 +819,7 @@ def test_223f_the_pending_ask_gate_is_not_shadowed_by_another_always_tier_violat
     assert "YOU ARE STOPPING WITH ACTIONABLE WORK IN HAND" in got.out, shadowed
 
 
-def test_223g_the_failure_path_the_detectors_helpers_never_raise(wl):  # noqa: F811
+def test_223g_the_failure_path_the_detectors_helpers_never_raise(wl):
     """Same contract as 222j next door: a stall detector that crashes a stop is worse than one that is absent. The call site is wrapped; these are the helpers under it, driven directly on the inputs that would break a careless implementation."""
     probe = pyprobe(wl, PROBE_223G, {"HOOKDIR": str(wlfix.STOP_DIR)})
     assert probe.returncode == 0, (
@@ -828,7 +827,7 @@ def test_223g_the_failure_path_the_detectors_helpers_never_raise(wl):  # noqa: F
     )
 
 
-def test_223h_the_refusal_ledger_records_a_refusal_and_then_surfaces_it(wl):  # noqa: F811
+def test_223h_the_refusal_ledger_records_a_refusal_and_then_surfaces_it(wl):
     """Before this the pre-ask hook refused questions and left NO trace anywhere the operator looks, and `.claude/hooks/test-hooks.sh` names the consequence itself: a false positive is invisible by construction, because the operator never learns what was not asked. This drives the real guard, then asserts the Stop advisory that reads what it wrote.
 
     ONE RUN, BOTH NEEDLES on the last leg. A queued advisory is drained exactly once, so two `check` calls would be two stops and the second would assert the absence of something it had already consumed: a green test proving the opposite of what it reads like.
@@ -859,7 +858,7 @@ def test_223h_the_refusal_ledger_records_a_refusal_and_then_surfaces_it(wl):  # 
     assert '"decision": "block"' not in got.out, surfaced
 
 
-def test_223i_control_no_refusals_means_no_advisory(wl):  # noqa: F811
+def test_223i_control_no_refusals_means_no_advisory(wl):
     """A surface that speaks when the count is zero is noise, and noise is what the rotation exists to prevent."""
     wl.brief_now()
     wl.hand_now()

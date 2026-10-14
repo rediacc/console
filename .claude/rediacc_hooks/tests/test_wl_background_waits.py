@@ -14,7 +14,6 @@ import subprocess
 import time
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 BW1 = [{"id": "bw1", "type": "shell", "status": "running", "description": "long CI watch"}]
 
@@ -66,7 +65,7 @@ def backdate(path, minutes: float) -> None:
     os.utime(path, (old, old))
 
 
-def test_163_a_pure_background_wait_gets_a_check_in_not_make_work(wl):  # noqa: F811
+def test_163_a_pure_background_wait_gets_a_check_in_not_make_work(wl):
     """v15: live background jobs, no open items, no expired deferral.
 
     The hook recognizes the state as legitimate and demands only a bounded check-in whose worker facts it gathered itself from the output streams. v19: an UNBLOCKED pending task now (correctly) makes the wait impure, so this case's parked task is in_progress, the state a watched-by-this-session job actually has, and the unblocked-pending behavior gets case 163y.
@@ -106,7 +105,7 @@ def test_163_a_pure_background_wait_gets_a_check_in_not_make_work(wl):  # noqa: 
     )
 
 
-def test_163y_an_unblocked_pending_task_makes_the_wait_impure(wl):  # noqa: F811
+def test_163y_an_unblocked_pending_task_makes_the_wait_impure(wl):
     """Operator, 2026-08-08: a session idled for hours in "pure background wait" beside a fully planned, unblocked pending task; the check-in kept certifying the wait because it never consulted the harness queue.
 
     Now: pending with no unresolved blocker fires as WORKABLE-TASKS and names it, and pending behind a live blocker keeps the wait pure (the control below).
@@ -129,7 +128,7 @@ def test_163y_an_unblocked_pending_task_makes_the_wait_impure(wl):  # noqa: F811
     wl.check_quiet("not a demand for other work", label, result=got)
 
 
-def test_163y_control_a_task_behind_a_live_blocker_keeps_the_wait_pure(wl):  # noqa: F811
+def test_163y_control_a_task_behind_a_live_blocker_keeps_the_wait_pure(wl):
     """CONTROL: the blocked task stays unnamed; its live blocker is the one named."""
     wl.brief_now()
     wl.hand_now()
@@ -150,7 +149,7 @@ def test_163y_control_a_task_behind_a_live_blocker_keeps_the_wait_pure(wl):  # n
     wl.check_quiet("task #7 parked behind 6", label, result=got)
 
 
-def test_163x_the_transcript_join_finds_a_renamed_task_store(wl):  # noqa: F811
+def test_163x_the_transcript_join_finds_a_renamed_task_store(wl):
     """Review finding on #559: the fallback in _resolve_tasks_dir had no committed coverage (the original proof ran as ephemeral scratchpad python).
 
     This case drives it through the REAL hook: the primary session-deadbeef directory is EMPTY (the fixture creates it bare), the actual tasks live under a differently-named session-* directory, and the only join evidence is a TaskCreate result line in the transcript tail. The workable-tasks check-in naming the task proves the whole chain: resolve, then actionable, then fire.
@@ -186,7 +185,7 @@ def test_163x_the_transcript_join_finds_a_renamed_task_store(wl):  # noqa: F811
     assert_in(got, "task #21 the mismatch fixture task", label)
 
 
-def test_163x_control_two_candidate_directories_refuse_the_join(wl):  # noqa: F811
+def test_163x_control_two_candidate_directories_refuse_the_join(wl):
     """CONTROL: TWO directories matching the same TaskCreate line, so the join refuses, no task is named, and the wait stays pure.
 
     A fresh world, so the durable resolution cache from the fire case cannot leak in.
@@ -243,7 +242,7 @@ def mk_mate(fix, session: str, name: str, age_min: float) -> None:
     backdate(transcript, age_min)
 
 
-def test_163v_an_unverifiable_roster_is_reaped_but_only_where_certain(wl):  # noqa: F811
+def test_163v_an_unverifiable_roster_is_reaped_but_only_where_certain(wl):
     """THE BUG: after a compaction, or an operator reopening the session, the harness still reports every teammate ever spawned as `running`. Measured live: 20 claimed, exactly 1 transcript still growing.
 
     That roster drives _in_pure_wait and the 15-minute check-in, so a stale one means a session is told it supervises twenty workers forever and confirms phantoms every quarter hour. There is NO JOIN from a task id to an agent (a task carries only id, type, status and description, the description is the prompt truncated to about 50 characters, and that prefix is
@@ -311,7 +310,7 @@ def test_163v_an_unverifiable_roster_is_reaped_but_only_where_certain(wl):  # no
     )
 
 
-def test_163v_c1_reap_retires_an_id_and_refuses_one_the_hook_never_saw(wl):  # noqa: F811
+def test_163v_c1_reap_retires_an_id_and_refuses_one_the_hook_never_saw(wl):
     """`--reap` records a task id the roster claims but the session knows is gone, and refuses an id the hook has never been handed."""
     wl.brief_now()
     wl.hand_now()
@@ -423,7 +422,7 @@ def mate_world(fix, ages) -> None:
     fix.bg = json.dumps(MATE_ROSTER)
 
 
-def test_13a_a_fully_fresh_teammate_roster_owes_no_check_in(wl):  # noqa: F811
+def test_13a_a_fully_fresh_teammate_roster_owes_no_check_in(wl):
     """1.3: stream-less teammates whose transcripts are all still growing have an automatic liveness answer, so the overdue check-in stands down.
 
     Goes red under the old predicate, which fired for any roster that was not wholly confirmed inbox waiters. Case 13b is the paired control: one transcript aged past TEAMMATE_FRESH_MIN and the same fixture fires.
@@ -435,7 +434,7 @@ def test_13a_a_fully_fresh_teammate_roster_owes_no_check_in(wl):  # noqa: F811
     )
 
 
-def test_13b_control_one_teammate_aged_past_the_fresh_window_fires_and_is_marked(wl):  # noqa: F811
+def test_13b_control_one_teammate_aged_past_the_fresh_window_fires_and_is_marked(wl):
     """CONTROL for 13a: one transcript aged past TEAMMATE_FRESH_MIN (15) leaves 1 fresh for 2 claimed, so the roster is NOT covered.
 
     Aging EVERY transcript is not the control: `prune_background` reaps a wholly-stale roster (case 163v), leaving nothing to supervise. The per-row marker is the needle, not a bare "POSSIBLY STUCK": V_BG_REPORT's fixed text names that phrase on every check-in.
@@ -447,7 +446,7 @@ def test_13b_control_one_teammate_aged_past_the_fresh_window_fires_and_is_marked
     assert_in(got, MARK + ": 1 of 2 teammate transcript(s) fresh", label)
 
 
-def test_13c_control_an_unreadable_transcript_store_fires(wl):  # noqa: F811
+def test_13c_control_an_unreadable_transcript_store_fires(wl):
     """CONTROL: no projects store at all is "cannot tell", never "all alive", so the check-in fires and says so."""
     wl.brief_now()
     wl.hand_now()
@@ -474,7 +473,7 @@ def sleeper_row() -> dict:
     }
 
 
-def test_13d_an_os_confirmed_ordinary_shell_job_owes_no_check_in(wl):  # noqa: F811
+def test_13d_an_os_confirmed_ordinary_shell_job_owes_no_check_in(wl):
     """1.3: the widening is not waiter-specific. Any shell job the OS CONFIRMS is alive exits into a harness notification, so its liveness is already answered."""
     wl.brief_now()
     wl.hand_now()
@@ -498,7 +497,7 @@ def test_13d_an_os_confirmed_ordinary_shell_job_owes_no_check_in(wl):  # noqa: F
         proc.wait()
 
 
-def test_13e_control_the_same_shell_job_dead_fires(wl):  # noqa: F811
+def test_13e_control_the_same_shell_job_dead_fires(wl):
     """CONTROL for 13d: the same declared command with NO process behind it is `suspect`, which answers nothing."""
     wl.brief_now()
     wl.hand_now()
@@ -562,7 +561,7 @@ def subagent_world(fix, ages, linked=None) -> None:
     fix.bg = json.dumps(SUBAGENT_ROSTER)
 
 
-def test_13g_a_subagent_roster_with_fresh_joined_transcripts_owes_no_check_in(wl):  # noqa: F811
+def test_13g_a_subagent_roster_with_fresh_joined_transcripts_owes_no_check_in(wl):
     """1.3, in the shape today's Stop event actually carries: `type: "subagent"` rows, no taskKind. Each id joins to its own transcript through the `.output` symlink, so a fresh stream is an automatic liveness answer."""
     subagent_world(wl, [0, 1])
     got = overdue_stop(wl)
@@ -571,7 +570,7 @@ def test_13g_a_subagent_roster_with_fresh_joined_transcripts_owes_no_check_in(wl
     )
 
 
-def test_13h_control_one_subagent_transcript_stale_fires(wl):  # noqa: F811
+def test_13h_control_one_subagent_transcript_stale_fires(wl):
     """CONTROL for 13g: one transcript quiet past BG_STALE_MIN (15) and the SAME roster fires, with that row accused."""
     subagent_world(wl, [0, 20])
     got = overdue_stop(wl)
@@ -581,7 +580,7 @@ def test_13h_control_one_subagent_transcript_stale_fires(wl):  # noqa: F811
     assert_in(got, "<- POSSIBLY STUCK, investigate or restart", label)
 
 
-def test_13i_control_a_subagent_with_no_stream_fires(wl):  # noqa: F811
+def test_13i_control_a_subagent_with_no_stream_fires(wl):
     """CONTROL for 13g: a subagent whose `.output` join is missing is unverifiable, never live."""
     subagent_world(wl, [0, 0], linked={"a1111222233334444"})
     got = overdue_stop(wl)

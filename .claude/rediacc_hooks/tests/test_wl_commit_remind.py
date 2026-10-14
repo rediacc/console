@@ -17,20 +17,17 @@ import time
 from typing import Any
 
 import pytest
-from rediacc_ci import paths
+import wl_core as C
+import wl_planqueue
+import wl_standdown
+import wl_store as S
+import wl_uncommitted as U
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 STOP_DIR = wlfix.STOP_DIR
 HOOKS = STOP_DIR.parent
-paths.on_sys_path(STOP_DIR)
 
-import wl_core as C  # noqa: E402
-import wl_planqueue  # noqa: E402
-import wl_standdown  # noqa: E402
-import wl_store as S  # noqa: E402
-import wl_uncommitted as U  # noqa: E402
 
 NOW = 1_800_000_000.0
 
@@ -392,7 +389,7 @@ def init_real_repo(proj, commit_age_min):
     )
 
 
-def test_a_full_stop_run_carries_the_reminder_and_still_allows(wl):  # noqa: F811
+def test_a_full_stop_run_carries_the_reminder_and_still_allows(wl):
     init_real_repo(wl.proj, commit_age_min=60)
     wl.settings(commit_remind_min=15)
     (wl.proj / "work.txt").write_text("edited\n")
@@ -409,7 +406,7 @@ def test_a_full_stop_run_carries_the_reminder_and_still_allows(wl):  # noqa: F81
     assert "Do not stop yet" not in got.out
 
 
-def test_the_inverse_stop_run_is_silent_when_the_commit_is_recent(wl):  # noqa: F811
+def test_the_inverse_stop_run_is_silent_when_the_commit_is_recent(wl):
     init_real_repo(wl.proj, commit_age_min=1)
     wl.settings(commit_remind_min=15)
     (wl.proj / "work.txt").write_text("edited\n")
