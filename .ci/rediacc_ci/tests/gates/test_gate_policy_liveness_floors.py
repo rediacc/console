@@ -113,7 +113,7 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
     # The deps oracle here is the root manifest alone, so the copied blocklist's entries -- declared in packages/*/package.json in the real tree -- would be condemned as dead. Replace it with one entry the root manifest really does declare, which keeps the probe RUNNING (that is the point) without a false finding.
     (root / ".ci" / "policy" / ".deps-upgrade-blocklist").write_text(
         "# BLOCKER: live package pinned deliberately so this fixture exercises the deps "
-        "probe for real\neslint\n",
+        "probe for real\n@biomejs/biome\n",
         encoding="utf-8",
     )
 

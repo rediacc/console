@@ -210,14 +210,14 @@ def test_fires_on_dead_deps_entry(gate):
 
 
 def test_no_false_positive_on_live_entry(gate):
-    """THE CONTROL FOR THE CASE ABOVE. eslint is genuinely declared in the root
+    """THE CONTROL FOR THE CASE ABOVE. @biomejs/biome is genuinely declared in the root
     manifest, which is the only one the fixture carries. (zod would NOT work here: it appears in the real package.json only under "overrides", and an override is not a declaration, so the deps probe would correctly condemn it.)"""
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         write_policy(
             root,
             ".deps-upgrade-blocklist",
-            "# BLOCKER: live package pinned deliberately, must not be reported as stale\neslint\n",
+            "# BLOCKER: live package pinned deliberately, must not be reported as stale\n@biomejs/biome\n",
         )
         result = run_gate(gate, root)
         gate.assert_exit(0, result, "a declared package must not be condemned")
@@ -490,7 +490,7 @@ def hold_fixture(gate, root, hold: str = FROZEN_589_HOLD):
     write_policy(
         root,
         ".deps-upgrade-blocklist",
-        "# BLOCKER: live package pinned deliberately, must not be reported as stale\neslint\n",
+        "# BLOCKER: live package pinned deliberately, must not be reported as stale\n@biomejs/biome\n",
     )
     return root
 
