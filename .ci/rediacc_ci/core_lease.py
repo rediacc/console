@@ -876,7 +876,8 @@ def _cmd_status(pool: Pool, ns: argparse.Namespace) -> int:
         print(json.dumps(report, sort_keys=True))
         return EXIT_OK
     held = report["held"]
-    assert isinstance(held, list)  # noqa: S101 -- narrowing for the type checker
+    if not isinstance(held, list):
+        raise TypeError("held is not a list")
     print(
         "core lease %s: %s of %s token(s) free, %s live run(s)"
         % (report["dir"], report["free"], report["total"], report["runs"])

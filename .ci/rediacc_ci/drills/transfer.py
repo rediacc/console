@@ -102,7 +102,8 @@ class Transfer:
     def setup_sandbox(self) -> None:
         d = self.d
         d.step("Setup: two isolated config directories (device 1 and device 2)")
-        assert d.work is not None  # noqa: S101
+        if d.work is None:
+            raise RuntimeError("d.work is not set")
         self.device1 = str(d.work / "device1")
         self.device2 = str(d.work / "device2")
         for home in (self.device1, self.device2):
@@ -168,7 +169,8 @@ class Transfer:
     def mint_token(self, name: str) -> None:
         """A fresh account token minted over the SESSION api only; nothing else may use it before the CLI does (workaround b)."""
         d = self.d
-        assert d.work is not None  # noqa: S101
+        if d.work is None:
+            raise RuntimeError("d.work is not set")
         jar = http.cookiejar.MozillaCookieJar(str(d.work / ("cookies-%s.txt" % name)))
         if not d.account_session(self.email, DRILL_PASSWORD, jar):
             raise SystemExit(1)
@@ -231,7 +233,8 @@ class Transfer:
 
     def phase_offline_read(self) -> None:
         d = self.d
-        assert d.work is not None  # noqa: S101
+        if d.work is None:
+            raise RuntimeError("d.work is not set")
         d.step("Phase 2: an online write pushes, then reads survive the server going away")
         # An online write first, so the cache holds something the server produced (version 2) rather than only the seed. `config ssh set` changes the config and touches nothing outside it; `machine add` would also write an SSH alias into the user's real home.
         self.cli(
@@ -288,7 +291,8 @@ class Transfer:
 
     def phase_fail_closed_write(self) -> None:
         d = self.d
-        assert d.work is not None  # noqa: S101
+        if d.work is None:
+            raise RuntimeError("d.work is not set")
         d.step("Phase 3: while offline, a write refuses instead of saving locally")
         config_file = os.path.join(self.device1, "rediacc", "%s.json" % CONFIG_NAME)
         before = self.md5(config_file)

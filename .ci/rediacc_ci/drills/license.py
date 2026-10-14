@@ -213,7 +213,8 @@ class License:
 
     @property
     def work(self) -> pathlib.Path:
-        assert self.d.work is not None  # noqa: S101
+        if self.d.work is None:
+            raise RuntimeError("self.d.work is not set")
         return self.d.work
 
     # ------------------------------------------------------------------ plumbing
@@ -264,7 +265,8 @@ class License:
         return wire.lookup(wire.parse(self.d.stdout_text()), path)
 
     def patch_subscription(self, patch: dict) -> str:
-        assert self.admin_jar is not None  # noqa: S101
+        if self.admin_jar is None:
+            raise RuntimeError("self.admin_jar is not set")
         return self.d.account_patch_subscription(self.admin_jar, self.subscription_id, patch)
 
     # ------------------------------------------------------------------ cost and preflight

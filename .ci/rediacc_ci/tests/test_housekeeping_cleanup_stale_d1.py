@@ -578,7 +578,10 @@ def test_the_cutoff_line_is_the_only_clock_dependent_output() -> None:
     """The masking in `_mask_cutoff` is a claim about this subject, so it is checked rather than trusted: with the cutoff line removed, the recording and the port's stderr must be byte-identical without any masking at all."""
     _, _, want_err, _ = recorded("one-stale-database-under-dry-run")
     _, _, stderr, _ = drive("one-stale-database-under-dry-run")
-    strip = lambda text: [x for x in text.splitlines() if "Cutoff: " not in x]  # noqa: E731
+
+    def strip(text):
+        return [x for x in text.splitlines() if "Cutoff: " not in x]
+
     assert strip(want_err) == strip(stderr)
     # And the cutoff line itself is present on both, so the strip is not hiding an absence.
     assert any("Cutoff: " in x for x in want_err.splitlines())

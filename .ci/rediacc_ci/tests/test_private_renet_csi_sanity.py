@@ -275,7 +275,10 @@ def _run(
     if log.exists():
         calls = [line for line in log.read_text(encoding="utf-8").splitlines() if line]
         log.unlink()
-    decode = lambda raw: raw.decode("utf-8", "surrogateescape")  # noqa: E731
+
+    def decode(raw):
+        return raw.decode("utf-8", "surrogateescape")
+
     return {
         "exit": proc.returncode,
         "stdout": _mask(decode(proc.stdout), root, tmp_path.resolve()),

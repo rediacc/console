@@ -293,8 +293,13 @@ def _run(
         log.unlink()
     for stale in tmp_path.resolve().glob("tick*"):
         stale.unlink()
-    decode = lambda raw: raw.decode("utf-8", "surrogateescape")  # noqa: E731
-    mask = lambda text: _mask(text, root, tmp_path.resolve())  # noqa: E731
+
+    def decode(raw):
+        return raw.decode("utf-8", "surrogateescape")
+
+    def mask(text):
+        return _mask(text, root, tmp_path.resolve())
+
     return {
         "exit": proc.returncode,
         "stdout": mask(decode(proc.stdout)),

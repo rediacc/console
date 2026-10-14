@@ -40,7 +40,8 @@ class Universe:
     def setup_sandbox(self) -> None:
         d = self.d
         d.step("Setup: isolated config directory")
-        assert d.work is not None  # noqa: S101
+        if d.work is None:
+            raise RuntimeError("d.work is not set")
         xdg = d.work / "xdg"
         self.config_dir = xdg / "rediacc"
         self.config_dir.mkdir(parents=True, exist_ok=True)
@@ -73,7 +74,8 @@ class Universe:
         d.step("Setup: dev login, subscription and API token on %s" % self.server_url)
         d.account_ensure_login(EMAIL, PASSWORD)
         d.account_ensure_subscription(EMAIL, "PROFESSIONAL")
-        assert d.work is not None  # noqa: S101
+        if d.work is None:
+            raise RuntimeError("d.work is not set")
         jar = http.cookiejar.MozillaCookieJar(str(d.work / "cookies.txt"))
         if not d.account_session(EMAIL, PASSWORD, jar):
             raise SystemExit(1)
@@ -182,7 +184,8 @@ class Universe:
         a_before = self.md5("drill-a.json")
         b_before = self.md5("drill-b.json")
         d.note("md5 drill-a=%s drill-b=%s" % (a_before, b_before))
-        assert d.work is not None  # noqa: S101
+        if d.work is None:
+            raise RuntimeError("d.work is not set")
         # A real mutation of drill-b: `config ssh set` writes credentials into the config file and touches no network.
         self.cli(
             "config", "ssh", "set", "--key", str(d.work / "id_ed25519"), REDIACC_CONFIG="drill-b"

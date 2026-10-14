@@ -65,7 +65,10 @@ LOCALE_BEFORE = {"commands": {"up": {"help": "Hoch"}, "down": {"help": "Runter"}
 
 def _repo(tmp_path, monkeypatch, files):
     monkeypatch.chdir(tmp_path)
-    run = lambda *argv: subprocess.run(argv, check=True, capture_output=True)  # noqa: E731
+
+    def run(*argv):
+        return subprocess.run(argv, check=True, capture_output=True)
+
     run("git", "init", "-q")
     run("git", "config", "user.email", "t@example.invalid")
     run("git", "config", "user.name", "t")

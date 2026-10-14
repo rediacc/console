@@ -473,7 +473,8 @@ class Drill:
         )
         self.stop_gateway()
         started = int(time.time())
-        assert self.gateway_log is not None  # noqa: S101
+        if self.gateway_log is None:
+            raise RuntimeError("self.gateway_log is not set")
         # Its own process group (setsid): the tsx child must not survive a kill of the run.sh wrapper and keep the port bound.
         with self.gateway_log.open("wb") as log_file:
             self.gateway_proc = subprocess.Popen(

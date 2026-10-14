@@ -239,7 +239,8 @@ class Scenario:
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def newer(self, version: str = "1.0.4", override_sha: str = "") -> None:
-        assert self.fixture is not None  # noqa: S101 - set by start()
+        if self.fixture is None:
+            raise RuntimeError("self.fixture is not set")
         self.fixture.drop("edge", "1.0.3")
         self.fixture.prep(
             "edge", version, self.ctx.key, self.ctx.binary_name, self.ctx.rdc_binary, override_sha

@@ -283,7 +283,10 @@ def test_backup_d1_matches_bash(world: h.World) -> None:
     assert "r2.cloudflarestorage.com" not in out_p
     assert "valid for one hour" not in out_p
     assert "Exporting database edge-account-db-eu" in out_p
-    stripped = lambda t: h.mask_stamp(h.mask_root(h.strip(t), world))  # noqa: E731
+
+    def stripped(t):
+        return h.mask_stamp(h.mask_root(h.strip(t), world))
+
     lines_b = [ln for ln in stripped(err_b).splitlines() if "Exported" not in ln]
     lines_p = [ln for ln in stripped(err_p).splitlines() if "Exported" not in ln]
     assert lines_b == lines_p

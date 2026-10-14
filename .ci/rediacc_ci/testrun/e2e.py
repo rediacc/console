@@ -236,7 +236,8 @@ def stream(cmd: list[str], cwd: str) -> tuple[int, Scan]:
     except OSError as exc:
         log.error(f"{cmd[0]}: {exc.strerror or exc}")
         return 1, scan
-    assert proc.stdout is not None  # noqa: S101 - PIPE was requested above
+    if proc.stdout is None:
+        raise RuntimeError("proc.stdout is not set")
     for raw in proc.stdout:
         sys.stdout.buffer.write(raw)
         sys.stdout.buffer.flush()

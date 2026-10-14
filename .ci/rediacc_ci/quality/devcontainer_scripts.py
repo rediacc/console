@@ -145,12 +145,15 @@ def build_scratch_super(where: pathlib.Path) -> None:
     So assertion B needs neither the network nor credentials: the failure is a repository that is not there, which is the same class of failure as a stale credential helper and produces git's own diagnostic either way.
     """
     where.mkdir(parents=True, exist_ok=True)
-    run = lambda *args: subprocess.run(  # noqa: E731
-        ["git", "-C", str(where), *args],
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+
+    def run(*args):
+        return subprocess.run(
+            ["git", "-C", str(where), *args],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
     run("init", "-q", ".")
     run("config", "user.email", "gate@example.invalid")
     run("config", "user.name", "gate")
