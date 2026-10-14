@@ -364,7 +364,7 @@ export async function settleConfigEntry(
   repoConfig: DeletedRepoConfig,
   archiveConfig: boolean
 ): Promise<void> {
-  // A fork with no other holder is archived like --archive-config rather than removed: the name is free for a re-fork, and the archived record keeps the repository GUID that a restore of the fork's backups needs (review 82e9d8bc.1).
+  // A fork with no other holder is archived like --archive-config rather than removed: the name is free for a re-fork, and the archived record keeps the repository GUID that a restore of the fork's backups needs.
   const holders = otherHolders(repoConfig, machineName);
   if (archiveConfig || (holders.length === 0 && isFork(repoConfig))) {
     await configService.archiveRepository(name);
