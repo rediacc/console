@@ -38,9 +38,9 @@ import path from 'node:path';
 
 import type { DocumentNode } from '@humanwhocodes/momoa';
 import { parse as momoaParse } from '@humanwhocodes/momoa';
-import { parseSync, visitorKeys as jsVisitorKeys } from 'oxc-parser';
+import { visitorKeys as jsVisitorKeys, parseSync } from 'oxc-parser';
 
-import { XHTML_ENTITIES } from './jsx-entities.js';
+import { XHTML_ENTITIES } from './jsx-entities.ts';
 
 // `.tsx` parses as `tsx`, plain `.ts`/`.mts`/`.cts` as `ts` -- forcing every `.ts` file into the `tsx` grammar breaks the OLD-STYLE generic cast (`<T>value`) and generic-arrow ambiguity that grammar exists to resolve in favour of JSX, and real `.ts` sources in this repo use that syntax. Plain JS family files (`.js`/`.jsx`/`.mjs`/`.cjs`) always parse as `jsx` instead: the real config enables JSX (`ecmaFeatures.jsx: true`) for every js, jsx, ts and tsx source path it lints (`eslint.config/typescript.js`'s react-plugin block), including plain `.js` files under `eslint-rules` -- so `custom/require-testid`'s own probe file is plain `.js` with a JSX literal in it, and JS has no cast-vs-JSX ambiguity for that option to break.
 function langFor(filename: string): 'jsx' | 'ts' | 'tsx' {
