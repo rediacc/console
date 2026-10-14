@@ -1421,8 +1421,26 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
   if (process.platform === 'win32') return { assertions, failures };
   // A DEAD GATE THAT STILL ANSWERS kill(pid, 0). An exited child stays a zombie until its parent waits, and an orphaned gate's parent is whatever subreaper sits above the runner (the pins transaction's agent harness waits about once a second). Here node is that parent: the child exits, the event loop is held for 300 ms so nothing reaps it, and the control line proves the plain probe would have called it alive. Red before processAlive: the timed-out gate check failed with "must be dead" under a lazy reaper while passing under an init that reaps at once.
   const zombie = spawn('true', [], { stdio: 'ignore' });
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
   const zPid = zombie.pid ?? Number.NaN;
+  // Hold the event loop until the child has exited (state Z, or gone on Linux), with a generous bound for a loaded machine; elsewhere a fixed pause.
+  const sleep = (ms: number): void => {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+  };
+  if (process.platform === 'linux') {
+    for (let waited = 0; waited < 10_000; waited += 20) {
+      let st = '';
+      try {
+        const stat = fs.readFileSync(`/proc/${zPid}/stat`, 'utf8');
+        st = stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3);
+      } catch {
+        break;
+      }
+      if (st === 'Z') break;
+      sleep(20);
+    }
+  } else {
+    sleep(300);
+  }
   let plainProbeSeesIt = false;
   try {
     process.kill(zPid, 0);
