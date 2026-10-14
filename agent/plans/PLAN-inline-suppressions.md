@@ -303,10 +303,11 @@ The golangci half belongs to WD:
   - Add WB's handed-over entries and the three helper entries with BLOCKERs, and strip the last inline markers through RUF100 in the same commit.
   - Acceptance: python-lint rc 0, including liveness; `npm run check:ci-suppression-liveness` rc 0; `npm run check:ci-inline-suppressions -- --count .ci` and `-- --count conftest.py` report 0.
     (ticked) 2026-10-14T12:08:51Z by d778be9d: commit:3573afd17 and commit:d2ba79652: the leftovers are pyproject per-file-ignores with BLOCKER reasons, check:ci-python-lint (liveness) and check:ci-suppression-liveness rc=0, --count .ci and --count conftest.py both 0
-- [ ] F lead: close the gate.
+- [x] F lead: close the gate.
   - Write `.ci/config/inline-suppressions-baseline.json` at zero, and switch `check:ci-inline-suppressions` to "no baseline allowed": a present baseline file is itself a failure.
   - Lift the "20 files still carry eslint-disable tokens" BLOCKER on the stale-directive gate (`scripts/ci-runner/manifest.ts`, `scripts/ci-runner/gates.lock.json`), since its reason is now false. Delete `ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES` and the rule-141 ignores. These files are in `PLAN-biome-only-lint` Owns, so coordinate.
   - Acceptance: `npm run check:ci-inline-suppressions` rc 0 with "0 markers, no baseline"; `npm run check:ci-source-rules` rc 0; `npm run check:ci-suppression-liveness` rc 0; a planted `# noqa: F401` in a scratch copy is refused by both the gate and the pre-edit guard.
+    (ticked) 2026-10-14T15:33:03Z by d778be9d: commit:5ffd3a312 and commit:d099ac8fe with commit:61528a65c: check:ci-inline-suppressions rc=0 with 0 markers and no baseline (a baseline file or a planted noqa F401 is refused), check:ci-source-rules rc=0 with the rule-141 ignores and ACCOUNT_NO_HARDCODED_TEXT_DISABLE_FILES gone, check:ci-suppression-liveness rc=0
 
 ## Risks
 
