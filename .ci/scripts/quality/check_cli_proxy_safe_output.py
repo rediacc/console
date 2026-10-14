@@ -15,7 +15,7 @@ why: a CLI command that wrote to process.stdout or set process.exitCode directly
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import cli_proxy_safe_output
 
 if __name__ == "__main__":

@@ -617,63 +617,6 @@
    "type-ignore arg-type": 2,
    "type-ignore assignment": 1
   },
-  ".ci/scripts/quality/check_cli_doc_coverage.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_cli_proxy_safe_output.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_command_tree.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_commit_identity.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_compose_env.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_config_migrations.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_container_build_context.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_content_quality.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_control_vacuity.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_dead_case_arms.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_dead_python.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_decision_ids.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_devbox_exec.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_devcontainer_scripts.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_dockerfile_mirror_resilience.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_drill_verdicts.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_e2e_coverage.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_editorconfig.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_env_file_adoption.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_env_manifest.py": {
    "noqa F401": 1
   },

@@ -20,7 +20,7 @@ why: `set -a; source <envfile>` both EXECUTES the file and lets it overwrite the
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import env_file_adoption
 
 if __name__ == "__main__":

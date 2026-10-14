@@ -52,7 +52,7 @@ lane: quality-content
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import e2e_coverage
 
 if __name__ == "__main__":
