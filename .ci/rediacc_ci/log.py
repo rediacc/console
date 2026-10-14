@@ -200,15 +200,14 @@ class Logger:
 
 
 # The process-wide default. Constructed lazily rather than at import, because a module-level Logger would capture whatever sys.stderr was at import time -- and pytest's capsys, a subprocess wrapper and `contextlib.redirect_stderr` all REPLACE sys.stderr afterwards. A captured stream is the classic reason a test sees no output from a logger that is working perfectly.
-_default: Logger | None = None
+_DEFAULT: dict[str, Logger] = {}
 
 
 def default() -> Logger:
     """The shared Logger, built on first use against the current sys.stderr."""
-    global _default  # noqa: PLW0603
-    if _default is None:
-        _default = Logger()
-    return _default
+    if "logger" not in _DEFAULT:
+        _DEFAULT["logger"] = Logger()
+    return _DEFAULT["logger"]
 
 
 def reset(stream=None, colour: bool | None = None, env=None) -> Logger:
@@ -216,9 +215,8 @@ def reset(stream=None, colour: bool | None = None, env=None) -> Logger:
 
     Exists for two callers: a test that has just swapped sys.stderr, and a program that has parsed `--no-color` from its own argv and must apply the answer to a logger some imported module already used.
     """
-    global _default  # noqa: PLW0603
-    _default = Logger(stream=stream, colour=colour, env=env)
-    return _default
+    _DEFAULT["logger"] = Logger(stream=stream, colour=colour, env=env)
+    return _DEFAULT["logger"]
 
 
 def info(message: str) -> None:

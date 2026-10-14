@@ -343,7 +343,7 @@ def test_a_missing_token_is_refused_before_docker_is_reached() -> None:
     code, _, stderr, calls = recorded("a-missing-token")
     assert code == 1
     assert calls == []
-    assert stderr == "✗ %s\n" % dpg.MISSING_TOKEN
+    assert stderr == "✗ %s\n" % dpg.MISSING_AUTH_MSG
 
 
 def test_a_missing_actor_is_refused_before_docker_is_reached() -> None:

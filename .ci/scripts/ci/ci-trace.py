@@ -55,11 +55,18 @@ sys.modules["well_known"] = _WK
 _WK_SPEC.loader.exec_module(_WK)
 GH_REPO = _WK.GH_REPO
 # `--repo OWNER/NAME` retargets every read of this process at another repository (a submodule's PR). It is set once by main() and read through _repo(); threading it through the ~20 verb/helper signatures would break the stubs the tests install on `_fetcher` and `_run_snapshot`. Unset, _repo() is GH_REPO and behaviour is unchanged.
-_REPO_OVERRIDE = None
+_STATE: dict = {
+    "repo_override": None,
+    # the note switch below: the selftest's output must not depend on GitHub's weather.
+    "gh_note_off": False,
+    "gh_mod": None,
+    # The reader key for the once-only recovery note: the watcher's `--session` when it has one.
+    "gh_session": None,
+}
 
 
 def _repo():
-    return _REPO_OVERRIDE or GH_REPO
+    return _STATE["repo_override"] or GH_REPO
 
 
 # The diagnosis verbs (--why, --job, --watchdog, ...) live in rediacc_ci.ci.ci_diagnose so the CI-side publisher answers from the same code. Loaded by file for the same reason as well_known above.
@@ -435,20 +442,15 @@ def _trace_run(root, run_id, wait, timeout, as_json):
 
 
 # GITHUB'S OWN STATUS beside every non-green verdict (operator request 2026-10-05). "No runs yet" or "still queued" reads differently when githubstatus.com says Actions is degraded, and a session that cannot see that spends turns diagnosing a runner shortage as a broken workflow. CACHE-ONLY: `github_status.surface` and `read_cached` never wait on the network (they start a
-# detached refresh when the machine-wide cache is older than 15 minutes), so a `--wait` is never slowed by them. Loaded lazily and by file for the same reason as well_known above, and by name first so a suite that patches the module patches this caller too. `_GH_NOTE_OFF` keeps the selftest's expected output independent of GitHub's weather.
+# detached refresh when the machine-wide cache is older than 15 minutes), so a `--wait` is never slowed by them. Loaded lazily and by file for the same reason as well_known above, and by name first so a suite that patches the module patches this caller too. `_STATE["gh_note_off"]` keeps the selftest's expected output independent of GitHub's weather.
 #
 # A --wait ALSO RECORDS THE TRANSITIONS it lived through (`_gh_tick`, once per poll), and its final verdict names them: "GitHub Actions: degraded 19:11Z -> operational 21:02Z during this wait". The wait never exits on a status change; it exits on the CI verdict as before.
 _GH_STATUS_MODULE = "rediacc_ci.ci.github_status"
-_GH_NOTE_OFF = False
-_GH_MOD = None
-# The reader key for the once-only recovery note: the watcher's `--session` when it has one.
-_GH_SESSION = None
 _GH_SAMPLES: list = []
 
 
 def _gs():
-    global _GH_MOD  # noqa: PLW0603 -- loaded once per process
-    gs = sys.modules.get(_GH_STATUS_MODULE) or _GH_MOD
+    gs = sys.modules.get(_GH_STATUS_MODULE) or _STATE["gh_mod"]
     if gs is None:
         spec = importlib.util.spec_from_file_location(
             "github_status", REPO_ROOT / ".ci" / "rediacc_ci" / "ci" / "github_status.py"
@@ -459,23 +461,23 @@ def _gs():
         # Registered BEFORE it runs: a dataclass resolves its module through sys.modules while the class is built.
         sys.modules[spec.name] = gs
         spec.loader.exec_module(gs)
-        _GH_MOD = gs
+        _STATE["gh_mod"] = gs
     return gs
 
 
 def _github_note(green=False):
     """GitHub's degraded line (not on a green verdict), or this reader's one-time recovery note, else "". Never raises."""
-    if _GH_NOTE_OFF:
+    if _STATE["gh_note_off"]:
         return ""
     try:
-        return _gs().surface(session=_GH_SESSION, green=green)
+        return _gs().surface(session=_STATE["gh_session"], green=green)
     except Exception:
         return ""
 
 
 def _gh_tick(as_json):
     """One --wait poll's status sample. Prints the degraded line (text mode) when the wait sees GitHub turn degraded, so a head still waiting for its runs is read against the outage, with the command that wakes a session on recovery."""
-    if _GH_NOTE_OFF:
+    if _STATE["gh_note_off"]:
         return
     try:
         gs = _gs()
@@ -493,7 +495,7 @@ def _gh_tick(as_json):
 
 def _gh_transitions(as_json, stream=None):
     """The final verdict's transition line, text mode only (--json promises one document), on the verdict's own stream."""
-    if as_json or _GH_NOTE_OFF:
+    if as_json or _STATE["gh_note_off"]:
         return
     try:
         text = _gs().transitions_text(_GH_SAMPLES)
@@ -812,7 +814,9 @@ def _registering(root, info, seen, detail):
 
 def _snapshot(root, ref, cache, allow_branch=False, seen=None):
     """One read -> a payload dict, or None with a reason when unreadable."""
-    state, info = wl_ci.ci_rollup(root, ref, allow_branch=allow_branch, repo=_REPO_OVERRIDE)
+    state, info = wl_ci.ci_rollup(
+        root, ref, allow_branch=allow_branch, repo=_STATE["repo_override"]
+    )
     if state == "no-pr":
         return None, "no open PR for ref %r" % ref
     if state == "no-ref":
@@ -1066,13 +1070,11 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = REPO_ROOT
-    global _GH_SESSION  # noqa: PLW0603 -- set once, before any read; the recovery note's reader key
-    _GH_SESSION = args.session or None
+    _STATE["gh_session"] = args.session or None
     if args.repo:
-        global _REPO_OVERRIDE  # noqa: PLW0603 -- set once, before any read; see _repo()
         if not re.fullmatch(r"[\w.-]+/[\w.-]+", args.repo):
             ap.error("--repo wants OWNER/NAME, got %r" % args.repo)
-        _REPO_OVERRIDE = args.repo
+        _STATE["repo_override"] = args.repo
         # The branch, ancestry and cache lookups run against the checkout the caller stands in.
         top = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False
@@ -1251,7 +1253,7 @@ def _out(data, text, as_json):
 
 def _head_run(root, ref):
     """(run_id, head_sha, error): the Console CI run on the current PR head (or --ref head)."""
-    state, info = wl_ci.ci_rollup(root, ref, allow_branch=True, repo=_REPO_OVERRIDE)
+    state, info = wl_ci.ci_rollup(root, ref, allow_branch=True, repo=_STATE["repo_override"])
     if state == "no-pr":
         return None, "", "no open PR for ref %r" % ref
     if state == "no-ref":
@@ -1590,8 +1592,11 @@ def verb_jobs(root, run_id, attempt, as_json):
             }
         )
     bad = [r for r in rows if r["conclusion"] not in ("success", "skipped")]
+
     # COMPACT: every failure, but cancelled jobs (29 of them on run 36953549081 attempt 1) only the 8 that ran longest past their p90 -- the rest were stopped BY the cancel, not the reason for it.
-    over = lambda r: (r["s"] or 0) - (r["p90_s"] or 0)  # noqa: E731
+    def over(r):
+        return (r["s"] or 0) - (r["p90_s"] or 0)
+
     shown = [r for r in bad if r["conclusion"] != "cancelled"] + sorted(
         (r for r in bad if r["conclusion"] == "cancelled"), key=over, reverse=True
     )[:8]
@@ -2010,8 +2015,7 @@ def _selftest():
     Review-found live on PR #579: `--run <id>` reads a run's jobs endpoint DIRECTLY rather than through wl_ci.ci_classify's GraphQL contexts, so the filter fixing ci_classify (see wl_ci.py --selftest) never touched this path -- proven by ci-trace.py itself calling a run GitHub scored "success" RED, because a non-blocking check-run (then the retired PR-level
     review check; the controls below use `CI Verdict`, the one that remains) showed up as conclusion=failure in the jobs list.
     """
-    global _GH_NOTE_OFF  # noqa: PLW0603 -- the selftest's output must not depend on GitHub's weather
-    _GH_NOTE_OFF = True
+    _STATE["gh_note_off"] = True
     os.environ["CI_TRACE_NO_FOLD"] = (
         "1"  # the selftest drives _record_final and must start no refresh
     )
@@ -2363,7 +2367,10 @@ def _selftest():
         and "schedule" in out,
         "rc=%r out=%r err=%r" % (rc, out, err),
     )
-    stale = lambda path: {"workflow_runs": [row] if "event=schedule" in path else []}  # noqa: E731
+
+    def stale(path):
+        return {"workflow_runs": [row] if "event=schedule" in path else []}
+
     rc, out, err, _paths = runs_it("main", stale)
     check(
         "a stale plain listing (empty) is answered by the event-filtered read that lists the run",

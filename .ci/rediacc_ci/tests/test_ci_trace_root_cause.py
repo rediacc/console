@@ -32,7 +32,7 @@ def ct(monkeypatch, tmp_path):
     assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    setattr(mod, "_GH_NOTE_OFF", True)  # noqa: B010 -- a module loaded by path is typed ModuleType
+    mod._STATE["gh_note_off"] = True
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
     return mod
 

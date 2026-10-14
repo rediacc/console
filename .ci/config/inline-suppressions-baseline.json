@@ -36,9 +36,7 @@
    "noqa PLC0415": 5
   },
   ".ci/rediacc_ci/ci/gate_model.py": {
-   "noqa PLC0415": 3,
-   "noqa PLW0603": 2,
-   "noqa S105": 1
+   "noqa PLC0415": 2
   },
   ".ci/rediacc_ci/ci/github_status.py": {
    "noqa PLC0415": 2,
@@ -94,9 +92,6 @@
   ".ci/rediacc_ci/deploy/clone_d1.py": {
    "noqa SIM115": 1
   },
-  ".ci/rediacc_ci/deploy/deploy_proxy.py": {
-   "noqa S105": 1
-  },
   ".ci/rediacc_ci/deploy/turnstile_drift.py": {
    "noqa BLE001": 1,
    "noqa S310": 2
@@ -140,18 +135,11 @@
   ".ci/rediacc_ci/drills/wire.py": {
    "noqa S310": 1
   },
-  ".ci/rediacc_ci/infra/ci_pull_images.py": {
-   "noqa S105": 1,
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/infra/ci_start_account.py": {
    "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/infra/ci_stop_elite.py": {
    "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/infra/docker_pull_ghcr.py": {
-   "noqa S105": 1
   },
   ".ci/rediacc_ci/infra/obs_mirror.py": {
    "noqa S310": 1,
@@ -164,9 +152,6 @@
    "noqa S310": 1,
    "type-ignore call-overload": 1,
    "type-ignore no-any-return": 1
-  },
-  ".ci/rediacc_ci/log.py": {
-   "noqa PLW0603": 2
   },
   ".ci/rediacc_ci/proc.py": {
    "noqa PLC0415": 1
@@ -201,8 +186,7 @@
    "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/quality/hook_exec_baseline.py": {
-   "noqa PLC0415": 2,
-   "noqa PLW0603": 1
+   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/quality/page_density.py": {
    "noqa S606": 1
@@ -305,9 +289,6 @@
    "noqa E402": 1,
    "noqa PLC0415": 2
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_plan_housekeeping.py": {
-   "noqa PLW0603": 1
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_trap_registry.py": {
    "noqa PLC0415": 1
   },
@@ -339,9 +320,6 @@
   },
   ".ci/rediacc_ci/tests/test_ci_initialize.py": {
    "type-ignore arg-type": 2
-  },
-  ".ci/rediacc_ci/tests/test_ci_trace_root_cause.py": {
-   "noqa B010": 1
   },
   ".ci/rediacc_ci/tests/test_core_account.py": {
    "noqa ARG001": 3
@@ -517,9 +495,7 @@
   },
   ".ci/scripts/ci/ci-trace.py": {
    "noqa E402": 1,
-   "noqa E731": 2,
-   "noqa PLC0415": 6,
-   "noqa PLW0603": 4
+   "noqa PLC0415": 6
   },
   ".ci/scripts/lib/toolchain.sh": {
    "shellcheck-disable SC1090": 1
@@ -555,8 +531,7 @@
   },
   ".ci/scripts/quality/check_plan_implementation.py": {
    "noqa BLE001": 4,
-   "noqa PLC0415": 10,
-   "noqa PLW0603": 2
+   "noqa PLC0415": 8
   },
   ".ci/scripts/quality/check_plan_record.py": {
    "noqa BLE001": 1

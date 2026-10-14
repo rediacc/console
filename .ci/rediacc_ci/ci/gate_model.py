@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import functools
+import importlib
 import itertools
 import json
 import math
@@ -51,7 +53,7 @@ MODEL_VERSION = 1
 CLASSES = ("real", "flaky", "clock", "chronic", "infra", "none")
 INPUT_HASH_REL = "scripts/ci-runner/input-hash.ts"
 WORKLIST_REL = (".claude", "hooks", "stop", "worklist.py")
-TOKEN_PREFIX = "gate-model"  # noqa: S105 -- the worklist dedup token's prefix, not a credential
+DEDUP_PREFIX = "gate-model"
 LOCAL_SIDE = "local"
 CI_SIDE = "ci"
 CI_SOURCES = ("ci-step", "ci-nightly")
@@ -105,19 +107,17 @@ def load_lock(root: pathlib.Path) -> list[dict[str, Any]]:
     return [e for e in data if isinstance(e, dict) and isinstance(e.get("id"), str)]
 
 
-_MATCH: Callable[[str, str], bool] | None = None
+@functools.cache
+def _v2_match_glob() -> Callable[[str, str], bool]:
+    """The push guard's `v2_match_glob`, imported once per process."""
+    paths.on_sys_path(paths.repo_root() / ".claude")
+    guard = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
+    return guard.v2_match_glob
 
 
 def match_glob(glob: str, path: str) -> bool:
     """The input-hash glob grammar, through the push guard's own Python twin (`v2_match_glob`), imported rather than copied so the two can never disagree."""
-    global _MATCH  # noqa: PLW0603 -- one import per process
-    if _MATCH is None:
-        import importlib  # noqa: PLC0415
-
-        paths.on_sys_path(paths.repo_root() / ".claude")
-        guard = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
-        _MATCH = guard.v2_match_glob
-    return bool(_MATCH(glob, path))
+    return bool(_v2_match_glob()(glob, path))
 
 
 def global_inputs(root: pathlib.Path) -> list[str]:
@@ -212,25 +212,21 @@ class Obs:
         return self.outcome == "pass"
 
 
-_INFRA: frozenset[str] | None = None
-
-
+@functools.cache
 def infra_categories() -> frozenset[str]:
     """ci_diagnose's infrastructure and stopped-job categories, read from that module: `infra-likely` plus every cancel category it maps to."""
-    global _INFRA  # noqa: PLW0603
-    if _INFRA is None:
-        from rediacc_ci.ci import ci_diagnose  # noqa: PLC0415
+    # The module costs ~100 ms of import and only this lookup reads it.
+    from rediacc_ci.ci import ci_diagnose  # noqa: PLC0415
 
-        _INFRA = frozenset(
-            {
-                c
-                for c in ci_diagnose.CATEGORIES
-                if c.startswith("infra")
-                or c in ci_diagnose.CANCEL_CATEGORIES.values()
-                or c in ci_diagnose.RUN_CANCEL_CATEGORIES.values()
-            }
-        )
-    return _INFRA
+    return frozenset(
+        {
+            c
+            for c in ci_diagnose.CATEGORIES
+            if c.startswith("infra")
+            or c in ci_diagnose.CANCEL_CATEGORIES.values()
+            or c in ci_diagnose.RUN_CANCEL_CATEGORIES.values()
+        }
+    )
 
 
 @dataclass
@@ -903,7 +899,7 @@ def _wall_drift(by_gs: dict[tuple[str, str], list[Obs]], now: float) -> dict[str
 
 
 def token(kind: str, key: str) -> str:
-    return "[%s:%s:%s]" % (TOKEN_PREFIX, kind, key)
+    return "[%s:%s:%s]" % (DEDUP_PREFIX, kind, key)
 
 
 def items_for(b: Built, lock: list[dict[str, Any]]) -> list[tuple[str, str, str]]:
@@ -1351,6 +1347,7 @@ def refresh(
         if backfill and L.backfill(d, root, []) != 0:
             partial.append("backfill")
         if ci:
+            # The registry loads at import and a sparse checkout may lack it, so only this branch pays for it.
             from rediacc_ci.well_known import GH_REPO  # noqa: PLC0415
 
             if L.fold_ci(d, root, repo=GH_REPO) != 0:

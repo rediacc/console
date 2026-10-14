@@ -629,19 +629,24 @@ def wiring_controls():
 
     # READ FROM THE AST, NOT FROM A SUBSTRING. The first spelling of these two searched the gate's source for the literal `CLOCK_KEYS is not E.CLOCK_KEYS`, and renaming the import alias from `E` to `enforce` -- a change that alters nothing about the claim -- turned both controls red. A control that a rename can break is a control that a rename can also silently satisfy.
     def compares_identity(name):
-        """True when the gate contains an `X is not <something>.name` comparison."""
+        """True when the gate contains a `<name> is not <something>.name` comparison, where `<name>` is the bare name or a `BOUND["name"]` slot (the gate binds its run-time copies in one dict, so no `global` statement is needed)."""
+
+        def names(node):
+            if isinstance(node, ast.Name):
+                return node.id == name
+            return (
+                isinstance(node, ast.Subscript)
+                and isinstance(node.slice, ast.Constant)
+                and node.slice.value == name
+            )
+
         for node in ast.walk(ast.parse(src)):
             if not isinstance(node, ast.Compare) or not node.ops:
                 continue
             if not isinstance(node.ops[0], ast.IsNot):
                 continue
             left, right = node.left, node.comparators[0]
-            if (
-                isinstance(left, ast.Name)
-                and left.id == name
-                and isinstance(right, ast.Attribute)
-                and right.attr == name
-            ):
+            if names(left) and isinstance(right, ast.Attribute) and right.attr == name:
                 return True
         return False
 

@@ -427,9 +427,9 @@ def test_a_missing_token_refuses_before_the_build(tmp_path: pathlib.Path) -> Non
     old, new, old_calls, new_calls = run_both(tmp_path, root, drop_env=("CLOUDFLARE_API_TOKEN",))
     assert old.returncode == 1
     assert new.returncode == 1
-    assert old.stderr.endswith(port.MISSING_TOKEN + "\n")
+    assert old.stderr.endswith(port.MISSING_AUTH_MSG + "\n")
     assert ": line %d: " % _twin_line(': "${CLOUDFLARE_API_TOKEN:?') in old.stderr
-    assert new.stderr == port.MISSING_TOKEN + "\n"
+    assert new.stderr == port.MISSING_AUTH_MSG + "\n"
     assert old.stdout == new.stdout == ""
     assert old_calls == new_calls == "", "nothing may be built before the token is checked"
 
@@ -439,8 +439,8 @@ def test_an_empty_token_refuses_exactly_as_an_absent_one_does(tmp_path: pathlib.
     root = _fixture_root(tmp_path)
     old, new, _, _ = run_both(tmp_path, root, CLOUDFLARE_API_TOKEN="")
     assert old.returncode == new.returncode == 1
-    assert old.stderr.endswith(port.MISSING_TOKEN + "\n")
-    assert new.stderr == port.MISSING_TOKEN + "\n"
+    assert old.stderr.endswith(port.MISSING_AUTH_MSG + "\n")
+    assert new.stderr == port.MISSING_AUTH_MSG + "\n"
 
 
 def test_the_account_id_is_documented_and_never_checked(tmp_path: pathlib.Path) -> None:

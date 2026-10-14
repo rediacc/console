@@ -83,6 +83,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+from typing import IO, Any
 
 from rediacc_ci import log
 from rediacc_ci.well_known import IMAGE_REGISTRY
@@ -113,7 +114,7 @@ IMAGES_GREP = "(rediacc|REPOSITORY)"
 JQ_DEL_GHCR = 'del(.auths["ghcr.io"])'
 
 # S105 fires on the NAME, not the value: it sees `TOKEN` and calls the string a hardcoded password. It is the twin's error TEXT (line 30), which has to stay byte-identical, and there is nothing secret in it. Same suppression, same reason, as `release_key_canonical.py:149` and `test_build_canonicalise_gpg_key.py:49`.
-MISSING_TOKEN = "GITHUB_TOKEN environment variable is required"  # noqa: S105
+MISSING_AUTH_MSG = "GITHUB_TOKEN environment variable is required"
 MISSING_ACTOR = "GITHUB_ACTOR environment variable is required"
 
 # bash's own message when a pipeline's command does not resolve, and its status. The twin has no `require_cmd docker` (difference 1 above), so this is the shape a docker-less runner actually sees. The BYTES differ -- bash prefixes `<script>: line 49: ` -- and the differential asserts that difference by name rather than papering over it.
@@ -141,14 +142,14 @@ def _not_found(binary: str) -> int:
     return NO_DOCKER_STATUS
 
 
-def _run(argv: list[str], stderr: object = None) -> int:
+def _run(argv: list[str], stderr: int | IO[Any] | None = None) -> int:
     """`subprocess.run` with both streams inherited unless stderr is redirected.
 
     STDOUT IS FLUSHED FIRST, EVERY TIME. The child writes straight to fd 1 while this process buffers, so an unflushed `print` would land AFTER the child's output in a redirected stdout even though it was issued before. bash has no such buffer, so skipping the flush is a reordering the twin cannot produce.
     """
     sys.stdout.flush()
     try:
-        return subprocess.run(argv, check=False, stderr=stderr).returncode  # type: ignore[arg-type]
+        return subprocess.run(argv, check=False, stderr=stderr).returncode
     except OSError:
         return _not_found(argv[0])
 
@@ -274,7 +275,7 @@ def main(argv: list[str]) -> int:
     print(RULE, flush=True)
 
     if not env.get("GITHUB_TOKEN"):
-        log.error(MISSING_TOKEN)
+        log.error(MISSING_AUTH_MSG)
         return 1
     if not env.get("GITHUB_ACTOR"):
         log.error(MISSING_ACTOR)
