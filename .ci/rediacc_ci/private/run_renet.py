@@ -50,6 +50,12 @@ EXTRA ARGUMENTS ARE DROPPED IN SILENCE. `run-renet.sh quality test` runs `qualit
 
 CONSOLE ROOT comes from this file's own location (`parents[3]`), matching the twin's `get_repo_root`; `rediacc_ci.paths.repo_root()` is not used because it honours `$REDIACC_CI_ROOT` and the twin honours nothing.
 
+-----------------------------------------------------------------------------
+EVERY GOLANGCI EXCLUSION RULE CARRIES A BLOCKER REASON
+-----------------------------------------------------------------------------
+NEW behaviour with no twin (PLAN-inline-suppressions WD2). Before a stage that lints (`all`, `quality`), `private/renet/.golangci.yml` is read line by line and every item of `linters.exclusions.rules` must sit under a comment block holding a `# BLOCKER: <reason>` line; the reason runs from that line to the end of the block and goes through `rediacc_ci.core.allowlist.validate_reason`, the one implementation of the quality rules. A
+rule with no reason, a reason the quality rules refuse, a missing config file, or a config in which no rule is found at all is a failure before `ci.sh` runs: zero rules read is CANNOT VERIFY, never a pass. The other half, a rule that skipped nothing on every release GOOS, is `private/renet/.ci/scripts/quality/lint.sh`'s, because only the golangci-lint run it already makes can see it.
+
 ---- gate ----
 step: Run renet quality
 needs: none
@@ -69,7 +75,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import allowlist, common
 
 # `STAGE="${1:-all}"`. The twin documents four (all, quality, test, build) and
 # validates none of them: an unknown stage is forwarded to `ci.sh`, which is where the twin leaves the decision, so no validation is invented here either.
@@ -77,6 +83,107 @@ DEFAULT_STAGE = "all"
 
 # The label `require_submodule` puts in front of both its CI error and its local warning. Verbatim from the twin, because a caller greps the warning.
 SUBMODULE_LABEL = "Renet submodule"
+
+# The stages whose `ci.sh` arm runs golangci-lint, so the exclusion rules it reads are checked first.
+LINT_STAGES = frozenset({"all", "quality"})
+
+# The golangci config, relative to the renet submodule root, and the label findings name it by.
+GOLANGCI_CONFIG = ".golangci.yml"
+GOLANGCI_LABEL = "private/renet/.golangci.yml"
+
+BLOCKER_PREFIX = "# BLOCKER:"
+
+
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def _rules_block(lines: list[str]) -> tuple[int, int] | None:
+    """`(first, end)` line indexes of the items under `linters:` > `exclusions:` > `rules:`, or None when that path is absent."""
+    path = ("linters:", "exclusions:", "rules:")
+    depth, parent_indent = 0, -1
+    # The indent of the current parent's direct children, learned from its first content line.
+    child_indent: int | None = 0
+    for i, raw in enumerate(lines):
+        stripped = raw.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        ind = _indent(raw)
+        if depth and ind <= parent_indent:
+            return None
+        if child_indent is None:
+            child_indent = ind
+        if stripped == path[depth] and ind == child_indent:
+            depth, parent_indent, child_indent = depth + 1, ind, None
+            if depth == len(path):
+                end = len(lines)
+                for j in range(i + 1, len(lines)):
+                    body = lines[j].strip()
+                    if body and not body.startswith("#") and _indent(lines[j]) <= ind:
+                        end = j
+                        break
+                return i + 1, end
+    return None
+
+
+def exclusion_rule_findings(text: str, label: str = GOLANGCI_LABEL) -> tuple[list[str], int]:
+    """`(findings, rules_read)` for the `linters.exclusions.rules` items of a golangci config.
+
+    An item is a `- ` line at the indent of the block's first item. Its reason is the `# BLOCKER:` line in the run of comment lines directly above it, plus the comment lines that follow that line in the same run. A blank line ends the run, so a reason never reaches across to the next rule.
+    """
+    lines = text.splitlines()
+    block = _rules_block(lines)
+    if block is None:
+        return [
+            "%s: no linters.exclusions.rules list was found, so no rule can be verified" % label
+        ], 0
+    first, end = block
+    item_indent: int | None = None
+    findings: list[str] = []
+    rules = 0
+    for i in range(first, end):
+        stripped = lines[i].strip()
+        if not stripped.startswith("- "):
+            continue
+        if item_indent is None:
+            item_indent = _indent(lines[i])
+        if _indent(lines[i]) != item_indent:
+            continue
+        rules += 1
+        run: list[str] = []
+        j = i - 1
+        while j >= first and lines[j].strip().startswith("#"):
+            run.insert(0, lines[j].strip())
+            j -= 1
+        starts = [k for k, c in enumerate(run) if c.startswith(BLOCKER_PREFIX)]
+        entry = "rule at line %d (%s)" % (i + 1, stripped[2:].strip())
+        if not starts:
+            findings.append(
+                "%s:%d: %s carries no `%s <reason>` comment" % (label, i + 1, entry, BLOCKER_PREFIX)
+            )
+            continue
+        tail = run[starts[-1] :]
+        parts = [tail[0][len(BLOCKER_PREFIX) :]] + [c.lstrip("#") for c in tail[1:]]
+        reason = " ".join(p.strip() for p in parts if p.strip())
+        rejection = allowlist.validate_reason(entry, reason, label)
+        if rejection is not None:
+            findings.append("%s:%d: %s" % (label, i + 1, rejection.message.strip()))
+    if rules == 0:
+        findings.append("%s: linters.exclusions.rules holds no rule, so CANNOT VERIFY" % label)
+    return findings, rules
+
+
+def check_exclusion_rules(renet_dir: pathlib.Path) -> list[str]:
+    """The findings for the submodule's golangci config; a missing or unreadable file is one finding."""
+    path = renet_dir / GOLANGCI_CONFIG
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return [
+            "%s: cannot be read (%s), so no exclusion rule can be verified"
+            % (GOLANGCI_LABEL, exc.strerror or exc)
+        ]
+    return exclusion_rule_findings(text)[0]
 
 
 def console_root() -> pathlib.Path:
@@ -238,6 +345,13 @@ def main(argv: list[str]) -> int:
         return 0
 
     log.step("Running renet CI (stage: %s)..." % stage)
+
+    if stage in LINT_STAGES:
+        findings = check_exclusion_rules(renet_dir)
+        if findings:
+            for finding in findings:
+                log.error(finding)
+            return 1
 
     # An EXPORT, not a per-call env: `ci.sh` spawns its own children.
     os.environ["GOTOOLCHAIN"] = os.environ.get("GOTOOLCHAIN", "") or "auto"
