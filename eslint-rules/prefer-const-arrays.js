@@ -13,6 +13,61 @@
  * The rule provides auto-fix support via --fix.
  */
 
+/**
+ * Check if name follows UPPER_SNAKE_CASE pattern
+ */
+function isUpperSnakeCase(name) {
+  return /^[A-Z][A-Z0-9_]*$/.test(name);
+}
+
+/**
+ * Check if node is an array of literal values only
+ */
+function isLiteralArray(node) {
+  if (node.type !== 'ArrayExpression') return false;
+  if (node.elements.length === 0) return false;
+
+  return node.elements.every(
+    (el) =>
+      el &&
+      (el.type === 'Literal' ||
+        el.type === 'TemplateLiteral' ||
+        // Handle negative numbers like -1
+        (el.type === 'UnaryExpression' && el.argument?.type === 'Literal'))
+  );
+}
+
+/**
+ * Check if array already has `as const` assertion
+ */
+function hasAsConst(node) {
+  const parent = node.parent;
+  if (parent?.type === 'TSAsExpression') {
+    const typeAnnotation = parent.typeAnnotation;
+    // Check for `as const`
+    if (typeAnnotation?.type === 'TSTypeReference') {
+      return typeAnnotation.typeName?.name === 'const';
+    }
+  }
+  return false;
+}
+
+/** The literal array of an UPPER_SNAKE_CASE const declarator that still lacks `as const`, else null. */
+function arrayMissingAsConst(node) {
+  // Must be initialized with array literal of literals
+  const init = node.init;
+  if (!init) return null;
+
+  // Handle TSAsExpression wrapper (when already has type assertion)
+  const arrayNode = init.type === 'TSAsExpression' ? init.expression : init;
+  if (!isLiteralArray(arrayNode)) return null;
+
+  // Skip if already has `as const`
+  if (hasAsConst(arrayNode)) return null;
+
+  return arrayNode;
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const preferConstArrays = {
   meta: {
@@ -30,45 +85,6 @@ export const preferConstArrays = {
   },
 
   create(context) {
-    /**
-     * Check if name follows UPPER_SNAKE_CASE pattern
-     */
-    function isUpperSnakeCase(name) {
-      return /^[A-Z][A-Z0-9_]*$/.test(name);
-    }
-
-    /**
-     * Check if node is an array of literal values only
-     */
-    function isLiteralArray(node) {
-      if (node.type !== 'ArrayExpression') return false;
-      if (node.elements.length === 0) return false;
-
-      return node.elements.every(
-        (el) =>
-          el &&
-          (el.type === 'Literal' ||
-            el.type === 'TemplateLiteral' ||
-            // Handle negative numbers like -1
-            (el.type === 'UnaryExpression' && el.argument?.type === 'Literal'))
-      );
-    }
-
-    /**
-     * Check if array already has `as const` assertion
-     */
-    function hasAsConst(node) {
-      const parent = node.parent;
-      if (parent?.type === 'TSAsExpression') {
-        const typeAnnotation = parent.typeAnnotation;
-        // Check for `as const`
-        if (typeAnnotation?.type === 'TSTypeReference') {
-          return typeAnnotation.typeName?.name === 'const';
-        }
-      }
-      return false;
-    }
-
     return {
       VariableDeclarator(node) {
         // Must be const declaration
@@ -81,16 +97,8 @@ export const preferConstArrays = {
         // Must be UPPER_SNAKE_CASE
         if (!isUpperSnakeCase(name)) return;
 
-        // Must be initialized with array literal of literals
-        const init = node.init;
-        if (!init) return;
-
-        // Handle TSAsExpression wrapper (when already has type assertion)
-        const arrayNode = init.type === 'TSAsExpression' ? init.expression : init;
-        if (!isLiteralArray(arrayNode)) return;
-
-        // Skip if already has `as const`
-        if (hasAsConst(arrayNode)) return;
+        const arrayNode = arrayMissingAsConst(node);
+        if (!arrayNode) return;
 
         context.report({
           node: arrayNode,

@@ -69,15 +69,14 @@ function loadLocale(cwd) {
 /** Extract the i18n key from a t('KEY') call expression argument */
 function extractI18nKey(arg) {
   if (
-    !arg ||
-    arg.type !== 'CallExpression' ||
+    arg?.type !== 'CallExpression' ||
     arg.callee?.type !== 'Identifier' ||
     arg.callee.name !== 't'
   ) {
     return null;
   }
   const keyArg = arg.arguments[0];
-  if (!keyArg || keyArg.type !== 'Literal' || typeof keyArg.value !== 'string') {
+  if (keyArg?.type !== 'Literal' || typeof keyArg.value !== 'string') {
     return null;
   }
   return keyArg.value;

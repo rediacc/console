@@ -44,13 +44,14 @@ const KEYS = /** @type {Record<string, string[]>} */ (/** @type {unknown} */ (js
 function walk(node, visit) {
   if (!node || typeof node !== 'object' || typeof node.type !== 'string') return;
   visit(node);
-  for (const key of KEYS[node.type] ?? []) {
-    const value = node[key];
-    if (Array.isArray(value)) {
-      for (const child of value) walk(child, visit);
-    } else if (value && typeof value.type === 'string') {
-      walk(value, visit);
-    }
+  for (const key of KEYS[node.type] ?? []) walkChild(node[key], visit);
+}
+
+function walkChild(value, visit) {
+  if (Array.isArray(value)) {
+    for (const child of value) walk(child, visit);
+  } else if (value && typeof value.type === 'string') {
+    walk(value, visit);
   }
 }
 

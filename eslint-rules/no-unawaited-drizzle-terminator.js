@@ -161,6 +161,24 @@ function isSafelyConsumed(node, ancestors) {
   return parent.type === 'UnaryExpression' && parent.operator === 'void';
 }
 
+/** The terminator name when `node` is a `.run/.get/...` call on a Drizzle query-builder chain, else null. */
+function drizzleTerminatorMethod(node) {
+  // Must be `.something()` on a chain.
+  if (node.callee.type !== 'MemberExpression') return null;
+  if (node.callee.property?.type !== 'Identifier') return null;
+
+  const method = node.callee.property.name;
+  if (!TERMINATORS.has(method)) return null;
+
+  // The receiver must itself be a CallExpression (a chained query builder). Bare `foo.get()` where foo is just an identifier is not flagged.
+  if (node.callee.object?.type !== 'CallExpression') return null;
+
+  // Must look like a Drizzle chain — at least one builder method present.
+  if (!chainContainsDrizzleBuilder(node.callee)) return null;
+
+  return method;
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUnawaitedDrizzleTerminator = {
   meta: {
@@ -180,18 +198,8 @@ export const noUnawaitedDrizzleTerminator = {
   create(context) {
     return {
       CallExpression(node) {
-        // Must be `.something()` on a chain.
-        if (node.callee.type !== 'MemberExpression') return;
-        if (node.callee.property?.type !== 'Identifier') return;
-
-        const method = node.callee.property.name;
-        if (!TERMINATORS.has(method)) return;
-
-        // The receiver must itself be a CallExpression (a chained query builder). Bare `foo.get()` where foo is just an identifier is not flagged.
-        if (node.callee.object?.type !== 'CallExpression') return;
-
-        // Must look like a Drizzle chain — at least one builder method present.
-        if (!chainContainsDrizzleBuilder(node.callee)) return;
+        const method = drizzleTerminatorMethod(node);
+        if (method === null) return;
 
         // Walk up the AST to find this node's ancestors so we can check how
         // it's consumed. ESLint provides getAncestors() but we need the

@@ -91,6 +91,53 @@ const getStringLiteralValue = (node) => {
   return null;
 };
 
+function isInIgnoredComponent(node, ignoreComponents) {
+  let current = node.parent;
+  while (current) {
+    if (current.type === 'JSXElement') {
+      const name = getElementName(current.openingElement.name);
+      if (ignoreComponents.has(name)) return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+function checkJsxText(env, node) {
+  const { context, ignorePatterns, ignoreComponents } = env;
+  if (isInIgnoredComponent(node, ignoreComponents)) return;
+  if (isIgnoredText(node.value, ignorePatterns)) return;
+  context.report({ node, messageId: 'hardcodedText' });
+}
+
+function checkJsxExpression(env, node) {
+  const { context, ignorePatterns, ignoreComponents } = env;
+  if (node.parent?.type === 'JSXAttribute') return;
+  if (isInIgnoredComponent(node, ignoreComponents)) return;
+
+  const value = getStringLiteralValue(node);
+  if (!value) return;
+  if (isIgnoredText(value, ignorePatterns)) return;
+
+  context.report({ node, messageId: 'hardcodedText' });
+}
+
+function checkJsxAttribute(env, node) {
+  const { context, ignorePatterns, ignoreAttributes, checkAttributes, ignoreComponents } = env;
+  const attrName = node.name?.name;
+  if (!attrName || typeof attrName !== 'string') return;
+  if (ignoreAttributes.has(attrName)) return;
+  if (attrName.startsWith('data-')) return;
+  if (isInIgnoredComponent(node, ignoreComponents)) return;
+  if (!checkAttributes.has(attrName)) return;
+
+  const value = getStringLiteralValue(node.value);
+  if (!value) return;
+  if (isIgnoredText(value, ignorePatterns)) return;
+
+  context.report({ node, messageId: 'hardcodedText' });
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noHardcodedText = {
   meta: {
@@ -137,49 +184,19 @@ export const noHardcodedText = {
     const checkAttributes = new Set(options.checkAttributes || DEFAULT_CHECK_ATTRIBUTES);
     const ignoreComponents = new Set(options.ignoreComponents || DEFAULT_IGNORE_COMPONENTS);
 
-    const isInIgnoredComponent = (node) => {
-      let current = node.parent;
-      while (current) {
-        if (current.type === 'JSXElement') {
-          const name = getElementName(current.openingElement.name);
-          if (ignoreComponents.has(name)) return true;
-        }
-        current = current.parent;
-      }
-      return false;
-    };
+    const env = { context, ignorePatterns, ignoreAttributes, checkAttributes, ignoreComponents };
 
     return {
       JSXText(node) {
-        if (isInIgnoredComponent(node)) return;
-        if (isIgnoredText(node.value, ignorePatterns)) return;
-        context.report({ node, messageId: 'hardcodedText' });
+        checkJsxText(env, node);
       },
 
       JSXExpressionContainer(node) {
-        if (node.parent?.type === 'JSXAttribute') return;
-        if (isInIgnoredComponent(node)) return;
-
-        const value = getStringLiteralValue(node);
-        if (!value) return;
-        if (isIgnoredText(value, ignorePatterns)) return;
-
-        context.report({ node, messageId: 'hardcodedText' });
+        checkJsxExpression(env, node);
       },
 
       JSXAttribute(node) {
-        const attrName = node.name?.name;
-        if (!attrName || typeof attrName !== 'string') return;
-        if (ignoreAttributes.has(attrName)) return;
-        if (attrName.startsWith('data-')) return;
-        if (isInIgnoredComponent(node)) return;
-        if (!checkAttributes.has(attrName)) return;
-
-        const value = getStringLiteralValue(node.value);
-        if (!value) return;
-        if (isIgnoredText(value, ignorePatterns)) return;
-
-        context.report({ node, messageId: 'hardcodedText' });
+        checkJsxAttribute(env, node);
       },
     };
   },

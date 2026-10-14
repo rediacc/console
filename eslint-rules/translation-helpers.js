@@ -78,7 +78,7 @@ export const hasPath = (resource, segments) => {
   if (!resource) return false;
   let current = resource;
   for (const segment of segments) {
-    if (!Object.prototype.hasOwnProperty.call(current, segment)) {
+    if (!Object.hasOwn(current, segment)) {
       return false;
     }
     current = current[segment];
