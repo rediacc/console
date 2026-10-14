@@ -160,6 +160,8 @@ def plant_receipt(root, status="VERIFIED", tree=None, inputs=None, pointer=None,
     root = pathlib.Path(root)
     tree = tree or _git(root, "rev-parse", "HEAD^{tree}")
     head = _git(root, "rev-parse", "HEAD")
+    if not head:
+        raise RuntimeError("fixture has no HEAD commit to key the receipt on")
     if pointer is None:
         pointer = _git(root, "rev-parse", "%s:%s" % (tree, RENET))
     reason = None
@@ -225,6 +227,8 @@ def _other_pointer(path):
     """A VERIFIED receipt taken at renet A, while the pushed tree points at renet B."""
     root = world(path, renet_files=("cmd/renet/sandbox_exec.go",))
     seed_tree = _git(root, "rev-parse", "origin/main^{tree}")
+    if not seed_tree:
+        raise RuntimeError("fixture has no origin/main tree to seed the receipt from")
     return plant_receipt(root, tree=seed_tree)
 
 
@@ -232,6 +236,8 @@ def _stale_not_verified(path):
     """The CLI touched; the only NOT_VERIFIED receipt is for the seed's tree and inputs."""
     root = world(path, cli=True)
     seed_tree = _git(root, "rev-parse", "origin/main^{tree}")
+    if not seed_tree:
+        raise RuntimeError("fixture has no origin/main tree to seed the receipt from")
     return plant_receipt(root, "NOT_VERIFIED", tree=seed_tree)
 
 
