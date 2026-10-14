@@ -211,10 +211,15 @@ resolve_pytest() {
 }
 
 # Rungs 1-3 for ruff, same order as resolve_ruff in python_lint.py plus this
-# file's own cached install: RUFF_BIN, a PATH ruff AT THE PIN, then
+# file's own cached install: RUFF_BIN AT THE PIN, a PATH ruff AT THE PIN, then
 # $TOOL_BIN_DIR/ruff at the pin. Echoes the binary, or fails.
 resolve_ruff() {
-    if [ -n "${RUFF_BIN:-}" ]; then
+    # An explicit binary is taken only AT THE PIN, like every other rung: the
+    # install arm reports this answer as "ruff <pin> already at <path>" and the
+    # doctor row prints it beside the pin, so a different ruff here would be
+    # reported as the pinned one.
+    if [ -n "${RUFF_BIN:-}" ] &&
+        [ "$(toolchain_probe_version ruff "$RUFF_BIN" 2>/dev/null)" = "$RUFF_VERSION" ]; then
         printf '%s' "$RUFF_BIN"
         return 0
     fi

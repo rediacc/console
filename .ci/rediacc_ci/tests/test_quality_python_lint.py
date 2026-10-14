@@ -263,6 +263,51 @@ def test_a_missing_ruff_is_77_and_not_1(tmp_path):
     assert any("astral.sh/ruff" in line for line in lines), want_err
 
 
+def _cache_with(tmp_path, monkeypatch, *, ruff_version=None, uvx=False):
+    """A fake repo root whose bootstrap cache holds an optional `ruff` (reporting `ruff_version`) and an optional `uvx`, with an empty PATH, so only the cache rungs can answer."""
+    cache = tmp_path / ".ci" / "cache" / "toolchain"
+    if ruff_version is not None:
+        ruff = cache / "uv-tools" / "bin" / "ruff"
+        ruff.parent.mkdir(parents=True)
+        ruff.write_text("#!/bin/sh\necho 'ruff %s'\n" % ruff_version, encoding="utf-8")
+        ruff.chmod(0o755)
+    if uvx:
+        tool = cache / "uv-0.0.0" / "uvx"
+        tool.parent.mkdir(parents=True)
+        tool.write_text("#!/bin/sh\n", encoding="utf-8")
+        tool.chmod(0o755)
+    monkeypatch.setattr(gate.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    monkeypatch.delenv("RUFF_BIN", raising=False)
+    return cache
+
+
+def test_the_bootstrap_cached_ruff_at_the_pin_is_a_rung(tmp_path, monkeypatch):
+    cache = _cache_with(tmp_path, monkeypatch, ruff_version=gate.RUFF_VERSION)
+    assert gate.resolve_ruff() == [str(cache / "uv-tools" / "bin" / "ruff")]
+
+
+def test_the_bootstrap_cached_ruff_at_another_version_is_not_a_rung(tmp_path, monkeypatch):
+    _cache_with(tmp_path, monkeypatch, ruff_version="0.0.1")
+    assert gate.resolve_ruff() is None
+
+
+def test_the_bootstrap_uvx_runs_the_pinned_ruff_when_no_binary_is_at_the_pin(tmp_path, monkeypatch):
+    cache = _cache_with(tmp_path, monkeypatch, ruff_version="0.0.1", uvx=True)
+    assert gate.resolve_ruff() == [str(cache / "uv-0.0.0" / "uvx"), "ruff@%s" % gate.RUFF_VERSION]
+
+
+def test_a_path_uvx_is_the_last_rung(tmp_path, monkeypatch):
+    _cache_with(tmp_path, monkeypatch)
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    uvx = bindir / "uvx"
+    uvx.write_text("#!/bin/sh\n", encoding="utf-8")
+    uvx.chmod(0o755)
+    monkeypatch.setenv("PATH", str(bindir))
+    assert gate.resolve_ruff() == [str(uvx), "ruff@%s" % gate.RUFF_VERSION]
+
+
 def test_the_control_verdict_pins_three_separate_facts():
     """F821 present, ARG001 present, ANN001 ABSENT. Any one alone is satisfiable.
 

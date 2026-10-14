@@ -249,6 +249,13 @@ def pr_body(environ=None, runner=None, branch=None):
         return None, note % ("gh unavailable: %s" % exc)
 
 
+def pr_body_for(offenders, reader=None):
+    """(body, note) from `pr_body`, read only when `offenders` (the open-box plans) exist: the body decides nothing else, and a run with every box ticked must not pay a `gh` round trip or print a note about a body it never needed."""
+    if not offenders:
+        return None, ""
+    return (reader or pr_body)()
+
+
 def pr_admits_open_boxes(gate, body):
     """True when the PR body carries an `Operational-Reason:` line, read by plan_gate's own parser.
 
@@ -1906,16 +1913,15 @@ def main(argv=None) -> int:
     # ---- P-A1, scoped to the live PR's plan and the plans this branch ticked (operator ruling 2026-10-02). A plan_gate that cannot be read is a finding, never an empty scope.
     n_plans, n_open = in_scope(head_plans, planfile.FINISHED_STATES)
     gate, gate_problem = load_plan_gate()
-    run_body, body_note = pr_body()
+    all_offenders = open_offenders(head_plans, planfile.FINISHED_STATES)
+    run_body, body_note = pr_body_for(all_offenders)
     if body_note:
         print("  INFO: " + body_note)
     scope, scope_notes, scope_problem = clock_scope(
         gate, REPO_ROOT, base_plans, head_plans, run_body
     )
     scope_problem = gate_problem or scope_problem
-    on_clock, off_clock = split_by_scope(
-        open_offenders(head_plans, planfile.FINISHED_STATES), scope
-    )
+    on_clock, off_clock = split_by_scope(all_offenders, scope)
     if scope_problem:
         findings.append(
             "P-A1 NO SCOPE: %s. Refusing to judge nothing: restore .claude/rediacc_hooks/plan_gate.py "

@@ -279,7 +279,7 @@ def _at_pin(binary: str) -> bool:
     fields = probe.stdout.split()
     version = fields[1].removeprefix("v") if len(fields) > 1 else ""
     match = re.match(r"^[0-9]+(\.[0-9]+)*", version)
-    return bool(match) and match.group(0) == RUFF_VERSION
+    return match is not None and match.group(0) == RUFF_VERSION
 
 
 def _which(name: str) -> str | None:

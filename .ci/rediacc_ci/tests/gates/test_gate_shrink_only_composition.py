@@ -113,6 +113,18 @@ def argv_asserts(tree) -> set[int]:
     """The ids of the nodes inside every `assert` whose condition reads NO argument vector (see ARGV_PARAMS): those check output, so their comparisons parse nothing."""
     skipped: set[int] = set()
 
+    def fstring_reads(node, tainted) -> bool:
+        """Whether any interpolation of the f-string `node`, or of a format spec nested in one, reads an argument vector."""
+        for part in node.values:
+            if not isinstance(part, ast.FormattedValue):
+                continue
+            if reads(part.value, tainted):
+                return True
+            spec = part.format_spec
+            if isinstance(spec, ast.JoinedStr) and fstring_reads(spec, tainted):
+                return True
+        return False
+
     def reads(expr, tainted) -> bool:
         # A value is an argument vector when any operand it is built from is one: concatenation, unpacking, `or`/`and`, a conditional, a display. A call result is untainted unless it is a sequence wrapper or argparse result, a method called ON a tainted receiver (`sys.argv.copy()`), a method on a literal handed a tainted argument (`" ".join(sys.argv)`), or a call handed a tainted positional argument that is returned whole by a wrapper; any other call (`build_args()`, `run(argv)`) is untainted by design, because its result is as often the output of a run as an argv and counting it would put every test that passes `argv` on to a subprocess helper on the offender list.
         if isinstance(expr, ast.Name):
@@ -138,15 +150,12 @@ def argv_asserts(tree) -> set[int]:
             if isinstance(func, ast.Name) and func.id in SEQUENCE_WRAPPERS:
                 return any(reads(a, tainted) for a in expr.args)
             if isinstance(func, ast.Attribute):
-                # A method on a literal (`" ".join(sys.argv)`, `f"{sep}".join(sys.argv)`) is built from its arguments; any other attribute call (`subprocess.run(argv)`) stays untainted by design.
+                # A method on a literal (`" ".join(sys.argv)`) is built from its arguments; any other attribute call (`subprocess.run(argv)`) stays untainted by design.
                 if isinstance(func.value, ast.Constant):
                     return any(reads(a, tainted) for a in expr.args)
-                # An f-string receiver carries its own interpolations, which can be the argument vector too (`f"{sys.argv[1]}".join(...)`).
+                # An f-string receiver is built from its arguments AND from its own interpolations, format specs included, so either side can be the argument vector (`f"{sys.argv[1]}".join(...)`, `f"{x:{sys.argv[1]}}".join(...)`).
                 if isinstance(func.value, ast.JoinedStr):
-                    parts = [
-                        v.value for v in func.value.values if isinstance(v, ast.FormattedValue)
-                    ]
-                    return any(reads(p, tainted) for p in parts) or any(
+                    return fstring_reads(func.value, tainted) or any(
                         reads(a, tainted) for a in expr.args
                     )
                 return reads(func.value, tainted)
@@ -826,6 +835,13 @@ print("unconditional reseed")
     "assert FLAG in (line = f'{sys.argv[1]}'.join(['a', 'b']))": """import sys
 
 line = f"{sys.argv[1]}".join(["a", "b"])
+assert "%s" in line
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (line = f'{x:{sys.argv[1]}}'.join(['a', 'b']))": """import sys
+
+line = f"{'x':{sys.argv[1]}}".join(["a", "b"])
 assert "%s" in line
 print("unconditional reseed")
 """

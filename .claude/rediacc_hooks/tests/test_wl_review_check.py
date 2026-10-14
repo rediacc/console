@@ -655,3 +655,17 @@ def test_a_long_unterminated_line_is_counted_once_across_chunks(monkeypatch):
     assert not R._lines_upto(io.StringIO("x" * 100), 2, 10_000)[0]
     # The bound is in characters: a line that starts past it is not found.
     assert not R._lines_upto(io.StringIO(text), 2, 50)[0]
+
+
+def test_module_file_prefers_the_hit_sharing_the_most_directory_components():
+    """The tie-break counts whole path components: `a/bc` and `a/bd` share the one directory `a`, not the characters `a/b`, so the hit under the nearer directory tree wins and the length only breaks a true tie."""
+    tree = R._Tree("/nonexistent", "0" * 40)
+    tree._files = ["a/bd/util.py", "a/util.py"]
+    # By characters `a/bd/util.py` shares `a/b` with `a/bc/y.py` and wins; by components both share only `a`, and the shorter path wins.
+    assert tree.module_file("util", "a/bc/y.py") == "a/util.py"
+    # A deeper shared directory beats a shorter path.
+    tree._files = ["a/bc/deep/util.py", "a/util.py"]
+    assert tree.module_file("util", "a/bc/deep/y.py") == "a/bc/deep/util.py"
+    # Root-level files share the empty directory with each other, the unchanged edge.
+    tree._files = ["util.py", "pkg/util.py"]
+    assert tree.module_file("util", "main.py") == "util.py"
