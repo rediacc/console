@@ -114,6 +114,7 @@ COMMAND-LINE ENTRY POINT (what a bash caller can reach)
 
 from __future__ import annotations
 
+import os
 import pathlib
 import platform as _stdlib_platform
 import sys
@@ -328,7 +329,6 @@ def detect_wsl(proc_root: pathlib.Path | str = "/", env: dict[str, str] | None =
 
     An unreadable file is not a signal and not an error: /proc is absent on macOS, and `detect_wsl()` there must answer "not WSL" rather than raise.
     """
-    import os  # noqa: PLC0415 -- stdlib os is used by this function alone
 
     root = pathlib.Path(proc_root)
     environ = os.environ if env is None else env

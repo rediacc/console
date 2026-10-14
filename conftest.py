@@ -11,6 +11,7 @@ WHAT IT DOES NOT DO. It does not turn parallelism on, and it does not decide the
 24 inner ones. `--dist loadgroup` IS in `addopts` (pyproject.toml says why): without it these markers do nothing, and a bare `pytest -n auto` spread test_guards_differential.py's session fixture over 24 workers.
 """
 
+import hashlib
 import os
 import pathlib
 import subprocess
@@ -477,7 +478,6 @@ def parse_porcelain(raw: str) -> list[tuple[str, str]]:
 
 def tree_state(root, scope: list[str]) -> dict[str, tuple[str, str]] | None:
     """`{path: (status, sha256 of its bytes or "<absent>")}` for every changed or untracked path under `scope`, or None when git cannot answer."""
-    import hashlib  # noqa: PLC0415 -- only the tripwire needs it, and conftest is imported by every run
 
     try:
         result = subprocess.run(
@@ -538,8 +538,8 @@ def pytest_sessionfinish(session: pytest.Session) -> None:
     if hasattr(config, "workerinput"):
         # A worker hands its write record and notes to the controller, which judges the run once.
         if os.environ.get(SNAPSHOT_ENV) != "0":
-            config.workeroutput["tree_writes"] = dict(_WRITES)  # type: ignore[attr-defined]
-            config.workeroutput["tree_notes"] = list(_NOTES)  # type: ignore[attr-defined]
+            config.workeroutput["tree_writes"] = dict(_WRITES)
+            config.workeroutput["tree_notes"] = list(_NOTES)
         return
     if _tripwire_off(config) or _TRIPWIRE_KEY not in config.stash:
         return

@@ -35,6 +35,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import bws_env
+from rediacc_ci.core import env as envfile
 from rediacc_ci.setup import bridge, githooks, host, phases
 from rediacc_ci.setup.ctx import Ctx
 
@@ -421,7 +423,6 @@ PUBLIC_KEY_SPECS = (
 
 def retired_env_findings(root: pathlib.Path) -> list[str]:
     """One line per retired env file that still holds more than the bootstrap token. Names only, never values."""
-    from rediacc_ci.core import env as envfile  # noqa: PLC0415
 
     findings = []
     for rel in RETIRED_ENV_FILES:
@@ -441,7 +442,6 @@ def _account_bws_bootstrap(ctx: Ctx) -> int:
 
     Every secret the account stack reads comes from Bitwarden through `bws_env exec --profile ...`, and the one credential that cannot (the machine-account token) lives in its own 0600 file. A leftover `private/account/.env` would be a second source of truth that nothing reconciles, which is why this stops setup rather than warning.
     """
-    from rediacc_ci.core import bws_env  # noqa: PLC0415
 
     ctx.say()
     ctx.step("Bitwarden bootstrap (account)")

@@ -30,6 +30,7 @@ THE PURE CORE IS PURE ON PURPOSE. Every function below takes data and returns da
 """
 
 import dataclasses
+import datetime as dt
 import json
 import os
 import pathlib
@@ -204,7 +205,6 @@ def session_rel(session: str) -> str:
 
 def stamp_text(ts: float) -> str:
     """An ISO-8601 Z stamp, matching the heading format the sections carry."""
-    import datetime as dt  # noqa: PLC0415 -- one formatting call; the module stays clock-free at import
 
     return dt.datetime.fromtimestamp(float(ts), dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 

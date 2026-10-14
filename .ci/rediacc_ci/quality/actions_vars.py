@@ -54,9 +54,11 @@ Exit 1 on any finding or refusal, 2 on a failed control.
 from __future__ import annotations
 
 import collections
+import copy
 import json
 import pathlib
 import sys
+import tempfile
 import typing
 from typing import Any
 
@@ -449,8 +451,6 @@ _SUPPLY = {"bootstrap_names": ["BWS_ACCESS_TOKEN"]}
 
 
 def _fixture(tmp, workflow=None, spec=None, vault_map=None, supply=None):
-    import copy  # noqa: PLC0415
-
     root = pathlib.Path(tmp)
     (root / ".github" / "workflows").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "config").mkdir(parents=True, exist_ok=True)
@@ -481,8 +481,6 @@ def _has(root, prefix: str) -> bool:
 
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
-    import copy  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
 

@@ -62,6 +62,7 @@ from __future__ import annotations
 import ast
 import pathlib
 import sys
+import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
@@ -471,7 +472,6 @@ def _scopes_for_fixture():
 
 def selftest():
     """True when a control failed, which is what `controls_first` expects."""
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
     scopes = _scopes_for_fixture()

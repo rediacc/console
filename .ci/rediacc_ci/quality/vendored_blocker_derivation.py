@@ -57,6 +57,7 @@ import os
 import pathlib
 import re
 import sys
+import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
@@ -521,7 +522,6 @@ def _real(rel: str) -> str:
 
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
 

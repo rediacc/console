@@ -39,9 +39,11 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
+from rediacc_ci.core import bws_env
 from rediacc_ci.quality import shrink_only
 
 BASELINE_REL = ".ci/config/account-env-retired-baseline.json"
@@ -191,7 +193,6 @@ def evaluate_token_path(token: str, root: pathlib.Path) -> list[str]:
 
 def run(root=None, env=None):
     root = pathlib.Path(root or paths.repo_root())
-    from rediacc_ci.core import bws_env  # noqa: PLC0415
 
     files = tracked(root)
     baseline = load_baseline(root)
@@ -323,7 +324,6 @@ def _findings(root, env=None) -> list[str]:
 @git_isolated
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
     clean_script = "#!/bin/bash\nPYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-dev -- x\n"
