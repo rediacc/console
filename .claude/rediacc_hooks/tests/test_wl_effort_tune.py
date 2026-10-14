@@ -582,3 +582,24 @@ def test_each_generated_judge_rule_matches_its_shape_and_not_its_control(shape):
     exec(compile(spec["source"], "<rule:%s>" % shape, "exec"), ns)
     assert ns["matches"](*POSITIVES[shape]) is True
     assert ns["matches"](*spec["control"]) is False
+
+
+def test_an_untuned_key_counts_rows_whose_recorded_verdict_differs_from_the_table(proj):
+    """2026-10-14, first real run: a queued advisory for a key the table BLOCKS is recorded `advise`, and comparing every row with the table hid 8 of 12 real rows. Only a key tuned after the row was decided sets the row aside."""
+    table = table_of(proj)
+    key = "reg-queue"
+    assert T.wl_effort.verdict(key, "smart", table) == "block"
+    rows = [row(n, key, "advise", "smart", "work") for n in range(1, 4)]
+    assert T.stats(rows, NOW, table=table)[key]["advise"]["rows"] == 3
+    # CONTROL: once the key is tuned AFTER those rows, the rows recorded under the old verdict are set aside.
+    tuned = {
+        **table,
+        "tuned": {
+            key: {
+                "tuned_at": stamp(0),
+                "review_after": stamp(-60 * 24 * 30),
+                "direction": "promote",
+            }
+        },
+    }
+    assert T.stats(rows, NOW, table=tuned)[key]["advise"]["rows"] == 0
