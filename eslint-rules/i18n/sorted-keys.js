@@ -50,6 +50,38 @@ const reportFirstUnsorted = (context, keys, members, compare) => {
   }
 };
 
+/**
+ * Check if an object's keys are sorted
+ * @param {object} env - rule context and comparator
+ * @param {object} node - AST Object node
+ * @param {string} path - Current path for error messages
+ */
+function checkObject(env, node, path = '') {
+  const members = objectMembers(node);
+  const keys = [];
+
+  for (const member of members) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+
+    if (key) {
+      keys.push({
+        key,
+        node: member,
+        fullPath: joinPath(path, key),
+      });
+    }
+
+    // Recursively check nested objects
+    if (member.value?.type === 'Object') {
+      checkObject(env, member.value, joinPath(path, key));
+    }
+  }
+
+  reportFirstUnsorted(env.context, keys, members, env.naturalCompare);
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const sortedKeys = {
   meta: {
@@ -96,41 +128,12 @@ export const sortedKeys = {
       });
     };
 
-    /**
-     * Check if an object's keys are sorted
-     * @param {object} node - AST Object node
-     * @param {string} path - Current path for error messages
-     */
-    const checkObject = (node, path = '') => {
-      const members = objectMembers(node);
-      const keys = [];
-
-      for (const member of members) {
-        if (member.type !== 'Member') continue;
-
-        const key = memberKey(member);
-
-        if (key) {
-          keys.push({
-            key,
-            node: member,
-            fullPath: joinPath(path, key),
-          });
-        }
-
-        // Recursively check nested objects
-        if (member.value?.type === 'Object') {
-          checkObject(member.value, joinPath(path, key));
-        }
-      }
-
-      reportFirstUnsorted(context, keys, members, naturalCompare);
-    };
+    const env = { context, naturalCompare };
 
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(env, node.body);
         }
       },
     };

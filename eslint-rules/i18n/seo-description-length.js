@@ -10,6 +10,54 @@ import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 const DEFAULT_MIN_LENGTH = 50;
 const DEFAULT_MAX_LENGTH = 160;
 
+function isMetaDescriptionKey(path) {
+  return path.endsWith('.meta.description');
+}
+
+function isExempt(exemptKeys, path) {
+  return exemptKeys.some((exempt) => path.includes(exempt));
+}
+
+function checkValue(env, value, fullPath) {
+  const { context, minLength, maxLength, exemptKeys } = env;
+  if (value.type === 'Object') {
+    checkObject(env, value, fullPath);
+    return;
+  }
+  if (value.type !== 'String') return;
+  if (!isMetaDescriptionKey(fullPath) || isExempt(exemptKeys, fullPath)) return;
+
+  const str = value.value;
+  const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
+  const len = rendered.length;
+
+  if (len < minLength) {
+    context.report({
+      node: value,
+      messageId: 'tooShort',
+      data: { key: fullPath, length: String(len), min: String(minLength) },
+    });
+  } else if (len > maxLength) {
+    context.report({
+      node: value,
+      messageId: 'tooLong',
+      data: { key: fullPath, length: String(len), max: String(maxLength) },
+    });
+  }
+}
+
+function checkObject(env, node, path = '') {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+    const value = member.value;
+    if (!key || !value) continue;
+
+    checkValue(env, value, joinPath(path, key));
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const seoDescriptionLength = {
   meta: {
@@ -48,57 +96,12 @@ export const seoDescriptionLength = {
     const maxLength = options.maxLength ?? DEFAULT_MAX_LENGTH;
     const exemptKeys = options.exemptKeys || [];
 
-    function isMetaDescriptionKey(path) {
-      return path.endsWith('.meta.description');
-    }
-
-    function isExempt(path) {
-      return exemptKeys.some((exempt) => path.includes(exempt));
-    }
-
-    const checkValue = (value, fullPath) => {
-      if (value.type === 'Object') {
-        checkObject(value, fullPath);
-        return;
-      }
-      if (value.type !== 'String') return;
-      if (!isMetaDescriptionKey(fullPath) || isExempt(fullPath)) return;
-
-      const str = value.value;
-      const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
-      const len = rendered.length;
-
-      if (len < minLength) {
-        context.report({
-          node: value,
-          messageId: 'tooShort',
-          data: { key: fullPath, length: String(len), min: String(minLength) },
-        });
-      } else if (len > maxLength) {
-        context.report({
-          node: value,
-          messageId: 'tooLong',
-          data: { key: fullPath, length: String(len), max: String(maxLength) },
-        });
-      }
-    };
-
-    const checkObject = (node, path = '') => {
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-
-        const key = memberKey(member);
-        const value = member.value;
-        if (!key || !value) continue;
-
-        checkValue(value, joinPath(path, key));
-      }
-    };
+    const env = { context, minLength, maxLength, exemptKeys };
 
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(env, node.body);
         }
       },
     };

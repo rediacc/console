@@ -10,6 +10,64 @@ import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 const DEFAULT_MIN_LENGTH = 30;
 const DEFAULT_MAX_LENGTH = 60;
 
+/**
+ * Check if a key path ends with "meta.title" (page title pattern)
+ */
+function isMetaTitleKey(path) {
+  return path.endsWith('.meta.title');
+}
+
+/**
+ * Check if a key is exempt from validation
+ */
+function isExempt(exemptKeys, path) {
+  return exemptKeys.some((exempt) => path.includes(exempt));
+}
+
+/**
+ * Recursively walk the JSON AST checking title values
+ */
+function checkValue(env, value, fullPath) {
+  const { context, minLength, maxLength, exemptKeys } = env;
+  if (value.type === 'Object') {
+    checkObject(env, value, fullPath);
+    return;
+  }
+  if (value.type !== 'String') return;
+  if (!isMetaTitleKey(fullPath) || isExempt(exemptKeys, fullPath)) return;
+
+  const str = value.value;
+  // Skip interpolation-heavy titles (e.g., "{{companyName}}")
+  const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
+  const len = rendered.length;
+
+  if (len < minLength) {
+    context.report({
+      node: value,
+      messageId: 'tooShort',
+      data: { value: str, key: fullPath, length: String(len), min: String(minLength) },
+    });
+  } else if (len > maxLength) {
+    context.report({
+      node: value,
+      messageId: 'tooLong',
+      data: { value: str, key: fullPath, length: String(len), max: String(maxLength) },
+    });
+  }
+}
+
+function checkObject(env, node, path = '') {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+    const value = member.value;
+    if (!key || !value) continue;
+
+    checkValue(env, value, joinPath(path, key));
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const seoTitleLength = {
   meta: {
@@ -47,67 +105,12 @@ export const seoTitleLength = {
     const maxLength = options.maxLength ?? DEFAULT_MAX_LENGTH;
     const exemptKeys = options.exemptKeys || [];
 
-    /**
-     * Check if a key path ends with "meta.title" (page title pattern)
-     */
-    function isMetaTitleKey(path) {
-      return path.endsWith('.meta.title');
-    }
-
-    /**
-     * Check if a key is exempt from validation
-     */
-    function isExempt(path) {
-      return exemptKeys.some((exempt) => path.includes(exempt));
-    }
-
-    /**
-     * Recursively walk the JSON AST checking title values
-     */
-    const checkValue = (value, fullPath) => {
-      if (value.type === 'Object') {
-        checkObject(value, fullPath);
-        return;
-      }
-      if (value.type !== 'String') return;
-      if (!isMetaTitleKey(fullPath) || isExempt(fullPath)) return;
-
-      const str = value.value;
-      // Skip interpolation-heavy titles (e.g., "{{companyName}}")
-      const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
-      const len = rendered.length;
-
-      if (len < minLength) {
-        context.report({
-          node: value,
-          messageId: 'tooShort',
-          data: { value: str, key: fullPath, length: String(len), min: String(minLength) },
-        });
-      } else if (len > maxLength) {
-        context.report({
-          node: value,
-          messageId: 'tooLong',
-          data: { value: str, key: fullPath, length: String(len), max: String(maxLength) },
-        });
-      }
-    };
-
-    const checkObject = (node, path = '') => {
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-
-        const key = memberKey(member);
-        const value = member.value;
-        if (!key || !value) continue;
-
-        checkValue(value, joinPath(path, key));
-      }
-    };
+    const env = { context, minLength, maxLength, exemptKeys };
 
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(env, node.body);
         }
       },
     };

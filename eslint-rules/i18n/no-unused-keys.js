@@ -8,6 +8,60 @@ import { extractUsedKeys } from './shared/key-extractor.js';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
+/**
+ * Check if a key or any of its parent paths are used
+ */
+function isKeyOrParentUsed(usedKeys, key) {
+  // Check exact match
+  if (usedKeys.has(key)) {
+    return true;
+  }
+
+  // Check if this is a parent of a used key
+  for (const usedKey of usedKeys) {
+    if (usedKey.startsWith(`${key}.`)) {
+      return true;
+    }
+  }
+
+  // Check if any parent path is used (means the whole object is accessed)
+  const parts = key.split('.');
+  for (let i = 1; i < parts.length; i++) {
+    const parentPath = parts.slice(0, i).join('.');
+    if (usedKeys.has(parentPath)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Flatten keys from a JSON object node
+ */
+function flattenKeys(node, prefix = '') {
+  const keys = [];
+
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+    if (!key) continue;
+
+    const fullPath = joinPath(prefix, key);
+
+    if (member.value?.type === 'Object') {
+      // Recursively check nested objects
+      keys.push(...flattenKeys(member.value, fullPath));
+    } else {
+      // Leaf value - this is a translation key
+      keys.push({ key: fullPath, node: member.name });
+    }
+  }
+
+  return keys;
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUnusedKeys = {
   meta: {
@@ -65,60 +119,6 @@ export const noUnusedKeys = {
       return ignorePatterns.some((pattern) => pattern.test(key));
     };
 
-    /**
-     * Check if a key or any of its parent paths are used
-     */
-    const isKeyOrParentUsed = (key) => {
-      // Check exact match
-      if (usedKeys.has(key)) {
-        return true;
-      }
-
-      // Check if this is a parent of a used key
-      for (const usedKey of usedKeys) {
-        if (usedKey.startsWith(`${key}.`)) {
-          return true;
-        }
-      }
-
-      // Check if any parent path is used (means the whole object is accessed)
-      const parts = key.split('.');
-      for (let i = 1; i < parts.length; i++) {
-        const parentPath = parts.slice(0, i).join('.');
-        if (usedKeys.has(parentPath)) {
-          return true;
-        }
-      }
-
-      return false;
-    };
-
-    /**
-     * Flatten keys from a JSON object node
-     */
-    const flattenKeys = (node, prefix = '') => {
-      const keys = [];
-
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-
-        const key = memberKey(member);
-        if (!key) continue;
-
-        const fullPath = joinPath(prefix, key);
-
-        if (member.value?.type === 'Object') {
-          // Recursively check nested objects
-          keys.push(...flattenKeys(member.value, fullPath));
-        } else {
-          // Leaf value - this is a translation key
-          keys.push({ key: fullPath, node: member.name });
-        }
-      }
-
-      return keys;
-    };
-
     return {
       Document(node) {
         if (node.body?.type !== 'Object') return;
@@ -132,7 +132,7 @@ export const noUnusedKeys = {
           }
 
           // Check if key is used
-          if (!isKeyOrParentUsed(key)) {
+          if (!isKeyOrParentUsed(usedKeys, key)) {
             context.report({
               node: keyNode,
               messageId: 'unusedKey',

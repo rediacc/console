@@ -43,7 +43,7 @@ const namespaceFromScope = (scope) => {
 /** The variable names passed in the options object of a t() call. */
 const collectProvidedVars = (optionsArg) => {
   const providedVars = new Set();
-  if (!optionsArg || optionsArg.type !== 'ObjectExpression') return providedVars;
+  if (optionsArg?.type !== 'ObjectExpression') return providedVars;
 
   for (const prop of optionsArg.properties) {
     if (prop.type !== 'Property') continue;
@@ -231,7 +231,7 @@ export const interpolationMatch = {
 
         // Get the first argument (translation key)
         const keyArg = node.arguments[0];
-        if (!keyArg || keyArg.type !== 'Literal' || typeof keyArg.value !== 'string') {
+        if (keyArg?.type !== 'Literal' || typeof keyArg.value !== 'string') {
           return; // Skip dynamic keys
         }
 

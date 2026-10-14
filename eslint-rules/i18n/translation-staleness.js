@@ -87,6 +87,39 @@ const extractKeyValuesFromAst = (node, prefix = '') => {
   return result;
 };
 
+/** Compare one key's current hash with the stored manifest and report a new or stale key. */
+function checkKeyHash(context, namespace, storedHashes, key, { value, node: valueNode }) {
+  // For web package, keys in hashes are prefixed with namespace For CLI package, they're flat (single file) Check both formats for compatibility
+  const fullKey = namespace === 'cli' ? key : `${namespace}.${key}`;
+  const currentHash = crc32(value);
+
+  // Try full key first, then bare key
+  const storedHash = storedHashes[fullKey] || storedHashes[key];
+
+  if (storedHash === undefined) {
+    // New key that doesn't exist in hash manifest
+    context.report({
+      node: valueNode,
+      messageId: 'newKey',
+      data: {
+        key: fullKey,
+        currentHash,
+      },
+    });
+  } else if (storedHash !== currentHash) {
+    // Hash mismatch - English value changed
+    context.report({
+      node: valueNode,
+      messageId: 'staleTranslation',
+      data: {
+        key: fullKey,
+        storedHash,
+        currentHash,
+      },
+    });
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const translationStaleness = {
   meta: {
@@ -160,36 +193,8 @@ export const translationStaleness = {
         const namespace = path.basename(filename, '.json');
 
         // Compare each key's current hash with stored hash
-        for (const [key, { value, node: valueNode }] of Object.entries(keyValues)) {
-          // For web package, keys in hashes are prefixed with namespace For CLI package, they're flat (single file) Check both formats for compatibility
-          const fullKey = namespace === 'cli' ? key : `${namespace}.${key}`;
-          const currentHash = crc32(value);
-
-          // Try full key first, then bare key
-          const storedHash = storedHashes[fullKey] || storedHashes[key];
-
-          if (storedHash === undefined) {
-            // New key that doesn't exist in hash manifest
-            context.report({
-              node: valueNode,
-              messageId: 'newKey',
-              data: {
-                key: fullKey,
-                currentHash,
-              },
-            });
-          } else if (storedHash !== currentHash) {
-            // Hash mismatch - English value changed
-            context.report({
-              node: valueNode,
-              messageId: 'staleTranslation',
-              data: {
-                key: fullKey,
-                storedHash,
-                currentHash,
-              },
-            });
-          }
+        for (const [key, entry] of Object.entries(keyValues)) {
+          checkKeyHash(context, namespace, storedHashes, key, entry);
         }
       },
     };

@@ -126,6 +126,79 @@ const loadPathsFromTree = () => {
   return { leaves, parents };
 };
 
+function reportPositional(context, value, fullPath, command) {
+  if (command.source === 'explicit') {
+    context.report({
+      node: value,
+      messageId: 'positionalSyntaxExplicit',
+      data: {
+        key: fullPath,
+        path: command.path,
+        requiredOptions: command.requiredOptions.join(', '),
+        firstOption: command.requiredOptions[0],
+      },
+    });
+    return;
+  }
+
+  context.report({
+    node: value,
+    messageId: 'positionalSyntaxDerived',
+    data: {
+      key: fullPath,
+      path: command.path,
+    },
+  });
+}
+
+function checkLine(env, value, fullPath, line) {
+  const { context, allCommands, exemptCommandPrefixes } = env;
+  const trimmedLine = line.trimStart();
+  if (exemptCommandPrefixes.some((prefix) => trimmedLine.startsWith(prefix))) return;
+
+  // Dedupe per-line per-rdc-position so a longer match wins.
+  const reported = new Set();
+  for (const command of allCommands) {
+    const m = command.regex.exec(line);
+    if (!m) continue;
+
+    const rdcIndex = line.indexOf('rdc ', m.index);
+    const trailing = line.slice(rdcIndex);
+    const afterPath = trailing.slice(`rdc ${command.path} `.length);
+    if (isUsagePlaceholder(afterPath)) continue;
+
+    const posKey = `${rdcIndex}`;
+    if (reported.has(posKey)) continue;
+    reported.add(posKey);
+
+    reportPositional(context, value, fullPath, command);
+  }
+}
+
+function checkStringValue(env, value, fullPath) {
+  for (const line of value.value.split(/\r?\n/)) {
+    checkLine(env, value, fullPath, line);
+  }
+}
+
+function checkObject(env, node, prefix = '') {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+    if (!key) continue;
+
+    const fullPath = joinPath(prefix, key);
+    const value = member.value;
+
+    if (value?.type === 'Object') {
+      checkObject(env, value, fullPath);
+    } else if (value?.type === 'String') {
+      checkStringValue(env, value, fullPath);
+    }
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noPositionalCliSyntax = {
   meta: {
@@ -215,86 +288,12 @@ export const noPositionalCliSyntax = {
     const allCommands = [...explicitCommands, ...derivedCommands];
     if (allCommands.length === 0) return {};
 
-    const isExempt = (value) => {
-      const trimmed = value.trimStart();
-      return exemptCommandPrefixes.some((prefix) => trimmed.startsWith(prefix));
-    };
-
-    const reportPositional = (value, fullPath, command) => {
-      if (command.source === 'explicit') {
-        context.report({
-          node: value,
-          messageId: 'positionalSyntaxExplicit',
-          data: {
-            key: fullPath,
-            path: command.path,
-            requiredOptions: command.requiredOptions.join(', '),
-            firstOption: command.requiredOptions[0],
-          },
-        });
-        return;
-      }
-
-      context.report({
-        node: value,
-        messageId: 'positionalSyntaxDerived',
-        data: {
-          key: fullPath,
-          path: command.path,
-        },
-      });
-    };
-
-    const checkLine = (value, fullPath, line) => {
-      if (isExempt(line.trimStart())) return;
-
-      // Dedupe per-line per-rdc-position so a longer match wins.
-      const reported = new Set();
-      for (const command of allCommands) {
-        const m = command.regex.exec(line);
-        if (!m) continue;
-
-        const rdcIndex = line.indexOf('rdc ', m.index);
-        const trailing = line.slice(rdcIndex);
-        const afterPath = trailing.slice(`rdc ${command.path} `.length);
-        if (isUsagePlaceholder(afterPath)) continue;
-
-        const posKey = `${rdcIndex}`;
-        if (reported.has(posKey)) continue;
-        reported.add(posKey);
-
-        reportPositional(value, fullPath, command);
-      }
-    };
-
-    const checkStringValue = (value, fullPath) => {
-      for (const line of value.value.split(/\r?\n/)) {
-        checkLine(value, fullPath, line);
-      }
-    };
-
-    const checkObject = (node, prefix = '') => {
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-
-        const key = memberKey(member);
-        if (!key) continue;
-
-        const fullPath = joinPath(prefix, key);
-        const value = member.value;
-
-        if (value?.type === 'Object') {
-          checkObject(value, fullPath);
-        } else if (value?.type === 'String') {
-          checkStringValue(value, fullPath);
-        }
-      }
-    };
+    const env = { context, allCommands, exemptCommandPrefixes };
 
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(env, node.body);
         }
       },
     };

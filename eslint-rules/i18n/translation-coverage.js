@@ -101,6 +101,34 @@ const calculateCoverage = (localesDir, namespace, sourceLanguage) => {
 // Rule-option default: percentage of source-language keys a locale must carry before the rule reports it as under-translated.
 const DEFAULT_MINIMUM_COVERAGE = 80;
 
+/** Report one language that is missing its file or falls below the minimum coverage. */
+function reportLanguage(context, node, lang, data, namespace, minimumCoverage) {
+  if (data.count === 0 && data.total > 0) {
+    // Missing translation file
+    context.report({
+      node,
+      messageId: 'missingFile',
+      data: {
+        language: lang,
+        namespace,
+      },
+    });
+  } else if (data.percentage < minimumCoverage) {
+    // Low coverage
+    context.report({
+      node,
+      messageId: 'lowCoverage',
+      data: {
+        language: lang,
+        percentage: data.percentage,
+        count: data.count,
+        total: data.total,
+        minimum: minimumCoverage,
+      },
+    });
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const translationCoverage = {
   meta: {
@@ -178,30 +206,7 @@ export const translationCoverage = {
         }
 
         for (const [lang, data] of Object.entries(languages)) {
-          if (data.count === 0 && data.total > 0) {
-            // Missing translation file
-            context.report({
-              node,
-              messageId: 'missingFile',
-              data: {
-                language: lang,
-                namespace,
-              },
-            });
-          } else if (data.percentage < minimumCoverage) {
-            // Low coverage
-            context.report({
-              node,
-              messageId: 'lowCoverage',
-              data: {
-                language: lang,
-                percentage: data.percentage,
-                count: data.count,
-                total: data.total,
-                minimum: minimumCoverage,
-              },
-            });
-          }
+          reportLanguage(context, node, lang, data, namespace, minimumCoverage);
         }
       },
     };

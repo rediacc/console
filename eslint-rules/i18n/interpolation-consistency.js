@@ -63,6 +63,75 @@ const loadEnglishTranslations = (localesDir, namespace) => {
   }
 };
 
+/**
+ * Compare one translated string's placeholder set against English.
+ */
+function checkStringValue(env, value, fullPath) {
+  const { context, englishTranslations } = env;
+  const englishValue = englishTranslations.get(fullPath);
+  if (!englishValue) return;
+
+  const englishPlaceholders = extractPlaceholders(englishValue);
+  const translationPlaceholders = extractPlaceholders(value.value);
+
+  // Skip if English has no placeholders
+  if (englishPlaceholders.size === 0) return;
+
+  const englishStr = Array.from(englishPlaceholders).join(', ');
+
+  // Check for missing placeholders
+  for (const placeholder of englishPlaceholders) {
+    if (!translationPlaceholders.has(placeholder)) {
+      context.report({
+        node: value,
+        messageId: 'missingPlaceholder',
+        data: {
+          key: fullPath,
+          placeholder,
+          englishPlaceholders: englishStr,
+        },
+      });
+    }
+  }
+
+  // Check for extra placeholders
+  for (const placeholder of translationPlaceholders) {
+    if (!englishPlaceholders.has(placeholder)) {
+      context.report({
+        node: value,
+        messageId: 'extraPlaceholder',
+        data: {
+          key: fullPath,
+          placeholder,
+          englishPlaceholders: englishStr,
+        },
+      });
+    }
+  }
+}
+
+/**
+ * Recursively check all values in a JSON object
+ */
+function checkObject(env, node, prefix = '') {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+    if (!key) continue;
+
+    const fullPath = joinPath(prefix, key);
+    const value = member.value;
+
+    if (value?.type === 'Object') {
+      // Recursively check nested objects
+      checkObject(env, value, fullPath);
+    } else if (value?.type === 'String') {
+      checkStringValue(env, value, fullPath);
+    }
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const interpolationConsistency = {
   meta: {
@@ -113,78 +182,12 @@ export const interpolationConsistency = {
     // Load English translations
     const englishTranslations = loadEnglishTranslations(absoluteLocalesDir, namespace);
 
-    /**
-     * Recursively check all values in a JSON object
-     */
-    /**
-     * Compare one translated string's placeholder set against English.
-     */
-    const checkStringValue = (value, fullPath) => {
-      const englishValue = englishTranslations.get(fullPath);
-      if (!englishValue) return;
-
-      const englishPlaceholders = extractPlaceholders(englishValue);
-      const translationPlaceholders = extractPlaceholders(value.value);
-
-      // Skip if English has no placeholders
-      if (englishPlaceholders.size === 0) return;
-
-      const englishStr = Array.from(englishPlaceholders).join(', ');
-
-      // Check for missing placeholders
-      for (const placeholder of englishPlaceholders) {
-        if (!translationPlaceholders.has(placeholder)) {
-          context.report({
-            node: value,
-            messageId: 'missingPlaceholder',
-            data: {
-              key: fullPath,
-              placeholder,
-              englishPlaceholders: englishStr,
-            },
-          });
-        }
-      }
-
-      // Check for extra placeholders
-      for (const placeholder of translationPlaceholders) {
-        if (!englishPlaceholders.has(placeholder)) {
-          context.report({
-            node: value,
-            messageId: 'extraPlaceholder',
-            data: {
-              key: fullPath,
-              placeholder,
-              englishPlaceholders: englishStr,
-            },
-          });
-        }
-      }
-    };
-
-    const checkObject = (node, prefix = '') => {
-      for (const member of objectMembers(node)) {
-        if (member.type !== 'Member') continue;
-
-        const key = memberKey(member);
-        if (!key) continue;
-
-        const fullPath = joinPath(prefix, key);
-        const value = member.value;
-
-        if (value?.type === 'Object') {
-          // Recursively check nested objects
-          checkObject(value, fullPath);
-        } else if (value?.type === 'String') {
-          checkStringValue(value, fullPath);
-        }
-      }
-    };
+    const env = { context, englishTranslations };
 
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(env, node.body);
         }
       },
     };
