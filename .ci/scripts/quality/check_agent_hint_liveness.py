@@ -102,7 +102,7 @@ def load_matcher():
     paths.on_sys_path(HOOK_DIR)
     try:
         # Deferred deliberately: HOOK_DIR must be on sys.path first, and a top-level import would make this gate uncollectable outside the repo.
-        import wl_agents  # noqa: PLC0415
+        import wl_agents
     except ImportError as exc:
         die(f"cannot import wl_agents ({exc}). Refusing to pass while measuring nothing.")
     for fn in ("load_corpus", "discriminative", "tokenize", "score", "best_hint"):

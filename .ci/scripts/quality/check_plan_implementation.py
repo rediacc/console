@@ -80,9 +80,9 @@ def load_modules():
         die(f"{HOOK_DIR} not found; cannot read a clock that is not there")
     paths.on_sys_path(HOOK_DIR)
     try:
-        import wl_planenforce as E  # noqa: PLC0415
-        import wl_planfile as PF  # noqa: PLC0415
-        import wl_planrec as R  # noqa: PLC0415
+        import wl_planenforce as E
+        import wl_planfile as PF
+        import wl_planrec as R
     except ImportError as exc:
         die(
             f"cannot import the Stop-hook plan modules ({exc}). Refusing to pass while "
@@ -107,7 +107,7 @@ def load_modules():
     boxes_gate = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(boxes_gate)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         die(f"cannot load check_plan_boxes.py ({exc}); P-A0 has no oracle to ask")
     for fn in (
         "scan",
@@ -186,8 +186,8 @@ def load_plan_gate():
     """(module, problem). `rediacc_hooks.plan_gate`, or None and the reason it could not be loaded. The caller FAILS CLOSED on a problem: without the queue head there is no way to tell the PR's plan from the queued ones, and judging nothing would read exactly like a finished plan."""
     paths.on_sys_path(HOOK_PKG_PARENT)
     try:
-        from rediacc_hooks import plan_gate  # noqa: PLC0415
-    except Exception as exc:  # noqa: BLE001
+        from rediacc_hooks import plan_gate
+    except Exception as exc:
         return None, "cannot import rediacc_hooks.plan_gate from %s (%s)" % (HOOK_PKG_PARENT, exc)
     return plan_gate, ""
 
@@ -249,7 +249,7 @@ def clock_scope(gate, root, base_plans, head_plans, body=None):
         )
     try:
         head = str(gate.queue_head(root) or "").strip()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return {}, notes, "rediacc_hooks.plan_gate.queue_head raised (%s)" % exc
     plan_set = getattr(gate, "pr_plan_set", None)
     if not callable(plan_set):
@@ -260,7 +260,7 @@ def clock_scope(gate, root, base_plans, head_plans, body=None):
         )
     try:
         members, set_problems = plan_set(root, body)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return {}, notes, "rediacc_hooks.plan_gate.pr_plan_set raised (%s)" % exc
     if set_problems:
         return (
@@ -2139,7 +2139,7 @@ def lazy_successor_of(root, base, planrec):
     built = {}
 
     def build():
-        import wl_review  # noqa: PLC0415 -- the hook dir is on sys.path after load_modules
+        import wl_review
 
         pids: dict[str, str] = {}
         if base:
@@ -2248,7 +2248,7 @@ def resolve_here(planrec, kind, token, absent):
     ok, why = planrec.resolve(REPO_ROOT, kind, token)
     if ok and kind == "commit":
         # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #ad75ce33, PR #595 run 37230695132). A rebase leaves the pre-rewrite commit in the local object store, so `rev-parse` passes here and fails in CI's fresh checkout. check_plan_citations.commit_is_reachable is the ancestry test that gate already uses; a commit must be an ancestor of HEAD. A rewritten one then falls to the caller's successor_of re-resolution.
-        from check_plan_citations import (  # noqa: PLC0415 -- lazy: pulls in the wl_* resolvers
+        from check_plan_citations import (
             commit_is_reachable,
         )
 
@@ -2267,8 +2267,8 @@ def registration_findings(boxes_gate):
     """
     out = []
     try:
-        import wl_planrec as planrec  # noqa: PLC0415
-        import wl_reggate as reggate  # noqa: PLC0415
+        import wl_planrec as planrec
+        import wl_reggate as reggate
     except ImportError as exc:
         return ["P-A5: cannot import the reachability oracle (%s)" % exc]
     scripts = planrec._package_scripts(REPO_ROOT)

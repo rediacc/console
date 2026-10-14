@@ -62,7 +62,7 @@ def load_probe():
     paths.on_sys_path(HOOK_DIR)
     try:
         # Deferred deliberately: HOOK_DIR must be on sys.path first, and a top-level import would make this gate uncollectable outside the repo.
-        import wl_reggate  # noqa: PLC0415
+        import wl_reggate
     except ImportError as exc:
         die(
             f"check-gate-reachability-coverage: cannot import wl_reggate ({exc}). Refusing to pass while measuring nothing."

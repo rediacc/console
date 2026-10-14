@@ -532,7 +532,7 @@ def watchdog_subject(gate, watchdog):
 
 def diff_module():
     # Imported lazily: `differential` builds its BASE_ENV (and a run dir) at import, which every harness user does not need.
-    from rediacc_ci.tests import differential  # noqa: PLC0415
+    from rediacc_ci.tests import differential
 
     return differential
 
