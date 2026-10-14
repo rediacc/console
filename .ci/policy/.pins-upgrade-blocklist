@@ -21,3 +21,5 @@
 # Empty by default: nothing is held.
 
 npm  # BLOCKER: npm 12 has not been evaluated against this repo's lockfile pass, overrides handling and ignore-scripts hardening; held so the operator schedules the major move rather than an unattended overnight session (expires 2026-11-14)
+
+ci-node  # BLOCKER: the node images track the active LTS line 24; node 26 becomes LTS in late October 2026, and the move needs the CLI SEA build and the workers validated on 26, which the operator schedules (expires 2026-11-14)
