@@ -431,7 +431,6 @@ const assertRuleExport = (rule, modulePath, exportName) => {
   return rule;
 };
 
-// The control for assertRuleExport, run on every gate run: each non-rule shape throws and both rule shapes pass, so a guard that stops refusing (or starts refusing a real rule) turns the gate red instead of letting every probe report a missing rule as dead.
 // The rule loader the gate runs, built over an importer so the control below drives this same code with fake modules: one import per module and export, cached, and every export passed through assertRuleExport.
 const makeRuleLoader = (importModule) => {
   const rulesByModule = new Map();
@@ -445,6 +444,10 @@ const makeRuleLoader = (importModule) => {
   };
 };
 
+// The control for assertRuleExport, run on every gate run: each non-rule shape throws and both rule shapes pass, so a guard that stops refusing (or starts refusing a real rule) turns the gate red instead of letting every probe report a missing rule as dead.
+// Only the named refusal counts: any other error (a mistyped fake module, a broken loader) is a control failure, not a refusal.
+const refusedAsNoRule = (e) => e instanceof Error && /has no rule export/.test(e.message);
+
 const ruleExportControlFailures = async () => {
   const failures = [];
   for (const [label, value] of [
@@ -456,7 +459,9 @@ const ruleExportControlFailures = async () => {
     try {
       assertRuleExport(value, 'control.js', 'r');
       failures.push(`a ${label} export was admitted as a rule`);
-    } catch {}
+    } catch (e) {
+      if (!refusedAsNoRule(e)) failures.push(`a ${label} export failed for another reason: ${e}`);
+    }
   }
   for (const [label, value] of [
     ['an object', { create() {} }],
@@ -479,7 +484,10 @@ const ruleExportControlFailures = async () => {
     try {
       await load(modulePath, 'r');
       failures.push(`the rule loader admitted the non-rule export of ${modulePath}`);
-    } catch {}
+    } catch (e) {
+      if (!refusedAsNoRule(e))
+        failures.push(`the rule loader failed ${modulePath} for another reason: ${e}`);
+    }
   }
   try {
     await load('rule.js', 'r');
@@ -1083,7 +1091,7 @@ async function main() {
       }
     }
 
-    // 1b. in-config mode proper (review 40894873.1): the shared instance with NO overrides, which runs every table entry in scope for the file. Sorted JSON is clean for every rule the table runs there.
+    // 1b. in-config mode proper: the shared instance with NO overrides, which runs every table entry in scope for the file. Sorted JSON is clean for every rule the table runs there.
     {
       const { fired } = firedRuleIds(
         await inConfig.lintText(JSON.stringify({ a: '1', b: '2' }, null, 2), {
