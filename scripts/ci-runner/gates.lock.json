@@ -1416,6 +1416,34 @@
     }
   },
   {
+    "id": "check:ci-standalone-selftests",
+    "run": "npm run check:ci-standalone-selftests",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-standalone-selftests.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Standalone selftests"
+    }
+  },
+  {
+    "id": "check:ci-selftest-reachability",
+    "run": "npm run check:ci-selftest-reachability",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-selftest-reachability.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Selftest entry points are CI-reachable"
+    }
+  },
+  {
     "id": "check:ci-ceph-image-pin",
     "run": "npm run check:ci-ceph-image-pin",
     "gate": true,
