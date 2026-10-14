@@ -253,7 +253,7 @@ def run(command, root, gh, broken=False):
 
 
 def _declared_defect(source=None):
-    # Every binding of `DEFECT`, at any depth and in any form (a plain, annotated, augmented or unpacking assignment), is read from the syntax tree. Exactly one is required, and it must be `DEFECT = <literal>` or `DEFECT: T = <literal>`: the guard module would run the last of several bindings while the harness planted the first, an indented one is still code the module runs, and literal_eval refuses anything but a literal, so a computed value is an error and not code that runs.
+    # Every binding of `DEFECT`, at any depth and in any form Python has (a plain, annotated, augmented or unpacking assignment, a for or with target, an import alias, a walrus, a def or class name), is read from the syntax tree. Exactly one is required, and it must be `DEFECT = <literal>` or `DEFECT: T = <literal>`: the guard module would run the last of several bindings while the harness planted the first, an indented one is still code the module runs, and literal_eval refuses anything but a literal, so a computed value is an error and not code that runs.
     text = GUARD.read_text(encoding="utf-8") if source is None else source
 
     def binds(target):
@@ -265,16 +265,37 @@ def _declared_defect(source=None):
             return binds(target.value)
         return False
 
-    bindings: list[tuple[ast.Assign | ast.AnnAssign | ast.AugAssign, ast.expr]] = []
+    bindings: list[tuple[ast.AST, ast.AST]] = []
     for node in ast.walk(ast.parse(text)):
         if isinstance(node, ast.Assign):
             bindings += [(node, t) for t in node.targets if binds(t)]
-        elif isinstance(node, (ast.AnnAssign, ast.AugAssign)) and binds(node.target):
+        elif isinstance(
+            node, (ast.AnnAssign, ast.AugAssign, ast.For, ast.AsyncFor, ast.NamedExpr)
+        ) and binds(node.target):
             bindings.append((node, node.target))
+        elif isinstance(node, (ast.With, ast.AsyncWith)):
+            bindings += [
+                (node, i.optional_vars)
+                for i in node.items
+                if i.optional_vars is not None and binds(i.optional_vars)
+            ]
+        elif isinstance(node, (ast.Import, ast.ImportFrom)):
+            bindings += [
+                (node, node) for a in node.names if (a.asname or a.name.split(".")[0]) == "DEFECT"
+            ]
+        elif (
+            isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+            and node.name == "DEFECT"
+        ):
+            bindings.append((node, node))
     if len(bindings) != 1:
         raise SystemExit("%d DEFECT bindings in %s, want exactly 1" % (len(bindings), GUARD))
     node, target = bindings[0]
-    if isinstance(node, ast.AugAssign) or not isinstance(target, ast.Name) or node.value is None:
+    if (
+        not isinstance(node, (ast.Assign, ast.AnnAssign))
+        or not isinstance(target, ast.Name)
+        or node.value is None
+    ):
         raise SystemExit("the DEFECT binding in %s is not DEFECT = <literal>" % GUARD)
     return ast.literal_eval(node.value)
 
@@ -295,6 +316,19 @@ for label, source, refused in (
     ("plain plus unpacking DEFECT", 'DEFECT = ("a", "b")\nDEFECT, x = ("c", "d"), 1\n', True),
     ("plain plus augmented DEFECT", 'DEFECT = ("a", "b")\nDEFECT += ("c",)\n', True),
     ("only an unpacking DEFECT", 'DEFECT, x = ("c", "d"), 1\n', True),
+    (
+        "plain plus a for target",
+        'DEFECT = ("a", "b")\nfor DEFECT in [("c", "d")]:\n    pass\n',
+        True,
+    ),
+    (
+        "plain plus a with target",
+        'DEFECT = ("a", "b")\nwith open("x") as DEFECT:\n    pass\n',
+        True,
+    ),
+    ("plain plus an import alias", 'DEFECT = ("a", "b")\nimport os as DEFECT\n', True),
+    ("plain plus a walrus", 'DEFECT = ("a", "b")\nif (DEFECT := ("c", "d")):\n    pass\n', True),
+    ("plain plus a def", 'DEFECT = ("a", "b")\ndef DEFECT():\n    pass\n', True),
     ("one annotated DEFECT line", 'DEFECT: tuple = ("a", "b")\n', False),
     ("one DEFECT line", 'DEFECT = ("a", "b")\n', False),
 ):
