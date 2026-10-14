@@ -444,10 +444,11 @@ const makeRuleLoader = (importModule) => {
   };
 };
 
-// The control for assertRuleExport, run on every gate run: each non-rule shape throws and both rule shapes pass, so a guard that stops refusing (or starts refusing a real rule) turns the gate red instead of letting every probe report a missing rule as dead.
-// Only the named refusal counts: any other error (a mistyped fake module, a broken loader) is a control failure, not a refusal.
-const refusedAsNoRule = (e) => e instanceof Error && /has no rule export/.test(e.message);
+// Only the named refusal counts, matched exactly: any other error (a mistyped fake module, a broken loader, or a message that merely contains the refusal) is a control failure, not a refusal.
+const refusedAsNoRule = (e, modulePath, exportName) =>
+  e instanceof Error && e.message === `${modulePath} has no rule export '${exportName}'`;
 
+// The control for assertRuleExport, run on every gate run: each non-rule shape throws and both rule shapes pass, so a guard that stops refusing (or starts refusing a real rule) turns the gate red instead of letting every probe report a missing rule as dead.
 const ruleExportControlFailures = async () => {
   const failures = [];
   for (const [label, value] of [
@@ -460,7 +461,8 @@ const ruleExportControlFailures = async () => {
       assertRuleExport(value, 'control.js', 'r');
       failures.push(`a ${label} export was admitted as a rule`);
     } catch (e) {
-      if (!refusedAsNoRule(e)) failures.push(`a ${label} export failed for another reason: ${e}`);
+      if (!refusedAsNoRule(e, 'control.js', 'r'))
+        failures.push(`a ${label} export failed for another reason: ${e}`);
     }
   }
   for (const [label, value] of [
@@ -485,7 +487,7 @@ const ruleExportControlFailures = async () => {
       await load(modulePath, 'r');
       failures.push(`the rule loader admitted the non-rule export of ${modulePath}`);
     } catch (e) {
-      if (!refusedAsNoRule(e))
+      if (!refusedAsNoRule(e, modulePath, 'r'))
         failures.push(`the rule loader failed ${modulePath} for another reason: ${e}`);
     }
   }
