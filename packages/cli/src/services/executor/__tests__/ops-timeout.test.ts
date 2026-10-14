@@ -1,8 +1,80 @@
+import { spawn } from 'node:child_process';
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { opsExecutorService } from '../ops-executor.js';
+
+// Captured before any fake timer is installed: readiness polling and cleanup run on the wall clock while the executor's own timers are driven by hand.
+const realSetTimeout = globalThis.setTimeout;
+const realClearTimeout = globalThis.clearTimeout;
+
+const isAlive = (pid: number): boolean => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Whether any process still belongs to the group led by `pid`. A group id is not reused while it has a member, so signalling the group cannot reach an unrelated process the way a bare recorded pid can after its process was reaped.
+const groupAlive = (pid: number): boolean => Number.isInteger(pid) && isAlive(-pid);
+
+type SettleOptions = {
+  pending: Promise<unknown> | null;
+  advance: (ms: number) => void;
+  renetPid: () => number;
+  grandchildPid: () => number;
+  dir: string;
+  killGroup?: (pgid: number) => void;
+  settleWaitMs?: number;
+  reapWaitMs?: number;
+};
+
+// Drives a run still in flight to its end. A rejected run counts as ended (its outcome is not this helper's concern), so a rejection never skips the kill and the survivor check below.
+const settleRun = async (options: SettleOptions): Promise<void> => {
+  if (!options.pending) return;
+  options.advance(60_000);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const settled = await Promise.race([
+    options.pending.then(
+      () => true,
+      () => true
+    ),
+    new Promise<boolean>((resolve) => {
+      timer = realSetTimeout(() => resolve(false), options.settleWaitMs ?? 5000);
+    }),
+  ]);
+  realClearTimeout(timer);
+  if (settled) return;
+  const renet = options.renetPid();
+  const kill =
+    options.killGroup ??
+    ((pgid: number) => {
+      try {
+        process.kill(-pgid, 'SIGKILL');
+      } catch {
+        // already gone
+      }
+    });
+  if (Number.isInteger(renet)) kill(renet);
+  await new Promise((resolve) => realSetTimeout(resolve, options.reapWaitMs ?? 500));
+  const survivors = [
+    ...(groupAlive(renet) ? [`process group ${renet}`] : []),
+    ...[options.grandchildPid()]
+      .filter((pid) => Number.isInteger(pid) && isAlive(pid))
+      .map((pid) => `pid ${pid}`),
+  ];
+  throw Object.assign(
+    new Error(
+      survivors.length > 0
+        ? `the executor never settled after the group SIGKILL and ${survivors.join(', ')} is still alive; their files are kept in ${options.dir}`
+        : 'the executor never settled after the group SIGKILL; the fake renet tree was killed directly'
+    ),
+    { keepDir: survivors.length > 0 }
+  );
+};
 
 /**
  * Regression guard for the `rdc ops` timeout path (review finding F3).
@@ -24,17 +96,8 @@ describe('ops-executor timeout kills the process tree', () => {
   // The in-flight executor run, so a failed readiness wait still ends the process tree it started.
   let pending: Promise<unknown> | null;
 
-  const alive = (pid: number): boolean => {
-    try {
-      process.kill(pid, 0);
-      return true;
-    } catch {
-      return false;
-    }
-  };
+  const alive = isAlive;
 
-  // Captured before any fake timer is installed: readiness polling must run on the wall clock while the executor's own timers are driven by hand.
-  const realSetTimeout = globalThis.setTimeout;
   const realSleep = (ms: number): Promise<void> =>
     new Promise((resolve) => realSetTimeout(resolve, ms));
 
@@ -95,49 +158,23 @@ setInterval(() => {}, 1e9);
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   });
 
-  // The pids of the fake renet tree that are known and still running: the renet itself (it records its pid first thing) and the grandchild.
-  const livePids = (): number[] => {
-    const pids = [renetPidFile, gcPidFile].map((file) => {
-      try {
-        return Number.parseInt(readFileSync(file, 'utf8').trim(), 10);
-      } catch {
-        return Number.NaN; // never written
-      }
-    });
-    return pids.filter((pid) => Number.isInteger(pid) && alive(pid));
-  };
-
-  const killLive = (): void => {
-    for (const pid of livePids()) {
-      try {
-        process.kill(pid, 'SIGKILL');
-      } catch {
-        // already gone
-      }
+  const readPid = (file: string): number => {
+    try {
+      return Number.parseInt(readFileSync(file, 'utf8').trim(), 10);
+    } catch {
+      return Number.NaN; // never written
     }
   };
 
-  // Ends a run still in flight (the readiness wait threw) through the executor's own timers: the timeout sends SIGTERM and the grace window then sends the group SIGKILL. When that does not settle it, the recorded pids are killed directly; the returned directory is kept (and named in the thrown error) only when one of them survives, so a leaked tree stays diagnosable.
-  const settlePending = async (): Promise<boolean> => {
-    if (!pending) return false;
-    vi.advanceTimersByTime(60_000);
-    const settled = await Promise.race([
-      pending.then(() => true),
-      realSleep(5000).then(() => false),
-    ]);
-    if (settled) return false;
-    killLive();
-    await realSleep(500);
-    const leaked = livePids();
-    throw Object.assign(
-      new Error(
-        leaked.length > 0
-          ? `the executor never settled after the group SIGKILL and pid(s) ${leaked.join(', ')} are still alive; their files are kept in ${dir}`
-          : 'the executor never settled after the group SIGKILL; the fake renet tree was killed directly'
-      ),
-      { keepDir: leaked.length > 0 }
-    );
-  };
+  // Ends a run still in flight (the readiness wait threw) through the executor's own timers: the timeout sends SIGTERM and the grace window then sends the group SIGKILL. When that does not settle it, the whole process group is killed directly, which also reaches a grandchild that is alive but had not yet recorded its pid. The returned directory is kept (and named in the thrown error) only when something survives, so a leaked tree stays diagnosable.
+  const settlePending = (): Promise<void> =>
+    settleRun({
+      pending,
+      advance: (ms) => vi.advanceTimersByTime(ms),
+      renetPid: () => readPid(renetPidFile),
+      grandchildPid: () => readPid(gcPidFile),
+      dir,
+    });
 
   afterEach(async () => {
     let keepDir = false;
@@ -195,4 +232,100 @@ setInterval(() => {}, 1e9);
     }
     expect(alive(gcPid)).toBe(false);
   }, 20_000);
+});
+
+describe('settleRun, the cleanup behind the timeout test', () => {
+  const cleanups: (() => void)[] = [];
+  afterEach(() => {
+    for (const fn of cleanups.splice(0)) fn();
+  });
+
+  // A detached node process (its own group leader) that spawns an unrecorded node grandchild in the same group. Both ignore SIGTERM.
+  const startTree = async (dir: string): Promise<{ leader: number; grandchildFile: string }> => {
+    const grandchildFile = join(dir, 'unrecorded.pid');
+    const child = spawn(
+      process.execPath,
+      [
+        '-e',
+        `const { spawn } = require('node:child_process');
+process.on('SIGTERM', () => {});
+const gc = spawn(process.execPath, ['-e', "process.on('SIGTERM',()=>{}); setInterval(()=>{},1e9)"], { stdio: 'ignore' });
+require('node:fs').writeFileSync(${JSON.stringify(grandchildFile)}, String(gc.pid));
+setInterval(() => {}, 1e9);`,
+      ],
+      { detached: true, stdio: 'ignore' }
+    );
+    const leader = child.pid as number;
+    cleanups.push(() => {
+      try {
+        process.kill(-leader, 'SIGKILL');
+      } catch {
+        // already gone
+      }
+    });
+    for (let i = 0; i < 500; i++) {
+      try {
+        readFileSync(grandchildFile, 'utf8');
+        return { leader, grandchildFile };
+      } catch {
+        await new Promise((resolve) => realSetTimeout(resolve, 10));
+      }
+    }
+    throw new Error('the test tree never started');
+  };
+
+  const options = (dir: string, over: Partial<SettleOptions>): SettleOptions => ({
+    pending: new Promise(() => {}),
+    advance: () => {},
+    renetPid: () => Number.NaN,
+    grandchildPid: () => Number.NaN,
+    dir,
+    settleWaitMs: 50,
+    reapWaitMs: 50,
+    ...over,
+  });
+
+  it('kills the whole group, including a grandchild that never recorded its pid, and lets the directory go', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ops-settle-'));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const { leader, grandchildFile } = await startTree(dir);
+    const grandchild = Number.parseInt(readFileSync(grandchildFile, 'utf8'), 10);
+    expect(isAlive(grandchild)).toBe(true);
+    // Only the leader is recorded; the grandchild's pid stays unknown to the helper.
+    const error = await settleRun(options(dir, { renetPid: () => leader })).catch((e) => e);
+    expect((error as Error).message).toMatch(/killed directly/);
+    expect((error as { keepDir?: boolean }).keepDir).toBe(false);
+    for (let i = 0; i < 100 && isAlive(grandchild); i++) {
+      await new Promise((resolve) => realSetTimeout(resolve, 20));
+    }
+    expect(isAlive(grandchild)).toBe(false);
+  });
+
+  it('keeps the directory and names the survivor when the group outlives the kill', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ops-settle-'));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const { leader } = await startTree(dir);
+    const error = await settleRun(
+      options(dir, { renetPid: () => leader, killGroup: () => {} })
+    ).catch((e) => e);
+    expect((error as Error).message).toContain(`process group ${leader} is still alive`);
+    expect((error as Error).message).toContain(dir);
+    expect((error as { keepDir?: boolean }).keepDir).toBe(true);
+  });
+
+  it('treats a run that rejects as ended, so no kill is sent for it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ops-settle-'));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const killed: number[] = [];
+    await expect(
+      settleRun(
+        options(dir, {
+          pending: Promise.reject(new Error('boom')),
+          renetPid: () => 1,
+          killGroup: (pgid) => killed.push(pgid),
+        })
+      )
+    ).resolves.toBeUndefined();
+    expect(killed).toEqual([]);
+  });
 });
