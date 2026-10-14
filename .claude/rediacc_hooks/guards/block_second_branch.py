@@ -182,7 +182,7 @@ def run(ev):
     console_top = commit_policy.toplevel(root)
     console_branch = commit_policy.current_branch(console_top) if console_top else ""
     # LOCAL time, deliberately, like block_stale_pr_branch_date: a branch is named for the operator's day.
-    today = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- see above
+    today = datetime.datetime.now().astimezone().strftime("%m%d")
     for creation in creations:
         repo = creation.repo_root
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.

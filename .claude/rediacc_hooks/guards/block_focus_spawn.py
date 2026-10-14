@@ -169,7 +169,10 @@ def run(event):
         # THE LIGHT READ: only focus and lineage lines are parsed (a full fold costs ~0.5 s on this repo's log, on every Agent call). The lineage binding is for the PAYLOAD's session, so a compacted session keeps its focus.
         light = S.phase_fold(worklist, root)
         C.bind_lineage(session_id, light.aliases_of(session_id))
-        owned = lambda o: C.owned_by_me(o, session_id)  # noqa: E731
+
+        def owned(o):
+            return C.owned_by_me(o, session_id)
+
         focus = wl_standdown.active_phase(light.phase, owned)
     except Exception as exc:
         event.warn_raw(

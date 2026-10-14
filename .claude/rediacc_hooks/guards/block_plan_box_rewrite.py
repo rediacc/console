@@ -68,7 +68,7 @@ section appears once (`git diff -- agent/plans/QUEUE.md` shows the duplicate), t
 rerun `npm run check:ci-plan-record`.
 """
 
-_GATE = None
+_GATE: list[tuple] = []  # the one loaded (gate, wl_planqueue, wl_store), per dispatcher process
 
 
 def _load_gate():
@@ -76,9 +76,8 @@ def _load_gate():
 
     `sys.path` is restored afterwards: the gate puts `.ci`, `.ci/scripts/quality` and `.claude/hooks/stop` on it, and a dispatcher process that runs every guard of the chain should not inherit three directories of unrelated module names. The modules stay in `sys.modules`, so the gate's own references keep working. Cached for the life of the process.
     """
-    global _GATE  # noqa: PLW0603 -- one load per dispatcher process
-    if _GATE is not None:
-        return _GATE
+    if _GATE:
+        return _GATE[0]
     root = hookio.repo_root()
     quality = root / ".ci" / "scripts" / "quality"
     saved = list(sys.path)
@@ -101,8 +100,8 @@ def _load_gate():
         import wl_store
     finally:
         sys.path[:] = saved
-    _GATE = (gate, wl_planqueue, wl_store)
-    return _GATE
+    _GATE.append((gate, wl_planqueue, wl_store))
+    return _GATE[0]
 
 
 # --------------------------------------------------------------------------- reading the two versions ---------------------------------------------------------------------------
