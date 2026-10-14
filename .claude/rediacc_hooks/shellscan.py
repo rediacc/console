@@ -1381,14 +1381,27 @@ class _Op:
 
 
 class _Heredoc:
-    """A `<<`/`<<-` redirect's body, once the lexer has read it."""
+    """A `<<`/`<<-` redirect's body, once the lexer has read it.
 
-    __slots__ = ("body_end", "body_start", "delim", "quoted", "strip_tabs", "substs", "term_end")
+    `body_start`/`body_end` are offsets into the text ITS lexer read, which for a heredoc inside an `sh -c` payload, an `eval` or a substitution is that payload, not the command line. `body` is the text itself, read from that same source; `heredoc_bodies` is the reading for anyone holding only the command line.
+    """
+
+    __slots__ = (
+        "body",
+        "body_end",
+        "body_start",
+        "delim",
+        "quoted",
+        "strip_tabs",
+        "substs",
+        "term_end",
+    )
 
     def __init__(self, delim, quoted, strip_tabs):
         self.delim = delim
         self.quoted = quoted
         self.strip_tabs = strip_tabs
+        self.body = None
         self.body_start = None
         self.body_end = None
         self.term_end = None
@@ -1564,6 +1577,7 @@ class _Lexer:
                     i = hd.term_end
                     break
                 i = limit if j < 0 else line_end + 1
+            hd.body = src[hd.body_start : hd.body_end]
             if not hd.quoted:
                 hd.substs = self._scan_substs(hd.body_start, hd.body_end)
         self.pending = []
@@ -5578,9 +5592,7 @@ def stdin_text(run, cmd):
     kept: list[str] = []
     rest = feed
     for doc in _analyse(cmd).heredocs:
-        if doc.body_start is None or doc.body_end is None:
-            continue
-        body = cmd[doc.body_start : doc.body_end]
+        body = doc.body
         if not body or body not in rest:
             continue
         text = body if doc.quoted else _expand_heredoc(body, run.vars)
@@ -5658,6 +5670,14 @@ def _written_scripts(cmd, until, cwd):
     return out
 
 
+def heredoc_bodies(cmd):
+    """Every heredoc body `cmd` holds, in the order the walk read them, nested ones included: a heredoc inside an `sh -c` payload, an `eval` or a substitution is read from that payload's own text.
+
+    THE OFFSETS ARE THE PAYLOAD'S (#78afdc0b). Four readers sliced the COMMAND LINE with `body_start`/`body_end`, which for a nested heredoc index the payload, so `sh -c "python3 - <<'E' ... E"` read a fragment of the line as the program: block_review_file_shell_write allowed a review-file write that way (rc 0) and refused the bare heredoc (rc 2), measured 2026-10-14 at c5c3036c3.
+    """
+    return [doc.body for doc in _analyse(cmd).heredocs if doc.body is not None]
+
+
 def interpreter_program(run, cmd, cwd=None):
     """`(text, kind)` for the program an interpreter run executes, or `(None, None)`.
 
@@ -5671,13 +5691,7 @@ def interpreter_program(run, cmd, cwd=None):
     if kind == "module":
         return None, None
     if kind == "stdin":
-        analysis = _analyse(cmd)
-        bodies = [
-            cmd[doc.body_start : doc.body_end]
-            for doc in analysis.heredocs
-            if doc.body_start is not None and doc.body_end is not None
-        ]
-        return "\n".join(bodies), "stdin"
+        return "\n".join(heredoc_bodies(cmd)), "stdin"
     written = _written_scripts(cmd, run, cwd)
     target = _script_path(value, run.cwd, cwd)
     if target in written:

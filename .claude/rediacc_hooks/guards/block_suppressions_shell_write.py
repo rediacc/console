@@ -209,11 +209,8 @@ def _render(engine, grew):
 def _offending(engine, cmd, cwd):
     """A one-line description of the first marker-adding write in `cmd`, or ""."""
     analysis = shellscan._analyse(cmd)
-    bodies = [
-        cmd[doc.body_start : doc.body_end]
-        for doc in analysis.heredocs
-        if doc.body_start is not None and doc.body_end is not None
-    ]
+    # A nested heredoc's offsets index its payload, not `cmd` (#78afdc0b): the body is read from its own text.
+    bodies = shellscan.heredoc_bodies(cmd)
     appends = {target for op, target in analysis.writes if op in (">>", "&>>")}
     # What a `tee` writes is its UPSTREAM stage's output; read as every writer's arguments in the command, plus the heredocs.
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i` or an interpreter that `find -exec` or `npx -c` starts writes the same files, so the runs are `shellscan.every_run`.

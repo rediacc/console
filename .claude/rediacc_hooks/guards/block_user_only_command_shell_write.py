@@ -287,11 +287,8 @@ def _program(run, cmd, cwd, holds):
 def _offending(cmd, cwd):
     """(kind, description) of the first refused write, kind "list" or "flag", or None."""
     analysis = shellscan._analyse(cmd)
-    bodies = [
-        cmd[doc.body_start : doc.body_end]
-        for doc in analysis.heredocs
-        if doc.body_start is not None and doc.body_end is not None
-    ]
+    # A nested heredoc's offsets index its payload, not `cmd` (#78afdc0b): the body is read from its own text.
+    bodies = shellscan.heredoc_bodies(cmd)
     runs = shellscan.every_run(cmd)
     listed_write = _list_write(runs, analysis, cmd, cwd)
     if listed_write:
