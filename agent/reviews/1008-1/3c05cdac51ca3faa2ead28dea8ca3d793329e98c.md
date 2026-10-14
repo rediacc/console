@@ -26,4 +26,4 @@ Resolution: open
 ### 3c05cdac.2 [medium] cmd/renet/sandbox_gateway.go:291
 Anchor: in-diff
 Claim: For a key line without --guid, resolveGatewayNetworkID skips the mirror (guard at line 273), so a client-sent positive ID passes whenever no docker unit serves it (owner == ""); this contradicts the commit's claim that omitting the variable no longer drops eBPF confinement and that the ID must match the mirror when one exists.
-Resolution: open
+Resolution: not-a-bug | cmd/renet/sandbox_gateway_test.go:237 'No mirror: the client value stands only if no other repo's daemon owns it' is the pinned design (TestGatewayNetworkID); a key line without --guid has no mirror to consult, and an ID no docker unit serves grants only a socket path that does not exist | d778be9d 2026-10-14T14:56:28Z

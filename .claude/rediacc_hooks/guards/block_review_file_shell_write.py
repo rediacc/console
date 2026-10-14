@@ -261,6 +261,10 @@ def _offending(cmd, depth=0, cwd=None):
                     "read a review file with cat, grep, head, sed -n, jq or git show, and call "
                     "a command itself rather than through a shell function"
                 ) % (name, word, name)
+        # A script run DIRECTLY by its shebang is the interpreter it names (review 05c4df4d.2): no interpreter word stands in the command.
+        shebang = shellscan.shebang_interpreter(run, cwd)
+        if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
+            name = shebang
         if name.startswith(INTERPRETERS):
             # The program is `shellscan.interpreter_program`'s reading (#c4542b69): the `-c` value, the heredocs only when it reads its program from stdin (a `cat > x.py <<EOF` earlier in the line is a file being written, not code being run), or a script passed BY PATH, which was not read at all before (rc 0 against rc 2 for the same program as a heredoc).
             text, kind = shellscan.interpreter_program(run, cmd, cwd)
