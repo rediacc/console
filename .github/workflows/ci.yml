@@ -515,11 +515,13 @@ jobs:
   # ============================================================================
   # LABEL GUIDE: explain this repo's labels on every PR
   #
-  # Twelve labels, several of them kill switches whose effect is invisible
-  # unless you already know they exist (`full-ci` bypasses the scope engine's
-  # skips, `no-cancel-push` disarms the watchdog, `rollback` blocks stable
-  # promotion). Nobody remembers twelve of those, and nothing on a PR says what
-  # they do. This posts one comment, rendered from .github/labels.yml, and
+  # The labels in .github/labels.yml include several kill switches whose effect
+  # is invisible unless you already know they exist (`full-ci` bypasses the
+  # scope engine's skips, `no-cancel-push` keeps a new push from cancelling the
+  # older run, `no-auto-cancel` keeps a failed job from cancelling the rest of
+  # its run, `no-auto-retry` turns the watchdog's rerun off, `rollback` blocks
+  # stable promotion). Nobody remembers all of those, and nothing on a PR says
+  # what they do. This posts one comment, rendered from .github/labels.yml, and
   # rewrites it in place only when that file changes -- a rerun on an unchanged
   # tree performs zero API writes.
   #

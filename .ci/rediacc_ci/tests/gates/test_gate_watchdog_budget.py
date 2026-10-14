@@ -535,6 +535,9 @@ const jobs = fx.jobs.map((j, i) => ({
   completed_at: j.status === 'completed' ? ago(j.startedAgoMin - j.durationMin) : null,
 }));
 const actions = [], outputs = {}, errors = [], warnings = [], annotationReads = [];
+// `labels` on the fixture is one entry PER READ of the PR's labels, the last entry repeating: a list of names, or the string "ERROR" to make that read throw. Absent means every read answers "no labels".
+const labelScript = fx.labels || [[]];
+let labelReads = 0;
 const github = {
   hook: { before: () => {} },
   paginate: async () => jobs,
@@ -553,7 +556,14 @@ const github = {
       downloadJobLogsForWorkflowRun: async () => ({ data: 'log line\n' }),
       cancelWorkflowRun: async () => { actions.push('cancel'); return {}; },
     },
-    issues: { listLabelsOnIssue: async () => ({ data: [] }) },
+    issues: {
+      listLabelsOnIssue: async () => {
+        const entry = labelScript[Math.min(labelReads, labelScript.length - 1)];
+        labelReads += 1;
+        if (entry === 'ERROR') throw new Error('labels unreadable');
+        return { data: entry.map((name) => ({ name })) };
+      },
+    },
     // A job's check-run annotations: `annotations` (messages) on the fixture job, or `annotationsError` to make the read throw.
     checks: {
       listAnnotations: async ({ check_run_id }) => {
@@ -578,7 +588,7 @@ const core = {
 const context = { repo: { owner: 'rediacc', repo: 'console' }, runId: 1, payload: {} };
 Object.assign(process.env, fx.env);
 monitor({ github, context, core })
-  .then(() => console.log(JSON.stringify({ actions, outputs, errors, warnings, annotationReads })))
+  .then(() => console.log(JSON.stringify({ actions, outputs, errors, warnings, annotationReads, labelReads })))
   .catch((e) => { console.log(JSON.stringify({ threw: e.message })); process.exitCode = 3; });
 """
 
@@ -619,8 +629,8 @@ SIBLINGS = [
 ]
 
 
-def run_monitor(gate, tmp_path: pathlib.Path, jobs, run, **env_overrides) -> dict:
-    """Drive the real monitor once; returns its trace plus the budget-violations.json it wrote (or None)."""
+def run_monitor(gate, tmp_path: pathlib.Path, jobs, run, labels=None, **env_overrides) -> dict:
+    """Drive the real monitor once; returns its trace plus the budget-violations.json it wrote (or None). `labels` scripts the PR's label reads (see MONITOR_JS) and makes the run a PR's."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     script = tmp_path / "monitor.cjs"
     script.write_text(MONITOR_JS, encoding="utf-8")
@@ -629,6 +639,9 @@ def run_monitor(gate, tmp_path: pathlib.Path, jobs, run, **env_overrides) -> dic
     env["WATCHDOG_BUDGET_DIR"] = str(budget_dir)
     env.update(env_overrides)
     fixture = {"jobs": jobs + SIBLINGS, "run": run, "env": env}
+    if labels is not None:
+        fixture["labels"] = labels
+        env.setdefault("WATCHDOG_PR_NUMBER", "600")
     result = harness.run(
         ["node", str(script), str(subject(gate)), json.dumps(fixture)], timeout=120
     )
@@ -938,3 +951,162 @@ def test_the_watchdog_never_watches_housekeeping(gate):
         "watchdog starters %s; housekeeping's 50-minute capture sits outside every watched run"
         % starters
     )
+
+
+# --- the hold-open label (`no-auto-cancel`) against the real monitor ----------
+#
+# WHAT THE LABEL IS FOR. A PR run is cancelled at its first real job failure. Twice on 2026-10-13 a `Quality / Secure Storage` leg failed within seconds on PR 600 and the other 87 jobs were cancelled with no verdict, so each fix cost a full extra round. With the label on the PR a FAILED job cancels nothing: the run finishes and concludes `failure` by itself.
+#
+# WHAT IT MUST NOT DO, and these are the controls: hold a run open without the label; hold back a LIVE job over its time budget; start a rerun the `no-auto-retry` label forbids. It is read at the decision, so a label added to (or taken off) a PR whose run already started counts at the next failure.
+
+HOLD = "no-auto-cancel"
+# The leg that failed within seconds on 2026-10-13. `Quality` is a no-retry pattern, so this takes the fast-fail branch.
+QUALITY_LEG = "Quality / Secure Storage (macos-latest)"
+# Neither no-retry nor on the retry allowlist: with the classifier absent it fails fast (branch 4).
+BUILD_LEG = "Build (CLI) / Cross Compile"
+# A long leg still running when the failure lands: the job a cancel would silence.
+RUNNING_LEG = "Tests + Infra / E2E K8s"
+
+
+def _failed(name: str) -> dict:
+    return {
+        "name": name,
+        "status": "completed",
+        "conclusion": "failure",
+        "startedAgoMin": 3,
+        "durationMin": 1,
+    }
+
+
+def _cancels(trace: dict) -> int:
+    """Every cancel the monitor asked for: the force-cancel request and its plain-cancel fallback."""
+    return sum(1 for a in trace["actions"] if a in ("force-cancel", "cancel"))
+
+
+def test_control_without_the_label_a_first_failure_still_cancels_the_run(gate, tmp_path):
+    """THE CONTROL the label cases stand on: the same fixtures, no label, cancel exactly as before. Without it a monitor that never cancelled anything would pass every hold-open case below."""
+    for leg in (QUALITY_LEG, BUILD_LEG):
+        trace = run_monitor(
+            gate, tmp_path / leg[:5], [_failed(leg), _live(RUNNING_LEG, 5)], PR_RUN, labels=[[]]
+        )
+        gate.assert_eq(trace["actions"], ["force-cancel"], "%s: one cancel, nothing else" % leg)
+        gate.assert_eq(trace["outputs"].get("by_design_kind"), "pipeline-cancelled", "recorded")
+        gate.assert_eq(trace["outputs"].get("continue"), None, "and the chain ends")
+    gate.log_pass("without the label a first failure cancels the run (2 legs)")
+
+
+def test_with_the_label_a_first_failure_leaves_the_other_jobs_running(gate, tmp_path):
+    """A failed job, a long leg still running, the label on the PR: no cancel of any kind, no rerun, the failure still named, and the chain keeps monitoring. No cancel is what keeps the verdict red: the run concludes `failure` from its own failed job instead of `cancelled`."""
+    for leg in (QUALITY_LEG, BUILD_LEG):
+        trace = run_monitor(
+            gate, tmp_path / leg[:5], [_failed(leg), _live(RUNNING_LEG, 5)], PR_RUN, labels=[[HOLD]]
+        )
+        gate.assert_eq(trace["actions"], [], "%s: no cancel, no rerun, no setFailed" % leg)
+        gate.assert_eq(trace["outputs"].get("by_design_kind"), "left-uncancelled", "recorded")
+        gate.assert_contains(
+            trace["outputs"].get("by_design_reason", ""),
+            'Job failed: "%s"' % leg,
+            "the failed job is still named in the annotation",
+        )
+        gate.assert_eq(trace["outputs"].get("continue"), "true", "and monitoring continues")
+        gate.assert_contains(trace["stdout"], "NOT cancelling run 999", "the banner says why")
+    gate.log_pass("with the label a first failure cancels nothing and is still annotated (2 legs)")
+
+
+def test_the_label_does_not_hold_back_a_live_job_over_its_budget(gate, tmp_path):
+    """Budgets are enforced under the label: the fixture of the first monitor case, plus the label, still force-cancels with the T4.2 text."""
+    trace = run_monitor(gate, tmp_path, [_live(LEG, 16)], PR_RUN, labels=[[HOLD]])
+    gate.assert_eq(trace["actions"], ["force-cancel"], "a live job at 16m of 15 cancels the run")
+    gate.assert_contains(
+        trace["outputs"].get("by_design_reason", ""),
+        "CI BUDGET VIOLATION: '%s' ran 16.0m (budget 15m)" % LEG,
+        "with the budget annotation",
+    )
+    gate.assert_eq(trace["outputs"].get("by_design_kind"), "pipeline-cancelled", "run cancelled")
+    gate.log_pass("the label does not exempt a live job over its budget")
+
+
+def test_control_the_label_holds_a_job_inside_its_budget_and_a_failure_beside_it(gate, tmp_path):
+    """The other direction of the case above: a failed job beside a live job INSIDE its budget is held open, so the budget cancel is the budget's doing and not a label that stopped working."""
+    trace = run_monitor(
+        gate, tmp_path, [_failed(BUILD_LEG), _live(LEG, 14)], PR_RUN, labels=[[HOLD]]
+    )
+    gate.assert_eq(_cancels(trace), 0, "14m of 15 is inside the budget: nothing cancels")
+    gate.assert_eq(trace["budget"], None, "and no violation is recorded")
+    gate.log_pass("a failure beside a job inside its budget is held open")
+
+
+def test_a_label_added_after_the_run_started_is_honoured(gate, tmp_path):
+    """The first read (generation start) finds no label, every later read finds it: the failure is judged on the labels as they are AT THE DECISION. One read per generation cancelled this run."""
+    trace = run_monitor(
+        gate, tmp_path, [_failed(BUILD_LEG), _live(RUNNING_LEG, 5)], PR_RUN, labels=[[], [HOLD]]
+    )
+    if trace["labelReads"] < 2:
+        gate.log_fail(
+            "the monitor read the PR labels %d time(s); a label added mid-run needs a read at the decision"
+            % trace["labelReads"]
+        )
+    gate.assert_eq(_cancels(trace), 0, "the label added mid-run holds the run open")
+    gate.assert_eq(trace["outputs"].get("by_design_kind"), "left-uncancelled", "recorded as held")
+    gate.log_pass(
+        "a label added after the first read holds the run (%d reads)" % trace["labelReads"]
+    )
+
+
+def test_a_label_removed_after_the_run_started_stops_holding(gate, tmp_path):
+    """The mirror: on the PR at start, gone by the failure. The run cancels, which is how taking the label off to drive a branch to green takes effect without a new push."""
+    trace = run_monitor(
+        gate, tmp_path, [_failed(BUILD_LEG), _live(RUNNING_LEG, 5)], PR_RUN, labels=[[HOLD], []]
+    )
+    gate.assert_eq(trace["actions"], ["force-cancel"], "the label is gone, so the run cancels")
+    gate.log_pass("a label removed after the first read no longer holds the run")
+
+
+def test_an_unreadable_label_list_keeps_the_last_one_read(gate, tmp_path):
+    """A failed read at the decision must not read as "no labels": the list from the last good read stands, in both directions."""
+    held = run_monitor(
+        gate, tmp_path / "held", [_failed(BUILD_LEG)], PR_RUN, labels=[[HOLD], "ERROR"]
+    )
+    gate.assert_eq(_cancels(held), 0, "label read once, then unreadable: still held")
+    gate.assert_contains(held["stdout"], "keeping the last list read", "and the fallback is said")
+    plain = run_monitor(
+        gate, tmp_path / "plain", [_failed(BUILD_LEG)], PR_RUN, labels=[[], "ERROR"]
+    )
+    gate.assert_eq(plain["actions"], ["force-cancel"], "CONTROL: no label read, then unreadable")
+    gate.log_pass("an unreadable label list keeps the last list read, held or not")
+
+
+def test_the_label_holds_a_run_past_a_timeout_killed_leg_without_retrying_it(gate, tmp_path):
+    """A leg GitHub already killed at its timeout is dead: cancelling reclaims nothing from it. Under the label the run stays open, the violation is still annotated, and the leg is still never retried."""
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    trace = run_monitor(gate, tmp_path, [_cancelled_leg(15)], run, labels=[[HOLD]])
+    gate.assert_eq(trace["actions"], [], "no cancel and no rerun")
+    gate.assert_contains(
+        " ".join(trace["errors"]),
+        "CI BUDGET VIOLATION: '%s' ran 15.0m (budget 15m)" % LEG,
+        "still annotated as a budget violation",
+    )
+    gate.log_pass("a timeout-killed leg under the label: held open, annotated, not retried")
+
+
+def test_auto_retry_under_the_label_reruns_failed_jobs_and_never_cancels(gate, tmp_path):
+    """Auto-retry is unchanged by the label: an allowlisted leg's failure holds a pending rerun, and once the held-open run completes its failed jobs are rerun. No cancel is part of it."""
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    trace = run_monitor(gate, tmp_path, [_failed(RUNNING_LEG)], run, labels=[[HOLD]])
+    gate.assert_eq(trace["actions"], ["rerun"], "the failed jobs are rerun, nothing is cancelled")
+    gate.assert_eq(trace["outputs"].get("rerun_executed"), "true", "and the chain follows it")
+    gate.log_pass("under the label a retryable failure is rerun after the run completes")
+
+
+def test_no_auto_retry_beside_the_label_neither_reruns_nor_cancels(gate, tmp_path):
+    """Both labels: `no-auto-retry` turns the rerun off and the hold-open label turns the cancel off, so the run simply finishes red. The control half is `no-auto-retry` alone, which cancels."""
+    run = {"status": "completed", "event": "pull_request", "startedAgoMin": 20}
+    both = run_monitor(
+        gate, tmp_path / "both", [_failed(RUNNING_LEG)], run, labels=[[HOLD, "no-auto-retry"]]
+    )
+    gate.assert_eq(both["actions"], [], "no rerun and no cancel")
+    alone = run_monitor(
+        gate, tmp_path / "alone", [_failed(RUNNING_LEG)], run, labels=[["no-auto-retry"]]
+    )
+    gate.assert_eq(alone["actions"], ["force-cancel"], "CONTROL: no-auto-retry alone cancels")
+    gate.log_pass("no-auto-retry beside the label: the run finishes red, untouched")

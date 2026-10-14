@@ -280,11 +280,26 @@ the watchdog generation.
 |-------|--------|
 | `no-cancel-push` | Don't cancel older runs on new pushes |
 | `no-auto-retry` | Skip retry, force-cancel immediately on failure |
+| `no-auto-cancel` | Hold a failing run open: a failed job does not cancel the rest of the run (see below) |
 | `no-external-quality` | Skip the externally-dependent gates (see `external_quality` below) |
 | `no-media-quality` | Hold the tutorial-media gates (see `media_quality` below) |
 
-There is no label that holds a failing run open. `no-cancel-failure` did, and it was removed 2026-08-05: a red run kept alive still has to wait out the 44-minute E2E and OPS legs before it concludes, so every iteration on a branch being driven to green paid that cost. The full roster of deterministic reds arrives anyway -- the Quality drain above collects every lane, and
-`forceCancel` re-fetches the job list so the annotation names every job that had failed by then.
+**`no-auto-cancel` holds a failing run open.** With it on the PR a failed job cancels nothing: every other job runs to its own conclusion, the watchdog still prints the failure roster and records the decision as `left-uncancelled` on the `Watchdog Monitor` run, and the run concludes `failure` from its own failed jobs, so CI Complete is red exactly as it would have been. The label changes how much one run reports, never the verdict.
+
+What it leaves alone:
+
+- **Time budgets.** A live job over its per-job budget (15 minutes, or its `JOB_BUDGET_CAPS` cap) still force-cancels the run with the `CI BUDGET VIOLATION` annotation. A job GitHub already killed at its `timeout-minutes` is annotated and never retried, and the run stays open past it, since a cancel reclaims nothing from a dead job.
+- **New pushes.** A push still cancels the PR's older run (the concurrency group, and the `Cancel older runs` step unless `no-cancel-push` is also set).
+- **Auto-retry.** A failure judged retryable still holds a pending rerun, and the failed jobs are rerun once after the held-open run completes. Nothing is cancelled to make room for it. `no-auto-retry` beside it turns the rerun off as well, and the run simply finishes red.
+
+The watchdog reads PR labels live from the API at each decision (once per generation, once per newly handled failure, and again inside `forceCancel`), so adding or removing `no-auto-cancel` or `no-auto-retry` takes effect on a run already in flight, at its next failure. `no-cancel-push` is read from the event payload by `ci.yml`, so it counts from the next push.
+
+**The cost, and when to take the label off.** A held-open red run waits for the long E2E and OPS legs before it concludes, so each round costs the full pipeline instead of the seconds a first failure takes. The label is for a branch being DIAGNOSED, where one run that names every failure is worth more than several fast runs that name one each. Remove it once the remaining failures are known and the branch is being driven to green.
+
+**History.** `no-cancel-failure` did this job until it was removed on 2026-08-05 for exactly that cost, on the reasoning that the full roster of deterministic reds arrives anyway (the Quality drain collects every lane, and `forceCancel` re-fetches the job list). That holds for the Quality lanes only. `no-auto-cancel` brought the hold back on 2026-09-27 (`d1f764a66`) when the sharded E2E legs could not report through any early failure, and this section went on saying no such label existed. On 2026-10-13 a `Quality / Secure Storage` macOS/Windows leg that fails within seconds twice cancelled the other 87 jobs of a PR #600 run: the K8s E2E, account E2E, Pytest shard and build legs ended `cancelled` with no verdict, and each fix cost a full extra round.
+The operator ruled the same day that a PR label is the answer; the label was already there, so the ruling is carried out by documenting it here, by keeping time budgets enforced under it, and by reading labels at the decision.
+
+Matrix `fail-fast` and `needs:` chains are out of its reach: see *GitHub matrix fail-fast beats the `no-cancel-failure` label* in [TRAPS.md](TRAPS.md).
 
 Labels apply to PR runs only. A `push` or `schedule` run has no PR, so none of them are readable there -- which is why the nightly exemption above is in code rather than in a label.
 

@@ -29,7 +29,7 @@
 //                                 into before any rerun; the workflow uploads it
 //                                 as an artifact. Unset = no capture.
 //
-// Labels (PR context only): no-auto-retry - Skip AI + retry entirely (force-cancel immediately)
+// Labels (PR context only, read LIVE at every decision, see refreshPrLabels): no-auto-retry - Skip AI + retry entirely (force-cancel immediately). no-auto-cancel - a FAILED job no longer cancels the run, so every job reports; a live job over its time budget still does (see evaluateCancelExemption).
 //
 // Usage (from actions/github-script):
 //   script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
@@ -163,17 +163,27 @@ function jobBudgetFor(name, defaultMin, caps = JOB_BUDGET_CAPS) {
 /** The PR label that leaves a failing run uncancelled, so every job reports (PLAN-ci-time-budget: sharded jobs could not report while any early failure cancelled the run). A debugging aid: remove it once the branch is green. */
 const NO_AUTO_CANCEL_LABEL = 'no-auto-cancel';
 
-function evaluateCancelExemption({ runEvent, labels = [] }) {
+/**
+ * Why a cancel is being asked for. The label answers one question only: "should a job that FAILED take the rest of the run down with it?". A live job over its time budget is a different question, and the label does not answer it: a held-open run that also ignored its budgets would have no upper bound on what one hung leg costs (operator ruling 2026-10-13, which kept the hold-open
+ * label and asked that budgets stay enforced under it). The event exemption covers both causes, because it protects the run's CONCLUSION, which a budget cancel rewrites just as a failure cancel does.
+ */
+const CANCEL_CAUSE_FAILURE = 'failure';
+const CANCEL_CAUSE_BUDGET = 'budget';
+
+function evaluateCancelExemption({ runEvent, labels = [], cause = CANCEL_CAUSE_FAILURE }) {
   const event = String(runEvent || '');
   const byEvent = CANCEL_EXEMPT_EVENTS.includes(event);
-  const byLabel = !byEvent && labels.includes(NO_AUTO_CANCEL_LABEL);
+  // The label yields only to a POSITIVE budget cause. An absent or unrecognised cause reads as a failure, so a call site that forgets to say why keeps the run open rather than cancelling past the label.
+  const byLabel =
+    !byEvent && cause !== CANCEL_CAUSE_BUDGET && (labels || []).includes(NO_AUTO_CANCEL_LABEL);
   return {
     exempt: byEvent || byLabel,
     event,
+    byLabel,
     reason: byEvent
       ? `run event "${event}" is cancel-exempt: cancelling would rewrite this run's conclusion from "failure" to "cancelled", which is what hid twelve consecutive red nightlies`
       : byLabel
-        ? `the PR carries the "${NO_AUTO_CANCEL_LABEL}" label: every job runs to its own conclusion`
+        ? `the PR carries the "${NO_AUTO_CANCEL_LABEL}" label: a failed job does not cancel the run, so every job reports and the run concludes "failure" on its own`
         : '',
   };
 }
@@ -1259,7 +1269,9 @@ const monitor = async ({ github, context, core }) => {
   // end the chain at the first failure on the nightly, which is precisely the under-diagnosis this wave exists to fix.
   //
   // `preamble` is text that must survive the roster rebuild below: a budget cancel (T4.2) has no failed job of its own to name, and without it a run that also carries an unrelated failure would lose the CI BUDGET VIOLATION line from its roster annotation.
-  async function forceCancel(failureMsg, { preamble = '' } = {}) {
+  //
+  // `cause` says why the cancel is asked for (see CANCEL_CAUSE_BUDGET): only the live-job budget call site passes 'budget', which the no-auto-cancel label does not hold back.
+  async function forceCancel(failureMsg, { preamble = '', cause = CANCEL_CAUSE_FAILURE } = {}) {
     // Re-fetch the job list so the cancellation names EVERY job that has failed by now, not only the one that drove the decision. Between the poll that detected the first failure and this call (AI classification + the critical-job wait below both take time) sibling jobs can also flip to failure; without this an operator or agent reading the cancelled run re-scans every job to find
     // failures the watchdog already saw. Best-effort:
     // if the refetch fails we fall back to the driving job's message.
@@ -1290,7 +1302,13 @@ const monitor = async ({ github, context, core }) => {
 
     // The cancel-exemption check sits AFTER the roster build (an exempt run still gets the full "here is everything that failed" banner) and BEFORE the critical-job drain (there is nothing to drain for if nothing is being cancelled). This is the single chokepoint: all five call sites route through forceCancel, including the no-drain Review Gate path, so the exemption cannot be
     // bypassed by adding a sixth.
-    const exemption = evaluateCancelExemption({ runEvent: targetRunEvent, labels: prLabels });
+    // Labels are re-read HERE, at the decision, not trusted from the start of the generation: a label put on the PR after a run has started must hold that run open at its next failure, and one taken off must let the next failure cancel.
+    await refreshPrLabels();
+    const exemption = evaluateCancelExemption({
+      runEvent: targetRunEvent,
+      labels: prLabels,
+      cause,
+    });
     if (exemption.exempt) {
       console.log('');
       console.log('#'.repeat(70));
@@ -1378,28 +1396,42 @@ const monitor = async ({ github, context, core }) => {
     return true;
   }
 
-  // Check for the skip-auto-retry label. Labels are fetched LIVE from the API: the event payload's label list is frozen at the event that created the run, so a label added afterwards (e.g. no-auto-retry added right before rerunning failed jobs) would be invisible in context.payload and silently ignored.
+  // PR labels, fetched LIVE from the API: the event payload's label list is frozen at the event that created the run, so a label added afterwards (e.g. no-auto-retry added right before rerunning failed jobs) would be invisible in context.payload and silently ignored.
+  //
+  // RE-READ AT EVERY DECISION, not once per generation. One read at start made a label take effect only when the next generation began (up to WATCHDOG_DEADLINE_SECONDS later), and a failure landing inside that window cancelled a run its PR had already been labelled to hold open. refreshPrLabels runs once here, once per newly handled failure, and once inside forceCancel: one request
+  // per decision, none per idle poll. A failed read keeps the last list that WAS read (the event payload before any read succeeds) and says so, rather than reading as "no labels".
   let skipAutoRetry = false;
-  let prLabels = [];
-  if (prNumber) {
-    let labels = context.payload.pull_request?.labels.map((l) => l.name) || [];
+  let prLabels = context.payload.pull_request?.labels?.map((l) => l.name) || [];
+  async function refreshPrLabels() {
+    if (!prNumber) return;
     try {
       const liveLabels = await github.rest.issues.listLabelsOnIssue({
         owner: context.repo.owner,
         repo: context.repo.repo,
         issue_number: prNumber,
+        per_page: 100,
       });
-      labels = liveLabels.data.map((l) => l.name);
+      prLabels = liveLabels.data.map((l) => l.name);
     } catch (e) {
       console.log(
-        `Could not fetch live PR labels (${e.message}) - falling back to event payload labels`
+        `Could not fetch live PR labels (${e.message}) - keeping the last list read: [${prLabels.join(', ')}]`
       );
     }
-    prLabels = labels;
-    skipAutoRetry = labels.includes('no-auto-retry');
-    if (skipAutoRetry) {
-      console.log('Label "no-auto-retry" detected - will not auto-retry on failures');
+    const nowSkipAutoRetry = prLabels.includes('no-auto-retry');
+    if (nowSkipAutoRetry !== skipAutoRetry) {
+      console.log(
+        nowSkipAutoRetry
+          ? 'Label "no-auto-retry" detected - will not auto-retry on failures'
+          : 'Label "no-auto-retry" is no longer on the PR - auto-retry is back on'
+      );
     }
+    skipAutoRetry = nowSkipAutoRetry;
+  }
+  await refreshPrLabels();
+  if (prLabels.includes(NO_AUTO_CANCEL_LABEL)) {
+    console.log(
+      `Label "${NO_AUTO_CANCEL_LABEL}" detected - a failed job will not cancel the run; time budgets are still enforced`
+    );
   }
 
   // A refused rerun leaves the pending-rerun chain with nothing to do: in pending mode nothing is classified or cancelled, and the one remaining action just got vetoed by the deterministic backstop. End immediately instead of idle-polling generations until the run completes.
@@ -1509,8 +1541,8 @@ const monitor = async ({ github, context, core }) => {
 
     // Budget check, right after the job fetch and before anything else reads `allJobs` -- evaluateBudget already excludes WATCHDOG_EXCLUDE_PATTERNS itself, so this runs on the unfiltered list. A no-op (both minutes null) when the workflow has not set either budget env var.
     //
-    // ENFORCEMENT (T4.2). A live job over its budget under WATCHDOG_BUDGET_MODE=enforce (or the run over its budget under WATCHDOG_RUN_BUDGET_MODE=enforce) goes through forceCancel, the single chokepoint, so the CANCEL_EXEMPT_EVENTS and no-auto-cancel exemptions apply to it exactly as to every other cancel: a nightly or a dispatch is recorded, never rewritten to `cancelled`. Not
-    // in pending-rerun mode, where the retry decision is already made and nothing is cancelled. reportBudget dedupes per job, so an exempt run is not re-asked every poll.
+    // ENFORCEMENT (T4.2). A live job over its budget under WATCHDOG_BUDGET_MODE=enforce (or the run over its budget under WATCHDOG_RUN_BUDGET_MODE=enforce) goes through forceCancel, the single chokepoint, so the CANCEL_EXEMPT_EVENTS exemption applies to it exactly as to every other cancel: a nightly or a dispatch is recorded, never rewritten to `cancelled`. The no-auto-cancel
+    // label does NOT apply (cause 'budget'): it holds a run open past a failed job, not past a live job that will not finish. Not in pending-rerun mode, where the retry decision is already made and nothing is cancelled. reportBudget dedupes per job, so an exempt run is not re-asked every poll.
     if (jobBudgetMin !== null || runBudgetMin !== null) {
       const budgetMessages = reportBudget(
         evaluateBudget({
@@ -1530,7 +1562,8 @@ const monitor = async ({ github, context, core }) => {
         console.log('#'.repeat(70));
         console.log(`Budget enforcement: ${budgetMsg}`);
         console.log('#'.repeat(70));
-        if (await forceCancel(budgetMsg, { preamble: budgetMsg })) return;
+        if (await forceCancel(budgetMsg, { preamble: budgetMsg, cause: CANCEL_CAUSE_BUDGET }))
+          return;
       }
     }
 
@@ -1678,6 +1711,9 @@ const monitor = async ({ github, context, core }) => {
       // Cached in logTails, so the later classification does not re-fetch.
       await getLogTail(job);
 
+      // The labels as they are NOW, before the no-auto-retry branch below reads them (forceCancel re-reads them again for its own decision).
+      await refreshPrLabels();
+
       // 0. Stuck cancellations bypass AI + retry entirely -- the job hung once, retrying would just hang again. Force-cancel and surface a loud annotation so the operator investigates the root cause.
       if (isStuck) {
         // A job GitHub's annotation names as timed out is judged against its declared timeout-minutes (rounded, "5m0s" -> 5); one caught by the threshold alone against the threshold.
@@ -1703,9 +1739,10 @@ const monitor = async ({ github, context, core }) => {
           message: budgetText,
         });
         flushBudgetReport();
+        // Cause 'failure', deliberately, although the text says budget: this job is already DEAD (GitHub's timeout killed it), so a cancel reclaims nothing from it and would only take the still-reporting jobs down, which is what the no-auto-cancel label exists to prevent. The budget was enforced by the kill itself, and the job is still never retried.
         if (await forceCancel(failureMsg, { preamble: budgetText })) return;
 
-        // Cancel-exempt run (the nightly): the failure is recorded but the run is left to conclude on its own, so forceCancel returned false and did NOT end this generation. The job is nonetheless TERMINAL AND STUCK, so it must not fall through into the branches below.
+        // Cancel-exempt run (the nightly, or a PR labelled no-auto-cancel): the failure is recorded but the run is left to conclude on its own, so forceCancel returned false and did NOT end this generation. The job is nonetheless TERMINAL AND STUCK, so it must not fall through into the branches below.
         //
         // Falling through was a real regression, introduced when forceCancel began returning a boolean and caught in review of PR #541. Branch 4
         // would be reached with `isFailure: failed.includes(job)` === false --
@@ -1907,6 +1944,7 @@ module.exports.pendingNoRetryJobs = pendingNoRetryJobs;
 module.exports.NO_DRAIN_PATTERNS = NO_DRAIN_PATTERNS;
 module.exports.evaluateCancelExemption = evaluateCancelExemption;
 module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
+module.exports.NO_AUTO_CANCEL_LABEL = NO_AUTO_CANCEL_LABEL;
 module.exports.JOB_BUDGET_CAPS = JOB_BUDGET_CAPS;
 module.exports.DEFAULT_STUCK_THRESHOLD_MIN = DEFAULT_STUCK_THRESHOLD_MIN;
 module.exports.jobBudgetFor = jobBudgetFor;
