@@ -5678,13 +5678,50 @@ def heredoc_bodies(cmd):
     return [doc.body for doc in _analyse(cmd).heredocs if doc.body is not None]
 
 
+def shebang_interpreter(run, cwd=None):
+    """The interpreter a script run DIRECTLY by path names on its first line (`./long.py` with `#!/usr/bin/env python3` is `python3`), or None: a name with no slash is looked up on PATH and is not a script of the checkout, a missing or unreadable file names nothing, and a shebang naming another program (`bash`) is not an interpreter run (reviews 6623b83f.1, 6f52f7ff.1)."""
+    if "/" not in run.name:
+        return None
+    target = _script_path(run.name, run.cwd, cwd)
+    try:
+        with open(target, "rb") as handle:
+            first = handle.readline(256).decode("utf-8", "replace")
+    except OSError:
+        return None
+    if not first.startswith("#!"):
+        return None
+    for word in first[2:].split():
+        base = word.rsplit("/", 1)[-1]
+        if base.startswith(INTERPRETER_NAMES):
+            return base
+    return None
+
+
+def _shebang_program(run, cwd):
+    """`(text, "file")` for a script run directly by path whose shebang names an interpreter, read under the rules a script handed to an interpreter is; `(None, None)` for anything else."""
+    if shebang_interpreter(run, cwd) is None:
+        return None, None
+    text, state = _script_file_text(run.name, run.cwd, cwd)
+    if state == "read":
+        return text, "file"
+    if state == "unjudgeable":
+        return None, "unjudgeable"
+    return None, None
+
+
+# What a guard's pre-filter reads before it starts the lexer for a program: a command that names an interpreter, or one whose command word is a path (a script run directly, `_shebang_program`).
+PROGRAM_PREFILTER = re.compile(
+    r"python|node|perl|ruby|deno|bun|tsx|(?:^|[;&|(\n])\s*(?:\./|\.\./|/|[\w.@+-]+/)"
+)
+
+
 def interpreter_program(run, cmd, cwd=None):
     """`(text, kind)` for the program an interpreter run executes, or `(None, None)`.
 
     `kind` is "inline" (`-c`/`-e` and their spellings), "stdin" (every heredoc body of `cmd`, when the run reads its program from stdin: no operand, or `-`), "file" (a script passed by path: what an earlier run of the same command wrote into it, else the file on disk, under the rules above) or "unjudgeable" (`(None, "unjudgeable")`: an earlier run wrote the script from a source this walk cannot read, or the file is larger than `_SCRIPT_MAX`). A module run (`python -m x`), a tracked and unchanged script, and one that does not exist are `(None, None)`. `cwd` is the directory the command runs in; a run that `cd`'d is resolved from its own `run.cwd` under it.
     """
     if not run.name.rsplit("/", 1)[-1].startswith(INTERPRETER_NAMES):
-        return None, None
+        return _shebang_program(run, cwd)
     kind, value = _program_parse(run.name.rsplit("/", 1)[-1], list(run.argv))
     if kind == "inline":
         return value, "inline"
@@ -5706,7 +5743,7 @@ def interpreter_program(run, cmd, cwd=None):
 
 def interpreter_scripts(cmd, cwd=None):
     """The text of every script `cmd` runs BY PATH (`interpreter_program`'s "file" kind), for a guard's pre-filter: a command naming no interpreter never starts the lexer."""
-    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
+    if not PROGRAM_PREFILTER.search(cmd):
         return []
     out = []
     for run in every_run(cmd):

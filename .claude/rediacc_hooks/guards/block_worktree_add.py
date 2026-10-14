@@ -499,12 +499,15 @@ def _program_verdict(cmd, depth, cwd=None):
 # A SCRIPT RUN BY PATH IS A PROGRAM TOO (#78afdc0b). `interpreter_programs` reads only what the command line itself holds (`-c`, `-e`, a heredoc, a here-string, a pipe), so `python3 scratch/wt.py` whose file runs `git worktree add` was allowed (rc 0, 2026-10-14) while the same text as `python3 - <<EOF` was refused. `shellscan.interpreter_program` is the reading the shell-write guards share: what an earlier run of the same command wrote into the script, else the file on disk;
 # a script tracked and unchanged from HEAD is reviewed code and is not read, and one that does not exist fails open. An "unjudgeable" script (written from a source the walk cannot read, or past its size cap) is refused when the command itself could spell the banned verb, the pre-filter `shell_verdict` applies inside a program.
 def _script_verdict(cmd, depth, cwd):
-    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
+    if not shellscan.PROGRAM_PREFILTER.search(cmd):
         return None
     for run_ in shellscan.every_run(cmd):
         text, kind = shellscan.interpreter_program(run_, cmd, cwd)
         if kind == "file" and text:
-            verdict = _code_verdict(_interpreter_name(run_.name), text, depth + 1)
+            family = _interpreter_name(run_.name) or _interpreter_name(
+                shellscan.shebang_interpreter(run_, cwd) or ""
+            )
+            verdict = _code_verdict(family, text, depth + 1)
             if verdict:
                 return verdict
         elif kind == "unjudgeable" and _could_spell(cmd):
@@ -692,6 +695,7 @@ def run(ev):
         return hookio.DENY
     verdict = _program_verdict(cmd, 0, ev.field("cwd") or None)
     if verdict:
-        ev.warn(messages[verdict] + " " + PROGRAM_NOTE)
+        # An unjudgeable script found nothing: the note says where a worktree verb was found, so it is for the other verdicts only (review 6f52f7ff.4).
+        ev.warn(messages[verdict] + ("" if verdict == "unjudgeable" else " " + PROGRAM_NOTE))
         return hookio.DENY
     return hookio.ALLOW

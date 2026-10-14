@@ -21,6 +21,12 @@ _SCRIPTS = pathlib.Path(tempfile.mkdtemp(prefix="test-long-sleep-scripts-"))
 atexit.register(shutil.rmtree, str(_SCRIPTS), True)
 LONG = _SCRIPTS / "long.py"
 LONG.write_text("import os\nos.system(%r)\n" % (S + " 900"), encoding="utf-8")
+# A script run DIRECTLY, by its shebang, with no interpreter word in the command (review 6623b83f.1).
+DIRECT = _SCRIPTS / "direct.py"
+DIRECT.write_text(
+    "#!/usr/bin/env python3\nimport os\nos.system(%r)\n" % (S + " 900"), encoding="utf-8"
+)
+DIRECT.chmod(0o755)
 SHORT = _SCRIPTS / "short.py"
 SHORT.write_text("import os\nos.system(%r)\n" % (S + " 5"), encoding="utf-8")
 
@@ -84,6 +90,15 @@ CASES = [
     ("a script by path running a long pause", "python3 %s" % LONG, False, True),
     ("the same script from a cd", "cd %s && python3 long.py" % _SCRIPTS, False, True),
     ("a script by path running a short pause", "python3 %s" % SHORT, False, False),
+    ("a script run directly by its shebang", str(DIRECT), False, True),
+    ("the same script directly from a cd", "cd %s && ./direct.py" % _SCRIPTS, False, True),
+    # Review 6623b83f.2: the text rule does not ask whether the pause RUNS, the same trade the heredoc body makes (operator ruling 2026-08-25), so a program that only prints the words is refused too.
+    (
+        "python -c only printing a long pause is refused by the text rule",
+        "python3 -c 'print(\"" + S + " 900\")'",
+        False,
+        True,
+    ),
     (
         "python -c running a short pause",
         "python3 -c 'import os; os.system(\"" + S + " 5\")'",

@@ -120,7 +120,7 @@ def _program_texts(cmd, cwd):
 
     An "unjudgeable" script is not refused here, unlike the shell-write guards: this guard bounds a pause's COST, and a script the walk cannot read is no more likely to hold one than any other command.
     """
-    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
+    if not shellscan.PROGRAM_PREFILTER.search(cmd):
         return []
     out = []
     for run_ in shellscan.every_run(cmd):

@@ -12,6 +12,7 @@ import subprocess
 
 import pytest
 
+from rediacc_hooks import dispatch
 from rediacc_hooks.tests import hookblocks, hookcases
 from rediacc_hooks.wellknown import ACCOUNT_REPO, CLAUDE_CODE_URL, GH_REPO
 
@@ -1005,6 +1006,37 @@ def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
     git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed")
     spec_deny = "check 2 guards/block_worktree_add.py"
     spec_allow = "check 0 guards/block_worktree_add.py"
+    # Review 6f52f7ff.1: a script run directly by its shebang names no interpreter in the command.
+    direct = tmp_path / "direct.py"
+    direct.write_text(
+        "#!/usr/bin/env python3\nimport os\nos.system('git worktree add /tmp/x')\n",
+        encoding="utf-8",
+    )
+    direct.chmod(0o755)
+    quiet = tmp_path / "quiet.py"
+    quiet.write_text(
+        "#!/usr/bin/env python3\nprint('never run git worktree add here')\n", encoding="utf-8"
+    )
+    quiet.chmod(0o755)
+    shell = tmp_path / "shell.sh"
+    shell.write_text("#!/bin/bash\necho git worktree add /tmp/x\n", encoding="utf-8")
+    shell.chmod(0o755)
+    block.check(spec_deny, bash_json(str(direct)), "worktree-add: a script run directly by shebang")
+    block.check(
+        spec_deny,
+        bash_json("cd %s && ./direct.py" % tmp_path),
+        "worktree-add: the same script directly from a cd",
+    )
+    block.check(
+        spec_allow,
+        bash_json(str(quiet)),
+        "worktree-add CONTROL: a script run directly that only prints a sentence",
+    )
+    block.check(
+        spec_allow,
+        bash_json(str(shell)),
+        "worktree-add CONTROL: a shebang naming no interpreter is not read",
+    )
     block.check(spec_deny, bash_json("python3 %s" % runs), "worktree-add: a script by path runs it")
     block.check(
         spec_deny,
@@ -1022,6 +1054,22 @@ def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
         "worktree-add CONTROL: a tracked, unchanged script is reviewed code and is not read",
     )
     block.done()
+
+
+def test_block_worktree_add_unjudgeable_script_is_not_said_to_hold_a_verb():
+    """Review 6f52f7ff.4: an unreadable script is refused, and the refusal must not claim a verb was found inside program text."""
+    unreadable = bash_json(
+        "cp /tmp/a.py /tmp/wt-78afdc0b.py && python3 /tmp/wt-78afdc0b.py worktree add x"
+    )
+    found = bash_json("python3 -c 'import os; os.system(\"git worktree add /tmp/x\")'")
+    rc, _out, err = dispatch.run_one("block_worktree_add", unreadable)
+    assert rc == 2
+    assert "cannot read" in err
+    assert "found inside the program text" not in err
+    # CONTROL: a verb found in program text still carries the note.
+    rc, _out, err = dispatch.run_one("block_worktree_add", found)
+    assert rc == 2
+    assert "found inside the program text" in err
 
 
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
