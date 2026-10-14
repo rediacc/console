@@ -172,6 +172,7 @@ export function syncPinGroups(steps: InstallStep[]): boolean {
   const plan = planPinSync(text, moved, syncpackSourceDirs().map(readDeclaredRanges));
   // A plan with no text rewrote nothing (it carries only errors), so it neither prints nor counts rewrites it did not make.
   const written = plan.text !== null ? plan.rewrites : [];
+  // tree-write: safe reached only from check-deps --upgrade (syncPinGroups after executeInstalls), never from the gate run
   if (plan.text !== null) fs.writeFileSync(SYNCPACK_RC, plan.text);
   console.log(
     `\n${BLUE}syncpack pin groups:${NC} ${plan.groups} groups, ${plan.involved} hold a moved package, ${written.length} rewritten`
