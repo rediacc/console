@@ -2996,6 +2996,20 @@
     }
   },
   {
+    "id": "check:ci-generated-artifacts",
+    "run": "npm run check:ci-generated-artifacts",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_generated_artifacts.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-code",
+      "step": "Generated artifacts registry"
+    }
+  },
+  {
     "id": "check:ci-workflow-env-provision",
     "run": "npm run check:ci-workflow-env-provision",
     "gate": true,

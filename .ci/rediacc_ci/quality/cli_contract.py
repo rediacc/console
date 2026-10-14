@@ -54,6 +54,9 @@ GENERATOR = "packages/cli/scripts/generate-cli-contract.ts"
 # The two non-i18n artefacts, in the twin's order. Order is visible in the `Stale CLI contract: ...` line, which joins the list with spaces.
 TOP_LEVEL_FILES = ("contract.generated.ts", "contract.json")
 
+# The one flag beside `--selftest`: judge without building the workspace packages first (see `main`).
+NO_BUILD = "--no-build"
+
 # The two substrings whose lines are dropped before diffing. Substrings, not
 # patterns: `grep -v -e '_VERSION = ' -e '"version":'` is BRE and neither string
 # contains a BRE metacharacter, so a literal `in` test is the same question.
@@ -148,26 +151,39 @@ def _files_equal(left: pathlib.Path, right: pathlib.Path) -> bool:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the gate. Exit 0 up-to-date, 1 stale, or the builder's own code."""
+    """Run the gate. Exit 0 up-to-date, 1 stale, 2 an unknown argument, or the builder's own code.
+
+    `--no-build` SKIPS THE PACKAGE BUILD and judges with whatever `dist` the workspace packages already carry. It exists for the commit-time check (`.ci/config/generated-artifacts.json`, entry `cli-contract`), which runs this file from a scratch checkout of the commit's index and cannot pay for a build on every commit. The full gate, build included, stays the pre-push and CI verdict.
+    """
     args = list(argv or [])
     if args and args[0] == "--selftest":
         return selftest()
+    unknown = [a for a in args if a != NO_BUILD]
+    if unknown:
+        # An ignored flag is how `--no-biuld` would silently run the build, or a misspelt `--selftest` would judge the real tree.
+        log.error("unknown argument(s): %s (known: --selftest, %s)" % (" ".join(unknown), NO_BUILD))
+        return 2
 
     root = paths.repo_root()
     output_dir = root / OUTPUT_SUBDIR
 
-    # The generator imports the live CLI, which resolves @rediacc/shared and @rediacc/provisioning through their dist builds.
-    log.step("Building packages the CLI imports...")
-    build = subprocess.run(
-        ["npm", "run", "build:packages"],
-        cwd=str(root),
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        check=False,
-    )
-    if build.returncode != 0:
-        # `set -e`: the twin dies here with npm's status and never compares anything. See the port notes for why this is not collapsed to 1.
-        return build.returncode
+    if NO_BUILD in args:
+        log.step(
+            "Skipping the package build (%s): the built packages are judged as they are" % NO_BUILD
+        )
+    else:
+        # The generator imports the live CLI, which resolves @rediacc/shared and @rediacc/provisioning through their dist builds.
+        log.step("Building packages the CLI imports...")
+        build = subprocess.run(
+            ["npm", "run", "build:packages"],
+            cwd=str(root),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            check=False,
+        )
+        if build.returncode != 0:
+            # `set -e`: the twin dies here with npm's status and never compares anything. See the port notes for why this is not collapsed to 1.
+            return build.returncode
 
     log.step("Regenerating the CLI contract...")
     with tempfile.TemporaryDirectory() as tmp:
@@ -250,7 +266,7 @@ def selftest() -> int:
 
         golden = _write_tree(base / "golden", _GOLDEN)
 
-        def run(committed: dict[str, str], **shim_env: str) -> int:
+        def run(committed: dict[str, str], argv: tuple[str, ...] = (), **shim_env: str) -> int:
             """Drive the gate over a fixture whose committed data is `committed`."""
             root = base / "root"
             if root.exists():
@@ -267,7 +283,7 @@ def selftest() -> int:
             os.environ.pop("SHIM_NPX_EXIT", None)
             os.environ.update(shim_env)
             try:
-                return main([])
+                return main(list(argv))
             finally:
                 for key, value in saved.items():
                     if value is None:
@@ -351,6 +367,28 @@ def selftest() -> int:
             "SETUP: a failing generator propagates its own exit code",
             run(dict(_GOLDEN), SHIM_NPX_EXIT="9"),
             9,
+        )
+
+        # `--no-build`, BOTH DIRECTIONS. The builder shim is planted to FAIL, so a 0 here can only mean the build never ran; the drift plant proves the comparison still does.
+        ctl.check(
+            "NO-BUILD CONTROL: the build is skipped, so a failing builder is never reached",
+            run(dict(_GOLDEN), (NO_BUILD,), SHIM_NPM_EXIT="7"),
+            0,
+        )
+        ctl.check(
+            "NO-BUILD PLANT: drift is still caught without the build",
+            run(real_drift, (NO_BUILD,), SHIM_NPM_EXIT="7"),
+            1,
+        )
+        ctl.check(
+            "NO-BUILD PLANT: a failing generator is still a failure",
+            run(dict(_GOLDEN), (NO_BUILD,), SHIM_NPX_EXIT="9"),
+            9,
+        )
+        ctl.check(
+            "ARGV: a misspelt flag is refused, never ignored",
+            run(dict(_GOLDEN), ("--no-biuld",)),
+            2,
         )
 
     return 0 if ctl.report() else 1

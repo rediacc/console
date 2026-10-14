@@ -119,6 +119,10 @@ WHY THIS GATE IS HAND-REGISTERED, and it must stay that way. It needs `fetch-dep
 `if: steps.setup.outcome == 'success'`, which in a lane with no such step is
 false, so every gate SKIPS while the job reports green. So this gate carries no `---- gate ----` header and its workflow step is written by hand.
 
+THE COMMITTED BYTES ARE JUDGED TOO (RC), because the working tree is not what CI reads. The worklist verbs re-render `agent/plans/QUEUE.md` and `agent/INDEX.md` in the WORKING TREE, and a session that commits the plans and not the renders leaves this gate green locally over files nobody pushed: PR 600's run 38381096702 went red on exactly that, on a tree whose local receipt was green (worklist #c99e9a5f, fixed for the instance by 5b84734de). So every full run exports `agent/` as HEAD holds it (a scratch index, never `git archive`, which honours the `export-ignore` on `agent/` and exports nothing) and repeats R8, RQ and RQ-SETTINGS there, and a disagreement names the files to commit. In a clean CI checkout the two readings are the same bytes and the second costs about a second. A checkout with no HEAD has no committed bytes and says so; an export that fails, or that holds fewer plans than the floor, is a finding and never a pass.
+
+`--rendered-only` RUNS R8, RQ AND RQ-SETTINGS AND NOTHING ELSE, with no selftest and no git history: the three verdicts that are a pure function of the tracked files under `agent/`. It is the commit-time check of `.ci/config/generated-artifacts.json` (entries `plan-queue` and `plan-index`), run by the git-level pre-commit hook from a checkout of the commit's index in about a second, where the whole gate takes more than a minute. It says on every run what it did not judge.
+
 Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 """
 
@@ -1026,6 +1030,111 @@ def census_report(root, out=sys.stdout, err=sys.stderr):
     return 0
 
 
+# --------------------------------------------------------------------------- THE RENDERED FILES, and the committed copy of them (RC).
+#
+# R8, RQ and RQ-SETTINGS are a pure function of the tracked files under `agent/`: no history, no ledger. That is what lets them run from a bare export of a tree, which is how the same three rules judge the working tree, HEAD's bytes (`committed_problems`) and a commit's index (`--rendered-only`, from the pre-commit hook).
+RENDERED_ONLY = "--rendered-only"
+AGENT_DIR = "agent"
+
+
+def rendered_problems(root, recs=None, update=False):
+    """(plan files, problems) for R8, RQ and RQ-SETTINGS under `root`. `recs` is reused when the caller already enumerated the plans."""
+    root = pathlib.Path(root)
+    if recs is None:
+        recs = CK.plan_records(root, tracked_only=True)
+    rows = R.index_rows(root, recs)
+    # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade described the wrong way round. `recs` is reused so the directory is not walked twice, but `plan_box_census` reads every plan to count boxes. That cost is deliberately paid HERE, once per run, so that SessionStart and PostCompact -- which fire on every session and every compaction -- pay one file read instead.
+    census = PI.render_census(
+        PI.census_rows(root, plan_records=lambda _r: recs, plan_box_census=CK.plan_box_census)
+    )
+    problems = list(index_problems(root, rows, census=census, update=update))
+    # RQ. agent/plans/QUEUE.md's generated section equals `wl_planqueue`'s render over the tracked plans; `--update` rewrites only that section.
+    problems.extend(PQ.problems(root, update=update))
+    # RQ-SETTINGS. Every problem the settings reader found in the `## Settings` block is a finding; `--update` never rewrites the block, it is the operator's.
+    problems.extend("RQ-SETTINGS: %s" % p for p in PQ.settings_for(root)[1])
+    return recs, problems, len(PI.parse_census(census))
+
+
+def export_head_agent(root, dest):
+    """Write `agent/` as HEAD holds it under `dest`. "" on success, else why not; "no-head" for a checkout with no commit yet."""
+    head = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--verify", "-q", "HEAD^{commit}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if head.returncode != 0:
+        inside = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--git-dir"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if inside.returncode == 0:
+            return "no-head"
+        return "`git rev-parse HEAD` failed in %s: %s" % (root, head.stderr.strip() or "no output")
+    # A THROWAWAY INDEX, NOT `git archive`. The archive honours `export-ignore`, and `.gitattributes` gives `agent/` exactly that, so `git archive HEAD -- agent` exits 0 with an empty tarball (measured 2026-10-13, 10240 bytes of padding). `read-tree` into a scratch index and `checkout-index` from it read the tree itself, and neither touches the checkout's own index or files.
+    env = dict(os.environ, GIT_INDEX_FILE=str(pathlib.Path(dest) / ".head-index"))
+    for args in (
+        ["read-tree", "--prefix=%s/" % AGENT_DIR, "HEAD:%s" % AGENT_DIR],
+        ["checkout-index", "-a", "--prefix=%s/" % str(dest).rstrip("/")],
+    ):
+        step = subprocess.run(
+            ["git", "-C", str(root), *args], capture_output=True, text=True, check=False, env=env
+        )
+        if step.returncode != 0:
+            return "`git %s` exited %d: %s" % (
+                " ".join(args[:2]),
+                step.returncode,
+                step.stderr.strip()[-400:] or "no output",
+            )
+    return ""
+
+
+def committed_problems(root, floor=None):
+    """(problems, note) for RC: R8, RQ and RQ-SETTINGS repeated on HEAD's bytes. `floor` is the plan-count floor, MIN_PLAN_FILES unless a fixture says otherwise.
+
+    The note is the green line's half: how many plans the committed reading saw, or why there was nothing committed to read. A problem here means the working tree is fine and the COMMIT is not, so the message names a commit, not a regeneration.
+    """
+    with tempfile.TemporaryDirectory(prefix="plan-record-head-") as td:
+        why = export_head_agent(root, td)
+        if why == "no-head":
+            return (
+                [],
+                "RC: this checkout has no commit yet, so there are no committed bytes to judge",
+            )
+        if why:
+            return [
+                "RC: cannot read the committed copy (%s), so nothing judged the bytes CI will read"
+                % why
+            ], ""
+        floor = MIN_PLAN_FILES if floor is None else floor
+        recs, found, _n = rendered_problems(td)
+        if len(recs) < floor:
+            return [
+                "RC: VACUOUS INPUT: HEAD's export holds %d plan file(s), floor is %d. The export lost the corpus, so the committed bytes were not judged."
+                % (len(recs), floor)
+            ], ""
+    if not found:
+        return (
+            [],
+            "RC: HEAD's bytes re-judged for R8/RQ/RQ-SETTINGS, %d plan file(s) read from the commit"
+            % len(recs),
+        )
+    out = []
+    for p in found:
+        first = p.split("\n", 1)[0].replace(" Regenerate and commit it:", "")
+        out.append(
+            "RC: in the COMMITTED tree (HEAD), %s\n"
+            "      This run's working tree may already be regenerated; CI reads the commit. Commit the\n"
+            "      render with the plans it was rendered from (after `npm run check:ci-plan-record -- --update`\n"
+            "      if the working tree is stale too):\n"
+            "      git commit -F <msg> -- %s %s <the plan files>"
+            % (first, R.INDEX_REL, PQ.QUEUE_REL)
+        )
+    return out, ""
+
+
 # --------------------------------------------------------------------------- CONTROL FIRST. Every verdict above is meaningless if these do not fire, so the fixture is a REAL git repository with a real origin/main, a real ledger and a real blob. Nothing here is mocked: R1's ancestor test, R2's `rev-parse <sha>:<path>` and R4's `git show <sha>:<ledger>` are the rules most likely to
 # be satisfied by a stub while being broken against git.
 
@@ -1871,13 +1980,133 @@ def selftest():
 # ---------------------------------------------------------------------------
 
 
+@git_isolated
+def selftest_committed():
+    """RC's controls, in a real repository: the incident shape reds, its two neighbours stay silent, and a reading that could not happen is never a pass. Returns the number of failed controls."""
+    bad = 0
+
+    def ck(label, ok, detail=""):
+        nonlocal bad
+        print(f"  {'PASS' if ok else 'FAIL'}  {label}")
+        if not ok:
+            bad += 1
+            if detail:
+                print(f"        {detail}")
+
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td) / "repo"
+        (root / "agent" / "plans").mkdir(parents=True)
+        _run(root, "git", "init", "-q", "-b", "main")
+        _run(root, "git", "config", "user.email", "fixture@example.invalid")
+        _run(root, "git", "config", "user.name", "fixture")
+        ck(
+            "RC CONTROL: a checkout with no commit has no committed bytes, and says so without a finding",
+            committed_problems(root, floor=1) == ([], committed_problems(root, floor=1)[1])
+            and "no commit yet" in committed_problems(root, floor=1)[1],
+            f"got {committed_problems(root, floor=1)}",
+        )
+        plan = root / "agent/plans/PLAN-committed-bytes.md"
+        open_text = "# Committed bytes\n\nStatus: approved\n\n## Tasks\n\n- [x] T1 the first box\n- [ ] T2 the second box\n"
+        plan.write_text(open_text, encoding="utf-8")
+        R.write_atomic(
+            root / PQ.QUEUE_REL,
+            PQ.SKELETON + "1. agent/plans/PLAN-committed-bytes.md -- the pick\n\n",
+        )
+        _run(root, "git", "add", "-A")
+        rendered_problems(root, update=True)
+        _run(root, "git", "add", "-A")
+        _run(root, "git", "commit", "-qm", "fixture: the plan and both renders")
+        ck(
+            "RC CONTROL: the working tree is silent once rendered",
+            rendered_problems(root)[1] == [],
+            f"got {rendered_problems(root)[1]}",
+        )
+        got, note = committed_problems(root, floor=1)
+        ck(
+            "RC CONTROL: a commit carrying its own renders is silent, and the note counts what was read",
+            got == [] and "1 plan file(s) read from the commit" in note,
+            f"got {got} / {note!r}",
+        )
+        ck(
+            "RC: an export below the plan floor is VACUOUS, never a pass",
+            any("VACUOUS INPUT" in p for p in committed_problems(root, floor=5)[0]),
+            f"got {committed_problems(root, floor=5)}",
+        )
+
+        # THE INCIDENT (PR 600, run 38381096702): the box is ticked and COMMITTED, the renders are regenerated in the WORKING TREE and not committed. The working-tree reading is green, which is the whole trap.
+        plan.write_text(plant(open_text, "- [ ] T2", "- [x] T2"), encoding="utf-8")
+        _run(
+            root, "git", "commit", "-qm", "fixture: the tick, without the renders", "--", str(plan)
+        )
+        rendered_problems(root, update=True)
+        ck(
+            "RC CONTROL: the incident's working tree is green (regenerated, uncommitted)",
+            rendered_problems(root)[1] == [],
+            f"got {rendered_problems(root)[1]}",
+        )
+        got, _note = committed_problems(root, floor=1)
+        ck(
+            "RC: the committed queue that disagrees with the committed plans is reported, naming the file and a commit",
+            any(PQ.QUEUE_REL in p and "COMMITTED tree" in p and "git commit" in p for p in got),
+            f"got {got}",
+        )
+        _run(root, "git", "commit", "-qm", "fixture: the renders", "--", PQ.QUEUE_REL, R.INDEX_REL)
+        got, _note = committed_problems(root, floor=1)
+        ck("RC CONTROL: committing the renders clears it", got == [], f"got {got}")
+
+        # THE OPPOSITE NEIGHBOUR: an UNCOMMITTED tick. HEAD is consistent with itself, so RC is silent; the working-tree rules own this one.
+        plan.write_text(open_text, encoding="utf-8")
+        ck(
+            "RC CONTROL: an uncommitted plan edit is the working-tree rules' finding",
+            rendered_problems(root)[1] != [],
+        )
+        got, _note = committed_problems(root, floor=1)
+        ck("RC CONTROL: and not a finding about the commit", got == [], f"got {got}")
+
+        outside = pathlib.Path(td) / "not-a-repo"
+        (outside / "agent").mkdir(parents=True)
+        got, _note = committed_problems(outside, floor=1)
+        ck(
+            "RC: a tree git cannot read is a finding, never a pass",
+            any("cannot read the committed copy" in p for p in got),
+            f"got {got}",
+        )
+    return bad
+
+
+def rendered_only(root, update=False):
+    """`--rendered-only`: R8, RQ and RQ-SETTINGS for `root`, no selftest, no history. With `update` the two renders are written first, which is the fast regeneration (about 3 s against the full gate's 77 s). Exit 0 or 1."""
+    recs, problems, n_census = rendered_problems(root, update=update)
+    if len(recs) < MIN_PLAN_FILES:
+        print(
+            f"VACUOUS INPUT: found {len(recs)} plan file(s) under agent/, floor is "
+            f"{MIN_PLAN_FILES}. The glob lost the corpus; refusing a verdict rather than "
+            f"reporting a clean tree for files nobody read.",
+            file=sys.stderr,
+        )
+        return 1
+    if problems:
+        print(f"✗ plan records (rendered files only): {len(problems)} problem(s):", file=sys.stderr)
+        for p in problems:
+            print(f"    {p}", file=sys.stderr)
+        return 1
+    print(
+        f"✓ plan records (rendered files only): {len(recs)} plan file(s) (floor {MIN_PLAN_FILES}), "
+        f"{R.INDEX_REL} ({n_census} census row(s)) and {PQ.QUEUE_REL} equal their renders. "
+        f"NOT judged here: R1..R7, R9, RB, RC and the census; the full gate judges them."
+    )
+    return 0
+
+
 def main(argv):
     update = "--update" in argv
     # A PURE READER, and it runs before anything else on purpose. `--census-report` answers "has the window elapsed" from the recorded rows and must stay usable on a tree whose R1..R8 verdict is red -- the window is about the CANDIDATE rules and has nothing to say about the enforced ones.
     if "--census-report" in argv:
         return census_report(ROOT)
+    if RENDERED_ONLY in argv:
+        return rendered_only(ROOT, update=update)
     print("plan records: controls first, then the verdict")
-    if selftest():
+    if selftest() + selftest_committed():
         print(
             "✗ instrument control failed; every verdict below would be meaningless",
             file=sys.stderr,
@@ -1941,17 +2170,11 @@ def main(argv):
         n_xref += 1
         problems.extend(header_xref_problems(ROOT, rel, text))
 
-    rows = R.index_rows(ROOT, recs)
-    # THIS DOES OPEN EVERY PLAN, and saying otherwise would be the wrong trade described the wrong way round. `recs` is reused so the directory is not walked twice, but `plan_box_census` reads all 83 files to count boxes. That cost is deliberately paid HERE, once per CI run, so that SessionStart and PostCompact -- which fire on every session and every compaction -- pay one file
-    # read instead. The point was never to stop reading the plans; it was to stop reading them on the interactive path.
-    census = PI.render_census(
-        PI.census_rows(ROOT, plan_records=lambda _r: recs, plan_box_census=CK.plan_box_census)
-    )
-    problems.extend(index_problems(ROOT, rows, census=census, update=update))
-    # RQ. agent/plans/QUEUE.md's generated section equals `wl_planqueue`'s render over the tracked plans; `--update` rewrites only that section.
-    problems.extend(PQ.problems(ROOT, update=update))
-    # RQ-SETTINGS. Every problem the settings reader found in the `## Settings` block is a finding; `--update` never rewrites the block, it is the operator's.
-    problems.extend("RQ-SETTINGS: %s" % p for p in PQ.settings_for(ROOT)[1])
+    # R8, RQ and RQ-SETTINGS over the working tree (`rendered_problems`), then RC: the same three over HEAD's bytes, which is what CI reads.
+    _recs, rendered, n_census = rendered_problems(ROOT, recs=recs, update=update)
+    problems.extend(rendered)
+    rc_problems, rc_note = committed_problems(ROOT)
+    problems.extend(rc_problems)
 
     # ---- THE ADVISORY CENSUS ------------------------------------------------- IT RUNS ON BOTH PATHS, red and green. A measurement window with a hole in it wherever some unrelated rule failed is a window nobody can reason about, and the candidates say nothing about R1..R8 either way.
     #
@@ -1990,8 +2213,8 @@ def main(argv):
         f"{n_records} compacted or parked record(s), every pointer resolves, every "
         f"`done=` is attested by {R.LEDGER_REL} at the commit it names, and "
         f"{R.INDEX_REL} matches, census section included "
-        f"({len(PI.parse_census(census))} plan row(s) SessionStart reads instead of "
-        f"opening the plans). R9: {n_xref} plan(s) carry a "
+        f"({n_census} plan row(s) SessionStart reads instead of "
+        f"opening the plans). {rc_note}. R9: {n_xref} plan(s) carry a "
         f"{'/'.join(HEADER_XREF_KEYS)} header and every pointer in one resolves. "
         f"RB: {n_rb_judged} plan(s) judged, no started plan without a box, "
         f"{len(rb_warnings)} not-started plan(s) warned."

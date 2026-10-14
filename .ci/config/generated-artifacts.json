@@ -1,0 +1,237 @@
+{
+  "$comment": [
+    "The registry of generated-and-committed artifacts: what each is generated from, the command that regenerates it, the gate that judges it, and whether a commit is checked against it.",
+    "WHY. A generated file goes stale whenever one of its inputs is committed without it. Three times on 2026-10-13 that was found late: 8dbb6066e left the CLI contract stale for 40 minutes; agent/plans/QUEUE.md was regenerated in the working tree and never committed, and PR 600 run 38381096702 went red on it; a new test file needed gen-docs --write, which the gen-docs pre-commit check caught at the commit. The third is the model, and this file extends it.",
+    "READ BY .claude/rediacc_hooks/git/artifacts.py (the git-level pre-commit hook, from the COMMIT'S index) and judged by .ci/scripts/quality/check_generated_artifacts.py (check:ci-generated-artifacts): an input or output glob that matches no tracked file, a generator or gate that does not exist, an enrolled entry without a check, a budget or a control, and an entry left out of the commit-time check without a reason are each a finding.",
+    "`when`: `commit` runs `commit.check` in a scratch checkout of the commit's index whenever the commit changes a path matching `inputs` (minus `inputs_exclude`) or `outputs`, and refuses the commit when it exits `commit.stale_exit` (default 1); any other non-zero exit, a missing `commit.requires` path and a run longer than `commit.budget_s` are refused as UNCHECKED. `commit-dedicated` is checked at commit time by its own code path, named in `reason`. `pre-push` is left to its gate in the pre-push run and CI, with the reason.",
+    "`commit.links` are untracked build products of the working tree linked into the scratch tree (a link the working tree lacks is skipped); `commit.requires` must exist in the working tree, each with the command that creates it; `commit.env_remove` are environment variables the checker must not inherit. `commit.blind` says what the commit-time run cannot see and the gate can.",
+    "`commit.control` is the planted defect .claude/rediacc_hooks/tests/test_githook_generated_artifacts.py commits through the real hook: `replace` rewrites `old` to `new` in an input, `create` adds a new input file. The commit must be refused naming `generator`, the same commit with the regenerated outputs must pass, and a commit of an unrelated path must not run the checker.",
+    "`measured_s` is the gate's wall time on 2026-10-13 on the development machine, the number the commit-or-pre-push decision was made from. TO ENROL an artifact: give its gate a mode that needs no network and no history beyond the tree, measure it, declare the inputs and a control, and run the test file."
+  ],
+  "schema": 1,
+  "artifacts": [
+    {
+      "id": "cli-contract",
+      "title": "CLI contract",
+      "when": "commit",
+      "outputs": ["packages/shared/src/cli-contract/data/**"],
+      "inputs": [
+        "packages/cli/src/**",
+        "packages/cli/scripts/generate-cli-contract.ts",
+        "packages/cli/scripts/lib/**",
+        "packages/shared/src/cli-contract/**",
+        ".ci/rediacc_ci/quality/cli_contract.py"
+      ],
+      "inputs_exclude": ["packages/cli/src/__tests__/**"],
+      "generator": "npm run generate:cli-contract -w @rediacc/cli",
+      "gate": "check:ci-cli-contract",
+      "deterministic": true,
+      "measured_s": 7.0,
+      "commit": {
+        "check": ["python3", ".ci/scripts/quality/check_cli_contract.py", "--no-build"],
+        "stale_exit": 1,
+        "budget_s": 90,
+        "links": ["node_modules", "packages/cli/node_modules"],
+        "requires": [
+          { "path": "node_modules/tsx", "fix": "npm install && npm run install:natives" },
+          { "path": "packages/shared/dist", "fix": "npm run build:packages" }
+        ],
+        "env_remove": ["REDIACC_CI_ROOT"],
+        "blind": "The generator imports @rediacc/shared and @rediacc/provisioning through their built dist in the working tree, so a staged change under packages/shared/src outside cli-contract/ is judged only as far as that build is current. check:ci-cli-contract builds first and is the verdict before a push.",
+        "control": {
+          "kind": "replace",
+          "path": "packages/cli/src/i18n/locales/en/cli.json",
+          "old": "\"description\": \"Inspect remote machine state: ",
+          "new": "\"description\": \"Inspect the remote machine state: "
+        }
+      }
+    },
+    {
+      "id": "plan-renders",
+      "title": "Plan queue and plan index",
+      "when": "commit",
+      "outputs": ["agent/plans/QUEUE.md", "agent/INDEX.md"],
+      "inputs": [
+        "agent/plans/**",
+        ".claude/hooks/stop/wl_planqueue.py",
+        ".claude/hooks/stop/wl_planindex.py",
+        ".claude/hooks/stop/wl_planrec.py",
+        ".claude/hooks/stop/wl_plandeps.py",
+        ".claude/hooks/stop/wl_planconc.py",
+        ".claude/hooks/stop/wl_planfile.py",
+        ".claude/hooks/stop/wl_store.py",
+        ".claude/hooks/stop/wl_checks.py",
+        ".claude/rediacc_hooks/plan_gate.py",
+        ".ci/scripts/quality/check_plan_record.py"
+      ],
+      "generator": "npm run check:ci-plan-record -- --rendered-only --update",
+      "gate": "check:ci-plan-record",
+      "deterministic": true,
+      "measured_s": 2.7,
+      "commit": {
+        "check": ["python3", ".ci/scripts/quality/check_plan_record.py", "--rendered-only"],
+        "stale_exit": 1,
+        "budget_s": 45,
+        "env_remove": ["PLAN_RECORD_ROOT", "PLAN_RECORD_MIN_PLANS", "REDIACC_CI_ROOT"],
+        "blind": "Only R8, RQ and RQ-SETTINGS run (the two rendered files against their renders). R1 to R7, R9, RB and the census need history and the full gate's 77 s, and stay in the pre-push run.",
+        "control": {
+          "kind": "create",
+          "path": "agent/plans/PLAN-zz-generated-artifacts-control.md",
+          "content": "# PLAN: the generated-artifacts control\n\nStatus: approved\n\n## Tasks\n\n- [ ] T1 a box the queue must list\n"
+        }
+      }
+    },
+    {
+      "id": "gates-lock",
+      "title": "Gate registration lock",
+      "when": "commit",
+      "outputs": ["scripts/ci-runner/gates.lock.json"],
+      "inputs": ["scripts/ci-runner/*.ts", "scripts/gen/gen-gates-lock.ts"],
+      "generator": "npm run gen:gates-lock",
+      "gate": "check:ci-gates-lock",
+      "deterministic": true,
+      "measured_s": 1.1,
+      "commit": {
+        "check": ["npx", "tsx", "scripts/gen/gen-gates-lock.ts"],
+        "stale_exit": 1,
+        "budget_s": 45,
+        "links": ["node_modules"],
+        "requires": [{ "path": "node_modules/tsx", "fix": "npm install && npm run install:natives" }],
+        "blind": "The lock's own selftest does not run at commit time; check:ci-gates-lock runs it.",
+        "control": {
+          "kind": "replace",
+          "path": "scripts/ci-runner/manifest.ts",
+          "old": "run: 'npm run check:ci-gates-lock',",
+          "new": "run: 'npm run check:ci-gates-lock --generated-artifacts-control',"
+        }
+      }
+    },
+    {
+      "id": "doc-regions",
+      "title": "Generated doc regions",
+      "when": "commit-dedicated",
+      "outputs": ["scripts/data/doc-registry.md", "CLAUDE.md", "docs/agent-reference/*.md"],
+      "inputs": ["scripts/gen/gen-docs.ts", "scripts/lib/doc-providers.ts"],
+      "generator": "npx tsx scripts/gen/gen-docs.ts --write",
+      "gate": "check:ci-doc-region-parity",
+      "deterministic": true,
+      "measured_s": 13.1,
+      "reason": "Checked at commit time by `gen_docs_pre_commit` in .claude/rediacc_hooks/git/githooks.py, which predates this registry and asks the generator itself (`--affected`) which staged paths are inputs: each provider declares its own `inputs` in scripts/lib/doc-providers.ts, so the two globs here name only the machinery and the full input set is not repeated."
+    },
+    {
+      "id": "command-tree",
+      "title": "CLI command tree",
+      "when": "pre-push",
+      "outputs": ["packages/cli/scripts/command-tree.json"],
+      "inputs": ["packages/cli/src/**", "packages/cli/scripts/export-command-tree.ts"],
+      "generator": "npm run export:command-tree -w @rediacc/cli",
+      "gate": "check:ci-command-tree",
+      "deterministic": true,
+      "measured_s": 10.3,
+      "reason": "It has the CLI contract's inputs and a second exporter run of its own, so enrolling it doubles what every CLI commit pays, and its gate has no no-build mode yet. The next candidate: add the mode, measure, enrol."
+    },
+    {
+      "id": "plan-boxes",
+      "title": "Plan box ledger",
+      "when": "pre-push",
+      "outputs": [".ci/config/plan-boxes.json"],
+      "inputs": ["agent/plans/**"],
+      "generator": "npm run check:ci-plan-boxes -- --update",
+      "gate": "check:ci-plan-boxes",
+      "deterministic": true,
+      "measured_s": 2.4,
+      "reason": "Its verdict includes A1, a box that vanished since the base ref, which reads history the scratch tree is not set up to prove. Cheap enough to enrol once it has a tree-only mode."
+    },
+    {
+      "id": "i18n-hashes",
+      "title": "Translation hash manifests",
+      "when": "pre-push",
+      "outputs": [
+        "packages/www/src/i18n/translations/.translation-hashes.json",
+        "packages/cli/src/i18n/locales/.translation-hashes.json"
+      ],
+      "inputs": ["packages/www/src/i18n/translations/en.json", "packages/cli/src/i18n/locales/en/*.json"],
+      "generator": "npm run i18n:generate-hashes",
+      "gate": "check:ci-i18n-hashes",
+      "deterministic": true,
+      "hand_reviewed": true,
+      "measured_s": 0.8,
+      "reason": "Deterministic and cheap, and deliberately not a commit-time fix: regenerating the hashes is the LOCK step that follows re-translating the changed keys, so a refusal that printed the generator would invite locking stale translations. The gate's own message gives the order. It also reads the private/account submodule, which a scratch checkout of the index does not hold."
+    },
+    {
+      "id": "i18n-locales",
+      "title": "Derived locale files",
+      "when": "pre-push",
+      "outputs": ["packages/www/src/i18n/translations/*.json"],
+      "inputs": ["packages/www/src/i18n/translations/en.json"],
+      "generator": "npm run i18n:sync",
+      "gate": "check:ci-i18n-completeness",
+      "deterministic": false,
+      "hand_reviewed": true,
+      "reason": "NOT deterministic and never run automatically: `i18n:sync` rewrote 12 locales on a clean tree. The locales are naturalized by hand and by the pipeline in docs/i18n/CONVENTIONS.md; the generator is named here so that nobody enrols it."
+    },
+    {
+      "id": "shard-manifests",
+      "title": "Shard manifests",
+      "when": "pre-push",
+      "outputs": [".ci/config/shards/*.json"],
+      "inputs": [".ci/config/lane-durations.json", "scripts/ci-runner/shard-place.ts", "scripts/ci-runner/lanes.ts"],
+      "generator": "npm run shard:place",
+      "gate": "check:ci-shard-manifest-coverage",
+      "deterministic": true,
+      "measured_s": 6.8,
+      "reason": "Its real inputs are every test file of six lanes, three of them inside the private/renet and private/account submodules (one enumerated by `go list`), which a scratch checkout of the index does not hold; the three globs name only the machinery. 6.8 s on every commit that adds a test is also above what a commit should pay."
+    },
+    {
+      "id": "python-env-registry",
+      "title": "Python environment registry",
+      "when": "pre-push",
+      "outputs": [".ci/config/python-env-registry.json"],
+      "inputs": [".ci/**/*.py", ".claude/**/*.py"],
+      "generator": ".ci/scripts/quality/check_python_env_registry.py --write-baseline",
+      "gate": "check:ci-python-env-registry",
+      "deterministic": true,
+      "hand_reviewed": true,
+      "measured_s": 24.7,
+      "reason": "24.7 s, and every tracked Python module is an input, so most commits would pay it. It is also shrink-only: a new environment read is reviewed, not regenerated away."
+    },
+    {
+      "id": "hook-inventory",
+      "title": "Hook inventory and coverage baselines",
+      "when": "pre-push",
+      "outputs": ["scripts/data/hook-inventory-baseline.json", "scripts/data/hook-coverage-baseline.json"],
+      "inputs": [".claude/hooks/**", ".claude/rediacc_hooks/guards/**", "scripts/data/hook-audit-scope.json"],
+      "generator": "hand-edited: drain the one line the gate names",
+      "gate": "check:ci-hook-integrity",
+      "deterministic": true,
+      "hand_reviewed": true,
+      "measured_s": 0.4,
+      "reason": "A baseline, not a render: removing a guard is a deliberate act and the baseline is drained by hand in the same commit, so there is no generator a refusal could print."
+    },
+    {
+      "id": "inline-suppressions",
+      "title": "Inline suppression baseline",
+      "when": "pre-push",
+      "outputs": [".ci/config/inline-suppressions-baseline.json"],
+      "inputs": [".ci/scripts/quality/check_inline_suppressions.py"],
+      "generator": ".ci/scripts/quality/check_inline_suppressions.py --write-baseline",
+      "gate": "check:ci-inline-suppressions",
+      "deterministic": true,
+      "hand_reviewed": true,
+      "measured_s": 7.4,
+      "reason": "Shrink-only: `--write-baseline` records a drain and refuses growth, and a new suppression is fixed, never baselined, so the command must not be offered as the fix for a refused commit. Its inputs are every source file in the tree; the glob names only the gate."
+    },
+    {
+      "id": "gate-bind",
+      "title": "Workflow steps bound from gate headers",
+      "when": "pre-push",
+      "outputs": [".github/workflows/ci-quality.yml"],
+      "inputs": ["scripts/gate-bind.ts", "scripts/ci-runner/manifest.ts", ".ci/scripts/quality/check_*.py", "scripts/gates/check-*.ts"],
+      "generator": "npm run gate:bind",
+      "gate": "check:ci-gate-bind",
+      "deterministic": true,
+      "measured_s": 6.1,
+      "reason": "6.1 s with every gate source as an input, so most CI commits would pay it; check:ci-parity and check:ci-gate-bind judge it in the pre-push run."
+    }
+  ]
+}

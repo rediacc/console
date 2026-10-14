@@ -2272,10 +2272,63 @@ export const proseStyleProvider: Provider = {
   inputs: filesInput(PROSE_RULES),
 };
 
+const GENERATED_ARTIFACTS = '.ci/config/generated-artifacts.json';
+
+interface GeneratedArtifact {
+  id: string;
+  title: string;
+  when: string;
+  outputs?: string[];
+  generator: string;
+  gate: string;
+  commit?: { budget_s?: number };
+}
+
+/**
+ * The generated-and-committed artifacts, one row each, read from the registry the pre-commit
+ * hook judges commits by (`.claude/rediacc_hooks/git/artifacts.py`).
+ *
+ * THE COLUMN THAT MATTERS IS `Checked`. A list of generated files with no such column reads as
+ * "all of these are checked when a commit stages their inputs", and only the `when: commit`
+ * rows are. The rest wait for their gate in the pre-push run, each for a reason the registry
+ * carries beside it, so the row names the gate rather than leaving the reader to assume the hook.
+ */
+export const generatedArtifactsProvider: Provider = {
+  id: 'generated-artifacts',
+  scans: `${GENERATED_ARTIFACTS}, one row per generated-and-committed artifact`,
+  columns: ['Artifact', 'Outputs', 'Regenerate with', 'Checked'],
+  rows: (root) => {
+    const file = path.join(root, GENERATED_ARTIFACTS);
+    if (!fs.existsSync(file)) return [];
+    const doc = JSON.parse(fs.readFileSync(file, 'utf-8')) as { artifacts?: GeneratedArtifact[] };
+    return (doc.artifacts ?? []).map((a) => {
+      const checked =
+        a.when === 'commit'
+          ? `at the commit, ${a.commit?.budget_s ?? '?'} s budget; then \`${a.gate}\``
+          : a.when === 'commit-dedicated'
+            ? `at the commit, by the gen-docs check; then \`${a.gate}\``
+            : `before the push, by \`${a.gate}\``;
+      return {
+        key: a.id,
+        cells: [
+          `${a.title} (\`${a.id}\`)`,
+          (a.outputs ?? []).map((o) => `\`${o}\``).join(', '),
+          `\`${a.generator}\``,
+          checked,
+        ],
+      };
+    });
+  },
+  missing: (root) =>
+    fs.existsSync(path.join(root, GENERATED_ARTIFACTS)) ? [] : [GENERATED_ARTIFACTS],
+  inputs: filesInput(GENERATED_ARTIFACTS),
+};
+
 export const PROVIDERS: readonly Provider[] = [
   gatesProvider,
   gatesSummaryProvider,
   proseStyleProvider,
+  generatedArtifactsProvider,
   hookGuardsProvider,
   hookSummaryProvider,
   suppressionsProvider,

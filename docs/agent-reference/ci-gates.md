@@ -520,6 +520,38 @@ Anything unreadable is a refusal. The git-level `pre-push` hook admits the same 
 
 **`pre-commit` refuses a commit that leaves a generated doc region stale.** It runs `scripts/gen/gen-docs.ts --affected` from the commit's own index (plain `node`, about 0.15 s, no provider runs), which names every staged path that one of the generator's modules, a document carrying a region, or a provider's declared `inputs` (`scripts/lib/doc-providers.ts`) could move. No hit is the fast path. A hit checks out the commit's index in full (`checkout-index`, 0.7 s parallel) and runs verify there, about 9 s in all, so a partial `git commit -F <msg> -- <paths>` that leaves its regeneration unstaged is refused, not judged by the working tree. The refusal names the staged inputs, the drifted files and the fix: `npx tsx scripts/gen/gen-docs.ts --write`, then commit the regenerated files with the inputs. A staged generator module also re-runs `--check-inputs` (about 25 s), the trace that proves every provider reads only what its `inputs` declare; `--selftest` runs the same trace in CI. A missing `node`, a timeout or a generator that cannot run is refused as UNCHECKED. A committed generator with no `--affected` mode is skipped with a notice. There is no escape hatch beyond `COMMIT_POLICY_OK=1`. Tests: `.claude/rediacc_hooks/tests/test_githook_gen_docs.py`, where every case also runs against a copy planted to always allow and must fail there.
 
+**`pre-commit` also refuses a commit that leaves a generated artifact stale.** `.ci/config/generated-artifacts.json` is the registry: for each generated-and-committed artifact, the globs it is generated from, the command that regenerates it, the gate that judges it, and whether a commit is checked against it. The hook reads the registry from the commit's own index and lists the paths the commit changes; a commit that changes no input of an enrolled artifact costs two git calls and prints nothing.
+A commit that does is checked out in full into a scratch tree (the commit's index, never the working tree), the untracked build products the entry declares are linked in, and the entry's checker runs there under its time budget. A stale artifact is refused with the staged inputs, the checker's own words, the generator command and the output paths to add. A checker that exits with anything else, a missing build product and a run past the budget are refused as UNCHECKED. `.claude/rediacc_hooks/git/artifacts.py` is the code.
+
+<!-- >>> gen-docs: generated-artifacts -->
+
+Scans: .ci/config/generated-artifacts.json, one row per generated-and-committed artifact.
+
+| Artifact | Outputs | Regenerate with | Checked |
+|---|---|---|---|
+| CLI contract (`cli-contract`) | `packages/shared/src/cli-contract/data/**` | `npm run generate:cli-contract -w @rediacc/cli` | at the commit, 90 s budget; then `check:ci-cli-contract` |
+| Plan queue and plan index (`plan-renders`) | `agent/plans/QUEUE.md`, `agent/INDEX.md` | `npm run check:ci-plan-record -- --rendered-only --update` | at the commit, 45 s budget; then `check:ci-plan-record` |
+| Gate registration lock (`gates-lock`) | `scripts/ci-runner/gates.lock.json` | `npm run gen:gates-lock` | at the commit, 45 s budget; then `check:ci-gates-lock` |
+| Generated doc regions (`doc-regions`) | `scripts/data/doc-registry.md`, `CLAUDE.md`, `docs/agent-reference/*.md` | `npx tsx scripts/gen/gen-docs.ts --write` | at the commit, by the gen-docs check; then `check:ci-doc-region-parity` |
+| CLI command tree (`command-tree`) | `packages/cli/scripts/command-tree.json` | `npm run export:command-tree -w @rediacc/cli` | before the push, by `check:ci-command-tree` |
+| Plan box ledger (`plan-boxes`) | `.ci/config/plan-boxes.json` | `npm run check:ci-plan-boxes -- --update` | before the push, by `check:ci-plan-boxes` |
+| Translation hash manifests (`i18n-hashes`) | `packages/www/src/i18n/translations/.translation-hashes.json`, `packages/cli/src/i18n/locales/.translation-hashes.json` | `npm run i18n:generate-hashes` | before the push, by `check:ci-i18n-hashes` |
+| Derived locale files (`i18n-locales`) | `packages/www/src/i18n/translations/*.json` | `npm run i18n:sync` | before the push, by `check:ci-i18n-completeness` |
+| Shard manifests (`shard-manifests`) | `.ci/config/shards/*.json` | `npm run shard:place` | before the push, by `check:ci-shard-manifest-coverage` |
+| Python environment registry (`python-env-registry`) | `.ci/config/python-env-registry.json` | `.ci/scripts/quality/check_python_env_registry.py --write-baseline` | before the push, by `check:ci-python-env-registry` |
+| Hook inventory and coverage baselines (`hook-inventory`) | `scripts/data/hook-inventory-baseline.json`, `scripts/data/hook-coverage-baseline.json` | `hand-edited: drain the one line the gate names` | before the push, by `check:ci-hook-integrity` |
+| Inline suppression baseline (`inline-suppressions`) | `.ci/config/inline-suppressions-baseline.json` | `.ci/scripts/quality/check_inline_suppressions.py --write-baseline` | before the push, by `check:ci-inline-suppressions` |
+| Workflow steps bound from gate headers (`gate-bind`) | `.github/workflows/ci-quality.yml` | `npm run gate:bind` | before the push, by `check:ci-gate-bind` |
+
+13 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+
+<!-- <<< gen-docs -->
+
+An artifact is left to the pre-push run when its check is too slow for a commit, not deterministic, or a hand-reviewed baseline whose regeneration is a decision; the registry carries that reason beside the entry, and `commit.blind` says what an enrolled check cannot see. The CLI contract check, for one, runs without building the workspace packages, so `check:ci-cli-contract` stays the verdict before a push. `check:ci-generated-artifacts` refuses a registry entry whose glob matches no tracked file, whose generator or gate does not exist, or whose control cannot plant.
+`.claude/rediacc_hooks/tests/test_githook_generated_artifacts.py` commits each enrolled entry's declared control through the real hook: refused with the generator named, allowed once regenerated, and no checker run for an unrelated path, each case also required to fail against a hook planted to always allow.
+
+**The committed plan renders are judged as committed.** The worklist verbs re-render `agent/plans/QUEUE.md` and `agent/INDEX.md` in the working tree, and `check:ci-plan-record` read only the working tree, so a render that was never committed stayed green locally and went red in CI (PR 600, run 38381096702). The gate now repeats R8, RQ and RQ-SETTINGS on HEAD's bytes (rule RC) on every full run, and `--rendered-only` runs those three rules alone, in about 3 s, which is the commit-time check of the `plan-renders` entry; `npm run check:ci-plan-record -- --rendered-only --update` regenerates both files.
+
 **The tags.** A tag is a bracketed word in the SUBJECT line.
 
 - **`[hotfix]`**, on `main` only and required there. It sits at the end of the subject, and the message carries a `Hotfix-Evidence:` trailer: the red `main` run (a bare run id or an `actions/runs` URL) when the fix is the main-only failure class of `/pr-merge` step 5, or `ASKED:<YYYY-MM-DDTHH:MMZ>` when the operator called it a hotfix in this task. At most `hotfix_max_files` (5) paths. No `PR-TASK:` trailer, since `main` has no epic. Always reviewed, never `[no-review]`. Pushed by the operator with `!`, since the fast-forward fallback never covers a commit made on `main`.
