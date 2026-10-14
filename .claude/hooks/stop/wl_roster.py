@@ -1107,8 +1107,10 @@ def _shellscan():
     # this module lives outside the rediacc_hooks package (test_canonical_sys_path_hop).
     helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
     spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
-    syspath = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-    spec.loader.exec_module(syspath)  # type: ignore[union-attr]
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
     syspath.on_sys_path(syspath.CLAUDE_DIR)
     from rediacc_hooks import shellscan
 

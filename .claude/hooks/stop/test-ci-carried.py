@@ -20,12 +20,13 @@ import tempfile
 import types
 from typing import Any
 
+import wl_ci as W
+
 _SCRATCH = tempfile.mkdtemp(prefix="ci-carried-")
 atexit.register(shutil.rmtree, _SCRATCH, True)
 # job_log caches completed logs under XDG_CACHE_HOME; a fixture job id must never read a real cached log, nor leave one behind.
 os.environ["XDG_CACHE_HOME"] = _SCRATCH
 
-import wl_ci as W  # noqa: E402
 
 _CI = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci"
 
@@ -182,7 +183,7 @@ def trouble(contexts, carry_text, jobs, logs, live=False, base=None):
     fake_diag.GhFetcher = lambda *_a, **_k: fetch
     saved = (W.ci_rollup, W.ci_steps, W._git, W._load_diagnose)
 
-    def fake_rollup(_root, _ref, allow_branch=False, repo=None):  # noqa: ARG001 -- ci_rollup's signature
+    def fake_rollup(_root, _ref, _allow_branch=False, _repo=None):
         return "ok", info
 
     def fake_steps(_root, _info, _rows, _cached):

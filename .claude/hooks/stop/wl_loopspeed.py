@@ -11,6 +11,7 @@ BACKUP PUSH (agent/plans/PLAN-turbo-local-first.md D4). Under `turbo_push: batch
 All are advice. Nothing refuses a push and nothing here exits non-zero.
 """
 
+import importlib
 import json
 import pathlib
 import re
@@ -29,7 +30,7 @@ def record_policy_rel():
     LAZY, NOT AT IMPORT. A module-level call made `import wl_checks` fail wherever `.ci` is absent, and the Stop-hook tests that copy .claude/hooks/stop into a scratch tree (test_wl_lkg, test_wl_cadence 222j, test_wl_retro r16, test_stop_hook_edit_check) then saw the whole hook as broken. ImportError propagates to the one caller, which answers "unknown".
     """
     if not _RECORD_POLICY_REL:
-        import wl_proc  # noqa: F401 -- its import puts .ci on sys.path
+        importlib.import_module("wl_proc")  # its import puts .ci on sys.path
         from rediacc_ci.policy_paths import policy_rel
 
         _RECORD_POLICY_REL.append(policy_rel("record-paths.json"))

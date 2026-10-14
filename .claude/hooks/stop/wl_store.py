@@ -655,7 +655,7 @@ def save_state(worklist, session_id, doc):
 
 
 _JSONL_APPEND_REL = (".ci", "rediacc_ci", "core", "jsonl_append.py")
-_JSONL_APPEND = None
+_JSONL_APPEND: dict[str, Any] = {}  # the per-process module cache, under the key "mod"
 
 
 def _jsonl_append():
@@ -663,9 +663,8 @@ def _jsonl_append():
 
     Looked for above this file first; then above the live `.claude/rediacc_hooks` a last-known-good snapshot links in (wl_lkg.snapshot); then above the working directory, because several suites copy this directory into a temp root (test_wl_lkg, test_wl_roster) while the process still runs from the checkout. None found is a loud refusal, never a silent dropped write.
     """
-    global _JSONL_APPEND  # noqa: PLW0603 -- a per-process module cache
-    if _JSONL_APPEND is not None:
-        return _JSONL_APPEND
+    if "mod" in _JSONL_APPEND:
+        return _JSONL_APPEND["mod"]
     import importlib.util
 
     here = pathlib.Path(__file__).resolve()
@@ -682,7 +681,7 @@ def _jsonl_append():
             if spec is not None and spec.loader is not None:
                 mod = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(mod)
-                _JSONL_APPEND = mod
+                _JSONL_APPEND["mod"] = mod
                 return mod
     raise RuntimeError(
         "worklist WRITES need %s, which is not above %s, its linked .claude/rediacc_hooks, or the working directory %s"

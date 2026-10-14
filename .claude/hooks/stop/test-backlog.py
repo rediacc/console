@@ -14,10 +14,10 @@ import re
 import sys
 import tempfile
 
-HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+import wl_backlog as B
 
-import wl_backlog as B  # noqa: E402
+HERE = pathlib.Path(__file__).resolve().parent
+
 
 # `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
 _RUNTMP = importlib.util.spec_from_file_location(

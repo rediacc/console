@@ -1959,9 +1959,15 @@ def refute_existence(tree_obj, finding):
         return ""
     if path.endswith(PY_SUFFIXES):
         line = _quoted_line(tree_obj.text(path) or "", finding.claim) or finding.line
-        lookup = lambda ident: _py_verify(tree_obj, path, line, ident)  # noqa: E731
+
+        def lookup(ident):
+            return _py_verify(tree_obj, path, line, ident)
+
     elif path.endswith(JS_SUFFIXES):
-        lookup = lambda ident: _js_verify(tree_obj, path, ident)  # noqa: E731
+
+        def lookup(ident):
+            return _js_verify(tree_obj, path, ident)
+
     else:
         return ""
     idents = claimed_identifiers(finding.claim)

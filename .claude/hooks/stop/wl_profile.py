@@ -922,6 +922,10 @@ def selftest() -> int:
     return check.failures
 
 
+# The day counts of the last `rank()` call: how many days it read and how many of them held Bash samples.
+RANK_COVERAGE: dict[str, int] = {}
+
+
 def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
     """High-to-low IMPACT over the time-based corpus (operator ruling 2026-09-03).
 
@@ -1027,7 +1031,7 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
                 g["findings"] += sum(1 for f in derive([c]))
     top_shapes = sorted(shapes.values(), key=lambda e: -e["cpu_ms"])
     top_gates = sorted(gates.values(), key=lambda g: -g["cpu_ticks"])
-    rank.coverage = {"days": days_seen, "days_with_bash": days_with_bash}  # type: ignore[attr-defined]
+    RANK_COVERAGE.update({"days": days_seen, "days_with_bash": days_with_bash})
     return top_shapes, top_gates
 
 

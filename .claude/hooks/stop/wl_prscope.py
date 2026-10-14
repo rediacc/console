@@ -27,8 +27,10 @@ def _hooks_pkg():
     """(plan_gate, commit_policy) from `.claude/rediacc_hooks`, reached through the canonical sys.path hop (`.claude/rediacc_hooks/syspath.py`), loaded by file because this module lives outside that package."""
     helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
     spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
-    syspath = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-    spec.loader.exec_module(syspath)  # type: ignore[union-attr]
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
     syspath.on_sys_path(syspath.CLAUDE_DIR)
     from rediacc_hooks import commit_policy, plan_gate
 
@@ -176,7 +178,7 @@ def loop_state(
     branch = commit_policy.current_branch(top)
     head = plan_gate.queue_head(top)
     stale = head if head and _open_count(plan_gate, top, head) == 0 else ""
-    day = today or datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- block_second_branch's clock
+    day = today or datetime.datetime.now().astimezone().strftime("%m%d")
 
     def done(kind, pr=0, body=None, reason="", next_branch=""):
         plans: tuple[str, ...] = ()

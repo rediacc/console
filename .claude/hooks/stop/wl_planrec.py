@@ -1051,8 +1051,10 @@ def render(rec):
         "Why-Source",
         "Read-History",
     ):
-        if tr.get(k):
-            lines.append("%s: %s" % (k, tr[k]))  # noqa: PERF401 -- a filtered loop, not a map
+        # A loop over a literal tuple on purpose: scripts/lib/doc-providers.ts reads this `for k in (...):` tuple as the trailer grammar it publishes.
+        value = tr.get(k)
+        if value:
+            lines.append("%s: %s" % (k, value))
     lines.append("")
 
     lines.append("## History")

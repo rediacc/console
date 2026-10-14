@@ -23,7 +23,9 @@ THE ONE PROPERTY THIS FILE EXISTS FOR, if it must be reduced to one: a record's 
 could be lost by a change made somewhere else for an unrelated reason. Pinned here so that change fails loudly instead of quietly turning every compacted record into a source of phantom boxes for check:ci-plan-boxes.
 """
 
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import pathlib
@@ -32,13 +34,16 @@ import subprocess
 import sys
 import tempfile
 
-HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+import wl_checks as K
+import wl_core as _C
+import wl_planfid as P
+import wl_planfile as F
+import wl_planindex as PI
+import wl_planrec as R
+import worklist as _W
 
-import wl_checks as K  # noqa: E402
-import wl_planfid as P  # noqa: E402
-import wl_planfile as F  # noqa: E402
-import wl_planrec as R  # noqa: E402
+HERE = pathlib.Path(__file__).resolve().parent
+
 
 # A PRIVATE TMPDIR FOR THE WHOLE RUN, removed at exit. The investigation ledger under test takes a flock sidecar at `$TMPDIR/claude-worklist/.judge/plan-investigation-<sha1 of the ledger path>.lock`, and the fixture root is a fresh random directory, so each run left a new lock file in the machine-wide /tmp; the `_gitdir` PATH shim for the `--why model` case below leaked the same way. The code under test reads TMPDIR at call time, so pointing it here keeps both, and every other temp directory this suite makes, inside one directory deleted at exit.
 # `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
@@ -1087,7 +1092,6 @@ except Exception as _exc:
     truthy("the gate's own scan() could be loaded for the equality control: %r" % _exc, False)
 
 # THE TICK REFRESHES agent/INDEX.md (worklist #f4d0bc57). The census carries each plan's byte size, so a tick that left the index alone was check:ci-plan-record R8 red until a manual --update. After refresh_index, the hook's own freshness reading (wl_planindex.index_census) must call the census fresh; before it, stale.
-import wl_planindex as PI  # noqa: E402
 
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 truthy(
@@ -1791,11 +1795,7 @@ sys.path[:] = _before_path
 
 # --------------------------------------------------------------------------- 14c4. THE CLI SAYS SO when --evidence is dropped because a (ticked) line already sits under the box (49731139.2).
 # ---------------------------------------------------------------------------
-import contextlib  # noqa: E402
-import io  # noqa: E402
 
-import wl_core as _C  # noqa: E402
-import worklist as _W  # noqa: E402
 
 _cli_note = (
     "retro fixture: before the closing commit the tree held nothing here, and %s added it" % AFTER

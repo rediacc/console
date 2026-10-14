@@ -953,7 +953,8 @@ def scan(store, start, idle_min=None):
                 info = {}
             # ONE BAD AGENT MUST NOT ABORT THE WHOLE PASS. Without this guard a single entry that raises -- an oversized index line, an unreadable transcript, a surprise in the meta shape -- kills the loop before it reaches anything sorted after it. And because a failed entry is never recorded as `known`, the NEXT scan hits the same wall at the same place: the self-heal starves
             # permanently, silently, and worst of all invisibly, since a caller may wrap this in a blanket except of its own. Isolating per agent means a bad entry costs exactly itself.
-            try:
+            entry = None
+            with contextlib.suppress(Exception):
                 sends, final, rec = harvest_transcript(jsonl)
                 entry = capture(
                     store,
@@ -970,9 +971,6 @@ def scan(store, start, idle_min=None):
                     sends=len(sends),
                     tx="ok",  # scan globbed this file, so it resolves by construction
                 )
-            except Exception:  # noqa: S112 -- deliberate, see the comment above:
-                # one bad agent must not abort the whole pass, and a narrower tuple would let an unforeseen shape kill every entry sorted after it.
-                continue
             if entry:
                 known.add(entry["id"])
                 added.append(entry)
