@@ -11,8 +11,9 @@ run-name: "Pins soaked: ${{ github.event_name }}"
 # `contents: read` (operator ruling: artifact only). A session applies the result by
 # re-running `apply-soaked` on its own branch against the live tree.
 #
-# Triggers: daily at 00:30 UTC (clear of the CI, housekeeping and promote-stable windows), on demand, and when
-# CI - OBS Mirror completes, so a mirrored Leap build is reflected within hours.
+# Triggers: daily at 00:30 UTC (clear of the CI, housekeeping and promote-stable
+# windows), on demand, and when CI - OBS Mirror completes, so a mirrored Leap build
+# is reflected within hours.
 # Green means nothing is soaked, or every soaked bump passes its gates. Red means a
 # soaked bump was refused by a gate or by the registry, or the apply failed.
 #
