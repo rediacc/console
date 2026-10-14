@@ -1119,6 +1119,29 @@ def test_an_if_that_is_not_the_label_hold_is_refused(condition: str | None) -> N
     assert pin_kinds(ci, quality) == ["pin-gate-conditional"]
 
 
+@pytest.mark.parametrize(
+    "job_if",
+    [
+        "github.event_name == 'pull_request'",
+        "${{ inputs.is_bot != 'true' && github.event_name != 'schedule' }}",
+    ],
+)
+def test_a_job_level_if_that_can_skip_the_nightly_is_refused(job_if: str) -> None:
+    """The step-level `if:` is exact, but a condition on the JOB skips every step in it, announcer included, and no step-level check sees it."""
+    ci, quality = pin_pair()
+    quality["jobs"]["quality-go"]["if"] = job_if
+    assert pin_kinds(ci, quality) == ["pin-gate-job-conditional"]
+
+
+def test_the_bot_guard_on_the_job_is_not_a_finding() -> None:
+    """Control: the lane's own guard, with or without the expression wrapper, is admitted."""
+    ci, quality = pin_pair()
+    quality["jobs"]["quality-go"]["if"] = "inputs.is_bot != 'true'"
+    assert pin_kinds(ci, quality) == []
+    quality["jobs"]["quality-go"]["if"] = "${{ inputs.is_bot != 'true' }}"
+    assert pin_kinds(ci, quality) == []
+
+
 def test_whitespace_inside_the_if_is_not_a_finding() -> None:
     """Control for the comparison: the admitted `if:` reflowed is still the admitted `if:`."""
     ci, quality = pin_pair()

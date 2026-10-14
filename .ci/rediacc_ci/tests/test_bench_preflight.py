@@ -127,6 +127,27 @@ def test_a_listed_problem_no_linked_mark_explains_is_refused(tmp_path):
     assert done.returncode == 1
 
 
+def test_a_problem_no_mark_names_is_refused_even_when_a_linked_mark_could_stand_for_it(tmp_path):
+    """One problem, one mark inside a linked directory, so the two counts agree; but the problem names `left`, which is not the marked package."""
+    tree = {"problems": ["missing: left"], "dependencies": {"@rediacc/shared": LINKED}}
+    done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
+    assert done.returncode == 1
+    assert "does not match its package-lock.json" in done.stderr
+
+
+def test_a_scoped_package_problem_is_matched_to_its_mark(tmp_path):
+    linked = {
+        "resolved": "file:../../packages/shared",
+        "dependencies": {"@rediacc/shared": {"missing": True}},
+    }
+    tree = {
+        "problems": ["missing: @rediacc/shared@^1.0.0, required by x@1.0.0"],
+        "dependencies": {"x": linked},
+    }
+    done, _ = _run(tmp_path, "lockfile %s" % tmp_path, npm_ls_rc=1, npm_ls_out=json.dumps(tree))
+    assert done.returncode == 0, done.stderr
+
+
 def test_a_file_tarball_is_not_a_link(tmp_path):
     packed = {"resolved": "file:vendor/x-1.0.0.tgz", "dependencies": {"zod": {"missing": True}}}
     tree = {"problems": ["missing: zod"], "dependencies": {"x": packed}}

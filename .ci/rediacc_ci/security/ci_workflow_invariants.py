@@ -794,6 +794,7 @@ PIN_GATE_KINDS = (
     "pin-gate-missing",
     "pin-gate-softened",
     "pin-gate-conditional",
+    "pin-gate-job-conditional",
     "pin-gate-unannounced",
     "pin-gate-schedule-skipped",
 )
@@ -811,6 +812,8 @@ PIN_GATE_ANNOUNCER = "rediacc_ci.quality.announce_gate_skips"
 PIN_GATE_IF = (
     "!cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip'"
 )
+# The one job-level `if:` the job holding the pin steps may carry: the bot guard every quality lane has. Any other job condition (`github.event_name == 'pull_request'`) would skip all three gates, and the announcer beside them, on the nightly while every step-level check here still passed.
+PIN_GATE_JOB_IF = "inputs.is_bot != 'true'"
 # What the announcer is handed: the label's `skip`, and `hard` for every other value, `soft` included, because these steps run hard under `soft`.
 PIN_GATE_ANNOUNCE_MODE = "inputs.external_quality == 'skip' && 'skip' || 'hard'"
 # ci.yml's external_quality: every event that is not a pull request resolves to a value the pin steps RUN under. `'skip'` there would remove them from the nightly without a word.
@@ -872,11 +875,18 @@ def analyse_pin_gates(
     shape: list[str] = []
     jobs = quality_doc.get("jobs") if isinstance(quality_doc, dict) else None
     quality_jobs: dict[str, typing.Any] = jobs if isinstance(jobs, dict) else {}
+    job_checked: set[str] = set()
     for gate, sites in pin_gate_steps(quality_doc).items():
         if not sites:
             out.append(("pin-gate-missing", gate))
             continue
         for job, i, st in sites:
+            if job not in job_checked:
+                job_checked.add(job)
+                body = quality_jobs.get(job)
+                condition = _expr(body.get("if")) if isinstance(body, dict) else ""
+                if condition not in ("", PIN_GATE_JOB_IF):
+                    out.append(("pin-gate-job-conditional", job))
             label = "%s (%s)" % (gate, _step_label(job, i, st))
             env = _env(st)
             if PIN_GATE_WRAPPER in _text(st.get("run")) or "EXTERNAL_QUALITY_MODE" in env:
@@ -917,6 +927,13 @@ def pin_gate_message_for(kind: str, name: str, files: dict[str, str]) -> str | N
             "INVARIANT-FAIL: pin-gates: %s in %s has an `if:` other than `%s`. Any other "
             "condition can keep the step from running on a cadence without a word, and the "
             "label is the only hold these gates have." % (name, quality, PIN_GATE_IF)
+        )
+    if kind == "pin-gate-job-conditional":
+        return (
+            "INVARIANT-FAIL: pin-gates: job %s in %s carries an `if:` other than `%s`. The "
+            "pin steps and their announcer live in it, so a job condition that can tell a "
+            "schedule from a pull request skips all three gates on the nightly without a "
+            "word, whatever each step's own `if:` says." % (name, quality, PIN_GATE_JOB_IF)
         )
     if kind == "pin-gate-unannounced":
         return (

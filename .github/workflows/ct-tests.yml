@@ -2952,6 +2952,7 @@ jobs:
       - name: drill transfer
         run: |
           set -o pipefail
+          command -v keyctl >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq keyutils; }
           keyctl session - sh -c 'keyctl link @u @s && exec ./run.sh drill transfer --keep-work' 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
 
       # The chunk-store backup drill: session mint from a licence blob, the

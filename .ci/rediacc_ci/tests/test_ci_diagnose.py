@@ -518,6 +518,17 @@ def test_a_retry_that_cleared_before_a_stale_pin_is_not_an_infra_verdict():
     assert D.classify(lines[:2]) == ("unknown", "")
 
 
+def test_a_stale_pin_beside_an_unreachable_one_reads_infra_and_still_shows_the_stale_pin():
+    """The mixed case: one gate found a stale pin, another could not reach its upstream. An infra hit outranks every code hit by design, so the verdict is the infrastructure one, and the stale pin must stay visible in the excerpt so a re-run is not mistaken for a cure."""
+    stale = "2026-10-14T03:10:04.0000000Z \u2717 1 devcontainer pin(s) are behind upstream:"
+    unreachable = "2026-10-14T03:10:09.0000000Z \u2717 1 real-provider pin(s) were NOT compared with upstream:"
+    lines = [stale, "2026-10-14T03:10:04.0000000Z   Bitwarden CLI: pinned 2026.9.0", unreachable]
+    assert D.classify(lines) == ("infra-likely", "pin-upstream-unreachable")
+    shown = "\n".join(D.excerpt(lines))
+    assert "pin(s) are behind upstream" in shown
+    assert "NOT compared with upstream" in shown
+
+
 def test_the_retry_note_exclusion_is_what_keeps_that_verdict(monkeypatch):
     """The plant: with the exclusion switched off the same log reads as infrastructure, so the case above is testing the exclusion and not the row order."""
     monkeypatch.setattr(D, "RETRY_NOTE_RE", re.compile(r"(?!)"))
