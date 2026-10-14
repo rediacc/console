@@ -434,8 +434,8 @@ def _ci_seams():
     cipath = str(hookio.repo_root() / ".ci")
     inserted = syspath.on_sys_path(cipath)
     try:
-        from rediacc_ci.core import allowlist  # noqa: PLC0415 - deliberately late
-        from rediacc_ci.policy_paths import policy_path  # noqa: PLC0415 - deliberately late
+        from rediacc_ci.core import allowlist
+        from rediacc_ci.policy_paths import policy_path
     finally:
         if inserted and cipath in sys.path:
             sys.path.remove(cipath)

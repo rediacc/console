@@ -300,7 +300,7 @@ def ff_fallback_refusal(repo_root: str, remote: str, live: str, sha: str, base: 
 
 def git_split(argv: list[str]) -> tuple[list[str], str, list[str]]:
     """`(global options, subcommand, subcommand args)` for a `git` argv (the name excluded). The options taking a separate value are `shellscan.GIT_GLOBAL_WITH_VALUE`, the walk's own list (#d5d33bee)."""
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     k = 0
     while k < len(argv):
@@ -321,7 +321,7 @@ def _base(name: str) -> str:
 
 def runs(cmd: str) -> list:
     """Every simple command bash would run in `cmd`, from the shared lexer's walk."""
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     return list(shellscan._analyse(cmd).runs)
 
@@ -367,7 +367,7 @@ def effective_dir(run, base: str, created=frozenset()) -> str:
         return run_dir(run, base)
     if run.git_sub is None:
         return base
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     return os.path.normpath(shellscan._git_invocation(run.argv, base)[1])
 
@@ -379,7 +379,7 @@ def run_repo(run, base: str, created=frozenset()) -> str:
 
 def created_dirs(cmd: str, base: str) -> frozenset:
     """The directories `cmd` creates before using them (shellscan._created_dirs), for `run_repo` and `scoped_repo`."""
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     return frozenset(shellscan._created_dirs(runs(cmd), base))
 
@@ -414,7 +414,7 @@ def foreign_only(ev, cmd: str, subs: tuple[str, ...] | None = None) -> bool:
     picked = [r for r in picked if r.git_sub not in ("init", "clone")] or picked
     if not picked:
         return False
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     created = shellscan._created_dirs(runs(cmd), base)
     for run in picked:
@@ -436,7 +436,7 @@ def _branch_creation(args: list[str]) -> tuple[str, str] | None:
 
     Read by `shellscan.git_args("branch", ...)`, git's parse-options over the whole option table, and decided the way builtin/branch.c decides its mode (#d5d33bee): a delete, an explicit or implied list (`-l`, `--contains`, `--merged`, `--points-at`, ...), `--show-current`, `--edit-description`, an upstream change and `-a`/`-r` create nothing; a move or a copy creates its LAST operand; anything else with an operand creates the first. Measured on git 2.53.0, `git branch -v x`, `-vv x`, `-l --no-list x`, `--format f x`, `--column=never x` and `-d --no-delete x` each CREATED x, and the old flag-name membership read every one of them as a read; `--cop a x` copies to x, which it read as a branch called `a`.
     """
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     parsed = shellscan.git_args("branch", args)
     names = parsed.operands
@@ -471,7 +471,7 @@ def push_destinations(args: list[str]) -> list[tuple[str, str]]:
 
     Read by `shellscan.git_push_args`, git's parse-options over `git push`'s whole option table (#d5d33bee). A delete, `--all` and `--mirror` name no branch being created (git 2.53.0 refuses `--all` or `--mirror` beside a refspec, and pushes only existing local branches without one), nor does `--tags` alone; `--tags` BESIDE a refspec pushes that refspec too. The last of a flag and its negation wins and a unique prefix is the option. Measured on git 2.53.0: `--tags origin HEAD:x`, `-d --no-delete origin HEAD:x`, `--all --no-all origin HEAD:x` and `--mirror --no-mirror origin HEAD:x` each CREATED x, and the flag-name membership this read until then took every one of them for a push creating nothing. A destination outside `refs/heads/` gives nothing.
     """
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     parsed = shellscan.git_push_args(args)
     if parsed.on("delete") or parsed.on("all") or parsed.on("mirror"):
@@ -496,7 +496,7 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
     found: list[tuple[str, str]] = []
     if sub in ("checkout", "switch"):
         # git's own parse-options rules (`shellscan.git_checkout_args`/`git_switch_args`, #d2d5f89d): a bundle (`-qb x`, `-qc x`) and a unique prefix (`--cr x`, `--orph x`) create the branch they name. Measured on git 2.53.0, each of those created it; `_flag_value` saw none of them.
-        from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+        from rediacc_hooks import shellscan
 
         if sub == "checkout":
             parsed = shellscan.git_checkout_args(args)
@@ -511,7 +511,7 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
             found.append(hit)
     elif sub == "worktree" and args[:1] == ["add"]:
         # git's parse (`shellscan.git_args("worktree-add", ...)`, #d5d33bee): `-fb x` creates x as `-b x` does (git 2.53.0). block_worktree_add refuses every `git worktree add` from the Bash tool before this matters.
-        from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+        from rediacc_hooks import shellscan
 
         parsed = shellscan.git_args("worktree-add", args[1:])
         value = parsed.last("b") or parsed.last("B")
@@ -542,7 +542,7 @@ def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creat
 
     Read through `shellscan.gh_args`, the one pflag reader the gh guards share (#d2d5f89d), so every spelling gh accepts is the branch it names: `-H x`, `-Hx`, `-H=x` (`x`, never `=x`), `--head=x`, a bundle ending in it (`-dH x`), a `pr`-level flag before the verb (`gh pr -R r create -H x`), and a value-taking flag's value is never a flag (`-t --head` titles a PR "--head"). The REST form's method is `shellscan.gh_api_method` (`-XPOST`, `--method=POST`, `-X=POST`, or a field with no `-X`) and its endpoint the call's own operand, so a `git/refs` in a header or a `--jq` is no endpoint. Measured 2026-10-07 through dispatch.py, before this: `gh pr create -dH 0229-7` was admitted (rc=0) where `--head 0229-7` is refused, and `-H=0101-1` was refused as a branch called `=0101-1`.
     """
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     parsed = shellscan.gh_args(run.argv)
     if parsed.on("help"):
@@ -574,7 +574,7 @@ def branch_creations(cmd: str, root: str, base: str | None = None) -> list[Creat
     `root` is this checkout; `base` is the directory the command starts in (the Bash tool's `cwd`), defaulting to `root`. A creation's `repo_root` is resolved from each invocation's own `cd`/`-C`, so the caller can exempt a repository outside `root` and apply the submodule rule inside it. A `rename` is reported too, so a name check still sees the new name; the one-branch rule lets it through, because the count stays at one.
     """
     start = base or root
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     created = shellscan._created_dirs(runs(cmd), start)
     out: list[Creation] = []
@@ -613,7 +613,7 @@ def parse_commit_args(args: list[str]) -> CommitArgs:
 
     `flags` lists each boolean (or optional-value) option ON at the end of the parse, the last spelling winning as it does in git (`-n --verify` runs the hooks), in both its spellings: `--no-verify` and `-n`, `--all` and `-a`. `problems` names an ambiguous or unknown option; git refuses that command, and the parse reads on past it.
     """
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     parsed = shellscan.git_commit_args(args)
     flags: list[str] = []
@@ -654,7 +654,7 @@ class Segment(typing.NamedTuple):
 
 def stdin_bodies(redirs, lexer):
     """The heredoc and here-string bodies a list of `shellscan` redirects feeds to stdin."""
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     for redir in redirs:
         hd = redir.heredoc
@@ -669,7 +669,7 @@ def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[
 
     THE HEREDOC IS SCOPED TO THE COMMAND IT IS ATTACHED TO. Found live 2026-09-26 (#91c4716c) in `block_prose_style_commit`, and again 2026-09-30 (#64c3e990) in `commit_message_text`: reading EVERY heredoc in the payload as the message made a `python3 - <<'EOF' ... EOF` edit chained before a commit into that commit's message. A body counts as stdin only when it sits on the target itself or on a `cat` piped into it (`Segment.stdin`), and the caller still decides whether the target reads stdin at all. `Segment.inner` holds a heredoc whose body sits INSIDE the target's own words, the `-m "$(cat <<'EOF' ... EOF)"` shape. Raises what the lexer raises on an unlexable command.
     """
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     lexer = shellscan._Lexer(cmd)
     out: list[Segment] = []
@@ -711,7 +711,7 @@ def target_segments(cmd: str, is_target: typing.Callable[[list], bool]) -> list[
 
 
 def _is_commit_stage(words: list) -> bool:
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     values = [shellscan._word_value(w) for w in words]
     return _base(values[0]) == "git" and git_split(values[1:])[1] == "commit"
@@ -724,7 +724,7 @@ def _stdin_messages(cmd: str, commit) -> list[str]:
     """
     try:
         segments = target_segments(cmd, _is_commit_stage)
-    except Exception:  # noqa: BLE001 -- an unlexable command has no readable heredoc
+    except Exception:
         return []
     unpaired = list(segments)
     for run in git_runs(cmd, "commit"):
@@ -750,7 +750,7 @@ def written_message_files(cmd: str, commit, base: str) -> list[tuple[str, typing
 
     A PreToolUse guard runs ONCE, before the first clause, so in `printf 'feat: x' > m && git commit -F m` the file on disk still holds whatever an EARLIER command left there (#9ec22810, and #9888de00 for the three commit-policy guards that read it anyway: `block_commit_on_main` admitted a stale `[hotfix]` message onto `main` for a commit whose real message carried none). Matched two ways: the name as spelled in a redirect or `tee` (`shellscan.writes_file`), and an earlier redirect whose target resolves, from `base`, to the same path as the `-F` name does from the commit's own directory. A `tee`, which `earlier_mutators` does not model, gets a synthetic redirect mutator so the refusal can still name the write.
     """
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- see the module docstring
+    from rediacc_hooks import shellscan
 
     _, _, args = git_split(commit.argv)
     names = [n for n in parse_commit_args(args).files if n and n not in STDIN_NAMES]

@@ -170,10 +170,10 @@ def run(event):
     text = "%s\n%s" % (tool_input.get("description") or "", tool_input.get("prompt") or "")
     syspath.on_sys_path(STOP_DIR)
     try:
-        import wl_core as C  # noqa: PLC0415 -- loaded only for an Agent call, never for the other chains
-        import wl_leasehelp as LH  # noqa: PLC0415
-        import wl_planconc as X  # noqa: PLC0415
-        import wl_roster  # noqa: PLC0415
+        import wl_core as C
+        import wl_leasehelp as LH
+        import wl_planconc as X
+        import wl_roster
 
         root = C.project_root(C.project_start({"cwd": cwd}))
         if kind in wl_roster.read_only_types(root):
@@ -188,13 +188,13 @@ def run(event):
                 % kind
             )
             return hookio.ALLOW
-        import wl_store as S  # noqa: PLC0415
+        import wl_store as S
 
         fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
         by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
         serving = X.spawn_plans(text, by_id)
         live = X.live_plans(cwd, session_id, fold)
-    except Exception as exc:  # noqa: BLE001 -- fail open, and say so
+    except Exception as exc:
         event.warn_raw(
             UNEXAMINED
             % (

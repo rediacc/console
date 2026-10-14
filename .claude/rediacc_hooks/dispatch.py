@@ -75,7 +75,7 @@ def run_chain(chain, payload, cwd=None, env=None):
         event = hookio.Event(payload, cwd=cwd, env=env)
         try:
             rc = module.run(event)
-        except Exception:  # noqa: BLE001 -- see the docstring: never fatal here
+        except Exception:
             crashed += 1
             err.append(
                 "HOOK GUARD CRASHED: %s (chain %s) raised, so it decided nothing.\n"

@@ -170,11 +170,11 @@ def review_refusals(root, branch, repo, head_sha=""):
         )
     try:
         syspath.on_sys_path(STOP_DIR)
-        import wl_review  # noqa: PLC0415 -- loaded only for a merge, never for the rest of the chain
+        import wl_review
 
         label = "console" if repo == GH_REPO else "private/" + repo.rsplit("/", 1)[-1]
         return wl_review.check_state(pathlib.Path(root), branch, label=label, expected_tip=head_sha)
-    except Exception as exc:  # noqa: BLE001 -- unverifiable is refused, never allowed
+    except Exception as exc:
         return (
             ["unverifiable"],
             ["the per-commit review check could not run (%s: %s)" % (type(exc).__name__, exc)],

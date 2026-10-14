@@ -88,8 +88,8 @@ def run(event):
     cwd = str(doc.get("cwd") or event.cwd)
     session_id = str(doc.get("session_id") or "")
     syspath.on_sys_path(STOP_DIR)
-    import wl_core as C  # noqa: PLC0415 -- loaded only for an Agent call, never for the other chains
-    import wl_roster  # noqa: PLC0415
+    import wl_core as C
+    import wl_roster
 
     root = C.project_root(C.project_start({"cwd": cwd}))
     read_only = wl_roster.read_only_types(root)

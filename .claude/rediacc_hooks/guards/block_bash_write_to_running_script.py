@@ -217,8 +217,8 @@ def _hold_world_lock(world):
 
     The descriptor is deliberately never closed: the lock is released by the kernel when this interpreter exits, which is exactly the lifetime the spawned shells have.
     """
-    import fcntl  # noqa: PLC0415
-    import time  # noqa: PLC0415
+    import fcntl
+    import time
 
     fd = os.open(os.path.join(world, ".lock"), os.O_CREAT | os.O_RDWR, 0o600)
     deadline = time.monotonic() + 300.0
@@ -245,7 +245,7 @@ def _kill_stale(paths):
     `start_new_session=True`, so it leads its own group and killing the group
     takes its `sleep` child with it.
     """
-    import time  # noqa: PLC0415
+    import time
 
     for _ in range(500):
         stale = [p for p in proc.pids() if any(t in (proc.cmdline(p) or "") for t in paths)]
@@ -267,7 +267,7 @@ def _await_visible():
 
     `Popen` returns before the exec completes and the bash sweep starts immediately afterwards; a case that ran in that gap would see one process on one side and two on the other, reported as a port defect.
     """
-    import time  # noqa: PLC0415
+    import time
 
     for _ in range(500):
         seen = sum(1 for c in _CHILDREN if (proc.cmdline(c.pid) or "").find(".sh") >= 0)

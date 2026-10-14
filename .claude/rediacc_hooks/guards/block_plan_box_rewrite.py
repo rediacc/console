@@ -97,8 +97,8 @@ def _load_gate():
             # The gate exits 1 with a VACUOUS INPUT message when it cannot import its parser.
             msg = "check_plan_boxes.py exited %s while loading" % exc.code
             raise ImportError(msg) from exc
-        import wl_planqueue  # noqa: PLC0415 -- on sys.path only inside this window
-        import wl_store  # noqa: PLC0415 -- same
+        import wl_planqueue
+        import wl_store
     finally:
         sys.path[:] = saved
     _GATE = (gate, wl_planqueue, wl_store)

@@ -160,9 +160,9 @@ def run(event):
     session_id = str(doc.get("session_id") or "")
     syspath.on_sys_path(STOP_DIR)
     try:
-        import wl_core as C  # noqa: PLC0415 -- loaded only for an Agent call, never for the other chains
-        import wl_standdown  # noqa: PLC0415
-        import wl_store as S  # noqa: PLC0415
+        import wl_core as C
+        import wl_standdown
+        import wl_store as S
 
         root = C.project_root(C.project_start({"cwd": cwd}))
         worklist = C.worklist_for(C.project_start({"cwd": cwd}))
@@ -171,14 +171,14 @@ def run(event):
         C.bind_lineage(session_id, light.aliases_of(session_id))
         owned = lambda o: C.owned_by_me(o, session_id)  # noqa: E731
         focus = wl_standdown.active_phase(light.phase, owned)
-    except Exception as exc:  # noqa: BLE001 -- fail open, and say so
+    except Exception as exc:
         event.warn_raw(
             UNREADABLE % (session_id, "%s: %s" % (type(exc).__name__, str(exc)[:120]), kind)
         )
         return hookio.ALLOW
     if focus is None or wl_standdown.expired(focus):
         return hookio.ALLOW
-    import wl_roster  # noqa: PLC0415
+    import wl_roster
 
     if kind in wl_roster.read_only_types(root):
         return hookio.ALLOW
@@ -191,7 +191,7 @@ def run(event):
         # The full fold, paid only for a declared fix-work spawn while focused.
         try:
             rec = S.load(worklist, sync=False).by_id.get(m.group(1))
-        except Exception as exc:  # noqa: BLE001 -- fail open, and say so
+        except Exception as exc:
             event.warn_raw(UNREADABLE % (session_id, "%s: %s" % (type(exc).__name__, exc), kind))
             return hookio.ALLOW
         C.bind_lineage(session_id, light.aliases_of(session_id))

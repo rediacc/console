@@ -248,8 +248,8 @@ PLAN_LEVEL_RE = re.compile(r"\bP([0-3])\b")
 
 def _grammar():
     """(wl_plandeps, wl_planconc), with the stop directory on sys.path for the import and for `finished_states`' lazy wl_planfile import. The caller removes the entry again."""
-    import wl_planconc  # noqa: PLC0415 -- loaded only for a plan edit
-    import wl_plandeps  # noqa: PLC0415
+    import wl_planconc
+    import wl_plandeps
 
     return wl_plandeps, wl_planconc
 
@@ -259,9 +259,9 @@ def _operator_texts(transcript_path):
     if not transcript_path:
         return []
     try:
-        import json  # noqa: PLC0415
+        import json
 
-        import wl_admit  # noqa: PLC0415 -- the rare path: an operator value is being changed
+        import wl_admit
     except ImportError:
         return []
     _tools, last = wl_admit.turn_tools(transcript_path)
