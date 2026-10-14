@@ -5,7 +5,7 @@
  * or /{lang}/contact and opens the contact modal instead. Works with Astro
  * View Transitions since it listens on document (no re-init needed).
  */
-(function () {
+(() => {
   const CONTACT_RE = /^\/(?:[a-z]{2}\/)?contact(?:\?|$)/;
 
   document.addEventListener('click', (e) => {

@@ -13,12 +13,10 @@
  *
  * Survives Astro View Transitions via astro:page-load re-init.
  */
-(function () {
+(() => {
   let p = window.plausible;
 
-  const path = function () {
-    return location.pathname;
-  };
+  const path = () => location.pathname;
 
   // ── 1. Scroll Depth ──────────────────────────────────────────────
   let scrollFired = {};
@@ -193,16 +191,14 @@
   }
 
   // Expose UTM getter for conversion events
-  window.__pa_get_utm = function () {
+  window.__pa_get_utm = () => {
     try {
       return JSON.parse(sessionStorage.getItem('__pa_utm') ?? '{}');
     } catch {
       return {};
     }
   };
-  window.__pa_get_referrer = function () {
-    return sessionStorage.getItem('__pa_referrer') ?? '';
-  };
+  window.__pa_get_referrer = () => sessionStorage.getItem('__pa_referrer') ?? '';
 
   // ── 6. Rage Click Detection ───────────────────────────────────
   let rageClicks = [];
@@ -245,7 +241,7 @@
 
   // Wrap plausible to intercept our own events for scoring
   const origP = p;
-  p = function (eventName, opts) {
+  p = (eventName, opts) => {
     origP(eventName, opts);
     if (!engagementQualified && scoreMap[eventName]) {
       engagementScore += scoreMap[eventName];

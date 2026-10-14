@@ -308,7 +308,7 @@ function bindIllustrationTriggers() {
     const trigger = e.target.closest?.('.sp-illustration-trigger');
     if (!trigger) return;
     const img = trigger.querySelector('img');
-    if (!img || !img.src) return;
+    if (!img?.src) return;
     e.preventDefault();
     openImageModal(img.src, img.alt || '');
   });

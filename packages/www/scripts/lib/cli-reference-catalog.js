@@ -214,17 +214,17 @@ function parseShellTokens(text) {
   const tokens = [];
   let current = '';
   let quote = null;
-  let escape = false;
+  let escaped = false;
 
   for (const char of text) {
-    if (escape) {
+    if (escaped) {
       current += char;
-      escape = false;
+      escaped = false;
       continue;
     }
 
     if (char === '\\') {
-      escape = true;
+      escaped = true;
       continue;
     }
 

@@ -43,7 +43,10 @@ function parseArgs(argv) {
   };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    const next = () => argv[(i += 1)];
+    const next = () => {
+      i += 1;
+      return argv[i];
+    };
     if (arg === '--stale-only') opts.staleOnly = true;
     else if (arg === '--selftest') opts.selftest = true;
     else if (arg === '--lang') opts.langs = new Set(next().split(','));

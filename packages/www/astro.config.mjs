@@ -1,7 +1,8 @@
 /* global process */
 // @ts-check
+
+import { execSync } from 'node:child_process';
 import { defineConfig } from 'astro/config';
-import { execSync } from 'child_process';
 
 // Version is injected by CI via APP_VERSION (resolved from git tags). Local dev shows 0.0.0-dev. No git-describe fallback — version resolution is the caller's job, not the build's.
 const version = process.env.APP_VERSION || '0.0.0-dev';
@@ -81,7 +82,7 @@ export default defineConfig({
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }
         // Root homepage
-        else if (url === (process.env.PUBLIC_SITE_URL || WK_SITE_ORIGIN) + '/') {
+        else if (url === `${process.env.PUBLIC_SITE_URL || WK_SITE_ORIGIN}/`) {
           item.priority = 1.0;
           item.changefreq = ChangeFreqEnum.WEEKLY;
         }

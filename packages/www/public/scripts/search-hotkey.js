@@ -3,7 +3,7 @@
  * Listens for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
  */
 
-(function () {
+(() => {
   // Create custom event for search hotkey
   const SEARCH_HOTKEY_EVENT = 'search:open';
 

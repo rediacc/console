@@ -2,7 +2,7 @@
  * Scroll reveal — adds .visible to .reveal elements when they enter the viewport.
  * One-shot: once visible, the element stays visible and the observer disconnects.
  */
-(function () {
+(() => {
   const elements = document.querySelectorAll('.reveal');
   if (!elements.length) return;
 

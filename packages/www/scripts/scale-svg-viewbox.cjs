@@ -7,8 +7,8 @@
  */
 
 const { DOMParser, XMLSerializer } = require('@xmldom/xmldom');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const ILLUSTRATIONS_DIR = path.join(__dirname, '../src/assets/images/illustrations');
 const TARGET_W = 800;
@@ -48,7 +48,7 @@ function fmt(n) {
 function scaleAttrVal(val, scale) {
   if (val.endsWith('%')) return val;
   const n = parseFloat(val);
-  if (isNaN(n)) return val;
+  if (Number.isNaN(n)) return val;
   return fmt(n * scale);
 }
 
@@ -56,14 +56,14 @@ function scaleAttrVal(val, scale) {
 function scaleNumList(str, scale) {
   return str.replace(/-?\d*\.?\d+/g, (m) => {
     const n = parseFloat(m);
-    return isNaN(n) ? m : fmt(n * scale);
+    return Number.isNaN(n) ? m : fmt(n * scale);
   });
 }
 
 // ─── Scale SVG path data ─────────────────────────────────────
 
 function scalePath(d, scale) {
-  if (!d || !d.trim()) return d;
+  if (!d?.trim()) return d;
 
   // Tokenize path data into commands and numbers
   const tokens = [];
@@ -304,8 +304,7 @@ function walkNode(node, scale, inSymbol, rootEl) {
   if (!inSymbol && !enteringSymbol) {
     const attrs = node.attributes;
     if (attrs) {
-      for (let i = 0; i < attrs.length; i++) {
-        const a = attrs[i];
+      for (const a of Array.from(attrs)) {
         const name = a.name;
         const val = a.value;
 
@@ -369,7 +368,6 @@ function walkNode(node, scale, inSymbol, rootEl) {
         // Inline style
         if (name === 'style') {
           a.value = scaleStyle(val, scale);
-          continue;
         }
       }
     }
@@ -377,8 +375,8 @@ function walkNode(node, scale, inSymbol, rootEl) {
 
   // Recurse children (skip symbol children from scaling)
   const childInSymbol = inSymbol || enteringSymbol;
-  for (let i = 0; i < node.childNodes.length; i++) {
-    walkNode(node.childNodes[i], scale, childInSymbol, rootEl);
+  for (const child of Array.from(node.childNodes)) {
+    walkNode(child, scale, childInSymbol, rootEl);
   }
 }
 
