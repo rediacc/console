@@ -137,7 +137,7 @@ def census_rows(root, plan_records=None, plan_box_census=None, tracked_only=Fals
     """
     if plan_records is None or plan_box_census is None:
         # DEFERRED ON PURPOSE, and it is not a style slip. `wl_checks` imports THIS module, so a top-level `import wl_checks` here is a cycle that fails at hook-load time. Deferring also keeps the fast path honest: the fresh path never calls this function, so it never pays the import.
-        import wl_checks  # noqa: PLC0415 -- wl_checks imports this module; top-level would cycle
+        import wl_checks
 
         if plan_records is None:
 

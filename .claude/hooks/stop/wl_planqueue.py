@@ -317,7 +317,7 @@ def settings_for(root, rev: str = "") -> tuple[Settings, list[str]]:
     """`settings` over the working tree's QUEUE.md, or over `git show <rev>:agent/plans/QUEUE.md`. An absent working-tree file is all defaults (fixtures, other checkouts); an unreadable file or an unreadable rev is defaults and a problem."""
     root = pathlib.Path(root)
     if rev:
-        import subprocess  # noqa: PLC0415
+        import subprocess
 
         try:
             proc = subprocess.run(
@@ -441,7 +441,7 @@ class Queue:
 
 def box_counts(path: pathlib.Path) -> tuple[int, int] | None:
     """(open, done) by `rediacc_hooks.plan_gate.open_boxes`' rule: the parser's count against the raw line count, the larger open count wins. None when the file cannot be read."""
-    import wl_planfile  # noqa: PLC0415
+    import wl_planfile
 
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -454,7 +454,7 @@ def box_counts(path: pathlib.Path) -> tuple[int, int] | None:
 
 def parent_of(rel: str, graph) -> str | None:
     """The live plan a sub-plan belongs to: `PLAN-<parent>.<suffix>.md` is a part of `PLAN-<parent>.md`, the longest such parent first. None for a plan that is no part."""
-    import wl_plandeps as D  # noqa: PLC0415
+    import wl_plandeps as D
 
     stem = rel.rsplit("/", 1)[-1][: -len(".md")]
     while "." in stem:
@@ -507,12 +507,12 @@ def break_cycles(prereqs: dict[str, set[str]], key) -> list[tuple[list[str], str
 
 def live_plans(root) -> Queue:
     """The queue over the tracked live plans: no plan without an open box, a prerequisite before every plan that needs it, then (held, progress tier, op, ai, path)."""
-    import heapq  # noqa: PLC0415
+    import heapq
 
-    import wl_planconc as X  # noqa: PLC0415
-    import wl_plandeps as D  # noqa: PLC0415 -- the graph is loaded only for a render
-    import wl_planfile  # noqa: PLC0415
-    import wl_store  # noqa: PLC0415
+    import wl_planconc as X
+    import wl_plandeps as D
+    import wl_planfile
+    import wl_store
 
     root = pathlib.Path(root)
     tracked = {
@@ -670,7 +670,7 @@ def refresh(root) -> bool:
     got, new = want(root)
     if got == new:
         return False
-    import wl_planrec as R  # noqa: PLC0415 -- the one atomic writer
+    import wl_planrec as R
 
     R.write_atomic(path, new)
     return True
@@ -682,7 +682,7 @@ def problems(root, update: bool = False) -> list[str]:
     if got == new:
         return []
     if update:
-        import wl_planrec as R  # noqa: PLC0415
+        import wl_planrec as R
 
         R.write_atomic(pathlib.Path(root) / QUEUE_REL, new)
         print("✓ wrote %s" % QUEUE_REL)
@@ -1001,7 +1001,7 @@ def render_inflight(inf: InFlight) -> str:
         )
     else:
         out.append(FOCUS_LABEL + "build.")
-    import wl_prscope as P  # noqa: PLC0415 -- the loop kinds
+    import wl_prscope as P
 
     if inf.kind == P.LIVE:
         out.append("- Branch: %s, PR #%d open." % (inf.branch, inf.pr))
@@ -1083,7 +1083,7 @@ def with_inflight(text: str, body: str) -> str:
 
 def _plan_source(rel, loop, body, named) -> str:
     """How `rel` joined the live PR's plan set: the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite, or the queue head standing in for a body with no `Plan:` line."""
-    import wl_prscope as P  # noqa: PLC0415
+    import wl_prscope as P
 
     plan_gate, _cp = P._hooks_pkg()
     listed = plan_gate.body_plans(body) if isinstance(body, str) else []
@@ -1104,7 +1104,7 @@ def _plan_source(rel, loop, body, named) -> str:
 
 def _branch_epic_commits(root, kind) -> dict[str, int]:
     """{epic id: commits} from the `PR-TASK:` trailers of the commits this branch adds over origin/main; {} on main, off the loop, or without git."""
-    import wl_prscope as P  # noqa: PLC0415
+    import wl_prscope as P
 
     if kind not in (P.LIVE, P.NO_PR, P.MERGED, P.UNREADABLE):
         return {}
@@ -1132,11 +1132,11 @@ def _branch_epic_commits(root, kind) -> dict[str, int]:
 def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=None) -> InFlight:
     """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), `plan_gate.turbo_named` and the PR body for each plan's source, the focus events and leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
     `fold` and `loop` are the stop's own when it has them; `writers` is the live writer ids, None when not counted."""
-    import wl_ci  # noqa: PLC0415
-    import wl_epic  # noqa: PLC0415
-    import wl_prscope as P  # noqa: PLC0415
-    import wl_standdown  # noqa: PLC0415
-    import wl_store as S  # noqa: PLC0415
+    import wl_ci
+    import wl_epic
+    import wl_prscope as P
+    import wl_standdown
+    import wl_store as S
 
     root = pathlib.Path(root)
     plan_gate, _cp = P._hooks_pkg()
@@ -1265,7 +1265,7 @@ def refresh_inflight(root, worklist, session_id, fold=None, loop=None, writers=N
     if not path.is_file():
         return False
     body = render_inflight(gather_inflight(root, worklist, session_id, fold, loop, writers))
-    import wl_planrec as R  # noqa: PLC0415 -- the one atomic writer
+    import wl_planrec as R
 
     for _attempt in range(2):
         got = path.read_text(encoding="utf-8")

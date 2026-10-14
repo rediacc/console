@@ -540,13 +540,13 @@ def _e1(caps) -> list[dict]:
 
 
 def selftest() -> int:
-    import subprocess  # noqa: PLC0415
-    import tempfile  # noqa: PLC0415
-    import time  # noqa: PLC0415
+    import subprocess
+    import tempfile
+    import time
 
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
-    import wl_ressample as R  # noqa: PLC0415
+    import wl_common
+    import wl_ressample as R
 
     check = wl_common.Checker("indent")
 
@@ -697,7 +697,7 @@ def selftest() -> int:
     finally:
         with contextlib.suppress(Exception):
             z_parent.kill()
-        import shutil  # noqa: PLC0415
+        import shutil
 
         shutil.rmtree(d, ignore_errors=True)
 
@@ -928,7 +928,7 @@ def rank(root: Path, days: int = 30) -> tuple[list[dict], list[dict]]:
     Two tables. SHAPES from exit records: total CPU seconds is the primary key -- it is what parallelism or caching would give back -- then invocations, peak RSS, and the wall share. GATES from captures: tree CPU ticks, peak RSS, and the blocked share (samples whose frontier wchan was DEFERRING or a sleep). Findings are counted per gate so a structural finding sits beside the cost
     it would recover.
     """
-    import time  # noqa: PLC0415
+    import time
 
     cutoff = time.strftime("%Y-%m-%d", time.gmtime(time.time() - days * 86400))
     shapes: dict[str, dict] = {}

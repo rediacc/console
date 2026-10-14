@@ -145,13 +145,13 @@ def render(root, rows, last_green):
     #
     # DEGRADES TO SILENCE, matching this module's stated fail semantics: it can only ADD to a block already being emitted, so losing it loses a hint and can never grant an exit that was otherwise refused.
     try:
-        import wl_planrec as R  # noqa: PLC0415 -- optional, and the block must not depend on it
+        import wl_planrec as R
 
         why = R.why_for_paths(root, [pth for _s, _sub, paths in found for pth in paths])
         if why:
             body.append("")
             body.extend("  " + ln for ln in why.split("\n"))
-    except Exception:  # noqa: BLE001 -- see above
+    except Exception:
         pass
     return "\n".join(body)
 
@@ -165,6 +165,6 @@ def apply_verdict(root, rows, last_green):
     """
     try:
         text = render(root, rows, last_green)
-    except Exception:  # noqa: BLE001 -- a diagnostic must never wedge a stop
+    except Exception:
         return "silent", ""
     return ("fire", text) if text else ("silent", "")

@@ -191,7 +191,7 @@ def workflow_stream(cwd, session_id, name):
 
     A workflow task's own `<id>.output` stays empty until the workflow returns, so reading it made every live workflow look POSSIBLY STUCK (2026-09-24: wf_887c90a5-909 read 27 minutes quiet while three of its agents wrote to their transcripts that minute). The event row carries the workflow's `name`, and each run persists its script as `workflows/scripts/<name>-<runId>.js`; the run's agents write under `subagents/workflows/<runId>/`. The newest such script names the run.
     """
-    import wl_roster as R  # noqa: PLC0415 -- lazy: wl_roster imports this module
+    import wl_roster as R
 
     if not name:
         return None
@@ -260,7 +260,7 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
 
     Reads the filesystem, never the session's memory, so it is unaffected by a compaction -- which is the case this exists for.
     """
-    import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+    import wl_report as RPT
 
     fresh_min = TEAMMATE_FRESH_MIN if fresh_min is None else fresh_min
     proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
@@ -296,7 +296,7 @@ def live_worker_ids(event, live_bg, cwd, session_id):
     """Every worker id that is live this stop: the running background tasks, PLUS each agent waiting on a shell it armed (`wl_roster.shell_waiters`).
 
     A waiter ended its turn, so the event lists only its shell and calls the agent completed; the harness resumes it when that shell exits. Before 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.8) an expired lease on a waiter therefore failed closed into an open item, and the stuck detector did not count the lease as supervision, while the roster called the same agent live."""
-    import wl_roster as R  # noqa: PLC0415 -- lazy: wl_roster imports this module
+    import wl_roster as R
 
     ids = {str(b.get("id") or "") for b in live_bg or [] if isinstance(b, dict)}
     try:
@@ -306,7 +306,7 @@ def live_worker_ids(event, live_bg, cwd, session_id):
             if isinstance(b, dict) and b.get("status") == "running"
         ]
         ids |= set(R.shell_waiters(running, R.load_metas(R.session_subagents_dir(cwd, session_id))))
-    except Exception:  # noqa: BLE001 -- liveness evidence is additive; a failure adds nothing
+    except Exception:
         pass
     ids.discard("")
     return ids
@@ -366,7 +366,7 @@ def _teammate_meta(cwd, session_id, name):
 
     On collision (a name reused across spawns) take the NEWEST sibling .jsonl by mtime. That is the only defensible choice: the lease names a worker that is supposed to be current, and an older transcript would answer about a dead predecessor -- reporting idle for a name whose live agent is working, which is the one direction this design refuses to fail in.
     """
-    import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+    import wl_report as RPT
 
     if not name:
         return None, None
@@ -512,7 +512,7 @@ def idle_edge(cwd, session_id, name):
     Absence is NOT a signal. It means the hook has not fired for this teammate -- which is indistinguishable from a teammate that never went idle, and may simply mean `TeammateIdle` does not fire for this class of agent in this harness at all (unobserved as of 2026-08-23). Reading absence as evidence is the exact `ListAgents` error this whole item exists to replace, so the caller
     degrades to the transcript rather than changing its verdict.
     """
-    import wl_store as S  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+    import wl_store as S
 
     start = C.project_start({"cwd": cwd})
     try:
@@ -706,11 +706,11 @@ def ladder(fold, session_id, event, state_doc):
     # PARALLEL-WRITER ROSTER: a lease on a KNOWN SUBAGENT (a meta exists in this session) belongs to wl_roster, whose 20-minute status ping and lineage-aware dead check replace this ladder for it. Nesting the two was rejected in the plan: the same item would be reported at 45, blocked at 90 and at 120 on top of the ping, and the `gone` branch below would keep accusing a parent whose
     # child is still working (plan F4). Shell workers, teammates leased by name and harness tasks stay here, because the roster cannot read their clocks. A roster that cannot be imported or cannot see the store skips nothing.
     try:
-        import wl_roster  # noqa: PLC0415 -- wl_roster imports this module lazily too
+        import wl_roster
 
         roster_ids = wl_roster.known_subagent_ids(event.get("cwd") or "", session_id)
         queue_w = wl_roster.QUEUE_WORKER
-    except Exception:  # noqa: BLE001 -- a missing roster must leave the ladder exactly as it was
+    except Exception:
         roster_ids = set()
         queue_w = "queue"
 

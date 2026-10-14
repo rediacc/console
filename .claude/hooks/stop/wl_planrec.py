@@ -314,7 +314,7 @@ def sha9(s: str) -> str:
 
 def shacite() -> Any:
     """`rediacc_ci.shacite`, the one rule for writing and reading a short-sha citation, loaded through `wl_gh.import_ci` (`.ci` on sys.path only while importing). Raises ImportError when it cannot be imported: a citation reader that cannot see the rule says so rather than guessing."""
-    import wl_gh  # noqa: PLC0415 -- the shared `.ci` loader, needed only when a digit run or a `commit:` ref is in hand
+    import wl_gh
 
     return wl_gh.import_ci("rediacc_ci.shacite")
 
@@ -329,7 +329,7 @@ def _citation_gate():
     """
     if _CITATION_GATE:
         return _CITATION_GATE[0]
-    import importlib.util  # noqa: PLC0415
+    import importlib.util
 
     qdir = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "quality"
     gate = qdir / "check_plan_citations.py"
@@ -528,7 +528,7 @@ def resolve(root, kind, token):
             return False, "not an ancestor of %s" % ref
         return False, "neither origin/main nor main exists here"
     if kind == "fileline":
-        import wl_checks as CK  # noqa: PLC0415 -- see the docstring
+        import wl_checks as CK
 
         return CK.citation_state(root, token)
     if kind == "gate":
@@ -596,7 +596,7 @@ def launder(root, text):
     # file:line FIRST. A citation contains no hex-object-shaped token in its path
     # for any real path in this tree, but doing hex first would let a path
     # fragment be rewritten out from under the citation resolver.
-    import wl_checks as CK  # noqa: PLC0415 -- see resolve()
+    import wl_checks as CK
 
     sub(CK.CITE_RE, "fileline")
     sub(PLAN_REF_RE, "plan")
@@ -968,7 +968,7 @@ def derive(root, rel, text=None, history=None):
 
     epics = sorted(set(PR_TASK_RE.findall(_git_out(root, "log", "--format=%B", "--", rel) or "")))
 
-    import wl_checks as CK  # noqa: PLC0415 -- see resolve()
+    import wl_checks as CK
 
     touched = []
     for m in CK.CITE_RE.finditer(text):
@@ -1374,7 +1374,7 @@ def refresh_index(root, plan_records, plan_box_census):
 
     `plan_records` and `plan_box_census` are injected for the reason `index_rows` gives.
     """
-    import wl_planindex as PI  # noqa: PLC0415 -- wl_store imports wl_planindex lazily; keep this module's import light
+    import wl_planindex as PI
 
     # tracked_only (#0b93d454): agent/INDEX.md is a COMMITTED render that a clean checkout compares for equality, so another session's untracked plan in a shared tree must not enter it.
     recs = plan_records(root, tracked_only=True)
@@ -1396,10 +1396,10 @@ def refresh_index(root, plan_records, plan_box_census):
 def _refresh_queue(root):
     """The generated half of agent/plans/QUEUE.md, on the same verbs that refresh agent/INDEX.md: a plan write can change a Status or a Priority, and check:ci-plan-record fails while the section is stale. A failure here is printed, never raised: the plan write already landed, and the gate names the regenerate command."""
     try:
-        import wl_planqueue  # noqa: PLC0415
+        import wl_planqueue
 
         wl_planqueue.refresh(root)
-    except Exception as exc:  # noqa: BLE001 -- a stale queue is the gate's finding, not a reason to fail the tick
+    except Exception as exc:
         sys.stderr.write(
             "wl_planrec: %s was not refreshed (%s: %s); run `npm run check:ci-plan-record -- --update`\n"
             % ("agent/plans/QUEUE.md", type(exc).__name__, exc)
@@ -1504,7 +1504,7 @@ def ask_why(plan_text):
 
     The model, the budget and the timeout are wl_judge's -- the model is WK_CLAUDE_HAIKU_MODEL (wl_models.py). Not a new knob: a second model setting is a second thing to calibrate, and CLAUDE.md's i18n section already records what happens when the cheap default is not the one that gets used.
     """
-    import wl_judge  # noqa: PLC0415 -- see resolve()
+    import wl_judge
 
     exe = wl_judge.resolve_claude()
     if not exe or not os.path.exists(exe):
@@ -2100,7 +2100,7 @@ def ledger_row(root, rel, text, moved_at=""):
     RESTATED RATHER THAN IMPORTED, for the reason `box_sig` is: the import already runs the other way (the gate imports this directory), and importing back would make the two directories mutually dependent. The equality is pinned by a control in test-planrec.py, which is what keeps the restatement
     from drifting into a second opinion.
     """
-    import wl_checks as CK  # noqa: PLC0415 -- see resolve()
+    import wl_checks as CK
 
     status = ""
     for r, st, _n in CK.plan_records(root):
@@ -2301,7 +2301,7 @@ def resolve_pointers(root, pointers):
             ok, detail = False, str(exc)
         if ok and kind == "gate":
             try:
-                import wl_reggate as RG  # noqa: PLC0415 -- see resolve()
+                import wl_reggate as RG
 
                 if not RG.gate_reachable(_package_scripts(root), token, root):
                     ok = False
@@ -2598,7 +2598,7 @@ def clause2_falsifiable(root, row, evidence):
     head = str(row.get("head") or "").strip()
     if not head:
         return ""
-    import wl_checks as CK  # noqa: PLC0415 -- see resolve()
+    import wl_checks as CK
 
     for m in CK.CITE_RE.finditer(evidence or ""):
         cited_rel, line = m.group(1), int(m.group(2))
@@ -2642,7 +2642,7 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
         )
     # THE TWO TICK VERBS HAD DRIFTED, and this closes it. `worklist.py --tick` has called wl_checks.completion_evidence since v5 and dies with CLI_TICK_NO_EVIDENCE; `--plan-tick` tested only the 12-CHARACTER FLOOR, so `--plan-tick <me> <plan> <sig> "done it, works"` was accepted. That was the widest hole in the tree, in the one verb a plan-implementation gate has to depend on.
     # Both floors apply now: the length floor catches a terse claim and completion_evidence demands something a reader can follow.
-    import wl_checks as CK_EV  # noqa: PLC0415 -- see resolve()
+    import wl_checks as CK_EV
 
     if not CK_EV.completion_evidence(root, ev):
         raise RecordError(
@@ -2782,7 +2782,7 @@ def retro_evidence_text(root, rel, selector, evidence, note, me, text=None, now=
             "held to the SAME floor a live `--plan-tick` line is, because the next reader cannot "
             "tell the two apart and must not have to." % (len(ev), TICK_EVIDENCE_MIN)
         )
-    import wl_checks as CK_EV  # noqa: PLC0415 -- see resolve()
+    import wl_checks as CK_EV
 
     # Lengthened like `plan_tick`'s line (#0241c97d), BEFORE the citations are resolved so the token judged is the token written.
     ev = clip(citable_commit_refs(root, ev), TICK_EVIDENCE_MAX)

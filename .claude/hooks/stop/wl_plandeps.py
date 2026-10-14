@@ -468,7 +468,7 @@ def is_stub_header(header: Header) -> bool:
 
 def finished_states() -> frozenset[str]:
     """`wl_planfile.FINISHED_STATES`, imported lazily. ImportError propagates: a caller that cannot tell finished from live must say so, not guess."""
-    import wl_planfile  # noqa: PLC0415 -- lazy by design, see the module docstring
+    import wl_planfile
 
     return wl_planfile.FINISHED_STATES
 

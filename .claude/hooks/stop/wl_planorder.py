@@ -72,7 +72,7 @@ def context(root) -> tuple[X.OrderCtx | None, str]:
         ctx = X.order_ctx(D.Graph.load(root))
         _MEMO[str(root)] = (sig, ctx)
         return ctx, ""
-    except Exception as exc:  # noqa: BLE001 -- an order is never worth a crashed stop; the caller prints the problem
+    except Exception as exc:
         return None, "%s: %s" % (type(exc).__name__, str(exc)[:160])
 
 
@@ -149,8 +149,8 @@ def holders(writers, fold, session_id) -> dict[str, list[str]]:
 
     `writers` is `[(agent_id, type, text)]`, `text` being the writer's description plus its first prompt. The lease half is `live_plans`' own, line for line.
     """
-    import wl_core as C  # noqa: PLC0415 -- the live world is read only here
-    import wl_leasehelp as LH  # noqa: PLC0415
+    import wl_core as C
+    import wl_leasehelp as LH
 
     items = list(getattr(fold, "items", None) or [])
     by_id = {r["id"]: r for r in items if isinstance(r, dict) and r.get("id")}

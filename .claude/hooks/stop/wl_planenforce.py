@@ -108,7 +108,7 @@ def first_box(root, rel, reader=None):
         return None
     try:
         boxes = R.open_boxes(text)
-    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+    except Exception:
         return None
     if not boxes:
         return None
@@ -137,7 +137,7 @@ def plan_rows(root, scope, reader=None):
             continue
         try:
             boxes = R.open_boxes(text) if text else []
-        except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+        except Exception:
             boxes = []
         workable = [b for b in boxes if not after_merge(b[2])]
         if workable:
