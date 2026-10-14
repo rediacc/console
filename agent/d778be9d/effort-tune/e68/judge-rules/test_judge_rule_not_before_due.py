@@ -11,9 +11,7 @@ def matches(reason, item_line, now_utc):
     stamps = _NB.findall(item_line)
     if not stamps or not re.search(r"(?i)\bdue\b", reason):
         return False
-    when = datetime.datetime.strptime(
-        stamps[-1], "%Y-%m-%dT%H:%M:%SZ" if stamps[-1].count(":") > 1 else "%Y-%m-%dT%H:%MZ"
-    ).replace(tzinfo=datetime.UTC)
+    when = datetime.datetime.strptime(stamps[-1], "%Y-%m-%dT%H:%MZ").replace(tzinfo=datetime.UTC)
     return now_utc < when
 
 

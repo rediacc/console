@@ -183,10 +183,12 @@ ignore = [
 # reasoning below already rests on. A single `tests/test_*.py` segment missed
 # every file one directory deeper than a literal `tests/`, which is why this
 # glob was silently blind to that whole gates/ tree.
-# The effort tuner's proposed judge rules are pytest files too
-# (agent/plans/PLAN-stop-hook-effort-tuning.md: it writes them with their
-# tests under agent/<session>/effort-tune/<epoch>/judge-rules/), so their
-# bare `assert`s carry the same reason as the test trees below.
+# The effort tuner's proposed judge rules are pytest files too, though no
+# testpaths entry collects them: wl_effort_tune.py writes them under
+# agent/<session>/effort-tune/<epoch>/judge-rules/ and the effort-tuner agent
+# runs each by path (.claude/agents/effort-tuner.md step 3), the route
+# rediacc_ci.quality.dead_python.GLOB_ROOTS declares. Their bare `assert`s
+# carry the same reason as the test trees below.
 "agent/*/effort-tune/*/judge-rules/test_*.py" = [
     # BLOCKER: `assert` is the pytest interface for these generated judge-rule tests exactly as for the test trees below; every other file under agent/ is still held to S101
     "S101",
