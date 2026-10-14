@@ -27,6 +27,7 @@ import shutil
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import test_deploy_verify_edge_endpoints as edgediff
 from rediacc_ci.tests.test_deploy_verify_edge_endpoints import (
     assert_same,
@@ -353,8 +354,6 @@ def test_the_same_tree_with_regions_json_present_does_check_them(
 
 
 def test_a_missing_curl_refuses_identically(tmp_path: pathlib.Path) -> None:
-    from rediacc_ci.tests import differential as diff  # noqa: PLC0415
-
     lean = tmp_path / "leanbin"
     lean.mkdir()
     for tool in ("bash", "jq", "sed", "cat", "env", "python3", "tr", "grep", "dirname", "uname"):

@@ -40,6 +40,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import platform as plat
+from rediacc_ci.core import toolchain
 from rediacc_ci.tests import differential as diff
 
 TOOLCHAIN_SH = ".ci/scripts/lib/toolchain.sh"
@@ -391,7 +392,6 @@ def test_uv_checksum_key_is_a_key_the_pins_file_defines(system: str, machine: st
     Read from the live pins file rather than listed here, so a checksum removed
     from that file stops this passing the same day.
     """
-    from rediacc_ci.core import toolchain  # noqa: PLC0415 -- one case needs the pins
 
     pins = toolchain.load_pins()
     key = plat.uv_checksum_key(system, machine)

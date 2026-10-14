@@ -7,9 +7,13 @@ NO NETWORK. `fetch_summary` is replaced in every test that could reach it, and t
 
 from __future__ import annotations
 
+import fcntl
 import importlib.util
 import io
 import json
+import os
+import subprocess
+import sys
 import time
 from typing import TYPE_CHECKING
 
@@ -233,8 +237,6 @@ def test_read_cached_never_fetches_and_spawns_one_refresh_when_old(cache):
 
 
 def test_read_cached_skips_the_spawn_while_a_refresh_holds_the_lock(cache):
-    import fcntl  # noqa: PLC0415
-
     cache.parent.mkdir(parents=True)
     lock = cache.parent / gs.LOCK_NAME
     with lock.open("w") as fh:
@@ -572,9 +574,6 @@ def test_ci_trace_wait_names_the_transition_in_its_verdict(cache, trace, monkeyp
 
 def test_the_hook_runs_as_a_real_process_loading_the_module_by_file(tmp_path):
     """The hook process has no `.ci` on sys.path, so it loads github_status BY FILE; a dataclass module loaded that way must be registered in sys.modules before it runs, which no in-process test (where the module is importable by name) can see. Driven as the harness runs it, outside pytest's environment marker, over a fresh cache in a temp lease directory, so no refresh is spawned and nothing touches the network."""
-    import os  # noqa: PLC0415
-    import subprocess  # noqa: PLC0415
-    import sys  # noqa: PLC0415
 
     lease = tmp_path / "lease"
     gs.read(fetch=Fetch(DEGRADED), path=lease / gs.CACHE_NAME)

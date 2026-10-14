@@ -14,6 +14,7 @@ import re
 
 import pytest
 
+from rediacc_ci import workflows
 from rediacc_ci.ci import ci_diagnose as D
 
 FIX = pathlib.Path(__file__).resolve().parent / "fixtures" / "ci_diagnose"
@@ -1004,7 +1005,6 @@ def test_a_reraising_step_widens_the_evidence_to_earlier_steps():
 
 def test_aggregators_cover_every_job_downstream_of_ci_complete():
     """THE PIN. Every Console CI job whose `needs:` holds ci-complete reports CI Complete's result, so it can never be a root cause; a new one must join DOWNSTREAM_JOBS or this fails."""
-    from rediacc_ci import workflows  # noqa: PLC0415 -- the repo's yaml.safe_load stand-in
 
     ci = workflows.parse(
         (D.REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")

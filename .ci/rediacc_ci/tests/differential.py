@@ -33,16 +33,20 @@ stripped strings, which would also stop the comparison seeing a real trailing-wh
 """
 
 import base64
+import grp
 import importlib.util
 import json
 import os
 import pathlib
 import pty
+import pwd
 import re
 import selectors
 import subprocess
+from typing import TypedDict
 
 from rediacc_ci import paths, runtmp
+from rediacc_ci.core import bash_dialect
 
 
 def _child_tmpdir() -> str:
@@ -55,6 +59,15 @@ def _child_tmpdir() -> str:
     leaf = os.path.join(runtmp.run_dir("difftest-"), "tmp")
     os.mkdir(leaf)
     return leaf
+
+
+class RunKwargs(TypedDict):
+    """The keyword arguments the proxy suites forward verbatim to `subprocess.run`: typed field by field so the call resolves an overload instead of seeing `dict[str, object]`."""
+
+    env: dict[str, str]
+    cwd: str
+    capture_output: bool
+    text: bool
 
 
 # The environment every differential starts from. Deliberately tiny.
@@ -239,8 +252,6 @@ def mask_toolchain_tmp(text: str) -> str:
 
 
 def _load_goldenio():
-    import importlib.util  # noqa: PLC0415 - only this loader needs it
-
     path = paths.repo_root() / ".claude" / "rediacc_hooks" / "tests" / "goldenio.py"
     spec = importlib.util.spec_from_file_location("rediacc_ci_tests_goldenio", path)
     if spec is None or spec.loader is None:
@@ -352,8 +363,6 @@ INTEGER_MARK = "<BASH:integer-expected>"
 
 def host_identity() -> tuple[str, str]:
     """What `ls -l` prints for a file this process created: the effective user's and group's NAMES, or the bare ids when the passwd/group database has no entry (a container run as `-u 1001:1001`)."""
-    import grp  # noqa: PLC0415 - POSIX only, and only the goldens need it
-    import pwd  # noqa: PLC0415
 
     uid, gid = os.geteuid(), os.getegid()
     try:
@@ -388,7 +397,6 @@ def host_unfold(
 ) -> str:
     """Compare time: each token becomes THIS host's spelling. `dialect` is (arith clause, integer phrase), defaulting to what the bash on PATH prints."""
     # Imported here: one bash probe, paid only when a golden is read.
-    from rediacc_ci.core import bash_dialect  # noqa: PLC0415
 
     user, group = identity or host_identity()
     if dialect is None:

@@ -7,11 +7,9 @@ import json
 import pathlib
 from typing import Any
 
-from rediacc_ci import paths
-from rediacc_ci.review import clean_ledger as C
+import wl_review
 
-paths.on_sys_path(paths.hooks_stop_dir())
-import wl_review  # noqa: E402
+from rediacc_ci.review import clean_ledger as C
 
 BRANCH = "1004-1"
 

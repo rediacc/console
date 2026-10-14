@@ -6,14 +6,11 @@ No case touches the network: `publish` takes the `gh` runner as a seam, and a re
 import pathlib
 
 import pytest
+import wl_review
 
-from rediacc_ci import paths
 from rediacc_ci.quality import review_comments
 from rediacc_ci.review import review_table as T
 from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
-
-paths.on_sys_path(paths.hooks_stop_dir())
-import wl_review  # noqa: E402
 
 BRANCH = "1003-1"
 ME = "d778be9d"

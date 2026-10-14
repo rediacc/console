@@ -10,6 +10,7 @@ ATTRIBUTION (2026-10-07). In a SHARED tree (a tracked path already modified at s
 outer test edits the scratch tree while the nested session is parked inside its one test, so the nested pytest never touches that file.
 """
 
+import importlib.util
 import pathlib
 import shutil
 import subprocess
@@ -292,8 +293,6 @@ def test_the_mode_is_printed_on_a_clean_run(repo) -> None:
 
 
 def _conftest():
-    import importlib.util  # noqa: PLC0415 -- only the pure-helper cases load the conftest as a module
-
     spec = importlib.util.spec_from_file_location("root_conftest_under_test", CONFTEST)
     assert spec is not None
     assert spec.loader is not None

@@ -24,6 +24,10 @@ THE SWEEP IS A READ, NEVER A WRITE. The twin records that an earlier version wro
 NO `xdist_group`. Shims and probes are written into pytest's own `tmp_path`; the tree is read (git ls-files, and the two subject files) and never written.
 """
 
+import datetime
+import hashlib
+import importlib.util
+import json
 import os
 import pathlib
 import re
@@ -415,8 +419,6 @@ def skip_ci_gh(tmp_path, pushed_at, runs_json=DISPATCH_ONLY_RUNS):
 
 
 def now_iso():
-    import datetime  # noqa: PLC0415
-
     return '"%s"' % datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -487,7 +489,6 @@ def test_noci_settled_bounds(gate):
         "_noci_settled: either lower bound on the head's age settles it, neither alone fakes it"
     )
     require_subjects(gate)
-    import importlib.util  # noqa: PLC0415
 
     spec = importlib.util.spec_from_file_location("ci_trace_under_test", TRACE)
     assert spec is not None, "cannot load %s" % TRACE
@@ -921,8 +922,6 @@ esac
 
 
 def _attrib_gh(tmp_path, with_watchdog):
-    import json  # noqa: PLC0415
-
     jobs = json.loads((DIAG_FIX / "jobs_36953549081_attempt1.json").read_text(encoding="utf-8"))[
         "jobs"
     ]
@@ -1007,8 +1006,6 @@ with open(os.environ["FAKE_WORKLIST_LOG"], "a", encoding="utf-8") as fh:
 
 
 def _wait_env(tmp_path, bindir):
-    import json  # noqa: PLC0415
-
     fake = tmp_path / "worklist.py"
     fake.write_text(FAKE_WORKLIST, encoding="utf-8")
     (tmp_path / "t").mkdir(parents=True, exist_ok=True)
@@ -1039,8 +1036,6 @@ def _wait_env(tmp_path, bindir):
 
 
 def _cache_doc(tmp_path, json):
-    import hashlib  # noqa: PLC0415
-
     tag = hashlib.sha1(PR_BRANCH.encode("utf-8")).hexdigest()[:8]
     hits = sorted((tmp_path / "t" / "claude-worklist").glob("*.md.civerdict-%s" % tag))
     return json.loads(hits[0].read_text(encoding="utf-8")) if hits else None

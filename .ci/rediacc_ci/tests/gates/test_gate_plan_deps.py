@@ -5,17 +5,17 @@ WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. Those controls plant into fixture
 THE FIXTURE IS A PLAIN DIRECTORY, not a git repository: the gate reads plan files from disk and never asks git, so a repository would be a precondition this gate does not have.
 """
 
+import hashlib
 import pathlib
+import subprocess
 import sys
 
 import pytest
+import wl_plandeps as D
 
 from rediacc_ci import paths
 from rediacc_ci.quality import plan_lifecycle as PL
 from rediacc_ci.tests.gates import harness
-
-paths.on_sys_path(paths.hooks_stop_dir())
-import wl_plandeps as D  # noqa: E402
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_deps.py")
 
@@ -296,7 +296,6 @@ def test_d17_a_kept_marker_is_info_not_red(gate, tmp_path):
 
 def test_d17_reads_the_merge_base_from_git(gate, tmp_path):
     """The real path: `git merge-base HEAD main`, then one `git grep` at the base. A plan on main carries an operator value; the branch demotes it."""
-    import subprocess  # noqa: PLC0415
 
     root = _seed(tmp_path, x=_xplan(pri="P1 (operator) -- ruled", dep="PLAN-y.md"))
 
@@ -423,8 +422,6 @@ def _mig_tree(tmp_path: pathlib.Path) -> pathlib.Path:
 
 
 def _snapshot(root: pathlib.Path) -> dict:
-    import hashlib  # noqa: PLC0415
-
     return {
         p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
         for p in sorted(root.rglob("*"))
