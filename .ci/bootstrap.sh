@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# THE PYTHON BOOTSTRAP: locate or install uv, then let uv provide pytest.
+# THE PYTHON BOOTSTRAP: locate or install uv, then let uv provide pytest and ruff.
 #
 # WHY THIS FILE IS THE FIRST THING IN THE PYTHON WORKSTREAM. Nothing written in
 # Python can be PROVEN on a machine until that machine has a package manager,
@@ -29,12 +29,22 @@
 # touch the system Python, does not write outside .ci/cache/ (gitignored), and
 # does not run any test.
 #
-# THREE TOOLS, THREE RUNGS, THREE ROWS -- never two tools and an assumption.
+# FOUR TOOLS, THREE RUNGS, FOUR ROWS -- never two tools and an assumption.
 # The install arm is IDEMPOTENT BY RESOLUTION rather than by a stamp file, so
 # each thing is asked for separately: on a machine that already has pytest,
 # resolve_pytest succeeds and install_pytest is never reached, and anything
 # folded into that function would then be installed nowhere at all while the
 # report still read `ok`.
+#
+# RUFF IS THE FOURTH ROW. The lint gate (`check:ci-python-lint`) exits 77, "could
+# not run", when no ruff at the pin is reachable, and the pin moves with
+# RUFF_VERSION in .devcontainer/toolchain.env without any host following it. It
+# is installed as its own uv tool into the same $TOOL_DIR, version read from the
+# same pins file the toolchain gates read. CI does not use this arm: the quality
+# lanes pip-install `ruff==${RUFF_VERSION}` from the same pin (ci-quality.yml,
+# "Install ruff"), so one value moves both. mypy needs no row: its gate resolves
+# `uvx mypy@<pin>` through the uv this file installs. shfmt, shellcheck and
+# actionlint acquire themselves through .ci/scripts/lib/toolchain.sh.
 #
 # THE RESOLVER IS A SIBLING, NOT A NEW IDEA. Rungs and their order are lifted
 # from resolve_ruff in .ci/rediacc_ci/quality/python_lint.py:
@@ -200,6 +210,27 @@ resolve_pytest() {
     return 1
 }
 
+# Rungs 1-3 for ruff, same order as resolve_ruff in python_lint.py plus this
+# file's own cached install: RUFF_BIN, a PATH ruff AT THE PIN, then
+# $TOOL_BIN_DIR/ruff at the pin. Echoes the binary, or fails.
+resolve_ruff() {
+    if [ -n "${RUFF_BIN:-}" ]; then
+        printf '%s' "$RUFF_BIN"
+        return 0
+    fi
+    local at_pin
+    if at_pin="$(toolchain_check ruff 2>/dev/null)"; then
+        printf '%s' "$at_pin"
+        return 0
+    fi
+    if [ -x "$TOOL_BIN_DIR/ruff" ] &&
+        [ "$(toolchain_probe_version ruff "$TOOL_BIN_DIR/ruff" 2>/dev/null)" = "$RUFF_VERSION" ]; then
+        printf '%s' "$TOOL_BIN_DIR/ruff"
+        return 0
+    fi
+    return 1
+}
+
 # The pytest-xdist version REGISTERED IN THE PYTEST THAT WILL ACTUALLY RUN, or
 # nothing. `pytest -VV` lists its registered plugins as `<name>-<version> at
 # <path>`, so this asks the resolved binary rather than looking for a file: rung
@@ -335,6 +366,24 @@ install_xdist() {
     printf '%s' "$TOOL_BIN_DIR/pytest"
 }
 
+install_ruff() {
+    local uv="$1" got
+    echo "bootstrap: installing ruff ${RUFF_VERSION} via uv" >&2
+    # A separate uv tool from pytest, so neither install can reinstall or unpin the other.
+    UV_TOOL_DIR="$TOOL_DIR" UV_TOOL_BIN_DIR="$TOOL_BIN_DIR" \
+        "$uv" tool install --quiet --force "ruff==${RUFF_VERSION}" || {
+        echo "${RED}bootstrap${NC}: uv tool install ruff failed" >&2
+        return 1
+    }
+    # Verified by asking the binary, not by trusting uv's exit code.
+    got="$(toolchain_probe_version ruff "$TOOL_BIN_DIR/ruff" 2>/dev/null)"
+    [ "$got" = "$RUFF_VERSION" ] || {
+        echo "${RED}bootstrap${NC}: uv reported success but $TOOL_BIN_DIR/ruff reports '${got:-none}'" >&2
+        return 1
+    }
+    printf '%s' "$TOOL_BIN_DIR/ruff"
+}
+
 # True when $1 is a wrapper this script wrote: a regular file (never uv's
 # symlink) carrying the marker line.
 is_lease_wrapper() {
@@ -414,7 +463,7 @@ report_row() {
 }
 
 report() {
-    local uv pytest xdist rc=0
+    local uv pytest xdist ruff rc=0
     printf 'root: %s\n' "$ROOT"
     printf 'lane: %s\n\n' "$(toolchain_lane)"
     report_row tool pinned resolved
@@ -437,6 +486,13 @@ report() {
         report_row xdist "$PYTEST_XDIST_VERSION" "in $xdist"
     else
         report_row xdist "$PYTEST_XDIST_VERSION" "${YELLOW}ABSENT${NC}"
+        rc=1
+    fi
+    # ITS OWN ROW: the lint gate exits 77 without a ruff at the pin.
+    if ruff="$(resolve_ruff)"; then
+        report_row ruff "$RUFF_VERSION" "$ruff"
+    else
+        report_row ruff "$RUFF_VERSION" "${YELLOW}ABSENT${NC}"
         rc=1
     fi
     # ITS OWN ROW TOO: a repo-local pytest that is still uv's bare symlink runs
@@ -494,6 +550,12 @@ case "${1:-install}" in
         else
             xdist_in="$(install_xdist "$uv_bin")" || exit 1
             echo "${GREEN}ok${NC}   pytest-xdist ${PYTEST_XDIST_VERSION} installed into $xdist_in"
+        fi
+        if ruff_bin="$(resolve_ruff)"; then
+            echo "${GREEN}ok${NC}   ruff ${RUFF_VERSION} already at $ruff_bin"
+        else
+            ruff_bin="$(install_ruff "$uv_bin")" || exit 1
+            echo "${GREEN}ok${NC}   ruff ${RUFF_VERSION} installed at $ruff_bin"
         fi
         # LAST, because every uv install above rewrites the bin directory. Only
         # for the repo-local install: a PYTEST_BIN or PATH pytest is not ours to

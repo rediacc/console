@@ -250,7 +250,7 @@ def enumeration_reaches_untracked(root: str, enumerate_fn) -> tuple[bool, str]:
 
 
 def resolve_ruff() -> list[str] | None:
-    """The three-rung resolver, as an argv list. None means neither ruff nor uvx.
+    """The resolver, as an argv list: RUFF_BIN, a PATH ruff at the pin, bootstrap's installed ruff at the pin, then uvx. None means none of them.
 
     RUNG TWO IS "AT THE PIN", NOT "PRESENT". A host carrying 0.5.0 must not decide this repo's verdict; see the module docstring for the sibling tools where the same defect was already fixed.
     """
@@ -258,17 +258,28 @@ def resolve_ruff() -> list[str] | None:
     if explicit:
         return [explicit]
     on_path = _which("ruff")
-    if on_path is not None:
-        probe = _run([on_path, "--version"])
-        fields = probe.stdout.split()
-        version = fields[1] if len(fields) > 1 else ""
-        version = version.removeprefix("v")
-        match = re.match(r"^[0-9]+(\.[0-9]+)*", version)
-        if match and match.group(0) == RUFF_VERSION:
-            return [on_path]
-    if _which("uvx") is not None:
-        return ["uvx", "ruff@%s" % RUFF_VERSION]
+    if on_path is not None and _at_pin(on_path):
+        return [on_path]
+    # The last rungs exist so a bootstrapped host on which nothing is on PATH gets a verdict instead of a 77: `.ci/bootstrap.sh` installs the pinned ruff into its uv-tools directory, and its uv carries a uvx. CI never reaches them; it installs ruff at the pin.
+    cache = paths.repo_root() / ".ci" / "cache" / "toolchain"
+    installed = cache / "uv-tools" / "bin" / "ruff"
+    if os.access(installed, os.X_OK) and _at_pin(str(installed)):
+        return [str(installed)]
+    uvx = _which("uvx") or next(
+        (str(c) for c in sorted(cache.glob("uv-*/uvx")) if os.access(c, os.X_OK)), None
+    )
+    if uvx is not None:
+        return [uvx, "ruff@%s" % RUFF_VERSION]
     return None
+
+
+def _at_pin(binary: str) -> bool:
+    """True when `binary --version` reports exactly RUFF_VERSION."""
+    probe = _run([binary, "--version"])
+    fields = probe.stdout.split()
+    version = fields[1].removeprefix("v") if len(fields) > 1 else ""
+    match = re.match(r"^[0-9]+(\.[0-9]+)*", version)
+    return bool(match) and match.group(0) == RUFF_VERSION
 
 
 def _which(name: str) -> str | None:
