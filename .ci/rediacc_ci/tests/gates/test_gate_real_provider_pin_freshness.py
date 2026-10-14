@@ -15,16 +15,21 @@ FAIL CLOSED (operator ruling 2026-10-13), control first against the stub server:
 Every case owns its fixtures under `tmp_path`; the tracked lock file is read by one case and never written.
 """
 
-import contextlib
 import datetime
-import http.server
 import json
 import pathlib
-import socket
-import threading
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.gates.upstream_stub import (
+    RATE_LIMITED,
+    assert_no_token,
+    closed_port,
+    ok,
+    sentinel,
+    status,
+    stub_upstream,
+)
 
 VALIDATOR = paths.from_root("scripts", "gates", "check-real-provider-pin-freshness.ts")
 REAL_LOCK = paths.from_root("private", "account", "e2e", "real-provider.lock.json")
@@ -93,70 +98,15 @@ def run_gate(gate, directory: pathlib.Path, listing: object, lock: pathlib.Path 
     )
 
 
-def sentinel() -> str:
-    """A NON-SECRET stand-in the gate is handed as its credential, so a test can prove the value reaches neither the stub nor the output."""
-    return "not-a-real-credential-sentinel"
+def route(repo: str) -> str:
+    """The path the gate asks the stub for a repository's release list."""
+    return "/repos/%s/releases" % repo
 
 
-RATE_LIMITED = (
-    403,
-    {"x-ratelimit-remaining": "0", "x-ratelimit-reset": "1791000000"},
-    {"message": "API rate limit exceeded"},
-)
-
-
-def ok(body: object) -> tuple:
-    return (200, {}, body)
-
-
-def status(code: int) -> tuple:
-    return (code, {}, {"message": "stubbed %d" % code})
-
-
-class StubUpstream:
-    """A stand-in for api.github.com: each repository answers its scripted responses in order, and the last one repeats."""
-
-    def __init__(self, script: dict[str, list[tuple]]) -> None:
-        self.script = {repo: list(answers) for repo, answers in script.items()}
-        self.requests: list[tuple[str, bool]] = []
-        stub = self
-
-        class Handler(http.server.BaseHTTPRequestHandler):
-            def do_GET(self) -> None:
-                route = self.path.split("?")[0]
-                repo = route.removeprefix("/repos/").removesuffix("/releases")
-                stub.requests.append((repo, self.headers.get("Authorization") is not None))
-                answers = stub.script.get(repo) or [status(404)]
-                code, headers, body = answers.pop(0) if len(answers) > 1 else answers[0]
-                payload = body if isinstance(body, bytes) else json.dumps(body).encode()
-                self.send_response(code)
-                for name, value in headers.items():
-                    self.send_header(name, value)
-                self.send_header("Content-Length", str(len(payload)))
-                self.end_headers()
-                self.wfile.write(payload)
-
-            def log_message(self, *_args: object) -> None:
-                """Silence the per-request line; `requests` is the record."""
-
-        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        self.base = "http://127.0.0.1:%d" % self.server.server_address[1]
-
-    def asked(self, repo: str) -> int:
-        return sum(1 for seen, _ in self.requests if seen == repo)
-
-
-@contextlib.contextmanager
-def stub_upstream(script: dict[str, list[tuple]]):
-    stub = StubUpstream(script)
-    thread = threading.Thread(target=stub.server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        yield stub
-    finally:
-        stub.server.shutdown()
-        stub.server.server_close()
-        thread.join(timeout=5)
+def served(**answers: list[tuple]) -> dict[str, list[tuple]]:
+    """A stub script from `bitwarden=` and `vaultwarden=` answer lists."""
+    repos = {"bitwarden": BITWARDEN, "vaultwarden": VAULTWARDEN}
+    return {route(repos[name]): listed for name, listed in answers.items()}
 
 
 def run_gate_over_http(gate, directory: pathlib.Path, base: str):
@@ -178,31 +128,25 @@ def run_gate_over_http(gate, directory: pathlib.Path, base: str):
     )
 
 
-def assert_no_token(gate, result) -> None:
-    gate.assert_not_contains(result.combined, sentinel(), "the output never carries the token")
-    gate.assert_not_contains(result.combined, "Bearer", "the output never carries a header")
-
-
 def test_control_both_listings_served_over_http_is_green(gate, tmp_path):
     """The control for every red case below: the same stub, answering, is green, so a red there is the failure and not the stub."""
     listing = current_listing()
-    script = {BITWARDEN: [ok(listing[BITWARDEN])], VAULTWARDEN: [ok(listing[VAULTWARDEN])]}
+    script = served(bitwarden=[ok(listing[BITWARDEN])], vaultwarden=[ok(listing[VAULTWARDEN])])
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
         gate.assert_exit(0, result, "two listings served over HTTP pass")
         gate.assert_contains(result.out, "2 of 2 compared with upstream", "the count is printed")
-        gate.assert_eq(stub.asked(BITWARDEN), 1, "bitwarden is asked once")
-        gate.assert_eq(stub.asked(VAULTWARDEN), 1, "vaultwarden is asked once")
-        gate.assert_eq(
-            [sent for _, sent in stub.requests], [False, False], "the token is not sent to a seam"
-        )
+        gate.assert_eq(stub.asked(route(BITWARDEN)), 1, "bitwarden is asked once")
+        gate.assert_eq(stub.asked(route(VAULTWARDEN)), 1, "vaultwarden is asked once")
+        gate.assert_eq(len(stub.requests), 2, "two requests reached the stub")
+        gate.assert_eq(stub.tokens_seen(), 0, "the token is not sent to a seam")
     gate.log_pass("the stub upstream, answering, is green")
 
 
 def test_a_stale_pin_over_http_still_fires(gate, tmp_path):
     listing = current_listing()
     listing[VAULTWARDEN].insert(0, release("1.38.0"))
-    script = {BITWARDEN: [ok(listing[BITWARDEN])], VAULTWARDEN: [ok(listing[VAULTWARDEN])]}
+    script = served(bitwarden=[ok(listing[BITWARDEN])], vaultwarden=[ok(listing[VAULTWARDEN])])
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
     gate.assert_exit(1, result, "a pin behind an aged release fails over HTTP too")
@@ -212,9 +156,7 @@ def test_a_stale_pin_over_http_still_fires(gate, tmp_path):
 
 
 def test_an_unreachable_upstream_is_red(gate, tmp_path):
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        port = probe.getsockname()[1]
+    port = closed_port()
     result = run_gate_over_http(gate, tmp_path, "http://127.0.0.1:%d" % port)
     gate.assert_exit(1, result, "an upstream nothing answers on fails closed")
     gate.assert_contains(result.err, "2 real-provider pin(s) were NOT compared", "both are named")
@@ -227,6 +169,11 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
         result.err, f"Vaultwarden (pinned {PIN_VW})", "the second pin is a finding too"
     )
     gate.assert_contains(result.err, "The comparison did not happen", "the finding says so")
+    gate.assert_contains(
+        result.err,
+        "UPSTREAM REACHABILITY FAILURE (127.0.0.1:%d), not a stale pin" % port,
+        "the finding says what kind of red this is and names the host",
+    )
     gate.assert_contains(result.out, "attempt 2 of 3 failed", "the retries are visible")
     gate.assert_not_contains(result.out, "Every real-provider pin", "no green line is printed")
     gate.assert_not_contains(result.err, "per_page", "the query string is not printed")
@@ -236,10 +183,10 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
 
 def test_a_rate_limit_is_red(gate, tmp_path):
     listing = current_listing()
-    script = {BITWARDEN: [ok(listing[BITWARDEN])], VAULTWARDEN: [RATE_LIMITED]}
+    script = served(bitwarden=[ok(listing[BITWARDEN])], vaultwarden=[RATE_LIMITED])
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
-        gate.assert_eq(stub.asked(VAULTWARDEN), 1, "a primary rate limit is not asked again")
+        gate.assert_eq(stub.asked(route(VAULTWARDEN)), 1, "a primary rate limit is not asked again")
     gate.assert_exit(1, result, "a rate limit fails closed")
     gate.assert_contains(
         result.err, "1 real-provider pin(s) were NOT compared", "one pin is the finding"
@@ -259,10 +206,10 @@ def test_a_rate_limit_is_red(gate, tmp_path):
 
 def test_a_refused_token_is_red(gate, tmp_path):
     listing = current_listing()
-    script = {BITWARDEN: [status(401)], VAULTWARDEN: [ok(listing[VAULTWARDEN])]}
+    script = served(bitwarden=[status(401)], vaultwarden=[ok(listing[VAULTWARDEN])])
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
-        gate.assert_eq(stub.asked(BITWARDEN), 1, "a refused token is not asked again")
+        gate.assert_eq(stub.asked(route(BITWARDEN)), 1, "a refused token is not asked again")
     gate.assert_exit(1, result, "an authentication failure fails closed")
     gate.assert_contains(result.err, "HTTP 401 (the token was refused)", "the status is named")
     assert_no_token(gate, result)
@@ -271,10 +218,10 @@ def test_a_refused_token_is_red(gate, tmp_path):
 
 def test_a_persistent_server_error_is_red(gate, tmp_path):
     listing = current_listing()
-    script = {BITWARDEN: [ok(listing[BITWARDEN])], VAULTWARDEN: [status(503)]}
+    script = served(bitwarden=[ok(listing[BITWARDEN])], vaultwarden=[status(503)])
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
-        gate.assert_eq(stub.asked(VAULTWARDEN), 3, "a 5xx is asked three times and no more")
+        gate.assert_eq(stub.asked(route(VAULTWARDEN)), 3, "a 5xx is asked three times and no more")
     gate.assert_exit(1, result, "a 5xx that outlasts the retry budget fails closed")
     gate.assert_contains(result.err, "-> HTTP 503, after 3 attempt(s)", "status and attempts")
     gate.log_pass("a persistent 5xx is red after the budget")
@@ -282,14 +229,14 @@ def test_a_persistent_server_error_is_red(gate, tmp_path):
 
 def test_a_transient_failure_then_success_is_green(gate, tmp_path):
     listing = current_listing()
-    script = {
-        BITWARDEN: [status(503), ok(listing[BITWARDEN])],
-        VAULTWARDEN: [(429, {"retry-after": "1"}, {}), ok(listing[VAULTWARDEN])],
-    }
+    script = served(
+        bitwarden=[status(503), ok(listing[BITWARDEN])],
+        vaultwarden=[(429, {"retry-after": "1"}, {}), ok(listing[VAULTWARDEN])],
+    )
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
-        gate.assert_eq(stub.asked(BITWARDEN), 2, "the 503 is asked again once")
-        gate.assert_eq(stub.asked(VAULTWARDEN), 2, "the 429 is asked again once")
+        gate.assert_eq(stub.asked(route(BITWARDEN)), 2, "the 503 is asked again once")
+        gate.assert_eq(stub.asked(route(VAULTWARDEN)), 2, "the 429 is asked again once")
     gate.assert_exit(0, result, "a failure that clears inside the retry budget passes")
     gate.assert_contains(result.out, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
     gate.assert_contains(result.out, "2 of 2 compared with upstream", "both were compared")
@@ -298,13 +245,13 @@ def test_a_transient_failure_then_success_is_green(gate, tmp_path):
 
 def test_a_wait_longer_than_the_budget_is_not_retried(gate, tmp_path):
     listing = current_listing()
-    script = {
-        BITWARDEN: [ok(listing[BITWARDEN])],
-        VAULTWARDEN: [(429, {"retry-after": "3600"}, {}), ok(listing[VAULTWARDEN])],
-    }
+    script = served(
+        bitwarden=[ok(listing[BITWARDEN])],
+        vaultwarden=[(429, {"retry-after": "3600"}, {}), ok(listing[VAULTWARDEN])],
+    )
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
-        gate.assert_eq(stub.asked(VAULTWARDEN), 1, "an hour's wait is not slept through")
+        gate.assert_eq(stub.asked(route(VAULTWARDEN)), 1, "an hour's wait is not slept through")
     gate.assert_exit(1, result, "a wait the budget cannot hold fails closed")
     gate.assert_contains(result.err, "HTTP 429 (rate limit), after 1 attempt(s)", "named")
     gate.log_pass("a Retry-After beyond the budget is red at once")
@@ -312,10 +259,9 @@ def test_a_wait_longer_than_the_budget_is_not_retried(gate, tmp_path):
 
 def test_a_response_that_is_not_json_is_red(gate, tmp_path):
     listing = current_listing()
-    script = {
-        BITWARDEN: [(200, {}, b"<html>proxy</html>")],
-        VAULTWARDEN: [ok(listing[VAULTWARDEN])],
-    }
+    script = served(
+        bitwarden=[(200, {}, b"<html>proxy</html>")], vaultwarden=[ok(listing[VAULTWARDEN])]
+    )
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
     gate.assert_exit(1, result, "a 200 that is not JSON is not a pass")

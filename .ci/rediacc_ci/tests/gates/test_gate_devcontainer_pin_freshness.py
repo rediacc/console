@@ -6,8 +6,15 @@
                                   used INSTEAD of the network
   DEVCONTAINER_BLOCKLIST_FILE     the blocklist whose BLOCKER convention is enforced
   DEVCONTAINER_DOCKERFILE         the file `--upgrade` rewrites
+  DEVCONTAINER_API_BASE           another API base, here a stub HTTP server on 127.0.0.1
+                                  (`upstream_stub.py`), so the request, the status handling
+                                  and the retry are the gate's real code path
 
-Proved: it passes when nothing is behind, FIRES on a stale pin, DEFERS a just-released version (the shared soak), FAILS SOFT when a source cannot be checked, and enforces the BLOCKER convention on its blocklist.
+Proved: it passes when nothing is behind, FIRES on a stale pin, DEFERS a just-released version (the shared soak), FAILS CLOSED when a source was not compared, and enforces the BLOCKER convention on its blocklist.
+
+FAIL CLOSED (operator ruling 2026-10-13, "Everything fails closed, nightly included"), control first against the stub server: every listing served is green and the token never reaches the stub; a port nothing listens on is RED after three attempts, with the pin, the host and path, the error code and the words "UPSTREAM REACHABILITY FAILURE"; a rate limit is RED at once; a 503 followed by the listing is green inside the retry budget; a listing with no release under the tag prefix is RED; a source with no ARG in the Dockerfile is RED; a held pin is not asked and is counted as held.
+
+THE FIXTURE MAPS COVER EVERY SOURCE, READ FROM THE GATE'S OWN LIST. They used to name `bw` alone, written when the list held one entry. The list grew to five and the other four were "not in fixture", which the gate then reported as could-not-check and passed: every green case here was comparing one pin of five. The bases are now read by importing `DEVCONTAINER_PIN_SOURCES`, and `test_fixture_keys_are_corpus_derived` refuses an empty read.
 
 Plus the assertion this gate exists for, which the embed gate's test has no reason to make: `--upgrade` must move the VERSION and its sha256 ARGs TOGETHER, and must refuse to move the version at all when a digest is missing. A tree carrying a new version beside a stale hash does not build, so an upgrade path that can produce one is worse than no upgrade path.
 
@@ -27,10 +34,20 @@ NO `xdist_group`. Every case owns its whole fixture set under `tmp_path` and the
 """
 
 import datetime
+import json
 import shutil
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.gates.upstream_stub import (
+    RATE_LIMITED,
+    assert_no_token,
+    closed_port,
+    ok,
+    sentinel,
+    status,
+    stub_upstream,
+)
 
 VALIDATOR = paths.from_root("scripts", "gates", "check-devcontainer-pin-freshness.ts")
 REAL_DOCKERFILE = paths.from_root(".devcontainer", "Dockerfile")
@@ -40,8 +57,60 @@ BW_SHA_AMD64 = "580c1deec8345b19dbac7f8b02babb6cc4fe250c69c567e29061f727f1e40768
 BW_SHA_ARM64 = "3f474cc34b701a1cebdd486009870038b034343afb83095607422cdad4c3653a"
 
 
+SOURCES_FILE = paths.from_root("scripts", "lib", "devcontainer-pin-sources.ts")
+LONG_AGO = "2020-01-01T00:00:00Z"
+
+PROBE = (
+    "import { DEVCONTAINER_PIN_SOURCES } from './scripts/lib/devcontainer-pin-sources.ts';\n"
+    "process.stdout.write(JSON.stringify(DEVCONTAINER_PIN_SOURCES.map((s) => "
+    "({ base: s.base, display: s.display, repo: s.repo, tagPrefix: s.tagPrefix }))));"
+)
+
+# The source list costs one tsx start-up, paid once per pytest process. A one-slot dict rather than a rebound module global, so no `global` statement is needed.
+_SOURCES: dict[str, list[dict]] = {}
+
+
+def sources(gate) -> list[dict]:
+    """The gate's own source list: base, display, repo and tag prefix of each watched pin."""
+    if "value" in _SOURCES:
+        return _SOURCES["value"]
+    for path in (VALIDATOR, SOURCES_FILE):
+        if not path.is_file():
+            gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(path))
+    npx = harness.require_tool(
+        "npx", "install node; the source list is a TypeScript module read through tsx"
+    )
+    probe = harness.run([npx, "tsx", "--eval", PROBE], cwd=paths.repo_root())
+    found: list[dict] = []
+    if probe.rc == 0:
+        try:
+            found = list(json.loads(probe.out.strip().splitlines()[-1]))
+        except (ValueError, IndexError):
+            found = []
+    if not found:
+        gate.log_fail(
+            "read ZERO source(s) out of %s (rc=%d, stdout=%r, stderr=%r), so every fixture "
+            "below would be an EMPTY map. Either the list moved or DEVCONTAINER_PIN_SOURCES "
+            "changed shape."
+            % (paths.relative_to_root(SOURCES_FILE), probe.rc, probe.out, probe.err)
+        )
+    _SOURCES["value"] = found
+    return found
+
+
+def upstream_map(gate, **overrides: dict) -> dict:
+    """Every watched source reported far OLDER than any real pin, then `overrides`."""
+    data: dict[str, dict] = {src["base"]: {"version": "0.0.1"} for src in sources(gate)}
+    data.update(overrides)
+    return data
+
+
+def write_map(directory, name: str, mapping: dict) -> None:
+    (directory / name).write_text(json.dumps(mapping) + "\n", encoding="utf-8")
+
+
 def build_fixtures(gate, directory):
-    """Every fixture the twin's `setup_fixtures` writes, into `directory`.
+    """Every fixture the cases read, into `directory`.
 
     Returns the path of the WRITABLE Dockerfile copy. The real one is read and never touched.
     """
@@ -55,47 +124,35 @@ def build_fixtures(gate, directory):
     # WRITABLE regardless of the source's mode: copy2 carries the source's permissions across, and `--upgrade` must be able to rewrite the copy. Without this the case depends on the environment rather than on the code.
     dockerfile.chmod(dockerfile.stat().st_mode | 0o200)
 
-    # Reported far OLDER than the real pin -> nothing is stale.
-    (directory / "all-current.json").write_text(
-        '{ "bw": { "version": "0.0.1" } }\n', encoding="utf-8"
-    )
+    # Every source reported far OLDER than the real pin -> nothing is stale.
+    write_map(directory, "all-current.json", upstream_map(gate))
 
-    # Reported far NEWER, published long ago -> confirmed stale (past the soak).
-    (directory / "stale.json").write_text(
-        "{\n"
-        '  "bw": {\n'
-        '    "version": "9999.1.0",\n'
-        '    "publishedAt": "2020-01-01T00:00:00Z",\n'
-        '    "digests": {\n'
-        '      "bw-linux-9999.1.0.zip": "%s",\n'
-        '      "bw-linux-arm64-9999.1.0.zip": "%s"\n'
-        "    }\n"
-        "  }\n"
-        "}\n" % (BW_SHA_AMD64, BW_SHA_ARM64),
-        encoding="utf-8",
-    )
+    # bw reported far NEWER, published long ago -> confirmed stale (past the soak).
+    stale_bw = {
+        "version": "9999.1.0",
+        "publishedAt": LONG_AGO,
+        "digests": {
+            "bw-linux-9999.1.0.zip": BW_SHA_AMD64,
+            "bw-linux-arm64-9999.1.0.zip": BW_SHA_ARM64,
+        },
+    }
+    write_map(directory, "stale.json", upstream_map(gate, bw=stale_bw))
 
     # Stale, but the arm64 asset has NO digest -> `--upgrade` must refuse the whole source rather than write a version whose hash it could not resolve.
-    (directory / "stale-missing-digest.json").write_text(
-        "{\n"
-        '  "bw": {\n'
-        '    "version": "9999.1.0",\n'
-        '    "publishedAt": "2020-01-01T00:00:00Z",\n'
-        '    "digests": { "bw-linux-9999.1.0.zip": "%s" }\n'
-        "  }\n"
-        "}\n" % BW_SHA_AMD64,
-        encoding="utf-8",
-    )
+    half = dict(stale_bw, digests={"bw-linux-9999.1.0.zip": BW_SHA_AMD64})
+    write_map(directory, "stale-missing-digest.json", upstream_map(gate, bw=half))
 
     # Newer but published just now -> inside the freshness window (deferred).
     recent = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=1)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
-    (directory / "fresh.json").write_text(
-        '{ "bw": { "version": "9999.1.0", "publishedAt": "%s" } }\n' % recent, encoding="utf-8"
+    write_map(
+        directory,
+        "fresh.json",
+        upstream_map(gate, bw={"version": "9999.1.0", "publishedAt": recent}),
     )
 
-    # Empty fixture -> every source "not in fixture" -> could-not-check (fail soft).
+    # Empty fixture -> every source has no entry -> none was compared, which is RED.
     (directory / "empty.json").write_text("{}\n", encoding="utf-8")
 
     # A blocklist entry with NO BLOCKER reason -> verifyAllBlockers must reject it.
@@ -172,10 +229,262 @@ def arg_value(text: str, name: str) -> str:
     return ""
 
 
+def release(tag: str, published: str = LONG_AGO, **extra: object) -> dict:
+    return {
+        "tag_name": tag,
+        "published_at": published,
+        "draft": False,
+        "prerelease": False,
+        **extra,
+    }
+
+
+def route(src: dict) -> str:
+    """The path the gate asks the stub for a source's release list."""
+    return "/repos/%s/releases" % src["repo"]
+
+
+def current_script(gate, dockerfile) -> dict[str, list[tuple]]:
+    """A stub script in which every repository's newest release under the prefix IS the pinned version.
+
+    Two sources can share a repository, so the listings are merged per path. The noise entry is a tag no prefix here selects.
+    """
+    text = dockerfile.read_text(encoding="utf-8")
+    listings: dict[str, list[dict]] = {}
+    for src in sources(gate):
+        pinned = arg_value(text, "%s_VERSION" % src["base"].upper())
+        if not pinned:
+            gate.log_fail("the Dockerfile copy has no %s_VERSION ARG" % src["base"].upper())
+        listings.setdefault(route(src), [release("unrelated-component-v9999.0.0")]).append(
+            release(src["tagPrefix"] + pinned)
+        )
+    return {path: [ok(listing)] for path, listing in listings.items()}
+
+
+def run_gate_over_http(dockerfile, base: str, *args: str, blocklist=None):
+    """The gate against `base` over real HTTP: no fixture map, so the fetch, the status handling and the retry all run."""
+    npx = harness.require_tool(
+        "npx", "install node; the subject is a TypeScript program driven through tsx"
+    )
+    holds = dockerfile.parent / "blocklist-none"
+    holds.write_text("# no holds; the cases do not read live policy\n", encoding="utf-8")
+    return harness.run(
+        [npx, "tsx", str(VALIDATOR), *args],
+        cwd=paths.repo_root(),
+        env={
+            "DEVCONTAINER_API_BASE": base,
+            "DEVCONTAINER_FRESHNESS_FIXTURE": "",
+            "DEVCONTAINER_BLOCKLIST_FILE": str(blocklist or holds),
+            "DEVCONTAINER_DOCKERFILE": str(dockerfile),
+            "GITHUB_TOKEN": sentinel(),
+        },
+    )
+
+
+def by_base(gate, base: str) -> dict:
+    return next(src for src in sources(gate) if src["base"] == base)
+
+
+def test_fixture_keys_are_corpus_derived(gate):
+    """Anti-vacuity: the fixture maps cover every source the gate has, and `bw`, which the stale cases drive, is one of them."""
+    found = sources(gate)
+    if "bw" not in [src["base"] for src in found]:
+        gate.log_fail("the stale and fresh cases drive 'bw', which the subject no longer declares")
+    gate.log_pass(
+        "%d source(s) read out of the subject, bw among them: %s"
+        % (len(found), ", ".join(src["base"] for src in found))
+    )
+
+
+def test_control_every_listing_served_over_http_is_green(gate, tmp_path):
+    """The control for every red HTTP case below: the same stub, answering, is green."""
+    dockerfile = build_fixtures(gate, tmp_path)
+    count = len(sources(gate))
+    with stub_upstream(current_script(gate, dockerfile)) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+        gate.assert_exit(0, result, "every listing served over HTTP passes")
+        gate.assert_contains(
+            result.out,
+            "%d of %d compared with upstream, 0 held" % (count, count),
+            "the count of compared pins is printed",
+        )
+        gate.assert_eq(len(stub.requests), count, "one request per source reached the stub")
+        gate.assert_eq(stub.tokens_seen(), 0, "the token is not sent to a seam")
+    gate.log_pass("the stub upstream, answering, is green")
+
+
+def test_a_stale_pin_over_http_still_fires(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    bw = by_base(gate, "bw")
+    script[route(bw)][0][2].insert(0, release(bw["tagPrefix"] + "9999.1.0"))
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+    gate.assert_exit(1, result, "a pin behind an aged release fails over HTTP too")
+    gate.assert_contains(result.err, "upstream 9999.1.0", "the finding names the newer version")
+    gate.assert_contains(result.err, "--upgrade", "the fix is printed")
+    gate.assert_not_contains(result.err, "NOT compared", "a stale pin is not a failed fetch")
+    gate.log_pass("the HTTP path judges a listing the way the fixture path does")
+
+
+def test_an_unreachable_upstream_is_red(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    count = len(sources(gate))
+    bw = by_base(gate, "bw")
+    pinned = arg_value(dockerfile.read_text(encoding="utf-8"), "BW_VERSION")
+    port = closed_port()
+    result = run_gate_over_http(dockerfile, "http://127.0.0.1:%d" % port)
+    gate.assert_exit(1, result, "an upstream nothing answers on fails closed")
+    gate.assert_contains(
+        result.err,
+        "%d devcontainer pin(s) were NOT compared with upstream" % count,
+        "all are named",
+    )
+    gate.assert_contains(
+        result.err,
+        "%s (pinned %s): GET 127.0.0.1:%d%s -> network error ECONNREFUSED, after 3 attempt(s)"
+        % (bw["display"], pinned, port, route(bw)),
+        "the finding names the pin, the host and path, the error code and the attempts",
+    )
+    gate.assert_contains(
+        result.err,
+        "UPSTREAM REACHABILITY FAILURE (127.0.0.1:%d), not a stale pin" % port,
+        "the finding says what kind of red this is and names the host",
+    )
+    gate.assert_contains(result.out, "attempt 2 of 3 failed", "the retries are visible")
+    gate.assert_not_contains(result.out, "Every devcontainer pin", "no green line is printed")
+    gate.assert_not_contains(result.err, "per_page", "the query string is not printed")
+    assert_no_token(gate, result)
+    gate.log_pass("an unreachable upstream is red after three attempts")
+
+
+def test_a_rate_limit_is_red(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    dlv = by_base(gate, "dlv")
+    script[route(dlv)] = [RATE_LIMITED]
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+        gate.assert_eq(stub.asked(route(dlv)), 1, "a primary rate limit is not asked again")
+    gate.assert_exit(1, result, "a rate limit fails closed")
+    gate.assert_contains(result.err, "1 devcontainer pin(s) were NOT compared", "one finding")
+    gate.assert_contains(
+        result.err,
+        "%s -> HTTP 403 (rate limit, resets 2026-10-" % route(dlv),
+        "the finding names the path, the status and the reset",
+    )
+    gate.assert_contains(result.err, "after 1 attempt(s)", "the attempt count is printed")
+    assert_no_token(gate, result)
+    gate.log_pass("a rate limit is red at once")
+
+
+def test_a_persistent_server_error_is_red(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    dlv = by_base(gate, "dlv")
+    script[route(dlv)] = [status(503)]
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+        gate.assert_eq(stub.asked(route(dlv)), 3, "a 5xx is asked three times and no more")
+    gate.assert_exit(1, result, "a 5xx that outlasts the retry budget fails closed")
+    gate.assert_contains(result.err, "-> HTTP 503, after 3 attempt(s)", "status and attempts")
+    gate.log_pass("a persistent 5xx is red after the budget")
+
+
+def test_a_transient_failure_then_success_is_green(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    dlv = by_base(gate, "dlv")
+    bw = by_base(gate, "bw")
+    script[route(dlv)].insert(0, status(503))
+    script[route(bw)].insert(0, (429, {"retry-after": "1"}, {}))
+    count = len(sources(gate))
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+        gate.assert_eq(stub.asked(route(dlv)), 2, "the 503 is asked again once")
+        gate.assert_eq(stub.asked(route(bw)), 2, "the 429 is asked again once")
+    gate.assert_exit(0, result, "a failure that clears inside the retry budget passes")
+    gate.assert_contains(result.out, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
+    gate.assert_contains(
+        result.out, "%d of %d compared with upstream" % (count, count), "every pin was compared"
+    )
+    gate.log_pass("a transient failure followed by the listing is green")
+
+
+def test_a_listing_without_the_tag_prefix_is_red(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    dlv = by_base(gate, "dlv")
+    script[route(dlv)] = [ok([release("renamed-scheme-1.0.0")])]
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base)
+    gate.assert_exit(1, result, "a listing with no release under the prefix would pass forever")
+    gate.assert_contains(result.err, "cannot use", "the error says the listing is unusable")
+    gate.assert_contains(result.err, dlv["repo"], "the error names the repository")
+    gate.assert_not_contains(
+        result.err, "NOT compared", "an unusable answer is not a network failure"
+    )
+    gate.log_pass("a listing that lost the tag scheme is red")
+
+
+def test_a_held_pin_is_not_asked_and_is_counted(gate, tmp_path):
+    """A hold is an explicit, reasoned exemption, so a held pin is the one pin a green may leave uncompared, and the green line counts it."""
+    dockerfile = build_fixtures(gate, tmp_path)
+    script = current_script(gate, dockerfile)
+    dlv = by_base(gate, "dlv")
+    script[route(dlv)] = [status(503)]
+    holds = tmp_path / "blocklist-dlv"
+    holds.write_text(
+        "# BLOCKER: the next Delve release drops the Go version this image builds with; "
+        "holding until the image moves\ndlv\n",
+        encoding="utf-8",
+    )
+    count = len(sources(gate))
+    with stub_upstream(script) as stub:
+        result = run_gate_over_http(dockerfile, stub.base, blocklist=holds)
+        gate.assert_eq(stub.asked(route(dlv)), 0, "a held pin's upstream is not asked")
+    gate.assert_exit(0, result, "a held pin whose upstream is down does not fail the gate")
+    gate.assert_contains(
+        result.out,
+        "%d of %d compared with upstream, 1 held" % (count - 1, count),
+        "counted as held",
+    )
+    gate.log_pass("a held pin is not asked, and the green line says one was held")
+
+
+def test_a_source_with_no_arg_is_red(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    text = dockerfile.read_text(encoding="utf-8")
+    kept = [
+        line for line in text.splitlines(keepends=True) if not line.startswith("ARG DLV_VERSION=")
+    ]
+    gate.assert_eq(len(text.splitlines()) - len(kept), 1, "exactly one ARG line was removed")
+    dockerfile.write_text("".join(kept), encoding="utf-8")
+    result = run_gate(gate, tmp_path, dockerfile, "all-current.json")
+    gate.assert_exit(1, result, "a watched tool with no pin was not compared, which is not a pass")
+    gate.assert_contains(result.err, "no DLV_VERSION ARG in the Dockerfile", "the ARG is named")
+    gate.assert_not_contains(result.out, "Every devcontainer pin", "no green line is printed")
+    gate.log_pass("a source with no ARG is red")
+
+
+def test_upgrade_with_an_unreachable_upstream_is_red(gate, tmp_path):
+    dockerfile = build_fixtures(gate, tmp_path)
+    before = dockerfile.read_bytes()
+    result = run_gate_over_http(dockerfile, "http://127.0.0.1:%d" % closed_port(), "--upgrade")
+    gate.assert_exit(1, result, "--upgrade that could not ask upstream did not upgrade anything")
+    gate.assert_contains(result.err, "were NOT compared with upstream", "the finding is printed")
+    gate.assert_eq(dockerfile.read_bytes(), before, "the Dockerfile is untouched")
+    gate.log_pass("--upgrade fails closed when upstream is unreachable")
+
+
 def test_passes_when_current(gate, tmp_path):
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate(gate, tmp_path, dockerfile, "all-current.json")
     gate.assert_exit(0, result, "nothing behind upstream should pass")
+    count = len(sources(gate))
+    gate.assert_contains(
+        result.out, "%d of %d compared with upstream" % (count, count), "every pin was compared"
+    )
     gate.log_pass("current pins pass")
 
 
@@ -198,11 +507,19 @@ def test_defers_fresh_release(gate, tmp_path):
     gate.log_pass("fresh release is deferred by the soak")
 
 
-def test_fails_soft_when_uncheckable(gate, tmp_path):
+def test_a_source_absent_from_the_fixture_is_red(gate, tmp_path):
+    """Was `test_fails_soft_when_uncheckable`, which asserted exit 0 here. A source with no upstream answer was not compared, and that is not a pass."""
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate(gate, tmp_path, dockerfile, "empty.json")
-    gate.assert_exit(0, result, "sources that cannot be checked must not fail the build")
-    gate.log_pass("uncheckable sources fail soft")
+    gate.assert_exit(1, result, "sources that were not compared fail the gate")
+    gate.assert_contains(
+        result.err,
+        "%d devcontainer pin(s) were NOT compared with upstream" % len(sources(gate)),
+        "every source is a finding",
+    )
+    gate.assert_contains(result.err, "Bitwarden CLI (pinned ", "the finding names the pin")
+    gate.assert_not_contains(result.out, "Every devcontainer pin", "no green line is printed")
+    gate.log_pass("a source that was not compared is red")
 
 
 def test_blocklist_rejects_missing_reason(gate, tmp_path):
