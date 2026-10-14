@@ -1621,6 +1621,8 @@ def test_a_red_path_watching_another_step_is_no_red_path() -> None:
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/ \\\n  || true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\nrc=0\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\nlet rc=0\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\nrc=0; echo "rc=$rc" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\necho "rc=$rc" >> "$GITHUB_OUTPUT"; rc=0',
     ],
 )
 def test_an_rc_output_that_is_not_the_apply_exit_status_is_no_red_path(run) -> None:

@@ -1081,13 +1081,16 @@ def _pins_secret(value: object, condition: object = None) -> bool:
 _PINS_RC_CAPTURE_RE = re.compile(r"^\s*rc=\$\?\s*$")
 # Anything on the apply line that lets `$?` be another command's status: a pipe (no pipefail under the default shell), `||`, `;`, a background or `&&` operator, or a line continuation. A `>&`/`&>` redirection is not one.
 _PINS_MASK_RE = re.compile(r"\||;|(?<![>&])&(?![>&])|&&|\\\s*$")
-_PINS_RC_OUT_RE = re.compile(r"""\brc=\$\{?rc\}?"?\s*>>\s*"?\$\{?GITHUB_OUTPUT\}?""")
+# The write is a whole line of exactly this form, so nothing can share the line with it.
+_PINS_RC_OUT_RE = re.compile(
+    r"""^\s*echo\s+"?rc=\$\{?rc\}?"?\s*>>\s*"?\$\{?GITHUB_OUTPUT\}?"?\s*$"""
+)
 _PINS_RC_WORD_RE = re.compile(r"\brc\b")
 _PINS_NOT_COMMAND_RE = re.compile(r"^\s*(#|echo\b|printf\b)")
 
 
 def _pins_publishes_rc(run: str) -> bool:
-    """True when the apply command's own exit status becomes the `rc` step output: nothing on the apply line can mask it (`_PINS_MASK_RE`), the next non-blank line is `rc=$?`, a later line writes `rc=$rc` to $GITHUB_OUTPUT, and no other line after the capture names `rc` at all, so nothing can reassign it. A comment or echo naming the verb is not the apply line."""
+    """True when the apply command's own exit status becomes the `rc` step output: nothing on the apply line can mask it (`_PINS_MASK_RE`), the next non-blank line is `rc=$?`, a later line is exactly `echo "rc=$rc" >> "$GITHUB_OUTPUT"` with nothing else on it, and no line after the capture other than that write names `rc`, so nothing can reassign it. A comment or echo naming the verb is not the apply line."""
     lines = run.split("\n")
     for i, line in enumerate(lines):
         if not _PINS_APPLY_RE.search(line) or _PINS_NOT_COMMAND_RE.match(line):
@@ -1097,7 +1100,7 @@ def _pins_publishes_rc(run: str) -> bool:
         rest = [ln for ln in lines[i + 1 :] if ln.strip()]
         if not rest or not _PINS_RC_CAPTURE_RE.match(rest[0]):
             return False
-        writes = [ln for ln in rest[1:] if _PINS_RC_OUT_RE.search(ln)]
+        writes = [ln for ln in rest[1:] if _PINS_RC_OUT_RE.match(ln)]
         others = [ln for ln in rest[1:] if _PINS_RC_WORD_RE.search(ln) and ln not in writes]
         return bool(writes) and not others
     return False
