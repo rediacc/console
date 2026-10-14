@@ -238,7 +238,8 @@ def test_oracle_floor_skips_instead_of_condemning(gate):
     with harness.temp_dir() as root:
         make_fixture(gate, root)
         # The workspace manifests make_fixture copies would lift the oracle past its floor; this case needs the two-name root alone.
-        shutil.rmtree(root / "packages", ignore_errors=True)
+        if (root / "packages").exists():
+            shutil.rmtree(root / "packages")
         (root / "package.json").write_text(
             '{"name":"fixture","dependencies":{"a":"1.0.0","b":"1.0.0"}}\n', encoding="utf-8"
         )
