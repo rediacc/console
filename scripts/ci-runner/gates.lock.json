@@ -1247,11 +1247,6 @@
     "id": "check:ci-gate-manifest",
     "run": "npm run check:ci-gate-manifest",
     "gate": true,
-    "paths": [
-      "scripts/ci-runner/**",
-      "scripts/gates/check-gate-manifest.ts"
-    ],
-    "pathsOrigin": "declared",
     "leaves": [
       "scripts/gates/check-gate-manifest.ts"
     ],

@@ -2,7 +2,7 @@
 /**
  * check:ci-gate-manifest -- the ci-runner manifest describes itself honestly.
  *
- * Three oracles over `scripts/ci-runner/manifest.ts`, all mechanical, all
+ * Four oracles (three over `scripts/ci-runner/manifest.ts`, one over the tree), all mechanical, all
  * offline. They exist because the pre-push lane's whole value rests on the
  * manifest being true about two things nobody re-reads: which gates are cheap,
  * and which files select them.
@@ -60,6 +60,18 @@
  *    to the wrong semantics. Recorded here so the next reader does not
  *    "strengthen" this into a false gate.
  *
+ * 4. NO DEAD GATE ID IN PROSE OR COMMENTS. The `gate-test` namespace is retired: the bash battery
+ *    became pytest modules under `.ci/rediacc_ci/tests/gates/`, collected by `check:ci-pytest`, and
+ *    the lock holds no id in it. About forty such ids stayed in docs, code comments and guard
+ *    messages anyway, so a reader told to run one found nothing (`npm run <id>` exits 1 with zero
+ *    bytes on both streams, which reads as a gate failing for cause). A mention is a finding unless
+ *    it names an id the manifest registers, or it is marked as a HISTORICAL RECORD: a comment that
+ *    starts with the record marker (RECORD_MARKER below) on the same line or the line above, or the
+ *    file-level form (RECORD_FILE_MARKER) which covers a whole dated log. Both need a reason, and a
+ *    marker that covers no mention is itself a finding, so a record cannot outlive its mention.
+ *    Scope: tracked text files outside `agent/` (plans, ledgers and reviews are dated records by
+ *    construction) and outside `.json`/`.jsonl` data, which cannot carry a comment.
+ *
  * ---- gate ----
  * step: Gate manifest self-consistency
  * emit: false
@@ -105,7 +117,7 @@ function globToRegExp(glob: string): RegExp {
   return new RegExp(`^${body}$`);
 }
 
-interface Finding {
+export interface Finding {
   oracle: string;
   text: string;
 }
@@ -119,7 +131,7 @@ interface Finding {
  * below already takes the CHEAPEST of `recent` for exactly that reason -- but min-of-N
  * is only honest when at least one of the N was taken on a quiet machine, and after the
  * samples for a gate are cleared the next few runs can all land under load. On
- * 2026-09-06 gate-test:docs-gen and gate-test:media-args each held THREE samples, all
+ * 2026-09-06 the docs-gen and media-args gate tests each held THREE samples, all
  * contended (33.0s and 20.7s against an uncontended 0.9-7.1s), and this oracle read the
  * floor of three bad numbers as a verdict.
  *
@@ -141,7 +153,7 @@ export const MIN_SAMPLES_TO_TIER = 5;
  * costs, and the 21s reading was the machine, not the gate.
  *
  * "Is this gate too CHEAP to be marked slow" cannot use the same number, and using it
- * shipped a real near-miss. gate-test:dead-bash measured 349.8s, 297.1s, 318.4s, 264.8s
+ * shipped a real near-miss. The dead-bash gate test measured 349.8s, 297.1s, 318.4s, 264.8s
  * and 4.675s. The floor is 4.675s, so this oracle demanded `slow: true` be dropped from
  * a gate that takes FIVE MINUTES four runs out of five -- moving it into the pre-push
  * lane on the strength of one anomalous run that plainly did not do the work. A single
@@ -375,6 +387,138 @@ function globFindings(specs: readonly GateSpec[], tracked: readonly string[]): F
   return out;
 }
 
+/**
+ * The retired id namespace, built from parts so this file never carries a mention of its own
+ * and the oracle below has nothing to exempt here.
+ */
+const DEAD_PREFIX = ['gate', 'test'].join('-') + ':';
+/** `<prefix><name>`; a placeholder (`<name>`) or a glob (`*`) does not start with an alphanumeric. */
+const DEAD_ID_RE = new RegExp(
+  `(?<![\\w:-])${DEAD_PREFIX}([A-Za-z0-9][A-Za-z0-9._-]*[A-Za-z0-9]|[A-Za-z0-9])`,
+  'g'
+);
+const RECORD_MARKER = ['gate-id', 'record'].join('-') + ':';
+const RECORD_FILE_MARKER = ['gate-id', 'record', 'file'].join('-') + ':';
+const MIN_REASON = 12;
+/** Data files cannot carry a comment, so they cannot carry the marker either. */
+const DATA_FILE = /\.(json|jsonl)$/;
+/** A marker is the START of a comment, so prose that merely names the marker is not one. */
+const markerRe = (m: string): RegExp =>
+  new RegExp(`(?:^|\\s)(?:\\/\\/|#|\\*|\\/\\*|<!--)\\s*${m.replace(/[-:]/g, '\\$&')}\\s*(.*)$`);
+
+export interface TextFile {
+  path: string;
+  text: string;
+}
+
+/**
+ * Dead-id oracle over files already read. Pure, so the selftest drives it on fixture text.
+ * `registered` is the set of manifest ids; a mention of a registered id is fine.
+ */
+export function deadGateIdFindings(
+  registered: ReadonlySet<string>,
+  files: readonly TextFile[]
+): Finding[] {
+  const out: Finding[] = [];
+  const lineMarker = markerRe(RECORD_MARKER);
+  const fileMarker = markerRe(RECORD_FILE_MARKER);
+  const reasonOk = (r: string | undefined): boolean =>
+    (r ?? '').replace(/-->|\*\/\s*$/g, '').trim().length >= MIN_REASON;
+  for (const f of files) {
+    const lines = f.text.split('\n');
+    const fileLevel = lines.map((l) => fileMarker.exec(l)).find((m) => m !== null) ?? null;
+    let fileCovered = 0;
+    if (fileLevel !== null && !reasonOk(fileLevel[1])) {
+      out.push({
+        oracle: 'dead-id',
+        text: `${f.path}: a file-level record marker needs a reason of at least ${MIN_REASON} characters.`,
+      });
+    }
+    const coveredMarkers = new Set<number>();
+    lines.forEach((line, i) => {
+      DEAD_ID_RE.lastIndex = 0;
+      const ids = [...line.matchAll(DEAD_ID_RE)].map((m) => DEAD_PREFIX + m[1]);
+      if (ids.length === 0) return;
+      const live = ids.filter((id) => !registered.has(id));
+      if (live.length === 0) return;
+      if (fileLevel !== null && reasonOk(fileLevel[1])) {
+        fileCovered += 1;
+        return;
+      }
+      for (const at of [i, i - 1]) {
+        if (at < 0) continue;
+        const m = lineMarker.exec(lines[at]);
+        if (m !== null && reasonOk(m[1])) {
+          coveredMarkers.add(at);
+          return;
+        }
+      }
+      out.push({
+        oracle: 'dead-id',
+        text:
+          `${f.path}:${i + 1} names ${[...new Set(live)].join(', ')}, which no manifest entry registers; ` +
+          'the retired namespace now lives in pytest modules under .ci/rediacc_ci/tests/gates/, run by check:ci-pytest. ' +
+          'Name the module (or the real gate id) instead. A genuine historical record keeps the id with a comment ' +
+          `starting with ${RECORD_MARKER} <reason> on the same line or the line above, or ${RECORD_FILE_MARKER} <reason> for a whole log. ` +
+          'Do not add a path allowlist.',
+      });
+    });
+    lines.forEach((line, i) => {
+      if (!lineMarker.test(line) || coveredMarkers.has(i)) return;
+      DEAD_ID_RE.lastIndex = 0;
+      if (DEAD_ID_RE.test(line)) return; // same-line marker whose mention was judged above
+      out.push({
+        oracle: 'dead-id',
+        text: `${f.path}:${i + 1} carries a record marker with no dead id on its line or the next, so it exempts nothing; delete it.`,
+      });
+    });
+    if (fileLevel !== null && reasonOk(fileLevel[1]) && fileCovered === 0) {
+      out.push({
+        oracle: 'dead-id',
+        text: `${f.path} carries a file-level record marker but names no dead id; delete the marker.`,
+      });
+    }
+  }
+  return out;
+}
+
+/** Tracked text files outside agent/ that mention the retired namespace, read once. */
+function deadIdCorpus(tracked: readonly string[]): { files: TextFile[]; searched: number } {
+  const candidates = tracked.filter((f) => !f.startsWith('agent/') && !DATA_FILE.test(f));
+  let hits: string[] = [];
+  try {
+    hits = execFileSync(
+      'git',
+      [
+        'grep',
+        '-I',
+        '-l',
+        '-e',
+        DEAD_PREFIX,
+        '-e',
+        RECORD_FILE_MARKER,
+        '-e',
+        RECORD_MARKER,
+        '--',
+        '.',
+        ':!agent',
+      ],
+      { cwd: REPO, encoding: 'utf-8', maxBuffer: 64 * 1024 * 1024 }
+    )
+      .split('\n')
+      .filter(Boolean);
+  } catch (e) {
+    // git grep exits 1 for "no match", which is a legitimate empty answer; anything else is the tool failing.
+    const status = (e as { status?: number }).status;
+    if (status !== 1) throw e;
+  }
+  const set = new Set(candidates);
+  const files = hits
+    .filter((h) => set.has(h))
+    .map((h) => ({ path: h, text: fs.readFileSync(path.join(REPO, h), 'utf-8') }));
+  return { files, searched: candidates.length };
+}
+
 /** CONTROL-FIRST. Each oracle is run against a planted defect and must find it,
  *  and against a clean fixture and must not. A gate whose green has never been
  *  contrasted with a red is not evidence. */
@@ -387,7 +531,7 @@ function globFindings(specs: readonly GateSpec[], tracked: readonly string[]): F
  * suite silently shrinking to nothing, which a self-reported count never could.
  */
 let CONTROLS_RUN = 0;
-const MIN_CONTROLS = 19;
+const MIN_CONTROLS = 33;
 
 function selftest(tracked: readonly string[]): number {
   let bad = 0;
@@ -627,6 +771,72 @@ function selftest(tracked: readonly string[]): number {
     tracked.length > 500
   );
 
+  // Dead-id oracle. Every fixture is ASSEMBLED from DEAD_PREFIX so this file stays free of the namespace it polices.
+  const dead = (name: string): string => `${DEAD_PREFIX}${name}`;
+  const none = new Set<string>();
+  const one = (text: string, reg: ReadonlySet<string> = none): number =>
+    deadGateIdFindings(reg, [{ path: 'x.md', text }]).length;
+  check(
+    'dead-id: a mention of an unregistered retired id is caught',
+    one(`run ${dead('docs-gen')} to verify`) === 1
+  );
+  check(
+    'dead-id CONTROL: a mention of a REGISTERED id passes',
+    one(`run ${dead('docs-gen')}`, new Set([dead('docs-gen')])) === 0
+  );
+  check(
+    'dead-id CONTROL: a placeholder and a glob are not ids',
+    one(`the ${DEAD_PREFIX}<name> convention and ${DEAD_PREFIX}* ids`) === 0
+  );
+  check(
+    'dead-id CONTROL: the word without the colon is not a mention',
+    one('a gate-test battery, and gate-test@example.invalid') === 0
+  );
+  check(
+    'dead-id: two mentions on two lines are two findings',
+    one(`${dead('a-b')}\n${dead('c-d')}`) === 2
+  );
+  check(
+    'dead-id CONTROL: a same-line record marker with a reason passes',
+    one(`${dead('docs-gen')} ran then <!-- ${RECORD_MARKER} dated measurement, id existed -->`) ===
+      0
+  );
+  check(
+    'dead-id CONTROL: a record marker on the line above passes',
+    one(`// ${RECORD_MARKER} dated measurement, id existed\n${dead('docs-gen')} ran`) === 0
+  );
+  check(
+    'dead-id: a record marker two lines above covers nothing',
+    one(`// ${RECORD_MARKER} dated measurement, id existed\n\n${dead('docs-gen')} ran`) >= 1
+  );
+  check(
+    'dead-id: a record marker with no reason does not exempt',
+    one(`${dead('docs-gen')} <!-- ${RECORD_MARKER} x -->`) >= 1
+  );
+  check(
+    'dead-id: a marker that covers no mention is itself a finding',
+    one(`// ${RECORD_MARKER} dated measurement, id existed\nnothing here`) === 1
+  );
+  check(
+    'dead-id CONTROL: prose that names the marker is not a marker',
+    one(`write \`${RECORD_MARKER} reason\` to mark a record`) === 0
+  );
+  check(
+    'dead-id CONTROL: a file-level marker covers every mention in the file',
+    one(
+      `<!-- ${RECORD_FILE_MARKER} execution log, ids existed then -->\n${dead('a-b')}\n\n${dead('c-d')}`
+    ) === 0
+  );
+  check(
+    'dead-id: a file-level marker over a file with no mention is a finding',
+    one(`<!-- ${RECORD_FILE_MARKER} execution log, ids existed then -->\nclean`) === 1
+  );
+  const corpus = deadIdCorpus(tracked);
+  check(
+    'dead-id CONTROL: the corpus walk sees the tree, or an empty answer would look like a clean one',
+    corpus.searched > 500
+  );
+
   // The `**/` semantics this file deliberately does NOT gate on, pinned so the comment above cannot rot into a claim nobody can check.
   check(
     'the runner matcher treats **/ as zero-or-more dirs',
@@ -725,6 +935,13 @@ function main(): number {
     );
   }
 
+  const corpus = deadIdCorpus(tracked);
+  if (corpus.searched < 500) {
+    return refused(
+      `the dead-id oracle searched ${corpus.searched} tracked file(s); the tree is not being seen, so its green would mean nothing`
+    );
+  }
+
   const findings = [
     ...tierFindings(
       GATES,
@@ -738,11 +955,12 @@ function main(): number {
     ...leafFindings(GATES),
     ...globFindings(GATES, tracked),
     ...leafTrackedFindings(GATES, tracked),
+    ...deadGateIdFindings(new Set(GATES.map((g) => g.id)), corpus.files),
   ];
 
   if (findings.length === 0) {
     process.stdout.write(
-      `✓ gate manifest: ${GATES.length} entries, ${Object.keys(dur).length} locally measured, ${Object.keys(ciDur).length} CI-measured; tiers, leaves and globs all agree\n`
+      `✓ gate manifest: ${GATES.length} entries, ${Object.keys(dur).length} locally measured, ${Object.keys(ciDur).length} CI-measured; tiers, leaves and globs all agree; ${corpus.searched} text file(s) searched for the retired id namespace, ${corpus.files.length} still name it or a record marker\n`
     );
     return 0;
   }

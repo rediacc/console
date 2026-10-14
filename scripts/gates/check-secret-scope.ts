@@ -23,7 +23,7 @@
  * migration nobody has run. The baseline freezes that SET, and the write path goes
  * through scripts/lib/shrink-only-baseline.ts -- the shared guard the seven other
  * frozen-backlog gates use. Enforcing on the read path alone was the defect
- * `gate-test:shrink-only-composition` exists to catch: a reseed that drains thirty
+ * `test_gate_shrink_only_composition.py` exists to catch: a reseed that drains thirty
  * findings and absorbs one satisfies "the total did not grow" while violating "the
  * set only loses members", and prints a SMALLER number as it does it.
  *

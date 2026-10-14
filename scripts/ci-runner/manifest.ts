@@ -1200,8 +1200,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-gate-manifest',
     run: 'npm run check:ci-gate-manifest',
     gate: true,
-    paths: ['scripts/ci-runner/**', 'scripts/gates/check-gate-manifest.ts'],
-    pathsOrigin: 'declared',
+    // No `paths`: the dead-gate-id oracle reads every tracked text file outside agent/, so a doc edit can add a finding and must select this gate.
     leaves: ['scripts/gates/check-gate-manifest.ts'],
     ci: {
       kind: 'step',
@@ -2196,7 +2195,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // The parity half of scripts/gen/gen-docs.ts, and the reason it is NOT a strict subset of gate-test:docs-gen: gen-docs DISCOVERS its targets by scanning for markers and refuses only when the target list is EMPTY, while that gate test asserts merely that one target was found. So a document that loses its markers stops being checked instead of failing, silently, with both green.
+    // The parity half of scripts/gen/gen-docs.ts, and the reason it is NOT a strict subset of test_gate_docs_gen.py: gen-docs DISCOVERS its targets by scanning for markers and refuses only when the target list is EMPTY, while that gate test asserts merely that one target was found. So a document that loses its markers stops being checked instead of failing, silently, with both green.
     // Measured: strip CLAUDE.md's two marker lines and gen-docs still exits 0 saying `ok CLAUDE.md`. That is the rediacc/console#549 class and invariant 1, an emitter landing without its checker.
     //
     // No `paths:` DELIBERATELY. Its providers read the gates lock, the hook wiring, every tracked file carrying BLOCKER: and the whole .ci tree, so any list short of "the repository" is wrong, and a half-populated one makes --changed drop the gate silently.
@@ -5001,6 +5000,7 @@ export const GATES: readonly GateSpec[] = [
   },
 
   // RETIRED (2026-10-09): check:ci-quality-gates, the CI-side aggregate that ran every `.ci/scripts/test/gates/test-*.sh` through `.ci/rediacc_ci/battery.py` in ci-quality.yml's `quality-gate-tests` job, went with the last bash gate test. Every gate-test entry once flattened out of it is retired below with its subject, each ported to a pytest module collected by check:ci-pytest; the runner, its job and the `qualityGateTest` field are deleted, and check:ci-battery-clean-tree, which policed only the runner's tree snapshot, went with it.
+  // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED WITH ITS SUBJECT (W11-A, 2026-10-08): gate-test:run-sh ran .ci/scripts/test/gates/test-run-sh.sh, which is deleted. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_run_sh.py` is collected by check:ci-pytest, and the bare-checkout ubuntu-slim proof is ci.yml's run-sh-tests job, which runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`.
   {
     id: 'check:ci-release-bump-skip',
@@ -5030,10 +5030,13 @@ export const GATES: readonly GateSpec[] = [
         '${SITE_URL}/regions.json returns 404, so silent drift would ship to every install',
     },
   },
+  // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED WITH ITS SUBJECT (section 12 U3, operator D8 ASKED:2026-10-08T19:13Z): gate-test:toolchain ran .ci/scripts/test/gates/test-toolchain.sh, which is deleted. The pytest port `.ci/rediacc_ci/tests/gates/test_gate_toolchain.py` is collected by check:ci-pytest, and ci.yml's bare-checkout run-sh-tests job runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`, which now supplies `tmp_path`, so the no-pytest reason this entry once gave no longer holds.
+  // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED WITH ITS SUBJECT: gate-test:claude-hooks, the heaviest entry in this file at 537.4s, was a 40-line wrapper around `.claude/hooks/test-hooks.sh` and had no other work in it. The harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`, and its label multiset was compared run-against-run before the deletion rather than diff-against-diff. The ports are
   // collected by check:ci-pytest, whose `paths` already carry `.claude/hooks/**` and `.claude/rediacc_hooks/**`, so nothing lost selection when this entry left.
   //
+  // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED, AND THE LAST TWO `mutex: ['tree:repo']` ENTRIES WENT WITH THEM: gate-test:gate-anti-vacuity and gate-test:generate-tag-inputs. Their pytest ports carried the exclusive claim to check:ci-pytest for a while; since 2026-10-05 no pytest module writes the tracked tree, and check:ci-pytest holds no `tree:` claim (see its entry).
   {
     id: 'check:ci-pytest',
@@ -5052,6 +5055,7 @@ export const GATES: readonly GateSpec[] = [
     // NO CLAIM ON THE BUILT SITE SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md). From #40adcff7 this gate held `reads: ['www-dist']` because test_gate_player_css_scope.py and test_gate_client_bundle_budget.py read packages/www/dist when one existed, and build:www (`mutex: ['www-dist']`) empties it before repopulating it (one --only run paired them and a real-dist case scanned 719 of 1842 pages). In the one-pass pre-push that claim made build:www wait out the whole pytest wall (1022.9 s) and run in the tail. Those arms now run only under REDIACC_PYTEST_REAL_DIST=1: the real dist is check:ci-player-css-scope's and check:ci-client-bundle-budget's own subject, each with `needs: ['build:www']`, and CI's quality-pytest builds no site.
     // The old set was ['.ci/rediacc_ci/**', 'pyproject.toml'] and could not see two things this gate actually runs: `.claude/rediacc_hooks/**` is a testpaths root, and `.ci/scripts/test/gates/**` holds the twins test_twin_parity drives. Under `--changed` an edit to either did not select this gate, which is a path filter reporting a pass over code it never looked at.
     //
+    // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
     // WIDENED AGAIN WHEN gate-test:claude-hooks WAS RETIRED, and the widening is the whole reason that retirement does not open a selection hole. The four entries below carried the SUBJECTS of the harness this gate now collects: the guards and the chain head under `.claude/hooks/**`, the wiring the settings file declares, the git fixture the trapguard cases source, and the
     // inline-python detector whose verdicts those cases assert. The harness declared every one of them; dropping its entry without moving them would have left editing a guard select no gate that runs it, which is the same pass-over-unread-code this comment already records once.
     paths: [
@@ -5111,8 +5115,11 @@ export const GATES: readonly GateSpec[] = [
       step: 'Package key budget',
     },
   },
+  // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED WITH ITS SUBJECT (section 12 U1): gate-test:blocker-golden-corpus ran .ci/scripts/test/gates/test-blocker-golden-corpus.sh, deleted with .ci/scripts/lib/blocker-validator.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py` is collected by check:ci-pytest and answers the frozen golden `lib.blocker-validator.jsonl`.
+  // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED WITH ITS SUBJECT (section 12 U2): gate-test:media-r2 ran .ci/scripts/test/gates/test-media-r2.sh, deleted with the then-dead .ci/media/verify.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_media_r2.py` is collected by check:ci-pytest and answers its frozen golden.
+  // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED WITH ITS SUBJECT (section 12 U1): gate-test:runner-advice ran .ci/scripts/test/gates/test-runner-advice.sh, deleted with .ci/scripts/lib/emit-advisory.sh. Its pytest port `.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py` is collected by check:ci-pytest.
   {
     // A sweep added retry_schema_exhaustion to the judge call sites one at a time and MISSED THE FIFTH, in wl_shapedup.py -- the commit that found it says so in its own subject. Five examples checked individually is not the claim that the set is uniform, and the fifth is what an example-based sweep drops. Enumerated from source, so a sixth site is covered the day it is written.

@@ -1,5 +1,7 @@
 # Full-run timing baseline
 
+<!-- gate-id-record-file: dated timing baseline; the ids it lists were measured while they existed -->
+
 Status: done
 Owner: 8f55d4f0
 Updated: 2026-09-06

@@ -3880,7 +3880,7 @@ async function selftest(): Promise<void> {
     lf1.status === 0 && lf1.other.filter((l) => l.includes('--package-lock-only')).length === 1,
     lf1.other.join('\n')
   );
-  const lfBad = runFixture(workers, 'upgrade', ['lockfiles', 'packages/nope']);
+  const lfBad = runFixture(workers, 'upgrade', ['lockfiles', ['packages', 'nope'].join('/')]);
   expect(
     'lockfile: CONTROL: an unknown directory is refused and nothing runs',
     lfBad.status === 1 &&
@@ -4126,7 +4126,7 @@ async function selftest(): Promise<void> {
   );
   for (const [where, file] of [
     ['scripts/', 'scripts/tool.ts'],
-    ['a tests directory', 'packages/cli/tests/use.test.ts'],
+    ['a tests directory', ['packages', 'cli', 'tests', 'use.test.ts'].join('/')],
   ] as const) {
     const deep = runFixture(
       rmSpec({

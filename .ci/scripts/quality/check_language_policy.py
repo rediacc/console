@@ -317,7 +317,7 @@ def dead_entries(
 # --------------------------------------------------------------------------- The shrink-only guard ---------------------------------------------------------------------------
 #
 # This is a faithful port of the DECISION half of scripts/lib/shrink-only-baseline.ts (`baselineAdditions` and `writeBaselineVerdict`), kept in Python because ruling 7 puts this gate in `.ci`. There is no Python binding for that module today and building one under `.ci/rediacc_ci/` would collide with the port that is in flight there this hour; see the report accompanying this gate,
-# which names the resulting coverage gap in gate-test:shrink-only-composition out loud rather than leaving it to be discovered.
+# which names the resulting coverage gap in test_gate_shrink_only_composition.py out loud rather than leaving it to be discovered.
 #
 # ORDER IS LOAD-BEARING in `write_verdict`, exactly as it is in the twin: the missing baseline is decided FIRST, because every later rule reads the old set and with no file there is no old set. Deleting the baseline is otherwise the cheapest way to
 # switch the whole rule off.

@@ -37,7 +37,7 @@ ALL_WORKSPACES = frozenset(("--workspaces", "-ws", "--ws"))
 EDGE_CASES = [
     ("a name no package.json defines", "npm run does-not-exist-example"),
     ("run-script is the same verb", "npm run-script does-not-exist-example"),
-    ("a manifest id that is not a root script", "npm run gate-test:trap-registry"),
+    ("a manifest id that is not a root script", "npm run test:write-once-guard"),
     ("a flag before the name is skipped", "npm run --silent does-not-exist-example"),
     ("a cd carries the package", "cd packages/cli && npm run check:ci-python-lint"),
     ("--prefix names the package", "npm --prefix packages/cli run check:ci-python-lint"),

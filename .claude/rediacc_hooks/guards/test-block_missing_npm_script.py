@@ -24,7 +24,7 @@ CASES = [
     # (name, command, expect_blocked)
     ("a name no package.json defines", "npm run " + MISSING, True),
     ("run-script spelling", "npm run-script " + MISSING, True),
-    ("a manifest id with no root script", "npm run gate-test:trap-registry", True),
+    ("a manifest id with no root script", "npm run test:write-once-guard", True),
     ("a root script typed into a package", "cd packages/cli && npm run check:ci-python-lint", True),
     ("--prefix governs", "npm --prefix packages/cli run check:ci-python-lint", True),
     ("-w by path governs", "npm -w packages/cli run check:ci-python-lint", True),
@@ -75,8 +75,8 @@ for name, cmd, want in CASES:
     )
 
 # The refusal must name the resolved file and a real neighbour, or it is a silent red with extra steps.
-rc, err = answer("npm run gate-test:trap-registry")
-named = "package.json" in err and "check:ci-trap-registry" in err
+rc, err = answer("npm run test:write-once-guard")
+named = "package.json" in err and "Nearest real scripts in that file: " in err
 fails += not named
 print("%-42s %s" % ("message names file and nearest script", "ok" if named else "*** FAIL ***"))
 

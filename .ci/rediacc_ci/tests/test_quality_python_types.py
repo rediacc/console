@@ -222,7 +222,7 @@ def test_the_baseline_path_the_subject_writes_is_the_one_committed():
 
 
 def test_the_gate_module_reaches_the_shared_composition_guard():
-    """`gate-test:shrink-only-composition`'s rule, asserted by this gate's own suite.
+    """`test_gate_shrink_only_composition.py`'s rule, asserted by this gate's own suite.
 
     Not a duplicate of that meta-gate: it asks the question of every writer in the tree and would name this file among several, while this one fails with this gate's name and this gate's reason. The import is the load-bearing half -- a local re-derivation of the decision is a second implementation that can drift from the one every other baseline uses.
     """

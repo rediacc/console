@@ -17,7 +17,7 @@ from rediacc_ci import paths
 from rediacc_ci.quality import env_manifest as em
 from rediacc_ci.quality import env_register as er
 
-# Rendered, never written out: gate-test:shrink-only-composition reads the contiguous flag in a .py file as a baseline writer that bypasses the guard (test_gate_language_policy.py keeps the same constant for the same reason).
+# Rendered, never written out: test_gate_shrink_only_composition.py reads the contiguous flag in a .py file as a baseline writer that bypasses the guard (test_gate_language_policy.py keeps the same constant for the same reason).
 DRAIN_FLAG = "--write-" + "baseline"
 
 FLAG_WHY = (

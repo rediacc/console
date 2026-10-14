@@ -10,7 +10,7 @@ Every fire case has its control: the same fixture, one thing changed, and the op
 --------------------------------------------------------------------------
 WHY THIS MODULE NO LONGER DECLARES `REAL_TREE_TWIN` (section 12 U1, 2026-10-08)
 --------------------------------------------------------------------------
-`gate-test:runner-advice` was retired from the manifest with its bash twin, so `gates.lock.json` carries no `tree:repo` read for it and `real_tree_admission` in `test_twin_parity.py` refuses a declaration the lock does not back. Three cases still read the tracked tree and write nothing: `test_real_tree_seam_free` (the real baseline, workflows and allowlist), `test_awk_and_python_agree_on_the_verdict` (the real `report.awk`) and `test_real_allowlist_blockers_are_substantive` (the real allowlist through `rediacc_ci.core.blocker_validator`). A pure reader needs no group.
+The `runner-advice` gate test was retired from the manifest with its bash twin, so `gates.lock.json` carries no `tree:repo` read for it and `real_tree_admission` in `test_twin_parity.py` refuses a declaration the lock does not back. Three cases still read the tracked tree and write nothing: `test_real_tree_seam_free` (the real baseline, workflows and allowlist), `test_awk_and_python_agree_on_the_verdict` (the real `report.awk`) and `test_real_allowlist_blockers_are_substantive` (the real allowlist through `rediacc_ci.core.blocker_validator`). A pure reader needs no group.
 
 --------------------------------------------------------------------------
 WHY THE MODULE-LEVEL CASES STILL SHELL OUT TO python3

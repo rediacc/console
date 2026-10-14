@@ -1,5 +1,7 @@
 # 07. Tooling-transformation decisions
 
+<!-- gate-id-record-file: dated decision log; the gate ids it names existed when each decision was taken -->
+
 [04-decisions.md](04-decisions.md) is the CI-overhaul record: what the operator locked, what was taken on recommendation, what is still open. This file is its sibling for the twelve workstream tooling transformation, and it exists for one reason.
 
 [08-driver-contract.md](08-driver-contract.md) records the conflicts found BEFORE the program started, when twelve independently drafted plans were compared. It cannot record what is decided DURING it. Those decisions were landing in code comments, where the next agent reads the comment, disagrees with a sentence rather than with a decision, and quietly reverses it. That has

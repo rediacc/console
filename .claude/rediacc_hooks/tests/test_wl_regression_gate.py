@@ -25,14 +25,14 @@ PKG_RUNNER_CI = '{"name":"p","version":"0.0.0","scripts":{"ci":"tsx scripts/ci-r
 
 MANIFEST_TS = (
     "export const GATES = [\n"
-    "  { id: 'gate-test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh',"
+    "  { id: 'test:real-thing', run: '.ci/scripts/test/gates/test-real-thing.sh',"
     " gate: true },\n"
     "];\n"
 )
 
 GATES_LOCK = (
     "[\n"
-    '  { "id": "gate-test:real-thing", "run": ".ci/scripts/test/gates/test-real-thing.sh",'
+    '  { "id": "test:real-thing", "run": ".ci/scripts/test/gates/test-real-thing.sh",'
     ' "gate": true }\n'
     "]\n"
 )
@@ -274,7 +274,7 @@ def test_91_control_a_manifest_id_citation_that_does_not_exist_still_hallucinate
     wl.shim_judge(
         judge_verdict(
             blind_spot="uncovered path",
-            existing_gate="gate-test:i-dreamed-this",
+            existing_gate="test:i-dreamed-this",
             recurring=True,
             instruction="write a gate",
         )
@@ -296,14 +296,14 @@ def test_92_a_fix_covered_by_a_real_gate_test_manifest_id_settles(wl):
     wl.shim_judge(
         judge_verdict(
             blind_spot="no check compared refs",
-            existing_gate="gate-test:real-thing",
+            existing_gate="test:real-thing",
             recurring=True,
         )
     )
     wl.checkj(
         "allow",
         "settled as covered",
-        "a REAL gate-test:* manifest id settles as covered",
+        "a REAL non-check manifest id settles as covered",
     )
     assert '"verdict": "covered"' in marker.read_text(encoding="utf-8"), (
         "the manifest-id citation was not recorded as covered: %s"

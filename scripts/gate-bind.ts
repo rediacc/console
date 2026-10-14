@@ -3021,10 +3021,7 @@ function main(argv: string[]): void {
 
   const problems: string[] = [];
   for (const b of declared) {
-    // A GATE-TEST IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. The gate-id-convention gate requires a gate-test to be registered as `gate-test:<name>` whose `run` points at the script directly, with no
-    // package.json entry at all: 148 keys that only ever restate a path would be 148 keys
-    // against the package key budget for nothing. Checking these against package.json would therefore red all 148 the moment they became subjects, for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not "is it flagged a gate-test". Those are the same set for the 148 under
-    // .ci/scripts/test/gates, and they diverge for `test:install-script` and `test:write-once-guard`, which are registered exactly the same way (run: the .sh path, no package.json key) and carry no `qualityGateTest`. Keying on the flag refused both the moment they declared a header on 2026-09-06, for a convention they follow correctly.
+    // A SCRIPT THE LOCK RUNS DIRECTLY IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. `test:install-script` and `test:write-once-guard` are registered as a bare path in `run` with no package.json key, so checking them against package.json would red them for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not an id prefix. (The bash gate-test battery that first needed this is gone; the two entries above are the remaining members.)
     const lockEntry = lockById.get(b.id);
     const runsScriptDirectly =
       lockEntry !== undefined &&

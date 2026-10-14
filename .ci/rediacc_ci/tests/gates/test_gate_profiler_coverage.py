@@ -8,7 +8,7 @@ CI-coverage claim true.
 Every fire case has its control: the same fixture, one thing changed, and the opposite verdict asserted. A gate that cannot be made to fire is not a gate.
 
 `test_real_tree_seam_free` SWEEPS THE REAL `.github/workflows`,
-`test_setup_workspace_is_builtin_coverage` and `test_wrapper_that_lost_the_profiler_refuses` read the real `.github/actions/setup-workspace`, and `test_undeclared_input_fails` is checked against the real `.github/actions/profiler/action.yml`. All are reads, and no `XDIST_GROUP` is declared: `gates.lock.json` no longer carries a `gate-test:profiler-coverage` entry, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
+`test_setup_workspace_is_builtin_coverage` and `test_wrapper_that_lost_the_profiler_refuses` read the real `.github/actions/setup-workspace`, and `test_undeclared_input_fails` is checked against the real `.github/actions/profiler/action.yml`. All are reads, and no `XDIST_GROUP` is declared: `gates.lock.json` no longer carries an entry for the retired `profiler-coverage` gate test, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
 
 --------------------------------------------------------------------------
 IS THIS FILE VISIBLE TO THE SWEEP IT DRIVES? NO, AND IT IS CHECKED

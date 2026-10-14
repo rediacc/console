@@ -1,5 +1,7 @@
 # Progress: what has actually been built
 
+<!-- gate-id-record-file: dated progress log; the gate ids it names existed when each entry was written -->
+
 The other documents in this folder describe the plan. This one records what landed, with evidence, and it is the file to update when the code moves. It was created on 2026-07-29 because the design docs had drifted **44 commits** behind `.ci/`, `.github/` and `.claude/` on branch `0728-2`, which is exactly the failure the Stop hook's design-doc check now blocks.
 
 Everything below is on **PR #543** (branch `0728-2`) unless stated otherwise. README's line "Nothing in it has been built" is no longer true; start here.

@@ -295,7 +295,7 @@ than blocked: a check that cannot fail, a ruling taken on faith, a comment that 
 
 ### The shape of the gate estate
 
-Both tables below are GENERATED from `scripts/ci-runner/gates.lock.json` and `.claude/settings.json` by `npx tsx scripts/gen/gen-docs.ts --write`, and verified by `gate-test:docs-gen`, which fails on drift either way. Do not hand-edit between the markers, and do not quote a number out of them into prose elsewhere: that is how `ci-gates.md` came to tell readers there were "254 fast
+Both tables below are GENERATED from `scripts/ci-runner/gates.lock.json` and `.claude/settings.json` by `npx tsx scripts/gen/gen-docs.ts --write`, and verified by `check:ci-doc-region-parity` and `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py` (collected by `check:ci-pytest`), which fail on drift either way. Do not hand-edit between the markers, and do not quote a number out of them into prose elsewhere: that is how `ci-gates.md` came to tell readers there were "254 fast
 gates" against a live 312. Per-gate detail is in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md).
 
 <!-- >>> gen-docs: gates-summary -->

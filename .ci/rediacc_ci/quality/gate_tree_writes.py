@@ -22,7 +22,7 @@ not recognise).
 
 REGISTRATION IS CHECKED BOTH WAYS on every lock entry: `writesTree` without an exclusive `tree:` claim is red, and an exclusive `tree:` claim without `writesTree` is red. The rule is otherwise one-directional, as pool_writer_safety's is: a `writesTree` entry with no TREE site is listed as `declared, no site found`, never red.
 
-THE MUTEX IS THE WEAK FIX. It serialises the writer only against the other declared `tree:` claimants (today check:ci-pytest and gate-test:runner-advice); the hundreds of scanners that read the tree declare nothing and still overlap it, and no claim helps with the residue a hard kill leaves. Writing to a temp copy is the real fix, and every red says so.
+THE MUTEX IS THE WEAK FIX. It serialises the writer only against the other declared `tree:` claimants (the entries in scripts/ci-runner/manifest.ts that still declare one); the hundreds of scanners that read the tree declare nothing and still overlap it, and no claim helps with the residue a hard kill leaves. Writing to a temp copy is the real fix, and every red says so.
 
 CONTROLS FIRST, both directions, on every run before the real verdict (PLAN section 4, C1-C10, plus C11-C12 for bash): a fixture tree is planted in a TemporaryDirectory, copied never symlinked, and driven through the same pipeline via `--root/--lock/--pkg`. REAL then asserts on the live tree: the lint-rule-liveness closure reaches the `.mjs`, at least one TEMP and one MODE-GATED site exist, and `check:ci-pytest`
 carries both `tree:repo` and `writesTree`.
@@ -103,7 +103,7 @@ SEVERITY = {
 MUTEX_ADVICE = (
     "Prefer writing to a temp copy (tempfile / os.tmpdir() / a mirror), which also survives a hard kill. The fallback is "
     "`mutex: ['tree:repo']` plus `writesTree: '<reason>'` on the entry in scripts/ci-runner/manifest.ts, and it is weak: it "
-    "serialises only against the other declared tree: claimants (today check:ci-pytest and gate-test:runner-advice)."
+    "serialises only against the other declared tree: claimants (the entries in scripts/ci-runner/manifest.ts that still declare one)."
 )
 
 

@@ -9,7 +9,7 @@ built that way reports perfect parity forever. `test_step_name_is_not_an_invocat
 HOW IT IS DRIVEN, and why the port is a transcription rather than a reimplementation. Every case builds a throwaway repository under a temp dir and points the subject at it through `CI_PARITY_ROOT` / `CI_PARITY_MANIFEST`. The subject stays the real TypeScript gate, invoked exactly as the twin invokes it, so what is being compared between the two sides is the FIXTURE and the
 ASSERTIONS, never two independent reimplementations of the detector. No tracked file is written by any case here.
 
-NO CASE WRITES THE TREE, and no `XDIST_GROUP` is declared either: this module has no `BASH_TWIN` of its own (it drives `check-ci-parity.ts` directly), `gates.lock.json` no longer carries a `gate-test:ci-parity` entry, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN`. A pure reader needs no group.
+NO CASE WRITES THE TREE, and no `XDIST_GROUP` is declared either: this module has no `BASH_TWIN` of its own (it drives `check-ci-parity.ts` directly), `gates.lock.json` no longer carries an entry for the retired `ci-parity` gate test, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN`. A pure reader needs no group.
 
 THE FIXTURE IS A REAL GIT REPOSITORY, not a directory of files, and that is not tidiness: `loadScripts()` in the subject derives its tracked set from `git ls-files`, so a fixture with no index exercises a code path the gate does not have and every case would fail for the wrong reason.
 """

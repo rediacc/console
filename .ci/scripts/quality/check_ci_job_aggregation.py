@@ -4,7 +4,7 @@
 The logic lives in `rediacc_ci.quality.ci_job_aggregation`; this file exists so the registry can invoke it BY PATH, which is the only invocation form `check-ci-parity`'s tokenizer can read (`gate-header.ts`'s `derivedRun` records why a `-m` command resolves its leaves to `[python3]` and fails parity).
 
 THIS GATE HAS NEVER RUN, AND THAT IS WHY IT CARRIES A HEADER WHERE ITS SIBLINGS DO NOT.
-`check-ci-job-aggregation.sh` is invoked by NOTHING: no `package.json` key, no `manifest.ts` entry, no workflow `run:` line, no wrapper. CI runs its gate TEST (`gate-test:ci-job-aggregation`) and never the gate, so its logic has been exercised against fixtures while never once judging the real repository -- and `check:ci-parity` cannot see that, because a gate absent from BOTH
+`check-ci-job-aggregation.sh` is invoked by NOTHING: no `package.json` key, no `manifest.ts` entry, no workflow `run:` line, no wrapper. CI runs its gate TEST (`test_gate_ci_job_aggregation.py`, collected by `check:ci-pytest`) and never the gate, so its logic has been exercised against fixtures while never once judging the real repository -- and `check:ci-parity` cannot see that, because a gate absent from BOTH
 sides is absent from the comparison. Found 2026-09-08 while cutting W7 P4 over: it was one of only three of the last thirteen twins with no registration to repoint.
 
 So this is not a cutover, it is a FIRST registration, and it goes in through a `---- gate ----` header plus one driver `gate:bind --write` rather than by hand. Driven against the real tree before registering: exit 0.

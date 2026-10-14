@@ -3,7 +3,7 @@
  * check:ci-doc-region-parity -- the committed bytes of every `gen-docs` region must equal
  * what the providers would emit RIGHT NOW, and every provider must still be used by one.
  *
- * WHY THIS EXISTS AT ALL, GIVEN gate-test:docs-gen ALREADY RUNS THE GENERATOR.
+ * WHY THIS EXISTS AT ALL, GIVEN test_gate_docs_gen.py ALREADY RUNS THE GENERATOR.
  *
  * `.ci/rediacc_ci/tests/gates/test_gate_docs_gen.py` case A runs `gen-docs` in verify mode and then
  * asserts one thing about the result: `grep -q '^ok '`, i.e. AT LEAST ONE target was named.

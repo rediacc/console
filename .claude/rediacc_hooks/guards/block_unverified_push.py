@@ -657,7 +657,7 @@ def _read_json(path):
         return None
 
 
-#: The substance bar for a keyed entry: the one .dead-bash-allowlist uses and gate-test:dead-bash pins with a low-effort-BLOCKER case. A bare "known issue" excuses nothing.
+#: The substance bar for a keyed entry: the one .dead-bash-allowlist uses and test_gate_dead_bash.py pins with a low-effort-BLOCKER case. A bare "known issue" excuses nothing.
 REASON_MIN = 80
 #: The stricter bar for `"findings": "*"`, a whole-gate carry. It is only for a gate that does not speak the `::finding::` protocol yet, so it must say more.
 STAR_REASON_MIN = 160
