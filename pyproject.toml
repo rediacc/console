@@ -302,6 +302,10 @@ ignore = [
 ".ci/rediacc_ci/ci/github_status.py" = [
     # BLOCKER: a verdict or status publisher has to post `unknown` rather than crash, because a crash or a render bug loses the verdict the run already produced, and a status note or sample must never change or break the caller it reports for
     "BLE001",
+    # BLOCKER: the Stop hook and ci-trace load this module by file path, where rediacc_ci is not importable, so it cannot import rediacc_ci.core.https; the URL it opens is the module constant SUMMARY_URL, an https literal, never caller input
+    "S310",
+    # BLOCKER: the Stop hook and ci-trace load this module by file path, where `rediacc_ci` is not importable by name, so _core_lease() tries the import and falls back to loading core_lease.py by path on ImportError; the import has to sit inside that try
+    "PLC0415",
 ]
 ".ci/scripts/ci/ci-trace.py" = [
     # BLOCKER: a verdict or status publisher has to post `unknown` rather than crash, because a crash or a render bug loses the verdict the run already produced, and a status note or sample must never change or break the caller it reports for
@@ -318,10 +322,14 @@ ignore = [
 ".ci/rediacc_ci/security/workflow_gates.py" = [
     # BLOCKER: the bash heredoc this replaced exited 1 on any traceback, so the port catches every exception at that one boundary to translate it into the same exit 1 the workflow already keys on
     "BLE001",
+    # BLOCKER: pyyaml is an optional dependency here: _ensure_yaml() IS the bootstrap that pip-installs it when the import fails and imports it again after invalidating the import caches, so neither import can be hoisted above the installer
+    "PLC0415",
 ]
 ".ci/rediacc_ci/security/ci_workflow_invariants.py" = [
     # BLOCKER: the bash heredoc this replaced exited 1 on any traceback, so the port catches every exception at that one boundary to translate it into the same exit 1 the workflow already keys on
     "BLE001",
+    # BLOCKER: pyyaml is an optional dependency here: _import_yaml() probes for it and returns None when it is absent, which the caller reports as a SETUP exit instead of a traceback, so the import has to sit inside that probe
+    "PLC0415",
 ]
 ".ci/rediacc_ci/testrun/install_methods.py" = [
     # BLOCKER: an install test or phase that raises is a FAILED test, recorded and counted, and must not end the run before the remaining methods and platforms are tried
@@ -338,6 +346,57 @@ ignore = [
 "conftest.py" = [
     # BLOCKER: the root conftest's audit hook records which test wrote into the tree, and an audit hook that raises aborts the operation it audits, where a lost record is only a weaker attribution
     "BLE001",
+]
+".ci/rediacc_ci/ci/ci_diagnose.py" = [
+    # BLOCKER: ci-trace.py loads this module by file path with no `.ci` on sys.path, so it cannot import rediacc_ci.core.https; its _open refuses any URL that does not start with https:// on the line before the Request
+    "S310",
+    # BLOCKER: ci-trace.py loads this module by file path, so `.ci` is not on sys.path until _gh_retry() has loaded paths.py by file and called on_sys_path; `rediacc_ci.core.gh_retry` cannot be imported before that call runs, and `python3 -c 'import rediacc_ci'` from outside .ci fails
+    "PLC0415",
+]
+# THE RESIDUE: one file each, every entry re-proved on every lint run by rediacc_ci.quality.lint_config_liveness.
+".ci/rediacc_ci/core/allowlist.py" = [
+    # BLOCKER: rediacc_ci.well_known raises RegistryError at import when .ci/config/well-known.env is missing (measured by importing a copy of the package without .ci/config), and allowlist.py has to keep every other verb working in a sparse checkout, so only _default_repo(), the one verb that needs the registry, imports it
+    "PLC0415",
+]
+".ci/rediacc_ci/quality/gh_retry_reads.py" = [
+    # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import rediacc_hooks'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
+    "PLC0415",
+]
+".ci/rediacc_ci/quality/hook_exec_baseline.py" = [
+    # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import rediacc_hooks'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
+    "PLC0415",
+]
+".ci/rediacc_ci/deploy/turnstile_drift.py" = [
+    # BLOCKER: main() is the exit-code boundary of the drift check, and its docstring contract is that an unexpected exception is exit 2 (no verdict), never Python's default 1, which a workflow reads as drift; any narrower handler would turn an unknown crash back into exit 1
+    "BLE001",
+]
+".ci/rediacc_ci/core/account_lifecycle.py" = [
+    # BLOCKER: STORE_PASSWORD is the published dev constant the dev banner prints for the local config store; the value is a dev or fixture constant that exists in no secret store and unlocks no production system, so it cannot be read from the environment without making the drill or gate unrunnable offline, and every other file stays held to S105
+    "S105",
+]
+".ci/rediacc_ci/drills/backup.py" = [
+    # BLOCKER: DRILL_PASSWORD is a throwaway login the drill chooses for its own local dev gateway; the value is a dev or fixture constant that exists in no secret store and unlocks no production system, so it cannot be read from the environment without making the drill or gate unrunnable offline, and every other file stays held to S105
+    "S105",
+]
+".ci/rediacc_ci/drills/license.py" = [
+    # BLOCKER: DRILL_PASSWORD is a throwaway login the drill chooses for its own local dev gateway; the value is a dev or fixture constant that exists in no secret store and unlocks no production system, so it cannot be read from the environment without making the drill or gate unrunnable offline, and every other file stays held to S105
+    "S105",
+]
+".ci/rediacc_ci/drills/transfer.py" = [
+    # BLOCKER: DRILL_PASSWORD and STORE_PASSWORD are throwaway dev-gateway values the drill chooses, the second constant by necessity because a re-seed cannot re-wrap the CEK without it; the value is a dev or fixture constant that exists in no secret store and unlocks no production system, so it cannot be read from the environment without making the drill or gate unrunnable offline, and every other file stays held to S105
+    "S105",
+]
+".ci/rediacc_ci/drills/universe.py" = [
+    # BLOCKER: PASSWORD is a throwaway login the drill chooses for its own local dev gateway; the value is a dev or fixture constant that exists in no secret store and unlocks no production system, so it cannot be read from the environment without making the drill or gate unrunnable offline, and every other file stays held to S105
+    "S105",
+]
+".ci/rediacc_ci/quality/proxy_image_smoke.py" = [
+    # BLOCKER: EXECUTOR_TOKEN and CALLER_TOKEN are fixture bearer tokens for a fake account server this script starts on loopback, and authenticate against nothing real; the value is a dev or fixture constant that exists in no secret store and unlocks no production system, so it cannot be read from the environment without making the drill or gate unrunnable offline, and every other file stays held to S105
+    "S105",
+]
+".ci/rediacc_ci/quality/release_key_canonical.py" = [
+    # BLOCKER: PASSPHRASE protects a throwaway GPG key the gate generates for itself and discards; the value is a dev or fixture constant that exists in no secret store and unlocks no production system, so it cannot be read from the environment without making the drill or gate unrunnable offline, and every other file stays held to S105
+    "S105",
 ]
 
 # NAMES, NOT FILES: a module imported only for what its import DOES. Held to the

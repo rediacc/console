@@ -7,10 +7,6 @@
   ".ci/rediacc_ci/ci/budget_report.py": {
    "noqa S314": 2
   },
-  ".ci/rediacc_ci/ci/ci_diagnose.py": {
-   "noqa PLC0415": 1,
-   "noqa S310": 1
-  },
   ".ci/rediacc_ci/ci/gate_ledger.py": {
    "noqa BLE001": 2,
    "noqa PLC0415": 5
@@ -18,19 +14,9 @@
   ".ci/rediacc_ci/ci/gate_model.py": {
    "noqa PLC0415": 2
   },
-  ".ci/rediacc_ci/ci/github_status.py": {
-   "noqa PLC0415": 1,
-   "noqa S310": 1
-  },
   ".ci/rediacc_ci/core/account.py": {
    "noqa S104": 2,
    "noqa S606": 2
-  },
-  ".ci/rediacc_ci/core/account_lifecycle.py": {
-   "noqa S105": 1
-  },
-  ".ci/rediacc_ci/core/allowlist.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/core/bws_env.py": {
    "noqa S606": 1
@@ -45,7 +31,6 @@
    "noqa S606": 2
   },
   ".ci/rediacc_ci/deploy/turnstile_drift.py": {
-   "noqa BLE001": 1,
    "noqa S310": 2
   },
   ".ci/rediacc_ci/deploy/upload_media_to_r2.py": {
@@ -60,20 +45,8 @@
   ".ci/rediacc_ci/docker/run_in_image.py": {
    "noqa S606": 1
   },
-  ".ci/rediacc_ci/drills/backup.py": {
-   "noqa S105": 1
-  },
   ".ci/rediacc_ci/drills/lib.py": {
    "noqa S310": 2
-  },
-  ".ci/rediacc_ci/drills/license.py": {
-   "noqa S105": 1
-  },
-  ".ci/rediacc_ci/drills/transfer.py": {
-   "noqa S105": 2
-  },
-  ".ci/rediacc_ci/drills/universe.py": {
-   "noqa S105": 1
   },
   ".ci/rediacc_ci/drills/wire.py": {
    "noqa S310": 1
@@ -94,30 +67,14 @@
   ".ci/rediacc_ci/quality/ci_watch_recipe.py": {
    "noqa BLE001": 1
   },
-  ".ci/rediacc_ci/quality/gh_retry_reads.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/quality/hook_exec_baseline.py": {
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/quality/page_density.py": {
    "noqa S606": 1
   },
   ".ci/rediacc_ci/quality/proxy_image_smoke.py": {
-   "noqa S105": 2,
    "noqa S310": 2
-  },
-  ".ci/rediacc_ci/quality/release_key_canonical.py": {
-   "noqa S105": 1
-  },
-  ".ci/rediacc_ci/security/ci_workflow_invariants.py": {
-   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/security/rdc_sh_env_check.py": {
    "noqa BLE001": 1
-  },
-  ".ci/rediacc_ci/security/workflow_gates.py": {
-   "noqa PLC0415": 2
   },
   ".ci/rediacc_ci/setup/host.py": {
    "noqa S310": 1

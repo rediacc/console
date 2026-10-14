@@ -56,7 +56,7 @@ USAGE = (
     "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k] [--selftest] "
     "[--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
-DRILL_PASSWORD = "DrillBackup123!"  # noqa: S105 -- a throwaway dev-gateway login
+DRILL_PASSWORD = "DrillBackup123!"
 CONFIG_NAME = "drill-backup"
 S3_REGION = "us-east-1"
 

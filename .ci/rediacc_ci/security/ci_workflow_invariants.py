@@ -170,7 +170,7 @@ def load_workflow(path: str) -> dict:
 
 def _import_yaml() -> ModuleType | None:
     try:
-        import yaml  # noqa: PLC0415 - deliberately late; this IS the twin's probe
+        import yaml
     except ImportError:
         return None
     return yaml

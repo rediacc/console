@@ -274,7 +274,7 @@ def _gh_retry():
     paths_mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(paths_mod)
     paths_mod.on_sys_path(ci_root)
-    from rediacc_ci.core import gh_retry  # noqa: PLC0415
+    from rediacc_ci.core import gh_retry
 
     return gh_retry
 
@@ -368,7 +368,7 @@ class HttpFetcher:
         # Only https: the API base is a constructor argument and a log redirect comes from the API's own Location header, so refuse anything else rather than open a file: or custom scheme.
         if not url.startswith("https://"):
             raise urllib.error.URLError("refusing a non-https URL: %s" % url[:80])
-        req = urllib.request.Request(url, headers=headers)  # noqa: S310 -- https enforced above
+        req = urllib.request.Request(url, headers=headers)
         opener = (
             urllib.request.build_opener() if follow else urllib.request.build_opener(_NoRedirect)
         )

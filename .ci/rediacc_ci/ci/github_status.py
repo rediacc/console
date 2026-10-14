@@ -121,7 +121,7 @@ def _core_lease():
     """`rediacc_ci.core_lease`, or the sibling file loaded by path: the Stop hook and ci-trace load THIS module by file, where the package is not importable by name."""
     try:
         # The fallback below needs the failure, so the import stays here.
-        from rediacc_ci import core_lease  # noqa: PLC0415
+        from rediacc_ci import core_lease
 
         return core_lease
     except ImportError:
@@ -149,7 +149,7 @@ def fetch_summary() -> bytes:
         SUMMARY_URL,
         headers={"User-Agent": "rediacc-ci-github-status", "Accept": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:  # noqa: S310 -- a fixed https URL, never caller input
+    with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT_S) as resp:
         return resp.read()
 
 

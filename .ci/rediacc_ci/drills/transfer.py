@@ -25,8 +25,8 @@ import time
 from rediacc_ci import log
 from rediacc_ci.drills import lib
 
-DRILL_PASSWORD = "DrillTransfer123!"  # noqa: S105 -- a throwaway dev-gateway login
-STORE_PASSWORD = "DrillStore123!"  # noqa: S105 -- constant by necessity: a re-seed cannot re-wrap the CEK without it
+DRILL_PASSWORD = "DrillTransfer123!"
+STORE_PASSWORD = "DrillStore123!"
 CONFIG_NAME = "drill-transfer"
 USAGE = "Usage: ./run.sh drill transfer [--selftest] [--no-restart] [--keep-work]"
 # `RemoteUnreachableError` maps to NETWORK_ERROR, which `packages/cli/src/types/index.ts` defines as exit 6 (`EXIT_CODES.NETWORK_ERROR`). The bash asserted exit 1 and failed on every live run (2026-10-01: "expected exit 1, got 6", assertion 19); a test pins this constant to the CLI's own table.

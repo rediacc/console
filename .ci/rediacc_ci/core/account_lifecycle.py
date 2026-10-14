@@ -70,7 +70,7 @@ DEFAULT_ROOT_EMAIL = "root@rediacc.dev"
 DEV_USER_EMAIL = WK_DEV_USER_EMAIL
 DEV_PARTNER_EMAIL = "dev-partner@rediacc.io"
 # `.ci/lib/account.sh:558`. A CONSTANT on purpose: an idempotent re-seed cannot re-wrap the CEK without the prior password.
-STORE_PASSWORD = "DevConsole123!"  # noqa: S105 -- the twin's published dev constant, printed in the banner
+STORE_PASSWORD = "DevConsole123!"
 
 # The six Bitwarden specs `account_reset` pushes (`.ci/lib/account.sh:802-807`) and the two it caches (`:816-817`).
 RESET_STORE_SPECS = (
