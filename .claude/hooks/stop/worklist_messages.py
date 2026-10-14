@@ -259,7 +259,7 @@ still red and still yours to decide about:
 CI_NOTE_TURBO_HELD = (
     "CI on PR #%s is red on %d job(s): %s. Stood down, not blocking: a turbo batch is building "
     "locally (turbo_push: batch-end; still open: %s). It blocks again when every plan of the set "
-    "is finished, under --focus babysit|merge, with turbo off, or under turbo_push: pr. A fix may "
+    "is finished, under --focus babysit|merge, with turbo off, or once turbo_push is switched to pr. A fix may "
     "go out now with TURBO_PUSH_REASON='red-fix: <why>'."
 )
 
