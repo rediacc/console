@@ -1314,11 +1314,10 @@
         "archiveOption": "설정 항목을 나중에 복구할 수 있도록 deletedRepositories로 이동합니다",
         "cloudBackupHint": "클라우드 백업(있는 경우)은 삭제 후에도 유지됩니다. 고아 클라우드 백업을 제거하려면: rdc storage prune <storage> -m {{machine}}",
         "completed": "저장소 삭제 완료",
-        "configDropped": "\"{{repository}}\"의 설정 항목을 제거했습니다.",
         "configRetained": "\"{{repository}}\"의 설정 항목은 백업과 복원을 위해 유지되었습니다. 삭제하려면 --archive-config 옵션으로 다시 실행한 뒤 \"rdc repo admin archive purge {{repository}}\"를 실행하세요.",
         "configRetainedElsewhere": "\"{{repository}}\"의 설정 항목이 유지되었습니다(전송된 사본이 다음 머신에 남아 있음: {{machines}}). 삭제하려면 --archive-config 옵션으로 다시 실행한 뒤 \"rdc repo admin archive purge {{repository}}\"를 실행하세요.",
         "confirm": "\"{{machine}}\"의 리포지토리 \"{{repository}}\"를 삭제할까요? 컨테이너, 볼륨, 암호화된 이미지가 모두 삭제됩니다.",
-        "description": "저장소와 그 데이터를 삭제합니다. 설정 항목은 유지됩니다. --archive-config를 사용하면 자격증명을 deletedRepositories로 옮겨 'repo admin archive restore'로 복구할 수 있습니다. 위치 인자로 <ref>를 받습니다. 이름만 전달하면 그랜드 계열로 해석되지만, 같은 기본 이름을 여러 저장소가 공유하면 거부되므로 포크를 지정하려면 이름:태그를 전달하세요",
+        "description": "저장소와 그 데이터를 삭제합니다. 포크의 설정 항목은 deletedRepositories로 옮겨져 이름이 해제되고 GUID는 'repo admin archive restore'로 복구할 수 있는 상태로 남습니다. 그랜드 저장소나 다른 머신으로 푸시된 저장소의 항목은 --archive-config를 지정하지 않으면 유지됩니다. 위치 인자로 <ref>를 받습니다. 이름만 전달하면 그랜드 계열로 해석되지만, 같은 기본 이름을 여러 저장소가 공유하면 거부되므로 포크를 지정하려면 이름:태그를 전달하세요",
         "descriptionShort": "저장소와 데이터를 삭제합니다",
         "examples": {
           "basic": "저장소를 삭제합니다.",
@@ -2354,7 +2353,7 @@
       "setupMachine": "원격 머신에서 설정 실행"
     },
     "examples": "예시:",
-    "keyConcepts": "\n핵심 개념:\n\n  아키텍처\n    • 저장소 = 격리된 Docker 환경 (전용 데몬, 루프백 IP 범위, LUKS 암호화 스토리지)\n    • renet compose 사용 (raw docker compose 사용 금지): network_mode:host 및 rediacc.* 레이블을 자동으로 삽입합니다\n    • 스토리지: ${REDIACC_WORKING_DIR}/...에 bind-mount, Docker named volume은 사용 금지 (포크/백업에서 제외됨)\n    • eBPF 바인드 재작성이 IP 격리를 처리: 앱은 0.0.0.0에 바인딩하고 커널이 올바른 루프백 IP로 재작성\n\n  라우팅\n    • 자동 라우트 (포크 호환): https://{service}.{repo}.{machine}.{baseDomain}\n    • 커스텀 도메인: Traefik 레이블 (traefik.enable=true), 포크 호환 불가\n    • 비80 포트용 rediacc.service_port 레이블. 배포 후 약 3초 후 라우트 활성화\n    • HTTPS: Cloudflare DNS-01을 통한 자동 Let's Encrypt 와일드카드 인증서, 'rdc machine infra set'으로 --cf-dns-token 설정이 필요합니다. 미설정 시 HTTP는 작동하지만 HTTPS 인증서는 프로비저닝되지 않음\n    • Grand 저장소는 *.{repo}.{machine}.{baseDomain}을 획득하며, 첫 번째 repo up 시 Traefik이 자동 프로비저닝합니다\n    • 포크는 상위 저장소의 와일드카드 인증서 재사용 (이미 프로비저닝됨, 속도 제한 영향 없음)\n\n  환경 변수\n    • Rediaccfile 셸: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • 컨테이너 내부: SERVICE_IP, REDIACC_NETWORK_ID (renet에 의해 자동 주입)\n\n  포킹\n    • rdc repo fork <parent-ref> --tag <tag>: 새 GUID, networkId, IP 범위, 자동 라우트 도메인을 가진 즉시 CoW 클론\n    • 상위 저장소는 계속 실행됨 (온라인 포킹). 크로스 머신: 로컬에서 포크 후 rdc repo push <ref> --to <machine>\n    • 저장소 삭제 후에도 구성 항목 유지 (저장소는 다른 머신에 존재할 수 있음)",
+    "keyConcepts": "\n핵심 개념:\n\n  아키텍처\n    • 저장소 = 격리된 Docker 환경 (전용 데몬, 루프백 IP 범위, LUKS 암호화 스토리지)\n    • renet compose 사용 (raw docker compose 사용 금지): network_mode:host 및 rediacc.* 레이블을 자동으로 삽입합니다\n    • 스토리지: ${REDIACC_WORKING_DIR}/...에 bind-mount, Docker named volume은 사용 금지 (포크/백업에서 제외됨)\n    • eBPF 바인드 재작성이 IP 격리를 처리: 앱은 0.0.0.0에 바인딩하고 커널이 올바른 루프백 IP로 재작성\n\n  라우팅\n    • 자동 라우트 (포크 호환): https://{service}.{repo}.{machine}.{baseDomain}\n    • 커스텀 도메인: Traefik 레이블 (traefik.enable=true), 포크 호환 불가\n    • 비80 포트용 rediacc.service_port 레이블. 배포 후 약 3초 후 라우트 활성화\n    • HTTPS: Cloudflare DNS-01을 통한 자동 Let's Encrypt 와일드카드 인증서, 'rdc machine infra set'으로 --cf-dns-token 설정이 필요합니다. 미설정 시 HTTP는 작동하지만 HTTPS 인증서는 프로비저닝되지 않음\n    • Grand 저장소는 *.{repo}.{machine}.{baseDomain}을 획득하며, 첫 번째 repo up 시 Traefik이 자동 프로비저닝합니다\n    • 포크는 상위 저장소의 와일드카드 인증서 재사용 (이미 프로비저닝됨, 속도 제한 영향 없음)\n\n  환경 변수\n    • Rediaccfile 셸: ${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • 컨테이너 내부: SERVICE_IP, REDIACC_NETWORK_ID (renet에 의해 자동 주입)\n\n  포킹\n    • rdc repo fork <parent-ref> --tag <tag>: 새 GUID, networkId, IP 범위, 자동 라우트 도메인을 가진 즉시 CoW 클론\n    • 상위 저장소는 계속 실행됨 (온라인 포킹). 크로스 머신: 로컬에서 포크 후 rdc repo push <ref> --to <machine>\n    • repo delete는 포크의 구성 항목을 보관하지만(이름은 해제되고 GUID는 복구 가능), 그랜드 저장소나 다른 머신으로 푸시된 저장소의 항목은 유지함 (--archive-config를 쓰면 그것도 보관함)",
     "machine": {
       "containers": "컨테이너 상태만 표시",
       "health": "CI/CD용 상태 확인",

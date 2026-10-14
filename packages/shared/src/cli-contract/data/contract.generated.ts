@@ -8403,7 +8403,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "REPOSITORIES",
       "plane": "machine",
       "descriptionKey": "commands.repo.delete.description",
-      "label": "Delete a repository and its data. Config entry is preserved; use --archive-config to move credentials to deletedRepositories for recovery via 'repo admin archive restore'. Takes a positional <ref>; a bare name resolves to the grand line and is refused when several repos share the base name, so pass name:tag to target a fork.",
+      "label": "Delete a repository and its data. A fork's config entry moves to deletedRepositories, which frees the name and keeps the GUID restorable via 'repo admin archive restore'; a grand repo's entry, or one pushed to other machines, is kept unless --archive-config is passed. Takes a positional <ref>; a bare name resolves to the grand line and is refused when several repos share the base name, so pass name:tag to target a fork.",
       "options": [
         {
           "flags": "--archive-config",

@@ -1314,11 +1314,10 @@
         "archiveOption": "将配置条目移至 deletedRepositories 以便后续恢复",
         "cloudBackupHint": "云备份（如有）在删除后仍会保留。使用以下命令删除孤立的云备份：rdc storage prune <storage> -m {{machine}}",
         "completed": "仓库已删除",
-        "configDropped": "已移除 \"{{repository}}\" 的配置条目。",
         "configRetained": "\"{{repository}}\" 的配置条目已保留，用于其备份和恢复。如需删除，请加上 --archive-config 重新运行，然后执行 \"rdc repo admin archive purge {{repository}}\"。",
         "configRetainedElsewhere": "\"{{repository}}\" 的配置条目已保留（已推送的副本仍在以下机器上：{{machines}}）。如需删除，请加上 --archive-config 重新运行，然后执行 \"rdc repo admin archive purge {{repository}}\"。",
         "confirm": "要删除 \"{{machine}}\" 上的仓库 \"{{repository}}\" 吗？此操作将销毁其容器、卷和加密镜像。",
-        "description": "删除仓库及其数据。配置条目将被保留；使用 --archive-config 可将凭据移至 deletedRepositories，以便通过 'repo admin archive restore' 恢复。接受位置参数 <ref>；不带标签的名称会解析为 grand 主线，若多个仓库共用同一基础名称则会被拒绝，此时请传入 name:tag 以指定某个 fork。",
+        "description": "删除仓库及其数据。fork 的配置条目会移至 deletedRepositories，释放名称，并保留 GUID 以便通过 'repo admin archive restore' 恢复；grand 仓库或已推送到其他机器的仓库的条目会保留，除非传入 --archive-config。接受位置参数 <ref>；不带标签的名称会解析为 grand 主线，若多个仓库共用同一基础名称则会被拒绝，此时请传入 name:tag 以指定某个 fork。",
         "descriptionShort": "删除仓库及其数据",
         "examples": {
           "basic": "删除一个仓库。",
@@ -2354,7 +2353,7 @@
       "setupMachine": "在远程机器上运行安装"
     },
     "examples": "示例:",
-    "keyConcepts": "\n关键概念:\n\n  架构\n    • 每个仓库 = 隔离的 Docker 环境（独立 daemon、回环 IP 范围、LUKS 加密存储）\n    • 使用 renet compose（切勿使用原始 docker compose），自动注入 network_mode:host 和 rediacc.* 标签\n    • 存储：bind-mount 到 ${REDIACC_WORKING_DIR}/...，切勿使用 Docker named volume（会被排除在 fork/备份之外）\n    • eBPF 绑定重写处理 IP 隔离：应用绑定到 0.0.0.0，内核将其重写为正确的回环 IP\n\n  路由\n    • 自动路由（fork 友好）：https://{service}.{repo}.{machine}.{baseDomain}\n    • 自定义域名：Traefik 标签（traefik.enable=true），非 fork 友好\n    • 非 80 端口使用 rediacc.service_port 标签。路由在部署后约 3 秒生效\n    • HTTPS：通过 Cloudflare DNS-01 自动签发 Let's Encrypt 通配符证书，需要通过 'rdc machine infra set' 配置 --cf-dns-token。未配置时 HTTP 可用，但不会签发 HTTPS 证书\n    • Grand 仓库会获得 *.{repo}.{machine}.{baseDomain}，首次 repo up 时由 Traefik 自动签发\n    • fork 复用父仓库的通配符证书（已签发，不影响速率限制）\n\n  环境变量\n    • Rediaccfile shell：${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • 容器内部：SERVICE_IP, REDIACC_NETWORK_ID（由 renet 自动注入）\n\n  Fork\n    • rdc repo fork <parent-ref> --tag <tag>：即时 CoW 克隆，具有新的 GUID、networkId、IP 范围、自动路由域名\n    • 父仓库保持运行（在线 fork）。跨机器：先在本地 fork，再运行 rdc repo push <ref> --to <machine>\n    • 仓库删除后配置项仍会保留（该仓库可能存在于其他机器上）",
+    "keyConcepts": "\n关键概念:\n\n  架构\n    • 每个仓库 = 隔离的 Docker 环境（独立 daemon、回环 IP 范围、LUKS 加密存储）\n    • 使用 renet compose（切勿使用原始 docker compose），自动注入 network_mode:host 和 rediacc.* 标签\n    • 存储：bind-mount 到 ${REDIACC_WORKING_DIR}/...，切勿使用 Docker named volume（会被排除在 fork/备份之外）\n    • eBPF 绑定重写处理 IP 隔离：应用绑定到 0.0.0.0，内核将其重写为正确的回环 IP\n\n  路由\n    • 自动路由（fork 友好）：https://{service}.{repo}.{machine}.{baseDomain}\n    • 自定义域名：Traefik 标签（traefik.enable=true），非 fork 友好\n    • 非 80 端口使用 rediacc.service_port 标签。路由在部署后约 3 秒生效\n    • HTTPS：通过 Cloudflare DNS-01 自动签发 Let's Encrypt 通配符证书，需要通过 'rdc machine infra set' 配置 --cf-dns-token。未配置时 HTTP 可用，但不会签发 HTTPS 证书\n    • Grand 仓库会获得 *.{repo}.{machine}.{baseDomain}，首次 repo up 时由 Traefik 自动签发\n    • fork 复用父仓库的通配符证书（已签发，不影响速率限制）\n\n  环境变量\n    • Rediaccfile shell：${SVCNAME_IP}, ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}\n    • 容器内部：SERVICE_IP, REDIACC_NETWORK_ID（由 renet 自动注入）\n\n  Fork\n    • rdc repo fork <parent-ref> --tag <tag>：即时 CoW 克隆，具有新的 GUID、networkId、IP 范围、自动路由域名\n    • 父仓库保持运行（在线 fork）。跨机器：先在本地 fork，再运行 rdc repo push <ref> --to <machine>\n    • repo delete 会归档 fork 的配置项（释放名称，GUID 仍可恢复），但会保留 grand 仓库或已推送到其他机器的仓库的配置项（--archive-config 也会将其归档）",
     "machine": {
       "containers": "仅显示容器状态",
       "health": "CI/CD 健康检查",

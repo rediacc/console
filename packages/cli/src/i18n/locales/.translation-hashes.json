@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1841,
-    "sourceCommit": "8d2765799d07415b285afb0a1ce044cd9af5f313"
+    "keyCount": 1840,
+    "sourceCommit": "82e9d8bc2e77e4d1a047966aebb5ab00d3dfbe4c"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -948,11 +948,10 @@
     "commands.repo.delete.archiveOption": "6bd8b32b",
     "commands.repo.delete.cloudBackupHint": "2c39aeb2",
     "commands.repo.delete.completed": "62ef4b3e",
-    "commands.repo.delete.configDropped": "d8321a8b",
     "commands.repo.delete.configRetained": "44db3127",
     "commands.repo.delete.configRetainedElsewhere": "fd3e8a37",
     "commands.repo.delete.confirm": "23edef10",
-    "commands.repo.delete.description": "0e524cc0",
+    "commands.repo.delete.description": "930f3fc9",
     "commands.repo.delete.descriptionShort": "546db59d",
     "commands.repo.delete.examples.basic": "a1bb7a65",
     "commands.repo.delete.examples.fork": "8e45f25b",
@@ -1710,7 +1709,7 @@
     "help.config.init": "caecb00a",
     "help.config.setupMachine": "f654bfaf",
     "help.examples": "9032d12e",
-    "help.keyConcepts": "bffa5061",
+    "help.keyConcepts": "cf4f4224",
     "help.machine.containers": "1ccbf359",
     "help.machine.health": "122f62a5",
     "help.machine.keyConcepts": "0a23fd03",

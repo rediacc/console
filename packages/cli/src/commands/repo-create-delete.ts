@@ -364,13 +364,14 @@ export async function settleConfigEntry(
   repoConfig: DeletedRepoConfig,
   archiveConfig: boolean
 ): Promise<void> {
-  if (archiveConfig) {
+  // A fork with no other holder is archived like --archive-config rather than removed: the name is free for a re-fork, and the archived record keeps the repository GUID that a restore of the fork's backups needs (review 82e9d8bc.1).
+  const holders = otherHolders(repoConfig, machineName);
+  if (archiveConfig || (holders.length === 0 && isFork(repoConfig))) {
     await configService.archiveRepository(name);
     outputService.info(t('commands.repo.delete.archived', { repository: name }));
     outputService.info(t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid }));
     return;
   }
-  const holders = otherHolders(repoConfig, machineName);
   if (holders.length > 0) {
     outputService.info(
       t('commands.repo.delete.configRetainedElsewhere', {
@@ -378,10 +379,6 @@ export async function settleConfigEntry(
         machines: holders.join(', '),
       })
     );
-  } else if (isFork(repoConfig)) {
-    await configService.removeRepository(name);
-    outputService.info(t('commands.repo.delete.configDropped', { repository: name }));
-    return;
   } else {
     outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
   }
