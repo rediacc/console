@@ -1615,12 +1615,24 @@ def test_a_red_path_watching_another_step_is_no_red_path() -> None:
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/ || true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/\necho "rc=0" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/\ntrue\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/ | tee log\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/; true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/ && true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/ \\\n  || true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
     ],
 )
 def test_an_rc_output_that_is_not_the_apply_exit_status_is_no_red_path(run) -> None:
     doc = pins_doc()
     doc["jobs"]["soaked"]["steps"][1]["run"] = run
     assert pins_kinds(doc) == ["pins-soaked-no-red-path"]
+
+
+def test_a_redirection_on_the_apply_line_keeps_the_red_path() -> None:
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"][1]["run"] = (
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/ > out.json 2>&1\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"'
+    )
+    assert pins_kinds(doc) == []
 
 
 def test_an_apply_step_that_never_publishes_rc_has_no_red_path() -> None:

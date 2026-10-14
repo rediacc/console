@@ -1068,16 +1068,18 @@ _PINS_WRITE_RE = re.compile(
 # Any reference to the secrets context outside the steps list or inside any step field (`run:` included): `secrets.NAME`, `secrets['NAME']`, or the whole context as a function argument such as `toJSON(secrets)`. The workflow needs no secret, so the check does not judge which one could write; the default GITHUB_TOKEN, read-only under `contents: read`, is the one exemption.
 _PINS_SECRET_RE = re.compile(r"\bsecrets(?:\.(?!GITHUB_TOKEN\b)\w+|\s*\[|\s*[),])")
 _PINS_RC_CAPTURE_RE = re.compile(r"^\s*rc=\$\?\s*$")
+# Anything on the apply line that lets `$?` be another command's status: a pipe (no pipefail under the default shell), `||`, `;`, a background or `&&` operator, or a line continuation. A `>&`/`&>` redirection is not one.
+_PINS_MASK_RE = re.compile(r"\||;|(?<![>&])&(?![>&])|&&|\\\s*$")
 _PINS_RC_OUT_RE = re.compile(r"""\brc=\$\{?rc\}?"?\s*>>\s*"?\$\{?GITHUB_OUTPUT\}?""")
 
 
 def _pins_publishes_rc(run: str) -> bool:
-    """True when the apply command's own exit status becomes the `rc` step output: the apply line has no `||` that could mask it, the next non-blank line is `rc=$?`, and a later line writes `rc=$rc` to $GITHUB_OUTPUT."""
+    """True when the apply command's own exit status becomes the `rc` step output: nothing on the apply line can mask it (`_PINS_MASK_RE`), the next non-blank line is `rc=$?`, and a later line writes `rc=$rc` to $GITHUB_OUTPUT."""
     lines = run.split("\n")
     for i, line in enumerate(lines):
         if not _PINS_APPLY_RE.search(line):
             continue
-        if "||" in line:
+        if _PINS_MASK_RE.search(line):
             return False
         rest = [ln for ln in lines[i + 1 :] if ln.strip()]
         return (
