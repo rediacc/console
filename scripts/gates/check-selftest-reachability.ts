@@ -189,7 +189,13 @@ function jsImports(file: string, text: string, has: (f: string) => boolean): str
   const dir = path.posix.dirname(file);
   const spec =
     /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*|\bnew\s+URL\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g;
-  for (const m of text.matchAll(spec)) {
+  // A commented-out import is no edge: the same comment-line rule the NAME scan applies.
+  const comment = COMMENT(file);
+  const code = text
+    .split('\n')
+    .filter((line) => !comment.test(line))
+    .join('\n');
+  for (const m of code.matchAll(spec)) {
     const p = path.posix.normalize(path.posix.join(dir, m[1] ?? ''));
     const stem = p.replace(/\.[cm]?js$/, '');
     for (const c of [
@@ -317,12 +323,14 @@ function selftestCases(): ControlCase[] {
       "import { GATES } from '../ci-runner/manifest.js';",
       "import { x } from '../lib/imported-selftest.js';",
       '// spawns scripts/lib/commented-selftest.ts, in a comment only',
+      "// import { y } from '../lib/commented-import-selftest.js';",
       "const run = spawnSync('tsx', [path.join(ROOT, 'scripts/lib/spawned-selftest.ts')]);",
       'process.argv.includes("--selftest");',
     ].join('\n'),
     'scripts/lib/imported-selftest.ts': 'export const x = 1;\n',
     'scripts/lib/spawned-selftest.ts': 'console.log(1);\n',
     'scripts/lib/commented-selftest.ts': 'console.log(1);\n',
+    'scripts/lib/commented-import-selftest.ts': 'console.log(1);\n',
     'scripts/lib/orphan-selftest.ts': 'console.log(1);\n',
     'scripts/lib/prose-selftest.ts': 'console.log(1);\n',
     'scripts/lib/handler.ts': "if (process.argv.includes('--selftest')) run();\n",
@@ -361,6 +369,11 @@ function selftestCases(): ControlCase[] {
     'a selftest only the manifest names, reached through a gate that imports the manifest'
   );
   expect('scripts/lib/commented-selftest.ts', true, 'a selftest named only in a comment');
+  expect(
+    'scripts/lib/commented-import-selftest.ts',
+    true,
+    'a selftest imported only by a commented-out import'
+  );
   expect('scripts/lib/prose-selftest.ts', true, 'a selftest named only in parenthesised prose');
   expect('.ci/rediacc_ci/quality/mod_c.py', true, 'a --selftest handler nothing imports');
   expect('scripts/lib/handler.ts', true, 'a --selftest handler nothing names');

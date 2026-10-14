@@ -238,7 +238,8 @@ readonly R2_MAX_RELEASE_VERSIONS=20
 
 # nfpm configuration (replaces dpkg-deb + rpmbuild for package creation)
 readonly NFPM_VERSION="2.48.0"
-# Verified against https://github.com/goreleaser/nfpm/releases/download/v<NFPM_VERSION>/checksums.txt
+# Verified against the checksums.txt asset of the goreleaser/nfpm release tagged
+# with the NFPM_VERSION above (https://github.com/goreleaser/nfpm/releases).
 # The tarball is piped straight into `sudo tar` in a job that also holds release
 # secrets, so an unverified download is arbitrary root-owned code. Update both
 # this and NFPM_VERSION together.
