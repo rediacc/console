@@ -414,7 +414,7 @@ JUDGE_SHAPES: tuple[dict[str, Any], ...] = (
         "shape": "status-table",
         "what": "a continue that demands a status table rather than work",
         "where": "wl_judge: an ADVICE_RULES entry, or `basis: out-of-sync` in the judge prompt",
-        "source": "import re\n\n_STATUS = re.compile(r%r)\n\n\ndef matches(reason, closed_ids=()):\n    del closed_ids\n    return bool(_STATUS.search(reason))\n"
+        "source": "import re\n\n_STATUS = re.compile(%r)\n\n\ndef matches(reason, closed_ids=()):\n    del closed_ids\n    return bool(_STATUS.search(reason))\n"
         % _STATUS,
         "control": ("Fix the failing assertion in wl_x.py and rerun the suite.", ()),
     },
@@ -422,7 +422,7 @@ JUDGE_SHAPES: tuple[dict[str, Any], ...] = (
         "shape": "rule-breaking",
         "what": "advice a repo rule forbids",
         "where": "wl_judge: a FORBIDDEN_ORDERS entry",
-        "source": "import re\n\n_RULE = re.compile(r%r)\n\n\ndef matches(reason, closed_ids=()):\n    del closed_ids\n    return bool(_RULE.search(reason))\n"
+        "source": "import re\n\n_RULE = re.compile(%r)\n\n\ndef matches(reason, closed_ids=()):\n    del closed_ids\n    return bool(_RULE.search(reason))\n"
         % _RULE,
         "control": ("Commit the verified unit with its PR-TASK trailer.", ()),
     },
