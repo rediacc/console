@@ -12,9 +12,10 @@ from __future__ import annotations
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    import http.client
     from collections.abc import Mapping
 
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
@@ -50,8 +51,28 @@ def build_request(
     )
 
 
+class _CheckedRedirect(urllib.request.HTTPRedirectHandler):
+    """Follows a 3xx only to a URL `check_url` admits under the same `http` setting (review 1bf85a71.1): the default handler follows an https URL's redirect to `http://` or `ftp://`, which would reopen the hole the first check closes."""
+
+    def __init__(self, http: str) -> None:
+        super().__init__()
+        self._http = http
+
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: http.client.HTTPMessage,
+        newurl: str,
+    ) -> urllib.request.Request | None:
+        check_url(newurl, http=self._http)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def urlopen(target: str | urllib.request.Request, *, timeout: float, http: str = "never") -> Any:
-    """`urllib.request.urlopen(target, timeout=...)` after the scheme check; the response is a context manager."""
+    """`urllib.request.urlopen(target, timeout=...)` after the scheme check, through an opener whose redirects pass the same check; the response is a context manager."""
     url = target if isinstance(target, str) else target.full_url
     check_url(url, http=http)
-    return urllib.request.urlopen(target, timeout=timeout)
+    return urllib.request.build_opener(_CheckedRedirect(http)).open(target, timeout=timeout)
