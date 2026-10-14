@@ -5942,6 +5942,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 local_batch=_judge_local_batch(_loop, root),
                 with_riders=_riders,
                 closed=wl_judge.closed_items(fold, lambda o: C.owned_by_me(o, session_id)),
+                effort_level=_cfg.effort,
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.
@@ -5960,6 +5961,9 @@ def run_stop(event, event_ok, worklist, hook_file):
         # UNGROUNDED SWEEP AND PROOF FIRES (R20260924.19): queued, never blocked on, and before any path below that can exit. STICKY, because the fix-set that raised one is banked and never re-asked.
         for _adv in verdict.get("advisories") or []:
             outq_add(worklist, session_id, state_doc, "sweep-ungrounded", str(_adv), 2, sticky=True)
+        # A continue the effort level reads as stop (wl_judge.settle_by_effort) rides its report key's own threshold instead of the block.
+        for _ekey, _etext in verdict.get("effort_advised") or []:
+            outq_add(worklist, session_id, state_doc, _ekey, _etext, 2)
         # DEFER-SETTLE VERDICT: banks, corroborates, and acts only through wl_defersettle's own evidence-gated tick. It cannot block, so it runs before any path below that can exit.
         if settle_batch:
             with contextlib.suppress(Exception):
