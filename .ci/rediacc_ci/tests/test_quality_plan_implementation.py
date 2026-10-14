@@ -16,6 +16,7 @@ import wl_planrec
 
 from rediacc_ci import log, paths
 from rediacc_ci.ci import gate_ledger
+from rediacc_ci.core import ghx
 
 GATE_PATH = paths.repo_root() / ".ci" / "scripts" / "quality" / "check_plan_implementation.py"
 FINISHED = frozenset({"done"})
@@ -121,3 +122,50 @@ def test_the_orphan_controls_run_when_the_gate_is_loaded_by_file(gate) -> None:
     orphan_ok, ancestor_ok = gate._orphan_commit_controls(wl_planrec)
     assert orphan_ok is False, "a commit that is not an ancestor of HEAD must not resolve"
     assert ancestor_ok is True, "an ancestor must resolve"
+
+
+# ---- the PR body a LOCAL run judges P-A1 against (PR-TASK 8ed364fe). Before the fix only GITHUB_EVENT_PATH was read, so `npm run ci:quick` was red on a PR whose Operational-Reason line CI admits.
+REASON_BODY = "Plan: agent/plans/PLAN-x.md\nOperational-Reason: the last box is the merge\n"
+
+
+def _gh_runner(calls, stdout="", returncode=0):
+    def run(args, **kwargs):
+        calls.append((list(args), kwargs))
+        return ghx.GhResult(["gh", *args], returncode, stdout, "no pull requests found")
+
+    return run
+
+
+def test_local_run_reads_the_open_prs_body_and_admits(gate):
+    calls: list = []
+    body, note = gate.pr_body({}, runner=_gh_runner(calls, REASON_BODY + "\n"), branch="1008-1")
+    assert calls, "no gh lookup was attempted outside CI"
+    assert calls[0][0][:3] == ["pr", "view", "1008-1"]
+    assert body == REASON_BODY.rstrip("\n")
+    assert note == ""
+    assert gate.pr_admits_open_boxes(gate.load_plan_gate()[0], body)
+
+
+def test_local_run_without_a_readable_pr_says_so(gate):
+    calls: list = []
+    body, note = gate.pr_body({}, runner=_gh_runner(calls, "", returncode=1), branch="1008-1")
+    assert calls
+    assert body is None
+    assert "judged without a PR body" in note
+    assert not gate.pr_admits_open_boxes(gate.load_plan_gate()[0], body)
+
+
+def test_github_actions_never_attempts_the_local_lookup(gate, tmp_path):
+    calls: list = []
+    event = tmp_path / "event.json"
+    event.write_text('{"pull_request": {"body": "from the event"}}', encoding="utf-8")
+    env = {"GITHUB_ACTIONS": "true", "GITHUB_EVENT_PATH": str(event)}
+    body, note = gate.pr_body(env, runner=_gh_runner(calls, REASON_BODY), branch="b")
+    assert calls == []
+    assert body == "from the event"
+    assert note == ""
+    # No payload under Actions (a push or cron run) stays None and silent: the event file is the only source there.
+    body, note = gate.pr_body({"GITHUB_ACTIONS": "true"}, runner=_gh_runner(calls, REASON_BODY))
+    assert calls == []
+    assert body is None
+    assert note == ""
