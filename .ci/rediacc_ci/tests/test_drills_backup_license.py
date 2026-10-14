@@ -592,16 +592,9 @@ def test_running_ips_reads_both_status_shapes_and_ignores_absent_vms() -> None:
     bare = json.dumps(
         {"vms": [{"ip": "10.0.0.1", "status": "running"}, {"ip": "10.0.0.2", "status": "absent"}]}
     )
-    assert (
-        backup.running_ips(enveloped)
-        == license_drill.running_ips(enveloped)
-        == [
-            "192.168.111.1",
-            "192.168.111.11",
-        ]
-    )
-    assert backup.running_ips(bare) == license_drill.running_ips(bare) == ["10.0.0.1"]
-    assert license_drill.running_ips("not json") == []
+    assert lib.running_ips(enveloped) == ["192.168.111.1", "192.168.111.11"]
+    assert lib.running_ips(bare) == ["10.0.0.1"]
+    assert lib.running_ips("not json") == []
 
 
 @pytest.mark.skipif(not NODE, reason="needs node for the bash expression")
