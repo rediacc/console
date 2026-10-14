@@ -250,14 +250,15 @@ def call_sites() -> list[Path]:
 def rename_pairs() -> list[tuple[str, str]]:
     """(old, new) from secret-rename.py's RENAMES, read as data.
 
-    Imported by exec rather than by parsing, because a second copy of the table is a second thing to get wrong -- and this gate's whole subject is two records disagreeing about a name."""
-    ns: dict = {}
+    Read with `ast.literal_eval` of the table's own source rather than a second copy, because a second copy of the table is a second thing to get wrong -- and this gate's whole subject is two records disagreeing about a name."""
     text = RENAME_TABLE.read_text(encoding="utf-8")
     m = re.search(r"^RENAMES: list\[tuple\[str, str\]\] = \[.*?^\]", text, re.DOTALL | re.MULTILINE)
     if not m:
         return []
-    exec(compile(m.group(0), str(RENAME_TABLE), "exec"), ns)  # noqa: S102
-    return list(ns.get("RENAMES", []))
+    node = ast.parse(m.group(0), str(RENAME_TABLE)).body[0]
+    if not isinstance(node, ast.AnnAssign) or node.value is None:
+        return []
+    return list(ast.literal_eval(node.value))
 
 
 def superseded_problems(name: str, rec: dict, suffixes: list[str]) -> list[str]:

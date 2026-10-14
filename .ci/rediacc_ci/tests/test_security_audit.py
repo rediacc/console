@@ -404,7 +404,7 @@ class Fixture:
             timeout=300,
         )
         return Run(
-            exit=proc.returncode,
+            exit_code=proc.returncode,
             stdout=self._normalise(proc.stdout),
             stderr=self._normalise(proc.stderr),
             calls=log.read_text(encoding="utf-8").splitlines(),
@@ -436,13 +436,13 @@ class Run:
 
     def __init__(
         self,
-        exit: int,  # noqa: A002 -- the channel is called `exit`, like the deleted twin's
+        exit_code: int,
         stdout: str,
         stderr: str,
         calls: list[str],
         artifacts: dict[str, str],
     ) -> None:
-        self.exit = exit
+        self.exit = exit_code  # the channel is called `exit`, like the deleted twin's
         self.stdout = stdout
         self.stderr = stderr
         self.calls = calls

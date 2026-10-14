@@ -257,8 +257,7 @@ def spawn_background(
     REAPED BY A THREAD THE MOMENT IT EXITS, because bash reaps its background jobs and `account_wait_port`'s `kill -0 "$pid"` therefore sees a finished job as gone. A Popen nobody waits on stays a zombie that still answers `kill -0`, and `wait_port` would wait for it forever.
     """
     _flush()
-    handle = open(log_path, "wb") if log_path else None  # noqa: SIM115 -- handed to the child and closed below
-    try:
+    with open(log_path, "wb") if log_path else contextlib.nullcontext() as handle:
         cd_err = local_common.cd_error(cwd) if cwd is not None else None
         if cd_err is not None:
             # The subshell's `cd` fails: its diagnostic lands in the log, and the job ends with status 1.
@@ -275,9 +274,6 @@ def spawn_background(
                 stderr=subprocess.STDOUT if handle is not None else None,
                 process_group=0,
             )
-    finally:
-        if handle is not None:
-            handle.close()
     threading.Thread(target=proc.wait, daemon=True).start()
     PIDS.append(proc.pid)
     _PROCS[proc.pid] = proc

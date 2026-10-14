@@ -9,10 +9,10 @@ against the real `date` binary while both copies existed, then reproduced by the
 
 from __future__ import annotations
 
-import datetime
 import json
 import pathlib
 import subprocess
+import time
 
 from rediacc_ci.release import check_soak_period, list_edge_releases
 from rediacc_ci.tests import differential as diff
@@ -26,10 +26,8 @@ def edge_date(days_ago: int) -> str:
     A literal calendar date rots: the age is computed from the clock AT RUN TIME, so a fixture pinned to a fixed date drifts by one real day every day this file exists, and it drifted for six days before this was noticed. The arithmetic is a FLOOR (whole days from a second count), so subtracting exactly `days_ago * 86400` seconds keeps the floor at `days_ago` for as long as the
     test itself takes to run.
     """
-    # Suppressed on this LINE only, rather than disabling DTZ in pyproject: the rule is right everywhere else and wrong here. The twin stamped and read this in LOCAL time (`date +%s` against a `%Y-%m-%dT%H:%M:%S` string carrying no offset) and the port reproduces that, so a tz-aware `now()` would shift the fixture by the machine's offset and move the floor across a day boundary on
-    # any host east or west of Greenwich -- the same two-clock defect block_stale_pr_branch_date.py records in its own port notes.
-    then = datetime.datetime.now() - datetime.timedelta(days=days_ago)  # noqa: DTZ005
-    return then.strftime("%Y-%m-%dT%H:%M:%S")
+    # LOCAL time on purpose: the twin stamped and read this in local time (`date +%s` against a `%Y-%m-%dT%H:%M:%S` string carrying no offset) and the port reproduces that, so a tz-aware stamp would shift the fixture by the machine's offset and move the floor across a day boundary on any host east or west of Greenwich -- the same two-clock defect block_stale_pr_branch_date.py records in its own port notes.
+    return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - days_ago * 86400))
 
 
 def head(written: str) -> str:
