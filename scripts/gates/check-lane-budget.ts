@@ -2825,8 +2825,10 @@ async function liveRebalanceControls(
           (result.gainMinutes ?? -1) >= 0 &&
           !again.changed &&
           JSON.stringify(again.rebalanced) === JSON.stringify(result.rebalanced),
+        // `coverage` is printed because it is the usual cause of a null gain: a unit the enumerator lists and no committed leg names (`npm run shard:place -- <lane>` places it).
         detail: JSON.stringify({
           violations: result.violations,
+          coverage: result.coverage,
           gain: result.gainMinutes,
           secondChanged: again.changed,
         }),
