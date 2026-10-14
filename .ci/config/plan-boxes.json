@@ -851,21 +851,21 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 3,
+      "open": 5,
+      "done": 6,
       "open_sigs": [
         "21ec1969",
         "273478dd",
-        "4ac71b3f",
-        "9026a390",
         "b25d1127",
         "c81a3974",
-        "d34570c5",
         "dc1c77bb"
       ],
       "done_sigs": [
         "054be3a6",
+        "4ac71b3f",
+        "9026a390",
         "91808dc2",
+        "d34570c5",
         "f2cabb45"
       ]
     },
@@ -1694,18 +1694,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 0,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "1323232f",
+        "1323232f"
+      ],
+      "done_sigs": [
         "271af786",
         "6b8f6f9e",
         "89d81247",
         "a9ec6923",
         "bc3890af",
         "f6e9746d"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-stop-hook-effort.md": {
       "status": "approved",
