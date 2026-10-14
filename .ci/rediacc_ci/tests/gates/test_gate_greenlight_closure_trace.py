@@ -14,8 +14,8 @@ THE COPY LIVES BESIDE THIS FILE RATHER THAN INSIDE IT, and that is not cosmetic.
 `trace_checker.cjs.fixture` is copied out of the twin unmodified and read from disk, then MATERIALISED into `tmp_path` as `trace.cjs` before each run -- which is what the twin does too, into its own `mktemp -d`.
 
 THE `.fixture` SUFFIX IS LOAD-BEARING AND WAS PAID FOR. Named plainly `trace_checker.cjs`, the file is JavaScript source of this repository and
-`npm run lint` covers `.ci`: `npx eslint` on it reports
-`89:33 error Unnecessary escape character` (`no-useless-escape`), measured 2026-09-07. That finding is real and is INVISIBLE today only because the program lives inside a bash heredoc where no linter looks. Fixing the escape would break the byte-identity this port's whole fidelity argument rests on, so the file is named for what it is -- a fixture, a frozen copy of somebody else's
+`npm run lint` covers `.ci`: the linter then in use (eslint) reported
+`89:33 error Unnecessary escape character` (`no-useless-escape`), measured 2026-09-07, and biome's `noUselessEscapeInRegex` flags the same escape. That finding is real and is INVISIBLE today only because the program lives inside a bash heredoc where no linter looks. Fixing the escape would break the byte-identity this port's whole fidelity argument rests on, so the file is named for what it is -- a fixture, a frozen copy of somebody else's
 bytes -- and node is handed a `.cjs` copy instead. Node refuses an unknown extension outright (`ERR_UNKNOWN_FILE_EXTENSION`), so the materialisation is not optional.
 
 THERE IS NO SECOND COPY ANY MORE, WHICH IS WHY THE DRIFT CHECK IS GONE. While both files existed, `test_the_checker_is_byte_identical_to_the_twins` -- an ADDED case, not one of the twin's four -- extracted the twin's heredoc and required it to equal the file, and it was written to FAIL rather than skip if the twin vanished so the pairing could not be forgotten. W7 P5 census

@@ -41,7 +41,7 @@ FIXTURE_REL_DIR = (".ci", "scripts")
 
 # The fixture filenames carry THIS PROCESS's pid, and that is a correctness fix rather than tidiness. They used to be fixed names in the twin, so two concurrent invocations planted the same two paths and each cleanup deleted the OTHER run's fixture; on 2026-08-05 that surfaced as a false "detector broken".
 #
-# The dotfile prefix is load-bearing (it is what keeps eslint, biome and knip off
+# The dotfile prefix is load-bearing (it is what keeps biome and knip off
 # these files) and the `.ts` suffix is what the scan globs for, so the pid goes between them. FIXTURE_NAME_PREFIX is the shape both fixtures share ACROSS pids and across the two LANGUAGES: the twin's fixtures are visible to this scan and this port's are visible to the twin's, so both sides scope themselves with it rather than assuming they are alone in the tree.
 FIXTURE_PID_SUFFIX = str(os.getpid())
 FIXTURE_NAME_PREFIX = ".gate-paths-exist-"
