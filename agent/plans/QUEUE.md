@@ -127,14 +127,15 @@ Promoted: 10 of 13 plans done, 160 of 170 boxes done (94%).
 16. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 18. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-19. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-20. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-21. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-22. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-25. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+19. agent/plans/PLAN-stop-hook-effort.md -- P1, approved, not started
+20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+23. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
