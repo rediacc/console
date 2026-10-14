@@ -837,11 +837,21 @@ async function main() {
   const targetFor = async (ruleId, options) => {
     const info = ruleInstancesById.get(ruleId)?.[0];
     if (info) {
-      return { ruleId, kind: info.kind, rule: await loadRule(info.modulePath, info.exportName), options };
+      return {
+        ruleId,
+        kind: info.kind,
+        rule: await loadRule(info.modulePath, info.exportName),
+        options,
+      };
     }
     const parked = KNOWN_OFF_MODULES[ruleId];
     if (!parked) return null;
-    return { ruleId, kind: 'json', rule: await loadRule(parked, camel(ruleId.split('/')[1])), options };
+    return {
+      ruleId,
+      kind: 'json',
+      rule: await loadRule(parked, camel(ruleId.split('/')[1])),
+      options,
+    };
   };
   class HostLinter {
     constructor(overrides = null) {
@@ -1032,9 +1042,7 @@ async function main() {
       .sort();
     for (const ruleId of isolatedRuleIds) {
       if (!ruleInstancesById.get(ruleId)?.[0]) {
-        err(
-          `${ruleId} has no RULE_INSTANCES entry, so the isolated probe has nothing to run.`
-        );
+        err(`${ruleId} has no RULE_INSTANCES entry, so the isolated probe has nothing to run.`);
         return 1;
       }
     }
