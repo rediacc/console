@@ -20,28 +20,19 @@
       "@rediacc/shared/*": ["./packages/shared/src/*"]
     }
   },
-  // NO `files` AND NO `include`, DELIBERATELY, and do NOT "fix" that -- it was tried and
-  // reverted the same morning (b6e4ac65b, undone here).
+  // A SOLUTION FILE: `"files": []`, so this config compiles nothing itself and only shares
+  // its options and names the projects below. Without it tsc read this file as matching
+  // every .ts under the repo, so a bare `npx tsc --noEmit` here compiled the whole tree
+  // under options meant to be shared rather than applied (lib ES2020, `types: ["node"]`,
+  // no DOM, no astro, no workers-types) and reported about 10,000 errors, all of them the
+  // wrong config.
   //
-  // The temptation: with neither key, tsc treats this as matching EVERY .ts under the repo,
-  // so a bare `npx tsc --noEmit` here compiles the whole tree under the options this file
-  // exists to SHARE rather than apply -- lib ES2020, `types: ["node"]`, no DOM, no astro,
-  // no workers-types -- and reports 10,095 errors that are all the wrong config and none of
-  // them a defect. `"files": []` is the textbook solution-file fix and it silences that.
-  //
-  // WHY IT IS WRONG HERE. eslint lints type-aware through `projectService`
-  // (eslint.config/typescript.js, in the repo-wide block's parserOptions), which picks a
-  // file's project by walking UP to the nearest tsconfig.json. Every `__tests__` tree is
-  // EXCLUDED by its own package's build config, so
-  // for 356 files -- packages/cli/src/**/__tests__ (144), private/account/tests (94),
-  // packages/shared/src/**/__tests__, packages/cli/scripts, private/account/scripts -- the
-  // match-everything root IS the project of last resort. Add `files: []` and all 356 fail
-  // to PARSE: "was not found by the project service", and `check:lint` reds in CI.
-  //
-  // So the cosmetic hazard stays. `npm run typecheck` is the supported way to check types
-  // and runs each project under its own options; a bare `tsc` here is not a workflow
-  // anybody has, and check:ci-typecheck-scope-coverage special-cases this file for exactly
-  // this reason.
+  // It stayed match-everything until 2026-10-14 for one reader: ESLint's type-aware
+  // `projectService` picked each file's project by walking up to the nearest tsconfig.json,
+  // and about 356 test and script files that no package build includes found this one.
+  // ESLint is gone (PLAN-biome-only-lint), Biome reads no tsconfig, and `npm run typecheck`
+  // runs each project under its own options, so nothing depends on the old shape.
+  "files": [],
   "references": [
     { "path": "./packages/shared" },
     { "path": "./packages/cli" }
