@@ -40,6 +40,8 @@ import type { DocumentNode } from '@humanwhocodes/momoa';
 import { parse as momoaParse } from '@humanwhocodes/momoa';
 import { parseSync, visitorKeys as jsVisitorKeys } from 'oxc-parser';
 
+import { XHTML_ENTITIES } from './jsx-entities.js';
+
 // `.tsx` parses as `tsx`, plain `.ts`/`.mts`/`.cts` as `ts` -- forcing every `.ts` file into the `tsx` grammar breaks the OLD-STYLE generic cast (`<T>value`) and generic-arrow ambiguity that grammar exists to resolve in favour of JSX, and real `.ts` sources in this repo use that syntax. Plain JS family files (`.js`/`.jsx`/`.mjs`/`.cjs`) always parse as `jsx` instead: the real config enables JSX (`ecmaFeatures.jsx: true`) for every js, jsx, ts and tsx source path it lints (`eslint.config/typescript.js`'s react-plugin block), including plain `.js` files under `eslint-rules` -- so `custom/require-testid`'s own probe file is plain `.js` with a JSX literal in it, and JS has no cast-vs-JSX ambiguity for that option to break.
 function langFor(filename: string): 'jsx' | 'ts' | 'tsx' {
   const ext = path.extname(filename);
@@ -248,6 +250,22 @@ function declarationTargetScope(kind: string | undefined, innermost: HostScope):
   return scope ?? innermost;
 }
 
+/** A character reference as acorn-jsx reads one: `&` then at most nine characters up to `;`. */
+const JSX_ENTITY = /&(#x[0-9a-fA-F]+|#[0-9]+|[A-Za-z0-9]+);/g;
+
+/**
+ * Decode the character references in JSX text or a JSX attribute string the way acorn-jsx does: a hex or decimal reference becomes its code unit, a name in the XHTML table becomes its character, and anything else stays as written. oxc-parser leaves both raw (`"&mdash; "`), so without this a rule reading `.value` sees letters ESLint never showed it.
+ */
+export function decodeJsxEntities(text: string): string {
+  if (!text.includes('&')) return text;
+  return text.replace(JSX_ENTITY, (whole, body: string) => {
+    if (body.length > 9) return whole;
+    if (body.startsWith('#x')) return String.fromCharCode(Number.parseInt(body.slice(2), 16));
+    if (body.startsWith('#')) return String.fromCharCode(Number.parseInt(body.slice(1), 10));
+    return Object.hasOwn(XHTML_ENTITIES, body) ? XHTML_ENTITIES[body] : whole;
+  });
+}
+
 /** Full-tree walk: sets `.parent` everywhere and builds every scope, before any rule listener runs. */
 function buildParentsAndScopes(
   node: AnyNode | null | undefined,
@@ -258,6 +276,12 @@ function buildParentsAndScopes(
 ): void {
   if (!node || typeof node !== 'object' || typeof node.type !== 'string') return;
   node.parent = parent;
+  if (
+    typeof node.value === 'string' &&
+    (node.type === 'JSXText' || (node.type === 'Literal' && parent?.type === 'JSXAttribute'))
+  ) {
+    node.value = decodeJsxEntities(node.value);
+  }
 
   let childScope = scope;
   if (FUNCTION_TYPES.has(node.type)) {

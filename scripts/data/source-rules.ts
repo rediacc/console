@@ -457,15 +457,9 @@ const ACCOUNT_WEB_I18N: RuleInstance[] = [
     modulePath: 'eslint-rules/no-hardcoded-text.js',
     exportName: 'noHardcodedText',
     files: ['private/account/web/src/**/*.ts', 'private/account/web/src/**/*.tsx'],
-    // The 5 files below carry a file-level ESLint suppression comment for this rule in the current tree (none states an inline reason), carried over here as explicit ignores per the rule map (row 141): a directive nothing honours once ESLint is gone must not silently start reporting instead.
     ignores: [
       'private/account/web/src/**/__tests__/**',
       'private/account/web/src/components/ui/**',
-      'private/account/web/src/pages/ConfigMemberAccept.tsx',
-      'private/account/web/src/pages/admin/ConfigAdmin.tsx',
-      'private/account/web/src/pages/ConfigStorage.tsx',
-      'private/account/web/src/pages/ConfigMembers.tsx',
-      'private/account/web/src/pages/ConfigSetup.tsx',
     ],
   },
   {
