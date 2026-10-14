@@ -14,7 +14,10 @@ import subprocess
 import types
 
 import pytest
-from rediacc_ci import paths
+import wl_checks
+import wl_judge
+import wl_prscope
+import worklist_messages as M
 
 from rediacc_hooks.tests import test_wl_focus as F
 from rediacc_hooks.tests import wlfix
@@ -30,13 +33,6 @@ from rediacc_hooks.tests.test_wl_pr_scope_stop import (
     write_queue,
 )
 from rediacc_hooks.tests.test_wl_roster import subagents_dir
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
-
-paths.on_sys_path(wlfix.STOP_DIR)
-import wl_checks  # noqa: E402
-import wl_judge  # noqa: E402
-import wl_prscope  # noqa: E402
-import worklist_messages as M  # noqa: E402
 
 LOOP_NEXT = "LOOP NEXT:"
 
@@ -55,7 +51,7 @@ def plans(fix, own_open: int = 1, next_open: int = 2):
 
 
 def expected_branch(taken: tuple[str, ...] = ()) -> str:
-    day = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- block_second_branch's clock
+    day = datetime.datetime.now().astimezone().strftime("%m%d")
     used = [int(b.split("-", 1)[1]) for b in taken if b.startswith(day + "-")]
     return "%s-%d" % (day, max(used, default=0) + 1)
 
@@ -78,7 +74,7 @@ def merged_world(fix, queue: bool = True, stale: bool = False):
     return own, nxt
 
 
-def test_ln1_merged_with_a_queue_blocks_with_the_step_seven_sequence(wl):  # noqa: F811
+def test_ln1_merged_with_a_queue_blocks_with_the_step_seven_sequence(wl):
     _own, nxt = merged_world(wl)
     got = stop(wl)
     out = reason(got)
@@ -95,7 +91,7 @@ def test_ln1_merged_with_a_queue_blocks_with_the_step_seven_sequence(wl):  # noq
     assert "git push origin --delete" not in out, "origin/%s does not exist: %s" % (BRANCH, out)
 
 
-def test_ln1_the_remote_delete_is_named_while_the_remote_branch_exists(wl):  # noqa: F811
+def test_ln1_the_remote_delete_is_named_while_the_remote_branch_exists(wl):
     merged_world(wl)
     head = wl.git("rev-parse", "HEAD").stdout.strip()
     wl.git("update-ref", "refs/remotes/origin/%s" % BRANCH, head)
@@ -103,14 +99,14 @@ def test_ln1_the_remote_delete_is_named_while_the_remote_branch_exists(wl):  # n
     assert "git push origin --delete %s" % BRANCH in reason(got), reason(got)[:1500]
 
 
-def test_ln1_control_merged_with_an_empty_queue_allows(wl):  # noqa: F811
+def test_ln1_control_merged_with_an_empty_queue_allows(wl):
     merged_world(wl, queue=False)
     got = stop(wl)
     assert LOOP_NEXT not in got.out, got.out[:1500]
     assert got.decision == "allow", reason(got)[:1500]
 
 
-def test_ln2_on_main_with_a_queue_cuts_the_next_branch(wl):  # noqa: F811
+def test_ln2_on_main_with_a_queue_cuts_the_next_branch(wl):
     base_world(wl)
     _own, nxt = plans(wl)
     write_queue(wl, nxt)
@@ -121,7 +117,7 @@ def test_ln2_on_main_with_a_queue_cuts_the_next_branch(wl):  # noqa: F811
     assert "git switch -c %s" % expected_branch() in out, out[:1500]
 
 
-def test_ln2_control_on_main_with_an_empty_queue_says_nothing(wl):  # noqa: F811
+def test_ln2_control_on_main_with_an_empty_queue_says_nothing(wl):
     base_world(wl)
     plans(wl)
     write_queue(wl)
@@ -129,7 +125,7 @@ def test_ln2_control_on_main_with_an_empty_queue_says_nothing(wl):  # noqa: F811
     assert LOOP_NEXT not in got.out, got.out[:1500]
 
 
-def test_ln3_a_branch_with_commits_and_no_pr_opens_the_draft(wl):  # noqa: F811
+def test_ln3_a_branch_with_commits_and_no_pr_opens_the_draft(wl):
     base_world(wl)
     wl.git("switch", "-q", "-c", BRANCH)
     _own, nxt = plans(wl)
@@ -144,7 +140,7 @@ def test_ln3_a_branch_with_commits_and_no_pr_opens_the_draft(wl):  # noqa: F811
     assert "git push -u origin %s" % BRANCH in out, out[:1500]
 
 
-def test_ln3_control_no_commits_ahead_works_the_queue_head(wl):  # noqa: F811
+def test_ln3_control_no_commits_ahead_works_the_queue_head(wl):
     base_world(wl)
     wl.git("switch", "-q", "-c", BRANCH)
     _own, nxt = plans(wl)
@@ -169,14 +165,14 @@ def live_world(fix, own_open: int, pre_open: int | None = None):
     return own
 
 
-def test_ln4_a_live_pr_with_open_boxes_gives_no_loop_next(wl):  # noqa: F811
+def test_ln4_a_live_pr_with_open_boxes_gives_no_loop_next(wl):
     live_world(wl, own_open=1)
     got = stop(wl)
     assert "loop-next" not in keys_of(wl, got), reason(got)[:1500]
     assert LOOP_NEXT not in got.out, got.out[:1500]
 
 
-def test_ln5_a_live_pr_with_every_box_ticked_names_pr_merge(wl):  # noqa: F811
+def test_ln5_a_live_pr_with_every_box_ticked_names_pr_merge(wl):
     live_world(wl, own_open=0)
     got = stop(wl)
     out = reason(got)
@@ -184,7 +180,7 @@ def test_ln5_a_live_pr_with_every_box_ticked_names_pr_merge(wl):  # noqa: F811
     assert "run /pr-merge" in out, out[:1500]
 
 
-def test_ln5b_a_pending_run_on_the_head_turns_the_merge_order_into_an_advisory(wl):  # noqa: F811
+def test_ln5b_a_pending_run_on_the_head_turns_the_merge_order_into_an_advisory(wl):
     """PR #597, 2026-10-06: every box ticked and CI running. /pr-merge needs CI Complete SUCCESS, so the merge order blocked each stop of the wait with nothing to do; the push hook's detached watch is not a background task of the session. ln5 (green CI) is the control: it still blocks."""
     live_world(wl, own_open=0)
     head = wl.git("rev-parse", "HEAD").stdout.strip()
@@ -198,7 +194,7 @@ def test_ln5b_a_pending_run_on_the_head_turns_the_merge_order_into_an_advisory(w
     assert "loop-next" not in keys_of(wl, got), reason(got)[:1500]
 
 
-def test_ln6_a_ticked_pr_plan_with_an_open_prerequisite_never_gets_pr_merge(wl):  # noqa: F811
+def test_ln6_a_ticked_pr_plan_with_an_open_prerequisite_never_gets_pr_merge(wl):
     """Ruling 7: the prerequisite is in the PR's plan set, so the set is not finished and the block names the prerequisite's first open box."""
     live_world(wl, own_open=0, pre_open=1)
     got = stop(wl)
@@ -209,7 +205,7 @@ def test_ln6_a_ticked_pr_plan_with_an_open_prerequisite_never_gets_pr_merge(wl):
     assert "T0 the open pre fixture box" in out, out[:2000]
 
 
-def test_ln7_a_finished_promoted_head_adds_its_removal_line(wl):  # noqa: F811
+def test_ln7_a_finished_promoted_head_adds_its_removal_line(wl):
     own, _nxt = merged_world(wl, stale=True)
     got = stop(wl)
     out = reason(got)
@@ -218,13 +214,13 @@ def test_ln7_a_finished_promoted_head_adds_its_removal_line(wl):  # noqa: F811
     ]
 
 
-def test_ln7_control_no_stale_head_no_removal_line(wl):  # noqa: F811
+def test_ln7_control_no_stale_head_no_removal_line(wl):
     merged_world(wl)
     got = stop(wl)
     assert "Then remove the finished Promoted entry" not in reason(got), reason(got)[:1500]
 
 
-def test_ln8_a_live_ci_trace_wait_turns_the_merged_block_into_an_advisory(wl):  # noqa: F811
+def test_ln8_a_live_ci_trace_wait_turns_the_merged_block_into_an_advisory(wl):
     merged_world(wl)
     wl.bg = json.dumps(
         [{"id": "bw9", "type": "shell", "status": "running", "description": "ci-trace --wait"}]
@@ -233,7 +229,7 @@ def test_ln8_a_live_ci_trace_wait_turns_the_merged_block_into_an_advisory(wl):  
     assert "loop-next" not in keys_of(wl, got), reason(got)[:1500]
 
 
-def test_ln9_gh_down_blocks_at_most_ci_max_blocks_stops_then_advises(wl):  # noqa: F811
+def test_ln9_gh_down_blocks_at_most_ci_max_blocks_stops_then_advises(wl):
     budget = int(wlfix.import_wl("wl_ci").CI_MAX_BLOCKS)
     base_world(wl)
     wl.git("switch", "-q", "-c", BRANCH)
@@ -249,7 +245,7 @@ def test_ln9_gh_down_blocks_at_most_ci_max_blocks_stops_then_advises(wl):  # noq
     assert seen == [True] * budget + [False], seen
 
 
-def test_ln_m1_without_the_merged_arm_the_merged_case_allows(wl):  # noqa: F811
+def test_ln_m1_without_the_merged_arm_the_merged_case_allows(wl):
     merged_world(wl)
     mutated_hook(wl, "wl_checks.py", "    if kind == wl_prscope.MERGED:\n", "    if False:\n")
     got = stop(wl)
@@ -304,7 +300,7 @@ def turbo_world(
     return own, one, two
 
 
-def test_tn1_turbo_names_the_eligible_plans_to_start_on_writers(wl):  # noqa: F811
+def test_tn1_turbo_names_the_eligible_plans_to_start_on_writers(wl):
     """The arm blocks on the first stop; its text is surfaced within the ladder's rotation over the T_MISSION keys that block beside it."""
     _own, one, two = turbo_world(wl)
     got = stop(wl)
@@ -322,7 +318,7 @@ def test_tn1_turbo_names_the_eligible_plans_to_start_on_writers(wl):  # noqa: F8
     assert "T0 the open turbo-one fixture box" in out, out[:2000]
 
 
-def test_tn1_the_named_plans_are_recorded_for_the_pr_body(wl):  # noqa: F811
+def test_tn1_the_named_plans_are_recorded_for_the_pr_body(wl):
     _own, one, two = turbo_world(wl)
     stop(wl)
     record = pathlib.Path(str(wl.wl)[: -len(".md")] + ".turbo-named.json")
@@ -330,7 +326,7 @@ def test_tn1_the_named_plans_are_recorded_for_the_pr_body(wl):  # noqa: F811
     assert json.loads(record.read_text(encoding="utf-8")).get(BRANCH) == [one, two]
 
 
-def test_tn2_turbo_off_never_names_a_plan_and_keeps_the_loop_keys(wl):  # noqa: F811
+def test_tn2_turbo_off_never_names_a_plan_and_keeps_the_loop_keys(wl):
     turbo_world(wl, turbo=False)
     got = stop(wl)
     out = reason(got)
@@ -339,7 +335,7 @@ def test_tn2_turbo_off_never_names_a_plan_and_keeps_the_loop_keys(wl):  # noqa: 
     assert not pathlib.Path(str(wl.wl)[: -len(".md")] + ".turbo-named.json").exists()
 
 
-def test_tn2_turbo_off_matches_a_queue_with_no_settings_block(wl):  # noqa: F811
+def test_tn2_turbo_off_matches_a_queue_with_no_settings_block(wl):
     """Turbo off is today's loop: the same keys as a QUEUE.md that has no `## Settings` at all."""
     turbo_world(wl, turbo=False)
     off = keys_of(wl, stop(wl))
@@ -355,7 +351,7 @@ def test_tn2_turbo_off_matches_a_queue_with_no_settings_block(wl):  # noqa: F811
     assert off == bare, (off, bare)
 
 
-def test_tn3_a_red_ci_outranks_the_turbo_arm(wl):  # noqa: F811
+def test_tn3_a_red_ci_outranks_the_turbo_arm(wl):
     turbo_world(wl, red=True)
     got = stop(wl)
     keys = keys_of(wl, got)
@@ -363,7 +359,7 @@ def test_tn3_a_red_ci_outranks_the_turbo_arm(wl):  # noqa: F811
     assert "turbo-next" not in keys, reason(got)[:2000]
 
 
-def test_tn4_a_finished_set_short_of_the_batch_is_not_offered_for_merge(wl):  # noqa: F811
+def test_tn4_a_finished_set_short_of_the_batch_is_not_offered_for_merge(wl):
     """D8: one plan finished of a batch of 2, and eligible plans remain, so the merge waits and the turbo arm names the next plans."""
     turbo_world(wl, own_open=0, batch=2)
     got = stop(wl)
@@ -372,7 +368,7 @@ def test_tn4_a_finished_set_short_of_the_batch_is_not_offered_for_merge(wl):  # 
     assert "turbo-next" in keys_of(wl, got), out[:2000]
 
 
-def test_tn4_control_batch_one_offers_the_merge(wl):  # noqa: F811
+def test_tn4_control_batch_one_offers_the_merge(wl):
     turbo_world(wl, own_open=0, batch=1)
     got = stop(wl)
     out = reason(got)
@@ -380,7 +376,7 @@ def test_tn4_control_batch_one_offers_the_merge(wl):  # noqa: F811
     assert "turbo-next" not in keys_of(wl, got), out[:2000]
 
 
-def test_tn_m1_a_turbo_flag_read_as_always_on_fires_the_arm_with_turbo_off(wl):  # noqa: F811
+def test_tn_m1_a_turbo_flag_read_as_always_on_fires_the_arm_with_turbo_off(wl):
     """Mutation control: with the settings parser reading every `turbo:` as on, the turbo-off world names plans, so tn2 depends on the flag."""
     turbo_world(wl, turbo=False)
     mutated_hook(
@@ -578,7 +574,7 @@ def test_lf2_a_ready_local_batch_blocks_with_the_batch_open_sequence(lrepo):
         assert rel.rsplit("/", 1)[-1] in text, (rel, text)
 
 
-def test_lf2_the_printed_body_names_every_batch_plan(wl):  # noqa: F811
+def test_lf2_the_printed_body_names_every_batch_plan(wl):
     """`worklist.py --batch-body <me>` prints plan_gate.batch_body: the queue head plus every plan the hook named for the branch."""
     base_world(wl)
     wl.git("switch", "-q", "-c", BRANCH)
@@ -594,7 +590,7 @@ def test_lf2_the_printed_body_names_every_batch_plan(wl):  # noqa: F811
         assert rel in line, (rel, got.out)
 
 
-def test_lf2_control_batch_body_refuses_a_bad_call(wl):  # noqa: F811
+def test_lf2_control_batch_body_refuses_a_bad_call(wl):
     got = wl.cli("--batch-body")
     assert got.rc == 2, got.err
     assert "usage: --batch-body" in got.err, got.err
@@ -694,14 +690,14 @@ def local_world(fix, turbo_push: str = "batch-end", turbo: bool = True):
     return own, nxt
 
 
-def test_lf1_live_hook_a_local_batch_never_says_open_it(wl):  # noqa: F811
+def test_lf1_live_hook_a_local_batch_never_says_open_it(wl):
     local_world(wl)
     got = stop(wl)
     assert "loop-next" not in keys_of(wl, got), reason(got)[:1500]
     assert "Open it" not in got.out, got.out[:1500]
 
 
-def test_lf1_live_hook_control_pr_mode_says_open_it(wl):  # noqa: F811
+def test_lf1_live_hook_control_pr_mode_says_open_it(wl):
     local_world(wl, turbo_push="pr")
     got = stop(wl)
     assert "loop-next" in keys_of(wl, got), reason(got)[:1500]

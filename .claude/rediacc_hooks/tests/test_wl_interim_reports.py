@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import json
 
-from rediacc_hooks.tests.test_wl_report_inbox import BIG, Scratch, sc  # noqa: F401
+from rediacc_hooks.tests.test_wl_report_inbox import BIG, Scratch
 
 AGENT = "awaiter-000011112222"
 WAITING = "I'll wait for this notification now."  # style-ok -- the agent's own words, quoted
 SHELL = "bwait0001"
 
 
-def transcript(sc: Scratch, notified: bool = False):  # noqa: F811
+def transcript(sc: Scratch, notified: bool = False):
     """The agent's transcript: a launched background shell, then an idle final record. `notified` appends the shell's `<task-id>` notification and a second idle record, the shape of an agent the harness resumed and that finished."""
     path = sc.subagents_dir() / ("agent-%s.jsonl" % AGENT)
     records = [
@@ -53,7 +53,7 @@ def transcript(sc: Scratch, notified: bool = False):  # noqa: F811
     return path
 
 
-def capture(sc: Scratch, body: str, tx) -> None:  # noqa: F811
+def capture(sc: Scratch, body: str, tx) -> None:
     got = sc.raw_stop(
         {
             "agent_id": AGENT,
@@ -68,23 +68,23 @@ def capture(sc: Scratch, body: str, tx) -> None:  # noqa: F811
     assert got.rc == 0, got.err[:300]
 
 
-def surfaced(sc: Scratch) -> str:  # noqa: F811
+def surfaced(sc: Scratch) -> str:
     return sc.surface("--session-start", "startup")
 
 
-def test_r7_an_interim_wait_is_held_while_the_agent_waits(sc):  # noqa: F811
+def test_r7_an_interim_wait_is_held_while_the_agent_waits(sc):
     """CONTROL: before R.7 the wait surfaced as an unread [SILENT] report."""
     capture(sc, WAITING, transcript(sc))
     assert WAITING not in surfaced(sc), surfaced(sc)[:600]
 
 
-def test_r7_inverse_the_agent_stops_waiting_with_no_later_capture_and_it_returns(sc):  # noqa: F811
+def test_r7_inverse_the_agent_stops_waiting_with_no_later_capture_and_it_returns(sc):
     capture(sc, WAITING, transcript(sc))
     transcript(sc, notified=True)
     assert WAITING in surfaced(sc), "a finished agent's interim entry stayed hidden"
 
 
-def test_r7_inverse_a_later_capture_supersedes_it(sc):  # noqa: F811
+def test_r7_inverse_a_later_capture_supersedes_it(sc):
     capture(sc, WAITING, transcript(sc))
     tx = transcript(sc, notified=True)
     capture(sc, "FINAL REPORT\n" + BIG, tx)
@@ -95,6 +95,6 @@ def test_r7_inverse_a_later_capture_supersedes_it(sc):  # noqa: F811
     assert '"via":"superseded"' in reads.replace(" ", ""), reads[:600]
 
 
-def test_r7_adversarial_a_substantive_report_is_never_held(sc):  # noqa: F811
+def test_r7_adversarial_a_substantive_report_is_never_held(sc):
     capture(sc, "SUBSTANCE WHILE WAITING\n" + BIG, transcript(sc))
     assert "SUBSTANCE WHILE WAITING" in surfaced(sc)

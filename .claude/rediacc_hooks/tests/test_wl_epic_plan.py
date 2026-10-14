@@ -12,7 +12,6 @@ import sys
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_roster import write_plan
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 PROBE = r"""
 import json, sys
@@ -61,7 +60,7 @@ def rel_of(plan: str) -> str:
     return "agent/plans/%s" % plan
 
 
-def test_epic_with_plan_resolves_its_covers(wl):  # noqa: F811
+def test_epic_with_plan_resolves_its_covers(wl):
     rel = rel_of(write_plan(wl, "scope-a"))
     item = add(wl, "(deadbeef) work under scope-a")
     eid = new_epic(wl, "--plan", rel, "scope-a work")
@@ -74,7 +73,7 @@ def test_epic_with_plan_resolves_its_covers(wl):  # noqa: F811
     assert probe(wl, other)["covers"] == []
 
 
-def test_epic_later_add_keeps_the_plan(wl):  # noqa: F811
+def test_epic_later_add_keeps_the_plan(wl):
     rel = rel_of(write_plan(wl, "scope-a"))
     first, second = add(wl, "(deadbeef) one"), add(wl, "(deadbeef) two")
     eid = new_epic(wl, "--plan", rel, "scope-a work")
@@ -85,7 +84,7 @@ def test_epic_later_add_keeps_the_plan(wl):  # noqa: F811
     assert got["epics"][eid]["plan"] == rel
 
 
-def test_epic_remove_detaches_an_item_and_a_later_add_restores_it(wl):  # noqa: F811
+def test_epic_remove_detaches_an_item_and_a_later_add_restores_it(wl):
     # 2026-10-07 #4b15e1e7: a post-merge task attached to the PR plan's epic blocked a PR it cannot finish in, and covers only ever accumulated, so nothing could detach it.
     rel = rel_of(write_plan(wl, "scope-a"))
     stay, leave = add(wl, "(deadbeef) stays"), add(wl, "(deadbeef) post-merge")
@@ -105,7 +104,7 @@ def test_epic_remove_detaches_an_item_and_a_later_add_restores_it(wl):  # noqa: 
     assert probe(wl, rel)["covers"] == sorted([stay, leave])
 
 
-def test_epic_title_naming_a_plan_resolves_nothing(wl):  # noqa: F811
+def test_epic_title_naming_a_plan_resolves_nothing(wl):
     plan = write_plan(wl, "scope-a")
     rel = rel_of(plan)
     item = add(wl, "(deadbeef) titled only")
@@ -118,7 +117,7 @@ def test_epic_title_naming_a_plan_resolves_nothing(wl):  # noqa: F811
     assert probe(wl, rel)["covers"] == [item]
 
 
-def test_epic_plan_verb_sets_later_wins_and_list_prints_it(wl):  # noqa: F811
+def test_epic_plan_verb_sets_later_wins_and_list_prints_it(wl):
     rel_a = rel_of(write_plan(wl, "scope-a"))
     rel_b = rel_of(write_plan(wl, "scope-b"))
     item = add(wl, "(deadbeef) moves plan")
@@ -138,7 +137,7 @@ def test_epic_plan_verb_sets_later_wins_and_list_prints_it(wl):  # noqa: F811
     assert line.endswith("plan: -"), line
 
 
-def test_epic_nonexistent_plan_is_refused_and_writes_nothing(wl):  # noqa: F811
+def test_epic_nonexistent_plan_is_refused_and_writes_nothing(wl):
     write_plan(wl, "scope-a")
     for bad in ("agent/plans/PLAN-missing.md", "docs/PLAN-scope-a.md", "agent/plans/../x.md"):
         got = wl.cli("--epic", wlfix.ME, "new", "--plan", bad, "refused epic")
@@ -165,7 +164,7 @@ def state_of(fix, item: str) -> str:
     return found.group(1)
 
 
-def test_reopen_moves_a_deferral_back_to_open(wl):  # noqa: F811
+def test_reopen_moves_a_deferral_back_to_open(wl):
     item = add(wl, "(deadbeef) parked item")
     assert wl.cli("--defer", wlfix.ME, item, *DEFER.split()).rc == 0
     assert state_of(wl, item) == "?"
@@ -175,7 +174,7 @@ def test_reopen_moves_a_deferral_back_to_open(wl):  # noqa: F811
     assert state_of(wl, item) == " "
 
 
-def test_reopen_is_refused_from_every_other_state(wl):  # noqa: F811
+def test_reopen_is_refused_from_every_other_state(wl):
     done = add(wl, "(deadbeef) finished item")
     assert wl.cli("--tick", wlfix.ME, done, "https://ci.invalid/run/1 nocommit:research").rc == 0
     got = wl.cli("--reopen", wlfix.ME, done, "try to reopen")

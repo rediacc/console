@@ -22,7 +22,6 @@ from typing import Any
 import pytest
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 ONBOARD = wlfix.STOP_DIR.parent / "context" / "onboard.py"
 
@@ -35,7 +34,7 @@ EV_SUB = {"session_id": FT_SID, "tool_name": "Bash", "parent_tool_use_id": "tool
 
 
 @pytest.fixture
-def ft(wl):  # noqa: F811
+def ft(wl):
     """The first-touch state directory, rebuilt per test as the bash rebuilt it per arm.
 
     UNDER THE SANDBOX ROOT, as the bash put it under `$BASE`: the onboarding hook resolves the worklist from the same TMPDIR the fixture pins, so a state directory outside it would read one session's marker against another's store.
@@ -113,11 +112,11 @@ def test_25_onboard_py_is_where_the_suite_expects_it():
     assert ONBOARD.is_file(), "onboard.py missing at %s" % ONBOARD
 
 
-def test_25_an_unarmed_session_is_silent(wl, ft):  # noqa: F811
+def test_25_an_unarmed_session_is_silent(wl, ft):
     assert combined(ftrun(wl, ft, EV_BASH)) == "", "it spoke without ever being armed"
 
 
-def test_25_arm_a_fires_at_the_first_tool_call_carrying_the_id_and_the_prefix(wl, ft):  # noqa: F811
+def test_25_arm_a_fires_at_the_first_tool_call_carrying_the_id_and_the_prefix(wl, ft):
     """Arm (a): the session OWNS something, so it is told at tool call #1 and not again.
 
     THREE CLAIMS, and the case fails if any one of them slips. It fires on a BASH call, which is what separates arm (a) from arm (b) rather than a matter of timing. It carries the ITEM ID, because a bare count of one open item sends the session straight back to the store to ask which one. And the verb prefix is THIS session's, pre-substituted: the operator's phrase was "commands
@@ -138,7 +137,7 @@ def test_25_arm_a_fires_at_the_first_tool_call_carrying_the_id_and_the_prefix(wl
     assert marker_of(ft)["state"] == "delivered", "the marker never recorded the delivery"
 
 
-def test_25_arm_b_five_non_edit_tool_calls_with_nothing_owned_emit_nothing(wl, ft):  # noqa: F811
+def test_25_arm_b_five_non_edit_tool_calls_with_nothing_owned_emit_nothing(wl, ft):
     """This is the arm that would have nagged 38 of 41 real sessions."""
     ftrun(wl, ft, EV_BASH, "--arm")
     for call in range(1, 6):
@@ -153,7 +152,7 @@ def test_25_arm_b_five_non_edit_tool_calls_with_nothing_owned_emit_nothing(wl, f
     )
 
 
-def test_25_arm_b_fires_on_the_first_edit_once(wl, ft):  # noqa: F811
+def test_25_arm_b_fires_on_the_first_edit_once(wl, ft):
     ftrun(wl, ft, EV_BASH, "--arm")
     for _ in range(5):
         ftrun(wl, ft, EV_BASH)
@@ -163,7 +162,7 @@ def test_25_arm_b_fires_on_the_first_edit_once(wl, ft):  # noqa: F811
     assert combined(ftrun(wl, ft, EV_EDIT)) == "", "it repeated within one epoch"
 
 
-def test_25_an_epoch_bump_re_arms_and_the_same_sequence_without_one_stays_silent(wl, ft):  # noqa: F811
+def test_25_an_epoch_bump_re_arms_and_the_same_sequence_without_one_stays_silent(wl, ft):
     """The compaction that fires NO hook, and its control.
 
     An in-place compaction can fire neither SessionStart nor PostCompact, so `--arm` is never called and the marker still reads `delivered` from before the context was replaced. The session on the other side of it has forgotten the store completely and is the single case this whole notice was asked for. The only trace left is the epoch counter that `band-notice.py`'s usage-drop
@@ -191,13 +190,13 @@ def test_25_an_epoch_bump_re_arms_and_the_same_sequence_without_one_stays_silent
     assert marker_of(ft)["epoch"] == 1, "the marker did not adopt the epoch it re-armed on"
 
 
-def test_25_a_subagent_call_is_silent(wl, ft):  # noqa: F811
+def test_25_a_subagent_call_is_silent(wl, ft):
     """A subagent is never told about the store."""
     ftrun(wl, ft, EV_BASH, "--arm")
     assert combined(ftrun(wl, ft, EV_SUB)) == "", "it spoke to a subagent"
 
 
-def test_25_cannot_say_is_not_zero(wl, ft):  # noqa: F811
+def test_25_cannot_say_is_not_zero(wl, ft):
     """This one was a real bug.
 
     `worklist.py --list --open <me>` exits 1 for an EMPTY slice, so keying on the exit code alone collapsed "owns nothing" into "cannot say" and arm (b) could never fire. The converse matters more: a store that REFUSES to answer (an identity mismatch) must produce silence, never the confident notice that nothing is owned.
@@ -207,13 +206,13 @@ def test_25_cannot_say_is_not_zero(wl, ft):  # noqa: F811
     assert out == "", "it asserted an empty slice the store never confirmed: %s" % out[:140]
 
 
-def test_25_the_off_switch_silences_it(wl, ft):  # noqa: F811
+def test_25_the_off_switch_silences_it(wl, ft):
     ftrun(wl, ft, EV_BASH, "--arm")
     out = combined(ftrun(wl, ft, EV_EDIT, extra={"ONBOARD_NOTICE": "off"}))
     assert out == "", "ONBOARD_NOTICE=off did not silence it: %s" % out[:120]
 
 
-def test_25_safety_it_must_never_break_a_tool_call(wl, ft):  # noqa: F811
+def test_25_safety_it_must_never_break_a_tool_call(wl, ft):
     """A PostToolUse hook that exits non-zero, or writes garbage to stdout, breaks the call it is attached to. Both are asserted against a deliberately corrupt marker."""
     (ft / "ffffeeee-onboard.json").write_text("not json at all", encoding="utf-8")
     got = ftrun(wl, ft, EV_EDIT)
@@ -311,7 +310,7 @@ CARRYOVER_SID = "eeee5555-0000-0000-0000-000000000000"
 
 
 @pytest.fixture
-def cohort(wl):  # noqa: F811
+def cohort(wl):
     """Four transcripts and a store, with every stamp chosen so the verdicts are known in advance.
 
     REFUSED_SID is refused at +5 and does not write until +20: refused-before-write. WROTE_SID writes at +2 and is refused at +8: the same shape in the other order, and the case exists because an audit that hard-coded YES would pass every assertion about the first session. PREFLOOR_SID starts an hour before the log begins, which is the session a compaction has made unmeasurable.
@@ -386,7 +385,7 @@ def row_of(payload: dict, sid8: str) -> dict:
     raise AssertionError("no row for %s in %s" % (sid8, [r["sid"] for r in payload["sessions"]]))
 
 
-def test_25_audit_reports_refusal_before_write_in_both_directions(wl, ft, cohort):  # noqa: F811
+def test_25_audit_reports_refusal_before_write_in_both_directions(wl, ft, cohort):
     """The headline metric, and the case is worth only as much as its second half.
 
     A verdict that is always YES satisfies every assertion about the refused session; a verdict that is always NO satisfies every assertion about the one that wrote first. Only the pair pins it, and the two transcripts differ in nothing except the ORDER of the refusal and the write.
@@ -413,7 +412,7 @@ def test_25_audit_reports_refusal_before_write_in_both_directions(wl, ft, cohort
     assert payload["summary"]["audited"] == 3
 
 
-def test_25_audit_does_not_charge_a_session_with_a_refusal_it_inherited(wl, ft, cohort):  # noqa: F811
+def test_25_audit_does_not_charge_a_session_with_a_refusal_it_inherited(wl, ft, cohort):
     """A resumed transcript replays the previous context's records, and one of them is a refusal.
 
     FOUND BY RUNNING THE TOOL RATHER THAN BY READING IT. On the live corpus f4da5c2e reported its first refusal at MINUS 2.0 minutes: the file opens at 12:05:08 and its fourth record is a `Stop hook feedback` stamped 12:03:10, replayed from the conversation it continues. A refusal before the session began is not this session's, and counting it made a session that was refused at
@@ -431,7 +430,7 @@ def test_25_audit_does_not_charge_a_session_with_a_refusal_it_inherited(wl, ft, 
     )
 
 
-def test_25_audit_skips_a_session_the_compaction_floor_has_made_unmeasurable(wl, ft, cohort):  # noqa: F811
+def test_25_audit_skips_a_session_the_compaction_floor_has_made_unmeasurable(wl, ft, cohort):
     """A session older than the log is UNKNOWN, and unknown is never folded in as clean.
 
     `worklist.py --compact` re-stamps every historical event `by: "compact"`, so a session that ran before the surviving log cannot be shown to have written. Counted, it would read as "never wrote" and inflate the headline on evidence that no longer exists; dropped silently, it would shrink the denominator with nobody told. It is skipped BY NAME instead.
@@ -450,7 +449,7 @@ def test_25_audit_skips_a_session_the_compaction_floor_has_made_unmeasurable(wl,
     assert "1 skipped" in plain.out, plain.out[:200]
 
 
-def test_25_audit_refuses_an_empty_cohort_rather_than_reporting_a_clean_one(wl, ft, cohort):  # noqa: F811
+def test_25_audit_refuses_an_empty_cohort_rather_than_reporting_a_clean_one(wl, ft, cohort):
     """Zero inputs is a FAILURE. Three ways to see nothing, and each exits non-zero saying which.
 
     This is the only way an audit can lie: a report over no sessions is perfectly clean and perfectly meaningless, and it is indistinguishable from a good result unless the tool refuses to print one.

@@ -16,20 +16,20 @@ import subprocess
 import time
 
 import pytest
-from rediacc_ci import paths
+import wl_checks
+import wl_ci
+import wl_core as C
+import wl_loopspeed as L
+import wl_prscope
+import wl_standdown
+import worklist_messages as M
 
 from rediacc_hooks.tests import wlfix
 
 STOP_DIR = wlfix.STOP_DIR
 HOOKS = STOP_DIR.parent
 REPO = HOOKS.parent.parent
-paths.on_sys_path(STOP_DIR)
 
-import wl_ci  # noqa: E402
-import wl_core as C  # noqa: E402
-import wl_loopspeed as L  # noqa: E402
-import wl_standdown  # noqa: E402
-import worklist_messages as M  # noqa: E402
 
 POLICY = {
     "version": 1,
@@ -300,7 +300,6 @@ def test_receipt_commands_earn_the_early_receipt_note(command, held, monkeypatch
 @pytest.mark.parametrize("filling", [True, False])
 def test_a_filling_local_batch_silences_the_early_receipt_note(filling, held, monkeypatch):
     """PLAN-turbo-local-first D4: no push is due while a turbo batch fills, so the receipt note stays quiet. Control: a batch that is not filling keeps the note."""
-    import wl_checks  # noqa: PLC0415
 
     root, *_ = held
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(root))
@@ -315,7 +314,6 @@ def test_a_filling_local_batch_silences_the_early_receipt_note(filling, held, mo
 
 def test_an_unreadable_loop_state_keeps_the_early_receipt_note(held, monkeypatch):
     """218bef67.1: the advisory fails open to the note when the loop state raises, so a broken state cannot silence it."""
-    import wl_prscope  # noqa: PLC0415
 
     def boom(*_a, **_k):
         raise RuntimeError("loop state unreadable")

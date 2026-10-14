@@ -13,7 +13,6 @@ import re
 import time
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
 def i6_fixture(fix) -> None:
@@ -28,7 +27,7 @@ def i6_fixture(fix) -> None:
     fix.crons = "[]"
 
 
-def test_91_a_stop_with_nothing_inbound_blocks_on_the_first_stop(wl):  # noqa: F811
+def test_91_a_stop_with_nothing_inbound_blocks_on_the_first_stop(wl):
     i6_fixture(wl)
     wl.check(
         "block",
@@ -37,21 +36,21 @@ def test_91_a_stop_with_nothing_inbound_blocks_on_the_first_stop(wl):  # noqa: F
     )
 
 
-def test_92a_control_a_live_work_cron_is_a_wake_up(wl):  # noqa: F811
+def test_92a_control_a_live_work_cron_is_a_wake_up(wl):
     """CONTROL: a wake-up source suppresses the idle block."""
     i6_fixture(wl)
     wl.crons = json.dumps([{"id": "w", "schedule": "17 * * * *"}])
     wl.check("allow", "", "a live work cron is a wake-up")
 
 
-def test_92c_control_a_running_background_task_is_a_wake_up(wl):  # noqa: F811
+def test_92c_control_a_running_background_task_is_a_wake_up(wl):
     """CONTROL: a wake-up source suppresses the idle block."""
     i6_fixture(wl)
     wl.bg = json.dumps([{"status": "running", "description": "agent"}])
     wl.check("allow", "", "a running background task is a wake-up")
 
 
-def test_92d_control_a_fresh_lease_is_a_wake_up(wl):  # noqa: F811
+def test_92d_control_a_fresh_lease_is_a_wake_up(wl):
     """CONTROL: a wake-up source suppresses the idle block."""
     i6_fixture(wl)
     until = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() + 30 * 60))
@@ -59,7 +58,7 @@ def test_92d_control_a_fresh_lease_is_a_wake_up(wl):  # noqa: F811
     wl.check("allow", "", "a fresh [>] lease is a wake-up")
 
 
-def test_93_a_confirmed_operator_blocked_task_is_a_legitimate_idle(wl):  # noqa: F811
+def test_93_a_confirmed_operator_blocked_task_is_a_legitimate_idle(wl):
     """CONTROL: waiting on the operator, confirmed in their own words, is a stop that needs no wake-up of its own."""
     wl.brief_now()
     wl.hand_now()
@@ -69,7 +68,7 @@ def test_93_a_confirmed_operator_blocked_task_is_a_legitimate_idle(wl):  # noqa:
     wl.check("allow", "", "confirmed 'You (User Thinks So)' waits without a wake-up")
 
 
-def test_94_a_tick_without_evidence_blocks_and_a_real_pointer_clears_it(wl):  # noqa: F811
+def test_94_a_tick_without_evidence_blocks_and_a_real_pointer_clears_it(wl):
     """A fabricated hex pointer must NOT count: it names no real object."""
     wl.say("done for now")
     wl.brief_now()
@@ -92,7 +91,7 @@ def test_94_a_tick_without_evidence_blocks_and_a_real_pointer_clears_it(wl):  # 
     wl.check("allow", "", "a REAL git object in the line is evidence")
 
 
-def test_95_a_task_flipping_to_completed_needs_evidence_near_its_id(wl):  # noqa: F811
+def test_95_a_task_flipping_to_completed_needs_evidence_near_its_id(wl):
     wl.brief_now()
     wl.hand_now()
     wl.reg_repo()
@@ -198,7 +197,7 @@ def test_96b_the_sha_arm_spends_its_budget_on_the_longest_candidates():
         checks._objects_in = original_batch
 
 
-def test_96_control_completions_that_predate_the_marker_never_nag(wl):  # noqa: F811
+def test_96_control_completions_that_predate_the_marker_never_nag(wl):
     """CONTROL: an init stop snapshots the world, so nothing that was already finished is ever asked about."""
     wl.brief_now()
     wl.reg_repo()
@@ -208,7 +207,7 @@ def test_96_control_completions_that_predate_the_marker_never_nag(wl):  # noqa: 
     wl.check("allow", "", "and the next stop sees no transition")
 
 
-def test_97_a_dot_leading_path_is_a_valid_citation(wl):  # noqa: F811
+def test_97_a_dot_leading_path_is_a_valid_citation(wl):
     """`\\b[\\w]` cannot start on a dot, so `.ci/x.sh:9` matched but CAPTURED `ci/x.sh`, which resolves to nothing. That made most of this repo uncitable while the check looked strict. Caught by I7 firing on a real tick."""
     wl.brief_now()
     wl.hand_now()
@@ -220,7 +219,7 @@ def test_97_a_dot_leading_path_is_a_valid_citation(wl):  # noqa: F811
     wl.check("allow", "", "a .ci path resolves as a citation")
 
 
-def test_98_control_a_dot_leading_path_that_does_not_exist_is_still_rejected(wl):  # noqa: F811
+def test_98_control_a_dot_leading_path_that_does_not_exist_is_still_rejected(wl):
     """CONTROL: without it, case 97 would pass for a check that accepts any dot-leading string."""
     wl.brief_now()
     wl.hand_now()
@@ -229,7 +228,7 @@ def test_98_control_a_dot_leading_path_that_does_not_exist_is_still_rejected(wl)
     wl.check("block", "which does not exist", "an invented .ci path is caught")
 
 
-def test_99_a_crashing_hook_blocks_it_does_not_wave_the_stop_through(wl):  # noqa: F811
+def test_99_a_crashing_hook_blocks_it_does_not_wave_the_stop_through(wl):
     """The hook's global escape hatch, and nobody put it there on purpose: an unhandled exception writes a traceback to stderr and NOTHING to stdout, the harness sees no decision, and the stop is ALLOWED. One bug anywhere silently disabled every check. A v8 cut really did crash on a tuple unpack and sail through; only a needle assertion caught it."""
     crashed = wl.base / "crashy.py"
     crashed.write_text(
@@ -260,7 +259,7 @@ def test_99_a_crashing_hook_blocks_it_does_not_wave_the_stop_through(wl):  # noq
     assert "planted crash" in got.out, "the block did not carry its traceback: %s" % got.out[:200]
 
 
-def test_100_control_the_unmodified_hook_still_allows_a_clean_stop(wl):  # noqa: F811
+def test_100_control_the_unmodified_hook_still_allows_a_clean_stop(wl):
     """CONTROL: without this, case 99 would pass on a hook that blocks unconditionally."""
     wl.brief_now()
     wl.hand_now()
@@ -293,7 +292,7 @@ def _registry_world(fix) -> None:
     fix.hand_now()
 
 
-def test_a_pass_claimed_for_an_unregistered_gate_is_a_violation(wl):  # noqa: F811
+def test_a_pass_claimed_for_an_unregistered_gate_is_a_violation(wl):
     _registry_world(wl)
     wl.say("Ran check:ci-plan-lifecycle-nonexistent passed, rc=0.\n\n## Remaining\nnothing")
     got = wl.run()
@@ -301,7 +300,7 @@ def test_a_pass_claimed_for_an_unregistered_gate_is_a_violation(wl):  # noqa: F8
     assert "check:ci-plan-lifecycle-nonexistent" in got.out, got.out[:800]
 
 
-def test_a_pass_claimed_for_a_registered_gate_is_silent(wl):  # noqa: F811
+def test_a_pass_claimed_for_a_registered_gate_is_silent(wl):
     """CONTROL: the same message naming a gate the lock defines must not fire."""
     _registry_world(wl)
     wl.say("Ran check:ci-trap-registry passed, rc=0.\n\n## Remaining\nnothing")

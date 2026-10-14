@@ -20,7 +20,6 @@ import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_roster import mk_sub, plant_lease, subagents_dir
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 PROOF_MARKER = "PROOF OBLIGATION: DID THE BULK TRANSFORM PROVE ITSELF"
 SWEEP_MARKER = "SWEEP THE CLASS, NOT THE INSTANCE"
@@ -199,7 +198,7 @@ def fixset_block(prompt: str) -> str:
 # ---- R.1: a live writer's edits are not the lead's fix-set ------------------------------------
 
 
-def test_r1_a_live_writers_edit_asks_no_sweep_or_proof(wl):  # noqa: F811
+def test_r1_a_live_writers_edit_asks_no_sweep_or_proof(wl):
     """CONTROL: before R.1 the whole dirty tree, the writer's in-flight edit included, was the fix-set, and the proof and sweep questions were asked about it."""
     tick_world(wl, writer_live=True)
     wl.runj()
@@ -208,7 +207,7 @@ def test_r1_a_live_writers_edit_asks_no_sweep_or_proof(wl):  # noqa: F811
     assert SWEEP_MARKER not in prompt, "a sweep was asked about a live writer's edit"
 
 
-def test_r1_inverse_a_finished_writers_edit_is_still_in_the_fixset(wl):  # noqa: F811
+def test_r1_inverse_a_finished_writers_edit_is_still_in_the_fixset(wl):
     """REWRITTEN per R20260925 Decision 1: a finished writer whose item is TICKED has handed its edit to the lead, so the questions are still asked about it. (A finished writer that never held a lease is the lead's at once too; `test_r25_2_*` covers the un-ticked case, which stays subtracted.)"""
     tick_world(wl, writer_live=False, writer_item="ticked")
     wl.runj()
@@ -217,7 +216,7 @@ def test_r1_inverse_a_finished_writers_edit_is_still_in_the_fixset(wl):  # noqa:
     assert "packages/x/a.ts" in fixset_block(prompt), fixset_block(prompt)
 
 
-def test_r1_adversarial_the_leads_own_dirty_file_still_draws_the_questions(wl):  # noqa: F811
+def test_r1_adversarial_the_leads_own_dirty_file_still_draws_the_questions(wl):
     """The narrowing subtracts ONLY the live writer's paths: a file the lead changed itself keeps the sweep and proof questions, and is the one listed."""
     tick_world(wl, writer_live=True, lead_file="packages/x/b.ts")
     wl.runj()
@@ -313,14 +312,14 @@ def prompt_section(fix, outstanding: dict) -> str:
     return json.loads(proc.stdout)
 
 
-def test_r2_a_search_already_run_in_the_transcript_discharges_the_followup(wl):  # noqa: F811
+def test_r2_a_search_already_run_in_the_transcript_discharges_the_followup(wl):
     """CONTROL: before R.2 the FOLLOWUP was asked again, whatever the transcript showed."""
     outstanding = dict(SWEEP_OUTSTANDING, fires=1, at=time.time() - 600, first_at=time.time() - 600)
     plant_search_call(wl, "grep -rn 'post-tool' .claude/settings.json | wc -l", 300)
     assert prompt_section(wl, outstanding) == ""
 
 
-def test_r2_inverse_a_search_before_the_demand_or_without_a_result_keeps_it(wl):  # noqa: F811
+def test_r2_inverse_a_search_before_the_demand_or_without_a_result_keeps_it(wl):
     outstanding = dict(SWEEP_OUTSTANDING, fires=1, at=time.time() - 600, first_at=time.time() - 600)
     plant_search_call(wl, "grep -rn 'post-tool' .claude/settings.json", 900)
     assert FOLLOWUP_OPENING in prompt_section(wl, outstanding), (
@@ -360,7 +359,7 @@ def deferral_world(fix) -> None:
     capturing_judge(fix, {"verdict": "stop", "reason": "ok", "next_action": "none"})
 
 
-def test_r2_the_real_stop_asks_no_followup_the_transcript_answers(wl):  # noqa: F811
+def test_r2_the_real_stop_asks_no_followup_the_transcript_answers(wl):
     deferral_world(wl)
     plant_sweep_demand(wl, 600)
     plant_search_call(wl, "grep -rn 'post-tool' .claude/settings.json", 300)
@@ -369,7 +368,7 @@ def test_r2_the_real_stop_asks_no_followup_the_transcript_answers(wl):  # noqa: 
     assert SWEEP_MARKER not in prompt_of(wl), "the sweep follow-up was asked again"
 
 
-def test_r2_adversarial_the_real_stop_still_follows_up_an_unrun_search(wl):  # noqa: F811
+def test_r2_adversarial_the_real_stop_still_follows_up_an_unrun_search(wl):
     deferral_world(wl)
     plant_sweep_demand(wl, 600)
     wl.runj()
@@ -423,7 +422,7 @@ def timeout_fix_world(
     )
 
 
-def test_r3_a_search_that_misses_the_fixed_instance_is_replaced(wl):  # noqa: F811
+def test_r3_a_search_that_misses_the_fixed_instance_is_replaced(wl):
     """CONTROL: before R.3 the block handed over `Run: grep -r 'post-tool' ...`, a search the fix's own diff never matches."""
     timeout_fix_world(wl, "grep -r 'post-tool' .claude/settings.json")
     out = wl.runj().out
@@ -432,7 +431,7 @@ def test_r3_a_search_that_misses_the_fixed_instance_is_replaced(wl):  # noqa: F8
     assert "Run: grep -r 'post-tool'" not in out, out[-1200:]
 
 
-def test_r3_inverse_a_search_that_finds_the_fixed_instance_is_kept(wl):  # noqa: F811
+def test_r3_inverse_a_search_that_finds_the_fixed_instance_is_kept(wl):
     timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
     out = wl.runj().out
     assert '"decision": "block"' in out, out[:600]
@@ -478,19 +477,19 @@ ORACLE_DEMAND = {"defect_class": "x", "search": r"grep -r 'bash_results\|oracle'
 FIND_DEMAND = {"defect_class": "x", "search": "find .ci/x -name '*d.py' -type f"}
 
 
-def test_r18_a_near_literal_rerun_discharges_the_sweep(wl):  # noqa: F811
+def test_r18_a_near_literal_rerun_discharges_the_sweep(wl):
     """CONTROL, 16:10:39Z: the lead ran the same paths with a shared alternative, and the demand stayed owed for three more stops because the whole pattern was not a substring of the command."""
     plant_search_call(wl, r"grep -rln 'bash_results\|ORACLES\b' .ci/x/", 300)
     assert evidenced(wl, ORACLE_DEMAND) is True
 
 
-def test_r18_a_find_demand_run_verbatim_discharges(wl):  # noqa: F811
+def test_r18_a_find_demand_run_verbatim_discharges(wl):
     """CONTROL, 16:29:15Z: a `find` demand run verbatim was never discharged, because `search_pattern` read grep and rg only."""
     plant_search_call(wl, "find .ci/x -name '*d.py' -type f", 300)
     assert evidenced(wl, FIND_DEMAND) is True
 
 
-def test_r18_inverse_a_shared_word_without_a_shared_path_stays_owed(wl):  # noqa: F811
+def test_r18_inverse_a_shared_word_without_a_shared_path_stays_owed(wl):
     plant_search_call(wl, "grep -r 'oracle' docs/", 300)
     assert evidenced(wl, ORACLE_DEMAND) is False, "an alternative with no shared path discharged it"
     wl.setup()
@@ -507,7 +506,7 @@ def test_r18_inverse_a_shared_word_without_a_shared_path_stays_owed(wl):  # noqa
 PROOF_DEMAND = {"transform_kind": "reflow of comments", "scope": "packages/x comments"}
 
 
-def test_r18_a_shape_cluster_diff_on_the_scope_discharges_the_proof(wl):  # noqa: F811
+def test_r18_a_shape_cluster_diff_on_the_scope_discharges_the_proof(wl):
     """CONTROL: before R.18 a proof demand had no discharge at all; it rode 16:10:30, 16:23:57 and 16:29:10."""
     plant_search_call(
         wl, "python3 .ci/scripts/quality/shape_cluster_diff.py --rev HEAD packages/x", 300
@@ -515,7 +514,7 @@ def test_r18_a_shape_cluster_diff_on_the_scope_discharges_the_proof(wl):  # noqa
     assert evidenced(wl, PROOF_DEMAND, "proof") is True
 
 
-def test_r18_inverse_a_proof_elsewhere_or_another_tool_stays_owed(wl):  # noqa: F811
+def test_r18_inverse_a_proof_elsewhere_or_another_tool_stays_owed(wl):
     plant_search_call(wl, "python3 .ci/scripts/quality/shape_cluster_diff.py --rev HEAD docs/", 300)
     assert evidenced(wl, PROOF_DEMAND, "proof") is False, "a proof over another path"
     wl.setup()
@@ -528,7 +527,7 @@ def test_r18_inverse_a_proof_elsewhere_or_another_tool_stays_owed(wl):  # noqa: 
     assert evidenced(wl, PROOF_DEMAND, "proof") is False, "a proof with no result"
 
 
-def test_r18_the_real_stop_asks_no_proof_followup_the_transcript_answers(wl):  # noqa: F811
+def test_r18_the_real_stop_asks_no_proof_followup_the_transcript_answers(wl):
     """CONTROL for the wiring at wl_judge.run_judge: before R.18 `PF.load_outstanding()` was used raw, so the follow-up was asked whatever the transcript showed."""
     deferral_world(wl)
     plant_demand(wl, "proofcheck", PROOF_DEMAND, 600)
@@ -540,7 +539,7 @@ def test_r18_the_real_stop_asks_no_proof_followup_the_transcript_answers(wl):  #
     assert PROOF_MARKER not in prompt_of(wl), "the proof follow-up was asked again"
 
 
-def test_r18_adversarial_the_real_stop_still_follows_up_an_unrun_proof(wl):  # noqa: F811
+def test_r18_adversarial_the_real_stop_still_follows_up_an_unrun_proof(wl):
     deferral_world(wl)
     plant_demand(wl, "proofcheck", PROOF_DEMAND, 600)
     wl.runj()
@@ -550,7 +549,7 @@ def test_r18_adversarial_the_real_stop_still_follows_up_an_unrun_proof(wl):  # n
 LONG_OWED = "grep -rn 'owed_" + "x" * 215 + "_tail' .claude/settings.json"
 
 
-def test_r18_a_long_still_owed_search_is_shown_in_full(wl):  # noqa: F811
+def test_r18_a_long_still_owed_search_is_shown_in_full(wl):
     """CONTROL, 16:13:17Z: the block read "STILL OWED: A bash orac"; the owed search sat at the end of `reason`, under apply_order's 400-character cap and still_owed_sentence's 160."""
     assert len(LONG_OWED) >= 250
     timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
@@ -562,7 +561,7 @@ def test_r18_a_long_still_owed_search_is_shown_in_full(wl):  # noqa: F811
     assert LONG_OWED in line, text[-1500:]
 
 
-def test_r18_adversarial_a_dropped_owed_search_is_never_handed_over(wl):  # noqa: F811
+def test_r18_adversarial_a_dropped_owed_search_is_never_handed_over(wl):
     """A demand is banked whatever its search validated to, so the STILL OWED line must not re-emit a search `enforce` dropped: the line that carries it is now outside every cap and every filter on `next_action`."""
     timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
     plant_sweep_demand(wl, 600, search="git clean -xdf .claude/")
@@ -618,7 +617,7 @@ def gitlink_world(fix) -> object:
     return sub
 
 
-def test_r19_a_moved_gitlink_lists_the_submodule_files(wl):  # noqa: F811
+def test_r19_a_moved_gitlink_lists_the_submodule_files(wl):
     """CONTROL, 16:23:57Z: "no test files appear in this fix-set" while the tests sat in private/account commit aea435154; the fix-set listed only the gitlink path."""
     gitlink_world(wl)
     files, _how = fixset(wl, ["tickid01"])
@@ -631,7 +630,7 @@ def test_r19_a_moved_gitlink_lists_the_submodule_files(wl):  # noqa: F811
     assert "sub/tests/a.test.ts" in files, files
 
 
-def test_r19_inverse_an_unmoved_gitlink_adds_nothing(wl):  # noqa: F811
+def test_r19_inverse_an_unmoved_gitlink_adds_nothing(wl):
     gitlink_world(wl)
     wl.git("add", "sub")
     wl.git("commit", "-qm", "fix: bump sub")
@@ -658,7 +657,7 @@ def advised(fix, got) -> bool:
     )
 
 
-def test_r19_an_ungrounded_sweep_fire_is_an_advisory(wl):  # noqa: F811
+def test_r19_an_ungrounded_sweep_fire_is_an_advisory(wl):
     """CONTROL, 15:49:19Z and 16:10:30Z: the block's own text said UNVERIFIED and it blocked anyway."""
     timeout_fix_world(
         wl, "grep -rn '\"timeout\"' .claude/settings.json", "hook timeout values over the budget"
@@ -668,7 +667,7 @@ def test_r19_an_ungrounded_sweep_fire_is_an_advisory(wl):  # noqa: F811
     assert advised(wl, got), got.out[-1500:]
 
 
-def test_r19_an_ungrounded_proof_fire_is_an_advisory(wl):  # noqa: F811
+def test_r19_an_ungrounded_proof_fire_is_an_advisory(wl):
     proof = {
         "applicable": True,
         "transform_kind": "a reflow",
@@ -685,7 +684,7 @@ def test_r19_an_ungrounded_proof_fire_is_an_advisory(wl):  # noqa: F811
     assert advised(wl, got), queued_keys(wl)
 
 
-def test_r19_inverse_a_grounded_fire_still_blocks(wl):  # noqa: F811
+def test_r19_inverse_a_grounded_fire_still_blocks(wl):
     timeout_fix_world(wl, "grep -rn '\"timeout\"' .claude/settings.json")
     got = wl.runj()
     assert got.decision == "block", got.out[:600]
@@ -702,23 +701,23 @@ BASELINE_DEMAND = {
 BASELINE_COVER = "find .ci/config .ci/rediacc_ci scripts/data -name '*baseline*.json' -type f"
 
 
-def test_r25_3_a_covering_find_glob_with_a_shared_path_discharges(wl):  # noqa: F811
+def test_r25_3_a_covering_find_glob_with_a_shared_path_discharges(wl):
     """CONTROL, 19:50:04 marker against the 19:50:12 command: a superset of the glob and the paths, and the demand stayed owed because `near_literal` needs the demand's glob as a substring."""
     plant_search_call(wl, BASELINE_COVER, 300)
     assert evidenced(wl, BASELINE_DEMAND) is True
 
 
-def test_r25_3_inverse_a_narrower_glob_stays_owed(wl):  # noqa: F811
+def test_r25_3_inverse_a_narrower_glob_stays_owed(wl):
     plant_search_call(wl, "find .ci/config .ci/rediacc_ci -name 'ci-baseline.json' -type f", 300)
     assert evidenced(wl, BASELINE_DEMAND) is False, "a narrower glob discharged it"
 
 
-def test_r25_3_inverse_a_covering_glob_with_no_shared_path_stays_owed(wl):  # noqa: F811
+def test_r25_3_inverse_a_covering_glob_with_no_shared_path_stays_owed(wl):
     plant_search_call(wl, "find scripts/data -name '*baseline*.json' -type f", 300)
     assert evidenced(wl, BASELINE_DEMAND) is False, "a covering glob over other paths discharged it"
 
 
-def test_r25_3_inverse_a_case_sensitive_cover_of_an_iname_demand_stays_owed(wl):  # noqa: F811
+def test_r25_3_inverse_a_case_sensitive_cover_of_an_iname_demand_stays_owed(wl):
     demand = dict(BASELINE_DEMAND, search=BASELINE_DEMAND["search"].replace("-name", "-iname"))
     plant_search_call(wl, BASELINE_COVER, 300)
     assert evidenced(wl, demand) is False, "-name does not cover an -iname demand"
@@ -759,7 +758,7 @@ def run_shape_tool_on_locales(fix) -> subprocess.CompletedProcess:
     )
 
 
-def test_r25_4_the_ordered_proof_is_a_key_diff_and_discharges_the_locale_demand(wl):  # noqa: F811
+def test_r25_4_the_ordered_proof_is_a_key_diff_and_discharges_the_locale_demand(wl):
     """CONTROL: the judge ordered `shape_cluster_diff` on the locales, a tool that shaped JSON as prose lines. It now reports key paths, and the ordered command discharges the demand through the unwidened PROOF_TOOL_RE."""
     ran = run_shape_tool_on_locales(wl)
     assert ran.returncode == 0, ran.stdout + ran.stderr
@@ -768,7 +767,7 @@ def test_r25_4_the_ordered_proof_is_a_key_diff_and_discharges_the_locale_demand(
     assert evidenced(wl, LOCALE_PROOF_DEMAND, "proof") is True
 
 
-def test_r25_4_inverse_a_hand_rolled_key_diff_or_another_scope_stays_owed(wl):  # noqa: F811
+def test_r25_4_inverse_a_hand_rolled_key_diff_or_another_scope_stays_owed(wl):
     """PROOF_TOOL_RE stays narrow: the lead's own key diff at 19:44:02 is not the proof tool, and the tool over another tree is not the scope."""
     plant_search_call(
         wl, "python3 -c 'import json; print(\"unexpected 0\")' " + LOCALES + "/de/cli.json", 300
@@ -864,7 +863,7 @@ def add_bash(fix, aid: str, command: str) -> None:
     os.utime(tx, (st.st_atime, st.st_mtime))
 
 
-def test_r25_1_each_a3_command_names_the_file_it_wrote(wl):  # noqa: F811
+def test_r25_1_each_a3_command_names_the_file_it_wrote(wl):
     """The four A3 commands, one by one: a `"$f"` operand under a `cd` covers the directory it runs in, a Python heredoc that writes counts its repo-path literals, and `git rm -r` / `rm -rf` cover the directory they remove."""
     root = str(wl.proj)
     got = {k: bash_paths(wl, c.format(root=root)) for k, c in A3_CMDS.items()}
@@ -874,7 +873,7 @@ def test_r25_1_each_a3_command_names_the_file_it_wrote(wl):  # noqa: F811
     assert got["18:43:26"] == [".claude/oracles"], got
 
 
-def test_r25_1_inverse_a_read_only_command_writes_nothing(wl):  # noqa: F811
+def test_r25_1_inverse_a_read_only_command_writes_nothing(wl):
     """One fact apart from each fire: the same verbs and paths READ, never written. A `sed` without `-i`, a Python body that only loads, a `git status` of the removed tree, a quoted `rm -rf` inside a grep pattern, and an unknowable operand whose literal part is the whole checkout (never the whole tree)."""
     for cmd in (
         "cd {root}/.claude/rediacc_hooks/guards && sed -n '/^TWIN = \"/p' block_x.py",
@@ -922,7 +921,7 @@ def a3_world(fix, with_bash: bool) -> None:
     )
 
 
-def test_r25_1_a3s_bash_writes_leave_the_leads_fixset(wl):  # noqa: F811
+def test_r25_1_a3s_bash_writes_leave_the_leads_fixset(wl):
     """CONTROL, the 19:47:31 and 19:50:04 incident: all four A3 files are subtracted, and the lead-only file beside A3's baseline still draws the questions."""
     a3_world(wl, with_bash=True)
     wl.runj()
@@ -934,7 +933,7 @@ def test_r25_1_a3s_bash_writes_leave_the_leads_fixset(wl):  # noqa: F811
         assert rel not in listed, (rel, listed)
 
 
-def test_r25_1_inverse_the_same_files_without_the_bash_calls_stay_in_the_fixset(wl):  # noqa: F811
+def test_r25_1_inverse_the_same_files_without_the_bash_calls_stay_in_the_fixset(wl):
     """One fact apart: the same dirty files and the same live writer, but its transcript never ran the commands, so nothing ties them to it and they are the lead's."""
     a3_world(wl, with_bash=False)
     wl.runj()
@@ -946,7 +945,7 @@ def test_r25_1_inverse_the_same_files_without_the_bash_calls_stay_in_the_fixset(
 # ---- R20260925.2: a writer's paths stay out until its item is ticked, and the tick answers for them ---
 
 
-def test_r25_2_a_finished_writer_with_an_unticked_item_stays_subtracted(wl):  # noqa: F811
+def test_r25_2_a_finished_writer_with_an_unticked_item_stays_subtracted(wl):
     """CONTROL, A3 at 19:50:04: finished 41 seconds earlier, its edits unverified and its item open. Before R.2 a finished writer's edits were the lead's at once."""
     tick_world(wl, writer_live=False, lead_file="packages/x/b.ts", writer_item="open")
     wl.runj()
@@ -955,7 +954,7 @@ def test_r25_2_a_finished_writer_with_an_unticked_item_stays_subtracted(wl):  # 
     assert "packages/x/a.ts" not in listed, listed
 
 
-def test_r25_2_inverse_the_same_writer_with_its_item_ticked_is_the_leads_again(wl):  # noqa: F811
+def test_r25_2_inverse_the_same_writer_with_its_item_ticked_is_the_leads_again(wl):
     tick_world(wl, writer_live=False, lead_file="packages/x/b.ts", writer_item="ticked")
     wl.runj()
     listed = fixset_block(prompt_of(wl))
@@ -991,7 +990,7 @@ def writer_tick_world(fix, leased: bool) -> None:
     )
 
 
-def test_r25_2_a_writers_tick_is_asked_about_its_writers_files_only(wl):  # noqa: F811
+def test_r25_2_a_writers_tick_is_asked_about_its_writers_files_only(wl):
     """The tick of an item a writer worked is asked about that writer's dirty files, under the `item-writers` provenance, not about the lead's `b.ts`."""
     writer_tick_world(wl, leased=True)
     wl.runj()
@@ -1002,7 +1001,7 @@ def test_r25_2_a_writers_tick_is_asked_about_its_writers_files_only(wl):  # noqa
     assert "narrowed to the files those writers changed" in prompt, listed
 
 
-def test_r25_2_inverse_an_item_that_never_had_a_worker_keeps_the_status_arm(wl):  # noqa: F811
+def test_r25_2_inverse_an_item_that_never_had_a_worker_keeps_the_status_arm(wl):
     writer_tick_world(wl, leased=False)
     wl.runj()
     prompt = prompt_of(wl)

@@ -13,7 +13,6 @@ import time
 from typing import TYPE_CHECKING
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 if TYPE_CHECKING:
     import pathlib
@@ -43,7 +42,7 @@ def three_rotating(fix) -> None:
     fix.say("answer with no remaining section")
 
 
-def test_p01_the_first_block_names_every_rotating_check(wl):  # noqa: F811
+def test_p01_the_first_block_names_every_rotating_check(wl):
     """CONTROL: before P0.1 the first block carried ONE rotating check plus "N more check(s) outstanding"; the others were unnamed until later stops."""
     three_rotating(wl)
     got = wl.run()
@@ -57,7 +56,7 @@ def test_p01_the_first_block_names_every_rotating_check(wl):  # noqa: F811
     assert "more check(s) outstanding, each named above" in reason, reason[-400:]
 
 
-def test_p01_only_the_quoted_check_rotates_and_the_named_ones_follow(wl):  # noqa: F811
+def test_p01_only_the_quoted_check_rotates_and_the_named_ones_follow(wl):
     """The LRU rotation is unchanged: the second stop quotes a check the first stop only named."""
     three_rotating(wl)
     first = json.loads(wl.run().out)["reason"]
@@ -69,7 +68,7 @@ def test_p01_only_the_quoted_check_rotates_and_the_named_ones_follow(wl):  # noq
     assert quoted_first != quoted_second, "P0.1: the same check was quoted on both stops"
 
 
-def test_p01_inverse_a_single_rotating_check_names_nothing(wl):  # noqa: F811
+def test_p01_inverse_a_single_rotating_check_names_nothing(wl):
     """INVERSE: with one rotating check there is nothing to name, and the footer says so."""
     wl.env["WORKLIST_STUCK_ROUNDS"] = "99"
     wl.brief_now()
@@ -96,7 +95,7 @@ def outq_entry(key: str, text: str, prio: int, seq: int, sticky: bool = False) -
     }
 
 
-def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):  # noqa: F811
+def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):
     """The multi-line advisory uses a key no check re-validates: `plan-tasks` is dropped as stale when no plan has rows (wl_checks' plan-tasks drop), which this fixture's plan-less world always is.
 
     CONTROL: before P0.2 the block said only "N advisory section(s) are queued and CANNOT be shown"."""
@@ -133,7 +132,7 @@ def test_p02_a_blocked_stop_carries_the_advisory_digest(wl):  # noqa: F811
     assert "CANNOT be shown" not in reason
 
 
-def test_p02_a_one_line_advisory_is_delivered_and_a_body_stays_queued(wl):  # noqa: F811
+def test_p02_a_one_line_advisory_is_delivered_and_a_body_stays_queued(wl):
     """The one-line advisory is DELIVERED by the digest and leaves the queue; the multi-line body is only named and waits for a clean stop."""
     three_rotating(wl)
     wl.run()
@@ -163,7 +162,7 @@ def test_p02_a_one_line_advisory_is_delivered_and_a_body_stays_queued(wl):  # no
     assert "sample-advisory: PLAN TASKS" in third, third[-600:]
 
 
-def test_p02_the_digest_is_capped_at_six_lines(wl):  # noqa: F811
+def test_p02_the_digest_is_capped_at_six_lines(wl):
     """At most six sections are named; the rest are counted, never dropped."""
     three_rotating(wl)
     wl.run()
@@ -177,7 +176,7 @@ def test_p02_the_digest_is_capped_at_six_lines(wl):  # noqa: F811
     assert len(load_state(wl)["outq"]["items"]) == 9
 
 
-def test_p04_a_blocked_stop_records_an_admission_in_tier_r(wl):  # noqa: F811
+def test_p04_a_blocked_stop_records_an_admission_in_tier_r(wl):
     """CONTROL: before P0.4 the prefilter and its Tier R record sat after the block exit, so a blocked stop whose turn admits a mistake left no row at all."""
     three_rotating(wl)
     wl.say("I clobbered the file another session was editing.")
@@ -193,13 +192,13 @@ def test_p04_a_blocked_stop_records_an_admission_in_tier_r(wl):  # noqa: F811
     assert len(rows) == 1, "the same turn was recorded twice across two blocked stops: %s" % rows
 
 
-def test_p04_inverse_a_blocked_stop_without_an_admission_writes_nothing(wl):  # noqa: F811
+def test_p04_inverse_a_blocked_stop_without_an_admission_writes_nothing(wl):
     three_rotating(wl)
     wl.run()
     assert not (wl.wl.parent / (wl.wl.name + ".admissions-deadbeef.jsonl")).exists()
 
 
-def test_p05_the_block_footer_names_the_hint_propose_outlet(wl):  # noqa: F811
+def test_p05_the_block_footer_names_the_hint_propose_outlet(wl):
     """CONTROL: before P0.5 the footer ordered a fix and offered no way to record a misfire that cannot be fixed this turn."""
     three_rotating(wl)
     reason = json.loads(wl.run().out)["reason"]
@@ -254,7 +253,7 @@ def quiet_world(fix) -> None:
     fix.say("done\n\n## Remaining\n- nothing")
 
 
-def test_p15_a_report_the_lead_already_received_is_read_automatically(wl):  # noqa: F811
+def test_p15_a_report_the_lead_already_received_is_read_automatically(wl):
     """CONTROL: before P1.5 the report blocked as unread although the lead's transcript already held its completed notification with the full result."""
     quiet_world(wl)
     plant_report(wl)
@@ -265,14 +264,14 @@ def test_p15_a_report_the_lead_already_received_is_read_automatically(wl):  # no
     assert '"via":"task-notification"' in marks, marks
 
 
-def test_p15_inverse_without_the_notification_it_still_blocks(wl):  # noqa: F811
+def test_p15_inverse_without_the_notification_it_still_blocks(wl):
     quiet_world(wl)
     plant_report(wl)
     got = wl.run()
     assert "UNREAD SUB-AGENT REPORTS" in got.out, got.out[:800]
 
 
-def test_p15_inverse_a_silent_report_is_never_read_automatically(wl):  # noqa: F811
+def test_p15_inverse_a_silent_report_is_never_read_automatically(wl):
     """An empty `<result>` is the [SILENT] shape, which stays a real signal."""
     quiet_world(wl)
     plant_report(wl, silent=True)
@@ -295,7 +294,7 @@ def added(result) -> str:
     return found.group(1)
 
 
-def test_p12_a_commit_does_not_stale_state_md(wl):  # noqa: F811
+def test_p12_a_commit_does_not_stale_state_md(wl):
     """CONTROL for P1.2: `state_world_sig` carried HEAD, so every commit staled a 16-minute-old document. The owned item set and the items `## Next action` names are the only triggers now."""
     wl.reg_repo()
     wl.brief_now()
@@ -312,7 +311,7 @@ def test_p12_a_commit_does_not_stale_state_md(wl):  # noqa: F811
     assert "STATE.md is stale" not in got.out, got.out[:800]
 
 
-def test_p12_inverse_ticking_the_named_item_stales_it(wl):  # noqa: F811
+def test_p12_inverse_ticking_the_named_item_stales_it(wl):
     """The staleness check runs only while something remains, so a pending harness task keeps the session busy after the tick."""
     wl.brief_now()
     wl.task(7, "pending", "the next thing")
@@ -329,7 +328,7 @@ def test_p12_inverse_ticking_the_named_item_stales_it(wl):  # noqa: F811
     assert "STATE.md is stale" in got.out, got.out[:800]
 
 
-def test_p12_post_compact_carries_the_computed_facts(wl):  # noqa: F811
+def test_p12_post_compact_carries_the_computed_facts(wl):
     wl.hand_now()
     wl.add_item("- [ ] (deadbeef) an open thing for the slice")
     out = wl.post_compact().out
