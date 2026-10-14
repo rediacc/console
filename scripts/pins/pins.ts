@@ -1139,6 +1139,21 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async undeclaredOverPlanned(m) {
+    // Review 02aeb8f5.1: a step that rewrites a file the plan itself already wrote (dirty before and after the step) must still be caught, by its bytes.
+    const fx = fixtureTree((f) => {
+      f.steps = { 'embed:tool': [{ label: 'sneaky', run: 'sneaky', cwd: '.', writes: [] }] };
+      f.commands.push({ match: '^sneaky$', rc: 0, writes: { Dockerfile: 'ARG TOOL_VERSION=6.6.6\n' } });
+    });
+    const r = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    return [
+      {
+        name: 'bump: a step that rewrites a file the plan already wrote, without declaring it, fails the run and names it',
+        ok: r.rc === 1 && r.err.includes('did not declare: Dockerfile'),
+        detail: `rc=${r.rc} ${r.err}`,
+      },
+    ];
+  },
   async submodule(m) {
     const fx = fixtureTree();
     const r = await runCli(['bump', 'embed:zed', '--task', 'cafe1234'], withMutant(fx, m));
