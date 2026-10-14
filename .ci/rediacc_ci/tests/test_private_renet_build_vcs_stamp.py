@@ -2,7 +2,7 @@
 
 THE DEFECT. Go records `vcs.revision`/`vcs.modified` from the repository it finds by walking up from the module for a `.git` DIRECTORY (cmd/go/internal/vcs, vcsGit RootNames `{".git", isDir: true}`). A submodule's `.git` is a gitlink FILE, so a plain `go build` in `private/renet` stamped the CONSOLE's HEAD and dirt: on 2026-10-14 bin/renet read `vcs.revision=2ea3c2780` (a console commit) and `vcs.modified=true` over a clean renet tree at e27b334, and `npm run vm:check`'s P1 refused it as `renet-build-mismatch` on every run, its one rebuild included.
 
-THE FIX UNDER TEST. Every `go build` in build.sh goes through `_go_build`, which points `GIT_DIR`/`GIT_WORK_TREE` at renet's own repository when `.git` is a file.
+THE FIX UNDER TEST. Every `go build` in build.sh goes through `_go_build`, which cds to renet's root in a subshell and, when `.git` is a gitlink file, points `GIT_DIR` at the gitdir it names and `GIT_WORK_TREE` at renet's root.
 
 REAL GIT, REAL GO. The fixture is an outer repository holding an inner one as a real submodule, the inner carrying a copy of the real build.sh and a one-file `./cmd/renet`. A fake `go` would prove only that the env vars are set, not that Go then stamps the right commit, so the module skips where `go` is absent, as `test_proxies_go_unit.py` does. `test_the_fixture_reproduces_the_defect` is the control: a plain `go build` in the same submodule must stamp the OUTER commit, or the fixture cannot tell the fix from its absence.
 """
@@ -110,29 +110,16 @@ def _build_sh_run(
     out: pathlib.Path,
     env: dict[str, str],
     cwd: pathlib.Path | None = None,
-    args: tuple[str, ...] = ("./cmd/renet",),
-    dash_c: tuple[str, ...] = (),
 ) -> subprocess.CompletedProcess[str]:
     # build.sh's last line, `[[ BASH_SOURCE == $0 ]] && "$@"`, is false when sourced and
     # so is the `source` itself; `declare -F` prints the name once the helper really loaded.
     # Every path is a positional argument, never interpolated into the script text.
     script = (
-        'source "$2" || true; declare -F _go_build >/dev/null && declare -F _go_build && '
-        'CGO_ENABLED=0 _go_build "${@:3}"'
+        'source "$1" || true; declare -F _go_build >/dev/null && declare -F _go_build && '
+        'CGO_ENABLED=0 _go_build -o "$2" ./cmd/renet'
     )
     return subprocess.run(
-        [
-            "bash",
-            "-c",
-            script,
-            "build-vcs",
-            str(out),
-            str(sub / "build.sh"),
-            *dash_c,  # go requires -C to be the first flag
-            "-o",
-            str(out),
-            *args,
-        ],
+        ["bash", "-c", script, "build-vcs", str(sub / "build.sh"), str(out)],
         cwd=cwd or sub,
         env=env,
         capture_output=True,
@@ -146,10 +133,8 @@ def _build_sh_go_build(
     out: pathlib.Path,
     env: dict[str, str],
     cwd: pathlib.Path | None = None,
-    args: tuple[str, ...] = ("./cmd/renet",),
-    dash_c: tuple[str, ...] = (),
 ) -> None:
-    res = _build_sh_run(sub, out, env, cwd, args, dash_c)
+    res = _build_sh_run(sub, out, env, cwd)
     assert res.returncode == 0, "rc=%d\nstdout:%s\nstderr:%s" % (
         res.returncode,
         res.stdout,
@@ -184,10 +169,10 @@ def test_build_sh_stamps_a_dirty_submodule_as_modified(tmp_path: pathlib.Path) -
     assert _stamp(out, env) == (sub_head, "true")
 
 
-def test_a_broken_gitlink_fails_with_or_without_the_helper(tmp_path: pathlib.Path) -> None:
+def test_a_broken_gitlink_fails_naming_the_missing_gitdir(tmp_path: pathlib.Path) -> None:
     """Failing on an unreadable gitlink is not a regression: a plain go build fails the same way."""
     sub, _sub_head, _outer, env = _fixture(tmp_path)
-    (sub / ".git").write_text("gitdir: /nonexistent/gitdir\n", encoding="utf-8")
+    (sub / ".git").write_text("gitdir: ../missing-gitdir\n", encoding="utf-8")
     plain = subprocess.run(
         ["go", "build", "-o", str(tmp_path / "p.bin"), "./cmd/renet"],
         cwd=sub,
@@ -200,11 +185,14 @@ def test_a_broken_gitlink_fails_with_or_without_the_helper(tmp_path: pathlib.Pat
     res = _build_sh_run(sub, tmp_path / "h.bin", env)
     assert "_go_build" in res.stdout, "the helper must have loaded and been called"
     assert res.returncode != 0
-    assert "nonexistent" in res.stderr or "not a git repository" in res.stderr, res.stderr
+    missing = f"{sub}/../missing-gitdir"
+    assert f"build.sh: {sub}/.git names gitdir {missing}, which is not a directory" in (
+        res.stderr
+    ), res.stderr
 
 
-def test_cwd_outside_renet_is_not_stamped_with_renets_commit(tmp_path: pathlib.Path) -> None:
-    """build.sh does not cd, so a build of another tree must not carry renet's stamp."""
+def test_a_foreign_cwd_still_builds_renet_with_renets_stamp(tmp_path: pathlib.Path) -> None:
+    """The helper cds to renet's root, so the caller's cwd neither breaks the build nor its stamp."""
     sub, sub_head, _outer, env = _fixture(tmp_path)
     other = tmp_path / "other"
     (other / "cmd" / "renet").mkdir(parents=True)
@@ -214,54 +202,62 @@ def test_cwd_outside_renet_is_not_stamped_with_renets_commit(tmp_path: pathlib.P
     )
     _run(["git", "init", "-q", str(other)], tmp_path, env)
     other_head = _commit(other, env, "go.mod", "cmd/renet/main.go")
-    # Run build.sh's helper from renet's path while the cwd is the other tree.
-    out = tmp_path / "other.bin"
+    out = tmp_path / "foreign.bin"
     _build_sh_go_build(sub, out, env, cwd=other)
-    assert _stamp(out, env) == (other_head, "false")
-    assert other_head != sub_head
-
-
-@pytest.mark.parametrize("flag", ["split", "equals"])
-def test_dash_c_into_renet_from_a_foreign_cwd_is_stamped_with_renets_commit(
-    tmp_path: pathlib.Path, flag: str
-) -> None:
-    """Go picks the module from `-C`, not the cwd: a build of renet from elsewhere is renet's."""
-    sub, sub_head, _outer, env = _fixture(tmp_path)
-    other = tmp_path / "elsewhere"
-    other.mkdir()
-    dash_c = ("-C", str(sub)) if flag == "split" else (f"-C={sub}",)
-    out = tmp_path / "c.bin"
-    _build_sh_go_build(sub, out, env, cwd=other, dash_c=dash_c)
     assert _stamp(out, env) == (sub_head, "false")
-
-
-def test_dash_c_away_from_renet_with_renet_cwd_is_not_stamped_with_renets_commit(
-    tmp_path: pathlib.Path,
-) -> None:
-    sub, sub_head, _outer, env = _fixture(tmp_path)
-    other = tmp_path / "other"
-    (other / "cmd" / "renet").mkdir(parents=True)
-    (other / "go.mod").write_text("module example.com/other\n\ngo 1.22\n", encoding="utf-8")
-    (other / "cmd" / "renet" / "main.go").write_text(
-        "package main\n\nfunc main() {}\n", encoding="utf-8"
-    )
-    _run(["git", "init", "-q", str(other)], tmp_path, env)
-    other_head = _commit(other, env, "go.mod", "cmd/renet/main.go")
-    out = tmp_path / "away.bin"
-    _build_sh_go_build(sub, out, env, cwd=sub, dash_c=("-C", str(other)))
-    assert _stamp(out, env) == (other_head, "false")
     assert other_head != sub_head
+
+
+def _bypassing_go_builds(text: str) -> list[str]:
+    """Shell lines of `text` outside `_go_build` that run `go build` (any spelling of `go`)."""
+    body = re.search(r"^_go_build\(\) [{(]\n.*?^[})]$", text, re.MULTILINE | re.DOTALL)
+    outside = text[: body.start()] + text[body.end() :] if body else text
+    # Bash does not continue a comment line, so comments go before continuations are joined.
+    code = "\n".join(ln for ln in outside.splitlines() if not ln.lstrip().startswith("#"))
+    joined = re.sub(r"\\\n\s*", " ", code)
+    # `go`, `/usr/local/go/bin/go`, `"go"`, `'go'`, `$(go ...)`, `` `go ...` ``, then `build`.
+    go_build = re.compile(r"""(?:^|[\s;&|(`])["']?(?:[^\s;&|()`"']*/)?go["']?\s+["']?build\b""")
+    return [ln for ln in joined.splitlines() if go_build.search(ln)]
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "go build ./cmd/renet",
+        "CGO_ENABLED=0 go build -o x ./cmd/renet",
+        "/usr/local/go/bin/go build ./cmd/renet",
+        '"go" build ./cmd/renet',
+        "'go' build ./cmd/renet",
+        '"$(go build ./cmd/renet)"',
+        "x=`go build ./cmd/renet`",
+        "go \\\n    build ./cmd/renet",
+        "# a comment ending in a backslash \\\ngo build ./cmd/renet",
+        "true && go\tbuild ./cmd/renet",
+    ],
+)
+def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
+    assert _bypassing_go_builds(line + "\n"), line
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "_go_build -o x ./cmd/renet",
+        "# go build ./cmd/renet",
+        "go generate ./pkg/ebpf/...",
+        "go version -m bin/renet",
+        '_go_build() (\n    go build "$@"\n)',
+    ],
+)
+def test_the_bypass_scan_passes_the_helper_and_other_go_verbs(line: str) -> None:
+    assert _bypassing_go_builds(line + "\n") == [], line
 
 
 def test_every_go_build_in_build_sh_goes_through_the_helper() -> None:
     """A new `go build` site that bypasses `_go_build` brings the console stamp back."""
     text = BUILD_SH.read_text(encoding="utf-8")
-    body = re.search(r"^_go_build\(\) \{\n(.*?)^\}", text, re.MULTILINE | re.DOTALL)
-    assert body, "build.sh defines _go_build"
-    outside = text[: body.start()] + text[body.end() :]
-    # Join backslash continuations first, so `go \` + newline + `build` is one line.
-    joined = re.sub(r"\\\n\s*", " ", outside)
-    code = [ln for ln in joined.splitlines() if not ln.lstrip().startswith("#")]
-    raw = [ln for ln in code if re.search(r"(^|[\s;&|(])go\s+build\b", ln)]
-    assert raw == [], "go build outside _go_build: %s" % raw
-    assert any(re.search(r"\b_go_build\s", ln) for ln in code), "build.sh calls _go_build"
+    assert re.search(r"^_go_build\(\) [{(]$", text, re.MULTILINE), "build.sh defines _go_build"
+    assert _bypassing_go_builds(text) == []
+    assert re.search(r"^\s+(?:\S+=\S+ )*_go_build\s", text, re.MULTILINE), (
+        "build.sh calls _go_build"
+    )
