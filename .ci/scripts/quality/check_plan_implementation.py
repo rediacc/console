@@ -210,6 +210,45 @@ def pr_event_body(event_path=None):
     return body if isinstance(body, str) else None
 
 
+LOCAL_BODY_TIMEOUT_S = 20
+
+
+def pr_body(environ=None, runner=None, branch=None):
+    """(body, note): the body this run judges P-A1 against, and one line saying so when none could be read.
+
+    CI keeps the event payload as the ONLY source: under GITHUB_ACTIONS, or whenever GITHUB_EVENT_PATH is set, the lookup below is never attempted. A local run (`npm run ci:quick`) has no payload, so before this it never saw the open PR's `Plan:` and `Operational-Reason:` lines and judged P-A1 red where CI admits it (PR-TASK 8ed364fe: 1008-1 local red, the same gate fed PR #600's body rc=0). Outside CI the open PR of the current branch is read through `gh_retry.gh` (bounded timeout, transient retry). No gh, no open PR or a failed read leaves the body None, today's verdict, and a note saying the verdict was judged without one.
+    """
+    env = os.environ if environ is None else environ
+    if env.get("GITHUB_ACTIONS") or env.get("GITHUB_EVENT_PATH"):
+        return pr_event_body(env.get("GITHUB_EVENT_PATH", "")), ""
+    note = "local verdict judged without a PR body (%s)"
+    try:
+        from rediacc_ci.core import gh_retry
+
+        name = branch
+        if name is None:
+            name = subprocess.run(
+                ["git", "-C", REPO_ROOT, "branch", "--show-current"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=LOCAL_BODY_TIMEOUT_S,
+            ).stdout.strip()
+        if not name:
+            return None, note % "no current branch"
+        result = gh_retry.gh(
+            ["pr", "view", name, "--json", "body", "--jq", ".body // empty"],
+            timeout=LOCAL_BODY_TIMEOUT_S,
+            attempts=2,
+            runner=runner,
+        )
+        if result.returncode != 0:
+            return None, note % "no open PR for %s, or gh failed" % name
+        return result.stdout.rstrip("\n"), ""
+    except (OSError, ImportError, subprocess.SubprocessError) as exc:
+        return None, note % ("gh unavailable: %s" % exc)
+
+
 def pr_admits_open_boxes(gate, body):
     """True when the PR body carries an `Operational-Reason:` line, read by plan_gate's own parser.
 
@@ -1867,8 +1906,11 @@ def main(argv=None) -> int:
     # ---- P-A1, scoped to the live PR's plan and the plans this branch ticked (operator ruling 2026-10-02). A plan_gate that cannot be read is a finding, never an empty scope.
     n_plans, n_open = in_scope(head_plans, planfile.FINISHED_STATES)
     gate, gate_problem = load_plan_gate()
+    run_body, body_note = pr_body()
+    if body_note:
+        print("  INFO: " + body_note)
     scope, scope_notes, scope_problem = clock_scope(
-        gate, REPO_ROOT, base_plans, head_plans, pr_event_body()
+        gate, REPO_ROOT, base_plans, head_plans, run_body
     )
     scope_problem = gate_problem or scope_problem
     on_clock, off_clock = split_by_scope(
@@ -1881,7 +1923,7 @@ def main(argv=None) -> int:
             "Depends-On problem, before this gate can tell the PR's plans from the queued ones."
             % scope_problem
         )
-    elif on_clock and pr_admits_open_boxes(gate, pr_event_body()):
+    elif on_clock and pr_admits_open_boxes(gate, run_body):
         print(
             "  INFO: P-A1 admitted by the PR body's `Operational-Reason:` line, the same admission "
             "plan_gate.plan_merge_refusal grants the merge: %s"
