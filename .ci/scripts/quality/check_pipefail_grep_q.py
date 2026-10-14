@@ -41,7 +41,7 @@ why: A detector built as `producer | grep -q` under pipefail cannot reliably
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import pipefail_grep_q
 
 if __name__ == "__main__":

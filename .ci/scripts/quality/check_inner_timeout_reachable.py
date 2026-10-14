@@ -38,7 +38,7 @@ import re
 import sys
 from collections.abc import Callable, Sequence
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.controls import Controls, plant
 from rediacc_ci.quality.gh_retry_shell import run_blocks
 

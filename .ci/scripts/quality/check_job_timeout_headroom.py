@@ -39,7 +39,7 @@ import pathlib
 import re
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.core import gh_retry
 from rediacc_ci.well_known import GH_REPO
 
