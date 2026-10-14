@@ -1333,6 +1333,96 @@ def test_block_worktree_add_unjudgeable_script_is_not_said_to_hold_a_verb():
     assert "found inside the program text" in err
 
 
+# A SCRIPT THE HOOK CANNOT READ IN FULL WAS ALLOWED. An untracked shell script or python program past `shellscan._SCRIPT_MAX`, one the hook may not open, a directory or zip python runs, and a program handed over as `<(...)` or /dev/fd/N each ran `git worktree add` with rc 0 unless the command line itself spelled the verb (2026-10-15). Each is now refused unless tracked and unchanged from HEAD.
+WT_PHRASE_PY = "import os\nos.system('git worktree add /tmp/x')\n"
+
+
+def _oversize(path, tail):
+    line = "#" + "x" * 1023 + "\n"
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(line * ((shellscan._SCRIPT_MAX // len(line)) + 1))
+        handle.write(tail)
+    assert os.path.getsize(path) > shellscan._SCRIPT_MAX
+
+
+def _worktree_rc(command, cwd):
+    rc, _out, err = dispatch.run_one(
+        "block_worktree_add",
+        json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(cwd)}),
+    )
+    return rc, err
+
+
+def test_a_script_the_guard_cannot_read_in_full_is_refused(tmp_path, monkeypatch):
+    # The command line must not spell the verb itself, or the older command-line pre-filter refuses it and the case proves nothing.
+    assert "worktree" not in str(tmp_path).lower(), tmp_path
+    big_sh = tmp_path / "big.sh"
+    _oversize(big_sh, "git worktree add /tmp/x\n")
+    big_sh.chmod(0o755)
+    big_py = tmp_path / "big.py"
+    _oversize(big_py, WT_PHRASE_PY)
+    locked_sh = tmp_path / "locked.sh"
+    locked_sh.write_text("git worktree add /tmp/x\n", encoding="utf-8")
+    locked_py = tmp_path / "locked.py"
+    locked_py.write_text(WT_PHRASE_PY, encoding="utf-8")
+    locked_sh.chmod(0)
+    locked_py.chmod(0)
+    if os.geteuid() == 0:
+        # Root opens a mode-0 file, so the refusal is driven by an open that fails the way it fails for any other user.
+        real_open = open
+
+        def denied(path, *args, **kwargs):
+            if str(path) in (str(locked_sh), str(locked_py)):
+                raise PermissionError(13, "Permission denied", str(path))
+            return real_open(path, *args, **kwargs)
+
+        monkeypatch.setattr(
+            dispatch.guards.load("block_worktree_add"), "open", denied, raising=False
+        )
+    pkg = tmp_path / "pkg"
+    pkg.mkdir()
+    (pkg / "__main__.py").write_text(WT_PHRASE_PY, encoding="utf-8")
+    wrong = []
+    try:
+        for command in (
+            "bash %s" % big_sh,
+            str(big_sh),
+            "source %s" % big_sh,
+            "python3 %s" % big_py,
+            "bash %s" % locked_sh,
+            "python3 %s" % locked_py,
+            "python3 %s" % pkg,
+            "python3 <(cat %s)" % locked_py,
+            "bash <(cat %s)" % locked_sh,
+            "python3 /dev/fd/3 3< %s" % big_py,
+        ):
+            rc, err = _worktree_rc(command, tmp_path)
+            if rc != 2 or "could not read in full" not in err or "`!`" not in err:
+                wrong.append((command, rc, err[:120]))
+            assert "found inside the program text" not in err, command
+        # CONTROLS: a tracked, unchanged oversize script is reviewed code and runs unread; a compiled program run directly, /dev/null, and a path that does not exist are not scripts the hook must read.
+        repo = tmp_path / "repo"
+        repo.mkdir()
+        git(repo, "init", "-q", "-b", "main")
+        _oversize(repo / "big.sh", "git worktree add /tmp/x\n")
+        _oversize(repo / "big.py", WT_PHRASE_PY)
+        git(repo, "add", "big.sh", "big.py")
+        git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed")
+        for command in (
+            "bash %s" % (repo / "big.sh"),
+            "python3 %s" % (repo / "big.py"),
+            "/usr/bin/env true",
+            "bash /dev/null",
+            "python3 %s" % (tmp_path / "absent.py"),
+        ):
+            rc, err = _worktree_rc(command, tmp_path)
+            assert rc == 0, (command, err)
+        assert not wrong, "\n".join(map(repr, wrong))
+    finally:
+        locked_sh.chmod(0o600)
+        locked_py.chmod(0o600)
+
+
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The

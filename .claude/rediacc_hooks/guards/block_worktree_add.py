@@ -20,6 +20,8 @@ import itertools
 import os
 import re
 import shlex
+import stat
+import zipfile
 from typing import Any
 
 from rediacc_hooks import hookio, shellscan
@@ -484,6 +486,66 @@ def _shell_script(run_, cmd, cwd):
     return text, "file"
 
 
+# A SCRIPT THE HOOK CANNOT READ IN FULL IS REFUSED, NOT PASSED. The readers above judge a script by its text and skip what they cannot open: a shell script or interpreter program larger than `shellscan._SCRIPT_MAX`, one the hook may not read, a directory an interpreter runs (`python3 pkg` runs `pkg/__main__.py`), a zip archive python runs, and a program the shell hands over as a descriptor (`python3 <(...)`, `bash /dev/fd/3 3<x`). Each was allowed (rc 0, 2026-10-15) with `git worktree add` inside. `_unread_reason` names why such a script cannot be read, and the run is refused unless the script is tracked and unchanged from HEAD. A path that does not exist still fails open (the interpreter fails on it), and a compiled program run directly or handed to a shell is not a script: bash refuses an ELF file and one whose first line holds a NUL, and a binary run directly is a program like any on PATH.
+DESCRIPTOR_PATH = re.compile(r"^/dev/(?:stdin|fd/\d+)$|^/proc/[^/]+/fd/\d+$")
+
+
+def _script_operand(run_, cmd, cwd):
+    """The path `run_` reads its program from: an interpreter's script operand, a shell's script (`_shell_script_path`), or the command word of a run by path. None for anything else."""
+    base = run_.name.rsplit("/", 1)[-1]
+    if base.startswith(shellscan.INTERPRETER_NAMES):
+        kind, value = shellscan._program_parse(base, list(run_.argv))
+        return value if kind == "file" else None
+    if base in shellscan.SHELL_NAMES or base in SOURCE_WORDS:
+        return _shell_script_path(run_, cmd, cwd)
+    return run_.name if "/" in run_.name else None
+
+
+def _binary(head):
+    return head.startswith(b"\x7fELF") or b"\0" in head.split(b"\n", 1)[0]
+
+
+def _unread_reason(run_, cmd, cwd):
+    """Why the script `run_` runs by path cannot be read in full, or None when it can, is a compiled program, does not exist, is what an earlier run of `cmd` writes (judged by that write), or is tracked and unchanged from HEAD."""
+    path = _script_operand(run_, cmd, cwd)
+    if not path:
+        return None
+    if path.startswith(("<(", ">(")):
+        return "a process substitution"
+    target = shellscan._script_path(path, run_.cwd, cwd)
+    if target in shellscan._written_scripts(cmd, run_, cwd):
+        return None
+    interpreter = run_.name.rsplit("/", 1)[-1].startswith(shellscan.INTERPRETER_NAMES)
+    reason = None
+    try:
+        if DESCRIPTOR_PATH.match(target):
+            return "a descriptor the shell supplies"
+        mode = os.stat(target).st_mode
+        if stat.S_ISDIR(mode):
+            reason = "a directory" if interpreter else None
+        elif not stat.S_ISREG(mode):
+            reason = None if os.path.realpath(target) == os.devnull else "not a regular file"
+        else:
+            with open(target, "rb") as handle:
+                head = handle.read(80)
+            if interpreter and zipfile.is_zipfile(target):
+                reason = "a zip archive"
+            elif not interpreter and _binary(head):
+                reason = None
+            elif os.path.getsize(target) > shellscan._SCRIPT_MAX:
+                reason = "larger than the %d bytes the hook reads" % shellscan._SCRIPT_MAX
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        reason = "unreadable (%s)" % (exc.strerror or type(exc).__name__)
+    if reason is None:
+        return None
+    try:
+        return None if shellscan._tracked_unchanged(target) else reason
+    except OSError:
+        return reason
+
+
 # A string handed to one of these is Python, judged as a program one level down.
 EVALUATORS = ("eval", "exec", "compile")
 # The words a string fills an unknown piece of a built string with: a concatenation, an f-string or a format whose known text names `worktree` is judged as if the unknown part completed the phrase.
@@ -703,7 +765,7 @@ def _program_verdict(cmd, depth, cwd=None):
 
 
 # A SCRIPT RUN BY PATH IS A PROGRAM TOO (#78afdc0b). `interpreter_programs` reads only what the command line itself holds (`-c`, `-e`, a heredoc, a here-string, a pipe), so `python3 scratch/wt.py` whose file runs `git worktree add` was allowed (rc 0, 2026-10-14) while the same text as `python3 - <<EOF` was refused. `shellscan.interpreter_program` is the reading the shell-write guards share: what an earlier run of the same command wrote into the script, else the file on disk;
-# a script tracked and unchanged from HEAD is reviewed code and is not read, and one that does not exist fails open. A shell script run by path (`bash x.sh`, `source x.sh`, `./x.sh`) is read by `_shell_script` under the same rules. An "unjudgeable" script (written from a source the walk cannot read, or past its size cap) is refused when the command itself could spell the banned verb, the pre-filter `shell_verdict` applies inside a program.
+# a script tracked and unchanged from HEAD is reviewed code and is not read, and one that does not exist fails open. A shell script run by path (`bash x.sh`, `source x.sh`, `./x.sh`) is read by `_shell_script` under the same rules. A script on disk that cannot be read in full (`_unread_reason`: past its size cap, unreadable, a directory, a zip, a descriptor) is refused whatever the command line says, unless tracked and unchanged. An "unjudgeable" script written by the same command from a source the walk cannot read (`cp a.py b.py && python3 b.py`) is refused when the command itself could spell the banned verb, the pre-filter `shell_verdict` applies inside a program.
 # `shellscan.PROGRAM_PREFILTER` admits an interpreter word or a path word; a shell reading a script named without a slash (`bash x.sh`, `source x.sh`) is neither.
 SHELL_SCRIPT_PREFILTER = re.compile(r"\b(?:sh|bash|dash|zsh|ash|ksh|source)\b|(?:^|[\s;&|(`])\.\s")
 
@@ -712,6 +774,8 @@ def _script_verdict(cmd, depth, cwd):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
     for run_ in shellscan.every_run(cmd):
+        if _unread_reason(run_, cmd, cwd):
+            return "unread"
         text, kind = shellscan.interpreter_program(run_, cmd, cwd)
         family = _interpreter_name(run_.name) or _interpreter_name(
             shellscan.shebang_interpreter(run_, cwd) or ""
@@ -793,6 +857,14 @@ UNJUDGEABLE_MESSAGE = (
     "❌ BLOCKED: this command names a worktree verb and runs a script this hook cannot read: "
     + shellscan.UNJUDGEABLE_REASON
     + "."
+)
+
+UNREAD_MESSAGE = (
+    "❌ BLOCKED: this runs a script by path that this hook could not read in full (larger than "
+    "the hook reads, unreadable, a directory or zip an interpreter runs, or a descriptor such as "
+    "`<(...)` or /dev/fd/N), and the script is untracked or differs from HEAD, so whether it runs "
+    "`git worktree add` cannot be judged. Hand the command to the operator to run with the `!` "
+    "prefix, which bypasses this hook, or run a script the hook can read."
 )
 
 EDGE_CASES = [
@@ -910,6 +982,7 @@ def run(ev):
         "port": PORT_MESSAGE,
         "unjudgeable": UNJUDGEABLE_MESSAGE,
         "script": SCRIPT_MESSAGE,
+        "unread": UNREAD_MESSAGE,
     }
     verdict = _direct_verdict(cmd)
     if verdict:
@@ -917,9 +990,10 @@ def run(ev):
         return hookio.DENY
     verdict = _program_verdict(cmd, 0, ev.field("cwd") or None)
     if verdict:
-        # An unjudgeable script found nothing, and a script naming the phrase was refused for its text: the note says where a worktree verb was found, so it is for the other verdicts only (review 6f52f7ff.4).
+        # An unjudgeable or unread script found nothing, and a script naming the phrase was refused for its text: the note says where a worktree verb was found, so it is for the other verdicts only.
         ev.warn(
-            messages[verdict] + ("" if verdict in ("unjudgeable", "script") else " " + PROGRAM_NOTE)
+            messages[verdict]
+            + ("" if verdict in ("unjudgeable", "unread", "script") else " " + PROGRAM_NOTE)
         )
         return hookio.DENY
     return hookio.ALLOW
