@@ -814,6 +814,27 @@ function sh(cwd: string, ...args: string[]): void {
 const FIXTURE_ROOTS: string[] = [];
 
 /** A fixture console with a nested private/renet repo, both committed; `tune` edits the fixture JSON. */
+/** Two takers judge the same dead-pid lock stale; the second one wins the window and holds a fresh lock before the first clears. The first must then stand down and leave the fresh lock in place, not remove it and take the lock too. */
+function lockRaceCase(root: string): { name: string; ok: boolean; detail: string } {
+  const lock = path.join(root, '.ci/cache/pins/.lock');
+  fs.mkdirSync(path.dirname(lock), { recursive: true });
+  fs.rmSync(lock, { force: true });
+  fs.writeFileSync(lock, '999999999\n');
+  const fresh = `${process.ppid}\n`;
+  const release = takeLock(root, () => {
+    fs.rmSync(lock, { force: true });
+    fs.writeFileSync(lock, fresh);
+  });
+  const held = fs.existsSync(lock) ? fs.readFileSync(lock, 'utf8') : '<absent>';
+  if (release) release();
+  fs.rmSync(lock, { force: true });
+  return {
+    name: 'lock: a taker that loses the stale-lock race stands down and leaves the winner its fresh lock',
+    ok: release === null && held === fresh,
+    detail: `took=${release !== null} lock=${JSON.stringify(held)}`,
+  };
+}
+
 function fixtureTree(tune: (fx: Fixture) => void = () => {}): Fx {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));
   FIXTURE_ROOTS.push(root);
@@ -1339,6 +1360,7 @@ const CASES: Record<string, Case> = {
         ok: live.rc === 2 && live.err.includes('holds .ci/cache/pins/.lock') && kept,
         detail: `${live.rc} ${live.err} kept=${kept}`,
       },
+      lockRaceCase(fx.root),
     ];
   },
   async submodule(m) {
