@@ -72,13 +72,6 @@
       "message": "Need type annotation for \"rows\" (hint: \"rows: list[<type>] = ...\")"
     },
     {
-      "id": "e77e9bb1f48bba4f",
-      "file": ".ci/rediacc_ci/infra/ci_pull_images.py",
-      "code": "call-overload",
-      "count": 1,
-      "message": "No overload variant of \"run\" matches argument types \"list[str]\", \"bool\", \"object\""
-    },
-    {
       "id": "33ba7875efcb68ca",
       "file": ".ci/rediacc_ci/infra/ci_start_account.py",
       "code": "call-overload",

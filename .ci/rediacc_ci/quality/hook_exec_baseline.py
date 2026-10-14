@@ -56,6 +56,7 @@ import json
 import os
 import pathlib
 import sys
+import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
@@ -76,16 +77,18 @@ SETTINGS_REL = (".claude", "settings.json")
 # same words, for the same reason.
 #
 # THE COUNTER IS NOT COPIED HERE, deliberately. Two implementations of "how many processes does a Bash call cost" is exactly the drift this gate exists to stop, and it would be a drift the gate could not see.
-_HOOK_PKG_PARENT = pathlib.Path(
-    os.environ.get("HOOK_EXEC_COUNTER_DIR")
-    or pathlib.Path(__file__).resolve().parents[3] / ".claude"
-)
+_HOOK_PKG = {
+    "parent": pathlib.Path(
+        os.environ.get("HOOK_EXEC_COUNTER_DIR")
+        or pathlib.Path(__file__).resolve().parents[3] / ".claude"
+    )
+}
 
 
 def _load_counter():
     """`rediacc_hooks.execcount`, imported through one documented path hop."""
     # `paths.on_sys_path` IS the "insert it once" this used to spell by hand, and it is the package's own resolver rather than a fourth copy of the idiom.
-    parent = str(_HOOK_PKG_PARENT)
+    parent = str(_HOOK_PKG["parent"])
     paths.on_sys_path(parent)
     try:
         from rediacc_hooks import execcount  # noqa: PLC0415
@@ -363,7 +366,6 @@ def _run_at(root):
 
 def selftest():
     """True when a control failed, which is what `controls_first` expects."""
-    import tempfile  # noqa: PLC0415
 
     check = Checker()
     execcount = _load_counter()
@@ -486,12 +488,11 @@ def selftest():
     # runs, so `from rediacc_hooks import execcount` succeeds no matter what sys.path says, and the refusal branch is unreachable inside a warm process.
     # The gate itself always runs cold, so the branch IS live where it matters;
     # simulating cold is what makes the control a claim about that branch rather than about the import cache.
-    global _HOOK_PKG_PARENT  # noqa: PLW0603
-    saved_parent = _HOOK_PKG_PARENT
+    saved_parent = _HOOK_PKG["parent"]
     saved_modules = {k: v for k, v in sys.modules.items() if k.split(".")[0] == "rediacc_hooks"}
     saved_path = list(sys.path)
     with tempfile.TemporaryDirectory() as tmp:
-        _HOOK_PKG_PARENT = pathlib.Path(tmp)
+        _HOOK_PKG["parent"] = pathlib.Path(tmp)
         for name in saved_modules:
             del sys.modules[name]
         sys.path[:] = [p for p in sys.path if p != str(saved_parent)]
@@ -501,7 +502,7 @@ def selftest():
         except RefusalError as exc:
             missing_refused = ".claude/rediacc_hooks/execcount.py" in str(exc)
         finally:
-            _HOOK_PKG_PARENT = saved_parent
+            _HOOK_PKG["parent"] = saved_parent
             sys.modules.update(saved_modules)
             sys.path[:] = saved_path
     check(

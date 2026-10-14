@@ -29,7 +29,7 @@ TWO DIVERGENCES IN TEXT NOBODY PARSES, both bash's own diagnostics:
 
      Note the doubled name, exactly as in `set-www-worker-secrets.sh`: the
      twin's own message begins with the variable name, so bash says it twice.
-     `MISSING_TOKEN` carries the `VAR: message` half, same stream, same exit 1.
+     `MISSING_AUTH_MSG` carries the `VAR: message` half, same stream, same exit 1.
   2. A failed `cd` (:50) is bash's message with the same path-and-line prefix.
      `CD_FAILED` carries the `cd: <dir>: No such file or directory` half, same
      stream, same exit 1.
@@ -60,8 +60,8 @@ SELF = "rediacc_ci.deploy.deploy_proxy"
 
 # The `${CLOUDFLARE_API_TOKEN:?...}` stand-in named in the docstring. The twin's
 # message already begins with the variable name, so this reads it twice; kept, because that is the text.
-MISSING_TOKEN = (
-    "CLOUDFLARE_API_TOKEN: CLOUDFLARE_API_TOKEN is required "  # noqa: S105 -- a refusal message, not a credential
+MISSING_AUTH_MSG = (
+    "CLOUDFLARE_API_TOKEN: CLOUDFLARE_API_TOKEN is required "
     "(use a scoped token, never the global API key)"
 )
 
@@ -238,7 +238,7 @@ def main(argv: list[str]) -> int:
 
     if not os.environ.get("CLOUDFLARE_API_TOKEN"):
         # THE DIVERGENCE: bash prefixes this with `<script>: line 29: `.
-        print(MISSING_TOKEN, file=sys.stderr, flush=True)
+        print(MISSING_AUTH_MSG, file=sys.stderr, flush=True)
         return 1
 
     if dry_run != TRUE and not os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY"):

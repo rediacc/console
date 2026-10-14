@@ -33,6 +33,7 @@ lane: quality-branch
 
 from __future__ import annotations
 
+import ast
 import datetime as dt
 import hashlib
 import importlib.util
@@ -44,6 +45,7 @@ import subprocess
 import sys
 import tempfile
 from typing import Any
+from unittest import mock
 
 import _cipath
 from rediacc_ci import log, paths
@@ -643,7 +645,6 @@ def tick_findings(
 
 def _late_print_is_unconditional(source=None):
     """True when main() prints `late_rows_line(...)` OUTSIDE every `if`/`for`/`while`/`try`, i.e. on every run (fe588087.1: it was indented under `if base_plans is not None:` and vanished on a run without a base)."""
-    import ast  # noqa: PLC0415
 
     if source is None:
         with open(__file__, encoding="utf-8") as fh:
@@ -1448,7 +1449,7 @@ def controls_fired(enforce, planfile, planrec=None):
     )
     caught(
         "C10: this gate does not read wl_planenforce's own CLOCK_KEYS, so a key rename could leave the two halves reading different fields",
-        not (CLOCK_KEYS is not enforce.CLOCK_KEYS),
+        not (BOUND["CLOCK_KEYS"] is not enforce.CLOCK_KEYS),
     )
     caught(
         "C10: the two halves name different config files (%s vs %s)"
@@ -1457,7 +1458,7 @@ def controls_fired(enforce, planfile, planrec=None):
     )
     caught(
         "C10: this gate does not read wl_planfile's own FINISHED_STATES, so the two halves could disagree about which plans are in scope",
-        not (FINISHED_STATES is not planfile.FINISHED_STATES),
+        not (BOUND["FINISHED_STATES"] is not planfile.FINISHED_STATES),
     )
 
     # in_scope -- the FINISHED filter must actually filter, and must not filter everything.
@@ -1647,8 +1648,7 @@ def controls_fired(enforce, planfile, planrec=None):
 
 
 #: BOUND AT RUN TIME FROM THE STOP-HOOK MODULES, never restated as literals here, and C10 asserts the binding is by IDENTITY rather than by equality. A copied tuple satisfies an equality test and still drifts the day one half is renamed; a shared object cannot.
-CLOCK_KEYS = None
-FINISHED_STATES = None
+BOUND: dict = {"CLOCK_KEYS": None, "FINISHED_STATES": None}
 
 #: A FLOOR under the number of plants, not the number itself. The count is derived from `controls_fired` and printed, so a collapse is visible; this catches the other direction, where a plant loop silently stops running and reports a small honest number nobody reads.
 MIN_CONTROLS = 15
@@ -1755,8 +1755,6 @@ def prefetch_partial_clone(root):
 
 
 def main(argv=None) -> int:
-    global CLOCK_KEYS, FINISHED_STATES  # noqa: PLW0603 -- see C10: the two halves must share the OBJECT, not a copy
-
     argv = list(sys.argv[1:] if argv is None else argv)
     selftest_only = "--selftest" in argv or "--selftest-only" in argv
 
@@ -1782,8 +1780,8 @@ def main(argv=None) -> int:
         _note = prefetch_partial_clone(REPO_ROOT)
         if _note:
             print("  " + _note)
-    CLOCK_KEYS = enforce.CLOCK_KEYS
-    FINISHED_STATES = planfile.FINISHED_STATES
+    BOUND["CLOCK_KEYS"] = enforce.CLOCK_KEYS
+    BOUND["FINISHED_STATES"] = planfile.FINISHED_STATES
 
     print("plan implementation clock: controls first, then the verdict")
     missed, n_driven = controls_fired(enforce, planfile, planrec)
@@ -2178,7 +2176,6 @@ def absent_submodules(root):
     manifest = os.path.join(root, ".gitmodules")
     if not os.path.isfile(manifest):
         return out
-    import subprocess  # noqa: PLC0415 -- used only here
 
     listing = subprocess.run(
         ["git", "config", "-f", manifest, "--get-regexp", r"\.path$"],
@@ -2217,8 +2214,6 @@ def fileline_at_commit(root, commit, token):
 
 def _orphan_commit_controls(planrec):
     """(orphan_resolves, ancestor_resolves) through resolve_here, against a tmp repo holding one ancestor commit and one orphan (commit, then `reset --hard` back: the object stays, ancestry is gone)."""
-    global REPO_ROOT  # noqa: PLW0603 -- resolve_here reads the module root; restored below
-    saved = REPO_ROOT
     with tempfile.TemporaryDirectory() as tmp:
 
         def git(*args):
@@ -2238,14 +2233,12 @@ def _orphan_commit_controls(planrec):
             # A fixture that could not be built proves nothing: answer the shape that fails BOTH controls.
             return True, False
         git("reset", "-q", "--hard", base)
-        REPO_ROOT = tmp
-        try:
+        # resolve_here reads the module root, so the root is swapped for the call and restored by the patch.
+        with mock.patch.object(sys.modules[__name__], "REPO_ROOT", tmp):
             return (
                 resolve_here(planrec, "commit", orphan, [])[0],
                 resolve_here(planrec, "commit", base, [])[0],
             )
-        finally:
-            REPO_ROOT = saved
 
 
 def resolve_here(planrec, kind, token, absent):

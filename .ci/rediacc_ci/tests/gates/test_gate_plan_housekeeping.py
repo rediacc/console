@@ -14,6 +14,7 @@ Python entry point in the retired bash twin, so this port changes only the harne
 """
 
 import datetime
+import functools
 import pathlib
 import shutil
 
@@ -25,7 +26,6 @@ CFG = paths.from_root(".ci", "config", "plan-lifecycle.json")
 
 # The filler corpus is IDENTICAL in every case -- 32 plans committed today, there only to clear the gate's 30-plan floor -- so it is built ONCE and copied. Doing it per case cost a git init, 32 writes and a commit thirteen times over. Module-scoped rather than a pytest fixture: several cases nest it inside their OWN tmp_path (`make_repo` copies it under a per-case root), and a
 # plain lazy path keeps that copy step identical to the bash original's `cp -r "$TEMPLATE" "$d"`.
-_TEMPLATE = None
 
 
 def _run(*argv, cwd=None, env=None):
@@ -35,10 +35,8 @@ def _run(*argv, cwd=None, env=None):
     return result
 
 
+@functools.cache
 def _template():
-    global _TEMPLATE  # noqa: PLW0603
-    if _TEMPLATE is not None:
-        return _TEMPLATE
     # Module-cached, so no single test owns it; a pid-stamped run dir is removed at exit and swept by the next run when this one was killed first.
     root = pathlib.Path(runtmp.run_dir("plan-housekeeping-test-"))
     agent = root / "agent"
@@ -56,7 +54,6 @@ def _template():
         )
     _run("git", "-C", str(root), "add", "-A", "--", ".")
     _run("git", "-C", str(root), "-c", "commit.gpgsign=false", "commit", "-qm", "filler")
-    _TEMPLATE = root
     return root
 
 
