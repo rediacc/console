@@ -354,5 +354,14 @@ export function txnCases(): ControlCase[] {
   ];
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
-  process.exit(runControls(txnCases()) === 0 ? 0 : 1);
+// The two directory listings above are each judged against a file the case wrote itself, so an empty listing fails its case; the floor guards the case list, so a run that drops controls is refused rather than reported green.
+const MIN_TXN_CASES = 8;
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const cases = txnCases();
+  if (cases.length < MIN_TXN_CASES) {
+    console.error(`VACUOUS: ${cases.length} txn control(s), below the floor of ${MIN_TXN_CASES}`);
+    process.exit(1);
+  }
+  process.exit(runControls(cases) === 0 ? 0 : 1);
+}
