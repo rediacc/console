@@ -277,7 +277,10 @@ async function viewOf(
   return {
     ...base,
     state: 'major-only',
-    detail: `only a major or out-of-range release is newer (${pool[0].version}); \`bump ${entry.id} --major --reason "<why>"\``,
+    detail:
+      entry.safety.major === 'refuse'
+        ? `only a major or out-of-range release is newer (${pool[0].version}); this pin refuses a major bump by its registry safety, so it moves by hand in its own change`
+        : `only a major or out-of-range release is newer (${pool[0].version}); \`bump ${entry.id} --major --reason "<why>"\``,
   };
 }
 
