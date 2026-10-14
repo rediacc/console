@@ -282,6 +282,73 @@ function putBackRefused(): ControlCase {
   };
 }
 
+/** A failure to stamp the install time comes after the claim is installed, so the claim is dropped before the error propagates; a stranded claim would hold every later taker until this process exits. */
+function stampFailureDropsClaim(): ControlCase {
+  const root = tmpRoot();
+  const claim = `${path.join(journalRoot(root), '.lock')}.claim`;
+  const realUtimes = fs.utimesSync;
+  fs.utimesSync = (() => {
+    throw Object.assign(new Error('operation not permitted'), { code: 'EPERM' });
+  }) as typeof fs.utimesSync;
+  let taken: (() => void) | null = null;
+  let threw = '';
+  try {
+    taken = takeLock(root, { claimWaitMs: 0 });
+  } catch (err) {
+    threw = (err as Error).message;
+  } finally {
+    fs.utimesSync = realUtimes;
+  }
+  const left = fs.existsSync(claim);
+  fs.rmSync(root, { recursive: true, force: true });
+  return {
+    name: 'lock: a failure after the claim is installed drops the claim instead of stranding it',
+    ok: taken === null && threw.includes('operation not permitted') && !left,
+    detail: `took=${taken !== null} claimLeft=${left} threw=${threw}`,
+  };
+}
+
+/** A taker acting on a dead claim that moves a different dead claim (the judged one left by a hand removal) leaves it in its tomb for the sweep and carries on, rather than waiting and refusing with a message about a live claim. */
+function movedDeadClaimIsHarmless(): ControlCase {
+  const root = tmpRoot();
+  const jr = journalRoot(root);
+  const lock = path.join(jr, '.lock');
+  const claim = `${lock}.claim`;
+  fs.mkdirSync(claim, { recursive: true });
+  fs.writeFileSync(path.join(claim, 'owner'), '999999999 - dead7\n');
+  let moved = false;
+  const refill = (from: fs.PathLike, to: fs.PathLike): void => {
+    if (moved || from !== claim || !path.basename(String(to)).startsWith('.lock.claim.dead.'))
+      return;
+    moved = true;
+    fs.mkdirSync(claim);
+    fs.writeFileSync(path.join(claim, 'owner'), `${process.ppid} - feed9\n`);
+  };
+  let taken: (() => void) | null = null;
+  let threw = '';
+  try {
+    taken = withFs({ renameSync: refill }, () =>
+      takeLock(root, {
+        claimWaitMs: 50,
+        afterClaimVerdict: () => {
+          fs.rmSync(claim, { recursive: true, force: true });
+          fs.mkdirSync(claim);
+          fs.writeFileSync(path.join(claim, 'owner'), '999999998 - dead8\n');
+        },
+      })
+    );
+  } catch (err) {
+    threw = (err as Error).message;
+  }
+  taken?.();
+  fs.rmSync(root, { recursive: true, force: true });
+  return {
+    name: 'lock: a different dead claim moved by mistake is left in its tomb, not reported as a live claim stranded',
+    ok: moved && threw === '',
+    detail: `moved=${moved} took=${taken !== null} threw=${threw}`,
+  };
+}
+
 /** A holder whose claim was moved into a tomb while it held it takes it back out, leaves the claim now in the slot alone, gives back the lock it took and refuses. */
 function claimMovedWhileHeld(): ControlCase {
   const root = tmpRoot();
@@ -526,6 +593,8 @@ export function txnCases(): ControlCase[] {
     slowLiveHolder(),
     ownerlessClaim(),
     putBackRefused(),
+    stampFailureDropsClaim(),
+    movedDeadClaimIsHarmless(),
     claimMovedWhileHeld(),
     deadTombsSwept(),
     noHardLinkPutBack(),
