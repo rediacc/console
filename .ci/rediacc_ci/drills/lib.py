@@ -45,6 +45,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import https
+from rediacc_ci.drills import wire
 
 if TYPE_CHECKING:
     import http.cookiejar
@@ -62,6 +63,17 @@ def _colours(stream) -> tuple[str, str, str, str]:
     if tty and not os.environ.get("NO_COLOR"):
         return "\033[0;32m", "\033[0;31m", "\033[1;33m", "\033[0m"
     return "", "", "", ""
+
+
+def running_ips(status_json: str) -> list[str]:
+    """The `ip` of every VM whose status is `running` in `rdc ops status -o json` (the CLI envelope puts the array at `data.vms`; the bare renet shape is accepted too). `ops status` lists every CONFIGURED VM including absent ones, so the gate is on each entry's status, never on the array's length."""
+    parsed = wire.parse(status_json)
+    vms = wire.lookup(parsed, "data.vms")
+    if not isinstance(vms, list):
+        vms = wire.lookup(parsed, "vms")
+    if not isinstance(vms, list):
+        return []
+    return [str(v.get("ip")) for v in vms if isinstance(v, dict) and v.get("status") == "running"]
 
 
 def json_get(raw: str, path: str) -> str:

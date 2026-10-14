@@ -112,17 +112,6 @@ def parse_args(argv: list[str], opts: Options) -> int | None:
     return None
 
 
-def running_ips(status_json: str) -> list[str]:
-    """The `ip` of every VM whose status is `running`. `rdc ops status -o json` wraps the renet payload in the CLI envelope (the array is at `data.vms`); the bare shape is accepted too. `ops status` lists every CONFIGURED VM including absent ones, so the gate is on each entry's status, never on the array's length."""
-    parsed = wire.parse(status_json)
-    vms = wire.lookup(parsed, "data.vms")
-    if not isinstance(vms, list):
-        vms = wire.lookup(parsed, "vms")
-    if not isinstance(vms, list):
-        return []
-    return [str(v.get("ip")) for v in vms if isinstance(v, dict) and v.get("status") == "running"]
-
-
 def renewed_sequence(results: object) -> int:
     """The highest `newSequence` among renewal results, 0 for none (Rule T 3)."""
     if not isinstance(results, list):
@@ -392,7 +381,7 @@ class License:
         if proc.returncode != 0:
             log.error("Could not read ops status. Is renet built and libvirt reachable?")
             raise SystemExit(1)
-        running = running_ips(proc.stdout)
+        running = lib.running_ips(proc.stdout)
         d.note("running VMs: %s" % (" ".join(running) or "<none>"))
         if o.needs_vm() and o.vm_ip not in running:
             log.error("Worker VM %s is not running, and legs a-e need it." % o.vm_ip)

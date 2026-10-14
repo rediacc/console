@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T17:58:16.652Z",
+  "generatedAt": "2026-10-14T18:12:16.014Z",
   "legs": [
     {
       "index": 1,
@@ -117,6 +117,7 @@
         "pytest:.ci/rediacc_ci/tests/test_docker_retag_image.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_run_in_image.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_roundtrip.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_vm_check_receipt.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_ledger.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model_replay.py",
         "pytest:.ci/rediacc_ci/tests/test_gitx.py",
@@ -336,6 +337,7 @@
         "pytest:.ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_license.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_local_plane.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_vm_check_trigger.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_model.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py",

@@ -425,7 +425,7 @@ class Backup:
             log.error("Could not read ops status, and leg i needs a machine.")
             log.error("Provision one:  ./rdc.sh ops up --basic     Or drop the leg.")
             raise SystemExit(1)
-        running = running_ips(proc.stdout)
+        running = lib.running_ips(proc.stdout)
         d.note("running VMs: %s" % (" ".join(running) or "<none>"))
         if o.vm_ip not in running:
             log.error("Leg i needs the worker VM %s, which is not running." % o.vm_ip)
@@ -1477,17 +1477,6 @@ def _docker_ok() -> bool:
     if not shutil.which("docker"):
         return False
     return subprocess.run(["docker", "info"], capture_output=True, check=False).returncode == 0
-
-
-def running_ips(status_json: str) -> list[str]:
-    """The `ip` of every VM whose status is `running` in `rdc ops status -o json` (the CLI envelope puts the array at `data.vms`; the bare renet shape is accepted too). `ops status` lists every CONFIGURED VM including absent ones, so the gate is on each entry's status, never on the array's length."""
-    parsed = wire.parse(status_json)
-    vms = wire.lookup(parsed, "data.vms")
-    if not isinstance(vms, list):
-        vms = wire.lookup(parsed, "vms")
-    if not isinstance(vms, list):
-        return []
-    return [str(v.get("ip")) for v in vms if isinstance(v, dict) and v.get("status") == "running"]
 
 
 def _sha_file(path: pathlib.Path) -> str:
