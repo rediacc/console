@@ -25,7 +25,7 @@
  * the tree. A link whose host gave no answer (a network error, a timeout, a 5xx,
  * a 429 or rate limit) was NOT checked, and is a red finding with the sentence
  * `UPSTREAM REACHABILITY FAILURE`, so `ci-trace.py --why` reads it as the
- * outage it is. The step runs the gate with no run_external_gate wrapper, so
+ * outage it is. The step runs the gate with no wrapper, so
  * both are red on the nightly too; the `no-external-quality` label on a pull
  * request is the one hold, and its job's announcer names this gate.
  * `EXTERNAL_LINKS_FIXTURE_ROOT` is the gate test's seam: the scan runs over that

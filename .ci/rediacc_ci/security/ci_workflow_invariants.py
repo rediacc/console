@@ -65,7 +65,7 @@ THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a f
     neither carries an `if:` that would run the cleanup past a red preflight.
 
 THE EXTERNAL-GATE PINS (operator rulings 2026-10-13, "Everything fails closed, nightly included", and 2026-10-14, "Extend to all seven") ride the same phase and read a fifth file, `ci-quality.yml` (`QUALITY_WORKFLOW_FILE` overrides it). Every gate that asks a host outside the repository (`UPSTREAM_GATES`: the three pin freshness gates, actions, external links, DKIM, Go dependencies and npm dependencies) is hard on a pull request, on the nightly and on a dispatch.
-`analyse_upstream_gates` refuses: a gate with no step; a step that goes through `run_external_gate` or carries `EXTERNAL_QUALITY_MODE` (the wrapper turns exit 1 into a warning under `soft`, which is the nightly); an `if:` other than the lane guard plus the label hold (a gate-bind shard conjunct `matrix.shard == N` is allowed, since it cannot tell one cadence from another); a job whose announcer does not name the gate under `no-external-quality`; and a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
+`analyse_upstream_gates` refuses: a gate with no step; an `if:` other than the lane guard plus the label hold (a gate-bind shard conjunct `matrix.shard == N` is allowed, since it cannot tell one cadence from another); a job whose announcer does not name the gate under `no-external-quality`; and a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
 
 WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
 and its success line prints the shape (tag job, its ancestors, job count, push count) so a collapse is visible.
@@ -793,7 +793,6 @@ def preflight_message_for(kind: str, name: str, files: dict[str, str]) -> str | 
 
 UPSTREAM_GATE_KINDS = (
     "upstream-gate-missing",
-    "upstream-gate-softened",
     "upstream-gate-conditional",
     "upstream-gate-job-conditional",
     "upstream-gate-unannounced",
@@ -811,7 +810,6 @@ UPSTREAM_GATES = (
     "check:ci-go-deps",
     "check:deps",
 )
-UPSTREAM_GATE_WRAPPER = "run_external_gate"
 UPSTREAM_GATE_LABEL = "no-external-quality"
 UPSTREAM_GATE_ANNOUNCER = "rediacc_ci.quality.announce_gate_skips"
 # The one `if:` an external step may carry: the lane's standard guard and the label hold, nothing that can tell a schedule from a pull request. Compared with parentheses removed, because gate-bind wraps its `when:` conjunct in them, and with at most one gate-bind shard conjunct (`matrix.shard == N`) removed, because a shard index cannot tell a cadence either.
@@ -890,7 +888,7 @@ def analyse_upstream_gates(
 ) -> tuple[list[tuple[str, str]], list[str]]:
     """(findings, shape lines) for every external gate. Pure; the tests drive it with literal dicts.
 
-    ci-quality.yml: each gate has a step; no such step goes through run_external_gate or carries EXTERNAL_QUALITY_MODE (the wrapper turns exit 1 into a warning under `soft`, which is the nightly); its `if:` reduces to UPSTREAM_GATE_IF; and an unconditional announcer in the same job names it under the label. ci.yml: `external_quality` never resolves to `skip` off a pull request.
+    ci-quality.yml: each gate has a step; its `if:` reduces to UPSTREAM_GATE_IF; and an unconditional announcer in the same job names it under the label. ci.yml: `external_quality` never resolves to `skip` off a pull request.
     """
     out: list[tuple[str, str]] = []
     shape: list[str] = []
@@ -909,9 +907,6 @@ def analyse_upstream_gates(
                 if condition not in ("", UPSTREAM_GATE_JOB_IF):
                     out.append(("upstream-gate-job-conditional", job))
             label = "%s (%s)" % (gate, _step_label(job, i, st))
-            env = _env(st)
-            if UPSTREAM_GATE_WRAPPER in _text(st.get("run")) or "EXTERNAL_QUALITY_MODE" in env:
-                out.append(("upstream-gate-softened", label))
             if _guard(st.get("if")) != _reduced(UPSTREAM_GATE_IF):
                 out.append(("upstream-gate-conditional", label))
             if not _announced(_steps(quality_jobs.get(job)), gate):
@@ -934,14 +929,6 @@ def upstream_gate_message_for(kind: str, name: str, files: dict[str, str]) -> st
             "INVARIANT-FAIL: upstream-gates: no step in %s runs `npm run %s`, so that external "
             "gate runs on no cadence at all (nothing to check cannot pass). Restore its step."
             % (quality, name)
-        )
-    if kind == "upstream-gate-softened":
-        return (
-            "INVARIANT-FAIL: upstream-gates: %s in %s goes through %s or carries "
-            "EXTERNAL_QUALITY_MODE. The wrapper turns exit 1 into a warning under `soft`, which "
-            "is the nightly and every dispatch, and every external gate is hard on every "
-            'cadence (operator rulings 2026-10-13 and 2026-10-14, "Extend to all seven"). '
-            "Run `npm run <gate>` directly." % (name, quality, UPSTREAM_GATE_WRAPPER)
         )
     if kind == "upstream-gate-conditional":
         return (

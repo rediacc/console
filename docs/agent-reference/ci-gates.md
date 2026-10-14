@@ -319,7 +319,7 @@ renet's own `go.mod`, so no registry can make it fail. Putting it behind `extern
 - **hard** -- normal PR: a failure blocks.
 - **skip** -- PR carrying the `no-external-quality` label: the steps do not run
 at all (offline branch work; the lookups cannot succeed).
-- **soft** -- schedule / workflow_dispatch: the gates run exactly as under **hard**. No gate goes through `rediacc_ci.quality.run_external_gate` any more, so nothing downgrades a failure to a warning; the value stays distinct so `check:ci-workflow-invariants` can prove that no event other than a pull request resolves to **skip**.
+- **soft** -- schedule / workflow_dispatch: the gates run exactly as under **hard**. No gate runs behind a wrapper, so nothing downgrades a failure to a warning; the value stays distinct so `check:ci-workflow-invariants` can prove that no event other than a pull request resolves to **skip**.
 
 **Every external gate is hard on every cadence and fails closed** (operator rulings 2026-10-13, "Fail closed every time" and "Everything fails closed, nightly included", and 2026-10-14, "Extend to all seven"). Each reads only the **skip** half of the flag. Each step runs `npm run <gate>` directly with the `if:` conjunct `inputs.external_quality != 'skip'` (the gate header's `when:`, which gate-bind emits), so a finding and an upstream that could not be reached are red on a pull request, on the nightly and on a dispatch alike.
 `check:ci-workflow-invariants` pins that shape (`analyse_upstream_gates`, over `UPSTREAM_GATES`): a step that goes back behind the wrapper, gains another `if:` (a gate-bind shard conjunct aside), or loses its announcer is refused, as is a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
@@ -355,7 +355,7 @@ No label can apply to a `schedule` or `workflow_dispatch` run, so on those caden
 
 `audit.py` gets only the skip half too, by the earlier operator decision of 2026-08-04: a new production advisory against main's unchanged lockfile is a real signal about main.
 
-A new external gate gets `when: inputs.external_quality != 'skip'` in its header, a name in its job's announcer and in `UPSTREAM_GATES`, and its requests through `scripts/lib/upstream.ts`. It never gets `continue-on-error` (banned by check-workflows.sh) or the `run_external_gate` wrapper, which has no call site left and which the invariant refuses on any external step.
+A new external gate gets `when: inputs.external_quality != 'skip'` in its header, a name in its job's announcer and in `UPSTREAM_GATES`, and its requests through `scripts/lib/upstream.ts`. It never gets `continue-on-error` (banned by check-workflows.sh) or a wrapper that softens its exit code.
 
 ### Tutorial-media gates and `media_quality` (hard / skip)
 

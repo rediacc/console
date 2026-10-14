@@ -45,7 +45,7 @@
  *
  * HARD ON EVERY CADENCE (operator ruling 2026-10-13, "Everything fails closed,
  * nightly included"). The step runs `npm run check:ci-real-provider-pins`
- * directly, with no run_external_gate wrapper, so its exit 1 is red on a pull
+ * directly, with no wrapper, so its exit 1 is red on a pull
  * request, on the nightly and on a dispatch alike. The one way it does not run
  * is the `no-external-quality` label on a pull request, and the job's
  * "Announce external gates held by label" step names this gate in the log when that

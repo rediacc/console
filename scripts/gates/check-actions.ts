@@ -27,7 +27,7 @@
  * reported as "unknown" and passed, so one rate-limited action went unchecked
  * under a green. A 404 (the repository publishes no release) and a pin with no
  * version comment are red too: the gate cannot compare them. The step runs
- * `npm run check:actions` with no run_external_gate wrapper, so the nightly is
+ * `npm run check:actions` with no wrapper, so the nightly is
  * red as well; the `no-external-quality` label on a pull request is the one
  * hold, and its job's announcer names this gate when it applies.
  * `ACTIONS_API_BASE` points the requests at another host (a stub in the gate

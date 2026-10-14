@@ -201,7 +201,7 @@ jobs:
       # carrying the no-external-quality label (offline branch work: the
       # lookups cannot succeed at all; each job's announcer names the held
       # gates), and 'soft' on schedule/dispatch. Every external gate reads only
-      # the 'skip' half and none runs behind run_external_gate any more, so
+      # the 'skip' half and none runs behind a softening wrapper, so
       # 'soft' downgrades nothing: the nightly goes red on a finding or on an
       # upstream that could not be reached, and ci-trace.py --why names the
       # latter `upstream-unreachable` (operator rulings 2026-10-13 and

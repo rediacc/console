@@ -33,7 +33,7 @@
  * the missing record is a finding about DNS. A query neither resolver answered
  * (a timeout, a refused connection, SERVFAIL) was NOT checked, and is a red
  * finding with the sentence `UPSTREAM REACHABILITY FAILURE`. The step runs the
- * gate with no run_external_gate wrapper, so it is red on the nightly too; the
+ * gate with no wrapper, so it is red on the nightly too; the
  * `no-external-quality` label on a pull request is the one hold, and its job's
  * announcer names this gate.
  *

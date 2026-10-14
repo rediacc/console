@@ -2714,8 +2714,8 @@ jobs:
       # the three pin freshness gates below ask upstream, and each one fails
       # closed: an upstream answer not obtained after three tries is a red
       # finding that names the thing asked and the host
-      # (scripts/lib/upstream.ts). None of them goes through
-      # run_external_gate, so `external_quality: soft` on the nightly and on a
+      # (scripts/lib/upstream.ts). Nothing wraps them to soften an exit
+      # code, so `external_quality: soft` on the nightly and on a
       # dispatch does not downgrade them: a stale pin and an unreachable
       # upstream are red there exactly as on a pull request. The
       # `inputs.external_quality != 'skip'` conjunct stays, so the
