@@ -19,7 +19,7 @@ JUDGED ON WHAT RUNS, NOT ON THE TEXT (worklist #0c331972). Every verb arm used t
 
 FAILS OPEN, WITH ONE EXCEPTION. This matches on a path shape plus a write verb; anything it does not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
 
-THE EXCEPTION IS AN INTERPRETER PROGRAM WITH A LOG IN PLAY, and there the burden is the program's. A log is IN PLAY for a python, node, perl or ruby run when the command line hands it one (an argument, an environment value, its stdin) or when the program's own text could spell one (the `pr-babysit` stem, or a string literal glob that meets the round-log pattern). Such a program must be one this guard can FOLLOW: made only of reads, pure calls, and writes to literal paths that are not a log. A dynamic import or dispatch, a shell-out, a write whose target is not a literal, a method on a value the reader cannot type, or simply a call it does not know, and the program is refused. THE BOUNDARY: a program that is handed no log and whose text cannot spell one is not read at all, however it is written, which is what keeps this strictness off every ordinary script.
+THE EXCEPTION IS AN INTERPRETER PROGRAM WITH A LOG IN PLAY, and there the burden is the program's. A log is IN PLAY for a python, node, perl or ruby run when the command line hands it one (an argument, an environment value, its stdin) or when the program's own text could spell one (the `pr-babysit` stem, or a string literal glob that meets the round-log pattern in a program holding something that expands it: a glob or match call, a shell-out, or a computed name, `_EXPANDS`). Such a program must be one this guard can FOLLOW: made only of reads, pure calls, and writes to literal paths that are not a log. A dynamic import or dispatch, a shell-out, a write whose target is not a literal, a method on a value the reader cannot type, or simply a call it does not know, and the program is refused. THE BOUNDARY: a program that is handed no log and whose text cannot spell one is not read at all, however it is written, which is what keeps this strictness off every ordinary script.
 
 NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime is partly invisible here. A verb's operand set by an earlier statement of the same command (`F=<log>; mv $F /tmp/`) is read as bash expands it; a REDIRECT onto such a variable (`> $F`), a value from the environment, and a shell glob that expands to the log are not, because the walk keeps a redirect target unexpanded. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
 the appendix survived, and a session that bypassed it has no such line to point at.
@@ -167,6 +167,32 @@ EDGE_CASES = [
     (
         "a program globbing txt files cannot write a log",
         "python3 - <<'PY'\nimport glob\nfor p in glob.glob('docs/*.txt'):\n    open(p, 'w').write('')\nPY",
+    ),
+    # #cad8d610, two live false positives on 2026-10-14: a JSDoc opener and closer held as string literals (the opener's basename is a bare double star) put a log in play, and a node program the reader cannot follow was refused though it writes only a TypeScript file. A star in a literal names files only through something that EXPANDS it, a glob or match call, a shell-out or a dynamic construct; text with none of those spells no path, however it reads.
+    (
+        "a node program printing a JSDoc header into a TypeScript file",
+        "node -e \"const x = require('./node_modules/acorn-jsx/xhtml.js'); const lines = ['/**', ' * Entities.', ' */']; for (const k of Object.keys(x)) lines.push(k); console.log(lines.join('\\n'));\" > scripts/lib/jsx-entities.ts",
+    ),
+    (
+        "a node program writing a JSDoc header to a literal TypeScript path",
+        "node -e \"const x = require('./node_modules/acorn-jsx/xhtml.js'); const lines = ['/**', ' * Entities.', ' */']; for (const k of Object.keys(x)) lines.push(k); const out = lines.join('\\n'); require('fs').writeFileSync('scripts/lib/jsx-entities.ts', out);\"",
+    ),
+    # Their twins, refused: the same shapes really reach a round log, through the redirect, a literal write, a glob call, or a shell-out the walk cannot follow.
+    (
+        "the JSDoc printer redirected onto a log",
+        "node -e \"const x = require('./node_modules/acorn-jsx/xhtml.js'); const lines = ['/**', ' * Entities.', ' */']; for (const k of Object.keys(x)) lines.push(k); console.log(lines.join('\\n'));\" > agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "the JSDoc writer onto a literal log path",
+        "node -e \"const x = require('./node_modules/acorn-jsx/xhtml.js'); const lines = ['/**', ' * Entities.', ' */']; for (const k of Object.keys(x)) lines.push(k); const out = lines.join('\\n'); require('fs').writeFileSync('agent/pr-babysit-0831-1.md', out);\"",
+    ),
+    (
+        "the JSDoc writer onto what an md glob call returns",
+        "node -e \"const lines = ['/**', ' * Entities.', ' */']; const out = lines.join('\\n'); require('fs').writeFileSync(require('fs').globSync('agent/*.md')[0], out);\"",
+    ),
+    (
+        "the JSDoc writer shelling out with an md glob",
+        "node -e \"const lines = ['/**', ' * Entities.', ' */']; require('child_process').execSync('cp /dev/null agent/*.md');\"",
     ),
     # Review 1d4e1754.1: a program handed the log (an argument, the environment, stdin) writes it without naming it.
     (
@@ -1053,10 +1079,23 @@ def _word_could_name_log(word):
     return False
 
 
+# What can turn a glob or brace literal into file names inside a program: a glob or match call (`glob`, `iglob`, `rglob`, `globSync`, `fnmatch`, `Path.match`, `minimatch`, ruby `Dir[...]`), a shell-out that hands the literal to a shell (`system`, `exec*`, `spawn*`, `popen`, `subprocess`, `child_process`, a backtick, perl `qx`, ruby `%x`), or a construct that reaches either by a computed name (`eval`, `getattr`, `__import__`, `importlib`, `Function`, `send`, `const_get`, a `require` or `import` of a non-literal). Matched anywhere in the text, inside literals too, so a mention over-counts expansion: the conservative direction for a guard whose miss is a destroyed history.
+_EXPANDS = re.compile(
+    r"glob|fnmatch|match|\bDir\b|system|exec|spawn|popen|subprocess|child_process|`|\bqx\b|%x|"
+    r"eval|getattr|__import__|importlib|\bFunction\b|\bsend\b|const_get|"
+    r"\b(?:require|import)\s*\(\s*[^'\"\s)]"
+)
+
+
 def _program_could_name_log(code):
-    """Could an interpreter program's own text spell a round-log path? It names the round-log stem (`pr-babysit`, in a literal or an f-string alike), or one of its STRING LITERALS is a glob or brace that can meet the round-log pattern (`glob.glob('agent/*.md')`). Code outside a literal is never read for globs: `3 * 4`, `from os import *` and `r']*'` are Python, not paths (#e5b0540a's false positive, reported live by w2)."""
+    """Could an interpreter program's own text spell a round-log path? It names the round-log stem (`pr-babysit`, in a literal or an f-string alike), or one of its STRING LITERALS is a glob or brace that can meet the round-log pattern (`glob.glob('agent/*.md')`) AND the program holds something that expands one (`_EXPANDS`). Code outside a literal is never read for globs: `3 * 4`, `from os import *` and `r']*'` are Python, not paths (#e5b0540a's false positive, reported live by w2).
+
+    A STAR IN A LITERAL IS A PATH ONLY WHERE SOMETHING EXPANDS IT (#cad8d610, two live false positives on 2026-10-14). A JSDoc opener held as a string (`'/` `**'`, its basename a bare double star) met the round-log pattern, put a log in play, and a node program the reader could not follow was refused though it wrote only `scripts/lib/jsx-entities.ts`, once by a redirect and once by `writeFileSync` on that literal path. Read by itself, a literal is a string: `open` and `writeFileSync` never expand a glob, and the only calls that do are the glob and match family, a shell, or a computed name that may reach either. A program with none of those cannot reach a file through a glob literal, so the literal does not put a log in play; a program that names the stem, is handed a log, or holds an expander is read exactly as before. A glob ASSEMBLED at runtime, or an expander reached through a name assembled at runtime, stays the module's named residual.
+    """
     if _LOG_STEM in code:
         return True
+    if not _EXPANDS.search(code):
+        return False
     # Every single- or double-quoted string literal, escapes kept (Python, shell and JS alike): an EXTRACTOR over program text the walk already chose, so it is local here rather than a module pattern a sentence could be probed against.
     literals = re.findall(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
     return any(_word_could_name_log(lit[1:-1]) for lit in literals)
@@ -2374,7 +2413,7 @@ def run(ev):
     # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
     cwd = ev.field("cwd") or str(hookio.repo_root())
     truncating = truncating or any(_verb_truncates(r, cwd) for r in shellscan.every_run(cmd))
-    # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
+    # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern where the program can expand it), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
     truncating = truncating or any(
         _program_truncates(code, False, family) for family, code in WT.interpreter_programs(cmd)
     )
