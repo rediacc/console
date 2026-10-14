@@ -1052,7 +1052,7 @@ def run_judge(
     if not fired:
         out = settle_wait_only_continue(out)
         out = settle_closed_reraise(out, [c[0] for c in closed or ()])
-        out = settle_by_effort(out, effort_level)
+        out = settle_by_effort(out, effort_level, local_batch=bool(local_batch))
     return sanitize_next_action(out, local_batch=bool(local_batch)), None
 
 
@@ -1128,18 +1128,23 @@ def report_bases_quiet(level, table=None):
     return tuple(k for k in REPORT_BASES if wl_effort.verdict(k, level, table) != wl_effort.BLOCK)
 
 
-def settle_by_effort(out, level, table=None):
-    """`out` with a `continue` whose `basis` is a report key that does not block at `level` read as `stop`, the judge's reason and order moved to `effort_advised` as one (key, text) pair; anything else unchanged."""
+def settle_by_effort(out, level, table=None, local_batch=False):
+    """`out` with a `continue` whose `basis` is a report key that does not block at `level` read as `stop`, the judge's reason and order moved to `effort_advised` as one (key, text) pair; anything else unchanged.
+
+    The order is sanitized on the way in (`sanitize_next_action`), because the field is blanked here and the sanitizer that closes `judge_verdict` never sees it again."""
     if out.get("verdict") != "continue":
         return out
     basis = out.get("basis")
     if basis not in report_bases_quiet(level, table):
         return out
+    order = sanitize_next_action({"next_action": out.get("next_action")}, local_batch)[
+        "next_action"
+    ]
     advised = "Stop-gate judge, advised at effort %s (%s does not block at this level): %s%s" % (
         level,
         basis,
         str(out.get("reason") or "")[:300],
-        " Next: %s" % str(out["next_action"])[:200] if out.get("next_action") else "",
+        " Next: %s" % str(order)[:200] if order else "",
     )
     out = dict(out)
     out["verdict"] = "stop"
