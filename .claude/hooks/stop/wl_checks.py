@@ -4420,7 +4420,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:
         pass
 
-    # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7). Computed once from agent/reviews/<branch>/ and local git, no network. An open finding at or above `block_at` blocks (`commit-review`) unless a leased `[>]` item names it (then it is a note while its writer works, and push still refuses it), a file that fails to parse or whose Body-Sig no longer matches blocks (`commit-review-malformed`); everything else is one advisory. The push guard enforces the same
+    # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7). Computed once from agent/reviews/<branch>/ and local git, no network. An open finding at or above `block_at` blocks (`commit-review`). A file that fails to parse or whose Body-Sig no longer matches blocks too (`commit-review-malformed`). Everything else is one advisory, and so is an open finding a leased `[>]` item names, while its writer works (wl_review.push_refusals still refuses it). The push guard enforces the same
     # state when this hook is disabled, so nothing here is the only line of defence.
     try:
         import wl_review
