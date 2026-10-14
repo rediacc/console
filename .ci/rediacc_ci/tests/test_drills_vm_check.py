@@ -79,6 +79,8 @@ class World(vm_check.Host):
         self.undeletable_suffix = over.pop("undeletable_suffix", "")
         self.crash_on = over.pop("crash_on", "")
         self.signal_on = over.pop("signal_on", "")
+        self.sftp_refusal = over.pop("sftp_refusal", "remote open: Permission denied")
+        self.minted_check_err = over.pop("minted_check_err", "")
         assert not over, over
         self.store = root / "remote-store"
         self.calls: list[list[str]] = []
@@ -175,9 +177,9 @@ class World(vm_check.Host):
         if head == ("machine", "list"):
             return vm_check.Result(0, json.dumps({"success": True, "data": self.machines}))
         if head == ("subscription", "status"):
-            if self.stored_ok or env.get("REDIACC_TOKEN") == TOKEN:
+            if self.stored_ok or (env.get("REDIACC_TOKEN") == TOKEN and not self.minted_check_err):
                 return vm_check.Result(0, '{"success":true}')
-            return vm_check.Result(1, "", "Unauthorized")
+            return vm_check.Result(1, "", self.minted_check_err or "Unauthorized")
         if head == ("repo", "list"):
             data = [
                 {"name": n, "guid": g, "networkId": "29%02d" % i}
@@ -244,7 +246,7 @@ class World(vm_check.Host):
         line = batch.strip()
         if line.startswith("put") and "/%s/" % a in line:
             return vm_check.Result(0)
-        return vm_check.Result(1, "", "remote open: Permission denied")
+        return vm_check.Result(1, "", self.sftp_refusal)
 
     # ------------------------------------------------------------------ views
 
@@ -256,7 +258,9 @@ class World(vm_check.Host):
 
 
 class FakeAccount:
-    def __init__(self, healthy: bool = True, token: str = TOKEN) -> None:
+    def __init__(self, healthy: bool = True, token: str = TOKEN, mint_error: str = "") -> None:
+        self.mint_error = mint_error
+        self.password = ""
         self.healthy = healthy
         self.token = token
         self.minted = 0
@@ -267,6 +271,9 @@ class FakeAccount:
     def mint(self, password: str) -> str:
         assert len(password) >= 24
         self.minted += 1
+        self.password = password
+        if self.mint_error:
+            raise OSError(self.mint_error % password)
         return self.token
 
 
@@ -491,6 +498,41 @@ def test_the_minted_token_is_absent_from_every_byte_written(
     tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     scenario_token_never_written(vm_check, tmp_path, capsys)
+
+
+def test_a_refused_minted_token_check_never_echoes_the_token(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, minted_check_err="bad credential %s rejected" % TOKEN)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-unavailable"
+    assert "refused the minted token" in receipt["reason"]["detail"]
+    assert TOKEN not in out
+    assert TOKEN not in json.dumps(receipt)
+
+
+def test_a_failed_mint_never_echoes_the_password(tmp_path: pathlib.Path) -> None:
+    account = FakeAccount(mint_error="login failed for password %s")
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-unavailable"
+    assert account.password
+    assert account.password not in out
+    assert account.password not in json.dumps(receipt)
+
+
+def test_a_negative_sftp_leg_needs_a_denial_not_just_a_non_zero_exit(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, sftp_refusal="Connection closed")
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    refused = [
+        s
+        for s in receipt["steps"]
+        if s["id"] == "V1.7" and "refused" in s["desc"] and s["verdict"] == "FAIL"
+    ]
+    assert len(refused) == 2, receipt["steps"]
 
 
 def test_a_valid_stored_token_mints_nothing(tmp_path: pathlib.Path) -> None:
