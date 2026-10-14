@@ -35,6 +35,12 @@ def test_selftest_passes() -> None:
     assert gate.selftest(quiet=True) == 0
 
 
+def test_an_untokenizable_file_names_the_line_tokenize_would() -> None:
+    """The fallback for Python tokenize cannot read numbers lines by newline only, as the tokenize path does; a form feed or \\x1c inside a line must not shift the marker's reported line."""
+    text = 'x = "unterminated\ny = "\x0c\x1c"\nz = 1  %s: B010\n' % NQ
+    assert gate.locate_markers(text, "py") == [(3, "noqa", "B010")]
+
+
 def test_scan_repo_reads_code_and_skips_prose(tmp_path: pathlib.Path) -> None:
     root = _repo(
         tmp_path,
@@ -171,6 +177,12 @@ def test_a_retired_or_unknown_flag_is_refused_not_ignored(
     assert "--write-baseline is retired" in capsys.readouterr().err
     assert not (root / gate.RETIRED_BASELINE_REL).exists()
     assert gate.main(["--write-baseline", "--first-seed"], root=root) == 2
+    assert "--write-baseline and --first-seed are retired" in capsys.readouterr().err
+    # A bare --first-seed names itself, not --write-baseline.
+    assert gate.main(["--first-seed"], root=root) == 2
+    err = capsys.readouterr().err
+    assert "--first-seed is retired" in err
+    assert "--write-baseline" not in err
     assert gate.main(["--bogus"], root=root) == 2
     assert "unknown argument(s): --bogus" in capsys.readouterr().err
     assert gate.main(["--count", "a.py", "--bogus"], root=root) == 2

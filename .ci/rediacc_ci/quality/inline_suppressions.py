@@ -226,7 +226,8 @@ def _iter_matches(text: str, language: str, *, raw: bool = False) -> Iterator[tu
     if language == "py":
         comments = None if raw else _python_comments(text)
         if comments is None:
-            comments = list(enumerate(text.splitlines(), start=1))
+            # split("\n"), not splitlines(): tokenize and the other languages count only "\n", and splitlines() also breaks on form feed, \x1c-\x1e, \x85 and the Unicode line separators, which would shift every later line number.
+            comments = list(enumerate(text.split("\n"), start=1))
         for line, comment in comments:
             for _offset, kind, code in _matches(comment, _PY_PATTERNS):
                 yield line, kind, code
@@ -609,11 +610,12 @@ USAGE = "usage: check_inline_suppressions.py [--selftest | --count <pathspec>...
 
 def argv_refusal(argv: list[str]) -> str | None:
     """Why `argv` is refused, or None. An argument this gate does not know is a refusal, never ignored: the gate once ignored `--count`'s pathspecs and printed the whole-tree verdict for each (item 3993c728), and a retired `--write-baseline` that silently ran the gate would read as a successful write."""
-    if "--write-baseline" in argv or "--first-seed" in argv:
+    retired = [flag for flag in ("--write-baseline", "--first-seed") if flag in argv]
+    if retired:
         return (
-            "--write-baseline is retired: the inline-suppressions baseline drained to zero and "
+            "%s %s retired: the inline-suppressions baseline drained to zero and "
             "was deleted on 2026-10-14, and the gate admits no baseline. Remove the marker and "
-            "fix the code."
+            "fix the code." % (" and ".join(retired), "is" if len(retired) == 1 else "are")
         )
     if "--selftest" in argv:
         return None if argv == ["--selftest"] else "--selftest takes no other argument"
