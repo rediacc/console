@@ -617,64 +617,11 @@
    "type-ignore arg-type": 2,
    "type-ignore assignment": 1
   },
-  ".ci/scripts/quality/check_env_manifest.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_environment_names.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_fetch_retry.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_format_scope.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_gate_reachability_coverage.py": {
-   "noqa F401": 1,
    "noqa PLC0415": 1
   },
-  ".ci/scripts/quality/check_gate_tree_writes.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_gh_retry_reads.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_git_history_depth.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_git_op_conditionals.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_go_deps.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_go_module_sync.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_go_tool_path.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_greenlight_closures.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_guard_mention_anchoring.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_hint_corpus.py": {
-   "noqa F401": 1,
    "noqa PLC0415": 2
-  },
-  ".ci/scripts/quality/check_hook_cross_os.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_hook_exec_baseline.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_hook_integrity.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_hooks_resolvable.py": {
-   "noqa F401": 1
   },
   ".ci/scripts/quality/check_host_toolchain_coverage.py": {
    "noqa F401": 1

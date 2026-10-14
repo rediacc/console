@@ -28,7 +28,7 @@ import re
 import sys
 from pathlib import Path
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("ENV_NAMES_ROOT") or Path(__file__).resolve().parents[3])

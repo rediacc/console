@@ -20,7 +20,7 @@ why: W5's "2 processes per Bash tool call" target had no baseline in the tree at
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import hook_exec_baseline
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ import re
 import subprocess
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.controls import plant
 
 # Vacuity floor. This repo wires dozens of hook commands; a handful means the parse broke, and every check below would be over an empty set -- which reads exactly like "every hook resolves".
