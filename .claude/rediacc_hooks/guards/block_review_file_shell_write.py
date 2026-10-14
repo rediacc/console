@@ -193,7 +193,7 @@ def _review_forms(word):
     return forms
 
 
-# Git verbs whose positional words are refs, refspecs, patterns or names, never a file the verb writes: a glob refspec such as `refs/heads/*/*:refs/heads/q/*/*` is two adjacent `*` segments, which `_review_forms` reads as `agent/reviews`. The first operand of the remote verbs stays judged (a remote may be a path); an option stays judged whatever it carries.
+# Git verbs whose positional words are refs, refspecs, patterns or names, never a file the verb writes: a glob refspec such as `refs/heads/*/*:refs/heads/q/*/*` is two adjacent `*` segments, which `_review_forms` reads as `agent/reviews`. The first operand of the remote verbs stays judged (a remote may be a path); an option stays judged whatever it carries, the word after a separate-form value option (`--receive-pack X`, `-o X`) included, wherever it sits.
 _GIT_REF_VERBS = frozenset(
     (
         "branch",
@@ -214,6 +214,18 @@ _GIT_REF_VERBS = frozenset(
     )
 )
 _GIT_REMOTE_VERBS = frozenset(("push", "fetch", "pull", "ls-remote"))
+# Options of the remote verbs that take their value as the NEXT word; that word is a program or path the verb may run or write, so it is read like the option.
+_GIT_VALUE_OPTIONS = frozenset(
+    (
+        "--receive-pack",
+        "--exec",
+        "--upload-pack",
+        "--repo",
+        "--push-option",
+        "--server-option",
+        "-o",
+    )
+)
 
 
 def _without_ref_operands(run, argv):
@@ -228,8 +240,13 @@ def _without_ref_operands(run, argv):
         return argv
     keep = 1 if verb in _GIT_REMOTE_VERBS else 0
     out = list(argv[: at + 1])
+    takes_value = False
     for word in argv[at + 1 :]:
+        value_of_option, takes_value = takes_value, False
         if word.startswith("-") and len(word) > 1:
+            out.append(word)
+            takes_value = verb in _GIT_REMOTE_VERBS and word in _GIT_VALUE_OPTIONS
+        elif value_of_option:
             out.append(word)
         elif keep:
             out.append(word)
