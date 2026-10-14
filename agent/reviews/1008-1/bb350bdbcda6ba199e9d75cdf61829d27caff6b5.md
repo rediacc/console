@@ -21,12 +21,12 @@ Body-Sig: 6b008d3a70d57b9b
 ### bb350bdb.1 [high] package-lock.json:63
 Anchor: in-diff
 Claim: The lock's workspace entry for ../../packages/shared now declares typescript ^7.0.2, but packages/shared/package.json is not in this commit and still declares ^6.0.3, so the lock no longer matches the manifest and `npm ci` will reject it as out of sync.
-Resolution: open
+Resolution: not-a-bug | the shared workspace entry follows the console's packages/shared/package.json, moved to typescript ^7.0.2 in console eca7ef3d9 alongside this account root at package.json:65; check:ci-lockfile resolves all 10 lockfiles byte-identical under npm 11.20.0 | d778be9d 2026-10-14T14:06:01Z
 
 ### bb350bdb.2 [high] e2e/package-lock.json:27
 Anchor: in-diff
 Claim: The e2e lock's shared-workspace entry now declares typescript ^7.0.2, but no node_modules/typescript entry is changed and e2e/package.json is not in the diff, so the locked 6.0.3 does not satisfy the declared range and the e2e install fails out of sync.
-Resolution: open
+Resolution: not-a-bug | e2e has no direct typescript dependency, so only its embedded shared-workspace entry (e2e/package-lock.json:27) moves, following console eca7ef3d9; check:ci-lockfile rc=0 on all 10 lockfiles, e2e included | d778be9d 2026-10-14T14:06:02Z
 
 ### bb350bdb.3 [medium] package.json:65
 Anchor: in-diff
