@@ -193,7 +193,7 @@ def _review_forms(word):
     return forms
 
 
-# Git verbs whose positional words are refs, refspecs, patterns or names, never a file the verb writes: a glob refspec such as `refs/heads/*/*:refs/heads/q/*/*` is two adjacent `*` segments, which `_review_forms` reads as `agent/reviews`. The first operand of the remote verbs stays judged (a remote may be a path); an option stays judged whatever it carries, the word after a separate-form value option (`--receive-pack X`, `-o X`) included, wherever it sits.
+# Git verbs whose positional words are refs, refspecs, patterns or names, never a file the verb writes: a glob refspec such as `refs/heads/*/*:refs/heads/q/*/*` is two adjacent `*` segments, which `_review_forms` reads as `agent/reviews`. The first operand of the remote verbs stays judged (a remote may be a path); an option stays judged whatever it carries. The word after a separate-form value option (`--receive-pack X`, `-o X`) is judged for the REMOTE verbs only, because there it is a program or path the verb runs or writes, wherever it sits; for a ref verb that word is a message, a format or a ref (`update-ref -m X ref`, `tag -m X v1`) and is dropped with the other positionals.
 _GIT_REF_VERBS = frozenset(
     (
         "branch",

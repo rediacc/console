@@ -399,23 +399,137 @@ def _joined(seq):
     return " ".join(shlex.quote(e) if e is not None else "X" for e in seq)
 
 
-def _python_verdict(code, depth):
-    """The arm a Python program text trips, or None. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
+# WHAT A FILE RUNS IS ITS CALLS, NOT ITS STRINGS. A program the command line itself holds (`-c`, a heredoc) is judged by every string it carries, because the command line IS the program. A script run BY PATH is a file that may merely MENTION the phrase as data: a guard's own test table lists `"git worktree add /tmp/wt"` as a case, and `python3 test-x.py` was refused for its text although it runs nothing (2026-10-15). For a file, a string or argv list counts only when it is handed to a call that executes a command: an OS exec primitive, or a function of the same file that wraps one.
+EXEC_CALLS = frozenset(
+    (
+        "system",
+        "popen",
+        "popen2",
+        "popen3",
+        "run",
+        "call",
+        "check_call",
+        "check_output",
+        "Popen",
+        "getoutput",
+        "getstatusoutput",
+        "spawn",
+        "spawnl",
+        "spawnle",
+        "spawnlp",
+        "spawnlpe",
+        "spawnv",
+        "spawnve",
+        "spawnvp",
+        "spawnvpe",
+        "execl",
+        "execle",
+        "execlp",
+        "execlpe",
+        "execv",
+        "execve",
+        "execvp",
+        "execvpe",
+        "posix_spawn",
+        "posix_spawnp",
+        "startfile",
+        "create_subprocess_exec",
+        "create_subprocess_shell",
+    )
+)
+EXEC_MODULES = ("os", "subprocess", "pty", "commands", "asyncio", "asyncio.subprocess", "sh")
+
+
+def _callee(node):
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return func.id if isinstance(func, ast.Name) else ""
+
+
+def _exec_names(tree):
+    """The names a file calls to run a command: the exec primitives, an alias a file imports one under, and each function the file defines whose body calls one (to a fixed point, so a wrapper of a wrapper counts)."""
+    names = set(EXEC_CALLS)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module in EXEC_MODULES:
+            names.update(a.asname for a in node.names if a.asname and a.name in EXEC_CALLS)
+    defs = [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    grew = True
+    while grew:
+        grew = False
+        for fn in defs:
+            if fn.name not in names and any(
+                isinstance(n, ast.Call) and _callee(n) in names for n in ast.walk(fn)
+            ):
+                names.add(fn.name)
+                grew = True
+    return names
+
+
+def _file_scope(tree):
+    """`(strings, sequences, called)` of what a FILE hands to a call that runs a command, with a name resolved to what the file assigns it. Everything else the file holds is data."""
+    names = _exec_names(tree)
+    assigned: dict[str, list[Any]] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and node.value is not None:
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    assigned.setdefault(target.id, []).append(node.value)
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and node.value is not None
+            and isinstance(node.target, ast.Name)
+        ):
+            assigned.setdefault(node.target.id, []).append(node.value)
+    handed: list[Any] = []
+    called = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            called.add(_callee(node))
+            if _callee(node) in names:
+                handed.extend(node.args)
+                handed.extend(k.value for k in node.keywords)
+    seen: set[int] = set()
+    strings: list[str] = []
+    sequences: list[list[str | None]] = []
+    queue = list(handed)
+    while queue:
+        top = queue.pop()
+        for node in ast.walk(top):
+            if id(node) in seen:
+                continue
+            seen.add(id(node))
+            value = _const_str(node)
+            if value is not None:
+                strings.append(value)
+            elif isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+                sequences.append([_const_str(e) for e in node.elts])
+            elif isinstance(node, ast.Name):
+                queue.extend(assigned.get(node.id, []))
+    return strings, sequences, called
+
+
+def _python_verdict(code, depth, file=False):
+    """The arm a Python program text trips, or None. `file` is a script run by path, read by `_file_scope`. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
     try:
         tree = ast.parse(code)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         # fa5d11be.3: a program nested past the parser's recursion limit, or too large for it, is read like Python that does not parse: by the regex reading, which neither recurses nor allocates a tree. Not fail-open (its literals and argv shapes are still judged) and not a blanket refusal (a deep data structure is not a worktree add).
-        return _text_verdict(code, depth)
-    strings = []
-    for node in ast.walk(tree):
-        value = _const_str(node)
-        if value is not None:
-            strings.append(value)
+        return _text_verdict(code, depth, file)
+    if file:
+        strings, sequences, called = _file_scope(tree)
+    else:
+        strings = []
+        for node in ast.walk(tree):
+            value = _const_str(node)
+            if value is not None:
+                strings.append(value)
+        sequences = list(_sequences(tree))
+        called = set()
     for value in dict.fromkeys(strings):
         verdict = shell_verdict(value, depth)
         if verdict:
             return verdict
-    sequences = list(_sequences(tree))
     for seq in sequences:
         if _adjacent(seq, "worktree", "add"):
             return "git"
@@ -424,22 +538,28 @@ def _python_verdict(code, depth):
             if verdict:
                 return verdict
     modules = set(strings)
-    called = set()
+    if file:
+        # An in-process call of the port is a CALL: `worktree.main(["create"])` or `cmd_create(...)`. An import beside a table that lists `"create"` is data.
+        modules = set()
+        sequences = [
+            [_const_str(a) for a in n.args[0].elts]
+            for n in ast.walk(tree)
+            if isinstance(n, ast.Call)
+            and n.args
+            and isinstance(n.args[0], (ast.List, ast.Tuple))
+            and _callee(n) in ("main", "cli", "run_main")
+        ]
+        strings = []
+    else:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                called.add(_callee(node))
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             modules.update(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             modules.add(node.module)
             modules.update("%s.%s" % (node.module, alias.name) for alias in node.names)
-        elif isinstance(node, ast.Call):
-            func = node.func
-            called.add(
-                func.attr
-                if isinstance(func, ast.Attribute)
-                else func.id
-                if isinstance(func, ast.Name)
-                else ""
-            )
     port = any(m == PORT_TARGETS[0] or m.startswith(PORT_TARGETS[0] + ".") for m in modules)
     if port and (
         "cmd_create" in called
@@ -453,20 +573,54 @@ def _python_verdict(code, depth):
     return None
 
 
-def _text_verdict(code, depth):
-    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse."""
+# The words a node, perl or ruby FILE runs a command through; a match counts only when one sits just before it (`_in_exec_call`). A backtick span is a command in perl and ruby.
+TEXT_EXEC = re.compile(
+    r"\b(system|exec|execSync|execFile|execFileSync|spawn|spawnSync|fork|popen|popen3|capture2?e?3?|run|call|"
+    r"check_call|check_output|Popen|readpipe|qx)\b\s*[(\[{ ]?\s*[(\[{ ]?\s*$"
+)
+EXEC_WINDOW = 80
+
+
+def _in_exec_call(code, at, backtick=False):
+    """Is the text at `at` handed to a call that runs a command: a backtick span, or one of TEXT_EXEC's words ends the EXEC_WINDOW characters before it."""
+    return backtick or bool(TEXT_EXEC.search(code[max(0, at - EXEC_WINDOW) : at]))
+
+
+def _text_verdict(code, depth, file=False):
+    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse. `file` is a script run by path, whose strings count only inside a call that runs a command (`_in_exec_call`)."""
     for m in itertools.chain(LITERAL.finditer(code), QUOTE_LIKE.finditer(code)):
         literal = " ".join(next(g for g in m.groups() if g is not None).split())
+        if file and not _in_exec_call(code, m.start(), m.group(0).startswith("`")):
+            continue
         verdict = shell_verdict(literal, depth)
         if verdict:
             return verdict
-    if ARGV_WORKTREE_ADD.search(code):
-        return "git"
+    for m in ARGV_WORKTREE_ADD.finditer(code):
+        if not file or _argv_call_before(code, m.start()):
+            return "git"
     if TEXT_PORT.search(code) and TEXT_PORT_CREATE.search(code):
-        return "port"
-    if "rediacc_ci" in code and ARGV_WORKTREE_CREATE.search(code):
-        return "port"
+        if not file:
+            return "port"
+        for m in TEXT_PORT_CREATE.finditer(code):
+            if m.group(0) == "cmd_create" or _argv_call_before(code, m.start()):
+                return "port"
+    if "rediacc_ci" in code:
+        for m in ARGV_WORKTREE_CREATE.finditer(code):
+            if not file or _argv_call_before(code, m.start()):
+                return "port"
     return None
+
+
+def _argv_call_before(code, at):
+    """Does the argv list that holds `at` open on a call that runs a command (`system("git", "worktree", "add")`, `spawn('git', ['worktree', 'add'])`)? Read back to the nearest statement end for an exec word."""
+    start = max(code.rfind(";", 0, at), code.rfind("\n", 0, at)) + 1
+    return bool(TEXT_EXEC_ANYWHERE.search(code[start:at]))
+
+
+TEXT_EXEC_ANYWHERE = re.compile(
+    r"\b(system|exec|execSync|execFile|execFileSync|spawn|spawnSync|fork|popen|popen3|capture2?e?3?|run|call|"
+    r"check_call|check_output|Popen|readpipe|main|cmd_\w+)\b"
+)
 
 
 def _direct_verdict(cmd):
@@ -481,8 +635,10 @@ def _direct_verdict(cmd):
     return None
 
 
-def _code_verdict(family, code, depth):
-    return _python_verdict(code, depth) if family == "python" else _text_verdict(code, depth)
+def _code_verdict(family, code, depth, file=False):
+    if family == "python":
+        return _python_verdict(code, depth, file)
+    return _text_verdict(code, depth, file)
 
 
 def _program_verdict(cmd, depth, cwd=None):
@@ -507,7 +663,7 @@ def _script_verdict(cmd, depth, cwd):
             family = _interpreter_name(run_.name) or _interpreter_name(
                 shellscan.shebang_interpreter(run_, cwd) or ""
             )
-            verdict = _code_verdict(family, text, depth + 1)
+            verdict = _code_verdict(family, text, depth + 1, file=True)
             if verdict:
                 return verdict
         elif kind == "unjudgeable" and _could_spell(cmd):
