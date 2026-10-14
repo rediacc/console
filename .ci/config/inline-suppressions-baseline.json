@@ -1,12 +1,6 @@
 {
  "note": "SHRINK-ONLY. Inline lint and type suppression markers that existed when operator ruling 2026-10-08 banned them, counted per (file, marker kind, code), never by line. Written only by `.ci/scripts/quality/check_inline_suppressions.py --write-baseline`, which refuses any growth. Fix the code; a deliberate project-wide exception is a per-file entry in the linter's own config with a BLOCKER: reason (docs/agent-reference/suppressions.md). The goal state is an empty map.",
  "counts": {
-  ".ci/rediacc_ci/check_pytest.py": {
-   "noqa S314": 1
-  },
-  ".ci/rediacc_ci/ci/budget_report.py": {
-   "noqa S314": 2
-  },
   ".ci/rediacc_ci/ci/gate_ledger.py": {
    "noqa BLE001": 2,
    "noqa PLC0415": 5
@@ -16,10 +10,6 @@
   },
   ".ci/rediacc_ci/core/run_verbs.py": {
    "noqa PLW0108": 1
-  },
-  ".ci/rediacc_ci/infra/obs_mirror.py": {
-   "noqa S310": 1,
-   "noqa S314": 2
   },
   ".ci/rediacc_ci/quality/account_probes.py": {
    "noqa PLW1509": 1
