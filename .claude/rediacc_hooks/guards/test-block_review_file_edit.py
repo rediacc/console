@@ -524,6 +524,14 @@ SHELL_CASES = [
     # The other direction: an option of the same verb, a path remote, and a verb that writes a path it names stay refused.
     ("push whose remote is the directory", "git push agent/reviews/0930-1 main", True),
     ("push --receive-pack naming the directory", "git push --receive-pack=%s o" % R, True),
+    ("push --receive-pack value after the remote", "git push origin --receive-pack %s" % R, True),
+    ("fetch --upload-pack value after the remote", "git fetch origin --upload-pack %s" % R, True),
+    ("push -o value before the remote", "git push -o %s origin main" % R, True),
+    (
+        "push --force then a glob refspec",
+        "git push origin --force 'refs/heads/*/*:refs/heads/q/*/*'",
+        False,
+    ),
     ("clone into a glob that reads as the directory", "git clone . '*/*'", True),
     ("worktree add at a glob that reads as the directory", "git worktree add '*/*'", True),
 ]

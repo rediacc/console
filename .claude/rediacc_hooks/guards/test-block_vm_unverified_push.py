@@ -303,6 +303,15 @@ CASES = [
         "",
     ),
     (
+        "a synced mapping first, a second glob sending the same ref elsewhere",
+        "git push origin 'refs/heads/vm-*:refs/heads/vm-*' 'refs/heads/vm-*:refs/heads/other-*'",
+        SYNCED_TIP,
+        None,
+        None,
+        True,
+        TIP,
+    ),
+    (
         "a glob git cannot enumerate",
         "git push origin 'refs/heads/*/*:refs/heads/*/*'",
         DOCS,

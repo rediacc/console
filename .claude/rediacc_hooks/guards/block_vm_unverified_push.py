@@ -411,11 +411,12 @@ def _enumerated(root, parsed, globs):
             matched = _glob_match(src, name)
             if matched is None or name in seen:
                 continue
-            seen.add(name)
             target = dst.replace("*", matched)
             branch = target.removeprefix("refs/heads/") if target.startswith("refs/heads/") else ""
             if remote and branch and refs.get("refs/remotes/%s/%s" % (remote, branch)) == tip:
+                # Synced under THIS mapping only: a later glob may send the same ref to another destination, so it is not marked seen.
                 continue
+            seen.add(name)
             commit = commit_policy.git(
                 ["rev-parse", "-q", "--verify", "%s^{commit}" % tip], cwd=root
             )
