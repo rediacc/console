@@ -60,7 +60,7 @@ def _registry():
         spec = importlib.util.spec_from_file_location("sanctioned", str(path))
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-    except Exception:  # noqa: BLE001 -- `except Exception: sys.exit(0)` in the twin
+    except Exception:
         module = None
     _REGISTRY.append(module)
     return module
@@ -95,7 +95,7 @@ def run(ev):
     try:
         row = module.match(scan)
         msg = shellscan._command_substitution(module.message(row) + "\n") if row else ""
-    except Exception:  # noqa: BLE001 -- a raising registry is `|| exit 0` in the twin
+    except Exception:
         return hookio.ALLOW
 
     if msg != "":

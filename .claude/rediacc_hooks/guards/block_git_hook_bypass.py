@@ -117,7 +117,7 @@ def _env_bypass(cmd):
     """An UNQUOTED word setting the override or git's config-by-environment variables, anywhere in the command's own tokens."""
     try:
         toks = shellscan._Lexer(cmd).tokens()
-    except Exception:  # noqa: BLE001 -- an unlexable command sets nothing this can see
+    except Exception:
         return ""
     for tok in toks:
         if not isinstance(tok, shellscan._Word) or not tok.parts:

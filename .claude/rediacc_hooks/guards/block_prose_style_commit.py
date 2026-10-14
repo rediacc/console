@@ -174,7 +174,7 @@ def _engine(root):
     if inserted:
         sys.path.insert(0, cipath)
     try:
-        from rediacc_ci.quality import prose_style  # noqa: PLC0415 - deliberately late
+        from rediacc_ci.quality import prose_style
     finally:
         if inserted and cipath in sys.path:
             sys.path.remove(cipath)

@@ -131,8 +131,8 @@ def _hold_world_lock(world):
 
     The descriptor is deliberately never closed: the lock is released by the kernel when this interpreter exits, which is exactly the lifetime the spawned shells have.
     """
-    import fcntl  # noqa: PLC0415
-    import time  # noqa: PLC0415
+    import fcntl
+    import time
 
     fd = os.open(os.path.join(world, ".lock"), os.O_CREAT | os.O_RDWR, 0o600)
     deadline = time.monotonic() + 300.0
@@ -159,7 +159,7 @@ def _kill_stale(paths):
     `start_new_session=True`, so it leads its own group and killing the group
     takes its `sleep` child with it.
     """
-    import time  # noqa: PLC0415
+    import time
 
     for _ in range(500):
         stale = [p for p in proc.pids() if any(t in (proc.cmdline(p) or "") for t in paths)]
@@ -194,7 +194,7 @@ def _await_visible():
 
 def _pause():
     # Deliberately not `time.sleep` at module scope: this is a 10 ms poll, and naming it once keeps the loop above readable.
-    import time  # noqa: PLC0415
+    import time
 
     time.sleep(0.01)
 
