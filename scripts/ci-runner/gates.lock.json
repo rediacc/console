@@ -2322,6 +2322,18 @@
     }
   },
   {
+    "id": "pins",
+    "run": "npm run pins",
+    "gate": false,
+    "leaves": [
+      "scripts/pins/pins.ts"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: a writer, not a validation. CI judges the pin registry through check:ci-pin-registry and the pins core through its pytest; a quality step here would claim CI bumps pins on behalf of the author."
+    }
+  },
+  {
     "id": "check:ci-syncpack-sources",
     "run": "npm run check:ci-syncpack-sources",
     "gate": true,

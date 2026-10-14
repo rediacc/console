@@ -14,6 +14,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import {
+  WK_GH_API_BASE,
+  WK_GO_DL_BASE,
+} from '../../../../packages/shared/src/config/well-known.generated.js';
 import { type ControlCase, runControls } from '../../controls.js';
 import { keyOf, type PinPlan, PlanRefused } from '../driver.js';
 import { createToolchainDriver, TOOLCHAIN_MUTANTS, type ToolchainMutant } from './toolchain.js';
@@ -29,7 +33,7 @@ import {
   stubUpstream,
 } from './toolchain-fixture.js';
 
-const GH = 'https://api.github.com';
+const GH = WK_GH_API_BASE;
 const ENV = '.devcontainer/toolchain.env';
 const DF = '.devcontainer/Dockerfile';
 const CONSTANTS = '.ci/config/constants.sh';
@@ -143,7 +147,7 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
       { filename: `go${v}.linux-arm64.tar.gz`, sha256: b },
     ];
     const answers = {
-      'https://go.dev/dl/?mode=json': [
+      [`${WK_GO_DL_BASE}/?mode=json`]: [
         { version: `go${minor}`, stable: true, files: files(minor, hex('7'), hex('8')) },
         { version: `go${next}`, stable: true, files: files(next, hex('a'), hex('b')) },
         { version: `go${cur}`, stable: true, files: files(cur, hex('c'), hex('d')) },
@@ -208,7 +212,7 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
     }
     const missing = await plan('toolchain:go', next, {
       ...answers,
-      'https://go.dev/dl/?mode=json': [
+      [`${WK_GO_DL_BASE}/?mode=json`]: [
         { version: `go${next}`, stable: true, files: files(next, hex('a'), '').slice(0, 2) },
       ],
     });

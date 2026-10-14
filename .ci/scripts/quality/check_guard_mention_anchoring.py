@@ -208,6 +208,16 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: extracts quoted string literals from interpreter program text (`python -c`, `node -e`) for a static "
         "scan; quote characters around any content, with no literal word."
     ),
+    ("block_roundlog_truncate.py", "_LIVE_PERL_RUBY"): (
+        "BLOCKER: searched in the text of a perl or ruby inline program (`perl -e`, `ruby -e`) that the guard's command walk "
+        "already extracted, for a pipe-open quote pair or a `<...>` glob that can turn a literal into file names; "
+        "punctuation shapes with no literal word, and a sentence cannot contain a program."
+    ),
+    ("block_roundlog_truncate.py", "_LEXEME"): (
+        "BLOCKER: tokenizes the same extracted inline program into string literals and brackets to see which call encloses a "
+        "delimiter literal; quote and bracket characters with no literal word, applied only to program text the command "
+        "walk extracted."
+    ),
 }
 
 # The structure declaration (see the module docstring): `ANCHORING = "structure: <reason>"` as a module-level string constant, read by `ast` like every other constant here.

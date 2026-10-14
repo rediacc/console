@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { WK_GH_API_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { type ControlCase, runControls } from '../../controls.js';
 import { githubApiHeaders } from '../../github-token.js';
 import { askUpstream } from '../../upstream.js';
@@ -37,7 +38,7 @@ import {
   stubUpstream,
 } from './toolchain-fixture.js';
 
-const GH = 'https://api.github.com';
+const GH = WK_GH_API_BASE;
 const DF = '.devcontainer/Dockerfile';
 
 const tree = (): string =>

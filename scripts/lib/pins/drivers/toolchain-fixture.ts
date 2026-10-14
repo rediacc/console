@@ -78,6 +78,10 @@ export function liveFiles(dir: string): string[] {
     }
   };
   walk(dir);
+  if (out.length === 0)
+    throw new Error(
+      `VACUOUS: ${dir} holds no file in the live console, so a copy of it proves nothing`
+    );
   return out;
 }
 

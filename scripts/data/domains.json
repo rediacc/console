@@ -76,6 +76,17 @@
       "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/gate-header.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3). This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob in the retired ESLint config was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
     },
     {
+      "id": "pins-cli",
+      "paths": ["scripts/pins/**"],
+      "home": "scripts/pins",
+      "stays": true,
+      "why": "The `npm run pins` entry point, one file per verb surface (status, when, bump, apply-soaked, verify). It is an operator command rather than a gate body or a shared module, so neither the gates rule nor the lib rule describes it; the driver and transaction libraries it calls live under scripts/lib/pins.",
+      "breaksIfMoved": [
+        "package.json: the `pins` script runs `tsx scripts/pins/pins.ts`, and the manifest entry `pins` in scripts/ci-runner/manifest.ts names the same path as its leaf.",
+        ".ci/rediacc_ci/tests/gates/test_gate_pin_cli.py drives the file by this path through its fixture selftest."
+      ]
+    },
+    {
       "id": "devbox-rotation",
       "paths": ["scripts/dev/bws-rotate.py"],
       "home": "scripts/dev",

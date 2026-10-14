@@ -20,7 +20,7 @@ import pytest
 
 from rediacc_ci.infra import obs_mirror
 from rediacc_ci.infra import renet_pkg_matrix as m
-from rediacc_ci.well_known import ETC_DIR
+from rediacc_ci.well_known import CEPH_IMAGE_REPO, ETC_DIR
 
 if TYPE_CHECKING:
     import pathlib
@@ -98,8 +98,8 @@ il | ceph-common | package | 19.2.3-lp160.2.98 | x86_64 | filesystems:ceph:squid
 il | cephadm     | package | 19.2.3-lp160.2.98 | noarch | filesystems:ceph:squid (Leap 16.0), pinned by renet
 """
 
-PIN_TEXT = """# comment with host.fake=1
-image=quay.io/ceph/ceph:v19.2.3-20250717
+PIN_TEXT = f"""# comment with host.fake=1
+image={CEPH_IMAGE_REPO}:v19.2.3-20250717
 host-version=19.2.3
 host.fedora-43=19.2.3-8.fc43
 host.el10=2:19.2.3-1.el10s

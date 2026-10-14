@@ -15,7 +15,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { WK_CEPH_IMAGE_REPO } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { runControls } from '../../controls.js';
+import { policyPath } from '../../policy-paths.js';
 import { REPO_ROOT } from '../../repo-root.js';
 // driver.js first: the driver modules use its exports only inside functions, but a driver as
 // the entry point would evaluate the table before the drivers finish (see ./index.ts).
@@ -140,7 +142,7 @@ function actionsTree(extra: Record<string, string> = {}): string {
     '.ci/breakpoint/workflow/breakpoint.yml': `steps:\n  - uses: actions/checkout@${S.co} # v1.0.1\n`,
     'scripts/gate-bind.ts': `export const UPLOAD_ARTIFACT_PIN =\n  'actions/upload-artifact@${S.ua}  # v7.0.2';\n`,
     '.ci/config/actions-allowlist.json': `{\n  "patterns_allowed": [\n    "rediacc/*",\n    "bitwarden/sm-action@${S.bw}"\n  ]\n}\n`,
-    '.ci/policy/.actions-upgrade-blocklist':
+    [policyPath('.actions-upgrade-blocklist', '.')]:
       '# Format: owner/repo # reason\nblocked/thing # BLOCKER: pinned for a reason\n',
     ...extra,
   });
@@ -492,7 +494,7 @@ async function goCases(
 // ---- os-ceph-host and ceph-image ------------------------------------------------------------
 
 const PIN_FILE = (evr: string, extra = '') =>
-  `image=quay.io/ceph/ceph:v19.2.3-20250717\nhost-version=19.2.3\nreview=2026-11-18\nhost.ubuntu=19.2.3-0ubuntu0.24.04.3\nhost.opensuse-16.0=${evr}\n${extra}`;
+  `image=${WK_CEPH_IMAGE_REPO}:v19.2.3-20250717\nhost-version=19.2.3\nreview=2026-11-18\nhost.ubuntu=19.2.3-0ubuntu0.24.04.3\nhost.opensuse-16.0=${evr}\n${extra}`;
 function leapTree(evr = '19.2.3-lp160.4.1', over: Record<string, string> = {}): string {
   return tree({
     'private/renet/.ceph-image-pin': PIN_FILE(evr),
@@ -631,8 +633,7 @@ async function cephImageCases(
   const e = entry('ceph-image');
   const root = tree({
     'private/renet/.ceph-image-pin': PIN_FILE('19.2.3-lp160.4.1'),
-    'private/renet/pkg/infra/ceph/provisioner.go':
-      'const CephImagePin = "quay.io/ceph/ceph:v19.2.3-20250717"\n',
+    'private/renet/pkg/infra/ceph/provisioner.go': `const CephImagePin = "${WK_CEPH_IMAGE_REPO}:v19.2.3-20250717"\n`,
   });
   const ctx = ctxOf(root);
   const tags: [string, number][] = [
@@ -663,7 +664,7 @@ async function cephImageCases(
   out.push({
     name: 'ceph-image: a bump moves image= and CephImagePin, keeps host-version=, and sets review= ninety days out',
     ok:
-      pin.includes('image=quay.io/ceph/ceph:v19.2.3-20260601') &&
+      pin.includes(`image=${WK_CEPH_IMAGE_REPO}:v19.2.3-20260601`) &&
       pin.includes('host-version=19.2.3') &&
       pin.includes('review=2027-01-12') &&
       (w['private/renet:pkg/infra/ceph/provisioner.go'] ?? '').includes('v19.2.3-20260601'),

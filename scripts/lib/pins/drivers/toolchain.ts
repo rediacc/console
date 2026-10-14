@@ -20,6 +20,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { WK_GO_DL_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { NotCompared, UnreadableListing } from '../../upstream.js';
 import {
   type DriverContext,
@@ -48,7 +49,7 @@ import {
 export const TOOLCHAIN_MUTANTS = ['half-hash', 'ambient-npm'] as const;
 export type ToolchainMutant = (typeof TOOLCHAIN_MUTANTS)[number];
 
-const GO_DL = 'https://go.dev/dl/?mode=json';
+const GO_DL = `${WK_GO_DL_BASE}/?mode=json`;
 const GO_ARCHIVE = 'linux-amd64.tar.gz';
 
 interface GoFile {
@@ -194,7 +195,9 @@ export function createToolchainDriver(
         (e.scope ?? []).flatMap((sc) => expandScope(ctx.root, sc))
       );
       if (locks.length === 0)
-        throw new PlanRefused('toolchain:npm: the npm family scope names no lockfile on disk');
+        throw new PlanRefused(
+          'toolchain:npm: VACUOUS scope, the npm family scope names no lockfile on disk'
+        );
       const npm = mutant === 'ambient-npm' ? 'npm' : `npx -y npm@${to.version}`;
       for (const l of locks) {
         const dir = path.posix.dirname(l.file);
