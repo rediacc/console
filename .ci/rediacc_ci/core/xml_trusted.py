@@ -1,6 +1,6 @@
 """The one place `.ci` parses XML with the standard library, and what that is trusted for.
 
-ruff's S314 reports every `xml.etree.ElementTree` parse, because the module expands internal entities and so a hostile document can balloon. It expands no external entities and fetches nothing. Every caller here parses a document it has just verified or produced itself: a junit file written by pytest or gotestsum a moment earlier, and the RPM repo metadata after its signature or checksum was checked. A parse of input from anyone else does not belong here.
+ruff's S314 reports every `xml.etree.ElementTree` parse, because the module expands internal entities and so a hostile document can balloon. It expands no external entities and fetches nothing. Every caller here parses a document it has just verified or produced itself: a junit file written by pytest or gotestsum in this repository's own CI (a moment earlier, or an earlier run's unit-duration artifact that `budget_report.parse_gotestsum_junit_unit_ms` downloads from the same workflow), and the RPM repo metadata after its signature or checksum was checked. A parse of input from anyone else does not belong here.
 
 `fromstring` and `parse` are the funnel: S314 is per-file-ignored for this module only (pyproject.toml), so a new `ET.fromstring` elsewhere is reported and sent here, where the trust boundary is written down.
 """

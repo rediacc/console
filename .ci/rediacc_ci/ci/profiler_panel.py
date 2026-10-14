@@ -103,7 +103,7 @@ def _gt(size: int, budget: str) -> bool:
 
 
 def main(_argv: list[str]) -> int:
-    """The twin ignores its arguments: every input arrives through the PROFILER_* environment."""
+    """The twin ignores its arguments: every input arrives through the environment: the PROFILER_* variables, plus GITHUB_STEP_SUMMARY (where the panel is appended, stdout when unset) and GITHUB_JOB."""
     sample_file = _env("PROFILER_SAMPLE_FILE")
     strict = _env("PROFILER_STRICT", "false")
     wall_s = _env("PROFILER_WALL_S", "0")

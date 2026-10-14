@@ -278,13 +278,15 @@ jobs:
   # Verify stable endpoints after deployment
   verify-stable:
     name: Verify stable
-    # contents: write is load-bearing and belongs to THIS job only:
-    # mark-production.sh moves the `production` tag ref (PATCH/POST on
+    # mark_production moves the `production` tag ref (PATCH/POST on
     # git/refs) and runs `gh release edit --latest`, both on the App token
-    # minted below (the tag move needs workflows:write, see that step).
-    # It runs AFTER the endpoints verify, so losing this scope leaves stable
+    # minted below (the tag move needs workflows:write, see that step), so
+    # the App's scope, not this job's GITHUB_TOKEN, is what authorises them.
+    # They run AFTER the endpoints verify, so losing that scope leaves stable
     # deployed while the production tag and the latest badge still point at
-    # the previous version.
+    # the previous version. The job-level contents: write below is kept at
+    # its prior value and belongs to THIS job only; it no longer gates the
+    # tag move or the release edit.
     permissions:
       contents: write
     needs: [promote, deploy-marketing-stable, deploy-account-stable]
