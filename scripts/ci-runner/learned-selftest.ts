@@ -201,10 +201,13 @@ function decide(
 }
 
 /** Every lock id that occurs in `text` as a whole token. */
+// A gate id with a colon (`check:x`) cannot be an English word, so any whole-token use names it. A colon-less id (the `pins` entry point) is also an ordinary word, so only a quoted use (a string literal naming it) counts as naming the gate.
 function gateIdsIn(text: string, ids: readonly string[]): string[] {
   const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return ids.filter((id) =>
-    new RegExp(`(?<![A-Za-z0-9:_.-])${esc(id)}(?![A-Za-z0-9:_-])`).test(text)
+    id.includes(':')
+      ? new RegExp(`(?<![A-Za-z0-9:_.-])${esc(id)}(?![A-Za-z0-9:_-])`).test(text)
+      : new RegExp(`['"\`]${esc(id)}['"\`]`).test(text)
   );
 }
 
@@ -240,6 +243,17 @@ export async function learnedSelftest(): Promise<{
         found.length === 0,
         `T9: ${file} names gate id(s) ${found.join(', ')}; derive them from model.json or the lock instead`
       );
+      const colonless = ids.find((id) => !id.includes(':'));
+      if (colonless) {
+        check(
+          gateIdsIn(`${text}\nconst g = '${colonless}';\n`, ids).includes(colonless),
+          `T9 CONTROL: the colon-less id ${colonless} quoted in ${file} must be found`
+        );
+        check(
+          !gateIdsIn(`// five ${colonless} and the order\n`, ids).includes(colonless),
+          `T9 CONTROL: the colon-less id ${colonless} as a plain word must not count as a gate name`
+        );
+      }
       const planted = gateIdsIn(`${text}\n// ${ids[ids.length - 1]}\n`, ids);
       check(
         planted.includes(ids[ids.length - 1] ?? ''),
