@@ -355,6 +355,13 @@ def completed_by(run: dict[str, Any], as_of: float | None) -> bool:
     return done is not None and done <= as_of
 
 
+def from_this_repo(run: dict[str, Any], repo: str) -> bool:
+    """Whether `run` was built from a branch of `repo` itself. A pull request from a fork is a run of this workflow too, and its unit-duration artifacts are written by code the repository did not review, so they are never parsed (`xml_trusted` names that boundary). A run that names no head repository is admitted: the API always names one, and a bare record carries no other repository's claim."""
+    head = run.get("head_repository")
+    name = head.get("full_name") if isinstance(head, dict) else None
+    return not isinstance(name, str) or name == repo
+
+
 def fetch_runs(
     repo: str,
     workflow: str,
@@ -401,7 +408,7 @@ def fetch_runs(
             "budget_report: %d reads of the %s run list disagreed (%s run(s) each); sampling their union."
             % (len(page_ids), event, "/".join(str(len(ids)) for ids in page_ids))
         )
-    runs = [run for run in by_id.values() if completed_by(run, as_of)]
+    runs = [run for run in by_id.values() if completed_by(run, as_of) and from_this_repo(run, repo)]
     ordered = sorted(runs, key=lambda r: r.get("created_at") or "", reverse=True)
     selected = ordered[:limit]
     for finding in stale_sample_findings(selected, now):
@@ -1169,7 +1176,8 @@ def _gates_lock_problem(root: Path) -> str | None:
         return "no %s" % GATES_LOCK_REL_PATH
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError) as exc:
+        # ValueError is both json.JSONDecodeError and UnicodeDecodeError (bytes that are not UTF-8), review a80e54c6.1.
         return "%s cannot be read (%s)" % (GATES_LOCK_REL_PATH, exc)
     if not isinstance(data, list):
         return "%s is not a list" % GATES_LOCK_REL_PATH
