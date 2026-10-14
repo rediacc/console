@@ -254,6 +254,10 @@ def _list_write(runs, analysis, cmd, cwd):
             a.startswith("of=") and model_invocation.is_exception_list(a[3:]) for a in argv
         ):
             return "dd of= the exception list"
+        # A script run DIRECTLY by its shebang is the interpreter it names (#7ab88f34, as in block_review_file_shell_write): no interpreter word stands in the command, and the program would otherwise run unread.
+        shebang = shellscan.shebang_interpreter(run, cwd)
+        if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
+            name = shebang
         if name.startswith(INTERPRETERS):
             code, verdict, _kind = _program(run, cmd, cwd, _names_list)
             writes = WRITE_CODE.search(code) if verdict is None else verdict
@@ -365,6 +369,10 @@ def _offending(cmd, cwd):
                         landing,
                         "; ".join(problems),
                     )
+        # A script run DIRECTLY by its shebang is the interpreter it names (#7ab88f34, as in block_review_file_shell_write): no interpreter word stands in the command, and the program would otherwise run unread.
+        shebang = shellscan.shebang_interpreter(run, cwd)
+        if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
+            name = shebang
         if name.startswith(INTERPRETERS):
             in_dir = _is_target(".", run.cwd)
             code, verdict, kind = _program(run, cmd, cwd, _names_dir)

@@ -482,6 +482,19 @@ SHELL_CASES = [
         "cat > %s/later <<'EOF'\n%sEOF\npython3 %s/later" % (SCRATCH, MARKER_PROGRAM, SCRATCH),
         True,
     ),
+    # #7ab88f34: the same script run DIRECTLY by the shebang its writer put on its first line. The file does not exist when the hook runs, so its first line was read from the disk, named nothing, and the program ran unread (rc 0).
+    (
+        "a script written and run directly by its shebang in one command",
+        "cat > %s/later_direct <<'EOF'\n#!/usr/bin/env python3\n%sEOF\nchmod +x %s/later_direct; %s/later_direct"
+        % (SCRATCH, MARKER_PROGRAM, SCRATCH, SCRATCH),
+        True,
+    ),
+    (
+        "a script written and run directly by its shebang that writes no marker",
+        "cat > %s/later_plain <<'EOF'\n#!/usr/bin/env python3\nprint(1)\nEOF\nchmod +x %s/later_plain; %s/later_plain"
+        % (SCRATCH, SCRATCH, SCRATCH),
+        False,
+    ),
     (
         "a script copied in and run, the command naming a marker",
         "cp /tmp/nowhere.py %s/x_noq%s_tool.py && python3 %s/x_noq%s_tool.py"
