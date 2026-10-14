@@ -54,7 +54,7 @@ CONSOLE ROOT comes from this file's own location (`parents[3]`), matching the tw
 EVERY GOLANGCI EXCLUSION RULE CARRIES A BLOCKER REASON
 -----------------------------------------------------------------------------
 NEW behaviour with no twin (PLAN-inline-suppressions WD2). Before a stage that lints (`all`, `quality`), `private/renet/.golangci.yml` is read line by line and every item of `linters.exclusions.rules` must sit under a comment block holding a `# BLOCKER: <reason>` line; the reason runs from that line to the end of the block and goes through `rediacc_ci.core.allowlist.validate_reason`, the one implementation of the quality rules. A
-rule with no reason, a reason the quality rules refuse, a missing config file, or a config in which no rule is found at all is a failure before `ci.sh` runs: zero rules read is CANNOT VERIFY, never a pass. The other half, a rule that skipped nothing on every release GOOS, is `private/renet/.ci/scripts/quality/lint.sh`'s, because only the golangci-lint run it already makes can see it.
+rule with no reason, a reason the quality rules refuse, a missing config file, or a config in which no rule is found at all is a failure before `ci.sh` runs: zero rules read is CANNOT VERIFY, never a pass. The other half, a rule or one linter of a rule that skipped nothing on every release GOOS, is `private/renet/.ci/scripts/quality/lint.sh`'s, because only the golangci-lint run it already makes can see it; it lints a copy of the config split one rule per linter, since golangci-lint counts skips per rule.
 
 ---- gate ----
 step: Run renet quality
