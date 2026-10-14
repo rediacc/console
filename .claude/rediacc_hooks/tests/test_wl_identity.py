@@ -196,7 +196,6 @@ def test_181_isolation_the_suite_can_never_reach_the_live_worklist(wl):  # noqa:
         "WORKLIST_BG_OUTPUT_DIR",
         "WORKLIST_HARNESS_PID",
         "WORKLIST_BG_REPORT_MIN",
-        "WORKLIST_FOCUS",
         "WORKLIST_STUCK_ROUNDS",
         "WORKLIST_JUDGE_CACHE_MIN",
     )
@@ -470,7 +469,7 @@ def drive_l1(fix) -> L1Drive:
         ("--list", "--list --open @WHO@", "l1-list-item"),
         ("--state", "--state @WHO@", "STATE.md section written"),
         ("--loop", "--loop @WHO@ 2099-01-01T00:00:00Z 1 l1-label", "loop declared"),
-        ("--focus", "--focus @WHO@ babysit --branch l1-pr-branch --pr 1", "focus ON for"),
+        ("--phase", "--phase @WHO@ babysit --branch l1-pr-branch --pr 1", "phase babysit for"),
         ("--brief", "--brief @WHO@ l1-brief-text", "brief recorded"),
         ("--intent", "--intent @WHO@ l1-intent-text --for 30", "intent recorded"),
         ("--reap", "--reap @WHO@ l1task9", "reaped 1 task"),
@@ -499,7 +498,7 @@ def drive_l1(fix) -> L1Drive:
         ),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
         # Bare form: prints the effective settings and writes nothing; the write form runs the identical argv parse and _identity_or_die.
-        ("--queue-set", "--queue-set @WHO@", "stop_hook: on"),
+        ("--queue-set", "--queue-set @WHO@", "effort: "),
         # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
         ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.

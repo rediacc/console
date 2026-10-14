@@ -156,11 +156,7 @@ def test_157e_pr_stale_folds_into_the_note_only_while_saturated(wl):  # noqa: F8
     assert "the PR body is stale; fold the refresh into that next push" in got.out, got.out[:400]
 
     ci_queue_fixture(wl, {"workflow_runs": [{"status": "completed", "created_at": qold}]})
-    wl.env["WORKLIST_FOCUS"] = "off"
-    try:
-        control = ci_run(wl, message="answer with work remaining")
-    finally:
-        wl.env.pop("WORKLIST_FOCUS", None)
+    control = ci_run(wl, message="answer with work remaining")
     assert "YOU PUSHED AFTER YOUR LAST PR-DESCRIPTION EDIT" in control.out, (
         "157e CONTROL: pr-stale did not fire on a clear queue: %s" % control.out[:300]
     )
@@ -197,7 +193,7 @@ def test_160_displays_show_basetext_and_the_latest_note_never_the_whole_history(
     wl.cli("--defer", "deadbeef", gid, "second old note DEFAULT: beta " + justification)
     wl.cli("--defer", "deadbeef", gid, "newest note wins DEFAULT: gamma " + justification)
     wl.say("answer\n\n## Remaining\n- the deferred campaign item")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
+    got = wl.run()
     assert "campaign base text for the brief test" in got.out, (
         "brief rendering wrong: %s" % got.out[:400]
     )
@@ -309,7 +305,7 @@ def test_160d_an_expired_lease_with_an_os_verified_worker_stays_in_flight(wl):  
         [{"id": "bw1", "type": "shell", "status": "running", "description": "the long CI watch"}]
     )
     wl.say("answer\n\n## Remaining\n- the long CI watch, in flight on bw1")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
+    got = wl.run()
     assert "lease expired; finish it" not in got.out, (
         "160d: a supervised long job still failed closed: %s" % got.out[:300]
     )
@@ -318,7 +314,7 @@ def test_160d_an_expired_lease_with_an_os_verified_worker_stays_in_flight(wl):  
     wl.bg = "[]"
     wl.newturn()
     wl.say("answer\n\n## Remaining\n- the long CI watch, in flight on bw1")
-    gone = wl.run({"WORKLIST_FOCUS": "off"})
+    gone = wl.run()
     assert "lease expired; finish it" in gone.out, (
         "160d CONTROL: the expired lease was tolerated without a live worker: %s" % gone.out[:300]
     )
@@ -349,7 +345,7 @@ def test_160e_own_bookkeeping_does_not_stale_the_state_document_but_structure_do
     wl.cli("--add", "deadbeef", "genuinely new work")
     wl.newturn()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
-    structural = wl.run({"WORKLIST_FOCUS": "off"})
+    structural = wl.run()
     assert "STATE.md is stale" in structural.out, (
         "160e CONTROL: structure moved and staleness never fired: %s" % structural.out[:300]
     )
@@ -373,7 +369,7 @@ def test_160f_an_unchanged_world_accepts_the_banked_remaining_report(wl):  # noq
     wl.cli("--add", "deadbeef", "new work invalidates the bank")
     wl.newturn()
     wl.say("another turn without a remaining section")
-    moved = wl.run({"WORKLIST_FOCUS": "off"})
+    moved = wl.run()
     assert "no '## Remaining' section" in moved.out, (
         "160f CONTROL: the bank outlived the world it described: %s" % moved.out[:300]
     )

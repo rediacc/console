@@ -657,8 +657,8 @@ def test_an_unresolvable_dependency_is_a_problem_naming_its_path(tmp_path):
 
 # ---------------------------------------------------------------- turbo (agent/plans/PLAN-stop-hook-turbo.md T4, T5, T7)
 
-TURBO_ON = "```stop-hook\nturbo: on\nbatch_size: 2\nplan_concurrency: 9\n```\n"
-TURBO_OFF = "```stop-hook\nturbo: off\n```\n"
+TURBO_ON = "```stop-hook\neffort: high\nturbo: on\nbatch_size: 2\nplan_concurrency: 9\n```\n"
+TURBO_OFF = "```stop-hook\neffort: high\nturbo: off\n```\n"
 
 
 def _xplan(opened=1, done=0, depends="", status="approved", conc="parallel", owns=""):
@@ -715,7 +715,10 @@ def test_settings_at_a_non_utf8_queue_falls_back_to_defaults(tmp_path):
 
 def test_batch_size_is_one_with_turbo_off(tmp_path):
     root = _turbo_root(
-        tmp_path, {"a": _xplan()}, ["a"], "```stop-hook\nturbo: off\nbatch_size: 5\n```\n"
+        tmp_path,
+        {"a": _xplan()},
+        ["a"],
+        "```stop-hook\neffort: high\nturbo: off\nbatch_size: 5\n```\n",
     )
     assert plan_gate.batch_size(plan_gate.settings_at(root)[0]) == 1
 
@@ -731,7 +734,7 @@ def test_next_turbo_stops_at_plan_concurrency_counting_the_prs_unfinished_plans_
     tmp_path,
 ):
     """`plan_concurrency` is the parallelism ceiling (operator 2026-10-04), apart from `batch_size`: the PR's own unfinished plans and the plans live writers serve count against it."""
-    three = "```stop-hook\nturbo: on\nbatch_size: 2\nplan_concurrency: 3\n```\n"
+    three = "```stop-hook\neffort: high\nturbo: on\nbatch_size: 2\nplan_concurrency: 3\n```\n"
     plans = {n: _xplan() for n in "abcde"}
     root = _turbo_root(tmp_path, plans, list("abcde"), three)
     assert plan_gate.plan_concurrency(plan_gate.settings_at(root)[0]) == 3
@@ -744,7 +747,9 @@ def test_next_turbo_stops_at_plan_concurrency_counting_the_prs_unfinished_plans_
     )
     assert plan_gate.next_turbo(root2, (), 10, in_set=(_t("e"),)) == [_t("a"), _t("b"), _t("c")]
     # CONTROL: without the key the default is 1, so an empty PR takes one plan
-    root3 = _turbo_root(tmp_path / "g", plans, list("abcde"), "```stop-hook\nturbo: on\n```\n")
+    root3 = _turbo_root(
+        tmp_path / "g", plans, list("abcde"), "```stop-hook\neffort: high\nturbo: on\n```\n"
+    )
     assert plan_gate.next_turbo(root3, (), 10) == [_t("a")]
 
 

@@ -549,7 +549,7 @@ def mode_ok(fix) -> bool:
     text = (fix.proj / PQ.QUEUE_REL).read_text(encoding="utf-8")
     want = {}
     settings = PQ.settings(text)[0]
-    for key in PQ.SETTINGS_KEYS:
+    for key in PQ.KNOWN_KEYS:
         value = getattr(settings, key)
         want[key] = ("on" if value else "off") if isinstance(value, bool) else str(value)
     return PQ.inflight_mode(text) == want
@@ -565,7 +565,7 @@ def test_inflight_a_live_pr_with_a_plan_line_shows_the_pr_and_its_plan(wl):  # n
         "- Next plan: agent/plans/PLAN-queued-next.md, Promoted entry 2; starts on the next branch after PR #543 merges."
         in body
     ), body
-    assert "- Focus: off." in body
+    assert "- Phase: build." in body
     assert mode_ok(wl), body
 
 
@@ -589,11 +589,11 @@ def test_inflight_focus_on_is_shown_and_off_again_after_focus_off(wl):  # noqa: 
     loop_world(wl)
     F.focus_on(wl, mode="merge")
     body = inflight_of(wl)
-    assert "- Focus: merge on PR #543 (branch pub, session %s" % wlfix.ME[:8] in body, body
+    assert "- Phase: merge on PR #543 (branch pub, session %s" % wlfix.ME[:8] in body, body
     run_stop(wl)
-    assert "- Focus: merge on PR #543" in inflight_of(wl)
+    assert "- Phase: merge on PR #543" in inflight_of(wl)
     F.focus_off(wl)
-    assert "- Focus: off." in inflight_of(wl)
+    assert "- Phase: build." in inflight_of(wl)
 
 
 def test_inflight_no_pr_names_the_queue_head_the_first_push_binds(wl):  # noqa: F811
@@ -641,7 +641,7 @@ def test_inflight_m1_a_renderer_that_flips_a_switch_fails_the_mode_check(wl):  #
     loop_world(wl)
     run_stop(wl)
     body = inflight_of(wl)
-    assert "stop_hook off; turbo on" in body, body
+    assert "; turbo on;" in body, body
     assert not mode_ok(wl), body
 
 
@@ -657,7 +657,7 @@ def write_turbo_queue(fix, *rels: str, solo: str = "") -> None:
         for i, r in enumerate(rels)
     )
     text = (
-        "# Plan queue\n\n## Settings\n\n```stop-hook\nturbo: on\nbatch_size: 3\nwriter_cap: 15\n```\n\n"
+        "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nturbo: on\nbatch_size: 3\nwriter_cap: 15\n```\n\n"
         "## Promoted\n\n" + entries
     )
     (fix.proj / "agent" / "plans" / "QUEUE.md").write_text(text, encoding="utf-8")

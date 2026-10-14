@@ -123,16 +123,15 @@ def test_146a_an_allow_stop_carries_the_guide_with_state_correct_verbs(wl):  # n
 
 
 def test_146b_a_focus_off_block_carries_the_guide_and_the_focused_one_drops_it(wl):  # noqa: F811
-    """(b) the guide rides the dump-all block reason and an open item gets `--tick`; (b2) v13's FOCUSED block deliberately drops the guide (operator, 2026-07-31, superseding the v11 every-full-stop mandate) and the noise reduction IS the feature, so the focused variant is asserted guide-FREE while it still names the open item."""
+    """(b) the guide gives an open item its `--tick` (read through `--list --open`, the same slice); (b2) v13's FOCUSED block deliberately drops the guide (operator, 2026-07-31, superseding the v11 every-full-stop mandate) and the noise reduction IS the feature, so the block is asserted guide-FREE while it still names the open item. Since agent/plans/PLAN-stop-hook-effort.md removed the WORKLIST_FOCUS=off dump, the focused block is the only block."""
     wl.brief_now()
     wl.hand_now()
     wl.add_item("- [ ] (deadbeef) wire the perf fixture")
     wl.say("answer\n\n## Remaining\n- the perf fixture")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
-    assert '"decision": "block"' in got.out, got.out[:300]
-    assert "WORKLIST GUIDE" in got.out, got.out[:300]
-    assert "--tick deadbeef" in got.out, got.out[:300]
-    assert "do it, then" in got.out, got.out[:300]
+    guide = wl.cli("--list", "--open", "deadbeef").out
+    assert "WORKLIST GUIDE" in guide, guide[:300]
+    assert "--tick deadbeef" in guide, guide[:300]
+    assert "do it, then" in guide, guide[:300]
 
     focused = wl.run()
     assert '"decision": "block"' in focused.out, focused.out[:300]
@@ -181,8 +180,10 @@ def test_146d_truncation_is_loud_twelve_of_fifteen_and_the_three_named(wl):  # n
     for index in range(1, 16):
         wl.add_item("- [ ] (deadbeef) backlog item number %d" % index)
     wl.say("answer\n\n## Remaining\n- fifteen backlog items")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
-    # Occurrences, not lines: the hook's output is ONE JSON line, so a line count reads 1.
+    # The guide leads an ALLOW and no longer rides a block, so the open items must not block: effort quiet keeps only the FLOOR (agent/plans/PLAN-stop-hook-effort.md).
+    wl.settings(effort="quiet")
+    got = wl.run()
+    assert got.decision == "allow", got.out[:300]
     shown = got.out.count("do it, then --tick")
     assert shown == 12, "silent or wrong truncation: shown=%d out=%s" % (shown, got.out[:300])
     assert "+3 more actionable" in got.out, got.out[:300]
@@ -210,7 +211,7 @@ def test_146e_each_broken_shape_carries_its_own_exit(wl):  # noqa: F811
     wl.add_item("- [?] (deadbeef) an undefaulted question")
     wl.add_item("- [>] (deadbeef) until:%s stale delegation" % past)
     wl.say("answer\n\n## Remaining\n- three differently broken items")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
+    got = wl.cli("--list", "--open", "deadbeef")
     for needle in (
         "execute its DEFAULT now",
         "--defer deadbeef",

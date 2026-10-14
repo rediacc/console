@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import threading
 
 from rediacc_hooks.tests import wlfix
@@ -106,14 +107,21 @@ def test_08_completed_tasks_are_not_remaining_work(wl):  # noqa: F811
 
 
 def test_09_focus_off_puts_every_violation_in_one_block(wl):  # noqa: F811
-    """v13 made the FOCUSED single-check block the default; the dump-all contract survives behind WORKLIST_FOCUS=off and this case keeps that path exercised."""
+    """v13 made the FOCUSED single-check block the default, and since agent/plans/PLAN-stop-hook-effort.md it is the only one (the WORKLIST_FOCUS=off dump is gone): one block still names every outstanding violation, the pick quoted and the rest named on one line each."""
     wl.say("nothing")
     wl.add_item("- [ ] (deadbeef) open thing")
     wl.add_item("- [?] (deadbeef) undefaulted q")
-    out = wl.run({"WORKLIST_FOCUS": "off"}).out
-    assert "check(s) failed" in out, out[:400]
-    violations = json.loads(out)["reason"].count("\n\n  ")
-    assert violations >= 3, "expected >=3 violations in one block, got %d" % violations
+    out = wl.run().out
+    msg = json.loads(out)
+    assert msg["decision"] == "block", out[:400]
+    counted = re.search(r"(\d+) check\(s\) outstanding", msg["systemMessage"])
+    assert counted, msg["systemMessage"]
+    total = int(counted.group(1))
+    assert total >= 3, "expected >=3 violations in one block, got %d" % total
+    named = msg["reason"].count("\n    ")
+    assert named >= total - 2, (
+        "every outstanding check is quoted or named: %s" % msg["reason"][:600]
+    )
 
 
 def test_10_the_recursion_guard_exits_silently(wl):  # noqa: F811

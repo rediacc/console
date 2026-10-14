@@ -340,9 +340,7 @@ def test_44b_staleness_is_per_session(wl):  # noqa: F811
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     sig_before = banked_sig(wl, "cafe1234")
 
-    wl.env["WORKLIST_FOCUS"] = "off"
     wl.check_as("cafe1234", "block", "STATE.md is stale", "44b FIRE: the STALE session B is nagged")
-    wl.env.pop("WORKLIST_FOCUS")
     wl.check("allow", "", "44b: session A, fresh, is NOT nagged by B's staleness")
 
     # THE BANKING HALF, which is worse than the skipped stop it hid behind. On a "stale" verdict nothing may be banked, or the next stop would compare against a signature recorded DURING the block and clear itself. Under the mtime bug B got an "ok" verdict off A's write and banked A's world as its own.
@@ -355,9 +353,7 @@ def test_44b_staleness_is_per_session(wl):  # noqa: F811
 
     # ANTI-VACUITY. Re-stamp B fresh: the nag must go away. Without this the case would pass on a hook that simply blocks every peer for every reason. The second half of the anti-vacuity is that B must still be SPEAKING (it still owns an open item), so the missing needle is the staleness verdict changing rather than the hook having gone quiet.
     wl.age_state("cafe1234", 1)
-    wl.env["WORKLIST_FOCUS"] = "off"
     out = wl.run_as("cafe1234").out
-    wl.env.pop("WORKLIST_FOCUS")
     assert "STATE.md is stale" not in out, (
         "44b ANTI-VACUITY: B is nagged even when fresh: %s" % out[:220]
     )

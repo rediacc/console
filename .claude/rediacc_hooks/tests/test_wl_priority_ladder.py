@@ -240,12 +240,15 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     prf_log(wl, 4)
     threads = wl.cli("--add", "deadbeef", "pr:543/threads resolve the review threads")
     tid = re.search(r"#([0-9a-f]+)", threads.out).group(1)
-    # FOCUS=off, and the reason is worth stating: adding the claim item makes `open-items` and the idle-stall gate outstanding too, and the focused block surfaces ONE rotating check per stop.
-    # Asserting the finish line's text through a rotation would be asserting the rotation, not the box. This case is about what the finish line SAYS about an open claim, so it reads the dump-all block.
-    focus_off = {"WORKLIST_FOCUS": "off"}
-    got = prf_run(wl, extra_env=focus_off)
-    assert "- [ ] threads resolved" in got.out, (
-        "233c: an open claim ticked the box: %s" % got.out[:400]
+    # ROTATION, and the reason is worth stating: adding the claim item makes `open-items` outstanding too, and the focused block quotes ONE rotating check per stop (the WORKLIST_FOCUS=off dump that quoted every check was removed by agent/plans/PLAN-stop-hook-effort.md). The rotation is LRU over the outstanding keys, so the finish line is quoted within as many stops as rotating checks are
+    # outstanding; this case is about what the finish line SAYS about an open claim, so it reads the stop that quotes it. Effort low keeps the mission checks only, so the two rotating keys are the finish line and the open item.
+    focus_off: dict[str, str] = {}
+    wl.settings(effort="low")
+    outs = [prf_run(wl, extra_env=focus_off).out for _ in range(2)]
+    quoting = [o for o in outs if "THE WAVE IS NOT FINISHED" in wlfix.quoted(o)]
+    assert quoting, "233c: no stop quoted the finish line: %s" % outs[-1][:400]
+    assert "- [ ] threads resolved" in quoting[0], (
+        "233c: an open claim ticked the box: %s" % quoting[0][:400]
     )
 
     wl.cli(
@@ -288,7 +291,7 @@ def test_233d_a_live_watch_on_a_head_with_no_verdict_stands_the_finish_line_down
             "command": ".ci/scripts/ci/ci-trace.py --wait --until-final",
         }
     ]
-    focus_off = {"WORKLIST_FOCUS": "off"}
+    focus_off: dict[str, str] = {}
     got = prf_run(wl, extra_env=focus_off, bg=watch)
     assert "THE WAVE IS NOT FINISHED" not in got.out, (
         "233d: a live watch on a running head still blocked the finish line: %s" % got.out[:500]

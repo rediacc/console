@@ -111,15 +111,15 @@ def adopted_plan(fix) -> None:
 
 
 def focus_on(fix, mode: str = "babysit", pr: str | None = "543") -> wlfix.Result:
-    argv = ["--focus", ME, mode, "--branch", "pub"] + (["--pr", pr] if pr else [])
+    argv = ["--phase", ME, mode, "--branch", "pub"] + (["--pr", pr] if pr else [])
     got = fix.cli(*argv)
-    assert got.rc == 0, "--focus failed: %s %s" % (got.out, got.err)
+    assert got.rc == 0, "--phase failed: %s %s" % (got.out, got.err)
     return got
 
 
 def focus_off(fix) -> wlfix.Result:
-    got = fix.cli("--focus", ME, "off")
-    assert got.rc == 0, "--focus off failed: %s %s" % (got.out, got.err)
+    got = fix.cli("--phase", ME, "build")
+    assert got.rc == 0, "--phase build failed: %s %s" % (got.out, got.err)
     return got
 
 
@@ -165,7 +165,7 @@ def focus_events(fix) -> list[dict]:
     return [
         json.loads(line)
         for line in fix.wl_events().splitlines()
-        if line.strip() and '"focus"' in line and json.loads(line).get("ev") == "focus"
+        if line.strip() and '"phase"' in line and json.loads(line).get("ev") == "phase"
     ]
 
 
@@ -186,8 +186,8 @@ def test_f1_focus_silences_a_plan_box_push(wl):  # noqa: F811
     adopted_plan(wl)
     focus_on(wl)
     got = stop(wl)
-    assert got.decision == "allow", wl.why("f1", "allow", got, "FOCUS MODE")
-    assert "FOCUS MODE (babysit PR #543" in got.out, got.out[:800]
+    assert got.decision == "allow", wl.why("f1", "allow", got, "PHASE ")
+    assert "PHASE babysit (PR #543" in got.out, got.out[:800]
     assert ADOPTED not in got.out, got.out[:800]
 
 
@@ -224,7 +224,7 @@ def test_f3_focus_refuses_a_writer_spawn(wl):  # noqa: F811
     focus_on(wl)
     rc, err = spawn(wl)
     assert rc == 2, err
-    assert "focus mode is on" in err, err
+    assert "phase is on" in err, err
 
 
 def test_f3_controls(wl):  # noqa: F811
@@ -261,8 +261,8 @@ def test_f4_focus_off_restores_all_three(wl):  # noqa: F811
     assert got.decision == "block", wl.why("f4", "block", got, ADOPTED)
     assert ADOPTED in got.out, got.out[:1500]
     assert CI_RED in got.out, got.out[:1500]
-    assert "FOCUS ENDED (operator)" in got.out, got.out[-1500:]
-    assert "plan-adopted" in got.out.split("FOCUS ENDED (operator)", 1)[1], got.out[-1500:]
+    assert "PHASE ENDED (operator)" in got.out, got.out[-1500:]
+    assert "plan-adopted" in got.out.split("PHASE ENDED (operator)", 1)[1], got.out[-1500:]
     rc, err = spawn(wl)
     assert rc == 0, err
 
@@ -279,10 +279,10 @@ def test_f5_merge_auto_ends_focus(wl):  # noqa: F811
     )
     wl.newturn()
     got = stop(wl)
-    offs = [e for e in focus_events(wl) if e.get("mode") == "off"]
+    offs = [e for e in focus_events(wl) if e.get("mode") == "build"]
     assert offs, focus_events(wl)
     assert offs[-1].get("why") == "merged", focus_events(wl)
-    assert "FOCUS ENDED (merged)" in got.out, got.out[-1200:]
+    assert "PHASE ENDED (merged)" in got.out, got.out[-1200:]
     assert spawn(wl)[0] == 0
 
 
@@ -292,8 +292,8 @@ def test_f5_control_no_merge_focus_stays(wl):  # noqa: F811
     stop(wl)
     wl.newturn()
     got = stop(wl)
-    assert not [e for e in focus_events(wl) if e.get("mode") == "off"], focus_events(wl)
-    assert "FOCUS MODE" in got.out, got.out[:800]
+    assert not [e for e in focus_events(wl) if e.get("mode") == "build"], focus_events(wl)
+    assert "PHASE " in got.out, got.out[:800]
     assert spawn(wl)[0] == 2
 
 
@@ -320,7 +320,7 @@ def test_f6_judge_skipped(wl):  # noqa: F811
     capturing_judge(wl, CONTINUE)
     got = stop(wl, judge=True)
     assert not (wl.base / "prompt.txt").exists(), "f6: the judge ran in focus: %s" % got.out[:600]
-    assert got.decision == "allow", wl.why("f6", "allow", got, "FOCUS MODE")
+    assert got.decision == "allow", wl.why("f6", "allow", got, "PHASE ")
 
 
 def test_f6_control_focus_off_judge_runs(wl):  # noqa: F811
@@ -373,7 +373,7 @@ def test_f7_advisories_batched(wl):  # noqa: F811
     plant_advisories(wl, None)
     wl.newturn()
     got = stop(wl)
-    assert got.decision == "allow", wl.why("f7", "allow", got, "FOCUS MODE")
+    assert got.decision == "allow", wl.why("f7", "allow", got, "PHASE ")
     assert "UNREAD REPORT WAITING" in got.out, got.out[:900]
     assert "HELD ADVISORY" not in got.out, got.out[:900]
     assert "4 advisory(ies) held" in got.out, got.out[:900]
@@ -404,7 +404,7 @@ def test_f8_control_unlinked_item_allows(wl):  # noqa: F811
     focus_on(wl)
     wl.cli("--add", ME, "an unrelated plan box")
     got = stop(wl)
-    assert got.decision == "allow", wl.why("f8-control", "allow", got, "FOCUS MODE")
+    assert got.decision == "allow", wl.why("f8-control", "allow", got, "PHASE ")
     assert "an unrelated plan box" not in got.out, got.out[:900]
 
 
@@ -417,8 +417,8 @@ def test_f9_compaction_near_keeps_state_demand(wl):  # noqa: F811
     wl.cli("--add", ME, "a parked plan box")  # STATE.md is demanded only while something remains
     wl.state_file().unlink()
     late = stop(wl, band_env(wl, 1))
-    assert late.decision == "block", wl.why("f9", "block", late, "focus mode is on")
-    assert "Kept although focus mode is on" in late.out, late.out[:900]
+    assert late.decision == "block", wl.why("f9", "block", late, "phase is on")
+    assert "Kept although a wind-down phase is on" in late.out, late.out[:900]
 
 
 def test_f9_control_early_band_allows(wl):  # noqa: F811
@@ -427,7 +427,7 @@ def test_f9_control_early_band_allows(wl):  # noqa: F811
     wl.cli("--add", ME, "a parked plan box")
     wl.state_file().unlink()
     early = stop(wl, band_env(wl, 0))
-    assert early.decision == "allow", wl.why("f9-control", "allow", early, "FOCUS MODE")
+    assert early.decision == "allow", wl.why("f9-control", "allow", early, "PHASE ")
 
 
 # ---- f10: compaction keeps an active focus ---------------------------------------------
@@ -437,12 +437,12 @@ def test_f10_compaction_keeps_active_focus(wl):  # noqa: F811
     world(wl)
     focus_on(wl)
     assert wl.cli("--compact").rc == 0
-    got = wl.cli("--focus", ME)
-    assert "focus: babysit, PR #543 on pub" in got.out, got.out
+    got = wl.cli("--phase", ME)
+    assert "phase: babysit, PR #543 on pub" in got.out, got.out
     focus_off(wl)
     assert wl.cli("--compact").rc == 0
     assert not focus_events(wl), "an ended focus was re-emitted: %s" % focus_events(wl)
-    assert "focus is not on" in wl.cli("--focus", ME).out
+    assert "no wind-down to end" in wl.cli("--phase", ME).out
 
 
 # ---- f11: a queue lease under focus ----------------------------------------------------
@@ -469,7 +469,7 @@ def test_f12_expiry_ends_focus(wl):  # noqa: F811
         fh.write(
             json.dumps(
                 {
-                    "ev": "focus",
+                    "ev": "phase",
                     "at": old,
                     "by": ME,
                     "o": ME,
@@ -486,9 +486,9 @@ def test_f12_expiry_ends_focus(wl):  # noqa: F811
         {"standdown": {"focus_at": old, "mode": "babysit", "pr": 543, "parked": {"open-items": 3}}},
     )
     got = stop(wl)
-    assert "FOCUS ENDED (expired)" in got.out, got.out[-900:]
+    assert "PHASE ENDED (expired)" in got.out, got.out[-900:]
     assert "open-items x3" in got.out, got.out[-900:]
-    offs = [e for e in focus_events(wl) if e.get("mode") == "off"]
+    offs = [e for e in focus_events(wl) if e.get("mode") == "build"]
     assert offs, focus_events(wl)
     assert offs[-1]["why"] == "expired", focus_events(wl)
 
@@ -497,8 +497,8 @@ def test_f12_control_fresh_focus_stays(wl):  # noqa: F811
     world(wl)
     focus_on(wl)
     got = stop(wl)
-    assert "FOCUS ENDED" not in got.out, got.out[-900:]
-    assert "FOCUS MODE" in got.out, got.out[:600]
+    assert "PHASE ENDED" not in got.out, got.out[-900:]
+    assert "PHASE " in got.out, got.out[:600]
 
 
 # ---- f13: static -----------------------------------------------------------------------
@@ -576,7 +576,7 @@ def test_m2_without_the_store_read_focus_is_off(wl):  # noqa: F811
     mutated_hook(
         wl,
         "wl_standdown.py",
-        '    if best is None or best.get("mode") not in FOCUS_MODES:\n',
+        '    if best is None or best.get("mode") not in PHASE_MODES:\n',
         "    if True:\n",
     )
     got = stop(wl)
@@ -655,8 +655,8 @@ def test_m6_without_the_merge_read_focus_does_not_end(wl):  # noqa: F811
     )
     wl.newturn()
     got = stop(wl)
-    assert "FOCUS ENDED" not in got.out, "m6: f5 does not depend on focus_pr_end"
-    assert not [e for e in focus_events(wl) if e.get("mode") == "off"]
+    assert "PHASE ENDED" not in got.out, "m6: f5 does not depend on focus_pr_end"
+    assert not [e for e in focus_events(wl) if e.get("mode") == "build"]
 
 
 def test_m7_without_focus_pr_items_the_fix_work_parks(wl):  # noqa: F811

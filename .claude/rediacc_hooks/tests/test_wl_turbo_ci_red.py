@@ -54,8 +54,8 @@ def held_line(got: wlfix.Result) -> str:
 
 
 def focus(fix, mode: str) -> None:
-    got = fix.cli("--focus", wlfix.ME, mode, "--branch", BRANCH, "--pr", "543")
-    assert got.rc == 0, "--focus failed: %s %s" % (got.out, got.err)
+    got = fix.cli("--phase", wlfix.ME, mode, "--branch", BRANCH, "--pr", "543")
+    assert got.rc == 0, "--phase failed: %s %s" % (got.out, got.err)
 
 
 # ---- controls first: every state the ruling does not cover blocks as before --------------------
