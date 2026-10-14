@@ -230,3 +230,18 @@ def test_the_gate_module_reaches_the_shared_composition_guard():
     assert "from rediacc_ci.quality.shrink_only import" in text
     assert "baseline_additions(" in text
     assert "write_verdict(" in text
+
+
+def test_a_long_mypy_crash_keeps_its_last_lines() -> None:
+    """Worklist #f0bad09d: a crash prints its traceback last, and the first 20 lines alone hid the error that names the cause."""
+    out = "\n".join("line %d" % n for n in range(1, 101)) + "\nRuntimeError: the cause\n"
+    got = python_types.crash_excerpt(out)
+    assert "RuntimeError: the cause" in got
+    assert "line 1\n" in got
+    assert "... 41 line(s) omitted ..." in got
+    assert got.count("\n") == python_types.CRASH_HEAD + python_types.CRASH_TAIL
+
+
+def test_a_short_mypy_crash_is_printed_whole() -> None:
+    out = "a\nb\nc\n"
+    assert python_types.crash_excerpt(out) == "    a\n    b\n    c"

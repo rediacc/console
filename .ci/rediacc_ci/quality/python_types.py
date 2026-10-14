@@ -508,6 +508,19 @@ def growth(added: list[str], grown: list[str]) -> list[str]:
 #
 
 
+CRASH_HEAD = 20
+CRASH_TAIL = 40
+
+
+def crash_excerpt(output: str) -> str:
+    """mypy's output on a crash, indented: all of it when short, else the first CRASH_HEAD and the last CRASH_TAIL lines around a count of what was left out. A crash prints its traceback LAST, so the first 20 lines alone (the cap before worklist #f0bad09d) hid the error that names the cause."""
+    lines = output.rstrip("\n").split("\n")
+    if len(lines) > CRASH_HEAD + CRASH_TAIL:
+        omitted = len(lines) - CRASH_HEAD - CRASH_TAIL
+        lines = [*lines[:CRASH_HEAD], "... %d line(s) omitted ..." % omitted, *lines[-CRASH_TAIL:]]
+    return "\n".join("    %s" % line for line in lines)
+
+
 def run_mypy(argv: list[str], root: pathlib.Path, files: list[str]) -> tuple[str, int]:
     """One mypy invocation over one group. Returns (merged output, exit code).
 
@@ -657,7 +670,7 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
                     index + 1,
                     len(groups),
                     len(group),
-                    "\n".join("    %s" % line for line in output.split("\n")[:20]),
+                    crash_excerpt(output),
                 )
             )
         findings.extend(parse_findings(output))
