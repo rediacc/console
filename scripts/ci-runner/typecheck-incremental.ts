@@ -153,7 +153,7 @@ function extendsChain(abs: string, seen: Set<string> = new Set()): string[] {
   } catch {
     return [];
   }
-  // A config that parses to null or a scalar names no `extends` (review 389237d5.3).
+  // A config that parses to null or a scalar names no `extends`.
   if (typeof value !== 'object' || value === null) return [];
   const ext = (value as { extends?: unknown }).extends;
   const targets = typeof ext === 'string' ? [ext] : Array.isArray(ext) ? ext : [];
@@ -167,7 +167,7 @@ function extendsChain(abs: string, seen: Set<string> = new Set()): string[] {
         : [];
     if (candidates.length === 0) {
       const req = createRequire(abs);
-      // Each spelling resolves on its own (review 389237d5.1): a bare specifier without the `.json` suffix throws, and that must not drop the suffixed candidate.
+      // Each spelling resolves on its own: a bare specifier without the `.json` suffix throws, and that must not drop the suffixed candidate.
       for (const spelling of [raw, `${raw}.json`]) {
         try {
           candidates.push(req.resolve(spelling));
@@ -638,12 +638,16 @@ async function selftest(): Promise<number> {
       fs.rmSync(dir, { recursive: true, force: true });
     }
 
-    // THE EXTENDS CHAIN, link by link (review 389237d5.1-.3): a relative link, an absolute one, a bare specifier that only resolves with `.json` appended, and a config that parses to null.
+    // THE EXTENDS CHAIN, link by link: a relative link, an absolute one, a bare specifier that only resolves with `.json` appended, and a config that parses to null.
     const cdir = fs.mkdtempSync(path.join(os.tmpdir(), 'typecheck-extends-'));
     try {
       const pkg = path.join(cdir, 'node_modules', 'fx-base');
       fs.mkdirSync(pkg, { recursive: true });
-      fs.writeFileSync(path.join(pkg, 'package.json'), '{"name":"fx-base","version":"1.0.0"}');
+      // The exports map exposes `./base.json` and not `./base`, so `require.resolve('fx-base/base')` throws and only the suffixed spelling resolves: without that, Node's own `.json` extension probing finds the file and the case passes on the unfixed code too.
+      fs.writeFileSync(
+        path.join(pkg, 'package.json'),
+        '{"name":"fx-base","version":"1.0.0","exports":{"./base.json":"./base.json"}}'
+      );
       fs.writeFileSync(path.join(pkg, 'base.json'), '{}');
       fs.writeFileSync(path.join(cdir, 'rel.json'), '{}');
       fs.writeFileSync(path.join(cdir, 'abs.json'), '{}');
@@ -655,7 +659,9 @@ async function selftest(): Promise<number> {
       );
       fs.writeFileSync(path.join(cdir, 'null.json'), 'null');
       check(
-        extendsChain(path.join(cdir, 'bare.json')).includes(path.join(pkg, 'base.json')),
+        extendsChain(path.join(cdir, 'bare.json')).includes(
+          fs.realpathSync(path.join(pkg, 'base.json'))
+        ),
         'extends: a bare specifier that resolves only with .json appended must be followed'
       );
       check(
