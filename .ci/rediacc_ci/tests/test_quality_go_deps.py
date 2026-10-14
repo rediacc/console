@@ -402,3 +402,22 @@ def test_plan_json_hands_the_probe_records_to_the_pins_planner(
     assert "example.test/c" in doc["unanswered"][0]
     assert len(doc["probeFailures"]) == 1
     assert doc["probeFailures"][0].startswith("broken:")
+
+
+def test_plan_json_files_an_unanswered_probe_under_unanswered_not_probe_failures(
+    monkeypatch, tmp_path: pathlib.Path, capsys
+) -> None:
+    """The go-list probe reports an upstream that did not answer with PROBE_SENTINEL as its path and the unanswered kind: that is `unanswered`, as in the gate, not a probe that could not run."""
+    (tmp_path / "private" / "renet").mkdir(parents=True)
+    (tmp_path / "private" / "renet" / "go.mod").write_text("module x\n")
+
+    def fake(_directory, _blocked, _freshness, _published=None):
+        return [
+            "%s - - %sproxy.golang.org down" % (go_deps.PROBE_SENTINEL, go_deps.UNANSWERED),
+        ]
+
+    monkeypatch.setattr(go_deps, "check_go_dir", fake)
+    assert go_deps.plan_json(tmp_path) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert len(doc["unanswered"]) == 1
+    assert doc["probeFailures"] == []
