@@ -410,8 +410,13 @@ if (!fs.statSync(outDir, { throwIfNoEntry: false })?.isDirectory()) {
   process.exit(2);
 }
 
-// The tracked copies are written only under --write-public, which the tree-write pragmas above declare; --out naming that same directory would write them past the declaration.
-if (!writePublic && fs.realpathSync(outDir) === fs.realpathSync(path.join(projectRoot, 'public'))) {
+// The tracked copies are written only under --write-public, which the tree-write pragmas above declare; --out naming that same directory would write them past the declaration. Device and inode identify the directory however it is spelled (another casing on a case-insensitive filesystem, a symlink, a bind mount).
+const sameDir = (a, b) => {
+  const x = fs.statSync(a);
+  const y = fs.statSync(b);
+  return x.dev === y.dev && x.ino === y.ino;
+};
+if (!writePublic && sameDir(outDir, path.join(projectRoot, 'public'))) {
   console.error(
     `✗ --out must not name the tracked public/ directory; use --write-public.\n${USAGE}`
   );
