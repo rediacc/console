@@ -1,7 +1,12 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // One module cache per workspace. The shared default (node_modules/.vitest-cache) is wiped by whichever vitest process first sees a changed lockfile hash, while sibling workspaces' runs are writing into it, and that run dies at startup with ENOTEMPTY.
+    fsModuleCachePath: fileURLToPath(
+      new URL('../../node_modules/.vitest-cache-cli', import.meta.url)
+    ),
     globals: true,
     environment: 'node',
     // Several serve-suite tests bind a real HTTP server and loopback-fetch (~100ms healthy). The vitest default 5s cap flakes on starved CI runners (observed: a run where a fork worker took >60s to not even

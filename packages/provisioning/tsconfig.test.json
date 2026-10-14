@@ -12,8 +12,10 @@
     "noEmit": true,
     "declaration": false,
     "declarationMap": false,
+    // `.` rather than the build's `./src`: this project also reaches vitest.config.ts, which sits beside src. noEmit means rootDir constrains only which files may be reached.
+    "rootDir": ".",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]
 }
