@@ -51,7 +51,7 @@ why: check-toolchain-pins.sh's A1 deliberately EXEMPTS GO_VERSION/NODE_VERSION
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import toolchain_env_dockerfile_sync
 
 if __name__ == "__main__":

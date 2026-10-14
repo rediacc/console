@@ -43,7 +43,7 @@ import re
 import sys
 import tempfile
 
-import _cipath  # noqa: F401
+import _cipath
 
 # Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py: the CI step that runs this installs the pinned PyYAML immediately before it, and a gate that quietly degrades when its parser is missing is the vacuity this tree has rules about. A bare ImportError traceback names the missing module, which is the right failure.
 import yaml

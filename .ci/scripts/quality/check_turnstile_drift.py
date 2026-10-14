@@ -16,7 +16,7 @@ why: on 2026-09-24 Bitwarden's Turnstile secret had silently stopped matching th
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.deploy import turnstile_drift
 
 if __name__ == "__main__":

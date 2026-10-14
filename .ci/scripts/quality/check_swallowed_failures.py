@@ -30,7 +30,7 @@ why: a gate that captures a probe whose failure is indistinguishable from an emp
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import swallowed_failures
 
 if __name__ == "__main__":

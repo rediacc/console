@@ -29,7 +29,7 @@ import json
 import pathlib
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.quality import shrink_only
