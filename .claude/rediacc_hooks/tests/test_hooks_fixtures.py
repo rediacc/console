@@ -991,7 +991,7 @@ def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
     block.done()
 
 
-# --- block_worktree_add: a script run BY PATH is a program (#78afdc0b) --------- The guard read `-c`, heredocs and here-strings only, so a script on disk that runs `git worktree add` was allowed (rc 0 at c5c3036c3). It now reads `shellscan.interpreter_program`'s text: an untracked script is read, a tracked and unchanged one is reviewed code and is not.
+# --- block_worktree_add: a script run BY PATH is a program (#78afdc0b) --------- The guard read `-c`, heredocs and here-strings only, so a script on disk that runs `git worktree add` was allowed (rc 0 at c5c3036c3). It now reads the script: an untracked or edited one is read, a tracked and unchanged one is reviewed code and is not.
 @pytest.mark.xdist_group("hooks-fixtures")
 def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
     block = hookblocks.Block("worktree-add-by-path")
@@ -999,12 +999,17 @@ def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
     runs.write_text("import os\nos.system('git worktree add /tmp/x')\n", encoding="utf-8")
     prints = tmp_path / "prints.py"
     prints.write_text("print('never run git worktree add here')\n", encoding="utf-8")
+    silent = tmp_path / "silent.py"
+    silent.write_text("import subprocess\nsubprocess.run(['git', 'status'])\n", encoding="utf-8")
     repo = tmp_path / "repo"
     repo.mkdir()
     git(repo, "init", "-q", "-b", "main")
     (repo / "tracked.py").write_text(runs.read_text(encoding="utf-8"), encoding="utf-8")
-    git(repo, "add", "tracked.py")
+    (repo / "edited.py").write_text(prints.read_text(encoding="utf-8"), encoding="utf-8")
+    git(repo, "add", "tracked.py", "edited.py")
     git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed")
+    with open(repo / "edited.py", "a", encoding="utf-8") as handle:
+        handle.write("print('edited')\n")
     spec_deny = "check 2 guards/block_worktree_add.py"
     spec_allow = "check 0 guards/block_worktree_add.py"
     # Review 6f52f7ff.1: a script run directly by its shebang names no interpreter in the command.
@@ -1019,24 +1024,25 @@ def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
         "#!/usr/bin/env python3\nprint('never run git worktree add here')\n", encoding="utf-8"
     )
     quiet.chmod(0o755)
-    shell = tmp_path / "shell.sh"
-    shell.write_text("#!/bin/bash\necho git worktree add /tmp/x\n", encoding="utf-8")
-    shell.chmod(0o755)
+    calm = tmp_path / "calm.py"
+    calm.write_text("#!/usr/bin/env python3\nprint('hello')\n", encoding="utf-8")
+    calm.chmod(0o755)
     block.check(spec_deny, bash_json(str(direct)), "worktree-add: a script run directly by shebang")
     block.check(
         spec_deny,
         bash_json("cd %s && ./direct.py" % tmp_path),
         "worktree-add: the same script directly from a cd",
     )
+    # THE FAIL-CLOSED COST, intended: a script that only prints the phrase is refused while it is untracked.
     block.check(
-        spec_allow,
+        spec_deny,
         bash_json(str(quiet)),
-        "worktree-add CONTROL: a script run directly that only prints a sentence",
+        "worktree-add: a script run directly that only prints the phrase",
     )
     block.check(
         spec_allow,
-        bash_json(str(shell)),
-        "worktree-add CONTROL: a shebang naming no interpreter is not read",
+        bash_json(str(calm)),
+        "worktree-add CONTROL: a script run directly that never names the phrase",
     )
     block.check(spec_deny, bash_json("python3 %s" % runs), "worktree-add: a script by path runs it")
     block.check(
@@ -1045,30 +1051,69 @@ def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
         "worktree-add: the same script by a path relative to a cd",
     )
     block.check(
-        spec_allow,
+        spec_deny,
         bash_json("python3 %s" % prints),
-        "worktree-add CONTROL: a script by path printing a sentence",
+        "worktree-add: a script by path that only prints the phrase (the fail-closed cost)",
+    )
+    block.check(
+        spec_allow,
+        bash_json("python3 %s" % silent),
+        "worktree-add CONTROL: a script by path that runs commands but never names the phrase",
     )
     block.check(
         spec_allow,
         bash_json("python3 %s" % (repo / "tracked.py")),
         "worktree-add CONTROL: a tracked, unchanged script is reviewed code and is not read",
     )
+    block.check(
+        spec_deny,
+        bash_json("python3 %s" % (repo / "edited.py")),
+        "worktree-add: a tracked script edited since HEAD is read again",
+    )
     block.done()
 
 
-# A SCRIPT THAT MENTIONS THE PHRASE IS NOT A SCRIPT THAT RUNS IT. `python3 test-block_x.py` was refused with the worktree-add message because the test file lists `"git worktree add /tmp/wt"` as a case (2026-10-15, worklist #8c8529b1); the same path stored in a variable passed. A file is judged by the calls it makes, a command line by its text.
-FILE_MENTIONS = {
-    "table.py": 'CASES = [("plain", "git worktree add /tmp/wt main", True)]\nprint(len(CASES))\n',
-    "argv_table.py": 'CASES = [["git", "worktree", "add", "x"], ("run", "./run.sh worktree create x")]\n',
-    "check.py": 'def check(c):\n    return len(c)\ncheck("git worktree add /tmp/x")\n',
-    "port_table.py": (
-        "from rediacc_ci.dev import worktree\nCASES = [['create', 'x']]\n"
-        "print(worktree.__doc__, CASES)\n"
-    ),
-    "table.js": 'const cases = ["git worktree add /tmp/x", ["git", "worktree", "add"]];\nconsole.log(cases);\n',
-    "table.pl": 'my @cases = ("git worktree add /tmp/x");\nprint scalar(@cases);\n',
-}
+# A SHELL SCRIPT RUN BY PATH WAS NEVER READ. `bash x.sh`, `sh -e x.sh`, `source x.sh`, `. x.sh` and `./x.sh` (a shell shebang) whose file runs `git worktree add` were each allowed (rc 0, 2026-10-15), as was a script the same command wrote and then ran.
+@pytest.mark.xdist_group("hooks-fixtures")
+def test_block_worktree_add_reads_a_shell_script_run_by_path(tmp_path):
+    block = hookblocks.Block("worktree-add-shell-script")
+    spec_deny = "check 2 guards/block_worktree_add.py"
+    spec_allow = "check 0 guards/block_worktree_add.py"
+    runs = tmp_path / "w.sh"
+    runs.write_text("#!/bin/bash\ngit worktree add /tmp/x\n", encoding="utf-8")
+    runs.chmod(0o755)
+    bare = tmp_path / "bare"
+    bare.write_text("git worktree add /tmp/x\n", encoding="utf-8")
+    bare.chmod(0o755)
+    split = tmp_path / "split.sh"
+    split.write_text('git work"tree" "a"dd /tmp/x\n', encoding="utf-8")
+    calm = tmp_path / "calm.sh"
+    calm.write_text("#!/bin/bash\ngit worktree list\necho hi\n", encoding="utf-8")
+    calm.chmod(0o755)
+    for run_ in (
+        "bash %s" % runs,
+        "sh -e %s" % runs,
+        "bash --norc -o pipefail %s" % runs,
+        "source %s" % runs,
+        ". %s" % runs,
+        str(runs),
+        "timeout 5 %s" % runs,
+        "cd %s && bash w.sh" % tmp_path,
+        str(bare),
+        "bash %s" % split,
+        "printf 'git worktree add /tmp/x\\n' > %s/v.sh; bash %s/v.sh" % (tmp_path, tmp_path),
+    ):
+        block.check(spec_deny, bash_json(run_), "worktree-add: a shell script by path: " + run_)
+    for run_ in ("bash %s" % calm, str(calm), "source %s" % calm, "/usr/bin/env true"):
+        block.check(
+            spec_allow,
+            bash_json(run_),
+            "worktree-add CONTROL: a shell script naming no add: " + run_,
+        )
+    block.done()
+
+
+# A FILE IS JUDGED BY ITS TEXT, NOT BY WHAT IT CAN RUN. An earlier reading allowed a file naming the phrase when it found no way for the file to run a command, and decided that from a deny list of exec primitives, dynamic reaches and code-running modules. Every round of review found a road the list missed, so the rule is now plain: an untracked or edited script naming `worktree` with `add` or `create` is refused, whatever it does with the words.
 FILE_RUNS = {
     "system.py": "import os\nos.system('git worktree add /tmp/x')\n",
     "argv.py": "import subprocess\nsubprocess.run(['git', 'worktree', 'add', '/tmp/x'])\n",
@@ -1083,7 +1128,7 @@ FILE_RUNS = {
     "run.pl": 'system("git", "worktree", "add", "/tmp/x");\n',
     "unparsable.py": "import os\nos.system('git worktree add /tmp/x'\n",
 }
-# A STRING REACHES A CALL BY MORE ROADS THAN A NAME ASSIGNMENT. The first cut traced a string into an exec call only through a name a plain assignment binds, so each file below ran the phrase and was allowed. A file that can run a command is now judged by every string it holds, so none of these shapes needs tracing.
+# A string reaches a call by more roads than a name assignment; none of them needs tracing when the text is what is judged.
 FILE_RUNS_UNTRACED = {
     "for_target.py": "import subprocess\nfor c in ['git worktree add /tmp/x']:\n    subprocess.run(c, shell=True)\n",
     "tuple_unpack.py": "import os\ncmd, other = 'git worktree add /tmp/x', 1\nos.system(cmd)\n",
@@ -1105,58 +1150,111 @@ FILE_RUNS_UNTRACED = {
     "concat.pl": 'my $c = "git worktree " . "add /tmp/x";\nsystem($c);\n',
     "interpolate.rb": 'v = "add"\nsystem("git worktree #{v} /tmp/x")\n',
 }
-# A file with no way to run a command still mentions the phrase freely, however it builds the string, and a file that runs commands but never spells the phrase still runs.
-FILE_MENTIONS_UNTRACED = {
+# Stdlib roads a deny list of exec primitives missed: each runs the phrase with no listed name, module or dynamic reach.
+FILE_RUNS_STDLIB = {
+    "methodcaller.py": "import os, operator\noperator.methodcaller('system', 'git worktree add /tmp/x')(os)\n",
+    "timeit.py": "import timeit\ntimeit.timeit(\"import os; os.system('git worktree add /tmp/x')\", number=1)\n",
+    "partial.py": "import os, functools\nfunctools.partial(os.system, 'git worktree add /tmp/x')()\n",
+    "doctest_run.py": (
+        "import doctest\n"
+        "doctest.run_docstring_examples(\">>> import os; os.system('git worktree add /tmp/x')\", {})\n"
+    ),
+    "attrgetter.py": "import os, operator\noperator.attrgetter('system')(os)('git worktree add /tmp/x')\n",
+    "upper.py": "import os\nos.system('GIT WORKTREE ADD /tmp/x'.lower())\n",
+    "adjacent.py": "import os\nos.system('git work' 'tree add /tmp/x')\n",
+    "built_verb.py": "import os\nv = 'a' + 'dd'\nos.system(f'git worktree {v} /tmp/x')\n",
+    "deno.ts": 'new Deno.Command("git", { args: ["worktree", "add", "/tmp/x"] }).outputSync();\n',
+}
+# THE FAIL-CLOSED COST, intended: a file that only lists the phrase as data is refused while untracked; committed and unchanged, it runs unread.
+FILE_MENTIONS = {
+    "table.py": 'CASES = [("plain", "git worktree add /tmp/wt main", True)]\nprint(len(CASES))\n',
+    "argv_table.py": 'CASES = [["git", "worktree", "add", "x"], ("run", "./run.sh worktree create x")]\n',
+    "check.py": 'def check(c):\n    return len(c)\ncheck("git worktree add /tmp/x")\n',
+    "port_table.py": (
+        "from rediacc_ci.dev import worktree\nCASES = [['create', 'x']]\n"
+        "print(worktree.__doc__, CASES)\n"
+    ),
+    "table.js": 'const cases = ["git worktree add /tmp/x", ["git", "worktree", "add"]];\nconsole.log(cases);\n',
+    "table.pl": 'my @cases = ("git worktree add /tmp/x");\nprint scalar(@cases);\n',
     "built_table.py": "CASES = ['git worktree ' + 'add x', f'git worktree {1}', 'git worktree %s' % 'add']\nprint(CASES)\n",
     "os_path.py": "import os\nprint(os.path.join('a', 'b'), 'git worktree add /tmp/x')\n",
     "doc_read.py": "import helper\nprint(helper.__doc__, 'git worktree add /tmp/x')\n",
     "commented.js": '// run the cases below\nconst cases = ["git worktree " + "add /tmp/x"];\nconsole.log(cases);\n',
-    "list_only.py": "import subprocess\nrepo = '.'\nsubprocess.run(['git', '-C', repo, 'worktree', 'list'])\n",
 }
+# A file that never names the phrase runs, whatever it runs.
+FILE_SILENT = {
+    "list_only.py": "import subprocess\nrepo = '.'\nsubprocess.run(['git', '-C', repo, 'worktree', 'list'])\n",
+    "status.py": "import os, subprocess\nos.system('git status')\nsubprocess.run(['ls'])\n",
+    "address.py": "print('worktree', 'address', 'added', 'creates')\n",
+    "run.js": 'require("child_process").execSync("git status");\n',
+    "run.pl": 'system("git", "status");\n',
+}
+INTERPRETER = {".py": "python3", ".js": "node", ".pl": "perl", ".rb": "ruby", ".ts": "deno run"}
 
 
 @pytest.mark.xdist_group("hooks-fixtures")
-def test_block_worktree_add_judges_a_script_by_its_calls_not_its_text(tmp_path):
-    block = hookblocks.Block("worktree-add-file-calls")
+def test_block_worktree_add_judges_a_script_by_its_text(tmp_path):
+    block = hookblocks.Block("worktree-add-file-text")
     spec_deny = "check 2 guards/block_worktree_add.py"
     spec_allow = "check 0 guards/block_worktree_add.py"
-    interpreter = {".py": "python3", ".js": "node", ".pl": "perl", ".rb": "ruby"}
-    mentions = {**FILE_MENTIONS, **FILE_MENTIONS_UNTRACED}
-    runs = {**FILE_RUNS, **FILE_RUNS_UNTRACED}
-    for name, text in {**mentions, **runs}.items():
-        (tmp_path / name).write_text(text, encoding="utf-8")
-    for name in mentions:
-        run_ = "%s %s" % (interpreter[os.path.splitext(name)[1]], tmp_path / name)
+    denied = {**FILE_RUNS, **FILE_RUNS_UNTRACED, **FILE_RUNS_STDLIB, **FILE_MENTIONS}
+    (tmp_path / "deny").mkdir()
+    (tmp_path / "allow").mkdir()
+    for name, text in denied.items():
+        (tmp_path / "deny" / name).write_text(text, encoding="utf-8")
+    for name, text in FILE_SILENT.items():
+        (tmp_path / "allow" / name).write_text(text, encoding="utf-8")
+    for name in denied:
+        run_ = "%s %s" % (INTERPRETER[os.path.splitext(name)[1]], tmp_path / "deny" / name)
+        block.check(spec_deny, bash_json(run_), "worktree-add: a file naming it: " + name)
+    for name in FILE_SILENT:
+        run_ = "%s %s" % (INTERPRETER[os.path.splitext(name)[1]], tmp_path / "allow" / name)
         block.check(
-            spec_allow, bash_json(run_), "worktree-add CONTROL: a file that only lists it: " + name
+            spec_allow, bash_json(run_), "worktree-add CONTROL: a file never naming it: " + name
         )
-    for name in runs:
-        run_ = "%s %s" % (interpreter[os.path.splitext(name)[1]], tmp_path / name)
-        block.check(spec_deny, bash_json(run_), "worktree-add: a file that runs it: " + name)
-    # The same file run from a cd, and directly by its shebang.
+    # The same files from a cd, and directly by a shebang.
     block.check(
-        spec_allow,
-        bash_json("cd %s && python3 table.py" % tmp_path),
-        "worktree-add CONTROL: a mentioning file from a cd",
+        spec_deny,
+        bash_json("cd %s && python3 table.py" % (tmp_path / "deny")),
+        "worktree-add: a mentioning file from a cd",
     )
     mention = tmp_path / "direct_mention.py"
     mention.write_text("#!/usr/bin/env python3\n" + FILE_MENTIONS["table.py"], encoding="utf-8")
     mention.chmod(0o755)
-    block.check(
-        spec_allow, bash_json(str(mention)), "worktree-add CONTROL: a mentioning file by shebang"
-    )
+    block.check(spec_deny, bash_json(str(mention)), "worktree-add: a mentioning file by shebang")
     # A command line is still judged by its text, whatever file it also runs.
     block.check(
         spec_deny,
-        bash_json("git worktree add /tmp/x && python3 %s" % (tmp_path / "table.py")),
+        bash_json("git worktree add /tmp/x && python3 %s" % (tmp_path / "allow" / "status.py")),
         "worktree-add: the command line itself is git worktree add",
     )
     block.check(
-        spec_deny,
-        bash_json("python3 %s; git worktree add /tmp/x" % (tmp_path / "table.py")),
-        "worktree-add: a real add after a mentioning file",
+        spec_allow,
+        bash_json("python3 -c 'print(\"never run git worktree add here\")'"),
+        "worktree-add CONTROL: a -c program printing a sentence is still judged by its calls",
     )
     block.done()
+
+
+def test_block_worktree_add_script_refusal_names_the_rule(tmp_path):
+    """A script refused for naming the phrase says so, and does not claim a verb was found running in program text."""
+    table = tmp_path / "table.py"
+    table.write_text(FILE_MENTIONS["table.py"], encoding="utf-8")
+    rc, _out, err = dispatch.run_one("block_worktree_add", bash_json("python3 %s" % table))
+    assert rc == 2
+    assert "names `worktree` together with `add`" in err
+    assert "found inside the program text" not in err
+    # CONTROL: the same text in a tracked, unchanged file is not read. A second file, because shellscan caches the tracked answer per file for the process.
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "table.py").write_text(FILE_MENTIONS["table.py"], encoding="utf-8")
+    git(repo, "init", "-q", "-b", "main")
+    git(repo, "add", "table.py")
+    git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed")
+    rc, _out, err = dispatch.run_one(
+        "block_worktree_add", bash_json("python3 %s" % (repo / "table.py"))
+    )
+    assert rc == 0, err
 
 
 def test_shebang_interpreter_does_not_open_a_named_pipe(tmp_path):
