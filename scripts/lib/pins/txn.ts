@@ -639,7 +639,11 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
       throw e;
     }
     // The tomb did not exist, so nobody had moved the judged claim yet and the slot still held it; the check below is the compare half of the swap.
-    if (!judged(tomb)) putBack(tomb, readText(path.join(tomb, 'owner')));
+    if (judged(tomb)) return;
+    const movedText = readText(path.join(tomb, 'owner'));
+    // A different claim whose owner is dead is as harmless in this tomb as the judged one would be: the sweep clears it, and no live taker is waiting on it.
+    if (movedText !== null && identityLive(movedText) === null) return;
+    putBack(tomb, movedText);
   };
 
   const inode = (p: string): string | null => {
@@ -651,14 +655,23 @@ export function takeLock(root: string, seams: LockSeams = {}): (() => void) | nu
     const deadline = Date.now() + waitMs;
     let ownerless = 0;
     for (let i = 0; i < 10_000; i++) {
+      let installed = true;
       try {
         fs.renameSync(stage, claim);
-        // The owner line was written before any wait for the slot; its time is the install time from here on.
-        const now = new Date();
-        fs.utimesSync(path.join(claim, 'owner'), now, now);
-        return true;
       } catch (e) {
         if (!occupied(e)) throw e;
+        installed = false;
+      }
+      if (installed) {
+        // The owner line was written before any wait for the slot; its time is the install time from here on. A failure here comes after the install, so the claim is dropped before it propagates.
+        try {
+          const now = new Date();
+          fs.utimesSync(path.join(claim, 'owner'), now, now);
+        } catch (e) {
+          dropClaim();
+          throw e;
+        }
+        return true;
       }
       const ownerFile = path.join(claim, 'owner');
       const text = readText(ownerFile);
