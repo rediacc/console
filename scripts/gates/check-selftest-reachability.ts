@@ -189,11 +189,13 @@ function jsImports(file: string, text: string, has: (f: string) => boolean): str
   const dir = path.posix.dirname(file);
   const spec =
     /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*|\bnew\s+URL\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g;
-  // A commented-out import is no edge: the same comment-line rule the NAME scan applies.
+  // A commented-out import is no edge: whole comment lines, block comments (interior lines need no leading marker) and a trailing line comment after code are all dropped. A comment opener counts only at a line start or after whitespace or punctuation, so a glob such as './src/**/*.ts' or a URL does not open one.
   const comment = COMMENT(file);
   const code = text
+    .replace(/(?<![^\s;{}(),])\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
     .split('\n')
     .filter((line) => !comment.test(line))
+    .map((line) => line.replace(/(?<![^\s;{}(),])\/\/.*$/, ''))
     .join('\n');
   for (const m of code.matchAll(spec)) {
     const p = path.posix.normalize(path.posix.join(dir, m[1] ?? ''));
@@ -324,6 +326,11 @@ function selftestCases(): ControlCase[] {
       "import { x } from '../lib/imported-selftest.js';",
       '// spawns scripts/lib/commented-selftest.ts, in a comment only',
       "// import { y } from '../lib/commented-import-selftest.js';",
+      '/* a block comment whose interior lines carry no marker:',
+      "import { z } from '../lib/block-commented-selftest.js';",
+      '*/',
+      "run(); // import { w } from '../lib/trailing-commented-selftest.js';",
+      "const glob = './src/**/*.ts'; /* closes later */",
       "const run = spawnSync('tsx', [path.join(ROOT, 'scripts/lib/spawned-selftest.ts')]);",
       'process.argv.includes("--selftest");',
     ].join('\n'),
@@ -331,6 +338,8 @@ function selftestCases(): ControlCase[] {
     'scripts/lib/spawned-selftest.ts': 'console.log(1);\n',
     'scripts/lib/commented-selftest.ts': 'console.log(1);\n',
     'scripts/lib/commented-import-selftest.ts': 'console.log(1);\n',
+    'scripts/lib/block-commented-selftest.ts': 'console.log(1);\n',
+    'scripts/lib/trailing-commented-selftest.ts': 'console.log(1);\n',
     'scripts/lib/orphan-selftest.ts': 'console.log(1);\n',
     'scripts/lib/prose-selftest.ts': 'console.log(1);\n',
     'scripts/lib/handler.ts': "if (process.argv.includes('--selftest')) run();\n",
@@ -373,6 +382,16 @@ function selftestCases(): ControlCase[] {
     'scripts/lib/commented-import-selftest.ts',
     true,
     'a selftest imported only by a commented-out import'
+  );
+  expect(
+    'scripts/lib/block-commented-selftest.ts',
+    true,
+    'a selftest imported only inside a block comment'
+  );
+  expect(
+    'scripts/lib/trailing-commented-selftest.ts',
+    true,
+    'a selftest imported only in a trailing line comment'
   );
   expect('scripts/lib/prose-selftest.ts', true, 'a selftest named only in parenthesised prose');
   expect('.ci/rediacc_ci/quality/mod_c.py', true, 'a --selftest handler nothing imports');
