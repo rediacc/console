@@ -247,8 +247,10 @@ def test_08_index_atomicity_under_fifty_concurrent_writers(sc):
                 text=True,
             )
         )
-        procs[-1].stdin.write(payload)
-        procs[-1].stdin.close()
+        stdin = procs[-1].stdin
+        assert stdin is not None, "Popen(stdin=PIPE) always opens a pipe"
+        stdin.write(payload)
+        stdin.close()
     for proc in procs:
         proc.wait()
     lines = sc.index_lines()

@@ -3096,20 +3096,6 @@
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"group\""
     },
     {
-      "id": "0144d9a9aa17ec5d",
-      "file": ".claude/rediacc_hooks/tests/test_wl_report_inbox.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"IO[Any] | None\" has no attribute \"close\""
-    },
-    {
-      "id": "14c849c7844f7fc1",
-      "file": ".claude/rediacc_hooks/tests/test_wl_report_inbox.py",
-      "code": "union-attr",
-      "count": 1,
-      "message": "Item \"None\" of \"IO[Any] | None\" has no attribute \"write\""
-    },
-    {
       "id": "d7e2e3be2beba728",
       "file": ".claude/rediacc_hooks/tests/test_wl_state_document.py",
       "code": "assignment",

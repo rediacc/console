@@ -1576,7 +1576,18 @@
           "expect": 1
         }
       ],
-      "derive": [],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/gen-docs.ts --write",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": ".",
+              "file": "scripts/data/doc-registry.md"
+            }
+          ]
+        }
+      ],
       "literals": []
     },
     {
@@ -1606,7 +1617,18 @@
           "expect": 1
         }
       ],
-      "derive": [],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/gen-docs.ts --write",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": ".",
+              "file": "scripts/data/doc-registry.md"
+            }
+          ]
+        }
+      ],
       "literals": []
     },
     {
@@ -1669,7 +1691,18 @@
           "expect": 1
         }
       ],
-      "derive": [],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/gen-docs.ts --write",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": ".",
+              "file": "scripts/data/doc-registry.md"
+            }
+          ]
+        }
+      ],
       "literals": []
     },
     {

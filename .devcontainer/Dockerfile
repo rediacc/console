@@ -361,12 +361,12 @@ ARG DLV_VERSION=1.27.2
 # versions, so that is what is pinned here; the freshness gate cannot compare
 # the two numbering schemes, which is why staticcheck is absent from
 # devcontainer-pin-sources.ts.
-ARG STATICCHECK_VERSION=0.8.1
+ARG STATICCHECK_VERSION=0.8.2
 # golangci-lint v2 moved to the /v2 module path. Installing the old
 # `github.com/golangci/golangci-lint/cmd/golangci-lint` at a v2 version fails
 # outright, so the path below is not interchangeable with the pre-v2 one.
 ARG GOLANGCILINT_VERSION=2.14.0
-ARG GOIMPORTS_VERSION=0.49.0
+ARG GOIMPORTS_VERSION=0.52.0
 # The `: "${X_VERSION:?...}"` guards are not decoration: without them an empty
 # build arg silently resolves to `@v`, which Go treats as a floating reference,
 # and the image would quietly ship an unpinned tool again while LOOKING pinned.
@@ -481,8 +481,8 @@ USER root
 # Pinned to what `@latest` resolved to on 2026-09-04, so this change moves nothing.
 # Bumping is a one-line edit per tool; there is deliberately no freshness gate on
 # these two, because a CLI whose version nothing depends on is not worth a red build.
-ARG CODEX_VERSION=0.153.1
-ARG GEMINI_CLI_VERSION=0.58.0
+ARG CODEX_VERSION=0.162.1
+ARG GEMINI_CLI_VERSION=0.63.0
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
 # npm-before`, passed by every build site as a build-arg). A global install resolves its whole
@@ -627,10 +627,10 @@ RUN gcc -O2 -Wall -o /usr/local/bin/bashcov-sup /tmp/bashcov-sup.c \
     && /usr/local/bin/bashcov-sup -- true
 
 # bottom (btm) — system monitor (https://github.com/ClementTsang/bottom)
-ARG BTM_VERSION=0.12.3
+ARG BTM_VERSION=0.14.9
 # Digests from the release API's `digest` field, same source as the bw pins above.
-ARG BTM_SHA256_AMD64=75dd4aa31eeb61087925c434627191062d9811b5da91c75ed28b83137a42ff27
-ARG BTM_SHA256_ARM64=6247af81c0f5befe46d95f8e34444e8f1aae04a525c571565fce4e1a0d3682a0
+ARG BTM_SHA256_AMD64=e8312526746c1190c3433e6ce0843f64c6e0c501003ee377552745c040dc6d56
+ARG BTM_SHA256_ARM64=a2d5fb1500c2209ffe3ec8711fe551b3b41830fad7bbde9fa1e58ae87010b9e5
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BTM_SHA="$BTM_SHA256_AMD64" ;; \
@@ -658,7 +658,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Both sides are pinned now: the workflow names a version instead of `@latest`, and
 # this ARG names the same one. They must move together -- a devbox that disagrees
 # with CI is worse than one that is merely behind, because it answers confidently.
-ARG AGENT_BROWSER_VERSION=0.36.0
+ARG AGENT_BROWSER_VERSION=0.39.0
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
     && npm cache clean --force
 

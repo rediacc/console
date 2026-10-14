@@ -136,6 +136,16 @@ EXEMPT_GLOBS = (
     ".ci/rediacc_ci/tests/gates/test_gate_toolchain*.py",
 )
 
+# A1's COINCIDENCES: a line that holds a pin's value only because ANOTHER pin, defined there, happens to carry the same version string. A1 is a literal value scan, so it cannot tell the two apart; each entry names the file, the pin key it would be reported under, and a regex over the one line it excuses, and carries its reason. Every hit is printed, and an entry that excuses nothing is red, so a coincidence that stops being one (either pin moves) is deleted rather than left to excuse a real restatement later.
+A1_COINCIDENCES: tuple[tuple[str, str, str, str], ...] = (
+    (
+        ".ci/breakpoint/versions.sh",
+        "MYPY_VERSION",
+        r'^readonly BREAKPOINT_TMATE_VERSION="',
+        "tmate's own pin (registry entry breakpoint:tmate) in the vendored breakpoint copy, equal to mypy's version string by coincidence",
+    ),
+)
+
 # A3's floor. A pins file that shrank below this is a collapsed corpus, not a clean tree.
 MIN_KEYS = 5
 
@@ -219,11 +229,16 @@ def read_lines(path: pathlib.Path) -> list[str]:
     return lines
 
 
-def restates(path: pathlib.Path, key: str, value: str) -> bool:
-    """`grep -F value | grep -vE '^\\s*#' | grep -qvF key`, stage by stage."""
+def restating_lines(path: pathlib.Path, key: str, value: str) -> list[str]:
+    """The lines `grep -F value | grep -vE '^\\s*#' | grep -vF key` keeps, stage by stage."""
     hits = [line for line in read_lines(path) if value in line]
     hits = [line for line in hits if not re.match(r"^[ \t]*#", line)]
-    return any(key not in line for line in hits)
+    return [line for line in hits if key not in line]
+
+
+def restates(path: pathlib.Path, key: str, value: str) -> bool:
+    """`grep -F value | grep -vE '^\\s*#' | grep -qvF key`, stage by stage."""
+    return bool(restating_lines(path, key, value))
 
 
 def check_a3(report: Report, pins: pathlib.Path) -> int:
@@ -271,6 +286,7 @@ def check_a1(report: Report, root: pathlib.Path, pins: pathlib.Path) -> int:
     """A1: one definition per pin. Returns the number of files scanned."""
     corpus = scan_corpus(root)
     dupes: list[str] = []
+    used: set[int] = set()
     for key, value in pin_entries(pins):
         # NODE_VERSION/GO_VERSION are also expressed as bare majors by third-party actions and by go.mod, which are not ours to unify.
         if key in ("NODE_VERSION", "GO_VERSION"):
@@ -281,8 +297,27 @@ def check_a1(report: Report, root: pathlib.Path, pins: pathlib.Path) -> int:
             target = root / rel
             if not target.is_file():
                 continue
-            if restates(target, key, value):
+            lines = restating_lines(target, key, value)
+            for i, (c_rel, c_key, c_re, c_why) in enumerate(A1_COINCIDENCES):
+                if c_rel != rel or c_key != key:
+                    continue
+                excused = [line for line in lines if re.search(c_re, line)]
+                if excused:
+                    used.add(i)
+                    print(
+                        "     A1 coincidence (exempt by name): %s %s=%s: %s"
+                        % (rel, key, value, c_why)
+                    )
+                lines = [line for line in lines if line not in excused]
+            if lines:
                 dupes.append("%s restates %s=%s" % (rel, key, value))
+
+    for i, (c_rel, c_key, _c_re, _c_why) in enumerate(A1_COINCIDENCES):
+        if i not in used:
+            dupes.append(
+                "%s: the A1 coincidence entry for %s excuses nothing; delete it from A1_COINCIDENCES"
+                % (c_rel, c_key)
+            )
 
     scanned = len(corpus)
     if scanned == 0:

@@ -138,7 +138,7 @@ if ! git -C "$SANDBOX_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 SB_FILE="$SANDBOX_ROOT/$SUITE_REL/$(basename "$FILE_ABS")"
-if ! FROM="$FROM" TO="$TO" python3 - "$SB_FILE" <<'PY'; then
+if ! FROM="$FROM" TO="$TO" python3 - "$SB_FILE" <<'PY'
 import os, pathlib, sys
 p = pathlib.Path(sys.argv[1])
 s = p.read_text()
@@ -155,6 +155,7 @@ if frm not in s:
 p.write_text(s.replace(frm, to, 1))
 print("  mutation applied to the sandbox copy")
 PY
+then
     rm -rf "$SANDBOX_ROOT"
     exit 2
 fi

@@ -237,12 +237,12 @@ readonly PKG_PRIORITY="optional"
 readonly R2_MAX_RELEASE_VERSIONS=20
 
 # nfpm configuration (replaces dpkg-deb + rpmbuild for package creation)
-readonly NFPM_VERSION="2.45.0"
+readonly NFPM_VERSION="2.48.0"
 # Verified against https://github.com/goreleaser/nfpm/releases/download/v2.45.0/checksums.txt
 # The tarball is piped straight into `sudo tar` in a job that also holds release
 # secrets, so an unverified download is arbitrary root-owned code. Update both
 # this and NFPM_VERSION together.
-readonly NFPM_SHA256_LINUX_X86_64="940f0c3ba8e2c9cc5669026a1c0c20453403b9c32ea4c66fd25426bcbe605a84"
+readonly NFPM_SHA256_LINUX_X86_64="6d7f9a28b2f397934403950fcbba83f598b08d02edbe79a0815b3b4897341750"
 
 # actionlint validates workflow YAML itself: `${{ }}` expression types, matrix
 # property references, runner labels, action input names, `if:` syntax. Pinned
@@ -274,8 +274,8 @@ readonly ACTIONLINT_SHA256_LINUX_ARM64="325e971b6ba9bfa504672e29be93c24981eeb1c0
 # `go install mvdan.cc/sh/v3/cmd/shfmt@v$SHFMT_VERSION`, which Go verifies
 # against its own checksum database -- a better guarantee than a hash we wrote
 # down ourselves.
-readonly SHELLCHECK_SHA256_LINUX_AARCH64="324a7e89de8fa2aed0d0c28f3dab59cf84c6d74264022c00c22af665ed1a09bb"
-readonly SHELLCHECK_SHA256_LINUX_X86_64="6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87"
+readonly SHELLCHECK_SHA256_LINUX_AARCH64="12b331c1d2db6b9eb13cfca64306b1b157a86eb69db83023e261eaa7e7c14588"
+readonly SHELLCHECK_SHA256_LINUX_X86_64="8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
 # DARWIN, added 2026-09-06 to finish the fix in .ci/scripts/lib/toolchain.sh. Until these
 # existed, an arm64 Mac resolved SHELLCHECK_SHA256_LINUX_AARCH64, downloaded the LINUX
 # tarball, and it PASSED its checksum because that is genuinely that file. The wrong OS
@@ -283,8 +283,8 @@ readonly SHELLCHECK_SHA256_LINUX_X86_64="6c881ab0698e4e6ea235245f22832860544f17b
 # no idea it had installed the tool for another platform. Fetched from each release asset
 # and verified BY TYPE before recording (Mach-O 64-bit executables and XZ archives, not an
 # error page), which is the trap CLAUDE.md records about piping an unchecked HTTP response.
-readonly SHELLCHECK_SHA256_DARWIN_X86_64="ef27684f23279d112d8ad84e0823642e43f838993bbb8c0963db9b58a90464c2"
-readonly SHELLCHECK_SHA256_DARWIN_AARCH64="bbd2f14826328eee7679da7221f2bc3afb011f6a928b848c80c321f6046ddf81"
+readonly SHELLCHECK_SHA256_DARWIN_X86_64="3c89db4edcab7cf1c27bff178882e0f6f27f7afdf54e859fa041fca10febe4c6"
+readonly SHELLCHECK_SHA256_DARWIN_AARCH64="56affdd8de5527894dca6dc3d7e0a99a873b0f004d7aabc30ae407d3f48b0a79"
 
 # shfmt release BINARIES, for the lanes that have no Go.
 #
@@ -295,18 +295,18 @@ readonly SHELLCHECK_SHA256_DARWIN_AARCH64="bbd2f14826328eee7679da7221f2bc3afb011
 # all, so an acquisition that requires it cannot run there. Recorded by
 # downloading the pinned release on 2026-08-25; mvdan/sh publishes no checksums
 # file, so this is trust-on-first-use, said plainly.
-readonly SHFMT_SHA256_LINUX_AMD64="fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1"
-readonly SHFMT_SHA256_LINUX_ARM64="32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7"
+readonly SHFMT_SHA256_LINUX_AMD64="76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf"
+readonly SHFMT_SHA256_LINUX_ARM64="5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489"
 # DARWIN, added 2026-09-06. Same reason as the shellcheck pair above. The arch spelling
 # differs between the two upstreams and that is NOT a typo: shfmt ships Go release names
 # and uses amd64/arm64, shellcheck uses x86_64/aarch64. toolchain.sh keys each variable off
 # the arch token that tool itself uses, so the two spellings must not be unified.
-readonly SHFMT_SHA256_DARWIN_AMD64="6feedafc72915794163114f512348e2437d080d0047ef8b8fa2ec63b575f12af"
-readonly SHFMT_SHA256_DARWIN_ARM64="9680526be4a66ea1ffe988ed08af58e1400fe1e4f4aef5bd88b20bb9b3da33f8"
+readonly SHFMT_SHA256_DARWIN_AMD64="d33eee0da0f92835b3562e9767a05cee7e4eaeef47daa03bfd09da17b4b590a6"
+readonly SHFMT_SHA256_DARWIN_ARM64="b7c872db63553ccffc7253aba3ed7d4885a27d83f1ba567b1138c6315a5847e5"
 
 # wrangler is installed globally in jobs that carry the production Cloudflare
 # API token, so it is pinned rather than floating on @latest.
-readonly WRANGLER_VERSION="4.112.0"
+readonly WRANGLER_VERSION="4.149.0"
 
 # Homebrew tap configuration
 readonly HOMEBREW_FORMULA_PATH="Formula/rediacc-cli.rb"
