@@ -5,6 +5,7 @@ The reader is driven against report.json files written into a scratch project. E
 
 from __future__ import annotations
 
+import ast
 import datetime
 import json
 
@@ -124,6 +125,23 @@ def test_the_stop_hook_queues_nothing_without_an_advisory_and_never_raises(monke
     assert calls == []
 
 
+def _calls_in(source: str, function: str, callee: str) -> list[ast.Call]:
+    tree = ast.parse(source)
+    return [
+        call
+        for fn in ast.walk(tree)
+        if isinstance(fn, ast.FunctionDef) and fn.name == function
+        for call in ast.walk(fn)
+        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name) and call.func.id == callee
+    ]
+
+
 def test_run_stop_calls_the_soaked_pins_report() -> None:
     source = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
-    assert "\n    _soaked_pins_report(worklist, session_id, state_doc)\n" in source
+    assert _calls_in(source, "run_stop", "_soaked_pins_report")
+
+
+def test_the_call_finder_reads_the_enclosing_function_not_the_text() -> None:
+    source = "def other():\n    _soaked_pins_report(a, b, c)\n\ndef run_stop():\n    return 1\n"
+    assert _calls_in(source, "other", "_soaked_pins_report")
+    assert not _calls_in(source, "run_stop", "_soaked_pins_report")
