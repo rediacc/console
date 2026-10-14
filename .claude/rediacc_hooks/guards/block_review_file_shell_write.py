@@ -193,6 +193,50 @@ def _review_forms(word):
     return forms
 
 
+# Git verbs whose positional words are refs, refspecs, patterns or names, never a file the verb writes: a glob refspec such as `refs/heads/*/*:refs/heads/q/*/*` is two adjacent `*` segments, which `_review_forms` reads as `agent/reviews`. The first operand of the remote verbs stays judged (a remote may be a path); an option stays judged whatever it carries.
+_GIT_REF_VERBS = frozenset(
+    (
+        "branch",
+        "tag",
+        "for-each-ref",
+        "show-ref",
+        "update-ref",
+        "symbolic-ref",
+        "remote",
+        "merge",
+        "rebase",
+        "cherry-pick",
+        "revert",
+        "describe",
+        "name-rev",
+        "rev-parse",
+        "reflog",
+    )
+)
+_GIT_REMOTE_VERBS = frozenset(("push", "fetch", "pull", "ls-remote"))
+
+
+def _without_ref_operands(run, argv):
+    """`argv` with the positional words of a git ref verb dropped, so only its options and its remote are read as possible file writes; any other command comes back unchanged."""
+    if run.name.rsplit("/", 1)[-1] != "git":
+        return argv
+    at, _ = shellscan._git_verb_at(argv)
+    if at is None:
+        return argv
+    verb = argv[at]
+    if verb not in _GIT_REF_VERBS and verb not in _GIT_REMOTE_VERBS:
+        return argv
+    keep = 1 if verb in _GIT_REMOTE_VERBS else 0
+    out = list(argv[: at + 1])
+    for word in argv[at + 1 :]:
+        if word.startswith("-") and len(word) > 1:
+            out.append(word)
+        elif keep:
+            out.append(word)
+            keep -= 1
+    return out
+
+
 def _operands(argv):
     return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
 
@@ -251,7 +295,7 @@ def _offending(cmd, depth=0, cwd=None):
         # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
         # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
         for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
-            for word, how in shellscan.output_landings(run, words, cwd):
+            for word, how in shellscan.output_landings(run, _without_ref_operands(run, words), cwd):
                 if not _is_review(word, run.cwd):
                     continue
                 if how == "option":

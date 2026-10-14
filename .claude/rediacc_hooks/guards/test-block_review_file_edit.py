@@ -511,6 +511,21 @@ SHELL_CASES = [
         "cd agent/reviews/1008-1 && grep -l open *.md | while read f; do head -1 $f; done",
         False,
     ),
+    # A git ref verb's positional words are refs, refspecs and patterns, never a file it writes: two adjacent `*` segments in a glob refspec are not `agent/reviews`. Each allowance was refused (rc 2) before.
+    ("push of a glob refspec", "git push --dry-run . 'refs/heads/*/*:refs/heads/q/*/*'", False),
+    ("fetch of a glob refspec", "git fetch . 'refs/heads/*/*:refs/x/*/*'", False),
+    ("pull of a glob refspec", "git pull . 'refs/heads/*/*'", False),
+    ("ls-remote of a glob pattern", "git ls-remote . 'refs/*/*'", False),
+    ("branch --list of a glob", "git branch --list '*/*'", False),
+    ("tag -l of a glob", "git tag -l '*/*'", False),
+    ("for-each-ref of a glob", "git for-each-ref 'refs/*/*'", False),
+    ("log over a glob pathspec", "git log -- '*/*/x'", False),
+    ("push under -C of a glob refspec", "git -C /tmp push . 'refs/*/*:refs/*/*'", False),
+    # The other direction: an option of the same verb, a path remote, and a verb that writes a path it names stay refused.
+    ("push whose remote is the directory", "git push agent/reviews/0930-1 main", True),
+    ("push --receive-pack naming the directory", "git push --receive-pack=%s o" % R, True),
+    ("clone into a glob that reads as the directory", "git clone . '*/*'", True),
+    ("worktree add at a glob that reads as the directory", "git worktree add '*/*'", True),
 ]
 
 

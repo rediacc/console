@@ -76,7 +76,11 @@ for name, cmd, want in CASES:
 
 # The refusal must name the resolved file and a real neighbour, or it is a silent red with extra steps.
 rc, err = answer("npm run test:write-once-guard")
-named = "package.json" in err and "Nearest real scripts in that file: " in err
+HEADER = "Nearest real scripts in that file: "
+scripts = json.loads((ROOT / "package.json").read_text())["scripts"]
+after = err.partition(HEADER)[2].split("\n", 1)[0]
+# At least one name after the header must be a script the file really defines; the header alone, or a made-up neighbour, is a refusal naming nothing.
+named = "package.json" in err and any(n.strip(", ") in scripts for n in after.split())
 fails += not named
 print("%-42s %s" % ("message names file and nearest script", "ok" if named else "*** FAIL ***"))
 
