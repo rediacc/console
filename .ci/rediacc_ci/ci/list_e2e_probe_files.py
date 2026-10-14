@@ -43,9 +43,10 @@ def probe_units(manifest_path: pathlib.Path) -> list[dict[str, str]]:
     for leg in data["legs"]:
         for entry_id in leg["ids"]:
             unit = entry_id.removeprefix(UNIT_PREFIX)
-            test, _, bucket = unit.partition("#")
+            test, separator, bucket = unit.partition("#")
             grep = ""
-            if bucket:
+            if separator:
+                # The separator, not the bucket, decides: `a.test.ts#` names an empty bucket, which is refused like any other unknown one (review 729e29cc.1).
                 grep = SHARD_GREP_BUCKETS.get(bucket, "")
                 if not grep:
                     raise UnknownBucketError(

@@ -26,7 +26,6 @@ import pathlib
 import subprocess
 
 import pytest
-import wl_planrec
 
 from rediacc_ci import log, paths
 from rediacc_ci.quality import plan_housekeeping as hk
@@ -326,9 +325,10 @@ def test_the_config_mirror_equals_wl_planrec_record_states_both_directions() -> 
 
     NOT SKIPPED WHEN THE HOOKS ARE ABSENT WITHOUT SAYING SO. `pytest.skip` prints the reason, which is the difference between "checked and equal" and "not checked".
     """
-    stop = paths.CI_DIR.parent / ".claude" / "hooks" / "stop"
-    if not (stop / "wl_planrec.py").is_file():
-        pytest.skip("no %s in this checkout, so the mirror has no origin to compare against" % stop)
+    # Imported here and not at the top, so a checkout with no `.claude/` skips this one comparison (review fa983477.1) and the sed and bash cases above still run.
+    wl_planrec = pytest.importorskip(
+        "wl_planrec", reason="no .claude/hooks/stop in this checkout, so the mirror has no origin"
+    )
 
     mirror = set(hk.record_states(CONFIG))
     origin = set(wl_planrec.RECORD_STATES)

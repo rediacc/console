@@ -683,6 +683,20 @@ def test_a_rules_sequence_at_the_indent_of_its_key_is_read() -> None:
     assert "carries no" in findings[0]
 
 
+def test_a_bare_dash_item_at_the_indent_of_the_rules_key_is_read() -> None:
+    """Review e7aa60fa.1: a `-` alone on its line (body on the next lines) is a sequence item too; the block used to end at it and its rules were never read."""
+    text = (
+        "linters:\n  exclusions:\n    rules:\n"
+        "    # BLOCKER: the nesting follows the tool's output grammar, one case per field of its report.\n"
+        "    -\n      path: a\\.go$\n      linters:\n        - nestif\n"
+        "    -\n      path: b\\.go$\n      linters:\n        - nestif\n"
+    )
+    findings, rules = port_module.exclusion_rule_findings(text, "f.yml")
+    assert rules == 2
+    assert len(findings) == 1
+    assert "carries no" in findings[0]
+
+
 def test_a_non_utf8_config_is_one_finding_not_a_traceback(tmp_path) -> None:
     (tmp_path / ".golangci.yml").write_bytes(b"linters:\n  \xff\n")
     findings = port_module.check_exclusion_rules(tmp_path)

@@ -342,6 +342,15 @@ def test_an_osv_vulns_that_is_not_a_list_is_not_compared(monkeypatch, vulns) -> 
     assert "not a list" in str(raised.value)
 
 
+@pytest.mark.parametrize("bad_id", [["GO-1"], {"x": 1}, 7])
+def test_an_osv_vuln_whose_id_is_not_a_string_is_not_compared(monkeypatch, bad_id) -> None:
+    """Review e7aa60fa.2: an unhashable id reached the set comprehension and raised TypeError, a traceback instead of the named refusal."""
+    monkeypatch.setattr(upstream, "ask_json", lambda *_a, **_k: {"vulns": [{"id": bad_id}]})
+    with pytest.raises(upstream.NotComparedError) as raised:
+        go_deps.osv_affected("example.test/dep", "v1.1.0")
+    assert "not a string" in str(raised.value)
+
+
 def test_an_osv_vulns_list_is_read_as_before(monkeypatch) -> None:
     monkeypatch.setattr(
         upstream, "ask_json", lambda *_a, **_k: {"vulns": [{"id": "GO-2"}, {"id": "GO-1"}, {}]}

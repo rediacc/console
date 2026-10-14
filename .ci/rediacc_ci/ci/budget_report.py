@@ -1162,13 +1162,28 @@ def gate_step_seconds(
     return result
 
 
+def _gates_lock_problem(root: Path) -> str | None:
+    """Why the lock cannot be trusted to name the live gates: absent, unreadable, not JSON or not a list (review 48ee821e.1). `load_gate_ci_steps` reads every one of those as an empty map, which would make a prune drop the whole table."""
+    path = root / GATES_LOCK_REL_PATH
+    if not path.is_file():
+        return "no %s" % GATES_LOCK_REL_PATH
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return "%s cannot be read (%s)" % (GATES_LOCK_REL_PATH, exc)
+    if not isinstance(data, list):
+        return "%s is not a list" % GATES_LOCK_REL_PATH
+    return None
+
+
 def prune_gate_steps_to_lock(gate_steps: dict[str, Any], root: Path) -> dict[str, Any]:
     """Drop a gate id no longer eligible for a CI-sourced p90 in the committed lock -- retired, retyped, renamed-step, OR moved into a step now SHARED with another gate (`_exclusive_ci_steps`) -- the same reasoning as `prune_units_to_manifests`: an ADD-only merge would keep a stale, or now-mis-attributed, entry forever."""
     # NO LOCK, NO PRUNE (worklist #f0bad09d): a `--lane-durations` path outside a repo puts `root` where no lock exists, load_gate_ci_steps reads that as an empty map, and every entry was dropped without a word (287 on the run that found it). An unreadable lock keeps the table and says so, the rule prune_units_to_manifests already follows for a missing manifest.
-    if not (root / GATES_LOCK_REL_PATH).is_file():
+    lock_problem = _gates_lock_problem(root)
+    if lock_problem is not None:
         print(
-            "budget_report: no %s under %s, so gate_step_p90_seconds is kept unpruned (%d entries)"
-            % (GATES_LOCK_REL_PATH, root, len(gate_steps)),
+            "budget_report: %s under %s, so gate_step_p90_seconds is kept unpruned (%d entries)"
+            % (lock_problem, root, len(gate_steps)),
             file=sys.stderr,
         )
         return dict(gate_steps)

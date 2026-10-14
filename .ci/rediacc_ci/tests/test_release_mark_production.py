@@ -679,3 +679,17 @@ def test_diagnostics_are_prefixed_with_the_module_name(tmp_path: pathlib.Path) -
     assert new.stderr == (
         "✗ rediacc_ci.release.mark_production: no version given (argv[1] or $VERSION)\n"
     )
+
+
+def test_the_failure_line_names_creating_when_the_production_ref_was_missing(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review 4c4f9ef7.2: the `creating` arm of the failure message (a failed POST) had no case; the golden-backed one covers only the PATCH `moving` arm. The port is driven alone, since the twin is retired."""
+    proc, _ = _run_live(PORT, tmp_path, ["v1.3.1"], FAKE_GH_PROD_REF_RC="1", FAKE_GH_MUTATE_RC="6")
+    assert proc.returncode == 6
+    assert "creating of the 'production' tag to " in proc.stderr
+    assert "moving of the 'production' tag" not in proc.stderr
+    # CONTROL: with the ref present the same failure reads `moving`.
+    proc, _ = _run_live(PORT, tmp_path, ["v1.3.1"], FAKE_GH_MUTATE_RC="6")
+    assert proc.returncode == 6
+    assert "moving of the 'production' tag to " in proc.stderr

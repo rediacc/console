@@ -828,7 +828,7 @@ def db_launch(plan: DbPlan, env: dict[str, str] | None = None) -> int:
     log.info("Port: %d" % plan.port)
     print()
     argv = [binary, "--host", bind, "--port", str(plan.port), "--no-browser", plan.database]
-    proc.exec_replace(argv)
+    proc.exec_replace(argv, env=environ)
     raise AssertionError("exec_replace returned")  # pragma: no cover
 
 

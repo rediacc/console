@@ -260,8 +260,8 @@ def rename_pairs() -> list[tuple[str, str]]:
         return []
     try:
         return list(ast.literal_eval(node.value))
-    except ValueError as exc:
-        # A concatenation or a name in the table is not data this gate can read: say so, rather than a bare traceback.
+    except (ValueError, TypeError) as exc:
+        # A concatenation or a name in the table, or an unhashable element (`TypeError`), is not data this gate can read: say so, rather than a bare traceback.
         msg = f"{RENAME_TABLE.relative_to(ROOT)}: RENAMES must hold only literal strings ({exc})"
         raise SystemExit(msg) from exc
 

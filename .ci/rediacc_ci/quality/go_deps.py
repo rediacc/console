@@ -166,7 +166,18 @@ def osv_affected(path: str, version: str) -> list[str]:
         raise upstream.NotComparedError(
             "an answer whose vulns is not a list", host, "POST " + url, 1
         )
-    return sorted({v["id"] for v in vulns if isinstance(v, dict) and v.get("id")})
+    ids: set[str] = set()
+    for vuln in vulns:
+        if not isinstance(vuln, dict) or not vuln.get("id"):
+            continue
+        if not isinstance(vuln["id"], str):
+            # An unhashable id (a list or a mapping) would raise TypeError in the set below, and any other non-string id is no advisory name (review e7aa60fa.2).
+            host = url.split("/")[2] if url.count("/") >= 2 else url
+            raise upstream.NotComparedError(
+                "an answer whose vulns hold an id that is not a string", host, "POST " + url, 1
+            )
+        ids.add(vuln["id"])
+    return sorted(ids)
 
 
 # The seam the selftest swaps for a table, so its controls never touch the network.

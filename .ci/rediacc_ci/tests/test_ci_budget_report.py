@@ -3153,3 +3153,16 @@ def test_prune_gate_steps_to_lock_still_prunes_against_a_lock_that_names_nothing
     lock.parent.mkdir(parents=True)
     lock.write_text("[]", encoding="utf-8")
     assert br.prune_gate_steps_to_lock({"check:a": 5.0}, tmp_path) == {}
+
+
+@pytest.mark.parametrize("body", ["{not json", '{"id": "check:a"}'])
+def test_prune_gate_steps_to_lock_keeps_the_table_when_the_lock_is_malformed(
+    tmp_path, capsys, body
+):
+    """Review 48ee821e.1: a lock that exists but does not parse as a list read as an empty map and pruned every entry without a word."""
+    lock = tmp_path / br.GATES_LOCK_REL_PATH
+    lock.parent.mkdir(parents=True)
+    lock.write_text(body, encoding="utf-8")
+    gate_steps = {"check:a": 5.0, "check:b": 9.5}
+    assert br.prune_gate_steps_to_lock(gate_steps, tmp_path) == gate_steps
+    assert "kept unpruned (2 entries)" in capsys.readouterr().err

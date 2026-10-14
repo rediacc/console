@@ -123,3 +123,51 @@ def test_selftest_passes_and_is_not_vacuous(capsys) -> None:
     out = capsys.readouterr().out
     assert "control(s) passed" in out
     assert int(out.strip().split("\n")[-1].split()[0]) >= 18
+
+
+def test_a_signing_failure_that_is_not_a_bad_passphrase_reads_error_not_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review e0c47452.2: a key gpg cannot import leaves no secret key to sign with, which is neither a signature nor a wrong passphrase."""
+    junk = tmp_path / "junk.asc"
+    junk.write_text("not a key\n", encoding="utf-8")
+    verdict = gate._sign_with(tmp_path, junk, "irrelevant", "junk")
+    assert verdict.startswith("error: ")
+    assert verdict != "refused"
+
+
+def test_gpg_runs_under_the_c_locale_so_its_messages_match_the_gate(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """Review e0c47452.1: the wrong-passphrase match reads the C-locale text, so a non-English LANG must not reach gpg."""
+    seen: dict[str, str] = {}
+    real_run = gate.subprocess.run
+
+    def spy(_argv, **kw):
+        seen.update(kw["env"])
+        return real_run(["true"], **{k: v for k, v in kw.items() if k != "env"})
+
+    monkeypatch.setenv("LANG", "de_DE.UTF-8")
+    monkeypatch.setenv("LC_ALL", "de_DE.UTF-8")
+    monkeypatch.setattr(gate.subprocess, "run", spy)
+    gate._gpg(["--version"], str(tmp_path))
+    assert seen["LC_ALL"] == "C"
+
+
+def test_a_failed_agent_launch_is_reported_as_an_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """Review e0c47452.3: the launch's exit code was ignored, so a failed launch fell back to the on-demand start the launch exists to avoid."""
+
+    class Done:
+        returncode = 2
+        stderr = ""
+        stdout = ""
+
+    def fake_gpg(*_args, **_kw):
+        return Done()
+
+    monkeypatch.setattr(gate, "_gpg", fake_gpg)
+    assert gate._sign_with(tmp_path, tmp_path / "k", "p", "t") == (
+        "error: gpgconf --launch gpg-agent exited 2"
+    )
