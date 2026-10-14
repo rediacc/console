@@ -313,20 +313,29 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     }
     saveJournal(dir, j);
     const repos = [...new Set(['.', ...[...touched.values()].map((p) => p.repo)])];
+    // A step is judged by the BYTES it changed, not by which files are dirty: a file an earlier write or step already made dirty is dirty before and after, and only its hash shows that this step rewrote it (review 02aeb8f5.1). A change is declared only by this step's own writes, never by the journal, which also holds every other plan's files.
+    const dirtyHashes = (r: string): Map<string, string> => {
+      const out = new Map<string, string>();
+      for (const f of dirtyPaths(path.join(o.root, r)) ?? new Set<string>()) {
+        if (f.endsWith('/') || (r === '.' && o.submodules.includes(f))) continue;
+        out.set(f, sha(readBytes(path.join(o.root, r, f))));
+      }
+      return out;
+    };
     for (const s of steps) {
-      const pre = new Map(
-        repos.map((r) => [r, dirtyPaths(path.join(o.root, r)) ?? new Set<string>()])
-      );
+      const pre = new Map(repos.map((r) => [r, dirtyHashes(r)]));
       const rc = run(s.run, s.cwd);
+      const declared = new Set(s.writes.map((w) => keyOf(w)));
       for (const w of s.writes) markWrote(keyOf(w));
       const before = undeclared.length;
       for (const r of repos) {
-        const post = dirtyPaths(path.join(o.root, r)) ?? new Set<string>();
-        for (const f of post) {
-          if (pre.get(r)?.has(f) || f.endsWith('/') || (r === '.' && o.submodules.includes(f)))
-            continue;
+        const was = pre.get(r) ?? new Map<string, string>();
+        const now = dirtyHashes(r);
+        for (const f of new Set([...was.keys(), ...now.keys()])) {
+          const after = now.get(f) ?? sha(readBytes(path.join(o.root, r, f)));
+          if (was.get(f) === after) continue;
           const k = keyOf({ repo: r, file: f });
-          if (!j.files[k] && !undeclared.includes(k)) undeclared.push(k);
+          if (!declared.has(k) && !undeclared.includes(k)) undeclared.push(k);
         }
       }
       saveJournal(dir, j);
