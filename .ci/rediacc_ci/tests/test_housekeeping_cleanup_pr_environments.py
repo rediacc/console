@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import typing
+from typing import Any
 
 import pytest
 
@@ -155,7 +156,7 @@ def _delete(env: str) -> str:
     return f"api\t-X\tDELETE\trepos/acme/widget/environments/{env}"
 
 
-CASE_KW: dict[str, tuple[list[str], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[list[str], dict[str, Any]]] = {
     "no-arguments": ([], {}),
     "a-missing-gh": ([], {"with_gh": False}),
     "no-pr-environments": (REPO, {"FAKE_GH_ENVS": "edge,stable,production-eu"}),
@@ -215,7 +216,7 @@ def recorded(name: str) -> tuple[int, str, str, list[str]]:
 
 def drive(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):
     args, kw = CASE_KW[name]
-    return _run(subject or PORT, tmp_path, args, **kw)  # type: ignore[arg-type]
+    return _run(subject or PORT, tmp_path, args, **kw)
 
 
 def compare(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):

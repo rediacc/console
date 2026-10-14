@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from rediacc_ci.drills import universe
+from rediacc_ci.drills import lib, universe
 from rediacc_ci.ops import (
     apply_cf_redirect_rules,
     backup_cutover_preflight,
@@ -123,7 +123,7 @@ def test_linode_phases_and_defaults(
 
 def test_the_universe_drill_builds_its_cli_commands_from_the_drills_root() -> None:
     class FakeDrill:
-        root = "/repo"
+        root: object = "/repo"
 
         def __init__(self) -> None:
             self.calls: list[tuple[list[str], dict[str, str]]] = []
@@ -139,8 +139,8 @@ def test_the_universe_drill_builds_its_cli_commands_from_the_drills_root() -> No
             return "/repo/" + other
 
     fake = FakeDrill()
-    fake.root = Root()  # type: ignore[assignment]
-    drill = universe.Universe(fake, restart_gateway=False)  # type: ignore[arg-type]
+    fake.root = Root()
+    drill = universe.Universe(typing.cast("lib.Drill", fake), restart_gateway=False)
     drill.cli("config", "current", "-o", "json", REDIACC_CONFIG="drill-a")
     assert fake.calls == [
         (["/repo/rdc.sh", "config", "current", "-o", "json"], {"REDIACC_CONFIG": "drill-a"})

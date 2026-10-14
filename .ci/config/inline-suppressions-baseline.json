@@ -152,37 +152,6 @@
   ".ci/rediacc_ci/tests/test_ci_github_status.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/tests/test_housekeeping_cleanup_github_deployments.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_infra_ci_start_account.py": {
-   "type-ignore arg-type": 2
-  },
-  ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
-   "type-ignore arg-type": 4
-  },
-  ".ci/rediacc_ci/tests/test_infra_obs_mirror.py": {
-   "type-ignore func-returns-value": 1
-  },
-  ".ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_ops_build_server.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_ops_units.py": {
-   "type-ignore arg-type": 1,
-   "type-ignore assignment": 1
-  },
-  ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_quality_no_app_admin_perm.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": {
    "noqa PLC0415": 1
   },

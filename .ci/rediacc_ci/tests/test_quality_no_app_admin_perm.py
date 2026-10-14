@@ -14,6 +14,7 @@ The full twin render is recorded all the same, both streams verbatim, so a reade
 from __future__ import annotations
 
 import pathlib
+from typing import Any
 
 import pytest
 
@@ -73,7 +74,7 @@ def project_golden(text: str) -> str:
     return project(int(exit_line.removeprefix("exit: ")), stdout)
 
 
-CASES: list[tuple[str, dict[str, object]]] = [
+CASES: list[tuple[str, dict[str, Any]]] = [
     ("clean", {"extra": {}}),
     ("workflow", {"extra": {".github/workflows/ci.yml": CLEAN_WORKFLOW + REQUEST}}),
     ("action", {"extra": {".github/actions/app-token/action.yml": "name: x\n" + REQUEST}}),
@@ -107,9 +108,9 @@ EXPECTED_HITS = {
 
 @pytest.mark.parametrize(("name", "kwargs"), CASES, ids=[c[0] for c in CASES])
 def test_port_matches_the_twins_recorded_output(
-    tmp_path: pathlib.Path, name: str, kwargs: dict[str, object]
+    tmp_path: pathlib.Path, name: str, kwargs: dict[str, Any]
 ) -> None:
-    root = build(tmp_path, **kwargs)  # type: ignore[arg-type]
+    root = build(tmp_path, **kwargs)
     returncode, stdout, _ = run_port(root)
     actual = project(returncode, stdout)
     expected = project_golden(frozen.read(SLUG, name))

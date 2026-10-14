@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import typing
+from typing import Any
 
 import pytest
 
@@ -135,7 +136,7 @@ LIST_CALL = (
 
 BASE = ["--repo", "acme/widget", "--environment", "pr-42"]
 
-CASE_KW: dict[str, tuple[list[str], dict[str, object]]] = {
+CASE_KW: dict[str, tuple[list[str], dict[str, Any]]] = {
     "no-arguments": ([], {}),
     "a-repo-without-an-environment": (["--repo", "acme/widget"], {}),
     "an-environment-without-a-repo": (["--environment", "pr-42"], {}),
@@ -184,7 +185,7 @@ def recorded(name: str) -> tuple[int, str, str, list[str]]:
 
 def drive(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):
     args, kw = CASE_KW[name]
-    return _run(subject or PORT, tmp_path, args, **kw)  # type: ignore[arg-type]
+    return _run(subject or PORT, tmp_path, args, **kw)
 
 
 def compare(tmp_path: pathlib.Path, name: str, *, subject: pathlib.Path | None = None):

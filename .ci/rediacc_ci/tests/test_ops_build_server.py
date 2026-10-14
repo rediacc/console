@@ -270,7 +270,7 @@ def build(tmp_path: pathlib.Path, name: str, *, port_source: str | None = None):
     THE FAKES MAKE THE OUTPUTS THE REAL TOOLS WOULD. `npm pack` is a fake, so the tarball it "produces" is a path in `FAKE_NPM_MAKE_FILES` that the fake creates on every npm call; `rm -rf cli-npm` runs BEFORE the pack, so a tarball staged by the fixture up front would be wiped and the fake is the only way to put one there.
     """
     kw: dict[str, object] = {}
-    fx: dict[str, object] = {}
+    fx: dict[str, typing.Any] = {}
     args = ["onprem"]
     npm_makes = [ONE_TARBALL]
     npx_makes: list[str] = []
@@ -310,7 +310,7 @@ def build(tmp_path: pathlib.Path, name: str, *, port_source: str | None = None):
         fx["www_package"] = False
         npm_makes = []
 
-    root = fixture(tmp_path, port_source=port_source, **fx)  # type: ignore[arg-type]
+    root = fixture(tmp_path, port_source=port_source, **fx)
     if npm_makes:
         kw["FAKE_NPM_MAKE_FILES"] = " ".join(str(root / p) for p in npm_makes)
     if npx_makes:
