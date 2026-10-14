@@ -147,8 +147,18 @@ describe('inode 0 on a case-folding platform', () => {
     const dir = path.join(scratch, 'Only');
     fs.mkdirSync(dir);
     const other = path.join(scratch, 'only');
-    // The two realpaths differ here, so the equality short-circuit cannot answer and the fold decides.
-    expect(keepsSpelling(other)).not.toBe(keepsSpelling(dir));
+    // The two realpaths differ here, so the equality short-circuit cannot answer and the fold decides: read them through the realpath the fold itself calls, and require the volume to resolve both spellings to one directory.
+    const seen: string[] = [];
+    withInodeZero(
+      () => {
+        seen.push(fs.realpathSync(dir), fs.realpathSync(other));
+        return true;
+      },
+      insensitive,
+      keepsSpelling
+    );
+    expect(seen[0]).not.toBe(seen[1]);
+    expect(realReal(insensitive(other))).toBe(realReal(insensitive(dir)));
     expect(
       withInodeZero(() => sameDirectory(dir, other, 'darwin'), insensitive, keepsSpelling)
     ).toBe(true);
@@ -166,5 +176,31 @@ describe('inode 0 on a case-folding platform', () => {
     expect(withInodeZero(() => sameDirectory(a, b, 'darwin'), insensitive, keepsSpelling)).toBe(
       true
     );
+  });
+
+  it('does not fold when the letterless directory is a mount point whose volume the probed ancestor does not describe', () => {
+    const site = path.join(scratch, 'Mount');
+    fs.mkdirSync(path.join(site, '2024'), { recursive: true });
+    const a = path.join(site, '2024');
+    const b = path.join(scratch, 'mount', '2024');
+    const folded = withInodeZero(
+      () => {
+        const inner = fs.statSync;
+        (fs as { statSync: unknown }).statSync = ((p: fs.PathLike) => {
+          const s = inner(p) as fs.Stats;
+          return path.basename(String(p)) === '2024'
+            ? Object.assign(Object.create(Object.getPrototypeOf(s)), s, { dev: s.dev + 1 })
+            : s;
+        }) as typeof fs.statSync;
+        try {
+          return sameDirectory(a, b, 'darwin');
+        } finally {
+          (fs as { statSync: unknown }).statSync = inner;
+        }
+      },
+      insensitive,
+      keepsSpelling
+    );
+    expect(folded).toBe(false);
   });
 });
