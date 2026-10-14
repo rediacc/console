@@ -35,8 +35,9 @@ _SYSPATH = _load_syspath()
 _SYSPATH.on_sys_path(_SYSPATH.CLAUDE_DIR)
 _SYSPATH.on_sys_path(_SYSPATH.STOP_DIR)
 
-import wl_review as R  # noqa: E402
-from rediacc_hooks import hookio, shellscan  # noqa: E402
+R = importlib.import_module("wl_review")
+hookio = importlib.import_module("rediacc_hooks.hookio")
+shellscan = importlib.import_module("rediacc_hooks.shellscan")
 
 
 def commit_repos(cmd, cwd, root):

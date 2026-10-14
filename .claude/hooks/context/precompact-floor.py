@@ -82,7 +82,10 @@ def open_items(project, slug):
 
 
 def facts(project, event, slug):
-    git = lambda *a: run(["git", *a], project).strip()  # noqa: E731
+
+    def git(*a):
+        return run(["git", *a], project).strip()
+
     branch = git("rev-parse", "--abbrev-ref", "HEAD") or "(detached or unknown)"
     head = git("log", "-1", "--format=%h %s")
     dirty = [line for line in git("status", "--porcelain").splitlines() if line.strip()]

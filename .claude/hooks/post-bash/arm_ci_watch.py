@@ -44,8 +44,9 @@ _SYSPATH = _load_syspath()
 _SYSPATH.on_sys_path(_SYSPATH.CLAUDE_DIR)
 _SYSPATH.on_sys_path(_SYSPATH.STOP_DIR)
 
-import wl_core as C  # noqa: E402
-from rediacc_hooks import hookio, shellscan  # noqa: E402
+C = importlib.import_module("wl_core")
+hookio = importlib.import_module("rediacc_hooks.hookio")
+shellscan = importlib.import_module("rediacc_hooks.shellscan")
 
 TRACE = pathlib.Path(".ci") / "scripts" / "ci" / "ci-trace.py"
 WORKLIST = HOOKS / "stop" / "worklist.py"
