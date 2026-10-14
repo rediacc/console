@@ -548,11 +548,13 @@ function dropKnipEntry(text: string, pkg: string): string {
   // The comment above is the entry's own when the next line is not another entry the same comment covers.
   const coversNext = /^"[^"]+",?$/.test(next);
   if (commentStart < idx && !coversNext) for (let k = commentStart; k < idx; k++) drop.add(k);
-  let kept = lines.filter((_, i) => !drop.has(i));
-  // An array whose last entry went leaves a dangling comma before its closing bracket.
-  kept = kept.map((l, i) =>
-    /,\s*$/.test(l) && /^\s*\]/.test(kept[i + 1] ?? '') ? l.replace(/,\s*$/, '') : l
-  );
+  const kept = lines.filter((_, i) => !drop.has(i));
+  // An array whose last entry went leaves a dangling comma on the entry before it; any other array keeps its commas.
+  if (/^\s*\]/.test(lines[idx + 1] ?? '')) {
+    let p = commentStart - 1;
+    while (p >= 0 && (lines[p].trim().startsWith('//') || lines[p].trim() === '')) p--;
+    if (p >= 0) kept[p] = kept[p].replace(/,\s*$/, '');
+  }
   return kept.join('\n');
 }
 
@@ -568,12 +570,16 @@ function importersOf(pkg: string, dirs: string[]): string[] {
     for (const f of globSync(['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'], {
       cwd: d,
       posix: true,
+      // Dot directories (.ci/, .storybook/) hold sources too.
+      dot: true,
+      // Output directories are skipped only where the declaring directory itself builds them: a source folder that happens to be named build/ deeper down still counts.
       ignore: [
         '**/node_modules/**',
         '**/dist/**',
-        '**/build/**',
-        '**/coverage/**',
-        '**/.astro/**',
+        '**/.git/**',
+        'build/**',
+        'coverage/**',
+        '.astro/**',
         '.ci/cache/**',
       ],
     }).sort())
@@ -618,8 +624,15 @@ export function planRemove(entry: PinEntry, ctx: DriverContext, pkg: string): Pi
       const text = readOf(p);
       if (text === null) continue;
       const doc = JSON.parse(text) as Record<string, Record<string, unknown> | undefined>;
-      if (`${JSON.stringify(doc, null, 2)}\n` !== text) continue;
       const isKey = (k: string): boolean => k === pkg || k.startsWith(`${pkg}@`);
+      if (`${JSON.stringify(doc, null, 2)}\n` !== text) {
+        // A manifest that cannot be rewritten byte-faithfully must not leave its override behind in silence.
+        if (['overrides', '_overridesReasons'].some((f) => Object.keys(doc[f] ?? {}).some(isKey)))
+          throw new PlanRefused(
+            `remove ${pkg}: ${keyOf(p)} holds an override for it but is not in npm's two-space form; reformat it first`
+          );
+        continue;
+      }
       let touched = false;
       for (const f of ['overrides', '_overridesReasons'])
         for (const k of Object.keys(doc[f] ?? {}))
