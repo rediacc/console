@@ -428,12 +428,11 @@ def fenced_lines(root, rel):
     return out
 
 
-#: An OPEN plan box, `- [ ] ...`. A gate named on one is the gate the box promises to build, so it cannot resolve yet: the box text is the durable key `check:ci-plan-boxes` refuses to let a change rewrite, so the name cannot be phrased away either. Ticking the box flips its bracket, which makes the line an addition again, and the gate is judged then, when it must exist.
-OPEN_BOX_RE = re.compile(r"^\s*[-*] \[ \] ")
+# An OPEN plan box is a line the plan-box parser itself reads as unticked (`wl_planrec.BOX_LINE_RE`, bracket `[ ]`, any of its `-`, `*` or `+` bullets), so the exemption covers exactly the lines `check:ci-plan-boxes` keys as boxes and nothing shaped like one elsewhere. A gate named on one is the gate the box promises to build, so it cannot resolve yet: the box text is the durable key `check:ci-plan-boxes` refuses to let a change rewrite, so the name cannot be phrased away either. Ticking the box flips its bracket, which makes the line an addition again, and the gate is judged then, when it must exist.
 
 
 def citations(text):
-    """[(kind, token)] for every pointer on one line, in resolve()'s kinds. A gate named on an open plan box is not a citation (OPEN_BOX_RE).
+    """[(kind, token)] for every pointer on one line, in resolve()'s kinds. A gate named on an open plan box, as the plan-box parser reads one, is not a citation.
 
     THE ORDER MATTERS and it is the order `wl_planrec.launder` uses: file:line first, because a path fragment inspected as hex would be rewritten out from under the citation resolver. Plans before gates before objects for the same reason -- each later shape is a superset of characters the earlier one owns.
     """
@@ -448,7 +447,8 @@ def citations(text):
 
     take(CK.CITE_RE, "fileline")
     take(R.PLAN_REF_RE, "plan")
-    if not OPEN_BOX_RE.match(text or ""):
+    box = R.BOX_LINE_RE.match(text or "")
+    if not (box and box.group(1) == " "):
         take(R.GATE_RE, "gate")
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
     # The shape alone is not enough: the same line must also name it a bookmark (or time-travel), as a verbatim deploy record does.
@@ -1006,7 +1006,7 @@ def selftest(root):
         "CONTROL: the same 12 hex characters WITHOUT the UUID dashes ARE",
         any(k == "object" for k, _t in citations("Stripe secret 3fda6dabc123 leaked")),
     )
-    # THE OPEN-BOX GATE EXEMPTION, both directions: an open box may name the gate it promises, a ticked box and plain prose may not. See OPEN_BOX_RE.
+    # THE OPEN-BOX GATE EXEMPTION, both directions: an open box may name the gate it promises, a ticked box and plain prose may not. See the comment above citations().
     ck(
         "a gate named on an OPEN plan box is NOT a citation (the box promises it)",
         not any(
@@ -1020,6 +1020,10 @@ def selftest(root):
     ck(
         "CONTROL: the same gate in prose IS a citation",
         any(k == "gate" for k, _t in citations("5. COVERAGE: `check:no-such-gate-zzz` compares")),
+    )
+    ck(
+        "CONTROL: a box-like line the parser does not read as a box (no bullet) IS judged",
+        any(k == "gate" for k, _t in citations("[ ] T10: `check:no-such-gate-zzz` for leaves")),
     )
     ck(
         "CONTROL: a file:line on an open box is still judged",
