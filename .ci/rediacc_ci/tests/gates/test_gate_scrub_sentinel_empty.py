@@ -11,7 +11,7 @@ WHAT THE PORT PROMISES INSTEAD (its Rule T 1). A probe that cannot answer is not
 
 THE TOOL-ABSENT BRANCH. Under `CI` a missing `aws` is a FAILURE, because a missing tool there is a broken lane and a suite that quietly passes over it is the gate-that-cannot-fail shape this repo keeps paying for. Locally it is announced as NOT VERIFIED rather than skipped silently, which is what keeps the absence visible. Without `aws` the port exits 1 with `Required command 'aws' is not available`, which would otherwise be indistinguishable from the property above failing.
 
-NOT A REAL-TREE TWIN. `gate-test:scrub-sentinel-empty` carries no `tree:` claim in `gates.lock.json`, so `REAL_TREE_TWIN` is deliberately NOT set. The subject is executed read-only against an unreachable endpoint and writes nothing.
+NOT A REAL-TREE TWIN. No `tree:` claim in `gates.lock.json` backs this module, so `REAL_TREE_TWIN` is deliberately NOT set. The subject is executed read-only against an unreachable endpoint and writes nothing.
 """
 
 import os

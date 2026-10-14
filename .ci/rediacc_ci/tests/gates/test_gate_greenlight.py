@@ -21,7 +21,7 @@ Stated explicitly rather than guessed from the fixtures, because the fixtures mi
     read the real `.ci/scripts/ci/scope-shadow.sh`, and
     `test_the_trail_digest_names_every_key` extracts a shell function out of it.
 
-All four are reads. No `XDIST_GROUP` is declared: `gates.lock.json` no longer carries a `gate-test:greenlight` entry, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
+All four are reads. No `XDIST_GROUP` is declared: `gates.lock.json` no longer carries an entry for the retired `greenlight` gate test, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
 
 --------------------------------------------------------------------------
 DOES THE SUBJECT SELF-SCAN? NO, AND IT WAS MEASURED RATHER THAN ASSUMED

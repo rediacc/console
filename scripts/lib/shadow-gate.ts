@@ -1201,7 +1201,7 @@ function selftest(repoRoot: string): number {
     }
   };
 
-  // EVERY fixture path in this selftest is ASSEMBLED at runtime rather than written as a literal, and that is not a dodge of gate-test:gate-paths-exist. That gate reads a path-shaped literal inside a gate script as a real path constant and reds when the file does not exist, which is the right rule: such a constant is usually a rename nobody finished. These name nothing on disk ON
+  // EVERY fixture path in this selftest is ASSEMBLED at runtime rather than written as a literal, and that is not a dodge of test_gate_paths_exist.py. That gate reads a path-shaped literal inside a gate script as a real path constant and reds when the file does not exist, which is the right rule: such a constant is usually a rename nobody finished. These name nothing on disk ON
   // PURPOSE, because the comparator under test is pure string handling and never opens them. Same treatment and same reasoning as check-em-dash-surfaces.ts and check-typecheck-scope-coverage.ts, which each hit this.
   const fx = (stem: string): string => `${'packages'}/${stem}.ts`;
 

@@ -18,7 +18,7 @@ TWO ASSERTIONS ARE NARROWER THAN THEY LOOK, both written strict first and both h
     diagnostic, so the case pins those two shapes, not a blanket zero.
 Both keep the property that a NEW hardcoded reference is red.
 
-EVERY CASE COPIES `.ci/breakpoint/` and the subset cases read `.ci/rediacc_ci/core/allowlist.py`; both are reads, and no `XDIST_GROUP` is declared. `gates.lock.json` no longer carries a `gate-test:breakpoint-portability` entry, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does. A pure reader needs no group.
+EVERY CASE COPIES `.ci/breakpoint/` and the subset cases read `.ci/rediacc_ci/core/allowlist.py`; both are reads, and no `XDIST_GROUP` is declared. `gates.lock.json` no longer carries an entry for the retired `breakpoint-portability` gate test, this file's bash twin is retired, and `real_tree_admission` in `test_twin_parity.py` only runs against modules that still declare a `BASH_TWIN` -- this one no longer does. A pure reader needs no group.
 
 `check_subset` TAKES ITS EXTRACTOR AS AN ARGUMENT, which is the port's shape for the twin's function shadowing. The flaky-read control needs the SAME code path driven with a truncating reader; a control that re-implemented the comparison would prove only that it agrees with itself.
 

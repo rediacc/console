@@ -843,8 +843,8 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     if eg:
         if eg in keys:
             return "settle", "covered", eg
-        # A `gate-test:*` (or any other) manifest id with `gate: true` is run DIRECTLY by `npm run ci` -- scripts/ci-runner/run.ts schedules from manifest.ts, not from package.json `check:*` keys. gate_reachable() already trusts this same set for the WRITE path; the REBUT path was checking package.json only, so a correct citation of a real, ci-runner-scheduled suite gate (e.g.
-        # gate-test:ci-trace-branch) was unconditionally reported as hallucinated. Verified live 2026-08-27: `npx tsx scripts/ci-runner/run.ts --only gate-test:ci-trace-branch` actually executes and passes it.
+        # A `test:*` (or any other non-`check:*`) manifest id with `gate: true` is run DIRECTLY by `npm run ci` -- scripts/ci-runner/run.ts schedules from manifest.ts, not from package.json `check:*` keys. gate_reachable() already trusts this same set for the WRITE path; the REBUT path was checking package.json only, so a correct citation of a real, ci-runner-scheduled suite gate (e.g.
+        # `test:write-once-guard`) was unconditionally reported as hallucinated. Verified live 2026-08-27 that `npx tsx scripts/ci-runner/run.ts --only <id>` executes and passes such a gate.
         if eg in _manifest_gate_ids(root):
             return "settle", "covered", eg
         # A citation is at least as often a FILE PATH (optionally with "::test_name") as it is a manifest id -- both a human rebuttal and the judge itself reach for the path visible in the tree. Observed live 2026-08-27: three consecutive REBUTs, each naming a real, already-passing case in test_gate_ci_trace_branch.py by path/function, kept reporting hallucinated because only the

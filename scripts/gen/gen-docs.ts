@@ -88,7 +88,7 @@ const SNAPSHOT = 'scripts/data/doc-registry-preport.json';
 /**
  * TEST-ONLY CONTENT OVERRIDE, keyed by repo-relative target path.
  *
- * `gate-test:docs-gen`'s drift control (`test_gate_docs_gen.py`, case B) has to prove verify
+ * `test_gate_docs_gen.py`'s drift control (`test_gate_docs_gen.py`, case B) has to prove verify
  * reports DRIFT on a perturbed generated row, and the row lives in a TRACKED file. Every other
  * seam in this generator resolves against the real ROOT -- `targets()` and every provider's
  * `.rows(root)` shell out to `git ls-files` there -- so faking the perturbation by pointing the

@@ -96,20 +96,6 @@ ck(
   derivedId('.ci/scripts/quality/check_docker_npm_pins.py')
 );
 ck(
-  'id derives for a gate-test',
-  derivedId('.ci/scripts/test/gates/test-gate-anti-vacuity.sh') ===
-    'gate-test:gate-anti-vacuity'
-);
-ck(
-  // THE PORTED SPELLING, which the case above cannot reach: it passes a hyphenated
-  // `.sh` name, so it is satisfied by an arm that does no underscore normalisation
-  // at all. Every `gate-test:` id in the manifest is hyphenated, so a port that
-  // derived `gate-test:gate_lanes` would match nothing and register nowhere.
-  'a gate-test id normalises underscores, so a ported battery test still matches the manifest',
-  derivedId('.ci/scripts/test/gates/test_gate_lanes.py') === 'gate-test:gate-lanes',
-  derivedId('.ci/scripts/test/gates/test_gate_lanes.py')
-);
-ck(
   'run is the BARE PATH for py -- a python3 prefix breaks check:ci-parity',
   derivedRun('.ci/scripts/quality/check_x.py') === '.ci/scripts/quality/check_x.py'
 );

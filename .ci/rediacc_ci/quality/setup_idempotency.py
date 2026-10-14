@@ -48,7 +48,7 @@ Hermetic: no docker, no network, no package installs.
 THE TWO INCIDENTS BEHIND CHECK B'S SETTLE POLL, both carried verbatim because they are the reason the assertion has the shape it has.
 -----------------------------------------------------------------------------
 
-A NEIGHBOUR'S TEST FIXTURE IS NOT EVIDENCE ABOUT `setup --check`. This snapshot is taken twice around one command, and under `npm run ci` twenty-two gates share the tree. `gate-test:gate-paths-exist` plants a scan fixture INSIDE the repo on purpose -- the detector it controls globs `.ci/scripts/**/*.ts`, so a fixture outside the tree would prove nothing -- and names it
+A NEIGHBOUR'S TEST FIXTURE IS NOT EVIDENCE ABOUT `setup --check`. This snapshot is taken twice around one command, and under `npm run ci` twenty-two gates share the tree. `test_gate_paths_exist.py` used to plant a scan fixture INSIDE the repo on purpose (it now plants into a scratch copy) -- the detector it controls globs `.ci/scripts/**/*.ts`, so a fixture outside the tree would prove nothing -- and named it
 `.gate-paths-exist-<kind>-fixture.<pid>.ts`. If that lands between the two snapshots, check B reports "setup --check changed the working tree" over a file `run.sh` never touched. Observed 2026-08-31 in the pre-push lane:
 
     FAIL B: setup --check changed the working tree

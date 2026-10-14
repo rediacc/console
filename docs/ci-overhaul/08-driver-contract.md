@@ -1,5 +1,7 @@
 # 08. Driver contract for the tooling transformation
 
+<!-- gate-id-record-file: dated driver contract; the floor it quotes was set by an id that existed then -->
+
 This file is the authority for the twelve-workstream tooling transformation. It exists because the twelve workstream plans were drafted independently, and a completeness pass found twenty places where two of them plan incompatible things in the same file. Those resolutions are recorded here ONCE, so no sub-driver re-decides them and no two agents land opposite designs.
 
 Read this before launching any sub-driver. Its three tables are the ones that actually prevent damage: the W-key map (because four plans schedule against wrong keys), the single-writer lock table (because the hot files are hot across every track), and the machine mutex (because a git worktree does not isolate a docker daemon).

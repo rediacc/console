@@ -1,5 +1,7 @@
 # 07. Execution record: what was built, what broke, what the operator decided
 
+<!-- gate-id-record-file: dated execution record; the gate ids it names existed when each entry was written -->
+
 The other documents in this folder are the PLAN, written 2026-08-09 before any code existed. This one is the RECORD, written as the plan met the tree on 2026-08-14. Where the two disagree, this file is right and the plan is stale.
 
 That distinction is not bookkeeping. Acting on the plan without checking it against the tree has been wrong SEVEN times in one session (section 4), twice in ways that would have deleted working code. Read this file first.

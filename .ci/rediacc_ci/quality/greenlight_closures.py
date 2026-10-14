@@ -12,7 +12,7 @@ from the code:
 
   So a closure path that is present on disk but NOT COMMITTED resolves to
   nothing on the candidate side: greenlight throws its named refusal, emits no
-  `run_<key>=false`, and gate-test:greenlight goes red -- with an error that
+  `run_<key>=false`, and `test_gate_greenlight.py` goes red -- with an error that
   blames the key, not the path. That is exactly what happened on 2026-09-02 when
   `.github/actions/bws-secrets` was added to eighteen closures before the action
   itself was committed, and it cost real time to diagnose because the symptom
@@ -289,7 +289,7 @@ def main(argv: list[str] | None = None) -> int:
     print("  (controls: a missing path and an untracked path each reported, a clean pair silent)")
     print("  Residue, stated because it is NOT covered: TRACKED is not IN HEAD. A path that is")
     print("  staged but uncommitted still resolves to nothing on the candidate side, so")
-    print("  gate-test:greenlight can be red while this passes. Asserting HEAD-presence instead")
+    print("  test_gate_greenlight.py can be red while this passes. Asserting HEAD-presence instead")
     print("  would red on every new file in an uncommitted tree, which is this repo's normal")
     print("  state, and a gate that is always red gets switched off. See TRAPS.md,")
     print("  uncommitted-file-reds-a-remote-fake.")

@@ -318,11 +318,7 @@ export function headerError(source: string): string | null {
  */
 export function derivedId(repoPath: string): string {
   const base = (repoPath.split('/').pop() ?? '').replace(/\.(py|sh|ts|cjs|mjs)$/, '');
-  // BOTH ARMS NORMALISE `_` TO `-`, and until 2026-09-08 only the second did. The prefix strip has been `[-_]`-tolerant on both lines for a while, which made the missing normalisation on the gate-test arm read as deliberate. It was not: every one of the 149 `id: 'gate-test:...'` entries in scripts/ci-runner/manifest.ts is hyphenated, so a ported `test_gate_lanes.py` would have
-  // derived `gate-test:gate_lanes` and matched none of them. LATENT RATHER THAN LIVE TODAY, stated so nobody reads this as a bug that was biting: `.ci/scripts/test/gates/` holds 149 files and 0 `.py`, and the pytest ports live under `.ci/rediacc_ci/tests/gates/` -- note the `s` -- which this branch does not match and which carries no gate header anyway. It fires on the first
-  // battery test ported IN PLACE.
-  if (repoPath.includes('/test/gates/'))
-    return `gate-test:${base.replace(/^test[-_]/, '').replace(/_/g, '-')}`;
+  // There is no test-battery arm: the bash battery under `.ci/scripts/test/gates/` is gone and its pytest ports carry no gate header, so every derivable id is a `check:ci-` one.
   return `check:ci-${base.replace(/^check[-_]/, '').replace(/_/g, '-')}`;
 }
 

@@ -11,7 +11,7 @@ WHAT IT IS. A shrink-only baseline freezes the debt a gate finds on the day it l
     later rule reads the old set and with no file there is no old set. Deleting
     the baseline is otherwise the cheapest way to switch the whole rule off.
 
-WHY IT IS HERE AND NOT COPIED AGAIN. `scripts/lib/shrink-only-baseline.ts` is the TypeScript original; `.ci/scripts/quality/check_language_policy.py` transliterated the decision half into Python and said so out loud, naming the resulting coverage gap in `gate-test:shrink-only-composition` rather than leaving it to be found. That was correct while the port it would have
+WHY IT IS HERE AND NOT COPIED AGAIN. `scripts/lib/shrink-only-baseline.ts` is the TypeScript original; `.ci/scripts/quality/check_language_policy.py` transliterated the decision half into Python and said so out loud, naming the resulting coverage gap in `test_gate_shrink_only_composition.py` rather than leaving it to be found. That was correct while the port it would have
 collided with was in flight. A SECOND Python copy is not correct, and
 `check:ci-shape-duplication` would report the pair, so the decision moves here and both gates call it.
 

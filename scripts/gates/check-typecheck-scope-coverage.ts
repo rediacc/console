@@ -169,7 +169,7 @@ const ABSENT_CONFIG = ['packages', 'no-such-workspace', 'tsconfig.json'].join('/
 
 /**
  * Fixture source path, assembled for the same reason as ABSENT_CONFIG: it names a file
- * that deliberately does not exist, and gate-test:gate-paths-exist scans this source for
+ * that deliberately does not exist, and test_gate_paths_exist.py scans this source for
  * path constants whose target is missing.
  */
 const FIXTURE_SRC = ['packages', 'cli', 'src', 'a.ts'].join('/');
@@ -300,7 +300,7 @@ CONTROLS.push(
   },
   {
     name: 'a chain clause naming a tsconfig that does not exist is reported',
-    // The absent path is BUILT at runtime rather than written as a literal: gate-test:gate-paths-exist scans source for path constants whose workspace root is missing, and a control whose whole point is a non-existent path trips it.
+    // The absent path is BUILT at runtime rather than written as a literal: test_gate_paths_exist.py scans source for path constants whose workspace root is missing, and a control whose whole point is a non-existent path trips it.
     world: fakeWorld({
       discovered: ['packages/cli/tsconfig.json'],
       rootTypecheck: `tsc -b packages/cli && tsc --noEmit -p ${ABSENT_CONFIG}`,

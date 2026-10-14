@@ -1,5 +1,7 @@
 # Remaining work, with ready-to-run prompts
 
+<!-- gate-id-record-file: dated work log; the gate ids it names existed when each entry was written -->
+
 Written 2026-09-06 for a session that may be a compaction of this one and knows NOTHING. Every task below carries the prompt to launch it, so nothing has to be re-derived. Status figures are measured, not remembered.
 
 ## Where the program actually is

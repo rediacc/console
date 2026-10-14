@@ -153,7 +153,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const PROFILE_OPTS = ((): { profileDir?: string; profileRunId?: string } => {
   if (process.env.CI_PROFILE === 'off') return {};
   try {
-    // A NESTED RUNNER MUST NOT ROTATE. gate-test:ci-runner runs this very file as a gate, so without this the inner run rotated the pointer and aimed it at its own two selftest captures -- last writer wins, and a full 292-gate run left a profiles.current naming a directory with two files in it. The inner run inherits the outer run's directory and id and simply writes beside it.
+    // A NESTED RUNNER MUST NOT ROTATE. test_gate_ci_runner.py runs this very file as a gate, so without this the inner run rotated the pointer and aimed it at its own two selftest captures -- last writer wins, and a full 292-gate run left a profiles.current naming a directory with two files in it. The inner run inherits the outer run's directory and id and simply writes beside it.
     const inherited = process.env.CI_PROFILE_RUN;
     if (inherited !== undefined && inherited !== '') {
       const [id, ...rest] = inherited.split('\u0000');
@@ -1218,7 +1218,7 @@ function saveDurations(
   try {
     const next: Record<string, DurationRecord> = Object.fromEntries(loadDurationRecords(cachePath));
     for (const r of results) {
-      // ONLY a passing run. A gate that fails fast is cheap in wall-clock and expensive in nothing -- but the tier oracle judges the FLOOR of `recent`, so one 1.1s failure of a 21s gate makes it look like a pre-push-lane candidate forever. That is how check:ci-shape-duplication (21.4s), check:ci-renet-types (10.7s) and gate-test:trap-registry (46.4s) were all demanded into the
+      // ONLY a passing run. A gate that fails fast is cheap in wall-clock and expensive in nothing -- but the tier oracle judges the FLOOR of `recent`, so one 1.1s failure of a 21s gate makes it look like a pre-push-lane candidate forever. That is how check:ci-shape-duplication (21.4s), check:ci-renet-types (10.7s) and test_gate_trap_registry.py (46.4s) were all demanded into the
       // fast lane on 2026-09-02, during a session that had just triaged ten red gates. A failure's duration is not the gate's cost; it is the cost of the part that ran.
       if (r.status !== 'ok' || r.ms <= 0) continue;
       const old = prior.get(r.id);

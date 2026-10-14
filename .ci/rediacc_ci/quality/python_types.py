@@ -128,7 +128,7 @@ from rediacc_ci.core import toolchain
 # `enumerate_py` is already the ONE enumerator inside `python_lint` for exactly this reason (its own header records the 2026-08-09 run that reported "27 files, All checks passed!" while the newest module in the tree was untracked and invisible to it).
 from rediacc_ci.quality.python_lint import enumerate_py
 
-# THE COMPOSITION DECISION IS SHARED, NOT RE-DERIVED. `rediacc_ci.quality.shrink_only` holds the two halves every shrink-only baseline in this repo agrees on, and `gate-test:shrink-only-composition` requires a Python baseline writer to reach them. A third copy of the same twelve lines is what `check:ci-shape-duplication` exists to report, and the reason those lines are worth
+# THE COMPOSITION DECISION IS SHARED, NOT RE-DERIVED. `rediacc_ci.quality.shrink_only` holds the two halves every shrink-only baseline in this repo agrees on, and `test_gate_shrink_only_composition.py` requires a Python baseline writer to reach them. A third copy of the same twelve lines is what `check:ci-shape-duplication` exists to report, and the reason those lines are worth
 # sharing at all is in that module's header: a reseed that drains thirty and absorbs one prints a smaller number while doing it.
 from rediacc_ci.quality.shrink_only import baseline_additions, write_verdict
 

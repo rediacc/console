@@ -700,7 +700,7 @@ Trap-Id: concurrency-artifact-not-a-flake
 Enforced-By: gate:check:ci-pool-writer-safety, gate:check:ci-gate-tree-writes
 Residue: the scheduler serialises by the lock's `mutex` and `reads` claims, and two gates now check those claims against what the code does: `check:ci-pool-writer-safety` for gate tests, `check:ci-gate-tree-writes` for the gates themselves (every module their leaves reach, through imports and cross-language spawns). What neither sees: a write whose target the scanners cannot resolve and a pragma declares safe, product code under `packages/*/src`, and bare tools (tsc, astro, biome). Diagnosing by mtime, and asking who else is working in the tree, stay human steps.
 
-`npm run ci` runs its gates ~8.7x parallel. Something in that pool rewrites tracked source files in place while other gates are reading them, so a reader can catch a half-written file. The 2026-08-17 battery failed `gate-test:claude-hooks` with
+`npm run ci` runs its gates ~8.7x parallel. Something in that pool rewrites tracked source files in place while other gates are reading them, so a reader can catch a half-written file. The 2026-08-17 battery failed `gate-test:claude-hooks` with <!-- gate-id-record: 2026-08-17 incident, the id existed then -->
 
     .claude/hooks/test-hooks.sh: line 545: syntax error near unexpected token `fi'
 
@@ -1161,7 +1161,7 @@ Trap-Id: uncommitted-file-reds-a-remote-fake
 Enforced-By: JUDGMENT-ONLY
 Residue: Nothing can tell "this closure path is wrong" from "this closure path is correct and not committed yet". The two produce the identical symptom -- a named refusal and empty stdout -- and only the author knows which they are looking at.
 
-Found 2026-09-02. `gate-test:greenlight` case 6 went red on `run_renet=false` not being emitted. Everything about it read like a defect in the change under way: the same session had edited `greenlight.cjs`, the failing assertion named a key that session had touched, and greenlight's own output said *"candidate listing failed ... so nothing is greenlit"*.
+Found 2026-09-02. `gate-test:greenlight` case 6 went red on `run_renet=false` not being emitted. Everything about it read like a defect in the change under way: the same session had edited `greenlight.cjs`, the failing assertion named a key that session had touched, and greenlight's own output said *"candidate listing failed ... so nothing is greenlit"*. <!-- gate-id-record: 2026-09-02 incident, the id existed then -->
 
 The cause was that `.github/actions/bws-secrets` had been added to eighteen greenlight closures and the composite action **did not exist in `HEAD` yet** — `git status` showed it as `??`. The test's fake `gh` resolves the candidate repository with `git ls-tree HEAD`, deliberately, because the candidate IS a remote commit and modelling it from the dirty worktree would assert
 something the real thing never does. So a path that is correct, present on disk, and about to be committed resolves to nothing, greenlight throws its named refusal, and stdout is empty.
@@ -1674,10 +1674,9 @@ Residue: The guard refuses an agent's `npm run <name>` when the governing packag
 
 `npm run --silent <name>` for a name `package.json` does not define exits **1 with ZERO bytes on both streams**. That is byte-for-byte what a gate failing for cause looks like when its output is suppressed, so the reflex it triggers -- "this gate is red, go fix the tree" -- sends a session debugging something that never ran.
 
-**The reason this is a trap and not just a typo is that the ids are real.** Most gates are both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two namespaces look interchangeable. They are not. Some manifest entries have no npm script at all and carry a bare path in `run:` -- `gate-test:trap-registry` and `gate-test:docs-gen` are two, and
-`gate-test:claude-hooks` was a third until its subject was ported to pytest -- and the ci-runner invokes them by that path. Reading the id out of the manifest and typing `npm run` in front of it therefore produces a plausible-looking red for a gate that is perfectly green.
+**The reason this is a trap and not just a typo is that the ids are real.** Most gates are both a `package.json` script and a `scripts/ci-runner/manifest.ts` entry, so the two namespaces look interchangeable. They are not. Some manifest entries have no npm script at all and carry a bare path in `run:` -- `test:install-script` and `test:write-once-guard` are two, and the retired `gate-test:` family (the bash battery, since ported to pytest under `.ci/rediacc_ci/tests/gates/`) was the large third -- and the ci-runner invokes them by that path. Reading the id out of the manifest and typing `npm run` in front of it therefore produces a plausible-looking red for a gate that is perfectly green.
 
-Measured in one session on 2026-09-09: **four** such reds, on `check:ci-plan-lifecycle` (a name that does not exist anywhere; the real gate is `check:ci-plan-housekeeping`), on `gate-test:trap-registry`, and on `gate-test:docs-gen`. Every one of them was rc=0 when driven by its real invocation. Two earlier sessions lost time to the same shape on `check:ci-cli-examples`, whose real
+Measured in one session on 2026-09-09: **four** such reds, on `check:ci-plan-lifecycle` (a name that does not exist anywhere; the real gate is `check:ci-plan-housekeeping`), on `gate-test:trap-registry`, and on `gate-test:docs-gen`. Every one of them was rc=0 when driven by its real invocation. Two earlier sessions lost time to the same shape on `check:ci-cli-examples`, whose real <!-- gate-id-record: 2026-09-09 measurement, the ids existed then -->
 name is `check:cli-examples`.
 
 Before believing a silent red:

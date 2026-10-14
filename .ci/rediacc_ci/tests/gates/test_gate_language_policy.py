@@ -6,7 +6,7 @@ refused rather than printed.
 HOW IT IS DRIVEN. Every case but the last builds a throwaway git repository and points the subject at it through `LANGUAGE_POLICY_ROOT` / `_BASELINE` / `_ALLOWLIST`, so no tracked baseline, allowlist or script is touched. `git ls-files` IS the subject's corpus, which is why the fixture has to be a real repository with a real index rather than a directory of files: a fixture that
 merely looks like a tree exercises a code path the subject does not have.
 
-THE LAST CASE IS SEAM-FREE, against the real repository, because every seam above it is a chance for the subject to be correct about a fixture and wrong about the tree it ships with. It is a read, and no `XDIST_GROUP` is declared: this file's bash twin is retired, `gates.lock.json` no longer carries a `gate-test:language-policy` entry, and `real_tree_admission` in `test_twin_parity.py`
+THE LAST CASE IS SEAM-FREE, against the real repository, because every seam above it is a chance for the subject to be correct about a fixture and wrong about the tree it ships with. It is a read, and no `XDIST_GROUP` is declared: this file's bash twin is retired, `gates.lock.json` no longer carries an entry for the retired `language-policy` gate test, and `real_tree_admission` in `test_twin_parity.py`
 only runs against modules that still declare a `BASH_TWIN` -- this one no longer does, so it is never asked. A pure reader needs no group.
 
 EVERY FIRE CASE HAS ITS CONTROL: the same fixture with one thing changed and the opposite verdict asserted. A gate that cannot be made to fire is not a gate, and a gate that fires on everything is not one either.
@@ -19,7 +19,7 @@ from rediacc_ci.tests.gates import harness
 
 # The seam-free case runs the subject against the real repository, but it is a read; no group needed. See the docstring.
 
-# THE SELF-SCANNING TRAP, AND WHY THIS FLAG IS RENDERED RATHER THAN WRITTEN. `gate-test:shrink-only-composition` enumerates every tracked-or-untracked `.ts`/`.js`/`.py` file whose TEXT contains the drain flag and requires each one to consume the composition guard. It excludes nothing by name, so a PORT that quotes the flag becomes an "unguarded Python baseline writer" and reds that
+# THE SELF-SCANNING TRAP, AND WHY THIS FLAG IS RENDERED RATHER THAN WRITTEN. `test_gate_shrink_only_composition.py` enumerates every tracked-or-untracked `.ts`/`.js`/`.py` file whose TEXT contains the drain flag and requires each one to consume the composition guard. It excludes nothing by name, so a PORT that quotes the flag becomes an "unguarded Python baseline writer" and reds that
 # gate tree-wide. Measured on 2026-09-09: writing the flag literally here put this file on that gate's offender list within minutes of it being created. Splitting it means the contiguous string never appears in this file's bytes, and `test_this_port_is_not_a_shrink_only_offender` reds BY NAME if that ever stops being true. Batch 3's `label-references` port paid for this rule first;
 # any port of a self-scanning subject owes the same treatment.
 DRAIN_FLAG = "--write-" + "baseline"
@@ -573,7 +573,7 @@ def test_the_three_seams_still_exist_in_the_subject(gate):
 def test_this_port_is_not_a_shrink_only_offender(gate):
     """THE SELF-SCANNING CONTROL, which the twin does not need and this port does.
 
-    The twin is a `.sh` file, and `gate-test:shrink-only-composition` enumerates only `.ts`, `.js` and `.py`, so the twin is invisible to that gate for free. This module is a `.py` file that talks about the drain flag constantly, and it is invisible only because `DRAIN_FLAG` is split -- something a later editor would undo without connecting the two. So this reds BY NAME the moment
+    The twin is a `.sh` file, and `test_gate_shrink_only_composition.py` enumerates only `.ts`, `.js` and `.py`, so the twin is invisible to that gate for free. This module is a `.py` file that talks about the drain flag constantly, and it is invisible only because `DRAIN_FLAG` is split -- something a later editor would undo without connecting the two. So this reds BY NAME the moment
     the contiguous literal reappears in this file's bytes.
 
     Measured 2026-09-09: with the flag written out, this file appeared on that gate's offender list as ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py offers ... and consumes neither a shared guard nor the ported one".
@@ -582,7 +582,7 @@ def test_this_port_is_not_a_shrink_only_offender(gate):
     if DRAIN_FLAG in own:
         gate.log_fail(
             "this port's own source contains the contiguous drain flag, so "
-            "gate-test:shrink-only-composition will report it as an unguarded Python "
+            "test_gate_shrink_only_composition.py will report it as an unguarded Python "
             "baseline writer. Keep it rendered through DRAIN_FLAG."
         )
     # AND THE CONSTANT MUST STILL BE THE REAL FLAG. A control that only checks for absence is satisfied by a typo, which would make every case above drive the subject with an argument it ignores. CHECKED AGAINST THE SUBJECT, which is where the argument is really parsed, rather than against a literal written here, which would be a tautology or a second thing to keep rendered. The

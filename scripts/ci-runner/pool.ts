@@ -42,8 +42,8 @@
  * carried the membership as two hand-maintained NAME LISTS inside the runner
  * (WRITER_TESTS, SCANNER_TESTS) and honoured them. The manifest carried nothing:
  * measured 2026-09-06 at commit ac817a647, all three real-tree writers --
- * gate-test:gate-paths-exist, gate-test:gate-anti-vacuity,
- * gate-test:generate-tag-inputs -- are registered with NO mutex, and zero of the
+ * the paths-exist, gate-anti-vacuity and generate-tag-inputs battery tests --
+ * are registered with NO mutex, and zero of the
  * 147 qualityGateTest entries carry one. So `npm run ci` schedules exactly the
  * combination the battery's own header calls "a flake manufactured by the
  * runner", while the CI step that runs the same 147 tests is protected. The
