@@ -139,8 +139,16 @@ def argv_asserts(tree) -> set[int]:
                 return any(reads(a, tainted) for a in expr.args)
             if isinstance(func, ast.Attribute):
                 # A method on a literal (`" ".join(sys.argv)`, `f"{sep}".join(sys.argv)`) is built from its arguments; any other attribute call (`subprocess.run(argv)`) stays untainted by design.
-                if isinstance(func.value, (ast.Constant, ast.JoinedStr)):
+                if isinstance(func.value, ast.Constant):
                     return any(reads(a, tainted) for a in expr.args)
+                # An f-string receiver carries its own interpolations, which can be the argument vector too (`f"{sys.argv[1]}".join(...)`).
+                if isinstance(func.value, ast.JoinedStr):
+                    parts = [
+                        v.value for v in func.value.values if isinstance(v, ast.FormattedValue)
+                    ]
+                    return any(reads(p, tainted) for p in parts) or any(
+                        reads(a, tainted) for a in expr.args
+                    )
                 return reads(func.value, tainted)
         return False
 
@@ -811,6 +819,13 @@ print("unconditional reseed")
 
 sep = " "
 line = f"{sep}".join(sys.argv)
+assert "%s" in line
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (line = f'{sys.argv[1]}'.join(['a', 'b']))": """import sys
+
+line = f"{sys.argv[1]}".join(["a", "b"])
 assert "%s" in line
 print("unconditional reseed")
 """
