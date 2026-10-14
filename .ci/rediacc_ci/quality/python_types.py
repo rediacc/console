@@ -171,7 +171,7 @@ NOTE = (
 )
 
 
-class CannotRun(Exception):  # noqa: N818
+class CannotRunError(Exception):
     """The gate cannot reach a verdict. Exit 77, never a verdict either way."""
 
 
@@ -421,21 +421,21 @@ def read_baseline(path: pathlib.Path) -> dict[str, dict[str, object]] | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        raise CannotRun(
+        raise CannotRunError(
             "%s exists but cannot be read (%s). A corrupt baseline is not an empty\n"
             "  one: treating it as empty would report all of today's frozen findings as\n"
             "  brand new. Repair the JSON; do not delete the file." % (BASELINE_LABEL, exc)
         ) from exc
     rows = data.get("findings")
     if not isinstance(rows, list):
-        raise CannotRun(
+        raise CannotRunError(
             "%s has no `findings` array. Refusing to guess what the frozen set was."
             % BASELINE_LABEL
         )
     out: dict[str, dict[str, object]] = {}
     for row in rows:
         if not isinstance(row, dict) or "id" not in row:
-            raise CannotRun(
+            raise CannotRunError(
                 "%s holds a row with no `id`. Every row is keyed by a hash of "
                 "(file, code, message); a row without one cannot be compared against "
                 "anything." % BASELINE_LABEL
@@ -555,7 +555,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return _main(root, baseline_path, write=write, first_seed=first_seed)
-    except CannotRun as exc:
+    except CannotRunError as exc:
         print("✗ CANNOT RUN: %s" % exc, file=sys.stderr)
         return EXIT_CANNOT_RUN
 
@@ -589,7 +589,7 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
     try:
         want = toolchain.pin(PIN_KEY)
     except toolchain.PinError as exc:
-        raise CannotRun(
+        raise CannotRunError(
             "the %s pin could not be read (%s).\n"
             "  Without it this gate cannot tell a correct mypy from one whose typeshed\n"
             "  disagrees about code nobody edited, and the baseline diff of a wrong\n"
@@ -618,7 +618,7 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
         # cwd is the repo root, which is where mypy reads pyproject.toml from.
         control_out, control_code = run_mypy(mypy, root, [str(control_file)])
     if control_code not in (0, 1):
-        raise CannotRun(
+        raise CannotRunError(
             "mypy exited %d on the planted control fixture rather than judging it.\n"
             "  That is a crash or a configuration error, not a verdict, so nothing is\n"
             "  said about the real files. mypy said:\n%s"
@@ -648,7 +648,7 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
     for index, group in enumerate(groups):
         output, code = run_mypy(mypy, root, group)
         if code not in (0, 1):
-            raise CannotRun(
+            raise CannotRunError(
                 "mypy exited %d on group %d of %d (%d file(s)) rather than judging it.\n"
                 "  Exit 2 is a crash or a usage error, never a finding, so treating it as\n"
                 "  'no findings' would silently retire this whole group. mypy said:\n%s"

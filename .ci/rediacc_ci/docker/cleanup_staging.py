@@ -113,18 +113,18 @@ def usage(prog: str) -> str:
     )
 
 
-class HelpRequested(Exception):  # noqa: N818
+class HelpRequestedError(Exception):
     """`-h | --help`: print usage on stdout and exit 0."""
 
 
-class UnboundVariable(Exception):  # noqa: N818
+class UnboundVariableError(Exception):
     """One `set -u` death, in bash's own wording, on stderr, exit 1."""
 
     def __init__(self, name: str, line: int) -> None:
         super().__init__("%s: line %d: %s: unbound variable" % (sys.argv[0], line, name))
 
 
-class Refusal(Exception):  # noqa: N818
+class RefusalError(Exception):
     """A `log_error` followed by `exit 1`."""
 
 
@@ -144,16 +144,16 @@ def parse_args(argv: list[str]) -> Options:
         flag = argv[i]
         if flag == "--tag":
             if i + 1 >= len(argv):
-                raise UnboundVariable("$2", UNBOUND_LINE_TAG)
+                raise UnboundVariableError("$2", UNBOUND_LINE_TAG)
             opts.staging_tag = argv[i + 1]
             i += 2
         elif flag == "--dry-run":
             opts.dry_run = "true"
             i += 1
         elif flag in ("-h", "--help"):
-            raise HelpRequested
+            raise HelpRequestedError
         else:
-            raise Refusal("Unknown option: %s" % flag)
+            raise RefusalError("Unknown option: %s" % flag)
     return opts
 
 
@@ -291,13 +291,13 @@ def delete_staging_tag(image_name: str, opts: Options, org: str, reg: str) -> bo
 def main(argv: list[str]) -> int:
     try:
         opts = parse_args(argv)
-    except HelpRequested:
+    except HelpRequestedError:
         print(usage(sys.argv[0]), flush=True)
         return 0
-    except UnboundVariable as exc:
+    except UnboundVariableError as exc:
         print(str(exc), file=sys.stderr, flush=True)
         return 1
-    except Refusal as exc:
+    except RefusalError as exc:
         log.error(str(exc))
         return 1
 

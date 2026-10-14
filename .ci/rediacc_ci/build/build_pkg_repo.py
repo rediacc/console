@@ -196,7 +196,7 @@ VALUE_FLAG_LINES = {
 FLOOR_LINE = 213
 
 
-class Refusal(Exception):  # noqa: N818 - named for what the twin does
+class RefusalError(Exception):
     """A `log_error ...; exit N`, or a bare `set -e` death when `lines` is empty.
 
     THE EMPTY CASE IS NOT A SHORTCUT. DEFECTS 1, 5 and 6 are all places where the twin genuinely exits non-zero having printed nothing at all, and a port that invented a message there would be describing a better program than the one that runs.
@@ -274,13 +274,13 @@ def source_common() -> None:
 def require_dir(path: str) -> None:
     """`common.sh:160-167`, verbatim."""
     if not pathlib.Path(path).is_dir():
-        raise Refusal(1, "Required directory '%s' does not exist" % path)
+        raise RefusalError(1, "Required directory '%s' does not exist" % path)
 
 
 def require_cmd(cmd: str) -> None:
     """`common.sh:140-147`, verbatim."""
     if shutil.which(cmd) is None:
-        raise Refusal(1, "Required command '%s' is not available" % cmd)
+        raise RefusalError(1, "Required command '%s' is not available" % cmd)
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +372,7 @@ def _bare(argv: list[str], **kw) -> None:
         print("%s: %s: command not found" % (sys.argv[0], argv[0]), file=sys.stderr, flush=True)
         code = 127
     if code != 0:
-        raise Refusal(code)
+        raise RefusalError(code)
 
 
 def _find(root: str, name: str, *, quiet: bool = False) -> list[str]:
@@ -443,9 +443,9 @@ def _fingerprint(argv: list[str]) -> str:
     try:
         proc = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
     except OSError:
-        raise Refusal(127) from None
+        raise RefusalError(127) from None
     if proc.returncode != 0:
-        raise Refusal(proc.returncode)
+        raise RefusalError(proc.returncode)
     return _first_field(proc.stdout.decode("utf-8", errors="replace"), "fpr", 10)
 
 
@@ -463,7 +463,7 @@ def parse_args(argv: list[str]) -> tuple[dict[str, str], bool, bool]:
         assignment's line, exit 1;
       * `--max-versions` with nothing after it -> `shift 2` fails and `set -e`
         ends the run with ZERO BYTES on both streams, exit 1. That is DEFECT 5,
-        and the empty `Refusal` is how it is spelled.
+        and the empty `RefusalError` is how it is spelled.
     """
     values = {"VERSION": "", "LOCAL_PKGS": "", "OUTPUT_DIR": "", "CHANNEL": ""}
     keys = {
@@ -478,7 +478,7 @@ def parse_args(argv: list[str]) -> tuple[dict[str, str], bool, bool]:
         flag = rest[0]
         if flag in keys:
             if len(rest) < 2:
-                raise Refusal(
+                raise RefusalError(
                     1,
                     "%s: line %d: $2: unbound variable" % (sys.argv[0], VALUE_FLAG_LINES[flag]),
                     raw=True,
@@ -488,7 +488,7 @@ def parse_args(argv: list[str]) -> tuple[dict[str, str], bool, bool]:
         elif flag == "--max-versions":
             # Deprecated: ignored (historical versions accumulate via s3 sync). DEFECT 5: `shift 2` with one argument left is a silent death.
             if len(rest) < 2:
-                raise Refusal(1)
+                raise RefusalError(1)
             rest = rest[2:]
         elif flag == "--dry-run":
             dry_run = True
@@ -496,7 +496,7 @@ def parse_args(argv: list[str]) -> tuple[dict[str, str], bool, bool]:
         elif flag in ("-h", "--help"):
             return values, dry_run, True
         else:
-            raise Refusal(1, "Unknown option: %s" % flag)
+            raise RefusalError(1, "Unknown option: %s" % flag)
     return values, dry_run, False
 
 
@@ -523,7 +523,7 @@ def _phase1_gpg(
 
     private_key = os.environ.get("RELEASE_GPG_PRIVATE_KEY", "")
     if not private_key:
-        raise Refusal(1, "RELEASE_GPG_PRIVATE_KEY environment variable is required")
+        raise RefusalError(1, "RELEASE_GPG_PRIVATE_KEY environment variable is required")
 
     gnupghome = tempfile.mkdtemp(prefix="tmp.")
     os.environ["GNUPGHOME"] = gnupghome
@@ -543,7 +543,7 @@ def _phase1_gpg(
     except OSError:
         imported = 127
     if imported != 0:
-        raise Refusal(imported)
+        raise RefusalError(imported)
     log.info("GPG private key imported")
 
     # `$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5 || true)`. The `|| true` is what stops this one being a DEFECT-6 death, so a missing gpg lands on the refusal below instead.
@@ -563,7 +563,7 @@ def _phase1_gpg(
             key_id = fields[4] if len(fields) >= 5 else ""
             break
     if not key_id:
-        raise Refusal(1, "No GPG public key found after import")
+        raise RefusalError(1, "No GPG public key found after import")
     log.info("Using GPG key: %s" % key_id)
 
     public_key_file = os.environ.get("RELEASE_GPG_PUBLIC_KEY_FILE", "") or str(
@@ -582,7 +582,7 @@ def _phase1_gpg(
         if not want_fpr or not have_fpr or want_fpr != have_fpr:
             # DEFECT 6: `${want_fpr:-<unreadable>}` and `${have_fpr:-<none>}`
             # are written for a case `_fingerprint` has already died on. Kept verbatim so the two files read the same way.
-            raise Refusal(
+            raise RefusalError(
                 1,
                 "signing key %s is not the published public key %s (%s); a repository "
                 "signed with it would fail verification on every client"
@@ -673,7 +673,7 @@ def _phase4_apt(
     # VACUITY FLOOR. dpkg-scanpackages over an EMPTY pool succeeds and writes a valid, empty Packages file, so the repository publishes and `apt update` reports no error -- it just offers nothing to install. DEFECT 2 is that this exists for APT and for nothing else; DEFECT 3 is that a zero-padded floor value turns it off.
     min_debs = os.environ.get("PKG_REPO_MIN_DEBS", "") or DEFAULT_MIN_DEBS
     if bash_lt(deb_count, min_debs):
-        raise Refusal(
+        raise RefusalError(
             1,
             "VACUOUS: %s holds %s .deb file(s), floor %s." % (apt_pool_dir, deb_count, min_debs),
             "Refusing to publish an APT repository that offers nothing to install.",
@@ -817,9 +817,9 @@ def _apkindex_name(index_tarball: str) -> str:
             check=False,
         )
     except OSError:
-        raise Refusal(127) from None
+        raise RefusalError(127) from None
     if proc.returncode != 0:
-        raise Refusal(proc.returncode)
+        raise RefusalError(proc.returncode)
     name = ""
     for line in proc.stdout.decode("utf-8", errors="replace").split("\n"):
         fields = line.split(":")
@@ -1004,7 +1004,7 @@ def build(argv: list[str]) -> int:
         ("CHANNEL", "--channel"),
     ):
         if not values[name]:
-            raise Refusal(1, "Missing required argument: %s" % flag)
+            raise RefusalError(1, "Missing required argument: %s" % flag)
 
     version = values["VERSION"]
     local_pkgs = values["LOCAL_PKGS"]
@@ -1085,7 +1085,7 @@ def _phases(
 def main(argv: list[str]) -> int:
     try:
         return build(argv)
-    except Refusal as refusal:
+    except RefusalError as refusal:
         for line in refusal.lines:
             if refusal.raw:
                 print(line, file=sys.stderr, flush=True)

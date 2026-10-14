@@ -16,15 +16,6 @@
   ".ci/media/venv.sh": {
    "shellcheck-disable SC1091": 2
   },
-  ".ci/rediacc_ci/build/build_cli_executables.py": {
-   "noqa N818": 1
-  },
-  ".ci/rediacc_ci/build/build_linux_pkg.py": {
-   "noqa N818": 1
-  },
-  ".ci/rediacc_ci/build/build_pkg_repo.py": {
-   "noqa N818": 1
-  },
   ".ci/rediacc_ci/build/generate_cli_manifest.py": {
    "noqa N818": 1,
    "noqa SIM115": 1
@@ -56,12 +47,6 @@
   ".ci/rediacc_ci/ci/github_status.py": {
    "noqa PLC0415": 2,
    "noqa S310": 1
-  },
-  ".ci/rediacc_ci/ci/initialize.py": {
-   "noqa N818": 1
-  },
-  ".ci/rediacc_ci/ci/list_e2e_probe_files.py": {
-   "noqa N818": 1
   },
   ".ci/rediacc_ci/ci/profiler_panel.py": {
    "noqa ARG001": 1
@@ -136,15 +121,6 @@
   },
   ".ci/rediacc_ci/dev/www.py": {
    "noqa S606": 1
-  },
-  ".ci/rediacc_ci/docker/cleanup_staging.py": {
-   "noqa N818": 3
-  },
-  ".ci/rediacc_ci/docker/create_manifest.py": {
-   "noqa N818": 3
-  },
-  ".ci/rediacc_ci/docker/retag_image.py": {
-   "noqa N818": 3
   },
   ".ci/rediacc_ci/docker/run_in_image.py": {
    "noqa S606": 1
@@ -250,9 +226,6 @@
   ".ci/rediacc_ci/quality/python_env_registry.py": {
    "noqa PLC0415": 3
   },
-  ".ci/rediacc_ci/quality/python_types.py": {
-   "noqa N818": 1
-  },
   ".ci/rediacc_ci/quality/release_key_canonical.py": {
    "noqa S105": 1
   },
@@ -271,9 +244,6 @@
   },
   ".ci/rediacc_ci/release/install_sh_config_check.py": {
    "noqa ARG001": 1
-  },
-  ".ci/rediacc_ci/review/claude_review_gate.py": {
-   "noqa N818": 1
   },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
    "noqa DTZ006": 1
@@ -438,10 +408,6 @@
    "type-ignore attr-defined": 5
   },
   ".ci/rediacc_ci/tests/test_docker_create_manifest.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_docker_retag_image.py": {
-   "noqa PLC0415": 1,
    "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/tests/test_drills_backup_license.py": {

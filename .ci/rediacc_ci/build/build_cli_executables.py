@@ -143,7 +143,7 @@ EXPECTED_NODE_STATUS = "ok"
 CORRUPT_PREFIX = "corrupt"
 
 
-class Refusal(Exception):  # noqa: N818 - named for what the twin does, not for Error
+class RefusalError(Exception):
     """A `log_error ...; exit N` in the twin.
 
     Carries the stderr lines already formatted and the status to exit with, so `main()` has exactly one place that prints and returns. The twin can afford a bare `exit` because it is a script; a module that other code imports cannot.
@@ -316,7 +316,7 @@ def parse_args(argv: list[str]) -> tuple[str, str, str, bool, str | None]:
             return platform_name, arch, output_dir, dry_run, "help"
         else:
             # `*)` -- the arm every argument parser in this tree is checked for having, and this one has it.
-            raise Refusal(1, "Unknown option: %s" % flag)
+            raise RefusalError(1, "Unknown option: %s" % flag)
     return platform_name, arch, output_dir, dry_run, None
 
 
@@ -326,7 +326,7 @@ def _value(rest: list[str], line: int) -> str:
     bash writes `<script>: line <n>: $2: unbound variable` and exits 1 from the SHELL, not from the script's own logic, so there is no `✗` glyph and no log_error. The twin's line numbers are passed in rather than derived, because they are the twin's lines and drifting them would be silently wrong.
     """
     if not rest:
-        raise Refusal(1, "%s: line %d: $2: unbound variable" % (sys.argv[0], line), raw=True)
+        raise RefusalError(1, "%s: line %d: $2: unbound variable" % (sys.argv[0], line), raw=True)
     return rest.pop(0)
 
 
@@ -346,7 +346,7 @@ def _size(path: str | pathlib.Path) -> int:
 def require_file(path: str) -> None:
     """`common.sh:151-157`, verbatim message and status."""
     if not pathlib.Path(path).is_file():
-        raise Refusal(1, "Required file '%s' does not exist" % path)
+        raise RefusalError(1, "Required file '%s' does not exist" % path)
 
 
 def _exec_failure(command: str, line: int) -> tuple[str, int]:
@@ -392,7 +392,7 @@ def _must(argv: list[str], line: int, **kw) -> None:
     """
     code = _status(argv, line, **kw)
     if code != 0:
-        raise Refusal(code)
+        raise RefusalError(code)
 
 
 def _jq(doctor_output: str, program: str) -> str:
@@ -427,7 +427,7 @@ def _resolve_version() -> None:
     if os.environ.get("RELEASE_BUILD", "") == TRUE:
         cli_version = os.environ.get("CLI_VERSION", "")
         if not cli_version:
-            raise Refusal(
+            raise RefusalError(
                 1,
                 "RELEASE_BUILD=true but CLI_VERSION is empty; "
                 "refusing to build a publishable artifact without a version",
@@ -435,7 +435,7 @@ def _resolve_version() -> None:
         code, exports, out, err = inject_env.inject(["--version", cli_version, "--strict"])
         _emit(out, err)
         if code != 0:
-            raise Refusal(
+            raise RefusalError(
                 1,
                 "Release build refused: CLI_VERSION='%s' is not a publishable version"
                 % cli_version,
@@ -447,7 +447,7 @@ def _resolve_version() -> None:
         _emit(out, err)
         if code != 0:
             # A bare `source` under `set -e`. Unreachable today -- the argument is never empty -- but flattening it to a message the twin does not print would be inventing behaviour.
-            raise Refusal(code)
+            raise RefusalError(code)
     os.environ.update(exports)
 
 
@@ -470,7 +470,7 @@ def _smoke_tests(binary: str, expected_version: str) -> None:
         log.info("Smoke test (--version) passed")
     else:
         # `$?` here is the CONDITION's status: bash expands the arguments of the first command in the `else` branch before running it, so the value is still the one the `if` tested. Correct in the twin, and easy to get wrong in either direction.
-        raise Refusal(1, "Smoke test (--version) failed (exit code: %d)" % code)
+        raise RefusalError(1, "Smoke test (--version) failed (exit code: %d)" % code)
 
     log.step("Running smoke test: doctor --output json")
     doctor_output, doctor_exit = _doctor(binary)
@@ -492,7 +492,7 @@ def _smoke_tests(binary: str, expected_version: str) -> None:
     log.error(line)
     if doctor_output:
         print(doctor_output, flush=True)
-    raise Refusal(1)
+    raise RefusalError(1)
 
 
 def _doctor(binary: str) -> tuple[str, int]:
@@ -533,7 +533,7 @@ def _check_doctor_json(doctor_output: str, expected_version: str) -> None:
     if valid.returncode != 0:
         log.error("Doctor output is not valid JSON")
         print(doctor_output, flush=True)
-        raise Refusal(1)
+        raise RefusalError(1)
     log.info("Doctor JSON output is valid")
 
     install_method = _jq(
@@ -547,15 +547,15 @@ def _check_doctor_json(doctor_output: str, expected_version: str) -> None:
     if install_method == EXPECTED_INSTALL_METHOD:
         log.info("Install method: %s" % install_method)
     else:
-        raise Refusal(1, "SEA mode check failed: '%s'" % install_method)
+        raise RefusalError(1, "SEA mode check failed: '%s'" % install_method)
 
     # THE ONLY POINT IN THE WHOLE PIPELINE THAT READS A VERSION OUT OF FRESHLY
     # BUILT BYTES, and the twin's comment records why it is a comparison rather than a non-empty test: release 31154305287 published binaries built as 1.2.16 under the label 1.2.17, and this step said "CLI version: 1.2.16" and passed. `EXPECTED_CLI_VERSION` exists as a separate variable in the twin for the same reason -- `$CLI_VERSION` used to be clobbered by the jq read below it,
     # leaving nothing to compare against.
     if not reported_version or reported_version == "null":
-        raise Refusal(1, "CLI version check failed: doctor reported '%s'" % reported_version)
+        raise RefusalError(1, "CLI version check failed: doctor reported '%s'" % reported_version)
     if reported_version != expected_version:
-        raise Refusal(
+        raise RefusalError(
             1,
             "CLI version mismatch: built for '%s' but the binary reports '%s'"
             % (expected_version, reported_version),
@@ -565,7 +565,7 @@ def _check_doctor_json(doctor_output: str, expected_version: str) -> None:
     if node_status == EXPECTED_NODE_STATUS:
         log.info("Node.js status: %s" % node_status)
     else:
-        raise Refusal(1, "Node.js check failed: status='%s'" % node_status)
+        raise RefusalError(1, "Node.js check failed: status='%s'" % node_status)
 
     # Runtime embedded-asset integrity. `doctor` reads the host renet binary back out of the SEA and sha256-checks it against the build-time metadata: the ONE runtime check a corrupt or unreachable blob cannot pass. `--version` never touches an asset, and `verify.mjs` only parses the container without running it, so without this a blob whose main script is intact and whose payload
     # is shredded ships green.
@@ -583,7 +583,7 @@ def _check_doctor_json(doctor_output: str, expected_version: str) -> None:
             % CORRUPT_PREFIX,
         )
         print(detail, flush=True)
-        raise Refusal(1)
+        raise RefusalError(1)
 
 
 def _checksum(output_dir: str, name: str) -> None:
@@ -628,7 +628,7 @@ def build(argv: list[str]) -> int:
         system = uname("-s")
         detected = platform_from_uname(system)
         if detected is None:
-            raise Refusal(1, "Cannot detect platform from: %s" % uname("-s"))
+            raise RefusalError(1, "Cannot detect platform from: %s" % uname("-s"))
         platform_name = detected
         log.info("Auto-detected platform: %s" % platform_name)
 
@@ -636,7 +636,7 @@ def build(argv: list[str]) -> int:
         machine = uname("-m")
         detected_arch = arch_from_uname(machine)
         if detected_arch is None:
-            raise Refusal(1, "Cannot detect architecture from: %s" % uname("-m"))
+            raise RefusalError(1, "Cannot detect architecture from: %s" % uname("-m"))
         arch = detected_arch
         log.info("Auto-detected arch: %s" % arch)
 
@@ -778,7 +778,7 @@ def build(argv: list[str]) -> int:
 def main(argv: list[str]) -> int:
     try:
         return build(argv)
-    except Refusal as refusal:
+    except RefusalError as refusal:
         for line in refusal.lines:
             if refusal.raw:
                 print(line, file=sys.stderr, flush=True)

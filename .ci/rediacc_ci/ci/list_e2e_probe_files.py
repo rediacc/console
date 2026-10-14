@@ -24,7 +24,7 @@ from rediacc_ci import paths
 MANIFEST_REL = pathlib.Path(".ci/config/shards/test-e2e-workers.json")
 
 
-class Vacuous(Exception):  # noqa: N818
+class VacuousError(Exception):
     """The manifest named zero e2e-workers files -- a corpus this small must refuse rather than probe nothing."""
 
 
@@ -37,7 +37,7 @@ def probe_files(manifest_path: pathlib.Path) -> list[str]:
             rest = entry_id.removeprefix("e2e-workers:")
             files.add(rest.split("#", 1)[0])
     if not files:
-        raise Vacuous("VACUOUS: %s named zero e2e-workers files" % manifest_path)
+        raise VacuousError("VACUOUS: %s named zero e2e-workers files" % manifest_path)
     return sorted(files)
 
 
@@ -46,7 +46,7 @@ def main(argv: list[str]) -> int:
     manifest_path = paths.repo_root() / MANIFEST_REL
     try:
         files = probe_files(manifest_path)
-    except (OSError, ValueError, KeyError, Vacuous) as exc:
+    except (OSError, ValueError, KeyError, VacuousError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
 

@@ -519,7 +519,12 @@ testpaths = [
 # hand-wrote the hop above their import and paid an E402 marker for it, and
 # inline markers are banned. The modules there are flat `wl_*` files and
 # `worklist.py`, none of which shadows a name under `.ci`.
-pythonpath = [".ci", ".claude/hooks/stop"]
+#
+# `.claude` IS THE THIRD (2026-10-14), so a `.ci` suite that drives a guard
+# (`test_gate_incremental_receipt` imports `rediacc_hooks.guards`) imports it at
+# the top like any other module instead of a hop plus an E402 marker. The one
+# package there is `rediacc_hooks`, which shadows nothing under `.ci`.
+pythonpath = [".ci", ".claude/hooks/stop", ".claude"]
 
 # NOT under the repo root. `.pytest_cache/` is NOT in .gitignore (checked with
 # `git check-ignore`), so the default location would put an untracked directory
