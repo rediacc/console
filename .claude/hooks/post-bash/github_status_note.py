@@ -77,7 +77,7 @@ def is_ci_command(cmd):
     if not cmd or not any(w in cmd for w in ("push", "ci-trace", "gh", "wl_prreview")):
         return False
     _load_syspath().on_sys_path(ROOT / ".claude")
-    from rediacc_hooks import shellscan  # noqa: PLC0415 -- only a Bash payload needs the lexer
+    from rediacc_hooks import shellscan
 
     return bool(CI_COMMAND.search(shellscan.scan_target(cmd)))
 
@@ -87,7 +87,7 @@ def note_line(session, gs=None):
     try:
         gs = gs or load_github_status()
         return gs.surface(session=session or None)
-    except Exception:  # noqa: BLE001 -- advisory: a broken status read is silence, never a failed hook
+    except Exception:
         return ""
 
 
@@ -121,7 +121,7 @@ def main(argv=None, stdin=None, stdout=None):
         text = note_line(session)
         if text:
             stdout.write(render("PostToolUse", text))
-    except Exception:  # noqa: BLE001 -- advisory: never fail the chain
+    except Exception:
         pass
     return 0
 

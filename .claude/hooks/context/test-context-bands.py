@@ -192,7 +192,7 @@ def fired(p):
         return None
     try:
         d = json.loads(out)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return None
     return (d.get("hookSpecificOutput") or {}).get("additionalContext")
 
@@ -978,7 +978,7 @@ def test_arithmetic_in(hooks_dir):
         )
         try:
             r = json.loads(p.stdout)
-        except Exception:  # noqa: BLE001
+        except Exception:
             r = {}
         check(
             "a pin overrules a model cap that was only ASSUMED",
@@ -1016,7 +1016,7 @@ def test_compact_boundary(hooks_dir):
             )
             try:
                 return json.loads(r.stdout)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return None
         finally:
             shutil.rmtree(d, ignore_errors=True)

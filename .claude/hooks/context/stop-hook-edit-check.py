@@ -267,6 +267,6 @@ def main():
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except Exception as exc:  # noqa: BLE001 -- a PostToolUse warning must never break the tool call
+    except Exception as exc:
         print("stop-hook-edit-check: %s: %s" % (type(exc).__name__, exc), file=sys.stderr)
         sys.exit(0)

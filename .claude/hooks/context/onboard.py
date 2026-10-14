@@ -56,7 +56,7 @@ def marker_file(session_id):
 def load_marker(session_id):
     try:
         return json.loads(marker_file(session_id).read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001 -- absent or corrupt both mean "not armed"
+    except Exception:
         return {}
 
 
@@ -75,7 +75,7 @@ def current_epoch(session_id):
     """
     try:
         return int(B.load_state(session_id).get("epoch", 0))
-    except Exception:  # noqa: BLE001
+    except Exception:
         return 0
 
 
@@ -97,7 +97,7 @@ def my_open_items(session_id):
             # A non-zero exit is DATA here, not an error: --list --open exits 1 on an EMPTY slice, which is a real answer and not a failure.
             check=False,
         )
-    except Exception:  # noqa: BLE001
+    except Exception:
         return [], None
     rows = [ln for ln in r.stdout.splitlines() if ln.strip().startswith("- [")]
     if rows:
@@ -339,8 +339,8 @@ def stop_modules():
         syspath = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(syspath)
         syspath.on_sys_path(stop_dir)
-        import wl_core  # noqa: PLC0415 -- deferred; it must follow the sys.path hop above, and the PostToolUse path must never pay this import
-        import wl_store  # noqa: PLC0415 -- see wl_core
+        import wl_core
+        import wl_store
     except ImportError as exc:
         sys.stderr.write(
             "onboard --audit: cannot import the worklist store from %s (%s). The audit reads "
@@ -727,7 +727,7 @@ if __name__ == "__main__":
     else:
         try:
             main()
-        except Exception as exc:  # noqa: BLE001 -- a PostToolUse hook must never break a tool call
+        except Exception as exc:
             with contextlib.suppress(Exception):
                 B.log_error("onboard", exc)
             sys.exit(0)

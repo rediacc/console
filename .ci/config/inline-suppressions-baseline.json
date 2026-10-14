@@ -660,53 +660,17 @@
    "noqa FLY002": 1,
    "noqa PLC0415": 1
   },
-  ".claude/hooks/context/band-notice.py": {
-   "noqa BLE001": 3
-  },
   ".claude/hooks/context/ctx_budget.py": {
-   "noqa BLE001": 8,
    "noqa S112": 2
   },
-  ".claude/hooks/context/epoch-reset.py": {
-   "noqa BLE001": 1
-  },
-  ".claude/hooks/context/onboard.py": {
-   "noqa BLE001": 4,
-   "noqa PLC0415": 2
-  },
   ".claude/hooks/context/precompact-floor.py": {
-   "noqa BLE001": 2,
    "noqa E731": 1
   },
-  ".claude/hooks/context/stop-hook-edit-check.py": {
-   "noqa BLE001": 1
-  },
-  ".claude/hooks/context/test-context-bands.py": {
-   "noqa BLE001": 3
-  },
   ".claude/hooks/post-bash/arm_ci_watch.py": {
-   "noqa BLE001": 1,
-   "noqa E402": 2,
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/post-bash/github_status_note.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/post-bash/loop_speed_note.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 8
-  },
-  ".claude/hooks/post-bash/review_commit.py": {
-   "noqa BLE001": 2,
    "noqa E402": 2
   },
-  ".claude/hooks/post-tool/commit_remind.py": {
-   "noqa BLE001": 1,
-   "noqa PLC0415": 3
-  },
-  ".claude/hooks/profile/py/sitecustomize.py": {
-   "noqa BLE001": 7
+  ".claude/hooks/post-bash/review_commit.py": {
+   "noqa E402": 2
   },
   ".claude/hooks/stop/test-always-tier.py": {
    "noqa PLC0415": 1
@@ -888,13 +852,6 @@
   ".claude/hooks/stop/worklist.py": {
    "noqa BLE001": 13,
    "noqa PLC0415": 34
-  },
-  ".claude/hooks/trapguard/dispatch.py": {
-   "noqa BLE001": 3
-  },
-  ".claude/hooks/why-on-edit.py": {
-   "noqa BLE001": 6,
-   "noqa PLC0415": 3
   },
   ".claude/rediacc_hooks/commit_policy.py": {
    "noqa BLE001": 1,

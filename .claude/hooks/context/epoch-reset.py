@@ -37,7 +37,7 @@ def main():
                 # Deliberately NOT carried forward: usage, threshold, model. Usage in particular must not survive, or the usage-drop backstop in band-notice would fire on the next tool call and bump a second epoch for the same compaction.
             },
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         B.log_error("epoch-reset", exc)
 
 

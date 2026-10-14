@@ -574,7 +574,7 @@ def _save_shown(session, shown):
 def run_posttool():
     try:
         raw, over = read_bounded(sys.stdin.buffer)
-    except Exception:  # noqa: BLE001 -- a warning layer must never break a turn
+    except Exception:
         return 0
     event: dict = {}
     if over:
@@ -619,7 +619,7 @@ def run_posttool():
             if fault == rid:
                 raise RuntimeError("TRAPGUARD_FAULT planted in %s" % rid)
             note = rule(cmd, out, root, resp)
-        except Exception as exc:  # noqa: BLE001 -- one broken rule must not silence the others, and it must not be silent either
+        except Exception as exc:
             _append("errors.jsonl", {"ts": _now(), "rule": rid, "exc_type": type(exc).__name__})
             note = None
         if not note:
@@ -656,7 +656,7 @@ def main():
         return 0
     try:
         raw, _over = read_bounded(sys.stdin.buffer)
-    except Exception:  # noqa: BLE001 -- a probe must never break a turn
+    except Exception:
         return 0
     try:
         event = json.loads(raw) if raw.strip() else {}

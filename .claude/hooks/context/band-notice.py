@@ -161,14 +161,14 @@ def main():
                 "install."
             )
             return
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         B.log_error("band-notice/force", exc)
 
     try:
         if os.environ.get("CTX_BAND_DUMP") or (B.state_dir() / "dump-events").exists():
             with open(B.state_dir() / "events.jsonl", "a", encoding="utf-8") as fh:
                 fh.write(json.dumps(event, sort_keys=True) + "\n")
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         B.log_error("band-notice/dump", exc)
 
     try:
@@ -279,7 +279,7 @@ def main():
         B.save_state(session_id, st)
         if texts:
             emit("\n\n".join(texts))
-    except Exception as exc:  # noqa: BLE001 -- a PostToolUse hook must never break a tool call
+    except Exception as exc:
         B.log_error("band-notice", exc)
 
 

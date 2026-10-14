@@ -103,7 +103,7 @@ def read_event():
     try:
         raw = sys.stdin.read()
         return json.loads(raw) if raw.strip() else {}
-    except Exception:  # noqa: BLE001 -- an unreadable payload is "allow", not a crash
+    except Exception:
         return {}
 
 
@@ -153,19 +153,19 @@ def epoch_of(session_id):
     READ, NEVER WRITTEN. `ctx_budget.save_state` replaces the whole document, so writing our keys into that file would clobber whatever `band-notice.py` had put there and vice versa. Our own state lives beside it.
     """
     try:
-        import ctx_budget as B  # noqa: PLC0415 -- optional; absence must not block an edit
+        import ctx_budget as B
 
         return int(B.load_state(session_id).get("epoch", 0) or 0)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return 0
 
 
 def state_file(session_id):
     try:
-        import ctx_budget as B  # noqa: PLC0415 -- see epoch_of
+        import ctx_budget as B
 
         return B.state_dir() / ("why-%s.json" % B.session_slug(session_id))
-    except Exception:  # noqa: BLE001
+    except Exception:
         return HERE / "context" / "state" / "why-unknown.json"
 
 
@@ -173,7 +173,7 @@ def load_seen(session_id, epoch):
     """{"epoch": n, "paths": [...], "n": k} for THIS epoch, reset across one."""
     try:
         doc = json.loads(state_file(session_id).read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001 -- absent or corrupt both mean "nothing pushed yet"
+    except Exception:
         doc = {}
     if int(doc.get("epoch", -1)) != epoch:
         return {"epoch": epoch, "paths": [], "n": 0}
@@ -275,10 +275,10 @@ def main():
         return 0
 
     try:
-        import wl_planrec as R  # noqa: PLC0415 -- optional; absence must not block an edit
+        import wl_planrec as R
 
         lines, state = R.why_lines(root, rel)
-    except Exception:  # noqa: BLE001 -- a broken index must never cost an edit
+    except Exception:
         return 0
     if state != R.WHY_EDGES or not lines:
         # SILENT. See property 1: this hook was not asked, so nothing to say means nothing said. The state is still recorded, so a path with no edge is not re-looked-up on every keystroke of the same file.
@@ -308,5 +308,5 @@ if __name__ == "__main__":
         sys.exit(main())
     except SystemExit:
         raise
-    except Exception:  # noqa: BLE001 -- see the module docstring: fails open, always
+    except Exception:
         sys.exit(0)

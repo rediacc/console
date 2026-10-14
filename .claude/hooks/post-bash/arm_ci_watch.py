@@ -148,7 +148,7 @@ def spawn_watch(root, sid, branch, item, log_path):
 def open_pr_exists(root, branch, read=None):
     """False only when `gh pr list` ANSWERED that `branch` has no open PR. A plain push of a PR-less branch starts no CI (ci.yml runs on push to main and on pull_request), so a watcher would only wait out its timeout. A lookup that fails (no gh, network, auth) is unknown, not "no PR", and keeps the watch (fail open). The read goes through wl_gh.read_raw, the hooks' one bounded read with its transient retry."""
     if read is None:
-        import wl_gh  # noqa: PLC0415 -- stop-dir sibling, on sys.path through the hop above
+        import wl_gh
 
         read = wl_gh.read_raw
     out, _why = read(
@@ -239,7 +239,7 @@ def main():
         return 0
     try:
         line = arm(ev.project_dir, ev.field("session_id"))
-    except Exception as exc:  # noqa: BLE001 -- advisory: a broken arm says so and lets the tool call stand
+    except Exception as exc:
         line = "CI watch NOT armed (hook error %s: %s)" % (type(exc).__name__, str(exc)[:160])
     if line:
         sys.stdout.write(line + "\n")

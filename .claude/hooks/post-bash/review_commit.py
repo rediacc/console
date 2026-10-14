@@ -85,7 +85,7 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
     for repo in commit_repos(cmd, cwd, root):
         try:
             started = trigger(root, pathlib.Path(repo))
-        except Exception as exc:  # noqa: BLE001 -- advisory: a broken trigger says so and lets the tool call stand
+        except Exception as exc:
             lines.append(
                 "per-commit review NOT started in %s (%s: %s)"
                 % (repo, type(exc).__name__, str(exc)[:160])
@@ -119,7 +119,7 @@ def main():
         lines += trigger_lines(cmd, ev.field("cwd") or None, root)
     try:
         lines += R.surface_new(root, R.current_branch(root), ev.field("session_id"))
-    except Exception as exc:  # noqa: BLE001 -- advisory
+    except Exception as exc:
         lines.append(
             "per-commit review surfacing failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])
         )
