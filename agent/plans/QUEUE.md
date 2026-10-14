@@ -69,9 +69,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 805 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 5 live of writer_cap 15 (session d778be9d): worker:a48d80587a06d7d5d, worker:a7889ef4fee7688e3, worker:a02b2efee4b730102, worker:a8b5272cd54d0c30f, worker:adb215d8c782f250f.
-- Leased items: 13: #4aa4e8f2 (worker:a7889ef4fee7688e3, d778be9d), #50cb9316 (worker:a7889ef4fee7688e3, d778be9d), #6361fc5b (worker:a7889ef4fee7688e3, d778be9d), #66e2e0ef (worker:a48d80587a06d7d5d, d778be9d), #759e0ca5 (worker:a48d80587a06d7d5d, d778be9d), #809a3054 (worker:a7889ef4fee7688e3, d778be9d), #8315d613 (worker:a7889ef4fee7688e3, d778be9d), #97a7ced2 (worker:a8b5272cd54d0c30f, d778be9d), #97b9af80 (worker:a48d80587a06d7d5d, d778be9d), #9b2100de (worker:a02b2efee4b730102, d778be9d), #c275adc4 (worker:a7889ef4fee7688e3, d778be9d), #fa76892c (worker:adb215d8c782f250f, d778be9d), and 1 more.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 815 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a48d80587a06d7d5d, worker:a7889ef4fee7688e3, worker:a02b2efee4b730102, worker:a77ee135e2f712dbc.
+- Leased items: 12: #4aa4e8f2 (worker:a7889ef4fee7688e3, d778be9d), #50cb9316 (worker:a7889ef4fee7688e3, d778be9d), #6361fc5b (worker:a7889ef4fee7688e3, d778be9d), #66e2e0ef (worker:a48d80587a06d7d5d, d778be9d), #759e0ca5 (worker:a48d80587a06d7d5d, d778be9d), #809a3054 (worker:a7889ef4fee7688e3, d778be9d), #8315d613 (worker:a7889ef4fee7688e3, d778be9d), #97a7ced2 (worker:a77ee135e2f712dbc, d778be9d), #97b9af80 (worker:a48d80587a06d7d5d, d778be9d), #9b2100de (worker:a02b2efee4b730102, d778be9d), #c275adc4 (worker:a7889ef4fee7688e3, d778be9d), #fe2d3ad2 (worker:a48d80587a06d7d5d, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
@@ -131,14 +131,14 @@ Promoted: 13 of 16 plans done, 190 of 197 boxes done (96%).
 9. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 10. agent/plans/PLAN-tooling-transformation.md -- P1, ready, in progress (152 of 154 boxes ticked)
 11. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked), dep-blocked
-12. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
-13. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
-14. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
-15. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-16. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-18. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-19. agent/plans/PLAN-vm-check.md -- P1, approved, not started
+12. agent/plans/PLAN-vm-check.md -- P1, approved, in progress (1 of 8 boxes ticked)
+13. agent/plans/PLAN-w7p5a-real-run-dispatch.md -- P1, in-progress, in progress (7 of 9 boxes ticked)
+14. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+15. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
+16. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+17. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+18. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+19. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
 20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
 21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
 22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
