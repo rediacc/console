@@ -160,6 +160,12 @@ def osv_affected(path: str, version: str) -> list[str]:
             "an answer that is not a JSON object", host, "POST " + url, 1
         )
     vulns = data.get("vulns", [])
+    if not isinstance(vulns, list):
+        # Iterating a string or a mapping would drop every entry and read as "no advisory": an answer of the wrong shape is not a clean answer.
+        host = url.split("/")[2] if url.count("/") >= 2 else url
+        raise upstream.NotComparedError(
+            "an answer whose vulns is not a list", host, "POST " + url, 1
+        )
     return sorted({v["id"] for v in vulns if isinstance(v, dict) and v.get("id")})
 
 

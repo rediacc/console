@@ -2234,7 +2234,7 @@ def _orphan_commit_controls(planrec):
             return True, False
         git("reset", "-q", "--hard", base)
         # resolve_here reads the module root, so the root is swapped for the call and restored by the patch.
-        with mock.patch.object(sys.modules[__name__], "REPO_ROOT", tmp):
+        with mock.patch.dict(globals(), {"REPO_ROOT": tmp}):
             return (
                 resolve_here(planrec, "commit", orphan, [])[0],
                 resolve_here(planrec, "commit", base, [])[0],

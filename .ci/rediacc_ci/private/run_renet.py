@@ -119,7 +119,13 @@ def _rules_block(lines: list[str]) -> tuple[int, int] | None:
                 end = len(lines)
                 for j in range(i + 1, len(lines)):
                     body = lines[j].strip()
-                    if body and not body.startswith("#") and _indent(lines[j]) <= ind:
+                    # A sequence may sit at the same indent as its `rules:` key (valid YAML), so a `- ` line at that indent is still an item.
+                    if (
+                        body
+                        and not body.startswith("#")
+                        and _indent(lines[j]) <= ind
+                        and not (_indent(lines[j]) == ind and body.startswith("- "))
+                    ):
                         end = j
                         break
                 return i + 1, end
@@ -178,10 +184,10 @@ def check_exclusion_rules(renet_dir: pathlib.Path) -> list[str]:
     path = renet_dir / GOLANGCI_CONFIG
     try:
         text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
         return [
             "%s: cannot be read (%s), so no exclusion rule can be verified"
-            % (GOLANGCI_LABEL, exc.strerror or exc)
+            % (GOLANGCI_LABEL, getattr(exc, "strerror", None) or exc)
         ]
     return exclusion_rule_findings(text)[0]
 

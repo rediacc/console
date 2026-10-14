@@ -12,6 +12,7 @@ import io
 import pathlib
 
 import pytest
+import wl_planrec
 
 from rediacc_ci import log, paths
 from rediacc_ci.ci import gate_ledger
@@ -113,3 +114,10 @@ def test_a_path_outside_the_key_alphabet_is_still_keyed_per_plan(gate):
     assert keys[1].startswith("P-A1:")
     assert log.FINDING_KEY_RE.match(keys[1])
     assert keys[1] == gate.key_of(gate.clock_findings([(odd, 9)])[0])
+
+
+def test_the_orphan_controls_run_when_the_gate_is_loaded_by_file(gate) -> None:
+    """The gate is loaded here with no sys.modules entry, the way an importlib caller loads it; the root swap must not look the module up by name (435ef88e.1)."""
+    orphan_ok, ancestor_ok = gate._orphan_commit_controls(wl_planrec)
+    assert orphan_ok is False, "a commit that is not an ancestor of HEAD must not resolve"
+    assert ancestor_ok is True, "an ancestor must resolve"
