@@ -357,7 +357,7 @@ USER vscode
 ARG GOPLS_VERSION=0.23.0
 ARG DLV_VERSION=1.27.2
 # staticcheck ships TWO names for one build: the GitHub release is tagged
-# 2026.2.1 while the Go module version is v0.8.1. `go install` speaks module
+# with a calendar version while the Go module version is STATICCHECK_VERSION below (v-prefixed). `go install` speaks module
 # versions, so that is what is pinned here; the freshness gate cannot compare
 # the two numbering schemes, which is why staticcheck is absent from
 # devcontainer-pin-sources.ts.
@@ -478,7 +478,7 @@ USER root
 # changed. An unpinned install is a build any stranger can break, and it also means
 # two people building "the same" devcontainer get different tools.
 #
-# Pinned to what `@latest` resolved to on 2026-09-04, so this change moves nothing.
+# Pinned to an exact release; the values below are whatever the last bump chose.
 # Bumping is a one-line edit per tool; there is deliberately no freshness gate on
 # these two, because a CLI whose version nothing depends on is not worth a red build.
 ARG CODEX_VERSION=0.162.1

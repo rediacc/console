@@ -104,6 +104,8 @@ interface LeafView {
   state: 'current' | 'bumpable' | 'deferred' | 'held' | 'major-only' | 'not-compared';
   current: string | null;
   detail: string;
+  /** The release the window is holding back, with the instant it clears (null when the driver's own rule holds it). */
+  deferred?: { clearsAt: number | null } | null;
 }
 
 /**
@@ -139,10 +141,12 @@ function verdict(sel: Selection, views: LeafView[], mutant?: Mutant): Report {
     `  left to their own gate: ${sel.byFamily.length} (${[...new Set(sel.byFamily.map((f) => f.gate))].join(', ') || 'none'})`
   );
   out.push(`  no upstream source (BLOCKER in the registry): ${sel.noSource.join(', ') || 'none'}`);
-  for (const v of of('deferred'))
-    out.push(
-      `  deferred    ${v.id}: ${v.detail}${v.detail.includes('inside the window') ? ` (npm run pins -- when ${v.id})` : ''}`
-    );
+  for (const v of of('deferred')) {
+    const at = v.deferred?.clearsAt;
+    const clears =
+      typeof at === 'number' ? `, clears the window at ${new Date(at).toISOString()}` : '';
+    out.push(`  deferred    ${v.id}: ${v.detail}${clears} (npm run pins -- when ${v.id})`);
+  }
   for (const v of of('held')) out.push(`  held        ${v.id}: ${v.detail}`);
   for (const v of of('major-only')) {
     out.push(`  major only  ${v.id}: ${v.detail}`);
@@ -340,6 +344,31 @@ async function selftest(): Promise<number> {
       green.all
     );
     registerDrivers({ toolchain: stubDriver() });
+
+    // A deferred leaf whose detail carries no particular wording still names its instant and its `when` line.
+    const when = verdict(
+      { judged: [], byFamily: [], noSource: [] },
+      [
+        {
+          id: DEFERRED,
+          state: 'deferred',
+          current: '1.0.0',
+          detail: '1.0.0 -> 1.0.1 deferred: held by the driver',
+          deferred: { clearsAt: Date.UTC(2030, 0, 2, 3, 4, 5) },
+        },
+      ],
+      'empty-passes'
+    );
+    add(
+      'DEFERRED: whatever the detail says, the instant and the `pins when` line are printed',
+      when.out.some(
+        (l) =>
+          l.startsWith(`  deferred    ${DEFERRED}:`) &&
+          l.includes('2030-01-02T03:04:05.000Z') &&
+          l.includes(`npm run pins -- when ${DEFERRED}`)
+      ),
+      when.out.join('\n')
+    );
 
     const empty = verdict({ judged: [], byFamily: [], noSource: [] }, []);
     add('VACUITY: a run that judged no leaf is red', empty.rc === 1);
