@@ -75,7 +75,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 13 plans done, 157 of 170 boxes done (92%).
+Promoted: 10 of 13 plans done, 159 of 170 boxes done (93%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -84,7 +84,7 @@ Promoted: 10 of 13 plans done, 157 of 170 boxes done (92%).
 | 3 | PLAN-ci-consolidation.md | 22/22 | done |
 | 4 | PLAN-config-team-scoping.md | 11/11 | done |
 | 5 | PLAN-plan-dependencies.md | 12/12 | done |
-| 6 | PLAN-remove-cross-session-messaging.md | 9/13 | 4 open |
+| 6 | PLAN-remove-cross-session-messaging.md | 11/13 | 2 open |
 | 7 | PLAN-config-passkey-optional.md | 4/4 | done |
 | 8 | PLAN-plan-per-pr-loop.md | 15/16 | 1 open |
 | 9 | PLAN-stop-hook-retro-20260924.md | 23/23 | done |
