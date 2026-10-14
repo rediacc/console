@@ -16,6 +16,8 @@ import urllib.parse
 import urllib.request
 from typing import TYPE_CHECKING
 
+from rediacc_ci.core import https
+
 if TYPE_CHECKING:
     import http.cookiejar
 
@@ -133,7 +135,7 @@ def http_bytes(
         handlers.append(urllib.request.HTTPCookieProcessor(jar))
     opener = urllib.request.build_opener(*handlers)
     data = body.encode() if isinstance(body, str) else body
-    request = urllib.request.Request(url, data=data, method=method)  # noqa: S310 -- the drill's own http gateway or store URL
+    request = https.build_request(url, data=data, method=method, http="any")
     if data is not None and json_body:
         request.add_header("Content-Type", "application/json")
     for name, value in (headers or {}).items():

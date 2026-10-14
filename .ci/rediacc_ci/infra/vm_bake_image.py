@@ -32,9 +32,9 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import urllib.request
 from typing import TYPE_CHECKING, Unpack
 
+from rediacc_ci.core import https
 from rediacc_ci.infra import vm_bake_key
 from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, IMAGE_REGISTRY
 
@@ -108,7 +108,7 @@ def _run(argv: Sequence[str], **kw: Unpack[RunKwargs]) -> subprocess.CompletedPr
 
 
 def _download(url: str, dest: pathlib.Path) -> None:
-    with urllib.request.urlopen(url, timeout=120) as resp, open(dest, "wb") as out:  # noqa: S310 - a pinned https URL
+    with https.urlopen(url, timeout=120) as resp, open(dest, "wb") as out:
         shutil.copyfileobj(resp, out)
 
 

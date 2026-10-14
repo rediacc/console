@@ -27,6 +27,7 @@ import urllib.request
 from typing import TYPE_CHECKING
 
 from rediacc_ci.controls import controls_first
+from rediacc_ci.core import https
 from rediacc_ci.well_known import CF_API_BASE
 
 if TYPE_CHECKING:
@@ -67,7 +68,7 @@ def label(path: str) -> str:
 
 def http_fetch(path: str, token: str) -> tuple[object, dict]:
     """The `result` and `result_info` of a successful Cloudflare v4 envelope; ApiError otherwise."""
-    req = urllib.request.Request(  # noqa: S310 -- constant https API_BASE
+    req = https.build_request(
         API_BASE + path,
         headers={
             "Authorization": "Bearer " + token,
@@ -76,7 +77,7 @@ def http_fetch(path: str, token: str) -> tuple[object, dict]:
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 -- constant https API_BASE
+        with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
     except urllib.error.HTTPError as e:
         raise ApiError("HTTP %d on %s%s" % (e.code, label(path), _cf_errors(e.read()))) from None
