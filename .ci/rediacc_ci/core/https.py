@@ -71,8 +71,15 @@ class _CheckedRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+def build_opener(
+    *handlers: urllib.request.BaseHandler, http: str = "never"
+) -> urllib.request.OpenerDirector:
+    """`urllib.request.build_opener(*handlers)` whose redirects pass `check_url` under the same `http` setting (review 1bf85a71.2): a caller that needs cookies or another handler gets the redirect check too."""
+    return urllib.request.build_opener(*handlers, _CheckedRedirect(http))
+
+
 def urlopen(target: str | urllib.request.Request, *, timeout: float, http: str = "never") -> Any:
     """`urllib.request.urlopen(target, timeout=...)` after the scheme check, through an opener whose redirects pass the same check; the response is a context manager."""
     url = target if isinstance(target, str) else target.full_url
     check_url(url, http=http)
-    return urllib.request.build_opener(_CheckedRedirect(http)).open(target, timeout=timeout)
+    return build_opener(http=http).open(target, timeout=timeout)
