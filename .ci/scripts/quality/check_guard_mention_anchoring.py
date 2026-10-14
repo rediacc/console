@@ -148,6 +148,19 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: extracts the body of perl q{}/qq{}/qw and ruby %q()/%w() literals from interpreter program text for "
         "the static scan, beside LITERAL; bracket shapes with no word, applied to program text, never to the command."
     ),
+    ("block_worktree_add.py", "PLACEHOLDER"): (
+        "BLOCKER: a printf, format, f-string or ${}/#{} placeholder inside a string literal already found in interpreter "
+        "program text, replaced by `.sub()` with the unknown marker that `_filled` completes; it rewrites a literal, "
+        "never reads the command, and never decides a refusal."
+    ),
+    ("block_worktree_add.py", "TEXT_JOIN_BEFORE"): (
+        "BLOCKER: a concatenation operator (`+`, perl `.`, `<<`) searched in the 16 characters before a literal that "
+        "LITERAL or QUOTE_LIKE found in program text; it only says the literal is one piece of a built string."
+    ),
+    ("block_worktree_add.py", "TEXT_INTERPOLATION"): (
+        "BLOCKER: a `${}`, `#{}`, `$name` or `@name` interpolation inside a literal found in program text, replaced by "
+        "`.sub()` with the unknown marker that `_filled` completes; it rewrites a literal and never reads the command."
+    ),
     ("block_blanket_git_add.py", "BARE_DDASH"): (
         "BLOCKER: an optional ` -- ` concatenated between GIT_ADD's anchored prefix and END; it is a piece of the composed "
         "BLANKET_* patterns, never searched on its own."
