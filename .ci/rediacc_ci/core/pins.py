@@ -4,6 +4,8 @@ The registry is the one list of every pinned version and where each is written (
 This module reads the same file for Python callers and refuses, by field path, any part of an entry it hands out that is not the shape it needs, so a malformed edit fails at the caller rather than surfacing as a wrong label or an empty tuple.
 
 First reader: `rediacc_ci.infra.renet_pkg_matrix.PIN_SITES`, the sites an `OBS REBUILT` finding tells the reader to move, which used to be a third hand-kept copy of the Leap pin's three files.
+
+THE REMEDY LINE (Design 4). `bump_remedy` and `lockfiles_remedy` build the one failure line a Python freshness gate prints, byte for byte the line `scripts/lib/pins/remedy.ts` builds for the TypeScript gates: `  fix: npm run pins -- bump <id>` or `  fix: npm run pins -- lockfiles <dir>`. A remedy naming an id the registry does not hold is refused, and the registry read for that check is the one beside this code, never `REDIACC_CI_ROOT`'s, because the gates calling it run under fixture roots.
 """
 
 from __future__ import annotations
@@ -11,14 +13,14 @@ from __future__ import annotations
 import dataclasses
 import functools
 import json
-from typing import TYPE_CHECKING
+import pathlib
 
 from rediacc_ci import paths
 
-if TYPE_CHECKING:
-    import pathlib
-
 REGISTRY_PARTS = (".ci", "config", "pins.json")
+# The registry of the checkout this module is part of: .ci/rediacc_ci/core/pins.py -> .ci/config/pins.json.
+_OWN_REGISTRY = pathlib.Path(__file__).resolve().parents[2] / "config" / "pins.json"
+REMEDY_PREFIX = "fix:"
 
 
 class PinsError(ValueError):
@@ -149,3 +151,20 @@ def site_labels(entry_id: str, path: pathlib.Path | None = None) -> tuple[str, .
     if not entry.sites:
         raise PinsError(f"{entry_id}: has no sites to name")
     return tuple(s.label for s in entry.sites)
+
+
+def bump_command(entry_id: str) -> str:
+    """`npm run pins -- bump <id>`, for a message that names the command inside its own sentence; refused for an id the registry does not hold."""
+    load(_OWN_REGISTRY).entry(entry_id)
+    return "npm run pins -- bump %s" % entry_id
+
+
+def bump_remedy(entry_id: str, *, major: bool = False) -> str:
+    """`  fix: npm run pins -- bump <id>`, the line a freshness gate prints for a stale pin; refused for an id the registry does not hold."""
+    tail = ' --major --reason "<why>"' if major else ""
+    return "  %s %s%s" % (REMEDY_PREFIX, bump_command(entry_id), tail)
+
+
+def lockfiles_remedy(directory: str) -> str:
+    """`  fix: npm run pins -- lockfiles <dir>`, check:ci-lockfile's line for a lockfile the pinned npm would rewrite."""
+    return "  %s npm run pins -- lockfiles %s" % (REMEDY_PREFIX, directory or ".")

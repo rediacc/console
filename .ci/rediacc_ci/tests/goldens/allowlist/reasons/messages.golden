@@ -10,7 +10,7 @@
     "entry": "defer-000",
     "reason": "astro 6 is a major m not needed by this change",
     "file": ".deps-upgrade-blocklist",
-    "message": "Allowlist .deps-upgrade-blocklist: BLOCKER for entry defer-000 defers a routine bump instead of justifying a hold (\"astro 6 is a major m not needed by this change\")\n  Rejected because: it contains \"not needed by this change\" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump.\n  Note: check-deps already auto-defers freshly-published versions (until the next UTC day after they age the minimum-release-age window), so there is no need to blocklist a fresh release.\n  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the concrete technical blocker (which package pins what, what breaks)."
+    "message": "Allowlist .deps-upgrade-blocklist: BLOCKER for entry defer-000 defers a routine bump instead of justifying a hold (\"astro 6 is a major m not needed by this change\")\n  Rejected because: it contains \"not needed by this change\" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump.\n  Note: check-deps already auto-defers freshly-published versions (until the next UTC day after they age the minimum-release-age window), so there is no need to blocklist a fresh release.\n  Action: TAKE the bump ('npm run pins -- bump npm'), OR cite the concrete technical blocker (which package pins what, what breaks)."
   },
   "low-effort": {
     "entry": "phrase-000",

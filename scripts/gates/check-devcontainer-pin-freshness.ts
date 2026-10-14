@@ -13,11 +13,10 @@
  *
  * WHY A SIBLING OF check-embed-asset-freshness.ts RATHER THAN AN ARM OF IT. That
  * gate is narrowly about the binaries renet EMBEDS: its name, its blocklist and
- * every line of its --upgrade advice ("re-run ./build.sh embed_assets --force",
- * "update the credits inventories") are about that pipeline. Devcontainer tools
- * share none of it, and folding them in would make each of those sentences
- * half-true. What IS shared -- the parser, the soak, the BLOCKER validator -- is
- * imported rather than copied.
+ * the derive steps its pins entries carry (the credits inventories, the vendored
+ * CRDs) are about that pipeline. Devcontainer tools share none of it. What IS
+ * shared -- the parser, the soak, the BLOCKER validator -- is imported rather
+ * than copied.
  *
  * POLICY, inherited deliberately from that gate because it is what makes a
  * freshness gate liveable rather than a thing people disable:
@@ -44,20 +43,20 @@
  *  - BLOCKER-GATED HOLDS: .devcontainer-upgrade-blocklist, each entry carrying a
  *    substantive reason, validated like every other suppression list here.
  *
- * WHAT IT DOES THAT THE EMBED GATE DOES NOT:
- *  1. Filters release TAGS by prefix. bitwarden/clients is a monorepo, so
- *     /releases/latest answers with whichever of web/desktop/browser/cli shipped
- *     last -- a question nobody asked. See DevcontainerPinSource.tagPrefix.
- *  2. Rewrites the sha256 ARGs with the version. The embed gate rewrites the ARG
- *     and tells a human to go refresh the hashes; here that would hand back a
- *     tree whose next `docker build` dies at `sha256sum -c -`. The digests are
- *     already on the release JSON this gate is holding, so it writes them.
+ * WHAT IT DOES THAT THE EMBED GATE DOES NOT: it filters release TAGS by prefix.
+ * bitwarden/clients is a monorepo, so /releases/latest answers with whichever of
+ * web/desktop/browser/cli shipped last -- a question nobody asked. See
+ * DevcontainerPinSource.tagPrefix.
  *
  * UPSTREAM ASKED: api.github.com, `GET /repos/<owner>/<repo>/releases` for each
  * repository in scripts/lib/devcontainer-pin-sources.ts (bitwarden/clients,
- * bitwarden/sdk-sm, golang/tools, go-delve/delve, golangci/golangci-lint). The
- * sha256 digests `--upgrade` writes come from that same answer, so there is no
- * second host and no second request.
+ * bitwarden/sdk-sm, golang/tools, go-delve/delve, golangci/golangci-lint).
+ *
+ * THE FIX IS ONE COMMAND. A stale pin's failure line is `npm run pins -- bump
+ * devcontainer:<base>` (scripts/lib/pins/remedy.ts): the devcontainer driver moves
+ * the version and every sha256 ARG together, from the digests the release
+ * publishes, and refuses the whole pin when one digest is missing. This gate's
+ * own `--upgrade` mode, which did that rewrite here, is retired with it.
  *
  * HARD ON EVERY CADENCE. The step runs `npm run check:ci-devcontainer-pins`
  * directly, with no wrapper, so an exit 1 is red on a pull
@@ -66,14 +65,13 @@
  * pin gates held by label" step names this gate in the log when that happens.
  *
  * Usage:
- *   npx tsx scripts/gates/check-devcontainer-pin-freshness.ts            # check
- *   npx tsx scripts/gates/check-devcontainer-pin-freshness.ts --upgrade  # rewrite pins
+ *   npx tsx scripts/gates/check-devcontainer-pin-freshness.ts
  *   npm run check:ci-devcontainer-pins
  *
  * Exit codes: 0 = every pin that is not held was compared with upstream and is
  * current or deferred; 1 = a confirmed stale pin, a pin that was not compared,
- * a listing that cannot be used, a source with no ARG, a malformed blocklist
- * entry, or an --upgrade that could not resolve every digest it needed.
+ * a listing that cannot be used, a source with no ARG, or a malformed blocklist
+ * entry.
  *
  * ---- gate ----
  * step: Check devcontainer pin upstream freshness
@@ -87,7 +85,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { WK_GH_API_BASE } from '../../packages/shared/src/config/well-known.generated.js';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import {
@@ -95,6 +92,7 @@ import {
   type DevcontainerPinSource as Source,
 } from '../lib/devcontainer-pin-sources.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
+import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
@@ -103,7 +101,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
 // Test seams, mirroring check-embed-asset-freshness.ts: point the gate at fixture files so its test can prove the BLOCKER validation fires and that a stale pin is caught, without mutating the tracked blocklist or hitting the network.
 //
-// DEVCONTAINER_DOCKERFILE is the seam this file was MISSING, and its absence had a cost. --upgrade rewrites the Dockerfile in place, so the gate's test drove it against the REAL tracked file and restored it from a trap. That mutation is visible to every other gate sharing the tree: on 2026-09-03 it reddened check:ci-setup-idempotency in the pre-push lane, which reported "setup
+// DEVCONTAINER_DOCKERFILE is the seam this file was MISSING, and its absence had a cost. The retired --upgrade rewrote the Dockerfile in place, so the gate's test drove it against the REAL tracked file and restored it from a trap. That mutation is visible to every other gate sharing the tree: on 2026-09-03 it reddened check:ci-setup-idempotency in the pre-push lane, which reported "setup
 // --check changed the working tree" over `.devcontainer/Dockerfile` -- a file run.sh never writes, naming the wrong command and sending the reader into run.sh. It is also a hazard beyond CI: this repo's working tree usually holds another session's uncommitted work, and a gate that rewrites a tracked file, however briefly, can be interrupted.
 const DOCKERFILE =
   process.env.DEVCONTAINER_DOCKERFILE || path.join(CONSOLE_ROOT, '.devcontainer/Dockerfile');
@@ -116,8 +114,6 @@ const github = githubAsker('rediacc-devcontainer-pin-freshness', process.env.DEV
 interface Latest {
   version: string;
   publishedAt: Date | null;
-  /** asset filename -> bare sha256 hex, from the release API's `digest` field. */
-  digests: Map<string, string>;
 }
 
 /** A version string -> comparable numeric segments. */
@@ -143,8 +139,7 @@ function isNewer(latest: string, pinned: string): boolean {
 
 /**
  * Test seam: DEVCONTAINER_FRESHNESS_FIXTURE points at a JSON map
- * `{ "<base>": { "version": "x.y.z", "publishedAt"?: "ISO",
- *                "digests"?: { "<asset>": "<sha256>" } } }`
+ * `{ "<base>": { "version": "x.y.z", "publishedAt"?: "ISO" } }`
  * used INSTEAD of the network. A base absent from the fixture was not compared,
  * which is red.
  */
@@ -152,7 +147,6 @@ let fixtureCache: Record<string, FixtureEntry> | null | undefined;
 interface FixtureEntry {
   version: string;
   publishedAt?: string;
-  digests?: Record<string, string>;
 }
 function loadFixture(): Record<string, FixtureEntry> | null {
   const cached = fixtureCache;
@@ -168,7 +162,6 @@ interface GithubRelease {
   published_at?: string;
   draft?: boolean;
   prerelease?: boolean;
-  assets?: Array<{ name?: string; digest?: string }>;
 }
 
 /** Newest stable release matching the source's tag prefix. Throws NotCompared when the listing was not obtained and UnreadableListing when it cannot be used. */
@@ -180,7 +173,6 @@ async function latestFor(src: Source): Promise<Latest> {
     return {
       version: hit.version,
       publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null,
-      digests: new Map(Object.entries(hit.digests ?? {})),
     };
   }
 
@@ -197,18 +189,9 @@ async function latestFor(src: Source): Promise<Latest> {
     );
   }
 
-  const digests = new Map<string, string>();
-  for (const a of hit.assets ?? []) {
-    // `digest` is "sha256:<hex>". Bitwarden publishes no .sha256 sidecars and no GPG/cosign signatures, so this is the only machine-readable checksum there is -- an integrity check against the same API that serves the download, not an independent trust root. Worth knowing; still better than no pin.
-    if (a.name && a.digest?.startsWith('sha256:')) {
-      digests.set(a.name, a.digest.slice('sha256:'.length));
-    }
-  }
-
   return {
     version: hit.tag_name.slice(src.tagPrefix.length),
     publishedAt: hit.published_at ? new Date(hit.published_at) : null,
-    digests,
   };
 }
 
@@ -216,7 +199,6 @@ interface Finding {
   src: Source;
   pinned: string;
   latest: string;
-  digests: Map<string, string>;
 }
 
 function loadBlocklist(): { held: Set<string>; errors: string[] } {
@@ -226,33 +208,7 @@ function loadBlocklist(): { held: Set<string>; errors: string[] } {
   return { held: new Set(entries.map((e) => e.entry.trim().toLowerCase())), errors };
 }
 
-/**
- * Rewrite one source's version ARG and every hash ARG it declares.
- *
- * ALL-OR-NOTHING per source. A missing digest returns null and the caller leaves
- * that pin alone, because writing the version without its hash produces a tree
- * that fails `docker build` at `sha256sum -c -` -- and an operator who ran
- * --upgrade and got a broken build learns to distrust the gate, not the release.
- */
-function rewriteSource(src: string, f: Finding): { text: string } | { error: string } {
-  const arg = `${f.src.base.toUpperCase()}_VERSION`;
-  let out = src.replace(new RegExp(`(^ARG\\s+${arg}=)\\S+`, 'gm'), `$1${f.latest}`);
-
-  for (const [arch, spec] of Object.entries(f.src.hashArgs ?? {})) {
-    const assetName = spec.asset(f.latest);
-    const digest = f.digests.get(assetName);
-    if (!digest) {
-      return {
-        error: `${f.src.display}: release ${f.latest} has no digest for ${assetName} (arch ${arch}); refusing to move the version without its hash.`,
-      };
-    }
-    out = out.replace(new RegExp(`(^ARG\\s+${spec.arg}=)\\S+`, 'gm'), `$1${digest}`);
-  }
-  return { text: out };
-}
-
 async function main(): Promise<void> {
-  const upgrade = process.argv.includes('--upgrade');
   const dockerfile = fs.readFileSync(DOCKERFILE, 'utf-8');
   const { versions, conflicts } = parseDockerfileVersions(dockerfile);
   const { held, errors: blockerErrors } = loadBlocklist();
@@ -307,20 +263,19 @@ async function main(): Promise<void> {
       );
       continue;
     }
-    stale.push({ src, pinned, latest: latest.version, digests: latest.digests });
+    stale.push({ src, pinned, latest: latest.version });
   }
 
   for (const d of deferred) console.log(`${YELLOW}⏳ ${d}${NC}`);
   for (const h of tally.held) console.log(`${YELLOW}⏸ held: ${h}${NC}`);
 
-  // What a green may not hide: a pin nobody compared. --upgrade rewrites the pins it can see, so a missing ARG is left to the check run.
+  // What a green may not hide: a pin nobody compared.
   const blind = tally.report({
     sources: 'scripts/lib/devcontainer-pin-sources.ts',
     noPinFix: [
       '  Restore the ARG in .devcontainer/Dockerfile, or drop the entry from',
       '  scripts/lib/devcontainer-pin-sources.ts when the tool is no longer installed.',
     ],
-    noPinIsRed: !upgrade,
   });
 
   if (stale.length === 0) {
@@ -329,58 +284,17 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (upgrade) {
-    let text = dockerfile;
-    const errors: string[] = [];
-    for (const f of stale) {
-      const result = rewriteSource(text, f);
-      if ('error' in result) {
-        errors.push(result.error);
-        continue;
-      }
-      text = result.text;
-      const alsoHashes = Object.keys(f.src.hashArgs ?? {}).length;
-      console.log(
-        `${GREEN}↑ ${f.src.display}: ${f.pinned} -> ${f.latest}${NC}` +
-          (alsoHashes > 0 ? ` (and ${alsoHashes} sha256 pin(s))` : '')
-      );
-    }
-    if (text !== dockerfile) fs.writeFileSync(DOCKERFILE, text);
-    if (errors.length > 0) {
-      console.error('');
-      for (const e of errors) console.error(`${RED}✗ ${e}${NC}`);
-      console.error('  Check the release assets by hand, then set the ARGs yourself:');
-      console.error(
-        `    curl -s ${WK_GH_API_BASE}/repos/<repo>/releases/tags/<tag> | jq -r '.assets[]|"\\(.name) \\(.digest)"'`
-      );
-      process.exit(1);
-    }
-    console.log('');
-    console.log(`${YELLOW}Dockerfile ARGs rewritten. Now REBUILD the image and verify:${NC}`);
-    console.log(
-      '  docker build -t rediacc/devcontainer:bump -f .devcontainer/Dockerfile .devcontainer'
-    );
-    console.log('  A wrong hash fails that build at `sha256sum -c -`, which is the point.');
-    console.log('  The published image only changes when .github/workflows/ci-build-docker.yml');
-    console.log('  runs on the merge; developers pick it up with `./run.sh setup --pull`.');
-    // A pin that was not compared was not upgraded either, and that is not a clean run.
-    if (blind > 0) process.exit(1);
-    return;
-  }
-
   console.error('');
   console.error(`${RED}✗ ${stale.length} devcontainer pin(s) are behind upstream:${NC}`);
   for (const f of stale) {
     console.error(`  ${f.src.display}: pinned ${f.pinned}  ->  upstream ${f.latest}`);
   }
-  // A copy-pasteable fix, for the same reason check-embed-asset-freshness.ts has one: a human or an agent reading this should be able to act without hunting.
+  // THE FIX, one line per stale pin: the pins command moves the version and its hashes together (scripts/lib/pins/remedy.ts builds the line).
   console.error('');
-  console.error(`${YELLOW}TO FIX — bump the pin and its hashes together:${NC}`);
-  console.error('    npm run check:ci-devcontainer-pins -- --upgrade');
-  console.error('  then rebuild the image to prove the new hashes are right:');
   console.error(
-    '    docker build -t rediacc/devcontainer:bump -f .devcontainer/Dockerfile .devcontainer'
+    `${YELLOW}TO FIX, per pin (then rebuild the image; a wrong hash fails at \`sha256sum -c -\`):${NC}`
   );
+  for (const f of stale) console.error(bumpRemedy(f.src.id));
   console.error('');
   console.error('TO HOLD one back instead: add its base name (e.g. `bw`) with a `# BLOCKER:`');
   console.error(`reason to ${path.basename(BLOCKLIST)}.`);

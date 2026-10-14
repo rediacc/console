@@ -17,6 +17,8 @@
 import { entriesFor, idName, loadRegistry, type PinEntry } from './pins/registry.js';
 
 export interface EmbedAssetSource {
+  /** The registry id (`embed:<base>`), which the gate's failure line names. */
+  id: string;
   /** Dockerfile ARG base, lowercased (matches parseDockerfileVersions keys). */
   base: string;
   display: string;
@@ -27,9 +29,10 @@ export interface EmbedAssetSource {
 
 function toSource(e: PinEntry): EmbedAssetSource {
   const base = idName(e);
-  if (e.source.type === 'rsync-index') return { base, display: e.name, kind: 'rsync-index' };
+  if (e.source.type === 'rsync-index')
+    return { id: e.id, base, display: e.name, kind: 'rsync-index' };
   if (e.source.type === 'github-release' && e.source.repo)
-    return { base, display: e.name, kind: 'github', repo: e.source.repo };
+    return { id: e.id, base, display: e.name, kind: 'github', repo: e.source.repo };
   throw new Error(
     `.ci/config/pins.json ${e.id}: the embed driver reads a github-release or rsync-index source, not ${e.source.type}`
   );

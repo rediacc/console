@@ -31,6 +31,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import pins
 from rediacc_ci.tests import frozen
 
 SLUG = "w7p5-go-deps-probe-failure"
@@ -100,11 +101,24 @@ def run_port(root: pathlib.Path) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
+# THE ONE LINE ADDED AFTER THE TWIN WAS FROZEN, and the normalizer that declares it. Design 4 of agent/plans/PLAN-pins-command.md gave every freshness gate its fix line, `npm run pins -- bump go-mod` here, printed after the outdated list; the twin never printed it, so the outdated recording cannot hold it. It is removed before the comparison only where the port printed it, and the
+# outdated case asserts it was printed there, so the normalizer cannot hide its absence.
+REMEDY = "\n%s\n" % pins.bump_remedy("go-mod")
+
+
+def drop_remedy(stdout: str, case_id: str) -> str:
+    if case_id == "healthy-outdated-still-fails":
+        assert stdout.count(REMEDY) == 1, "the outdated list is followed by the pins fix line"
+        return stdout.replace(REMEDY, "")
+    assert REMEDY not in stdout, "%s: no fix line where nothing is outdated" % case_id
+    return stdout
+
+
 @pytest.mark.parametrize(("case_id", "mode"), CASES, ids=[c[0] for c in CASES])
 def test_port_matches_the_twins_recorded_output(tmp_path, case_id, mode):
     root = build_fixture(tmp_path, mode)
     returncode, stdout, stderr = run_port(root)
-    stdout = frozen.mask_root(stdout, root)
+    stdout = drop_remedy(frozen.mask_root(stdout, root), case_id)
     stderr = frozen.mask_root(stderr, root)
     want_rc, want_out, want_err = split_golden(frozen.read(SLUG, case_id))
     assert returncode == want_rc, "the twin exited %d, the port %d" % (want_rc, returncode)

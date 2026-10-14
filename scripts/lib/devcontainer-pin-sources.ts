@@ -47,17 +47,9 @@
 
 import { entriesFor, loadRegistry, type PinEntry } from './pins/registry.js';
 
-/* NOT exported: `DevcontainerPinSource.hashArgs` is its only reference, and it is in
-   this file. knip runs with `--treat-config-hints-as-errors`, so an export nobody
-   imports is a hard CI failure, not a warning. */
-interface DevcontainerPinHashArg {
-  /** The Dockerfile ARG holding this asset's sha256, e.g. "BW_SHA256_AMD64". */
-  arg: string;
-  /** Release-asset filename for a given version. */
-  asset: (version: string) => string;
-}
-
 export interface DevcontainerPinSource {
+  /** The registry id (`devcontainer:<name>`), which the gate's failure line names. */
+  id: string;
   /** Dockerfile ARG base, lowercased (matches parseDockerfileVersions keys). */
   base: string;
   display: string;
@@ -71,15 +63,6 @@ export interface DevcontainerPinSource {
    * way to ask "what is the newest CLI?".
    */
   tagPrefix: string;
-  /**
-   * Per-arch sha256 ARGs to rewrite alongside the version. Optional: a pin with
-   * no hashes (the tools listed in the header, if they are ever added) simply
-   * omits it. When present, `--upgrade` refuses to rewrite the version unless it
-   * can resolve EVERY digest -- a tree with a new version and a stale hash does
-   * not build, and an upgrade path that hands back a broken build is worse than
-   * no upgrade path.
-   */
-  hashArgs?: Record<string, DevcontainerPinHashArg>;
 }
 
 const DOCKERFILE = '.devcontainer/Dockerfile';
@@ -94,20 +77,12 @@ function toSource(e: PinEntry): DevcontainerPinSource {
     fail(`needs a version site on ARG <BASE>_VERSION in ${DOCKERFILE}`);
   if (e.source.type !== 'github-release' || !e.source.repo || e.source.tagPrefix === undefined)
     fail('the devcontainer gate reads a github-release source with a repo and a tagPrefix');
-  const hashArgs: Record<string, DevcontainerPinHashArg> = {};
-  for (const s of own.filter((x) => x.role.startsWith('sha256:'))) {
-    const template = s.asset ?? fail(`site ARG ${s.arg} has no asset filename`);
-    hashArgs[s.role.slice('sha256:'.length)] = {
-      arg: s.arg as string,
-      asset: (v) => template.replaceAll('{version}', v),
-    };
-  }
   return {
+    id: e.id,
     base: (version as string).slice(0, -'_VERSION'.length).toLowerCase(),
     display: e.name,
     repo: e.source.repo as string,
     tagPrefix: e.source.tagPrefix as string,
-    ...(Object.keys(hashArgs).length > 0 ? { hashArgs } : {}),
   };
 }
 

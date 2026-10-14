@@ -40,8 +40,9 @@
  *     red until it is; the `no-external-quality` label is the existing way to
  *     skip every external gate on one pull request.
  *  4. THE FIX IS NOT A REWRITE BY THIS GATE. The pins live in the account
- *     submodule and the hashes come from downloads, so the message names the
- *     command there: `npm run real-provider:bump`.
+ *     submodule and the hashes come from downloads, so the message names
+ *     `npm run pins -- bump real-provider:<pin>`, whose driver runs
+ *     `npm run real-provider:bump` there inside one transaction.
  *
  * HARD ON EVERY CADENCE (operator ruling 2026-10-13, "Everything fails closed,
  * nightly included"). The step runs `npm run check:ci-real-provider-pins`
@@ -71,6 +72,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { bumpRemedy } from '../lib/pins/remedy.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
 
@@ -258,18 +260,13 @@ async function main(): Promise<number> {
         `  ${f.src.display}: pinned ${f.pin.version} (published ${f.pin.publishedAt})  ->  ${f.latest.version}, published ${f.latest.publishedAt} (${f.src.repo} release ${f.latest.tag})`
       );
     }
-    const flags = stale.map((f) => `--${f.src.key} ${f.latest.version}`).join(' ');
+    // THE FIX, one line per stale pin (scripts/lib/pins/remedy.ts builds it). The real-provider driver runs `npm run real-provider:bump` in private/account/e2e inside the pins transaction, and its message draft carries the one step no gate can take: the spec against live providers.
     console.error('');
-    console.error(`${YELLOW}TO FIX: bump ${LOCK_REL}, then prove the spec.${NC}`);
+    console.error(`${YELLOW}TO FIX, per pin:${NC}`);
+    for (const f of stale) console.error(bumpRemedy(`real-provider:${f.src.key}`));
     errorLines(
-      '  1. Rewrite the pin (version, every sha256, the image index digest, publishedAt):',
-      `       (cd private/account/e2e && npm run real-provider:bump -- ${flags})`,
-      '  2. Run the spec five times against a running account backend:',
-      '       (cd private/account/e2e && npm run test:real-provider)',
-      '     A failure saying the provider and "providesPrf" disagree lists its own steps.',
-      '  3. Commit the lock file in private/account once the spec passes, then move the',
-      "     console's submodule pointer. private/account/e2e/README.md, section",
-      '     "Bumping a pin", has the details.'
+      '  then, before the commit, prove the new release against a running account backend:',
+      '       (cd private/account/e2e && npm run test:real-provider)'
     );
   }
 

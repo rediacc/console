@@ -150,7 +150,9 @@ def test_a_stale_pin_over_http_still_fires(gate, tmp_path):
     with stub_upstream(script) as stub:
         result = run_gate_over_http(gate, tmp_path, stub.base)
     gate.assert_exit(1, result, "a pin behind an aged release fails over HTTP too")
-    gate.assert_contains(result.err, "--vaultwarden 1.38.0", "the bump command is printed")
+    gate.assert_contains(
+        result.err, "fix: npm run pins -- bump real-provider:vaultwarden", "the bump is printed"
+    )
     gate.assert_not_contains(result.err, "NOT compared", "a stale pin is not a failed fetch")
     gate.log_pass("the HTTP path judges a listing the way the fixture path does")
 
@@ -294,27 +296,28 @@ def test_fires_on_a_newer_release_past_the_window(gate, tmp_path):
     )
     gate.assert_contains(
         result.err,
-        "npm run real-provider:bump -- --bitwarden 2026.10.0",
-        "the finding gives the bump command with the version filled in",
+        "  fix: npm run pins -- bump real-provider:bitwarden\n",
+        "the finding gives the pins bump command for the stale pin",
     )
     gate.assert_not_contains(
-        result.err, "--vaultwarden", "a current pin is not in the bump command"
+        result.err, "real-provider:vaultwarden", "a current pin is not in the fix"
     )
     gate.log_pass("a stale pin fires with the pin, the release, its date and the bump command")
 
 
-def test_both_pins_behind_share_one_bump_command(gate, tmp_path):
+def test_both_pins_behind_each_get_their_bump_line(gate, tmp_path):
     listing = current_listing()
     listing[BITWARDEN].insert(0, release("browser-v2026.10.0"))
     listing[VAULTWARDEN].insert(0, release("1.38.0"))
     result = run_gate(gate, tmp_path, listing)
     gate.assert_exit(1, result, "two pins behind fail")
-    gate.assert_contains(
-        result.err,
-        "npm run real-provider:bump -- --bitwarden 2026.10.0 --vaultwarden 1.38.0",
-        "one command bumps both",
-    )
-    gate.log_pass("two stale pins are bumped by one command")
+    for pin in ("bitwarden", "vaultwarden"):
+        gate.assert_contains(
+            result.err,
+            "  fix: npm run pins -- bump real-provider:%s\n" % pin,
+            "each stale pin names its own bump",
+        )
+    gate.log_pass("two stale pins each name their pins bump")
 
 
 def test_defers_a_release_inside_the_window(gate, tmp_path):
@@ -333,7 +336,9 @@ def test_the_newest_eligible_release_is_the_finding(gate, tmp_path):
     listing[BITWARDEN].insert(0, release("browser-v2026.10.1", an_hour_ago()))
     result = run_gate(gate, tmp_path, listing)
     gate.assert_exit(1, result, "an aged release behind a fresh one is still a finding")
-    gate.assert_contains(result.err, "--bitwarden 2026.10.0", "the bump targets the aged release")
+    gate.assert_contains(
+        result.err, "->  2026.10.0, published", "the finding names the aged release"
+    )
     gate.assert_contains(result.out, "2026.10.1", "the fresh release is noted as deferred")
     gate.assert_not_contains(result.err, "2026.10.1", "the fresh release is not the finding")
     gate.log_pass("a fresh release does not hide an aged one behind it")

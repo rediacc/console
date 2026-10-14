@@ -369,7 +369,8 @@ def check_drift(
 UPSTREAM_EVENT = "schedule"
 # The places a Leap pin bump touches, all in the renet submodule: the os:opensuse-16.0-ceph entry of
 # .ci/config/pins.json, whose site count check:ci-pin-registry holds to the tree.
-PIN_SITES = pins.site_labels("os:opensuse-16.0-ceph")
+PIN_ENTRY = "os:opensuse-16.0-ceph"
+PIN_SITES = pins.site_labels(PIN_ENTRY)
 
 
 def obs_upstream_evr() -> str:
@@ -416,8 +417,10 @@ def check_upstream(
     finding = (
         f"OBS REBUILT: {obs_mirror.OBS_ORIGIN} now serves ceph-common/cephadm {obs_evr}, the pin is {pin}. "
         "OBS keeps only its latest build, so `renet ceph install` on Leap fails (zypper 104) until the pin "
-        f"moves. The fix is a one-line pin bump to {obs_evr} in private/renet (only to a captured EVR): "
+        f"moves. The fix is a one-line pin bump to {obs_evr} in private/renet (only to a captured EVR), at "
         + "; ".join(PIN_SITES)
+        + ". It is one command, refused while the obs-mirror tag for the new EVR is absent:\n"
+        + pins.bump_remedy(PIN_ENTRY)
     )
     return _upstream_finding(name, finding, nightly)
 

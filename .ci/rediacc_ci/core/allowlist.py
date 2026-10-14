@@ -160,6 +160,9 @@ _TRAILING_PUNCTUATION = re.compile(r"[.!?,;:]+$")
 # and a naive `replace()` chain would then splice the entry id into the middle of their prose and the two languages would disagree about the bytes. `_render` walks the template with a regex and resolves each field from a dict, so an injected value is never rescanned. `test_core_allowlist` plants exactly that reason.
 _FIELD = re.compile(r"\{([a-z]+)\}")
 
+# The command a routine npm bump takes, `pins.bump_command("npm")` spelled out: this module is imported by every gate and copied alone into the blocker tests' minimal trees, so it does not read the pin registry. test_gate_pin_remedies.py holds the two equal.
+DEPS_BUMP = "npm run pins -- bump npm"
+
 MESSAGE_TEMPLATES: dict[str, tuple[str, ...]] = {
     "low-effort": (
         'Allowlist {file}: BLOCKER for entry {entry} is a low-effort placeholder ("{reason}")',
@@ -192,8 +195,8 @@ MESSAGE_TEMPLATES: dict[str, tuple[str, ...]] = {
             "need to blocklist a fresh release."
         ),
         (
-            "  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the "
-            "concrete technical blocker (which package pins what, what breaks)."
+            "  Action: TAKE the bump ('%s'), OR cite the concrete technical blocker "
+            "(which package pins what, what breaks)." % DEPS_BUMP
         ),
     ),
     "too-short": (
