@@ -729,6 +729,7 @@
       "FFMPEG_BIN",
       "FFPROBE_BIN",
       "GH_BIN",
+      "GOCACHE",
       "GOTOOLCHAIN",
       "GO_VERSION",
       "MYPY_BIN",
