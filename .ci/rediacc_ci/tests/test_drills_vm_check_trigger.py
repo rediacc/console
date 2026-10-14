@@ -397,3 +397,17 @@ def test_a_watched_console_file_moved_out_of_the_trigger_still_hits(world: World
     _commit(world.root, "move out")
     got = world.changed(base=base)
     assert "packages/cli/src/remote/sync/x.ts" in got.hits
+
+
+def test_non_ascii_watched_path_is_not_quoted_away(world: World) -> None:
+    _write(world.root, "packages/cli/src/remote/é.ts", "a\n")
+    assert world.changed(mode="worktree").hits == ("packages/cli/src/remote/é.ts",)
+    _commit(world.root, "c1")
+    assert world.changed().hits == ("packages/cli/src/remote/é.ts",)
+    assert trig.inputs(world.root, _tree(world)) is not None
+
+
+def test_directory_without_its_own_repository_has_no_pointer(world: World) -> None:
+    (world.sub / ".git").rename(world.sub / ".git-away")
+    assert trig.inputs(world.root) == trig._digest([], "")
+    assert not world.changed(mode="worktree").touched
