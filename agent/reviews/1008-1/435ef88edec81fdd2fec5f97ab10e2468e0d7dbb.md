@@ -21,19 +21,19 @@ Body-Sig: f5458c7fafd6f992
 ### 435ef88e.1 [medium] .ci/scripts/quality/check_plan_implementation.py:2237
 Anchor: in-diff
 Claim: _orphan_commit_controls now evaluates sys.modules[__name__]; if this file is executed by importlib without being registered in sys.modules, that lookup raises KeyError when controls_fired runs, where the removed `global REPO_ROOT` never looked the module up.
-Resolution: open
+Resolution: fixed e7aa60fad67b480bc4869ff5bebf6af32e6f6194 | d778be9d 2026-10-14T12:26:00Z
 
 ### 435ef88e.2 [low] .ci/rediacc_ci/infra/docker_pull_ghcr.py:104
 Anchor: in-diff
 Claim: The comment above MISSING_AUTH_MSG still says S105 fires on the name `TOKEN` and that the suppression is the same as elsewhere, but the suppression was removed and the name no longer contains TOKEN, so the rationale is stale.
-Resolution: open
+Resolution: fixed c0cab2d5a421f08daee6bbc5b55285bcd962722d | d778be9d 2026-10-14T12:26:00Z
 
 ### 435ef88e.3 [low] .ci/rediacc_ci/infra/ci_pull_images.py:116
 Anchor: in-diff
 Claim: The comment above MISSING_AUTH_MSG still describes S105 firing on the name `TOKEN` and a shared suppression, both of which this commit removed, so the rationale no longer matches the code.
-Resolution: open
+Resolution: fixed c0cab2d5a421f08daee6bbc5b55285bcd962722d | d778be9d 2026-10-14T12:26:01Z
 
 ### 435ef88e.4 [low] .ci/rediacc_ci/tests/gates/test_gate_plan_housekeeping.py:27
 Anchor: in-diff
 Claim: The comment block about the module-scoped filler template now sits above `_run`, after `_TEMPLATE` was removed, so it no longer sits beside the `_template` function it describes.
-Resolution: open
+Resolution: fixed c0cab2d5a421f08daee6bbc5b55285bcd962722d | d778be9d 2026-10-14T12:26:01Z

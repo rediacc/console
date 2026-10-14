@@ -21,4 +21,4 @@ Body-Sig: c55a245201c4c1f1
 ### 127b0faa.1 [low] .ci/scripts/quality/check_resprofile.py:38
 Anchor: in-diff
 Claim: The commit adds `import time as _t` at module level right beside the existing `import time`, so the same module is imported twice under two names; the alias existed only to dodge a function-local import that is now removed, so `_t` should be dropped and its uses switched to `time`.
-Resolution: open
+Resolution: fixed c0cab2d5a421f08daee6bbc5b55285bcd962722d | d778be9d 2026-10-14T12:25:56Z
