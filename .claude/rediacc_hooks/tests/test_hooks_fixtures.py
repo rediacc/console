@@ -1423,6 +1423,73 @@ def test_a_script_the_guard_cannot_read_in_full_is_refused(tmp_path, monkeypatch
         locked_py.chmod(0o600)
 
 
+# A PROGRAM READ ON STDIN IS JUDGED BY ITS TEXT, WHEREVER THE TEXT COMES FROM (review 0d227c80.1, .2 and a sibling). `python3 /dev/stdin <<'EOF'` was refused as an unreadable descriptor although its program is on the command line, `python3 - < p.py` and its spellings ran a file holding `git worktree add` with rc 0 because only heredocs, here-strings and piped words were read, and a script path holding a NUL raised ValueError out of the guard, which the dispatcher counts as no decision (2026-10-15).
+WT_ARGV_PY = 'import subprocess\nsubprocess.run(["git", "worktree", "add", "/tmp/x"])\n'
+
+
+def test_a_program_read_on_stdin_is_judged_by_its_text(tmp_path):
+    # The command line must not spell the verb itself, or the older command-line pre-filter refuses it and the case proves nothing.
+    assert "worktree" not in str(tmp_path).lower(), tmp_path
+    (tmp_path / "p.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    (tmp_path / "x.sh").write_text("git worktree add /tmp/x\n", encoding="utf-8")
+    wrong = []
+    for command, needle in (
+        ("python3 - < p.py", "names `worktree`"),
+        ("python3 /dev/stdin < p.py", "names `worktree`"),
+        ("python3 < %s" % (tmp_path / "p.py"), "names `worktree`"),
+        ("python3 - 0< p.py", "names `worktree`"),
+        ("cat p.py | python3 -", "names `worktree`"),
+        ("{ python3 -; } < p.py", "names `worktree`"),
+        ("cat p.py | (python3 -)", "names `worktree`"),
+        ("node - < p.py", "names `worktree`"),
+        ("bash < x.sh", "names `worktree`"),
+        ('sh -c "python3 - < p.py"', "names `worktree`"),
+        ("python3 - < <(cat p.py)", "could not read in full"),
+        ("python3 - < /dev/fd/3", "could not read in full"),
+        ("python3 /dev/stdin <<'EOF'\n%sEOF" % WT_ARGV_PY, "git worktree add is not run"),
+        ("python3 $'p.py\\0x'", "could not read in full"),
+        ("python3 'p.py\0x'", "could not read in full"),
+        ("python3 - < $'p.py\\0x'", "could not read in full"),
+    ):
+        # A raise here is the 0d227c80.1 defect itself, so it is recorded as a wrong verdict rather than ending the loop.
+        try:
+            rc, err = _worktree_rc(command, tmp_path)
+        except ValueError as exc:
+            rc, err = "raised", repr(exc)
+        if rc != 2 or needle not in err:
+            wrong.append((command, rc, err[:120]))
+    # CONTROLS: a stdin program that runs nothing, through each stdin spelling; a file on stdin that is tracked and unchanged, absent, /dev/null, or on another descriptor; the shell's own stdin.
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    (repo / "p.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    git(repo, "add", "p.py")
+    git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed")
+    for command in (
+        "python3 /dev/stdin <<'EOF'\nprint(1)\nEOF",
+        "python3 /dev/fd/0 <<'EOF'\nprint(1)\nEOF",
+        "python3 /proc/self/fd/0 <<< 'print(1)'",
+        "python3 - <<'EOF'\nprint(1)\nEOF",
+        "node /dev/stdin <<< 'console.log(1)'",
+        "perl /dev/fd/0 <<'EOF'\nprint 1\nEOF",
+        "ruby -- /dev/stdin <<'EOF'\nputs 1\nEOF",
+        "python3 - < %s" % (repo / "p.py"),
+        "python3 - < absent.py",
+        "bash < absent.sh",
+        "python3 - < /dev/null",
+        "python3 - 3< p.py",
+        "python3 - < /dev/stdin",
+    ):
+        rc, err = _worktree_rc(command, tmp_path)
+        if rc != 0:
+            wrong.append((command, rc, err[:120]))
+    # A descriptor other than 0 is still not the program's stdin, so the shell supplies a file the hook does not read.
+    rc, err = _worktree_rc("python3 /dev/fd/3 3<<'EOF'\nprint(1)\nEOF", tmp_path)
+    if rc != 2 or "could not read in full" not in err:
+        wrong.append(("/dev/fd/3", rc, err[:120]))
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The
