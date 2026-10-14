@@ -48,17 +48,17 @@ class Failure:
 
 
 @dataclass(frozen=True)
-class Answer:
-    """One successful attempt."""
+class Answer[T]:
+    """One successful attempt. Generic in what `once` produced, so `retry` hands back that type rather than `object` and no caller has to cast its own answer back."""
 
-    value: object
+    value: T
 
 
 # The gate's sleep, swapped by a selftest so a control that drives the retry does not wait for real.
 SLEEP_SEAM: dict[str, Callable[[float], None]] = {"sleep": time.sleep}
 
 
-def retry(asked: str, host: str, who: str, once: Callable[[], Answer | Failure]) -> object:
+def retry[T](asked: str, host: str, who: str, once: Callable[[], Answer[T] | Failure]) -> T:
     """Call `once` up to MAX_ATTEMPTS times. Returns the answer's value; raises NotComparedError when the budget is spent or the failure is not worth asking again."""
     tries = 0
     while True:
@@ -107,7 +107,7 @@ def ask_json(url: str, who: str, body: object | None = None) -> object:
     data = None if body is None else json.dumps(body).encode()
     target = parts.path + ("?" + parts.query if parts.query else "")
 
-    def once() -> Answer | Failure:
+    def once() -> Answer[bytes] | Failure:
         conn = _connection(parts)
         try:
             conn.request(

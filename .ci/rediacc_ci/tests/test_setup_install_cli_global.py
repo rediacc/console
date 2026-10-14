@@ -543,10 +543,11 @@ def test_npm_starts_the_program_launchable_resolved(monkeypatch) -> None:
     """On Windows `launchable` turns `npm` into `npm.cmd`; the child must be started from that list. The lookup is replaced here because the real one only acts when `os.name` is `nt`."""
     started: list[list[str]] = []
     monkeypatch.setattr(port.common, "launchable", lambda argv: [r"C:\node\npm.cmd", *argv[1:]])
-    monkeypatch.setattr(
-        port.subprocess,
-        "run",
-        lambda argv, **_kw: started.append(argv) or subprocess.CompletedProcess(argv, 0),
-    )
+
+    def run(argv: list[str], **_kw: object) -> subprocess.CompletedProcess[str]:
+        started.append(argv)
+        return subprocess.CompletedProcess(argv, 0)
+
+    monkeypatch.setattr(port.subprocess, "run", run)
     assert port.npm(["pack", "x"]) == 0
     assert started == [[r"C:\node\npm.cmd", "pack", "x"]]

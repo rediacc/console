@@ -131,7 +131,9 @@ def _rdata(rrtype: str, record: object) -> bytes:
         return b"".join(
             bytes([len(text[i : i + 255])]) + text[i : i + 255] for i in range(0, len(text), 255)
         )
-    preference, exchange = record  # MX: (preference, exchange)
+    if not isinstance(record, tuple) or len(record) != 2:
+        raise TypeError("an MX record is (preference, exchange), got %r" % (record,))
+    preference, exchange = record
     return struct.pack("!H", preference) + _labels(exchange)
 
 
