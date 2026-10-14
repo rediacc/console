@@ -535,6 +535,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_release_state_validator.py",
         "pytest:.ci/rediacc_ci/tests/test_core_toolchain.py",
         "pytest:.ci/rediacc_ci/tests/test_core_upstream.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_xml_trusted.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_clone_d1.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_delete_r2_channel.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_edge.py",

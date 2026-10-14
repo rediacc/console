@@ -65,6 +65,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from rediacc_ci import core_lease, log, paths, proc
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import xml_trusted
 
 # See the module docstring for why this is a constant and floor 2 is not.
 MIN_TESTS = 150
@@ -330,7 +331,7 @@ def junit_finding_keys(junit: pathlib.Path) -> list[str]:
     """
 
     try:
-        root = ET.parse(junit).getroot()  # noqa: S314 -- this run's own junit, written by pytest a moment ago
+        root = xml_trusted.parse(junit)
     except (OSError, ET.ParseError):
         return []
     keys: set[str] = set()

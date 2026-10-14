@@ -46,6 +46,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING, Self, Unpack
 
+from rediacc_ci.core import https, xml_trusted
 from rediacc_ci.infra.vm_bake_image import REPOSITORY, BakeImageError, install_oras, tag_exists
 from rediacc_ci.well_known import ETC_DIR, GH_ORIGIN, GH_REPO
 
@@ -249,7 +250,7 @@ def _safe_relpath(href: str) -> str:
 
 def parse_repomd(data: bytes) -> Repomd:
     try:
-        root = ET.fromstring(data)  # noqa: S314 - signature-verified before it is trusted; ElementTree expands no external entities
+        root = xml_trusted.fromstring(data)
     except ET.ParseError as exc:
         raise MirrorError("repomd.xml does not parse: %s" % exc) from exc
     entries = []
@@ -310,7 +311,7 @@ def decompress(href: str, data: bytes) -> bytes:
 
 def parse_primary(xml: bytes) -> list[Package]:
     try:
-        root = ET.fromstring(xml)  # noqa: S314 - checksum-verified against the signed repomd first
+        root = xml_trusted.fromstring(xml)
     except ET.ParseError as exc:
         raise MirrorError("primary does not parse: %s" % exc) from exc
     out = []
@@ -519,7 +520,7 @@ def verify_signature(
 
 
 def http_get(url: str) -> bytes:
-    with urllib.request.urlopen(url, timeout=HTTP_TIMEOUT_S) as resp:  # noqa: S310 - https URLs built from OBS_ORIGIN
+    with https.urlopen(url, timeout=HTTP_TIMEOUT_S, http="loopback") as resp:
         data: bytes = resp.read()
         return data
 

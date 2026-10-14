@@ -368,6 +368,10 @@ ignore = [
     # BLOCKER: ci-trace.py loads this module by file path, so `.ci` is not on sys.path until _gh_retry() has loaded paths.py by file and called on_sys_path; `rediacc_ci.core.gh_retry` cannot be imported before that call runs, and `python3 -c 'import rediacc_ci'` from outside .ci fails
     "PLC0415",
 ]
+".ci/rediacc_ci/core/xml_trusted.py" = [
+    # BLOCKER: this module holds the only xml.etree parse calls, and every caller passes a document it produced or verified itself (a junit file written a moment earlier, RPM repo metadata after its signature or checksum check); ElementTree expands no external entities; every other file calls it and stays held to S314
+    "S314",
+]
 # THE RESIDUE: one file each, every entry re-proved on every lint run by rediacc_ci.quality.lint_config_liveness.
 ".ci/rediacc_ci/core/allowlist.py" = [
     # BLOCKER: rediacc_ci.well_known raises RegistryError at import when .ci/config/well-known.env is missing (measured by importing a copy of the package without .ci/config), and allowlist.py has to keep every other verb working in a sparse checkout, so only _default_repo(), the one verb that needs the registry, imports it

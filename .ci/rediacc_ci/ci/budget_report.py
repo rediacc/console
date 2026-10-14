@@ -110,7 +110,7 @@ if TYPE_CHECKING:
 
 from rediacc_ci import log, paths
 from rediacc_ci.ci.freshness import Keyed, emit_findings, key_part
-from rediacc_ci.core import gh_retry, ghx
+from rediacc_ci.core import gh_retry, ghx, xml_trusted
 from rediacc_ci.testrun import e2e as e2e_run
 from rediacc_ci.well_known import GH_REPO
 
@@ -825,7 +825,7 @@ def _classname_to_module_relpath(classname: str) -> str:
 def parse_pytest_junit_unit_ms(text: str, lane: str) -> dict[str, float]:
     """pytest `--junitxml`: per-`<testcase>` `time` (seconds -> ms), aggregated by the `file` attribute (falling back to `_classname_to_module_relpath` -- neither lane's real artifact carries `file`, see that function's own docstring) into a `pytest:<relpath>` id (`quality-pytest`) or a `renet-integration:<basename>` id (`test-renet-integration`, matching `renetIntegrationUnits`'s bare-filename shape)."""
     try:
-        root = ET.fromstring(text)  # noqa: S314 -- this repo's own pytest --junitxml artifact, not third-party input
+        root = xml_trusted.fromstring(text)
     except ET.ParseError as exc:
         raise ValueError("pytest junit artifact for lane %r is not XML: %s" % (lane, exc)) from exc
     totals: dict[str, float] = {}
@@ -859,7 +859,7 @@ def parse_gotestsum_junit_unit_ms(text: str) -> dict[str, float]:
 
     A PACKAGE WITH NO TEST FUNCTIONS STILL COSTS SOMETHING, and gotestsum measures it. `go test ./pkg/... ./cmd/...` compiles every package `go list` names, and one with no `_test.go` reports as `<testsuite tests="0" name="<import path>" time="0.763">` with no `<testcase>` at all (measured on run 36366933791's `unit-durations-test-renet-go-s1-*`: 7 such suites, 0.000-0.763 s). Keyed by `testcase` alone, those packages never got a sample and `check-lane-budget.ts` reported 12 enumerated units as unmeasured. The suite's own `time` is that package's real cost, so a suite with no testcase contributes it under its `name`; a suite WITH testcases keeps the per-testcase sum, unchanged."""
     try:
-        root = ET.fromstring(text)  # noqa: S314 -- this repo's own gotestsum --junitfile artifact, not third-party input
+        root = xml_trusted.fromstring(text)
     except ET.ParseError as exc:
         raise ValueError("gotestsum junit artifact is not XML: %s" % exc) from exc
     totals: dict[str, float] = {}
