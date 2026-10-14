@@ -143,7 +143,7 @@ def configured_window(project_dir):
     for f in _settings_files(project_dir):
         # An unreadable settings file is not this hook's problem: it yields no window and the next source is tried.
         data = _json_or_none(f)
-        if data is None:
+        if not isinstance(data, dict):
             continue
         v = data.get("autoCompactWindow")
         if isinstance(v, int) and WINDOW_MIN <= v <= WINDOW_MAX:

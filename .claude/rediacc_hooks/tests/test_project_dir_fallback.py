@@ -126,3 +126,24 @@ def test_the_context_hooks_name_the_state_file_at_the_root(monkeypatch):
     assert (
         budget.state_md_path(project, "abcd1234-x").parent.parent == pathlib.Path(project) / "agent"
     )
+
+
+def test_a_settings_file_that_is_not_an_object_is_skipped_for_the_window(tmp_path, monkeypatch):
+    """`[]`, `null` and a bare number parse as JSON but are not settings; the next source answers instead of the hook raising (02b8b9f5.4)."""
+    monkeypatch.delenv("CLAUDE_CODE_AUTO_COMPACT_WINDOW", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path / "nohome"))
+    spec = importlib.util.spec_from_file_location(
+        "ctx_budget_window_probe", CLAUDE / "hooks" / "context" / "ctx_budget.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    budget = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(budget)
+    settings = tmp_path / ".claude"
+    settings.mkdir()
+    (settings / "settings.json").write_text(
+        json.dumps({"autoCompactWindow": budget.WINDOW_MIN}), encoding="utf-8"
+    )
+    for odd in ("[]", "null", "7"):
+        (settings / "settings.local.json").write_text(odd, encoding="utf-8")
+        assert budget.configured_window(str(tmp_path))[0] == budget.WINDOW_MIN, odd
