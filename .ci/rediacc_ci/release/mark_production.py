@@ -209,7 +209,11 @@ def main(argv: list[str]) -> int:
             ]
         )
     if rc != 0:
-        # `set -e`: the script dies HERE, with the failing command's status and without the "moved the tag" line. No message of its own is invented.
+        # The failing call is NAMED (worklist #ae671b8f): gh's own text says only "Resource not accessible by integration (HTTP 403)", and with no line of ours the release lookup, the tag move and the release edit were indistinguishable in runs 38408143720 and 38556650310. A 403 here usually means the token lacks workflows:write for a commit range that touches .github/workflows.
+        out.error(
+            "rediacc_ci.release.mark_production: %s of the 'production' tag to %s failed (exit %d)"
+            % ("moving" if probe.ok else "creating", sha, rc)
+        )
         return rc
 
     out.info(
