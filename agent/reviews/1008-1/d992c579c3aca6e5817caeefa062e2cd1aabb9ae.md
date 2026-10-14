@@ -21,9 +21,9 @@ Body-Sig: df64fad552cf5c5d
 ### d992c579.1 [medium] scripts/gates/check-docker-image-freshness.ts:648
 Anchor: in-diff
 Claim: The new green line says every scanned FROM is 'each claimed by a docker leaf', but the count is pins.length, and parsePins (regex at line 189, unchanged) skips any FROM with a flag such as `FROM --platform=$BUILDPLATFORM node:20 AS build`; such a line is neither claimed nor freshness-checked while the gate still prints green, so the claim overstates the coverage.
-Resolution: open
+Resolution: fixed 73b04a54f7d398efbc2252528005c5a0451fce8a | d778be9d 2026-10-14T22:02:26Z
 
 ### d992c579.2 [low] scripts/gates/check-docker-image-freshness.ts:189
 Anchor: in-diff
 Claim: parsePins accepts indented FROM lines (`^\s*FROM`), but every leaf match added in pins.json is anchored `^FROM `, so an indented FROM is reported unclaimed and the printed advice to add a leaf with a version site whose match covers the line cannot clear it unless the new match also allows leading whitespace.
-Resolution: open
+Resolution: fixed 73b04a54f7d398efbc2252528005c5a0451fce8a | d778be9d 2026-10-14T22:02:27Z
