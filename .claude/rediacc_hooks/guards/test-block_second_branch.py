@@ -253,23 +253,36 @@ def run(command, root, gh, broken=False):
 
 
 def _declared_defect(source=None):
-    # Every assignment to `DEFECT`, at any depth, is parsed from the syntax tree. literal_eval refuses anything but a literal, so a non-literal assignment is an error and not code that runs. Exactly one is required: the guard module would run the last of several while the harness planted the first, and an indented one is still code the module runs.
+    # Every binding of `DEFECT`, at any depth and in any form (a plain, annotated, augmented or unpacking assignment), is read from the syntax tree. Exactly one is required, and it must be `DEFECT = <literal>` or `DEFECT: T = <literal>`: the guard module would run the last of several bindings while the harness planted the first, an indented one is still code the module runs, and literal_eval refuses anything but a literal, so a computed value is an error and not code that runs.
     text = GUARD.read_text(encoding="utf-8") if source is None else source
-    found = [
-        ast.literal_eval(node.value)
-        for node in ast.walk(ast.parse(text))
-        if isinstance(node, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id == "DEFECT" for t in node.targets)
-    ]
-    if len(found) != 1:
-        raise SystemExit("%d DEFECT lines in %s, want exactly 1" % (len(found), GUARD))
-    return found[0]
+
+    def binds(target):
+        if isinstance(target, ast.Name):
+            return target.id == "DEFECT"
+        if isinstance(target, (ast.Tuple, ast.List)):
+            return any(binds(t) for t in target.elts)
+        if isinstance(target, ast.Starred):
+            return binds(target.value)
+        return False
+
+    bindings = []
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, ast.Assign):
+            bindings += [(node, t) for t in node.targets if binds(t)]
+        elif isinstance(node, (ast.AnnAssign, ast.AugAssign)) and binds(node.target):
+            bindings.append((node, node.target))
+    if len(bindings) != 1:
+        raise SystemExit("%d DEFECT bindings in %s, want exactly 1" % (len(bindings), GUARD))
+    node, target = bindings[0]
+    if isinstance(node, ast.AugAssign) or not isinstance(target, ast.Name) or node.value is None:
+        raise SystemExit("the DEFECT binding in %s is not DEFECT = <literal>" % GUARD)
+    return ast.literal_eval(node.value)
 
 
 DEFECT = _declared_defect()
 
 fails = 0
-# The exactly-one rule refuses zero, two and an indented second assignment, and reads a single one.
+# The exactly-one rule refuses zero, two, an indented second, and a second annotated, unpacking or augmented binding, and reads a single plain or annotated one.
 for label, source, refused in (
     ("zero DEFECT lines", "x = 1\n", True),
     ("two DEFECT lines", 'DEFECT = ("a", "b")\nDEFECT = ("c", "d")\n', True),
@@ -278,6 +291,11 @@ for label, source, refused in (
         'DEFECT = ("a", "b")\nif True:\n    DEFECT = ("c", "d")\n',
         True,
     ),
+    ("plain plus annotated DEFECT", 'DEFECT = ("a", "b")\nDEFECT: tuple = ("c", "d")\n', True),
+    ("plain plus unpacking DEFECT", 'DEFECT = ("a", "b")\nDEFECT, x = ("c", "d"), 1\n', True),
+    ("plain plus augmented DEFECT", 'DEFECT = ("a", "b")\nDEFECT += ("c",)\n', True),
+    ("only an unpacking DEFECT", 'DEFECT, x = ("c", "d"), 1\n', True),
+    ("one annotated DEFECT line", 'DEFECT: tuple = ("a", "b")\n', False),
     ("one DEFECT line", 'DEFECT = ("a", "b")\n', False),
 ):
     try:
