@@ -61,7 +61,7 @@ from rediacc_hooks.shellscan import (
     _tr,
 )
 
-# The names above that guards reach as `hookio.<name>` and this module does not use itself; listing them here is what states them as re-exports.
+# The names above that guards reach as `hookio.<name>`; listing them here is what states them as re-exports (SPACE and BLANK are also used below, by `_RX_CLASSES`).
 __all__ = [
     "BLANK",
     "SPACE",

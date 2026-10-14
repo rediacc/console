@@ -158,6 +158,7 @@ def _publishes(run):
 
 def _load_reviewer():
     syspath.on_sys_path(STOP_DIR)
+    # Loaded only for a push, never for the rest of the chain.
     import wl_review
 
     return wl_review

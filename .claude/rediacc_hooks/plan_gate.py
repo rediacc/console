@@ -242,6 +242,7 @@ def open_boxes(root: str, rel: str, rev: str = "") -> tuple[int, int, str]:
         parsed_open, parsed_done = wl_planfile.plan_boxes(text)
         raw_open, raw_done = wl_planfile.raw_box_counts(text)
     except Exception as exc:
+        # Fail closed: a plan that cannot be verified is refused, never allowed.
         return 0, 0, "the plan parser could not run (%s: %s)" % (type(exc).__name__, exc)
     opened = max(len(parsed_open), raw_open)
     done = max(len(parsed_done), raw_done)
