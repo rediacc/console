@@ -4028,6 +4028,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # A corroborated `execute_default` from wl_defersettle joins this same demand early: a standing rule already requires the DEFAULT, so the window has nothing left to wait for. Suppressed: an advisory must never wedge a stop.
     with contextlib.suppress(Exception):
         expired += wl_defersettle.accelerated(state_doc, deferred_recs, expired)
+    # A DEFAULT that cannot run yet is not demanded yet: the clock, not the operator, holds it.
+    expired = [r for r in expired if not C.not_before_pending(r["line"])]
     if expired:
         shown = expired[: S.DEFER_EXEC_PER_STOP]
         vadd(
