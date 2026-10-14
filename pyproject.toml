@@ -57,6 +57,12 @@ extend-exclude = ["private"]
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
+    # -- ICN001: ruff 0.17.0 added `datetime as dt` to the default import
+    #    conventions. Every one of the 80 sites in this tree imports plain
+    #    `datetime`, and the rule's other aliases name libraries the tree does
+    #    not import, so it would only rename one stdlib module across the
+    #    corpus for no defect found.
+    "ICN001",
     # -- Annotations and docstring style. ~810 ANN + ~250 D findings, all churn.
     #    The hook docstrings are load-bearing PROSE that records why a line is
     #    the way it is; D209/D205/D401 would rewrite the prose to satisfy a

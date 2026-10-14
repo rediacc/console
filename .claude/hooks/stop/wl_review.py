@@ -1596,9 +1596,12 @@ class _Tree:
             return ""
 
         def shared(f):
-            return len(
-                os.path.commonprefix([os.path.dirname(f) + "/", os.path.dirname(near) + "/"])
-            )
+            # Whole path components, so `a/bc` and `a/bd` share one directory, not the characters `a/b`.
+            mine, theirs = os.path.dirname(f).split("/"), os.path.dirname(near).split("/")
+            n = 0
+            while n < min(len(mine), len(theirs)) and mine[n] == theirs[n]:
+                n += 1
+            return n
 
         return max(hits, key=lambda f: (shared(f), -len(f)))
 
