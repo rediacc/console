@@ -6,6 +6,7 @@ REAL REPOSITORIES, BUILT ONCE under a `rediacc_ci.runtmp` run directory: a featu
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER. The DEFECT control then plants the guard's own declared `DEFECT` in a copy and requires at least one fire case to flip to allowed; a suite whose green did not depend on the live-count test would pass that copy too.
 """
 
+import ast
 import datetime
 import importlib.util
 import json
@@ -252,12 +253,11 @@ def run(command, root, gh, broken=False):
 
 
 def _declared_defect():
-    namespace: dict[str, object] = {}
     for line in GUARD.read_text(encoding="utf-8").split("\n"):
         if line.startswith("DEFECT = "):
-            # Trusted: the line is the guard's own one-line literal.
-            exec(line, namespace)
-    return namespace["DEFECT"]
+            # literal_eval refuses anything but a literal, so a later non-literal DEFECT line is an error and not code that runs (review 411ed6cd.1).
+            return ast.literal_eval(line[len("DEFECT = ") :])
+    raise SystemExit("no DEFECT line in %s" % GUARD)
 
 
 DEFECT = _declared_defect()

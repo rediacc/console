@@ -67,6 +67,8 @@ def _checkout(name, edited):
 
 DIRTY = _checkout("dirty", edited=True)
 CLEAN = _checkout("clean", edited=False)
+BLANK = _checkout("blank", edited=False)
+(BLANK / SETTINGS).write_text("", encoding="utf-8")
 
 
 def _write(path, content, cwd=None):
@@ -147,6 +149,8 @@ CASES = [
         False,
     ),
     ("Write of an empty ordinary file", _write(DIRTY / "docs" / "x.md", ""), False),
+    # Review 7359200f.1: blank over a file that is already blank changes nothing.
+    ("Write of an empty settings file already blank", _write(BLANK / SETTINGS, ""), False),
     (
         "Write of an empty local settings file",
         _write(DIRTY / ".claude" / "settings.local.json", ""),

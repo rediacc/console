@@ -244,6 +244,4 @@ def test_read_rows_skips_a_non_utf8_byte_instead_of_raising(tmp_path):
     """One stray byte in a ledger must cost its own line, not the classification of every later stop (04fd0798.4)."""
     path = tmp_path / "rows.jsonl"
     path.write_bytes(b'{"id": "a"}\n{"id": "b\xff"}\nnot json\n{"id": "c"}\n')
-    ids = [r["id"] for r in OUT.read_rows(path)]
-    assert "a" in ids
-    assert "c" in ids
+    assert [r["id"] for r in OUT.read_rows(path)] == ["a", "c"]
