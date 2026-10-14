@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2821,
- "files": 690,
+ "count": 2818,
+ "files": 687,
  "by_rule": {
-  "R1": 1542,
+  "R1": 1541,
   "R11": 149,
   "R14": 1,
   "R18": 13,
   "R19": 62,
-  "R2": 606,
-  "R7": 448
+  "R2": 605,
+  "R7": 447
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -4038,11 +4038,6 @@
     "4b717be0efce24d0"
    ]
   },
-  "eslint-rules/__tests__/config-resolution-differential.mjs": {
-   "R2": [
-    "e657f5095a925142"
-   ]
-  },
   "eslint-rules/__tests__/no-empty-translations.spec.js": {
    "R7": [
     "d4a0e05813eaafc3"
@@ -4079,16 +4074,6 @@
   "eslint-rules/seo-no-trailing-slash-internal-link.js": {
    "R1": [
     "51465c129f7706b1"
-   ]
-  },
-  "eslint.config.js": {
-   "R1": [
-    "f0b3c727917784f1"
-   ]
-  },
-  "eslint.config/ignores.js": {
-   "R7": [
-    "9c58b61ca46cd593"
    ]
   },
   "packages/cli/scripts/lib/option-classification.ts": {

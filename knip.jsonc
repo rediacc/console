@@ -65,21 +65,7 @@
       // even in its own file, is still reported, which is how the genuinely dead
       // `rel` helper in scripts/lib/repo-root.ts was found and removed.
       "ignoreExportsUsedInFile": true,
-      "project": [
-        "*.{js,ts}",
-        "scripts/**/*.ts",
-        // THE FLAT CONFIG IS SPLIT, and this glob is what lets knip see it.
-        // `eslint.config.js` is a 50-line root that splices six modules from
-        // `eslint.config/`. `*.{js,ts}` matches the root only, so every plugin
-        // imported by those modules was invisible and knip reported all ten as
-        // unused devDependencies: @eslint/js, @eslint/json, globals, and the
-        // jsx-a11y / playwright / react / react-hooks / regexp / sonarjs /
-        // unicorn plugins. Removing them on that advice would have broken
-        // linting outright -- `unicorn/prefer-string-replace-all` is a rule this
-        // repo actively enforces. Widening the project glob makes the analysis
-        // MORE complete rather than suppressing the finding.
-        "eslint.config/**/*.js"
-      ]
+      "project": ["scripts/**/*.ts"]
     },
     "packages/locales": {
       "project": ["*.js"]

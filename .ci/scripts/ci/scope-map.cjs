@@ -53,7 +53,6 @@ const ROOT_MANIFESTS = new Set([
   'Dockerfile',
   'biome.json',
   'css-custom-data.json',
-  'eslint.config.js',
   'knip.jsonc',
   'package-lock.json',
   'package.json',
