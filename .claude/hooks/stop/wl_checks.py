@@ -39,6 +39,7 @@ import wl_judge
 import wl_leasehelp
 import wl_liveness
 import wl_loopspeed
+import wl_outcomes
 import wl_plandeps
 import wl_planenforce
 import wl_planfid
@@ -1251,7 +1252,10 @@ def outq_add(
     PERSISTS ON EVERY CALL, deliberately. Six of run_stop's emit paths do not save the state doc before emitting, so a "save at the end" contract would lose exactly what this queue exists to keep. The cost is at most about ten tempfile+os.replace writes on a path that already runs git and gh subprocesses.
 
     THE EFFORT LEVEL GATES IT (agent/plans/PLAN-stop-hook-effort.md): a key whose `advise` level in .claude/config/effort.json is above the level `run_stop` activated is not queued at all, and the call returns False."""
-    if not wl_effort.advises(key, wl_effort.active()):
+    _shown = wl_effort.advises(key, wl_effort.active())
+    # The outcome ledger records every advisory, shown or hidden (agent/plans/PLAN-stop-hook-effort-tuning.md T1).
+    wl_outcomes.note(state_doc, key, text, _shown)
+    if not _shown:
         return False
     q = _outq(state_doc)
     items = q["items"]
@@ -5327,6 +5331,18 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     # ---- THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), applied ONCE, here, after every check has had its say and before the roster's honest suppression and the stand-down profiles: each violation blocks, rides the advisory queue in its place, or is dropped, by its threshold in .claude/config/effort.json. The FLOOR (wl_floor) blocks at every level, and STATE.md joins it while compaction is due.
     _compaction_due = astate in _COMPACTION_ASTATES and _ctx_late_band(session_id)
+    # THE OUTCOME LEDGER (agent/plans/PLAN-stop-hook-effort-tuning.md T1): this stop's emissions get ids and earlier ones are classified into agent/ledgers/effort-outcomes.jsonl. Never raises.
+    wl_outcomes.observe(
+        root,
+        worklist,
+        session_id,
+        state_doc,
+        _cfg.effort,
+        violations,
+        fold,
+        last_msg,
+        _compaction_due,
+    )
     _effort_kept = []
     for _ev in violations:
         _ew = wl_effort.verdict(_ev[0], _cfg.effort, compaction_due=_compaction_due)

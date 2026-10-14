@@ -132,7 +132,7 @@
       },
       {
         "name": "ledgers",
-        "why": "Append-only measurement logs a gate writes and reads back, agent/ledgers/census-*.jsonl. A .jsonl at the top of a directory of documents reaches nobody's eye, which is the class this whole file exists for."
+        "why": "Append-only measurement logs a gate or the Stop hook writes and reads back: agent/ledgers/census-*.jsonl, and the effort tuner's effort-outcomes.jsonl and effort-proposals.jsonl (agent/plans/PLAN-stop-hook-effort-tuning.md). A .jsonl at the top of a directory of documents reaches nobody's eye, which is the class this whole file exists for."
       },
       {
         "name": "pr",

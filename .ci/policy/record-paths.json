@@ -335,6 +335,96 @@
           "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
         }
       ]
+    },
+    {
+      "glob": "agent/ledgers/effort-*.jsonl",
+      "except": [],
+      "probes": [
+        "agent/ledgers/effort-outcomes.jsonl",
+        "agent/ledgers/effort-proposals.jsonl"
+      ],
+      "readers": [
+        {
+          "id": "check:ci-account-env-retired",
+          "evidence": ".ci/rediacc_ci/quality/account_env_retired.py:57 (root) agent/"
+        },
+        {
+          "id": "check:ci-agent-hint-liveness",
+          "evidence": ".claude/hooks/stop/wl_checks.py:197 (cite) agent/ledgers/*.jsonl"
+        },
+        {
+          "id": "check:ci-agent-session-archival",
+          "evidence": ".claude/hooks/stop/wl_checks.py:197 (cite) agent/ledgers/*.jsonl"
+        },
+        {
+          "id": "check:ci-dead-python",
+          "evidence": ".ci/rediacc_ci/quality/dead_python.py:94 (root) agent/"
+        },
+        {
+          "id": "check:ci-decision-ids",
+          "evidence": ".claude/hooks/stop/wl_checks.py:197 (cite) agent/ledgers/*.jsonl"
+        },
+        {
+          "id": "check:ci-doc-region-parity",
+          "evidence": "scripts/lib/doc-providers.ts:1759 (root) agent/"
+        },
+        {
+          "id": "check:ci-durable-paths-tracked",
+          "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:44 (cite) agent/ledgers/"
+        },
+        {
+          "id": "check:ci-env-manifest",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:732 (root) agent/"
+        },
+        {
+          "id": "check:ci-gate-reachability-coverage",
+          "evidence": ".claude/hooks/stop/wl_checks.py:197 (cite) agent/ledgers/*.jsonl"
+        },
+        {
+          "id": "check:ci-hint-corpus",
+          "evidence": ".claude/hooks/stop/wl_checks.py:197 (cite) agent/ledgers/*.jsonl"
+        },
+        {
+          "id": "check:ci-literal-sources",
+          "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2081 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-boxes",
+          "evidence": ".ci/scripts/quality/check_plan_boxes.py:397 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-citations",
+          "evidence": ".claude/hooks/stop/wl_checks.py:197 (cite) agent/ledgers/*.jsonl"
+        },
+        {
+          "id": "check:ci-plan-deps",
+          "evidence": ".claude/hooks/stop/wl_checks.py:197 (cite) agent/ledgers/*.jsonl"
+        },
+        {
+          "id": "check:ci-plan-folders",
+          "evidence": ".ci/scripts/quality/check_plan_folders.py:135 (root) agent/"
+        },
+        {
+          "id": "check:ci-plan-implementation",
+          "evidence": ".ci/scripts/quality/check_plan_implementation.py:551 (cite) agent/ledgers/plan-investigation.jsonl."
+        },
+        {
+          "id": "check:ci-plan-record",
+          "evidence": ".ci/scripts/quality/check_plan_record.py:78 (cite) agent/ledgers/census-plan-record.jsonl"
+        },
+        {
+          "id": "check:ci-resprofile",
+          "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
+        },
+        {
+          "id": "check:ci-tree-shape",
+          "evidence": ".ci/scripts/quality/check_tree_shape.py:73 (cite) agent/ledgers/census-plan-record.jsonl"
+        },
+        {
+          "id": "check:ci-worklist-env-registry",
+          "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:732 (root) agent/"
+        }
+      ]
     }
   ]
 }
