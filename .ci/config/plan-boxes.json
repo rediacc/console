@@ -1643,6 +1643,24 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-shell-sandbox-readonly-view.md": {
+      "status": "active",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "35a8734b",
+        "88c84d61",
+        "a344b11a",
+        "a7ba8046",
+        "ce1f9881",
+        "fdd7c9d0",
+        "fe8a544f"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-skip-release-gates-r2-manifest.md": {
       "status": "compacted",
       "owner": "854ac1c6",
