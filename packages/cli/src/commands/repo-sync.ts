@@ -375,7 +375,6 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
           sftpUploadTransfer(isFileMode, sftpSources, ctx, {
             exclude: options.exclude,
             verify: options.verify,
-            universalUser: ctx.details.universalUser,
             dryRun: true,
           })
         );
@@ -389,7 +388,6 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
           sftpUploadTransfer(isFileMode, sftpSources, ctx, {
             exclude: options.exclude,
             verify: options.verify,
-            universalUser: ctx.details.universalUser,
             onProgress: (file) => {
               spinner.text = `Uploading: ${file}`;
             },
