@@ -15,7 +15,7 @@ THE THREE CONDITIONS, each read through the reader the Stop hook and the merge g
     deadline  production or CD state that cannot wait; the why names it
     backup    the oldest unpushed commit (`origin/<branch>..HEAD`, or `origin/main..HEAD` before the first push) is older than `backup_push_h` hours (QUEUE.md, default 4; 0 turns the valve off). Never admits `gh pr create`: a backup is a push with no PR, which triggers no CI.
 
-  Each admitted command appends one JSON line per push or create to agent/ledgers/turbo-push-reasons.jsonl in the console checkout (ts, branch, repo, act, kind, why, head, open_promoted), written only once every act in the command is admitted. This guard runs LAST in the chain (ORDER below), so every other guard has already admitted the same command when the line is written.
+  Each admitted command appends one JSON line per push or create to agent/ledgers/turbo-push-reasons.jsonl in the console checkout (ts, branch, repo, act, kind, why, head, open_promoted), written only once every act in the command is admitted. This guard is NOT last in the chain: guards at ORDER 58 to 62 run after it, so a line here records turbo's admission only, and a later guard (`block_vm_unverified_push` at 62, among others) can still refuse the push it logged.
 
 A COMPLETE BATCH NEEDS NO REASON (operator ruling ASKED:2026-10-08T10:25Z, on "how should a finished turbo batch push?": "It should not be even askable also for other/future sessions as well"). Before this the Stop hook's V_LOOP_NEXT_BATCH_OPEN ordered the push and `gh pr create` of a finished local batch while this guard refused both for want of a reason (11 Promoted plans, batch_size 3), and that gap is what put the question to the operator. Now, when a command would be refused, the branch's local batch is read through the Stop hook's own predicates (`_batch`: `wl_prscope.loop_state`, `wl_checks.local_batch`, `wl_checks.local_batch_open`), and a complete batch admits every push and `gh pr create` of the command with ledger kind `batch-complete`. A batch still open keeps the refusal, which names its open boxes (and the queued plan it still takes, when every box is ticked) so the session works instead of asking. A live PR, `turbo_push: pr`, and a PR read that failed are not a filling local batch and keep today's rules. A batch reader that raises or will not import fails open, loudly, as the queue readers do. Push timing is therefore never the operator's question; `block_settled_questions` refuses it on the pre-ask chain.
 
@@ -36,7 +36,7 @@ from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-# Last in the pre-bash chain: the ledger line is the admission record, so it is written only after every other guard has let the command through.
+# Not last in the pre-bash chain (58 to 62 follow): the ledger line records turbo's own admission, and a later guard can still refuse the command.
 ORDER = 57
 
 # The open-plan test, read the other way round: planted, the guard admits every push once the queue has been read, reason or none, which is the guard body switched off.

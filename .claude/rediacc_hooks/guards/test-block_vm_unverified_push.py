@@ -1,0 +1,497 @@
+#!/usr/bin/env python3
+"""Control harness for block_vm_unverified_push (OWN_SUITE: never bash, so no golden), box VC4 of agent/plans/PLAN-vm-check.md.
+
+REAL REPOSITORIES, one per world, built under a `rediacc_ci.runtmp` run directory by the guard's own `world()` and `plant_receipt()` (the builders its differential `FIXTURES` use, so the suite and the differential judge one shape): a console-shaped checkout on `1008-1` with a real `private/renet` gitlink, `origin/main` at the seed and one unpushed commit, and receipts written through `vm_check_receipt.write`, so a receipt shape the module would refuse can never be planted here.
+
+BOTH DIRECTIONS. Every refusal has an allow twin that differs by one planted fact: a docs-only range, a test-only renet range, a VERIFIED receipt, a receipt carried by a docs commit, a valid escape of each kind against a transcript holding one AskUserQuestion answer. Every escape kind is refused in its invalid case (an unknown kind, a short why, no ASKED, a malformed ASKED, an ASKED matching no answer, `vm-unavailable` with no NOT_VERIFIED receipt for these inputs).
+
+THE LEDGER. An admitted escape appends one line per push to agent/ledgers/vm-check-push-reasons.jsonl in the world; a refused command, a command whose second push is refused, and a push a VERIFIED receipt admits append nothing. All three are read back from the file.
+
+THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and both `MUTANTS` (`inputs-always-equal`, `asked-always-true`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
+"""
+
+import importlib.util
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import tempfile
+
+HERE = pathlib.Path(__file__).resolve().parent
+DISPATCH = str(HERE.parent / "dispatch.py")
+STEM = "block_vm_unverified_push"
+GUARD = HERE / ("%s.py" % STEM)
+LEDGER = "agent/ledgers/vm-check-push-reasons.jsonl"
+
+_RUNTMP = importlib.util.spec_from_file_location(
+    "runtmp", HERE.parents[2] / ".ci" / "rediacc_ci" / "runtmp.py"
+)
+if _RUNTMP is None or _RUNTMP.loader is None:
+    raise SystemExit("%s: .ci/rediacc_ci/runtmp.py is missing" % __file__)
+runtmp = importlib.util.module_from_spec(_RUNTMP)
+_RUNTMP.loader.exec_module(runtmp)
+RUN_TMP = runtmp.run_dir("guard-vm-unverified-push-")
+
+_SYSPATH = importlib.util.spec_from_file_location(
+    "_rediacc_syspath", HERE.parents[1] / "rediacc_hooks" / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
+syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(syspath)
+syspath.on_sys_path(syspath.CLAUDE_DIR)
+_SPEC = importlib.util.spec_from_file_location("vm_push_guard_under_test", GUARD)
+if _SPEC is None or _SPEC.loader is None:
+    raise SystemExit("cannot load %s" % GUARD)
+G = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(G)
+
+
+def new_dir(prefix):
+    return pathlib.Path(tempfile.mkdtemp(prefix=prefix, dir=RUN_TMP)) / "repo"
+
+
+def built(name):
+    return G.FIXTURES[name](new_dir(name + "-"))
+
+
+DOCS = built("vmc-docs-only")
+CLI_NONE = built("vmc-cli-none")
+CLI_VERIFIED = built("vmc-cli-verified")
+CLI_NOT_VERIFIED = built("vmc-cli-not-verified")
+CLI_FAILED = built("vmc-cli-failed")
+SANDBOX = built("vmc-renet-sandbox")
+TESTS_ONLY = built("vmc-renet-tests-only")
+OTHER_POINTER = built("vmc-other-pointer")
+ADVANCED = built("vmc-advanced")
+MISSING_OLD = built("vmc-missing-old")
+STALE_NV = built("vmc-stale-not-verified")
+# A VERIFIED receipt for the pushed tree whose deployed renet is not the pointer.
+MISMATCH = G.plant_receipt(G.world(new_dir("mismatch-"), cli=True), built=G.FAKE_RENET)
+# Worlds the escape cases write ledger lines into, one per kind, so each count is exact.
+ESC_NR = built("vmc-cli-none")
+ESC_DL = built("vmc-cli-none")
+ESC_NV = built("vmc-cli-not-verified")
+OUTSIDE = built("vmc-docs-only")
+
+
+def transcript(answer_ts):
+    """A lead transcript holding one AskUserQuestion and its answer at `answer_ts`."""
+    path = pathlib.Path(tempfile.mkdtemp(prefix="transcript-", dir=RUN_TMP)) / "lead.jsonl"
+    records = [
+        {
+            "type": "assistant",
+            "timestamp": "2026-01-01T00:00:10Z",
+            "message": {
+                "content": [
+                    {"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_fixture_ask"}
+                ]
+            },
+        },
+        {
+            "type": "user",
+            "timestamp": answer_ts,
+            "message": {
+                "content": [
+                    {"type": "tool_result", "tool_use_id": "toolu_fixture_ask", "content": "a"}
+                ]
+            },
+        },
+    ]
+    path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
+    return str(path)
+
+
+ANSWERED = transcript("2026-01-01T00:00:30Z")
+ASK = " ASKED:2026-01-01T00:00Z"
+ASK_ELSEWHERE = " ASKED:2026-01-01T00:10Z"
+FILES = G._FILES
+DEADLINE = G._DEADLINE
+UNAVAIL = G._UNAVAIL
+R = "VM_CHECK_PUSH_REASON='%s' "
+PUSH = "git push origin 1008-1"
+NR = (R % ("not-runtime: " + FILES + ASK)) + PUSH
+
+CASES = [
+    # (name, command, root, transcript, cwd, expect_blocked, stderr needle) ---- the trigger
+    ("docs only: a bare push", PUSH, DOCS, None, None, False, ""),
+    ("renet range, tests only", PUSH, TESTS_ONLY, None, None, False, ""),
+    (
+        "CLI touched, no receipt",
+        PUSH,
+        CLI_NONE,
+        None,
+        None,
+        True,
+        "packages/cli/src/remote/sftp.ts",
+    ),
+    (
+        "CLI touched: the command named",
+        PUSH,
+        CLI_NONE,
+        None,
+        None,
+        True,
+        "npm run vm:check -- --changed",
+    ),
+    ("CLI touched: an implicit push", "git push", CLI_NONE, None, None, True, ""),
+    ("CLI touched: a -C push", "git -C . push origin 1008-1", CLI_NONE, None, None, True, ""),
+    (
+        "CLI touched: an sh -c payload",
+        "sh -c 'git push origin 1008-1'",
+        CLI_NONE,
+        None,
+        None,
+        True,
+        "",
+    ),
+    (
+        "CLI touched: the push to main",
+        "git push origin 1008-1:main",
+        CLI_NONE,
+        None,
+        None,
+        True,
+        "",
+    ),
+    (
+        "renet range touching sandbox_exec.go",
+        PUSH,
+        SANDBOX,
+        None,
+        None,
+        True,
+        "private/renet/cmd/renet/sandbox_exec.go",
+    ),
+    ("the old renet object missing", PUSH, MISSING_OLD, None, None, True, "(unknown) renet range"),
+    # ---- the receipt
+    ("VERIFIED for this tree", PUSH, CLI_VERIFIED, None, None, False, ""),
+    ("VERIFIED, carried by a docs commit", PUSH, ADVANCED, None, None, False, ""),
+    ("NOT_VERIFIED", PUSH, CLI_NOT_VERIFIED, None, None, True, "fleet-unavailable"),
+    ("FAILED", PUSH, CLI_FAILED, None, None, True, "V1.3"),
+    ("VERIFIED for another pointer", PUSH, OTHER_POINTER, None, None, True, "other trigger inputs"),
+    ("VERIFIED, another renet build", PUSH, MISMATCH, None, None, True, "is not the pointer"),
+    # ---- not this guard's business
+    ("a dry run", "git push --dry-run origin 1008-1", CLI_NONE, None, None, False, ""),
+    ("a delete push", "git push origin --delete 1007-1", CLI_NONE, None, None, False, ""),
+    ("an empty-source delete", "git push origin :1007-1", CLI_NONE, None, None, False, ""),
+    (
+        "the mirror push of main",
+        "git push gitlab origin/main:refs/heads/main --follow-tags",
+        CLI_NONE,
+        None,
+        None,
+        False,
+        "",
+    ),
+    (
+        "a submodule push",
+        "git -C private/renet push origin 1008-1",
+        CLI_NONE,
+        None,
+        None,
+        False,
+        "",
+    ),
+    ("cd into the submodule", "cd private/renet && git push", CLI_NONE, None, None, False, ""),
+    ("cwd inside the submodule", PUSH, CLI_NONE, None, "private/renet", False, ""),
+    ("prose naming a push", "echo 'git push origin 1008-1'", CLI_NONE, None, None, False, ""),
+    ("a heredoc body", "cat > n.md <<'EOF'\ngit push\nEOF", CLI_NONE, None, None, False, ""),
+    (
+        "a repository outside",
+        "git -C %s push origin 1008-1" % OUTSIDE,
+        CLI_NONE,
+        None,
+        None,
+        False,
+        "",
+    ),
+    ("an empty command", "", CLI_NONE, None, None, False, ""),
+    # ---- the escape, admitted
+    ("not-runtime, answered", NR, ESC_NR, ANSWERED, None, False, ""),
+    (
+        "deadline, answered",
+        (R % ("deadline: " + DEADLINE + ASK)) + PUSH,
+        ESC_DL,
+        ANSWERED,
+        None,
+        False,
+        "",
+    ),
+    (
+        "vm-unavailable over its NOT_VERIFIED receipt",
+        (R % ("vm-unavailable: " + UNAVAIL + ASK)) + PUSH,
+        ESC_NV,
+        ANSWERED,
+        None,
+        False,
+        "",
+    ),
+    (
+        "an exported reason",
+        "export VM_CHECK_PUSH_REASON='not-runtime: %s%s'; %s" % (FILES, ASK, PUSH),
+        ESC_NR,
+        ANSWERED,
+        None,
+        False,
+        "",
+    ),
+    (
+        "env NAME=value",
+        "env VM_CHECK_PUSH_REASON='not-runtime: %s%s' %s" % (FILES, ASK, PUSH),
+        ESC_NR,
+        ANSWERED,
+        None,
+        False,
+        "",
+    ),
+    # ---- the escape, refused
+    (
+        "vm-unavailable with no receipt at all",
+        (R % ("vm-unavailable: " + UNAVAIL + ASK)) + PUSH,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "no NOT_VERIFIED receipt exists for these inputs",
+    ),
+    (
+        "vm-unavailable over another tree's NOT_VERIFIED",
+        (R % ("vm-unavailable: " + UNAVAIL + ASK)) + PUSH,
+        STALE_NV,
+        ANSWERED,
+        None,
+        True,
+        "no NOT_VERIFIED receipt exists for these inputs",
+    ),
+    (
+        "an unknown kind",
+        (R % ("because: " + FILES + ASK)) + PUSH,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "must be one of",
+    ),
+    (
+        "a short why",
+        (R % ("deadline: soon" + ASK)) + PUSH,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "at least 40",
+    ),
+    (
+        "no ASKED",
+        (R % ("not-runtime: " + FILES)) + PUSH,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "carries no ASKED",
+    ),
+    (
+        "a malformed ASKED",
+        (R % ("not-runtime: " + FILES + " ASKED:today")) + PUSH,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "carries no ASKED",
+    ),
+    (
+        "an ASKED matching no answer",
+        (R % ("not-runtime: " + FILES + ASK_ELSEWHERE)) + PUSH,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "matches no AskUserQuestion answer",
+    ),
+    ("an ASKED with no transcript", NR, CLI_NONE, None, None, True, "matches no AskUserQuestion"),
+    (
+        "the reason in prose only",
+        "echo \"VM_CHECK_PUSH_REASON='not-runtime: %s%s'\"; %s" % (FILES, ASK, PUSH),
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "no `VM_CHECK_PUSH_REASON=` on it",
+    ),
+    (
+        "a second push with no reason",
+        "%s; git push origin HEAD:1008-1" % NR,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "no `VM_CHECK_PUSH_REASON=` on it",
+    ),
+]
+
+BROKEN_RUNNER = (
+    "import sys; sys.path.insert(0, %r)\n"
+    "from rediacc_hooks import hookio\n"
+    "src = open(%r, encoding='utf-8').read()\n"
+    "old, new = %r\n"
+    "import ast\n"
+    "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
+    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'MUTANTS') for t in n.targets)]\n"
+    "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
+    " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
+    "assert outside.count(old) == 1, 'the mutant must name exactly one line outside its declaration'\n"
+    "ns = {'__name__': 'broken', '__file__': %r}\n"
+    "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+    "ev = hookio.Event(sys.stdin.read())\n"
+    "rc = ns['run'](ev)\n"
+    "sys.stderr.write(ev.result(rc)[2])\n"
+    "sys.exit(rc)\n"
+)
+
+
+def ledger_lines(root):
+    path = pathlib.Path(root) / LEDGER
+    return path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+
+
+def run(command, root, transcript_path, cwd, broken=None):
+    """(blocked, stderr) of one payload through the dispatcher, or through a copy of the guard with `broken` (an (old, new) mutant) planted."""
+    env = dict(
+        os.environ,
+        CLAUDE_PROJECT_DIR=str(root),
+        TMPDIR=tempfile.mkdtemp(prefix="tmp-", dir=RUN_TMP),
+    )
+    env.pop("VM_CHECK_PUSH_REASON", None)
+    doc = {
+        "tool_name": "Bash",
+        "tool_input": {"command": command},
+        "cwd": str(pathlib.Path(root) / cwd) if cwd else str(root),
+    }
+    if transcript_path:
+        doc["transcript_path"] = transcript_path
+    if broken:
+        argv = [
+            sys.executable,
+            "-c",
+            BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), broken, str(GUARD)),
+        ]
+    else:
+        argv = [sys.executable, DISPATCH, STEM]
+    proc = subprocess.run(
+        argv, input=json.dumps(doc), capture_output=True, text=True, check=False, env=env
+    )
+    if proc.returncode not in (0, 2):
+        raise SystemExit(
+            "%s runner crashed (rc %d): %s"
+            % ("broken" if broken else "guard", proc.returncode, proc.stderr[-800:])
+        )
+    return proc.returncode == 2, proc.stderr
+
+
+fails = 0
+blocked = 0
+for name, command, root, tr, cwd, want, needle in CASES:
+    before = len(ledger_lines(root))
+    got, err = run(command, root, tr, cwd)
+    grew = len(ledger_lines(root)) - before
+    blocked += got
+    ok = got == want and (not needle or needle in err)
+    escaped = "VM_CHECK_PUSH_REASON='" in command and not command.startswith("echo")
+    if got and grew:
+        ok = False
+        print("    a refused command wrote %d ledger line(s)" % grew)
+    if not got and escaped and grew != 1:
+        ok = False
+        print("    an admitted escape wrote %d ledger line(s), want 1" % grew)
+    if not got and not escaped and grew:
+        ok = False
+        print("    a push admitted without an escape wrote %d ledger line(s)" % grew)
+    fails += not ok
+    print(
+        "%-52s want=%-8s got=%-8s %s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok:
+        print("    needle %r; stderr: %s" % (needle, err.strip().splitlines()[:8]))
+
+# The shape of the ledger lines, read back.
+want_keys = {"ts", "branch", "head", "tree", "renet", "kind", "why", "asked", "hits", "receipt"}
+checks = (
+    (ESC_NR, "not-runtime", None),
+    (ESC_DL, "deadline", None),
+    (ESC_NV, "vm-unavailable", {"status": "NOT_VERIFIED", "class": "fleet-unavailable"}),
+)
+for root, kind, receipt in checks:
+    rows = [json.loads(line) for line in ledger_lines(root)]
+    if not rows:
+        print("*** FAIL *** no ledger line was written for kind %s" % kind)
+        fails += 1
+        continue
+    last = rows[-1]
+    bad = [
+        what
+        for what, cond in (
+            ("keys", set(last) == want_keys),
+            ("kind", last.get("kind") == kind),
+            ("branch", last.get("branch") == "1008-1"),
+            ("head", len(last.get("head", "")) == 40),
+            ("tree", len(last.get("tree", "")) == 40),
+            ("renet", len(last.get("renet", "")) == 40),
+            ("asked", last.get("asked") == "2026-01-01T00:00Z"),
+            ("hits", last.get("hits") == [G.CLI_FILE]),
+            ("receipt", last.get("receipt") == receipt),
+            ("why", "ASKED" not in last.get("why", "") and len(last.get("why", "")) >= G.MIN_WHY),
+        )
+        if not cond
+    ]
+    if bad:
+        print("*** FAIL *** ledger line %r is wrong in: %s" % (last, ", ".join(bad)))
+        fails += 1
+    else:
+        print("ledger: %d line(s) for kind %s, receipt %r" % (len(rows), kind, last["receipt"]))
+for quiet in (CLI_NONE, CLI_VERIFIED, ADVANCED, STALE_NV, DOCS):
+    if ledger_lines(quiet):
+        print("*** FAIL *** a world with no admitted escape wrote %r" % ledger_lines(quiet))
+        fails += 1
+
+print()
+CONTROLS = [("DEFECT", G.DEFECT), *sorted(G.MUTANTS.items())]
+# The cases each named mutant must flip, so a control cannot pass on some unrelated refusal.
+MUST_FLIP = {
+    "inputs-always-equal": "vm-unavailable over another tree's NOT_VERIFIED",
+    "asked-always-true": "an ASKED matching no answer",
+}
+for label, mutant in CONTROLS:
+    flipped = [
+        n for n, c, r, tr, cwd, w, _ in CASES if w and not run(c, r, tr, cwd, broken=mutant)[0]
+    ]
+    must = MUST_FLIP.get(label)
+    if flipped and (must is None or must in flipped):
+        print(
+            "%s control: planted %r; %d refusal(s) flipped to allowed, e.g. %r"
+            % (label, mutant[1], len(flipped), must or flipped[0])
+        )
+    else:
+        print(
+            "*** FAIL *** %s control: with %r planted, %s"
+            % (
+                label,
+                mutant,
+                "every refusal still refused" if not flipped else "%r did not flip" % must,
+            )
+        )
+        fails += 1
+
+if blocked in (0, len(CASES)):
+    print("*** FAIL *** the guard answered the same way on every case")
+    fails += 1
+print("%d case(s), %d blocked, %d allowed" % (len(CASES), blocked, len(CASES) - blocked))
+print("FAILURES: %d" % fails)
+sys.exit(1 if fails else 0)
