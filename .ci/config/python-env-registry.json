@@ -1182,6 +1182,7 @@
       "APP_TOKEN_ACTION_FILE",
       "CD_WORKFLOW_FILE",
       "HOUSEKEEPING_WORKFLOW_FILE",
+      "QUALITY_WORKFLOW_FILE",
       "WORKFLOW_FILE"
     ],
     ".ci/rediacc_ci/security/shellcheck.py": [

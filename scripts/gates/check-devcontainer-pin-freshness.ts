@@ -25,9 +25,22 @@
  *    (1440 min) is NOT flagged yet, and eligibility is rounded to the next UTC
  *    day so a day's upgrades surface together. Not a new knob: it is the same
  *    number check-deps.ts, audit.sh and check-go-deps.sh already read.
- *  - FAIL SOFT ON NETWORK: a rate-limit, timeout or 5xx is reported and EXITS 0.
- *    Only a CONFIRMED stale pin fails. A GitHub API blip must never be somebody's
- *    red build.
+ *  - FAIL CLOSED ON NETWORK (operator ruling 2026-10-13, "Everything fails
+ *    closed, nightly included"). Until that ruling this gate reported an
+ *    upstream it could not reach as could-not-check and exited 0, so its green
+ *    did not mean the pins had been compared. Now a pin whose release list was
+ *    not obtained is a RED finding that names the pin, the host and path asked,
+ *    the status or error code, and that this is an upstream reachability
+ *    failure. The request, the bounded retry (3 attempts, 15 s each, 2 s then
+ *    4 s between them) and the finding's wording are shared with the two
+ *    sibling gates in scripts/lib/pin-upstream.ts. The pins are asked
+ *    concurrently, so the worst case is 51 s.
+ *  - A LISTING THAT ANSWERS AND CANNOT BE USED IS RED TOO: a 200 that is not a
+ *    release list, or holds no release under the tag prefix in its newest 100,
+ *    means the gate has stopped seeing that upstream.
+ *  - A SOURCE WITH NO `ARG <BASE>_VERSION` IN THE DOCKERFILE IS RED on a check
+ *    run: nothing was compared for it, and the gate would watch nothing for
+ *    that tool from then on.
  *  - BLOCKER-GATED HOLDS: .devcontainer-upgrade-blocklist, each entry carrying a
  *    substantive reason, validated like every other suppression list here.
  *
@@ -40,21 +53,33 @@
  *     tree whose next `docker build` dies at `sha256sum -c -`. The digests are
  *     already on the release JSON this gate is holding, so it writes them.
  *
+ * UPSTREAM ASKED: api.github.com, `GET /repos/<owner>/<repo>/releases` for each
+ * repository in scripts/lib/devcontainer-pin-sources.ts (bitwarden/clients,
+ * bitwarden/sdk-sm, golang/tools, go-delve/delve, golangci/golangci-lint). The
+ * sha256 digests `--upgrade` writes come from that same answer, so there is no
+ * second host and no second request.
+ *
+ * HARD ON EVERY CADENCE. The step runs `npm run check:ci-devcontainer-pins`
+ * directly, with no run_external_gate wrapper, so an exit 1 is red on a pull
+ * request, on the nightly and on a dispatch. The `no-external-quality` label on
+ * a pull request is the one way the step does not run, and the job's "Announce
+ * pin gates held by label" step names this gate in the log when that happens.
+ *
  * Usage:
  *   npx tsx scripts/gates/check-devcontainer-pin-freshness.ts            # check
  *   npx tsx scripts/gates/check-devcontainer-pin-freshness.ts --upgrade  # rewrite pins
  *   npm run check:ci-devcontainer-pins
  *
- * Exit codes: 0 = fresh / deferred / held / could-not-check; 1 = a confirmed
- * stale pin, a malformed blocklist entry, or an --upgrade that could not resolve
- * every digest it needed.
+ * Exit codes: 0 = every pin that is not held was compared with upstream and is
+ * current or deferred; 1 = a confirmed stale pin, a pin that was not compared,
+ * a listing that cannot be used, a source with no ARG, a malformed blocklist
+ * entry, or an --upgrade that could not resolve every digest it needed.
  *
  * ---- gate ----
  * step: Check devcontainer pin upstream freshness
  * needs: node
  * id: check:ci-devcontainer-pins
  * lane: quality-go
- * env-EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
  * env-GITHUB_TOKEN: ${{ github.token }}
  * ---- end gate ----
  */
@@ -70,7 +95,7 @@ import {
   type DevcontainerPinSource as Source,
 } from '../lib/devcontainer-pin-sources.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
-import { githubApiHeaders } from '../lib/github-token.js';
+import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/pin-upstream.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
@@ -85,8 +110,8 @@ const DOCKERFILE =
 const BLOCKLIST =
   process.env.DEVCONTAINER_BLOCKLIST_FILE ||
   policyPath('.devcontainer-upgrade-blocklist', CONSOLE_ROOT);
-
-const HTTP_TIMEOUT_MS = 15_000;
+// A third seam: another API base, so the gate's test can stand a real HTTP server in for GitHub and an offline run can be driven by hand. The token is never sent to it.
+const github = githubAsker('rediacc-devcontainer-pin-freshness', process.env.DEVCONTAINER_API_BASE);
 
 interface Latest {
   version: string;
@@ -116,26 +141,12 @@ function isNewer(latest: string, pinned: string): boolean {
   return false;
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  // Unauthenticated GitHub is 60 requests/hour per IP, which one CI runner shared between jobs can exhaust. A token raises it; its absence is not fatal because the caller treats a rate-limit as could-not-check.
-  const headers = githubApiHeaders('rediacc-devcontainer-pin-freshness');
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, { headers, signal: ctl.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } finally {
-    clearTimeout(t);
-  }
-}
-
 /**
  * Test seam: DEVCONTAINER_FRESHNESS_FIXTURE points at a JSON map
  * `{ "<base>": { "version": "x.y.z", "publishedAt"?: "ISO",
  *                "digests"?: { "<asset>": "<sha256>" } } }`
- * used INSTEAD of the network. A base absent from the fixture throws, which is
- * how the test exercises the could-not-check / fail-soft path.
+ * used INSTEAD of the network. A base absent from the fixture was not compared,
+ * which is red.
  */
 let fixtureCache: Record<string, FixtureEntry> | null | undefined;
 interface FixtureEntry {
@@ -160,12 +171,12 @@ interface GithubRelease {
   assets?: Array<{ name?: string; digest?: string }>;
 }
 
-/** Newest stable release matching the source's tag prefix, or throws. */
+/** Newest stable release matching the source's tag prefix. Throws NotCompared when the listing was not obtained and UnreadableListing when it cannot be used. */
 async function latestFor(src: Source): Promise<Latest> {
   const fixture = loadFixture();
   if (fixture) {
     const hit = fixture[src.base];
-    if (!hit) throw new Error('not in fixture');
+    if (!hit) throw NotCompared.absentFromFixture(src.base);
     return {
       version: hit.version,
       publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null,
@@ -175,14 +186,15 @@ async function latestFor(src: Source): Promise<Latest> {
 
   // NOT /releases/latest. On a monorepo that endpoint answers with whichever COMPONENT shipped last -- for bitwarden/clients that is web-*, desktop-*, browser-* or cli-* depending on the week -- so it would compare the CLI pin against a browser-extension version and produce nonsense in both directions. The list endpoint is ordered newest-first, so the first prefix match is the
   // answer.
-  const rels = (await fetchJson(
-    `${WK_GH_API_BASE}/repos/${src.repo}/releases?per_page=100`
-  )) as GithubRelease[];
-  const hit = rels.find(
-    (r) => !r.draft && !r.prerelease && (r.tag_name ?? '').startsWith(src.tagPrefix)
+  const rels = await github(`/repos/${src.repo}/releases?per_page=100`, src.display);
+  if (!Array.isArray(rels)) throw new UnreadableListing('the response is not a release list');
+  const hit = (rels as Array<GithubRelease | null>).find(
+    (r) => r && !r.draft && !r.prerelease && (r.tag_name ?? '').startsWith(src.tagPrefix)
   );
   if (!hit?.tag_name) {
-    throw new Error(`no released tag starting with "${src.tagPrefix}" in the newest 100`);
+    throw new UnreadableListing(
+      `no released tag starting with "${src.tagPrefix}" in the newest 100`
+    );
   }
 
   const digests = new Map<string, string>();
@@ -259,27 +271,32 @@ async function main(): Promise<void> {
 
   const stale: Finding[] = [];
   const deferred: string[] = [];
-  const unchecked: string[] = [];
-  const heldOut: string[] = [];
+  const tally = new PinTally('devcontainer', SOURCES.length);
+  // A held pin and a source with no ARG are not asked.
+  const answers = await tally.askAll(SOURCES, (src) =>
+    versions.has(src.base) && !held.has(src.base) ? latestFor(src) : null
+  );
 
-  for (const src of SOURCES) {
+  for (const [index, src] of SOURCES.entries()) {
     const pinned = versions.get(src.base);
+    const answer = answers[index];
     if (!pinned) {
-      // A source naming an ARG the Dockerfile no longer has is a real defect -- the gate would silently watch nothing -- but it is not a STALENESS failure, and reporting it as one would be the wrong sentence. The suppression-liveness probe is what turns this into a hard error.
-      unchecked.push(`${src.display}: no ${src.base.toUpperCase()}_VERSION ARG in the Dockerfile`);
+      // A source naming an ARG the Dockerfile no longer has is not a staleness finding, and it is not a pass either: the gate would watch nothing for that tool.
+      tally.noPin.push(
+        `${src.display}: no ${src.base.toUpperCase()}_VERSION ARG in the Dockerfile`
+      );
       continue;
     }
-    if (held.has(src.base)) {
-      heldOut.push(`${src.display} (pinned at ${pinned})`);
+    if (!answer) {
+      tally.held.push(`${src.display} (pinned at ${pinned})`);
       continue;
     }
-    let latest: Latest;
-    try {
-      latest = await latestFor(src);
-    } catch (err) {
-      unchecked.push(`${src.display}: could not check (${(err as Error).message})`);
+    if ('err' in answer) {
+      tally.failed(`${src.display} (pinned ${pinned})`, `${src.display} (${src.repo})`, answer.err);
       continue;
     }
+    tally.compared++;
+    const latest = answer.value;
     if (!isNewer(latest.version, pinned)) continue;
     if (
       latest.publishedAt !== null &&
@@ -294,13 +311,21 @@ async function main(): Promise<void> {
   }
 
   for (const d of deferred) console.log(`${YELLOW}⏳ ${d}${NC}`);
-  for (const u of unchecked) console.log(`${YELLOW}? ${u}${NC}`);
-  for (const h of heldOut) console.log(`${YELLOW}⏸ held: ${h}${NC}`);
+  for (const h of tally.held) console.log(`${YELLOW}⏸ held: ${h}${NC}`);
+
+  // What a green may not hide: a pin nobody compared. --upgrade rewrites the pins it can see, so a missing ARG is left to the check run.
+  const blind = tally.report({
+    sources: 'scripts/lib/devcontainer-pin-sources.ts',
+    noPinFix: [
+      '  Restore the ARG in .devcontainer/Dockerfile, or drop the entry from',
+      '  scripts/lib/devcontainer-pin-sources.ts when the tool is no longer installed.',
+    ],
+    noPinIsRed: !upgrade,
+  });
 
   if (stale.length === 0) {
-    console.log(
-      `${GREEN}✓ Every devcontainer pin is current (or deferred / held / uncheckable).${NC}`
-    );
+    if (blind > 0) process.exit(1);
+    console.log(`${GREEN}✓ Every devcontainer pin is current or deferred (${tally.shape}).${NC}`);
     return;
   }
 
@@ -338,6 +363,8 @@ async function main(): Promise<void> {
     console.log('  A wrong hash fails that build at `sha256sum -c -`, which is the point.');
     console.log('  The published image only changes when .github/workflows/ci-build-docker.yml');
     console.log('  runs on the merge; developers pick it up with `./run.sh setup --pull`.');
+    // A pin that was not compared was not upgraded either, and that is not a clean run.
+    if (blind > 0) process.exit(1);
     return;
   }
 

@@ -21,9 +21,45 @@
  *  - BLOCKER-GATED HOLDS: .embed-assets-upgrade-blocklist deliberately pins a
  *    component back, each entry carrying a substantive BLOCKER reason (validated
  *    like every other suppression list in the repo).
- *  - FAIL SOFT ON NETWORK: an unreachable upstream / rate-limit / timeout is
- *    reported and EXITS 0. Only a CONFIRMED stale pin (past the window, not held)
- *    fails the build. A GitHub API blip must never be somebody's red build.
+ *  - FAIL CLOSED ON NETWORK (operator ruling 2026-10-13, "Everything fails
+ *    closed, nightly included"). Until that ruling an unreachable upstream, a
+ *    rate limit or a timeout was reported as could-not-check and EXITED 0, so a
+ *    green did not mean the pins had been compared. Now a pin whose upstream
+ *    answer was not obtained is a RED finding that names the pin, the host and
+ *    path asked, the status or error code, and that this is an upstream
+ *    reachability failure. The request, the bounded retry (3 attempts, 15 s
+ *    each, 2 s then 4 s between them) and the finding's wording are shared with
+ *    the two sibling gates in scripts/lib/pin-upstream.ts. The pins are asked
+ *    concurrently.
+ *  - AN ANSWER THAT CANNOT BE USED IS RED TOO: a release with no tag, a tag
+ *    list with no stable version, an rsync index with no tarball. The gate has
+ *    stopped seeing that upstream.
+ *  - A SOURCE WITH NO `ARG <BASE>_VERSION` IN THE DOCKERFILE IS RED on a check
+ *    run: nothing was compared for it.
+ *
+ * UPSTREAMS ASKED, all of them:
+ *  1. api.github.com `GET /repos/<owner>/<repo>/releases/latest`, for the six
+ *     GitHub sources in scripts/lib/embed-asset-sources.ts.
+ *  2. api.github.com `GET /repos/<owner>/<repo>/tags`, then
+ *     `GET /repos/<owner>/<repo>/commits/<tag>` for the tag's date, when (1)
+ *     answers 404: a project that tags without cutting releases (CRIU). A 404
+ *     on (1) is that documented fallback and is not a finding by itself; any
+ *     failure of the two follow-up requests is.
+ *  3. download.samba.org `GET /pub/rsync/src/`, the rsync source index.
+ *  4. download.samba.org `HEAD /pub/rsync/src/rsync-<v>.tar.gz`, for the
+ *     tarball's Last-Modified. This one request is NOT a finding when it fails:
+ *     the version comparison has already happened, a missing date means no soak,
+ *     and no soak makes a newer rsync red sooner, never green. The failure is
+ *     printed with its host.
+ *  --upgrade also asks api.github.com for a tag's commit and github.com for a
+ *  release's checksum file (scripts/lib/embed-pin-upgrade.ts); a failure there
+ *  REFUSES the component and exits 1.
+ *
+ * HARD ON EVERY CADENCE. The step runs `npm run check:ci-embed-asset-freshness`
+ * directly, with no run_external_gate wrapper, so an exit 1 is red on a pull
+ * request, on the nightly and on a dispatch. The `no-external-quality` label on
+ * a pull request is the one way the step does not run, and the job's "Announce
+ * pin gates held by label" step names this gate in the log when that happens.
  *
  * Usage:
  *   npx tsx scripts/gates/check-embed-asset-freshness.ts            # check
@@ -37,8 +73,10 @@
  * exit 1; it never leaves a half-moved pin behind.
  *   npm run check:ci-embed-asset-freshness
  *
- * Exit codes: 0 = fresh / deferred / held / could-not-check; 1 = a confirmed
- * stale pin (or a malformed blocklist entry).
+ * Exit codes: 0 = every pin that is not held was compared with upstream and is
+ * current or deferred; 1 = a confirmed stale pin, a pin that was not compared,
+ * an upstream answer that cannot be used, a source with no ARG, or a malformed
+ * blocklist entry.
  *
  * ---- gate ----
  * step: Check embed-asset upstream freshness
@@ -51,10 +89,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  WK_GH_API_BASE,
-  WK_RENET_REPO,
-} from '../../packages/shared/src/config/well-known.generated.js';
+import { WK_RENET_REPO } from '../../packages/shared/src/config/well-known.generated.js';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { parseDockerfileVersions } from '../lib/dockerfile-versions.js';
@@ -71,7 +106,13 @@ import {
   type UpgradeFiles,
   upgradeComponent,
 } from '../lib/embed-pin-upgrade.js';
-import { githubApiHeaders } from '../lib/github-token.js';
+import {
+  askUpstream,
+  githubAsker,
+  NotCompared,
+  PinTally,
+  UnreadableListing,
+} from '../lib/pin-upstream.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
@@ -84,8 +125,10 @@ const LOCKFILE = path.join(RENET_DIR, 'embed-assets.lock.json');
 // Test seam: EMBED_BLOCKLIST_FILE points at a fixture blocklist so the gate test can prove the BLOCKER-reason validation fires without mutating the real, tracked .embed-assets-upgrade-blocklist.
 const BLOCKLIST =
   process.env.EMBED_BLOCKLIST_FILE || policyPath('.embed-assets-upgrade-blocklist', CONSOLE_ROOT);
-
-const HTTP_TIMEOUT_MS = 15_000;
+// Test seam: EMBED_UPSTREAM_BASE stands ONE base in for both hosts this gate asks, so its test can serve them from a stub HTTP server and an offline run can be driven by hand: the GitHub API is read at `<base>/repos/...` and the rsync index at `<base>/pub/rsync/src/`. The token is never sent to it.
+const UPSTREAM_OVERRIDE = process.env.EMBED_UPSTREAM_BASE;
+const RSYNC_INDEX = `${UPSTREAM_OVERRIDE || 'https://download.samba.org'}/pub/rsync/src/`;
+const USER_AGENT = 'rediacc-embed-asset-freshness';
 
 interface Latest {
   version: string;
@@ -114,57 +157,20 @@ function isNewer(latest: string, pinned: string): boolean {
   return false;
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const headers = githubApiHeaders('rediacc-embed-asset-freshness');
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, { headers, signal: ctl.signal });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } finally {
-    clearTimeout(t);
-  }
-}
+/** One GitHub REST call for a pin, with the shared retry. The token goes to api.github.com and to nothing the seam points at. */
+const githubJson = githubAsker(USER_AGENT, UPSTREAM_OVERRIDE);
 
-/** HEAD a URL and return its response headers (used for Last-Modified dates). */
-async function fetchHead(url: string): Promise<Headers> {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      method: 'HEAD',
-      headers: { 'User-Agent': 'rediacc-embed-asset-freshness' },
-      signal: ctl.signal,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.headers;
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-async function fetchText(url: string): Promise<string> {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'rediacc-embed-asset-freshness' },
-      signal: ctl.signal,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
-  } finally {
-    clearTimeout(t);
-  }
+/** A plain GET of a text resource, with the shared retry and no token. */
+async function fetchText(url: string, who: string): Promise<string> {
+  return (await askUpstream({ url, headers: { 'User-Agent': USER_AGENT }, who })).body;
 }
 
 /**
  * Test seam: EMBED_FRESHNESS_FIXTURE points at a JSON map
  * `{ "<base>": { "version": "x.y.z", "publishedAt"?: "ISO" } }` used INSTEAD of
  * hitting the network, so the gate test can prove it fires (stale) and passes
- * (current) deterministically. A base absent from the fixture throws (→ the
- * could-not-check / fail-soft path), which the test also exercises.
+ * (current) deterministically. A base absent from the fixture was not compared,
+ * which is red, and the test exercises that too.
  */
 let fixtureCache: Record<string, { version: string; publishedAt?: string }> | null | undefined;
 function loadFixture(): Record<string, { version: string; publishedAt?: string }> | null {
@@ -176,75 +182,87 @@ function loadFixture(): Record<string, { version: string; publishedAt?: string }
   return loaded;
 }
 
-/** Latest stable release for a source, or throws (caught as could-not-check). */
+/** Highest stable vX.Y.Z among a repository's tags, with the tag's commit date so the soak applies. */
+async function latestTag(repo: string, who: string): Promise<Latest> {
+  const tags = await githubJson(`/repos/${repo}/tags?per_page=100`, who);
+  if (!Array.isArray(tags)) throw new UnreadableListing('the response is not a tag list');
+  const stable = (tags as Array<{ name?: string } | null>)
+    .map((t) => t?.name ?? '')
+    .filter((n) => /^v?\d+\.\d+(\.\d+)?$/.test(n))
+    .map((n) => n.replace(/^v/i, ''));
+  if (stable.length === 0) throw new UnreadableListing('no stable tags found');
+  stable.sort((a, b) => (isNewer(a, b) ? 1 : -1));
+  const newest = stable[stable.length - 1];
+
+  // Resolve the tag to its commit date so the soak applies here too.
+  //
+  // A tag carries no publish time of its own, and this gate treats a null date as NOT deferred, so CRIU, which tags but never cuts GitHub releases, was the one component that got NO grace period at all: the moment upstream pushed a tag, the very next CI run went red. Every other component soaked for a day. One extra request buys uniform behaviour.
+  const commit = (await githubJson(
+    `/repos/${repo}/commits/${encodeURIComponent(`v${newest}`)}`,
+    who
+  )) as { commit?: { committer?: { date?: string } } } | null;
+  const date = commit?.commit?.committer?.date;
+  return { version: newest, publishedAt: date ? new Date(date) : null };
+}
+
+/** The newest rsync in the Samba source index, dated by its tarball's Last-Modified. */
+async function latestRsync(who: string): Promise<Latest> {
+  const html = await fetchText(RSYNC_INDEX, who);
+  const versions = [...html.matchAll(/rsync-(\d+\.\d+\.\d+)\.tar\.gz/g)].map((m) => m[1]);
+  if (versions.length === 0) throw new UnreadableListing('no rsync tarballs found in index');
+  versions.sort((a, b) => (isNewer(a, b) ? 1 : -1));
+  const newestRsync = versions[versions.length - 1];
+
+  // Same reasoning as the tag path: the Samba index has no publish column that can be trusted, so take the tarball's Last-Modified header. rsync would otherwise be the second component with no soak.
+  let rsyncPublished: Date | null = null;
+  try {
+    const head = await askUpstream({
+      url: `${RSYNC_INDEX}rsync-${newestRsync}.tar.gz`,
+      headers: { 'User-Agent': USER_AGENT },
+      who,
+      method: 'HEAD',
+    });
+    const lastModified = head.headers.get('last-modified');
+    if (lastModified) {
+      const parsed = new Date(lastModified);
+      if (!Number.isNaN(parsed.getTime())) rsyncPublished = parsed;
+    }
+  } catch (err) {
+    if (!(err instanceof NotCompared)) throw err;
+    // NOT a finding, and not a skipped comparison: the version above is already known. A null date means no soak, so a newer rsync is reported at once; this failure can only make the gate redder.
+    console.log(
+      `${YELLOW}? ${who}: no publish date for ${newestRsync} (${err.message}); judged without the soak${NC}`
+    );
+  }
+  return { version: newestRsync, publishedAt: rsyncPublished };
+}
+
+/** Latest stable release for a source. Throws NotCompared when upstream's answer was not obtained and UnreadableListing when it cannot be used. */
 async function latestFor(src: Source): Promise<Latest> {
   const fixture = loadFixture();
   if (fixture) {
     const hit = fixtureEntry(fixture, src.base);
-    if (!hit) throw new Error('not in fixture');
+    if (!hit) throw NotCompared.absentFromFixture(src.base);
     return {
       version: hit.version,
       publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null,
     };
   }
-  if (src.kind === 'github') {
-    // /releases/latest excludes prereleases/drafts — the stable line we track.
-    try {
-      const rel = (await fetchJson(`${WK_GH_API_BASE}/repos/${src.repo}/releases/latest`)) as {
-        tag_name?: string;
-        published_at?: string;
-      };
-      if (!rel.tag_name) throw new Error('no tag_name in release');
-      return {
-        version: rel.tag_name.replace(/^v/i, ''),
-        publishedAt: rel.published_at ? new Date(rel.published_at) : null,
-      };
-    } catch (err) {
-      // Projects that tag but never cut GitHub "releases" (e.g. CRIU) 404 on /releases/latest — fall back to the tags list and take the highest stable vX.Y.Z. Tags carry no publish date, so the freshness window can't apply (treated as old enough).
-      if (!/HTTP 404/.test((err as Error).message)) throw err;
-      const tags = (await fetchJson(
-        `${WK_GH_API_BASE}/repos/${src.repo}/tags?per_page=100`
-      )) as Array<{ name?: string }>;
-      const stable = tags
-        .map((t) => t.name ?? '')
-        .filter((n) => /^v?\d+\.\d+(\.\d+)?$/.test(n))
-        .map((n) => n.replace(/^v/i, ''));
-      if (stable.length === 0) throw new Error('no stable tags found');
-      stable.sort((a, b) => (isNewer(a, b) ? 1 : -1));
-      const newest = stable[stable.length - 1];
-
-      // Resolve the tag to its commit date so the soak applies here too.
-      //
-      // A tag carries no publish time of its own, and this gate treats a null date as NOT deferred, so CRIU — which tags but never cuts GitHub releases — was the one component that got NO grace period at all: the moment upstream pushed a tag, the very next CI run went red. Every other component soaked for a day. One extra request buys uniform behaviour.
-      const commit = (await fetchJson(
-        `${WK_GH_API_BASE}/repos/${src.repo}/commits/${encodeURIComponent(`v${newest}`)}`
-      )) as { commit?: { committer?: { date?: string } } };
-      const date = commit.commit?.committer?.date;
-      return { version: newest, publishedAt: date ? new Date(date) : null };
-    }
-  }
-  // rsync: parse the Samba source index for the highest rsync-X.Y.Z.tar.gz.
-  const html = await fetchText('https://download.samba.org/pub/rsync/src/');
-  const versions = [...html.matchAll(/rsync-(\d+\.\d+\.\d+)\.tar\.gz/g)].map((m) => m[1]);
-  if (versions.length === 0) throw new Error('no rsync tarballs found in index');
-  versions.sort((a, b) => (isNewer(a, b) ? 1 : -1));
-  const newestRsync = versions[versions.length - 1];
-
-  // Same reasoning as the tag path above: the Samba index has no publish column we can trust, so take the tarball's Last-Modified header. rsync would otherwise be the second component with no soak.
-  let rsyncPublished: Date | null = null;
+  if (src.kind !== 'github') return latestRsync(src.display);
+  // /releases/latest excludes prereleases and drafts: the stable line this gate tracks.
+  let rel: { tag_name?: string; published_at?: string } | null;
   try {
-    const head = await fetchHead(
-      `https://download.samba.org/pub/rsync/src/rsync-${newestRsync}.tar.gz`
-    );
-    const lastModified = head.get('last-modified');
-    if (lastModified) {
-      const parsed = new Date(lastModified);
-      if (!Number.isNaN(parsed.getTime())) rsyncPublished = parsed;
-    }
-  } catch {
-    // Fall through with a null date: the gate's existing policy is that a dateless source still surfaces a stale pin rather than hiding it.
+    rel = (await githubJson(`/repos/${src.repo}/releases/latest`, src.display)) as typeof rel;
+  } catch (err) {
+    // Projects that tag but never cut GitHub "releases" (e.g. CRIU) 404 on /releases/latest: fall back to the tags list and take the highest stable vX.Y.Z. Every other failure is a pin that was not compared.
+    if (!(err instanceof NotCompared && err.status === 404)) throw err;
+    return latestTag(src.repo ?? '', src.display);
   }
-  return { version: newestRsync, publishedAt: rsyncPublished };
+  if (!rel?.tag_name) throw new UnreadableListing('no tag_name in release');
+  return {
+    version: rel.tag_name.replace(/^v/i, ''),
+    publishedAt: rel.published_at ? new Date(rel.published_at) : null,
+  };
 }
 
 /** Test seam: EMBED_PIN_FIXTURE = { commits: { "<owner/repo>@<tag>": "<sha>" }, texts: { "<url>": "<body>" } }, used INSTEAD of the network for --upgrade's pin resolution. */
@@ -270,13 +288,14 @@ function pinFetchers(): Fetchers {
   }
   return {
     commitOf: async (repo, tag) => {
-      const c = (await fetchJson(
-        `${WK_GH_API_BASE}/repos/${repo}/commits/${encodeURIComponent(tag)}`
-      )) as { sha?: string };
-      if (!c.sha) throw new Error('no sha in commit response');
+      const c = (await githubJson(
+        `/repos/${repo}/commits/${encodeURIComponent(tag)}`,
+        `${repo}@${tag}`
+      )) as { sha?: string } | null;
+      if (!c?.sha) throw new Error('no sha in commit response');
       return c.sha;
     },
-    text: fetchText,
+    text: (url) => fetchText(url, url),
   };
 }
 
@@ -379,29 +398,32 @@ async function main(): Promise<void> {
 
   const stale: Finding[] = [];
   const deferred: string[] = [];
-  const unchecked: string[] = [];
-  const heldOut: string[] = [];
+  const tally = new PinTally('embed-asset', SOURCES.length);
+  // A held pin and a source with no ARG are not asked.
+  const answers = await tally.askAll(SOURCES, (src) =>
+    versions.has(src.base) && !held.has(src.base) ? latestFor(src) : null
+  );
 
-  for (const src of SOURCES) {
+  for (const [index, src] of SOURCES.entries()) {
     const pinned = versions.get(src.base);
+    const answer = answers[index];
     if (!pinned) {
-      unchecked.push(`${src.display}: no ${src.base.toUpperCase()}_VERSION ARG in Dockerfile`);
+      tally.noPin.push(`${src.display}: no ${src.base.toUpperCase()}_VERSION ARG in Dockerfile`);
       continue;
     }
-    if (held.has(src.base)) {
-      heldOut.push(`${src.display} (pinned at ${pinned})`);
+    if (!answer) {
+      tally.held.push(`${src.display} (pinned at ${pinned})`);
       continue;
     }
-    let latest: Latest;
-    try {
-      latest = await latestFor(src);
-    } catch (err) {
-      // FAIL SOFT: never redden the build over a network / rate-limit blip.
-      unchecked.push(`${src.display}: could not check (${(err as Error).message})`);
+    if ('err' in answer) {
+      const source = `${src.display} (${src.repo ?? 'rsync index'})`;
+      tally.failed(`${src.display} (pinned ${pinned})`, source, answer.err);
       continue;
     }
+    tally.compared++;
+    const latest = answer.value;
     if (!isNewer(latest.version, pinned)) continue;
-    // FAIL-OPEN on a missing publish date (git tags, the rsync index): unlike the npm-dep gate we flag it, because a dateless source must still surface a stale pin. With a date, apply the shared soak.
+    // FAIL-OPEN on a missing publish date (git tags, the rsync index): unlike the npm-dep gate it is flagged, because a dateless source must still surface a stale pin. With a date, apply the shared soak.
     if (
       latest.publishedAt !== null &&
       isWithinFreshnessWindow(latest.publishedAt.getTime(), nowMs, minReleaseAgeMs)
@@ -415,18 +437,27 @@ async function main(): Promise<void> {
   }
 
   for (const d of deferred) console.log(`${YELLOW}⏳ ${d}${NC}`);
-  for (const u of unchecked) console.log(`${YELLOW}? ${u}${NC}`);
-  for (const h of heldOut) console.log(`${YELLOW}⏸ held: ${h}${NC}`);
+  for (const h of tally.held) console.log(`${YELLOW}⏸ held: ${h}${NC}`);
+
+  // What a green may not hide: a pin nobody compared. --upgrade rewrites the pins it can see, so a missing ARG is left to the check run.
+  const blind = tally.report({
+    sources: 'scripts/lib/embed-asset-sources.ts',
+    noPinFix: [
+      '  Restore the ARG in private/renet/Dockerfile, or drop the entry from',
+      '  scripts/lib/embed-asset-sources.ts when the asset is no longer embedded.',
+    ],
+    noPinIsRed: !upgrade,
+  });
 
   if (stale.length === 0) {
-    console.log(
-      `${GREEN}✓ Every embed-asset pin is current (or deferred / held / uncheckable).${NC}`
-    );
+    if (blind > 0) process.exit(1);
+    console.log(`${GREEN}✓ Every embed-asset pin is current or deferred (${tally.shape}).${NC}`);
     return;
   }
 
   if (upgrade) {
-    process.exit(await runUpgrade(stale, dockerfile));
+    // A pin that was not compared was not upgraded either, and that is not a clean run.
+    process.exit((await runUpgrade(stale, dockerfile)) || (blind > 0 ? 1 : 0));
   }
 
   console.error('');
@@ -456,7 +487,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  // An unexpected error in the gate itself must not silently pass — but a network failure is already caught per-source above, so reaching here is a real bug.
+  // An unexpected error in the gate itself must not silently pass. A network failure is already a finding per source above, so reaching here is a real bug.
   console.error(`${RED}✗ freshness gate crashed: ${(err as Error).message}${NC}`);
   process.exit(1);
 });
