@@ -28,6 +28,9 @@
  * journaled, written, derived, canonicalised, gated, and restored by comparison on any
  * failure. A finished run prints, per repo and submodules first, the exact `git add` and
  * `git commit -F <draft> -- <paths>` lines, with the drafts under .ci/cache/pins/<stamp>/.
+ * After the writes it runs `npx tsx scripts/gen/gen-docs.ts --write` and lists the generated files that
+ * moved (a hold changes the blocklist row counts in two docs) in the commit line, and the drafts take
+ * their `PR-TASK:` trailer from --task, else from the one epic of agent/pr/<branch>.md.
  *
  * THE DRIVERS are scripts/lib/pins/driver.ts's seam. The npm driver (T4/T6) has landed; T7 (embed,
  * devcontainer, toolchain) and T8 (actions, go-mod, the ceph pins, real-provider, docker)
@@ -221,6 +224,100 @@ function writeOut(w: World, outDir: string, report: unknown, drafts: RepoDraft[]
         }).stdout ?? '';
     fs.writeFileSync(path.join(outDir, `${slug(d.repo)}.patch`), patch);
   }
+}
+
+// ---- generated docs and the epic trailer ---------------------------------------------------
+
+const REGEN_CMD = 'npx tsx scripts/gen/gen-docs.ts --write';
+
+/** Dirty files of the console repo with a content hash and whether git sees them as new; null when git cannot answer. */
+function dirtyState(root: string): Map<string, { hash: string; added: boolean }> | null {
+  const r = spawnSync(
+    'git',
+    ['-C', root, 'status', '--porcelain=v1', '--untracked-files=all', '-z'],
+    {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    }
+  );
+  if (r.status !== 0) return null;
+  const out = new Map<string, { hash: string; added: boolean }>();
+  const parts = (r.stdout ?? '').split('\0');
+  for (let i = 0; i < parts.length; i++) {
+    const e = parts[i];
+    if (e.length < 4) continue;
+    const code = e.slice(0, 2);
+    const file = e.slice(3);
+    if (/[RC]/.test(code)) i++;
+    const abs = path.join(root, file);
+    if (file.endsWith('/') || !fs.existsSync(abs) || fs.statSync(abs).isDirectory()) continue;
+    out.set(file, {
+      hash: crypto.createHash('sha256').update(fs.readFileSync(abs)).digest('hex'),
+      added: code === '??' || code[0] === 'A',
+    });
+  }
+  return out;
+}
+
+/**
+ * Regenerates the generated doc regions after a verb's writes landed. A hold moves the row counts in .ci/policy/README.md and scripts/data/doc-registry.md, and a bump can move any region that quotes a version, so the regeneration runs after every verb that wrote; a no-op when nothing moved. Returns the files the run changed that were clean beforehand (they belong in the commit), the files it changed that already held another session's edits (they do not), and the command record. A tree without the generator, or a fixture without a matching command, skips it.
+ */
+function regenDocs(w: World): {
+  record: CommandRecord | null;
+  changed: string[];
+  added: string[];
+  foreign: string[];
+  failure: string | null;
+} {
+  const none = { record: null, changed: [], added: [], foreign: [], failure: null };
+  const has = w.fixture
+    ? w.fixture.commands.some((c) => new RegExp(c.match).test(REGEN_CMD))
+    : fs.existsSync(path.join(w.root, 'scripts/gen/gen-docs.ts'));
+  if (!has) return none;
+  const before = dirtyState(w.root);
+  if (before === null)
+    return { ...none, failure: 'git status failed; the generated docs were not regenerated' };
+  const r = w.runner(REGEN_CMD, w.root);
+  const record: CommandRecord = { cmd: REGEN_CMD, cwd: '.', rc: r.rc };
+  if (r.rc !== 0)
+    return {
+      ...none,
+      record,
+      failure: `${REGEN_CMD} failed (rc=${r.rc}); run it by hand before committing: ${r.out.slice(-400)}`,
+    };
+  const after = dirtyState(w.root) ?? new Map<string, { hash: string; added: boolean }>();
+  const changed: string[] = [];
+  const added: string[] = [];
+  const foreign: string[] = [];
+  for (const [file, now] of after) {
+    const was = before.get(file);
+    if (was?.hash === now.hash) continue;
+    if (was) foreign.push(file);
+    else {
+      changed.push(file);
+      if (now.added) added.push(file);
+    }
+  }
+  return { record, changed, added, foreign, failure: null };
+}
+
+/** The epic id a commit on this branch carries: the one `PR-TASK:` id of agent/pr/<branch>.md, the snapshot block_untagged_commit validates a trailer against. Null when the branch has none or several (the caller then names the ids and asks for --task). */
+function branchTask(root: string): { task: string | null; ids: string[] } {
+  const b = spawnSync('git', ['-C', root, 'rev-parse', '--abbrev-ref', 'HEAD'], {
+    encoding: 'utf8',
+  });
+  const branch = (b.stdout ?? '').trim();
+  const snap = path.join(root, 'agent/pr', `${branch}.md`);
+  if (b.status !== 0 || !branch || branch === 'HEAD' || !fs.existsSync(snap))
+    return { task: null, ids: [] };
+  const ids = [
+    ...new Set(
+      [...fs.readFileSync(snap, 'utf8').matchAll(/^`?PR-TASK:\s*([0-9a-f]{6,32})`?\s*$/gm)].map(
+        (m) => m[1]
+      )
+    ),
+  ];
+  return { task: ids.length === 1 ? ids[0] : null, ids };
 }
 
 // ---- verbs ----------------------------------------------------------------------------------
@@ -471,7 +568,25 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   } finally {
     release();
   }
-  const drafts = res.ok ? writeDrafts(w, res, s.plans, s.views, f.task, subject) : [];
+  let regenFailure: string | null = null;
+  let foreignDocs: string[] = [];
+  if (res.ok) {
+    const g = regenDocs(w);
+    regenFailure = g.failure;
+    foreignDocs = g.foreign;
+    if (g.record) res.commands.push(g.record);
+    if (g.changed.length > 0) {
+      const home = res.changes.find((c) => c.repo === '.');
+      if (home) {
+        home.paths.push(...g.changed.filter((p) => !home.paths.includes(p)));
+        home.added.push(...g.added);
+      } else res.changes.push({ repo: '.', paths: g.changed, added: g.added });
+    }
+  }
+  const derived = f.task ? { task: f.task, ids: [] as string[] } : branchTask(w.root);
+  f.task = derived.task;
+  const drafts =
+    res.ok && regenFailure === null ? writeDrafts(w, res, s.plans, s.views, f.task, subject) : [];
   const rep = report(w, f, s, res, drafts);
   if (f.out) writeOut(w, path.resolve(f.out), rep, drafts);
   if (f.json) {
@@ -479,6 +594,15 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
     return res.ok && s.refused.length === 0 ? 0 : 1;
   }
   for (const r of s.refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
+  if (regenFailure !== null) {
+    w.err.push(`FAILED: ${regenFailure}`);
+    w.err.push(`journal: ${res.dir}`);
+    return 1;
+  }
+  for (const d of foreignDocs)
+    w.err.push(
+      `note: ${d} was regenerated but already held another session's edits, so it is not in the commit line`
+    );
   if (!res.ok) {
     w.err.push(`FAILED: ${res.failure}`);
     if (res.restored.length) w.err.push(`restored: ${res.restored.join(', ')}`);
@@ -492,7 +616,12 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   for (const p of s.plans) w.out.push(`${p.entry.id}: ${p.from} -> ${p.to.version}`);
   if (res.gates)
     w.out.push(`gates: npm run ci -- --only ${res.gates.ids.join(',')} rc=${res.gates.rc}`);
-  if (!f.task) w.out.push('note: no --task given, so the drafts carry no PR-TASK trailer');
+  if (!f.task)
+    w.out.push(
+      derived.ids.length > 1
+        ? `note: the branch carries ${derived.ids.length} epics (${derived.ids.join(', ')}), so pass --task <id>; the drafts carry no PR-TASK trailer`
+        : 'note: no --task given and the branch snapshot names no epic, so the drafts carry no PR-TASK trailer'
+    );
   for (const d of drafts) {
     w.out.push(`${d.repo === '.' ? 'console' : d.repo}:`);
     for (const l of d.lines) w.out.push(`  ${l}`);
@@ -1686,6 +1815,106 @@ const CASES: Record<string, Case> = {
           b.rc === 1 &&
           b.err.includes('held'),
         detail: `${r.rc} ${r.err} | ${v?.state} | ${b.rc} ${b.err}`,
+      },
+    ];
+  },
+  async regen(m) {
+    const regenCmd = {
+      match: 'gen-docs\\.ts --write$',
+      rc: 0,
+      writes: { 'docs/generated.md': 'rows: 6\n' },
+    };
+    const branchOf = (fx: Fx): string =>
+      (
+        spawnSync('git', ['-C', fx.root, 'rev-parse', '--abbrev-ref', 'HEAD'], { encoding: 'utf8' })
+          .stdout ?? ''
+      ).trim();
+    const snapshot = (fx: Fx, ids: string[]): void => {
+      fs.mkdirSync(path.join(fx.root, 'agent/pr'), { recursive: true });
+      fs.writeFileSync(
+        path.join(fx.root, 'agent/pr', `${branchOf(fx)}.md`),
+        ids.map((i) => `\`PR-TASK: ${i}\``).join('\n\n') + '\n'
+      );
+    };
+    const hold = (fx: Fx) =>
+      runCli(
+        [
+          'hold',
+          'embed:tool',
+          '--reason',
+          'tool 1.1 changes the archive layout the installer unpacks',
+        ],
+        withMutant(fx, m)
+      );
+    const draftOf = (out: string): string => {
+      const f = /commit -F (\S+)/.exec(out)?.[1];
+      return f ? fs.readFileSync(f, 'utf8') : '';
+    };
+
+    const fx = fixtureTree((x) => x.commands.push(regenCmd));
+    snapshot(fx, ['cafe1234']);
+    const r = await hold(fx);
+    const msg = draftOf(r.out);
+
+    const two = fixtureTree((x) => x.commands.push(regenCmd));
+    snapshot(two, ['cafe1234', 'beef5678']);
+    const rTwo = await hold(two);
+
+    // A region file another session already edited is regenerated too, but is not this commit's to carry.
+    const peer = fixtureTree((x) => x.commands.push(regenCmd));
+    peer.write('docs/generated.md', 'rows: 5, and a peer is mid-edit\n');
+    const rPeer = await hold(peer);
+
+    const bad = fixtureTree((x) => x.commands.push({ ...regenCmd, rc: 1 }));
+    const rBad = await hold(bad);
+
+    const plain = fixtureTree();
+    const rPlain = await hold(plain);
+
+    return [
+      {
+        name: 'hold: the generated docs it moves are regenerated, listed in the commit line and the draft, and the epic of the branch is the trailer',
+        ok:
+          r.rc === 0 &&
+          fx.read('docs/generated.md') === 'rows: 6\n' &&
+          r.out.includes('add -- docs/generated.md') &&
+          /commit -F \S+ -- .*docs\/generated\.md/.test(r.out) &&
+          /commit -F \S+ -- .*\.fixture-blocklist/.test(r.out) &&
+          msg.includes('Ran: npx tsx scripts/gen/gen-docs.ts --write') &&
+          msg.trimEnd().endsWith('PR-TASK: cafe1234') &&
+          !r.out.includes('no --task given'),
+        detail: `rc=${r.rc} ${r.err} ${r.out}\n${msg}`,
+      },
+      {
+        name: 'hold: a branch snapshot naming two epics gives no trailer and the note names both ids',
+        ok:
+          rTwo.rc === 0 &&
+          rTwo.out.includes('cafe1234, beef5678') &&
+          !draftOf(rTwo.out).includes('PR-TASK:'),
+        detail: `rc=${rTwo.rc} ${rTwo.err} ${rTwo.out}`,
+      },
+      {
+        name: 'hold: a regenerated file that already held a peer session edit is reported and kept out of the commit line',
+        ok:
+          rPeer.rc === 0 &&
+          rPeer.err.includes('docs/generated.md was regenerated but already held') &&
+          !/commit -F \S+ -- .*docs\/generated\.md/.test(rPeer.out),
+        detail: `rc=${rPeer.rc} ${rPeer.err} ${rPeer.out}`,
+      },
+      {
+        name: 'hold: a failing regeneration fails the run loudly and drafts no commit line',
+        ok:
+          rBad.rc === 1 &&
+          rBad.err.includes('gen-docs.ts --write failed') &&
+          !rBad.out.includes('commit -F'),
+        detail: `rc=${rBad.rc} ${rBad.err} ${rBad.out}`,
+      },
+      {
+        name: 'hold: a tree with no generator skips the regeneration and still drafts the blocklist commit',
+        ok:
+          rPlain.rc === 0 &&
+          /commit -F \S+ -- \.ci\/policy\/\.fixture-blocklist$/m.test(rPlain.out),
+        detail: `rc=${rPlain.rc} ${rPlain.err} ${rPlain.out}`,
       },
     ];
   },
