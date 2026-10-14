@@ -1065,10 +1065,17 @@ _PINS_APPLY_RE = re.compile(r"\bpins\s+--\s+apply-soaked\b")
 _PINS_WRITE_RE = re.compile(
     r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b|\bcurl\b[^\n]*\b(POST|PUT|PATCH|DELETE)\b"
 )
-# A secret handed to a step through `with:` or `env:` (the default GITHUB_TOKEN, read-only under `contents: read`, is exempt).
+# Any secret reaching the job (workflow or job `env:`, a reusable workflow's `secrets:`, a step's `with:` or `env:`). The workflow needs none, so the check does not judge which secret could write; the default GITHUB_TOKEN, read-only under `contents: read`, is the one exemption.
 _PINS_SECRET_RE = re.compile(r"\bsecrets\.(?!GITHUB_TOKEN\b)\w+")
-# The red path: a step that runs only when the apply exited non-zero and ends the job with `exit 1`.
-_PINS_RED_IF_RE = re.compile(r"\boutputs\.rc\s*!=\s*'0'")
+# The apply step publishes its exit code as the `rc` step output.
+_PINS_RC_OUT_RE = re.compile(r"\brc=[^\n]*\$GITHUB_OUTPUT\b")
+
+
+def _pins_red_if_re(step_id: str) -> re.Pattern[str]:
+    """The red path's condition: the apply step's own `rc` output is not 0, quoted or bare."""
+    return re.compile(r"\bsteps\.%s\.outputs\.rc\s*!=\s*(?:'0'|\"0\"|0\b)" % re.escape(step_id))
+
+
 _PINS_EXIT_RE = re.compile(r"\bexit\s+1\b")
 _PINS_WRITE_USES = ("app-token", "create-pull-request", "github-script", "bws-secrets")
 
@@ -1107,15 +1114,29 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         out.append(("pins-soaked-permissions", "workflow level"))
     raw_jobs = doc.get("jobs")
     jobs: dict = raw_jobs if isinstance(raw_jobs, dict) else {}
+    if _PINS_SECRET_RE.search(_text(doc.get("env"))):
+        out.append(("pins-soaked-writes", "workflow env"))
     applies = uploads = reds = 0
     for jname, job in jobs.items():
         if not isinstance(job, dict):
             continue
         if _PINS_SECRET_RE.search(_text(job.get("env"))):
             out.append(("pins-soaked-writes", "job %s env" % jname))
+        secrets = job.get("secrets")
+        if secrets == "inherit" or _PINS_SECRET_RE.search(_text(secrets)):
+            out.append(("pins-soaked-writes", "job %s secrets" % jname))
+        steps = list(_steps(job))
+        apply_ids = [
+            _text(st.get("id"))
+            for st in steps
+            if _PINS_APPLY_RE.search(_text(st.get("run")))
+            and _text(st.get("id"))
+            and _PINS_RC_OUT_RE.search(_text(st.get("run")))
+        ]
+        red_ifs = [_pins_red_if_re(sid) for sid in apply_ids]
         if "permissions" in job and not _read_only(job.get("permissions")):
             out.append(("pins-soaked-permissions", "job %s" % jname))
-        for i, st in enumerate(_steps(job)):
+        for i, st in enumerate(steps):
             run, uses = _text(st.get("run")), _text(st.get("uses"))
             passed = _text(st.get("with")) + _text(st.get("env"))
             if (
@@ -1124,7 +1145,8 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
                 or _PINS_SECRET_RE.search(passed)
             ):
                 out.append(("pins-soaked-writes", _step_label(jname, i, st)))
-            if _PINS_RED_IF_RE.search(_text(st.get("if"))) and _PINS_EXIT_RE.search(run):
+            cond = _text(st.get("if"))
+            if any(r.search(cond) for r in red_ifs) and _PINS_EXIT_RE.search(run):
                 reds += 1
             if _PINS_APPLY_RE.search(run) and "--out" in run and "--json" in run:
                 applies += 1
@@ -1136,7 +1158,10 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         out.append(("pins-soaked-no-upload", "<no upload-artifact step>"))
     if not reds:
         out.append(
-            ("pins-soaked-no-red-path", "<no `if: ...outputs.rc != '0'` step ending in `exit 1`>")
+            (
+                "pins-soaked-no-red-path",
+                "<no `if: steps.<apply id>.outputs.rc != '0'` step ending in `exit 1`, where the apply step has an id and writes rc= to $GITHUB_OUTPUT>",
+            )
         )
     return out, [
         "%d cron(s), %d apply step(s), %d upload step(s), contents: read only"
