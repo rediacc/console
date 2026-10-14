@@ -5,6 +5,7 @@ import { getMsys2Environment, getRsyncPath, getSshPath } from '../msys2/paths.js
 import type { SyncProgress, SyncResult } from '../types/index.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
 import { prepareRsyncPaths } from './pathConverter.js';
+import { newRsyncCountState, updateRsyncCount } from './rsync-count.js';
 
 /**
  * Gets the rsync command/path for the current platform
@@ -316,6 +317,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
 
     let filesTransferred = 0;
     let bytesTransferred = 0;
+    const countState = newRsyncCountState();
 
     rsync.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
@@ -337,13 +339,8 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
         bytesTransferred = bytes;
       }
 
-      // Count transferred files
-      if (output.includes('xfr#')) {
-        const xfrMatch = /xfr#(\d+)/.exec(output);
-        if (xfrMatch) {
-          filesTransferred = Number.parseInt(xfrMatch[1], 10);
-        }
-      }
+      // Count transferred files (highest xfr# across the chunk, not the first)
+      filesTransferred = updateRsyncCount(countState, output);
     });
 
     rsync.stderr.on('data', (data: Buffer) => {
