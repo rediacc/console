@@ -164,10 +164,15 @@ def test_a_failed_agent_launch_is_reported_as_an_error(
         stderr = ""
         stdout = ""
 
-    def fake_gpg(*_args, **_kw):
+    calls: list[list[str]] = []
+
+    def fake_gpg(args, *_args, **_kw):
+        calls.append(list(args))
         return Done()
 
     monkeypatch.setattr(gate, "_gpg", fake_gpg)
     assert gate._sign_with(tmp_path, tmp_path / "k", "p", "t") == (
         "error: gpgconf --launch gpg-agent exited 2"
     )
+    # Review a80e54c6.4: a half-started agent is killed on the failed-launch path too.
+    assert calls == [["--launch", "gpg-agent"], ["--kill", "gpg-agent"]]

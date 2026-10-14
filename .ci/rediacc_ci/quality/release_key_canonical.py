@@ -457,7 +457,7 @@ def _run_canon(canon: pathlib.Path, target: pathlib.Path, passphrase: str) -> in
 def _sign_with(tmp: pathlib.Path, key: pathlib.Path, passphrase: str, tag: str) -> str:
     """`_sign_with` -- import into a fresh GNUPGHOME, then try to detach-sign.
 
-    Returns "signed", "refused" (gpg said the passphrase is bad), or "error: <gpg's last stderr line>".
+    Returns "signed", "refused" (gpg said the passphrase is bad), or "error: <gpg's last stderr line>"; a gpg-agent that does not launch returns "error: gpgconf --launch gpg-agent exited <code>", and the agent is killed on that path too (it may be half started).
 
     THE AGENT IS STARTED AND STOPPED HERE (worklist #538ba810). Under a loaded ci:quick the right-passphrase control read "refused" while a dozen gpg-agent processes were alive: gpg started each fresh GNUPGHOME's agent on demand, a slow start failed the signing, and any failure counted as a refusal. `gpgconf --launch` returns once the agent answers, only a bad-passphrase failure reads as a refusal, and `gpgconf --kill` stops the agent so no run leaves one behind.
     """
@@ -465,10 +465,10 @@ def _sign_with(tmp: pathlib.Path, key: pathlib.Path, passphrase: str, tag: str) 
     home.mkdir(parents=True, exist_ok=True)
     home.chmod(0o700)
     gnupghome = str(home)
-    launched = _gpg(["--launch", "gpg-agent"], gnupghome, capture=False, tool="gpgconf")
-    if launched.returncode != 0:
-        return "error: gpgconf --launch gpg-agent exited %d" % launched.returncode
     try:
+        launched = _gpg(["--launch", "gpg-agent"], gnupghome, capture=False, tool="gpgconf")
+        if launched.returncode != 0:
+            return "error: gpgconf --launch gpg-agent exited %d" % launched.returncode
         return _import_and_sign(home, key, passphrase)
     finally:
         _gpg(["--kill", "gpg-agent"], gnupghome, capture=False, tool="gpgconf")
