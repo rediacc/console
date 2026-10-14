@@ -58,7 +58,7 @@ CI runs renet's go tests as root (`private/renet/.ci/scripts/test/run-tests.sh:4
 
 ## Tasks
 
-- [ ] H0: prove the hypothesis on the unchanged sandbox, first.
+- [x] H0: prove the hypothesis on the unchanged sandbox, first.
   - Two test seams in `sandbox_gateway.go` with unchanged defaults: `shellUser = config.RediaccUser` (for `gctx.user` at `:225`) and `shellHomeRoot = "/home"` (for `homeDir` at `:129`).
   - New `cmd/renet/sandbox_gateway_shell_linux_test.go`, reusing `TestMain`'s sandbox-exec dispatch (`sandbox_gateway_race_linux_test.go:20-31`).
   - Fixture under `/var/tmp` (never `t.TempDir()`: the shell overmounts `/tmp`, and a vanished datastore fakes a pass with ENOENT): a datastore with `mounts/<guidA>`, `mounts/<guidB>` and `.interim/sandbox`, directories 0755, victim `mounts/<guidB>/victim` at 0600 with a fixed mtime, owned by the run-as user.
@@ -67,11 +67,13 @@ CI runs renet's go tests as root (`private/renet/.ci/scripts/test/run-tests.sh:4
   - Cases: `chmod 0777 <B>/victim`, `touch -m -d @0 <B>/victim`, `truncate -s 0 <B>/victim`, and `setfattr -n user.x -v 1 <B>/victim` when setfattr is installed. B's victim keeps its mode, mtime, size and xattrs.
   - If chmod and touch are already refused on 2131e1a, the hypothesis is false: record the errno, tick H0 with it, and collapse the plan to S1, S3 and E1.
   - Acceptance: `cd private/renet && go test -count=1 -run TestShellOfOneRepoCannotChangeAnotherRepo ./cmd/renet` FAILS on 2131e1a plus seams naming chmod and utimes, both as a sudo-capable user and as `sudo -E env PATH=$PATH go test ...`; the failure lines are quoted in the S2 commit message.
-- [ ] S1: the read-only view runs in CI.
+    (ticked) 2026-10-14T16:26:08Z by d778be9d: renet 0033236: the H0 test failed on the unchanged sandbox: chmod, touch and xattr on repo B by repo A shell rc=0, quoted in the S2 commit; go test -count=1 ./cmd/renet rc=0 as non-root and the targeted root run PASS; lint.sh and i18n.sh rc=0 (private/renet/cmd/renet/sandbox_gateway_shell_linux_test.go)
+- [x] S1: the read-only view runs in CI.
   - `newTransferRace` as uid 0 keeps `--readonly-except`, sets `transferUser = "nobody"`, chowns the fixture to nobody and sets `r.root = true` so the mode case runs.
   - A root sibling of `TestRunSandboxExecRefusesWithoutTheReadOnlyView` builds the view in a child and proves a write outside the writable path fails with EROFS.
   - Acceptance: `sudo -E env PATH=$PATH go test -count=1 -run 'TestTransferLinkSwappedAfterTheCheckCannotEscape|TestRunSandboxExec' -v ./cmd/renet` shows the mode case as PASS, not SKIP; `go test -count=1 ./cmd/renet` as non-root rc 0.
-- [ ] S2: the shell sandbox seals its mounts read-only except an explicit writable set.
+    (ticked) 2026-10-14T16:26:38Z by d778be9d: renet 40febec: as root the transfer race keeps the read-only view and runs the mode case; TestRunSandboxExecBuildsTheReadOnlyView proves EROFS; go test -count=1 ./cmd/renet rc=0 as non-root and the targeted root run PASS; lint.sh and i18n.sh rc=0 (private/renet/cmd/renet/sandbox_gateway_race_linux_test.go:1)
+- [x] S2: the shell sandbox seals its mounts read-only except an explicit writable set.
   - `readOnlyExcept(writable []string)`: every path absolute, clean and existing; bind each onto itself with `MS_BIND|MS_REC`; one `MountSetattr(RDONLY, AT_RECURSIVE)` on `/`; clear RDONLY on each path.
   - `--readonly-except` becomes a `StringArray` (not `StringSlice`, which splits on commas). The early refusal without a namespace stays (`sandbox_exec.go:113-117`). The seal MOVES to just before `applyLandlockAndDrop`, after `setupRepoEbpf`, the home overlay and the `/tmp` bind. With `--readonly-except`, a failed `/tmp` or `/dev/shm` bind is fatal.
   - A private `/dev/shm`: `initSandboxWorkspace` creates `<sandboxDir>/shm` chowned to the run-as user, bound over `/dev/shm` after the `/tmp` bind.
@@ -79,10 +81,12 @@ CI runs renet's go tests as root (`private/renet/.ci/scripts/test/run-tests.sh:4
   - i18n: `sandbox_exec.readonly_view` takes the joined list; a new key `sandbox_exec.private_mount` in all 13 locales and hashes.json.
   - The H0 test goes green and gains positive cases inside A's shell: write and chmod in A's mount, `~/f`, `/tmp/f`, `/dev/shm/f`, `/dev/null`, a git commit in the mount when git is installed, a connect to a unix-socket listener outside the writable set; and A's `ls /dev/shm` does not show B's marker.
   - Acceptance: `go test -count=1 ./cmd/renet ./pkg/i18n/...` rc 0 as non-root and as root, with `TestShellOfOneRepoCannotChangeAnotherRepo` PASS in the root run; `GOOS=linux|darwin|windows go build ./...` rc 0; `go vet` rc 0; `bash .ci/scripts/quality/lint.sh` and `bash .ci/scripts/quality/i18n.sh` rc 0; console `npm run check:ci-renet` rc 0.
-- [ ] S3: a shell refuses to run without Landlock.
+    (ticked) 2026-10-14T16:26:40Z by d778be9d: renet 0033236: TestShellOfOneRepoCannotChangeAnotherRepo PASS as root, with positive cases for the mount, home, tmp, dev/shm, git and a socket; go test -count=1 ./cmd/renet rc=0 as non-root and the targeted root run PASS; lint.sh and i18n.sh rc=0 (private/renet/cmd/renet/sandbox_readonly_linux.go:1)
+- [x] S3: a shell refuses to run without Landlock.
   - `buildGatewaySandboxArgs` adds `--require-landlock`; the comment at `sandbox_exec.go:200-205` no longer names the shell as the warn-only case.
   - Tests: the shell argv carries `--require-landlock`; with `landlockABI` forced to 0 the shell's sandbox-exec argv refuses and a marker command does not run; as root, repo A's `chmod 0777 /proc/<pid of B's shell>/cwd/victim` fails and the victim is unchanged. If that last case SUCCEEDS, stop and escalate: the view would need a private PID namespace and procfs.
   - Acceptance: `go test -count=1 -run 'TestShellPlan|TestShellOfOneRepo|TestRunSandboxExec' ./cmd/renet` rc 0 as non-root and as root; the S2 build, lint and i18n commands rc 0.
+    (ticked) 2026-10-14T16:26:41Z by d778be9d: renet bcb9351: TestShellPlanRefusesWithoutLandlock and TestShellOfOneRepoCannotReachAnotherThroughProc PASS as root; go test -count=1 ./cmd/renet rc=0 as non-root and the targeted root run PASS; lint.sh and i18n.sh rc=0 (private/renet/cmd/renet/sandbox_gateway.go:1)
 - [ ] E1: measure, and from then on gate, Landlock on every supported OS.
   - `packages/e2e-tests/tests/01-system-checks.test.ts`: `runner.executeOnWorker('renet sandbox-exec --detect')` prints `Status: AVAILABLE`, and its ABI line is logged.
   - Measure the default image first: `./rdc.sh ops up --basic`, then `ssh 192.168.111.11 renet sandbox-exec --detect`.
