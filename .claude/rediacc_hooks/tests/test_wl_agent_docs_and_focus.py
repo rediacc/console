@@ -317,7 +317,7 @@ def test_154_next_wakeups_is_gone_from_both_emit_paths(wl):  # noqa: F811
     wl.add_item("- [x] (deadbeef) a finished piece of work")
     wl.newturn()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)\n- #8 moved (pending)")
-    blocked = wl.run({"WORKLIST_FOCUS": "off"})
+    blocked = wl.run()
     assert '"decision": "block"' in blocked.out, blocked.out[:220]
     assert "NEXT WAKEUPS" not in blocked.out, (
         "154b: the wakeup section survived on the dump-all block: %s" % blocked.out[:220]
@@ -509,14 +509,14 @@ def test_156_focus_surfaces_one_rotating_check_per_stop_in_lru_order(wl):  # noq
 
 
 def test_156c_control_focus_off_restores_the_dump_all_block(wl):  # noqa: F811
-    """The revert control for the whole feature: the same two-check fixture shows BOTH bodies in one block when focus is off."""
+    """The control for the whole feature: the same two-check fixture names BOTH checks in one block, one quoted and the other named on its own line (the WORKLIST_FOCUS=off dump that used to quote both was removed by agent/plans/PLAN-stop-hook-effort.md)."""
     wl.hand_now()
     wl.add_item("- [ ] (deadbeef) open thing")
     wl.say("answer")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
+    got = wl.run()
     assert "OPEN worklist item" in got.out, got.out[:300]
     assert "no '## Remaining' section" in got.out, got.out[:300]
-    assert "check(s) failed" in got.out, got.out[:300]
+    assert "2 check(s) outstanding" in got.out, got.out[:300]
 
 
 def test_156d_the_always_tier_rides_every_focused_block(wl):  # noqa: F811

@@ -361,7 +361,7 @@ def test_195_a_foreign_producing_checklist_is_reported_never_blocked_on(wl):  # 
         "agent/programs/demo/CHECKLIST.md:1 asked 2026-10-03; left with its owner nocommit:operator-deferred",
     )
     assert "ticked" in ticked.out, ticked.out + ticked.err
-    got = wl.run(extra_env={"WORKLIST_FOCUS": "off"})
+    got = wl.run()
     assert "CHECKLIST OWNER NOT LIVE" not in got.out, (
         "195c: a recorded answer did not silence the ownership question: %s" % got.out[:500]
     )
@@ -403,7 +403,7 @@ def test_197_an_uncovered_wave_blocks_then_the_add_moves_it_into_the_open_items_
     assert "--add deadbeef 'cl:demo/w1 Wave A: wire the thing'" in got.out, noexit
 
     wl.cli("--add", "deadbeef", "cl:demo/w1 Wave A: wire the thing")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
+    got = wl.run()
     disjoint = "197b: coverage either did not register or swallowed the work: %s" % got.out[:500]
     assert "UNCOVERED" not in got.out, disjoint
     assert "OPEN worklist item" in got.out, disjoint

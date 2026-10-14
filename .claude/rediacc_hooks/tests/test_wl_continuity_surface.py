@@ -325,7 +325,7 @@ def test_p12_inverse_ticking_the_named_item_stales_it(wl):  # noqa: F811
     assert ticked.rc == 0, ticked.err[:300]
     wl.newturn()
     wl.say("done\n\n## Remaining\n- #7 the next thing (pending)")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
+    got = wl.run()
     assert "STATE.md is stale" in got.out, got.out[:800]
 
 

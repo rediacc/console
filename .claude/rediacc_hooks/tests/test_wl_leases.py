@@ -71,7 +71,7 @@ def test_l1b_inverse_a_lead_lease_with_nothing_running_is_open(wl):  # noqa: F81
     item = add(wl, "(deadbeef) driven inline by the lead")
     wl.cli("--lease", wlfix.ME, item, "+30", "worker:lead", "driving it")
     wl.say("working\n\n## Remaining\n- #%s in flight, inline" % item)
-    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    out = wl.run().out
     assert "worker:lead with nothing of this session running" in out, out[:800]
 
 
@@ -194,16 +194,19 @@ def test_l4_a_blocked_item_waits_and_reopens_when_its_blocker_closes(wl):  # noq
     root = add(wl, "(deadbeef) the root of the chain")
     child = add(wl, "(deadbeef) waits on the root BLOCKED_BY:#%s" % root)
     wl.say("working\n\n## Remaining\n- #%s and #%s" % (root, child))
-    reason = json.loads(wl.run({"WORKLIST_FOCUS": "off"}).out)["reason"]
+    reason = json.loads(wl.run().out)["reason"]
     open_block = reason.split("OPEN worklist item(s)", 1)[1].split("\n\n", 1)[0]
     assert "1 OPEN worklist item(s)" in reason, reason[:800]
     assert "the root of the chain" in open_block, open_block
     assert "waits on the root" not in open_block, open_block
-    assert "#%s waiting (#%s)" % (child, root) in reason, reason[-800:]
+    # The waiting row is the guide's, which a block no longer carries: read it where the guide lives.
+    assert "#%s waiting (#%s)" % (child, root) in wl.cli("--list", "--open", wlfix.ME).out, reason[
+        -800:
+    ]
     assert wl.cli("--tick", wlfix.ME, root, "done, exit code 0 nocommit:research").rc == 0
     wl.newturn()
     wl.say("working\n\n## Remaining\n- #%s" % child)
-    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    out = wl.run().out
     assert "1 OPEN worklist item(s)" in out, out[:800]
     assert "waits on the root" in out, out[:800]
     doc = json.loads(wl.stem(".state-deadbeef.json").read_text(encoding="utf-8"))
@@ -234,11 +237,13 @@ def test_l4c_a_blocked_by_set_by_update_makes_the_item_wait(wl):  # noqa: F811
     assert wl.cli("--update", wlfix.ME, child, "BLOCKED_BY:#%s waits on the root" % root).rc == 0
     assert wl.cli("--update", wlfix.ME, child, "progress note with no token").rc == 0
     wl.say("working\n\n## Remaining\n- #%s and #%s" % (root, child))
-    reason = json.loads(wl.run({"WORKLIST_FOCUS": "off"}).out)["reason"]
+    reason = json.loads(wl.run().out)["reason"]
     open_block = reason.split("OPEN worklist item(s)", 1)[1].split("\n\n", 1)[0]
     assert "1 OPEN worklist item(s)" in reason, reason[:800]
     assert "an ordinary item" not in open_block, open_block
-    assert "#%s waiting (#%s)" % (child, root) in reason, reason[-800:]
+    assert "#%s waiting (#%s)" % (child, root) in wl.cli("--list", "--open", wlfix.ME).out, reason[
+        -800:
+    ]
 
 
 def test_l5_a_lease_names_exactly_one_worker(wl):  # noqa: F811
@@ -263,54 +268,44 @@ def queue_with(wl, block: str):  # noqa: F811
 
 
 def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):  # noqa: F811
-    """Operator order 2026-10-04: QUEUE.md `stop_hook: off` allows every stop with one free notice and no `decision`; verbs keep working; a malformed block keeps the hook on; a stray `.ci/config/stop-hook.json` disables nothing."""
+    """agent/plans/PLAN-stop-hook-effort.md, replacing the 2026-10-04 `stop_hook: off` switch: `effort: quiet` keeps only the FLOOR, so an open item no longer holds the stop; verbs keep working; `stop_hook: off` is an unknown key that quiets nothing; a malformed `effort:` line is the fail-safe `high`; a stray `.ci/config/stop-hook.json` disables nothing."""
     ready(wl)
     add(wl, "(deadbeef) open work that would block")
     wl.say("working\n\n## Remaining\n- the item")
     assert (
-        "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out
-    )  # CONTROL: no settings, the hook blocks
+        "OPEN worklist item" in wl.run().out
+    )  # CONTROL: the fixture's level (high), the hook blocks
     # The retired switch: a file at the old path, even one saying enabled:false, is not read.
     cfg = wl.proj / ".ci" / "config" / "stop-hook.json"
     cfg.parent.mkdir(parents=True, exist_ok=True)
     cfg.write_text('{"enabled": false}', encoding="utf-8")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the item")
-    assert "OPEN worklist item" in wl.run({"WORKLIST_FOCUS": "off"}).out
-    # A malformed block keeps the hook on, whichever way it is malformed.
-    for bad in (
-        "stop_hook: of",
-        "stop_hook: off\nstop_hook: off",
-        "stop_hook: off\nturbx: on",
-    ):
+    assert "OPEN worklist item" in wl.run().out
+    # The retired key and a malformed level both keep every check on.
+    for bad in ("stop_hook: off", "effort: of", "effort: quiet\neffort: quiet", "effort: off"):
         queue_with(wl, bad)
         wl.newturn()
         wl.say("working\n\n## Remaining\n- the item")
-        got = wl.run({"WORKLIST_FOCUS": "off"})
-        if "turbx" in bad:  # an unknown key is a problem for THAT key; stop_hook: off still holds
-            assert "decision" not in got.out, got.out[:300]
-        else:
-            assert "OPEN worklist item" in got.out, (bad, got.out[:300])
-    # Off: one systemMessage naming the switch and its note, no decision, rc 0.
-    queue_with(wl, "stop_hook: off -- operator test reason")
+        got = wl.run()
+        assert "OPEN worklist item" in got.out, (bad, got.out[:300])
+    # quiet: the open item no longer blocks, rc 0, and the verbs are unaffected.
+    queue_with(wl, "effort: quiet -- operator test reason")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the item")
-    got = wl.run({"WORKLIST_FOCUS": "off"})
+    got = wl.run()
     assert got.rc == 0, (got.rc, got.err[:300])
-    msg = json.loads(got.out)
-    assert "decision" not in msg, msg
-    assert (
-        "Stop hook OFF (agent/plans/QUEUE.md stop_hook: off -- operator test reason)"
-        in (msg["systemMessage"])
-    ), msg
+    assert '"decision": "block"' not in got.out, got.out[:300]
     assert "OPEN worklist item" not in got.out
     assert wl.cli("--list", "--open", wlfix.ME).rc == 0  # verbs unaffected
-    # The notice carries the settings problems too.
-    queue_with(wl, "stop_hook: off\nturbo: onn")
+    # A settings problem rides the stop as an advisory, at every level that advises it.
+    queue_with(wl, "effort: low\nturbo: onn")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the item")
-    msg = json.loads(wl.run({"WORKLIST_FOCUS": "off"}).out)
-    assert "turbo: expected on|off" in msg["systemMessage"], msg
+    wl.run()
+    state = json.loads(wl.wl.with_suffix(".state-%s.json" % wlfix.ME).read_text(encoding="utf-8"))
+    texts = [e.get("text") or "" for e in (state.get("outq") or {}).get("items", [])]
+    assert any("SETTINGS PROBLEM" in t and "turbo: expected on|off" in t for t in texts), texts
 
 
 # ---- R20260925.5: an expired queue lease on a waiting item reads as waiting ---------------------------
@@ -331,7 +326,7 @@ def queued_waiter_world(fix, with_token: bool) -> None:
 def test_l7_an_expired_queue_lease_waiting_on_an_open_blocker_does_not_fail_closed(wl):  # noqa: F811
     """CONTROL: before R20260925.5 the expired lease failed closed into an open item although its blocker was still being worked, and the lead renewed it by hand with the note "blocked on A3"."""
     queued_waiter_world(wl, with_token=True)
-    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    out = wl.run().out
     assert "lease expired; finish it" not in out, out[:1200]
     # The guide says the same: waiting, not a dead lease to re-lease.
     assert "#q0000old LEASE DEAD" not in out, out[:1600]
@@ -340,9 +335,11 @@ def test_l7_an_expired_queue_lease_waiting_on_an_open_blocker_does_not_fail_clos
 
 def test_l7b_inverse_the_same_lease_without_the_token_fails_closed_and_names_the_remedy(wl):  # noqa: F811
     queued_waiter_world(wl, with_token=False)
-    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    out = wl.run().out
     assert "lease expired; finish it" in out, out[:1200]
-    assert "#q0000old LEASE DEAD" in out, out[:1600]
+    # The dead-lease row is the guide's, which a block no longer carries: read it where the guide lives.
+    guide = wl.cli("--list", "--open", wlfix.ME).out
+    assert "#q0000old LEASE DEAD" in guide, guide[:1600]
     assert "--update deadbeef q0000old 'BLOCKED_BY:#<blocker>'" in out, out[:1600]
 
 
@@ -403,7 +400,7 @@ def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):  # noqa: F
     plant_lease(wl, "b10c0001", W1)
     plant_queued(wl, "q0000new", "(deadbeef) independent writer work", 10)
     wl.say("working\n\n## Remaining\n- #b10c0001 on the writer, #q0000new queued")
-    out = wl.run({"WORKLIST_FOCUS": "off"}).out
+    out = wl.run().out
     assert "QUEUED WORK AND A FREE WRITER SLOT" in out, out[:1200]
     assert "start #q0000new" in out, out[:1200]
     assert "--update deadbeef <id> 'BLOCKED_BY:#<blocker>'" in out, out[:1600]

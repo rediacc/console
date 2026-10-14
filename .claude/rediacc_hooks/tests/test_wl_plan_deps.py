@@ -145,14 +145,16 @@ def test_d6_the_stop_says_unblocked_when_the_root_finishes(fix):
     root = add(fix, linked("PLAN-z.md", "the root box"))
     waiter = add(fix, linked("PLAN-x.md", "port the x box"))
     fix.say("working\n\n## Remaining\n- #%s and #%s" % (root, waiter))
-    first = json.loads(fix.run({"WORKLIST_FOCUS": "off"}).out)["reason"]
+    fix.run()
+    # The waiting row is the guide's, which a block no longer carries: read it where the guide lives.
+    first = fix.cli("--list", "--open", wlfix.ME).out
     assert waiter in first, first[-900:]
     assert "waiting (PLAN-z.md)" in first, first[-900:]
     write_plan(fix, "z", status="done")
     assert fix.cli("--tick", wlfix.ME, root, EVIDENCE).rc == 0
     fix.newturn()
     fix.say("working\n\n## Remaining\n- #%s" % waiter)
-    second = fix.run({"WORKLIST_FOCUS": "off"}).out
+    second = fix.run().out
     line = "UNBLOCKED #%s: PLAN-z.md is finished" % waiter
     texts = unblocked_texts(fix)
     assert any(t.startswith(line) for t in texts) or line in second, (texts, second[-700:])
@@ -166,11 +168,11 @@ def test_d6b_inverse_a_root_nobody_tracks_does_not_claim_to_be_finished(fix):
     root = add(fix, linked("PLAN-z.md", "the root box"))
     waiter = add(fix, linked("PLAN-x.md", "port the x box"))
     fix.say("working\n\n## Remaining\n- #%s and #%s" % (root, waiter))
-    fix.run({"WORKLIST_FOCUS": "off"})
+    fix.run()
     assert fix.cli("--tick", wlfix.ME, root, EVIDENCE).rc == 0
     fix.newturn()
     fix.say("working\n\n## Remaining\n- #%s" % waiter)
-    out = fix.run({"WORKLIST_FOCUS": "off"}).out
+    out = fix.run().out
     assert not any("is finished, so it is open work again" in t for t in unblocked_texts(fix))
     assert "is finished, so it is open work again" not in out, out[-700:]
     assert "nothing tracks it; start there" in out, out[-900:]
