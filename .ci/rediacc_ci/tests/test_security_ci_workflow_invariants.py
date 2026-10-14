@@ -1623,6 +1623,8 @@ def test_a_red_path_watching_another_step_is_no_red_path() -> None:
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\nlet rc=0\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\nrc=0; echo "rc=$rc" >> "$GITHUB_OUTPUT"',
         '! npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\necho "rc=$rc >> $GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\necho "rc=$rc" >> "$GITHUB_OUTPUT',
         'if npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\necho "rc=$rc" >> "$GITHUB_OUTPUT"; rc=0',
     ],
@@ -1645,6 +1647,31 @@ def test_a_comment_or_echo_naming_the_verb_above_the_apply_is_not_the_apply_line
 def test_the_word_secrets_outside_an_expression_is_not_a_secret() -> None:
     doc = pins_doc()
     doc["jobs"]["soaked"]["steps"].append({"run": "echo this job holds no secrets, by design"})
+    assert pins_kinds(doc) == []
+
+
+@pytest.mark.parametrize(
+    "write",
+    [
+        'echo "rc=$rc" >> "$GITHUB_OUTPUT"',
+        'echo "rc=${rc}" >> "${GITHUB_OUTPUT}"',
+        "echo rc=$rc >> $GITHUB_OUTPUT",
+        'echo rc=${rc} >> "$GITHUB_OUTPUT"',
+    ],
+)
+def test_each_accepted_spelling_of_the_rc_write_keeps_the_red_path(write) -> None:
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"][1]["run"] = (
+        "npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\n" + write
+    )
+    assert pins_kinds(doc) == []
+
+
+def test_a_noclobber_redirection_on_the_apply_line_keeps_the_red_path() -> None:
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"][1]["run"] = (
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/ >| out.json\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"'
+    )
     assert pins_kinds(doc) == []
 
 
