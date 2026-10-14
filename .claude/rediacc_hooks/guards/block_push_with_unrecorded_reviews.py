@@ -158,7 +158,7 @@ def _publishes(run):
 
 def _load_reviewer():
     syspath.on_sys_path(STOP_DIR)
-    import wl_review  # noqa: PLC0415 -- loaded only for a push, never for the rest of the chain
+    import wl_review
 
     return wl_review
 
@@ -172,7 +172,7 @@ def run(ev):
         return hookio.ALLOW
     try:
         rv = _load_reviewer()
-    except Exception as exc:  # noqa: BLE001 -- a broken environment warns and allows
+    except Exception as exc:
         ev.warn("per-commit review check skipped: the reviewer module did not load (%s)" % exc)
         return hookio.ALLOW
     project = pathlib.Path(ev.project_dir).resolve()
@@ -208,7 +208,7 @@ def run(ev):
         label = rv.repo_label(root, repo)
         try:
             st = rv.branch_state(root, branch, repos={label})
-        except Exception as exc:  # noqa: BLE001 -- a broken environment warns and allows
+        except Exception as exc:
             ev.warn(
                 "per-commit review check skipped for %s (%s: %s)" % (label, type(exc).__name__, exc)
             )

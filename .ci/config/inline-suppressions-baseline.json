@@ -735,48 +735,16 @@
   ".claude/rediacc_hooks/guards/block_plan_without_depends.py": {
    "noqa E731": 1
   },
-  ".claude/rediacc_hooks/guards/block_prose_style_edit.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/guards/block_push_with_unrecorded_reviews.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/guards/block_raw_ci_read.py": {
-   "noqa BLE001": 2
-  },
-  ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
-   "noqa BLE001": 1
-  },
   ".claude/rediacc_hooks/guards/block_second_branch.py": {
    "noqa DTZ005": 1
   },
   ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py": {
    "noqa DTZ005": 2
   },
-  ".claude/rediacc_hooks/guards/block_turbo_early_push.py": {
-   "noqa BLE001": 1,
-   "noqa PLC0415": 9
-  },
-  ".claude/rediacc_hooks/guards/block_unpushed_submodule_pin.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/guards/block_unverified_push.py": {
-   "noqa PLC0415": 1
-  },
   ".claude/rediacc_hooks/guards/test-block_agent_cap.py": {
    "noqa PLC0415": 2,
    "type-ignore arg-type": 1,
    "type-ignore union-attr": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_ci_skip_token.py": {
-   "noqa S102": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_commit_on_main.py": {
-   "noqa S102": 1
-  },
-  ".claude/rediacc_hooks/guards/test-block_git_hook_bypass.py": {
-   "noqa S102": 1
   },
   ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": {
    "noqa E402": 1
@@ -786,20 +754,14 @@
    "type-ignore arg-type": 1,
    "type-ignore union-attr": 1
   },
-  ".claude/rediacc_hooks/guards/test-block_no_review_ineligible.py": {
-   "noqa S102": 1
-  },
   ".claude/rediacc_hooks/guards/test-block_plan_box_rewrite.py": {
-   "noqa PLC0415": 2,
-   "noqa S102": 2
+   "noqa PLC0415": 2
   },
   ".claude/rediacc_hooks/guards/test-block_plan_concurrency.py": {
-   "noqa PLC0415": 2,
-   "noqa S102": 2
+   "noqa PLC0415": 2
   },
   ".claude/rediacc_hooks/guards/test-block_plan_without_depends.py": {
-   "noqa PLC0415": 2,
-   "noqa S102": 2
+   "noqa PLC0415": 2
   },
   ".claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py": {
    "noqa PLC0415": 1,

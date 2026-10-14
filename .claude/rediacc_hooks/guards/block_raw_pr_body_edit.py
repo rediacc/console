@@ -338,7 +338,7 @@ def _stdin_of(cmd, run, verb):
     """The heredoc and here-string bodies attached to THIS walked `gh pr <verb>`, [] when none is (a pipe, or no stdin at all)."""
     try:
         segments = commit_policy.target_segments(cmd, _is_gh_pr(verb))
-    except Exception:  # noqa: BLE001 -- an unlexable command has no readable heredoc
+    except Exception:
         return []
     # Paired in order, as `commit_policy._stdin_messages` pairs commits, so two creates in one command each get their own heredoc.
     unpaired = list(segments)

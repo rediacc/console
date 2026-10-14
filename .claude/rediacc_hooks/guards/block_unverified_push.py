@@ -924,7 +924,7 @@ def _policy_rel(name):
     cipath = str(hookio.repo_root() / ".ci")
     inserted = syspath.on_sys_path(cipath)
     try:
-        from rediacc_ci.policy_paths import policy_rel  # noqa: PLC0415 - deliberately late
+        from rediacc_ci.policy_paths import policy_rel
     finally:
         if inserted and cipath in sys.path:
             sys.path.remove(cipath)

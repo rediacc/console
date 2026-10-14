@@ -432,7 +432,7 @@ def main():
     from rediacc_hooks import hookio  # noqa: PLC0415 -- the package is registered just above
 
     good: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
-    exec(compile(SOURCE, str(GUARD), "exec"), good)  # noqa: S102
+    exec(compile(SOURCE, str(GUARD), "exec"), good)
     # 2eaeda7b.1: a git error while reading the corpus must raise (the outer handler warns UNEXAMINED and allows), never read as an empty corpus.
     root = build(world())
     env_ = dict(GIT_ENV, CLAUDE_PROJECT_DIR=str(root))
@@ -481,7 +481,7 @@ def main():
         fails += 1
     else:
         bad: dict = {"__name__": "broken_guard", "__file__": str(GUARD)}
-        exec(compile(SOURCE.replace(old, new), str(GUARD), "exec"), bad)  # noqa: S102
+        exec(compile(SOURCE.replace(old, new), str(GUARD), "exec"), bad)
         changed = 0
         refusals = 0
         saved = dict(os.environ)

@@ -129,7 +129,7 @@ def _registry():
             spec.loader.exec_module(loaded)
             if hasattr(loaded, "CI_READ_VERBS"):
                 module = loaded
-    except Exception:  # noqa: BLE001 -- fail open, as block_adhoc_sanctioned does
+    except Exception:
         module = None
     _REGISTRY.append(module)
     return module
@@ -162,7 +162,7 @@ def run(ev):
         return hookio.ALLOW
     try:
         msg = _refusal(registry, cmd)
-    except Exception:  # noqa: BLE001 -- a raising registry allows, never bricks the shell
+    except Exception:
         return hookio.ALLOW
     if msg:
         ev.warn(msg)

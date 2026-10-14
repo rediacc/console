@@ -530,7 +530,7 @@ def main():
     from rediacc_hooks import hookio  # noqa: PLC0415 -- the package is registered just above
 
     _good_ns: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
-    exec(compile(SOURCE, str(GUARD), "exec"), _good_ns)  # noqa: S102
+    exec(compile(SOURCE, str(GUARD), "exec"), _good_ns)
     for label in ("DEFECT", "VERDICT_DEFECT"):
         old, new = _good_ns[label]
         if old not in _outside_defect(SOURCE, "DEFECT", "VERDICT_DEFECT"):
@@ -541,7 +541,7 @@ def main():
             fails += 1
             continue
         _bad_ns: dict = {"__name__": "broken_guard", "__file__": str(GUARD)}
-        exec(compile(SOURCE.replace(old, new), str(GUARD), "exec"), _bad_ns)  # noqa: S102
+        exec(compile(SOURCE.replace(old, new), str(GUARD), "exec"), _bad_ns)
         changed = 0
         for _name, payload, _want in CASES:
             tree()
