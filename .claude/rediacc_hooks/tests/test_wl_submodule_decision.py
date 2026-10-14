@@ -13,7 +13,6 @@ import subprocess
 import sys
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 TARGET = "aea435154"
 
@@ -64,30 +63,30 @@ def leased_with_note(fix, note: str) -> str:
     return rid
 
 
-def test_r23_a_keep_in_a_leased_items_note_is_a_decision(wl):  # noqa: F811
+def test_r23_a_keep_in_a_leased_items_note_is_a_decision(wl):
     """CONTROL: before R.23 only a ticked item carrying sha[:9] counted, so this was False."""
     leased_with_note(wl, "private/account 9fda8c7 -> aea4351: KEEP, the babysitter commits it")
     assert decided(wl) is True
 
 
-def test_r23_a_drop_in_an_open_items_update_is_a_decision(wl):  # noqa: F811
+def test_r23_a_drop_in_an_open_items_update_is_a_decision(wl):
     rid = item(wl, "(deadbeef) the account pointer")
     got = wl.cli("--update", wlfix.ME, rid, "DROP private/account aea43515, a peer's checkout")
     assert got.rc == 0, got.err[:400]
     assert decided(wl) is True
 
 
-def test_r23_inverse_a_note_without_keep_or_drop_is_not_a_decision(wl):  # noqa: F811
+def test_r23_inverse_a_note_without_keep_or_drop_is_not_a_decision(wl):
     leased_with_note(wl, "private/account 9fda8c7 -> aea4351: looking at it")
     assert decided(wl) is False
 
 
-def test_r23_inverse_a_different_sha_is_not_a_decision(wl):  # noqa: F811
+def test_r23_inverse_a_different_sha_is_not_a_decision(wl):
     leased_with_note(wl, "private/account 9fda8c7 -> aea4351: KEEP")
     assert decided(wl, sha="bbbb12345") is False
 
 
-def test_r23_inverse_a_short_sha_or_another_path_is_not_a_decision(wl):  # noqa: F811
+def test_r23_inverse_a_short_sha_or_another_path_is_not_a_decision(wl):
     leased_with_note(wl, "private/account aea43: KEEP")
     assert decided(wl) is False, "a 5-character prefix"
     wl.setup()
@@ -95,6 +94,6 @@ def test_r23_inverse_a_short_sha_or_another_path_is_not_a_decision(wl):  # noqa:
     assert decided(wl) is False, "another submodule's path"
 
 
-def test_r23_inverse_another_sessions_item_is_not_this_sessions_decision(wl):  # noqa: F811
+def test_r23_inverse_another_sessions_item_is_not_this_sessions_decision(wl):
     leased_with_note(wl, "private/account 9fda8c7 -> aea4351: KEEP")
     assert decided(wl, session_id=wlfix.peer_id("cafef00d")) is False

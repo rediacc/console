@@ -13,7 +13,6 @@ import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_roster import subagents_dir
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 EVIDENCE_SNIPPET = r"""
 import json, sys
@@ -44,25 +43,25 @@ def tracked_files(fix) -> None:
     fix.git("commit", "-qm", "chore: files")
 
 
-def test_r8_rc_equals_is_an_exit_code(wl):  # noqa: F811
+def test_r8_rc_equals_is_an_exit_code(wl):
     """CONTROL: before R.8 `rc=0` was not evidence."""
     assert evidence(wl, "87 cases rc=0") is True
     assert evidence(wl, "87 cases, rc 0") is True
 
 
-def test_r8_a_unique_basename_citation_resolves(wl):  # noqa: F811
+def test_r8_a_unique_basename_citation_resolves(wl):
     """CONTROL: before R.8 a bare basename never resolved."""
     tracked_files(wl)
     assert evidence(wl, "fixed in unique_guard.py:2") is True
 
 
-def test_r8_inverse_ambiguous_or_out_of_range_basenames_do_not_resolve(wl):  # noqa: F811
+def test_r8_inverse_ambiguous_or_out_of_range_basenames_do_not_resolve(wl):
     tracked_files(wl)
     assert evidence(wl, "fixed in dup_name.py:2") is False
     assert evidence(wl, "fixed in unique_guard.py:40") is False
 
 
-def test_r8_inverse_a_bare_claim_is_still_refused(wl):  # noqa: F811
+def test_r8_inverse_a_bare_claim_is_still_refused(wl):
     tracked_files(wl)
     assert evidence(wl, "done, works") is False
 
@@ -109,7 +108,7 @@ def added(fix) -> str:
     return found.group(1)
 
 
-def test_r8_asked_passes_against_a_real_answer(wl):  # noqa: F811
+def test_r8_asked_passes_against_a_real_answer(wl):
     """CONTROL: before R.8 an operator answer quoted by its time was refused."""
     minute = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() - 3600))
     answered = time.strftime("%Y-%m-%dT%H:%M:40.000Z", time.gmtime(time.time() - 3600))
@@ -124,7 +123,7 @@ def test_r8_asked_passes_against_a_real_answer(wl):  # noqa: F811
     assert got.rc == 0, got.err[:400]
 
 
-def test_r8_inverse_asked_without_an_answer_is_refused_and_logged(wl):  # noqa: F811
+def test_r8_inverse_asked_without_an_answer_is_refused_and_logged(wl):
     lead_transcript(wl).write_text("", encoding="utf-8")
     minute = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() - 3600))
     item = added(wl)
@@ -193,7 +192,7 @@ def sibling_repo(fix, rel: str) -> str:
     ).stdout.strip()
 
 
-def test_r20_a_sibling_repo_sha_is_evidence(wl):  # noqa: F811
+def test_r20_a_sibling_repo_sha_is_evidence(wl):
     """CONTROL, tick-refusals rows 5 and 6 (18:37:08Z, 18:37:16Z): real shas of private/generative and private/growth were refused, because only the console and its submodules were asked."""
     wl.reg_repo()
     sha = sibling_repo(wl, "private/sib")
@@ -202,7 +201,7 @@ def test_r20_a_sibling_repo_sha_is_evidence(wl):  # noqa: F811
     assert evidence(wl, "landed %s" % deep) is True, "a depth-4 repo (maasikas.emta.ee's depth)"
 
 
-def test_r20_inverse_a_fabricated_sha_is_refused_in_one_call_per_root(wl):  # noqa: F811
+def test_r20_inverse_a_fabricated_sha_is_refused_in_one_call_per_root(wl):
     wl.reg_repo()
     sibling_repo(wl, "private/sib")
     sibling_repo(wl, "private/other")
@@ -217,7 +216,7 @@ def test_r20_inverse_a_fabricated_sha_is_refused_in_one_call_per_root(wl):  # no
 # ---- R20260924.21: the refusal names every accepted shape, and the newest answer minute --------------
 
 
-def test_r21_the_refusal_names_every_shape_and_the_newest_ask_minute(wl):  # noqa: F811
+def test_r21_the_refusal_names_every_shape_and_the_newest_ask_minute(wl):
     """CONTROL, tick-refusals rows 1 to 3 (16:05:52Z to 16:07:30Z): the lead wrote "operator /ask 2026-09-24T16:0xZ" three times, because the refusal never named `ASKED:` or `rc=N`."""
     older = time.strftime("%Y-%m-%dT%H:%M:05.000Z", time.gmtime(time.time() - 3000))
     newest = time.gmtime(time.time() - 1200)
@@ -231,7 +230,7 @@ def test_r21_the_refusal_names_every_shape_and_the_newest_ask_minute(wl):  # noq
     assert "ASKED:%s" % time.strftime("%Y-%m-%dT%H:%MZ", newest) in got.err, got.err
 
 
-def test_r21_inverse_no_recent_answer_prints_no_minute(wl):  # noqa: F811
+def test_r21_inverse_no_recent_answer_prints_no_minute(wl):
     plant_ask(wl, time.strftime("%Y-%m-%dT%H:%M:05.000Z", time.gmtime(time.time() - 3 * 3600)))
     item = added(wl)
     got = wl.cli("--tick", wlfix.ME, item, "operator ruled: quarantine it")

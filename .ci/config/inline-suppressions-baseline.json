@@ -786,37 +786,6 @@
   ".claude/rediacc_hooks/hookio.py": {
    "noqa F401": 1
   },
-  ".claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py": {
-   "noqa F401": 1,
-   "noqa F811": 18
-  },
-  ".claude/rediacc_hooks/tests/test_wl_submodule_decision.py": {
-   "noqa F401": 1,
-   "noqa F811": 6
-  },
-  ".claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py": {
-   "noqa F401": 1,
-   "noqa F811": 14
-  },
-  ".claude/rediacc_hooks/tests/test_wl_tick_evidence_shapes.py": {
-   "noqa F401": 1,
-   "noqa F811": 10
-  },
-  ".claude/rediacc_hooks/tests/test_wl_triage_and_plans.py": {
-   "noqa F401": 1,
-   "noqa F811": 10
-  },
-  ".claude/rediacc_hooks/tests/test_wl_waiter_controls.py": {
-   "noqa F401": 1,
-   "noqa F811": 10
-  },
-  ".claude/rediacc_hooks/tests/test_wl_wake.py": {
-   "noqa F401": 1,
-   "noqa F811": 2
-  },
-  ".claude/rediacc_hooks/tests/wlfix.py": {
-   "noqa PLC0415": 1
-  },
   ".devcontainer/Dockerfile.uid": {
    "hadolint-ignore DL3002": 1,
    "hadolint-ignore DL3006": 1,

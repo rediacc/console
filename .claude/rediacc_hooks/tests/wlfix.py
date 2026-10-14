@@ -13,6 +13,7 @@ THE AMBIENT SCRUB IS STILL LOAD-BEARING and is done here rather than once at imp
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import pathlib
@@ -23,7 +24,6 @@ import subprocess
 import sys
 import time
 
-import pytest
 from rediacc_ci import paths
 
 # The hook under test, and the directory `wl_*` imports resolve against.
@@ -194,7 +194,7 @@ class Fixture:
     def settings(self, **kw) -> None:
         """Write `kw` (`cadence=False`, `agent_hint="off"`, `writer_cap=2`, ...) into the fixture project's agent/plans/QUEUE.md settings block, through `wl_planqueue.set_settings`, the verb's own writer. A bool becomes on|off; anything else is stringified."""
         paths.on_sys_path(STOP_DIR)
-        import wl_planqueue  # noqa: PLC0415
+        wl_planqueue = importlib.import_module("wl_planqueue")
 
         path = self.proj / wl_planqueue.QUEUE_REL
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -635,11 +635,3 @@ def quoted(out: str) -> str:
 
     Since 2026-09-24 ("One quoted + others named") every outstanding rotating check is NAMED on one line under `ALSO OUTSTANDING, NAMED`, so a case asserting which check a stop QUOTED must look above that heading, not at the whole output."""
     return out.split("ALSO OUTSTANDING, NAMED", 1)[0]
-
-
-@pytest.fixture
-def wl(tmp_path):
-    """One sandbox per test, torn down with `tmp_path`."""
-    fixture = Fixture(tmp_path / "hookfix")
-    fixture.setup()
-    return fixture

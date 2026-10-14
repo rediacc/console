@@ -12,7 +12,6 @@ import tempfile
 import time
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 ME = "0000cafe"
 WATCH = {
@@ -119,7 +118,7 @@ def test_wk8_the_harness_timeout_outlasts_the_sleep_and_stays_under_the_ceiling(
     assert wake.harness_timeout_ms(wake.WAKE_MAX_MIN) > wake.WAKE_MAX_MIN * 60000
 
 
-def test_wk6_a_waiting_stop_without_a_timer_blocks_and_names_the_arm_command(wl):  # noqa: F811
+def test_wk6_a_waiting_stop_without_a_timer_blocks_and_names_the_arm_command(wl):
     wl.setup()
     wl.brief_now()
     wl.hand_now()
@@ -139,7 +138,7 @@ def test_wk6_a_waiting_stop_without_a_timer_blocks_and_names_the_arm_command(wl)
     assert "NO WAKE-UP TIMER" not in got.out, got.out[:600]
 
 
-def test_wk7_no_background_work_needs_no_timer_and_a_timer_alone_is_not_a_wait(wl):  # noqa: F811
+def test_wk7_no_background_work_needs_no_timer_and_a_timer_alone_is_not_a_wait(wl):
     wl.setup()
     wl.brief_now()
     wl.hand_now()

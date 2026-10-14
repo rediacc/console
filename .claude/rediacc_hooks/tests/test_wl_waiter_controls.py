@@ -12,7 +12,6 @@ import sys
 import time
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 SAID_THING = "answer\n\n## Remaining\n- #7 thing (pending)"
 SAID_DONE = "all done, nothing outstanding"
@@ -79,7 +78,7 @@ def stamp(minutes_ago: float = 0.0) -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - minutes_ago * 60))
 
 
-def test_163x_no_cli_verb_may_fall_through_to_the_stop_battery(wl):  # noqa: F811
+def test_163x_no_cli_verb_may_fall_through_to_the_stop_battery(wl):
     """THE DEFECT, measured on HEAD before the fix rather than theorised.
 
     A verb whose guard put the arity check INSIDE the condition did not fail on too few arguments: it fell through to the hook path, which runs the whole battery against an EMPTY event. With stdin closed that returned a genuine block verdict at EXIT 0 and wrote six unknown-session sidecars for a session id that does not exist; with stdin left open it hung forever in json.load. Both
@@ -119,7 +118,7 @@ def test_163x_no_cli_verb_may_fall_through_to_the_stop_battery(wl):  # noqa: F81
     assert rc != 0, "163x: an unknown verb succeeded, which it must not"
 
 
-def test_163x_control_the_well_formed_verbs_still_work(wl):  # noqa: F811
+def test_163x_control_the_well_formed_verbs_still_work(wl):
     """CONTROL: the legitimate forms still work, so the guards refuse arity and not the verb."""
     declared = wl.cli_as("looppfx1", "--loop", "looppfx1", "2026-01-01T00:00:00Z", "1", "label")
     assert_in(declared, "loop declared", "163x CONTROL: a well-formed --loop still declares")
@@ -127,7 +126,7 @@ def test_163x_control_the_well_formed_verbs_still_work(wl):  # noqa: F811
     assert_in(recorded, "brief recorded", "163x CONTROL: a well-formed --brief still records")
 
 
-def test_163g_a_bare_item_id_is_refused_as_a_brief(wl):  # noqa: F811
+def test_163g_a_bare_item_id_is_refused_as_a_brief(wl):
     """A LONE ITEM ID is a misread of the verb, not a very short brief.
 
     The word reads both ways (publish a brief, or brief somebody on a topic) and `--brief <me> <text...>` is `--tick <me> <id> <evidence>` minus the evidence, so the id lands where the sentence goes. Paid for live: a session meaning to READ item 65ce7ca3 published it, and the roster then advertised "65ce7ca3" as that session's live activity to every later reader. Both real id
@@ -148,7 +147,7 @@ def test_163g_a_bare_item_id_is_refused_as_a_brief(wl):  # noqa: F811
         )
 
 
-def test_163g_control_real_briefs_still_record(wl):  # noqa: F811
+def test_163g_control_real_briefs_still_record(wl):
     """CONTROL: the discriminator is a LONE all-hex token of id width, so anything with a second word, any non-hex character, or a length outside the band must still record."""
     rows = [
         (
@@ -169,7 +168,7 @@ def test_163g_control_real_briefs_still_record(wl):  # noqa: F811
         )
 
 
-def test_163x_control_a_bare_invocation_still_runs_the_battery(wl):  # noqa: F811
+def test_163x_control_a_bare_invocation_still_runs_the_battery(wl):
     """CONTROL 2, THE LOAD-BEARING ONE: the real Stop hook takes NO arguments, so the leading-dash catch-all must not be able to swallow it.
 
     If this regressed, every stop in the repo would exit 2 instead of running any check at all. The bash asserted a verdict key OR any output at all, which is the same claim as this one: the battery ran.
@@ -184,7 +183,7 @@ def test_163x_control_a_bare_invocation_still_runs_the_battery(wl):  # noqa: F81
     )
 
 
-def test_163y_unread_sub_agent_reports_are_surfaced_on_an_ordinary_stop(wl):  # noqa: F811
+def test_163y_unread_sub_agent_reports_are_surfaced_on_an_ordinary_stop(wl):
     """v18. SessionStart and PostCompact are covered by wl_report's own hooks; this is the commoner case they miss, a long-running session whose teammate finished twenty minutes ago and whose SendMessage has scrolled out of reach.
 
     IT USED TO BE REPORT-ONLY FOREVER, on the stated grounds that no honest evidence of having read one could be demanded at a stop. That grounds was untrue (`wl_report.py --read <me> <id>` is exactly such evidence, and the advisory already printed the command) and the cost was measured: outq_drain runs only on the ALLOW path, so one session carried four unread teammate reports
@@ -280,7 +279,7 @@ def test_163y_unread_sub_agent_reports_are_surfaced_on_an_ordinary_stop(wl):  # 
     assert not foreign.out.strip(), why
 
 
-def test_163b_a_stale_output_stream_is_flagged_possibly_stuck(wl):  # noqa: F811
+def test_163b_a_stale_output_stream_is_flagged_possibly_stuck(wl):
     """A stream that has not grown for 25 minutes is direct evidence no self-report can fake, so the check-in calls it out."""
     wl.brief_now()
     wl.hand_now()
@@ -302,7 +301,7 @@ def test_163b_a_stale_output_stream_is_flagged_possibly_stuck(wl):  # noqa: F811
     assert_in(got, "POSSIBLY STUCK", "163b: a 25-minute-silent stream is called out")
 
 
-def test_163c_control_an_open_item_means_normal_battery_no_wait_check_in(wl):  # noqa: F811
+def test_163c_control_an_open_item_means_normal_battery_no_wait_check_in(wl):
     """CONTROL: open work suppresses the wait check-in, because a session with an open item is not waiting on anything."""
     wl.brief_now()
     wl.hand_now()
@@ -339,7 +338,7 @@ def derivation_probe(fix, faketmp, session_id: str) -> str:
     return got.stdout.strip()
 
 
-def test_163e_the_output_stream_path_derivation_finds_the_claude_uid_layout(wl):  # noqa: F811
+def test_163e_the_output_stream_path_derivation_finds_the_claude_uid_layout(wl):
     """Regression gate for 9b557ab0e: every other background case overrides the base via WORKLIST_BG_OUTPUT_DIR, so the derivation itself was untested and its first live firing missed the claude-<uid> segment.
 
     This case exercises the real derivation end to end: no override, TMPDIR pointed at a fixture root, and the stream living exactly where the harness writes it.
@@ -360,7 +359,7 @@ def test_163e_the_output_stream_path_derivation_finds_the_claude_uid_layout(wl):
     assert missing == "missing", "163e CONTROL: vacuous probe (got: %r)" % missing
 
 
-def test_163f_a_stale_stream_with_a_verified_alive_process_is_not_called_stuck(wl):  # noqa: F811
+def test_163f_a_stale_stream_with_a_verified_alive_process_is_not_called_stuck(wl):
     """Fired live 2026-07-31: a healthy CI poll loop, silent by design for 29 minutes, was accused POSSIBLY STUCK.
 
     Two fixes are pinned here at once: _needle must extract a quote-free SEGMENT (the poll-loop command has a quoted middle, so the old whole-line rule made it unverifiable), and the check-in must consult verify_background before accusing.
