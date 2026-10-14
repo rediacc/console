@@ -329,6 +329,7 @@ export const BLOCKER_FILES: readonly string[] = Object.freeze([
   '.runner-advice-allowlist',
   '.unverified-download-allowlist',
   '.ci/config/directive-quotes-allowlist.txt',
+  'pyproject.toml',
 ]);
 
 /** Absolute path and display path of one BLOCKER file, through the policy seam. */
