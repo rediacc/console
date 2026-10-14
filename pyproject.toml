@@ -151,6 +151,24 @@ ignore = [
 # already long: a rule that is correct everywhere EXCEPT in one shape of file.
 # Widening the global `ignore` to accommodate tests would switch the rule off for
 # the 100 non-test Python files too, which is the opposite of what is wanted.
+#
+# EVERY ENTRY CARRIES A `# BLOCKER:` REASON AND IS RE-PROVED LIVE ON EVERY RUN
+# (operator ruling 2026-10-08: inline suppression markers are banned, and a
+# deliberate pattern lives here instead). `rediacc_ci.quality.lint_config_liveness`,
+# run by `check:ci-python-lint` after the lint itself, reads this table and the
+# pyflakes one below line by line, because tomllib drops comments. One BLOCKER
+# line covers the codes after it until the next BLOCKER line, a blank line or
+# the end of the array, the group rule docs/agent-reference/suppressions.md
+# states for a JSONC array, so every array carries its own; a (glob, code) pair
+# with no reason is refused, and so is a pair that no longer suppresses a single
+# ruff finding in a file its glob matches. A BLOCKER reason is ONE line, since
+# the parser reads the reason off the line that carries the word.
+#
+# WHAT A DIRECTORY-WIDE GLOB DOES NOT PROVE. `.claude/hooks/**/*.py` is live
+# while one site exists, so it admits a new site with no marker and no review
+# of its own. A per-entry count ratchet was considered and rejected as a second
+# baseline. The BLOCKER names the contract instead, the gate prints each pair's
+# site count on every run, and a site outside the contract is a review finding.
 [tool.ruff.lint.per-file-ignores]
 # TWO SEGMENTS, NOT ONE, because `.ci/rediacc_ci/tests/gates/` is a real pytest
 # root too -- `testpaths` (below) already lists it beside `.ci/rediacc_ci/tests`
@@ -160,6 +178,7 @@ ignore = [
 # every file one directory deeper than a literal `tests/`, which is why this
 # glob was silently blind to that whole gates/ tree.
 "**/tests/**/test_*.py" = [
+    # BLOCKER: `assert` is the pytest interface, which pytest rewrites to produce its diff output, so a collected test file is the one shape of file where S101 is wrong; every file outside a test tree is still held to it
     # S101 (assert used). `assert` IS the pytest interface: pytest rewrites the
     # statement to produce its diff output, so a test written with `if not x:
     # raise` gets a worse failure message and buys nothing. Every OTHER file in
@@ -167,6 +186,7 @@ ignore = [
     # an `assert` in a gate is a real finding, because gates run under -O in
     # nobody's environment and a stripped assertion is a check that vanished.
     "S101",
+    # BLOCKER: a test that seeds `random.Random(seed)` exercises a shuffle or pick algorithm reproducibly and produces no secret; every file outside a test tree is still held to S311
     # Docstring rules are already off repo-wide in the `ignore` list above (the
     # whole "D" set), so a test file needs nothing extra for missing docstrings.
     # Stated rather than listed: a redundant "D103" here would read as load
@@ -181,6 +201,7 @@ ignore = [
     "S311",
 ]
 "**/rediacc_hooks/guards/test-*.py" = [
+    # BLOCKER: a per-guard control harness is a script named `test-<guard stem>.py`, the exact name check_hook_integrity credits with both directions, so the hyphen N999 objects to is required by a gate and nothing imports the file as a module
     # THE GLOB READ `test-block_*.py` UNTIL THE FIRST `warn_` HARNESS ARRIVED, and
     # the narrower spelling was a fact about which guards happened to have a
     # dedicated suite rather than a rule about what these files are. The rule is
@@ -213,6 +234,7 @@ ignore = [
     "N999",
 ]
 "**/hooks/{stop,context}/test-*.py" = [
+    # BLOCKER: the Stop-hook and context control scripts seed `random.Random(seed)` to drive a sampling algorithm deterministically, which produces no secret; they sit outside a `tests/` directory, so the test-tree entry above does not reach them
     # S311, THE SAME SIBLING FIX AS THE tests/test_*.py GLOB ABOVE, missed here
     # because these run as scripts under `.claude/hooks/{stop,context}/`, not
     # inside a `tests/` directory pytest collects -- `worklist.py`'s own
@@ -386,7 +408,13 @@ testpaths = [
 # last count, in five different spellings. pytest has an ini key for exactly
 # this, so the test suite uses it and the hand-written hop does not reappear
 # here. Non-test consumers get the same answer from rediacc_ci.paths.
-pythonpath = [".ci"]
+#
+# `.claude/hooks/stop` IS THE SECOND ENTRY (2026-10-13), for the same reason: the
+# suites that import a Stop-hook module (`wl_ci`, `wl_review`, `wl_proc`) each
+# hand-wrote the hop above their import and paid an E402 marker for it, and
+# inline markers are banned. The modules there are flat `wl_*` files and
+# `worklist.py`, none of which shadows a name under `.ci`.
+pythonpath = [".ci", ".claude/hooks/stop"]
 
 # NOT under the repo root. `.pytest_cache/` is NOT in .gitignore (checked with
 # `git check-ignore`), so the default location would put an untracked directory

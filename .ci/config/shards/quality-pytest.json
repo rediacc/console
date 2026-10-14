@@ -144,6 +144,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_greenlight_closures.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_guard_mention_anchoring.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_label_inventory.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_lint_config_liveness.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_lockfile.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_mutate_check.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_npmrc.py",
