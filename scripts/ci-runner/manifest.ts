@@ -2252,6 +2252,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // THE VM CHECK, registered for the reason pins is: a hand-written package.json key counts against check:ci-package-key-budget. gate:false because it forks repos on the ops VMs, and may boot or tear down a fleet; the scheduler never runs it, and the push guard reads its receipt instead.
+    id: 'vm:check',
+    run: 'npm run vm:check',
+    gate: false,
+    leaves: ['.ci/rediacc_ci/drills/vm_check.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: needs KVM, the ops VM fleet and a dev account gateway, none of which a CI runner has. Its flow is judged in CI by the vm_check pytest suite through a fake host; the live run is what the push guard receipt records.',
+    },
+  },
+  {
     id: 'check:ci-syncpack-sources',
     run: 'npm run check:ci-syncpack-sources',
     gate: true,

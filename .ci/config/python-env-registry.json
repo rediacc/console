@@ -535,6 +535,10 @@
     ".ci/rediacc_ci/drills/transfer.py": [
       "DRILL_EXPECT_NO_KEYRING"
     ],
+    ".ci/rediacc_ci/drills/vm_check.py": [
+      "CLAUDE_CODE_SESSION_ID",
+      "VM_IMAGE"
+    ],
     ".ci/rediacc_ci/env/create_e2e_env.py": [
       "*name",
       "BRIDGE_TIMEOUT",
@@ -1581,6 +1585,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_drills_universe_transfer.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_vm_check.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py": [
