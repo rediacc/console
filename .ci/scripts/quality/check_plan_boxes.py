@@ -85,6 +85,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import _cipath
@@ -639,7 +640,6 @@ def _selftest_rulings(open_row: dict, tp) -> int:
 
     The plans and the quoted file are written to a scratch directory and read back through `ruling_problems`, so the header parser, the quote reader and the worklist fold are the production code rather than stubs. The store case writes REAL jsonl events and lets `wl_planfile.store_item_states` fold them, because a resolver fed only a hand-built dict proves nothing about the reader CI uses.
     """
-    import tempfile  # noqa: PLC0415 -- selftest only
 
     bad = 0
     fin = "superseded"

@@ -56,6 +56,8 @@ why: agent/<session>/ directories accumulate for ever. The Stop hook already
 ---- end gate ----
 """
 
+import dataclasses
+import datetime as dt
 import json
 import os
 import pathlib
@@ -63,6 +65,7 @@ import shutil
 import subprocess
 import sys
 import time
+from typing import TypedDict, Unpack
 
 import _cipath
 from rediacc_ci import controls, gitx, paths
@@ -107,6 +110,33 @@ CLEAN_ROSTER = "live0001 0.5 live\nabandon1 400 dead\nrecent01 100 dead\n"
 RESERVED_MIRROR = frozenset(
     {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy", "reviews"}
 )
+
+
+class _MoveOverrides(TypedDict, total=False):
+    """The facts a control may override on `_QuietMove`."""
+
+    session: str
+    reserved: frozenset[str]
+    exists: bool
+    dead: bool
+    forced: bool
+    dirty: bool
+    target_exists: bool
+    label: str
+
+
+@dataclasses.dataclass(frozen=True)
+class _QuietMove:
+    """The facts of a move that is allowed; each control overrides the one it is about."""
+
+    session: str = "abandon1"
+    reserved: frozenset[str] = RESERVED_MIRROR
+    exists: bool = True
+    dead: bool = True
+    forced: bool = False
+    dirty: bool = False
+    target_exists: bool = False
+    label: str = "2026-09-22-backfill"
 
 
 def _roster(text: str) -> list[ASA.Session]:
@@ -234,19 +264,9 @@ def selftest() -> int:
     )
 
     # --move's rails, each refused for its own reason and each mirrored by a pass.
-    def refusal(**over: object) -> str:
-        args = {
-            "session": "abandon1",
-            "reserved": RESERVED_MIRROR,
-            "exists": True,
-            "dead": True,
-            "forced": False,
-            "dirty": False,
-            "target_exists": False,
-            "label": "2026-09-22-backfill",
-        }
-        args.update(over)
-        return ASA.move_refusal(**args)  # type: ignore[arg-type]
+    def refusal(**over: Unpack[_MoveOverrides]) -> str:
+        facts = dataclasses.replace(_QuietMove(), **over)
+        return ASA.move_refusal(**dataclasses.asdict(facts))
 
     tally.check("an abandoned target on a quiet tree is allowed", refusal(), "")
     tally.truthy("a reserved name is refused outright", refusal(session="archive"))
@@ -419,7 +439,6 @@ def _gh_merged_at(branch: str) -> float | None:
             "gh pr list failed for %s (rc %d): %s"
             % (branch, done.returncode, done.stderr.strip()[:200])
         )
-    import datetime as dt  # noqa: PLC0415 -- one parse, at the edge
 
     # An answer that is not a JSON list of objects, or a stamp that is not an ISO date (a rate-limit page, an API shape change), is an oracle that could not be read: CANNOT RUN, never a crash and never a guessed date (per-commit review ee607a00.1).
     try:

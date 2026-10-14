@@ -9,8 +9,10 @@ THE REST IS THE PURE CORE. `idle_hours`, `due_after_hours`, `classify_due`, `vac
 """
 
 import ast
+import dataclasses
 import pathlib
 import sys
+from typing import TypedDict, Unpack
 
 import pytest
 
@@ -185,20 +187,36 @@ RESERVED = frozenset(
     {"archive", "programs", "worklist", "reggate", "plans", "ledgers", "pr", "legacy", "reviews"}
 )
 
-CLEAN_MOVE = {
-    "session": "abcd1234",
-    "reserved": RESERVED,
-    "exists": True,
-    "dead": True,
-    "forced": False,
-    "dirty": False,
-    "target_exists": False,
-    "label": "2026-09-22-backfill",
-}
+
+class MoveOverrides(TypedDict, total=False):
+    """The facts a case may override on `CleanMove`."""
+
+    session: str
+    reserved: frozenset[str]
+    exists: bool
+    dead: bool
+    forced: bool
+    dirty: bool
+    target_exists: bool
+    label: str
 
 
-def _refuse(**over: object) -> str:
-    return ASA.move_refusal(**{**CLEAN_MOVE, **over})  # type: ignore[arg-type]
+@dataclasses.dataclass(frozen=True)
+class CleanMove:
+    """The facts of a move that is allowed; each case overrides the one it is about."""
+
+    session: str = "abcd1234"
+    reserved: frozenset[str] = RESERVED
+    exists: bool = True
+    dead: bool = True
+    forced: bool = False
+    dirty: bool = False
+    target_exists: bool = False
+    label: str = "2026-09-22-backfill"
+
+
+def _refuse(**over: Unpack[MoveOverrides]) -> str:
+    return ASA.move_refusal(**dataclasses.asdict(dataclasses.replace(CleanMove(), **over)))
 
 
 def test_a_clean_move_is_allowed_so_the_refusals_below_mean_something():

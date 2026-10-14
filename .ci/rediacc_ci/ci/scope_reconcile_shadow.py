@@ -52,8 +52,14 @@ import shutil
 import subprocess
 import sys
 import time
+from typing import TYPE_CHECKING
 
 from rediacc_ci.core import gh_retry
+
+if TYPE_CHECKING:
+    from typing import Unpack
+
+    from rediacc_ci.proc import PipeKwargs
 
 
 def _merge_job_pages(jobs_json: pathlib.Path, jobs_err: pathlib.Path) -> bool:
@@ -131,9 +137,11 @@ def main(argv: list[str]) -> int:
     except ValueError:
         gh_timeout = 45.0
 
-    def bounded(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+    def bounded(
+        args: list[str], **kwargs: Unpack[PipeKwargs]
+    ) -> subprocess.CompletedProcess[bytes]:
         try:
-            return subprocess.run(args, timeout=gh_timeout, check=False, **kwargs)  # type: ignore[arg-type]
+            return subprocess.run(args, timeout=gh_timeout, check=False, **kwargs)
         except subprocess.TimeoutExpired:
             return subprocess.CompletedProcess(args, 124)
 

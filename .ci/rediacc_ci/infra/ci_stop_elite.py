@@ -24,9 +24,15 @@ from __future__ import annotations
 import pathlib
 import subprocess
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Unpack
+
+    from rediacc_ci.proc import TextRunKwargs
 
 
-def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+def _docker(args: list[str], **kwargs: Unpack[TextRunKwargs]) -> subprocess.CompletedProcess[str]:
     """`subprocess.run(["docker", *args], ...)`, treating a missing binary as bash's exit 127 rather than raising.
 
     The twin never checks `command -v docker` first; a missing binary just makes every `docker ...` invocation fail with bash's own "command not found" (127),
@@ -34,7 +40,7 @@ def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[st
     `subprocess.run` raises `FileNotFoundError` for the same case instead of returning a completed process, so without this the port would crash where the twin degrades.
     """
     try:
-        return subprocess.run(["docker", *args], check=False, **kwargs)  # type: ignore[arg-type]
+        return subprocess.run(["docker", *args], check=False, **kwargs)
     except FileNotFoundError:
         return subprocess.CompletedProcess(["docker", *args], 127, stdout="", stderr="")
 
