@@ -118,10 +118,23 @@ def test_write_refuses_a_malformed_receipt_and_writes_nothing(tmp_path: pathlib.
         {"reason": {"class": "x", "detail": "y"}},
         {"steps": "none"},
         {"steps": [{"id": "V1", "evidence": "x" * 201}]},
+        {"renet": "abc"},
+        {"trigger": ["x"]},
+        {"fleet": "reused"},
+        {"teardown": True},
+        {"forks": {}},
     ],
 )
 def test_validate_rejects(bad: dict[str, Any]) -> None:
     assert rc.validate(make(**bad))
+
+
+def test_a_receipt_whose_renet_is_a_string_is_refused_not_a_crash(tmp_path: pathlib.Path) -> None:
+    folder = tmp_path / rc.CACHE_DIR
+    folder.mkdir(parents=True)
+    (folder / rc.LATEST).write_text(json.dumps(make(renet="abc")), encoding="utf-8")
+    assert rc.read_latest(tmp_path) is None
+    assert not rc.admit(tmp_path, TREE, DIGEST).ok
 
 
 def test_validate_accepts_a_good_receipt_of_each_status() -> None:
