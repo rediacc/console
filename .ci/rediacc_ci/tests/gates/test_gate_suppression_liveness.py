@@ -100,6 +100,11 @@ def make_fixture(gate, root):
         src = paths.from_root(*rel.split("/"))
         if src.is_file():
             shutil.copyfile(src, root / rel)
+    # THE WORKSPACE MANIFESTS TOO. The deps probe's oracle reads packages/*/package.json beside the root (declaredPackageNames) and refuses below 20 names. The root alone carried that many until the eslint toolchain left it (eca7ef3d9, 13 names), after which every deps case here SKIPPED and the dead-entry controls went green for the wrong reason.
+    for src in sorted(paths.from_root("packages").glob("*/package.json")):
+        dest = root / "packages" / src.parent.name / "package.json"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, dest)
     return root
 
 
@@ -232,6 +237,8 @@ def test_oracle_floor_skips_instead_of_condemning(gate):
     """
     with harness.temp_dir() as root:
         make_fixture(gate, root)
+        # The workspace manifests make_fixture copies would lift the oracle past its floor; this case needs the two-name root alone.
+        shutil.rmtree(root / "packages")
         (root / "package.json").write_text(
             '{"name":"fixture","dependencies":{"a":"1.0.0","b":"1.0.0"}}\n', encoding="utf-8"
         )
