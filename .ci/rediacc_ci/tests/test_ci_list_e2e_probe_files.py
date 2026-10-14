@@ -30,23 +30,54 @@ def write_manifest(path: pathlib.Path, ids: list[str]) -> None:
     )
 
 
-def test_probe_files_strips_the_prefix_and_the_part_suffix(tmp_path: pathlib.Path) -> None:
+def test_probe_units_keep_each_part_as_its_own_leg_with_its_bucket_grep(
+    tmp_path: pathlib.Path,
+) -> None:
     manifest = tmp_path / "manifest.json"
     write_manifest(
         manifest,
         [
-            "e2e-workers:13-postgres-fork-isolation.test.ts#part1",
             "e2e-workers:13-postgres-fork-isolation.test.ts#part2",
+            "e2e-workers:13-postgres-fork-isolation.test.ts#part1",
             "e2e-workers:01-system-checks.test.ts",
         ],
     )
-    assert subject.probe_files(manifest) == [
-        "01-system-checks.test.ts",
-        "13-postgres-fork-isolation.test.ts",
+    assert subject.probe_units(manifest) == [
+        {
+            "unit": "01-system-checks.test.ts",
+            "test": "01-system-checks.test.ts",
+            "grep": "",
+            "slug": "01-system-checks.test.ts",
+        },
+        {
+            "unit": "13-postgres-fork-isolation.test.ts#part1",
+            "test": "13-postgres-fork-isolation.test.ts",
+            "grep": subject.SHARD_GREP_BUCKETS["part1"],
+            "slug": "13-postgres-fork-isolation.test.ts-part1",
+        },
+        {
+            "unit": "13-postgres-fork-isolation.test.ts#part2",
+            "test": "13-postgres-fork-isolation.test.ts",
+            "grep": subject.SHARD_GREP_BUCKETS["part2"],
+            "slug": "13-postgres-fork-isolation.test.ts-part2",
+        },
     ]
 
 
-def test_probe_files_reads_every_leg(tmp_path: pathlib.Path) -> None:
+def test_probe_units_refuse_a_bucket_the_runner_cannot_select(tmp_path: pathlib.Path) -> None:
+    manifest = tmp_path / "manifest.json"
+    write_manifest(manifest, ["e2e-workers:a.test.ts", "e2e-workers:13-x.test.ts#part9"])
+    with pytest.raises(subject.UnknownBucketError, match="part9"):
+        subject.probe_units(manifest)
+
+
+def test_probe_units_deduplicate_a_unit_two_legs_name(tmp_path: pathlib.Path) -> None:
+    manifest = tmp_path / "manifest.json"
+    write_manifest(manifest, ["e2e-workers:a.test.ts", "e2e-workers:a.test.ts"])
+    assert [u["unit"] for u in subject.probe_units(manifest)] == ["a.test.ts"]
+
+
+def test_probe_units_read_every_leg(tmp_path: pathlib.Path) -> None:
     manifest = tmp_path / "manifest.json"
     manifest.write_text(
         json.dumps(
@@ -59,17 +90,17 @@ def test_probe_files_reads_every_leg(tmp_path: pathlib.Path) -> None:
         ),
         encoding="utf-8",
     )
-    assert subject.probe_files(manifest) == ["a.test.ts", "b.test.ts"]
+    assert [u["unit"] for u in subject.probe_units(manifest)] == ["a.test.ts", "b.test.ts"]
 
 
-def test_probe_files_refuses_a_vacuous_manifest(tmp_path: pathlib.Path) -> None:
+def test_probe_units_refuse_a_vacuous_manifest(tmp_path: pathlib.Path) -> None:
     manifest = tmp_path / "manifest.json"
     manifest.write_text(json.dumps({"legs": []}), encoding="utf-8")
     with pytest.raises(subject.VacuousError, match="VACUOUS"):
-        subject.probe_files(manifest)
+        subject.probe_units(manifest)
 
 
-def test_main_writes_files_line_to_github_output(
+def test_main_writes_units_line_to_github_output(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     manifest = tmp_path / ".ci" / "config" / "shards" / "test-e2e-workers.json"
@@ -81,7 +112,13 @@ def test_main_writes_files_line_to_github_output(
     monkeypatch.setenv("GITHUB_OUTPUT", str(github_output))
 
     assert subject.main([]) == 0
-    assert github_output.read_text(encoding="utf-8") == 'files=["a.test.ts","z.test.ts"]\n'
+    line = github_output.read_text(encoding="utf-8")
+    assert line.startswith("units=")
+    assert line.endswith("\n")
+    assert [u["unit"] for u in json.loads(line.removeprefix("units="))] == [
+        "a.test.ts#part1",
+        "z.test.ts",
+    ]
 
 
 def test_main_prints_to_stdout_without_github_output(
@@ -95,7 +132,12 @@ def test_main_prints_to_stdout_without_github_output(
     monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
 
     assert subject.main([]) == 0
-    assert capsys.readouterr().out == 'files=["only.test.ts"]\n'
+    captured = capsys.readouterr()
+    assert (
+        captured.out
+        == 'units=[{"unit":"only.test.ts","test":"only.test.ts","grep":"","slug":"only.test.ts"}]\n'
+    )
+    assert "1 unit(s)" in captured.err
 
 
 def test_main_returns_1_and_reports_a_vacuous_manifest(

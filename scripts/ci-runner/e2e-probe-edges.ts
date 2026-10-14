@@ -2,9 +2,10 @@
 /**
  * T2.12 (PLAN-ci-time-budget). The dependency probe's own analysis step.
  *
- * `ct-e2e-probe.yml` runs every E2E Workers spec file ALONE, on a fresh VM
- * (one matrix leg per file), and uploads one small `{file, outcome}` JSON per
- * leg. This script reads all of them and proposes `needs` edges, in the exact
+ * `ct-e2e-probe.yml` runs every E2E Workers shard unit ALONE, on a fresh VM
+ * (one matrix leg per unit: a spec file, or one `#part` bucket of a file the
+ * manifest splits), and uploads one small `{file, outcome}` JSON per leg,
+ * `file` holding the unit id without its `e2e-workers:` prefix. This script reads all of them and proposes `needs` edges, in the exact
  * shape `unit-enumerators.ts`'s `Unit.needs?: string[]` and `shardPlan`
  * (`lanes.ts`) already consume: a file that FAILS alone but is part of the
  * committed, currently-green `test-e2e-workers` shard plan needs its
@@ -39,7 +40,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 export interface ProbeResult {
-  /** Spec file basename, e.g. "03-datastore-lifecycle.test.ts" -- matches unit-enumerators.ts's e2eWorkersUnits() id tail. */
+  /** Unit id tail, e.g. "03-datastore-lifecycle.test.ts" or "13-postgres-fork-isolation.test.ts#part2" -- the shard manifest's id without its `e2e-workers:` prefix. */
   file: string;
   outcome: 'pass' | 'fail';
 }
@@ -264,6 +265,25 @@ function selftest(): number {
     failures
   );
 
+  // BUCKETS: a `#part` unit sorts between its file's neighbours and after its own earlier parts, so part2 failing alone needs part1, a real manifest id.
+  const buckets = computeEdges([
+    { file: '11-multi-machine.test.ts', outcome: 'pass' },
+    { file: '13-postgres-fork-isolation.test.ts#part1', outcome: 'pass' },
+    { file: '13-postgres-fork-isolation.test.ts#part2', outcome: 'fail' },
+    { file: '14-vault-builder.test.ts', outcome: 'pass' },
+  ]);
+  require_(
+    JSON.stringify(buckets.edges) ===
+      JSON.stringify([
+        {
+          id: 'e2e-workers:13-postgres-fork-isolation.test.ts#part2',
+          needs: ['e2e-workers:13-postgres-fork-isolation.test.ts#part1'],
+        },
+      ]),
+    `buckets: edges were ${JSON.stringify(buckets.edges)}`,
+    failures
+  );
+
   // VACUOUS INPUT refuses rather than reporting a silent "all clear".
   let threw = false;
   try {
@@ -278,7 +298,7 @@ function selftest(): number {
     return 1;
   }
   process.stderr.write(
-    'OK: e2e-probe-edges selftest passed (control, inverse, no-predecessor, consecutive, vacuous)\n'
+    'OK: e2e-probe-edges selftest passed (control, inverse, no-predecessor, consecutive, buckets, vacuous)\n'
   );
   return 0;
 }
