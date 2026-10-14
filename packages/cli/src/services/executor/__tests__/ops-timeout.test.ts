@@ -47,8 +47,9 @@ describe('ops-executor timeout kills the process tree', () => {
     }
   };
   // The fake renet appends to this file when SIGTERM reaches it, so the test sees the signal itself and not only its absence of effect.
+  // The three wall-clock waits (6s pid, 3s SIGTERM, 3s reap) sum to 12s, inside the 15s test timeout, so a missed signal fails on its own assertion and not on the test timeout.
   const waitForSigterm = async (): Promise<boolean> => {
-    const deadline = Date.now() + 5000;
+    const deadline = Date.now() + 3000;
     while (Date.now() < deadline) {
       try {
         if (readFileSync(termFile, 'utf8').length > 0) return true;
@@ -60,7 +61,7 @@ describe('ops-executor timeout kills the process tree', () => {
     return false;
   };
   const readGrandchildPid = async (): Promise<number> => {
-    const deadline = Date.now() + 10_000;
+    const deadline = Date.now() + 6000;
     for (let pid = tryReadGrandchildPid(); ; pid = tryReadGrandchildPid()) {
       if (pid !== null) return pid;
       if (Date.now() > deadline) throw new Error('fake renet never recorded its grandchild pid');
@@ -95,12 +96,19 @@ setInterval(() => {}, 1e9);
     // A run still in flight (the readiness wait threw) is ended through the executor's own timers: the timeout sends SIGTERM and the grace window then sends the group SIGKILL.
     if (pending) {
       vi.advanceTimersByTime(60_000);
-      await pending;
+      const settled = await Promise.race([
+        pending.then(() => true),
+        realSleep(5000).then(() => false),
+      ]);
+      if (!settled)
+        throw new Error(
+          'the executor never settled after the group SIGKILL; the fake renet tree may still be alive'
+        );
     }
     vi.useRealTimers();
     vi.restoreAllMocks();
     rmSync(dir, { recursive: true, force: true });
-  });
+  }, 10_000);
 
   it('escalates to SIGKILL across the group so the grandchild dies, then rejects', async () => {
     let settled = false;
@@ -137,7 +145,7 @@ setInterval(() => {}, 1e9);
     expect((error as Error).message).toMatch(/timed out/);
 
     // Prove the grandchild is dead, the exact thing the old test never checked. The kill is already delivered; this only waits for the kernel to reap it.
-    const deadline = Date.now() + 4000;
+    const deadline = Date.now() + 3000;
     while (alive(gcPid) && Date.now() < deadline) {
       await realSleep(20);
     }
