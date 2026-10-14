@@ -99,7 +99,10 @@ function generateSearchIndex(outDir) {
       console.log(`  ${lang}: ${entries.length} items`);
     }
     // Backward-compat fallback, byte-identical to the English file: any consumer that hardcoded the legacy URL gets English content rather than a 404. With no English content indexed (src/content/docs/en/ gone) it is an empty array, so the runtime fetch still succeeds.
-    files.set('search-index.json', files.get('search-index-en.json') ?? '[]\n');
+    files.set(
+      'search-index.json',
+      files.get('search-index-en.json') ?? `${JSON.stringify([], null, 2)}\n`
+    );
 
     // A locale that stopped being generated leaves a stale file behind, which would ship and confuse the freshness check. Only those are removed; every other file is overwritten in place, so a dev server reading the directory never sees it without an index.
     for (const file of fs.readdirSync(outDir)) {
