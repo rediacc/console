@@ -382,6 +382,7 @@
     "ci": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts",
     "ci:quick": "tsx scripts/ci-runner/run.ts --selftest && tsx scripts/ci-runner/run.ts --quick",
     "ci:list": "tsx scripts/ci-runner/run.ts --list",
+    "pins": "tsx scripts/pins/pins.ts",
     "ci:serial": "tsx scripts/ci-runner/run.ts --jobs 1",
     "quality": "npm run ci",
     "test:e2e": "npm test -w @rediacc/e2e-tests",
