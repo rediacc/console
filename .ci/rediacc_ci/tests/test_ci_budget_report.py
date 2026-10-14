@@ -3136,3 +3136,20 @@ def test_refresh_lane_durations_drops_the_plans_of_a_name_it_can_no_longer_trace
     compute = _fake_compute(job_p90_minutes={"Q / X (1/2)": 7.0}, job_p90_plans={})
     assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
     assert "job_p90_plans" not in json.loads(path.read_text())
+
+
+def test_prune_gate_steps_to_lock_keeps_the_table_and_says_so_when_no_lock_is_there(
+    tmp_path, capsys
+):
+    """Worklist #f0bad09d: a `--lane-durations` path outside a repo left `root` without a lock, and the empty map pruned every entry silently."""
+    gate_steps = {"check:a": 5.0, "check:b": 9.5}
+    assert br.prune_gate_steps_to_lock(gate_steps, tmp_path) == gate_steps
+    assert "kept unpruned (2 entries)" in capsys.readouterr().err
+
+
+def test_prune_gate_steps_to_lock_still_prunes_against_a_lock_that_names_nothing(tmp_path):
+    """CONTROL: a lock that IS there and lists no step gate still prunes; only an absent lock keeps the table."""
+    lock = tmp_path / br.GATES_LOCK_REL_PATH
+    lock.parent.mkdir(parents=True)
+    lock.write_text("[]", encoding="utf-8")
+    assert br.prune_gate_steps_to_lock({"check:a": 5.0}, tmp_path) == {}
