@@ -93,6 +93,10 @@ SYNC_BIG_BYTES = 1024 * 1024
 PROBE_RENET_HASH = "renet hash"
 PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
 SFTP_BATCH = ("sftp", "-q", "-o", "BatchMode=yes", "-b")
+# A refused sftp leg counts as confinement only when the server says so; a dropped connection or a missing path is not a refusal.
+SFTP_DENIAL = re.compile(
+    r"permission denied|read-only file system|operation not permitted", re.IGNORECASE
+)
 
 # First-line markers of a refusal by the CLI's agent guard (packages/cli/src/utils/agent-guard.ts, command-policy.ts).
 AGENT_REFUSALS = (
@@ -483,6 +487,7 @@ class VmCheck:
         self.leftovers: list[str] = []
         # Run state
         self.token: str | None = None
+        self.password: str | None = None
         self.locked = False
         self.fleet_mode = ""
         self.fleet_started = False
@@ -517,11 +522,17 @@ class VmCheck:
         print(text, file=self.out)
         self.out.flush()
 
-    def _clean(self, text: str) -> str:
-        """Evidence from a child's output, clipped and with the minted token removed should a child ever echo it."""
+    def scrub(self, text: str) -> str:
+        """`text` with the minted token and the login password removed, should a child or an exception ever echo them."""
         if self.token:
             text = text.replace(self.token, "<token>")
-        return receipt_mod.clip_evidence(" ".join(text.split()))
+        if self.password:
+            text = text.replace(self.password, "<password>")
+        return text
+
+    def _clean(self, text: str) -> str:
+        """Evidence from a child's output, clipped and scrubbed."""
+        return receipt_mod.clip_evidence(" ".join(self.scrub(text).split()))
 
     def record(
         self,
@@ -617,14 +628,14 @@ class VmCheck:
         try:
             self._steps()
         except NotVerifiedError as exc:
-            self.reason = (exc.cls, exc.detail)
+            self.reason = (exc.cls, self.scrub(exc.detail))
             self.record("--", "stopped: %s" % exc.cls, False, evidence=exc.detail)
         except RunInterruptedError as exc:
-            self.reason = ("interrupted", str(exc))
+            self.reason = ("interrupted", self.scrub(str(exc)))
             self.record("--", "stopped: interrupted", False, evidence=str(exc))
         except CRASHES as exc:
-            self.reason = ("crashed", "%s: %s" % (type(exc).__name__, exc))
-            log.error("vm:check crashed:\n%s" % traceback.format_exc().rstrip())
+            self.reason = ("crashed", self.scrub("%s: %s" % (type(exc).__name__, exc)))
+            log.error("vm:check crashed:\n%s" % self.scrub(traceback.format_exc().rstrip()))
             self.record("--", "stopped: crashed", False, evidence=self.reason[1])
         finally:
             self._quiet_signals()
@@ -821,6 +832,7 @@ class VmCheck:
                 "the stored token is refused and no healthy dev gateway answers; start one with ./run.sh account dev",
             )
         password = secrets.token_urlsafe(24)
+        self.password = password
         try:
             token = self.account.mint(password)
         except (lib.GatewayError, OSError) as exc:
@@ -1126,9 +1138,8 @@ class VmCheck:
             res = self.host.run(
                 [*SFTP_BATCH, str(batch), self.connection], env=self.environ, timeout=120
             )
-            self.check(
-                "V1.7", "sftp: %s" % desc, (res.rc == 0) == allowed, res, evidence=res.text()
-            )
+            ok = res.rc == 0 if allowed else res.rc != 0 and bool(SFTP_DENIAL.search(res.text()))
+            self.check("V1.7", "sftp: %s" % desc, ok, res, evidence=res.text())
         after = self.shell(
             self.ref(b), "stat -c '%%a %%Y' %s" % shlex.quote("%s/%s" % (other_dir, GUARDED_FILE))
         )
@@ -1176,7 +1187,7 @@ class VmCheck:
         try:
             leftovers = self._teardown_steps()
         except CRASHES as exc:
-            leftovers.append("teardown crashed: %s: %s" % (type(exc).__name__, exc))
+            leftovers.append(self.scrub("teardown crashed: %s: %s" % (type(exc).__name__, exc)))
         finally:
             self.lock.release()
             self.locked = False
