@@ -367,58 +367,77 @@ export const npmDriver: PinDriver = {
     for (const m of plan.majors) releases.push(majorRelease(m, plan));
     return Promise.resolve({ current: IN_RANGE_BASE, releases });
   },
-  plan(entry, to, ctx): Promise<PinPlan> {
-    const major = loadPlan(ctx, []).majors.find((m) => m.key === to.version);
-    if (!major) {
-      const plan = loadPlan(ctx, []);
-      if (plan.steps.length === 0)
+  plan(entry, to, ctx, also = []): Promise<PinPlan> {
+    const base = loadPlan(ctx, []);
+    const found = [to, ...also].map((r) => base.majors.find((m) => m.key === r.version));
+    if (also.length > 0 && found.some((m) => m === undefined))
+      throw new PlanRefused(
+        `${entry.id}: several --to are taken together only as majors; ${[to, ...also]
+          .filter((_, i) => found[i] === undefined)
+          .map((r) => r.version)
+          .join(', ')} is not one`
+      );
+    const majors = found.filter((m): m is MajorCandidate => m !== undefined);
+    if (majors.length === 0) {
+      if (base.steps.length === 0)
         throw new PlanRefused(`${entry.id}: nothing past the window to bump`);
       return Promise.resolve(
         npmPlanOf(
           entry,
           ctx,
-          `${plan.manifests.length} manifests`,
-          { version: `${names(plan.steps).length} package(s)`, publishedMs: null },
-          plan,
+          `${base.manifests.length} manifests`,
+          { version: `${names(base.steps).length} package(s)`, publishedMs: null },
+          base,
           [],
           []
         )
       );
     }
-    // A major: the planner runs with the allow entry transient and the hold absent, restricted to the packages that entry authorises.
-    const plan = loadPlan(ctx, [
-      '--allow',
-      major.key,
-      ...(major.blockKey ? ['--unblock', major.blockKey] : []),
-    ]);
+    // Majors: the planner runs with every allow entry transient and every hold absent, so a family whose majors only converge as a set (check:deps stays red while any one is undecided) moves in one transaction.
+    const plan = loadPlan(
+      ctx,
+      majors.flatMap((m) => ['--allow', m.key, ...(m.blockKey ? ['--unblock', m.blockKey] : [])])
+    );
     if (plan.steps.length === 0)
-      throw new PlanRefused(`${entry.id}: the planner found nothing to install for ${major.key}`);
+      throw new PlanRefused(
+        `${entry.id}: the planner found nothing to install for ${majors.map((m) => m.key).join(', ')}`
+      );
     const writes: FileWrite[] = [];
     const changes: string[] = [];
-    if (major.blockKey) {
+    const blockKeys = new Set(majors.flatMap((m) => (m.blockKey ? [m.blockKey] : [])));
+    if (blockKeys.size > 0) {
       const bl = holdFile(entry, 'deps-upgrade-blocklist');
       const text = needText(ctx, bl);
-      const after = dropBlocklistLines(text, new Set([major.blockKey]));
+      const after = dropBlocklistLines(text, blockKeys);
       if (after !== text) {
         writes.push({ ...bl, after });
-        changes.push(`${keyOf(bl)}: drop the ${major.blockKey} hold`);
+        for (const k of blockKeys) changes.push(`${keyOf(bl)}: drop the ${k} hold`);
       }
       const ex = holdFile(entry, 'deps-major-exceptions.json');
       const exText = ctx.read(ex);
       if (exText !== null) {
-        const r = dropJsonKeys(exText, 'exceptions', (k) => k === major.blockKey, keyOf(ex));
+        const r = dropJsonKeys(exText, 'exceptions', (k) => blockKeys.has(k), keyOf(ex));
         if (r.dropped.length > 0) {
           writes.push({ ...ex, after: r.after });
-          changes.push(`${keyOf(ex)}: drop the ${major.blockKey} exception`);
+          for (const k of r.dropped) changes.push(`${keyOf(ex)}: drop the ${k} exception`);
         }
       }
     }
+    const [first] = majors;
     return Promise.resolve(
       npmPlanOf(
         entry,
         ctx,
-        `${major.pkg.name} ${major.pkg.current}`,
-        { version: `${major.pkg.name} ${major.pkg.latest}`, publishedMs: to.publishedMs },
+        majors.length === 1
+          ? `${first.pkg.name} ${first.pkg.current}`
+          : `${majors.length} majors (${majors.map((m) => m.key).join(', ')})`,
+        {
+          version:
+            majors.length === 1
+              ? `${first.pkg.name} ${first.pkg.latest}`
+              : `${majors.length} majors`,
+          publishedMs: to.publishedMs,
+        },
         plan,
         writes,
         changes
@@ -445,6 +464,11 @@ function projectDirs(
         out.push({ repo: sc.repo, dir, abs: path.join(base, dir) });
       }
   }
+  // VACUOUS guard: a family that scopes npm lockfiles yet enumerates none would let every plan and every removal report "nothing to do" over an empty corpus.
+  if (out.length === 0 && (entry.scope ?? []).some((sc) => sc.scanner === 'npm-lockfile'))
+    throw new PlanRefused(
+      `${entry.id}: VACUOUS: the npm-lockfile scope matched no package-lock.json under ${ctx.root}, so nothing was judged`
+    );
   return out;
 }
 

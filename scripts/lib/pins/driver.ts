@@ -92,7 +92,8 @@ export class PlanRefused extends Error {}
 export interface PinDriver {
   name: Driver;
   inspect(entry: PinEntry, ctx: DriverContext): Promise<Inspection>;
-  plan(entry: PinEntry, to: Release, ctx: DriverContext): Promise<PinPlan>;
+  /** `also` carries the further releases of a multi-`--to` selection; only a driver whose releases converge as a set (npm majors) accepts any. */
+  plan(entry: PinEntry, to: Release, ctx: DriverContext, also?: Release[]): Promise<PinPlan>;
   /** The key a hold of this entry writes into its first `holds` file; null when the driver has no hold. */
   holdKey(entry: PinEntry): string | null;
 }
