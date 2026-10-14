@@ -100,6 +100,8 @@ def make_full_fixture(gate, base: pathlib.Path) -> pathlib.Path:
         paths.from_root(".ci", "config", "directive-quotes-allowlist.txt"),
         root / ".ci" / "config" / "directive-quotes-allowlist.txt",
     )
+    # pyproject.toml is a BLOCKER file too (its ruff tables), and a full checkout must hold every BLOCKER file.
+    shutil.copy2(paths.from_root("pyproject.toml"), root / "pyproject.toml")
     # The merged-PR ledger the pr-conditions probe requires of a full checkout.
     shutil.copy2(
         paths.from_root(".ci", "config", "merged-prs.json"),
