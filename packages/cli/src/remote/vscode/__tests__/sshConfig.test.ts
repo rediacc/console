@@ -50,7 +50,7 @@ describe('addMachineSSHConfigEntry', () => {
     expect(content).not.toMatch(/UserKnownHostsFile\s/);
   });
 
-  it('includes REDIACC_TEAM and REDIACC_DATASTORE when provided', () => {
+  it('includes REDIACC_TEAM and REDIACC_DATASTORE_PATH when provided', () => {
     addMachineSSHConfigEntry({
       machineName: 'm2',
       host: '10.0.0.1',
@@ -61,7 +61,8 @@ describe('addMachineSSHConfigEntry', () => {
     });
     const content = readConfigFile();
     expect(content).toContain('SetEnv REDIACC_TEAM=myteam');
-    expect(content).toContain('SetEnv REDIACC_DATASTORE=/mnt/data');
+    expect(content).toContain('SetEnv REDIACC_DATASTORE_PATH=/mnt/data');
+    expect(content).not.toMatch(/SetEnv REDIACC_DATASTORE=/);
   });
 
   it('upserts on second call with different IP', () => {

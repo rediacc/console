@@ -84,7 +84,7 @@ export function buildRepositoryEnvironment(options: {
     REDIACC_NETWORK_ID: networkId,
     REDIACC_NETWORK_MODE: networkMode,
     REDIACC_REPO_TAG: resolvedTag,
-    REDIACC_DATASTORE: datastore,
+    REDIACC_DATASTORE_PATH: datastore,
     REDIACC_DATASTORE_USER: universalUser,
     REDIACC_IMMOVABLE: immovable ? 'true' : 'false',
     DOCKER_DATA: fullRepoPath,
@@ -113,7 +113,7 @@ export function buildMachineEnvironment(options: {
   return {
     REDIACC_TEAM: teamName,
     REDIACC_MACHINE: machineName,
-    REDIACC_DATASTORE: datastore,
+    REDIACC_DATASTORE_PATH: datastore,
     REDIACC_DATASTORE_USER: universalUser,
   };
 }

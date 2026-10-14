@@ -73,7 +73,7 @@ describe('getSSHConnectionDetails', () => {
     expect(result.environment).toEqual({
       REDIACC_TEAM: 'team1',
       REDIACC_MACHINE: 'server-1',
-      REDIACC_DATASTORE: WK_DATASTORE_PATH,
+      REDIACC_DATASTORE_PATH: WK_DATASTORE_PATH,
       REDIACC_DATASTORE_USER: 'rediacc',
     });
     expect(result.workingDirectory).toBe(WK_DATASTORE_PATH);
@@ -104,7 +104,10 @@ describe('getSSHConnectionDetails', () => {
       REDIACC_WORKING_DIR: `${WK_DATASTORE_PATH}/mounts/guid-1234`,
       DOCKER_SOCKET: `${WK_RUNTIME_DIR}/docker-abc123.sock`,
       DOCKER_HOST: `unix://${WK_RUNTIME_DIR}/docker-abc123.sock`,
+      REDIACC_DATASTORE_PATH: WK_DATASTORE_PATH,
     });
+    // REDIACC_DATASTORE names a datastore on the machine; a path never travels under it.
+    expect(result.environment).not.toHaveProperty('REDIACC_DATASTORE');
   });
 
   it('uses sshUser from vault when available', async () => {
