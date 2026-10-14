@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * so each test imports a FRESH copy of the module through vi.resetModules() after setting
  * the env it wants to exercise.
  */
-async function loadFresh() {
+function loadFresh() {
   vi.resetModules();
   return import('../media-url.ts');
 }

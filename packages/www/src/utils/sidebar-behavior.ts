@@ -40,6 +40,12 @@ export interface TOCOptions {
   stripTags?: boolean; // Strip HTML tags from titles (default: true)
 }
 
+/** The heading tag already carries the id the page will render, written by the rehype pipeline. Read it instead of re-deriving one: re-derivation is how the TOC and the document ended up running two different slug algorithms, which left half the site's in-page links dead. Attribute order is not guaranteed, so parse the attribute soup rather than assuming a position. */
+function extractHeadingId(attrs: string): string {
+  const idMatch = /\bid\s*=\s*(?:"([^"]*)"|'([^']*)')/.exec(attrs);
+  return idMatch ? idMatch[1] || idMatch[2] || '' : '';
+}
+
 /**
  * Generate Table of Contents from HTML content
  *
@@ -60,39 +66,23 @@ export function generateTOCFromHtml(htmlContent: string, options: TOCOptions = {
   const headingRegex = /<h([2-6])([^>]*)>(.*?)<\/h\1>/gis;
   const headings: TOCHeading[] = [];
 
-  let match = headingRegex.exec(htmlContent);
-  while (match !== null) {
+  for (const match of htmlContent.matchAll(headingRegex)) {
     const level = Number.parseInt(match[1]);
 
     // Skip headings outside the requested range
-    if (level < minLevel || level > maxLevel) {
-      match = headingRegex.exec(htmlContent);
-      continue;
-    }
+    if (level < minLevel || level > maxLevel) continue;
 
-    // The heading tag already carries the id the page will render, written by the rehype pipeline. Read it instead of re-deriving one: re-derivation is how the TOC and the document ended up running two different slug algorithms, which left half the site's in-page links dead. Attribute order is not guaranteed, so parse the attribute soup rather than assuming a position.
-    const idMatch = /\bid\s*=\s*(?:"([^"]*)"|'([^']*)')/.exec(match[2]);
-    const id = idMatch ? idMatch[1] || idMatch[2] || '' : '';
+    const id = extractHeadingId(match[2]);
 
     // A heading without an id cannot be linked to; emitting href="#" would be a
     // dead link by construction, so skip it.
-    if (!id) {
-      match = headingRegex.exec(htmlContent);
-      continue;
-    }
-
-    let title = match[3];
+    if (!id) continue;
 
     // Strip inner HTML tags if requested
-    if (stripTags) {
-      title = title.replaceAll(/<[^>]+>/g, '');
-    }
+    const raw = stripTags ? match[3].replaceAll(/<[^>]+>/g, '') : match[3];
 
     // Decode HTML entities so rendered text doesn't double-encode (e.g. "Fork & Backup" not "Fork &#x26; Backup")
-    title = decodeHtmlEntities(title);
-
-    headings.push({ level, title, id });
-    match = headingRegex.exec(htmlContent);
+    headings.push({ level, title: decodeHtmlEntities(raw), id });
   }
 
   return headings;
