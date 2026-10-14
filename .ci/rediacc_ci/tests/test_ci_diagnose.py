@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 
 import pytest
 
@@ -426,6 +427,14 @@ SIG_CASES = {
         "Dependency check FAILED: 2 must upgrade, 0 major(s) awaiting a decision",
         "0 FAILED, 12 passed",
     ),
+    "pin-upstream-unreachable": (
+        "  Bitwarden CLI (pinned 2026.9.0): GET api.github.com/repos/bitwarden/clients/releases -> HTTP 503, after 3 attempt(s)",
+        "? Bitwarden CLI: attempt 1 of 3 failed (HTTP 503), asking again in 2 s",
+    ),
+    "pin-stale": (
+        "\u2717 1 devcontainer pin(s) are behind upstream:",
+        "\u2713 Every devcontainer pin is current or deferred (5 of 5 compared with upstream, 0 held).",
+    ),
 }
 
 
@@ -465,6 +474,54 @@ def test_a_stall_outranks_a_code_failure_in_the_same_log():
         "2026-10-07T18:22:20.0000000Z rclone is still not installed after every install attempt",
     ]
     assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+
+
+PIN_RETRY = "2026-10-14T03:10:01.0000000Z ? Bitwarden CLI: attempt %d of 3 failed (%s), asking again in %d s"
+PIN_NOT_COMPARED = (
+    "2026-10-14T03:10:07.0000000Z \u2717 1 devcontainer pin(s) were NOT compared with upstream:",
+    "2026-10-14T03:10:07.0000000Z   Bitwarden CLI (pinned 2026.9.0): GET api.github.com/repos/bitwarden/clients/releases -> %s, after 3 attempt(s)",
+    "2026-10-14T03:10:07.0000000Z   UPSTREAM REACHABILITY FAILURE (api.github.com), not a stale pin and not a defect in the tree.",
+    "2026-10-14T03:10:07.0000000Z ##[error]Process completed with exit code 1.",
+)
+
+
+@pytest.mark.parametrize(
+    "what",
+    [
+        "HTTP 503",
+        "HTTP 403 (rate limit, resets 2026-10-14T04:00:00.000Z)",
+        "timeout after 15 s",
+        "network error ECONNREFUSED",
+        "network error ENOTFOUND",
+    ],
+)
+def test_a_pin_gate_that_could_not_reach_upstream_is_infra_and_named(what):
+    """The nightly red the 2026-10-13 ruling created: a pin freshness gate fails closed when upstream does not answer. Every status and error code it can print reads as `pin-upstream-unreachable`, never as an unknown, as the Bitwarden secrets row (the pin's display name and a 5xx share a line) or as the generic network row."""
+    lines = [
+        PIN_RETRY % (1, what, 2),
+        PIN_RETRY % (2, what, 4),
+        *(ln.replace("%s", what) for ln in PIN_NOT_COMPARED),
+    ]
+    assert D.classify(lines) == ("infra-likely", "pin-upstream-unreachable")
+    assert "not a stale pin" in D.signature_label("pin-upstream-unreachable")
+
+
+def test_a_retry_that_cleared_before_a_stale_pin_is_not_an_infra_verdict():
+    """Control for the retry-note exclusion: the retry succeeded, and the red is the stale pin. Without the exclusion the note's `Bitwarden ... 503` reads as `bitwarden-5xx` and outranks the finding."""
+    lines = [
+        PIN_RETRY % (1, "HTTP 503", 2),
+        PIN_RETRY % (1, "network error ECONNRESET", 2),
+        "2026-10-14T03:10:04.0000000Z \u2717 1 devcontainer pin(s) are behind upstream:",
+        "2026-10-14T03:10:04.0000000Z   Bitwarden CLI: pinned 2026.9.0  ->  upstream 2026.10.0",
+    ]
+    assert D.classify(lines) == ("code-likely", "pin-stale")
+    assert D.classify(lines[:2]) == ("unknown", "")
+
+
+def test_the_retry_note_exclusion_is_what_keeps_that_verdict(monkeypatch):
+    """The plant: with the exclusion switched off the same log reads as infrastructure, so the case above is testing the exclusion and not the row order."""
+    monkeypatch.setattr(D, "RETRY_NOTE_RE", re.compile(r"(?!)"))
+    assert D.classify([PIN_RETRY % (1, "HTTP 503", 2)]) == ("infra-likely", "bitwarden-5xx")
 
 
 @pytest.mark.parametrize(

@@ -205,6 +205,10 @@ jobs:
       # not "the world moved"; 5 of 8 nightlies before 2026-08-04 were red on
       # external drift alone). Consumed by ci-quality.yml steps via the
       # run_external_gate wrapper; push never reaches quality (full_suite).
+      # The three pin freshness gates (embed-asset, devcontainer, real-provider)
+      # honour only 'skip': they run without the wrapper, so 'soft' does not
+      # downgrade them and the nightly goes red on a stale pin or an upstream
+      # that could not be reached (operator ruling 2026-10-13).
       external_quality: ${{ github.event_name != 'pull_request' && 'soft' || (contains(github.event.pull_request.labels.*.name, 'no-external-quality') && 'skip' || 'hard') }}
       # media_quality: TWO-state control for the gates that read in-flight
       # tutorial media (recorded .cast files and the transcript/audio/parity

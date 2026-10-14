@@ -1036,6 +1036,209 @@ def test_a_real_dispatch_guard_that_differs_from_the_seal_is_refused(
     assert "Write release sentinels" in proc.stderr
 
 
+# ---- the pin freshness gates are hard on every cadence (operator ruling 2026-10-13) ----
+
+PIN_IF = (
+    "${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}"
+)
+PIN_MODE = "${{ github.event_name != 'pull_request' && 'soft' || (contains(github.event.pull_request.labels.*.name, 'no-external-quality') && 'skip' || 'hard') }}"
+PIN_ANNOUNCE = (
+    "PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality "
+    + " ".join(ci_workflow_invariants.PIN_GATES)
+)
+REAL_QUALITY = ROOT / ".github/workflows/ci-quality.yml"
+
+
+def pin_pair() -> tuple[dict, dict]:
+    """A conformant (ci, ci-quality) pair; every red case below breaks exactly one thing in a fresh copy."""
+    ci = {"jobs": {"initialize": {"outputs": {"external_quality": PIN_MODE}}}}
+    steps: list[dict] = [
+        {"id": "setup", "uses": "./.github/actions/setup-workspace"},
+        {
+            "name": "Announce pin gates held by label",
+            "if": "${{ !cancelled() && steps.setup.outcome == 'success' }}",
+            "env": {
+                "GATE_SKIP_MODE": "${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}"
+            },
+            "run": PIN_ANNOUNCE,
+        },
+    ]
+    steps += [
+        {"name": gate, "if": PIN_IF, "env": {"GITHUB_TOKEN": "t"}, "run": "npm run %s" % gate}
+        for gate in ci_workflow_invariants.PIN_GATES
+    ]
+    return ci, {"jobs": {"quality-go": {"steps": steps}}}
+
+
+def pin_kinds(ci: dict, quality: dict) -> list[str]:
+    return [kind for kind, _name in ci_workflow_invariants.analyse_pin_gates(ci, quality)[0]]
+
+
+def pin_step(quality: dict, gate: str) -> dict:
+    return next(s for s in quality["jobs"]["quality-go"]["steps"] if s.get("name") == gate)
+
+
+def test_a_conformant_pin_gate_pair_is_clean_and_reports_its_shape() -> None:
+    findings, shape = ci_workflow_invariants.analyse_pin_gates(*pin_pair())
+    assert findings == []
+    assert shape == ["%s in quality-go" % gate for gate in ci_workflow_invariants.PIN_GATES]
+
+
+def test_the_pre_ruling_shape_wrapped_and_soft_on_the_nightly_is_refused() -> None:
+    """THE SHAPE THE RULING RETIRED: the step goes through run_external_gate with the cadence's mode, so `soft` on a schedule turns exit 1 into a warning."""
+    ci, quality = pin_pair()
+    step = pin_step(quality, "check:ci-devcontainer-pins")
+    step["run"] = "PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate " + step["run"]
+    step["env"]["EXTERNAL_QUALITY_MODE"] = "${{ inputs.external_quality }}"
+    assert pin_kinds(ci, quality) == ["pin-gate-softened"]
+
+
+def test_a_stray_mode_variable_without_the_wrapper_is_refused() -> None:
+    ci, quality = pin_pair()
+    pin_step(quality, "check:ci-real-provider-pins")["env"]["EXTERNAL_QUALITY_MODE"] = "hard"
+    assert pin_kinds(ci, quality) == ["pin-gate-softened"]
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [
+        "${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality == 'hard' }}",
+        PIN_IF.replace(" }}", " && github.event_name == 'pull_request' }}"),
+        "${{ !cancelled() && steps.setup.outcome == 'success' }}",
+        None,
+    ],
+)
+def test_an_if_that_is_not_the_label_hold_is_refused(condition: str | None) -> None:
+    """`== 'hard'` skips the step under `soft`, a pull_request conjunct skips it on a schedule, and dropping the label conjunct removes the documented hold: each is a different `if:`, and only the one is admitted."""
+    ci, quality = pin_pair()
+    step = pin_step(quality, "check:ci-embed-asset-freshness")
+    if condition is None:
+        del step["if"]
+    else:
+        step["if"] = condition
+    assert pin_kinds(ci, quality) == ["pin-gate-conditional"]
+
+
+def test_whitespace_inside_the_if_is_not_a_finding() -> None:
+    """Control for the comparison: the admitted `if:` reflowed is still the admitted `if:`."""
+    ci, quality = pin_pair()
+    pin_step(quality, "check:ci-embed-asset-freshness")["if"] = PIN_IF.replace(" && ", "\n  && ")
+    assert pin_kinds(ci, quality) == []
+
+
+def test_a_pin_gate_with_no_step_is_a_vacuity_failure() -> None:
+    ci, quality = pin_pair()
+    steps = quality["jobs"]["quality-go"]["steps"]
+    steps.remove(pin_step(quality, "check:ci-devcontainer-pins"))
+    assert ci_workflow_invariants.analyse_pin_gates(ci, quality)[0] == [
+        ("pin-gate-missing", "check:ci-devcontainer-pins")
+    ]
+    assert pin_kinds(ci, {"jobs": {}}) == ["pin-gate-missing"] * 3
+
+
+def test_a_longer_script_name_is_not_the_gate() -> None:
+    """`npm run check:ci-devcontainer-pins-extra` is another script: it does not satisfy the gate, and it is not judged as one."""
+    ci, quality = pin_pair()
+    pin_step(quality, "check:ci-devcontainer-pins")["run"] += "-extra"
+    assert pin_kinds(ci, quality) == ["pin-gate-missing"]
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda a: a.__setitem__("run", a["run"].replace(" check:ci-real-provider-pins", "")),
+        lambda a: a.__setitem__("run", a["run"].replace("no-external-quality", "no-media-quality")),
+        lambda a: a.__setitem__("if", PIN_IF),
+        lambda a: a["env"].__setitem__("GATE_SKIP_MODE", "${{ inputs.external_quality }}"),
+        lambda a: a.__setitem__("run", "true"),
+    ],
+)
+def test_a_label_hold_nothing_announces_is_refused(mutate) -> None:
+    """The announcer drops a gate, names another label, sits behind the same label it announces, is handed the raw three-state value (which it refuses under `soft`), or is gone."""
+    ci, quality = pin_pair()
+    mutate(quality["jobs"]["quality-go"]["steps"][1])
+    kinds = pin_kinds(ci, quality)
+    assert kinds, "the mutation was not seen"
+    assert set(kinds) == {"pin-gate-unannounced"}
+
+
+@pytest.mark.parametrize(
+    "mode",
+    [
+        "${{ github.event_name != 'pull_request' && 'skip' || 'hard' }}",
+        "${{ github.event_name == 'schedule' && 'skip' || 'hard' }}",
+        "skip",
+        None,
+    ],
+)
+def test_a_ci_yml_that_can_skip_the_pin_gates_off_a_pull_request_is_refused(mode) -> None:
+    ci, quality = pin_pair()
+    if mode is None:
+        del ci["jobs"]["initialize"]["outputs"]["external_quality"]
+    else:
+        ci["jobs"]["initialize"]["outputs"]["external_quality"] = mode
+    assert pin_kinds(ci, quality) == ["pin-gate-schedule-skipped"]
+
+
+def test_every_pin_gate_kind_has_a_message() -> None:
+    files = {"ci": "ci.yml", "quality": "ci-quality.yml"}
+    for kind in ci_workflow_invariants.PIN_GATE_KINDS:
+        assert ci_workflow_invariants.pin_gate_message_for(kind, "g", files) is not None, kind
+    assert ci_workflow_invariants.pin_gate_message_for("invented", "g", files) is None
+
+
+def test_the_real_workflow_holds_the_pin_gates_hard(tmp_path: pathlib.Path) -> None:
+    """The live pair, through the gate itself: green, and the shape line names all three gates."""
+    proc = run_real(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert "pin gates hold:" in proc.stderr
+    for gate in ci_workflow_invariants.PIN_GATES:
+        assert "%s in quality-go" % gate in proc.stderr
+
+
+@pytest.mark.parametrize("gate", ci_workflow_invariants.PIN_GATES)
+def test_rewrapping_a_real_pin_step_is_refused(tmp_path: pathlib.Path, gate: str) -> None:
+    """THE PLANT ON THE REAL FILE: put one step back behind the wrapper, as it was before the ruling, and the gate is red naming it."""
+    text = cut_once(
+        REAL_QUALITY.read_text(encoding="utf-8"),
+        "        run: npm run %s\n" % gate,
+        "        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run %s\n"
+        % gate,
+    )
+    proc = run_real(tmp_path, QUALITY_WORKFLOW_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: pin-gates: %s (quality-go step" % gate in proc.stderr
+    assert "hard on every cadence" in proc.stderr
+
+
+def test_the_real_announcer_losing_a_gate_is_refused(tmp_path: pathlib.Path) -> None:
+    text = cut_once(
+        REAL_QUALITY.read_text(encoding="utf-8"),
+        " no-external-quality check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins\n",
+        " no-external-quality check:ci-embed-asset-freshness check:ci-devcontainer-pins\n",
+    )
+    proc = run_real(tmp_path, QUALITY_WORKFLOW_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: pin-gates: check:ci-real-provider-pins" in proc.stderr
+    assert "no announcer naming it" in proc.stderr
+
+
+def test_a_real_ci_yml_that_skips_external_gates_on_the_nightly_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    text = cut_once(
+        REAL_CI.read_text(encoding="utf-8"),
+        "external_quality: ${{ github.event_name != 'pull_request' && 'soft' ||",
+        "external_quality: ${{ github.event_name != 'pull_request' && 'skip' ||",
+    )
+    proc = run_real(
+        tmp_path, WORKFLOW_FILE=text, CD_WORKFLOW_FILE=REAL_CD.read_text(encoding="utf-8")
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: pin-gates:" in proc.stderr
+    assert "take them off the nightly" in proc.stderr
+
+
 # ---- the cd-preflight pins (PLAN-cd-errors-in-ci W4) ----
 
 PF_PR = 'PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version "$V" --checks a,b,c,d,promotion'

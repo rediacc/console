@@ -80,6 +80,9 @@ on:
       # (schedule/dispatch: run_external_gate downgrades a failure to a
       # ::warning:: so external drift cannot redden the nightly). Default
       # 'hard' fails closed if a caller forgets to pass it.
+      # The three pin freshness gates in quality-go read only the 'skip' half:
+      # they run unwrapped, so 'soft' is hard for them (operator ruling
+      # 2026-10-13).
       external_quality:
         type: string
         required: false
@@ -2680,47 +2683,57 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-embed-asset-versions
 
-      # Freshness of the embedded-binary version pins vs upstream. GITHUB_TOKEN
-      # raises the API rate limit; the gate fails SOFT on any network/rate-limit
-      # error, so a missing token or a blip never reddens the build — only a
-      # confirmed-stale pin does. external_quality softens even that confirmed
-      # case on the nightly: a new rclone release reddened 3 consecutive
-      # nightlies (2026-08-02..04) with zero commits on main.
+      # THE THREE PIN FRESHNESS GATES ARE HARD ON EVERY CADENCE (operator ruling
+      # 2026-10-13, "Everything fails closed, nightly included"). They ask
+      # upstream whether a pin is behind, and each one fails closed: a pin whose
+      # upstream answer was not obtained after three tries is a red finding
+      # that names the pin and the host (scripts/lib/pin-upstream.ts). None of
+      # them goes through run_external_gate, so `external_quality: soft` on the
+      # nightly and on a dispatch does not downgrade them: a stale pin and an
+      # unreachable upstream are red there exactly as on a pull request. The
+      # `inputs.external_quality != 'skip'` conjunct stays, so the
+      # no-external-quality label on a pull request still holds them, and the
+      # announcer below names them in the log when it does. A skipped step
+      # prints nothing by itself. `soft` and `hard` both read as enforced here,
+      # which is what the two steps after it do with them.
+      - name: Announce pin gates held by label
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins
+
+      # Freshness of the embedded-binary version pins vs upstream
+      # (api.github.com and download.samba.org). GITHUB_TOKEN raises the API
+      # rate limit. Until 2026-10-13 this step was soft on the nightly, after a
+      # new rclone release reddened 3 consecutive nightlies (2026-08-02..04)
+      # with zero commits on main; the ruling above takes that red back on
+      # purpose.
       - name: Check embed-asset upstream freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-embed-asset-freshness
+        run: npm run check:ci-embed-asset-freshness
 
       # The same question for .devcontainer/Dockerfile, which until this gate had
       # NOTHING watching it: check-deps sees npm, check-go-deps sees go.mod, and
       # the embed gate above is hardcoded to private/renet/Dockerfile. Same soak,
-      # same soft-fail, same external_quality treatment -- a new Bitwarden release
-      # is external drift by definition, so it must not redden the nightly that
-      # validates main.
+      # same fail-closed network handling, hard on every cadence.
       - name: Check devcontainer pin upstream freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-devcontainer-pins
+        run: npm run check:ci-devcontainer-pins
 
       # And for private/account/e2e/real-provider.lock.json: the Bitwarden
       # browser extension and the Vaultwarden server the account E2E suite runs
       # config-storage setup against. A stable upstream release newer than the
-      # pin and past the release-age window fails a pull request here; the
-      # message names the bump command. Same external_quality treatment as the
-      # two steps above: soft on the nightly, skipped by the label. Unlike them
-      # it FAILS CLOSED on the network (operator ruling 2026-10-13): a pin whose
-      # release list was not obtained after three tries is red on a pull
-      # request. The nightly's soft mode turns that red into a warning too.
+      # pin and past the release-age window fails here; the message names the
+      # bump command. Hard on every cadence, like the two steps above.
       - name: Check real-provider pin upstream freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-real-provider-pins
+        run: npm run check:ci-real-provider-pins
 
       # Kept inline (3 logic lines, under check-workflows.sh's limit) rather than
       # extracted: a check-*.sh path would make check-ci-parity's R2 demand a

@@ -2,7 +2,7 @@
 
 Tests for `rediacc_ci.quality.run_external_gate`, the wrapper that gives externally-dependent quality gates their three-state behaviour: hard on a normal PR, absent on a labelled PR via the step `if:`, soft on schedule.
 
-IT IS WHAT THE SIX WRAPPED STEPS in `.github/workflows/ci-quality.yml` run, and since the bash twin `.ci/scripts/quality/run-external-gate.sh` was deleted it is also what every case below drives.
+IT IS WHAT THE FOUR WRAPPED STEPS in `.github/workflows/ci-quality.yml` run, and since the bash twin `.ci/scripts/quality/run-external-gate.sh` was deleted it is also what every case below drives.
 
 Every direction is exercised with a REAL child process, and both failure directions are proven able to fire: a soft failure that exits non-zero, or a hard failure that exits zero, would each silently break the design in the dangerous direction -- a red nightly nobody wanted, or a green PR that should have blocked.
 

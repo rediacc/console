@@ -3757,7 +3757,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-embed-asset-freshness',
     env: {
-      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
       GITHUB_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-embed-asset-freshness',
@@ -3789,7 +3788,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-devcontainer-pins',
     env: {
-      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
       GITHUB_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-devcontainer-pins',
@@ -3805,7 +3803,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-real-provider-pins',
     env: {
-      EXTERNAL_QUALITY_MODE: '${{ inputs.external_quality }}',
       GITHUB_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-real-provider-pins',
