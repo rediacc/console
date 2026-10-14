@@ -613,7 +613,7 @@ def _pr_signals(root, payload):
     head = payload.get("head") or ""
     out = {"state": "unreadable", "pr": pr, "head": head, "signals": [], "error": ""}
     try:
-        import wl_prsignals  # noqa: PLC0415 -- the hook's own module, on sys.path above
+        import wl_prsignals
 
         fetch = _fetcher(root)
         comments: list[dict] = []
@@ -645,7 +645,7 @@ def _signals_text(state, signals=None):
     """The PR SIGNALS block for `state`; `signals` narrows it to a subset (the in-wait news)."""
     if state["state"] != "ok":
         return "PR SIGNALS: unreadable (%s)" % (state.get("error") or "?")
-    import wl_prsignals  # noqa: PLC0415
+    import wl_prsignals
 
     return wl_prsignals.render(
         state["signals"] if signals is None else signals, state["pr"], state["head"]
@@ -1418,8 +1418,8 @@ def _verb_scheduled_workflow(root, sched, name, as_json):
 def verb_scheduled(root, workflow, as_json):
     """--scheduled [--workflow X]: 0 all green, 1 any red, 2 unreadable, empty or unknown."""
     try:
-        import wl_core  # noqa: PLC0415 -- the hook's own modules, on sys.path above
-        import wl_schedred  # noqa: PLC0415
+        import wl_core
+        import wl_schedred
 
         if workflow:
             return _verb_scheduled_workflow(root, wl_schedred, workflow, as_json)
@@ -1899,8 +1899,8 @@ def _record_final(root, ref, payload, verdict, args, diag=None):
     record = _final_record(payload, verdict, diag)
     headline = D.render(record).splitlines()[0]
     try:
-        import wl_civerdict  # noqa: PLC0415
-        import wl_core  # noqa: PLC0415 -- the hook's own modules, on sys.path above
+        import wl_civerdict
+        import wl_core
 
         worklist = wl_core.worklist_for(root)
         wl_civerdict.write_cache(

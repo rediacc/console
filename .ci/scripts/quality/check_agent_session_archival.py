@@ -343,7 +343,7 @@ def _wl_store(root: pathlib.Path):
     hooks = paths.hooks_stop_dir(root)
     paths.on_sys_path(hooks)
     try:
-        import wl_store  # noqa: PLC0415 -- the derivation is the point; see the docstring
+        import wl_store
     except ImportError as exc:
         raise CannotRunError(
             "cannot import wl_store from %s (%s), so the ONE liveness oracle cannot be "

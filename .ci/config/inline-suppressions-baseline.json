@@ -82,13 +82,7 @@
   ".ci/rediacc_ci/setup/machine.py": {
    "noqa S606": 1
   },
-  ".ci/rediacc_ci/tests/gates/harness.py": {
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": {
-   "noqa PLC0415": 2
-  },
-  ".ci/rediacc_ci/tests/regolden.py": {
    "noqa PLC0415": 2
   },
   ".ci/rediacc_ci/tests/test_ci_github_status.py": {
@@ -101,33 +95,10 @@
    "noqa PLC0415": 1
   },
   ".ci/scripts/ci/ci-trace.py": {
-   "noqa E402": 1,
-   "noqa PLC0415": 6
-  },
-  ".ci/scripts/quality/check_agent_hint_liveness.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/scripts/quality/check_agent_session_archival.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/scripts/quality/check_gate_reachability_coverage.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/scripts/quality/check_hint_corpus.py": {
-   "noqa PLC0415": 2
-  },
-  ".ci/scripts/quality/check_plan_implementation.py": {
-   "noqa BLE001": 4,
-   "noqa PLC0415": 8
+   "noqa E402": 1
   },
   ".ci/scripts/quality/check_plan_record.py": {
    "noqa BLE001": 1
-  },
-  ".ci/scripts/quality/check_resprofile.py": {
-   "noqa E402": 1
-  },
-  ".ci/scripts/quality/check_tree_shape.py": {
-   "noqa PLC0415": 1
   }
  }
 }

@@ -66,8 +66,8 @@ def load_hints():
         )
     paths.on_sys_path(HOOK_DIR)
     try:
-        import wl_hints  # noqa: PLC0415
-        import wl_planrec as plan_r  # noqa: PLC0415
+        import wl_hints
+        import wl_planrec as plan_r
     except ImportError as exc:
         die(
             f"cannot import wl_hints or wl_planrec ({exc}). Refusing to pass while measuring nothing."

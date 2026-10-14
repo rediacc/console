@@ -127,11 +127,11 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["REDIACC_CI_REGOLDEN"] = args.source
     # Imported only now: `differential` reads the mode per call, but its BASE_ENV is built at import.
     try:
-        import pytest  # noqa: PLC0415
+        import pytest
     except ModuleNotFoundError:
         return _reexec_under_pytest()
 
-    from rediacc_ci.tests import differential as diff  # noqa: PLC0415
+    from rediacc_ci.tests import differential as diff
 
     files: list[str] = []
     for twin in args.twins:
