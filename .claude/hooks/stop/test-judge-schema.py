@@ -24,8 +24,6 @@ import subprocess
 import sys
 import tempfile
 import types
-
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from typing import Any
 
 import wl_bravedefault
@@ -36,6 +34,10 @@ import wl_proc
 import wl_proofcheck
 import wl_reggate
 import wl_rules
+import wl_shapedup
+import wl_shapedup as _stubbed_shapedup
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 
 class Tally:
@@ -1411,7 +1413,6 @@ control(
 #
 # The third judged rule, and the only one on its OWN model call. Its verdict half is pure and its trigger half is a subprocess, so the controls below drive the pure half directly and stub the subprocess for the driver.
 
-import wl_shapedup  # noqa: E402 -- the module under test, imported where its section starts
 
 SHAPE_MARKER_TEXT = wl_shapedup.SHAPE_MARKER
 SMARK = MARKER.with_suffix(".shape")
@@ -2283,12 +2284,9 @@ control(
 # A FRESH MODULE INSTANCE, deliberately. A control far above this one replaces `wl_shapedup.ask` with a permanent stub ("stubbed: no model call in a control"), and the first version of these four controls called that stub and failed with it -- which is the good outcome: a test that cannot reach the code it names must say so rather than pass. Loading an isolated copy leaves the stub
 # in place for everything that depends on it. ---------------------------------------------------------------------------
 
-import importlib.util as _ilu  # noqa: E402
 
-import wl_shapedup as _stubbed_shapedup  # noqa: E402
-
-_spec = _ilu.spec_from_file_location("wl_shapedup_fresh", _stubbed_shapedup.__file__)
-_shapedup = _ilu.module_from_spec(_spec)
+_spec = importlib.util.spec_from_file_location("wl_shapedup_fresh", _stubbed_shapedup.__file__)
+_shapedup = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_shapedup)
 control(
     "PART 5 precondition: the fresh copy is NOT the stubbed one",

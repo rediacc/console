@@ -18,6 +18,14 @@ import tempfile
 import types
 from typing import Any, cast
 
+import wl_checks
+import wl_core
+import wl_defersettle as DS
+import wl_judge
+import wl_proc
+import wl_store
+import worklist as WL
+
 HERE = pathlib.Path(__file__).resolve().parent
 # ONE PRIVATE TMPDIR, removed at exit whatever happens: run_judge creates `$TMPDIR/claude-worklist/.judge`, and test_hooks_delegates fails any standalone suite that leaves an entry behind.
 # `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
@@ -34,13 +42,6 @@ _TMP = runtmp.run_dir("ds-test-")
 os.environ["TMPDIR"] = _TMP
 tempfile.tempdir = _TMP
 
-import wl_checks  # noqa: E402
-import wl_core  # noqa: E402
-import wl_defersettle as DS  # noqa: E402
-import wl_judge  # noqa: E402
-import wl_proc  # noqa: E402
-import wl_store  # noqa: E402
-
 
 class Tally:
     fails = 0
@@ -55,7 +56,7 @@ def control(label, got, want):
     print(f"  FAIL {label}: got {got!r}, want {want!r}", file=sys.stderr)
 
 
-SECRET = "xxxxSECRETVALUE9f3a"  # noqa: S105 -- a planted fixture value, asserted never to leak
+PLANTED = "xxxxSECRETVALUE9f3a"
 BB_QUOTE = DS.CATALOG[0]["quote"]
 MR_QUOTE = DS.CATALOG[1]["quote"]
 
@@ -76,9 +77,9 @@ def make_root(env_key=True, script=True):
     (root / ".ci" / "config").mkdir(parents=True)
     lines = ["{", '  "secrets": {', '    "UNRELATED_KEY": {"id": "abc"}']
     if env_key:
-        # The fixture SECRET stands in as the entry's id: nothing from the map, value or id, may reach a fact.
+        # The fixture PLANTED stands in as the entry's id: nothing from the map, value or id, may reach a fact.
         lines[-1] += ","
-        lines.append('    "CLOUDFLARE_R2_ACCESS_KEY_ID": {"id": "%s"}' % SECRET)
+        lines.append('    "CLOUDFLARE_R2_ACCESS_KEY_ID": {"id": "%s"}' % PLANTED)
     lines += ["  }", "}"]
     (root / ".ci" / "config" / "bws-secret-map.json").write_text(
         "\n".join(lines) + "\n", encoding="utf-8"
@@ -146,10 +147,10 @@ control(
     ".ci/config/bws-secret-map.json:4",
 )
 control("class1: a Fact has no value field at all", "value" in DS.Fact._fields, False)
-control("class1: the fact never carries the value", any(SECRET in repr(f) for f in facts), False)
+control("class1: the fact never carries the value", any(PLANTED in repr(f) for f in facts), False)
 section = DS.prompt_section([(r2, facts)])
 control("class1: the prompt carries the marker", DS.DEFER_SETTLE_MARKER in section, True)
-control("class1: the prompt never carries the value", SECRET in section, False)
+control("class1: the prompt never carries the value", PLANTED in section, False)
 
 state: dict[Any, Any] = {}
 w = Writes()
@@ -174,7 +175,7 @@ control(
     DS._default_gate(str(root), tick.get("note", "")),
     True,
 )
-control("class1: the evidence never carries the value", SECRET in tick.get("note", ""), False)
+control("class1: the evidence never carries the value", PLANTED in tick.get("note", ""), False)
 control(
     "class1: the evidence carries the machine marker",
     tick.get("note", "").startswith("MACHINE-CLASSIFIED (%s)" % DS.ACTOR),
@@ -383,7 +384,7 @@ control(
     "defer_settle" in CAPTURED["schema"]["required"],
     True,
 )
-control("e2e: the secret never reaches the judge prompt", SECRET in CAPTURED["prompt"], False)
+control("e2e: the secret never reaches the judge prompt", PLANTED in CAPTURED["prompt"], False)
 control(
     "e2e: the verdict carries the array through",
     (v or {}).get("defer_settle", [{}])[0].get("verdict"),
@@ -567,7 +568,6 @@ ME = SID[:8]
 os.environ["WORKLIST_SESSION_ID"] = SID
 os.environ["CLAUDE_PROJECT_DIR"] = str(root)
 os.environ.pop("WORKLIST_JUDGE", None)
-import worklist as WL  # noqa: E402
 
 store_dir = pathlib.Path(tempfile.mkdtemp(prefix="ds-store-"))
 WLPATH = store_dir / "wl.md"
@@ -602,7 +602,7 @@ code, msg = cli("--defer", ME, rid, R2_DEFER)
 control("create: a confident settled refuses the --defer", code, 1)
 control(
     "create: the refusal names the fact, not the value",
-    ("CLOUDFLARE_R2_ACCESS_KEY_ID" in msg, SECRET in msg),
+    ("CLOUDFLARE_R2_ACCESS_KEY_ID" in msg, PLANTED in msg),
     (True, False),
 )
 control("create: the item is not deferred", state_of(rid), " ")

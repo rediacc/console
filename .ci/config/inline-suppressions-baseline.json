@@ -672,60 +672,6 @@
   ".claude/hooks/post-bash/review_commit.py": {
    "noqa E402": 2
   },
-  ".claude/hooks/stop/test-backlog.py": {
-   "noqa E402": 1
-  },
-  ".claude/hooks/stop/test-ci-carried.py": {
-   "noqa ARG001": 1,
-   "noqa E402": 1
-  },
-  ".claude/hooks/stop/test-ci-rerun.py": {
-   "noqa ARG001": 1,
-   "noqa E402": 1
-  },
-  ".claude/hooks/stop/test-defer-settle.py": {
-   "noqa E402": 7,
-   "noqa S105": 1
-  },
-  ".claude/hooks/stop/test-judge-schema.py": {
-   "noqa E402": 3
-  },
-  ".claude/hooks/stop/test-planfile.py": {
-   "noqa E402": 3
-  },
-  ".claude/hooks/stop/test-planrec.py": {
-   "noqa E402": 9
-  },
-  ".claude/hooks/stop/wl_checks.py": {
-   "noqa E731": 2
-  },
-  ".claude/hooks/stop/wl_loopspeed.py": {
-   "noqa F401": 1
-  },
-  ".claude/hooks/stop/wl_planrec.py": {
-   "noqa PERF401": 1
-  },
-  ".claude/hooks/stop/wl_profile.py": {
-   "type-ignore attr-defined": 1
-  },
-  ".claude/hooks/stop/wl_prscope.py": {
-   "noqa DTZ005": 1,
-   "type-ignore arg-type": 1,
-   "type-ignore union-attr": 1
-  },
-  ".claude/hooks/stop/wl_report.py": {
-   "noqa S112": 1
-  },
-  ".claude/hooks/stop/wl_review.py": {
-   "noqa E731": 2
-  },
-  ".claude/hooks/stop/wl_roster.py": {
-   "type-ignore arg-type": 1,
-   "type-ignore union-attr": 1
-  },
-  ".claude/hooks/stop/wl_store.py": {
-   "noqa PLW0603": 1
-  },
   ".claude/rediacc_hooks/hookio.py": {
    "noqa F401": 1
   },

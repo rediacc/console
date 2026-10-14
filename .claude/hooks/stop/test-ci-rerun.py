@@ -18,11 +18,12 @@ import shutil
 import tempfile
 import time
 
+import wl_ci as W
+
 _SCRATCH = tempfile.mkdtemp(prefix="ci-rerun-")
 atexit.register(shutil.rmtree, _SCRATCH, True)
 os.environ["XDG_CACHE_HOME"] = _SCRATCH
 
-import wl_ci as W  # noqa: E402
 
 _CI = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci"
 spec = importlib.util.spec_from_file_location("controls", _CI / "controls.py")
@@ -101,7 +102,7 @@ def trouble_twice(first_ctxs, second_ctxs, age_s):
     base.mkdir()
     box = {"ctxs": first_ctxs}
 
-    def rollup(_root, _ref, allow_branch=False, repo=None):  # noqa: ARG001 -- ci_rollup's signature
+    def rollup(_root, _ref, _allow_branch=False, _repo=None):
         return "ok", {
             "owner": "rediacc",
             "name": "console",

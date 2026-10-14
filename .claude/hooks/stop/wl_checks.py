@@ -1372,7 +1372,10 @@ def outq_drain(worklist, session_id, state_doc, n, rng=None, only=None):
             take.extend(r.sample(pool, budget))
             budget = 0
     # A DIGEST, NOT A QUEUE OF FACTS. Every settled regression-gate outcome is a sticky one-line fact that is not asked again; released one per stop they took a stop each, and a long session accumulated twenty-five of them. When one comes due, ALL of its siblings ride the same stop as one section, so the queue holds at most one of them however many fixes settled.
-    is_settled = lambda e: str(e.get("key", "")).startswith("reg-settled:")  # noqa: E731
+
+    def is_settled(e):
+        return str(e.get("key", "")).startswith("reg-settled:")
+
     if any(is_settled(e) for e in take):
         ordered = sorted(
             (e for e in q["items"] if is_settled(e)), key=lambda e: int(e.get("seq") or 0)
@@ -2946,7 +2949,10 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
 
     Ends an expired or finished focus, and queues the summary when a focus that was on at the last stop is not the one on now. The summary is a priority-0 sticky entry, so the allow drain delivers it; the block path appends it in full and forgets the entry, because a block's digest shows only 150 characters of it.
     """
-    owned = lambda o: C.owned_by_me(o, session_id)  # noqa: E731
+
+    def owned(o):
+        return C.owned_by_me(o, session_id)
+
     focus = None
     why = ""
     with contextlib.suppress(Exception):
