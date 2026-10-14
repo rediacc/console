@@ -1,0 +1,48 @@
+diff --git a/.claude/config/effort.json b/.claude/config/effort.json
+--- a/.claude/config/effort.json
++++ b/.claude/config/effort.json
+@@ -290,7 +290,7 @@
+       "advise": "low"
+     },
+     "no-remaining": {
+-      "block": "high",
++      "block": "smart",
+       "advise": "smart"
+     },
+     "out-of-sync": {
+@@ -478,7 +478,7 @@
+       "advise": "smart"
+     },
+     "plan-backlog": {
+-      "advise": "smart"
++      "advise": "low"
+     },
+     "agent-hint": {
+       "advise": "smart"
+@@ -508,5 +508,25 @@
+       "advise": "smart"
+     }
+   },
+-  "tuned": {}
++  "tuned": {
++    "no-remaining": {
++      "direction": "promote",
++      "from": {
++        "block": "high",
++        "advise": "smart"
++      },
++      "tuned_at": "2026-10-14T22:28:11Z",
++      "review_after": "2026-10-28T22:28:11Z",
++      "evidence": "eo-39d733e9, eo-7b9cfade, eo-fa20bec6, eo-95cffaba, eo-fdadb35f, eo-a847d62a, eo-1931478e, eo-fc097b32, eo-2955b892, eo-dfed90e8"
++    },
++    "plan-backlog": {
++      "direction": "promote",
++      "from": {
++        "advise": "smart"
++      },
++      "tuned_at": "2026-10-14T22:28:11Z",
++      "review_after": "2026-10-28T22:28:11Z",
++      "evidence": "eo-5b51a195, eo-4a48cdfe, eo-2c8ce2cb, eo-2e161bd7, eo-426369d0"
++    }
++  }
+ }
