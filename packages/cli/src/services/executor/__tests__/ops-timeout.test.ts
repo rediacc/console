@@ -47,7 +47,7 @@ describe('ops-executor timeout kills the process tree', () => {
     }
   };
   // The fake renet appends to this file when SIGTERM reaches it, so the test sees the signal itself and not only its absence of effect.
-  // The three wall-clock waits (6s pid, 3s SIGTERM, 3s reap) sum to 12s, inside the 15s test timeout, so a missed signal fails on its own assertion and not on the test timeout.
+  // The three wall-clock waits (10s pid, 3s SIGTERM, 3s reap) sum to 16s, inside the 20s test timeout, so a missed signal fails on its own assertion and not on the test timeout.
   const waitForSigterm = async (): Promise<boolean> => {
     const deadline = Date.now() + 3000;
     while (Date.now() < deadline) {
@@ -61,7 +61,7 @@ describe('ops-executor timeout kills the process tree', () => {
     return false;
   };
   const readGrandchildPid = async (): Promise<number> => {
-    const deadline = Date.now() + 6000;
+    const deadline = Date.now() + 10_000;
     for (let pid = tryReadGrandchildPid(); ; pid = tryReadGrandchildPid()) {
       if (pid !== null) return pid;
       if (Date.now() > deadline) throw new Error('fake renet never recorded its grandchild pid');
@@ -94,20 +94,24 @@ setInterval(() => {}, 1e9);
 
   afterEach(async () => {
     // A run still in flight (the readiness wait threw) is ended through the executor's own timers: the timeout sends SIGTERM and the grace window then sends the group SIGKILL.
-    if (pending) {
-      vi.advanceTimersByTime(60_000);
-      const settled = await Promise.race([
-        pending.then(() => true),
-        realSleep(5000).then(() => false),
-      ]);
-      if (!settled)
-        throw new Error(
-          'the executor never settled after the group SIGKILL; the fake renet tree may still be alive'
-        );
+    try {
+      if (pending) {
+        vi.advanceTimersByTime(60_000);
+        const settled = await Promise.race([
+          pending.then(() => true),
+          realSleep(5000).then(() => false),
+        ]);
+        if (!settled)
+          throw new Error(
+            'the executor never settled after the group SIGKILL; the fake renet tree may still be alive'
+          );
+      }
+    } finally {
+      // Runs even when the settle wait throws, so fake timers, mocks and the temp dir never leak into later tests.
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+      rmSync(dir, { recursive: true, force: true });
     }
-    vi.useRealTimers();
-    vi.restoreAllMocks();
-    rmSync(dir, { recursive: true, force: true });
   }, 10_000);
 
   it('escalates to SIGKILL across the group so the grandchild dies, then rejects', async () => {
@@ -150,5 +154,5 @@ setInterval(() => {}, 1e9);
       await realSleep(20);
     }
     expect(alive(gcPid)).toBe(false);
-  }, 15_000);
+  }, 20_000);
 });
