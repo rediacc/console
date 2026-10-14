@@ -594,9 +594,6 @@
   ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/tests/test_quality_run_external_gate.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/tests/test_quality_shape_cluster_diff.py": {
    "noqa E731": 1
   },
