@@ -418,7 +418,7 @@ def main():
     from rediacc_hooks import hookio  # noqa: PLC0415 -- the package is registered just above
 
     good: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
-    exec(compile(SOURCE, str(GUARD), "exec"), good)  # noqa: S102
+    exec(compile(SOURCE, str(GUARD), "exec"), good)
     old, new = good["DEFECT"]
     if old not in _outside_defect(SOURCE):
         print(
@@ -428,7 +428,7 @@ def main():
         fails += 1
     else:
         bad: dict = {"__name__": "broken_guard", "__file__": str(GUARD)}
-        exec(compile(SOURCE.replace(old, new), str(GUARD), "exec"), bad)  # noqa: S102
+        exec(compile(SOURCE.replace(old, new), str(GUARD), "exec"), bad)
         changed = 0
         saved = dict(os.environ)
         try:

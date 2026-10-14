@@ -172,7 +172,7 @@ def _declared_defect():
     source = GUARD.read_text(encoding="utf-8")
     start = source.index("DEFECT = ")
     end = source.index(")\n", start) + 1
-    exec(source[start:end], namespace)  # noqa: S102 -- the guard's own literal
+    exec(source[start:end], namespace)
     return namespace["DEFECT"]
 
 

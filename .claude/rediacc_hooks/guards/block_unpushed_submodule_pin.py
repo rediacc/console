@@ -31,7 +31,7 @@ _FIXTURE_DATE = "2026-01-01T00:00:00+00:00"
 
 
 def _fixture_git(cwd, *args):
-    import subprocess  # noqa: PLC0415 -- fixture-only; the guard's own path forks through hookio
+    import subprocess
 
     env = dict(
         os.environ,

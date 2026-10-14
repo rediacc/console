@@ -56,8 +56,8 @@ UNREAD = "block-turbo-early-push: %s; this push passed UNEXAMINED."
 
 
 def _git(path, *argv, env_date=None):
-    import os  # noqa: PLC0415 -- fixture builders only
-    import subprocess  # noqa: PLC0415
+    import os
+    import subprocess
 
     env = dict(
         os.environ,
@@ -238,7 +238,7 @@ def _open_promoted(ev, root):
         return None
     syspath.on_sys_path(plan_gate.STOP_DIR)
     try:
-        import wl_planqueue  # noqa: PLC0415 -- the one reader of the queue's format
+        import wl_planqueue
     except ImportError as exc:
         ev.warn(UNREAD % ("wl_planqueue could not import (%s)" % exc))
         return None
@@ -388,10 +388,10 @@ def _batch(ev, root, session_id):
     """
     syspath.on_sys_path(plan_gate.STOP_DIR)
     try:
-        import wl_checks  # noqa: PLC0415 -- the Stop hook's batch predicates, read-only
-        import wl_core  # noqa: PLC0415
-        import wl_planenforce  # noqa: PLC0415
-        import wl_prscope  # noqa: PLC0415
+        import wl_checks
+        import wl_core
+        import wl_planenforce
+        import wl_prscope
 
         worklist = wl_core.worklist_for(wl_core.project_start({"cwd": str(root)}))
         state = wl_prscope.loop_state(str(root), worklist, session_id, gh=False)
@@ -410,8 +410,8 @@ def _batch(ev, root, session_id):
         if not any(r[3] for r in rows) and state.finished < state.batch_size:
             state = wl_prscope.with_turbo(state, str(root), (), 0)
             if state.turbo_more:
-                import wl_planconc  # noqa: PLC0415
-                import wl_store  # noqa: PLC0415
+                import wl_planconc
+                import wl_store
 
                 live = wl_planconc.live_plans(
                     str(root), session_id, wl_store.load(worklist, sync=False)
@@ -427,7 +427,7 @@ def _batch(ev, root, session_id):
         # THE STRICTER READ WINS. `local_batch_open` reads boxes through `wl_planenforce.first_box`, which follows no `Moved-To:` stub, while `loop_state`'s own `finished` count (`plan_gate.open_boxes`) does, and an empty set is vacuously finished. Where the two disagree the push is not released: a stub whose target still has an open box, or a batch of no plan, is not a completed batch.
         disagree = [r[0] for r in rows if r[1] > 0 and not r[3]]
         complete = hook_complete and bool(rows) and not disagree
-    except Exception as exc:  # noqa: BLE001 -- a broken reader must SAY SO, never wedge a push
+    except Exception as exc:
         ev.warn(UNREAD % ("the batch state could not be read (%s: %s)" % (type(exc).__name__, exc)))
         return None
     out = Batch(
