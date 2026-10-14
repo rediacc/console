@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1839,
-    "sourceCommit": "8dbb6066e7922cf8904178937cfce41bd62d71b5"
+    "keyCount": 1841,
+    "sourceCommit": "8d2765799d07415b285afb0a1ce044cd9af5f313"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -948,7 +948,9 @@
     "commands.repo.delete.archiveOption": "6bd8b32b",
     "commands.repo.delete.cloudBackupHint": "2c39aeb2",
     "commands.repo.delete.completed": "62ef4b3e",
-    "commands.repo.delete.configRetained": "de1665ed",
+    "commands.repo.delete.configDropped": "d8321a8b",
+    "commands.repo.delete.configRetained": "44db3127",
+    "commands.repo.delete.configRetainedElsewhere": "fd3e8a37",
     "commands.repo.delete.confirm": "23edef10",
     "commands.repo.delete.description": "0e524cc0",
     "commands.repo.delete.descriptionShort": "546db59d",

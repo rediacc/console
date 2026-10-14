@@ -331,11 +331,68 @@ export function handleRepoCreate(
   });
 }
 
-/** Handle post-delete success: cleanup, archiving, timeline, hints. */
+type DeletedRepoConfig = {
+  repositoryGuid: string;
+  grandGuid?: string;
+  pushState?: Record<string, unknown>;
+};
+
+/** A fork carries a grand lineage distinct from its own GUID. */
+function isFork(repoConfig: DeletedRepoConfig): boolean {
+  return !!repoConfig.grandGuid && repoConfig.grandGuid !== repoConfig.repositoryGuid;
+}
+
+/**
+ * Machines other than the one just deleted from that hold a pushed copy, as
+ * recorded by `repo push` in `pushState`. A repo lives on its placement machine
+ * only; the push record is the sole evidence of another holder.
+ */
+function otherHolders(repoConfig: DeletedRepoConfig, machineName: string): string[] {
+  return Object.keys(repoConfig.pushState ?? {}).filter((m) => m !== machineName);
+}
+
+/**
+ * Settle the config entry after a successful delete and say what happened. The
+ * message matches the outcome: archived (moved), dropped (a fork with no other
+ * holder, its credential is the parent's so nothing is lost), or retained with
+ * the true reason (pushed copies elsewhere, or a grand repo whose credential
+ * backups restore with).
+ */
+export async function settleConfigEntry(
+  name: string,
+  machineName: string,
+  repoConfig: DeletedRepoConfig,
+  archiveConfig: boolean
+): Promise<void> {
+  if (archiveConfig) {
+    await configService.archiveRepository(name);
+    outputService.info(t('commands.repo.delete.archived', { repository: name }));
+    outputService.info(t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid }));
+    return;
+  }
+  const holders = otherHolders(repoConfig, machineName);
+  if (holders.length > 0) {
+    outputService.info(
+      t('commands.repo.delete.configRetainedElsewhere', {
+        repository: name,
+        machines: holders.join(', '),
+      })
+    );
+  } else if (isFork(repoConfig)) {
+    await configService.removeRepository(name);
+    outputService.info(t('commands.repo.delete.configDropped', { repository: name }));
+    return;
+  } else {
+    outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
+  }
+  outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
+}
+
+/** Handle post-delete success: cleanup, timeline, config-entry settlement, hints. */
 async function handleDeleteSuccess(
   name: string,
   machineName: string,
-  repoConfig: { repositoryGuid: string },
+  repoConfig: DeletedRepoConfig,
   archiveConfig: boolean,
   result: import('../services/executor/local-executor.js').ExecuteResult,
   originalRef?: string
@@ -346,20 +403,12 @@ async function handleDeleteSuccess(
     await cleanupDeletedRepoSSH(machineName, originalRef).catch(() => {});
   }
 
-  if (archiveConfig) {
-    await configService.archiveRepository(name);
-    outputService.info(t('commands.repo.delete.archived', { repository: name }));
-    outputService.info(t('commands.repo.delete.restoreHint', { guid: repoConfig.repositoryGuid }));
-  }
   if (result.allSteps && result.allSteps.length > 0) {
     renderTimelineTotal(result.allSteps);
   } else {
     outputService.success(t('commands.repo.delete.completed'));
   }
-  outputService.info(t('commands.repo.delete.configRetained', { repository: name }));
-  if (!archiveConfig) {
-    outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
-  }
+  await settleConfigEntry(name, machineName, repoConfig, archiveConfig);
   outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
 }
 
