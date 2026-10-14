@@ -84,6 +84,8 @@ const POLICY_FILES = Object.freeze([
   // W4-D1, CLOSED 2026-09-08. This name landed in the directory on 2026-09-07 with check:ci-language-policy and was NOT added here, so 16 dotfiles on disk faced 15 names for a day with nothing red: its gate reached it through a hardcoded literal instead of policyPath(), and a reader that bypasses the seam does not need the list to know the file exists, which is exactly why a stale
   // list is invisible. Both halves are fixed: the literal became policy_path() in W4 P4a, and check:ci-policy-inventory now asserts three-way set equality between this list, the Python one and the directory, so the same drift cannot recur silently.
   '.language-policy-allowlist',
+  // 2026-10-14. The hold list of the toolchain and docker pins of .ci/config/pins.json, written by `npm run pins -- hold` and read by scripts/lib/pins/status.ts holdOf; check:ci-pin-freshness enforces its liveness in-gate (a line no leaf answers to is red).
+  '.pins-upgrade-blocklist',
   '.plan-housekeeping-allowlist',
   '.profiler-coverage-allowlist',
   '.runner-advice-allowlist',

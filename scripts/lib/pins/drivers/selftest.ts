@@ -793,6 +793,74 @@ async function dockerCases(
     ok: !!nosrc && nosrc.message.startsWith('BLOCKER:'),
     detail: String(nosrc),
   });
+
+  // A leaf spanning an ARG default and six FROM stages in two submodule files: one bump moves all eight lines.
+  const ub = entry('image:renet-ubuntu');
+  const stages = ['rsync-builder', 'zot-downloader', 'k3s-downloader'].flatMap((n) => [
+    `FROM ubuntu:24.04 AS ${n}-amd64`,
+    `FROM ubuntu:24.04 AS ${n}-arm64`,
+  ]);
+  const renet = tree({
+    'private/renet/Dockerfile': `ARG TARGET_IMAGE=ubuntu:24.04\nFROM debian:bookworm AS criu-source\n${stages.join('\n')}\nFROM $TARGET_IMAGE\n`,
+    'private/renet/Dockerfile.native': `ARG BASE_IMAGE=ubuntu:24.04\nFROM $BASE_IMAGE\n`,
+    'scripts/data/docker-image-freshness-baseline.json': '[\n  "ubuntu:24.04"\n]\n',
+  });
+  const cu = ctxOf(renet);
+  // Docker Hub's answer, measured shape (2026-10-14): `26.04` re-pushed last week with an id from
+  // late 2025, a never-re-pushed dated codename tag created after it, and 26.10 pushed last month.
+  const ubHub = () => ({
+    results: [
+      { name: '26.04', id: 1010, last_updated: iso(NOW - 10 * DAY) },
+      { name: '26.10', id: 1204, last_updated: iso(NOW - 26 * DAY) },
+      { name: 'resolute-20260106', id: 1049, last_updated: iso(NOW - 268 * DAY) },
+      { name: '24.04', id: 500, last_updated: iso(NOW - 10 * DAY) },
+    ],
+    next: null,
+  });
+  const ui = await dockerDriver(() => deps({ json: ubHub }).deps, mutant).inspect(ub, cu);
+  const up = await dockerDriver(() => deps({ json: ubHub }).deps, mutant).plan(
+    ub,
+    ui.releases.find((r) => r.version === 'ubuntu:26.04') as (typeof ui.releases)[number],
+    cu
+  );
+  const uw = written(up);
+  out.push({
+    name: 'docker: a leaf with an ARG site and six FROM stages in two submodule files moves every line, and leaves debian alone',
+    ok:
+      (uw['private/renet:Dockerfile'] ?? '').split('ubuntu:26.04').length - 1 === 7 &&
+      !(uw['private/renet:Dockerfile'] ?? '').includes('ubuntu:24.04') &&
+      (uw['private/renet:Dockerfile'] ?? '').includes('FROM debian:bookworm AS criu-source') &&
+      (uw['private/renet:Dockerfile.native'] ?? '').includes('ARG BASE_IMAGE=ubuntu:26.04') &&
+      up.steps[0]?.run.endsWith('--write-baseline'),
+    detail: JSON.stringify(uw),
+  });
+  const line26 = ui.releases.map((r) => (r as { lineFirstMs?: number | null }).lineFirstMs);
+  out.push({
+    name: "docker: a re-pushed tag's line is dated by the oldest push among tags created after the line began, not by its own stamp",
+    ok: line26.length === 2 && line26.every((ms) => ms === NOW - 268 * DAY),
+    detail: JSON.stringify(ui.releases),
+  });
+  // CONTROL, the other direction: a line that genuinely began last week reads last week.
+  const fresh = await dockerDriver(
+    () =>
+      deps({
+        json: () => ({
+          results: [
+            { name: '27.04', id: 2000, last_updated: iso(NOW - 6 * DAY) },
+            { name: 'resolute-20260106', id: 1049, last_updated: iso(NOW - 268 * DAY) },
+          ],
+          next: null,
+        }),
+      }).deps,
+    mutant
+  ).inspect(ub, cu);
+  out.push({
+    name: 'docker: CONTROL a line whose first tag is a week old is dated a week old, older tags created before it are no evidence',
+    ok:
+      (fresh.releases[0] as { lineFirstMs?: number | null } | undefined)?.lineFirstMs ===
+      NOW - 6 * DAY,
+    detail: JSON.stringify(fresh.releases),
+  });
   return out;
 }
 

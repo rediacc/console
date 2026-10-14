@@ -10,13 +10,13 @@ The line is built in one place per language, `scripts/lib/pins/remedy.ts` and `r
   check:ci-go-deps                  REDIACC_CI_ROOT plus a GOPROXY stub, a minor ahead           bump go-mod
   check:ci-lockfile                 REDIACC_CI_ROOT plus an `npx` stub that rewrites the lock    lockfiles <dir>
   renet_pkg_matrix OBS REBUILT      check_upstream with an upstream that moved                   bump os:opensuse-16.0-ceph
-  check:ci-docker-image-freshness   DOCKER_FRESHNESS_ROOT and a DOCKER_HUB_API_BASE stub         the no-leaf line (below)
+  check:ci-docker-image-freshness   DOCKER_FRESHNESS_ROOT and a DOCKER_HUB_API_BASE stub         bump image:proxy-node --major
 
 EACH CASE HAS ITS CONTROL: the same seam with nothing stale is green and prints no fix line, so a gate that printed the line unconditionally, or a case that asserted against the wrong stream, fails here.
 
 A GATE THAT STOPS PRINTING ITS LINE IS RED HERE, which is the box's acceptance: each line is asserted with its leading indent and trailing newline, so a reworded or dropped line does not match.
 
-THE DOCKER GATE IS THE ONE WITHOUT AN EXACT ID TODAY. Its FROM lines under packages/, workers/ and the submodules are members of the `docker` family scope, and no `docker` leaf claims them, so `npm run pins` has nothing to move; the gate says exactly that rather than naming a command that would refuse. The case pins that line, so the day a leaf claims a scanned Dockerfile the gate's exact `bump <id> --major` line takes its place through the same helper.
+THE DOCKER GATE NAMES THE LEAF OF THE STALE FROM LINE. Every FROM image has its own `docker` leaf (operator ruling 2026-10-14T20:56Z), matched by the line, so the fixture's registry carries the real `image:proxy-node` entry with its site moved onto the fixture's Dockerfile, and the fix line is that id's `bump --major`. Its second control is a FROM line no leaf claims, which is red before any listing, with the leaf to add.
 
 check:deps is not here: its failure line belongs to the npm driver (box T6), which owns scripts/gates/check-deps.ts.
 """
@@ -388,11 +388,8 @@ def test_obs_rebuilt(gate):
 
 # ---- check:ci-docker-image-freshness ---------------------------------------------------
 
-NO_LEAF = (
-    "  fix: none yet; no docker leaf of .ci/config/pins.json claims tools/Dockerfile, so "
-    "`npm run pins` cannot move node:20-slim. Add the leaf (driver docker, a site on this FROM "
-    'line), then run `npm run pins -- bump <its id> --major --reason "<why>"`.\n'
-)
+DOCKER_FIX = '  fix: npm run pins -- bump image:proxy-node --major --reason "<why>"\n'
+UNCLAIMED = "tools/Dockerfile.extra:1  alpine:3.20: no docker leaf of .ci/config/pins.json has a site matching this FROM line"
 
 
 def docker_tree(tmp: pathlib.Path) -> pathlib.Path:
@@ -402,6 +399,28 @@ def docker_tree(tmp: pathlib.Path) -> pathlib.Path:
     (root / "scripts" / "data").mkdir(parents=True)
     (root / "scripts" / "data" / "docker-image-freshness-baseline.json").write_text(
         "[]\n", encoding="utf-8"
+    )
+    real = json.loads(paths.from_root(".ci", "config", "pins.json").read_text(encoding="utf-8"))
+    leaf = next(e for e in real["entries"] if e["id"] == "image:proxy-node")
+    leaf["sites"] = [
+        {
+            "repo": ".",
+            "file": "tools/Dockerfile",
+            "role": "version",
+            "match": "^FROM (?<value>node:\\S+)$",
+            "expect": 1,
+        }
+    ]
+    registry = {
+        "version": real["version"],
+        "submodules": {"scanned": [], "unscanned": []},
+        "literalExclude": [],
+        "entries": [leaf],
+        "ignores": [],
+    }
+    (root / ".ci" / "config").mkdir(parents=True)
+    (root / ".ci" / "config" / "pins.json").write_text(
+        json.dumps(registry, indent=2) + "\n", encoding="utf-8"
     )
     subprocess.run(["git", "init", "-q", str(root)], check=True)
     return root
@@ -427,7 +446,15 @@ def test_docker_image_freshness(gate, tmp_path):
         )
     gate.assert_exit(1, red, "a newer series of the same shape is red")
     gate.assert_contains(red.err, "newly stale", "the finding is a new staleness")
-    gate.assert_contains(
-        red.err, NO_LEAF, "the fix line says no leaf can move it, and how to add one"
+    gate.assert_contains(red.err, DOCKER_FIX, "the fix line names the leaf of the stale FROM line")
+    (root / "tools" / "Dockerfile.extra").write_text("FROM alpine:3.20\n", encoding="utf-8")
+    with stub_upstream({}, default=hub("20-slim", "18-slim")) as stub:
+        stray = tsx(
+            gate, "check-docker-image-freshness.ts", {**env, "DOCKER_HUB_API_BASE": stub.base}
+        )
+    gate.assert_exit(1, stray, "a FROM line no docker leaf claims is red, stale or not")
+    gate.assert_contains(stray.err, UNCLAIMED, "the unclaimed line is named with the leaf to add")
+    gate.assert_not_contains(stray.combined, "fix:", "an unclaimed line is given no bump line")
+    gate.log_pass(
+        "check:ci-docker-image-freshness names `npm run pins -- bump image:<leaf> --major`"
     )
-    gate.log_pass("check:ci-docker-image-freshness names the pins path for a pin no leaf claims")

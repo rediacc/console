@@ -1,0 +1,21 @@
+# Pins upgrade blocklist: one <key> per line to HOLD a toolchain or docker image pin of
+# .ci/config/pins.json at its current value instead of tracking upstream.
+#
+# The key is the pin id after its colon (toolchain:npm -> npm, image:renet-ubuntu ->
+# renet-ubuntu). Every toolchain and docker leaf names this file as its first `holds` file,
+# and check:ci-pin-freshness refuses a line whose key no such leaf answers to.
+#
+# Write lines with `npm run pins -- hold <id> --reason "<why>" --expires YYYY-MM-DD`, never by
+# hand. A newer major whose first release is past the grace in .ci/config/pin-major-grace.json
+# turns check:ci-pin-freshness red unless the pin is bumped or held here WITH an expiry: an
+# undated hold does not excuse an aged major.
+#
+# Do NOT hold a release that is merely too fresh: the release-age window in
+# .ci/config/release-age.json defers it, and the deferral clears itself.
+#
+# Each entry needs a substantive BLOCKER reason, the same as every other suppression list here.
+# Format, as `pins hold` writes it:
+#
+#   <key>  # BLOCKER: <why the pin is held back and when to revisit> (expires YYYY-MM-DD)
+#
+# Empty by default: nothing is held.

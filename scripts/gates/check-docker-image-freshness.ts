@@ -31,11 +31,14 @@ import { spawnSync } from 'node:child_process';
  * unknown rather than pretended to be a pass. mcr.microsoft.com is anonymous and NOT rate
  * limited, so images served from there never need credentials.
  *
- * THE FIX LINE. A newly stale pin names `npm run pins -- bump <id> --major --reason "<why>"`
- * when a `docker` leaf of .ci/config/pins.json claims its Dockerfile (scripts/lib/pins/
- * remedy.ts builds it; the docker driver takes a series move only as a major). A FROM line
- * that only the `docker` family scope claims has no leaf the pins command can move, and the
- * finding says so rather than naming a command that would refuse.
+ * THE FIX LINE. A newly stale pin names `npm run pins -- bump <id> --major --reason "<why>"`,
+ * the `docker` leaf of .ci/config/pins.json whose site matches that very FROM line
+ * (scripts/lib/pins/remedy.ts builds it; the docker driver takes a series move only as a
+ * major). Every FROM image has its own leaf (operator ruling 2026-10-14T20:56Z, "Add entries"),
+ * so a FROM line no leaf site matches is RED on every run, stale or not, with the leaf shape
+ * to add: a fix line that cannot name its pin is the gap that ruling closed. A file with
+ * several FROM images (private/renet/Dockerfile carries debian, ubuntu and golang) is matched
+ * by line, never by file, so each finding names its own leaf.
  *
  * DOCKER_HUB_API_BASE points the tag listings at another host (a stub in the remedy test);
  * set, no credential is sent. DOCKER_FRESHNESS_ROOT points the scan and the baseline at a
@@ -156,7 +159,7 @@ function readGitmodulePaths(): string[] {
 
 import { WK_IMAGE_REGISTRY } from '../../packages/shared/src/config/well-known.generated.js';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
-import { loadRegistry } from '../lib/pins/registry.js';
+import { loadRegistry, type PinEntry, siteRegex } from '../lib/pins/registry.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
@@ -175,6 +178,8 @@ export interface Pin {
   tag: string;
   file: string;
   line: number;
+  /** The FROM line itself, which the leaf's site must match. */
+  text: string;
 }
 
 /** `FROM <image>:<tag>` pins, ignoring build stages and our own ghcr.io images. */
@@ -186,7 +191,7 @@ export function parsePins(src: string, file: string): Pin[] {
     const [, image, tag] = m;
     // Our own published images are not an upstream freshness question; they are outputs.
     if (image.startsWith(`${WK_IMAGE_REGISTRY}/`)) return;
-    out.push({ image, tag, file, line: i + 1 });
+    out.push({ image, tag, file, line: i + 1, text: raw });
   });
   return out;
 }
@@ -318,27 +323,38 @@ async function listHubTags(repo: string): Promise<TagInfo[] | null> {
   return null;
 }
 
-/** The `docker` leaf of .ci/config/pins.json whose site is this Dockerfile (repo-relative), or null when only the family scope claims it. */
-function leafFor(file: string): string | null {
-  for (const e of loadRegistry().entries) {
+/**
+ * The `docker` leaf whose site matches this pin's FROM line in its file (the file is
+ * repo-relative to the console; a site in a submodule is `<repo>/<file>`), or null. Pure.
+ */
+export function leafFor(p: Pin, entries: PinEntry[]): string | null {
+  for (const e of entries) {
     if (e.kind !== 'leaf' || e.driver !== 'docker') continue;
-    if (e.sites.some((s) => (s.repo === '.' ? s.file : `${s.repo}/${s.file}`) === file))
-      return e.id;
+    for (const s of e.sites) {
+      if ((s.repo === '.' ? s.file : `${s.repo}/${s.file}`) !== p.file) continue;
+      const re = siteRegex(s, '');
+      if (re?.test(p.text)) return e.id;
+    }
   }
   return null;
 }
 
-/** The fix line for one newly stale pin. */
-function remedyLine(p: Pin): string {
-  const id = leafFor(p.file);
-  if (id !== null) return bumpRemedy(id, { major: true });
-  return `  fix: none yet; no docker leaf of .ci/config/pins.json claims ${p.file}, so \`npm run pins\` cannot move ${p.image}:${p.tag}. Add the leaf (driver docker, a site on this FROM line), then run \`npm run pins -- bump <its id> --major --reason "<why>"\`.`;
+/** The FROM pins no docker leaf's site matches, each with the entry shape that would claim it. Pure. */
+export function unclaimedPins(pins: Pin[], entries: PinEntry[]): string[] {
+  return pins
+    .filter((p) => leafFor(p, entries) === null)
+    .map(
+      (p) =>
+        `${p.file}:${p.line}  ${p.image}:${p.tag}: no docker leaf of .ci/config/pins.json has a site matching this FROM line; add one (driver docker, source dockerhub with image ${p.image}, a version site whose match covers the line; image:proxy-node is the shape) so \`npm run pins -- bump <its id>\` can move it`
+    );
 }
 
-function selftest(): number {
+function selftest(): { bad: number; total: number } {
   let bad = 0;
+  let total = 0;
   const check = (label: string, ok: boolean) => {
     console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
+    total++;
     if (!ok) bad++;
   };
   const pins = parsePins(
@@ -420,19 +436,50 @@ function selftest(): number {
   );
   check('CONTROL: no seed admits nothing', seedFilter(['a:1  img'], undefined).length === 1);
 
-  return bad;
+  // EVERY FROM IMAGE HAS ITS LEAF, matched by LINE: the console's own registry, three images in one renet Dockerfile.
+  const real = loadRegistry(
+    path.resolve(import.meta.dirname, '..', '..', '.ci/config/pins.json')
+  ).entries;
+  const renet = parsePins(
+    'FROM debian:bookworm AS criu-source\nFROM ubuntu:24.04 AS rsync-builder-amd64\nFROM golang:1.26-bookworm AS csi-builder\n',
+    'private/renet/Dockerfile'
+  );
+  check(
+    'one Dockerfile, three FROM images: each line finds its own leaf, not the first leaf of the file',
+    renet.map((p) => leafFor(p, real)).join(',') ===
+      'image:renet-debian,image:renet-ubuntu,image:renet-csi-golang'
+  );
+  check(
+    'CONTROL: every FROM with a leaf leaves nothing unclaimed',
+    unclaimedPins(renet, real).length === 0
+  );
+  const strays = [
+    ...parsePins('FROM node:24-slim\n', 'tools/Dockerfile'),
+    ...parsePins('FROM alpine:3.20 AS extra\n', 'private/renet/Dockerfile'),
+  ];
+  const un = unclaimedPins(strays, real);
+  check(
+    'a FROM in an unclaimed file, and a new FROM line in a claimed file, are both unclaimed, by file and line',
+    un.length === 2 &&
+      un[0].startsWith('tools/Dockerfile:1  node:24-slim') &&
+      un[1].startsWith('private/renet/Dockerfile:1  alpine:3.20')
+  );
+
+  return { bad, total };
 }
 
 async function main(): Promise<void> {
   if (process.argv.includes('--selftest')) {
     console.log('docker image freshness selftest');
-    const bad = selftest();
+    const { bad, total } = selftest();
     console.log(
-      bad === 0 ? `\n${GREEN}✓${NC} 13/13 controls pass` : `\n${RED}✗${NC} ${bad} failed`
+      bad === 0
+        ? `\n${GREEN}✓${NC} ${total}/${total} controls pass`
+        : `\n${RED}✗${NC} ${bad} of ${total} failed`
     );
     process.exit(bad === 0 ? 0 : 1);
   }
-  if (selftest() !== 0) {
+  if (selftest().bad !== 0) {
     console.error('controls failed; the gate cannot be trusted');
     process.exit(1);
   }
@@ -445,6 +492,17 @@ async function main(): Promise<void> {
     console.error(
       '✗ zero image pins found. The gate is not seeing the tree; its green would mean nothing.'
     );
+    process.exit(1);
+  }
+
+  // Every FROM image has its own docker leaf, read from the registry of the tree being scanned.
+  const entries = loadRegistry(path.join(ROOT, '.ci/config/pins.json')).entries;
+  const unclaimed = unclaimedPins(pins, entries);
+  if (unclaimed.length > 0) {
+    console.error(
+      `\n${RED}✗${NC} ${unclaimed.length} FROM image pin(s) have no docker leaf, so no \`npm run pins\` command can move them:\n`
+    );
+    for (const u of unclaimed) console.error(`    ${u}`);
     process.exit(1);
   }
 
@@ -560,7 +618,7 @@ async function main(): Promise<void> {
     );
     for (const i of freshIdx) {
       console.error(`    ${stale[i]}`);
-      console.error(remedyLine(stalePins[i]));
+      console.error(bumpRemedy(leafFor(stalePins[i], entries) as string, { major: true }));
     }
     errorLines(
       `\nThe window is the SHARED one from .ci/config/release-age.json (${win / 60000} min,`,
@@ -587,7 +645,7 @@ async function main(): Promise<void> {
   }
   console.log(
     `${GREEN}✓${NC} ${checked} Docker Hub pin(s) checked, ${checked - stale.length} current, ` +
-      `${stale.length} known-stale and baselined. No NEW staleness.`
+      `${stale.length} known-stale and baselined. No NEW staleness. ${pins.length} FROM line(s), each claimed by a docker leaf.`
   );
 }
 

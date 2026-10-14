@@ -560,7 +560,13 @@ async function cmdHold(w: World, f: Flags): Promise<number> {
   }
   const text = ctx.read({ repo: '.', file }) ?? '';
   const line = `${key}  # BLOCKER: ${f.reason}${f.expires ? ` (expires ${f.expires})` : ''}`;
-  const after = `${text}${text === '' || text.endsWith('\n\n') ? '' : text.endsWith('\n') ? '\n' : '\n\n'}${line}\n`;
+  // An expired hold is RENEWED in place: a second line for the key would leave the file holding two verdicts for one pin.
+  const after = existing
+    ? text
+        .split('\n')
+        .map((l, i) => (i === existing.line - 1 ? line : l))
+        .join('\n')
+    : `${text}${text === '' || text.endsWith('\n\n') ? '' : text.endsWith('\n') ? '\n' : '\n\n'}${line}\n`;
   const write: FileWrite = { repo: '.', file, after };
   const cur = leafCurrent(entry, ctx) ?? 'its current pin';
   const plan: PinPlan = {
@@ -1623,7 +1629,49 @@ const CASES: Record<string, Case> = {
     const st = await runCli(['status', 'embed:tool', '--json'], withMutant(fx, m));
     const v = st.rc === 0 ? (JSON.parse(st.out) as { pins: PinView[] }).pins[0] : null;
     const b = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    // An expired hold renewed: the line is replaced, not followed by a second one the reader would never reach.
+    const fx2 = fixtureTree();
+    const header = fx2.read('.ci/policy/.fixture-blocklist');
+    fx2.write(
+      '.ci/policy/.fixture-blocklist',
+      `${header}tool  # BLOCKER: tool 1.1 changes the archive layout the installer unpacks (expires 2026-10-01)\n`
+    );
+    sh(fx2.root, 'add', '-A');
+    sh(
+      fx2.root,
+      '-c',
+      'user.email=fx@example.invalid',
+      '-c',
+      'user.name=fx',
+      'commit',
+      '-qm',
+      'expired hold'
+    );
+    const renew = await runCli(
+      [
+        'hold',
+        'embed:tool',
+        '--reason',
+        'tool 1.1 still changes the archive layout the installer unpacks',
+        '--expires',
+        '2026-12-01',
+      ],
+      withMutant(fx2, m)
+    );
+    const st2 = await runCli(['status', 'embed:tool', '--json'], withMutant(fx2, m));
+    const v2 = st2.rc === 0 ? (JSON.parse(st2.out) as { pins: PinView[] }).pins[0] : null;
+    const held = fx2.read('.ci/policy/.fixture-blocklist');
     return [
+      {
+        name: 'hold: an expired hold is renewed in place, one line for the key, and status reads it held',
+        ok:
+          renew.rc === 0 &&
+          held.split('\n').filter((l) => l.startsWith('tool ')).length === 1 &&
+          held.includes('(expires 2026-12-01)') &&
+          v2?.state === 'held' &&
+          v2.hold?.expires === '2026-12-01',
+        detail: `${renew.rc} ${renew.err} | ${v2?.state} | ${held}`,
+      },
       {
         name: 'hold: a hollow reason is refused by the shared BLOCKER validator',
         ok: short.rc === 1,
