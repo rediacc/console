@@ -7,6 +7,7 @@ The predicate here is built the way production builds it: the union of `wl_epic.
 
 from __future__ import annotations
 
+import datetime
 import importlib
 import json
 import re
@@ -356,7 +357,10 @@ def _plant_aged_deferral(wl, text):
 
 def test_an_aged_default_held_by_a_future_not_before_is_not_demanded(wl):
     loop_world(wl)
-    _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:2999-01-01T00:00Z DEFAULT: bump it")
+    soon = (datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=1)).strftime(
+        "%Y-%m-%dT%H:%MZ"
+    )
+    _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:%s DEFAULT: bump it" % soon)
     got = run_stop(wl)
     assert "defer-expired" not in keys_of(wl, got), reason(got)[:1500]
 
@@ -366,6 +370,22 @@ def test_an_aged_default_whose_not_before_has_passed_is_demanded(wl):
     _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:2000-01-01T00:00Z DEFAULT: bump it")
     got = run_stop(wl)
     assert "defer-expired" in keys_of(wl, got), reason(got)[:1500]
+
+
+def test_a_not_before_beyond_the_cap_holds_nothing_and_is_named(wl):
+    loop_world(wl)
+    _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:2999-01-01T00:00Z DEFAULT: bump it")
+    got = run_stop(wl)
+    assert "defer-expired" in keys_of(wl, got), reason(got)[:1500]
+    assert "more than 7 days out" in got.out, got.out[:2000]
+
+
+def test_an_impossible_not_before_holds_nothing_and_is_named(wl):
+    loop_world(wl)
+    _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:2026-10-32T00:00Z DEFAULT: bump it")
+    got = run_stop(wl)
+    assert "defer-expired" in keys_of(wl, got), reason(got)[:1500]
+    assert "is not a valid instant" in got.out, got.out[:2000]
 
 
 def test_sc5_a_dead_lease_outside_the_epic_still_blocks(wl):

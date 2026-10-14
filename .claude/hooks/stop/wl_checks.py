@@ -4029,7 +4029,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     with contextlib.suppress(Exception):
         expired += wl_defersettle.accelerated(state_doc, deferred_recs, expired)
     # A DEFAULT that cannot run yet is not demanded yet: the clock, not the operator, holds it.
-    expired = [r for r in expired if not C.not_before_pending(r["line"])]
+    expired = [r for r in expired if not C.not_before_pending(r["line"], r.get("upd", ""))]
     if expired:
         shown = expired[: S.DEFER_EXEC_PER_STOP]
         vadd(
@@ -4039,7 +4039,17 @@ def run_stop(event, event_ok, worklist, hook_file):
             % (
                 len(expired),
                 S.DEFER_WINDOW_MIN,
-                "\n".join("    #%s %s" % (r["id"], S.brief_text(r, 150)) for r in shown),
+                "\n".join(
+                    "    #%s %s%s"
+                    % (
+                        r["id"],
+                        S.brief_text(r, 150),
+                        (" [%s]" % C.not_before_problem(r["line"], r.get("upd", "")))
+                        if C.not_before_problem(r["line"], r.get("upd", ""))
+                        else "",
+                    )
+                    for r in shown
+                ),
                 ""
                 if len(expired) <= len(shown)
                 else "    (and %d more, held back so this drains %d per stop)\n"
@@ -4066,7 +4076,17 @@ def run_stop(event, event_ok, worklist, hook_file):
             % (
                 len(unjustified),
                 S.JUSTIFY_AGE_MIN,
-                "\n".join("    #%s %s" % (r["id"], S.brief_text(r, 150)) for r in shown),
+                "\n".join(
+                    "    #%s %s%s"
+                    % (
+                        r["id"],
+                        S.brief_text(r, 150),
+                        (" [%s]" % C.not_before_problem(r["line"], r.get("upd", "")))
+                        if C.not_before_problem(r["line"], r.get("upd", ""))
+                        else "",
+                    )
+                    for r in shown
+                ),
                 ""
                 if len(unjustified) <= len(shown)
                 else "    (and %d more, held back so this drains %d per stop)\n"
