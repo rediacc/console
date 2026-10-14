@@ -97,9 +97,10 @@ SFTP_BATCH = ("sftp", "-q", "-o", "BatchMode=yes", "-b")
 SFTP_DENIAL = re.compile(
     r"permission denied|read-only file system|operation not permitted", re.IGNORECASE
 )
-# ssh's own failed login (`user@host: Permission denied (publickey,password).`) is not a server-side refusal: the connection never authenticated, so nothing was confined. The method list is a word followed by separator-then-word repeats, so each character has one way to match and a line with no closing paren fails in linear time.
+# ssh's own failed login (`user@host: Permission denied (publickey,password).`) is not a server-side refusal: the connection never authenticated, so nothing was confined. The method list is hyphenated words joined by single commas, with an optional trailing comma: the comma is the only separator, so each character has one way to match and a line with no closing paren fails in linear time.
 SSH_AUTH_FAILURE = re.compile(
-    r"permission denied \([a-z]+(?:[,-][a-z]+)*\)|too many authentication failures", re.IGNORECASE
+    r"permission denied \([a-z-]+(?:,[a-z-]+)*,?\)|too many authentication failures",
+    re.IGNORECASE,
 )
 
 
