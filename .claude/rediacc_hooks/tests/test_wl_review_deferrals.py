@@ -136,7 +136,8 @@ def test_an_open_finding_named_by_a_leased_item_waits_in_the_note(tmp_path):
 def test_control_an_open_finding_with_no_leased_item_blocks(tmp_path):
     items = {"77aa88bb": (" ", "review %s [high]: guard arm" % FID)}
     block, _malformed, _note = R.stop_texts(_state(tmp_path, "open", "high", items=items))
-    assert "OPEN PER-COMMIT REVIEW FINDING(S)" in block and FID in block, block
+    assert "OPEN PER-COMMIT REVIEW FINDING(S)" in block, block
+    assert FID in block, block
 
 
 @pytest.mark.parametrize("items", [None, {"f32c08e6": " "}, {"f32c08e6": ">"}])
