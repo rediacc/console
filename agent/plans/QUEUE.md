@@ -32,7 +32,7 @@ What each key does (default in brackets):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-stop_hook: off
+stop_hook: on -- operator /ask 2026-10-13 'When the current writers finish'; 2026-10-14 'enable turbo mode to complete all ## Promoted'
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -51,23 +51,23 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook off; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook on; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1008-1, PR #600 open.
 - Plans on the PR (8):
   - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-cd-errors-in-ci.md -- 5 of 6 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-plan-dependencies.md -- 12 of 12 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-cd-errors-in-ci.md -- 6 of 6 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-plan-dependencies.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 480 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 5 live of writer_cap 15 (session d778be9d): worker:a1937821b4fedafa6, worker:a8fc11bbf1671320a, worker:a9d07bc05c9f91f20, worker:aaea17b81034dcd4b, worker:abd69eb18c37c52f3.
-- Leased items: 14: #08d1e96f (worker:bllc1cu8h, d778be9d), #0c1ad5de (worker:bllc1cu8h, d778be9d), #1ec0aecb (worker:a9d07bc05c9f91f20, d778be9d), #3c36e4b5 (worker:bllc1cu8h, d778be9d), #6361fc5b (worker:bllc1cu8h, d778be9d), #6f62cf78 (worker:a1937821b4fedafa6, d778be9d), #7925e987 (worker:bllc1cu8h, d778be9d), #88c0f4d7 (worker:bllc1cu8h, d778be9d), #bd51855a (worker:bllc1cu8h, d778be9d), #d0148189 (worker:bllc1cu8h, d778be9d), #d52ad5bb (worker:aaea17b81034dcd4b, d778be9d), #eed71790 (worker:a8fc11bbf1671320a, d778be9d), and 2 more.
-- Next plan: agent/plans/PLAN-deferred-findings-block-merge.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 536 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 13: #3c36e4b5 (worker:bllc1cu8h, d778be9d), #47d3bb3d (worker:1048598, d778be9d), #6361fc5b (worker:bh1ismw0t, d778be9d), #6f62cf78 (worker:a1937821b4fedafa6, d778be9d), #7925e987 (worker:bllc1cu8h, d778be9d), #7fcd9da1 (worker:a249e7f94150ed252, d778be9d), #88c0f4d7 (worker:a9590f3625f145757, d778be9d), #bd51855a (worker:bllc1cu8h, d778be9d), #c99e9a5f (worker:af2edf186e903cfe0, d778be9d), #d52ad5bb (worker:aaea17b81034dcd4b, d778be9d), #f147e3e5 (worker:abd69eb18c37c52f3, d778be9d), #fe2d3ad2 (worker:bllc1cu8h, d778be9d), and 1 more.
+- Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
