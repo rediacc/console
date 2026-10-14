@@ -52,6 +52,7 @@ import {
   LEASE_HELD_ENV,
   liveGates,
   processAlive,
+  psFailureState,
   refuseNewGates,
   refusingNewGates,
 } from './exec';
@@ -1419,7 +1420,7 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     if (!cond) failures.push(message);
   };
   if (process.platform === 'win32') return { assertions, failures };
-  // A DEAD GATE THAT STILL ANSWERS kill(pid, 0). An exited child stays a zombie until its parent waits, and an orphaned gate's parent is whatever subreaper sits above the runner (the pins transaction's agent harness waits about once a second). Here node is that parent: the child exits, the event loop is held for 300 ms so nothing reaps it, and the control line proves the plain probe would have called it alive. Red before processAlive: the timed-out gate check failed with "must be dead" under a lazy reaper while passing under an init that reaps at once.
+  // A DEAD GATE THAT STILL ANSWERS kill(pid, 0). An exited child stays a zombie until its parent waits, and an orphaned gate's parent is whatever subreaper sits above the runner (the pins transaction's agent harness waits about once a second). Here node is that parent: the child exits, the event loop is held until the child has exited (polled through /proc on Linux, a fixed 300 ms pause elsewhere) so nothing reaps it, and the control line proves the plain probe would have called it alive. Red before processAlive: the timed-out gate check failed with "must be dead" under a lazy reaper while passing under an init that reaps at once.
   const zombie = spawn('true', [], { stdio: 'ignore' });
   const zPid = zombie.pid ?? Number.NaN;
   // Hold the event loop until the child has exited (state Z, or gone on Linux), with a generous bound for a loaded machine; elsewhere a fixed pause.
@@ -1455,6 +1456,26 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
   require_(!processAlive(zPid), 'processAlive must call an exited, unreaped child (a zombie) dead');
   require_(processAlive(process.pid), 'processAlive must call a running process alive');
   require_(!processAlive(Number.NaN), 'processAlive must refuse a pid that is not a number');
+  require_(
+    psFailureState({ status: 1, stdout: '', stderr: '' }) === 'Z',
+    "psFailureState: ps's quiet exit 1 means no such process, so the pid is gone"
+  );
+  require_(
+    psFailureState({ status: 1, stdout: '', stderr: 'ps: illegal option -- o' }) === '',
+    'psFailureState: a ps that complains on stderr is broken and must leave the pid alive'
+  );
+  require_(
+    psFailureState({ status: 2, stdout: '', stderr: '' }) === '',
+    'psFailureState: exit 2 is a usage error, not a missing pid'
+  );
+  require_(
+    psFailureState({ code: 'ENOENT' }) === '',
+    'psFailureState: a ps that cannot be spawned must leave the pid alive'
+  );
+  require_(
+    psFailureState({ status: null, signal: 'SIGKILL' }) === '',
+    'psFailureState: a ps killed by a signal must leave the pid alive'
+  );
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-kill-'));
   const env = { ...process.env };
   delete env.CI_RUNNER_CACHE;
