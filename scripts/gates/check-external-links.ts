@@ -18,28 +18,37 @@
  * - Reports broken links with file location
  * - Exit code 1 on any broken link (CI-friendly)
  *
+ * FAILS CLOSED ON EVERY CADENCE (operator ruling 2026-10-14, "Extend to all
+ * seven"). Each request goes through scripts/lib/upstream.ts: three attempts,
+ * 15 s each, 2 s then 4 s between them. A link whose host gave a definite
+ * answer (a 404, a 410, a 403 after the GET fallback) is BROKEN, a finding in
+ * the tree. A link whose host gave no answer (a network error, a timeout, a 5xx,
+ * a 429 or rate limit) was NOT checked, and is a red finding with the sentence
+ * `UPSTREAM REACHABILITY FAILURE`, so `ci-trace.py --why` reads it as the
+ * outage it is. The step runs the gate with no run_external_gate wrapper, so
+ * both are red on the nightly too; the `no-external-quality` label on a pull
+ * request is the one hold, and its job's announcer names this gate.
+ * `EXTERNAL_LINKS_FIXTURE_ROOT` is the gate test's seam: the scan runs over that
+ * tree instead, with an EMPTY allowlist and KNOWN_BROKEN (a fixture carries none
+ * of the real tree's exemptions, and the liveness audit would otherwise fail on
+ * every entry the fixture does not cite), and a 127.0.0.1 URL is checked rather
+ * than skipped, so a link can point at the test's stub server. The run prints
+ * that it is a fixture run.
+ *
  * ---- gate ----
  * step: External links
  * selftest: true
- * emit: false
- * blocker: BLOCKER: its `run:` goes through the `rediacc_ci.quality.run_external_gate` WRAPPER, which the derived run does not produce, and its `env:` carries PROSE comments the grammar cannot hold.
- *     THE ENV REASON IS DEAD AND THIS LINE USED TO STATE IT. Box A1 taught the
- *     binder `env-<KEY>:` on 2026-09-08, so "gate-bind cannot emit an env block"
- *     stopped being true -- and a BLOCKER whose reason has quietly expired is the
- *     exact shape check:ci-suppression-liveness exists to refuse. Corrected to the
- *     real obstacle rather than deleted, because retiring this one is a BEHAVIOUR
- *     change and needs its own box. check-docker-image-freshness.ts was the one of
- *     the six whose ONLY obstacle was env, and it retired the same day.
  * needs: node
  * lane: quality-content
  * slow: true
- * env-EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+ * when: inputs.external_quality != 'skip'
  * env-GITHUB_TOKEN: ${{ github.token }}
  * ---- end gate ----
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { globSync } from 'glob';
 import {
   WK_GH_API_BASE,
   WK_GH_ORIGIN,
@@ -47,8 +56,8 @@ import {
   WK_RELEASES_ORIGIN,
   WK_SITE_ORIGIN,
 } from '../../packages/shared/src/config/well-known.generated.js';
-import { globSync } from 'glob';
 import { githubToken } from '../lib/github-token.js';
+import { askUpstream, NotCompared, reportUnreachable } from '../lib/upstream.js';
 
 // Every markdown tree whose external links are load-bearing. Each root is guarded independently below: a root that matches zero files is a moved or renamed path, never a legitimate state, and it fails the run rather than silently shrinking the corpus (root pattern 1 in `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`).
 //
@@ -63,15 +72,18 @@ const SCAN_ROOTS = [
   'packages/cli',
 ];
 
+// The gate test's seam; see the header.
+const FIXTURE_ROOT = process.env.EXTERNAL_LINKS_FIXTURE_ROOT || undefined;
+
 const CONCURRENCY = 5;
-const TIMEOUT_MS = 15_000;
-const MAX_RETRIES = 2;
+// THE OUTAGE BREAKER. With no network every link spends the full retry budget, which over this corpus outlasts the job's timeout and would end the run as a cancelled step rather than as the finding below. Once this many links in a row have come back unreachable and not one host has answered, the rest are not asked: the run is red either way, and the finding names the hosts that were tried.
+const OUTAGE_BREAKER = 20;
 
 // The liveness re-probe is a hint for a human, not a build verdict, so it gets a tighter budget and no retries: we only want to know whether the host answers cleanly right now.
 const LIVENESS_TIMEOUT_MS = 8_000;
 
 // Sites that aggressively block all automated requests (403 even with browser UA + curl). Verified manually with a real browser. Keep this list minimal.
-const ALLOWLISTED_DOMAINS = new Set([
+const TREE_ALLOWLISTED_DOMAINS = new Set([
   'www.hhs.gov', // US HHS - blocks all automated requests
   'www.sec.gov', // US SEC - blocks all automated requests
   'pd.rkn.gov.ru', // Russia Roskomnadzor - unreachable from most locations
@@ -126,9 +138,12 @@ const ALLOWLISTED_DOMAINS = new Set([
   // SSL.com's reseller site. Surfaced by widening the scan to docs/. Measured 2026-07-29 with this file's own headers: BOTH the deep resource page and the bare domain root answer 403, so it is a whole-domain WAF block on the client rather than a dead page; it renders in a browser.
   'signmycode.com',
 ]);
+const ALLOWLISTED_DOMAINS: ReadonlySet<string> = FIXTURE_ROOT
+  ? new Set()
+  : TREE_ALLOWLISTED_DOMAINS;
 
 // Links that are KNOWN DEAD and cannot be fixed from this file, keyed by the exact URL rather than by domain so the exemption cannot spread. Each entry is a work order, not an exemption: auditAllowlist() FAILS the build when the URL stops appearing in the docs (the doc got fixed, so delete the entry) and WARNS when the URL starts answering 200 again (fixed upstream).
-const KNOWN_BROKEN = new Map<string, string>([
+const TREE_KNOWN_BROKEN = new Map<string, string>([
   // A DEAD COMMAND, not just a dead link, and the widened scan is what found it. Both docs used to tell the operator to run:
   //   ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)"
   // Measured 2026-07-29 and again 2026-08-05: that path is 404 on www, edge, eu, us and asia, and the string "account-key" appears nowhere in private/account/src, so the route does not exist rather than having moved. www.rediacc.com no longer serves the account API at all -- /account/api/v1/** answers 410 with "Account API is served by regional workers (eu/us/asia.rediacc.com)".
@@ -146,6 +161,7 @@ const KNOWN_BROKEN = new Map<string, string>([
   // NOTE: a comment block for a gnupg.org entry used to sit here, describing the domain as unreachable from two networks on 2026-07-30. Its ENTRY is gone -- removed when the host came back -- and the prose outlived it, ending mid-sentence where the deleted line used to be. A reason with no entry reads as an entry to a skimming reader, so it is removed rather than left as
   // furniture. gnupg.org is handled in ALLOWLIST_DOMAINS above, where the current measurement lives.
 ]);
+const KNOWN_BROKEN: ReadonlyMap<string, string> = FIXTURE_ROOT ? new Map() : TREE_KNOWN_BROKEN;
 
 // Patterns matched against the RAW regex capture, before any punctuation cleaning. A template that the URL regex truncated mid-token (it stops at `>` and whitespace) still carries its opening delimiter here, and the cleaning step would otherwise destroy the evidence: `https://media.rediacc.com/...` becomes `https://media.rediacc.com/` once trailing dots are stripped, which looks
 // like a perfectly real link and 404s.
@@ -161,8 +177,7 @@ const SKIP_PATTERNS = [
   // RFC 2606 reserved domains/TLDs: example.com/net/org and any host ending in .example/.invalid/.test never resolve by design (this is the whole point of reserving them), so a fetch failure there is not a broken link.
   /^https?:\/\/(?:[^/]*\.)?example\.(com|net|org)/,
   /^https?:\/\/[^/]*\.(example|invalid|test)(:\d+)?(\/|$)/,
-  /^https?:\/\/127\.\d+\.\d+\.\d+/,
-  /^https?:\/\/localhost/,
+  ...(FIXTURE_ROOT ? [] : [/^https?:\/\/127\.\d+\.\d+\.\d+/, /^https?:\/\/localhost/]),
   // Inline-code artifact. A URL captured with a backtick anywhere in it came out of `...` in prose, which in these docs always means an API base, a host to configure, or an endpoint template -- never a navigable page. Measured, not assumed: the two such URLs that resolve at all, https://media.rediacc.com and https://eu.rediacc.com/account/api/v1, both answer 404 by design
   // (object-store root and API root, no index document). The previous form of this pattern was `^https?://[^/]*\`` and so only caught a backtick before the first slash, which is why the deeper ones were being reported as broken.
   /`/,
@@ -341,86 +356,57 @@ export function toApiUrl(url: string): string | null {
   return `${WK_GH_API_BASE}/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`;
 }
 
-async function checkUrl(
-  url: string,
-  retries = 0
-): Promise<{ ok: boolean; status: number | string }> {
+// HEAD answers these from servers that serve the same URL fine to GET: 405 (HEAD not implemented), 404 (Azure), and 401/403/429 from GitHub and Cloudflare anti-bot, where a plain GET with a browser UA and/or the token answers 200.
+const GET_FALLBACK_STATUSES = new Set([401, 403, 404, 405, 429]);
+
+type LinkVerdict =
+  | { kind: 'ok' }
+  | { kind: 'broken'; status: number | string }
+  | { kind: 'unreachable'; err: NotCompared };
+
+/** One method against one URL through the shared retry budget. */
+async function ask(url: string, method: 'GET' | 'HEAD', maxAttempts?: number): Promise<void> {
+  await askUpstream({ url, method, headers: buildHeaders(url), who: url, maxAttempts });
+}
+
+async function checkUrl(original: string): Promise<LinkVerdict> {
   // Rewrite github.com HTML URLs to api.github.com so GITHUB_TOKEN actually authorises the request. Only used when GITHUB_TOKEN is available.
-  if (githubToken()) {
-    const api = toApiUrl(url);
-    if (api) url = api;
-  }
+  const url = (githubToken() && toApiUrl(original)) || original;
+  let headFailure: NotCompared;
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-    const response = await fetch(url, {
-      method: 'HEAD',
-      signal: controller.signal,
-      redirect: 'follow',
-      headers: buildHeaders(url),
-    });
-
-    clearTimeout(timeout);
-
-    // Some servers don't support HEAD, retry with GET. 401/403/429 are also common from GitHub/Cloudflare anti-bot on HEAD — the same URL answers 200 to a plain GET with a browser UA and/or auth token.
-    if (
-      response.status === 405 ||
-      response.status === 404 ||
-      response.status === 401 ||
-      response.status === 403 ||
-      response.status === 429
-    ) {
-      const controller2 = new AbortController();
-      const timeout2 = setTimeout(() => controller2.abort(), TIMEOUT_MS);
-
-      const getResponse = await fetch(url, {
-        method: 'GET',
-        signal: controller2.signal,
-        redirect: 'follow',
-        headers: buildHeaders(url),
-      });
-
-      clearTimeout(timeout2);
-      // Consume body to prevent memory leak
-      await getResponse.text().catch(() => {});
-      return { ok: getResponse.ok, status: getResponse.status };
-    }
-
-    return { ok: response.ok, status: response.status };
+    await ask(url, 'HEAD');
+    return { kind: 'ok' };
   } catch (err) {
-    if (retries < MAX_RETRIES) {
-      await new Promise((r) => setTimeout(r, 1000 * (retries + 1)));
-      return checkUrl(url, retries + 1);
-    }
-
-    // LAST-CHANCE GET, and it is not belt-and-braces. The status-based fallback above only fires when HEAD *answers*; a HEAD that hangs or is refused throws, lands here, and never tries GET at all -- so a host that simply does not serve HEAD is reported as a broken link.
-    //
-    // Measured on https://azure.microsoft.com/pricing/calculator/, which failed this checker in CI with TIMEOUT: from a residential IP the same URL answers 404 to HEAD three times out of three and 200 to GET, with and without a browser UA. On the runner the HEAD hung instead of 404ing, so even the status fallback could not save it. The page is live either way.
-    //
-    // A URL only counts as broken once GET has also failed.
-    try {
-      const controller3 = new AbortController();
-      const timeout3 = setTimeout(() => controller3.abort(), TIMEOUT_MS);
-      const getResponse = await fetch(url, {
-        method: 'GET',
-        signal: controller3.signal,
-        redirect: 'follow',
-        headers: buildHeaders(url),
-      });
-      clearTimeout(timeout3);
-      await getResponse.text().catch(() => {});
-      if (getResponse.ok) return { ok: true, status: getResponse.status };
-    } catch {
-      // Fall through to the original diagnosis below; a failed rescue must not replace the real error with its own.
-    }
-
-    const message = err instanceof Error ? err.message : String(err);
-    if (message.includes('abort')) {
-      return { ok: false, status: 'TIMEOUT' };
-    }
-    return { ok: false, status: message.slice(0, 60) };
+    if (!(err instanceof NotCompared)) throw err;
+    headFailure = err;
   }
+  // Some servers do not implement HEAD, or refuse it to a client they would serve a GET. Ask again with GET, under the same budget.
+  if (headFailure.status !== null && GET_FALLBACK_STATUSES.has(headFailure.status)) {
+    try {
+      await ask(url, 'GET');
+      return { kind: 'ok' };
+    } catch (err) {
+      if (!(err instanceof NotCompared)) throw err;
+      return err.unreachable
+        ? { kind: 'unreachable', err }
+        : { kind: 'broken', status: err.status ?? err.what };
+    }
+  }
+  // LAST-CHANCE GET, and it is not belt-and-braces. The status fallback above only fires when HEAD *answers*; a HEAD that hangs or is refused never tries GET at all, so a host that simply does not serve HEAD would be reported as unreachable.
+  //
+  // Measured on https://azure.microsoft.com/pricing/calculator/, which failed this checker in CI with TIMEOUT: from a residential IP the same URL answers 404 to HEAD three times out of three and 200 to GET, with and without a browser UA. On the runner the HEAD hung instead of 404ing, so even the status fallback could not save it. The page is live either way.
+  //
+  // ONE attempt: HEAD has already spent the full budget on this URL. A failed rescue does not replace the original diagnosis.
+  if (headFailure.unreachable) {
+    try {
+      await ask(url, 'GET', 1);
+      return { kind: 'ok' };
+    } catch (err) {
+      if (!(err instanceof NotCompared)) throw err;
+      return { kind: 'unreachable', err: headFailure };
+    }
+  }
+  return { kind: 'broken', status: headFailure.status ?? headFailure.what };
 }
 
 // --------------------------------------------------------------------------- ALLOWLIST LIVENESS --------------------------------------------------------------------------- ALLOWLISTED_DOMAINS is thirteen hand-written claims of the form "verified manually in a real browser". Nothing re-checked them, so two failure modes were invisible: an entry whose site stopped blocking bots
@@ -574,16 +560,22 @@ async function auditAllowlist(
 
 async function processQueue(entries: LinkEntry[]): Promise<{
   broken: LinkEntry[];
+  unreachable: Array<{ who: string; err: NotCompared }>;
+  notAsked: number;
   skipped: LinkEntry[];
   excluded: number;
   knownBroken: number;
   checked: number;
 }> {
   const broken: LinkEntry[] = [];
+  const unreachable: Array<{ who: string; err: NotCompared }> = [];
   const skipped: LinkEntry[] = [];
   let excluded = 0;
   let knownBroken = 0;
   let checked = 0;
+  let notAsked = 0;
+  let answered = 0;
+  let unansweredRun = 0;
   let idx = 0;
 
   async function worker() {
@@ -606,10 +598,21 @@ async function processQueue(entries: LinkEntry[]): Promise<{
         continue;
       }
 
+      if (answered === 0 && unansweredRun >= OUTAGE_BREAKER) {
+        notAsked++;
+        continue;
+      }
+
       const result = await checkUrl(entry.url);
       checked++;
 
-      if (!result.ok) {
+      if (result.kind === 'unreachable') {
+        unansweredRun++;
+        unreachable.push({ who: `${entry.url} (${where(entry)})`, err: result.err });
+        continue;
+      }
+      answered++;
+      if (result.kind === 'broken') {
         broken.push(entry);
         console.error(`  BROKEN [${result.status}]: ${entry.url}`);
         for (const loc of entry.locations) {
@@ -622,7 +625,14 @@ async function processQueue(entries: LinkEntry[]): Promise<{
   const workers = Array.from({ length: CONCURRENCY }, () => worker());
   await Promise.all(workers);
 
-  return { broken, skipped, excluded, knownBroken, checked };
+  return { broken, unreachable, notAsked, skipped, excluded, knownBroken, checked };
+}
+
+/** The first place a link is cited, and how many more there are. */
+function where(entry: LinkEntry): string {
+  const first = entry.locations[0];
+  const more = entry.locations.length - 1;
+  return `${first ? `${first.file}:${first.line}` : 'no location'}${more > 0 ? ` and ${more} more` : ''}`;
 }
 
 /**
@@ -667,7 +677,7 @@ function collectFiles(): { files: string[]; perRoot: Map<string, number> } | nul
 
 function selftestToApiUrl(): void {
   const repoApi = `${WK_GH_API_BASE}/repos/${WK_GH_REPO}`;
-  const cases: Array<[string, string | null]> = [
+  const cases: [string, string | null][] = [
     // Control first: a shape the function already handled must still map.
     [`${WK_GH_ORIGIN}/${WK_GH_REPO}/issues/12`, `${WK_GH_API_BASE}/repos/${WK_GH_REPO}/issues/12`],
     [`${WK_GH_ORIGIN}/${WK_GH_REPO}`, repoApi],
@@ -697,6 +707,12 @@ async function main() {
   }
   console.log('External Link Checker');
   console.log('='.repeat(60));
+  if (FIXTURE_ROOT) {
+    process.chdir(FIXTURE_ROOT);
+    console.log(
+      `  FIXTURE RUN over ${FIXTURE_ROOT}: no allowlist, no KNOWN_BROKEN, loopback checked`
+    );
+  }
 
   const collected = collectFiles();
   if (!collected) process.exit(1);
@@ -734,7 +750,8 @@ async function main() {
   );
   console.log('Checking links...\n');
 
-  const { broken, skipped, excluded, knownBroken, checked } = await processQueue(entries);
+  const { broken, unreachable, notAsked, skipped, excluded, knownBroken, checked } =
+    await processQueue(entries);
 
   console.log('Auditing allowlist liveness...\n');
   const liveness = await auditAllowlist(allLinks, skipped);
@@ -749,6 +766,8 @@ async function main() {
   console.log(`  Skipped (allowlist):${skipped.length}`);
   console.log(`  Known-broken (tracked):${knownBroken}`);
   console.log(`  Broken:            ${broken.length}`);
+  console.log(`  Not answered:      ${unreachable.length}`);
+  console.log(`  Not asked (outage):${notAsked}`);
   console.log(`  Liveness probes:   ${liveness.probed}`);
 
   if (skipped.length > 0) {
@@ -788,7 +807,7 @@ async function main() {
   if (liveness.healed.length > 0) {
     console.log(`\n  WARNING: KNOWN_BROKEN links that now answer 2xx:`);
     for (const url of liveness.healed) console.log(`    - ${url}`);
-    console.log(`    Fixed upstream. Delete the KNOWN_BROKEN entry.`);
+    console.log(`    Fixed upstream. Delete the TREE_KNOWN_BROKEN entry.`);
   }
 
   if (knownBroken > 0) {
@@ -808,7 +827,7 @@ async function main() {
     failures.push(
       `  Allowlisted domain(s) no longer referenced by any scanned markdown:\n` +
         liveness.unreferencedDomains.map((d) => `    - ${d}`).join('\n') +
-        `\n  The exemption outlived the link it excused. Delete it from ALLOWLISTED_DOMAINS.`
+        `\n  The exemption outlived the link it excused. Delete it from TREE_ALLOWLISTED_DOMAINS.`
     );
   }
 
@@ -816,7 +835,7 @@ async function main() {
     failures.push(
       `  KNOWN_BROKEN url(s) that no longer appear in any scanned markdown:\n` +
         liveness.unreferencedKnownBroken.map((u) => `    - ${u}`).join('\n') +
-        `\n  The doc was fixed. Delete the entry from KNOWN_BROKEN.`
+        `\n  The doc was fixed. Delete the entry from TREE_KNOWN_BROKEN.`
     );
   }
 
@@ -836,13 +855,43 @@ async function main() {
     failures.push(`  ${broken.length} broken external link(s) found.`);
   }
 
+  // FAIL CLOSED (operator ruling 2026-10-14). A link whose host never answered was not checked, and a link that was not checked is a finding, on the nightly as on a pull request. Printed through the shared reporter so the log carries the sentence ci_diagnose.py reads as an upstream outage rather than as a broken link.
+  reportUnreachable('external link(s)', unreachable, {
+    notA: 'a broken link',
+    hint: [
+      '  and re-run the failed job when this is a nightly. A link that never answers from',
+      '  any network is dead after all: fix or remove it, since an allowlist entry is only',
+      '  for a host that blocks automated clients and still serves a browser.',
+    ],
+  });
+  if (unreachable.length > 0) {
+    failures.push(
+      `  ${unreachable.length} external link(s) were NOT checked: their host did not answer.`
+    );
+  }
+  if (notAsked > 0) {
+    failures.push(
+      `  ${notAsked} external link(s) were NOT asked: the first ${OUTAGE_BREAKER} links checked\n` +
+        `  all went unanswered and no host answered at all, which is an outage on this\n` +
+        `  side of the network rather than ${OUTAGE_BREAKER} dead links. Re-run once the network answers.`
+    );
+  }
+  if (checked === 0) {
+    failures.push(
+      `  Not one link was checked: every URL was excluded, allowlisted or tracked, so a\n` +
+        `  green here would rest on nothing.`
+    );
+  }
+
   if (failures.length > 0) {
     console.error(`\n  FAILED:`);
     for (const f of failures) console.error(f);
     process.exit(1);
   }
 
-  console.log('\n  All external links are valid.');
+  console.log(
+    `\n  All external links are valid (${checked} checked, ${skipped.length} allowlisted, ${excluded} excluded).`
+  );
 }
 
 main();

@@ -235,9 +235,6 @@
    "type-ignore arg-type": 1,
    "type-ignore list-item": 1
   },
-  ".ci/rediacc_ci/quality/go_deps.py": {
-   "noqa S310": 1
-  },
   ".ci/rediacc_ci/quality/hook_cross_os.py": {
    "noqa PLC0415": 1
   },

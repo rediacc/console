@@ -3947,9 +3947,6 @@
   },
   {
     "id": "check:ci-go-deps",
-    "env": {
-      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}"
-    },
     "run": "npm run check:ci-go-deps",
     "gate": true,
     "leaves": [
@@ -4237,7 +4234,6 @@
   {
     "id": "check:ci-external-links",
     "env": {
-      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
       "GITHUB_TOKEN": "${{ github.token }}"
     },
     "run": "npm run check:ci-external-links",
@@ -4255,9 +4251,6 @@
   },
   {
     "id": "check:ci-dkim-notify",
-    "env": {
-      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}"
-    },
     "run": "npm run check:ci-dkim-notify",
     "gate": true,
     "leaves": [
@@ -4856,7 +4849,6 @@
   {
     "id": "check:actions",
     "env": {
-      "EXTERNAL_QUALITY_MODE": "${{ inputs.external_quality }}",
       "GITHUB_TOKEN": "${{ github.token }}"
     },
     "run": "npm run check:actions",

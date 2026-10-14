@@ -64,7 +64,8 @@ THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a f
     a preflight step precedes every `cleanup_versions` step in its job, and
     neither carries an `if:` that would run the cleanup past a red preflight.
 
-THE PIN-GATE PINS (operator ruling 2026-10-13, "Everything fails closed, nightly included") ride the same phase and read a fifth file, `ci-quality.yml` (`QUALITY_WORKFLOW_FILE` overrides it). The three gates that ask an upstream whether a pin is behind (`check:ci-embed-asset-freshness`, `check:ci-devcontainer-pins`, `check:ci-real-provider-pins`) are hard on a pull request, on the nightly and on a dispatch. `analyse_pin_gates` refuses: a gate with no step; a step that goes through `run_external_gate` or carries `EXTERNAL_QUALITY_MODE` (the wrapper turns exit 1 into a warning under `soft`, which is the nightly); an `if:` other than the lane guard plus the label hold; a job whose announcer does not name the gate under `no-external-quality`; and a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
+THE EXTERNAL-GATE PINS (operator rulings 2026-10-13, "Everything fails closed, nightly included", and 2026-10-14, "Extend to all seven") ride the same phase and read a fifth file, `ci-quality.yml` (`QUALITY_WORKFLOW_FILE` overrides it). Every gate that asks a host outside the repository (`UPSTREAM_GATES`: the three pin freshness gates, actions, external links, DKIM, Go dependencies and npm dependencies) is hard on a pull request, on the nightly and on a dispatch.
+`analyse_upstream_gates` refuses: a gate with no step; a step that goes through `run_external_gate` or carries `EXTERNAL_QUALITY_MODE` (the wrapper turns exit 1 into a warning under `soft`, which is the nightly); an `if:` other than the lane guard plus the label hold (a gate-bind shard conjunct `matrix.shard == N` is allowed, since it cannot tell one cadence from another); a job whose announcer does not name the gate under `no-external-quality`; and a ci.yml whose `external_quality` can resolve to `skip` off a pull request.
 
 WHEN IT RUNS. Only when the ci.yml under test IS the real one, or when `CD_WORKFLOW_FILE` is set explicitly. The recorded fixture cases point `WORKFLOW_FILE` at a synthetic ci.yml; judging the live cd-v2.yml beside a synthetic ci.yml would mix two worlds, and adding bytes to those runs would falsify the twin's goldens. `npm run check:ci-workflow-invariants` and the gate test both drive the real ci.yml, so both run this phase,
 and its success line prints the shape (tag job, its ancestors, job count, push count) so a collapse is visible.
@@ -788,35 +789,41 @@ def preflight_message_for(kind: str, name: str, files: dict[str, str]) -> str | 
     return None
 
 
-# --------------------------------------------------------------------------- the pin freshness gates are hard on every cadence (operator ruling 2026-10-13)
+# --------------------------------------------------------------------------- the external gates are hard on every cadence (operator rulings 2026-10-13 and 2026-10-14)
 
-PIN_GATE_KINDS = (
-    "pin-gate-missing",
-    "pin-gate-softened",
-    "pin-gate-conditional",
-    "pin-gate-job-conditional",
-    "pin-gate-unannounced",
-    "pin-gate-schedule-skipped",
+UPSTREAM_GATE_KINDS = (
+    "upstream-gate-missing",
+    "upstream-gate-softened",
+    "upstream-gate-conditional",
+    "upstream-gate-job-conditional",
+    "upstream-gate-unannounced",
+    "upstream-gate-schedule-skipped",
 )
 
-# The three gates that ask an upstream whether a pin is behind. "Everything fails closed, nightly included": each one is hard on a pull request, on the nightly and on a dispatch, and the no-external-quality label is the one way a step does not run.
-PIN_GATES = (
+# Every gate that asks a host outside the repository. "Everything fails closed, nightly included" and "Extend to all seven": each one is hard on a pull request, on the nightly and on a dispatch, and the no-external-quality label is the one way a step does not run. check:deps asks the npm registry and was always hard on the nightly; it joined the label hold on 2026-10-14, when the doc that listed it as label-held turned out to describe a step that was not.
+UPSTREAM_GATES = (
     "check:ci-embed-asset-freshness",
     "check:ci-devcontainer-pins",
     "check:ci-real-provider-pins",
+    "check:actions",
+    "check:ci-external-links",
+    "check:ci-dkim-notify",
+    "check:ci-go-deps",
+    "check:deps",
 )
-PIN_GATE_WRAPPER = "run_external_gate"
-PIN_GATE_LABEL = "no-external-quality"
-PIN_GATE_ANNOUNCER = "rediacc_ci.quality.announce_gate_skips"
-# The one `if:` a pin step may carry: the lane's standard guard and the label hold, nothing that can tell a schedule from a pull request.
-PIN_GATE_IF = (
+UPSTREAM_GATE_WRAPPER = "run_external_gate"
+UPSTREAM_GATE_LABEL = "no-external-quality"
+UPSTREAM_GATE_ANNOUNCER = "rediacc_ci.quality.announce_gate_skips"
+# The one `if:` an external step may carry: the lane's standard guard and the label hold, nothing that can tell a schedule from a pull request. Compared with parentheses removed, because gate-bind wraps its `when:` conjunct in them, and with at most one gate-bind shard conjunct (`matrix.shard == N`) removed, because a shard index cannot tell a cadence either.
+UPSTREAM_GATE_IF = (
     "!cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip'"
 )
-# The one job-level `if:` the job holding the pin steps may carry: the bot guard every quality lane has. Any other job condition (`github.event_name == 'pull_request'`) would skip all three gates, and the announcer beside them, on the nightly while every step-level check here still passed.
-PIN_GATE_JOB_IF = "inputs.is_bot != 'true'"
+# The one job-level `if:` a job holding external steps may carry: the bot guard every quality lane has. Any other job condition (`github.event_name == 'pull_request'`) would skip its gates, and the announcer beside them, on the nightly while every step-level check here still passed.
+UPSTREAM_GATE_JOB_IF = "inputs.is_bot != 'true'"
+_SHARD_CONJUNCT_RE = re.compile(r" && matrix\.shard == \d+$")
 # What the announcer is handed: the label's `skip`, and `hard` for every other value, `soft` included, because these steps run hard under `soft`.
-PIN_GATE_ANNOUNCE_MODE = "inputs.external_quality == 'skip' && 'skip' || 'hard'"
-# ci.yml's external_quality: every event that is not a pull request resolves to a value the pin steps RUN under. `'skip'` there would remove them from the nightly without a word.
+UPSTREAM_GATE_ANNOUNCE_MODE = "inputs.external_quality == 'skip' && 'skip' || 'hard'"
+# ci.yml's external_quality: every event that is not a pull request resolves to a value the external steps RUN under. `'skip'` there would remove them from the nightly without a word.
 _NON_PR_MODE_RE = re.compile(
     r"github\.event_name\s*!=\s*'pull_request'\s*&&\s*'(soft|hard)'\s*\|\|"
 )
@@ -836,65 +843,79 @@ def _env(step: dict) -> dict:
     return env if isinstance(env, dict) else {}
 
 
-def pin_gate_steps(quality_doc: object) -> dict[str, list[tuple[str, int, dict]]]:
+def _reduced(text: str) -> str:
+    """An expression with every parenthesis dropped and whitespace collapsed, so `a && (b)` and `a && b` compare equal. `!cancelled()` reduces the same way on both sides."""
+    return " ".join(text.replace("(", " ").replace(")", " ").split())
+
+
+def _guard(value: object) -> str:
+    """An `if:` reduced for comparison with UPSTREAM_GATE_IF: no parentheses, no trailing gate-bind shard conjunct."""
+    return _SHARD_CONJUNCT_RE.sub("", _reduced(_expr(value)))
+
+
+def upstream_gate_steps(quality_doc: object) -> dict[str, list[tuple[str, int, dict]]]:
     """gate id -> every (job, step index, step) in ci-quality.yml whose `run:` invokes `npm run <id>`."""
-    found: dict[str, list[tuple[str, int, dict]]] = {gate: [] for gate in PIN_GATES}
+    found: dict[str, list[tuple[str, int, dict]]] = {gate: [] for gate in UPSTREAM_GATES}
     jobs = quality_doc.get("jobs") if isinstance(quality_doc, dict) else None
     for job, body in (jobs if isinstance(jobs, dict) else {}).items():
         for i, st in enumerate(_steps(body)):
             run = _text(st.get("run"))
-            for gate in PIN_GATES:
+            for gate in UPSTREAM_GATES:
                 if re.search(r"\bnpm run %s(?![\w:-])" % re.escape(gate), run):
                     found[gate].append((job, i, st))
     return found
 
 
 def _announced(job_steps: list[dict], gate: str) -> bool:
-    """Does an UNCONDITIONAL announcer in this job name `gate` under the label, with the mode the pin steps really run under?"""
+    """Does an UNCONDITIONAL announcer in this job name `gate` under the label, with the mode the external steps really run under?"""
     for st in job_steps:
         run = _text(st.get("run"))
         words = run.split()
-        if PIN_GATE_ANNOUNCER not in run or PIN_GATE_LABEL not in words or gate not in words:
+        if (
+            UPSTREAM_GATE_ANNOUNCER not in run
+            or UPSTREAM_GATE_LABEL not in words
+            or gate not in words
+        ):
             continue
         env = _env(st)
         if "external_quality" in _text(st.get("if")):
             continue
-        if _expr(env.get("GATE_SKIP_MODE")) == PIN_GATE_ANNOUNCE_MODE:
+        if _expr(env.get("GATE_SKIP_MODE")) == UPSTREAM_GATE_ANNOUNCE_MODE:
             return True
     return False
 
 
-def analyse_pin_gates(
+def analyse_upstream_gates(
     ci_doc: object, quality_doc: object
 ) -> tuple[list[tuple[str, str]], list[str]]:
-    """(findings, shape lines) for the three pin freshness gates. Pure; the tests drive it with literal dicts.
+    """(findings, shape lines) for every external gate. Pure; the tests drive it with literal dicts.
 
-    ci-quality.yml: each gate has a step; no such step goes through run_external_gate or carries EXTERNAL_QUALITY_MODE (the wrapper turns exit 1 into a warning under `soft`, which is the nightly); its `if:` is exactly PIN_GATE_IF; and an unconditional announcer in the same job names it under the label. ci.yml: `external_quality` never resolves to `skip` off a pull request.
+    ci-quality.yml: each gate has a step; no such step goes through run_external_gate or carries EXTERNAL_QUALITY_MODE (the wrapper turns exit 1 into a warning under `soft`, which is the nightly); its `if:` reduces to UPSTREAM_GATE_IF; and an unconditional announcer in the same job names it under the label. ci.yml: `external_quality` never resolves to `skip` off a pull request.
     """
     out: list[tuple[str, str]] = []
     shape: list[str] = []
     jobs = quality_doc.get("jobs") if isinstance(quality_doc, dict) else None
     quality_jobs: dict[str, typing.Any] = jobs if isinstance(jobs, dict) else {}
     job_checked: set[str] = set()
-    for gate, sites in pin_gate_steps(quality_doc).items():
+    for gate, sites in upstream_gate_steps(quality_doc).items():
         if not sites:
-            out.append(("pin-gate-missing", gate))
+            out.append(("upstream-gate-missing", gate))
             continue
         for job, i, st in sites:
             if job not in job_checked:
                 job_checked.add(job)
                 body = quality_jobs.get(job)
                 condition = _expr(body.get("if")) if isinstance(body, dict) else ""
-                if condition not in ("", PIN_GATE_JOB_IF):
-                    out.append(("pin-gate-job-conditional", job))
+                if condition not in ("", UPSTREAM_GATE_JOB_IF):
+                    out.append(("upstream-gate-job-conditional", job))
             label = "%s (%s)" % (gate, _step_label(job, i, st))
             env = _env(st)
-            if PIN_GATE_WRAPPER in _text(st.get("run")) or "EXTERNAL_QUALITY_MODE" in env:
-                out.append(("pin-gate-softened", label))
-            if _expr(st.get("if")) != PIN_GATE_IF:
-                out.append(("pin-gate-conditional", label))
+            if UPSTREAM_GATE_WRAPPER in _text(st.get("run")) or "EXTERNAL_QUALITY_MODE" in env:
+                out.append(("upstream-gate-softened", label))
+            if _guard(st.get("if")) != _reduced(UPSTREAM_GATE_IF):
+                out.append(("upstream-gate-conditional", label))
             if not _announced(_steps(quality_jobs.get(job)), gate):
-                out.append(("pin-gate-unannounced", label))
+                out.append(("upstream-gate-unannounced", label))
             shape.append("%s in %s" % (gate, job))
 
     ci_jobs = ci_doc.get("jobs") if isinstance(ci_doc, dict) else None
@@ -902,85 +923,88 @@ def analyse_pin_gates(
     outputs = init.get("outputs") if isinstance(init, dict) else None
     mode = _expr((outputs if isinstance(outputs, dict) else {}).get("external_quality"))
     if not _NON_PR_MODE_RE.search(mode):
-        out.append(("pin-gate-schedule-skipped", mode or "<no external_quality output>"))
+        out.append(("upstream-gate-schedule-skipped", mode or "<no external_quality output>"))
     return out, shape
 
 
-def pin_gate_message_for(kind: str, name: str, files: dict[str, str]) -> str | None:
+def upstream_gate_message_for(kind: str, name: str, files: dict[str, str]) -> str | None:
     ci, quality = files["ci"], files["quality"]
-    if kind == "pin-gate-missing":
+    if kind == "upstream-gate-missing":
         return (
-            "INVARIANT-FAIL: pin-gates: no step in %s runs `npm run %s`, so that pin gate runs "
-            "on no cadence at all (nothing to check cannot pass). Restore its step in "
-            "quality-go." % (quality, name)
+            "INVARIANT-FAIL: upstream-gates: no step in %s runs `npm run %s`, so that external "
+            "gate runs on no cadence at all (nothing to check cannot pass). Restore its step."
+            % (quality, name)
         )
-    if kind == "pin-gate-softened":
+    if kind == "upstream-gate-softened":
         return (
-            "INVARIANT-FAIL: pin-gates: %s in %s goes through %s or carries "
+            "INVARIANT-FAIL: upstream-gates: %s in %s goes through %s or carries "
             "EXTERNAL_QUALITY_MODE. The wrapper turns exit 1 into a warning under `soft`, which "
-            "is the nightly and every dispatch, and the three pin gates are hard on every "
-            'cadence (operator ruling 2026-10-13, "Everything fails closed, nightly included"). '
-            "Run `npm run <gate>` directly." % (name, quality, PIN_GATE_WRAPPER)
+            "is the nightly and every dispatch, and every external gate is hard on every "
+            'cadence (operator rulings 2026-10-13 and 2026-10-14, "Extend to all seven"). '
+            "Run `npm run <gate>` directly." % (name, quality, UPSTREAM_GATE_WRAPPER)
         )
-    if kind == "pin-gate-conditional":
+    if kind == "upstream-gate-conditional":
         return (
-            "INVARIANT-FAIL: pin-gates: %s in %s has an `if:` other than `%s`. Any other "
-            "condition can keep the step from running on a cadence without a word, and the "
-            "label is the only hold these gates have." % (name, quality, PIN_GATE_IF)
+            "INVARIANT-FAIL: upstream-gates: %s in %s has an `if:` other than `%s` (a gate-bind "
+            "shard conjunct aside). Any other condition can keep the step from running on a "
+            "cadence without a word, and the label is the only hold these gates have."
+            % (name, quality, UPSTREAM_GATE_IF)
         )
-    if kind == "pin-gate-job-conditional":
+    if kind == "upstream-gate-job-conditional":
         return (
-            "INVARIANT-FAIL: pin-gates: job %s in %s carries an `if:` other than `%s`. The "
-            "pin steps and their announcer live in it, so a job condition that can tell a "
-            "schedule from a pull request skips all three gates on the nightly without a "
-            "word, whatever each step's own `if:` says." % (name, quality, PIN_GATE_JOB_IF)
+            "INVARIANT-FAIL: upstream-gates: job %s in %s carries an `if:` other than `%s`. "
+            "External steps and their announcer live in it, so a job condition that can tell a "
+            "schedule from a pull request skips those gates on the nightly without a word, "
+            "whatever each step's own `if:` says." % (name, quality, UPSTREAM_GATE_JOB_IF)
         )
-    if kind == "pin-gate-unannounced":
+    if kind == "upstream-gate-unannounced":
         return (
-            "INVARIANT-FAIL: pin-gates: %s in %s is held by the %s label with no announcer "
+            "INVARIANT-FAIL: upstream-gates: %s in %s is held by the %s label with no announcer "
             "naming it: a skipped step prints nothing and its job stays green. Its job needs a "
             "step with no external_quality `if:` running `%s %s <gates>` with GATE_SKIP_MODE "
             "`%s`."
             % (
                 name,
                 quality,
-                PIN_GATE_LABEL,
-                PIN_GATE_ANNOUNCER,
-                PIN_GATE_LABEL,
-                PIN_GATE_ANNOUNCE_MODE,
+                UPSTREAM_GATE_LABEL,
+                UPSTREAM_GATE_ANNOUNCER,
+                UPSTREAM_GATE_LABEL,
+                UPSTREAM_GATE_ANNOUNCE_MODE,
             )
         )
-    if kind == "pin-gate-schedule-skipped":
+    if kind == "upstream-gate-schedule-skipped":
         return (
-            "INVARIANT-FAIL: pin-gates: %s initialize.outputs.external_quality is `%s`, which "
-            "does not resolve every event other than pull_request to 'soft' or 'hard'. The pin "
+            "INVARIANT-FAIL: upstream-gates: %s initialize.outputs.external_quality is `%s`, which "
+            "does not resolve every event other than pull_request to 'soft' or 'hard'. The external "
             "steps run under both and are skipped under 'skip', so this would take them off the "
             "nightly." % (ci, name)
         )
     return None
 
 
-def _pin_gate_phase(ci_file: str, quality_file: str) -> tuple[list[str], list[str]]:
-    """(errors, info lines) for the pin freshness gates. A missing file is an error, never a pass."""
+def _upstream_gate_phase(ci_file: str, quality_file: str) -> tuple[list[str], list[str]]:
+    """(errors, info lines) for the external gates. A missing file is an error, never a pass."""
     files = {"ci": ci_file, "quality": quality_file}
     docs = {}
     for key, path in files.items():
         if not os.path.isfile(path):
             return [
-                "INVARIANT-FAIL: pin-gates: no file at %s (nothing to check cannot pass)" % path
+                "INVARIANT-FAIL: upstream-gates: no file at %s (nothing to check cannot pass)"
+                % path
             ], []
         try:
             docs[key] = load_workflow(path)
         except SetupExit as exc:
-            return ["INVARIANT-FAIL: pin-gates: %s" % exc.message.strip()], []
-    findings, shape = analyse_pin_gates(docs["ci"], docs["quality"])
-    errors = [m for k, n in findings if (m := pin_gate_message_for(k, n, files)) is not None]
+            return ["INVARIANT-FAIL: upstream-gates: %s" % exc.message.strip()], []
+    findings, shape = analyse_upstream_gates(docs["ci"], docs["quality"])
+    errors = [m for k, n in findings if (m := upstream_gate_message_for(k, n, files)) is not None]
     if errors:
         return errors, []
     return [], [
-        "pin gates hold: %s; each runs unwrapped (hard on pull_request, schedule and dispatch), "
-        "is held only by the %s label, and is named by its job's announcer"
-        % ("; ".join(shape), PIN_GATE_LABEL)
+        "external gates hold (%d gate(s), %d step(s)): %s; each runs unwrapped (hard on "
+        "pull_request, schedule and dispatch), is held only by the %s label, and is named by "
+        "its job's announcer"
+        % (len(UPSTREAM_GATES), len(shape), "; ".join(shape), UPSTREAM_GATE_LABEL)
     ]
 
 
@@ -1114,9 +1138,9 @@ def main(argv: list[str]) -> int:
     if release_phase:
         release_errors, release_info = _release_phase(workflow_file, cd_file, action_file)
         preflight_errors, preflight_info = _preflight_phase(workflow_file, cd_file, hk_file)
-        pin_errors, pin_info = _pin_gate_phase(workflow_file, quality_file)
-        release_info += preflight_info + pin_info
-        for message in release_errors + preflight_errors + pin_errors:
+        upstream_errors, upstream_info = _upstream_gate_phase(workflow_file, quality_file)
+        release_info += preflight_info + upstream_info
+        for message in release_errors + preflight_errors + upstream_errors:
             log.error(message)
             failed = 1
 

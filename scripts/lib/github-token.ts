@@ -120,9 +120,9 @@ export const hasGithubToken = (
 /**
  * The request headers of a GitHub REST call: the API media type, the caller's
  * User-Agent, and the token when there is one. Without a token the request goes
- * out anonymous (60 an hour for the whole machine). The three pin freshness
- * gates report the rate limit that follows as a pin that was not compared, which
- * is red (scripts/lib/pin-upstream.ts).
+ * out anonymous (60 an hour for the whole machine). The external gates
+ * report the rate limit that follows as a request that was not answered, which
+ * is red (scripts/lib/upstream.ts).
  *
  * NAMES THE SHAPE `check:ci-shape-duplication` found once a third pin freshness
  * gate built the same object by hand.
