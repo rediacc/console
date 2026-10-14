@@ -68,6 +68,7 @@ import {
   fixtureRunner,
   openJournals,
   type RepoChange,
+  RestoreRefused,
   type Runner,
   realRunner,
   restoreJournal,
@@ -710,7 +711,14 @@ async function cmdHold(w: World, f: Flags): Promise<number> {
 
 function cmdVerify(w: World, f: Flags): number {
   if (f.restore) {
-    const r = restoreJournal(w.root, f.restore);
+    let r: ReturnType<typeof restoreJournal>;
+    try {
+      r = restoreJournal(w.root, f.restore);
+    } catch (err) {
+      if (!(err instanceof RestoreRefused)) throw err;
+      w.err.push(`REFUSED: ${err.message}`);
+      return 1;
+    }
     w.out.push(`restored: ${r.restored.join(', ') || '(none)'}`);
     if (r.leftAlone.length)
       w.out.push(`left alone (changed since the run wrote them): ${r.leftAlone.join(', ')}`);
@@ -924,6 +932,38 @@ const snap = (fx: Fx, rels: string[]): string[] => rels.map((r) => fx.read(r));
 const same = (a: string[], b: string[]): boolean => a.every((x, i) => x === b[i]);
 const TOOL_FILES = ['Dockerfile', 'tool.lock.json', 'docs/tool.md'];
 
+/** One plan over the fixture's embed:tool entry with only the given steps, for driving the transaction directly. */
+function directPlans(fx: Fx, steps: PinPlan['steps']): PinPlan[] {
+  const reg = loadRegistry(path.join(fx.root, '.ci/config/pins.json'));
+  const entry = reg.entries.find((e) => e.id === 'embed:tool');
+  if (!entry) throw new Error('fixture registry lost embed:tool');
+  return [
+    {
+      entry: { ...entry, derive: [], gates: [] },
+      from: '1.0.0',
+      to: { version: '1.1.0', publishedMs: null },
+      writes: [
+        {
+          repo: '.',
+          file: 'Dockerfile',
+          after: fx.read('Dockerfile').replace('TOOL_VERSION=1.0.0', 'TOOL_VERSION=1.1.0'),
+        },
+      ],
+      steps,
+      changes: [],
+    },
+  ];
+}
+
+const directTxn = (fx: Fx, stamp: string, runner: Runner, m: Mutant | undefined) => ({
+  root: fx.root,
+  stamp,
+  runner,
+  mutant: m ?? null,
+  npmVersion: '11.20.0',
+  submodules: ['private/renet'],
+});
+
 const CASES: Record<string, Case> = {
   async soak(m) {
     const fx = fixtureTree();
@@ -947,16 +987,16 @@ const CASES: Record<string, Case> = {
       !isWithinFreshnessWindow(pub, at, 86_400_000);
     return [
       {
-        name: `when: a release published ${PUB_NEW} clears at 2026-10-16T00:00Z, the instant isWithinFreshnessWindow turns false`,
+        name: `when: a release published ${PUB_NEW} clears at 2026-10-16T00:00:00Z, the instant isWithinFreshnessWindow turns false`,
         ok:
           r.rc === 0 &&
           rule &&
-          r.out.includes('clears the release-age window at 2026-10-16T00:00Z'),
+          r.out.includes('clears the release-age window at 2026-10-16T00:00:00Z'),
         detail: `rc=${r.rc} rule=${rule} ${r.out} ${r.err}`,
       },
       {
         name: 'when: prints a ready worklist DEFAULT line naming the bump',
-        ok: /DEFAULT: on or after 2026-10-16T00:00Z run `npm run pins -- bump embed:tool`/.test(
+        ok: /DEFAULT: on or after 2026-10-16T00:00:00Z run `npm run pins -- bump embed:tool`/.test(
           r.out
         ),
         detail: r.out,
@@ -995,7 +1035,7 @@ const CASES: Record<string, Case> = {
         name: 'bump: the draft names versions, publish time, soak clearance, gate rc and PR-TASK',
         ok:
           /^chore\(pins\): bump tool 1\.0\.0 to 1\.1\.0$/m.test(draft) &&
-          draft.includes('published 2026-10-01T00:00Z, soak cleared 2026-10-03T00:00Z') &&
+          draft.includes('published 2026-10-01T00:00:00Z, soak cleared 2026-10-03T00:00:00Z') &&
           draft.includes('npm run ci -- --only check:fixture-tool (in .) rc=0') &&
           /\nPR-TASK: cafe1234\n$/.test(draft),
         detail: draft,
@@ -1140,17 +1180,164 @@ const CASES: Record<string, Case> = {
     ];
   },
   async undeclaredOverPlanned(m) {
-    // Review 02aeb8f5.1: a step that rewrites a file the plan itself already wrote (dirty before and after the step) must still be caught, by its bytes.
+    // A step that rewrites a file the plan itself already wrote (dirty before and after the
+    // step) is still caught, by its bytes; the rewritten file no longer holds the bytes the run
+    // wrote, so compare-and-restore names it and leaves it, and restores the other sites.
+    const sneaky = 'ARG TOOL_VERSION=6.6.6\n';
     const fx = fixtureTree((f) => {
       f.steps = { 'embed:tool': [{ label: 'sneaky', run: 'sneaky', cwd: '.', writes: [] }] };
-      f.commands.push({ match: '^sneaky$', rc: 0, writes: { Dockerfile: 'ARG TOOL_VERSION=6.6.6\n' } });
+      f.commands.push({ match: '^sneaky$', rc: 0, writes: { Dockerfile: sneaky } });
     });
+    const before = snap(fx, ['tool.lock.json', 'docs/tool.md']);
     const r = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
     return [
       {
-        name: 'bump: a step that rewrites a file the plan already wrote, without declaring it, fails the run and names it',
-        ok: r.rc === 1 && r.err.includes('did not declare: Dockerfile'),
-        detail: `rc=${r.rc} ${r.err}`,
+        name: 'bump: a step that rewrites a file the plan already wrote, without declaring it, fails the run and names it; that file is left as the step wrote it, the other sites restored',
+        ok:
+          r.rc === 1 &&
+          r.err.includes('did not declare: Dockerfile') &&
+          /left alone .*Dockerfile/.test(r.err) &&
+          fx.read('Dockerfile') === sneaky &&
+          same(before, snap(fx, ['tool.lock.json', 'docs/tool.md'])),
+        detail: `rc=${r.rc} ${r.err}\n${fx.read('Dockerfile')}`,
+      },
+    ];
+  },
+  async deletedByStep(m) {
+    // A step that deletes a file the plan wrote hashes it as absent rather than throwing: the
+    // undeclared deletion fails the run by name, and a declared one is counted as the step's.
+    const fx = fixtureTree();
+    const del: Runner = (cmd, cwd) => {
+      if (cmd === 'rm-dockerfile') fs.rmSync(path.join(cwd, 'Dockerfile'));
+      return { rc: 0, out: '' };
+    };
+    const step = (declared: boolean): PinPlan[] =>
+      directPlans(fx, [
+        {
+          label: 'rm',
+          run: 'rm-dockerfile',
+          cwd: '.',
+          writes: declared ? [{ repo: '.', file: 'Dockerfile' }] : [],
+        },
+      ]);
+    const bad = runTransaction(step(false), directTxn(fx, 'del-undeclared', del, m));
+    const undeclaredGone = !fs.existsSync(path.join(fx.root, 'Dockerfile'));
+    sh(fx.root, 'checkout', '-q', '--', '.');
+    const good = runTransaction(step(true), directTxn(fx, 'del-declared', del, m));
+    return [
+      {
+        name: 'txn: a step that deletes a planned file without declaring it fails by name, and the deletion is left',
+        ok:
+          !bad.ok &&
+          (bad.failure ?? '').includes('did not declare: Dockerfile') &&
+          bad.leftAlone.includes('Dockerfile') &&
+          undeclaredGone,
+        detail: `${bad.failure} left=${bad.leftAlone}`,
+      },
+      {
+        name: 'txn: a step that deletes a file it declares finishes, with the deletion as its change',
+        ok: good.ok && good.changes.some((c) => c.paths.includes('Dockerfile')),
+        detail: `${good.failure} ${JSON.stringify(good.changes)}`,
+      },
+    ];
+  },
+  async killedInStep(m) {
+    // A run killed while a step runs: the journal on disk at that instant must already claim
+    // the step's declared files, so `verify --restore` puts them back.
+    const fx = fixtureTree();
+    const jroot = path.join(fx.root, '.ci/cache/pins');
+    const kill: Runner = (cmd, cwd) => {
+      fs.writeFileSync(path.join(cwd, 'credits.json'), '{ "half": true\n');
+      fs.mkdirSync(path.join(jroot, 'killed'), { recursive: true });
+      fs.copyFileSync(
+        path.join(jroot, 'live', 'journal.json'),
+        path.join(jroot, 'killed', 'journal.json')
+      );
+      return { rc: cmd === 'gen' ? 0 : 1, out: '' };
+    };
+    runTransaction(
+      directPlans(fx, [
+        { label: 'gen', run: 'gen', cwd: '.', writes: [{ repo: '.', file: 'credits.json' }] },
+      ]),
+      directTxn(fx, 'live', kill, m)
+    );
+    fx.write('credits.json', '{ "half": true\n');
+    const named = await runCli(['verify'], withMutant(fx, m));
+    const rest = await runCli(['verify', '--restore', 'killed'], withMutant(fx, m));
+    return [
+      {
+        name: "verify --restore: a run killed inside a step gets that step's declared files back",
+        ok:
+          named.err.includes('journal killed') &&
+          rest.rc === 0 &&
+          /^restored: .*\bcredits\.json\b/m.test(rest.out) &&
+          fx.read('credits.json') === '{}\n' &&
+          fx.read('Dockerfile').includes('TOOL_VERSION=1.0.0'),
+        detail: `${named.err} | rc=${rest.rc} ${rest.out} ${rest.err} | ${fx.read('credits.json')}`,
+      },
+    ];
+  },
+  async restoreDone(m) {
+    const fx = fixtureTree();
+    const r = await runCli(['bump', 'embed:tool', '--json'], withMutant(fx, m));
+    const stamp =
+      r.rc === 0 ? path.basename((JSON.parse(r.out) as { journal: string }).journal) : '';
+    const rest = await runCli(['verify', '--restore', stamp], withMutant(fx, m));
+    const missing = await runCli(['verify', '--restore', 'no-such-run'], withMutant(fx, m));
+    return [
+      {
+        name: "verify --restore: a finished run's journal is refused by state, and its bump stays",
+        ok:
+          r.rc === 0 &&
+          rest.rc === 1 &&
+          rest.err.includes("is 'done'") &&
+          fx.read('Dockerfile').includes('TOOL_VERSION=1.1.0'),
+        detail: `bump rc=${r.rc} | rc=${rest.rc} ${rest.out} ${rest.err}`,
+      },
+      {
+        name: 'verify --restore: an unknown stamp is refused by name, not a stack trace',
+        ok: missing.rc === 1 && missing.err.includes('no journal no-such-run'),
+        detail: `rc=${missing.rc} ${missing.err}`,
+      },
+    ];
+  },
+  async seconds(m) {
+    const fx = fixtureTree((f) => {
+      f.releases['embed:tool'][0].published = '2026-10-14T10:00:30Z';
+    });
+    const r = await runCli(['when', 'embed:tool'], withMutant(fx, m));
+    return [
+      {
+        name: 'when: a publish instant with seconds is printed to the second, the instant the registry holds',
+        ok: r.rc === 0 && r.out.includes('published 2026-10-14T10:00:30Z'),
+        detail: `rc=${r.rc} ${r.out} ${r.err}`,
+      },
+    ];
+  },
+  async lock(m) {
+    const fx = fixtureTree();
+    const lock = path.join(fx.root, '.ci/cache/pins/.lock');
+    fs.mkdirSync(path.dirname(lock), { recursive: true });
+    fs.writeFileSync(lock, '');
+    const empty = await runCli(['plan', 'embed:tool'], withMutant(fx, m));
+    const emptyBump = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    sh(fx.root, 'checkout', '-q', '--', '.');
+    fs.writeFileSync(lock, 'not a pid\n');
+    const junk = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    sh(fx.root, 'checkout', '-q', '--', '.');
+    fs.writeFileSync(lock, `${process.pid}\n`);
+    const live = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    const kept = fs.existsSync(lock) && fs.readFileSync(lock, 'utf8') === `${process.pid}\n`;
+    return [
+      {
+        name: 'lock: an empty or non-numeric lock file is stale debris, not a live run',
+        ok: empty.rc === 0 && emptyBump.rc === 0 && junk.rc === 0,
+        detail: `${emptyBump.rc} ${emptyBump.err} | ${junk.rc} ${junk.err}`,
+      },
+      {
+        name: 'lock: a lock naming a live pid is never taken, and is left in place',
+        ok: live.rc === 2 && live.err.includes('holds .ci/cache/pins/.lock') && kept,
+        detail: `${live.rc} ${live.err} kept=${kept}`,
       },
     ];
   },
