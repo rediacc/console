@@ -154,7 +154,7 @@ def always_keys(tree):
 
 def main():
     sys.path.insert(0, str(HERE))
-    import wl_checks  # noqa: PLC0415 -- the module under test
+    import wl_checks
 
     tree = ast.parse(CHECKS.read_text(encoding="utf-8"))
     seen, dynamic = vadd_keys(tree)

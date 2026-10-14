@@ -91,7 +91,7 @@ def raises(label, fn, needle=""):
             Tally.fails += 1
             print("FAIL  %s: refused, but not for %r: %s" % (label, needle, exc), file=sys.stderr)
         return
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         Tally.fails += 1
         print("FAIL  %s: raised %r, wanted a RecordError" % (label, exc), file=sys.stderr)
         return
@@ -108,7 +108,7 @@ def _refusal(fn):
         fn()
     except R.RecordError as exc:
         return str(exc)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return "did not raise a RecordError: %r" % exc
     return ""
 
@@ -1083,7 +1083,7 @@ try:
         R.ledger_row(ROOT, REL, _ticked),
         _cpb.scan(ROOT)[REL],
     )
-except Exception as _exc:  # noqa: BLE001
+except Exception as _exc:
     truthy("the gate's own scan() could be loaded for the equality control: %r" % _exc, False)
 
 # THE TICK REFRESHES agent/INDEX.md (worklist #f4d0bc57). The census carries each plan's byte size, so a tick that left the index alone was check:ci-plan-record R8 red until a manual --update. After refresh_index, the hook's own freshness reading (wl_planindex.index_census) must call the census fresh; before it, stale.

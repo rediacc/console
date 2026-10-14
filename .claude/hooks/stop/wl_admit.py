@@ -244,7 +244,7 @@ def process_admission(ad, text, worklist, session_id, me8, hits, sig, settled, a
     if kind == "track":
         try:
             new_id = add_item(worklist, me8, "(%s) %s" % (me8, item_text))
-        except Exception as exc:  # noqa: BLE001 -- never fail a stop over this
+        except Exception as exc:
             detail = "add_item failed: %s" % exc
         record_hits(
             worklist,
@@ -390,7 +390,7 @@ def defer_sig(fold, session_id):
             for r in fold.items
             if r["state"] == "?" and C.owned_by_me(r.get("owner"), session_id)
         )
-    except Exception:  # noqa: BLE001 -- a signature must never wedge a stop
+    except Exception:
         return ""
     return hashlib.sha1(("|".join(rows)).encode("utf-8", "replace")).hexdigest()[:16]
 
@@ -676,7 +676,7 @@ def _selftest():
 
     These are the DETERMINISTIC half. They prove the plumbing: that a verdict is checked against the message, that a hallucinated quote cannot manufacture work, and that the prefilter has the recall the design claims. The other half, whether the model can separate the twelve corpus cases, cannot be stubbed and is a separate gate: a stub answering "yes" proves nothing.
     """
-    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
+    import wl_common
 
     check = wl_common.Checker()
 

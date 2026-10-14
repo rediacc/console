@@ -91,7 +91,7 @@ def _wl_checks():
     `wl_checks` imports this module to reach its call site, so a module-level `import wl_checks` here would bind a half-initialised module object during whichever import happens to run first. The citation primitives live there and must not be copied: `CITE_RE`, `citation_state` and `cited_excerpts` are the exact regexes a second implementation would get wrong. Section 2 of
     the plan records the cost of not reusing them -- a hand-rolled path regex mis-parsed every `.claude/...` dotfile path and reported 298 dead citations where the real number is 175.
     """
-    import wl_checks  # noqa: PLC0415 -- deferred on purpose; see the docstring
+    import wl_checks
 
     return wl_checks
 
@@ -303,7 +303,7 @@ def investigation_for_claim(root, text):
     if not claim:
         return None
     try:
-        import wl_planrec as R  # noqa: PLC0415 -- deferred; wl_planrec is not on the stop hook's hot path
+        import wl_planrec as R
     except ImportError:
         return None
     sigs = set(_SIG_RE.findall(claim))

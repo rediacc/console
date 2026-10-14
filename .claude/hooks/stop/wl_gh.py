@@ -115,7 +115,7 @@ def _attempt(once: Runner, argv: list[str]) -> tuple[int, str, str]:
     """One runner call that cannot raise into the hook: an injected runner that throws reads as a spawn failure."""
     try:
         rc, out, err = once(list(argv))
-    except Exception as exc:  # noqa: BLE001 -- the contract is "never raises"; the reason is kept
+    except Exception as exc:
         return RC_SPAWN, "", "gh runner raised %s: %s" % (type(exc).__name__, exc)
     return rc, out or "", err or ""
 
@@ -212,7 +212,7 @@ def write_refusal(argv: list[str]) -> str:
         tokens = list(argv)
         tokens.insert(0, "gh")
         kind, verb = import_ci("rediacc_ci.quality.gh_retry_reads").classify(tokens)
-    except Exception as exc:  # noqa: BLE001 -- an unknowable verdict refuses, it never admits
+    except Exception as exc:
         return "the write classifier could not be loaded (%s: %s)" % (type(exc).__name__, exc)
     if kind != "write":
         return (
@@ -236,7 +236,7 @@ def write(
     once = run or runner(cwd, timeout)
     try:
         rc, out, err = once(list(argv))
-    except Exception as exc:  # noqa: BLE001 -- the contract is "never raises"; the reason is kept
+    except Exception as exc:
         return RC_SPAWN, "", "gh runner raised %s: %s" % (type(exc).__name__, exc)
     return rc, out or "", err or ""
 

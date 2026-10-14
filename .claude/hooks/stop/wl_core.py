@@ -756,5 +756,5 @@ try:
     import wl_resprofile as _resprofile
 
     _resprofile.install()
-except BaseException:  # noqa: BLE001 -- see above; silence is the contract here
+except BaseException:
     pass

@@ -301,7 +301,7 @@ def _adopt_hint(owner, projects_dir, rel):
     """The adoption sentence for a foreign checklist whose owner is dead, "" otherwise."""
     try:
         age = S.owner_age_hours(owner, projects_dir)
-    except Exception:  # noqa: BLE001 -- an advisory hint must never break the gate
+    except Exception:
         age = None
     if age is None or age < float(os.environ.get("WORKLIST_DEAD_HOURS", "24")):
         return ""
@@ -498,13 +498,13 @@ def checklist_findings(root, fold, session_id, projects_dir, worklist=None):
     violations, advisories = [], []
     try:
         paths = checklist_paths(root)
-    except Exception as exc:  # noqa: BLE001 -- fail CLOSED
+    except Exception as exc:
         # UNSCOPED, and deliberately so: the glob itself failed, so there is no slug to scope by, and this path returns immediately -- at most one such finding can exist per stop, so it has nothing to collide with.
         return [("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])], []
     for path in paths:
         try:
             v, a = _adjudicate(root, path, fold, session_id, projects_dir, worklist)
-        except Exception as exc:  # noqa: BLE001 -- fail CLOSED, per file
+        except Exception as exc:
             # Per FILE, so scoped like every other per-checklist finding. The slug is read off the path rather than out of the parse, because the parse is what just threw.
             slug = os.path.basename(os.path.dirname(str(path)))
             violations.append((_ckey("cl-shape", slug), True, M.V_CL_UNREADABLE % str(exc)[:160]))
@@ -524,7 +524,7 @@ def checklists_block(root):
         rel = _rel(root, path)
         try:
             p = parse_checklist(root, path)
-        except Exception:  # noqa: BLE001 -- name it, never drop it
+        except Exception:
             lines.append("  %s [UNREADABLE] the Stop hook will block on this one" % rel)
             continue
         malformed = bool(p["errors"])

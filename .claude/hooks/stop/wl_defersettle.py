@@ -236,7 +236,7 @@ def _script_line(root, key):
 def _artifact_facts(root, text):
     if not EXISTENCE_RE.search(text):
         return []
-    import wl_reggate  # noqa: PLC0415 -- lazy: a heavier sibling only this path needs
+    import wl_reggate
 
     out, budget = [], MAX_ARTIFACT_CANDIDATES
     scripts = None
@@ -472,7 +472,7 @@ def build_evidence(fact, first_at, now):
 
 
 def _default_gate(root, evidence):
-    import wl_checks  # noqa: PLC0415 -- lazy: wl_checks imports this module
+    import wl_checks
 
     return wl_checks.completion_evidence(root, evidence) and not wl_checks.issue_only_evidence(
         root, evidence
@@ -487,7 +487,7 @@ def apply_stop(out, batch, state_doc, root, worklist, run_id=None, gate=None, se
     if not batch:
         return []
     if set_state is None:
-        import wl_store  # noqa: PLC0415 -- lazy, and injectable so the controls observe the write
+        import wl_store
 
         set_state = wl_store.set_state
     gate = gate or _default_gate
@@ -571,8 +571,8 @@ def classify_one(root, text, just):
 
     Advisory: the caller refuses the --defer only on a confident `settled` and treats every error as "create it as before".
     """
-    import wl_judge  # noqa: PLC0415 -- lazy: wl_judge imports this module
-    import wl_planqueue  # noqa: PLC0415
+    import wl_judge
+    import wl_planqueue
 
     if wl_judge.disabled(wl_planqueue.settings_for(root)[0]):
         return None, "judge disabled"
