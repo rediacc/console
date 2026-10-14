@@ -280,7 +280,8 @@ jobs:
     name: Verify stable
     # contents: write is load-bearing and belongs to THIS job only:
     # mark-production.sh moves the `production` tag ref (PATCH/POST on
-    # git/refs) and runs `gh release edit --latest`, both on github.token.
+    # git/refs) and runs `gh release edit --latest`, both on the App token
+    # minted below (the tag move needs workflows:write, see that step).
     # It runs AFTER the endpoints verify, so losing this scope leaves stable
     # deployed while the production tag and the latest badge still point at
     # the previous version.
@@ -300,15 +301,39 @@ jobs:
             .ci/scripts
             .ci/rediacc_ci
             .ci/config/well-known.env
+            .github/actions/bws-secrets
+            .github/actions/app-token
           sparse-checkout-cone-mode: false
 
       - name: Verify stable endpoints
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.verify_stable_endpoints
+
+      # THE PRODUCTION TAG NEEDS workflows:write. Moving refs/tags/production
+      # onto a commit range that touches .github/workflows is refused to a
+      # token without it, and github.token can never hold it: runs 38408143720
+      # (v1.8.0) and 38556650310 (v2.1.0) failed here with "Resource not
+      # accessible by integration (HTTP 403)" after the endpoints verified.
+      # The App token's `cd` preset carries workflows:write for the same
+      # reason on cd-v2's tag push (.github/actions/app-token/action.yml).
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_APP_PRIVATE_KEY }}
+          preset: cd
 
       # AFTER verification, never before: the markers are a claim that this
       # version is live and serving, so they must not be written by a promotion
       # whose endpoints failed to answer.
       - name: Mark this version as production
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.mark_production "${{ needs.promote.outputs.version }}"
