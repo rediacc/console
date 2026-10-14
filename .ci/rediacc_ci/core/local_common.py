@@ -61,7 +61,7 @@ import stat
 import subprocess
 import sys
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, proc
 from rediacc_ci.core import devbox, toolchain
 from rediacc_ci.well_known import GO_DL_BASE
 
@@ -1192,8 +1192,8 @@ def reexec_with_docker_group(args: list[str]) -> bool:
         for word in [_required("SCRIPT_ENTRYPOINT", os.environ.get("SCRIPT_ENTRYPOINT")), *args]
     )
     _flush()
-    os.execvp("sg", ["sg", "docker", "-c", command])  # noqa: S606 -- forwarding exec, same shape as the twin's
-    return True  # pragma: no cover -- execvp does not return
+    proc.exec_replace(["sg", "docker", "-c", command])
+    return True  # pragma: no cover -- exec_replace does not return
 
 
 def reset_docker_memo(env: dict[str, str] | None = None) -> None:

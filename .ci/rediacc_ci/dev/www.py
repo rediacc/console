@@ -24,9 +24,7 @@ The twin's arm is `dev) dev ;;` with no `shift` and a body that reads none of th
 
 from __future__ import annotations
 
-import os
-
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, proc
 from rediacc_ci.setup import bridge
 
 # Byte for byte the twin's `log_step "Starting www development server"`.
@@ -55,7 +53,7 @@ def main(argv: list[str]) -> int:
         return rc
 
     try:
-        os.execvp(NPM_ARGV[0], list(NPM_ARGV))  # noqa: S606 -- forwarding exec, same shape as the twin's
+        proc.exec_replace(NPM_ARGV)
     except OSError as exc:
         # REACHED ONLY WHEN THE EXEC ITSELF FAILS, which is npm absent from PATH or not executable. Everything after a successful execvp belongs to npm, so there is no fall-through to guard against.
         log.error("%s: %s" % (NPM_ARGV[0], exc.strerror or exc))

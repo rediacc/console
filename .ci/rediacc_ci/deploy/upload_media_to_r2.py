@@ -16,12 +16,13 @@ from __future__ import annotations
 import os
 import sys
 
+from rediacc_ci import proc
+
 
 def main(argv: list[str]) -> int:
     root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     target = os.path.join(root, ".ci", "media", "tools", "upload-r2.sh")
-    os.execv(target, [target, *argv])  # noqa: S606 -- forwarding exec, same shape as the twin's
-    return 1  # unreachable: execv replaces this process on success
+    proc.exec_replace([target, *argv])
 
 
 if __name__ == "__main__":

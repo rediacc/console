@@ -349,6 +349,15 @@ ignore = [
     # BLOCKER: the root conftest's audit hook records which test wrote into the tree, and an audit hook that raises aborts the operation it audits, where a lost record is only a weaker attribution
     "BLE001",
 ]
+# THE FUNNEL HELPERS, one file each. A call that must start a process without a shell, open a URL, or parse XML goes through one of these, so the finding is reported once, here, beside the check that makes it safe.
+".ci/rediacc_ci/proc.py" = [
+    # BLOCKER: this module holds the one os.exec site for the package, because a forwarding shim has to become the command it wraps (same process, stdin, stdout, signals and exit status) and no subprocess call can do that; every other file calls proc.exec_replace and stays held to S606
+    "S606",
+]
+".ci/rediacc_ci/core_lease.py" = [
+    # BLOCKER: this file is stdlib-only because .ci/bootstrap.sh runs it by path (`python3 .ci/rediacc_ci/core_lease.py`), where rediacc_ci is not importable, so it cannot call proc.exec_replace and keeps one private exec site; its pytest wrapper and `run` verb must become the command to keep the lock descriptors open
+    "S606",
+]
 ".ci/rediacc_ci/ci/ci_diagnose.py" = [
     # BLOCKER: ci-trace.py loads this module by file path with no `.ci` on sys.path, so it cannot import rediacc_ci.core.https; its _open refuses any URL that does not start with https:// on the line before the Request
     "S310",

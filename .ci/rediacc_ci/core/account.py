@@ -58,7 +58,7 @@ import subprocess
 import sys
 import time
 
-from rediacc_ci import log, paths
+from rediacc_ci import log, paths, proc
 from rediacc_ci.core import local_common, ports
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT, DEV_USER_EMAIL
 
@@ -654,7 +654,7 @@ def bws_exec(profile: str, run_sh_args: list[str], env: dict[str, str] | None = 
     ]
     sys.stdout.flush()
     sys.stderr.flush()
-    os.execvpe("python3", argv, environ)  # noqa: S606 -- forwarding exec, same shape as the twin's
+    proc.exec_replace(argv, env=environ)
 
 
 def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
@@ -782,6 +782,8 @@ def db_launch(plan: DbPlan, env: dict[str, str] | None = None) -> int:
     This starts a server. It is written out so the port is complete, and it is excluded from every ledger row and from every differential case in `test_core_account.py`: a row is a claim of equivalence, and nothing here has been compared against the twin under a real launch.
     """
     environ = os.environ if env is None else env
+    # The address the browser is served on follows REDIACC_DEV_BIND, as the gateway and the dev servers do (account_lifecycle._serve): the devbox sets 0.0.0.0 so its proxy can reach the process, and anywhere else the tool listens on loopback only.
+    bind = environ.get("REDIACC_DEV_BIND") or "127.0.0.1"
     log.warn("Note: ./run.sh account reset DELETES this database.")
     directory = account_dir(env)
     if plan.use_studio:
@@ -800,8 +802,7 @@ def db_launch(plan: DbPlan, env: dict[str, str] | None = None) -> int:
         log.warn("Chrome blocks that hosted page from reaching a local server unless you enable")
         log.warn('"Local network access" for local.drizzle.studio in Site information.')
         child = subprocess.run(
-            # S104: `0.0.0.0` is an ARGUMENT to another program here, copied from the twin at `.ci/lib/account.sh:1021`, not a bind in this process.
-            ["npx", "drizzle-kit", "studio", "--port", str(plan.port), "--host", "0.0.0.0"],  # noqa: S104 -- the twin's own literal argument
+            ["npx", "drizzle-kit", "studio", "--port", str(plan.port), "--host", bind],
             cwd=directory,
             env={**environ, "DATABASE_PATH": plan.database},
             check=False,
@@ -826,9 +827,9 @@ def db_launch(plan: DbPlan, env: dict[str, str] | None = None) -> int:
     log.step("Database browser on %s" % plan.database)
     log.info("Port: %d" % plan.port)
     print()
-    argv = [binary, "--host", "0.0.0.0", "--port", str(plan.port), "--no-browser", plan.database]  # noqa: S104 -- the twin's own literal argument at `.ci/lib/account.sh:1045`
-    os.execv(binary, argv)  # noqa: S606 -- forwarding exec, same shape as the twin's
-    raise AssertionError("execv returned")  # pragma: no cover
+    argv = [binary, "--host", bind, "--port", str(plan.port), "--no-browser", plan.database]
+    proc.exec_replace(argv)
+    raise AssertionError("exec_replace returned")  # pragma: no cover
 
 
 def db(argv: list[str], env: dict[str, str] | None = None) -> int:

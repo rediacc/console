@@ -62,7 +62,7 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -677,6 +677,14 @@ def _err(message: str) -> None:
     print("core_lease: %s" % message, file=sys.stderr, flush=True)
 
 
+def _exec_replace(argv: Sequence[str], *, env: Mapping[str, str] | None = None) -> NoReturn:
+    """Become `argv`, searching PATH for `argv[0]`; the one exec site in this module. It is `proc.exec_replace` restated, because this file is stdlib-only: bootstrap.sh runs it by path (`python3 .ci/rediacc_ci/core_lease.py`), where `rediacc_ci` is not importable."""
+    args = list(argv)
+    if env is None:
+        os.execvp(args[0], args)
+    os.execvpe(args[0], args, dict(env))
+
+
 def _waiting_notice(pool: Pool, minimum: int) -> Callable[[], None]:
     def notice() -> None:
         _err(
@@ -703,7 +711,8 @@ def _exec_holding(
         # The marker's lock lives as long as the command's process tree, like the tokens.
         os.set_inheritable(run.fd, True)
     try:
-        os.execvpe(cmd[0], list(cmd), env)  # noqa: S606 -- the whole point of `run`: become the command, keeping the lock descriptors
+        # The whole point of `run`: become the command, keeping the lock descriptors.
+        _exec_replace(cmd, env=env)
     except OSError as exc:
         _err("cannot execute %s: %s" % (cmd[0], exc))
         Pool.release(tokens)
@@ -775,7 +784,7 @@ def _cmd_pytest(ns: argparse.Namespace) -> int:
         return EXIT_NOEXEC
     if os.environ.get(HELD_ENV) or PYTEST_INFO_FLAGS.intersection(args):
         try:
-            os.execv(real, [real, *args])  # noqa: S606 -- a pass-through wrapper
+            _exec_replace([real, *args])
         except OSError as exc:
             _err("cannot execute %s: %s" % (real, exc))
             return EXIT_NOEXEC

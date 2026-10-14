@@ -56,7 +56,7 @@ import shutil
 import subprocess
 import sys
 
-from rediacc_ci import paths
+from rediacc_ci import paths, proc
 from rediacc_ci.core import release_age
 from rediacc_ci.well_known import WEB_IMAGE_REPO
 
@@ -223,7 +223,7 @@ def ensure_image(target: Target, root: str) -> int:
 def _exec(argv: list[str]) -> int:
     """`exec argv`. Returns 127 the way bash does when it cannot start the program."""
     try:
-        os.execvp(argv[0], argv)  # noqa: S606 -- forwarding exec, same shape as the twins'
+        proc.exec_replace(argv)
     except OSError:
         # bash: `<script>: line 14: exec: <name>: not found`, exit 127. The prefix carries a line number this port does not reproduce; the code is compared verbatim.
         print("%s: exec: %s: not found" % (SELF, argv[0]), file=sys.stderr)
