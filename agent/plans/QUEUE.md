@@ -32,7 +32,7 @@ What each key does (default in brackets):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-stop_hook: on -- operator /ask 2026-10-13 'When the current writers finish'; 2026-10-14 'enable turbo mode to complete all ## Promoted'
+stop_hook: off -- operator 2026-10-14T07:0xZ: let's disable stop hook
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -51,10 +51,10 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--focus`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: stop_hook on; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
+- Mode: stop_hook off; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; cadence on; agent_hint on; agent_pushback on; judge on.
 - Focus: off.
 - Branch: 1008-1, PR #600 open.
-- Plans on the PR (10):
+- Plans on the PR (8):
   - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo batch claim on the `Plan:` line
@@ -63,12 +63,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-remove-cross-session-messaging.md -- 11 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-biome-only-lint.md -- 13 of 29 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 564 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:abb8c06191c213fb8, worker:a7b4270c8fa0716b4.
-- Leased items: 12: #3993c728 (worker:a7b4270c8fa0716b4, d778be9d), #3c36e4b5 (worker:a7b4270c8fa0716b4, d778be9d), #6361fc5b (worker:a7b4270c8fa0716b4, d778be9d), #6f1c311f (worker:abb8c06191c213fb8, d778be9d), #97a7ced2 (worker:a7b4270c8fa0716b4, d778be9d), #ad11a8df (worker:abb8c06191c213fb8, d778be9d), #bd51855a (worker:a7b4270c8fa0716b4, d778be9d), #c275adc4 (worker:b5zc648v7, d778be9d), #d52ad5bb (worker:a7b4270c8fa0716b4, d778be9d), #e4caba69 (worker:abb8c06191c213fb8, d778be9d), #f147e3e5 (worker:a7b4270c8fa0716b4, d778be9d), #fe2d3ad2 (worker:a7b4270c8fa0716b4, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 568 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a7b4270c8fa0716b4, worker:add58fd3bf2c14ef5.
+- Leased items: 13: #3993c728 (worker:a7b4270c8fa0716b4, d778be9d), #3c36e4b5 (worker:a7b4270c8fa0716b4, d778be9d), #6361fc5b (worker:a7b4270c8fa0716b4, d778be9d), #69b8a73b (worker:add58fd3bf2c14ef5, d778be9d), #97a7ced2 (worker:a7b4270c8fa0716b4, d778be9d), #ad11a8df (worker:add58fd3bf2c14ef5, d778be9d), #bd51855a (worker:a7b4270c8fa0716b4, d778be9d), #c275adc4 (worker:a7b4270c8fa0716b4, d778be9d), #d52ad5bb (worker:a7b4270c8fa0716b4, d778be9d), #e4caba69 (worker:add58fd3bf2c14ef5, d778be9d), #f0bad09d (worker:b133luood, d778be9d), #f147e3e5 (worker:a7b4270c8fa0716b4, d778be9d), and 1 more.
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
