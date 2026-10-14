@@ -105,16 +105,56 @@ def _stamp(binary: pathlib.Path, env: dict[str, str]) -> tuple[str, str]:
     return (rev.group(1) if rev else "", mod.group(1) if mod else "")
 
 
-def _build_sh_go_build(
-    sub: pathlib.Path, out: pathlib.Path, env: dict[str, str], cwd: pathlib.Path | None = None
-) -> None:
+def _build_sh_run(
+    sub: pathlib.Path,
+    out: pathlib.Path,
+    env: dict[str, str],
+    cwd: pathlib.Path | None = None,
+    args: tuple[str, ...] = ("./cmd/renet",),
+    dash_c: tuple[str, ...] = (),
+) -> subprocess.CompletedProcess[str]:
     # build.sh's last line, `[[ BASH_SOURCE == $0 ]] && "$@"`, is false when sourced and
-    # so is the `source` itself; `declare -F` then proves the helper really loaded.
+    # so is the `source` itself; `declare -F` prints the name once the helper really loaded.
+    # Every path is a positional argument, never interpolated into the script text.
     script = (
-        "source ./build.sh || true; declare -F _go_build >/dev/null && "
-        'CGO_ENABLED=0 _go_build -o "$1" ./cmd/renet'
+        'source "$2" || true; declare -F _go_build >/dev/null && declare -F _go_build && '
+        'CGO_ENABLED=0 _go_build "${@:3}"'
     )
-    _run(["bash", "-c", script, "build-vcs", str(out)], cwd or sub, env)
+    return subprocess.run(
+        [
+            "bash",
+            "-c",
+            script,
+            "build-vcs",
+            str(out),
+            str(sub / "build.sh"),
+            *dash_c,  # go requires -C to be the first flag
+            "-o",
+            str(out),
+            *args,
+        ],
+        cwd=cwd or sub,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def _build_sh_go_build(
+    sub: pathlib.Path,
+    out: pathlib.Path,
+    env: dict[str, str],
+    cwd: pathlib.Path | None = None,
+    args: tuple[str, ...] = ("./cmd/renet",),
+    dash_c: tuple[str, ...] = (),
+) -> None:
+    res = _build_sh_run(sub, out, env, cwd, args, dash_c)
+    assert res.returncode == 0, "rc=%d\nstdout:%s\nstderr:%s" % (
+        res.returncode,
+        res.stdout,
+        res.stderr,
+    )
 
 
 def test_the_fixture_reproduces_the_defect(tmp_path: pathlib.Path) -> None:
@@ -157,8 +197,10 @@ def test_a_broken_gitlink_fails_with_or_without_the_helper(tmp_path: pathlib.Pat
         check=False,
     )
     assert plain.returncode != 0, "CONTROL: Go itself refuses a broken gitlink"
-    with pytest.raises(AssertionError):
-        _build_sh_go_build(sub, tmp_path / "h.bin", env)
+    res = _build_sh_run(sub, tmp_path / "h.bin", env)
+    assert "_go_build" in res.stdout, "the helper must have loaded and been called"
+    assert res.returncode != 0
+    assert "nonexistent" in res.stderr or "not a git repository" in res.stderr, res.stderr
 
 
 def test_cwd_outside_renet_is_not_stamped_with_renets_commit(tmp_path: pathlib.Path) -> None:
@@ -173,12 +215,40 @@ def test_cwd_outside_renet_is_not_stamped_with_renets_commit(tmp_path: pathlib.P
     _run(["git", "init", "-q", str(other)], tmp_path, env)
     other_head = _commit(other, env, "go.mod", "cmd/renet/main.go")
     # Run build.sh's helper from renet's path while the cwd is the other tree.
-    script = (
-        f"source {sub}/build.sh || true; declare -F _go_build >/dev/null && "
-        'CGO_ENABLED=0 _go_build -o "$1" ./cmd/renet'
-    )
     out = tmp_path / "other.bin"
-    _run(["bash", "-c", script, "build-vcs", str(out)], other, env)
+    _build_sh_go_build(sub, out, env, cwd=other)
+    assert _stamp(out, env) == (other_head, "false")
+    assert other_head != sub_head
+
+
+@pytest.mark.parametrize("flag", ["split", "equals"])
+def test_dash_c_into_renet_from_a_foreign_cwd_is_stamped_with_renets_commit(
+    tmp_path: pathlib.Path, flag: str
+) -> None:
+    """Go picks the module from `-C`, not the cwd: a build of renet from elsewhere is renet's."""
+    sub, sub_head, _outer, env = _fixture(tmp_path)
+    other = tmp_path / "elsewhere"
+    other.mkdir()
+    dash_c = ("-C", str(sub)) if flag == "split" else (f"-C={sub}",)
+    out = tmp_path / "c.bin"
+    _build_sh_go_build(sub, out, env, cwd=other, dash_c=dash_c)
+    assert _stamp(out, env) == (sub_head, "false")
+
+
+def test_dash_c_away_from_renet_with_renet_cwd_is_not_stamped_with_renets_commit(
+    tmp_path: pathlib.Path,
+) -> None:
+    sub, sub_head, _outer, env = _fixture(tmp_path)
+    other = tmp_path / "other"
+    (other / "cmd" / "renet").mkdir(parents=True)
+    (other / "go.mod").write_text("module example.com/other\n\ngo 1.22\n", encoding="utf-8")
+    (other / "cmd" / "renet" / "main.go").write_text(
+        "package main\n\nfunc main() {}\n", encoding="utf-8"
+    )
+    _run(["git", "init", "-q", str(other)], tmp_path, env)
+    other_head = _commit(other, env, "go.mod", "cmd/renet/main.go")
+    out = tmp_path / "away.bin"
+    _build_sh_go_build(sub, out, env, cwd=sub, dash_c=("-C", str(other)))
     assert _stamp(out, env) == (other_head, "false")
     assert other_head != sub_head
 
@@ -189,7 +259,9 @@ def test_every_go_build_in_build_sh_goes_through_the_helper() -> None:
     body = re.search(r"^_go_build\(\) \{\n(.*?)^\}", text, re.MULTILINE | re.DOTALL)
     assert body, "build.sh defines _go_build"
     outside = text[: body.start()] + text[body.end() :]
-    code = [ln for ln in outside.splitlines() if not ln.lstrip().startswith("#")]
-    raw = [ln for ln in code if re.search(r"(^|[\s;&|(])go build\b", ln)]
+    # Join backslash continuations first, so `go \` + newline + `build` is one line.
+    joined = re.sub(r"\\\n\s*", " ", outside)
+    code = [ln for ln in joined.splitlines() if not ln.lstrip().startswith("#")]
+    raw = [ln for ln in code if re.search(r"(^|[\s;&|(])go\s+build\b", ln)]
     assert raw == [], "go build outside _go_build: %s" % raw
-    assert sum("_go_build \\" in ln for ln in code) == 4
+    assert any(re.search(r"\b_go_build\s", ln) for ln in code), "build.sh calls _go_build"
