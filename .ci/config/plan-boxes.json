@@ -1000,18 +1000,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 6,
+      "open": 5,
+      "done": 8,
       "open_sigs": [
         "097e0d3c",
-        "1f683ad5",
         "44a5af15",
-        "52428dc8",
         "52effe0e",
         "eb613c95",
         "fcbd1cc2"
       ],
       "done_sigs": [
+        "1f683ad5",
+        "52428dc8",
         "6a2b2863",
         "99b34656",
         "a50a6173",
@@ -2241,6 +2241,25 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-vm-check.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "316afc69",
+        "3b82dd28",
+        "750fd87e",
+        "ad35f490",
+        "b3a3c89c",
+        "be38aa52",
+        "d89e1dc8",
+        "dcdf6c1e"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-w7p4w-docker-cutover.md": {
