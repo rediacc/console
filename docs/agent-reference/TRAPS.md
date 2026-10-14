@@ -125,12 +125,12 @@ Clearing a build error does not reveal the next one, it *makes the next one reac
 
 After fixing a blocking error, re-run the thing it was blocking. Clearing the first error is not progress until you have.
 
-## `npx eslint` cannot be run from inside a package directory
+## The source-rules host gate cannot be run from inside a package directory
 Trap-Id: eslint-must-run-from-repo-root
 Enforced-By: JUDGMENT-ONLY
-Residue: The rule already fails loudly and says why. What is unmechanized is the CONCLUSION drawn from it, which sends the reader to "fix" a correct eslint.config.js.
+Residue: The rule already fails loudly and says why. What is unmechanized is the CONCLUSION drawn from it, which sends the reader to "fix" a correct `scripts/data/source-rules.ts`.
 
-`cd packages/cli && npx eslint src/index.ts` does not lint that package. It dies:
+The custom `i18n-source/interpolation-match` rule (run by `scripts/gates/check-source-rules.ts`, the host that replaced ESLint) resolves its `localeDir` option against the CWD. Entered from a package directory, the path doubles:
 
 ```
 Error while loading rule 'i18n-source/interpolation-match': the "localeDir"
@@ -138,12 +138,12 @@ option resolves to ".../packages/cli/packages/cli/src/i18n/locales/en", which
 is not an existing directory.
 ```
 
-`eslint.config.js` sets `localeDir` relative to the REPO ROOT, and ESLint resolves it against the CWD, so entering the package doubles the path. Run lint from the repo root, always -- there is no per-package invocation.
+`scripts/data/source-rules.ts` sets `localeDir` relative to the REPO ROOT, so run the gate from the repo root, always -- there is no per-package invocation. (`biome lint` is not affected: it reads `biome.json` from the repo root whichever directory it starts in.)
 
 The rule failing loudly is the correct half and worth preserving: it says in as many words that *a path that does not exist would make this rule read nothing and silently report no problems*. That is the vacuity class this file exists for, caught by a rule author who thought about it. Had it merely resolved to a missing directory and shrugged, every locale-interpolation check would
 have passed on zero files, and the green would have been indistinguishable from a clean tree.
 
-The trap is not the error. The trap is concluding from it that the package's lint is broken, and going to fix `eslint.config.js` -- the config is right, the invocation is wrong.
+The trap is not the error. The trap is concluding from it that the package's lint is broken, and going to fix `scripts/data/source-rules.ts` -- the table is right, the invocation is wrong.
 
 ## A cancelled run is not a passed run, and it is not a failed one either
 Trap-Id: cancelled-run-not-passed

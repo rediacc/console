@@ -125,7 +125,7 @@ if ! npm run quality > /dev/null 2>&1; then
     echo "     ./run.sh fix all          # Auto-fix formatting, lint, etc."
     echo ""
     echo "   To run specific checks:"
-    echo "     ./run.sh quality lint     # ESLint + Knip"
+    echo "     ./run.sh quality lint     # Biome lint + Knip"
     echo "     ./run.sh quality format   # Code formatting"
     echo "     ./run.sh quality types    # TypeScript types"
     echo ""

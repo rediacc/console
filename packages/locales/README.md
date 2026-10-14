@@ -4,7 +4,7 @@ The one declaration of the site's locale set.
 
 ## Why a package, not a file
 
-Consumers include `eslint.config.js` (runs before any build), eleven `node`-run `.js` scripts, Astro/Vite, `tsx` scripts, two Cloudflare workers and the bundled CLI. A bare specifier into a workspace package resolves for every one of them with no build ordering. `packages/shared` could not host it: its exports resolve through `./dist/`, so eslint would need a build first. A
+Consumers include eleven `node`-run `.js` scripts, Astro/Vite, `tsx` scripts, two Cloudflare workers and the bundled CLI. A bare specifier into a workspace package resolves for every one of them with no build ordering. `packages/shared` could not host it: its exports resolve through `./dist/`, so a build-less consumer would need a build first. A
 repo-root file could not either: `rootDir: "./src"` in the shared and cli tsconfigs makes a relative import out of `src` either fail to compile or emit a path that breaks at runtime.
 
 ## Subsets
