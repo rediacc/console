@@ -440,6 +440,16 @@ SHELL_CASES = [
         "cd agent/reviews/1008-1 && awk '/^### /{p=0} /^### (0b8baf43.1|599bfb94.1)/{p=1} p' x.md",
         False,
     ),
+    # Review fd4eda1a.1: whether an awk program may redirect is a rule over its text that follows nothing, so a redirect into a literal elsewhere is refused while the program reads a review file, and allowed over any other file.
+    ("awk redirecting elsewhere while it reads one", "awk '{print > \"x\"}' %s" % R, True),
+    (
+        "the same awk program over another file",
+        "awk '{print > \"x\"}' /tmp/agent-reviews-list.txt",
+        False,
+    ),
+    # Review fd4eda1a.3: the rule is lexical, and this refusal is its stated over-read. The program prints nothing.
+    ("over-read: an awk regex spelling print beside a pipe", "awk '/print|x/' %s" % R, True),
+    ("an awk regex with an alternation and no print", "awk '/prin|x/' %s" % R, False),
     (
         "a loop reading the records after a cd",
         "cd agent/reviews/1008-1 && grep -l open *.md | while read f; do head -1 $f; done",

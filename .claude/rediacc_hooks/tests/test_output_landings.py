@@ -12,6 +12,8 @@ import pytest
 from rediacc_hooks import shellscan
 
 R = "agent/reviews/0930-1/a.md"
+# The input operand of the awk rows below. A program that may redirect (`shellscan._awk_may_redirect`) makes every word that is neither an option nor a program a landing, so each such row ends with it, and each row is the reader's WHOLE answer, in its order (review fd4eda1a.2).
+A = ("/tmp/a", "option")
 
 
 def _landings(cmd, name, **kwargs):
@@ -42,13 +44,24 @@ OPTION_FORMS = [
     ("sed's w command after an address", "sed -n '/x/,$w %s' /tmp/a" % R, "sed", [(R, "option")]),
     ("sed's w flag", "sed -n 's/a/b/gw %s' /tmp/a" % R, "sed", [(R, "option")]),
     ("sed -e", "sed -n -e p -e 'W %s' /tmp/a" % R, "sed", [(R, "option")]),
-    ("an awk redirect", "awk '{print > \"%s\"}' /tmp/a" % R, "awk", [(R, "option")]),
+    ("an awk redirect", "awk '{print > \"%s\"}' /tmp/a" % R, "awk", [(R, "option"), A]),
     (
         "an awk pipe",
         "awk '{print | \"tee %s\"}' /tmp/a" % R,
         "awk",
-        [("tee %s" % R, "option"), ("tee", "option"), (R, "option")],
+        [("tee %s" % R, "option"), ("tee", "option"), (R, "option"), A],
     ),
+    # Review fd4eda1a.1: a program that redirects into a literal elsewhere still lands on the operand it reads, since the rule does not follow where a print goes. The guard refuses it over a review file and allows it over any other (rows of test-block_review_file_edit.py).
+    (
+        "an awk redirect elsewhere, reading a record",
+        "awk '{print > \"x\"}' %s" % R,
+        "awk",
+        [("x", "option"), (R, "option")],
+    ),
+    ("an awk redirect elsewhere", "awk '{print > \"x\"}' /tmp/a", "awk", [("x", "option"), A]),
+    ("an awk comparison beside a print", "awk '$3 > 5 {print}' %s" % R, "awk", [(R, "option")]),
+    # Review fd4eda1a.3, an OVER-READ the lexical rule accepts: this program prints nothing, and the letters `print` beside a `|` are read as a program that may redirect.
+    ("over-read: print inside a regex", "awk '/print|x/' %s" % R, "awk", [(R, "option")]),
     (
         "an awk redirect through -v",
         "awk -v out=%s '{print > out}' /tmp/a" % R,
@@ -64,14 +77,29 @@ OPTION_FORMS = [
         [("inplace", "option"), ("{print}", "option"), (R, "option")],
     ),
     # Review 906a4d56.1: gawk's -o, -p and -d take a value only attached, so the word after them is the program. Each yielded nothing before.
-    ("gawk -p, then the program", "gawk -p '{print > \"%s\"}' /tmp/a" % R, "gawk", [(R, "option")]),
-    ("gawk -d, then the program", "gawk -d '{print > \"%s\"}' /tmp/a" % R, "gawk", [(R, "option")]),
-    ("gawk -o, then the program", "gawk -o '{print > \"%s\"}' /tmp/a" % R, "gawk", [(R, "option")]),
+    (
+        "gawk -p, then the program",
+        "gawk -p '{print > \"%s\"}' /tmp/a" % R,
+        "gawk",
+        [(R, "option"), A],
+    ),
+    (
+        "gawk -d, then the program",
+        "gawk -d '{print > \"%s\"}' /tmp/a" % R,
+        "gawk",
+        [(R, "option"), A],
+    ),
+    (
+        "gawk -o, then the program",
+        "gawk -o '{print > \"%s\"}' /tmp/a" % R,
+        "gawk",
+        [(R, "option"), A],
+    ),
     (
         "gawk --profile, then the program",
         "gawk --profile '{print > \"%s\"}' /tmp/a" % R,
         "gawk",
-        [(R, "option")],
+        [(R, "option"), A],
     ),
     ("gawk -d with its file attached", "gawk -d%s '{print}' /tmp/a" % R, "gawk", [(R, "option")]),
     (
@@ -91,13 +119,14 @@ OPTION_FORMS = [
         "gawk -W, then the program",
         "gawk -W lint '{print > \"%s\"}' /tmp/a" % R,
         "gawk",
-        [(R, "option")],
+        # The value of -W is a word that is neither an option nor a program, so it is listed with the operand.
+        [(R, "option"), ("lint", "option"), A],
     ),
     (
         "mawk -W, then the program",
         "mawk -W interactive '{print > \"%s\"}' /tmp/a" % R,
         "mawk",
-        [(R, "option")],
+        [(R, "option"), ("interactive", "option"), A],
     ),
     (
         "gawk -W dump-variables=",
@@ -167,13 +196,31 @@ UNREAD_FORMS = [
     ("_label", "cmd", "name", "want"), OPTION_FORMS, ids=[row[0] for row in OPTION_FORMS]
 )
 def test_a_listed_command_writes_through_its_own_spelling(_label, cmd, name, want):
-    got = _landings(cmd, name)
-    if name in ("awk", "gawk", "mawk") and len(got) > len(want):
-        # A printing awk program that holds a redirect may write any operand (`_awk_may_redirect`), so after the landings the row pins, the reader lists the command's own remaining words and nothing else.
-        assert got[: len(want)] == want
-        assert all(word in cmd.split() for word, _how in got[len(want) :])
-        return
-    assert got == want
+    assert _landings(cmd, name) == want
+
+
+MAY_REDIRECT = [
+    # (program word, whether `_awk_may_redirect` answers yes)
+    ('{print > "x"}', True),
+    ("{print > ARGV[1]}", True),
+    ('{printf "%s\\n", $1 | "sort"}', True),
+    ('{system("date")}', True),
+    ('{"date" | getline d}', True),
+    ("$3 > 5 {print}", True),
+    # The lexical over-reads (review fd4eda1a.3): neither program redirects, and each is read as one that may.
+    ("/print|x/", True),
+    ('$1 == "print" || $2 > 3', True),
+    ("{print $1}", False),
+    ("$3 > 5", False),
+    ("/a|b/{p=1} p", False),
+    ("{sprint = $1 > 2}", False),
+    ("/tmp/a", False),
+]
+
+
+@pytest.mark.parametrize(("word", "want"), MAY_REDIRECT, ids=[row[0] for row in MAY_REDIRECT])
+def test_whether_an_awk_word_may_redirect_is_lexical(word, want):
+    assert shellscan._awk_may_redirect(word) is want
 
 
 @pytest.mark.parametrize(

@@ -3759,7 +3759,11 @@ def _whole_word_operands(spec, argv):
 
 
 def _awk_may_redirect(word):
-    """Whether an awk program word can write somewhere its text does not name. THE RULE, NOT A PARSE (reviews 660ec7a0.1, f125e7ea.1, f125e7ea.2): a pattern that follows a print statement to its `>` was dodged twice in one round, by a `;` inside a string literal and by a target that starts with a literal. So nothing is followed: a word that holds a print or printf AND a `>` or `|` anywhere, or a `system(` call, or a `getline` beside a `|`, may redirect. A comparison inside a printing program reads the same and is refused with it (`$3 > 5 {print}`); a program that prints nothing redirects nothing (`$3 > 5`, `/a|b/{p=1} p`)."""
+    """Whether an awk program word can write somewhere its text does not name. THE RULE, NOT A PARSE (reviews 660ec7a0.1, f125e7ea.1, f125e7ea.2): a pattern that follows a print statement to its `>` was dodged twice in one round, by a `;` inside a string literal and by a target that starts with a literal. So nothing is followed: a word that holds a print or printf AND a `>` or `|` anywhere, or a `system(` call, or a `getline` beside a `|`, may redirect.
+
+    IT IS LEXICAL, AND IT OVER-READS ON PURPOSE (review fd4eda1a.3). The word is never parsed, so the letters `print` beside a `>` or `|` answer True wherever they sit: a comparison inside a printing program (`$3 > 5 {print}`), and a program that prints nothing at all but spells the word inside a regex or a string (`/print|x/`, `$1 == "print" || $2 > 3`). Each is read as a program that may redirect, which is the direction that fails closed: telling those apart
+    means following awk's grammar, the parse that was dodged. What answers False is a word with no `print`, `system(` or piped `getline` in it (`$3 > 5`, `/a|b/{p=1} p`), and a printing word with neither `>` nor `|` (`{print $1}`).
+    """
     if re.search(r"\bsystem\s*\(", word):
         return True
     if "|" in word and re.search(r"\bgetline\b", word):
@@ -3793,7 +3797,9 @@ def _awk_landings(argv, valued):
         # A word that is not itself a program is an option or an assignment, and every `=` in it may open the value.
         parts = word.split("=")
         out.extend("=".join(parts[at:]) for at in range(1, len(parts)))
-    # A PROGRAM THAT WRITES CAN NAME ITS TARGET WITHOUT A LITERAL (`print > ARGV[1]`, `print > FILENAME`, a variable built from either), and which operand it reaches is the program's own logic. So once a word may redirect (`_awk_may_redirect`), every word that is neither an option nor a program is a landing. That refuses a printing program that also compares or pipes while it reads a protected file; it never allows one that writes the file it was handed.
+    # A PROGRAM THAT WRITES CAN NAME ITS TARGET WITHOUT A LITERAL (`print > ARGV[1]`, `print > FILENAME`, a variable built from either), and which operand it reaches is the program's own logic. So once a word may redirect (`_awk_may_redirect`), every word that is neither an option nor a program is a landing.
+    # WHAT THAT REFUSES (review fd4eda1a.1), for a guard testing the landings against a file it protects: every awk command handed that file as an operand whose program may redirect, wherever the redirect goes. That is a program writing the operand (`print > ARGV[1]`), and equally one that only reads it while it redirects into a literal elsewhere (`awk '{print > "x"}' <file>`), pipes (`{print | "sort"}`), compares while it prints
+    # (`$3 > 5 {print}`) or merely spells `print` beside a `>` or `|` (`/print|x/`). The same program over an operand the guard does not protect is not refused, and a program that may not redirect (`{print $1}`, `$3 > 5`) reads the protected file freely. It never allows a program that writes the file it was handed.
     if any("FILENAME" in w or _awk_may_redirect(w) for w in argv):
         out.extend(w for w, literals in found if literals is None and not w.startswith("-"))
     return [w for w in out if w], in_place
