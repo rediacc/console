@@ -92,3 +92,38 @@ def test_the_advisory_is_shown_from_smart_and_hidden_below() -> None:
     assert E.advises("soaked-pins", "high")
     assert not E.advises("soaked-pins", "low")
     assert not E.advises("soaked-pins", "quiet")
+
+
+def _wired(monkeypatch, advisory):
+    """wl_checks._soaked_pins_report with the report reader replaced and outq_add recorded."""
+    checks = wlfix.import_wl("wl_checks")
+    calls: list[tuple] = []
+    monkeypatch.setattr(SP, "advisory", advisory)
+    monkeypatch.setattr(checks.C, "project_start", lambda: "/nowhere")
+    monkeypatch.setattr(checks.C, "project_root", lambda _start: "/nowhere")
+    monkeypatch.setattr(checks, "outq_add", lambda *a, **k: calls.append((a, k)))
+    return checks, calls
+
+
+def test_the_stop_hook_queues_the_advisory_under_its_effort_key(monkeypatch) -> None:
+    checks, calls = _wired(monkeypatch, lambda _root: "2 soaked pins")
+    checks._soaked_pins_report("wl", "sid", {})
+    assert calls == [(("wl", "sid", {}, "soaked-pins", "2 soaked pins", 3), {})]
+
+
+def test_the_stop_hook_queues_nothing_without_an_advisory_and_never_raises(monkeypatch) -> None:
+    checks, calls = _wired(monkeypatch, lambda _root: None)
+    checks._soaked_pins_report("wl", "sid", {})
+    assert calls == []
+
+    def boom(_root):
+        raise RuntimeError("unreadable report")
+
+    checks, calls = _wired(monkeypatch, boom)
+    checks._soaked_pins_report("wl", "sid", {})
+    assert calls == []
+
+
+def test_run_stop_calls_the_soaked_pins_report() -> None:
+    source = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
+    assert "\n    _soaked_pins_report(worklist, session_id, state_doc)\n" in source
