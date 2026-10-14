@@ -16,6 +16,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import time
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -549,6 +550,18 @@ def test_a_failed_ssh_login_is_not_a_refusal(tmp_path: pathlib.Path) -> None:
         if s["id"] == "V1.7" and "refused" in s["desc"] and s["verdict"] == "FAIL"
     ]
     assert len(refused) == 2, receipt["steps"]
+
+
+def test_ssh_auth_failure_pattern_is_linear_on_an_unterminated_method_list() -> None:
+    for tail in ("a" * 40, "a-" * 2000, "ab," * 2000, "a" * 20000):
+        line = "user@host: Permission denied (" + tail
+        started = time.perf_counter()
+        assert not vm_check.SSH_AUTH_FAILURE.search(line)
+        assert time.perf_counter() - started < 1.0, tail[:8]
+    assert vm_check.SSH_AUTH_FAILURE.search(
+        "u@h: Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password)."
+    )
+    assert vm_check.SSH_AUTH_FAILURE.search("Permission denied (keyboard-interactive).")
 
 
 def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None:
