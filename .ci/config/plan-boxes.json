@@ -1689,7 +1689,7 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-stop-hook-effort.md": {
+    "agent/plans/PLAN-stop-hook-effort-tuning.md": {
       "status": "approved",
       "owner": "d778be9d",
       "folder": "agent/plans",
@@ -1697,6 +1697,25 @@
       "open": 7,
       "done": 0,
       "open_sigs": [
+        "1323232f",
+        "271af786",
+        "6b8f6f9e",
+        "89d81247",
+        "a9ec6923",
+        "bc3890af",
+        "f6e9746d"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-stop-hook-effort.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
         "0248d91c",
         "1c90ccae",
         "1cdbf17e",
@@ -1704,8 +1723,7 @@
         "69d6168a",
         "77c85d1d",
         "f0e32992"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-stop-hook-focus-mode.md": {
       "status": "draft",
