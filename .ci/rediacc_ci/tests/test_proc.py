@@ -332,9 +332,9 @@ def test_it_stops_at_the_first_success_and_sleeps_only_between_failures():
 def test_it_retries_on_any_falsy_result_matching_every_bash_loop():
     """No implementation in the tree distinguishes retryable from fatal."""
     for falsy in (False, 0, "", None, []):
-        seen = []
+        seen: list[int] = []
         outcome = proc.retry_with_backoff(
-            lambda: seen.append(1) or falsy,  # noqa: B023
+            lambda seen=seen, falsy=falsy: seen.append(1) or falsy,
             attempts=3,
             delay=0,
             sleep=lambda _s: None,

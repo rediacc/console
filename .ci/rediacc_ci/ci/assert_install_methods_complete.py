@@ -23,6 +23,7 @@ through `log.error` instead of a bash line number, which is the same rewording c
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -48,15 +49,15 @@ def main(argv: list[str]) -> int:
     del argv
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY", "") or DEFAULT_SUMMARY
 
-    try:
-        handle = open(summary_path, "a", encoding="utf-8")  # noqa: SIM115
-    except OSError as exc:
-        # The twin dies here too, under `set -e`, before judging any platform.
-        log.error("%s: %s" % (summary_path, exc.strerror))
-        return 1
-
     failed = False
-    with handle:
+    with contextlib.ExitStack() as stack:
+        try:
+            handle = stack.enter_context(open(summary_path, "a", encoding="utf-8"))
+        except OSError as exc:
+            # The twin dies here too, under `set -e`, before judging any platform.
+            log.error("%s: %s" % (summary_path, exc.strerror))
+            return 1
+
         handle.write("## Install Method Test Results\n")
         handle.write("\n")
         handle.write("| Platform | Result |\n")

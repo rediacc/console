@@ -322,7 +322,11 @@ def _state_age(path: pathlib.Path) -> str:
         mtime = path.stat().st_mtime
     except OSError:
         return "MISSING"
-    return datetime.datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ006
+    return (
+        datetime.datetime.fromtimestamp(mtime, tz=datetime.UTC)
+        .astimezone()
+        .strftime("%Y-%m-%d %H:%M:%S")
+    )
 
 
 def _peer_dirs(me: str) -> int:

@@ -25,7 +25,6 @@ import sys
 import tempfile
 
 import _cipath
-from rediacc_ci import paths  # noqa: F401  (kept for parity with the sibling gate's import shape)
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 AGENTS_DIR = os.path.join(REPO_ROOT, ".claude", "agents")

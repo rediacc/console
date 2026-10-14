@@ -35,6 +35,7 @@ IT DOES NOT AFFECT PLACEMENT TODAY. `satisfies()` and `placeGate()` read only `s
 quietly become load-bearing.
 """
 
+import importlib
 import json
 import os
 import pathlib
@@ -137,7 +138,7 @@ def test_the_suites_own_interpreter_cannot_import_yaml():
     `uv tool install pytest` builds an isolated environment. If this ever starts passing -- because the bootstrap grew `--with PyYAML` -- the constraint has changed and the design decision above deserves re-examining. That is a conversation, not a silent drift, so it is pinned here.
     """
     with pytest.raises(ImportError):
-        import yaml  # noqa: F401, PLC0415
+        importlib.import_module("yaml")
 
 
 def test_the_corpus_is_derived_and_covers_every_tracked_workflow():

@@ -884,8 +884,7 @@ class Sampler:
             summary = self.env.get("GITHUB_STEP_SUMMARY") or ""
             if summary:
                 # `run_probe | tee -a "$GITHUB_STEP_SUMMARY"`.
-                sink = open(summary, "a", encoding="utf-8")  # noqa: SIM115
-                try:
+                with open(summary, "a", encoding="utf-8") as sink:
 
                     def emit(line: str) -> None:
                         print(line, flush=True)
@@ -893,8 +892,6 @@ class Sampler:
                         sink.flush()
 
                     self.run_probe(emit)
-                finally:
-                    sink.close()
             else:
                 self.run_probe(lambda line: print(line, flush=True))
             return 0
@@ -1005,8 +1002,8 @@ class Sampler:
                 )
                 return 2
 
-            out_fh = open(self.out, "a", encoding="utf-8")  # noqa: SIM115 - the twin's `exec 8>>`
-            try:
+            # The twin's `exec 8>>`, closed with the block as its `exec 8>&-`.
+            with open(self.out, "a", encoding="utf-8") as out_fh:
                 out_fh.write(
                     "#META\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n"
                     % (
@@ -1097,8 +1094,6 @@ class Sampler:
                             flush=True,
                         )
                         break
-            finally:
-                out_fh.close()  # `exec 8>&-`
         finally:
             for sig, handler in previous.items():
                 signal.signal(sig, handler)

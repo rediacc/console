@@ -110,6 +110,7 @@ A FOURTH, SMALLER ONE, STATED RATHER THAN HIDDEN: `$CONFIG_FLAG` unquoted is sub
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import shutil
@@ -320,12 +321,12 @@ def wc_lines(path: str) -> str:
 
     A redirection that cannot be opened there does NOT end the run: the enclosing command is `log_info`, which succeeds, so bash prints its own complaint and the message interpolates an empty string. Both halves are reproduced; only the wording of the complaint diverges.
     """
-    try:
-        handle = open(path, "rb")  # noqa: SIM115
-    except OSError as exc:
-        print("%s: %s: %s" % (SELF, path, exc.strerror), file=sys.stderr, flush=True)
-        return ""
-    with handle:
+    with contextlib.ExitStack() as stack:
+        try:
+            handle = stack.enter_context(open(path, "rb"))
+        except OSError as exc:
+            print("%s: %s: %s" % (SELF, path, exc.strerror), file=sys.stderr, flush=True)
+            return ""
         _, text = _capture(["wc", "-l"], stdin=handle)
     return text
 

@@ -44,7 +44,7 @@ import fcntl
 import json
 import os
 import pathlib
-import random
+import secrets
 import socket
 import time
 
@@ -177,7 +177,7 @@ def free_port_in_range(
     """
     start, end = worker_port_range(low, high, environ)
     span = end - start + 1
-    offset = random.randrange(span)  # noqa: S311 -- spreading probes, not security
+    offset = secrets.randbelow(span)
     for step in range(span):
         port = start + (offset + step) % span
         if _bindable(port):

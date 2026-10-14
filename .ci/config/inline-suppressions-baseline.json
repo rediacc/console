@@ -20,9 +20,6 @@
    "noqa PLC0415": 1,
    "noqa S314": 1
   },
-  ".ci/rediacc_ci/ci/assert_install_methods_complete.py": {
-   "noqa SIM115": 1
-  },
   ".ci/rediacc_ci/ci/budget_report.py": {
    "noqa S314": 2
   },
@@ -41,9 +38,6 @@
    "noqa PLC0415": 2,
    "noqa S310": 1
   },
-  ".ci/rediacc_ci/ci/profiler_sampler_linux.py": {
-   "noqa SIM115": 2
-  },
   ".ci/rediacc_ci/ci/scope_reconcile_shadow.py": {
    "type-ignore arg-type": 1
   },
@@ -55,8 +49,7 @@
    "noqa S606": 2
   },
   ".ci/rediacc_ci/core/account_lifecycle.py": {
-   "noqa S105": 1,
-   "noqa SIM115": 1
+   "noqa S105": 1
   },
   ".ci/rediacc_ci/core/allowlist.py": {
    "noqa PLC0415": 1
@@ -83,9 +76,6 @@
   },
   ".ci/rediacc_ci/core_lease.py": {
    "noqa S606": 2
-  },
-  ".ci/rediacc_ci/deploy/clone_d1.py": {
-   "noqa SIM115": 1
   },
   ".ci/rediacc_ci/deploy/turnstile_drift.py": {
    "noqa BLE001": 1,
@@ -195,9 +185,6 @@
   },
   ".ci/rediacc_ci/quality/worklist_env_registry.py": {
    "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/review/standing_orders_brief.py": {
-   "noqa DTZ006": 1
   },
   ".ci/rediacc_ci/security/ci_workflow_invariants.py": {
    "noqa PLC0415": 1
@@ -332,9 +319,6 @@
    "type-ignore arg-type": 1,
    "type-ignore assignment": 1
   },
-  ".ci/rediacc_ci/tests/test_proc.py": {
-   "noqa B023": 1
-  },
   ".ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py": {
    "type-ignore call-overload": 4
   },
@@ -374,9 +358,6 @@
   ".ci/rediacc_ci/tests/test_quality_staging_tag_guard.py": {
    "type-ignore arg-type": 1
   },
-  ".ci/rediacc_ci/tests/test_release_check_soak_period.py": {
-   "noqa DTZ005": 1
-  },
   ".ci/rediacc_ci/tests/test_review_clean_ledger.py": {
    "noqa E402": 1
   },
@@ -385,9 +366,6 @@
   },
   ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
    "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/tests/test_security_audit.py": {
-   "noqa A002": 1
   },
   ".ci/rediacc_ci/tests/test_setup_tools.py": {
    "type-ignore arg-type": 1
@@ -398,13 +376,8 @@
   ".ci/rediacc_ci/tests/test_twin_goldens.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/tests/test_workflows.py": {
-   "noqa F401": 1,
-   "noqa PLC0415": 1
-  },
   ".ci/rediacc_ci/xdist_groups.py": {
-   "noqa PLC0415": 1,
-   "noqa S311": 1
+   "noqa PLC0415": 1
   },
   ".ci/scripts/ci/ci-trace.py": {
    "noqa E402": 1,
@@ -416,15 +389,9 @@
   ".ci/scripts/quality/check_agent_hint_liveness.py": {
    "noqa PLC0415": 1
   },
-  ".ci/scripts/quality/check_agent_model_roster.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_agent_session_archival.py": {
    "noqa PLC0415": 2,
    "type-ignore arg-type": 1
-  },
-  ".ci/scripts/quality/check_bws_map.py": {
-   "noqa S102": 1
   },
   ".ci/scripts/quality/check_checkout_cone.py": {
    "type-ignore arg-type": 2,
@@ -463,7 +430,6 @@
    "noqa PLC0415": 3
   },
   ".ci/scripts/quality/check_tree_shape.py": {
-   "noqa FLY002": 1,
    "noqa PLC0415": 1
   },
   ".devcontainer/Dockerfile.uid": {
