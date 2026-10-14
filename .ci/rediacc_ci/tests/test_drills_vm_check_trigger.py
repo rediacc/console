@@ -404,7 +404,16 @@ def test_non_ascii_watched_path_is_not_quoted_away(world: World) -> None:
     assert world.changed(mode="worktree").hits == ("packages/cli/src/remote/é.ts",)
     _commit(world.root, "c1")
     assert world.changed().hits == ("packages/cli/src/remote/é.ts",)
-    assert trig.inputs(world.root, _tree(world)) is not None
+    assert trig.inputs(world.root, _tree(world)) == trig.inputs(world.root)
+
+
+def test_a_watched_path_with_quote_or_tab_is_not_quoted_away(world: World) -> None:
+    name = 'packages/cli/src/remote/a"b\tc.ts'
+    _write(world.root, name, "a\n")
+    assert world.changed(mode="worktree").hits == (name,)
+    _commit(world.root, "c1")
+    assert world.changed().hits == (name,)
+    assert trig.inputs(world.root, _tree(world)) == trig.inputs(world.root)
 
 
 def test_directory_without_its_own_repository_has_no_pointer(world: World) -> None:

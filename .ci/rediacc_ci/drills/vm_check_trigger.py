@@ -93,7 +93,8 @@ def make_git(cwd: pathlib.Path) -> Callable[[Sequence[str]], str | None]:
 
 
 def _submodule_git(root: pathlib.Path) -> Callable[[Sequence[str]], str | None] | None:
-    """A runner inside the checked-out `private/renet`, or None. An empty directory is not a checkout: git would walk up to the console repository and answer for it."""
+    """A runner inside the checked-out `private/renet`, or None."""
+    # An empty directory is not a checkout: git would walk up to the console repository and answer for it.
     sub = root / RENET_SUBMODULE
     git = make_git(sub)
     if not (sub / ".git").exists() or git(["rev-parse", "--git-dir"]) is None:
@@ -102,7 +103,8 @@ def _submodule_git(root: pathlib.Path) -> Callable[[Sequence[str]], str | None] 
 
 
 def _lines(text: str | None) -> list[str]:
-    return [ln for ln in (text or "").split("\n") if ln]
+    """The entries of NUL-terminated git output (`-z`), which never quotes a name."""
+    return [ln for ln in (text or "").split("\0") if ln]
 
 
 def _gitlink(git: Callable[[Sequence[str]], str | None], rev: str) -> str:
@@ -126,15 +128,15 @@ def _renet_range(
             return [], "the new side has no private/renet gitlink"
         if subgit(["cat-file", "-e", f"{new}^{{commit}}"]) is None:
             return [], "the new gitlink commit is not in the local private/renet"
-        names = subgit(["diff", "--no-renames", "--name-only", old, new])
+        names = subgit(["diff", "--no-renames", "--name-only", "-z", old, new])
         if names is None:
             return [], "git diff of the renet range failed"
         return _lines(names), None
-    names = subgit(["diff", "--no-renames", "--name-only", old])
+    names = subgit(["diff", "--no-renames", "--name-only", "-z", old])
     if names is None:
         return [], "git diff of the renet worktree failed"
     found = _lines(names)
-    found += _lines(subgit(["ls-files", "--others", "--exclude-standard"]))
+    found += _lines(subgit(["ls-files", "-z", "--others", "--exclude-standard"]))
     return found, None
 
 
@@ -156,14 +158,14 @@ def changed_paths(root: pathlib.Path, base: str, mode: Mode, tip: str = "HEAD") 
     """
     git = make_git(root)
     if mode == "push":
-        names = git(["diff", "--no-renames", "--name-only", base, tip])
+        names = git(["diff", "--no-renames", "--name-only", "-z", base, tip])
     else:
-        names = git(["diff", "--no-renames", "--name-only", base])
+        names = git(["diff", "--no-renames", "--name-only", "-z", base])
     if names is None:
         return Changed(hits=(), unknown=(f"{base}: git diff failed",))
     changed = _lines(names)
     if mode == "worktree":
-        changed += _lines(git(["ls-files", "--others", "--exclude-standard"]))
+        changed += _lines(git(["ls-files", "-z", "--others", "--exclude-standard"]))
     hits = sorted({p for p in changed if console_hit(p)})
     unknown: list[str] = []
     old = _gitlink(git, base)
@@ -248,7 +250,7 @@ def _tree_entry_path(line: str) -> str:
 def inputs_of_tree(root: pathlib.Path, tree: str) -> str | None:
     """sha256 over the sorted `git ls-tree -r <tree>` lines of the console trigger paths (exclusions applied) plus the tree's `private/renet` gitlink. None when git cannot read the tree."""
     git = make_git(root)
-    out = git(["ls-tree", "-r", tree, "--", *CONSOLE_PATHS])
+    out = git(["ls-tree", "-r", "-z", tree, "--", *CONSOLE_PATHS])
     if out is None:
         return None
     lines = [ln for ln in _lines(out) if not excluded(_tree_entry_path(ln))]
@@ -280,7 +282,9 @@ def _worktree_entry(root: pathlib.Path, rel: str) -> str | None:
 def inputs_of_worktree(root: pathlib.Path) -> str | None:
     """The same digest computed from worktree blobs (`git hash-object` per file) and the submodule HEAD, so what ran and what is pushed compare on equal terms."""
     git = make_git(root)
-    tracked = git(["ls-files", "--cached", "--others", "--exclude-standard", "--", *CONSOLE_PATHS])
+    tracked = git(
+        ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *CONSOLE_PATHS]
+    )
     if tracked is None:
         return None
     lines: list[str] = []
