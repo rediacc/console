@@ -89,6 +89,38 @@ def test_a_missing_submodule_is_not_checked_locally(tmp_path: pathlib.Path) -> N
     assert gate.flatten(scan.counts) == {"a.py": {"noqa E402": 1}}
 
 
+def test_count_reads_its_pathspec(
+    tmp_path: pathlib.Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`--count <path>` once ignored its argument and ran the whole gate (item 3993c728): every per-tree acceptance line of the drain plan read the same tree-wide verdict. Each spec now gets its own count, and a spec under which nothing was read refuses instead of reporting 0."""
+    root = _repo(
+        tmp_path,
+        {
+            "a/x.py": "x = 1  %s: F401\ny = 2  %s: E402\n" % (NQ, NQ),
+            "a/clean.py": "z = 3\n",
+            "b/y.py": "w = 4\n",
+            "ab/z.py": "v = 5  %s: B010\n" % NQ,
+        },
+    )
+    monkeypatch.delenv("CI", raising=False)
+    assert gate.main(["--count", "a", "./b/"], root=root) == 0
+    out = capsys.readouterr().out
+    assert "a: 2 marker(s) in 1 of 2 code file(s) read (by kind: noqa 2)" in out
+    assert "b: 0 marker(s) in 0 of 1 code file(s) read (by kind: none)" in out
+    # CONTROL: a prefix is a path component, so `a` above did not swallow `ab/z.py`, and `ab` sees it.
+    assert gate.main(["--count", "ab"], root=root) == 0
+    assert (
+        "ab: 1 marker(s) in 1 of 1 code file(s) read (by kind: noqa 1)" in capsys.readouterr().out
+    )
+    assert gate.main(["--count", "a/x.py"], root=root) == 0
+    assert "a/x.py: 2 marker(s) in 1 of 1" in capsys.readouterr().out
+    assert gate.main(["--count", "nowhere"], root=root) == 1
+    assert "VACUOUS: no code file was read under nowhere" in capsys.readouterr().err
+    assert gate.main(["--count"], root=root) == 2
+
+
 def test_write_baseline_refuses_growth_and_allows_a_drain(tmp_path: pathlib.Path) -> None:
     path = tmp_path / "baseline.json"
     two = {"a.py": gate.count_markers("x = 1  %s: F401\ny = 2  %s: F401\n" % (NQ, NQ), "py")}

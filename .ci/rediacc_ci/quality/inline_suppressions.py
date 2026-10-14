@@ -307,6 +307,7 @@ class Scan:
         self.files_by_repo: collections.Counter[str] = collections.Counter()
         self.unreadable: list[str] = []
         self.not_checked: list[str] = []
+        self.read: list[str] = []
 
 
 def scan_repo(root: pathlib.Path, label: str, prefix: str, scan: Scan) -> None:
@@ -331,6 +332,7 @@ def scan_repo(root: pathlib.Path, label: str, prefix: str, scan: Scan) -> None:
             continue
         scan.files_by_language[language] += 1
         scan.files_by_repo[label] += 1
+        scan.read.append(key)
         found = count_markers(text, language)
         if found:
             scan.counts[key] = found
@@ -673,6 +675,55 @@ REMEDY = """\
   docs/agent-reference/suppressions.md. Do not add the marker to the baseline."""
 
 
+def count_specs(argv: list[str]) -> list[str] | None:
+    """The pathspecs after `--count`, up to the next flag; None when `--count` is absent. Each is normalised to a repo-relative prefix without `./` or a trailing slash."""
+    if "--count" not in argv:
+        return None
+    specs: list[str] = []
+    for arg in argv[argv.index("--count") + 1 :]:
+        if arg.startswith("--"):
+            break
+        specs.append(arg.removeprefix("./").rstrip("/") or ".")
+    return specs
+
+
+def _under(key: str, spec: str) -> bool:
+    return spec in (".", key) or key.startswith(spec + "/")
+
+
+def report_counts(scan: Scan, specs: list[str]) -> int:
+    """`--count <pathspec>...`: the markers in the files under each pathspec, one line per spec.
+
+    Each spec is a path prefix from the repository root (`.claude`, `private/renet`, `conftest.py`). A spec under which NO code file was read is a refusal, never a zero: a typo or a submodule that is not checked out would otherwise report exactly what a drained tree reports.
+    """
+    if not specs:
+        print("inline-suppressions: --count needs at least one pathspec", file=sys.stderr)
+        return 2
+    rc = 0
+    for spec in specs:
+        read = [key for key in scan.read if _under(key, spec)]
+        if not read:
+            print(
+                "inline-suppressions: VACUOUS: no code file was read under %s, so a count of 0 would mean nothing"
+                % spec,
+                file=sys.stderr,
+            )
+            rc = 1
+            continue
+        found = {key: c for key, c in scan.counts.items() if _under(key, spec)}
+        by_kind: collections.Counter[str] = collections.Counter()
+        for per in found.values():
+            for (kind, _code), n in per.items():
+                by_kind[kind] += n
+        total = sum(by_kind.values())
+        kinds = ", ".join("%s %d" % kv for kv in by_kind.most_common()) or "none"
+        print(
+            "%s: %d marker(s) in %d of %d code file(s) read (by kind: %s)"
+            % (spec, total, len(found), len(read), kinds)
+        )
+    return rc
+
+
 def main(argv: list[str], root: pathlib.Path | None = None) -> int:
     if "--selftest" in argv:
         return selftest()
@@ -694,6 +745,10 @@ def main(argv: list[str], root: pathlib.Path | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+
+    specs = count_specs(argv)
+    if specs is not None:
+        return report_counts(scan, specs)
 
     if scan.files_by_repo.get("console", 0) < MIN_CONSOLE_FILES:
         print(
