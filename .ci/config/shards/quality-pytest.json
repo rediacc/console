@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 3,
-  "generatedAt": "2026-10-14T10:49:25.378Z",
+  "generatedAt": "2026-10-14T10:50:08.884Z",
   "legs": [
     {
       "index": 1,
@@ -653,6 +653,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_state.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_loop_next.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_messaging_removed.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_outcomes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_priority.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prreview.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_progress.py",
