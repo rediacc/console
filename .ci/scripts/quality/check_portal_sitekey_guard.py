@@ -15,7 +15,7 @@ why: every production login failed on 2026-09-24 because the deployed portal was
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import portal_sitekey_guard
 
 if __name__ == "__main__":

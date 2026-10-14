@@ -21,7 +21,7 @@ why: a control proves a gate can fail by feeding it a MUTATED fixture, and a
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import plant_proofs
 
 if __name__ == "__main__":

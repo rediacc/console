@@ -50,7 +50,7 @@ import pathlib
 import sys
 import tempfile
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.controls import Controls
 
 SELF = os.path.basename(__file__)

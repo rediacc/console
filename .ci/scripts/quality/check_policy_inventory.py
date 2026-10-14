@@ -80,7 +80,7 @@ import sys
 import tempfile
 import tokenize
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.controls import Controls, plant
 from rediacc_ci.policy_paths import policy_path
 

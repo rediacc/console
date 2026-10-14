@@ -36,7 +36,7 @@ import sys
 import tempfile
 from typing import Any
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci import controls, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.policy_paths import policy_rel

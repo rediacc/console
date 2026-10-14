@@ -23,7 +23,7 @@ why: ruff does no type inference at all, so the Python half of `tsc --noEmit` di
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import python_types
 
 if __name__ == "__main__":
