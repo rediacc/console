@@ -1603,6 +1603,18 @@ def test_fetch_runs_sorts_by_created_at_descending_explicitly(monkeypatch):
     assert [r["id"] for r in result] == [2, 3]
 
 
+def test_fetch_runs_drops_a_fork_pull_request_run(monkeypatch):
+    """FIRES-if-unfixed (review 68b5f243.1): a fork's pull-request run is a run of this workflow, and its unit-duration artifacts are parsed as trusted XML, so only runs of this repository's own branches are sampled."""
+    runs = [
+        {"id": 1, "created_at": "2026-09-20T00:00:00Z", "head_repository": {"full_name": "o/r"}},
+        {"id": 2, "created_at": "2026-09-21T00:00:00Z", "head_repository": {"full_name": "x/r"}},
+        {"id": 3, "created_at": "2026-09-19T00:00:00Z"},
+    ]
+    monkeypatch.setattr(br.gh_retry, "api_json", lambda *_a, **_k: {"workflow_runs": runs})
+    result = br.fetch_runs("o/r", "ci.yml", "pull_request", None, "completed", 5)
+    assert [r["id"] for r in result] == [1, 3]
+
+
 def test_stale_sample_findings_fires_past_14_days():
     now = br._iso_to_epoch("2026-09-28T00:00:00Z")
     runs = [{"id": 9, "created_at": "2026-09-10T00:00:00Z"}]
@@ -3163,6 +3175,16 @@ def test_prune_gate_steps_to_lock_keeps_the_table_when_the_lock_is_malformed(
     lock = tmp_path / br.GATES_LOCK_REL_PATH
     lock.parent.mkdir(parents=True)
     lock.write_text(body, encoding="utf-8")
+    gate_steps = {"check:a": 5.0, "check:b": 9.5}
+    assert br.prune_gate_steps_to_lock(gate_steps, tmp_path) == gate_steps
+    assert "kept unpruned (2 entries)" in capsys.readouterr().err
+
+
+def test_prune_gate_steps_to_lock_keeps_the_table_when_the_lock_is_not_utf8(tmp_path, capsys):
+    """Review a80e54c6.1: bytes that are not UTF-8 raise UnicodeDecodeError (a ValueError, not a JSONDecodeError), which escaped the guard as a traceback."""
+    lock = tmp_path / br.GATES_LOCK_REL_PATH
+    lock.parent.mkdir(parents=True)
+    lock.write_bytes(b"[\xff\xfe]")
     gate_steps = {"check:a": 5.0, "check:b": 9.5}
     assert br.prune_gate_steps_to_lock(gate_steps, tmp_path) == gate_steps
     assert "kept unpruned (2 entries)" in capsys.readouterr().err
