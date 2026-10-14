@@ -12,7 +12,6 @@ import pathlib
 import re
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # A package.json whose `ci` key really runs `check:ci-real`, which is what makes a citation of that name resolvable rather than hallucinated.
 PKG_REAL_GATE = (
@@ -74,7 +73,7 @@ def short_head_of(fix) -> str:
     return fix.git("rev-parse", "--short", "HEAD").stdout.strip()
 
 
-def test_81_marker_init_asks_nothing_and_a_doc_only_fix_never_asks(wl):  # noqa: F811
+def test_81_marker_init_asks_nothing_and_a_doc_only_fix_never_asks(wl):
     wl.say("done for now")
     wl.brief_now()
     marker = wl.reg_repo()
@@ -88,7 +87,7 @@ def test_81_marker_init_asks_nothing_and_a_doc_only_fix_never_asks(wl):  # noqa:
     )
 
 
-def test_82_a_fix_covered_by_a_real_existing_gate_settles_once(wl):  # noqa: F811
+def test_82_a_fix_covered_by_a_real_existing_gate_settles_once(wl):
     wl.say("done for now")
     wl.brief_now()
     marker = wl.reg_repo()
@@ -109,7 +108,7 @@ def test_82_a_fix_covered_by_a_real_existing_gate_settles_once(wl):  # noqa: F81
     wl.checkj("allow", "", "a settled fix-set is NEVER re-asked")
 
 
-def test_83_hallucinated_coverage_blocks_and_84_the_deferral_exit_settles_it(wl):  # noqa: F811
+def test_83_hallucinated_coverage_blocks_and_84_the_deferral_exit_settles_it(wl):
     """Bash cases 83 and 84 in one function, because 84 calls no `setup`: it reads the deferral token out of 83's block and spends it, so the sequence is the assertion.
 
     The `[?]` is then OUR deferred item, so the something-remains machinery (handover plus `## Remaining`) applies to that stop, exactly as in case 74 of the requests battery.
@@ -148,7 +147,7 @@ def test_83_hallucinated_coverage_blocks_and_84_the_deferral_exit_settles_it(wl)
     wl.checkj("allow", "settled as deferred", "the [?] deferral settles the fix-set")
 
 
-def test_85_recurring_false_settles_as_one_off(wl):  # noqa: F811
+def test_85_recurring_false_settles_as_one_off(wl):
     wl.say("done for now")
     wl.brief_now()
     wl.reg_repo()
@@ -159,7 +158,7 @@ def test_85_recurring_false_settles_as_one_off(wl):  # noqa: F811
     wl.checkj("allow", "settled as one-off", "a one-off mistake warrants no gate and settles")
 
 
-def test_86_proof_a_new_gate_wired_transitively_and_green_settles_as_proven(wl):  # noqa: F811
+def test_86_proof_a_new_gate_wired_transitively_and_green_settles_as_proven(wl):
     wl.say("done for now")
     wl.brief_now()
     marker = wl.reg_repo()
@@ -191,7 +190,7 @@ def test_86_proof_a_new_gate_wired_transitively_and_green_settles_as_proven(wl):
     assert "check-newgate.sh" in text, "no cached gate run in the marker: %s" % text[:300]
 
 
-def test_87_control_a_gate_defined_but_not_reachable_from_ci_does_not_prove(wl):  # noqa: F811
+def test_87_control_a_gate_defined_but_not_reachable_from_ci_does_not_prove(wl):
     """CONTROL, and the anti-substring control too: `ci` MENTIONS the key inside an echo, so a substring reachability test would wrongly pass this. Only `npm run` edges count."""
     wl.say("done for now")
     wl.brief_now()
@@ -218,7 +217,7 @@ def test_87_control_a_gate_defined_but_not_reachable_from_ci_does_not_prove(wl):
     wl.checkj("block", "NOT reachable", "defined-but-never-run does not count as proof")
 
 
-def test_88_a_corrupt_marker_is_forgotten_loudly_never_a_block(wl):  # noqa: F811
+def test_88_a_corrupt_marker_is_forgotten_loudly_never_a_block(wl):
     wl.say("done for now")
     wl.brief_now()
     marker = wl.reg_repo()
@@ -228,7 +227,7 @@ def test_88_a_corrupt_marker_is_forgotten_loudly_never_a_block(wl):  # noqa: F81
     json.loads(marker.read_text(encoding="utf-8"))
 
 
-def test_89_a_judge_that_omits_regression_gate_on_a_fix_stop_fails_closed(wl):  # noqa: F811
+def test_89_a_judge_that_omits_regression_gate_on_a_fix_stop_fails_closed(wl):
     wl.say("done for now")
     wl.brief_now()
     wl.reg_repo()
@@ -243,7 +242,7 @@ def test_89_a_judge_that_omits_regression_gate_on_a_fix_stop_fails_closed(wl):  
     )
 
 
-def test_90_ticks_are_the_uncommitted_tree_signal(wl):  # noqa: F811
+def test_90_ticks_are_the_uncommitted_tree_signal(wl):
     """A pre-existing tick is seeded, never asked about; a NEWLY ticked `[x]` is a fix signal even with no commit.
 
     The new tick line carries a real short sha as evidence, else I7 blocks before the reggate settle is ever reached.
@@ -263,7 +262,7 @@ def test_90_ticks_are_the_uncommitted_tree_signal(wl):  # noqa: F811
     )
 
 
-def test_91_control_a_manifest_id_citation_that_does_not_exist_still_hallucinates(wl):  # noqa: F811
+def test_91_control_a_manifest_id_citation_that_does_not_exist_still_hallucinates(wl):
     """CONTROL: registration is what makes a citation real, so an id shaped like a manifest id but absent from the lock must still be caught."""
     wl.say("done for now")
     wl.brief_now()
@@ -285,7 +284,7 @@ def test_91_control_a_manifest_id_citation_that_does_not_exist_still_hallucinate
     assert "HALLUCINATED" in out, "a manifest id that is not registered did not hallucinate"
 
 
-def test_92_a_fix_covered_by_a_real_gate_test_manifest_id_settles(wl):  # noqa: F811
+def test_92_a_fix_covered_by_a_real_gate_test_manifest_id_settles(wl):
     """`npm run ci` runs it through the runner rather than through a `check:*` key, and that has to count."""
     wl.say("done for now")
     wl.brief_now()
@@ -312,7 +311,7 @@ def test_92_a_fix_covered_by_a_real_gate_test_manifest_id_settles(wl):  # noqa: 
     )
 
 
-def test_93_a_fix_covered_by_a_file_path_citation_settles(wl):  # noqa: F811
+def test_93_a_fix_covered_by_a_file_path_citation_settles(wl):
     """The citation is a PATH with a `::test_name` qualifier, not the manifest id: the shape a human or the judge actually reaches for, and the shape 91 and 92 do not cover, since they only prove the id-keyed lookup."""
     wl.say("done for now")
     wl.brief_now()
@@ -340,7 +339,7 @@ def test_93_a_fix_covered_by_a_file_path_citation_settles(wl):  # noqa: F811
     )
 
 
-def test_94_control_a_file_path_that_is_not_a_real_gates_run_still_hallucinates(wl):  # noqa: F811
+def test_94_control_a_file_path_that_is_not_a_real_gates_run_still_hallucinates(wl):
     """CONTROL: without this, case 93 would pass for a probe that accepts any string containing a slash."""
     wl.say("done for now")
     wl.brief_now()
@@ -364,7 +363,7 @@ def test_94_control_a_file_path_that_is_not_a_real_gates_run_still_hallucinates(
     assert "HALLUCINATED" in out, "a path that matches no gate's run: did not hallucinate"
 
 
-def test_95a_the_gate_maintenance_hint_is_artifact_derived_and_never_skips(wl):  # noqa: F811
+def test_95a_the_gate_maintenance_hint_is_artifact_derived_and_never_skips(wl):
     """WHY THIS EXISTS, measured 2026-09-04/05 across TWO sessions independently.
 
     Writing gate A produced the finding that gate B was needed (A's own selftest tail tripped `check:ci-shape-duplication`; A's new file tripped `check:ci-gate-manifest` leaf-tracked), and fixing B produced C. Roughly 8 rounds in one session and 3 in a peer's, each costing a full CI cycle on a PR that was already green, reviewed and threads-resolved. EVERY one of those findings had
@@ -418,7 +417,7 @@ def test_95a_the_gate_maintenance_hint_is_artifact_derived_and_never_skips(wl): 
     )
 
 
-def test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_history(wl):  # noqa: F811
+def test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_history(wl):
     """Found live: item 4954f598 blocked roughly 10 consecutive stops although its own closing note carried a real, resolving sha.
 
     `rec["text"]` accumulates every lease/update note an item ever received, forever; a handful of leases carrying worker-id-shaped hex notes (17-20 chars) outrank a real 9-char commit sha under the evidence scan's "5 longest hex candidates" rule, so the real sha never gets tried. The fix is scope, not the scan: I7 must see the tick's own closing note, not its whole history.
@@ -496,7 +495,7 @@ def test_96_a_ticks_evidence_is_its_closing_note_not_the_whole_accumulated_histo
     )
 
 
-def test_p27_every_obligation_the_verdict_fired_rides_the_gate_block(wl):  # noqa: F811
+def test_p27_every_obligation_the_verdict_fired_rides_the_gate_block(wl):
     """agent/plans/PLAN-stop-hook-continuity.md P2.7. A verdict whose regression gate blocks AND whose class sweep fired (written into reason/next_action by `wl_rules.apply_order`) used to emit the gate payload alone, so the sweep came back one judged stop later. CONTROL: before the fix the sweep's search is absent from the block."""
     wl.say("done for now")
     wl.brief_now()
@@ -529,7 +528,7 @@ def test_p27_every_obligation_the_verdict_fired_rides_the_gate_block(wl):  # noq
     assert "sibling_call(" in out, out[-900:]
 
 
-def test_p27_inverse_a_stop_verdict_adds_nothing(wl):  # noqa: F811
+def test_p27_inverse_a_stop_verdict_adds_nothing(wl):
     wl.say("done for now")
     wl.brief_now()
     wl.reg_repo()

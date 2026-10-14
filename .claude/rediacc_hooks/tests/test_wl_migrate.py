@@ -17,7 +17,7 @@ import sys
 import time
 from typing import TYPE_CHECKING
 
-from rediacc_hooks.tests.wlfix import import_wl, wl  # noqa: F401
+from rediacc_hooks.tests.wlfix import import_wl
 
 if TYPE_CHECKING:
     import pathlib
@@ -85,7 +85,7 @@ def item_id(fix, needle: str) -> str:
     raise AssertionError("could not find the peer's item matching %r" % needle)
 
 
-def test_190_the_store_is_a_directory_of_per_writer_files(wl):  # noqa: F811
+def test_190_the_store_is_a_directory_of_per_writer_files(wl):
     wl.say("done for now")
     wl.brief_now()
     wl.cli("--add", "deadbeef", "an item of my own")
@@ -108,7 +108,7 @@ def test_190_the_store_is_a_directory_of_per_writer_files(wl):  # noqa: F811
     assert mine.read_text(encoding="utf-8") == before, "writers are sharing a file"
 
 
-def test_191_the_reader_unions_every_file_and_sorts_by_time(wl):  # noqa: F811
+def test_191_the_reader_unions_every_file_and_sorts_by_time(wl):
     """Name order is not time order.
 
     `zz` holds the older add and `aa` the newer tick. Concatenating in name order would fold the tick before the item exists and report the item as still open.
@@ -153,7 +153,7 @@ def test_191_the_reader_unions_every_file_and_sorts_by_time(wl):  # noqa: F811
     )
 
 
-def test_192_the_legacy_tmpdir_log_is_still_read(wl):  # noqa: F811
+def test_192_the_legacy_tmpdir_log_is_still_read(wl):
     """So nothing stopped blocking.
 
     PLANT: an open item that exists ONLY in the pre-move location. A reader that looked at the tracked store alone would let this session stop.
@@ -181,7 +181,7 @@ def test_192_the_legacy_tmpdir_log_is_still_read(wl):  # noqa: F811
     wl.check("block", "only in the legacy log", "an item only in the legacy log still blocks")
 
 
-def test_193_migrate_refuses_a_session_that_is_live_here(wl):  # noqa: F811
+def test_193_migrate_refuses_a_session_that_is_live_here(wl):
     wl.say("done for now")
     wl.brief_now()
     mig_peer(wl, "livepeer1", "(livepeer1) work of a running session", 180)
@@ -198,7 +198,7 @@ def test_193_migrate_refuses_a_session_that_is_live_here(wl):  # noqa: F811
     )
 
 
-def test_194_a_migrated_item_is_mine_and_the_original_is_closed(wl):  # noqa: F811
+def test_194_a_migrated_item_is_mine_and_the_original_is_closed(wl):
     """Case 195 rides here: the bash ran it with no `setup` of its own, so idempotence is asserted against the very store 194 just moved."""
     wl.say("done for now")
     wl.brief_now()
@@ -215,7 +215,7 @@ def test_194_a_migrated_item_is_mine_and_the_original_is_closed(wl):  # noqa: F8
     assert "nothing left to migrate" in out, "re-migrating duplicated the work: %s" % out[:300]
 
 
-def test_196_an_in_flight_item_arrives_open_with_its_dead_lease_reset(wl):  # noqa: F811
+def test_196_an_in_flight_item_arrives_open_with_its_dead_lease_reset(wl):
     wl.say("done for now")
     wl.brief_now()
     mig_peer(wl, "leasesess", "(leasesess) leased to a worker that died with its session")
@@ -238,7 +238,7 @@ def test_196_an_in_flight_item_arrives_open_with_its_dead_lease_reset(wl):  # no
     )
 
 
-def test_197_a_deferral_keeps_its_default_window(wl):  # noqa: F811
+def test_197_a_deferral_keeps_its_default_window(wl):
     """Rather than restarting it.
 
     The window is measured from `upd`. Carried, the item is already about 180 minutes old (the peer fixture aged it) and its default is due; restarted, it would read as fresh.
@@ -259,7 +259,7 @@ def test_197_a_deferral_keeps_its_default_window(wl):  # noqa: F811
     assert "[?]" in wl.cli("--list", "--open", "deadbeef").out, "the [?] state was lost in the move"
 
 
-def test_198_migrate_refuses_me_and_a_prefix_with_no_events(wl):  # noqa: F811
+def test_198_migrate_refuses_me_and_a_prefix_with_no_events(wl):
     wl.say("done for now")
     wl.brief_now()
     out = mig(wl, "deadbeef")
@@ -268,7 +268,7 @@ def test_198_migrate_refuses_me_and_a_prefix_with_no_events(wl):  # noqa: F811
     assert "REFUSED" in out, "migrated from a session that never existed: %s" % out[:300]
 
 
-def test_199_a_stopped_peers_work_is_reported_never_blocked_on(wl):  # noqa: F811
+def test_199_a_stopped_peers_work_is_reported_never_blocked_on(wl):
     wl.say("done for now")
     wl.brief_now()
     mig_peer(wl, "handoff1", "(handoff1) work its session left behind")
@@ -280,7 +280,7 @@ def test_199_a_stopped_peers_work_is_reported_never_blocked_on(wl):  # noqa: F81
     )
 
 
-def test_199_control_a_live_peer_is_never_offered_for_handoff(wl):  # noqa: F811
+def test_199_control_a_live_peer_is_never_offered_for_handoff(wl):
     """CONTROL: a LIVE peer is not a handoff candidate, because its work is not this session's."""
     wl.say("done for now")
     wl.brief_now()
@@ -293,7 +293,7 @@ def test_199_control_a_live_peer_is_never_offered_for_handoff(wl):  # noqa: F811
     assert "HANDOFF CANDIDATES" not in got.out, "offered a live session's work for adoption"
 
 
-def test_200_doctor_catches_what_a_tracked_file_makes_possible(wl):  # noqa: F811
+def test_200_doctor_catches_what_a_tracked_file_makes_possible(wl):
     """Every plant is a shape that is SILENT by default: the reader skips unparseable lines by contract, so a conflict marker costs events and says nothing, and a secret in TMPDIR was private while a secret in a tracked file is pushed."""
     wl.say("done for now")
     wl.brief_now()
@@ -359,7 +359,7 @@ def test_200_doctor_catches_what_a_tracked_file_makes_possible(wl):  # noqa: F81
     )
 
 
-def test_201_compaction_never_rewrites_a_file_a_live_peer_is_appending_to(wl):  # noqa: F811
+def test_201_compaction_never_rewrites_a_file_a_live_peer_is_appending_to(wl):
     wl.say("done for now")
     wl.brief_now()
     wl.cli("--add", "deadbeef", "my own item")
@@ -396,7 +396,7 @@ def test_201_compaction_never_rewrites_a_file_a_live_peer_is_appending_to(wl):  
     assert found == 3, "compaction lost items (found %d of 3)" % found
 
 
-def test_202_the_tied_case_same_second_and_file_order_contradicts_write_order(wl):  # noqa: F811
+def test_202_the_tied_case_same_second_and_file_order_contradicts_write_order(wl):
     """`at` has SECOND resolution, so a judge reopen and a session tick inside one second TIE. Sorting on `at` alone left the tie to file-glob order, and a ticked item came back OPEN (case 150 caught it live). The nanosecond sequence is what restores real write order, and the file names below deliberately contradict it, so a sort that ignored `ns` would get this backwards."""
     wl.say("done for now")
     wl.brief_now()
@@ -448,7 +448,7 @@ def test_202_the_tied_case_same_second_and_file_order_contradicts_write_order(wl
     )
 
 
-def test_203_the_fixture_owns_both_halves_of_the_store(wl):  # noqa: F811
+def test_203_the_fixture_owns_both_halves_of_the_store(wl):
     """So no call can straddle them.
 
     WHAT THIS CATCHES is not hypothetical: it happened to the operator's own worklist on 2026-09-04. The tracked writer files come from WORKLIST_STORE_DIR, while the legacy event log, the markdown mirror and the `.lastevent-*` liveness artifacts all resolve from the worklist path under TMPDIR. The bash `setup` exported only the first and left TMPDIR to a per-invocation prefix at
@@ -497,7 +497,7 @@ def fold_dump(fix) -> str:
     return proc.stdout
 
 
-def test_204_compaction_is_lossless(wl):  # noqa: F811
+def test_204_compaction_is_lossless(wl):
     """The fold before equals the fold after.
 
     WHY THIS EXISTS, and why it is a property rather than another example. Compaction rewrites the whole log as a fresh snapshot, so every field the fold reads has to survive a round trip through `snapshot_events`. The suite tested compaction by its OUTPUTS (items consolidated, a live peer's file untouched, three items still present) and an output test only ever checks the fields
@@ -629,7 +629,7 @@ def plans_of(cands, prefix):
     return rows[0].get("plans") or []
 
 
-def test_205_a_plan_with_open_boxes_and_a_stopped_owner_is_a_candidate(wl):  # noqa: F811
+def test_205_a_plan_with_open_boxes_and_a_stopped_owner_is_a_candidate(wl):
     """And a finished or box-free plan is not.
 
     All three states of one plan, in one case, because the interesting failure is not "no plan is ever listed" -- it is a filter that lists EVERY plan. A `Status: done` plan and a plan whose last box is ticked are the two ways a plan clears itself, and a discovery surface that keeps naming them teaches the operator to ignore it.
@@ -654,7 +654,7 @@ def test_205_a_plan_with_open_boxes_and_a_stopped_owner_is_a_candidate(wl):  # n
     )
 
 
-def test_206_a_live_sessions_plan_is_never_offered(wl):  # noqa: F811
+def test_206_a_live_sessions_plan_is_never_offered(wl):
     """Listing is not adopting, but a live peer's plan is still not on the menu.
 
     The rule is the same one the item path already obeys and for the same reason: `--plan` rewrites a committed document, and offering a running session's design is how two sessions end up executing one plan. The idle peer beside it is the anti-vacuity half -- without it an empty listing would satisfy this assertion for the wrong reason.
@@ -677,7 +677,7 @@ def test_206_a_live_sessions_plan_is_never_offered(wl):  # noqa: F811
     )
 
 
-def test_207_an_owner_with_items_is_enriched_not_duplicated(wl):  # noqa: F811
+def test_207_an_owner_with_items_is_enriched_not_duplicated(wl):
     """One row per prefix, carrying both its items and its plans.
 
     The third pass runs after two that may already have added the owner, so "append a candidate" is the wrong default: it would print one session twice, once with its items and once with its plans, and the operator would have to know they were the same session.
@@ -703,7 +703,7 @@ def test_207_an_owner_with_items_is_enriched_not_duplicated(wl):  # noqa: F811
     )
 
 
-def test_208_control_a_peer_with_nothing_but_a_plan_is_still_a_candidate(wl):  # noqa: F811
+def test_208_control_a_peer_with_nothing_but_a_plan_is_still_a_candidate(wl):
     """Zero items, no STATE.md Next action, one `Status: ready` plan. Nothing else.
 
     THE CASE THE WHOLE CHANGE EXISTS FOR, and the only one that fails if the third pass is deleted: every other case here has an item or a handoff note propping the prefix up. Live on 2026-09-17 this was `8f55d4f0` and `PLAN-tooling-transformation.md`, 13 open boxes and 141 ticked, named by no surface in the repo.
@@ -748,7 +748,7 @@ def test_208_control_a_peer_with_nothing_but_a_plan_is_still_a_candidate(wl):  #
     )
 
 
-def test_209_migrate_prints_the_plan_command_and_plan_adopts(wl):  # noqa: F811
+def test_209_migrate_prints_the_plan_command_and_plan_adopts(wl):
     """A store migration never rewrites a committed document; `--plan` does, when named.
 
     The split is the point. Moving items is a store operation and takes no argument beyond a prefix, so folding plan adoption into it would rewrite a peer's committed file as a side effect of a verb whose whole contract is the worklist. The move prints the command instead, and the command names every path it will touch.
@@ -800,7 +800,7 @@ def test_209_migrate_prints_the_plan_command_and_plan_adopts(wl):  # noqa: F811
     assert plan.read_text(encoding="utf-8") == after, "a second adoption rewrote the file"
 
 
-def test_210_plan_adoption_refuses_a_finished_or_box_free_plan(wl):  # noqa: F811
+def test_210_plan_adoption_refuses_a_finished_or_box_free_plan(wl):
     """The two refusals, byte-checked, because a refusal that still writes is worse than no refusal."""
     done = plant_plan(wl, "finished-design", "cafe1234", status="done", open_boxes=2)
     empty = plant_plan(wl, "drained-design", "cafe1234", status="ready", open_boxes=0, ticked=2)

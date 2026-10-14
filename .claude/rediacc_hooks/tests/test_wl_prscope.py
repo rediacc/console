@@ -5,6 +5,7 @@ Every case runs against a temp git checkout with a planted agent/plans tree and 
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import subprocess
 from typing import TYPE_CHECKING
@@ -504,7 +505,6 @@ def test_batch_ready_waits_for_the_batch_or_an_empty_queue(world):
     turbo_live(world)
     got = turbo_state(world, ((), 2))
     assert not prscope.batch_ready(got, True), "1 finished of 2 with eligible plans left"
-    import dataclasses  # noqa: PLC0415
 
     assert prscope.batch_ready(dataclasses.replace(got, finished=2), True)
     assert prscope.batch_ready(dataclasses.replace(got, turbo_more=False), True)

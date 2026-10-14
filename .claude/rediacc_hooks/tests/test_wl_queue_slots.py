@@ -29,7 +29,6 @@ from rediacc_hooks.tests.test_wl_roster import (
     subagents_dir,
     verdict,
 )
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
 def three_writers(fix) -> None:
@@ -51,7 +50,7 @@ def queue(fix, count: int) -> list[str]:
 # ---- R.5 (a): only the K oldest queued items are named ------------------------------------------
 
 
-def test_r5a_one_free_slot_names_one_queued_item(wl):  # noqa: F811
+def test_r5a_one_free_slot_names_one_queued_item(wl):
     """CONTROL: before R.5 the stop carried twelve "start it" lines under roster-dead for one free slot."""
     three_writers(wl)
     ids = queue(wl, 12)
@@ -66,7 +65,7 @@ def test_r5a_one_free_slot_names_one_queued_item(wl):  # noqa: F811
         assert "#%s" % later not in got.out.split("QUEUED WORK", 1)[1][:400], got.out[:1500]
 
 
-def test_r5a_inverse_a_full_cap_names_no_queued_item(wl):  # noqa: F811
+def test_r5a_inverse_a_full_cap_names_no_queued_item(wl):
     three_writers(wl)
     mk_sub(wl, W4, "general-purpose", 1)
     plant_lease(wl, "cap3", W4)
@@ -86,7 +85,7 @@ def added(fix, text: str) -> str:
     return found.group(1)
 
 
-def test_r5b_a_hold_for_an_open_item_holds_the_slot(wl):  # noqa: F811
+def test_r5b_a_hold_for_an_open_item_holds_the_slot(wl):
     """CONTROL: before R.5 a queue lease with a free slot was refused outright, so the slot could not be held."""
     three_writers(wl)
     item = added(wl, "(deadbeef) writer work whose writer is about to be spawned")
@@ -98,7 +97,7 @@ def test_r5b_a_hold_for_an_open_item_holds_the_slot(wl):  # noqa: F811
     assert v["state"] != "DISHONEST", v
 
 
-def test_r5b_inverse_a_hold_for_a_closed_item_or_a_second_hold_is_refused(wl):  # noqa: F811
+def test_r5b_inverse_a_hold_for_a_closed_item_or_a_second_hold_is_refused(wl):
     three_writers(wl)
     closed = added(wl, "(deadbeef) already done")
     assert wl.cli("--tick", wlfix.ME, closed, "landed, exit 0 nocommit:research").rc == 0
@@ -164,7 +163,7 @@ def reported_back(fix, aid: str, shell: str) -> None:
     )
 
 
-def test_r6c_a_shell_the_agent_already_heard_back_from_is_not_a_wait(wl):  # noqa: F811
+def test_r6c_a_shell_the_agent_already_heard_back_from_is_not_a_wait(wl):
     """CONTROL: before R.6 the event's still-running shell made the finished agent a waiter, and the estimate counted it."""
     mk_sub(wl, W4, "general-purpose", 5, last="end_turn", running=False)
     plant_shell_wait(wl, W4, "bshell77", running=True)
@@ -173,7 +172,7 @@ def test_r6c_a_shell_the_agent_already_heard_back_from_is_not_a_wait(wl):  # noq
     assert W4 not in estimate(wl)
 
 
-def test_r6c_inverse_a_shell_still_armed_is_a_wait(wl):  # noqa: F811
+def test_r6c_inverse_a_shell_still_armed_is_a_wait(wl):
     mk_sub(wl, W4, "general-purpose", 5, last="end_turn", running=False)
     plant_shell_wait(wl, W4, "bshell77", running=True)
     lastevent(wl).write_text(wl.event(), encoding="utf-8")
@@ -213,14 +212,14 @@ def completion_world(fix) -> None:
     lead_transcript(fix).write_text("", encoding="utf-8")
 
 
-def test_r6d_a_completion_after_the_event_frees_the_slot(wl):  # noqa: F811
+def test_r6d_a_completion_after_the_event_frees_the_slot(wl):
     """CONTROL: before R.6 the estimate trusted the event's running list over the harness's own later completion notice."""
     completion_world(wl)
     lead_notified(wl, W4)
     assert W4 not in estimate(wl)
 
 
-def test_r6d_inverse_no_completion_keeps_the_slot(wl):  # noqa: F811
+def test_r6d_inverse_no_completion_keeps_the_slot(wl):
     completion_world(wl)
     lead_notified(wl, W1)
     assert W4 in estimate(wl)
@@ -255,23 +254,23 @@ TOOL_IN_FLIGHT = {
 }
 
 
-def test_2a252641_an_interrupted_transcript_frees_the_slot(wl):  # noqa: F811
+def test_2a252641_an_interrupted_transcript_frees_the_slot(wl):
     """CONTROL: a workflow agent cut by the harness ends in the interrupt marker, and before the fix it held a writer slot until the next Stop event."""
     dead_world(wl, INTERRUPT, 1)
     assert W4 not in estimate(wl)
 
 
-def test_2a252641_inverse_an_answered_tool_a_minute_ago_is_live(wl):  # noqa: F811
+def test_2a252641_inverse_an_answered_tool_a_minute_ago_is_live(wl):
     dead_world(wl, ANSWERED_TOOL, 1)
     assert W4 in estimate(wl)
 
 
-def test_2a252641_a_transcript_silent_past_the_horizon_frees_the_slot(wl):  # noqa: F811
+def test_2a252641_a_transcript_silent_past_the_horizon_frees_the_slot(wl):
     """CONTROL: nine agents killed mid-turn held nine slots for nine hours."""
     dead_world(wl, ANSWERED_TOOL, 180)
     assert W4 not in estimate(wl)
 
 
-def test_2a252641_inverse_a_tool_in_flight_past_the_horizon_stays_live(wl):  # noqa: F811
+def test_2a252641_inverse_a_tool_in_flight_past_the_horizon_stays_live(wl):
     dead_world(wl, TOOL_IN_FLIGHT, 180)
     assert W4 in estimate(wl)

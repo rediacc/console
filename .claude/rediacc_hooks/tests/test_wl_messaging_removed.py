@@ -22,7 +22,6 @@ import pytest
 
 from rediacc_hooks import lifecycle
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 REMOVED_VERBS = ("--ask", "--answer", "--decline", "--ack", "--requests", "--poll", "--wait")
 
@@ -132,7 +131,7 @@ def plant_poll_marker(fix) -> None:
     )
 
 
-def test_removed_verbs_are_unknown(wl):  # noqa: F811
+def test_removed_verbs_are_unknown(wl):
     """Each removed verb falls into the unknown-verb refusal: exit 2, named, and no verdict. Before the removal `--poll` exited 0 on an empty inbox, so rc 2 here is the removal, not a verb that was always broken."""
     for verb in REMOVED_VERBS:
         got = wl.cli(verb, wlfix.ME, "x")
@@ -174,7 +173,7 @@ def test_removed_verbs_are_unknown(wl):  # noqa: F811
     )
 
 
-def test_help_no_longer_advertises_messaging(wl):  # noqa: F811
+def test_help_no_longer_advertises_messaging(wl):
     got = wl.cli("--help")
     text = got.out + got.err
     for needle in (*REMOVED_VERBS, "Cross-session messaging", "wl_wait"):
@@ -184,7 +183,7 @@ def test_help_no_longer_advertises_messaging(wl):  # noqa: F811
     assert "--reassign" in text, text[:300]
 
 
-def test_old_request_history_folds_cleanly(wl):  # noqa: F811
+def test_old_request_history_folds_cleanly(wl):
     """Old history is ignored, not scrubbed: the fold skips an unknown `ev` and nothing opens `.requests` any more. The CONTROL is the same world with no history planted."""
     world(wl)
     control = wl.run()
@@ -210,7 +209,7 @@ def test_old_request_history_folds_cleanly(wl):  # noqa: F811
     )
 
 
-def test_a_leftover_poll_marker_buys_no_silent_stop(wl):  # noqa: F811
+def test_a_leftover_poll_marker_buys_no_silent_stop(wl):
     """A clean world plus a fresh poll marker and a baseline banked against that very world. Under the removed fast path this stop exited with zero bytes and skipped the battery, so `.lastevent-` was never written. Now the battery runs: `.lastevent-` is written, which is the proof."""
     wl.brief_now()
     wl.hand_now()
@@ -243,7 +242,7 @@ def test_no_hook_still_wires_the_waiter():
     assert any("onboard.py" in c for c in commands), commands
 
 
-def test_one_work_cron_is_the_shape_and_a_second_one_fires(wl):  # noqa: F811
+def test_one_work_cron_is_the_shape_and_a_second_one_fires(wl):
     """The deleted `no-poll`/`many-poll-crons`/`many-waiters` coverage becomes a shape assertion. DEFAULT_CRONS holds one work cron, and a clean stop allows; a `*/5` second cron is now a second WORK cron and `many-work-crons` fires."""
     assert len(wlfix.DEFAULT_CRONS) == 1, wlfix.DEFAULT_CRONS
     wl.brief_now()
@@ -258,7 +257,7 @@ def test_one_work_cron_is_the_shape_and_a_second_one_fires(wl):  # noqa: F811
     wl.check("block", "2 work crons are live", "a second cron is a second work cron now")
 
 
-def test_check_quiet_accepts_a_proven_silent_stop_and_still_refuses_a_dead_hook(wl):  # noqa: F811
+def test_check_quiet_accepts_a_proven_silent_stop_and_still_refuses_a_dead_hook(wl):
     """With the poll-backoff advisory gone, a clean stop is a zero-byte allow, so `wlfix.check_quiet` accepts silence when the battery provably ran (exit 0 and a rewritten `.lastevent-`). The FIRE leg keeps the anti-vacuity guard honest: a hook that no-ops before the battery (GITHUB_ACTIONS=true) is also silent, and must still be refused."""
     wl.brief_now()
     wl.hand_now()

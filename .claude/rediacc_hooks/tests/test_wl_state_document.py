@@ -18,7 +18,6 @@ import time
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_agent_session_archival import roster
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 B_BODY_29F = """This is session B, running the licensing drill on a fork of the bench universe, with the mint tool staged and the activation cap already lifted to five. Nothing here overlaps session A, and losing it would cost the drill.
 
@@ -125,7 +124,7 @@ def state_call(fix, argv, body, timeout=15, env_extra=None):
         os.close(write_end)
 
 
-def test_29b_state_refuses_a_bad_body_instead_of_accepting_then_blocking(wl):  # noqa: F811
+def test_29b_state_refuses_a_bad_body_instead_of_accepting_then_blocking(wl):
     """The old write path once accepted ANY body and let the Stop check reject it a stop later, leaving the compaction-recovery artifact broken while the session believed it was fine.
 
     Each rejection is paired with the ALLOW control so the guard cannot pass by refusing everything, and the final assertion is a byte comparison rather than a hook allow: a refused write must leave the previous document IDENTICAL.
@@ -161,7 +160,7 @@ def test_29b_state_refuses_a_bad_body_instead_of_accepting_then_blocking(wl):  #
     )
 
 
-def test_29f_two_sessions_share_one_branch_and_both_sections_survive(wl):  # noqa: F811
+def test_29f_two_sessions_share_one_branch_and_both_sections_survive(wl):
     """THE INCIDENT, 2026-08-09. Three sessions were live in one checkout on main. The staleness gate nagged 99ccf057 about a document 2fd369e0 owned, 99ccf057 rewrote it, and a peer's entire state document (a live canary campaign, attempt 6 in flight, five flag flips, an operator-owned design question) was destroyed. It came back only because the single-slot backup was read before
     the next write overwrote it.
 
@@ -196,7 +195,7 @@ def test_29f_two_sessions_share_one_branch_and_both_sections_survive(wl):  # noq
     assert "round two" in text_of(b_file), "29f CONTROL: the second body never landed"
 
 
-def test_29k_a_peer_directory_is_no_longer_named_on_an_ordinary_stop(wl):  # noqa: F811
+def test_29k_a_peer_directory_is_no_longer_named_on_an_ordinary_stop(wl):
     """REWRITTEN 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.3): the `agent-peers` advisory had no reader under the single-terminal ruling and was deleted, so a peer directory beside this session's produces no queue entry. CONTROL: before the deletion this stop queued `agent-peers` and printed the row. The roster itself stays readable at PostCompact and through `agent_peer_sections`, which the cases below drive."""
     wl.brief_now()
     wl.hand_now()
@@ -211,7 +210,7 @@ def test_29k_a_peer_directory_is_no_longer_named_on_an_ordinary_stop(wl):  # noq
     assert "agent-peers" not in keys, keys
 
 
-def test_29k_control_a_session_alone_on_its_branch_is_told_about_no_peers(wl):  # noqa: F811
+def test_29k_control_a_session_alone_on_its_branch_is_told_about_no_peers(wl):
     """CONTROL, one planted fact different: no peer directory, no note. Without it the FIRE could be satisfied by boilerplate printed on every stop."""
     wl.brief_now()
     wl.hand_now()
@@ -220,7 +219,7 @@ def test_29k_control_a_session_alone_on_its_branch_is_told_about_no_peers(wl):  
     wl.check_quiet("under agent/", "29k CONTROL: a peers note appeared with no peer directory")
 
 
-def test_29k_a_peer_past_the_dead_horizon_is_marked_abandoned(wl):  # noqa: F811
+def test_29k_a_peer_past_the_dead_horizon_is_marked_abandoned(wl):
     """The liveness marker: a peer whose owner is past the dead horizon is labelled, because "12 minutes old" and "gone since yesterday" ask different things of the reader. NOT called reap-eligible any more: nothing prunes another session's directory, and a label promising a sweep that never comes is a check that cannot fire.
 
     THE ROW IS MATCHED, NOT THE WORD: the note's own prose explains the marker, so a bare search for it passes on the explanation alone, which is how a control ends up testing a paragraph instead of a verdict.
@@ -240,7 +239,7 @@ def test_29k_a_peer_past_the_dead_horizon_is_marked_abandoned(wl):  # noqa: F811
     )
 
 
-def test_29k_control_a_fresh_peer_is_listed_without_the_marker(wl):  # noqa: F811
+def test_29k_control_a_fresh_peer_is_listed_without_the_marker(wl):
     """CONTROL: the same fixture with ONE fact changed, the peer's stamp. It gets its own world rather than a second stop in the same session, because a class-2 section is released once per stop and a repeat stop would report its absence for a reason that has nothing to do with the marker.
 
     No end anchor: the note travels inside a JSON string, where the row ends in a literal backslash-n rather than a newline. An anchored pattern would never match and this control would pass on any output at all.
@@ -263,7 +262,7 @@ def test_29k_control_a_fresh_peer_is_listed_without_the_marker(wl):  # noqa: F81
     )
 
 
-def test_29k_a_peer_directory_carrying_two_sections_for_one_owner_is_reported_once(wl):  # noqa: F811
+def test_29k_a_peer_directory_carrying_two_sections_for_one_owner_is_reported_once(wl):
     """A duplicate found in production, not a hypothetical: two `## SESSION <owner>` headings for the SAME owner inside one peer directory -- a relic from before the write path guaranteed replace-in-place -- doubled that peer's row in the stop-hook note, the same session reported as two different peers under two different ages.
 
     `agent_peer_sections` keeps only the newest section per owner now.
@@ -287,7 +286,7 @@ def test_29k_a_peer_directory_carrying_two_sections_for_one_owner_is_reported_on
     )
 
 
-def test_29g_state_refuses_a_body_carrying_a_session_heading(wl):  # noqa: F811
+def test_29g_state_refuses_a_body_carrying_a_session_heading(wl):
     """The old habit is pasting the WHOLE document, and that habit is what destroyed a peer's document. The tool now writes the heading itself, so a body with one in it is a whole-document paste; refusing teaches the contract at zero cost, because the previous document is untouched."""
     wl.brief_now()
     wl.hand_now()
@@ -312,7 +311,7 @@ def test_29g_state_refuses_a_body_carrying_a_session_heading(wl):  # noqa: F811
     )
 
 
-def test_29h_a_dead_peer_section_is_reaped_and_archived_before_it_is_dropped(wl):  # noqa: F811
+def test_29h_a_dead_peer_section_is_reaped_and_archived_before_it_is_dropped(wl):
     """Reaping is the one path that deletes content nobody chose to delete, so it is the one path with an append-only archive rather than a single slot. Liveness is the repo's existing notion (owner age over the transcript directory), with the section's own stamp as the fallback for an owner that has no transcript."""
     wl.brief_now()
     wl.hand_now()
@@ -360,7 +359,7 @@ def test_29h_a_dead_peer_section_is_reaped_and_archived_before_it_is_dropped(wl)
     assert str(reaped) in out, why
 
 
-def test_29i_a_legacy_single_section_document_is_adopted_never_destroyed(wl):  # noqa: F811
+def test_29i_a_legacy_single_section_document_is_adopted_never_destroyed(wl):
     """Three checkouts hold a pre-section STATE.md on disk right now. The first merge on such a branch must keep that text, because it may be an in-flight peer's only record, which is exactly the loss this whole change is about."""
     wl.brief_now()
     wl.plant_doc(LEGACY_BODY)
@@ -387,7 +386,7 @@ def test_29i_a_legacy_single_section_document_is_adopted_never_destroyed(wl):  #
     )
 
 
-def test_29j_a_malformed_document_is_never_silently_replaced(wl):  # noqa: F811
+def test_29j_a_malformed_document_is_never_silently_replaced(wl):
     """Fail closed: the parser must degrade rather than discard. A document that yields no usable section is still SOMEBODY'S text, and the write that lands beside it must leave it recoverable from the document itself and from the backup slot."""
     wl.brief_now()
     wl.plant_doc(JUNK)
@@ -407,7 +406,7 @@ def test_29j_a_malformed_document_is_never_silently_replaced(wl):  # noqa: F811
     wl.check("allow", "", "29j CONTROL: a peer's malformed text never blocks my own good section")
 
 
-def test_29e_a_short_or_bodyless_state_refuses_instead_of_hanging(wl):  # noqa: F811
+def test_29e_a_short_or_bodyless_state_refuses_instead_of_hanging(wl):
     """REGRESSION GATE for the defect session 4c3e095a reported as #7c1c2629. `--state` used to require a second argument to enter its own branch at all, so a BARE `--state` matched nothing and fell through to the Stop-HOOK path, which reads the hook event from stdin and therefore BLOCKED FOREVER on a terminal. It cost the reporter a ten-minute tool timeout, and no test could see
     it: every existing `--state` case pipes a body in, which is exactly the shape that does NOT reproduce it.
 
@@ -434,7 +433,7 @@ def test_29e_a_short_or_bodyless_state_refuses_instead_of_hanging(wl):  # noqa: 
     assert "no body arrived" not in thin_out, why
 
 
-def test_29c_the_outgoing_document_is_recoverable_from_the_backup(wl):  # noqa: F811
+def test_29c_the_outgoing_document_is_recoverable_from_the_backup(wl):
     """Two live sessions share one branch, and `--state` used to be last-write-wins. What was not by design is that the loss was permanent: session 84611aab replaced session b9491d9c's 0-minute-old document twice, and neither body could be recovered, because the event log stores item TEXT and never STATE bodies. The write path keeps exactly one previous DOCUMENT beside the lock.
 
     Since the merge (2026-08-09) a peer write cannot clobber anything, so this case is no longer about a clobber: 29f owns that property. What is left for the backup to cover is a bug in the WRITE itself, which is why the copy is of the whole outgoing document and why one slot is enough.
@@ -473,7 +472,7 @@ def test_29c_the_outgoing_document_is_recoverable_from_the_backup(wl):  # noqa: 
     )
 
 
-def test_29d_the_document_and_its_backup_follow_the_session_across_a_branch(wl):  # noqa: F811
+def test_29d_the_document_and_its_backup_follow_the_session_across_a_branch(wl):
     """This case used to assert the opposite, one backup slot PER BRANCH, and it was right while the document itself was per branch. On 2026-08-18 the branch left the path entirely, so the property it protected inverted: one session now has ONE STATE.md and ONE backup, and a checkout that changes branch under a live session must not fork either. That is not a theoretical inversion.
     Session 97604f47 was found owning three STATE.md files at once (main, 0815-1, backup-storage) because a merge moved the checkout mid-session, and the two it was no longer writing were invisible to it.
 

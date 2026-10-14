@@ -7,14 +7,17 @@ The predicate here is built the way production builds it: the union of `wl_epic.
 
 from __future__ import annotations
 
+import importlib
 import json
 import re
+import shlex
 import subprocess
 import sys
 
+from rediacc_hooks.tests import test_wl_focus as F
 from rediacc_hooks.tests import wlfix
+from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook
 from rediacc_hooks.tests.test_wl_roster import plant_item, stamp, write_plan
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 PROBE = r"""
 import json, sys
@@ -124,7 +127,7 @@ def joined(rows) -> str:
     return "\n".join(rows)
 
 
-def test_classify_scope_pr_plan_and_prerequisite_items_stay_open(wl):  # noqa: F811
+def test_classify_scope_pr_plan_and_prerequisite_items_stay_open(wl):
     got = probe(wl, world(wl))
     assert got["n"] == 5, "classify_items must return five values: %s" % got["n"]
     text = joined(got["open"])
@@ -132,7 +135,7 @@ def test_classify_scope_pr_plan_and_prerequisite_items_stay_open(wl):  # noqa: F
     assert "in the prerequisite's epic" in text, "ruling 7: a prerequisite's items block: %s" % got
 
 
-def test_classify_scope_unrelated_and_epicless_items_are_queued(wl):  # noqa: F811
+def test_classify_scope_unrelated_and_epicless_items_are_queued(wl):
     got = probe(wl, world(wl))
     assert set(got["queued"]) == {"cccc0003", "dddd0004"}, got
     text = joined(got["open"])
@@ -140,7 +143,7 @@ def test_classify_scope_unrelated_and_epicless_items_are_queued(wl):  # noqa: F8
     assert "no epic at all" not in text, got
 
 
-def test_classify_scope_dead_lease_outside_the_epic_stays_open(wl):  # noqa: F811
+def test_classify_scope_dead_lease_outside_the_epic_stays_open(wl):
     plans = world(wl)
     plant_dead_lease(wl, "eeee0005", "bdead0001")
     plant_dead_lease(wl, "ffff0006", "lead")
@@ -152,7 +155,7 @@ def test_classify_scope_dead_lease_outside_the_epic_stays_open(wl):  # noqa: F81
     assert "ffff0006" not in got["queued"], got
 
 
-def test_classify_scope_deferred_items_are_never_queued(wl):  # noqa: F811
+def test_classify_scope_deferred_items_are_never_queued(wl):
     plans = world(wl)
     defer = "q DEFAULT: do-it WHY: needs-an-operator-ruling HOW: operator-answers"
     assert wl.cli("--defer", wlfix.ME, "dddd0004", *defer.split()).rc == 0
@@ -161,7 +164,7 @@ def test_classify_scope_deferred_items_are_never_queued(wl):  # noqa: F811
     assert "dddd0004" not in got["queued"], got
 
 
-def test_classify_scope_none_equals_today(wl):  # noqa: F811
+def test_classify_scope_none_equals_today(wl):
     """CONTROL: no predicate is today's result, every open item in `open_items` and nothing queued."""
     world(wl)
     got = probe(wl, None)
@@ -171,7 +174,7 @@ def test_classify_scope_none_equals_today(wl):  # noqa: F811
     assert len(got["open"]) == 4, got
 
 
-def test_classify_scope_guide_lists_in_scope_items_only(wl):  # noqa: F811
+def test_classify_scope_guide_lists_in_scope_items_only(wl):
     got = probe(wl, world(wl))
     guide = got["guide"]
     assert "#aaaa0001" in guide, guide
@@ -188,8 +191,6 @@ def test_classify_scope_guide_lists_in_scope_items_only(wl):  # noqa: F811
 #
 # A fixture checkout on the MMDD-N branch 1003-1 whose one PR read (wl_ci.pr_link) answers from the shared gh shim of test_wl_focus, so `wl_prscope.loop_state` resolves a real `live` state: the PR body's `Plan:` line names the PR plan, and QUEUE.md holds it and one queued plan. Every fire case has a control that differs by one planted fact; the mutation controls run a PRIVATE COPY of the hook with one line removed.
 
-from rediacc_hooks.tests import test_wl_focus as F  # noqa: E402
-from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook  # noqa: E402
 
 BRANCH = "1003-1"
 PR_SCOPE = "One plan per PR: only this PR's plan, its prerequisites and the loop's duties block."
@@ -263,7 +264,7 @@ def reason(got: wlfix.Result) -> str:
     return str(doc.get("reason") or "") + "\n" + str(doc.get("systemMessage") or "")
 
 
-def test_sc5_an_item_on_the_pr_plans_epic_blocks(wl):  # noqa: F811
+def test_sc5_an_item_on_the_pr_plans_epic_blocks(wl):
     own = loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
     epic_for(wl, own.rsplit("/", 1)[-1], "aaaa0001")
@@ -273,7 +274,7 @@ def test_sc5_an_item_on_the_pr_plans_epic_blocks(wl):  # noqa: F811
     assert "PR #543 works PLAN-pr-own.md." in got.out, got.out[:1500]
 
 
-def test_sc5_control_the_same_item_on_an_epic_without_plan_is_queued(wl):  # noqa: F811
+def test_sc5_control_the_same_item_on_an_epic_without_plan_is_queued(wl):
     loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
     got_epic = wl.cli("--epic", wlfix.ME, "new", "an epic with no plan")
@@ -288,7 +289,7 @@ def test_sc5_control_the_same_item_on_an_epic_without_plan_is_queued(wl):  # noq
     ), got.out[:1500]
 
 
-def test_sc5_the_queued_line_never_enumerates_other_plans(wl):  # noqa: F811
+def test_sc5_the_queued_line_never_enumerates_other_plans(wl):
     loop_world(wl)
     for i in range(5):
         loop_plan(wl, "extra%d" % i, opened=3, done=0)
@@ -300,21 +301,21 @@ def test_sc5_the_queued_line_never_enumerates_other_plans(wl):  # noqa: F811
     assert "more plan(s)" not in out, out[:2000]
 
 
-def test_sc5_a_red_ci_on_the_live_branch_blocks_without_the_publish_ref(wl):  # noqa: F811
+def test_sc5_a_red_ci_on_the_live_branch_blocks_without_the_publish_ref(wl):
     loop_world(wl, red=True, ci_ref=True)
     got = run_stop(wl)
     assert "ci-red" in keys_of(wl, got), reason(got)[:1500]
     assert F.CI_RED in got.out, got.out[:1500]
 
 
-def test_sc5_control_off_the_loop_the_red_ci_is_not_armed(wl):  # noqa: F811
+def test_sc5_control_off_the_loop_the_red_ci_is_not_armed(wl):
     loop_world(wl, branch="feature-x", red=True, ci_ref=True)
     got = run_stop(wl)
     assert "ci-red" not in keys_of(wl, got), reason(got)[:1500]
     assert PR_SCOPE not in got.out, got.out[:1500]
 
 
-def test_sc5_an_expired_default_outside_the_epic_still_blocks(wl):  # noqa: F811
+def test_sc5_an_expired_default_outside_the_epic_still_blocks(wl):
     loop_world(wl)
     with wl.events.open("a", encoding="utf-8") as fh:
         fh.write(
@@ -335,7 +336,7 @@ def test_sc5_an_expired_default_outside_the_epic_still_blocks(wl):  # noqa: F811
     assert "defer-expired" in keys_of(wl, got), reason(got)[:1500]
 
 
-def test_sc5_a_dead_lease_outside_the_epic_still_blocks(wl):  # noqa: F811
+def test_sc5_a_dead_lease_outside_the_epic_still_blocks(wl):
     loop_world(wl)
     plant_dead_lease(wl, "eeee0005", "bdead0001")
     got = run_stop(wl)
@@ -343,7 +344,7 @@ def test_sc5_a_dead_lease_outside_the_epic_still_blocks(wl):  # noqa: F811
     assert "eeee0005" in got.out, got.out[:1500]
 
 
-def test_sc5_a_missing_state_doc_blocks_at_the_early_band(wl):  # noqa: F811
+def test_sc5_a_missing_state_doc_blocks_at_the_early_band(wl):
     """STATE.md freshness is a loop duty at every band (ruling 1d): kept in full by PR_LOOP, where the cap wait keeps it only in the late band (test_wl_cap_wait c3)."""
     own = loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
@@ -353,7 +354,7 @@ def test_sc5_a_missing_state_doc_blocks_at_the_early_band(wl):  # noqa: F811
     assert "agent-state" in keys_of(wl, got), reason(got)[:1500]
 
 
-def test_sc5_dropped_checks_stand_down_and_are_named(wl):  # noqa: F811
+def test_sc5_dropped_checks_stand_down_and_are_named(wl):
     """Every key the full battery raises off the loop and the PR_LOOP profile does not keep is absent on the loop and named in the Stood down phrase."""
     std = wlfix.import_wl("wl_standdown")
     loop_world(wl, branch="feature-x")
@@ -400,7 +401,7 @@ def test_sc5_dropped_checks_stand_down_and_are_named(wl):  # noqa: F811
         assert k.split(":", 1)[0] in line, (k, line)
 
 
-def test_sc5_control_off_the_loop_runs_todays_battery(wl):  # noqa: F811
+def test_sc5_control_off_the_loop_runs_todays_battery(wl):
     loop_world(wl, branch="feature-x")
     plant_item(wl, "dddd0004", "(deadbeef) in no epic at all")
     got = run_stop(wl)
@@ -408,7 +409,7 @@ def test_sc5_control_off_the_loop_runs_todays_battery(wl):  # noqa: F811
     assert PR_SCOPE not in got.out, got.out[:1500]
 
 
-def test_sc5_control_focus_on_still_uses_the_focus_profile(wl):  # noqa: F811
+def test_sc5_control_focus_on_still_uses_the_focus_profile(wl):
     own = loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
     epic_for(wl, own.rsplit("/", 1)[-1], "aaaa0001")
@@ -417,7 +418,7 @@ def test_sc5_control_focus_on_still_uses_the_focus_profile(wl):  # noqa: F811
     assert "open-items" not in keys_of(wl, got), "FOCUS parks open-items: %s" % reason(got)[:1500]
 
 
-def test_sc5_m1_without_open_items_in_the_keep_list_the_epic_item_stands_down(wl):  # noqa: F811
+def test_sc5_m1_without_open_items_in_the_keep_list_the_epic_item_stands_down(wl):
     own = loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
     epic_for(wl, own.rsplit("/", 1)[-1], "aaaa0001")
@@ -428,7 +429,7 @@ def test_sc5_m1_without_open_items_in_the_keep_list_the_epic_item_stands_down(wl
     )
 
 
-def test_sc5_m2_without_the_in_scope_predicate_the_queued_item_blocks(wl):  # noqa: F811
+def test_sc5_m2_without_the_in_scope_predicate_the_queued_item_blocks(wl):
     loop_world(wl)
     plant_item(wl, "dddd0004", "(deadbeef) in no epic at all")
     got = run_stop(wl)
@@ -468,7 +469,7 @@ def adopted(fix, name: str) -> str:
     return "agent/plans/PLAN-%s.md" % name
 
 
-def test_sc6_an_adopted_plan_outside_the_pr_gives_no_plan_adopted(wl):  # noqa: F811
+def test_sc6_an_adopted_plan_outside_the_pr_gives_no_plan_adopted(wl):
     """The PLAN-stop-hook-retro-20260925 case of the dry run: adopted, untracked boxes, not the PR's plan."""
     loop_world(wl)
     adopted(wl, "retro-fixture")
@@ -477,7 +478,7 @@ def test_sc6_an_adopted_plan_outside_the_pr_gives_no_plan_adopted(wl):  # noqa: 
     assert "PLAN-retro-fixture.md" not in got.out, got.out[:2000]
 
 
-def test_sc6_control_the_same_adoption_on_the_pr_plan_blocks(wl):  # noqa: F811
+def test_sc6_control_the_same_adoption_on_the_pr_plan_blocks(wl):
     loop_world(wl)
     rel_ = adopted(wl, "retro-fixture")
     F.merged_nodes(wl, [pr_node("OPEN", "Plan: %s\n" % rel_)])
@@ -485,14 +486,14 @@ def test_sc6_control_the_same_adoption_on_the_pr_plan_blocks(wl):  # noqa: F811
     assert "plan-adopted" in keys_of(wl, got), reason(got)[:1500]
 
 
-def test_sc6_open_boxes_across_other_plans_give_no_plan_unimplemented(wl):  # noqa: F811
+def test_sc6_open_boxes_across_other_plans_give_no_plan_unimplemented(wl):
     loop_world(wl, opened=0)
     loop_plan(wl, "elsewhere", opened=4, done=0)
     got = run_stop(wl)
     assert "plan-unimplemented" not in keys_of(wl, got), reason(got)[:1500]
 
 
-def test_sc6_control_one_open_box_on_the_pr_plan_blocks_and_is_named(wl):  # noqa: F811
+def test_sc6_control_one_open_box_on_the_pr_plan_blocks_and_is_named(wl):
     loop_world(wl, opened=1)
     got = run_stop(wl)
     assert "plan-unimplemented" in keys_of(wl, got), reason(got)[:1500]
@@ -500,7 +501,7 @@ def test_sc6_control_one_open_box_on_the_pr_plan_blocks_and_is_named(wl):  # noq
     assert "PLANNED BUT NOT IMPLEMENTED" not in got.out, got.out[:2000]
 
 
-def test_sc6_the_same_box_with_a_live_background_task_is_an_advisory(wl):  # noqa: F811
+def test_sc6_the_same_box_with_a_live_background_task_is_an_advisory(wl):
     loop_world(wl, opened=1)
     wl.bg = json.dumps(
         [{"id": "bw9", "type": "shell", "status": "running", "description": "ci-trace --wait"}]
@@ -509,9 +510,8 @@ def test_sc6_the_same_box_with_a_live_background_task_is_an_advisory(wl):  # noq
     assert "plan-unimplemented" not in keys_of(wl, got), reason(got)[:1500]
 
 
-def test_sc10_the_plan_adopted_recipe_survives_a_quote_in_the_box_text(wl):  # noqa: F811
+def test_sc10_the_plan_adopted_recipe_survives_a_quote_in_the_box_text(wl):
     """The 2026-10-03 recipe broke the shell when copied: a box text opening with `("` sat inside a hand-made "..." quote. The printed --add line must parse back to the exact box text."""
-    import shlex  # noqa: PLC0415 -- local to the one test that needs it
 
     loop_world(wl)
     rel_ = adopted(wl, "quote-fixture")
@@ -555,7 +555,7 @@ def mode_ok(fix) -> bool:
     return PQ.inflight_mode(text) == want
 
 
-def test_inflight_a_live_pr_with_a_plan_line_shows_the_pr_and_its_plan(wl):  # noqa: F811
+def test_inflight_a_live_pr_with_a_plan_line_shows_the_pr_and_its_plan(wl):
     own = loop_world(wl)
     run_stop(wl)
     body = inflight_of(wl)
@@ -569,12 +569,12 @@ def test_inflight_a_live_pr_with_a_plan_line_shows_the_pr_and_its_plan(wl):  # n
     assert mode_ok(wl), body
 
 
-def test_inflight_turbo_on_shows_turbo_and_the_named_picks(wl):  # noqa: F811
+def test_inflight_turbo_on_shows_turbo_and_the_named_picks(wl):
     # test_wl_loop_next imports this module, so it is imported here, not at the top.
-    from rediacc_hooks.tests import test_wl_loop_next as LN  # noqa: PLC0415
+    loop_next = importlib.import_module("rediacc_hooks.tests.test_wl_loop_next")
 
-    _own, one, two = LN.turbo_world(wl)
-    LN.stop(wl)
+    _own, one, two = loop_next.turbo_world(wl)
+    loop_next.stop(wl)
     body = inflight_of(wl)
     assert "turbo on; turbo_push pr; batch_size 2; plan_concurrency 9; writer_cap 4" in body, body
     assert mode_ok(wl), body
@@ -585,7 +585,7 @@ def test_inflight_turbo_on_shows_turbo_and_the_named_picks(wl):  # noqa: F811
     assert "- Writers: 0 live of writer_cap 4" in body, body
 
 
-def test_inflight_focus_on_is_shown_and_off_again_after_focus_off(wl):  # noqa: F811
+def test_inflight_focus_on_is_shown_and_off_again_after_focus_off(wl):
     loop_world(wl)
     F.focus_on(wl, mode="merge")
     body = inflight_of(wl)
@@ -596,7 +596,7 @@ def test_inflight_focus_on_is_shown_and_off_again_after_focus_off(wl):  # noqa: 
     assert "- Phase: build." in inflight_of(wl)
 
 
-def test_inflight_no_pr_names_the_queue_head_the_first_push_binds(wl):  # noqa: F811
+def test_inflight_no_pr_names_the_queue_head_the_first_push_binds(wl):
     own = loop_world(wl)
     F.merged_nodes(wl, [])
     run_stop(wl)
@@ -606,10 +606,10 @@ def test_inflight_no_pr_names_the_queue_head_the_first_push_binds(wl):  # noqa: 
     assert mode_ok(wl), body
 
 
-def test_inflight_a_branch_with_only_planless_epics_lists_the_epic(wl):  # noqa: F811
-    from rediacc_hooks.tests import test_wl_loop_next as LN  # noqa: PLC0415
+def test_inflight_a_branch_with_only_planless_epics_lists_the_epic(wl):
+    loop_next = importlib.import_module("rediacc_hooks.tests.test_wl_loop_next")
 
-    LN.base_world(wl)
+    loop_next.base_world(wl)
     wl.git("switch", "-q", "-c", BRANCH)
     got = wl.cli("--epic", wlfix.ME, "new", "Operator follow-ups with no plan")
     assert got.rc == 0, got.err
@@ -630,7 +630,7 @@ def test_inflight_a_branch_with_only_planless_epics_lists_the_epic(wl):  # noqa:
     ), body
 
 
-def test_inflight_m1_a_renderer_that_flips_a_switch_fails_the_mode_check(wl):  # noqa: F811
+def test_inflight_m1_a_renderer_that_flips_a_switch_fails_the_mode_check(wl):
     """CONTROL: the same live world through a private copy whose mode line inverts every on/off must fail the reading the cases above rely on."""
     mutated_hook(
         wl,
@@ -663,7 +663,7 @@ def write_turbo_queue(fix, *rels: str, solo: str = "") -> None:
     (fix.proj / "agent" / "plans" / "QUEUE.md").write_text(text, encoding="utf-8")
 
 
-def test_turbo_the_queued_line_says_turbo_not_one_plan_per_pr(wl):  # noqa: F811
+def test_turbo_the_queued_line_says_turbo_not_one_plan_per_pr(wl):
     own = loop_world(wl)
     write_turbo_queue(wl, own, "agent/plans/PLAN-queued-next.md")
     got = run_stop(wl)
@@ -673,7 +673,7 @@ def test_turbo_the_queued_line_says_turbo_not_one_plan_per_pr(wl):  # noqa: F811
     assert "PR #543 works PLAN-pr-own.md." in out, out[:2000]
 
 
-def test_turbo_a_solo_plan_in_the_set_is_named_as_why_no_plan_joins(wl):  # noqa: F811
+def test_turbo_a_solo_plan_in_the_set_is_named_as_why_no_plan_joins(wl):
     own = loop_world(wl)
     write_turbo_queue(wl, own, "agent/plans/PLAN-queued-next.md", solo=own)
     got = run_stop(wl)
@@ -685,7 +685,7 @@ def test_turbo_a_solo_plan_in_the_set_is_named_as_why_no_plan_joins(wl):  # noqa
     assert PR_SCOPE not in out, out[:2000]
 
 
-def test_turbo_control_turbo_off_keeps_the_one_plan_line(wl):  # noqa: F811
+def test_turbo_control_turbo_off_keeps_the_one_plan_line(wl):
     loop_world(wl)
     got = run_stop(wl)
     out = reason(got) + got.out
@@ -693,7 +693,7 @@ def test_turbo_control_turbo_off_keeps_the_one_plan_line(wl):  # noqa: F811
     assert "Turbo is on" not in out, out[:2000]
 
 
-def test_turbo_a_solo_queue_head_on_a_branch_with_no_pr_is_not_called_a_joining_pick(wl):  # noqa: F811
+def test_turbo_a_solo_queue_head_on_a_branch_with_no_pr_is_not_called_a_joining_pick(wl):
     """The live defect of 2026-10-07: on branch 1007-1 with no PR the plan set is empty, the solo queue head arrived as a turbo pick, and the line said it would JOIN this PR. It is the plan the first push binds, and it runs alone."""
     F.world(wl, ci=True)
     wl.git("switch", "-q", "-c", BRANCH)

@@ -19,7 +19,6 @@ from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import cldeliver, clfile
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_running, ci_setup
 from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # One work loop, the canonical cron shape.
 WORK_ONLY_CRONS = '[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
@@ -80,7 +79,7 @@ def prf_run(fix, message: str = "work done", extra_env=None, bg=None):
     return fix.python([], stdin=payload, env=env)
 
 
-def test_231_the_ladder_decides_the_first_pick_where_line_order_used_to(wl):  # noqa: F811
+def test_231_the_ladder_decides_the_first_pick_where_line_order_used_to(wl):
     """The operator's ask: "There should be list of 'has to show with this order'".
 
     READ THE SORT KEY IN wl_checks BEFORE CHANGING THIS CASE. Tier sits AFTER `served`, not before it, so the ladder is WALKED rather than camped on: on the first stop every key is unserved and tier decides, and afterwards the least-recently-served wins with tier breaking its ties. Camping on the top tier would starve docs drift, a stale PR body and an unpushed submodule pointer
@@ -104,7 +103,7 @@ def test_231_the_ladder_decides_the_first_pick_where_line_order_used_to(wl):  # 
     )
 
 
-def test_231b_a_mission_check_defined_later_in_the_battery_still_wins(wl):  # noqa: F811
+def test_231b_a_mission_check_defined_later_in_the_battery_still_wins(wl):
     """The same two checks, ORDER REVERSED by the ladder and not by line number. The assertion in 231 is only meaningful if the opposite arrangement produces the opposite first pick for the same reason. `brief` is defined EARLIER in the battery than several mission checks, so under the old line-order tiebreak a hygiene check could and did win a first pick. Here the only mission
     member is a checklist wave, whose `vadd` sits ~500 lines BELOW `brief`, so line order would pick the brief and the ladder must not.
     """
@@ -158,7 +157,7 @@ PENDING_ASK_MSG = """status
 Two questions for you before I pick the branch."""
 
 
-def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):  # noqa: F811
+def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):
     """The invariant tier buys UN-ROTATABILITY and nothing more. The battery's own warning, that a prompt which fires always is a prompt that gets skimmed, is the constraint, and three promotions in one change is exactly when it bites. NOTHING IS DROPPED: the third is named on one line with its opening sentence.
 
     THE NEEDLES ARE HEADLINES, NOT KEYS, and that is not a stylistic choice: a QUOTED invariant renders its message, which never contains its own key, so grepping for `unread-reports` passed only for whichever one got collapsed, an assertion that would have gone green on a hook that dropped the other two. A headline matches both ways, because the collapse line is exactly "<key>:
@@ -191,7 +190,7 @@ def test_232_the_collapse_three_invariants_two_quoted_the_third_named(wl):  # no
     assert not missing, "232: the collapse DROPPED an invariant instead of naming it: %s" % missing
 
 
-def test_232b_control_two_invariants_are_both_quoted_with_no_collapse_line(wl):  # noqa: F811
+def test_232b_control_two_invariants_are_both_quoted_with_no_collapse_line(wl):
     """ALWAYS_FULL_MAX is 2, so at the boundary the block must look exactly as it did before this change. A collapse that fired at two would be a regression wearing the new feature's clothes. One planted fact apart from 232: the report store is empty."""
     wl.crons = WORK_ONLY_CRONS
     wl.brief_now()
@@ -204,7 +203,7 @@ def test_232b_control_two_invariants_are_both_quoted_with_no_collapse_line(wl): 
     assert "ALSO BLOCKING, IN BRIEF" not in got.out, boundary
 
 
-def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl):  # noqa: F811
+def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl):
     """The operator's example, generalised: reaching green is not reaching the finish line. `.claude/commands/pr-babysit.md` states it (green, ready, per-commit reviews clean, human threads resolved), and before this change nothing held the wave open once ci-red went quiet.
 
     233b is the CONTROL and 233c the evidence ladder; both continue on this world with no fresh setup, so they stay here. 233b is the gate that stops this becoming a tax on every session that happens to have a PR open: same PR, same green, no pr-babysit wave, not one word. 233c pins that the hook cannot see a resolved thread and refuses to pretend it can: the
@@ -263,7 +262,7 @@ def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl): 
     )
 
 
-def test_233d_a_live_watch_on_a_head_with_no_verdict_stands_the_finish_line_down(wl):  # noqa: F811
+def test_233d_a_live_watch_on_a_head_with_no_verdict_stands_the_finish_line_down(wl):
     """While CI is still running, green cannot tick and ready cannot either, so blocking there demanded what no work in the turn can produce (PR #592, 2026-10-03). A running ci-trace watch on this head is the wake-up, the rule ci-red already follows (test_126). The CONTROL is the same world without the watch: it must still block, or the stand-down is unconditional."""
     ci_setup(wl)
     (wl.base / "projects" / "reports").mkdir(parents=True, exist_ok=True)

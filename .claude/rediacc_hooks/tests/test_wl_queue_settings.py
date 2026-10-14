@@ -10,11 +10,11 @@ import os
 import pathlib
 import subprocess
 import sys
+from typing import Any
 
 import pytest
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 PQ = wlfix.import_wl("wl_planqueue")
 REPO = pathlib.Path(__file__).resolve().parents[3]
@@ -151,8 +151,9 @@ def test_the_dataclass_is_frozen_with_the_contract_fields():
     names = [f.name for f in dataclasses.fields(PQ.Settings)]
     assert names == [*ALL_KEYS, "notes"]
     assert tuple(ALL_KEYS) == PQ.KNOWN_KEYS
+    settings: Any = PQ.Settings()
     with pytest.raises(dataclasses.FrozenInstanceError):
-        PQ.Settings().turbo = True  # type: ignore[misc]
+        settings.turbo = True
 
 
 def test_every_key_parses_and_notes_are_kept():
@@ -449,14 +450,14 @@ def test_the_live_queue_has_a_clean_block_and_marks_ci_consolidation_solo():
 # ---- the verb ----------------------------------------------------------------------------------
 
 
-def plant(wl, body: str) -> pathlib.Path:  # noqa: F811
+def plant(wl, body: str) -> pathlib.Path:
     path = wl.proj / PQ.QUEUE_REL
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding="utf-8")
     return path
 
 
-def test_queue_set_writes_atomically_prints_git_add_and_never_commits(wl):  # noqa: F811
+def test_queue_set_writes_atomically_prints_git_add_and_never_commits(wl):
     wl.reg_repo()
     queue = plant(wl, block("turbo: off -- old\nbatch_size: 1"))
     wl.git("add", "-A")
@@ -491,7 +492,7 @@ def test_queue_set_writes_atomically_prints_git_add_and_never_commits(wl):  # no
         ["turbo=on", "--note"],
     ],
 )
-def test_queue_set_refuses_a_bad_call_and_leaves_the_file_untouched(wl, pairs):  # noqa: F811
+def test_queue_set_refuses_a_bad_call_and_leaves_the_file_untouched(wl, pairs):
     queue = plant(wl, block("turbo: off\nbatch_size: 1"))
     before = queue.read_bytes()
     mtime = queue.stat().st_mtime_ns
@@ -507,7 +508,7 @@ def test_queue_set_refuses_a_bad_call_and_leaves_the_file_untouched(wl, pairs): 
     assert queue.read_bytes() != before
 
 
-def test_queue_set_refuses_a_broken_block_and_a_missing_file(wl):  # noqa: F811
+def test_queue_set_refuses_a_broken_block_and_a_missing_file(wl):
     # setup() writes `cadence: off` into QUEUE.md; this case needs the file gone.
     (wl.proj / PQ.QUEUE_REL).unlink(missing_ok=True)
     missing = wl.cli("--queue-set", wlfix.ME, "turbo=on")
@@ -522,7 +523,7 @@ def test_queue_set_refuses_a_broken_block_and_a_missing_file(wl):  # noqa: F811
     assert queue.read_bytes() == before
 
 
-def test_queue_set_checks_the_identity_like_the_other_verbs(wl):  # noqa: F811
+def test_queue_set_checks_the_identity_like_the_other_verbs(wl):
     queue = plant(wl, block("turbo: off"))
     before = queue.read_bytes()
     foreign = wl.cli("--queue-set", "cafe1234", "turbo=on")
@@ -533,7 +534,7 @@ def test_queue_set_checks_the_identity_like_the_other_verbs(wl):  # noqa: F811
     assert "usage: --queue-set" in usage.err
 
 
-def test_queue_set_bare_prints_values_sources_and_problems(wl):  # noqa: F811
+def test_queue_set_bare_prints_values_sources_and_problems(wl):
     plant(wl, block("turbo: on -- operator test\nbatch_size: x\nturbx: on"))
     got = wl.cli("--queue-set", wlfix.ME)
     assert got.rc == 0, got.err
@@ -791,7 +792,7 @@ def test_inflight_block_is_never_compared_by_the_queue_gate(tmp_path):
     assert PQ.problems(root) != []
 
 
-def test_queue_set_refreshes_the_inflight_block(wl):  # noqa: F811
+def test_queue_set_refreshes_the_inflight_block(wl):
     path = wl.proj / PQ.QUEUE_REL
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(block("turbo: off"), encoding="utf-8")
