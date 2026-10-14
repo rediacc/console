@@ -28,6 +28,7 @@ import type {
   StorageConfig,
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
+
 import { currentRequestConfig } from '../core/request-context.js';
 import { ConfigServiceBase } from './config-base.js';
 import {
@@ -53,6 +54,15 @@ import {
 } from './config-resources-resolve.js';
 import type { ResourceState } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
+
+/**
+ * Reject a name the config schema would refuse as a record key, BEFORE the write.
+ * Loaded lazily: utils/config-schema imports this module, so a static import would be a cycle.
+ */
+async function assertValidResourceName(name: string): Promise<void> {
+  const { assertResourceName } = await import('../../utils/config-schema.js');
+  assertResourceName(name);
+}
 
 export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
@@ -176,6 +186,7 @@ class ConfigService extends ConfigServiceBase {
 
   async addMachine(machineName: string, config: MachineConfig): Promise<void> {
     await this.requireSelfHosted();
+    await assertValidResourceName(machineName);
     assertUniqueName(await this.getCurrent(), machineName);
     await this.writeMachine(machineName, config);
   }
@@ -302,6 +313,7 @@ class ConfigService extends ConfigServiceBase {
 
   async addStorage(storageName: string, config: StorageConfig): Promise<void> {
     await this.requireSelfHosted();
+    await assertValidResourceName(storageName);
     const state = await this.getResourceState();
     const storages = state.getStorages();
     storages[storageName] = config;
@@ -342,6 +354,8 @@ class ConfigService extends ConfigServiceBase {
 
   async addRepository(repoName: string, config: RepositoryConfig): Promise<void> {
     await this.requireSelfHosted();
+    // The family name is the part before `:tag`; the config schema rejects the whole file on a bad record key, so the name is checked before anything is written.
+    await assertValidResourceName(repoName.split(':')[0]);
     const state = await this.getResourceState();
     const repos = state.getRepositories();
     assertNoCredentialCollision(repos, repoName, config);
@@ -586,6 +600,7 @@ class ConfigService extends ConfigServiceBase {
   async addCloudProvider(name: string, config: CloudProviderConfig): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
+    await assertValidResourceName(name);
     await writeCloudProviderToStore(configName, name, config);
   }
 
@@ -611,6 +626,7 @@ class ConfigService extends ConfigServiceBase {
   async addCluster(name: string, config: ClusterConfig): Promise<void> {
     const configName = this.getEffectiveConfigName();
     await this.requireSelfHosted(configName);
+    await assertValidResourceName(name);
     const current = await this.getCurrent();
     assertUniqueName(current, name);
     assertClusterMembersUnique(current, name, config);

@@ -1,6 +1,9 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { accountServerFetch } from '../services/account/account-client.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
+import { recordBackupRun } from '../services/backup/backup-runs-state.js';
+import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -8,16 +11,13 @@ import { getExecutor } from '../services/executor/executor-factory.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { compositeKey } from '../utils/config-schema.js';
+import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
 import { assertMachineExists } from './_validate.js';
-import { recordBackupRun } from '../services/backup/backup-runs-state.js';
-import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
-import { registerBackupStorageCommands, type BackupManifestsResponse } from './backup-storage.js';
-import { accountServerFetch } from '../services/account/account-client.js';
+import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
@@ -144,6 +144,8 @@ function registerBackupRestore(backup: Command): void {
           : { machine: targetMachine };
         const datastore = options.datastore ? namedDatastoreMount(options.datastore) : undefined;
 
+        // Refuse a bad target name before allocateNetworkId persists anything.
+        assertResourceName(targetName);
         const networkId = await configService.allocateNetworkId();
         await configService.addRepository(compositeKey(targetName, 'latest'), {
           repositoryGuid: source.repositoryGuid,

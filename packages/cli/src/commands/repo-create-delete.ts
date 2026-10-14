@@ -113,13 +113,15 @@ async function registerNewRepo(
   placement: Placement,
   extra: { sshPrivateKey?: string; sshPublicKey?: string }
 ): Promise<{ repositoryGuid: string; networkId: number }> {
+  // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
+  const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
+  assertResourceName(name);
   const existing = await configService.getRepository(name);
   if (existing) {
     throw new Error(t('commands.repo.create.alreadyExists', { name }));
   }
   const repositoryGuid = randomUUID();
   const networkId = await configService.allocateNetworkId();
-  const { compositeKey } = await import('../utils/config-schema.js');
   await configService.addRepository(compositeKey(name, 'latest'), {
     repositoryGuid,
     tag: 'latest',
