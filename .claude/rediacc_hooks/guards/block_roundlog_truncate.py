@@ -19,7 +19,7 @@ JUDGED ON WHAT RUNS, NOT ON THE TEXT (worklist #0c331972). Every verb arm used t
 
 FAILS OPEN, WITH ONE EXCEPTION. This matches on a path shape plus a write verb; anything it does not recognise runs. A guard that blocked on suspicion would be routed around, and being routed around is worse than a named residual.
 
-THE EXCEPTION IS AN INTERPRETER PROGRAM WITH A LOG IN PLAY, and there the burden is the program's. A log is IN PLAY for a python, node, perl or ruby run when the command line hands it one (an argument, an environment value, its stdin) or when the program's own text could spell one (the `pr-babysit` stem, or a string literal glob that meets the round-log pattern in a program holding something that expands it: a glob or match call, a shell-out, or a computed name, `_EXPANDS`). Such a program must be one this guard can FOLLOW: made only of reads, pure calls, and writes to literal paths that are not a log. A dynamic import or dispatch, a shell-out, a write whose target is not a literal, a method on a value the reader cannot type, or simply a call it does not know, and the program is refused. THE BOUNDARY: a program that is handed no log and whose text cannot spell one is not read at all, however it is written, which is what keeps this strictness off every ordinary script.
+THE EXCEPTION IS AN INTERPRETER PROGRAM WITH A LOG IN PLAY, and there the burden is the program's. A log is IN PLAY for a python, node, perl or ruby run when the command line hands it one (an argument, an environment value, its stdin) or when the program's own text could spell one (the `pr-babysit` stem, or a string literal glob that meets the round-log pattern in a program that is not provably inert, `_program_inert`). Such a program must be one this guard can FOLLOW: made only of reads, pure calls, and writes to literal paths that are not a log. A dynamic import or dispatch, a shell-out, a write whose target is not a literal, a method on a value the reader cannot type, or simply a call it does not know, and the program is refused. THE BOUNDARY: a program that is handed no log and whose text cannot spell one is not read at all, however it is written, which is what keeps this strictness off every ordinary script.
 
 NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime is partly invisible here. A verb's operand set by an earlier statement of the same command (`F=<log>; mv $F /tmp/`) is read as bash expands it; a REDIRECT onto such a variable (`> $F`), a value from the environment, and a shell glob that expands to the log are not, because the walk keeps a redirect target unexpanded. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
 the appendix survived, and a session that bypassed it has no such line to point at.
@@ -193,6 +193,38 @@ EDGE_CASES = [
     (
         "the JSDoc writer shelling out with an md glob",
         "node -e \"const lines = ['/**', ' * Entities.', ' */']; require('child_process').execSync('cp /dev/null agent/*.md');\"",
+    ),
+    # Review db54423c.1: an allowlist of expanders misses every library that expands a glob or runs a shell (shelljs, Open3, python `sh`, zx, execa, globby), and every directory listing filtered by a pattern. Each of these was refused before db54423cf, passed at it, and is refused again: only a program provably inert lets a glob literal pass.
+    ("shelljs rm on an md glob", "node -e \"require('shelljs').rm('agent/*.md')\""),
+    ("shelljs cp onto an md glob", "node -e \"require('shelljs').cp('/dev/null', 'agent/*.md')\""),
+    (
+        "ruby Open3 running a shell on an md glob",
+        "ruby -e \"require 'open3'; Open3.capture2('sh', '-c', 'cp /dev/null agent/*.md')\"",
+    ),
+    (
+        "python sh running bash on an md glob",
+        "python3 -c \"import sh; sh.bash('-c', 'cp /dev/null agent/*.md')\"",
+    ),
+    (
+        "a directory listing filtered by a log-meeting pattern",
+        "python3 -c \"import os, re; [open('agent/' + n, 'w') for n in os.listdir('agent') if re.search('pr-*.md', n)]\"",
+    ),
+    # The inert side, both directions: a program importing only `fs` that writes an md pattern list to the file its command line names writes that file, and the same program handed a log is refused by the handed arm.
+    (
+        "an inert program writing an md pattern list to the file it is handed",
+        "node -e \"const fs = require('fs'); fs.writeFileSync(process.argv[1], JSON.stringify(['*.md']))\" out.json",
+    ),
+    (
+        "the same inert program handed a log",
+        "node -e \"const fs = require('fs'); fs.writeFileSync(process.argv[1], JSON.stringify(['*.md']))\" agent/pr-babysit-0831-1.md",
+    ),
+    (
+        "the same program importing an unknown module",
+        "node -e \"const fs = require('fs-extra'); fs.writeFileSync(process.argv[1], JSON.stringify(['*.md']))\" out.json",
+    ),
+    (
+        "a JSDoc opener handed to a shelljs call",
+        "node -e \"const lines = ['/**', ' */']; require('shelljs').cp('/dev/null', '/**');\"",
     ),
     # Review 1d4e1754.1: a program handed the log (an argument, the environment, stdin) writes it without naming it.
     (
@@ -1079,26 +1111,156 @@ def _word_could_name_log(word):
     return False
 
 
-# What can turn a glob or brace literal into file names inside a program: a glob or match call (`glob`, `iglob`, `rglob`, `globSync`, `fnmatch`, `Path.match`, `minimatch`, ruby `Dir[...]`), a shell-out that hands the literal to a shell (`system`, `exec*`, `spawn*`, `popen`, `subprocess`, `child_process`, a backtick, perl `qx`, ruby `%x`), or a construct that reaches either by a computed name (`eval`, `getattr`, `__import__`, `importlib`, `Function`, `send`, `const_get`, a `require` or `import` of a non-literal). Matched anywhere in the text, inside literals too, so a mention over-counts expansion: the conservative direction for a guard whose miss is a destroyed history.
-_EXPANDS = re.compile(
-    r"glob|fnmatch|match|\bDir\b|system|exec|spawn|popen|subprocess|child_process|`|\bqx\b|%x|"
-    r"eval|getattr|__import__|importlib|\bFunction\b|\bsend\b|const_get|"
-    r"\b(?:require|import)\s*\(\s*[^'\"\s)]"
+# A PROGRAM IS INERT ONLY WHEN IT IS PROVABLY SO (review db54423c.1). The first version of this arm (db54423cf) listed the things that EXPAND a glob literal and let a program holding none of them pass, and every library it did not list became a bypass: shelljs `rm('agent/*.md')`, ruby `Open3`, python `sh`, zx, execa, globby, and a directory listing filtered by the literal as a pattern. The direction is now the other one: a glob literal puts a log in play UNLESS every module the program imports is on a short inert list and its text holds none of the constructs below.
+# The modules whose import alone cannot expand a glob or run a shell: what they offer that could (`os.system`, `fs.globSync`, `Path.glob`, `os.listdir`) is named by a construct below, so the call still makes the program live.
+_INERT_MODULES = {
+    "python": frozenset(
+        (
+            "sys",
+            "os",
+            "os.path",
+            "posixpath",
+            "json",
+            "re",
+            "io",
+            "string",
+            "textwrap",
+            "math",
+            "collections",
+            "itertools",
+            "functools",
+            "datetime",
+            "time",
+            "typing",
+            "pathlib",
+        )
+    ),
+    "js": frozenset(("fs", "node:fs", "path", "node:path", "os", "node:os", "util", "node:util")),
+    "ruby": frozenset(("json", "set", "date", "time")),
+    "perl": frozenset(("strict", "warnings", "utf8", "feature")),
+}
+# What makes a program LIVE whatever it imports, matched anywhere in its text, inside literals too, so a mention over-counts life: a shell-out (`system`, `exec*`, `spawn*`, `popen`, a backtick, perl `qx`, ruby `%x`), a computed name (`eval`, `getattr`, `__import__`, `Function`, `send`, `const_get`, perl `&{...}` and `->$name`), a glob or match call (`glob`, `fnmatch`, `match`), and a directory listing a pattern can filter (`listdir`, `scandir`, `walk`, `iterdir`, `readdir`, `opendir`, ruby `Dir`, `children`).
+_SHELL_OR_NAME = (
+    r"system|exec|spawn|popen|subprocess|child_process|`|\bqx\b|%x|"
+    r"eval|getattr|setattr|__import__|importlib|\bvars\b|locals|\bcompile\b|\bFunction\b|"
+    r"\bsend\b|const_get|instance_|\bmethod\b|&\s*[{$]|->\s*\$"
 )
+_GLOB_CALL = r"glob|fnmatch|match"
+_LISTING = r"listdir|scandir|\bwalk\b|iterdir|readdir|opendir|\bDir\b|children|each_child|\bFind\b"
+_LIVE = re.compile(f"{_SHELL_OR_NAME}|{_GLOB_CALL}|{_LISTING}")
+# Perl and ruby open a PIPE through a mode or a leading or trailing `|` in a string (`open(F, "ls *.md |")`), and perl's `<*.md>` is a glob with no call at all.
+_LIVE_PERL_RUBY = re.compile(r"['\"]\s*-?\||\|-?\s*['\"]|<[^<>\n]*[*?\[{][^<>\n]*>")
+_IMPORT_WORDS = {
+    "js": re.compile(r"\b(?:require|import)\b"),
+    "ruby": re.compile(r"\b(?:require|require_relative|load|autoload)\b"),
+    "perl": re.compile(r"\b(?:use|require|no|do)\b"),
+}
+_IMPORT_FORMS = {
+    "js": re.compile(
+        r"\brequire\s*\(\s*(['\"])([^'\"]+)\1\s*\)|\bimport\s+(?:[\w$*{}\s,]+?\s+from\s+)?(['\"])([^'\"]+)\3"
+    ),
+    "ruby": re.compile(r"\brequire\s*\(?\s*(['\"])([^'\"]+)\1"),
+    "perl": re.compile(r"\buse\s+()([\w:]+)"),
+}
 
 
-def _program_could_name_log(code):
-    """Could an interpreter program's own text spell a round-log path? It names the round-log stem (`pr-babysit`, in a literal or an f-string alike), or one of its STRING LITERALS is a glob or brace that can meet the round-log pattern (`glob.glob('agent/*.md')`) AND the program holds something that expands one (`_EXPANDS`). Code outside a literal is never read for globs: `3 * 4`, `from os import *` and `r']*'` are Python, not paths (#e5b0540a's false positive, reported live by w2).
+def _imports_inert(code, family):
+    """Does every import of the program name an inert module (`_INERT_MODULES`)? Python is read by its syntax tree (a relative import, or text that does not parse, is not inert); the other languages by their import words, each of which must be one plain import of a listed module. A language with no list is never inert."""
+    if family == "python":
+        try:
+            tree = ast.parse(code)
+        except (SyntaxError, ValueError):
+            return False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                if node.level or node.module is None:
+                    return False
+                names = [node.module]
+            else:
+                continue
+            if any(name not in _INERT_MODULES["python"] for name in names):
+                return False
+        return True
+    lang = "js" if family in _JS_FAMILIES else family
+    if lang not in _IMPORT_FORMS:
+        return False
+    forms = list(_IMPORT_FORMS[lang].finditer(code))
+    if len(forms) != len(_IMPORT_WORDS[lang].findall(code)):
+        return False
+    return all((m.group(2) or m.group(4)) in _INERT_MODULES[lang] for m in forms)
 
-    A STAR IN A LITERAL IS A PATH ONLY WHERE SOMETHING EXPANDS IT (#cad8d610, two live false positives on 2026-10-14). A JSDoc opener held as a string (`'/` `**'`, its basename a bare double star) met the round-log pattern, put a log in play, and a node program the reader could not follow was refused though it wrote only `scripts/lib/jsx-entities.ts`, once by a redirect and once by `writeFileSync` on that literal path. Read by itself, a literal is a string: `open` and `writeFileSync` never expand a glob, and the only calls that do are the glob and match family, a shell, or a computed name that may reach either. A program with none of those cannot reach a file through a glob literal, so the literal does not put a log in play; a program that names the stem, is handed a log, or holds an expander is read exactly as before. A glob ASSEMBLED at runtime, or an expander reached through a name assembled at runtime, stays the module's named residual.
+
+def _program_inert(code, family):
+    """Is the program provably unable to turn a glob literal into file names? Its imports are all inert, and its text holds nothing in `_LIVE` (nor, for perl and ruby, a pipe open or a `<...>` glob)."""
+    if _LIVE.search(code):
+        return False
+    if family in ("perl", "ruby") and _LIVE_PERL_RUBY.search(code):
+        return False
+    return _imports_inert(code, family)
+
+
+# A COMMENT DELIMITER HELD AS TEXT (#cad8d610). A generator that prints a JSDoc header holds `'/` `**'` and `' */'` as strings; the opener's basename is a bare double star, which meets the round-log pattern. Such a literal is text, not a glob, when it is EXACTLY a delimiter, sits only inside list brackets or the arguments of a print, log or append call, and the program holds no shell-out, computed name or glob call that could take it as a pattern.
+_DELIMITERS = frozenset(("/**", "/*", "*/", " */", " * ", " *"))
+_TEXT_CALLS = frozenset(
+    (
+        "print",
+        "log",
+        "info",
+        "warn",
+        "error",
+        "debug",
+        "puts",
+        "say",
+        "printf",
+        "write",
+        "push",
+        "append",
+    )
+)
+_NOT_TEXT = re.compile(f"{_SHELL_OR_NAME}|{_GLOB_CALL}")
+_LEXEME = re.compile(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"|`(?:[^`\\]|\\.)*`|[()\[\]{}]")
+
+
+def _delimiter_as_text(code, start):
+    """Is the literal at `start` placed where it can only be text: every parenthesis around it the argument list of a `_TEXT_CALLS` call, and the innermost bracket a list or such a call? A top-level binding (`p = '/` `**'`) is not, since the name can be handed anywhere."""
+    stack: list[tuple[str, str]] = []
+    for m in _LEXEME.finditer(code, 0, start):
+        lexeme = m.group(0)
+        if lexeme in "([{":
+            callee = (
+                re.search(r"([A-Za-z_$][\w$]*)\s*$", code[: m.start()]) if lexeme == "(" else None
+            )
+            stack.append((lexeme, callee.group(1) if callee else ""))
+        elif lexeme in ")]}" and stack:
+            stack.pop()
+    if not stack or stack[-1][0] == "{":
+        return False
+    return all(opener != "(" or callee in _TEXT_CALLS for opener, callee in stack)
+
+
+def _program_could_name_log(code, family="python"):
+    """Could an interpreter program's own text spell a round-log path? It names the round-log stem (`pr-babysit`, in a literal or an f-string alike), or one of its STRING LITERALS is a glob or brace that can meet the round-log pattern (`glob.glob('agent/*.md')`) in a program that is not provably inert (`_program_inert`). Code outside a literal is never read for globs: `3 * 4`, `from os import *` and `r']*'` are Python, not paths (#e5b0540a's false positive, reported live by w2).
+
+    INERT IS PROVEN, NEVER PRESUMED (review db54423c.1). A glob literal names files only through something that expands it, and the set of things that can is open: a library (shelljs, Open3, python `sh`, zx, execa, globby), a shell-out, a computed name, a directory listing the literal filters. So a glob literal counts unless every import is on a short inert list and the text holds none of those constructs; an unknown module is enough to keep the log in play, and the program is then read by `_follow`, which refuses what it cannot follow.
+
+    ONE NARROW EXEMPTION, for #cad8d610: a literal that is exactly a comment delimiter, held as list text or printed, in a program with no shell-out, computed name or glob call (`_delimiter_as_text`). The two live generators it was found on require a module from `node_modules` and so are not inert; they pass on this exemption alone. NAMED RESIDUAL: a delimiter placed in a list and later read back out of it as a pattern by a library this text does not name, a glob ASSEMBLED at runtime, and a module name assembled at runtime.
     """
     if _LOG_STEM in code:
         return True
-    if not _EXPANDS.search(code):
-        return False
     # Every single- or double-quoted string literal, escapes kept (Python, shell and JS alike): an EXTRACTOR over program text the walk already chose, so it is local here rather than a module pattern a sentence could be probed against.
-    literals = re.findall(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
-    return any(_word_could_name_log(lit[1:-1]) for lit in literals)
+    meeting = [
+        m
+        for m in re.finditer(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
+        if _word_could_name_log(m.group(0)[1:-1])
+        and not (
+            m.group(0)[1:-1] in _DELIMITERS
+            and not _NOT_TEXT.search(code)
+            and _delimiter_as_text(code, m.start())
+        )
+    ]
+    return bool(meeting) and not _program_inert(code, family)
 
 
 def _shell_words(cmd):
@@ -1133,7 +1295,9 @@ def _could_name_log(cmd):
         return False
     if any(_word_could_name_log(w) for w in _shell_words(cmd)):
         return True
-    return any(_program_could_name_log(code) for _family, code in WT.interpreter_programs(cmd))
+    return any(
+        _program_could_name_log(code, family) for family, code in WT.interpreter_programs(cmd)
+    )
 
 
 def _copy_writes_log(run_, cwd):
@@ -2370,7 +2534,7 @@ def _program_truncates(code, handed=False, family="python"):
 
     A program in play must be FOLLOWED (`_follow`): it is refused when a write lands on a literal that names a log, and equally when anything in it could not be followed, an unresolved write target included. A program whose every call is known, and whose every write goes to a named path that is not a log, writes those files and no other, whatever it reads.
     """
-    if not handed and not _program_could_name_log(code):
+    if not handed and not _program_could_name_log(code, family):
         return False
     literals, lost = _follow(code, family)
     return lost or any(_literal_names_log(text) for text in literals)
@@ -2413,7 +2577,7 @@ def run(ev):
     # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
     cwd = ev.field("cwd") or str(hookio.repo_root())
     truncating = truncating or any(_verb_truncates(r, cwd) for r in shellscan.every_run(cmd))
-    # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern where the program can expand it), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
+    # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern in a program not provably inert), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
     truncating = truncating or any(
         _program_truncates(code, False, family) for family, code in WT.interpreter_programs(cmd)
     )
