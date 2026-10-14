@@ -29,7 +29,7 @@ why: every www build must pass github.token. Found and fixed by hand at two of
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import www_build_token
 
 if __name__ == "__main__":

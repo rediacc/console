@@ -17,7 +17,7 @@ why: 133 WORKLIST_* names are read at 183 sites with no registry and no schema.
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import worklist_env_registry
 
 if __name__ == "__main__":

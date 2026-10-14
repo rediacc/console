@@ -84,7 +84,7 @@ why: TRAPS.md is a REGISTRY, not prose: every `## ` entry names the instrument
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import trap_registry
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ why: the golden corpus pins the vendored breakpoint validator as differing from
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import vendored_blocker_derivation
 
 if __name__ == "__main__":
