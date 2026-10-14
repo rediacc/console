@@ -358,7 +358,7 @@ def read(
     """The FOREGROUND read, for the CLI, the recovery waiter and the detached refresher only: it may fetch, for up to `FETCH_TIMEOUT_S`. Hooks and verdict printers call `read_cached`. Never raises."""
     try:
         return _read(max_age_s, now or time.time, fetch or fetch_summary, path, refresh)
-    except Exception as exc:  # noqa: BLE001 -- a status note must never break its caller
+    except Exception as exc:
         return Status(
             state="unknown",
             error="github_status internal error: %s: %s" % (type(exc).__name__, exc),
@@ -388,7 +388,7 @@ def _read(max_age_s, now, fetch, path, refresh) -> Status:
 
     try:
         data = parse_summary(fetch())
-    except Exception as exc:  # noqa: BLE001 -- every failure shape is the same answer: stale or unknown
+    except Exception as exc:
         error = "%s: %s" % (type(exc).__name__, str(exc)[:200])
         new = {"failed": {"at": t, "error": error}, "history": hist}
         if good is not None:
@@ -477,7 +477,7 @@ def read_cached(
             "older than %ds; %s" % (max_age_s, note),
             hist,
         )
-    except Exception as exc:  # noqa: BLE001 -- a status note must never break its caller
+    except Exception as exc:
         return Status(
             state="unknown",
             error="github_status internal error: %s: %s" % (type(exc).__name__, exc),
@@ -641,7 +641,7 @@ def surface(
         p = pathlib.Path(path) if path is not None else cache_path()
         if _claim_recovery(p, session, int(rec.get("gen") or 0)):
             return recovered_text(rec)
-    except Exception:  # noqa: BLE001 -- a status note must never break its caller
+    except Exception:
         return ""
     return ""
 

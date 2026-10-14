@@ -248,7 +248,7 @@ class Runner:
         log.step(f"TEST: {name}")
         try:
             code = fn()
-        except Exception as exc:  # noqa: BLE001 - a test that raises failed; it must not end the run
+        except Exception as exc:
             log.error(f"{type(exc).__name__}: {exc}")
             code = 1
         if code == 0 and self.cfg.dry_run:
@@ -664,7 +664,7 @@ class Runner:
         # The CLI's dependencies resolve live inside the container (a global install has no lockfile), so --before holds them to the release-age window; the cutoff comes from the checkout's one implementation.
         try:
             before = release_age.npm_before()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             log.error(
                 f"Could not compute the npm --before cutoff (rediacc_ci.core.release_age npm-before): {exc}"
             )

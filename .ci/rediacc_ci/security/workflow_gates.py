@@ -1121,7 +1121,7 @@ def _guarded(fn: typing.Callable[[], int]) -> int:
     except SystemExit as exc:  # pragma: no cover - defensive
         code = exc.code
         return code if isinstance(code, int) else 1
-    except BaseException:  # noqa: BLE001 - a heredoc's traceback is exit 1
+    except BaseException:
         traceback.print_exc()
         sys.stderr.flush()
         return 1

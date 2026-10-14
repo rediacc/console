@@ -668,7 +668,7 @@ def main(argv: list[str] | None = None) -> int:
             sys.stdout.write(render_only(branch, paths.repo_root()))
             return 0
         return publish(dict(os.environ), paths.repo_root())
-    except Exception as exc:  # noqa: BLE001 -- advisory: the table never fails CI
+    except Exception as exc:
         log.warn("review_table failed (%s: %s); nothing more posted" % (type(exc).__name__, exc))
         return 0
 

@@ -215,7 +215,7 @@ def _audit_hook(event: str, args: tuple) -> None:
             path = _audit_path(args[path_at], args[fd_at] if fd_at is not None else None)
             if path is not None:
                 record_write(root, path, str(_AUDIT["test"]), _WRITES, event in _SUBTREE_EVENTS)
-    except Exception:  # noqa: BLE001 -- an audit hook that raises aborts the operation it audits; a lost record is only a weaker attribution
+    except Exception:
         pass
     finally:
         _AUDIT["busy"] = False

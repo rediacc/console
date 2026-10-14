@@ -2,8 +2,10 @@
 
 Imported for its SIDE EFFECT, once per entry point:
 
-    import _cipath  # noqa: F401
+    import _cipath
     from rediacc_ci.docker import <mod>
+
+The line carries no marker: `lint.pyflakes.allowed-unused-imports` in the root pyproject.toml names `_cipath`, with its BLOCKER reason, so ruff does not report the import as unused.
 
 THIS IS A SECOND COPY, AND THE COPY IS THE PATTERN. `.ci/scripts/quality/_cipath.py` is the first; this is the first one outside that directory, and it was measured to be the only other one before it was written. A shared import cannot work here, and the reason is the same one that makes the hop necessary at all: what a path invocation puts on `sys.path[0]` is THE SCRIPT'S OWN
 DIRECTORY. For an entry point in `.ci/scripts/docker/` that is `.ci/scripts/docker`, so `import _cipath` can only ever resolve to a file sitting beside it. A module that could be imported from the quality directory would need `.ci` on the path already, which is exactly what has not happened yet.
