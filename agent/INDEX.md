@@ -516,7 +516,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-github-pr-review-restore.md` | approved | 128 | 0 | 13 | 35928 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-inline-suppressions.md` | approved | 317 | 1 | 10 | 41280 |
+| `agent/plans/PLAN-inline-suppressions.md` | approved | 318 | 0 | 11 | 41679 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
 | `agent/plans/PLAN-judge-prompt-trap-conflation.md` | compacted | 54 | 0 | 8 | 3828 |
 | `agent/plans/PLAN-k3s-137-and-pr-conditions.md` | approved | 112 | 0 | 5 | 9105 |
