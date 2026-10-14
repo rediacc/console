@@ -75,14 +75,21 @@ PY_EXEMPT = (".ci/rediacc_ci/quality/shrink_only.py",)
 def py_offers_flag(tree) -> bool:
     """True when the module PARSES the flag, not when it merely names it.
 
-    A writer reads the flag off its argument vector: `FLAG in argv` / `FLAG not in args`, `arg == FLAG`, or `parser.add_argument(FLAG, ...)`. A docstring, an error message telling the reader to run it, and a test passing it to a subprocess all name the flag without offering it, and treating those as writers is what put four test modules on the offender list.
+    A writer reads the flag off its argument vector: `FLAG in argv` / `FLAG not in args`, `arg == FLAG`, or `parser.add_argument(FLAG, ...)`. A docstring, an error message telling the reader to run it, a test passing it to a subprocess, and an `assert` on a captured stream all name the flag without offering it, and treating those as writers is what put four test modules on the offender list.
     """
 
     def is_flag(node) -> bool:
         return isinstance(node, ast.Constant) and node.value == FLAG
 
+    # A membership or equality test that is an `assert` condition checks output; it parses no argv.
+    asserted = {
+        id(inner)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Assert)
+        for inner in ast.walk(node.test)
+    }
     for node in ast.walk(tree):
-        if isinstance(node, ast.Compare):
+        if isinstance(node, ast.Compare) and id(node) not in asserted:
             operands = [node.left, *node.comparators]
             for i, op in enumerate(node.ops):
                 left, right = operands[i], operands[i + 1]
@@ -376,7 +383,8 @@ import sys
 def test_the_flag_refuses():
     proc = subprocess.run([sys.executable, "gate.py", "%s"], check=False)
     assert proc.returncode == 1, "run it again with %s --first-seed"
-''' % (FLAG, FLAG, FLAG)
+    assert "%s" not in proc.stderr
+''' % (FLAG, FLAG, FLAG, FLAG)
 
 UNGUARDED_TS_BODY = """// Temporary control fixture. Offers %s with no composition guard.
 if (process.argv.includes('%s')) {
