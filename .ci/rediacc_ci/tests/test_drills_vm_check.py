@@ -11,12 +11,12 @@ import io
 import json
 import os
 import pathlib
+import re
 import shutil
 import signal
 import subprocess
 import sys
 import tempfile
-import time
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -552,16 +552,68 @@ def test_a_failed_ssh_login_is_not_a_refusal(tmp_path: pathlib.Path) -> None:
     assert len(refused) == 2, receipt["steps"]
 
 
+# The searches run in a child under a generous deadline: a linear pattern answers in milliseconds even on a loaded runner, while a backtracking one does not finish "a" * 40 in hours, so the deadline separates the two without timing a single call against a tight bound.
+LINEAR_DEADLINE_S = 60
+LINEAR_CHILD = (
+    "import re, sys\n"
+    "pat = re.compile(sys.argv[1], re.IGNORECASE)\n"
+    "for tail in ('a' * 40, 'a-' * 2000, 'ab,' * 2000, 'a' * 20000, '-,' * 2000):\n"
+    "    if pat.search('user@host: Permission denied (' + tail):\n"
+    "        sys.exit('matched an unterminated list: ' + tail[:8])\n"
+    "print('linear')\n"
+)
+
+
 def test_ssh_auth_failure_pattern_is_linear_on_an_unterminated_method_list() -> None:
-    for tail in ("a" * 40, "a-" * 2000, "ab," * 2000, "a" * 20000):
-        line = "user@host: Permission denied (" + tail
-        started = time.perf_counter()
-        assert not vm_check.SSH_AUTH_FAILURE.search(line)
-        assert time.perf_counter() - started < 1.0, tail[:8]
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-I", "-c", LINEAR_CHILD, vm_check.SSH_AUTH_FAILURE.pattern],
+            capture_output=True,
+            text=True,
+            timeout=LINEAR_DEADLINE_S,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        pytest.fail(
+            "SSH_AUTH_FAILURE backtracks: an unterminated method list did not finish in %d s"
+            % LINEAR_DEADLINE_S
+        )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "linear", proc.stdout
     assert vm_check.SSH_AUTH_FAILURE.search(
         "u@h: Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password)."
     )
     assert vm_check.SSH_AUTH_FAILURE.search("Permission denied (keyboard-interactive).")
+
+
+# The method-list grammar the backtracking pattern accepted, kept small enough for it to answer at once: words of letters and hyphens, each optionally followed by a comma.
+BACKTRACKING_METHOD_LIST = r"permission denied \((?:[a-z-]+,?)+\)"
+
+
+def _short_lists(alphabet: str, longest: int) -> list[str]:
+    out = [""]
+    frontier = [""]
+    for _ in range(longest):
+        frontier = [s + c for s in frontier for c in alphabet]
+        out += frontier
+    return out
+
+
+def test_ssh_auth_failure_accepts_every_method_list_the_old_grammar_did() -> None:
+    old = re.compile(BACKTRACKING_METHOD_LIST, re.IGNORECASE)
+    lists = _short_lists("a-,", 6)
+    differ = [
+        body
+        for body in lists
+        if bool(old.fullmatch("permission denied (%s)" % body))
+        != bool(vm_check.SSH_AUTH_FAILURE.fullmatch("permission denied (%s)" % body))
+    ]
+    assert not differ, differ[:10]
+    for line in ("u@h: Permission denied (publickey,).", "u@h: Permission denied (-x)."):
+        assert vm_check.SSH_AUTH_FAILURE.search(line), line
+        assert not vm_check.sftp_refused(line), line
+    for line in ("u@h: Permission denied ().", "u@h: Permission denied (a,,b)."):
+        assert not vm_check.SSH_AUTH_FAILURE.search(line), line
 
 
 def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None:

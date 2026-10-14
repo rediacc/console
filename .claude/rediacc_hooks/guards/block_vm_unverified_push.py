@@ -4,6 +4,8 @@ THE ORDER (operator /ask ASKED:2026-10-14T17:19Z, option (c) "Script plus a push
 
 WHAT IS TOUCHED is never decided here. `rediacc_ci.drills.vm_check_trigger.changed_paths(root, base, "push", tip)` is the only definition of the trigger, shared with the script, and is imported through `syspath.import_from_ci` (`.ci` on sys.path only for the import). The base is `push_base` (`@{push}`, `origin/<branch>`, `@{upstream}`, then `origin/main`, merged with the pushed tip). A renet range that cannot be computed (an old gitlink commit missing from the local private/renet) is UNKNOWN, and unknown counts as touched: it is listed among the hits, never dropped. A push base that cannot be resolved is unknown in the same way.
 
+EVERY PUSHED COMMIT IS JUDGED ON ITS OWN. A command can send several commits: two pushes with different sources, or one push naming several refspecs. Each refspec's source (a bare ref is its own source, `+` dropped, a glob or no refspec at all reads as HEAD) is resolved to a commit, and each distinct commit gets its own range, tree and receipt. Judging only HEAD would admit a pushed commit carrying a trigger change that HEAD reverts. A source git cannot resolve is named on stderr and skipped, since git refuses to push it as well.
+
 THE RECEIPT is judged by `vm_check_receipt.admit(root, tree, inputs(root, tree))`: the pushed tree's archive, then `receipt.json`, then the newest archives. VERIFIED with the same tree or the same trigger digest, a renet build equal to the pointer and not modified, admits. A later commit outside the trigger keeps the digest, so it costs no new VM run.
 
 THE ESCAPE is an environment assignment on the push itself, read from the shared lexer's walk (`run.env`) exactly as `TURBO_PUSH_REASON` is, so a prefix, an earlier `export` and `env NAME=value` count, and prose naming it does not:
@@ -16,7 +18,7 @@ THE ESCAPE is an environment assignment on the push itself, read from the shared
 
   Every kind needs the `ASKED:` minute, matched against an AskUserQuestion answer in the payload's `transcript_path` within 300 s by `wl_checks._asked_in_transcript`, the evidence rule of the review waiver. That proves an operator answer exists at that minute, not that it answered this question: it narrows the escape to the operator's own turn. A transcript that cannot be read proves nothing, so the escape is refused then.
 
-THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head, tree, renet, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 62 is the last pre-bash slot, so every other guard has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
+THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 62 is the last pre-bash slot, so every other guard has already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
 
 SCOPE, as `block_unverified_push` draws it: a command-position `git push` in this checkout. NOT judged: a `--dry-run` push; a delete push (`--delete`, `:<ref>`); a push whose source is exactly `origin/main` (the GitLab mirror push of /pr-merge step 6b, `block_unverified_push.pushes_only_origin_main`); a submodule push (the console pointer push carries the range); another repository, by `-C`, `cd` or the payload's `cwd`.
 
@@ -229,6 +231,18 @@ def _stale_not_verified(path):
     return plant_receipt(root, "NOT_VERIFIED", tree=seed_tree)
 
 
+TIP_BRANCH = "vm-tip"
+
+
+def _reverted(path):
+    """`TIP_BRANCH` holds the CLI commit; HEAD reverts the CLI file on top, so HEAD's range touches nothing while the branch's does."""
+    root = world(path, cli=True)
+    _git(root, "branch", TIP_BRANCH)
+    _put(root, CLI_FILE, "export const sftp = 1;\n")
+    _commit(root, "revert the CLI change")
+    return root
+
+
 FIXTURES = {
     "vmc-docs-only": world,
     "vmc-cli-none": lambda p: world(p, cli=True),
@@ -241,6 +255,7 @@ FIXTURES = {
     "vmc-advanced": _advanced,
     "vmc-missing-old": lambda p: world(p, missing_old=True),
     "vmc-stale-not-verified": _stale_not_verified,
+    "vmc-reverted": _reverted,
 }
 
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
@@ -273,6 +288,8 @@ EDGE_CASES = [
     ("a submodule push", "git -C private/renet push origin 1008-1"),
     ("prose naming a push", "echo 'git push origin 1008-1'"),
     ("a scratch repo", "git -C /tmp push origin x"),
+    ("two pushes of two commits", "git push origin %s:refs/heads/x && %s" % (TIP_BRANCH, _PUSH)),
+    ("two refspecs in one push", "git push origin 1008-1:1008-1 %s:refs/heads/x" % TIP_BRANCH),
 ]
 
 
@@ -291,7 +308,7 @@ def _skipped(args):
 
 
 def _pushes(cmd, root, base):
-    """[(canonical push line, reason-or-None)] for every judged push of this checkout in `cmd`, in order."""
+    """[(canonical push line, reason-or-None, args)] for every judged push of this checkout in `cmd`, in order."""
     created = commit_policy.created_dirs(cmd, base)
     out = []
     for run in commit_policy.git_runs(cmd, "push"):
@@ -305,16 +322,38 @@ def _pushes(cmd, root, base):
         line = " ".join(["git", "push", *args])
         if PUSH.pushes_only_origin_main(root, [line]):
             continue
-        out.append((line, run.env.get(REASON_ENV)))
+        out.append((line, run.env.get(REASON_ENV), args))
     return out
 
 
-def _tip(lines):
-    """The commit the push sends: the one explicit source every line names, else HEAD (`block_unverified_push.pushed_tree`'s rule)."""
-    sources = {PUSH.push_source(line) for line in lines}
-    if len(sources) == 1 and "" not in sources:
-        return sources.pop()
-    return "HEAD"
+def _sources(args):
+    """Every source one push sends, in order: each refspec's left side (a bare ref is its own source, a leading `+` dropped), HEAD for a glob or when no refspec is named. A `:dst` delete inside a mixed push sends nothing."""
+    specs = shellscan.git_push_args(args).operands[1:]
+    out = []
+    for spec in specs:
+        src = spec.lstrip("+").split(":", 1)[0]
+        if not src and ":" in spec:
+            continue
+        out.append("HEAD" if not src or "*" in src else src)
+    return out or ["HEAD"]
+
+
+def _tips(root, pushes):
+    """({commit: (the source as spelled, [indexes into `pushes` sending it])}, [sources git cannot resolve]), every distinct pushed commit once, in order."""
+    tips: dict[str, tuple[str, list[int]]] = {}
+    unresolved: list[str] = []
+    for index, (_line, _reason, args) in enumerate(pushes):
+        for src in _sources(args):
+            commit = commit_policy.git(
+                ["rev-parse", "-q", "--verify", "%s^{commit}" % src], cwd=root
+            )
+            if not commit:
+                unresolved.append(src)
+                continue
+            _label, sending = tips.setdefault(commit, (src, []))
+            if index not in sending:
+                sending.append(index)
+    return tips, unresolved
 
 
 def _hits(trigger, root, tip):
@@ -324,7 +363,7 @@ def _hits(trigger, root, tip):
     resolved = trigger.push_base(git, branch or None)
     if not resolved.ref:
         return "", ["(unknown) no push base: tried %s" % ", ".join(resolved.tried)]
-    base = resolved.merge_base if tip == "HEAD" else git(["merge-base", tip, resolved.ref])
+    base = git(["merge-base", tip, resolved.ref])
     if not base:
         return resolved.ref, ["(unknown) no merge base of %s and %s" % (tip, resolved.ref)]
     changed = trigger.changed_paths(root, base, "push", tip)
@@ -409,7 +448,7 @@ def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
 # --------------------------------------------------------------------------- the ledger
 
 
-def _row(root, tree, kind, why, reason, hits, attempt):
+def _row(root, commit, tree, kind, why, reason, hits, attempt):
     asked = ASKED_STRICT_RE.search(reason or "")
     receipt = None
     if attempt is not None:
@@ -420,7 +459,7 @@ def _row(root, tree, kind, why, reason, hits, attempt):
     return {
         "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "branch": commit_policy.current_branch(root),
-        "head": commit_policy.git(["rev-parse", "HEAD"], cwd=root) or "",
+        "head": commit,
         "tree": tree,
         "renet": commit_policy.git(["rev-parse", "%s:%s" % (tree, RENET)], cwd=root) or "",
         "kind": kind,
@@ -444,7 +483,7 @@ def _record(ev, root, rows):
         )
 
 
-REFUSAL = """BLOCKED: this push touches the VM trigger paths and no VERIFIED vm:check receipt covers tree %(tree)s.
+REFUSAL = """BLOCKED: this push touches the VM trigger paths and no VERIFIED vm:check receipt covers tree %(tree)s (commit %(commit)s, pushed as `%(src)s`).
 
 Receipt: %(verdict)s
 Touched (%(n)d, base %(base)s):
@@ -484,37 +523,44 @@ def run(ev):
     except ImportError as exc:
         ev.warn(UNEXAMINED % ("the vm-check trigger or receipt module could not import (%s)" % exc))
         return hookio.ALLOW
-    lines = [line for line, _reason in pushes]
-    tip = _tip(lines)
     root_path = pathlib.Path(root)
-    tree = PUSH.pushed_tree(root, lines)
-    if not tree:
-        ev.warn(UNEXAMINED % ("git could not name the pushed tree of %s" % tip))
-        return hookio.ALLOW
-    base_name, hits = _hits(trigger, root_path, tip)
-    if not hits:
-        return hookio.ALLOW
-    digest = trigger.inputs(root_path, tree)
-    verdict = receipt_mod.admit(root_path, tree, digest)
-    if verdict.ok:
-        return hookio.ALLOW
+    tips, unresolved = _tips(root, pushes)
+    for src in unresolved:
+        ev.warn(UNEXAMINED % ("git could not name the pushed commit of `%s`" % src))
 
     rows = []
-    refusals = []
-    for line, reason in pushes:
-        kind, why, attempt = _judge_reason(ev, reason, receipt_mod, root_path, tree, digest)
-        if kind is None:
-            refusals.append("  %s\n    escape refused: %s\n" % (line, why))
+    blocks = []
+    for commit, (src, sending) in tips.items():
+        tree = commit_policy.git(["rev-parse", "%s^{tree}" % commit], cwd=root)
+        if not tree:
+            ev.warn(UNEXAMINED % ("git could not name the pushed tree of %s" % src))
             continue
-        rows.append(_row(root, tree, kind, why, reason, hits, attempt))
-    if refusals:
+        base_name, hits = _hits(trigger, root_path, commit)
+        if not hits:
+            continue
+        digest = trigger.inputs(root_path, tree)
+        verdict = receipt_mod.admit(root_path, tree, digest)
+        if verdict.ok:
+            continue
+        refusals = []
+        for index in sending:
+            line, reason, _args = pushes[index]
+            kind, why, attempt = _judge_reason(ev, reason, receipt_mod, root_path, tree, digest)
+            if kind is None:
+                refusals.append("  %s\n    escape refused: %s\n" % (line, why))
+                continue
+            rows.append(_row(root, commit, tree, kind, why, reason, hits, attempt))
+        if not refusals:
+            continue
         shown = "".join("  %s\n" % h for h in hits[:HITS_SHOWN])
         if len(hits) > HITS_SHOWN:
             shown += "  ... and %d more\n" % (len(hits) - HITS_SHOWN)
-        ev.warn_raw(
+        blocks.append(
             REFUSAL
             % {
                 "tree": tree[:12],
+                "commit": commit[:12],
+                "src": src,
                 "verdict": verdict.message,
                 "n": len(hits),
                 "base": base_name or "unresolved",
@@ -525,6 +571,9 @@ def run(ev):
                 "ledger": LEDGER_REL,
             }
         )
+    if blocks:
+        ev.warn_raw("\n".join(blocks))
         return hookio.DENY
-    _record(ev, root, rows)
+    if rows:
+        _record(ev, root, rows)
     return hookio.ALLOW

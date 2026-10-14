@@ -74,6 +74,16 @@ ESC_NR = built("vmc-cli-none")
 ESC_DL = built("vmc-cli-none")
 ESC_NV = built("vmc-cli-not-verified")
 OUTSIDE = built("vmc-docs-only")
+# HEAD reverts the CLI change that `G.TIP_BRANCH` still carries: a command pushing both commits is judged on each.
+REVERTED = built("vmc-reverted")
+REVERTED_VERIFIED = built("vmc-reverted")
+G.plant_receipt(
+    REVERTED_VERIFIED,
+    tree=G._git(REVERTED_VERIFIED, "rev-parse", "%s^{tree}" % G.TIP_BRANCH),
+)
+ESC_TIP = built("vmc-reverted")
+TIP = G.TIP_BRANCH
+TIP_PUSH = "git push origin %s:refs/heads/x" % TIP
 
 
 def transcript(answer_ts):
@@ -165,6 +175,53 @@ CASES = [
         "private/renet/cmd/renet/sandbox_exec.go",
     ),
     ("the old renet object missing", PUSH, MISSING_OLD, None, None, True, "(unknown) renet range"),
+    # ---- every pushed commit, not only HEAD
+    ("HEAD reverts the change: a bare push", PUSH, REVERTED, None, None, False, ""),
+    (
+        "two pushes, the other commit touched",
+        "%s && %s" % (TIP_PUSH, PUSH),
+        REVERTED,
+        None,
+        None,
+        True,
+        "pushed as `%s`" % TIP,
+    ),
+    (
+        "two refspecs in one push",
+        "git push origin 1008-1:1008-1 %s:refs/heads/x" % TIP,
+        REVERTED,
+        None,
+        None,
+        True,
+        "pushed as `%s`" % TIP,
+    ),
+    (
+        "a bare ref naming another branch",
+        "git push origin %s" % TIP,
+        REVERTED,
+        None,
+        None,
+        True,
+        "",
+    ),
+    (
+        "a HEAD-relative source",
+        "git push origin HEAD~1:refs/heads/x",
+        REVERTED,
+        None,
+        None,
+        True,
+        "",
+    ),
+    (
+        "two pushes, the other commit VERIFIED",
+        "%s && %s" % (TIP_PUSH, PUSH),
+        REVERTED_VERIFIED,
+        None,
+        None,
+        False,
+        "",
+    ),
     # ---- the receipt
     ("VERIFIED for this tree", PUSH, CLI_VERIFIED, None, None, False, ""),
     ("VERIFIED, carried by a docs commit", PUSH, ADVANCED, None, None, False, ""),
@@ -241,6 +298,15 @@ CASES = [
         "env NAME=value",
         "env VM_CHECK_PUSH_REASON='not-runtime: %s%s' %s" % (FILES, ASK, PUSH),
         ESC_NR,
+        ANSWERED,
+        None,
+        False,
+        "",
+    ),
+    (
+        "not-runtime for the other commit",
+        (R % ("not-runtime: " + FILES + ASK)) + TIP_PUSH,
+        ESC_TIP,
         ANSWERED,
         None,
         False,
@@ -323,6 +389,15 @@ CASES = [
     (
         "a second push with no reason",
         "%s; git push origin HEAD:1008-1" % NR,
+        CLI_NONE,
+        ANSWERED,
+        None,
+        True,
+        "no `VM_CHECK_PUSH_REASON=` on it",
+    ),
+    (
+        "the same push twice, the second with no reason",
+        "%s; %s" % (NR, PUSH),
         CLI_NONE,
         ANSWERED,
         None,
@@ -456,7 +531,18 @@ for root, kind, receipt in checks:
         fails += 1
     else:
         print("ledger: %d line(s) for kind %s, receipt %r" % (len(rows), kind, last["receipt"]))
-for quiet in (CLI_NONE, CLI_VERIFIED, ADVANCED, STALE_NV, DOCS):
+# The ledger names the commit pushed, not the checkout's HEAD.
+tip_rows = [json.loads(line) for line in ledger_lines(ESC_TIP)]
+tip_sha = G._git(ESC_TIP, "rev-parse", TIP)
+if [r.get("head") for r in tip_rows] != [tip_sha]:
+    print(
+        "*** FAIL *** the escape for %s recorded head %r, want [%r] (HEAD is %s)"
+        % (TIP, [r.get("head") for r in tip_rows], tip_sha, G._git(ESC_TIP, "rev-parse", "HEAD"))
+    )
+    fails += 1
+else:
+    print("ledger: the escape for %s names the pushed commit %s" % (TIP, tip_sha[:12]))
+for quiet in (CLI_NONE, CLI_VERIFIED, ADVANCED, STALE_NV, DOCS, REVERTED, REVERTED_VERIFIED):
     if ledger_lines(quiet):
         print("*** FAIL *** a world with no admitted escape wrote %r" % ledger_lines(quiet))
         fails += 1
