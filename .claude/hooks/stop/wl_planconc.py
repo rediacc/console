@@ -486,7 +486,7 @@ def spawn_plans(text: str, by_id: dict | None = None) -> set[str]:
     if out:
         return out
     if by_id:
-        import wl_leasehelp as LH  # noqa: PLC0415 -- pure, but kept off the import path of the sealed module
+        import wl_leasehelp as LH
 
         for ref in LH.item_refs(text):
             rid = LH.resolve(ref, by_id)
@@ -582,9 +582,9 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
 
     This session: each live writer row (`wl_roster.live_estimate`), resolved through its first prompt with `spawn_plans`, plus any fresh lease to that writer on a plan-linked item. Other sessions: every fresh lease on a plan-linked item whose worker is neither `queue` nor `lead`. None only when the writer estimate is blind AND no cross-session lease is visible; the caller fails open on None and the Stop hook recounts.
     """
-    import wl_core as C  # noqa: PLC0415 -- the live world is read only here
-    import wl_leasehelp as LH  # noqa: PLC0415
-    import wl_roster  # noqa: PLC0415
+    import wl_core as C
+    import wl_leasehelp as LH
+    import wl_roster
 
     rows, metas = wl_roster.live_estimate(cwd, session_id, now=now)
     items = list(getattr(fold, "items", None) or [])

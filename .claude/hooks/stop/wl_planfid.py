@@ -684,7 +684,7 @@ def _selftest():
     The DETERMINISTIC half: plan discovery from a transcript, task counting, both prefilter signals in BOTH directions on the REAL before/after item sets, and the verification that stands between a model claim and a block. The other half -- whether haiku can separate the incident from its own correction -- cannot be stubbed and lives behind --corpus, because a stub that answers
     "unfaithful" proves nothing.
     """
-    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
+    import wl_common
 
     check = wl_common.Checker()
 

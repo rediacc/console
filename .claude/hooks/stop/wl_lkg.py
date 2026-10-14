@@ -95,7 +95,7 @@ def snapshot(d=None):
         with contextlib.suppress(OSError):
             (root / "crash-since").unlink()
         return dg
-    except Exception:  # noqa: BLE001 -- a snapshot must never be the thing that fails a stop
+    except Exception:
         return ""
 
 
@@ -139,7 +139,7 @@ def _git_snapshot(live):
             tar.extractall(out, filter="data")
         d = out / STOP_REL
         return d if (d / "worklist.py").is_file() else None
-    except Exception:  # noqa: BLE001 -- no git snapshot is an answer, not a crash
+    except Exception:
         return None
 
 

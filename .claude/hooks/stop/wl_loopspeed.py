@@ -29,8 +29,8 @@ def record_policy_rel():
     LAZY, NOT AT IMPORT. A module-level call made `import wl_checks` fail wherever `.ci` is absent, and the Stop-hook tests that copy .claude/hooks/stop into a scratch tree (test_wl_lkg, test_wl_cadence 222j, test_wl_retro r16, test_stop_hook_edit_check) then saw the whole hook as broken. ImportError propagates to the one caller, which answers "unknown".
     """
     if not _RECORD_POLICY_REL:
-        import wl_proc  # noqa: F401, PLC0415 -- its import puts .ci on sys.path
-        from rediacc_ci.policy_paths import policy_rel  # noqa: PLC0415
+        import wl_proc  # noqa: F401 -- its import puts .ci on sys.path
+        from rediacc_ci.policy_paths import policy_rel
 
         _RECORD_POLICY_REL.append(policy_rel("record-paths.json"))
     return _RECORD_POLICY_REL[0]
@@ -190,7 +190,7 @@ CI_CACHE_MAX_AGE_S = 20 * 60
 
 def pending_run(worklist, session_id, now=None):
     """The cached head's short sha when its run is in progress and not red, and the read is younger than CI_CACHE_MAX_AGE_S; else None. No git and no network."""
-    import wl_ci  # noqa: PLC0415 -- the Stop modules are importable only from the hook's own directory
+    import wl_ci
 
     try:
         cache = json.loads(wl_ci.cistate_path(worklist, session_id).read_text(encoding="utf-8"))

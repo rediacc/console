@@ -699,57 +699,13 @@
   ".claude/hooks/stop/wl_checks.py": {
    "noqa E731": 2
   },
-  ".claude/hooks/stop/wl_git.py": {
-   "noqa PLC0415": 2
-  },
-  ".claude/hooks/stop/wl_histfirst.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_liveness.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 6
-  },
-  ".claude/hooks/stop/wl_lkg.py": {
-   "noqa BLE001": 2
-  },
   ".claude/hooks/stop/wl_loopspeed.py": {
-   "noqa F401": 1,
-   "noqa PLC0415": 3
-  },
-  ".claude/hooks/stop/wl_planconc.py": {
-   "noqa PLC0415": 4
-  },
-  ".claude/hooks/stop/wl_plandeps.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_planenforce.py": {
-   "noqa BLE001": 2
-  },
-  ".claude/hooks/stop/wl_planfid.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_planfile.py": {
-   "noqa BLE001": 5,
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_planindex.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_planorder.py": {
-   "noqa BLE001": 1,
-   "noqa PLC0415": 2
-  },
-  ".claude/hooks/stop/wl_planqueue.py": {
-   "noqa PLC0415": 19
+   "noqa F401": 1
   },
   ".claude/hooks/stop/wl_planrec.py": {
-   "noqa BLE001": 1,
-   "noqa PERF401": 1,
-   "noqa PLC0415": 13
+   "noqa PERF401": 1
   },
   ".claude/hooks/stop/wl_profile.py": {
-   "noqa PLC0415": 7,
    "type-ignore attr-defined": 1
   },
   ".claude/hooks/stop/wl_prreview.py": {

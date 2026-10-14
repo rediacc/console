@@ -360,7 +360,7 @@ def _owner(plan_owner, root, rel):
     """
     try:
         return plan_owner(root, rel)
-    except Exception:  # noqa: BLE001 -- a header read must never wedge a stop
+    except Exception:
         return None
 
 
@@ -485,7 +485,7 @@ def store_item_states(root):
 
     The CI half of `fold_item_states`. It reads the tracked files directly rather than through `wl_store.store_dir`, whose TMPDIR legacy log and `WORKLIST_STORE_DIR` override describe one machine, not the commit being judged; the fold itself is `wl_store._fold_events`, so the two halves cannot disagree about what a sequence of events means. Imported lazily because wl_store imports this module.
     """
-    import wl_store as S  # noqa: PLC0415
+    import wl_store as S
 
     events = []
     for f in sorted((pathlib.Path(root) / "agent" / S.STORE_DIR_NAME).glob("*.jsonl")):
@@ -553,7 +553,7 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
             continue
         try:
             open_tasks, done_tasks = plan_boxes(text)
-        except Exception:  # noqa: BLE001
+        except Exception:
             open_tasks, done_tasks = [], []
         blind = None
         if raw_open and not open_tasks:
@@ -581,7 +581,7 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
             continue
         try:
             open_tasks, done_tasks = plan_boxes(text)
-        except Exception:  # noqa: BLE001 -- same contract as the loop above
+        except Exception:
             open_tasks, done_tasks = [], []
         if not open_tasks:
             continue
@@ -608,7 +608,7 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
             continue
         try:
             open_tasks, done_tasks = plan_boxes(text)
-        except Exception:  # noqa: BLE001 -- same contract as the loops above
+        except Exception:
             open_tasks, done_tasks = [], []
         if not open_tasks:
             continue
@@ -616,7 +616,7 @@ def plan_rows(root, recs, fold, session_id, plan_owner):
             states = fold_item_states(fold)
         try:
             ok, why = resolve_ruling(root, rel, text, states)
-        except Exception as exc:  # noqa: BLE001 -- a header read must never wedge a stop
+        except Exception as exc:
             ok, why = False, "the `Ruling:` line could not be checked (%s)" % exc
         if ok:
             continue

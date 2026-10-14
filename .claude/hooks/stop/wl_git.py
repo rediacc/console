@@ -1653,8 +1653,8 @@ def selftest():
     # EVERY `dels is None` GUARD, BOTH WAYS. These were the two fail-OPEN sites this session closed: `staged_deletions` returns None when its probe fails, None is falsy, and a bare `if dels:` therefore read "the probe broke" as "no deletions". force-push had it right and two other paths did not.
     #
     # Controls that only exercised the happy path would not have seen the inversion, which is the whole reason this block asserts BOTH returns per site: None must refuse, and an empty list must NOT.
-    import contextlib  # noqa: PLC0415 -- selftest-only
-    import io  # noqa: PLC0415
+    import contextlib
+    import io
 
     real_sd = globals()["staged_deletions"]
 
