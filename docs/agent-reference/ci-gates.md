@@ -568,6 +568,8 @@ An artifact is left to the pre-push run when its check is too slow for a commit,
 
 **Pushing is separate from committing.** A push is a backup and a CI trigger, never one per commit: at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits. Each push needs its `ci:quick` receipt (`block_unverified_push`; `--receipt-out` from a clean clone when the tree is shared).
 
+**A push touching the VM trigger paths also needs a VERIFIED `vm:check` receipt.** `block_vm_unverified_push` (pre-bash, ORDER 62, the last guard) diffs the pushed range through `.ci/rediacc_ci/drills/vm_check_trigger.py` and admits it only when `.ci/cache/vm-check/` holds a VERIFIED receipt for the pushed tree or its trigger inputs with a matching unmodified renet build; `npm run vm:check -- --changed` writes one. The operator escape is `VM_CHECK_PUSH_REASON` with an `ASKED:` minute, logged to `agent/ledgers/vm-check-push-reasons.jsonl`; `.claude/agents/ops-vms.md` carries the verdicts and classes.
+
 ### Submodule commit order
 
 Always commit submodules before the parent repo:
