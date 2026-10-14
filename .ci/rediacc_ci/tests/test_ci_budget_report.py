@@ -3007,3 +3007,100 @@ def test_the_artifact_retention_is_read_from_the_committed_record(tmp_path):
     record.parent.mkdir(parents=True)
     record.write_text('{"days": true}', encoding="utf-8")
     assert br.artifact_retention_days(tmp_path) is None
+
+
+# --------------------------------------------------------------------------- job_p90_plans: which leg a measured p90 ran ---------------------------------------------------------------------------
+
+
+def _plan_job(name: str, minutes: float = 5.0) -> dict[str, Any]:
+    return {
+        "name": name,
+        "conclusion": "success",
+        "started_at": "2026-10-13T10:00:00Z",
+        "completed_at": "2026-10-13T10:%02d:00Z" % minutes,
+    }
+
+
+def _manifest(of: int, legs: list[list[str]]) -> str:
+    return json.dumps(
+        {
+            "lane": "lane-x",
+            "of": of,
+            "legs": [{"index": i + 1, "ids": ids} for i, ids in enumerate(legs)],
+        }
+    )
+
+
+_PLAN_PATTERNS = {"lane-x": re.compile(r"^Q / X(?: \(.*\))?$")}
+
+
+def test_leg_plan_hash_pins_the_literal_check_lane_budget_reads():
+    """The TS selftest pins the same literal (`legPlanHash`); a drift between the two would set every measurement aside, or none."""
+    assert br.leg_plan_hash(["pytest:a.py", "pytest:b.py"]) == "6d63c78d64a1f6c7"
+
+
+def test_job_p90_plans_reads_each_run_s_own_plan_and_keeps_every_leg_a_name_ran():
+    runs = [{"id": 1, "head_sha": "new"}, {"id": 2, "head_sha": "old"}]
+    jobs = [[_plan_job("Q / X (1/2)"), _plan_job("Q / X (2/2)")], [_plan_job("Q / X (2/2)")]]
+    files = {
+        ("new", ".ci/config/shards/lane-x.json"): _manifest(2, [["a"], ["b", "c"]]),
+        ("old", ".ci/config/shards/lane-x.json"): _manifest(2, [["a", "b"], ["c"]]),
+    }
+    plans = br.job_p90_plans(runs, jobs, _PLAN_PATTERNS, lambda sha, rel: files.get((sha, rel)))
+    assert plans == {
+        "Q / X (1/2)": [br.leg_plan_hash(["a"])],
+        "Q / X (2/2)": sorted([br.leg_plan_hash(["b", "c"]), br.leg_plan_hash(["c"])]),
+    }
+
+
+def test_job_p90_plans_records_nothing_for_a_name_it_cannot_trace():
+    """Unknown is the strict side: a name any of whose samples is untraceable gets no entry, so the gate counts its p90 against today's leg."""
+    runs: list[dict[str, Any]] = [{"id": 1, "head_sha": "a"}, {"id": 2}, {"id": 3, "head_sha": "b"}]
+    jobs = [[_plan_job("Q / X (1/2)")], [_plan_job("Q / X (1/2)")], [_plan_job("Q / X (2/2)")]]
+    files = {
+        ("a", ".ci/config/shards/lane-x.json"): _manifest(2, [["a"], ["b"]]),
+        # A three-leg plan cannot be the plan a "2/2" name ran.
+        ("b", ".ci/config/shards/lane-x.json"): _manifest(3, [["a"], ["b"], ["c"]]),
+    }
+    plans = br.job_p90_plans(runs, jobs, _PLAN_PATTERNS, lambda sha, rel: files.get((sha, rel)))
+    assert plans == {}
+
+
+def test_job_p90_plans_skips_failed_jobs_and_lanes_with_no_manifest():
+    runs = [{"id": 1, "head_sha": "a"}]
+    failed = {**_plan_job("Q / X (1/1)"), "conclusion": "failure"}
+    plans = br.job_p90_plans(runs, [[failed]], _PLAN_PATTERNS, lambda _sha, _rel: None)
+    assert plans == {}
+    plans = br.job_p90_plans(
+        runs, [[_plan_job("Q / X (1/1)")]], _PLAN_PATTERNS, lambda _sha, _rel: None
+    )
+    assert plans == {}
+
+
+def test_merged_job_p90_plans_replaces_a_remeasured_name_and_keeps_the_rest():
+    existing = {"Q / X (1/2)": ["old1"], "Q / X (2/2)": ["old2"], "Other": ["k"]}
+    merged = br.merged_job_p90_plans(
+        existing, ["Q / X (1/2)", "Q / X (2/2)"], {"Q / X (1/2)": ["new1"]}
+    )
+    # (2/2) was re-measured but could not be traced: its old entry described other samples, so it goes.
+    assert merged == {"Other": ["k"], "Q / X (1/2)": ["new1"]}
+
+
+def test_refresh_lane_durations_writes_job_p90_plans(tmp_path):
+    path = tmp_path / "lane-durations.json"
+    path.write_text(
+        json.dumps(
+            {
+                "refreshed_at": "2026-01-01T00:00:00Z",
+                "concurrency": 20,
+                "job_p90_minutes": {"Q / X (1/2)": 9.0, "Kept": 1.0},
+                "job_p90_plans": {"Q / X (1/2)": ["stale"], "Kept": ["k"]},
+            }
+        )
+    )
+    compute = _fake_compute(
+        job_p90_minutes={"Q / X (1/2)": 7.0}, job_p90_plans={"Q / X (1/2)": ["fresh"]}
+    )
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    data = json.loads(path.read_text())
+    assert data["job_p90_plans"] == {"Kept": ["k"], "Q / X (1/2)": ["fresh"]}
