@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
@@ -46,7 +47,7 @@ vi.mock('../../utils/repo-executor.js', () => ({
   recordedDatastoreMount: mockRecordedMount,
 }));
 
-const DS = '/mnt/rediacc';
+const DS = WK_DATASTORE_PATH;
 
 const PUB_KEY = `ssh-ed25519 ${'A'.repeat(60)} test@rediacc`;
 const KEY_PREFIX = PUB_KEY.slice(0, 50);
