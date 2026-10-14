@@ -10,7 +10,7 @@
  * Parity goals with rsync:
  *  - Symlinks preserved as symlinks (not followed).
  *  - Executable bit preserved via chmod.
- *  - --chown universalUser:universalUser applied (sudo).
+ *  - No chown: the transfer runs as the repo user inside renet's transfer sandbox, so written files already carry the right owner (and sudo is unavailable there).
  *  - Exclude patterns interpreted with rsync-style globs.
  *  - --verify performs a remote sha256sum check after upload / before download.
  */
@@ -19,12 +19,11 @@ import type { Stats } from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
-import type { SFTPClient } from '../sftp/client.js';
 import { shellQuote } from '../../utils/shell-quote.js';
+import type { SFTPClient } from '../sftp/client.js';
 import { isExcluded } from './sftp-patterns.js';
 import {
   chmodRemote,
-  chownRemote,
   ensureRemoteDirs,
   finishResult,
   newResult,
@@ -53,8 +52,6 @@ export interface SftpTransferOptions {
   onProgress?: (file: string, bytesTransferred: number, totalBytes: number) => void;
   /** Dry run: count files without transferring. */
   dryRun?: boolean;
-  /** Remote user; when set, upload helpers `sudo chown -R` written paths to `${u}:${u}`. */
-  universalUser?: string;
   /** Verify each transferred file with sha256sum. Mismatches surface in errors + verifyFailures. */
   verify?: boolean;
 }
@@ -132,8 +129,8 @@ async function uploadOneFile(ctx: SingleFileUploadCtx): Promise<boolean> {
 
 /**
  * Upload a single local file to a fully-specified remote file path.
- * Pre-creates `dirname(remoteFilePath)`; preserves mode bits; applies sudo chown
- * when `universalUser` is set; verifies sha256 when `verify` is set.
+ * Pre-creates `dirname(remoteFilePath)`; preserves mode bits;
+ * verifies sha256 when `verify` is set.
  */
 async function statLocalFile(
   localFilePath: string,
@@ -191,10 +188,6 @@ export async function sftpUploadFile(
     });
     if (!ok) return finishResult(result, startTime);
 
-    if (options?.universalUser) {
-      await chownRemote(sftp, options.universalUser, [remoteFilePath], result.errors);
-    }
-
     result.filesTransferred = result.errors.length === 0 ? 1 : 0;
     result.bytesTransferred = data.length;
     options?.onProgress?.(path.posix.basename(remoteFilePath), data.length, data.length);
@@ -213,7 +206,6 @@ interface MultiUploadCtx {
   options?: SftpTransferOptions;
   totalBytes: number;
   result: SftpTransferResult;
-  writtenPaths: string[];
 }
 
 async function uploadFileEntry(file: SftpFileEntry, ctx: MultiUploadCtx): Promise<void> {
@@ -230,7 +222,6 @@ async function uploadFileEntry(file: SftpFileEntry, ctx: MultiUploadCtx): Promis
       label: file.remoteRelative,
     });
     if (!ok) return;
-    ctx.writtenPaths.push(remoteFilePath);
     ctx.result.filesTransferred++;
     ctx.result.bytesTransferred += data.length;
     ctx.options?.onProgress?.(file.remoteRelative, ctx.result.bytesTransferred, ctx.totalBytes);
@@ -245,7 +236,6 @@ async function uploadSymlinkEntry(link: SftpSymlinkEntry, ctx: MultiUploadCtx): 
   const remoteLinkPath = `${ctx.normalizedRemote}/${link.remoteRelative}`;
   try {
     await symlinkRemote(ctx.sftp, link.target, remoteLinkPath);
-    ctx.writtenPaths.push(remoteLinkPath);
   } catch (err) {
     ctx.result.errors.push(
       `symlink ${link.remoteRelative}: ${err instanceof Error ? err.message : String(err)}`
@@ -265,8 +255,8 @@ function dirsToCreate(normalizedRemote: string, expanded: ExpandedSources): stri
  * Upload one or more local files/directories to a remote directory via SFTP.
  * Files (single sources) land at `<remoteDir>/<basename>`; directory contents
  * are copied preserving their hierarchy under `<remoteDir>/`. Symlinks are
- * preserved as `ln -sfn` calls; modes are reapplied via chmod; ownership is
- * chowned to `universalUser` when set; sha256 verify runs when requested.
+ * preserved as `ln -sfn` calls; modes are reapplied via chmod;
+ * sha256 verify runs when requested.
  */
 export async function sftpUploadPaths(
   sources: SftpUploadSource[],
@@ -295,7 +285,6 @@ export async function sftpUploadPaths(
     options,
     totalBytes: expanded.files.reduce((s, f) => s + f.size, 0),
     result,
-    writtenPaths: [],
   };
 
   for (const file of expanded.files) {
@@ -303,10 +292,6 @@ export async function sftpUploadPaths(
   }
   for (const link of expanded.symlinks) {
     await uploadSymlinkEntry(link, ctx);
-  }
-
-  if (options?.universalUser && ctx.writtenPaths.length > 0) {
-    await chownRemote(sftp, options.universalUser, ctx.writtenPaths, result.errors);
   }
 
   return finishResult(result, startTime);

@@ -129,11 +129,12 @@ describe('sftpUploadFile', () => {
     expect(opts.stdin).toBe(Buffer.from('hello world').toString('base64'));
   });
 
-  it('applies sudo chown -h when universalUser is set (no symlink dereference)', async () => {
-    await sftpUploadFile(localFile, 'a/b.bin', sftp, { universalUser: 'svc' });
+  it('never issues sudo (no chown) for an upload: the transfer already runs as the repo user', async () => {
+    // A caller still passing the retired `universalUser` option must not get a chown either.
+    const retired = { exclude: [], universalUser: 'svc' };
+    await sftpUploadFile(localFile, 'a/b.bin', sftp, retired);
     const cmds = mockExec.mock.calls.map(([cmd]) => cmd as string);
-    // -h prevents chown from following symlinks: uploading a symlink like `link -> /etc/passwd` must NOT change ownership of the target.
-    expect(cmds.some((c) => c.startsWith(`sudo chown -h 'svc:svc' 'a/b.bin'`))).toBe(true);
+    expect(cmds.some((c) => c.includes('sudo') || c.includes('chown'))).toBe(false);
   });
 
   it('non-zero exit code -> success false, error message includes code', async () => {
@@ -255,20 +256,19 @@ describe('sftpUploadPaths', () => {
     expect(cmds).toContain(`mkdir -p 'dest/b'`);
   });
 
-  it('chowns all written paths once when universalUser is set', async () => {
+  it('never issues sudo or chown for a tree upload with symlinks', async () => {
     const dir = join(workDir, 'tree');
     mkdirSync(dir);
     writeFileSync(join(dir, 'a.txt'), 'a');
     writeFileSync(join(dir, 'b.txt'), 'b');
+    symlinkSync('a.txt', join(dir, 'ln'));
 
-    await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp, { universalUser: 'svc' });
+    const retired = { exclude: [], universalUser: 'svc' };
+    const r = await sftpUploadPaths([{ path: dir, isFile: false }], 'dest', sftp, retired);
     const cmds = mockExec.mock.calls.map(([c]) => c as string);
-    const chownCalls = cmds.filter((c) => c.startsWith('sudo chown'));
-    expect(chownCalls.length).toBeGreaterThanOrEqual(1);
-    // All file paths are in the single chown call (one chunk).
-    expect(chownCalls.some((c) => c.includes(`'dest/a.txt'`) && c.includes(`'dest/b.txt'`))).toBe(
-      true
-    );
+    expect(r.success).toBe(true);
+    expect(r.filesTransferred).toBe(2);
+    expect(cmds.some((c) => c.includes('sudo') || c.includes('chown'))).toBe(false);
   });
 
   it('exclude patterns filter walked files', async () => {
