@@ -33,8 +33,8 @@ export interface Verdict {
   clearsAt: number | null;
 }
 
-export const iso = (ms: number): string =>
-  new Date(ms).toISOString().replace(/:\d\d\.\d{3}Z$/, 'Z');
+/** An instant as ISO 8601 UTC, to the second (milliseconds too when nonzero), never rounded. */
+export const iso = (ms: number): string => new Date(ms).toISOString().replace(/\.000Z$/, 'Z');
 
 /**
  * Judge one release for one entry. A driver verdict (mirror-tag, same-host-version) wins;

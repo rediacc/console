@@ -20,8 +20,14 @@
  *      this run last wrote gets its before-bytes back (or is deleted, when it did not exist);
  *      a file that changed since then is someone else's edit and is left alone, by name.
  *
- * The journal is written before every phase, so a run killed half-way leaves a record
- * `pins verify` reads and `pins verify --restore <stamp>` replays with the same comparison.
+ * The journal is written before every phase and before every step, so a run killed half-way
+ * leaves a record `pins verify` reads and `pins verify --restore <stamp>` replays with the same
+ * comparison. A step's declared files are marked in flight before its command starts: a run
+ * killed inside the step cannot know which bytes the step wrote, so whatever such a file holds
+ * is counted as this run's write, exactly as a step that returns has its declared files
+ * counted. Only an unfinished run ('writing') replays; a finished, refused or already
+ * restored run is refused by state, since its files may since hold the same bytes again on
+ * purpose.
  * The tool never commits: a finished run writes one message draft per repo, submodules
  * first, and prints the exact add and commit lines.
  */
@@ -112,6 +118,8 @@ interface JournalFile extends RepoPath {
   before: string | null;
   /** sha256 of the bytes this run last wrote; null until it writes the file. */
   wrote: string | null;
+  /** True while a step that declares this file runs; cleared when the step returns. */
+  inflight?: boolean;
 }
 
 interface Journal {
@@ -140,9 +148,12 @@ export function compareAndRestore(root: string, j: Journal, mutant: Mutant | nul
   const out: RestoreOutcome = { restored: [], leftAlone: [] };
   if (mutant === 'no-restore') return out;
   for (const [k, f] of Object.entries(j.files)) {
-    if (f.wrote === null) continue;
+    if (f.wrote === null && f.inflight !== true) continue;
     const abs = absOf(root, f);
-    if (mutant !== 'blind-restore' && sha(readBytes(abs)) !== f.wrote) {
+    const now = sha(readBytes(abs));
+    if (f.inflight === true) {
+      if (now === (f.before === null ? 'absent' : sha(Buffer.from(f.before, 'base64')))) continue;
+    } else if (mutant !== 'blind-restore' && now !== f.wrote) {
       out.leftAlone.push(k);
       continue;
     }
@@ -167,10 +178,25 @@ export function openJournals(root: string): Array<{ stamp: string; files: string
   return out;
 }
 
-/** `pins verify --restore <stamp>`: replay a killed run's compare-and-restore. */
+/** Why `restoreJournal` refused a stamp: unknown, or a run that is not unfinished. */
+export class RestoreRefused extends Error {}
+
+/**
+ * `pins verify --restore <stamp>`: replay a killed run's compare-and-restore. Only a run left
+ * in 'writing' replays: a 'done' run's files are a finished bump, and a 'restored' or
+ * 'refused' one has nothing of its own left on disk, so replaying either would undo bytes a
+ * later run or edit put there.
+ */
 export function restoreJournal(root: string, stamp: string): RestoreOutcome {
   const dir = path.join(journalRoot(root), stamp);
-  const j = JSON.parse(fs.readFileSync(path.join(dir, 'journal.json'), 'utf8')) as Journal;
+  const file = path.join(dir, 'journal.json');
+  if (path.basename(stamp) !== stamp || !fs.existsSync(file))
+    throw new RestoreRefused(`no journal ${stamp} under ${journalRoot(root)}`);
+  const j = JSON.parse(fs.readFileSync(file, 'utf8')) as Journal;
+  if (j.state !== 'writing')
+    throw new RestoreRefused(
+      `journal ${stamp} is '${j.state}', not a run killed mid-write; only 'writing' journals replay`
+    );
   const out = compareAndRestore(root, j, null);
   j.state = 'restored';
   saveJournal(dir, j);
@@ -286,6 +312,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     const now = sha(readBytes(absOf(o.root, f)));
     const before = f.before === null ? 'absent' : sha(Buffer.from(f.before, 'base64'));
     if (now !== before || f.wrote !== null) f.wrote = now;
+    delete f.inflight;
   };
   j.state = 'writing';
   saveJournal(dir, j);
@@ -313,7 +340,11 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     }
     saveJournal(dir, j);
     const repos = [...new Set(['.', ...[...touched.values()].map((p) => p.repo)])];
-    // A step is judged by the BYTES it changed, not by which files are dirty: a file an earlier write or step already made dirty is dirty before and after, and only its hash shows that this step rewrote it (review 02aeb8f5.1). A change is declared only by this step's own writes, never by the journal, which also holds every other plan's files.
+    // A step is judged by the BYTES it changed, not by which files are dirty: a file an
+    // earlier write or step already made dirty is dirty before and after, and only its hash
+    // shows that this step rewrote it. A change is declared only by this step's own writes,
+    // never by the journal, which also holds every other plan's files. A deleted file hashes
+    // as 'absent', so a step that removes a dirty file is judged the same way.
     const dirtyHashes = (r: string): Map<string, string> => {
       const out = new Map<string, string>();
       for (const f of dirtyPaths(path.join(o.root, r)) ?? new Set<string>()) {
@@ -324,6 +355,8 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     };
     for (const s of steps) {
       const pre = new Map(repos.map((r) => [r, dirtyHashes(r)]));
+      for (const w of s.writes) j.files[keyOf(w)].inflight = true;
+      saveJournal(dir, j);
       const rc = run(s.run, s.cwd);
       const declared = new Set(s.writes.map((w) => keyOf(w)));
       for (const w of s.writes) markWrote(keyOf(w));
@@ -356,6 +389,8 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
           'NPM_VERSION is missing from .devcontainer/toolchain.env; refusing to run an ambient npm'
         );
       for (const { k, f } of changedLocks) {
+        f.inflight = true;
+        saveJournal(dir, j);
         const rc = run(canonicalCmd(o.npmVersion), path.join(f.repo, path.dirname(f.file)));
         markWrote(k);
         if (rc !== 0) throw new Error(`the canonical lockfile pass failed for ${k} (rc=${rc})`);
@@ -380,7 +415,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     res.failure = (err as Error).message;
     const r = compareAndRestore(o.root, j, o.mutant);
     res.restored = r.restored;
-    res.leftAlone = [...r.leftAlone, ...undeclared];
+    res.leftAlone = [...new Set([...r.leftAlone, ...undeclared])];
     j.state = 'restored';
     saveJournal(dir, j);
     return res;
@@ -409,22 +444,40 @@ export function takeLock(root: string): (() => void) | null {
   const dir = journalRoot(root);
   fs.mkdirSync(dir, { recursive: true });
   const lock = path.join(dir, '.lock');
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      fs.writeFileSync(lock, `${process.pid}\n`, { flag: 'wx' });
-      return () => fs.rmSync(lock, { force: true });
-    } catch {
-      const pid = Number(fs.readFileSync(lock, 'utf8').trim());
-      let alive = false;
+  // The lock appears only by a hard link from a file that already holds the pid, so a lock
+  // file never exists empty or half-written while its owner lives: one whose content is not
+  // a positive integer pid is debris from a crash and is stale, as is one naming a dead pid.
+  const tmp = `${lock}.${process.pid}.${crypto.randomBytes(4).toString('hex')}`;
+  fs.writeFileSync(tmp, `${process.pid}\n`);
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        process.kill(pid, 0);
-        alive = true;
-      } catch {
-        alive = false;
+        fs.linkSync(tmp, lock);
+        return () => fs.rmSync(lock, { force: true });
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
+        let text: string;
+        try {
+          text = fs.readFileSync(lock, 'utf8').trim();
+        } catch {
+          continue;
+        }
+        const pid = /^\d+$/.test(text) ? Number(text) : 0;
+        let alive = false;
+        if (Number.isSafeInteger(pid) && pid > 0) {
+          try {
+            process.kill(pid, 0);
+            alive = true;
+          } catch (e) {
+            alive = (e as NodeJS.ErrnoException).code === 'EPERM';
+          }
+        }
+        if (alive) return null;
+        fs.rmSync(lock, { force: true });
       }
-      if (alive) return null;
-      fs.rmSync(lock, { force: true });
     }
+    return null;
+  } finally {
+    fs.rmSync(tmp, { force: true });
   }
-  return null;
 }
