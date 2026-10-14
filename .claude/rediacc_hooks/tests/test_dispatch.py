@@ -219,6 +219,31 @@ def test_the_entry_point_runs_as_a_process():
     assert proc.returncode in (0, 2), proc.stderr.decode("utf-8", "replace")
 
 
+@pytest.mark.parametrize(
+    ("argv", "rc", "says"),
+    [
+        (["--help"], 0, "dispatch"),
+        (["-h"], 0, "dispatch"),
+        (["no_such_guard"], 64, "no guard named 'no_such_guard'"),
+        (["--bogus"], 64, "unknown option '--bogus'"),
+        (["--chain"], 64, "--chain needs a chain name"),
+    ],
+)
+def test_a_bad_argument_is_named_not_a_traceback(argv, rc, says):
+    """`dispatch.py --help` and an unknown stem reached importlib and ended in a traceback (2026-10-15); each now names the problem and exits."""
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"), *argv],
+        input=b"",
+        capture_output=True,
+        check=False,
+        cwd=str(ROOT),
+    )
+    err = proc.stderr.decode("utf-8", "replace")
+    assert proc.returncode == rc, err
+    assert "Traceback" not in err, err
+    assert says in err, err
+
+
 def test_list_names_every_port():
     proc = subprocess.run(
         [sys.executable, str(ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"), "--list"],
