@@ -74,7 +74,7 @@ class _CheckedRedirect(urllib.request.HTTPRedirectHandler):
 def build_opener(
     *handlers: urllib.request.BaseHandler, http: str = "never"
 ) -> urllib.request.OpenerDirector:
-    """`urllib.request.build_opener(*handlers)` whose redirects pass `check_url` under the same `http` setting (review 1bf85a71.2): a caller that needs cookies or another handler gets the redirect check too."""
+    """`urllib.request.build_opener(*handlers)` whose redirects pass `check_url`: a caller that needs cookies or another handler gets the redirect check too, where a plain `urllib.request.build_opener` follows a redirect to any scheme unchecked."""
     return urllib.request.build_opener(*handlers, _CheckedRedirect(http))
 
 
