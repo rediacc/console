@@ -527,7 +527,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
-| `agent/plans/PLAN-pins-command.md` | approved | 67 | 13 | 0 | 19846 |
+| `agent/plans/PLAN-pins-command.md` | approved | 67 | 13 | 0 | 19887 |
 | `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 50 | 7 | 0 | 7813 |
 | `agent/plans/PLAN-plan-dependencies.md` | approved | 389 | 0 | 12 | 36988 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
@@ -560,7 +560,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sentence-aware-wrapping.md` | compacted | 38 | 0 | 0 | 2804 |
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
-| `agent/plans/PLAN-shell-sandbox-readonly-view.md` | active | 119 | 3 | 4 | 17445 |
+| `agent/plans/PLAN-shell-sandbox-readonly-view.md` | active | 119 | 3 | 4 | 18226 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-ssr-nav-locale.md` | compacted | 36 | 0 | 0 | 1976 |
 | `agent/plans/PLAN-staged-duplication-probe.md` | compacted | 52 | 0 | 8 | 3329 |

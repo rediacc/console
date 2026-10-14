@@ -428,8 +428,12 @@ def fenced_lines(root, rel):
     return out
 
 
+#: An OPEN plan box, `- [ ] ...`. A gate named on one is the gate the box promises to build, so it cannot resolve yet: the box text is the durable key `check:ci-plan-boxes` refuses to let a change rewrite, so the name cannot be phrased away either. Ticking the box flips its bracket, which makes the line an addition again, and the gate is judged then, when it must exist.
+OPEN_BOX_RE = re.compile(r"^\s*[-*] \[ \] ")
+
+
 def citations(text):
-    """[(kind, token)] for every pointer on one line, in resolve()'s kinds.
+    """[(kind, token)] for every pointer on one line, in resolve()'s kinds. A gate named on an open plan box is not a citation (OPEN_BOX_RE).
 
     THE ORDER MATTERS and it is the order `wl_planrec.launder` uses: file:line first, because a path fragment inspected as hex would be rewritten out from under the citation resolver. Plans before gates before objects for the same reason -- each later shape is a superset of characters the earlier one owns.
     """
@@ -444,7 +448,8 @@ def citations(text):
 
     take(CK.CITE_RE, "fileline")
     take(R.PLAN_REF_RE, "plan")
-    take(R.GATE_RE, "gate")
+    if not OPEN_BOX_RE.match(text or ""):
+        take(R.GATE_RE, "gate")
     uuid_tail_spans = [u.span(1) for u in UUID_TAIL_RE.finditer(text or "")]
     # The shape alone is not enough: the same line must also name it a bookmark (or time-travel), as a verbatim deploy record does.
     if D1_MARKER_RE.search(text or ""):
@@ -1000,6 +1005,25 @@ def selftest(root):
     ck(
         "CONTROL: the same 12 hex characters WITHOUT the UUID dashes ARE",
         any(k == "object" for k, _t in citations("Stripe secret 3fda6dabc123 leaked")),
+    )
+    # THE OPEN-BOX GATE EXEMPTION, both directions: an open box may name the gate it promises, a ticked box and plain prose may not. See OPEN_BOX_RE.
+    ck(
+        "a gate named on an OPEN plan box is NOT a citation (the box promises it)",
+        not any(
+            k == "gate" for k, _t in citations("- [ ] T10: `check:no-such-gate-zzz` for leaves")
+        ),
+    )
+    ck(
+        "CONTROL: the same gate on a TICKED box IS a citation",
+        any(k == "gate" for k, _t in citations("- [x] T10: `check:no-such-gate-zzz` for leaves")),
+    )
+    ck(
+        "CONTROL: the same gate in prose IS a citation",
+        any(k == "gate" for k, _t in citations("5. COVERAGE: `check:no-such-gate-zzz` compares")),
+    )
+    ck(
+        "CONTROL: a file:line on an open box is still judged",
+        any(k == "fileline" for k, _t in citations("- [ ] T1: see package.json:1 first")),
     )
     # THE FINGERPRINT EXEMPTION, both directions: the marker is what licenses it, so the same token without the marker must still be judged. See FINGERPRINT_RE.
     ck(
