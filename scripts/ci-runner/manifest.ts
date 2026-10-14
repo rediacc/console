@@ -2853,6 +2853,19 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-generated-artifacts',
+    // The registry the pre-commit hook judges commits by must be able to fail: a glob that matches nothing, a generator that does not exist or a control that cannot plant makes the commit-time check pass without running (three stale generated files on 2026-10-13).
+    run: 'npm run check:ci-generated-artifacts',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_generated_artifacts.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-code',
+      step: 'Generated artifacts registry',
+    },
+  },
+  {
     id: 'check:ci-workflow-env-provision',
     // A job may not use a shell variable nothing in that job provides. bash expands an unset name to the empty string, so the failure always surfaces downstream wearing somebody else's name.
     run: 'npm run check:ci-workflow-env-provision',

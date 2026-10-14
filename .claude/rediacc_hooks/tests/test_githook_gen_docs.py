@@ -131,8 +131,10 @@ def _closure(root: pathlib.Path) -> list[str]:
 
 
 class World:
-    def __init__(self, base: pathlib.Path):
+    def __init__(self, base: pathlib.Path, extra_overlay: tuple[str, ...] = ()):
+        """`extra_overlay` names more working-tree files to lay over HEAD: `test_githook_generated_artifacts.py` passes the registry and the checkers it enrols, which are under test there as the hooks are here."""
         self.base = base
+        self.extra_overlay = extra_overlay
         self.repo = base / "fx"
         self.real_hooks = self.repo / HOOKS_REL
         # Beside the real directory, inside the fixture: githooks.py loads ../commit_policy.py and roots itself two levels up, so the copy needs the same layout. Untracked, so no commit and no provider ever sees it.
@@ -154,6 +156,7 @@ class World:
             for p in sorted((REPO_ROOT / HOOKS_REL).iterdir())
             if p.is_file() and not p.name.endswith(".pyc")
         ] + _closure(REPO_ROOT)
+        overlay += [rel for rel in self.extra_overlay if rel not in overlay]
         for rel in overlay:
             dst = self.repo / rel
             dst.parent.mkdir(parents=True, exist_ok=True)

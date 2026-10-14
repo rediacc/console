@@ -1,4 +1,4 @@
-"""The git-level half of the commit policy: `commit-msg`, `reference-transaction` and `pre-push`, plus the `pre-commit` doc-region check.
+"""The git-level half of the commit policy: `commit-msg`, `reference-transaction` and `pre-push`, plus the `pre-commit` checks of generated files (doc regions, and the artifacts of `.ci/config/generated-artifacts.json`).
 
 WHY A SECOND LAYER (the commit-policy plan in agent/plans, section 5.3; operator ruling 2, 2026-09-25: installed for everyone, with the `COMMIT_POLICY_OK=1` override). The pre-bash guards see only an agent's own Bash tool calls. Everything else that commits, cuts a branch or pushes never reaches them: the operator's terminal and `!` commands, and subprocesses (`worklist.py --git`, the per-commit reviewer, release scripts run locally; the 2026-09-22 push to `main` came from a script three process levels below the Bash call). Git runs these hooks for all of them once `core.hooksPath` points at this directory, which the `git-hooks-path` setup phase does in the console and in every checked-out submodule (`.ci/rediacc_ci/setup/githooks.py`). It is local config only, so `/tmp` fixtures and CI checkouts are unaffected.
 
@@ -6,7 +6,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
 
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
-  pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `pre_commit` says how it stays fast).
+  pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
   pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one.
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
@@ -15,7 +15,7 @@ THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It read
 
 THE OVERRIDE. `COMMIT_POLICY_OK=1` in the environment makes every hook here exit 0. It is the operator's; `block_git_hook_bypass` refuses an agent command that sets it, or that skips these hooks with `--no-verify`, `-n` or `-c core.hooksPath=`.
 
-LOADED BY FILE, NOT BY PACKAGE. Git runs a hook as a plain executable with no package context, so each shim beside this file loads it with `importlib`, and this module loads `commit_policy.py` the same way. No `sys.path` entry is added anywhere, which `test_canonical_sys_path_hop.py` freezes.
+LOADED BY FILE, NOT BY PACKAGE. Git runs a hook as a plain executable with no package context, so each shim beside this file loads it with `importlib`, and this module loads `commit_policy.py` and `artifacts.py` the same way. No `sys.path` entry is added anywhere, which `test_canonical_sys_path_hop.py` freezes.
 """
 
 from __future__ import annotations
@@ -38,16 +38,19 @@ HERE = pathlib.Path(__file__).resolve().parent
 CONSOLE_ROOT = HERE.parents[2]
 
 
-def _load_policy():
-    spec = importlib.util.spec_from_file_location("commit_policy", HERE.parent / "commit_policy.py")
+def _load(name: str, path: pathlib.Path):
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise SystemExit("commit-policy hook: %s/commit_policy.py is missing" % HERE.parent)
+        raise SystemExit("commit-policy hook: %s is missing" % path)
     module = importlib.util.module_from_spec(spec)
+    # Registered before execution: `artifacts.py` declares dataclasses under postponed annotations, and `dataclasses` resolves a class's module through `sys.modules`.
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
 
-cp = _load_policy()
+cp = _load("commit_policy", HERE.parent / "commit_policy.py")
+ga = _load("githook_artifacts", HERE / "artifacts.py")
 
 SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
 
@@ -442,6 +445,14 @@ def _unchecked(why: str) -> int:
 
 
 def pre_commit(_argv: list[str]) -> int:
+    """Both generated-file checks, cheapest refusal first: the doc regions, then the registry's artifacts."""
+    code = gen_docs_pre_commit()
+    if code != 0:
+        return code
+    return artifacts_pre_commit()
+
+
+def gen_docs_pre_commit() -> int:
     started = time.monotonic()
     repo = _repo()
     entry = _index_text(repo, GEN_ENTRY) if repo else None
@@ -552,6 +563,50 @@ def pre_commit(_argv: list[str]) -> int:
         return _unchecked(str(exc) or type(exc).__name__)
     finally:
         shutil.rmtree(tree, ignore_errors=True)
+
+
+# THE REGISTRY'S ARTIFACTS (`artifacts.py` carries the why and the rules). The same shape as the doc-region check above, for every generated file that declares its inputs in `.ci/config/generated-artifacts.json`: no staged input is two git calls and silence; a staged input runs the entry's checker on a checkout of the commit's index, under the entry's budget. The scratch tree is this worktree's fixed directory, so a killed run's leftovers are removed by the next one, and it holds only LINKS to the working tree's build products, which `shutil.rmtree` unlinks and never follows.
+
+
+def artifacts_pre_commit() -> int:
+    started = time.monotonic()
+    repo = _repo()
+    if not repo:
+        return 0
+    git_dir = _git(["rev-parse", "--absolute-git-dir"])
+    scratch = scratch_for(git_dir or repo)
+    env = _gen_env(repo, scratch)
+    try:
+        verdicts, staged, enrolled = ga.judge(
+            repo, git_dir, env, os.path.join(scratch, "artifacts-tree")
+        )
+    except ga.RegistryError as exc:
+        return _refuse(
+            "UNCHECKED: this commit could not be checked against the generated artifacts.\n%s\n"
+            "An unknown is not a pass." % exc
+        )
+    except subprocess.TimeoutExpired as exc:
+        return _refuse(
+            "UNCHECKED: `%s` timed out after %ss while the generated artifacts were being checked. An unknown is not a pass."
+            % (" ".join(str(a) for a in exc.cmd[:3]), exc.timeout)
+        )
+    except OSError as exc:
+        return _refuse(
+            "UNCHECKED: the generated artifacts could not be checked (%s). An unknown is not a pass."
+            % (str(exc) or type(exc).__name__)
+        )
+    for verdict in verdicts:
+        if verdict.kind == "stale":
+            return _refuse(ga.stale_message(verdict))
+        if verdict.kind != "clean":
+            return _refuse(ga.unchecked_message(verdict))
+        sys.stderr.write(ga.clean_line(verdict, staged))
+    if not verdicts and enrolled and os.environ.get("GEN_DOCS_PRECOMMIT_VERBOSE") == "1":
+        sys.stderr.write(
+            "%s: %d staged path(s), none an input of the %d enrolled artifact(s) (%.2fs)\n"
+            % (ga.LABEL, staged, enrolled, time.monotonic() - started)
+        )
+    return 0
 
 
 def main(hook: str, argv: list[str]) -> int:
