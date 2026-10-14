@@ -2341,6 +2341,28 @@ STATIC: list[Case] = [
         bash_json("awk '/^### (a|b)/{p=1} p' agent/reviews/1008-1/x.md"),
         "review-file-shell-write CONTROL: a pattern's alternation is not a pipe",
     ),
+    # Review fd4eda1a.1: the rule does not follow where a print goes, so a program that redirects into a literal ELSEWHERE is refused while it reads a review file. The control is the same program over another file.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > \"x\"}' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: an awk that redirects into a literal elsewhere while reading a review file (fd4eda1a.1)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk '{print > \"x\"}' /tmp/agent-reviews-list.txt"),
+        "review-file-shell-write CONTROL: the same redirecting awk program over a file that is not a review file",
+    ),
+    # Review fd4eda1a.3: the rule is lexical. This program prints nothing; the letters `print` beside a `|` inside its regex read as a program that may redirect, and the refusal is a stated over-read in the direction that fails closed.
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json("awk '/print|x/' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write: over-read, an awk regex that spells print beside a pipe is refused (fd4eda1a.3)",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json("awk '/prin|x/' agent/reviews/1008-1/x.md"),
+        "review-file-shell-write CONTROL: an awk regex with an alternation and no print reads a review file",
+    ),
     case(
         "check 2 guards/block_ssh_docker.py",
         bash_json("ssh host docker ps"),
