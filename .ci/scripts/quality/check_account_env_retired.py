@@ -16,7 +16,7 @@ why: private/account/.env is retired in favour of Bitwarden profiles, so no trac
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import account_env_retired
 
 if __name__ == "__main__":

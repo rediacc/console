@@ -600,70 +600,22 @@
   ".ci/scripts/lib/toolchain.sh": {
    "shellcheck-disable SC1090": 1
   },
-  ".ci/scripts/quality/check_account_env_retired.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_account_portal.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_account_probes.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_actions_allowlist.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_actions_vars.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_agent_browser_exit.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_agent_hint_liveness.py": {
-   "noqa F401": 1,
    "noqa PLC0415": 1
   },
   ".ci/scripts/quality/check_agent_model_roster.py": {
-   "noqa F401": 2
+   "noqa F401": 1
   },
   ".ci/scripts/quality/check_agent_session_archival.py": {
-   "noqa F401": 1,
    "noqa PLC0415": 2,
    "type-ignore arg-type": 1
   },
-  ".ci/scripts/quality/check_audit_coverage.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_bash_lib_ported.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_branch.py": {
-   "noqa F401": 1
-  },
   ".ci/scripts/quality/check_bws_map.py": {
-   "noqa F401": 1,
    "noqa S102": 1
-  },
-  ".ci/scripts/quality/check_bws_rotation_notice.py": {
-   "noqa F401": 1
   },
   ".ci/scripts/quality/check_checkout_cone.py": {
    "type-ignore arg-type": 2,
    "type-ignore assignment": 1
-  },
-  ".ci/scripts/quality/check_ci_job_aggregation.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_ci_scans_tracked_paths.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_ci_watch_recipe.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_claude_attribution.py": {
-   "noqa F401": 1
-  },
-  ".ci/scripts/quality/check_cli_contract.py": {
-   "noqa F401": 1
   },
   ".ci/scripts/quality/check_cli_doc_coverage.py": {
    "noqa F401": 1

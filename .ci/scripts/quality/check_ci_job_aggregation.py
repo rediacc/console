@@ -31,7 +31,7 @@ why: every non-exempt job in ci.yml must be aggregated by ci-complete and tiered
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import ci_job_aggregation
 
 if __name__ == "__main__":
