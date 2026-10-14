@@ -51,6 +51,7 @@ import {
   killLiveGates,
   LEASE_HELD_ENV,
   liveGates,
+  processAlive,
   refuseNewGates,
   refusingNewGates,
 } from './exec';
@@ -1402,14 +1403,7 @@ function killPidFile(file: string): void {
   }
 }
 
-function pidAlive(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch {
-    return false;
-  }
-}
+const pidAlive = processAlive;
 
 /**
  * THE KILL TIMER AND THE SIGNAL HANDLER, END TO END THROUGH A REAL RUNNER PROCESS (gate-timeout.ts, exec.ts LIVE, installSignalHandlers). Two runners are spawned on synthetic manifests, concurrently and started at the top of the selftest so their few seconds overlap the rest of it:
@@ -1425,6 +1419,24 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     if (!cond) failures.push(message);
   };
   if (process.platform === 'win32') return { assertions, failures };
+  // A DEAD GATE THAT STILL ANSWERS kill(pid, 0). An exited child stays a zombie until its parent waits, and an orphaned gate's parent is whatever subreaper sits above the runner (the pins transaction's agent harness waits about once a second). Here node is that parent: the child exits, the event loop is held for 300 ms so nothing reaps it, and the control line proves the plain probe would have called it alive. Red before processAlive: the timed-out gate check failed with "must be dead" under a lazy reaper while passing under an init that reaps at once.
+  const zombie = spawn('true', [], { stdio: 'ignore' });
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
+  const zPid = zombie.pid ?? Number.NaN;
+  let plainProbeSeesIt = false;
+  try {
+    process.kill(zPid, 0);
+    plainProbeSeesIt = true;
+  } catch {
+    plainProbeSeesIt = false;
+  }
+  require_(
+    plainProbeSeesIt,
+    'CONTROL: an exited, unreaped child must still answer kill(pid, 0), or the zombie case below proves nothing'
+  );
+  require_(!processAlive(zPid), 'processAlive must call an exited, unreaped child (a zombie) dead');
+  require_(processAlive(process.pid), 'processAlive must call a running process alive');
+  require_(!processAlive(Number.NaN), 'processAlive must refuse a pid that is not a number');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-kill-'));
   const env = { ...process.env };
   delete env.CI_RUNNER_CACHE;
