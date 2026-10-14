@@ -1654,6 +1654,8 @@ interface FixtureSpec {
   blocklist?: string;
   /** package.json content per manifest, same keys; '{}' when absent. */
   manifests?: Record<string, object>;
+  /** package.json text per manifest, written verbatim over `manifests`, for a manifest that is not in npm's two-space form. */
+  rawManifests?: Record<string, string>;
   /** Lockfile `packages` map the stub `npm update` writes per manifest, same keys: what npm "resolved". */
   updateLocks?: Record<string, Record<string, { version: string }>>;
   /** Lockfile entries the stub `npm install` merges in per manifest, same keys: what npm "resolved" for the install, e.g. the new sibling and the range it now declares. */
@@ -1727,7 +1729,7 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
     // Written the way npm writes a manifest (two-space indent, trailing newline), because the override bump refuses a package.json it cannot round-trip byte for byte.
     write(
       path.join(rel, 'package.json'),
-      `${JSON.stringify(spec.manifests?.[rel] ?? {}, null, 2)}\n`
+      spec.rawManifests?.[rel] ?? `${JSON.stringify(spec.manifests?.[rel] ?? {}, null, 2)}\n`
     );
     write(path.join(rel, '.fixture-outdated.json'), JSON.stringify(spec.outdated[rel] ?? {}));
     if (spec.locks[rel])
@@ -4140,6 +4142,82 @@ async function selftest(): Promise<void> {
       deep.output
     );
   }
+  for (const [where, file] of [
+    ['a source folder named build/ below the declaring directory', 'scripts/build/x.ts'],
+    ['a dot directory', '.ci/scripts/y.ts'],
+  ] as const) {
+    const hidden = runFixture(
+      rmSpec({
+        files: { 'knip.jsonc': rmKnip, [file]: "import { g } from 'gizmo';\nexport { g };\n" },
+      }),
+      'upgrade',
+      ['remove', 'gizmo']
+    );
+    expect(
+      `remove: a package still imported from ${where} is refused naming the file`,
+      hidden.status === 1 &&
+        hidden.output.includes(`still imported by ${file}`) &&
+        hidden.installs.length === 0,
+      hidden.output
+    );
+  }
+  const outputOnly = runFixture(
+    rmSpec({
+      files: {
+        'knip.jsonc': rmKnip,
+        'build/gen.js': "const g = require('gizmo');\nmodule.exports = g;\n",
+        '.ci/cache/c.js': "const g = require('gizmo');\nmodule.exports = g;\n",
+      },
+    }),
+    'upgrade',
+    ['remove', 'gizmo']
+  );
+  expect(
+    "remove: CONTROL: an importer under the declaring directory's own build/ or .ci/cache/ is output, not source, and does not refuse",
+    outputOnly.status === 0 && outputOnly.installs.length === 1,
+    outputOnly.output
+  );
+  const rmCompact = rmSpec().manifests?.[''] ?? {};
+  const rawRoot = runFixture(
+    rmSpec({ rawManifests: { '': JSON.stringify(rmCompact, null, 4) } }),
+    'upgrade',
+    ['remove', 'gizmo']
+  );
+  expect(
+    "remove: a root manifest that holds an override for the package but is not in npm's two-space form is refused, and nothing is written",
+    rawRoot.status === 1 && rawRoot.output.includes('not in npm') && rawRoot.installs.length === 0,
+    rawRoot.output
+  );
+  const knipTwoArrays =
+    '{\n  "ignoreBinaries": [\n    "alpha",\n    "beta",\n  ],\n  "ignoreDependencies": [\n    // BLOCKER: gizmo is spawned by a script knip cannot trace to a call site\n    "gizmo",\n    // BLOCKER: keeper is loaded lazily and knip cannot trace the call\n    "keeper"\n  ],\n  "ignoreMembers": [\n    "m",\n  ]\n}\n';
+  const rmTwo = runFixture(rmSpec({ files: { 'knip.jsonc': knipTwoArrays } }), 'upgrade', [
+    'remove',
+    'gizmo',
+  ]);
+  const twoAfter = rmTwo.files.get('knip.jsonc') ?? '';
+  expect(
+    'remove: dropping a knip entry leaves the trailing commas of every other array alone',
+    rmTwo.status === 0 &&
+      !twoAfter.includes('gizmo') &&
+      twoAfter.includes('"beta",\n  ]') &&
+      twoAfter.includes('"m",\n  ]'),
+    twoAfter
+  );
+  const rmLast = runFixture(rmSpec({ files: { 'knip.jsonc': knipTwoArrays } }), 'upgrade', [
+    'remove',
+    'keeper',
+  ]);
+  const lastAfter = rmLast.files.get('knip.jsonc') ?? '';
+  expect(
+    "remove: dropping the last entry of a knip array strips the comma before it and no other array's",
+    rmLast.status === 0 &&
+      !lastAfter.includes('keeper') &&
+      lastAfter.includes('"gizmo"\n  ]') &&
+      lastAfter.includes('"beta",\n  ]') &&
+      lastAfter.includes('"m",\n  ]'),
+    lastAfter
+  );
+
   const rmNone = runFixture(rmSpec(), 'upgrade', ['remove', 'ghost']);
   expect(
     'remove: CONTROL: a package no manifest declares is refused',
