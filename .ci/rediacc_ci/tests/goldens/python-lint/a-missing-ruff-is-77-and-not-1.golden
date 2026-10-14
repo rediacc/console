@@ -4,9 +4,9 @@ exit: 77
 --- stderr ---
 [0;31merror[0m: ruff is not available and neither is uvx.
   install one of:
-    curl -fsSL https://astral.sh/ruff/0.16.1/install.sh | sh   # no pip needed
-    pip install ruff==0.16.1
-    uv tool install ruff@0.16.1
+    curl -fsSL https://astral.sh/ruff/0.17.0/install.sh | sh   # no pip needed
+    pip install ruff==0.17.0
+    uv tool install ruff@0.17.0
   or point RUFF_BIN at an existing binary:
     RUFF_BIN=/path/to/ruff npm run check:ci-python-lint
   NOT skipping: a linter that cannot run is a gate that cannot fail.

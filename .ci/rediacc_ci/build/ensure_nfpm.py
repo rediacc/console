@@ -63,7 +63,7 @@ Fixing either would change a live gate's and two workflows' behaviour, which is 
      pin in `constants.sh` does not invalidate an existing `.ci/cache/bin/nfpm`,
      and every later run keeps handing out the OLD binary while the pin site
      says otherwise. Measured, not estimated: with a fixture whose `constants.sh`
-     pins 2.45.0 and whose `.ci/cache/bin/nfpm` reports 1.0.0-stale, the twin
+     pins 2.48.0 and whose `.ci/cache/bin/nfpm` reports 1.0.0-stale, the twin
      exits 0 and prints the cache directory, downloading nothing.
      Blast radius: 2 of the 5 live callers are affected and 3 are not. CI and
      cd-stage check out fresh runners with no `.ci/cache/` (`.gitignore:143`,

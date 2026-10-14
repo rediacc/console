@@ -84,7 +84,7 @@ STUB_ENSURE_NFPM = """import pathlib
 
 d = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "cache" / "bin"
 d.mkdir(parents=True, exist_ok=True)
-(d / "nfpm").write_text('#!/bin/bash\\necho "nfpm version 2.45.0"\\n', encoding="utf-8")
+(d / "nfpm").write_text('#!/bin/bash\\necho "nfpm version 2.48.0"\\n', encoding="utf-8")
 (d / "nfpm").chmod(0o755)
 print(d)
 """

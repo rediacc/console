@@ -540,8 +540,19 @@ SOURCES = (
 
 
 def gate_ids_in(text: str, ids: list[str]) -> list[str]:
-    """Every lock id appearing in `text` as a whole token (not as the prefix of a longer id)."""
-    return [i for i in ids if re.search(r"(?<![\w:-])%s(?![\w:-])" % re.escape(i), text)]
+    """Every lock id appearing in `text` as a whole token (not as the prefix of a longer id).
+
+    An id with no `:` or `-` is an ordinary English word (`pins`), so prose using the word is not a mention of the gate; such an id counts only when it is quoted, which is how code names one.
+    """
+    found = []
+    for i in ids:
+        if re.fullmatch(r"\w+", i):
+            pattern = r"""(["'`])%s\1""" % re.escape(i)
+        else:
+            pattern = r"(?<![\w:-])%s(?![\w:-])" % re.escape(i)
+        if re.search(pattern, text):
+            found.append(i)
+    return found
 
 
 def _ids() -> list[str]:
@@ -567,3 +578,10 @@ def test_t9_control_a_planted_id_is_found(tmp_path: pathlib.Path) -> None:
     planted.write_text(src + "\nPINNED = %r\n" % ids[len(ids) // 2], encoding="utf-8")
     planted.chmod(planted.stat().st_mode | stat.S_IRUSR)
     assert gate_ids_in(planted.read_text(encoding="utf-8"), ids) == [ids[len(ids) // 2]]
+
+
+def test_t9_a_bare_word_id_is_found_quoted_and_ignored_in_prose() -> None:
+    ids = _ids()
+    assert "pins" in ids, "the bare-word id this control is about left the lock"
+    assert gate_ids_in("the safety search pins the gate whose start moved", ids) == []
+    assert gate_ids_in("const g = 'pins';", ids) == ["pins"]

@@ -1,7 +1,7 @@
 # twin .ci/scripts/quality/check-python-lint.sh blob 471b915b87984c59aeaca380951aa3dd5bd3b702
 exit: 1
 --- stdout ---
-info: linting 13 Python file(s) with ruff 0.16.1
+info: linting 13 Python file(s) with ruff 0.17.0
 EXE001 Shebang is present but file is not executable
  --> probe_exe.py:1:1
   |

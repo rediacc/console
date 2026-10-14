@@ -138,9 +138,9 @@ PORT NOTES.
 -----------------------------------------------------------------------------
 
 THE PIN IS ASSIGNED TWICE IN THE TWIN AND THE SECOND ONE WINS. It sources `.ci/scripts/lib/toolchain.sh`, calls `toolchain_load` (which exports `RUFF_VERSION` from `.devcontainer/toolchain.env`), and then immediately writes
-`RUFF_VERSION="0.16.1"` over it. Because `toolchain_pin_for ruff` reads the
+`RUFF_VERSION="0.17.0"` over it. Because `toolchain_pin_for ruff` reads the
 CURRENT value of that variable, the literal is what `toolchain_check` compares against, not the pins file. The two agree today (`.devcontainer/toolchain.env:32`
-says `RUFF_VERSION=0.16.1`), so the redundancy is invisible; the day someone bumps
+says `RUFF_VERSION=0.17.0`), so the redundancy is invisible; the day someone bumps
 the pins file and not this line, the gate keeps demanding the old version and says nothing about why. Reproduced, and reported as a defect rather than repaired.
 
 `enumerate_py` IS ONE FUNCTION FOR A REASON, carried verbatim: "It is a function specifically so the control cannot drift from the thing it guards: an earlier draft of control 3 ran its own copy of this query, which meant editing the real enumeration left the control green -- a check that cannot fail, introduced by the very commit that was fixing one."
@@ -172,7 +172,7 @@ from rediacc_ci.controls import Controls
 MIN_PY_FILES = 10
 
 # The literal that overwrites the pins-file value. See the port notes.
-RUFF_VERSION = "0.16.1"
+RUFF_VERSION = "0.17.0"
 
 # The twin's exit statuses. 77 is CANNOT RUN and is never a verdict.
 EXIT_CANNOT_RUN = 77
@@ -642,7 +642,7 @@ def selftest() -> int:
     # THE FLOOR AND THE STATUSES ARE THE TWIN'S.
     ctl.check("the file floor is 10, not 1", MIN_PY_FILES, 10)
     ctl.check("cannot-run is 77, never 1", EXIT_CANNOT_RUN, 77)
-    ctl.check("the pin the twin actually compares against", RUFF_VERSION, "0.16.1")
+    ctl.check("the pin the twin actually compares against", RUFF_VERSION, "0.17.0")
 
     # COLOUR IS DECIDED BY CI, NOT BY isatty. Both directions, because a port that used the logger would be byte-identical only when attached to a terminal.
     saved = os.environ.get("CI")

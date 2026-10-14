@@ -24,6 +24,7 @@ import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
 
 // Integration that writes a fresh search index into the BUILD OUTPUT, where it overwrites the committed packages/www/public copies Astro has just copied there; the site fetches /search-index-<lang>.json (src/components/SearchModal.tsx). Written on `astro:build:done` into `dir`, beside json-generator and route-manifest-generator, and never into public/: the old `astro:build:start`
 // hook rewrote 14 tracked files on every build. A failure fails the BUILD, since swallowing it would ship whatever index public/ happened to hold.
+/** @type {import('astro').AstroIntegration} */
 const searchIndexIntegration = {
   name: 'search-index-generator',
   hooks: {

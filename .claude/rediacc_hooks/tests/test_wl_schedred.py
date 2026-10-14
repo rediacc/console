@@ -204,7 +204,14 @@ def test_discovery_pins_this_repos_scheduled_workflows():
     """The list is discovered, never hardcoded; this pin says which workflows that discovery finds today, so a schedule silently dropping out of the watch fails here."""
     root = wlfix.STOP_DIR.parents[2]
     stems = {w["stem"] for w in SR.scheduled_workflows(root)}
-    assert stems == {"ci", "housekeeping", "promote-stable", "ci-obs-mirror", "ci-vm-bake"}
+    assert stems == {
+        "ci",
+        "housekeeping",
+        "promote-stable",
+        "ci-obs-mirror",
+        "ci-vm-bake",
+        "pins-soaked",
+    }
 
 
 # --------------------------------------------------------------------------- the verdict

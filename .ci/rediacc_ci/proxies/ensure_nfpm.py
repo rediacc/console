@@ -24,8 +24,8 @@ and under `pipefail` a `grep` that matches nothing makes the whole pipeline non-
                X="$(echo hi | grep -oE "[0-9]+" | head -1)"; echo REACHED'
     (no output, exit 1)
 
-BLAST RADIUS: the day `nfpm --version` stops printing an `N.N.N` token -- a banner change, a `--version` that goes to stdout as JSON -- this REGISTERED gate exits 1 having printed four PASS lines, no FAIL line and no explanation. That is indistinguishable from the gate crashing, and it is the version-drift check itself that disappears. It is NOT reachable today (nfpm 2.45.0 prints
-`version: 2.45.0`), which is why it is documented and pinned rather than fixed: `_version_or_die` reproduces the abort, and `test_proxies_ensure_nfpm.py::test_a_version_with_no_semver_token_kills_both_ sides` drives it with a shimmed nfpm on both sides.
+BLAST RADIUS: the day `nfpm --version` stops printing an `N.N.N` token -- a banner change, a `--version` that goes to stdout as JSON -- this REGISTERED gate exits 1 having printed four PASS lines, no FAIL line and no explanation. That is indistinguishable from the gate crashing, and it is the version-drift check itself that disappears. It is NOT reachable today (nfpm 2.48.0 prints
+`version: 2.48.0`), which is why it is documented and pinned rather than fixed: `_version_or_die` reproduces the abort, and `test_proxies_ensure_nfpm.py::test_a_version_with_no_semver_token_kills_both_ sides` drives it with a shimmed nfpm on both sides.
 
 -----------------------------------------------------------------------------
 THE PIN IS READ WITH BOTH STREAMS DISCARDED HERE, unlike in the subject

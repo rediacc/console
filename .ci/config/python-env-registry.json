@@ -1343,6 +1343,9 @@
     ".ci/rediacc_ci/tests/gates/test_gate_paths_exist.py": [
       "GATE_PATHS_SCAN_FLOOR"
     ],
+    ".ci/rediacc_ci/tests/gates/test_gate_pin_remedies.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/gates/test_gate_player_css_scope.py": [
       "REDIACC_PYTEST_REAL_DIST"
     ],
