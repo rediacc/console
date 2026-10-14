@@ -18,6 +18,7 @@ import wl_bravedefault as BD
 import wl_claimcheck as CC
 import wl_classsweep as CS
 import wl_defersettle as DS
+import wl_effort
 import wl_models
 import wl_proc
 import wl_proofcheck as PF
@@ -69,6 +70,8 @@ JUDGE_SCHEMA = {
         "verdict": {"type": "string", "enum": ["stop", "continue"]},
         "reason": {"type": "string", "maxLength": 300},
         "next_action": {"type": "string", "maxLength": 200},
+        # What a `continue` rests on (JUDGE_BASIS below): required only on a stop whose effort level makes a report key advise-only, so an ordinary call's schema keeps its three required fields.
+        "basis": {"type": "string", "enum": ["work", "no-remaining", "out-of-sync"]},
         # v7: OPTIONAL at the top level (verified: --json-schema accepts a conditionally-required object and returns cleanly with it omitted, so ONE schema, no variants), but its own properties are all required. On a fix-signal stop a missing or malformed object is a judge error and fails closed, same as an invalid verdict. v11: the admission object, same optional-at-top-level
         # shape as regression_gate above and for the same reason. UNLIKE regression_gate, a missing or malformed object here NEVER fails closed: this detector's only consequence is a tracked item, and a session blocked by a phantom regret learns to phrase things evasively, which costs more than the detection is worth. See wl_admit.py.
         "admission": {
@@ -819,8 +822,11 @@ def run_judge(
     local_batch=None,
     with_riders=True,
     closed=None,
+    effort_level=None,
 ):
     """(verdict_dict, error_string). Exactly one is non-None.
+
+    `effort_level` is the stop's resolved effort level (wl_effort). When it makes a report key (REPORT_BASES) advise-only or off, the prompt carries JUDGE_BASIS, the schema requires `basis`, and a `continue` resting only on such a key is read as stop with the order handed back as an advisory (`settle_by_effort`).
 
     `with_riders` False (`judge: core`, wl_judge.riders) asks no class sweep, proof obligation or brave-default question, fresh or outstanding: the judge answers whether stopping is honest and nothing else. `closed` is the session's recently closed items as (id, text, evidence) rows (`closed_items`): the prompt names them with their tick evidence, and a `continue` whose only order names one of them is read as stop (`settle_closed_reraise`), so finished work is not ordered again.
 
@@ -901,6 +907,13 @@ def run_judge(
             % (cid, text[:120], (evidence or "(no evidence recorded)")[:200])
             for cid, text, evidence in closed[:CLOSED_SHOWN]
         )
+    quiet_bases = report_bases_quiet(effort_level)
+    schema = judge_schema_for(extra)
+    if quiet_bases:
+        # After `extra`, never inside it, like the two sections around it: judge_schema_for reads `extra`, and `basis` is required here rather than through a marker.
+        prompt += JUDGE_BASIS
+        schema = copy.deepcopy(schema)
+        schema["required"] = [*schema["required"], "basis"]
     if local_batch:
         # After `extra`, never inside it: is_fix_stop and judge_schema_for read `extra`, and this paragraph asks for no schema field.
         prompt += M.JUDGE_LOCAL_BATCH % {
@@ -917,7 +930,7 @@ def run_judge(
         "--output-format",
         "json",
         "--json-schema",
-        json.dumps(judge_schema_for(extra)),
+        json.dumps(schema),
         "--model",
         wl_models.haiku_model(),
         # NO TOOLS. A judge reads a prompt and returns a verdict; it has never needed Bash, Read or Grep, and it was being handed all three in a cwd (/tmp/claude-worklist/.judge) that contains nothing -- while the sweep prompt told it "every path it names must actually exist in this repo". Tonight 8 of 21 sweep verdicts were DROPPED for naming paths that do not exist; a model that
@@ -1039,6 +1052,7 @@ def run_judge(
     if not fired:
         out = settle_wait_only_continue(out)
         out = settle_closed_reraise(out, [c[0] for c in closed or ()])
+        out = settle_by_effort(out, effort_level)
     return sanitize_next_action(out, local_batch=bool(local_batch)), None
 
 
@@ -1092,6 +1106,49 @@ def settle_closed_reraise(out, closed_ids):
         % (out.get("reason", ""), ", ".join("#" + r for r in sorted(refs)))
     )[:400]
     out["next_action"] = ""
+    return out
+
+
+# ---- THE JUDGE OBEYS THE EFFORT TABLE (operator ruling 2026-10-14T09:27Z, agent/plans/PLAN-stop-hook-effort-tuning.md). At effort smart .claude/config/effort.json makes `no-remaining` and `out-of-sync` advise-only, and the judge still blocked on exactly those demands ("the message omits open items by id", "no loop schedule"): a second door to a block the table
+# had closed. The judge now names what its `continue` rests on, and a continue resting only on a report key that does not block at this level is read as stop, its order queued under that key's own threshold (wl_checks hands `effort_advised` to outq_add, which drops it where the key is off). A continue resting on `work`, a rule's order, or a level where the key blocks stands.
+REPORT_BASES = ("no-remaining", "out-of-sync")
+JUDGE_BASIS = (
+    "\nBASIS. Fill `basis` with what a `continue` rests on: `out-of-sync` when the only gap is "
+    "that the message omits open tracked items by id, so the report disagrees with the tracked list; "
+    "`no-remaining` when the only gap is the report's form (no '## Remaining' section, no schedule, "
+    "a missing label or designation); `work` when any gap is work the session can still start or "
+    "finish, including a report gap that comes with such work. With `stop`, fill `work`.\n"
+)
+
+
+def report_bases_quiet(level, table=None):
+    """The REPORT_BASES keys that do not block at `level` (wl_effort.verdict); () with no level."""
+    if not level:
+        return ()
+    return tuple(k for k in REPORT_BASES if wl_effort.verdict(k, level, table) != wl_effort.BLOCK)
+
+
+def settle_by_effort(out, level, table=None):
+    """`out` with a `continue` whose `basis` is a report key that does not block at `level` read as `stop`, the judge's reason and order moved to `effort_advised` as one (key, text) pair; anything else unchanged."""
+    if out.get("verdict") != "continue":
+        return out
+    basis = out.get("basis")
+    if basis not in report_bases_quiet(level, table):
+        return out
+    advised = "Stop-gate judge, advised at effort %s (%s does not block at this level): %s%s" % (
+        level,
+        basis,
+        str(out.get("reason") or "")[:300],
+        " Next: %s" % str(out["next_action"])[:200] if out.get("next_action") else "",
+    )
+    out = dict(out)
+    out["verdict"] = "stop"
+    out["reason"] = (
+        "%s [read as stop at effort %s: the continue rests only on %s, which advises here]"
+        % (out.get("reason", ""), level, basis)
+    )[:400]
+    out["next_action"] = ""
+    out["effort_advised"] = [(basis, advised)]
     return out
 
 
