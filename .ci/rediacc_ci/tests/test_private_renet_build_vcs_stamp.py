@@ -105,14 +105,16 @@ def _stamp(binary: pathlib.Path, env: dict[str, str]) -> tuple[str, str]:
     return (rev.group(1) if rev else "", mod.group(1) if mod else "")
 
 
-def _build_sh_go_build(sub: pathlib.Path, out: pathlib.Path, env: dict[str, str]) -> None:
+def _build_sh_go_build(
+    sub: pathlib.Path, out: pathlib.Path, env: dict[str, str], cwd: pathlib.Path | None = None
+) -> None:
     # build.sh's last line, `[[ BASH_SOURCE == $0 ]] && "$@"`, is false when sourced and
     # so is the `source` itself; `declare -F` then proves the helper really loaded.
     script = (
         "source ./build.sh || true; declare -F _go_build >/dev/null && "
         'CGO_ENABLED=0 _go_build -o "$1" ./cmd/renet'
     )
-    _run(["bash", "-c", script, "build-vcs", str(out)], sub, env)
+    _run(["bash", "-c", script, "build-vcs", str(out)], cwd or sub, env)
 
 
 def test_the_fixture_reproduces_the_defect(tmp_path: pathlib.Path) -> None:
@@ -140,6 +142,43 @@ def test_build_sh_stamps_a_dirty_submodule_as_modified(tmp_path: pathlib.Path) -
     out = tmp_path / "dirty.bin"
     _build_sh_go_build(sub, out, env)
     assert _stamp(out, env) == (sub_head, "true")
+
+
+def test_a_broken_gitlink_fails_with_or_without_the_helper(tmp_path: pathlib.Path) -> None:
+    """Failing on an unreadable gitlink is not a regression: a plain go build fails the same way."""
+    sub, _sub_head, _outer, env = _fixture(tmp_path)
+    (sub / ".git").write_text("gitdir: /nonexistent/gitdir\n", encoding="utf-8")
+    plain = subprocess.run(
+        ["go", "build", "-o", str(tmp_path / "p.bin"), "./cmd/renet"],
+        cwd=sub,
+        env={**env, "CGO_ENABLED": "0"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert plain.returncode != 0, "CONTROL: Go itself refuses a broken gitlink"
+    with pytest.raises(AssertionError):
+        _build_sh_go_build(sub, tmp_path / "h.bin", env)
+
+
+def test_cwd_outside_renet_is_not_stamped_with_renets_commit(tmp_path: pathlib.Path) -> None:
+    """build.sh does not cd, so a build of another tree must not carry renet's stamp."""
+    sub, sub_head, _outer, env = _fixture(tmp_path)
+    other = tmp_path / "other"
+    (other / "cmd" / "renet").mkdir(parents=True)
+    (other / "go.mod").write_text("module example.com/other\n\ngo 1.22\n", encoding="utf-8")
+    (other / "cmd" / "renet" / "main.go").write_text("package main\n\nfunc main() {}\n", encoding="utf-8")
+    _run(["git", "init", "-q", str(other)], tmp_path, env)
+    other_head = _commit(other, env, "go.mod", "cmd/renet/main.go")
+    # Run build.sh's helper from renet's path while the cwd is the other tree.
+    script = (
+        f"source {sub}/build.sh || true; declare -F _go_build >/dev/null && "
+        'CGO_ENABLED=0 _go_build -o "$1" ./cmd/renet'
+    )
+    out = tmp_path / "other.bin"
+    _run(["bash", "-c", script, "build-vcs", str(out)], other, env)
+    assert _stamp(out, env) == (other_head, "false")
+    assert other_head != sub_head
 
 
 def test_every_go_build_in_build_sh_goes_through_the_helper() -> None:
