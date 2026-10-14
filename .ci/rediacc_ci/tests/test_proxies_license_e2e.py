@@ -37,16 +37,21 @@ def _real_tree_env() -> dict[str, str]:
 
 
 def test_selftest_is_byte_identical() -> None:
-    kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
+    kwargs: diff.RunKwargs = {
+        "env": _real_tree_env(),
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+    }
     old = diff.twin_result(
         TWIN_REL,
         [repr(["bash", str(TWIN), "--selftest"])],
-        lambda: subprocess.run(  # type: ignore[call-overload]
+        lambda: subprocess.run(
             ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
         ),
         work=(),
     )
-    new = subprocess.run(  # type: ignore[call-overload]
+    new = subprocess.run(
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
     )
     assert old.returncode == 0, old.stderr
@@ -83,8 +88,13 @@ REAL_TREE_TIMEOUT_S = 600
 
 
 def test_real_tree_passes_through_the_port() -> None:
-    kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    new = subprocess.run(  # type: ignore[call-overload]
+    kwargs: diff.RunKwargs = {
+        "env": _real_tree_env(),
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+    }
+    new = subprocess.run(
         ["python3", "-m", PORT_MODULE], timeout=REAL_TREE_TIMEOUT_S, check=False, **kwargs
     )
     if new.returncode == 77:

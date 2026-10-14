@@ -144,18 +144,16 @@ def run_both(
     fixture: pathlib.Path, *args: str, path: str | None = None
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
-    kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
+    kwargs: diff.RunKwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
     old = diff.twin_result(
         TWIN_REL,
         [repr(["bash", str(fixture / TWIN_REL), *args])],
-        lambda: subprocess.run(  # type: ignore[call-overload]
+        lambda: subprocess.run(
             ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
         ),
         work=(fixture.parent,),
     )
-    new = subprocess.run(  # type: ignore[call-overload]
-        ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
-    )
+    new = subprocess.run(["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs)
     return old, new
 
 
@@ -230,16 +228,21 @@ def _real_tree_env(no_color: bool = True) -> dict[str, str]:
 
 
 def test_selftest_is_byte_identical() -> None:
-    kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
+    kwargs: diff.RunKwargs = {
+        "env": _real_tree_env(),
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+    }
     old = diff.twin_result(
         TWIN_REL,
         [repr(["bash", str(TWIN), "--selftest"])],
-        lambda: subprocess.run(  # type: ignore[call-overload]
+        lambda: subprocess.run(
             ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
         ),
         work=(),
     )
-    new = subprocess.run(  # type: ignore[call-overload]
+    new = subprocess.run(
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
     )
     assert old.returncode == 0, old.stderr
@@ -259,8 +262,13 @@ def test_selftest_is_byte_identical() -> None:
     ],
 )
 def test_real_tree_passes_through_the_port(workspace: str, key: str, gate: str) -> None:
-    kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    new = subprocess.run(  # type: ignore[call-overload]
+    kwargs: diff.RunKwargs = {
+        "env": _real_tree_env(),
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+    }
+    new = subprocess.run(
         ["python3", "-m", PORT_MODULE, workspace, key], timeout=600, check=False, **kwargs
     )
     if new.returncode == 77:
@@ -378,8 +386,13 @@ def test_the_summary_regex_cannot_see_a_coloured_vitest_line() -> None:
     coloured["CI"] = "true"
     coloured["GITHUB_ACTIONS"] = "true"
     coloured.pop("CLAUDECODE", None)
-    kwargs = {"env": coloured, "cwd": str(ROOT), "capture_output": True, "text": True}
-    new = subprocess.run(  # type: ignore[call-overload]
+    kwargs: diff.RunKwargs = {
+        "env": coloured,
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+    }
+    new = subprocess.run(
         ["python3", "-m", PORT_MODULE, "@rediacc/provisioning", "test"],
         timeout=600,
         check=False,

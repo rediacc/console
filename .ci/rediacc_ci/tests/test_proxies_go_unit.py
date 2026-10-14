@@ -139,18 +139,16 @@ def run_both(
     fixture: pathlib.Path, *args: str, path: str | None = None
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
-    kwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
+    kwargs: diff.RunKwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
     old = diff.twin_result(
         TWIN_REL,
         [repr(["bash", str(fixture / TWIN_REL), *args])],
-        lambda: subprocess.run(  # type: ignore[call-overload]
+        lambda: subprocess.run(
             ["bash", str(fixture / TWIN_REL), *args], timeout=600, check=False, **kwargs
         ),
         work=(fixture.parent,),
     )
-    new = subprocess.run(  # type: ignore[call-overload]
-        ["python3", "-m", PORT_MODULE, *args], timeout=600, check=False, **kwargs
-    )
+    new = subprocess.run(["python3", "-m", PORT_MODULE, *args], timeout=600, check=False, **kwargs)
     return old, new
 
 
@@ -234,16 +232,21 @@ def _real_tree_env() -> dict[str, str]:
 
 
 def test_selftest_is_byte_identical() -> None:
-    kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
+    kwargs: diff.RunKwargs = {
+        "env": _real_tree_env(),
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+    }
     old = diff.twin_result(
         TWIN_REL,
         [repr(["bash", str(TWIN), "--selftest"])],
-        lambda: subprocess.run(  # type: ignore[call-overload]
+        lambda: subprocess.run(
             ["bash", str(TWIN), "--selftest"], timeout=180, check=False, **kwargs
         ),
         work=(),
     )
-    new = subprocess.run(  # type: ignore[call-overload]
+    new = subprocess.run(
         ["python3", "-m", PORT_MODULE, "--selftest"], timeout=180, check=False, **kwargs
     )
     assert old.returncode == 0, old.stderr
@@ -256,10 +259,13 @@ def test_real_tree_passes_through_the_port() -> None:
 
     NOT SPLIT PER PACKAGE, ON A MEASUREMENT (agent/plans/PLAN-prepush-full-cpu.md PF13, 2026-10-05). The plan proposed one item per Go package on the hypothesis that this is one serial `go test` over every package. It is one `go test`, but not a serial one: `go test` builds and runs packages `-p GOMAXPROCS` wide, and this module measured 648% CPU over a 95 s serial pytest run on the 24-core host, this item 24.6 s of it with a warm build cache (the 68.4 s in the 2026-10-03 junit was taken under `-n 8` contention). The assertion is the port's own whole-run verdict ("3 check(s) passed"), which a per-package item could only reproduce through a per-package mode in `rediacc_ci.proxies.go_unit`, and each item would pay `go list` and the link step again. The module declares no xdist group, so its items already spread.
     """
-    kwargs = {"env": _real_tree_env(), "cwd": str(ROOT), "capture_output": True, "text": True}
-    new = subprocess.run(  # type: ignore[call-overload]
-        ["python3", "-m", PORT_MODULE], timeout=1800, check=False, **kwargs
-    )
+    kwargs: diff.RunKwargs = {
+        "env": _real_tree_env(),
+        "cwd": str(ROOT),
+        "capture_output": True,
+        "text": True,
+    }
+    new = subprocess.run(["python3", "-m", PORT_MODULE], timeout=1800, check=False, **kwargs)
     if new.returncode == 77:
         pytest.skip(f"the port reports cannot-run here: {new.stderr.strip()[:200]}")
     assert new.returncode == 0, new.stderr
