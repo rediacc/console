@@ -1123,7 +1123,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/commit-identity.json` | .ci/config | code: `.ci/rediacc_ci/quality/commit_identity.py` | no -- hardcoded in `.ci/rediacc_ci/quality/commit_identity.py` |
 | `.ci/config/commit-policy.json` | .ci/config | code: `.claude/rediacc_hooks/commit_policy.py` | no -- hardcoded in `.claude/rediacc_hooks/commit_policy.py` |
 | `.ci/config/commit-review.json` | .ci/config | code: `.ci/rediacc_ci/quality/agent_session_archival.py` | no -- hardcoded in `.ci/rediacc_ci/quality/agent_session_archival.py` |
-| `.ci/config/deps-major-allow.json` | .ci/config | code: `scripts/gates/check-deps.ts` | no -- hardcoded in `scripts/gates/check-deps.ts` |
+| `.ci/config/deps-major-allow.json` | .ci/config | code: `scripts/lib/deps/shared.ts` | no -- hardcoded in `scripts/lib/deps/shared.ts` |
 | `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_allowlist_key_matching.py` | no -- hardcoded in `.ci/scripts/quality/check_allowlist_key_matching.py` |
 | `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |
 | `.ci/config/freshness.json` | .ci/config | wiring: `.github/workflows/housekeeping.yml` | yes -- repoint in `.github/workflows/housekeeping.yml` |
