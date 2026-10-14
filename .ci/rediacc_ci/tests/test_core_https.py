@@ -93,3 +93,42 @@ def test_urlopen_reads_a_loopback_server_only_when_the_mode_allows_it():
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+def test_a_redirect_is_followed_only_to_a_url_the_same_mode_admits():
+    """Review 1bf85a71.1: the first URL passed the check, and urllib's default handler then followed a 3xx to `http://` or `ftp://` unchecked."""
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            targets = {
+                "/to-plain-http": "http://example.invalid/x",
+                "/to-ftp": "ftp://example.invalid/x",
+                "/to-loopback": "/final",
+            }
+            if self.path in targets:
+                self.send_response(302)
+                self.send_header("Location", targets[self.path])
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"final")
+
+        def log_message(self, *_args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = "http://127.0.0.1:%d" % server.server_address[1]
+        for path in ("/to-plain-http", "/to-ftp"):
+            with pytest.raises(urllib.error.URLError, match="may not open"):
+                https.urlopen(base + path, timeout=5, http="loopback")
+        # CONTROL: a redirect the mode admits is still followed.
+        with https.urlopen(base + "/to-loopback", timeout=5, http="loopback") as response:
+            assert response.read() == b"final"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
