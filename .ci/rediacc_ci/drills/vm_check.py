@@ -97,6 +97,17 @@ SFTP_BATCH = ("sftp", "-q", "-o", "BatchMode=yes", "-b")
 SFTP_DENIAL = re.compile(
     r"permission denied|read-only file system|operation not permitted", re.IGNORECASE
 )
+# ssh's own failed login (`user@host: Permission denied (publickey,password).`) is not a server-side refusal: the connection never authenticated, so nothing was confined.
+SSH_AUTH_FAILURE = re.compile(
+    r"permission denied \((?:[a-z-]+,?)+\)|too many authentication failures", re.IGNORECASE
+)
+
+
+def sftp_refused(output: str) -> bool:
+    """True when the sftp output holds a refusal from the server's side of an authenticated session. Lines that report an ssh authentication failure are set aside before the denial is looked for."""
+    lines = [ln for ln in output.splitlines() if not SSH_AUTH_FAILURE.search(ln)]
+    return bool(SFTP_DENIAL.search("\n".join(lines)))
+
 
 # First-line markers of a refusal by the CLI's agent guard (packages/cli/src/utils/agent-guard.ts, command-policy.ts).
 AGENT_REFUSALS = (
@@ -1138,7 +1149,7 @@ class VmCheck:
             res = self.host.run(
                 [*SFTP_BATCH, str(batch), self.connection], env=self.environ, timeout=120
             )
-            ok = res.rc == 0 if allowed else res.rc != 0 and bool(SFTP_DENIAL.search(res.text()))
+            ok = res.rc == 0 if allowed else res.rc != 0 and sftp_refused(res.text())
             self.check("V1.7", "sftp: %s" % desc, ok, res, evidence=res.text())
         after = self.shell(
             self.ref(b), "stat -c '%%a %%Y' %s" % shlex.quote("%s/%s" % (other_dir, GUARDED_FILE))

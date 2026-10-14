@@ -535,6 +535,35 @@ def test_a_negative_sftp_leg_needs_a_denial_not_just_a_non_zero_exit(
     assert len(refused) == 2, receipt["steps"]
 
 
+def test_a_failed_ssh_login_is_not_a_refusal(tmp_path: pathlib.Path) -> None:
+    ssh_failure = (
+        "rediacc@10.0.0.7: Permission denied (publickey,password,keyboard-interactive).\n"
+        "Connection closed"
+    )
+    world = make_world(tmp_path, sftp_refusal=ssh_failure)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    refused = [
+        s
+        for s in receipt["steps"]
+        if s["id"] == "V1.7" and "refused" in s["desc"] and s["verdict"] == "FAIL"
+    ]
+    assert len(refused) == 2, receipt["steps"]
+
+
+def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None:
+    assert vm_check.sftp_refused('remote open("/mnt/x"): Permission denied')
+    assert vm_check.sftp_refused('Couldn\'t setstat on "/x": Operation not permitted')
+    assert vm_check.sftp_refused("remote open: Read-only file system")
+    assert not vm_check.sftp_refused("u@h: Permission denied (publickey).")
+    assert not vm_check.sftp_refused("Received disconnect: Too many authentication failures")
+    assert not vm_check.sftp_refused("Connection closed")
+    assert not vm_check.sftp_refused("")
+    assert vm_check.sftp_refused(
+        'u@h: Permission denied (publickey).\nremote open("/x"): Permission denied'
+    )
+
+
 def test_a_valid_stored_token_mints_nothing(tmp_path: pathlib.Path) -> None:
     world = make_world(tmp_path, stored_ok=True)
     account = FakeAccount()
