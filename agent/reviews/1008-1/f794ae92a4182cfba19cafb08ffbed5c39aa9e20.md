@@ -26,9 +26,9 @@ Resolution: fixed 3d0927e0a67dbff9d0782f116b8fd6ce2de81ca5 | d778be9d 2026-10-14
 ### f794ae92.2 [medium] .ci/rediacc_ci/security/ci_workflow_invariants.py:1076
 Anchor: in-diff
 Claim: The new docstring says 'nothing on the apply line can mask it', but the regex does not cover a leading `!` negation, so the stated guarantee is false for that case.
-Resolution: open
+Resolution: fixed 3d0927e0a67dbff9d0782f116b8fd6ce2de81ca5 | d778be9d 2026-10-14T19:20:01Z
 
 ### f794ae92.3 [low] .ci/rediacc_ci/security/ci_workflow_invariants.py:1071
 Anchor: in-diff
 Claim: The `\|` alternative also matches the noclobber override `>|`, which does not change the apply status, so such a line is reported as 'no red path' (a false positive that fails closed).
-Resolution: open
+Resolution: fixed 8683c234f1133ccdc0f27e60f4848d27947e2aab | d778be9d 2026-10-14T19:20:01Z
