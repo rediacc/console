@@ -1202,7 +1202,8 @@ async function ageHeldMajors(
 async function partitionByReleaseAge(
   packages: PackageInfo[],
   minReleaseAgeMs: number,
-  nowMs: number
+  nowMs: number,
+  publishTime: (name: string, version: string) => Promise<number | null> = fetchVersionPublishTime
 ): Promise<{ installable: PackageInfo[]; tooNew: PackageInfo[] }> {
   if (minReleaseAgeMs <= 0 || packages.length === 0) {
     return { installable: packages, tooNew: [] };
@@ -1210,7 +1211,7 @@ async function partitionByReleaseAge(
   // The lookups run concurrently, but the partition keeps the input order, so two runs over the same tree print the same lines in the same order whatever order the registry answers in.
   const fresh = await Promise.all(
     packages.map(async (pkg) => {
-      const published = await fetchVersionPublishTime(pkg.name, pkg.latest);
+      const published = await publishTime(pkg.name, pkg.latest);
       // Fail-closed: a null publish time (registry hiccup) is treated as too-new.
       return published === null || isWithinFreshnessWindow(published, nowMs, minReleaseAgeMs);
     })
@@ -1836,7 +1837,7 @@ function runFixture(
 /**
  * Controls: prove this gate can still FAIL, and that its --upgrade path holds a breaking bump in EVERY manifest while still applying the safe ones. Run by `--selftest`.
  */
-function selftest(): void {
+async function selftest(): Promise<void> {
   let checks = 0;
   const fail = (what: string, detail = ''): never => {
     console.error(`${RED}✗${NC} selftest control failed: ${what}${detail ? `\n${detail}` : ''}`);
@@ -3497,6 +3498,41 @@ function selftest(): void {
     `${realPinRun.stdout}${realPinRun.stderr}`
   );
 
+  // THE RELEASE-AGE PARTITION KEEPS INPUT ORDER. The lookups run concurrently and here answer in reverse, the last package first; both lists must still come out in the order the packages went in, or two runs over one tree print different text.
+  const orderNow = Date.parse('2026-10-14T12:00:00Z');
+  const orderPkgs = ['a', 'b', 'c', 'd'].map((name) => ({
+    name,
+    current: '1.0.0',
+    latest: '1.0.1',
+  }));
+  const orderAge = new Map([
+    ['a', orderNow - 10 * 86_400_000],
+    ['b', orderNow - 60_000],
+    ['c', orderNow - 10 * 86_400_000],
+    ['d', orderNow - 60_000],
+  ]);
+  const orderDelay = new Map([
+    ['a', 40],
+    ['b', 30],
+    ['c', 20],
+    ['d', 10],
+  ]);
+  const ordered = await partitionByReleaseAge(
+    orderPkgs,
+    86_400_000,
+    orderNow,
+    (name) =>
+      new Promise((resolve) =>
+        setTimeout(() => resolve(orderAge.get(name) ?? null), orderDelay.get(name))
+      )
+  );
+  expect(
+    'the release-age partition keeps input order when the registry answers in reverse',
+    ordered.installable.map((x) => x.name).join(',') === 'a,c' &&
+      ordered.tooNew.map((x) => x.name).join(',') === 'b,d',
+    `installable=${ordered.installable.map((x) => x.name).join(',')} tooNew=${ordered.tooNew.map((x) => x.name).join(',')}`
+  );
+
   console.log(
     joinReport(
       `${GREEN}✓${NC} ${checks} selftest checks: the probe fails closed on both shapes; a breaking bump is held in `,
@@ -3518,7 +3554,8 @@ function selftest(): void {
       'every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary; an upgrade ',
       'rewrites the .syncpackrc.json pinVersion of each group holding a moved package (label kept), the skip-pin-sync ',
       'mutant leaves the group behind and is refused on a real tree, a partial lockstep move or an unreproducible rc ',
-      'file is refused by name, and a group whose packages did not move is untouched'
+      'file is refused by name, and a group whose packages did not move is untouched; the release-age partition keeps ',
+      'the input order when the registry answers in reverse'
     )
   );
   process.exit(0);
@@ -3526,7 +3563,12 @@ function selftest(): void {
 
 // Run the check
 if (process.argv.includes('--selftest')) {
-  selftest();
+  selftest().catch((error: unknown) => {
+    console.error(
+      `${RED}✗${NC} selftest crashed: ${error instanceof Error ? error.stack : String(error)}`
+    );
+    process.exit(1);
+  });
 } else {
   checkDependencies().catch((error: unknown) => {
     if (error instanceof DepsProbeError) {
