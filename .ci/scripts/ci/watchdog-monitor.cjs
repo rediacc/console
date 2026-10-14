@@ -68,7 +68,7 @@ const TIMEOUT_KILL_ANNOTATION_RE =
  */
 function findTimeoutKillAnnotation(annotations) {
   for (const a of annotations || []) {
-    const message = String((a && a.message) || '');
+    const message = String(a?.message || '');
     const m = TIMEOUT_KILL_ANNOTATION_RE.exec(message);
     if (!m) continue;
     const [, h, min, s, legacyMin] = m;
@@ -97,6 +97,17 @@ const JOB_BUDGET_CAPS = [
   { job: 'Validate Promotion', budgetMin: 20 },
 ];
 
+/** The one-line reason recorded for a job that ended failed, timed out, stuck or cancelled. */
+function jobEndReason(isFailed, timeoutKill, isStuck, jobMin) {
+  if (isFailed) return 'Job failed';
+  if (timeoutKill) {
+    return `Job killed by its timeout-minutes after ${jobMin}m (${timeoutKill.message})`;
+  }
+  if (isStuck)
+    return `Job stuck (ran ${jobMin}m before cancellation -- likely timeout-minutes expiry)`;
+  return 'Job cancelled (likely manual / supersession)';
+}
+
 /** The job's own display name: the segment after the last " / " (a reusable-workflow caller prefix), with any trailing " (matrix, leg)" suffix removed. */
 function jobBaseName(name) {
   const segment = String(name || '')
@@ -117,7 +128,7 @@ function jobRunStartMs(job) {
   // No `steps` field at all (a caller that never fetched them) keeps the old started_at reading; the real API always sends the array, empty for a job that never ran.
   if (!Array.isArray(job.steps)) return job.started_at ? new Date(job.started_at).getTime() : null;
   const starts = job.steps
-    .map((s) => (s && s.started_at ? new Date(s.started_at).getTime() : Number.NaN))
+    .map((s) => (s?.started_at ? new Date(s.started_at).getTime() : Number.NaN))
     .filter((ms) => Number.isFinite(ms));
   return starts.length ? Math.min(...starts) : null;
 }
@@ -170,6 +181,16 @@ const NO_AUTO_CANCEL_LABEL = 'no-auto-cancel';
 const CANCEL_CAUSE_FAILURE = 'failure';
 const CANCEL_CAUSE_BUDGET = 'budget';
 
+function cancelExemptReason(byEvent, byLabel, event) {
+  if (byEvent) {
+    return `run event "${event}" is cancel-exempt: cancelling would rewrite this run's conclusion from "failure" to "cancelled", which is what hid twelve consecutive red nightlies`;
+  }
+  if (byLabel) {
+    return `the PR carries the "${NO_AUTO_CANCEL_LABEL}" label: a failed job does not cancel the run, so every job reports and the run concludes "failure" on its own`;
+  }
+  return '';
+}
+
 function evaluateCancelExemption({ runEvent, labels = [], cause = CANCEL_CAUSE_FAILURE }) {
   const event = String(runEvent || '');
   const byEvent = CANCEL_EXEMPT_EVENTS.includes(event);
@@ -180,11 +201,7 @@ function evaluateCancelExemption({ runEvent, labels = [], cause = CANCEL_CAUSE_F
     exempt: byEvent || byLabel,
     event,
     byLabel,
-    reason: byEvent
-      ? `run event "${event}" is cancel-exempt: cancelling would rewrite this run's conclusion from "failure" to "cancelled", which is what hid twelve consecutive red nightlies`
-      : byLabel
-        ? `the PR carries the "${NO_AUTO_CANCEL_LABEL}" label: a failed job does not cancel the run, so every job reports and the run concludes "failure" on its own`
-        : '',
+    reason: cancelExemptReason(byEvent, byLabel, event),
   };
 }
 
@@ -502,7 +519,7 @@ function evaluateBudget({
   const enforcedJobViolations = jobMode === 'enforce' ? jobViolations.filter((v) => v.live) : [];
 
   let runViolation = null;
-  if (run && run.run_started_at && runBudgetMin !== null && runBudgetMin !== undefined) {
+  if (run?.run_started_at && runBudgetMin !== null && runBudgetMin !== undefined) {
     const minutes = (nowMs - new Date(run.run_started_at).getTime()) / 60000;
     if (minutes > runBudgetMin) {
       runViolation = { minutes, budgetMin: runBudgetMin };
@@ -644,7 +661,7 @@ async function signalByDesign(core, kind, headline, detail, targetRunId) {
   }
   // core.notice is optional surface: older @actions/core lacks it, and the gate harnesses stub `core` with only what they exercise. The OUTPUTS above are the durable signal, so an absent annotation API must degrade to a log line rather than throw -- a throw here would abort the monitor on a path where it had just worked correctly.
   if (typeof core.notice === 'function') {
-    core.notice(headline + ': ' + detail, { title: 'Watchdog: ' + kind });
+    core.notice(`${headline}: ${detail}`, { title: `Watchdog: ${kind}` });
   } else {
     console.log(`::notice::${headline}: ${detail}`);
   }
@@ -773,8 +790,8 @@ const monitor = async ({ github, context, core }) => {
   function writeBudgetArtifact() {
     if (!BUDGET_REPORT_DIR || budgetViolationLog.length === 0) return;
     try {
-      const fs = require('fs');
-      const path = require('path');
+      const fs = require('node:fs');
+      const path = require('node:path');
       fs.mkdirSync(BUDGET_REPORT_DIR, { recursive: true });
       fs.writeFileSync(
         path.join(BUDGET_REPORT_DIR, 'budget-violations.json'),
@@ -963,8 +980,8 @@ const monitor = async ({ github, context, core }) => {
   function persistJobLog(job, fullText) {
     if (!LOG_CAPTURE_DIR) return;
     try {
-      const fs = require('fs');
-      const path = require('path');
+      const fs = require('node:fs');
+      const path = require('node:path');
       fs.mkdirSync(LOG_CAPTURE_DIR, { recursive: true });
       // Job names carry slashes, spaces and parentheses ("Tests + Infra / E2E Workers (opensuse-16.0)"), none of which belong in a filename. The id keeps it unique when two legs sanitise to the same string.
       const safeName = String(job.name)
@@ -1016,7 +1033,7 @@ const monitor = async ({ github, context, core }) => {
   // The system prompt is shared by every provider: the verdict contract must not vary by who is answering, or the allowlist tier would be comparing verdicts produced under different rules.
   function readClassifierPrompt() {
     try {
-      return require('fs').readFileSync('.ci/prompts/ci-failure-classifier.md', 'utf8').trim();
+      return require('node:fs').readFileSync('.ci/prompts/ci-failure-classifier.md', 'utf8').trim();
     } catch (e) {
       console.log(`[AI] Failed to read prompt file: ${e.message}`);
       return null;
@@ -1691,13 +1708,7 @@ const monitor = async ({ github, context, core }) => {
       const jobMin = jobElapsedMin(job);
       const isStuck = stuckCancellations.includes(job);
       const timeoutKill = isStuck ? timeoutKills.get(job.id) || null : null;
-      const reason = failed.includes(job)
-        ? 'Job failed'
-        : timeoutKill
-          ? `Job killed by its timeout-minutes after ${jobMin}m (${timeoutKill.message})`
-          : isStuck
-            ? `Job stuck (ran ${jobMin}m before cancellation -- likely timeout-minutes expiry)`
-            : 'Job cancelled (likely manual / supersession)';
+      const reason = jobEndReason(failed.includes(job), timeoutKill, isStuck, jobMin);
       // let, not const: the transient branch below widens the message to the
       // full failure roster before recording it.
       let failureMsg = logFailure(job, reason, run.run_attempt);

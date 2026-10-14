@@ -98,7 +98,7 @@ function parseDir(rsrc, off, sectionRva) {
 
 /** Get (creating if absent) the child directory reached by an id/name key. */
 function childDir(dir, key) {
-  let entry = dir.entries.find((x) => (key.id != null ? x.id === key.id : x.name === key.name));
+  let entry = dir.entries.find((x) => (key.id == null ? x.name === key.name : x.id === key.id));
   if (!entry) {
     entry = { ...key, child: { isDir: true, entries: [] } };
     dir.entries.push(entry);
@@ -118,7 +118,10 @@ function sortDir(node) {
     const an = a.name != null;
     const bn = b.name != null;
     if (an !== bn) return an ? -1 : 1;
-    if (an) return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+    if (an) {
+      if (a.name < b.name) return -1;
+      return a.name > b.name ? 1 : 0;
+    }
     return a.id - b.id;
   });
   for (const en of node.entries) sortDir(en.child);
@@ -182,7 +185,7 @@ function serializeTree(root, sectionRva, blobLeaf, blobSize) {
     treeBuf.writeUInt16LE(d.entries.length - namedCount, d._off + 14);
     let e = d._off + DIR_SIZE;
     for (const en of d.entries) {
-      const nameField = en.name != null ? HIGH_BIT | en._nameOff : en.id;
+      const nameField = en.name == null ? en.id : HIGH_BIT | en._nameOff;
       const offField = en.child.isDir ? HIGH_BIT | en.child._off : en.child._deOff;
       treeBuf.writeUInt32LE(nameField >>> 0, e);
       treeBuf.writeUInt32LE(offField >>> 0, e + 4);
@@ -282,7 +285,7 @@ export function injectPe({ binaryPath, resourceName, blobPath, fuse }) {
     const secTableOff = optOff + optSize;
     const secTable = readAt(fd, numSections * SEC_HDR_SIZE, secTableOff);
     const sections = [];
-    let minRawPtr = Infinity;
+    let minRawPtr = Number.POSITIVE_INFINITY;
     let maxSectionEndRva = 0;
     let rsrcSecIdx = -1;
     for (let i = 0; i < numSections; i++) {

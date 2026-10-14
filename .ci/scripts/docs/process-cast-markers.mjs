@@ -49,12 +49,7 @@ function processCast(inputPath, outputPath) {
 
     if (eventType === 'o' && typeof data === 'string') {
       // Extract markers from output
-      const markers = [];
-      let match;
-      MARKER_RE.lastIndex = 0;
-      while ((match = MARKER_RE.exec(data)) !== null) {
-        markers.push(match[1]);
-      }
+      const markers = Array.from(data.matchAll(MARKER_RE), (match) => match[1]);
 
       // Inject marker events (label normalized for path display)
       for (const label of markers) {
@@ -78,7 +73,7 @@ function processCast(inputPath, outputPath) {
 
   // Write processed file
   const outputLines = [JSON.stringify(header), ...outputEvents.map((e) => JSON.stringify(e))];
-  writeFileSync(outputPath, outputLines.join('\n') + '\n');
+  writeFileSync(outputPath, `${outputLines.join('\n')}\n`);
 
   // Summary
   console.log(`Markers injected: ${markerCount}`);

@@ -21,7 +21,7 @@ module.exports = async ({ github, context, core }) => {
   // token or hits an API error; the fallback is strictly the old behaviour.
   const payloadPr = context.payload.pull_request;
   let pr = payloadPr;
-  if (payloadPr && payloadPr.number) {
+  if (payloadPr?.number) {
     try {
       const { data } = await github.rest.pulls.get({
         owner: context.repo.owner,
@@ -104,7 +104,7 @@ module.exports = async ({ github, context, core }) => {
 
   if (errors.length > 0) {
     summary += `### Errors\n`;
-    errors.forEach((e) => (summary += `- ❌ ${e}\n`));
+    for (const e of errors) summary += `- ❌ ${e}\n`;
     core.summary.addRaw(summary).write();
     core.setFailed(errors.join('\n\n'));
   } else {

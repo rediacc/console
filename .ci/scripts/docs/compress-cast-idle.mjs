@@ -41,7 +41,7 @@ function compress(inputPath, outputPath, maxIdleMs) {
 
   writeFileSync(
     outputPath,
-    [JSON.stringify(header), ...out.map((e) => JSON.stringify(e))].join('\n') + '\n'
+    `${[JSON.stringify(header), ...out.map((e) => JSON.stringify(e))].join('\n')}\n`
   );
   console.log(`Compressed cast: trimmed ${trimmed.toFixed(2)}s of idle time (cap=${maxIdleMs}ms)`);
 }

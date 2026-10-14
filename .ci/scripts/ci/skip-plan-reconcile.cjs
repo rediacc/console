@@ -26,7 +26,7 @@
 
 'use strict';
 
-const fs = require('fs');
+const fs = require('node:fs');
 
 const scopeMap = require('./scope-map.cjs');
 
@@ -219,7 +219,7 @@ function matchJobName(name, expected) {
 // Accept the Jobs API payload as gh returns it ({jobs:[...]}) or as a bare
 // array. Anything else is unusable evidence: null, and the caller hard-fails.
 function parseJobsPayload(payload) {
-  const jobs = Array.isArray(payload) ? payload : payload && payload.jobs;
+  const jobs = Array.isArray(payload) ? payload : payload?.jobs;
   if (!Array.isArray(jobs)) return null;
   return jobs.filter((j) => j && typeof j.name === 'string');
 }

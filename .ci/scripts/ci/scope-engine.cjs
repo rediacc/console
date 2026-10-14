@@ -17,8 +17,8 @@
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const scopeMap = require('./scope-map.cjs');
 
@@ -56,7 +56,7 @@ function unquoteCPath(quoted) {
     if (next >= '0' && next <= '7') {
       let oct = next;
       while (oct.length < 3 && inner[i + 1] >= '0' && inner[i + 1] <= '7') oct += inner[++i];
-      bytes.push(parseInt(oct, 8));
+      bytes.push(Number.parseInt(oct, 8));
       continue;
     }
     return null;
@@ -77,7 +77,7 @@ function parseLine(line) {
 
 function normalizePath(p) {
   const unquoted = p.startsWith('"') ? unquoteCPath(p) : null;
-  const value = unquoted !== null ? unquoted : p;
+  const value = unquoted === null ? p : unquoted;
   return value.startsWith('./') ? value.slice(2) : value;
 }
 
@@ -160,7 +160,7 @@ function planCoverageIsFull(plan) {
 }
 
 function evaluateBaselineCandidate(candidate) {
-  if (!candidate || candidate.conclusion !== 'success') {
+  if (candidate?.conclusion !== 'success') {
     return { usable: false, reason: 'not-green' };
   }
   if (!candidate.plan) {
@@ -198,7 +198,7 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
     plan.attest_reason = reason;
     return plan;
   };
-  const msg = (e) => (e && e.message ? e.message : String(e));
+  const msg = (e) => (e?.message ? e.message : String(e));
 
   try {
     // Cheapest first, and the order is a cost decision, not a style one. A plan that did not cover every key can never be a baseline whatever the reconciler says (case 1: evidence does not chain across SCOPE-reduced rounds), so asking the Jobs API about it would be a round trip spent on a foregone conclusion. Coverage, not the mode label: see planCoverageIsFull.
@@ -216,7 +216,7 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
     } catch (e) {
       return refuse(`jobs-unreadable:${msg(e)}`);
     }
-    const observed = Array.isArray(payload) ? payload : payload && payload.jobs;
+    const observed = Array.isArray(payload) ? payload : payload?.jobs;
     const list = Array.isArray(observed)
       ? observed.filter((j) => j && typeof j.name === 'string')
       : null;
@@ -228,7 +228,7 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
       plan.reconciled = true; // THE one and only assignment.
       return plan;
     }
-    return refuse(`reconcile:${(r && r.failures && r.failures[0]) || 'refused-without-a-reason'}`);
+    return refuse(`reconcile:${r?.failures?.[0] || 'refused-without-a-reason'}`);
   } catch (e) {
     // An unexpected throw must degrade to "not attested", never to a crash and never to an attestation: the engine runs inside `initialize`, which every other job depends on.
     return refuse(`attest-threw:${msg(e)}`);
@@ -286,7 +286,7 @@ function selectBaseline(candidates) {
   for (const candidate of candidates || []) {
     const verdict = evaluateBaselineCandidate(candidate);
     trail.push({
-      sha: candidate && candidate.sha ? candidate.sha : null,
+      sha: candidate?.sha ? candidate.sha : null,
       usable: verdict.usable,
       reason: verdict.reason,
     });
@@ -331,7 +331,7 @@ function resolveBaseline(opts, io) {
     notes,
     plan: forcedFullPlan(reason),
   });
-  const msg = (e) => (e && e.message ? e.message : String(e));
+  const msg = (e) => (e?.message ? e.message : String(e));
 
   if (!head) return fail('baseline:head-sha-missing');
 
@@ -366,7 +366,7 @@ function resolveBaseline(opts, io) {
     } catch (e) {
       return fail(`baseline:candidate-walk-failed:${msg(e)}`);
     }
-    const shas = (walk && walk.shas) || [];
+    const shas = walk?.shas || [];
     if (shas.length === 0) return fail('baseline:no-candidates');
 
     let budgetSpent = 0;
@@ -443,7 +443,7 @@ function resolveBaseline(opts, io) {
 // --------------------------------------------------------------------------- The real io: git for history, gh for runs and the attested plan artifact. ---------------------------------------------------------------------------
 
 function defaultRun(cmd, args) {
-  const { execFileSync } = require('child_process');
+  const { execFileSync } = require('node:child_process');
   return execFileSync(cmd, args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 }
 
@@ -499,11 +499,11 @@ function createRepoIo({
     const pages = parseJsonStream(text);
     if (pages.length === 0) throw new Error('jobs payload carried no JSON');
     if (pages.length === 1) return pages[0];
-    return { jobs: pages.flatMap((p) => (Array.isArray(p) ? p : (p && p.jobs) || [])) };
+    return { jobs: pages.flatMap((p) => (Array.isArray(p) ? p : p?.jobs || [])) };
   };
 
   const downloadPlan = (runId) => {
-    const os = require('os');
+    const os = require('node:os');
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-plan-'));
     try {
       try {
@@ -516,7 +516,7 @@ function createRepoIo({
         try {
           return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
         } catch {
-          continue;
+          // absent or unparseable: the loop moves on to the next candidate file
         }
       }
       return null;
@@ -583,7 +583,7 @@ function createRepoIo({
           `repos/${repo}/actions/runs?head_branch=${encodeURIComponent(branch)}&per_page=100&page=${page}`
         );
         const payload = JSON.parse(text);
-        const runs = (payload && payload.workflow_runs) || [];
+        const runs = payload?.workflow_runs || [];
         for (const r of runs) {
           if (r.name !== workflow) continue;
           const list = map.get(r.head_sha) || [];
@@ -595,7 +595,7 @@ function createRepoIo({
       runsBySha = map;
     } catch (e) {
       runsBySha = false; // correctness over cost: fall back to per-commit
-      noteSink(`runs-listing-degraded:per-commit:${e && e.message ? e.message : String(e)}`);
+      noteSink(`runs-listing-degraded:per-commit:${e?.message ? e.message : String(e)}`);
     }
   };
 
