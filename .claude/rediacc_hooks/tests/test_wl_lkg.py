@@ -8,8 +8,9 @@ from __future__ import annotations
 import json
 import shutil
 
+import wl_lkg as LKG
+
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 PLANT = "def run_stop(event, event_ok, worklist, hook_file):\n"
 
@@ -36,7 +37,7 @@ def open_item_world(fix) -> None:
     fix.say("working")
 
 
-def test_k1_a_crashed_live_hook_is_answered_by_the_snapshot(wl):  # noqa: F811
+def test_k1_a_crashed_live_hook_is_answered_by_the_snapshot(wl):
     """CONTROL: before P2.5 this stop printed "Stop hook CRASHED" and none of the battery ran."""
     target = copied_hook(wl)
     open_item_world(wl)
@@ -56,7 +57,7 @@ def test_k1_a_crashed_live_hook_is_answered_by_the_snapshot(wl):  # noqa: F811
     assert "OPEN worklist item" in reason, "the snapshot's battery did not run: %s" % reason[:600]
 
 
-def test_k1b_inverse_with_no_snapshot_and_no_git_the_crash_block_is_unchanged(wl):  # noqa: F811
+def test_k1b_inverse_with_no_snapshot_and_no_git_the_crash_block_is_unchanged(wl):
     target = copied_hook(wl)
     plant_crash(target)
     open_item_world(wl)
@@ -65,7 +66,7 @@ def test_k1b_inverse_with_no_snapshot_and_no_git_the_crash_block_is_unchanged(wl
     assert "NameError" in got.out, got.out[:600]
 
 
-def test_k1c_inverse_a_broken_snapshot_leaves_the_crash_block_unchanged(wl):  # noqa: F811
+def test_k1c_inverse_a_broken_snapshot_leaves_the_crash_block_unchanged(wl):
     target = copied_hook(wl)
     open_item_world(wl)
     wl.run()
@@ -83,7 +84,6 @@ def test_k1c_inverse_a_broken_snapshot_leaves_the_crash_block_unchanged(wl):  # 
 
 def test_k1d_the_snapshot_keeps_the_sibling_package_reachable(tmp_path, monkeypatch):
     """The stop modules reach `.claude/rediacc_hooks` as `parents[2]` of their own file. A flat snapshot sent that hop to `<TMPDIR>/claude-worklist/rediacc_hooks` (`prscope-broken`, 2026-10-04); the snapshot keeps the tree's shape and links the live package in."""
-    import wl_lkg as LKG  # noqa: PLC0415
 
     tree = tmp_path / "proj" / ".claude"
     stop = tree / "hooks" / "stop"

@@ -21,7 +21,6 @@ import sys
 import time
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 LEASE_BG = json.dumps(
     [
@@ -59,7 +58,7 @@ def added_id(result: wlfix.Result) -> str:
     return found.group(1)
 
 
-def test_132_the_store_markdown_items_fold_into_the_event_log(wl):  # noqa: F811
+def test_132_the_store_markdown_items_fold_into_the_event_log(wl):
     """Migration: all four live states fold in, and the `[~]` tombstone reads as deleted."""
     future = stamp(-30, "%Y-%m-%dT%H:%MZ")
     for line in (
@@ -90,7 +89,7 @@ def test_132_the_store_markdown_items_fold_into_the_event_log(wl):  # noqa: F811
     )
 
 
-def test_133_in_place_markdown_edits_are_honoured_and_cli_state_survives_md_churn(wl):  # noqa: F811
+def test_133_in_place_markdown_edits_are_honoured_and_cli_state_survives_md_churn(wl):
     """The markdown is MUTATED by its writers (ticks flip the state byte in place), which is why the sync is a whole-file diff and not an append offset."""
     wl.brief_now()
     wl.hand_now()
@@ -123,7 +122,7 @@ def test_133_in_place_markdown_edits_are_honoured_and_cli_state_survives_md_chur
     )
 
 
-def test_134_a_torn_event_log_tail_is_healed(wl):  # noqa: F811
+def test_134_a_torn_event_log_tail_is_healed(wl):
     """A crash mid-write leaves a fragment with no newline; it must stay its own dead line rather than merging into the next event."""
     wl.cli("--add", "deadbeef", "first item")
     with wl.events.open("a", encoding="utf-8") as handle:
@@ -152,7 +151,7 @@ def test_134_a_torn_event_log_tail_is_healed(wl):  # noqa: F811
     assert "second item" in wl.cli("--list").out, "the fold lost the event after the torn line"
 
 
-def test_135_race_concurrent_add_writers_lose_nothing(wl):  # noqa: F811
+def test_135_race_concurrent_add_writers_lose_nothing(wl):
     """Sixteen concurrent adds must yield sixteen parseable events with sixteen distinct ids."""
     procs = []
     for index in range(1, 17):
@@ -197,7 +196,7 @@ def test_135_race_concurrent_add_writers_lose_nothing(wl):  # noqa: F811
     )
 
 
-def test_136_tick_refuses_a_completion_without_evidence(wl):  # noqa: F811
+def test_136_tick_refuses_a_completion_without_evidence(wl):
     """Refused loudly (exit nonzero) and nothing written, and the same tick WITH evidence lands."""
     aid = added_id(wl.cli("--add", "deadbeef", "prove the flag binds"))
     refused = wl.cli("--tick", "deadbeef", aid, "done i guess")
@@ -210,7 +209,7 @@ def test_136_tick_refuses_a_completion_without_evidence(wl):  # noqa: F811
     assert "- [x]" in wl.cli("--list").out, "the evidenced tick did not land"
 
 
-def test_137_ladder_rung_1_a_quiet_lease_pings_report_only(wl):  # noqa: F811
+def test_137_ladder_rung_1_a_quiet_lease_pings_report_only(wl):
     """Forty-five minutes: a lease quiet for fifty still ALLOWS the stop and only pings."""
     wl.brief_now()
     wl.hand_now()
@@ -241,7 +240,7 @@ def test_137_ladder_rung_1_a_quiet_lease_pings_report_only(wl):  # noqa: F811
     wl.check("allow", "Liveness ping", "a 50-minute-quiet lease still ALLOWS the stop")
 
 
-def test_137_control_a_fresh_lease_draws_no_ping(wl):  # noqa: F811
+def test_137_control_a_fresh_lease_draws_no_ping(wl):
     """CONTROL: the same shape with young stamps draws no ping at all."""
     wl.brief_now()
     wl.hand_now()
@@ -272,7 +271,7 @@ def test_137_control_a_fresh_lease_draws_no_ping(wl):  # noqa: F811
     wl.check_quiet("Liveness ping", "CONTROL: a fresh lease draws no ping")
 
 
-def test_138_rung_2_investigate_blocks_once_per_stamp(wl):  # noqa: F811
+def test_138_rung_2_investigate_blocks_once_per_stamp(wl):
     """One hundred quiet minutes hits the INVESTIGATE rung, and the rung fires ONCE per stamp rather than on every stop."""
     wl.brief_now()
     wl.hand_now()
@@ -304,7 +303,7 @@ def test_138_rung_2_investigate_blocks_once_per_stamp(wl):  # noqa: F811
     wl.check("allow", "", "the rung fires ONCE per stamp, not every stop")
 
 
-def test_138_rung_3_resolve_blocks_and_the_default_exit_always_clears(wl):  # noqa: F811
+def test_138_rung_3_resolve_blocks_and_the_default_exit_always_clears(wl):
     """One hundred and twenty-five quiet minutes hits the RESOLVE rung, and the `[?]` plus DEFAULT exit clears the top rung, so it has no way to trap."""
     wl.brief_now()
     wl.hand_now()
@@ -346,7 +345,7 @@ def test_138_rung_3_resolve_blocks_and_the_default_exit_always_clears(wl):  # no
     wl.check("allow", "operator may answer", "the [?] plus DEFAULT exit clears the top rung")
 
 
-def test_139_gone_fires_on_a_vanished_worker(wl):  # noqa: F811
+def test_139_gone_fires_on_a_vanished_worker(wl):
     """`worker_verified: true` is the load-bearing half of this fixture. GONE means DROPPED: the harness could see the worker when the lease was taken and cannot see it now. Without that bit the case was really asserting that any id the harness does not list is dead, which is a different and wrong rule: it accused an Agent leased by NAME, which has no way to appear in a
     background-task list, while that agent was actively writing files."""
     wl.brief_now()
@@ -383,7 +382,7 @@ def test_139_gone_fires_on_a_vanished_worker(wl):  # noqa: F811
     )
 
 
-def test_139_a_never_verified_worker_is_not_called_dead(wl):  # noqa: F811
+def test_139_a_never_verified_worker_is_not_called_dead(wl):
     """THE OTHER HALF. This is the case that cost a session several round trips: an Agent leased by name, absent from the background list by construction, reported as finished or stopped while its files were appearing on disk."""
     wl.brief_now()
     wl.hand_now()
@@ -418,7 +417,7 @@ def test_139_a_never_verified_worker_is_not_called_dead(wl):  # noqa: F811
     )
 
 
-def test_139_control_an_unverifiable_teammate_is_never_accused(wl):  # noqa: F811
+def test_139_control_an_unverifiable_teammate_is_never_accused(wl):
     """THE FALSE-ACCUSATION CONTROL, the one failure mode worse than no check: an UNVERIFIABLE worker (a teammate, for which no OS process exists by design) must not read as gone. Same fixture shape, worker present in the event."""
     wl.brief_now()
     wl.hand_now()
@@ -482,7 +481,7 @@ def test_140_os_verification_confirmed_suspect_and_unverifiable():
     )
 
 
-def test_141_autonomy_a_default_past_its_window_is_executed_not_restated(wl):  # noqa: F811
+def test_141_autonomy_a_default_past_its_window_is_executed_not_restated(wl):
     """An aged deferral demands its default be executed, and refreshing the item restarts the window, so the exit is always available."""
     wl.brief_now()
     wl.hand_now()
@@ -506,7 +505,7 @@ def test_141_autonomy_a_default_past_its_window_is_executed_not_restated(wl):  #
     wl.check("allow", "operator may answer", "refreshing the item restarts the window")
 
 
-def test_141_control_a_fresh_deferral_does_not_demand_execution(wl):  # noqa: F811
+def test_141_control_a_fresh_deferral_does_not_demand_execution(wl):
     """CONTROL: a fresh deferral just reports (case 3 pins this too; here it is the explicit twin of the aged fixture)."""
     wl.brief_now()
     wl.hand_now()
@@ -526,7 +525,7 @@ def test_141_control_a_fresh_deferral_does_not_demand_execution(wl):  # noqa: F8
     wl.check("allow", "operator may answer", "CONTROL: a fresh deferral does not demand execution")
 
 
-def test_141_drain_cap_five_aged_deferrals_arrive_three_at_a_time(wl):  # noqa: F811
+def test_141_drain_cap_five_aged_deferrals_arrive_three_at_a_time(wl):
     """DRAIN CAP: five expired deferrals drain three per stop, never as a wall."""
     wl.brief_now()
     wl.hand_now()
@@ -550,7 +549,7 @@ def test_141_drain_cap_five_aged_deferrals_arrive_three_at_a_time(wl):  # noqa: 
     assert "and 2 more, held back" in got.out, "drain cap wrong: %s" % got.out[:260]
 
 
-def test_142_the_judge_caches_an_identical_world_and_message(wl):  # noqa: F811
+def test_142_the_judge_caches_an_identical_world_and_message(wl):
     """One paid call rather than two, and the CONTROL beside it: any change to the world signature re-asks."""
     wl.brief_now()
     wl.hand_now()
@@ -636,7 +635,7 @@ def orphan_defs(directory, refs) -> list[str]:
     return orphans
 
 
-def test_143_the_dead_code_gate_every_top_level_def_is_referenced_somewhere(wl):  # noqa: F811
+def test_143_the_dead_code_gate_every_top_level_def_is_referenced_somewhere(wl):
     """No unreferenced top-level function in the shipped modules, and PROVE THE INSTRUMENT: the same gate must FIRE on a planted orphan."""
     shipped = orphan_defs(wlfix.STOP_DIR, DEADCODE_REFS)
     assert not shipped, "dead code shipped: %s" % shipped
@@ -654,7 +653,7 @@ def test_143_the_dead_code_gate_every_top_level_def_is_referenced_somewhere(wl):
     )
 
 
-def test_145_a_tick_flood_is_absorbed_as_bookkeeping(wl):  # noqa: F811
+def test_145_a_tick_flood_is_absorbed_as_bookkeeping(wl):
     """The v10 upgrade guard: tick identity hashes the RENDERED line, and the store rewrite can re-render history, so the first post-upgrade stop may see hundreds of historical `[x]` as new (791 in the live store). That is drift, not 791 simultaneous fixes: absorb with one note, and never route those lines into the I7 evidence check either."""
     wl.say("done for now")
     wl.brief_now()
@@ -674,7 +673,7 @@ def test_145_a_tick_flood_is_absorbed_as_bookkeeping(wl):  # noqa: F811
     assert "absorbed as bookkeeping" not in again.out, "flood note repeated: %s" % again.out[:200]
 
 
-def test_144_state_document_staleness_is_world_keyed(wl):  # noqa: F811
+def test_144_state_document_staleness_is_world_keyed(wl):
     """The v9 trap this kills: the 10-minute age limit was outpaced by the 5-minute poll cron, so a QUIET session went stale every other poll. Age alone is not staleness; the world signature must also have moved.
 
     The write stays INLINE rather than folded into `hand_now`, and the point of the case is that the task dir the stop will read is covered by the signature the `--state` write records. `wlfix.Fixture.python` passes WORKLIST_TASKS_DIR on every invocation, which is what makes the two signatures comparable here.

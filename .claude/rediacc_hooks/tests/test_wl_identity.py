@@ -20,7 +20,6 @@ import time
 import pytest
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # The literal from the incident: a sub-agent namespace token passed as a session's own `<me>`.
 FOREIGN = "4c3e095a"
@@ -177,7 +176,7 @@ def probe_phantom(fix) -> str:
     return (proc.stdout + proc.stderr).strip()
 
 
-def test_181_isolation_the_suite_can_never_reach_the_live_worklist(wl):  # noqa: F811
+def test_181_isolation_the_suite_can_never_reach_the_live_worklist(wl):
     """Raised by the team lead after a run of this suite came back with failures a clean tree could not reproduce, on the hypothesis that fixture state and live session state were mixing. They were not mixing on DISK, since every invocation passes TMPDIR, but the check belongs here rather than in anyone's memory, because the cost of being wrong is a suite that tests the operator's
     real store. Two halves: the store path resolves inside the fixture, and the ENVIRONMENT the hook reads carries no ambient knob.
     """
@@ -210,7 +209,7 @@ def test_181_isolation_the_suite_can_never_reach_the_live_worklist(wl):  # noqa:
     )
 
 
-def test_182_sessionstart_source_compact_does_not_re_inject_the_docs_blurb(wl):  # noqa: F811
+def test_182_sessionstart_source_compact_does_not_re_inject_the_docs_blurb(wl):
     """THE BUG (operator, 2026-08-04): a long-running licensing session compacted, Claude Code fired SessionStart with source=compact, and the session was handed "N design doc(s) in docs/ci-overhaul" plus an order to read all of them, material belonging to an unrelated program, injected mid-task. Compaction is handle_post_compact's job: it already re-points at the design docs AND
     hands back the branch's plans, so SessionStart must stay quiet.
     """
@@ -660,7 +659,7 @@ def test_185_anti_vacuity_the_verb_list_is_derived_from_the_source_not_typed_her
     assert not gap, "UNCOVERED identity-taking verb(s), add a row to the 184 table: %s" % gap
 
 
-def test_186_meta_control_the_ambient_scrub_really_happened(wl):  # noqa: F811
+def test_186_meta_control_the_ambient_scrub_really_happened(wl):
     """A CHECK ON A CHECK, and it is not redundant.
 
     Everything above depends on WORKLIST_SESSION_ID being the ONLY identity in the environment. If `wlfix.scrubbed_environ` ever stops stripping CLAUDE_CODE_SESSION_ID, this suite splits in two: run from inside a Claude session every fixture prefix mismatches and about 110 sites refuse, and run in CI the variable is unset, check_me silently passes, and every identity case above
@@ -693,7 +692,7 @@ def test_186_meta_control_the_ambient_scrub_really_happened(wl):  # noqa: F811
     assert "beef0000" in both(got), both(got)[:200]
 
 
-def test_184x_a_short_me_that_exactly_matches_an_explicit_declaration_is_honoured(wl):  # noqa: F811
+def test_184x_a_short_me_that_exactly_matches_an_explicit_declaration_is_honoured(wl):
     """REGRESSION, from a defect the floor itself caused.
 
     Legacy sub-agents tagged items with their NAME rather than a session prefix, and `w2s-en` is 6 characters. The floor refused it even WITH the override declared, and the refusal then advised a rerun with the exact value it had just rejected. An instruction to retry the thing it refused leaves no next move: the listing path was closed, so the only way to see those items was to
@@ -728,7 +727,7 @@ def test_184x_a_short_me_that_exactly_matches_an_explicit_declaration_is_honoure
     assert "shorter than 8 characters" in both(got), both(got)[:200]
 
 
-def test_189_an_identity_that_writes_here_and_has_never_stopped_is_reported(wl):  # noqa: F811
+def test_189_an_identity_that_writes_here_and_has_never_stopped_is_reported(wl):
     """v19 L2: the backstop for what L1 cannot reach, history already written, and the deliberate silent-pass where the environment cannot name the caller. The signature is exact and binary: `.lastevent-<prefix>.json` is written at exactly ONE place (run_stop), so no file means no Stop hook has ever run under that identity, and a real session always stops."""
     wl.brief_now()
     wl.hand_now()
@@ -746,7 +745,7 @@ def test_189_an_identity_that_writes_here_and_has_never_stopped_is_reported(wl):
     )
 
 
-def test_189a_control_a_lastevent_file_means_it_did_stop_so_it_is_a_real_session(wl):  # noqa: F811
+def test_189a_control_a_lastevent_file_means_it_did_stop_so_it_is_a_real_session(wl):
     """CONTROL: one planted fact, the `.lastevent-` file, and it goes silent."""
     wl.brief_now()
     wl.hand_now()
@@ -762,7 +761,7 @@ def test_189a_control_a_lastevent_file_means_it_did_stop_so_it_is_a_real_session
     )
 
 
-def test_189b_control_a_brand_new_session_writes_before_its_first_stop(wl):  # noqa: F811
+def test_189b_control_a_brand_new_session_writes_before_its_first_stop(wl):
     """CONTROL: a 2-minute-old writer is not yet a phantom, because it has not had time to stop."""
     wl.brief_now()
     wl.hand_now()
@@ -777,7 +776,7 @@ def test_189b_control_a_brand_new_session_writes_before_its_first_stop(wl):  # n
     )
 
 
-def test_189c_control_a_phantom_that_owns_nothing_is_not_worth_a_word(wl):  # noqa: F811
+def test_189c_control_a_phantom_that_owns_nothing_is_not_worth_a_word(wl):
     """This is the gate that keeps real test residue in the operator's live store silent."""
     wl.brief_now()
     wl.hand_now()
@@ -817,7 +816,7 @@ def test_189c_control_a_phantom_that_owns_nothing_is_not_worth_a_word(wl):  # no
     )
 
 
-def test_189d_control_with_zero_lastevent_files_the_check_says_it_is_blind(wl):  # noqa: F811
+def test_189d_control_with_zero_lastevent_files_the_check_says_it_is_blind(wl):
     """Asserting silence here would be indistinguishable from the check not running.
 
     With no `.lastevent-*` anywhere the signature cannot discriminate, since it recognises a phantom by the ABSENCE of one, and it would indict every identity at once, so it must report the blindness in words and flag nobody. Case 189e is its control: same call, one file present, and the phantom is named.
@@ -832,7 +831,7 @@ def test_189d_control_with_zero_lastevent_files_the_check_says_it_is_blind(wl): 
     assert "is BLIND this stop" in out, out[:300]
 
 
-def test_189e_control_for_189d_one_lastevent_file_and_the_same_call_flags(wl):  # noqa: F811
+def test_189e_control_for_189d_one_lastevent_file_and_the_same_call_flags(wl):
     """Without this, 189d is satisfied by a function that never looks at anything.
 
     The bash reused 189d's world directly; here the identical fixture is rebuilt, because pytest gives each test its own sandbox, and the ONE planted fact that differs from 189d is still the single `.lastevent-` file.
@@ -849,7 +848,7 @@ def test_189e_control_for_189d_one_lastevent_file_and_the_same_call_flags(wl):  
     )
 
 
-def test_190_reassign_moves_the_open_work_and_leaves_the_history_alone(wl):  # noqa: F811
+def test_190_reassign_moves_the_open_work_and_leaves_the_history_alone(wl):
     """v19 L3. BEFORE AND AFTER in one run. The before-assert is the control: without it the test passes on a store that already contained the item."""
     wl.brief_now()
     wl.hand_now()
@@ -879,7 +878,7 @@ def test_190_reassign_moves_the_open_work_and_leaves_the_history_alone(wl):  # n
     )
 
 
-def test_190b_control_reassign_refuses_a_peer_that_is_fresh_but_never_stopped(wl):  # noqa: F811
+def test_190b_control_reassign_refuses_a_peer_that_is_fresh_but_never_stopped(wl):
     """THE REVIEW FINDING THIS PINS (medium, PR #551).
 
     The `.lastevent-` guard alone does not deliver the guarantee the docstring claims. That file is written at a session's FIRST STOP, so a peer that has added items and not yet stopped has no file either and is indistinguishable from a genuine phantom. Any session can read a peer's prefix out of `--list --open`, and concurrent sessions in one tree are routine here, so without an
@@ -898,7 +897,7 @@ def test_190b_control_reassign_refuses_a_peer_that_is_fresh_but_never_stopped(wl
     assert "mid-turn" in both(got), both(got)[:300]
 
 
-def test_190b_control_the_same_prefix_aged_past_the_floor_still_reassigns(wl):  # noqa: F811
+def test_190b_control_the_same_prefix_aged_past_the_floor_still_reassigns(wl):
     """CONTROL ON THE CONTROL: the SAME prefix, aged past the floor, still moves, so the case above proves an age gate and not a blanket refusal."""
     wl.brief_now()
     wl.hand_now()
@@ -910,7 +909,7 @@ def test_190b_control_the_same_prefix_aged_past_the_floor_still_reassigns(wl):  
     assert "reassigned fresh999" in both(got), both(got)[:300]
 
 
-def test_190c_lease_release_accepts_the_hash_this_tools_own_output_prints(wl):  # noqa: F811
+def test_190c_lease_release_accepts_the_hash_this_tools_own_output_prints(wl):
     """REVIEW FINDING, PR #551: the release branch read argv[2] raw while every other verb goes through the `.lstrip("#")` at the top of _item_cli.
 
     So an id copied straight from this tool's OWN output, which prints ids as `#abc123`, appended an unlease event matching nothing, printed "released ##abc123", and left the item `[>]`. A verb that reports success while changing nothing is precisely what this suite exists to catch, and it shipped inside the fix for a different silent no-op.
@@ -942,7 +941,7 @@ def test_190c_lease_release_accepts_the_hash_this_tools_own_output_prints(wl):  
     assert found.group(0) == "- [ ] #%s" % rid, "CONTROL: the bare form broke: %r" % found.group(0)
 
 
-def test_190a_control_reassign_refuses_a_session_that_has_stopped(wl):  # noqa: F811
+def test_190a_control_reassign_refuses_a_session_that_has_stopped(wl):
     """The rule that stops this verb becoming a way to steal a live peer's items."""
     wl.brief_now()
     wl.hand_now()
@@ -960,7 +959,7 @@ def test_190a_control_reassign_refuses_a_session_that_has_stopped(wl):  # noqa: 
     assert "identity mismatch" in both(got), both(got)[:200]
 
 
-def test_190b_reassign_survives_a_compaction_which_erases_every_writer_name(wl):  # noqa: F811
+def test_190b_reassign_survives_a_compaction_which_erases_every_writer_name(wl):
     """THE DEFECT, measured on the operator's live store on 2026-09-04.
 
     compact() re-emits the whole fold through snapshot_events(by="compact"), so after any compaction NO event carries its original writer any more, only the owner survives. Both readers of "which identities does this store know about" (the phantom backstop, and this verb's own age gate) scanned `by` alone, while the code that actually moves the work, three statements further down,

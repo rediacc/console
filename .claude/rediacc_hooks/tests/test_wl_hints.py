@@ -10,7 +10,6 @@ import random
 from typing import Any
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 REAL_ROOT = pathlib.Path(__file__).resolve().parents[3]
 REAL_HINTS = str(REAL_ROOT / "docs" / "agent-reference" / "HINTS.md")
@@ -222,7 +221,7 @@ def test_render_names_heading_id_and_source_all_refutable_in_one_look():
 # ---- the wiring: fires on a loud stop, silent on a clean or blocked one -----
 
 
-def test_hint_fires_on_a_loud_allow_stop(wl):  # noqa: F811
+def test_hint_fires_on_a_loud_allow_stop(wl):
     wl.env["WORKLIST_HINTS_FILE"] = REAL_HINTS
     wl.brief_now()
     wl.hand_now()
@@ -233,7 +232,7 @@ def test_hint_fires_on_a_loud_allow_stop(wl):  # noqa: F811
     assert "TIP (hint" in got.out, got.out[-600:]
 
 
-def test_hint_absent_on_a_genuinely_silent_clean_stop(wl):  # noqa: F811
+def test_hint_absent_on_a_genuinely_silent_clean_stop(wl):
     wl.env["WORKLIST_HINTS_FILE"] = REAL_HINTS
     # The popup reminder (wl_popup.py) is a separate, deliberate exception to this same silence, on a ~20% independent roll -- pinned off here because this control is about the rotating hint's own gate, not about that roll.
     wl.env["WORKLIST_POPUP_PROBABILITY"] = "0"
@@ -244,7 +243,7 @@ def test_hint_absent_on_a_genuinely_silent_clean_stop(wl):  # noqa: F811
     assert got2.out == "", repr(got2.out)
 
 
-def test_hint_rides_a_blocked_stop_at_most_once_per_30_min(wl):  # noqa: F811
+def test_hint_rides_a_blocked_stop_at_most_once_per_30_min(wl):
     """Since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P0.5) a block is an output the hint may ride, because a busy session otherwise never sees the corpus. INVERSE in the same case: a second block inside BLOCK_HINT_MIN carries none, so the tip cannot become an every-stop line."""
     wl.env["WORKLIST_HINTS_FILE"] = REAL_HINTS
     wl.add_item("- [ ] (deadbeef) open thing")
@@ -258,7 +257,7 @@ def test_hint_rides_a_blocked_stop_at_most_once_per_30_min(wl):  # noqa: F811
     assert "TIP (hint" not in again.out, again.out[-600:]
 
 
-def test_hint_absent_with_an_empty_corpus_proves_the_corpus_drives_the_line(wl):  # noqa: F811
+def test_hint_absent_with_an_empty_corpus_proves_the_corpus_drives_the_line(wl):
     """NEGATIVE CONTROL, per Section 6.3's H5: point the seam at a corpus with no active entries and confirm the tip disappears with everything else unchanged, proving the corpus -- not some other condition -- is what produces the line."""
     empty = wl.base / "empty-hints.md"
     empty.write_text("# empty corpus\n", encoding="utf-8")
@@ -272,7 +271,7 @@ def test_hint_absent_with_an_empty_corpus_proves_the_corpus_drives_the_line(wl):
     assert "WORKLIST GUIDE" in got.out, "the rest of the stop still ran"
 
 
-def test_hint_missing_corpus_never_blocks_and_reports_nothing(wl):  # noqa: F811
+def test_hint_missing_corpus_never_blocks_and_reports_nothing(wl):
     missing = str(wl.base / "no-such-hints.md")
     wl.env["WORKLIST_HINTS_FILE"] = missing
     wl.brief_now()
@@ -285,7 +284,7 @@ def test_hint_missing_corpus_never_blocks_and_reports_nothing(wl):  # noqa: F811
     assert "Hint corpus problem" not in got.out, got.out
 
 
-def test_hint_corpus_error_is_reported_and_never_blocks(wl):  # noqa: F811
+def test_hint_corpus_error_is_reported_and_never_blocks(wl):
     """A corpus that EXISTS but cannot be parsed cleanly -- as opposed to one that is simply absent -- is the real error this advisory exists to surface."""
     broken = wl.base / "broken-hints.md"
     broken.write_text("## a heading with no trailer at all\n\nbody\n", encoding="utf-8")
@@ -332,7 +331,7 @@ def test_pending_proposals_excludes_text_already_present_in_the_corpus(tmp_path)
     assert [p["text"] for p in pending] == ["still waiting on review"]
 
 
-def test_hint_propose_cli_round_trip_via_worklist(wl):  # noqa: F811
+def test_hint_propose_cli_round_trip_via_worklist(wl):
     wl.env["WORKLIST_HINTS_FILE"] = REAL_HINTS
     wl.brief_now()
     wl.hand_now()
@@ -386,7 +385,7 @@ def test_trapfires_a_confirmation_for_another_rule_does_not_silence_this_one(tmp
     assert "rebase-unverified" in t.retire_note(tmp_path)
 
 
-def test_trapfires_the_note_reaches_a_clean_stop(wl):  # noqa: F811
+def test_trapfires_the_note_reaches_a_clean_stop(wl):
     """The wiring, not just the arithmetic: a planted ledger under the fixture's TRAPGUARD_DIR must surface on an allowed stop."""
     wl.say("All finished.")
     wl.brief_now()
@@ -395,7 +394,7 @@ def test_trapfires_the_note_reaches_a_clean_stop(wl):  # noqa: F811
     wl.check("allow", "trapguard retirement candidates", "a retirement candidate is advised")
 
 
-def test_trapfires_no_candidate_leaves_a_clean_stop_quiet(wl):  # noqa: F811
+def test_trapfires_no_candidate_leaves_a_clean_stop_quiet(wl):
     wl.say("All finished.")
     wl.brief_now()
     wl.hand_now()

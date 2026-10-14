@@ -11,7 +11,7 @@ import os
 import stat
 import time
 
-from rediacc_hooks.tests.wlfix import FAKE_ORIGIN, wl  # noqa: F401
+from rediacc_hooks.tests.wlfix import FAKE_ORIGIN
 
 B_BODY_44B = """Session B is holding the canary campaign: attempt 6 is in flight behind watch id 9be21c, five flags are flipped, and v1.2.24 is released. None of this is session A material and none of it may be silenced by session A writing.
 
@@ -59,7 +59,7 @@ def pr_event(fix) -> str:
     )
 
 
-def test_31_design_doc_drift_never_blocks_a_stop_and_session_start_still_reports_it(wl):  # noqa: F811
+def test_31_design_doc_drift_never_blocks_a_stop_and_session_start_still_reports_it(wl):
     """Cases 31, 32 and 33 as one chain, rewritten 2026-09-24 when the Stop-time drift check was deleted (agent/plans/PLAN-stop-hook-continuity.md P1.3).
 
     31 is the CONTROL that twelve code commits with untouched docs no longer block a stop (before the deletion they did), 31b is the INVERSE that SessionStart still says DRIFTED, 32 moves the docs with the code, and 33 is the SessionStart handback that names those docs to a session that has not read them.
@@ -101,7 +101,7 @@ def test_31_design_doc_drift_never_blocks_a_stop_and_session_start_still_reports
     )
 
 
-def test_34_a_loop_that_died_blocks(wl):  # noqa: F811
+def test_34_a_loop_that_died_blocks(wl):
     """Had crons, now none."""
     wl.brief_now()
     wl.hand_now()
@@ -113,7 +113,7 @@ def test_34_a_loop_that_died_blocks(wl):  # noqa: F811
     wl.check("block", "WORK LOOP DIED", "losing the last cron blocks")
 
 
-def test_35_a_session_that_never_had_a_cron_is_not_nagged(wl):  # noqa: F811
+def test_35_a_session_that_never_had_a_cron_is_not_nagged(wl):
     """No cron ever, but a running background agent, so the v8 idle check stays quiet and this case keeps pinning ONLY the loop-died non-fire."""
     wl.brief_now()
     wl.hand_now()
@@ -124,7 +124,7 @@ def test_35_a_session_that_never_had_a_cron_is_not_nagged(wl):  # noqa: F811
     wl.check("allow", "", "no cron ever means no complaint")
 
 
-def test_34b_declaring_the_loop_finished_clears_it_and_stays_cleared(wl):  # noqa: F811
+def test_34b_declaring_the_loop_finished_clears_it_and_stays_cleared(wl):
     """V_LOOP_DIED offers two exits: recreate the cron, or say the loop is deliberately finished. The second one did not exist, because cron memory never read the message, so a session that retired its cron on purpose and said so was blocked on every stop after, with no wording that could satisfy it.
 
     The final assertion is the one that matters: the declaration must FORGET the high-water mark rather than skip a single stop, or the block returns next stop forever.
@@ -149,7 +149,7 @@ def test_34b_declaring_the_loop_finished_clears_it_and_stays_cleared(wl):  # noq
     wl.check("allow", "", "and it STAYS cleared on the next stop")
 
 
-def test_34c_control_merely_quoting_the_instruction_does_not_opt_out(wl):  # noqa: F811
+def test_34c_control_merely_quoting_the_instruction_does_not_opt_out(wl):
     """This is an opt-out, so it must survive being written about: every message that discusses this check quotes its own instruction text back. Stripping quoted and backticked spans before matching is what keeps that honest."""
     wl.brief_now()
     wl.hand_now()
@@ -169,7 +169,7 @@ def test_34c_control_merely_quoting_the_instruction_does_not_opt_out(wl):  # noq
     )
 
 
-def test_36_a_stale_local_branch_sharing_the_publish_name_blocks(wl):  # noqa: F811
+def test_36_a_stale_local_branch_sharing_the_publish_name_blocks(wl):
     wl.brief_now()
     wl.hand_now()
     wl.task(7, "pending", "thing")
@@ -191,7 +191,7 @@ def test_36_a_stale_local_branch_sharing_the_publish_name_blocks(wl):  # noqa: F
     )
 
 
-def test_37_pr_freshness_a_push_after_the_last_body_edit_blocks(wl):  # noqa: F811
+def test_37_pr_freshness_a_push_after_the_last_body_edit_blocks(wl):
     """Cases 37 and 38 as one chain: 38 has no fixture of its own and swaps only the shim's timestamp.
 
     37 is the FIRE, a body edited in 1970 and therefore long before any commit. 38 is the control that a body newer than the tip does not block, so the gate keys on the ordering rather than on the presence of a PR.
@@ -226,7 +226,7 @@ def test_37_pr_freshness_a_push_after_the_last_body_edit_blocks(wl):  # noqa: F8
     assert "PUSHED AFTER" not in out, "38: a fresh body must not block: %s" % out[:200]
 
 
-def test_39_an_item_listed_with_no_state_word_blocks(wl):  # noqa: F811
+def test_39_an_item_listed_with_no_state_word_blocks(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | me |")
@@ -234,7 +234,7 @@ def test_39_an_item_listed_with_no_state_word_blocks(wl):  # noqa: F811
     wl.check("block", "listed without a STATE", "a stateless remaining item blocks")
 
 
-def test_40_saying_ongoing_while_the_app_says_pending_blocks(wl):  # noqa: F811
+def test_40_saying_ongoing_while_the_app_says_pending_blocks(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | ongoing, me |")
@@ -242,7 +242,7 @@ def test_40_saying_ongoing_while_the_app_says_pending_blocks(wl):  # noqa: F811
     wl.check("block", "DISAGREES with the task list", "message and task list must agree")
 
 
-def test_41_ongoing_matches_an_in_progress_task(wl):  # noqa: F811
+def test_41_ongoing_matches_an_in_progress_task(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | ongoing, me |")
@@ -250,7 +250,7 @@ def test_41_ongoing_matches_an_in_progress_task(wl):  # noqa: F811
     wl.check("allow", "", "an in_progress task labelled ongoing is fine")
 
 
-def test_41b_literal_in_progress_is_recognized_as_the_state_word(wl):  # noqa: F811
+def test_41b_literal_in_progress_is_recognized_as_the_state_word(wl):
     """Even with a later 'pending' in the same line."""
     wl.brief_now()
     wl.hand_now()
@@ -266,7 +266,7 @@ def test_41b_literal_in_progress_is_recognized_as_the_state_word(wl):  # noqa: F
     )
 
 
-def test_42_a_found_not_fixed_list_blocks(wl):  # noqa: F811
+def test_42_a_found_not_fixed_list_blocks(wl):
     """Fix it or track it."""
     wl.brief_now()
     wl.hand_now()
@@ -278,7 +278,7 @@ def test_42_a_found_not_fixed_list_blocks(wl):  # noqa: F811
     wl.check("block", "CLAUDE.md's rule is to FIX", "reporting instead of fixing blocks")
 
 
-def test_43b_mentioning_the_phrase_mid_sentence_must_not_block(wl):  # noqa: F811
+def test_43b_mentioning_the_phrase_mid_sentence_must_not_block(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say(
@@ -290,7 +290,7 @@ def test_43b_mentioning_the_phrase_mid_sentence_must_not_block(wl):  # noqa: F81
     wl.check("allow", "", "describing the check does not trip it")
 
 
-def test_43_the_same_message_without_that_phrase_passes(wl):  # noqa: F811
+def test_43_the_same_message_without_that_phrase_passes(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, me |")
@@ -298,7 +298,7 @@ def test_43_the_same_message_without_that_phrase_passes(wl):  # noqa: F811
     wl.check("allow", "", "no found-not-fixed list, no complaint")
 
 
-def test_44_the_staleness_limit_is_load_bearing_and_bracketed(wl):  # noqa: F811
+def test_44_the_staleness_limit_is_load_bearing_and_bracketed(wl):
     """Cases 44 and 45 are ONE indivisible fixture: 45 has no fixture of its own and re-stamps the section 44 planted.
 
     The section is aged past the default without touching the clock. AGE COMES FROM THE SECTION'S HEADING STAMP since 2026-08-09, not from the file's mtime, so this re-stamps the section rather than touching the file: mtime is per FILE while the obligation is per SESSION, and a peer's write used to reset everyone's clock. Touching the file here would silently exercise the unstamped
@@ -319,7 +319,7 @@ def test_44_the_staleness_limit_is_load_bearing_and_bracketed(wl):  # noqa: F811
     wl.check("allow", "", "a 14-minute-old STATE.md is inside the 15-minute limit")
 
 
-def test_44b_staleness_is_per_session(wl):  # noqa: F811
+def test_44b_staleness_is_per_session(wl):
     """One session's write cannot silence another.
 
     THE OTHER HALF OF THE 2026-08-09 INCIDENT, and the half that made the first half inevitable. Age used to come from the file's MTIME, which is per FILE, while the recorded signature is per SESSION. So a peer's write reset everyone's clock: session B's 30-minute-stale document read "ok" the instant session A wrote, and, worse than a skipped stop, the checks then banked A's world
@@ -360,7 +360,7 @@ def test_44b_staleness_is_per_session(wl):  # noqa: F811
     assert "OPEN worklist item" in out, "44b ANTI-VACUITY: B went silent instead: %s" % out[:220]
 
 
-def test_44c_a_future_heading_stamp_cannot_buy_permanent_freshness(wl):  # noqa: F811
+def test_44c_a_future_heading_stamp_cannot_buy_permanent_freshness(wl):
     """FOUND ON THE LIVE DOCUMENT, not imagined: driving this code against the real main-branch STATE.md for the first time showed a peer's hand-written heading stamped 101 minutes AHEAD, almost certainly local time written with a Z. A trusted future stamp makes that section permanently fresh, which is worse than the unstamped fallback it would otherwise have taken, because the
     entire point of per-section staleness is that a section cannot dodge its own clock. A future stamp is therefore treated exactly like an unparseable one.
     """

@@ -10,9 +10,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 FORK = "2026-01-01T00:00:00Z"
 BEFORE = "2025-12-01T00:00:00Z"
@@ -57,7 +57,6 @@ def repo_on_branch(fix, trailers: list[str]) -> None:
     fix.git("branch", "-M", "main")
     # Re-date the base so the merge-base time is FORK, deterministic against the planted stamps.
     env = dict(os.environ, GIT_COMMITTER_DATE=FORK, GIT_AUTHOR_DATE=FORK)
-    import subprocess  # noqa: PLC0415 -- only this re-date needs an env git
 
     subprocess.run(
         ["git", "commit", "-q", "--amend", "--no-edit", "--reset-author"],
@@ -112,7 +111,7 @@ def world(fix):
     return ids
 
 
-def test_renders_only_this_prs_epics_then_the_backlog(wl):  # noqa: F811
+def test_renders_only_this_prs_epics_then_the_backlog(wl):
     ids = world(wl)
     repo_on_branch(wl, [EPIC_PR, EPIC_PR])
     got, snap = publish(wl)
@@ -148,7 +147,7 @@ def test_renders_only_this_prs_epics_then_the_backlog(wl):  # noqa: F811
     assert "Open system backlog: 2 open item(s)" in got.out
 
 
-def test_backlog_renders_none_when_empty(wl):  # noqa: F811
+def test_backlog_renders_none_when_empty(wl):
     iid = add(wl, "the only item, in this PR's epic")
     plant_ledger(wl, [(EPIC_PR, BEFORE, "This PR's epic", [iid])])
     repo_on_branch(wl, [EPIC_PR])
@@ -158,7 +157,7 @@ def test_backlog_renders_none_when_empty(wl):  # noqa: F811
     assert section(snap, "Open system backlog").strip().endswith("_none_")
 
 
-def test_a_cited_id_the_ledger_lacks_is_reported_not_rendered(wl):  # noqa: F811
+def test_a_cited_id_the_ledger_lacks_is_reported_not_rendered(wl):
     world(wl)
     repo_on_branch(wl, [EPIC_PR, EPIC_GHOST])
     got, snap = publish(wl)
@@ -167,7 +166,7 @@ def test_a_cited_id_the_ledger_lacks_is_reported_not_rendered(wl):  # noqa: F811
     assert "cites PR-TASK %s" % EPIC_GHOST in got.err
 
 
-def test_control_an_unread_range_is_said_not_folded_into_cites_nothing(wl):  # noqa: F811
+def test_control_an_unread_range_is_said_not_folded_into_cites_nothing(wl):
     """CONTROL. A branch that does not resolve must not publish as "this PR cites nothing" in silence."""
     world(wl)
     repo_on_branch(wl, [EPIC_PR])

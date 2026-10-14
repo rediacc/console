@@ -19,8 +19,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
-
 if TYPE_CHECKING:
     import pathlib
 
@@ -29,7 +27,7 @@ LOGICAL_UUID = "bde8bb05-0000-0000-0000-000000000002"
 
 
 @pytest.fixture
-def lineage(wl):  # noqa: F811
+def lineage(wl):
     """The transcript corpus `WORKLIST_PROJECTS_DIR` points at.
 
     UNDER THE SANDBOX ROOT, as the bash put it under `$BASE/lineage`, so the corpus is torn down with the rest of the fixture world rather than outliving it.
@@ -141,7 +139,7 @@ PREV = "beef7722-5555-6666-7777-888888888888"
 SHARED = "11111111-2222-3333-4444-555555555555"
 
 
-def test_24_an_ancestors_items_are_invisible_then_adopted_then_survive_compaction(wl, lineage):  # noqa: F811
+def test_24_an_ancestors_items_are_invisible_then_adopted_then_survive_compaction(wl, lineage):
     """BEFORE, FIRE and COMPACT in one sequence, because each arm depends on the one before it: the BEFORE half is what stops every later assertion passing on an empty store."""
     plant_chain(lineage, NEXT, PREV, SHARED)
     for label in ("lin-a", "lin-b", "lin-c"):
@@ -203,7 +201,7 @@ def test_24_an_ancestors_items_are_invisible_then_adopted_then_survive_compactio
     )
 
 
-def test_24_two_concurrent_sessions_are_not_adoptable_however_alike(wl, lineage):  # noqa: F811
+def test_24_two_concurrent_sessions_are_not_adoptable_however_alike(wl, lineage):
     """THE REFUSAL, and this is the one that matters."""
     first = "dddd3311-1111-1111-1111-111111111111"
     second = "eeee4422-2222-2222-2222-222222222222"
@@ -225,7 +223,7 @@ def test_24_two_concurrent_sessions_are_not_adoptable_however_alike(wl, lineage)
     )
 
 
-def test_24_e3_alone_cannot_be_defeated(wl, lineage):  # noqa: F811
+def test_24_e3_alone_cannot_be_defeated(wl, lineage):
     """KEEP continued-in (E1, the easiest line to forge) and STRIP every shared record and the boundary. If this adopts, one hand-written line takes another session's work."""
     successor = "ffff5533-1111-1111-1111-111111111111"
     predecessor = "ffff6644-2222-2222-2222-222222222222"
@@ -238,7 +236,7 @@ def test_24_e3_alone_cannot_be_defeated(wl, lineage):  # noqa: F811
     assert rc != 0, "one forged line was enough to adopt: %s" % out[:200]
 
 
-def test_24_additive_a_session_with_no_lineage_behaves_exactly_as_before(wl, lineage):  # noqa: F811
+def test_24_additive_a_session_with_no_lineage_behaves_exactly_as_before(wl, lineage):
     solo = "0a0a0a0a-1111-1111-1111-111111111111"
     (lineage / ("%s.jsonl" % solo)).write_text(
         json.dumps(

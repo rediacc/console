@@ -13,7 +13,6 @@ import re
 import threading
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 PEER_BODY = """Session cafe1234 owns packages/cli/src/services/licensing and the two drill scripts under scripts/dev, all of them uncommitted. A git add -A from any other session in this checkout would sweep them into somebody else s commit, which is the cross-session fact that has no home in a per-session file.
 
@@ -21,7 +20,7 @@ PEER_BODY = """Session cafe1234 owns packages/cli/src/services/licensing and the
 Finish the renewal drill and report the soft-claim slot count."""
 
 
-def test_01_an_open_item_blocks(wl):  # noqa: F811
+def test_01_an_open_item_blocks(wl):
     wl.say("done for now")
     wl.brief_now()
     wl.hand_now()
@@ -29,7 +28,7 @@ def test_01_an_open_item_blocks(wl):  # noqa: F811
     wl.check("block", "OPEN worklist item", "an open [ ] item blocks")
 
 
-def test_02_a_deferral_with_no_default_blocks(wl):  # noqa: F811
+def test_02_a_deferral_with_no_default_blocks(wl):
     wl.say("here is my answer\n\n## Remaining\nnothing")
     wl.brief_now()
     wl.hand_now()
@@ -37,7 +36,7 @@ def test_02_a_deferral_with_no_default_blocks(wl):  # noqa: F811
     wl.check("block", "no DEFAULT:", "a deferral with no DEFAULT: blocks")
 
 
-def test_03_a_deferral_with_a_default_does_not_block(wl):  # noqa: F811
+def test_03_a_deferral_with_a_default_does_not_block(wl):
     wl.say("answer\n\n## Remaining\n- the X decision")
     wl.brief_now()
     wl.hand_now()
@@ -51,7 +50,7 @@ def briefs_of(fix, who: str = wlfix.ME) -> list[str]:
     return [ln for ln in lines if ln.startswith(who + " ")]
 
 
-def test_04_a_missing_session_brief_is_stamped_by_the_hook_not_demanded(wl):  # noqa: F811
+def test_04_a_missing_session_brief_is_stamped_by_the_hook_not_demanded(wl):
     """Since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.1) the hook writes the brief itself, from the first line of `## Next action`. CONTROL: before, this fixture blocked with "session brief is missing"."""
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n- stuff")
@@ -65,7 +64,7 @@ def test_04_a_missing_session_brief_is_stamped_by_the_hook_not_demanded(wl):  # 
     ), mine[-1]
 
 
-def test_05_a_stale_session_brief_is_restamped_and_a_fresh_manual_one_is_kept(wl):  # noqa: F811
+def test_05_a_stale_session_brief_is_restamped_and_a_fresh_manual_one_is_kept(wl):
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n- stuff")
     wl.add_item("- [?] (deadbeef) q DEFAULT: d")
@@ -82,7 +81,7 @@ def test_05_a_stale_session_brief_is_restamped_and_a_fresh_manual_one_is_kept(wl
     assert briefs_of(wl)[-1].endswith("hand-written: reviewing the roster change"), briefs_of(wl)
 
 
-def test_06_a_pending_task_with_no_remaining_section_blocks(wl):  # noqa: F811
+def test_06_a_pending_task_with_no_remaining_section_blocks(wl):
     wl.say("All done, nothing to report.")
     wl.brief_now()
     wl.hand_now()
@@ -90,7 +89,7 @@ def test_06_a_pending_task_with_no_remaining_section_blocks(wl):  # noqa: F811
     wl.check("block", "no '## Remaining' section", "pending task + no ## Remaining blocks")
 
 
-def test_07_the_same_pending_task_with_a_remaining_section_passes(wl):  # noqa: F811
+def test_07_the_same_pending_task_with_a_remaining_section_passes(wl):
     wl.say("Here is the answer.\n\n## Remaining\n| #7 | merge the chain | pending, you |")
     wl.brief_now()
     wl.hand_now()
@@ -98,7 +97,7 @@ def test_07_the_same_pending_task_with_a_remaining_section_passes(wl):  # noqa: 
     wl.check("allow", "", "pending task + ## Remaining allowed (judge off)")
 
 
-def test_08_completed_tasks_are_not_remaining_work(wl):  # noqa: F811
+def test_08_completed_tasks_are_not_remaining_work(wl):
     wl.say("All done.")
     wl.brief_now()
     wl.hand_now()
@@ -106,7 +105,7 @@ def test_08_completed_tasks_are_not_remaining_work(wl):  # noqa: F811
     wl.check("allow", "", "a completed task does not demand a Remaining section")
 
 
-def test_09_focus_off_puts_every_violation_in_one_block(wl):  # noqa: F811
+def test_09_focus_off_puts_every_violation_in_one_block(wl):
     """v13 made the FOCUSED single-check block the default, and since agent/plans/PLAN-stop-hook-effort.md it is the only one (the WORKLIST_FOCUS=off dump is gone): one block still names every outstanding violation, the pick quoted and the rest named on one line each."""
     wl.say("nothing")
     wl.add_item("- [ ] (deadbeef) open thing")
@@ -124,7 +123,7 @@ def test_09_focus_off_puts_every_violation_in_one_block(wl):  # noqa: F811
     )
 
 
-def test_10_the_recursion_guard_exits_silently(wl):  # noqa: F811
+def test_10_the_recursion_guard_exits_silently(wl):
     """GITHUB_ACTIONS is pinned for a reason specific to THIS case: it asserts EMPTY output, and the hook's CI no-op also produces empty output. Inheriting a true value in Actions would make it pass whether or not the recursion guard exists at all."""
     wl.add_item("- [ ] (deadbeef) open thing")
     event = json.dumps(
@@ -134,7 +133,7 @@ def test_10_the_recursion_guard_exits_silently(wl):  # noqa: F811
     assert not (got.out + got.err).strip(), "guard produced output: %s" % (got.out + got.err)[:200]
 
 
-def test_11_an_unreachable_judge_fails_closed(wl):  # noqa: F811
+def test_11_an_unreachable_judge_fails_closed(wl):
     """A live cron in the event, else the idle check fires statically and the stop never reaches the judge path this case exists to pin."""
     wl.say("waiting on CI.\n\n## Remaining\n- #7 merge the chain (pending)")
     wl.brief_now()
@@ -154,14 +153,14 @@ def test_11_an_unreachable_judge_fails_closed(wl):  # noqa: F811
     assert "no-escape-hatch" in got.out, got.out[:300]
 
 
-def test_12_an_empty_world_allows_the_stop(wl):  # noqa: F811
+def test_12_an_empty_world_allows_the_stop(wl):
     wl.say("All finished.")
     wl.brief_now()
     wl.hand_now()
     wl.check("allow", "", "an empty world allows the stop")
 
 
-def test_16_a_remaining_section_that_omits_an_open_task_blocks(wl):  # noqa: F811
+def test_16_a_remaining_section_that_omits_an_open_task_blocks(wl):
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, me |")
     wl.brief_now()
     wl.hand_now()
@@ -170,7 +169,7 @@ def test_16_a_remaining_section_that_omits_an_open_task_blocks(wl):  # noqa: F81
     wl.check("block", "OUT OF SYNC", "an omitted task id blocks")
 
 
-def test_17_naming_every_open_task_passes(wl):  # noqa: F811
+def test_17_naming_every_open_task_passes(wl):
     wl.say(
         "answer\n\n## Remaining\n| #7 | thing | pending, me |\n"
         "| #8 | the forgotten one | pending, you |"
@@ -182,14 +181,14 @@ def test_17_naming_every_open_task_passes(wl):  # noqa: F811
     wl.check("allow", "", "all task ids named is fine")
 
 
-def test_18_a_missing_state_document_blocks_when_work_remains(wl):  # noqa: F811
+def test_18_a_missing_state_document_blocks_when_work_remains(wl):
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
     wl.brief_now()
     wl.task(7, "pending", "thing")
     wl.check("block", "STATE.md is missing", "a missing STATE.md blocks")
 
 
-def test_19_a_thin_state_document_blocks_and_carries_no_age(wl):  # noqa: F811
+def test_19_a_thin_state_document_blocks_and_carries_no_age(wl):
     """A stub is not a recovery document.
 
     THE CONTROL: a SHAPE verdict must carry no age at all. `thin` is about the body, and printing a staleness limit beside it suggests that waiting or re-stamping would help. Without the control the change could have simply appended a phrase everywhere and still read as wall-clock.
@@ -202,7 +201,7 @@ def test_19_a_thin_state_document_blocks_and_carries_no_age(wl):  # noqa: F811
     assert "min old" not in wl.run().out, "a shape verdict printed an age"
 
 
-def test_20_post_compact_hands_back_state_rules_and_trap_titles(wl):  # noqa: F811
+def test_20_post_compact_hands_back_state_rules_and_trap_titles(wl):
     wl.hand_now()
     (wl.proj / "agent" / wlfix.ME / "RULES.md").write_text(
         "settled fact: the reconciler exists, never rebuild it\n", encoding="utf-8"
@@ -219,12 +218,12 @@ def test_20_post_compact_hands_back_state_rules_and_trap_titles(wl):  # noqa: F8
     assert "body detail here" not in out, "PostCompact carried a trap BODY: %s" % out[:400]
 
 
-def test_21_post_compact_with_no_state_document_still_says_what_to_do(wl):  # noqa: F811
+def test_21_post_compact_with_no_state_document_still_says_what_to_do(wl):
     out = wl.post_compact().out
     assert "NO STATE.md" in out, "missing-STATE.md PostCompact was silent: %s" % out[:300]
 
 
-def test_21b_post_compact_puts_my_section_first_and_labels_the_peers(wl):  # noqa: F811
+def test_21b_post_compact_puts_my_section_first_and_labels_the_peers(wl):
     """A compacted session reads top-down, and the block it must act on is its own.
 
     The peer's section rides along because this checkout runs several sessions at once and a peer's section is the only place the reader learns which uncommitted files are not theirs to sweep. It must be unmistakably marked as not theirs to rewrite, or the briefing itself becomes the next clobber's instruction.
@@ -240,7 +239,7 @@ def test_21b_post_compact_puts_my_section_first_and_labels_the_peers(wl):  # noq
     assert "owns packages/cli" in out, out[:400]
 
 
-def test_21b_control_a_solo_document_produces_no_peers_block(wl):  # noqa: F811
+def test_21b_control_a_solo_document_produces_no_peers_block(wl):
     """CONTROL: with no peer section there is no peers block at all, so the label is information about the file rather than boilerplate on every briefing."""
     wl.hand_now()
     out = wl.post_compact({"WORKLIST_AGENT_BRANCH": "agenttest"}).out
@@ -248,7 +247,7 @@ def test_21b_control_a_solo_document_produces_no_peers_block(wl):  # noqa: F811
     assert "OTHER SESSIONS'" not in out, "a peers block appeared with no peers: %s" % out[:400]
 
 
-def test_20b_post_compact_with_no_own_section_still_hands_back_the_peers(wl):  # noqa: F811
+def test_20b_post_compact_with_no_own_section_still_hands_back_the_peers(wl):
     """Before sections, this path returned NO state content whatsoever: a compacted session on a branch where only a peer had written was told to reconstruct from what survived, while the peer's section sat unread in the file in front of it. The instruction to write one must survive too, or this becomes a way to inherit a peer's document."""
     wl.state_as("cafe1234", PEER_BODY)
     out = wl.post_compact({"WORKLIST_AGENT_BRANCH": "agenttest"}).out
@@ -257,7 +256,7 @@ def test_20b_post_compact_with_no_own_section_still_hands_back_the_peers(wl):  #
     assert "NOT YOURS" in out, out[:400]
 
 
-def test_22_an_unreadable_transcript_blames_the_hook(wl):  # noqa: F811
+def test_22_an_unreadable_transcript_blames_the_hook(wl):
     wl.brief_now()
     wl.hand_now()
     wl.task(7, "pending", "thing")
@@ -273,7 +272,7 @@ def test_22_an_unreadable_transcript_blames_the_hook(wl):  # noqa: F811
     assert '"decision": "block"' in out, out[:300]
 
 
-def test_23_a_heading_that_lands_late_is_still_honoured(wl):  # noqa: F811
+def test_23_a_heading_that_lands_late_is_still_honoured(wl):
     """The flush race: the retry must pick up a section written mid-check."""
     wl.brief_now()
     wl.hand_now()
@@ -287,7 +286,7 @@ def test_23_a_heading_that_lands_late_is_still_honoured(wl):  # noqa: F811
         timer.join()
 
 
-def test_24_a_remaining_section_survives_later_narration_blocks(wl):  # noqa: F811
+def test_24_a_remaining_section_survives_later_narration_blocks(wl):
     """THE REGRESSION. Every narration line before a tool call is its own assistant text block, so reading only the LAST block sees a one-liner and calls the section missing. This fired on a real message that did carry its heading."""
     wl.brief_now()
     wl.hand_now()
@@ -298,7 +297,7 @@ def test_24_a_remaining_section_survives_later_narration_blocks(wl):  # noqa: F8
     wl.check("allow", "", "a Remaining section survives later narration blocks")
 
 
-def test_25_two_live_work_crons_block(wl):  # noqa: F811
+def test_25_two_live_work_crons_block(wl):
     """Read from the EVENT, not from a declaration."""
     wl.brief_now()
     wl.hand_now()
@@ -313,7 +312,7 @@ def test_25_two_live_work_crons_block(wl):  # noqa: F811
     wl.check("block", "2 work crons are live", "two live work crons block")
 
 
-def test_26_the_canonical_cron_shape_does_not_block(wl):  # noqa: F811
+def test_26_the_canonical_cron_shape_does_not_block(wl):
     """The canonical shape is ONE work cron since the poll cron went (2026-09-24). Case 25 is the paired fire: add a second cron and `many-work-crons` blocks."""
     wl.brief_now()
     wl.hand_now()
@@ -323,7 +322,7 @@ def test_26_the_canonical_cron_shape_does_not_block(wl):  # noqa: F811
     wl.check("allow", "", "one work cron is the shape")
 
 
-def test_27_an_unconfirmed_operator_block_is_rejected(wl):  # noqa: F811
+def test_27_an_unconfirmed_operator_block_is_rejected(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, You |")
@@ -331,7 +330,7 @@ def test_27_an_unconfirmed_operator_block_is_rejected(wl):  # noqa: F811
     wl.check("block", "WITHOUT their confirmation", "an unconfirmed operator-block is rejected")
 
 
-def test_28_the_confirmed_operator_block_is_accepted(wl):  # noqa: F811
+def test_28_the_confirmed_operator_block_is_accepted(wl):
     wl.brief_now()
     wl.hand_now()
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, You (User Thinks So) |")
@@ -339,7 +338,7 @@ def test_28_the_confirmed_operator_block_is_accepted(wl):  # noqa: F811
     wl.check("allow", "", "the confirmed operator-block is accepted")
 
 
-def test_29_a_bloated_state_document_is_rejected(wl):  # noqa: F811
+def test_29_a_bloated_state_document_is_rejected(wl):
     """It is a prompt, not a report.
 
     The agent-notes split moved the cap from 1500 to 4000: rules and traps left the budget, so STATE.md needs room for state alone, and 4000 still refuses a pasted transcript. The boundary pair pins the edge, and both bodies carry the '## Next action' section so length is the ONLY variable under test.
@@ -353,7 +352,7 @@ def test_29_a_bloated_state_document_is_rejected(wl):  # noqa: F811
     wl.check("allow", "", "3900-odd chars sits inside the new 4000 budget")
 
 
-def test_30_a_state_document_without_a_next_action_is_aimless(wl):  # noqa: F811
+def test_30_a_state_document_without_a_next_action_is_aimless(wl):
     """The paragraph guard is DELETED: it was an explicit proxy for the old 600-char cap and split("\\n\\n") counted every markdown heading as a paragraph, which is why the old message had to forbid headings outright. `aimless` is the strictly better gate: presence of a next action IS the value, and padding cannot satisfy it."""
     wl.brief_now()
     wl.say("answer\n\n## Remaining\n- #7 thing (pending)")
@@ -439,7 +438,7 @@ def test_v22_solo_grind_stays_due_until_shown_then_fires_once_per_episode():
 TG_ERRORS_NEEDLE = "TRAPGUARD RULE ERRORS"
 
 
-def test_a_trapguard_error_log_blocks_the_stop(wl):  # noqa: F811
+def test_a_trapguard_error_log_blocks_the_stop(wl):
     """A rule that raised was skipped by the dispatcher; the planted log must turn an otherwise clean stop into a block naming the rule."""
     wl.say("All finished.")
     wl.brief_now()
@@ -458,7 +457,7 @@ def test_a_trapguard_error_log_blocks_the_stop(wl):  # noqa: F811
     assert "KeyError" in got.out, got.out[:800]
 
 
-def test_an_empty_trapguard_error_log_is_silent(wl):  # noqa: F811
+def test_an_empty_trapguard_error_log_is_silent(wl):
     """CONTROL for the case above: the same clean world with an EMPTY log allows the stop and says nothing about trapguard."""
     wl.say("All finished.")
     wl.brief_now()

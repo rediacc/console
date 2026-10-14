@@ -7,6 +7,7 @@ EVERY FIRE CASE HAS ITS INVERSE, differing by one planted fact (focus on or off,
 
 from __future__ import annotations
 
+import ast
 import datetime
 import json
 import re
@@ -31,7 +32,6 @@ from rediacc_hooks.tests.test_wl_ci_status import (
 )
 from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
 from rediacc_hooks.tests.test_wl_judge_fixset_scope import capturing_judge
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 ME = wlfix.ME
 DISPATCH = wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "dispatch.py"
@@ -181,7 +181,7 @@ def write_state_doc(fix, doc: dict) -> None:
 # ---- f1: a plan-box push ---------------------------------------------------------------
 
 
-def test_f1_focus_silences_a_plan_box_push(wl):  # noqa: F811
+def test_f1_focus_silences_a_plan_box_push(wl):
     world(wl)
     adopted_plan(wl)
     focus_on(wl)
@@ -191,7 +191,7 @@ def test_f1_focus_silences_a_plan_box_push(wl):  # noqa: F811
     assert ADOPTED not in got.out, got.out[:800]
 
 
-def test_f1_control_no_focus_blocks(wl):  # noqa: F811
+def test_f1_control_no_focus_blocks(wl):
     world(wl)
     adopted_plan(wl)
     got = stop(wl)
@@ -202,7 +202,7 @@ def test_f1_control_no_focus_blocks(wl):  # noqa: F811
 # ---- f2: a CI-red block ----------------------------------------------------------------
 
 
-def test_f2_focus_keeps_a_ci_red_block(wl):  # noqa: F811
+def test_f2_focus_keeps_a_ci_red_block(wl):
     world(wl, ci=True, red=True)
     focus_on(wl)
     got = stop(wl)
@@ -210,7 +210,7 @@ def test_f2_focus_keeps_a_ci_red_block(wl):  # noqa: F811
     assert CI_RED in got.out, got.out[:900]
 
 
-def test_f2_control_no_focus_no_ref_is_silent(wl):  # noqa: F811
+def test_f2_control_no_focus_no_ref_is_silent(wl):
     world(wl, ci=True, red=True)
     got = stop(wl)
     assert "CI IS RED" not in got.out, got.out[:900]
@@ -219,7 +219,7 @@ def test_f2_control_no_focus_no_ref_is_silent(wl):  # noqa: F811
 # ---- f3: a writer spawn ----------------------------------------------------------------
 
 
-def test_f3_focus_refuses_a_writer_spawn(wl):  # noqa: F811
+def test_f3_focus_refuses_a_writer_spawn(wl):
     world(wl)
     focus_on(wl)
     rc, err = spawn(wl)
@@ -227,7 +227,7 @@ def test_f3_focus_refuses_a_writer_spawn(wl):  # noqa: F811
     assert "phase is on" in err, err
 
 
-def test_f3_controls(wl):  # noqa: F811
+def test_f3_controls(wl):
     world(wl)
     focus_on(wl)
     linked = added_id(wl.cli("--add", ME, "fix the red static job pr:543/fix"))
@@ -246,7 +246,7 @@ def test_f3_controls(wl):  # noqa: F811
 # ---- f4: focus off restores all three --------------------------------------------------
 
 
-def test_f4_focus_off_restores_all_three(wl):  # noqa: F811
+def test_f4_focus_off_restores_all_three(wl):
     world(wl, ci=True, red=True)
     adopted_plan(wl)
     focus_on(wl)
@@ -270,7 +270,7 @@ def test_f4_focus_off_restores_all_three(wl):  # noqa: F811
 # ---- f5: the PR merging ends focus -----------------------------------------------------
 
 
-def test_f5_merge_auto_ends_focus(wl):  # noqa: F811
+def test_f5_merge_auto_ends_focus(wl):
     world(wl, ci=True)
     focus_on(wl)
     stop(wl)  # a focused stop records what it parked
@@ -286,7 +286,7 @@ def test_f5_merge_auto_ends_focus(wl):  # noqa: F811
     assert spawn(wl)[0] == 0
 
 
-def test_f5_control_no_merge_focus_stays(wl):  # noqa: F811
+def test_f5_control_no_merge_focus_stays(wl):
     world(wl, ci=True)
     focus_on(wl)
     stop(wl)
@@ -314,7 +314,7 @@ def deferral_world(fix) -> None:
     assert got.rc == 0, got.err
 
 
-def test_f6_judge_skipped(wl):  # noqa: F811
+def test_f6_judge_skipped(wl):
     deferral_world(wl)
     focus_on(wl)
     capturing_judge(wl, CONTINUE)
@@ -323,7 +323,7 @@ def test_f6_judge_skipped(wl):  # noqa: F811
     assert got.decision == "allow", wl.why("f6", "allow", got, "PHASE ")
 
 
-def test_f6_control_focus_off_judge_runs(wl):  # noqa: F811
+def test_f6_control_focus_off_judge_runs(wl):
     deferral_world(wl)
     capturing_judge(wl, CONTINUE)
     got = stop(wl, judge=True)
@@ -366,7 +366,7 @@ def plant_advisories(fix, batch_age_min: float | None) -> None:
     write_state_doc(fix, doc)
 
 
-def test_f7_advisories_batched(wl):  # noqa: F811
+def test_f7_advisories_batched(wl):
     world(wl)
     focus_on(wl)
     stop(wl)  # seeds the standdown doc and its batch clock
@@ -390,7 +390,7 @@ def test_f7_advisories_batched(wl):  # noqa: F811
 # ---- f8: the PR's own fix work still blocks --------------------------------------------
 
 
-def test_f8_pr_linked_item_still_blocks(wl):  # noqa: F811
+def test_f8_pr_linked_item_still_blocks(wl):
     world(wl)
     focus_on(wl)
     wl.cli("--add", ME, "fix the red static job pr:543/fix")
@@ -399,7 +399,7 @@ def test_f8_pr_linked_item_still_blocks(wl):  # noqa: F811
     assert "fix the red static job" in got.out, got.out[:900]
 
 
-def test_f8_control_unlinked_item_allows(wl):  # noqa: F811
+def test_f8_control_unlinked_item_allows(wl):
     world(wl)
     focus_on(wl)
     wl.cli("--add", ME, "an unrelated plan box")
@@ -411,7 +411,7 @@ def test_f8_control_unlinked_item_allows(wl):  # noqa: F811
 # ---- f9: STATE.md near compaction ------------------------------------------------------
 
 
-def test_f9_compaction_near_keeps_state_demand(wl):  # noqa: F811
+def test_f9_compaction_near_keeps_state_demand(wl):
     world(wl)
     focus_on(wl)
     wl.cli("--add", ME, "a parked plan box")  # STATE.md is demanded only while something remains
@@ -421,7 +421,7 @@ def test_f9_compaction_near_keeps_state_demand(wl):  # noqa: F811
     assert "Kept although a wind-down phase is on" in late.out, late.out[:900]
 
 
-def test_f9_control_early_band_allows(wl):  # noqa: F811
+def test_f9_control_early_band_allows(wl):
     world(wl)
     focus_on(wl)
     wl.cli("--add", ME, "a parked plan box")
@@ -433,7 +433,7 @@ def test_f9_control_early_band_allows(wl):  # noqa: F811
 # ---- f10: compaction keeps an active focus ---------------------------------------------
 
 
-def test_f10_compaction_keeps_active_focus(wl):  # noqa: F811
+def test_f10_compaction_keeps_active_focus(wl):
     world(wl)
     focus_on(wl)
     assert wl.cli("--compact").rc == 0
@@ -448,7 +448,7 @@ def test_f10_compaction_keeps_active_focus(wl):  # noqa: F811
 # ---- f11: a queue lease under focus ----------------------------------------------------
 
 
-def test_f11_queue_lease_accepted_in_focus(wl):  # noqa: F811
+def test_f11_queue_lease_accepted_in_focus(wl):
     world(wl)
     ident = added_id(wl.cli("--add", ME, "parked writer work"))
     refused = wl.cli("--lease", ME, ident, "+60", "worker:queue")
@@ -462,7 +462,7 @@ def test_f11_queue_lease_accepted_in_focus(wl):  # noqa: F811
 # ---- f12: the 24-hour cap --------------------------------------------------------------
 
 
-def test_f12_expiry_ends_focus(wl):  # noqa: F811
+def test_f12_expiry_ends_focus(wl):
     world(wl)
     old = stamp(25 * 60)
     with wl.events.open("a", encoding="utf-8") as fh:
@@ -493,7 +493,7 @@ def test_f12_expiry_ends_focus(wl):  # noqa: F811
     assert offs[-1]["why"] == "expired", focus_events(wl)
 
 
-def test_f12_control_fresh_focus_stays(wl):  # noqa: F811
+def test_f12_control_fresh_focus_stays(wl):
     world(wl)
     focus_on(wl)
     got = stop(wl)
@@ -549,7 +549,7 @@ def test_f13_standdown_is_pure():
 FORCE_PRF = ("        _prf_info = None\n", "        _prf_info = 1 / 0\n")
 
 
-def test_f14_cap_wait_keeps_pr_finish_hook_bug(wl):  # noqa: F811
+def test_f14_cap_wait_keeps_pr_finish_hook_bug(wl):
     saturated(wl)
     mutated_hook(wl, "wl_checks.py", *FORCE_PRF)
     got = cap_stop(wl)
@@ -560,7 +560,7 @@ def test_f14_cap_wait_keeps_pr_finish_hook_bug(wl):  # noqa: F811
 # ---- mutation controls: each removed in a PRIVATE COPY makes its case stop detecting ----
 
 
-def test_m1_without_ci_red_in_focus_a_red_pr_stands_down(wl):  # noqa: F811
+def test_m1_without_ci_red_in_focus_a_red_pr_stands_down(wl):
     world(wl, ci=True, red=True)
     focus_on(wl)
     mutated_hook(wl, "wl_standdown.py", '        "ci-red",\n', "")
@@ -569,7 +569,7 @@ def test_m1_without_ci_red_in_focus_a_red_pr_stands_down(wl):  # noqa: F811
     assert got.decision == "allow", "m1: expected the mutated focus to allow: %s" % got.out[:400]
 
 
-def test_m2_without_the_store_read_focus_is_off(wl):  # noqa: F811
+def test_m2_without_the_store_read_focus_is_off(wl):
     world(wl)
     adopted_plan(wl)
     focus_on(wl)
@@ -613,7 +613,7 @@ def test_m2_without_the_store_read_focus_is_off(wl):  # noqa: F811
     )
 
 
-def test_m3_without_the_judge_skip_the_judge_runs(wl):  # noqa: F811
+def test_m3_without_the_judge_skip_the_judge_runs(wl):
     deferral_world(wl)
     focus_on(wl)
     capturing_judge(wl, CONTINUE)
@@ -629,7 +629,7 @@ def test_m3_without_the_judge_skip_the_judge_runs(wl):  # noqa: F811
     assert (wl.base / "prompt.txt").exists(), "m3: f6 does not depend on the judge-site skip"
 
 
-def test_m4_without_the_drain_filter_every_advisory_shows(wl):  # noqa: F811
+def test_m4_without_the_drain_filter_every_advisory_shows(wl):
     world(wl)
     focus_on(wl)
     stop(wl)
@@ -640,7 +640,7 @@ def test_m4_without_the_drain_filter_every_advisory_shows(wl):  # noqa: F811
     assert "HELD ADVISORY" in got.out, "m4: f7 does not depend on the drain filter"
 
 
-def test_m6_without_the_merge_read_focus_does_not_end(wl):  # noqa: F811
+def test_m6_without_the_merge_read_focus_does_not_end(wl):
     world(wl, ci=True)
     focus_on(wl)
     stop(wl)
@@ -659,7 +659,7 @@ def test_m6_without_the_merge_read_focus_does_not_end(wl):  # noqa: F811
     assert not [e for e in focus_events(wl) if e.get("mode") == "build"]
 
 
-def test_m7_without_focus_pr_items_the_fix_work_parks(wl):  # noqa: F811
+def test_m7_without_focus_pr_items_the_fix_work_parks(wl):
     world(wl)
     focus_on(wl)
     wl.cli("--add", ME, "fix the red static job pr:543/fix")
@@ -668,7 +668,7 @@ def test_m7_without_focus_pr_items_the_fix_work_parks(wl):  # noqa: F811
     assert got.decision == "allow", "m7: f8 does not depend on the keep entry: %s" % got.out[:400]
 
 
-def test_m8_without_the_always_keep_the_cap_wait_hides_a_hook_bug(wl):  # noqa: F811
+def test_m8_without_the_always_keep_the_cap_wait_hides_a_hook_bug(wl):
     """f14's inverse: the pre-fix cap wait (no always-tier keep) stood the HOOK BUG branch down."""
     saturated(wl)
     mutated_hook(wl, "wl_checks.py", *FORCE_PRF)
@@ -692,7 +692,6 @@ def _outside_defect(src: str, *names: str) -> str:
 
     `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
     """
-    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
 
     wanted = names or ("DEFECT",)
     cut = [
@@ -708,7 +707,7 @@ def _outside_defect(src: str, *names: str) -> str:
     )
 
 
-def test_m5_the_guard_defect_accepts_an_unlinked_fix_label(wl):  # noqa: F811
+def test_m5_the_guard_defect_accepts_an_unlinked_fix_label(wl):
     """block_focus_spawn's declared DEFECT, planted in a copy: f3's no-token `focus-fix` is then allowed."""
     world(wl)
     focus_on(wl)

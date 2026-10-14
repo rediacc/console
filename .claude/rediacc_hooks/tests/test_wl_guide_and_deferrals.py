@@ -15,8 +15,6 @@ import stat
 import time
 from typing import TYPE_CHECKING
 
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
-
 if TYPE_CHECKING:
     from rediacc_hooks.tests import wlfix
 
@@ -62,7 +60,7 @@ def judge_calls(fix) -> int:
     return len([line for line in path.read_text(encoding="utf-8").splitlines() if line])
 
 
-def test_146a_an_allow_stop_carries_the_guide_with_state_correct_verbs(wl):  # noqa: F811
+def test_146a_an_allow_stop_carries_the_guide_with_state_correct_verbs(wl):
     """v11: the store-derived GUIDE rides every full stop, bounded. A `[>]` gets `--update`, a fresh `[?]` gets its window."""
     wl.brief_now()
     wl.hand_now()
@@ -122,7 +120,7 @@ def test_146a_an_allow_stop_carries_the_guide_with_state_correct_verbs(wl):  # n
     assert "DEFAULT executes in" in got.out, got.out[:300]
 
 
-def test_146b_a_focus_off_block_carries_the_guide_and_the_focused_one_drops_it(wl):  # noqa: F811
+def test_146b_a_focus_off_block_carries_the_guide_and_the_focused_one_drops_it(wl):
     """(b) the guide gives an open item its `--tick` (read through `--list --open`, the same slice); (b2) v13's FOCUSED block deliberately drops the guide (operator, 2026-07-31, superseding the v11 every-full-stop mandate) and the noise reduction IS the feature, so the block is asserted guide-FREE while it still names the open item. Since agent/plans/PLAN-stop-hook-effort.md removed the WORKLIST_FOCUS=off dump, the focused block is the only block."""
     wl.brief_now()
     wl.hand_now()
@@ -141,7 +139,7 @@ def test_146b_a_focus_off_block_carries_the_guide_and_the_focused_one_drops_it(w
     assert "OPEN worklist item" in focused.out, focused.out[:300]
 
 
-def test_146c_zero_actionable_is_silent_and_one_real_item_brings_the_guide_back(wl):  # noqa: F811
+def test_146c_zero_actionable_is_silent_and_one_real_item_brings_the_guide_back(wl):
     """(c) ZERO actionable is SILENT since v18.
 
     This case used to assert the opposite ("a short honest line, never ambiguous silence") and the operator overruled it (2026-08-04, quoting a stop whose whole output was that line plus the wakeup times): "silent when there is nothing to act on... let's go for efficient ai context usage". Zero bytes is the session's familiar "nothing to do".
@@ -173,7 +171,7 @@ def test_146c_zero_actionable_is_silent_and_one_real_item_brings_the_guide_back(
     assert "keep the flag?" in back.out, back.out[:260]
 
 
-def test_146d_truncation_is_loud_twelve_of_fifteen_and_the_three_named(wl):  # noqa: F811
+def test_146d_truncation_is_loud_twelve_of_fifteen_and_the_three_named(wl):
     """(d) 15 open items show 12 and SAY 3 were held back."""
     wl.brief_now()
     wl.hand_now()
@@ -190,7 +188,7 @@ def test_146d_truncation_is_loud_twelve_of_fifteen_and_the_three_named(wl):  # n
     assert "HELD BACK by the 12-line cap" in got.out, got.out[:300]
 
 
-def test_146e_each_broken_shape_carries_its_own_exit(wl):  # noqa: F811
+def test_146e_each_broken_shape_carries_its_own_exit(wl):
     """(e) VERB-STATE MATCH for the remaining shapes: undefaulted `[?]`, expired window, dead lease, each with its own exit spelled out."""
     wl.brief_now()
     wl.hand_now()
@@ -221,7 +219,7 @@ def test_146e_each_broken_shape_carries_its_own_exit(wl):  # noqa: F811
         assert needle in got.out, "verb-state mismatch, MISSING %r: %s" % (needle, got.out[:400])
 
 
-def test_146f_list_open_is_the_same_slice_and_the_full_dump_keeps_history(wl):  # noqa: F811
+def test_146f_list_open_is_the_same_slice_and_the_full_dump_keeps_history(wl):
     """(f) `--list --open` is the SAME slice from the CLI, and the full dump keeps the `[x]` history the slice excludes."""
     wl.add_item("- [ ] (deadbeef) open thing")
     wl.add_item("- [x] (deadbeef) finished thing, exit 0")
@@ -233,7 +231,7 @@ def test_146f_list_open_is_the_same_slice_and_the_full_dump_keeps_history(wl):  
     assert "finished thing" in full, "plain --list lost the history: %s" % full[:200]
 
 
-def test_146f2_the_cli_slice_is_uncapped(wl):  # noqa: F811
+def test_146f2_the_cli_slice_is_uncapped(wl):
     """(f2) GUIDE_TRUNCATED (case 146d) tells the reader to run this exact command "for the full slice", and until the full= flag the command re-rendered the same 12 rows: advice that looped back onto itself.
 
     15 open items must all appear here, with NO truncation footer. The 12-line cap stays on the Stop path, which case 146d pins; this case and that one are each other's control, so a regression that lifts the cap everywhere (or restores it here) fails one of the two.
@@ -252,7 +250,7 @@ def test_146f2_the_cli_slice_is_uncapped(wl):  # noqa: F811
     assert "HELD BACK" not in open_slice, open_slice[:300]
 
 
-def test_147_defer_refuses_a_deferral_that_cannot_justify_its_seat(wl):  # noqa: F811
+def test_147_defer_refuses_a_deferral_that_cannot_justify_its_seat(wl):
     """v12: deferral justification, with WHY and HOW as real store fields rather than prose."""
     nid = added_id(wl.cli("--add", "deadbeef", "choose the flag default"))
 
@@ -289,7 +287,7 @@ def test_147_defer_refuses_a_deferral_that_cannot_justify_its_seat(wl):  # noqa:
     assert '"blocked_on":"operator"' in events, events[-300:]
 
 
-def test_148_an_aged_deferral_with_no_justification_is_demanded(wl):  # noqa: F811
+def test_148_an_aged_deferral_with_no_justification_is_demanded(wl):
     """An AGED `[?]` with no justification is demanded, bounded, and THE HONEST-ANSWER EXIT is the anti-deadlock property: re-deferring with a WHY and a HOW is completable alone in one turn, and it reaches an allowed stop."""
     wl.brief_now()
     wl.hand_now()
@@ -324,7 +322,7 @@ def test_148_an_aged_deferral_with_no_justification_is_demanded(wl):  # noqa: F8
     )
 
 
-def test_148_control_the_same_age_with_a_justification_never_fires(wl):  # noqa: F811
+def test_148_control_the_same_age_with_a_justification_never_fires(wl):
     """CONTROL: one planted fact apart from the case above, and it must stay quiet."""
     wl.brief_now()
     wl.hand_now()
@@ -347,7 +345,7 @@ def test_148_control_the_same_age_with_a_justification_never_fires(wl):  # noqa:
     assert "NO justification on record" not in got.out, got.out[:260]
 
 
-def test_148_drain_cap_five_unjustified_arrive_three_at_a_time(wl):  # noqa: F811
+def test_148_drain_cap_five_unjustified_arrive_three_at_a_time(wl):
     """DRAIN CAP: five aged unjustified deferrals arrive three at a time, never as a wall."""
     wl.brief_now()
     wl.hand_now()
@@ -373,7 +371,7 @@ def test_148_drain_cap_five_unjustified_arrive_three_at_a_time(wl):  # noqa: F81
     assert "and 2 more, held back" in got.out, got.out[:300]
 
 
-def test_149_the_centrepiece_sitting_on_a_ci_watch_forces_the_backlog(wl):  # noqa: F811
+def test_149_the_centrepiece_sitting_on_a_ci_watch_forces_the_backlog(wl):
     """A CI watch as the ONLY in-flight work demands the aged backlog by id, names its next verb, and doing the demanded work reaches an allowed stop with the same watch still running."""
     wl.brief_now()
     wl.hand_now()
@@ -420,7 +418,7 @@ def test_149_the_centrepiece_sitting_on_a_ci_watch_forces_the_backlog(wl):  # no
     wl.check("allow", "", "doing the demanded work reaches an allowed stop under the same watch")
 
 
-def test_149_control_a_non_watch_worker_beside_the_watch_means_not_sitting(wl):  # noqa: F811
+def test_149_control_a_non_watch_worker_beside_the_watch_means_not_sitting(wl):
     """CONTROL 1, one planted fact: real delegated work runs beside the watch."""
     wl.brief_now()
     wl.hand_now()
@@ -464,7 +462,7 @@ def test_149_control_a_non_watch_worker_beside_the_watch_means_not_sitting(wl): 
     )
 
 
-def test_149_control_a_fresh_deferral_is_not_demanded(wl):  # noqa: F811
+def test_149_control_a_fresh_deferral_is_not_demanded(wl):
     """CONTROL 2, one planted fact: the backlog is fresh, so re-justifying is a real exit and there is nothing to force."""
     wl.brief_now()
     wl.hand_now()
@@ -497,7 +495,7 @@ def test_149_control_a_fresh_deferral_is_not_demanded(wl):  # noqa: F811
     assert "SITTING ON CI" not in got.out, "the force fired on a fresh backlog: %s" % got.out[:260]
 
 
-def test_150_the_judge_audits_sitting_justifications_and_do_now_reopens_the_item(wl):  # noqa: F811
+def test_150_the_judge_audits_sitting_justifications_and_do_now_reopens_the_item(wl):
     """A `do_now` audit verdict blocks with the judge's order, the rejected deferral is REOPENED as ordinary open work, and doing that work reaches an allowed stop."""
     wl.brief_now()
     wl.hand_now()
@@ -546,7 +544,7 @@ def test_150_the_judge_audits_sitting_justifications_and_do_now_reopens_the_item
     wl.checkj("allow", "", "ticking the reopened item with evidence reaches an allowed stop")
 
 
-def test_151_a_valid_audit_verdict_is_banked_and_an_untouched_item_is_asked_once(wl):  # noqa: F811
+def test_151_a_valid_audit_verdict_is_banked_and_an_untouched_item_is_asked_once(wl):
     """The `[?]` item is also an operator-only mail candidate, so the unconfigured email channel queues a class-1 note ahead of the audit note. Both are one-shots and neither is lost; this case asserts the audit note is produced, so it drains wide rather than waiting a stop for its turn."""
     wl.brief_now()
     wl.hand_now()
@@ -593,7 +591,7 @@ def test_151_a_valid_audit_verdict_is_banked_and_an_untouched_item_is_asked_once
     )
 
 
-def test_151_a_requested_audit_with_no_answer_fails_closed(wl):  # noqa: F811
+def test_151_a_requested_audit_with_no_answer_fails_closed(wl):
     """FAIL CLOSED: an audit that was requested and not answered is a judge error."""
     wl.brief_now()
     wl.hand_now()

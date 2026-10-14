@@ -24,7 +24,6 @@ from rediacc_hooks.tests.test_wl_roster import (
     until,
     write_plan,
 )
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 
 def add(fix, text: str) -> str:
@@ -47,7 +46,7 @@ def ready(fix) -> None:
 # ---- P2.1 worker:lead ---------------------------------------------------------
 
 
-def test_l1_a_lead_lease_survives_a_shell_replacement_without_a_new_lease(wl):  # noqa: F811
+def test_l1_a_lead_lease_survives_a_shell_replacement_without_a_new_lease(wl):
     """CONTROL: before P2.1 `--lease ... worker:lead` was accepted as any other name and, with no task of that id, failed closed on the first stop after its expiry; a shell replacement needed a new `--lease` every time."""
     ready(wl)
     wl.say("starting")
@@ -66,7 +65,7 @@ def test_l1_a_lead_lease_survives_a_shell_replacement_without_a_new_lease(wl):  
         assert "OPEN worklist item" not in out, out[:600]
 
 
-def test_l1b_inverse_a_lead_lease_with_nothing_running_is_open(wl):  # noqa: F811
+def test_l1b_inverse_a_lead_lease_with_nothing_running_is_open(wl):
     ready(wl)
     item = add(wl, "(deadbeef) driven inline by the lead")
     wl.cli("--lease", wlfix.ME, item, "+30", "worker:lead", "driving it")
@@ -75,7 +74,7 @@ def test_l1b_inverse_a_lead_lease_with_nothing_running_is_open(wl):  # noqa: F81
     assert "worker:lead with nothing of this session running" in out, out[:800]
 
 
-def test_l1c_the_lead_holds_at_most_three(wl):  # noqa: F811
+def test_l1c_the_lead_holds_at_most_three(wl):
     items = [add(wl, "(deadbeef) inline %d" % i) for i in range(4)]
     for item in items[:3]:
         assert wl.cli("--lease", wlfix.ME, item, "+30", "worker:lead").rc == 0
@@ -84,7 +83,7 @@ def test_l1c_the_lead_holds_at_most_three(wl):  # noqa: F811
     assert "the cap is 3" in got.err, got.err[:300]
 
 
-def test_l1e_a_ticked_item_refuses_a_lease_and_stays_done(wl):  # noqa: F811
+def test_l1e_a_ticked_item_refuses_a_lease_and_stays_done(wl):
     """2026-10-04: `--lease` accepted the ticked #54ee0b51 and folded it back to [>], so arm_ci_watch, which reuses its CI item only when a lease succeeds, re-leased a done item instead of adding one for the new head."""
     item = add(wl, "(deadbeef) CI verdict for a branch")
     ticked = wl.cli(
@@ -109,7 +108,7 @@ def test_l1e_a_ticked_item_refuses_a_lease_and_stays_done(wl):  # noqa: F811
     assert wl.cli("--lease", wlfix.ME, other, "+30", "worker:12345").rc == 0
 
 
-def test_l1d_a_covered_lead_lease_is_renewed_by_the_hook(wl):  # noqa: F811
+def test_l1d_a_covered_lead_lease_is_renewed_by_the_hook(wl):
     ready(wl)
     item = add(wl, "(deadbeef) driven inline by the lead")
     wl.cli("--lease", wlfix.ME, item, "+10", "worker:lead")
@@ -137,7 +136,7 @@ def agent_naming(fix, aid: str, item: str) -> None:
     tx.write_text(json.dumps(first) + "\n" + "".join(lines[1:]), encoding="utf-8")
 
 
-def test_l2_a_new_agent_whose_prompt_names_an_open_item_holds_its_lease(wl):  # noqa: F811
+def test_l2_a_new_agent_whose_prompt_names_an_open_item_holds_its_lease(wl):
     """CONTROL: before P2.2 the item stayed open, and the roster reported an unleased writer, until the lead typed `--lease`."""
     ready(wl)
     item = add(wl, "(deadbeef) work handed to an agent")
@@ -151,7 +150,7 @@ def test_l2_a_new_agent_whose_prompt_names_an_open_item_holds_its_lease(wl):  # 
     )
 
 
-def test_l2b_inverse_a_peers_item_is_never_auto_leased(wl):  # noqa: F811
+def test_l2b_inverse_a_peers_item_is_never_auto_leased(wl):
     ready(wl)
     peer = wl.cli_as("cafe1234", "--add", "cafe1234", "(cafe1234) the peer's own work")
     found = re.search(r"added #([0-9a-f]+)", peer.out)
@@ -166,7 +165,7 @@ def test_l2b_inverse_a_peers_item_is_never_auto_leased(wl):  # noqa: F811
 # ---- P2.3 id lists and --relay -----------------------------------------------------
 
 
-def test_l3_relay_moves_three_leases_in_one_call(wl):  # noqa: F811
+def test_l3_relay_moves_three_leases_in_one_call(wl):
     """CONTROL: before P2.3 a replaced shell needed one `--lease` per item it had held."""
     items = [add(wl, "(deadbeef) watched %d" % i) for i in range(3)]
     got = wl.cli("--lease", wlfix.ME, ",".join(items), "+30", "worker:bold01")
@@ -179,7 +178,7 @@ def test_l3_relay_moves_three_leases_in_one_call(wl):  # noqa: F811
     assert listed.count("worker:bnew02") == 3, listed
 
 
-def test_l3b_inverse_relay_from_a_worker_holding_nothing_is_refused(wl):  # noqa: F811
+def test_l3b_inverse_relay_from_a_worker_holding_nothing_is_refused(wl):
     got = wl.cli("--relay", wlfix.ME, "nobody1", "bnew02")
     assert got.rc != 0, got.out
     assert "nothing relayed" in got.err, got.err
@@ -188,7 +187,7 @@ def test_l3b_inverse_relay_from_a_worker_holding_nothing_is_refused(wl):  # noqa
 # ---- P2.4 BLOCKED_BY ---------------------------------------------------------------
 
 
-def test_l4_a_blocked_item_waits_and_reopens_when_its_blocker_closes(wl):  # noqa: F811
+def test_l4_a_blocked_item_waits_and_reopens_when_its_blocker_closes(wl):
     """CONTROL: before P2.4 the blocked item was ordinary open work, so `open-items` listed both."""
     ready(wl)
     root = add(wl, "(deadbeef) the root of the chain")
@@ -219,7 +218,7 @@ def test_l4_a_blocked_item_waits_and_reopens_when_its_blocker_closes(wl):  # noq
     )
 
 
-def test_l4b_inverse_an_unknown_blocker_and_a_cycle_are_refused(wl):  # noqa: F811
+def test_l4b_inverse_an_unknown_blocker_and_a_cycle_are_refused(wl):
     got = wl.cli("--add", wlfix.ME, "(deadbeef) waits on nothing BLOCKED_BY:#abcdef12")
     assert got.rc == 2, (got.rc, got.err)
     a = add(wl, "(deadbeef) first")
@@ -229,7 +228,7 @@ def test_l4b_inverse_an_unknown_blocker_and_a_cycle_are_refused(wl):  # noqa: F8
     assert "cycle" in got.err, got.err
 
 
-def test_l4c_a_blocked_by_set_by_update_makes_the_item_wait(wl):  # noqa: F811
+def test_l4c_a_blocked_by_set_by_update_makes_the_item_wait(wl):
     """2026-09-25: `--update <id> 'BLOCKED_BY:#<root>'` passed validation, then the fold kept it only as the display note, so `waiting_on` never saw it and the item stayed open work. A later update without the token must not unblock it either."""
     ready(wl)
     root = add(wl, "(deadbeef) the root of the chain")
@@ -246,7 +245,7 @@ def test_l4c_a_blocked_by_set_by_update_makes_the_item_wait(wl):  # noqa: F811
     ]
 
 
-def test_l5_a_lease_names_exactly_one_worker(wl):  # noqa: F811
+def test_l5_a_lease_names_exactly_one_worker(wl):
     """2026-09-25: `worker:a1,a2` was accepted and stored whole; the roster matches one id, so both writers read as UNLEASED."""
     ready(wl)
     item = add(wl, "(deadbeef) two writers on one item")
@@ -256,7 +255,7 @@ def test_l5_a_lease_names_exactly_one_worker(wl):  # noqa: F811
     assert wl.cli("--lease", wlfix.ME, item, "+60", "worker:abc123def", "note").rc == 0
 
 
-def queue_with(wl, block: str):  # noqa: F811
+def queue_with(wl, block: str):
     """Plant the fixture project's QUEUE.md with `block` as the body of its `stop-hook` fence."""
     path = wl.proj / "agent" / "plans" / "QUEUE.md"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -267,7 +266,7 @@ def queue_with(wl, block: str):  # noqa: F811
     return path
 
 
-def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):  # noqa: F811
+def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     """agent/plans/PLAN-stop-hook-effort.md, replacing the 2026-10-04 `stop_hook: off` switch: `effort: quiet` keeps only the FLOOR, so an open item no longer holds the stop; verbs keep working; `stop_hook: off` is an unknown key that quiets nothing; a malformed `effort:` line is the fail-safe `high`; a stray `.ci/config/stop-hook.json` disables nothing."""
     ready(wl)
     add(wl, "(deadbeef) open work that would block")
@@ -323,7 +322,7 @@ def queued_waiter_world(fix, with_token: bool) -> None:
     fix.say("working\n\n## Remaining\n- #b10c0001 on the writer, #q0000old queued")
 
 
-def test_l7_an_expired_queue_lease_waiting_on_an_open_blocker_does_not_fail_closed(wl):  # noqa: F811
+def test_l7_an_expired_queue_lease_waiting_on_an_open_blocker_does_not_fail_closed(wl):
     """CONTROL: before R20260925.5 the expired lease failed closed into an open item although its blocker was still being worked, and the lead renewed it by hand with the note "blocked on A3"."""
     queued_waiter_world(wl, with_token=True)
     out = wl.run().out
@@ -333,7 +332,7 @@ def test_l7_an_expired_queue_lease_waiting_on_an_open_blocker_does_not_fail_clos
     assert "[>] #q0000old waiting (#b10c0001)" in out, out[:1600]
 
 
-def test_l7b_inverse_the_same_lease_without_the_token_fails_closed_and_names_the_remedy(wl):  # noqa: F811
+def test_l7b_inverse_the_same_lease_without_the_token_fails_closed_and_names_the_remedy(wl):
     queued_waiter_world(wl, with_token=False)
     out = wl.run().out
     assert "lease expired; finish it" in out, out[:1200]
@@ -354,7 +353,7 @@ print(json.dumps({"open": got[0], "waiting": [r["id"] for r in fold.items if r.g
 """
 
 
-def test_l7d_an_expired_worker_lease_that_took_the_named_remedy_reads_as_waiting(wl):  # noqa: F811
+def test_l7d_an_expired_worker_lease_that_took_the_named_remedy_reads_as_waiting(wl):
     """2026-10-04: #6512e909's lease on a finished shell expired; the stop named `--update <id> 'BLOCKED_BY:#<blocker>'`, the session ran exactly that, and the next stop refused the same item word for word, because classify_items honoured BLOCKED_BY only on a `worker:queue` lease. Probed at classify_items itself: through the whole hook a live writer or an earlier block hides which bucket the item fell into."""
     blocker = add(wl, "(deadbeef) CI verdict for the head")
     waiter = "dead0001"
@@ -393,7 +392,7 @@ def test_l7d_an_expired_worker_lease_that_took_the_named_remedy_reads_as_waiting
     assert waiter not in done["waiting"], done
 
 
-def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):  # noqa: F811
+def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):
     """V_QUEUE_SLOT: a free slot and a startable queued item; the block says how to mark one that is really waiting."""
     ready(wl)
     mk_sub(wl, W1, "general-purpose", 1)
@@ -420,7 +419,7 @@ def held_world(fix) -> tuple[str, str]:
     return add(fix, linked(f, "held work")), add(fix, linked(e, "free work"))
 
 
-def test_l8_a_queue_lease_beside_a_free_slot_is_accepted_for_a_held_item(wl):  # noqa: F811
+def test_l8_a_queue_lease_beside_a_free_slot_is_accepted_for_a_held_item(wl):
     held, _free = held_world(wl)
     got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue", "waiting on E")
     assert got.rc == 0, got.err[:600]
@@ -436,7 +435,7 @@ def test_l8_a_queue_lease_beside_a_free_slot_is_accepted_for_a_held_item(wl):  #
     assert notes[-1] == "waiting on E HELD_BY:PLAN-e.md", notes
 
 
-def test_l8b_inverse_an_unheld_item_is_still_refused_with_a_free_slot(wl):  # noqa: F811
+def test_l8b_inverse_an_unheld_item_is_still_refused_with_a_free_slot(wl):
     _held, free = held_world(wl)
     got = wl.cli("--lease", wlfix.ME, free, "+60", "worker:queue")
     assert got.rc != 0, got.out[:300]
@@ -457,7 +456,7 @@ SECOND = (
 )
 
 
-def test_l9_add_warns_on_an_owned_near_duplicate(wl):  # noqa: F811
+def test_l9_add_warns_on_an_owned_near_duplicate(wl):
     first = wl.cli("--add", wlfix.ME, FIRST)
     assert first.rc == 0, first.err[:400]
     assert "similar open item" not in first.err, first.err[:400]
@@ -468,14 +467,14 @@ def test_l9_add_warns_on_an_owned_near_duplicate(wl):  # noqa: F811
     assert "similar open item: #%s" % fid in second.err, second.err[:600]
 
 
-def test_l9b_inverse_an_unrelated_add_does_not_warn(wl):  # noqa: F811
+def test_l9b_inverse_an_unrelated_add_does_not_warn(wl):
     wl.cli("--add", wlfix.ME, FIRST)
     got = wl.cli("--add", wlfix.ME, "fix the German translation artifacts in the de catalog")
     assert got.rc == 0, got.err[:400]
     assert "similar open item" not in got.err, got.err[:400]
 
 
-def test_l8c_inverse_an_expired_peer_lease_holds_nothing(wl):  # noqa: F811
+def test_l8c_inverse_an_expired_peer_lease_holds_nothing(wl):
     """v2's control: only a FRESH lease makes a plan live."""
     ready(wl)
     e = write_plan(wl, "e", conc="exclusive -- regenerates every golden file")
@@ -492,7 +491,7 @@ def test_l8c_inverse_an_expired_peer_lease_holds_nothing(wl):  # noqa: F811
     assert "worker:queue is only for writer work" in got.err, got.err[:600]
 
 
-def test_l8m_without_the_held_branch_l8_is_refused_again(wl):  # noqa: F811
+def test_l8m_without_the_held_branch_l8_is_refused_again(wl):
     held, _free = held_world(wl)
     stop = private_stop(wl, "worklist.py", "                and not _held_by\n", "")
     wl.hook = stop / "worklist.py"
