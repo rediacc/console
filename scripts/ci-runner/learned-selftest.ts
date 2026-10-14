@@ -24,9 +24,6 @@ const ARCHIVE_SAMPLE = 12;
 /** The seeded mixes T7 always replays. */
 const SEEDED_MIXES = [20261008, 7, 42];
 
-/** The floor on T7's NON-EMPTY mixes: every seeded one must carry gates to schedule, so fewer means the property was checked over nothing (VACUOUS). */
-const MIN_MIXES = SEEDED_MIXES.length;
-
 /** This machine's shape, as sim.ts P24 states it: 24 cores, C 23, K 46, M 29 GB. */
 const P24 = { machineCores: 24, jobs: 22, heavyLimit: 5 };
 const P24_BUDGET: CoreBudget = { cores: 23, epsilon: 0.1, maxProcs: 46, memMb: 29 * 1024 };
@@ -325,8 +322,9 @@ export async function learnedSelftest(): Promise<{
     const fromArchive = mixes.length - SEEDED_MIXES.length;
     const nonEmpty = mixes.filter((m) => m.specs.length > 0).length;
     check(
-      nonEmpty >= MIN_MIXES,
-      `T7 must simulate at least ${MIN_MIXES} mixes that carry gates to schedule, got ${nonEmpty} of ${mixes.length}`
+      // The floor on T7's NON-EMPTY mixes: every seeded one must carry gates to schedule, so fewer means the property was checked over nothing (VACUOUS).
+      nonEmpty >= SEEDED_MIXES.length,
+      `T7 must simulate at least ${SEEDED_MIXES.length} mixes that carry gates to schedule, got ${nonEmpty} of ${mixes.length}`
     );
     let on = 0;
     let slowerUnpinned = 0;

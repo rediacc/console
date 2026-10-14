@@ -269,10 +269,8 @@ function residueSweep(cfg: Obj): void {
 
 /** Transform 7: machines[*].ceph retirement (drop with warning). */
 function dropMachineCeph(cfg: Obj): void {
-  const machines =
-    isObj(cfg.resources) && isObj(cfg.resources.machines) ? cfg.resources.machines : undefined;
-  if (!machines) return;
-  for (const [mn, machine] of Object.entries(machines)) {
+  if (!isObj(cfg.resources) || !isObj(cfg.resources.machines)) return;
+  for (const [mn, machine] of Object.entries(cfg.resources.machines)) {
     if (!isObj(machine) || machine.ceph === undefined) continue;
     const ceph = isObj(machine.ceph) ? machine.ceph : {};
     const pool = typeof ceph.pool === 'string' ? ceph.pool : '<pool>';

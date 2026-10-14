@@ -114,6 +114,13 @@ function clampToSubscriptionExpiry(
   return { target: Math.max(1, clampedDays), clamped: true };
 }
 
+/** The reason a target was picked, before any clamp applies. */
+function initialValidityReason(requested: boolean, hasOverride: boolean): ValidityClampReason {
+  if (requested) return 'requested';
+  if (hasOverride) return 'subscription_override';
+  return 'plan_default';
+}
+
 /**
  * Compute the effective validity for a delegation cert.
  * Pure function - safe to call from frontend and backend.
@@ -130,14 +137,7 @@ export function computeDelegationCertValidity(input: ComputeValidityInput): Comp
 
   // Pick the target and initial reason.
   let target = input.requestedDays ?? effectiveDefault;
-  let reason: ValidityClampReason;
-  if (input.requestedDays !== undefined) {
-    reason = 'requested';
-  } else if (hasOverride) {
-    reason = 'subscription_override';
-  } else {
-    reason = 'plan_default';
-  }
+  let reason = initialValidityReason(input.requestedDays !== undefined, hasOverride);
 
   // Clamp to effective max.
   if (target > effectiveMax) {

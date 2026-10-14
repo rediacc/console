@@ -15,18 +15,14 @@ export class OpsCommandRunner {
   /**
    * Run a renet ops command
    */
-  async run(
-    subcommands: string[],
-    args: string[] = [],
-    timeoutMs = 300000
-  ): Promise<CommandResult> {
+  run(subcommands: string[], args: string[] = [], timeoutMs = 300000): Promise<CommandResult> {
     return this.runWithEnv(subcommands, args, {}, timeoutMs);
   }
 
   /**
    * Run a renet ops command with additional environment variables
    */
-  async runWithEnv(
+  runWithEnv(
     subcommands: string[],
     args: string[] = [],
     extraEnv: Record<string, string> = {},

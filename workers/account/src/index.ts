@@ -48,6 +48,20 @@ function withSecurityHeaders(response: Response): Response {
   });
 }
 
+/** The account portal's asset response for a path under /account. */
+function serveAccountPortal(request: Request, url: URL, env: Env): Promise<Response> {
+  // Static files (JS, CSS, SVG, fonts): serve directly from assets
+  if (/\.\w+$/.test(url.pathname)) {
+    return env.ASSETS.fetch(request);
+  }
+  // SPA routes: rewrite to /account/ so assets serves index.html. Don't use /account/index.html -- Cloudflare pretty URLs 307-redirects it.
+  if (url.pathname !== '/account' && url.pathname !== '/account/') {
+    const spaRequest = new Request(new URL('/account/', url.origin), request);
+    return env.ASSETS.fetch(spaRequest);
+  }
+  return env.ASSETS.fetch(request);
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -71,16 +85,7 @@ export default {
 
     // Account SPA: serve portal assets
     if (url.pathname === '/account' || url.pathname.startsWith('/account/')) {
-      // Static files (JS, CSS, SVG, fonts): serve directly from assets
-      if (/\.\w+$/.test(url.pathname)) {
-        return withSecurityHeaders(await env.ASSETS.fetch(request));
-      }
-      // SPA routes: rewrite to /account/ so assets serves index.html. Don't use /account/index.html -- Cloudflare pretty URLs 307-redirects it.
-      if (url.pathname !== '/account' && url.pathname !== '/account/') {
-        const spaRequest = new Request(new URL('/account/', url.origin), request);
-        return withSecurityHeaders(await env.ASSETS.fetch(spaRequest));
-      }
-      return withSecurityHeaders(await env.ASSETS.fetch(request));
+      return withSecurityHeaders(await serveAccountPortal(request, url, env));
     }
 
     // Root -> redirect to account portal

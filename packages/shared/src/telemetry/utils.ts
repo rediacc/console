@@ -146,7 +146,7 @@ export function anonymizeObject(obj: Record<string, unknown>): Record<string, un
 }
 
 /** Check if arg is a value following a sensitive flag */
-function isSensitiveFlagValue(arg: string, prevArg: string | undefined): boolean {
+function isSensitiveFlagValue(prevArg: string | undefined): boolean {
   if (!prevArg?.startsWith('-')) {
     return false;
   }
@@ -194,7 +194,7 @@ export function anonymizeArgs(args: string[]): string[] {
   return args.map((arg, index) => {
     const prevArg = args[index - 1];
 
-    if (isSensitiveFlagValue(arg, prevArg)) {
+    if (isSensitiveFlagValue(prevArg)) {
       return '[REDACTED]';
     }
 

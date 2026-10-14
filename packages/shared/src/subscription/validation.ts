@@ -36,18 +36,19 @@ export function validateSubscriptionData(data: unknown): data is SubscriptionDat
     'gracePeriodEnds',
   ];
 
-  for (const field of requiredStrings) {
-    if (typeof subscription[field] !== 'string') {
-      return false;
-    }
-  }
-
   // Check required number fields
+  const requiredNumbers: (keyof SubscriptionData)[] = [
+    'version',
+    'organizationId',
+    'maxActivations',
+    'activationCount',
+    'maxRepositorySizeGb',
+    'maxRepoLicenseIssuancesPerMonth',
+  ];
+
   if (
-    typeof subscription.version !== 'number' ||
-    typeof subscription.organizationId !== 'number' ||
-    typeof subscription.maxActivations !== 'number' ||
-    typeof subscription.activationCount !== 'number'
+    !requiredStrings.every((field) => typeof subscription[field] === 'string') ||
+    !requiredNumbers.every((field) => typeof subscription[field] === 'number')
   ) {
     return false;
   }
@@ -58,18 +59,7 @@ export function validateSubscriptionData(data: unknown): data is SubscriptionDat
   }
 
   // Check features object
-  if (!subscription.features || typeof subscription.features !== 'object') {
-    return false;
-  }
-
-  if (
-    typeof subscription.maxRepositorySizeGb !== 'number' ||
-    typeof subscription.maxRepoLicenseIssuancesPerMonth !== 'number'
-  ) {
-    return false;
-  }
-
-  return true;
+  return Boolean(subscription.features) && typeof subscription.features === 'object';
 }
 
 /**

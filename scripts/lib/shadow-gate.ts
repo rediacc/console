@@ -372,7 +372,7 @@ const PATH_LINE = /^\S*[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:\d+(?::\d+)?[:\s]/;
  * column numbers are never masked: a finding that moved to a different line is a
  * different finding, and that is the whole point of the comparison.
  */
-const MASKS: ReadonlyArray<[RegExp, string]> = [
+const MASKS: readonly [RegExp, string][] = [
   // Absolute temp paths, including the mktemp suffix. Before the repo-root mask, because TMPDIR can legitimately sit inside a worktree.
   [/\/(?:tmp|var\/folders)\/[^\s'"),:]*/g, '<tmp>'],
   // ISO-8601, with or without a zone.

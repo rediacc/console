@@ -691,8 +691,7 @@ async function scanForStaleCommandPaths(violations: Violation[]): Promise<void> 
 function dedupeViolations(violations: Violation[]): void {
   const seen = new Set<string>();
   let writeIdx = 0;
-  for (let i = 0; i < violations.length; i++) {
-    const v = violations[i];
+  for (const v of violations) {
     const key = `${v.file}|${v.line}|${v.reason}|${v.command.trim()}`;
     if (seen.has(key)) continue;
     seen.add(key);

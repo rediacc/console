@@ -13,53 +13,40 @@
  * @param output - Console output string
  * @returns Progress percentage (0-100) or null if not found
  */
+/** The last match of a progress pattern: its percentage and where it sits in the output. */
+function lastProgressMatch(
+  output: string,
+  pattern: RegExp
+): { percentage: number; index: number } | null {
+  const matches = [...output.matchAll(pattern)];
+  if (matches.length === 0) return null;
+  const lastMatch = matches[matches.length - 1];
+  return { percentage: Number.parseFloat(lastMatch[1]), index: lastMatch.index || -1 };
+}
+
 export function extractMostRecentProgress(output: string): number | null {
   if (!output) return null;
 
-  let lastPercentage: number | null = null;
-  let lastIndex = -1;
-
   // Pattern 1: msg_progress format "- N%" (bash scripts)
   const msgProgressPattern = /-\s+(\d+(?:\.\d+)?)%/g;
-  const msgProgressMatches = [...output.matchAll(msgProgressPattern)];
-
-  if (msgProgressMatches.length > 0) {
-    const lastMatch = msgProgressMatches[msgProgressMatches.length - 1];
-    lastPercentage = Number.parseFloat(lastMatch[1]);
-    lastIndex = lastMatch.index || -1;
-  }
 
   // Pattern 2: rsync/rclone format "N% speed" (transfer tools) Matches both byte format and human-readable format (K/M/G) Examples: "199,884,800 18% 190.59MB/s" or "1.5G 18% 190.59MB/s"
   const transferPattern = /\s+(\d+)%\s+[\d.,]+[KMG]?B\/s/g;
-  const transferMatches = [...output.matchAll(transferPattern)];
-
-  if (transferMatches.length > 0) {
-    const lastMatch = transferMatches[transferMatches.length - 1];
-    const matchIndex = lastMatch.index || -1;
-    // Use this percentage if it appears after the msg_progress percentage
-    if (matchIndex > lastIndex) {
-      lastPercentage = Number.parseFloat(lastMatch[1]);
-      lastIndex = matchIndex;
-    }
-  }
 
   // Pattern 3: renet format "[operation] N% - message" Examples: "[setup] 45% - Installing packages" or "[sync] 100% - Complete"
   const renetProgressPattern = /\[[^\]]+\]\s+(\d+(?:\.\d+)?)%/g;
-  const renetMatches = [...output.matchAll(renetProgressPattern)];
 
-  if (renetMatches.length > 0) {
-    const lastMatch = renetMatches[renetMatches.length - 1];
-    const matchIndex = lastMatch.index || -1;
-    if (matchIndex > lastIndex) {
-      lastPercentage = Number.parseFloat(lastMatch[1]);
-      lastIndex = matchIndex;
-    }
+  let latest = lastProgressMatch(output, msgProgressPattern);
+  // A later pattern's percentage wins only if it appears after the one already found.
+  for (const pattern of [transferPattern, renetProgressPattern]) {
+    const candidate = lastProgressMatch(output, pattern);
+    if (candidate && candidate.index > (latest?.index ?? -1)) latest = candidate;
   }
 
-  if (lastPercentage === null) return null;
+  if (latest === null) return null;
 
   // Clamp to valid range (0-100)
-  return Math.min(100, Math.max(0, lastPercentage));
+  return Math.min(100, Math.max(0, latest.percentage));
 }
 
 // ESC is built rather than written into the literal: no-control-regex refuses a control character in a regex.
