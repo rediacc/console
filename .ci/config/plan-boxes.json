@@ -1000,16 +1000,14 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 8,
+      "open": 2,
+      "done": 11,
       "open_sigs": [
-        "097e0d3c",
         "44a5af15",
-        "52effe0e",
-        "eb613c95",
-        "fcbd1cc2"
+        "52effe0e"
       ],
       "done_sigs": [
+        "097e0d3c",
         "1f683ad5",
         "52428dc8",
         "6a2b2863",
@@ -1017,7 +1015,9 @@
         "a50a6173",
         "a730821d",
         "b5c0c73b",
-        "d5abc71e"
+        "d5abc71e",
+        "eb613c95",
+        "fcbd1cc2"
       ]
     },
     "agent/plans/PLAN-plan-compaction-bindings.md": {
@@ -2248,19 +2248,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 3,
+      "done": 5,
       "open_sigs": [
+        "b3a3c89c",
+        "be38aa52",
+        "d89e1dc8"
+      ],
+      "done_sigs": [
         "316afc69",
         "3b82dd28",
         "750fd87e",
         "ad35f490",
-        "b3a3c89c",
-        "be38aa52",
-        "d89e1dc8",
         "dcdf6c1e"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-w7p4w-docker-cutover.md": {
       "status": "compacted",
