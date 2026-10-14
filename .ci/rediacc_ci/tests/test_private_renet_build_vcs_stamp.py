@@ -167,7 +167,9 @@ def test_cwd_outside_renet_is_not_stamped_with_renets_commit(tmp_path: pathlib.P
     other = tmp_path / "other"
     (other / "cmd" / "renet").mkdir(parents=True)
     (other / "go.mod").write_text("module example.com/other\n\ngo 1.22\n", encoding="utf-8")
-    (other / "cmd" / "renet" / "main.go").write_text("package main\n\nfunc main() {}\n", encoding="utf-8")
+    (other / "cmd" / "renet" / "main.go").write_text(
+        "package main\n\nfunc main() {}\n", encoding="utf-8"
+    )
     _run(["git", "init", "-q", str(other)], tmp_path, env)
     other_head = _commit(other, env, "go.mod", "cmd/renet/main.go")
     # Run build.sh's helper from renet's path while the cwd is the other tree.
