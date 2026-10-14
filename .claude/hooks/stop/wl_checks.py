@@ -4425,7 +4425,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     try:
         import wl_review
 
-        _rv_items = {r["id"]: r.get("state", " ") for r in fold.items}
+        _rv_items = {r["id"]: (r.get("state", " "), str(r.get("text") or "")) for r in fold.items}
         _rv = wl_review.branch_state(root, wl_review.current_branch(root), items=_rv_items)
     except Exception as exc:
         _rv = None
