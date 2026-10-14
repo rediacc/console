@@ -147,7 +147,11 @@ export function processAlive(pid: number): boolean {
   try {
     const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
     state = stat.slice(stat.lastIndexOf(')') + 2, stat.lastIndexOf(')') + 3);
-  } catch {
+  } catch (e) {
+    // The pid was reaped between the signal probe and this read.
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT' && process.platform === 'linux') {
+      return false;
+    }
     try {
       state = execFileSync('ps', ['-o', 'stat=', '-p', String(pid)], {
         encoding: 'utf8',
@@ -155,8 +159,9 @@ export function processAlive(pid: number): boolean {
       })
         .trim()
         .slice(0, 1);
-    } catch {
-      state = '';
+    } catch (psError) {
+      // ps exits 1 when no such pid exists; a missing or broken ps tells nothing, so the pid stays alive.
+      state = typeof (psError as { status?: unknown }).status === 'number' ? 'Z' : '';
     }
   }
   return state !== 'Z';
