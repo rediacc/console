@@ -1057,6 +1057,7 @@ PINS_SOAKED_KINDS = (
     "pins-soaked-writes",
     "pins-soaked-no-apply",
     "pins-soaked-no-upload",
+    "pins-soaked-no-red-path",
 )
 
 PINS_SOAKED_WORKFLOW = "CI - OBS Mirror"
@@ -1064,6 +1065,11 @@ _PINS_APPLY_RE = re.compile(r"\bpins\s+--\s+apply-soaked\b")
 _PINS_WRITE_RE = re.compile(
     r"\bgit\s+(push|commit|tag)\b|\bgh\s+(pr|api|release|workflow|issue)\b|\bcurl\b[^\n]*\b(POST|PUT|PATCH|DELETE)\b"
 )
+# A secret handed to a step through `with:` or `env:` (the default GITHUB_TOKEN, read-only under `contents: read`, is exempt).
+_PINS_SECRET_RE = re.compile(r"\bsecrets\.(?!GITHUB_TOKEN\b)\w+")
+# The red path: a step that runs only when the apply exited non-zero and ends the job with `exit 1`.
+_PINS_RED_IF_RE = re.compile(r"\boutputs\.rc\s*!=\s*'0'")
+_PINS_EXIT_RE = re.compile(r"\bexit\s+1\b")
 _PINS_WRITE_USES = ("app-token", "create-pull-request", "github-script", "bws-secrets")
 
 
@@ -1101,16 +1107,25 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         out.append(("pins-soaked-permissions", "workflow level"))
     raw_jobs = doc.get("jobs")
     jobs: dict = raw_jobs if isinstance(raw_jobs, dict) else {}
-    applies = uploads = 0
+    applies = uploads = reds = 0
     for jname, job in jobs.items():
         if not isinstance(job, dict):
             continue
+        if _PINS_SECRET_RE.search(_text(job.get("env"))):
+            out.append(("pins-soaked-writes", "job %s env" % jname))
         if "permissions" in job and not _read_only(job.get("permissions")):
             out.append(("pins-soaked-permissions", "job %s" % jname))
         for i, st in enumerate(_steps(job)):
             run, uses = _text(st.get("run")), _text(st.get("uses"))
-            if _PINS_WRITE_RE.search(run) or any(w in uses for w in _PINS_WRITE_USES):
+            passed = _text(st.get("with")) + _text(st.get("env"))
+            if (
+                _PINS_WRITE_RE.search(run)
+                or any(w in uses for w in _PINS_WRITE_USES)
+                or _PINS_SECRET_RE.search(passed)
+            ):
                 out.append(("pins-soaked-writes", _step_label(jname, i, st)))
+            if _PINS_RED_IF_RE.search(_text(st.get("if"))) and _PINS_EXIT_RE.search(run):
+                reds += 1
             if _PINS_APPLY_RE.search(run) and "--out" in run and "--json" in run:
                 applies += 1
             if "actions/upload-artifact@" in uses:
@@ -1119,6 +1134,10 @@ def analyse_pins_soaked(doc: object) -> tuple[list[tuple[str, str]], list[str]]:
         out.append(("pins-soaked-no-apply", "<no `pins -- apply-soaked --json --out` step>"))
     if not uploads:
         out.append(("pins-soaked-no-upload", "<no upload-artifact step>"))
+    if not reds:
+        out.append(
+            ("pins-soaked-no-red-path", "<no `if: ...outputs.rc != '0'` step ending in `exit 1`>")
+        )
     return out, [
         "%d cron(s), %d apply step(s), %d upload step(s), contents: read only"
         % (len(crons), applies, uploads)
@@ -1141,7 +1160,7 @@ def pins_soaked_message_for(kind: str, name: str, path: str) -> str | None:
     if kind == "pins-soaked-writes":
         return (
             head
-            + "%s: %s can write (a push, commit, tag, gh call, minted token or PR action); this workflow is artifact-only."
+            + "%s: %s can write (a push, commit, tag, gh call, minted token, PR action or a secret passed in); this workflow is artifact-only."
             % (path, name)
         )
     if kind == "pins-soaked-no-apply":
@@ -1151,6 +1170,11 @@ def pins_soaked_message_for(kind: str, name: str, path: str) -> str | None:
         )
     if kind == "pins-soaked-no-upload":
         return head + "%s has %s, so the report is lost with the runner." % (path, name)
+    if kind == "pins-soaked-no-red-path":
+        return head + "%s has %s, so a refused or failed apply would end the run green." % (
+            path,
+            name,
+        )
     return None
 
 

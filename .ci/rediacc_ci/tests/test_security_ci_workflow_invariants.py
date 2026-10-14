@@ -1551,8 +1551,12 @@ def pins_doc() -> dict:
                 "permissions": {"contents": "read"},
                 "steps": [
                     {"uses": "actions/checkout@sha"},
-                    {"run": "npm run --silent pins -- apply-soaked --json --out pins-soaked/"},
+                    {
+                        "id": "apply",
+                        "run": "npm run --silent pins -- apply-soaked --json --out pins-soaked/",
+                    },
                     {"uses": "actions/upload-artifact@sha"},
+                    {"if": "steps.apply.outputs.rc != '0'", "run": "echo failed\nexit 1"},
                 ],
             }
         },
@@ -1572,6 +1576,19 @@ def _drop_upload(doc: dict) -> None:
 def _drop_apply(doc: dict) -> None:
     steps = doc["jobs"]["soaked"]["steps"]
     steps[:] = [s for s in steps if "apply-soaked" not in str(s.get("run"))]
+
+
+def _drop_red_path(doc: dict) -> None:
+    steps = doc["jobs"]["soaked"]["steps"]
+    steps[:] = [s for s in steps if "outputs.rc" not in str(s.get("if"))]
+
+
+def test_the_default_token_in_with_is_not_a_write_secret() -> None:
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"].append(
+        {"uses": "some/action@sha", "with": {"token": "${{ secrets.GITHUB_TOKEN }}"}}
+    )
+    assert pins_kinds(doc) == []
 
 
 def test_the_real_pins_soaked_workflow_passes_the_gate() -> None:
@@ -1621,6 +1638,23 @@ def test_a_conformant_pins_soaked_document_is_clean() -> None:
             ),
             "pins-soaked-permissions",
         ),
+        (
+            lambda d: d["jobs"]["soaked"]["steps"].append(
+                {"uses": "some/action@sha", "with": {"token": "${{ secrets.WRITE_PAT }}"}}
+            ),
+            "pins-soaked-writes",
+        ),
+        (
+            lambda d: d["jobs"]["soaked"]["steps"].append(
+                {"run": "./tool", "env": {"T": "${{ secrets.DEPLOY_KEY }}"}}
+            ),
+            "pins-soaked-writes",
+        ),
+        (
+            lambda d: d["jobs"]["soaked"].__setitem__("env", {"T": "${{ secrets.DEPLOY_KEY }}"}),
+            "pins-soaked-writes",
+        ),
+        (_drop_red_path, "pins-soaked-no-red-path"),
         (_drop_apply, "pins-soaked-no-apply"),
         (_drop_upload, "pins-soaked-no-upload"),
         (lambda d: d["on"].pop("schedule"), "pins-soaked-triggers"),
