@@ -103,7 +103,7 @@ def refused(label, fn, needle=""):
             return
         print("  PASS  %s" % label)
         return
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         Tally.fails += 1
         print("  FAIL  %s: raised %r, wanted a RecordError" % (label, exc), file=sys.stderr)
         return
@@ -116,7 +116,7 @@ def accepted(label, fn):
     Tally.count += 1
     try:
         fn()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         Tally.fails += 1
         print("  FAIL  %s: refused with %s" % (label, exc), file=sys.stderr)
         return

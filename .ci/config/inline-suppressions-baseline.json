@@ -672,9 +672,6 @@
   ".claude/hooks/post-bash/review_commit.py": {
    "noqa E402": 2
   },
-  ".claude/hooks/stop/test-always-tier.py": {
-   "noqa PLC0415": 1
-  },
   ".claude/hooks/stop/test-backlog.py": {
    "noqa E402": 1
   },
@@ -693,56 +690,14 @@
   ".claude/hooks/stop/test-judge-schema.py": {
    "noqa E402": 3
   },
-  ".claude/hooks/stop/test-planenforce.py": {
-   "noqa BLE001": 2
-  },
   ".claude/hooks/stop/test-planfile.py": {
    "noqa E402": 3
   },
   ".claude/hooks/stop/test-planrec.py": {
-   "noqa BLE001": 3,
    "noqa E402": 9
   },
-  ".claude/hooks/stop/wl_admit.py": {
-   "noqa BLE001": 2,
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_agents.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_backlog.py": {
-   "noqa BLE001": 1,
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_checklist.py": {
-   "noqa BLE001": 4
-  },
   ".claude/hooks/stop/wl_checks.py": {
-   "noqa BLE001": 56,
-   "noqa E731": 2,
-   "noqa PLC0415": 14
-  },
-  ".claude/hooks/stop/wl_ci.py": {
-   "noqa BLE001": 4,
-   "noqa PLC0415": 4
-  },
-  ".claude/hooks/stop/wl_civerdict.py": {
-   "noqa BLE001": 2
-  },
-  ".claude/hooks/stop/wl_claimcheck.py": {
-   "noqa PLC0415": 2
-  },
-  ".claude/hooks/stop/wl_classsweep.py": {
-   "noqa PLC0415": 1
-  },
-  ".claude/hooks/stop/wl_core.py": {
-   "noqa BLE001": 1
-  },
-  ".claude/hooks/stop/wl_defersettle.py": {
-   "noqa PLC0415": 5
-  },
-  ".claude/hooks/stop/wl_gh.py": {
-   "noqa BLE001": 3
+   "noqa E731": 2
   },
   ".claude/hooks/stop/wl_git.py": {
    "noqa PLC0415": 2

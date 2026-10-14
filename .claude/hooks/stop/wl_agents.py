@@ -394,7 +394,7 @@ _GIVEUP_RES = tuple((label, re.compile(rx, re.IGNORECASE)) for label, rx in _GIV
 # The push-back is a ONE-SHOT PER AGENT PER SESSION. Not a nag: the operator's own intervention was a single sentence, and a check that fires every stop until satisfied would be answered by writing around its regex rather than by running the probe. One challenge, then it is the session's call and the record shows what it chose.
 def _default_settings():
     """All-defaults `Settings`, for a caller that passes none (the liveness gate): push-back on."""
-    import wl_planqueue  # noqa: PLC0415
+    import wl_planqueue
 
     return wl_planqueue.Settings()
 

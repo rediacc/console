@@ -62,7 +62,7 @@ def next_plan(root, nxt=None, exclude=(), order_ctx=None):
     """
     problem = ""
     if nxt is None:
-        import wl_prscope  # noqa: PLC0415 -- the one next-plan reader, loaded only when the caller had no loop state
+        import wl_prscope
 
         nxt, problem = wl_prscope.next_queued(root, exclude)
     entries = queue_entries(root)
@@ -89,7 +89,7 @@ def next_plan(root, nxt=None, exclude=(), order_ctx=None):
         order_ctx = PO.context(root)[0]
     try:
         n_open = len(R.open_boxes(text))
-    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+    except Exception:
         n_open = 0
     return (
         {

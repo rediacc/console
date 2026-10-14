@@ -639,7 +639,7 @@ def closed_sig(fold, session_id):
             for r in fold.items
             if r["state"] != " " and C.owned_by_me(r.get("owner"), session_id)
         )
-    except Exception:  # noqa: BLE001 -- a signature must never wedge a stop
+    except Exception:
         return ""
     return hashlib.sha1(("|".join(rows)).encode("utf-8", "replace")).hexdigest()[:16]
 
@@ -1094,7 +1094,7 @@ def triage_context(root, worklist, session_id=""):
             and (not session_id or C.owned_by_me(r["owner"], session_id))
         )
         opens = "%d" % open_n
-    except Exception:  # noqa: BLE001 -- a context fact must never break the verb
+    except Exception:
         opens = "unknown (the store could not be read)"
     return (
         "  branch: %s\n"
@@ -1635,7 +1635,7 @@ def guided_slice(
 
     `in_scope` is the same predicate `wl_store.classify_items` takes (agent/plans/PLAN-stop-hook-one-plan-scope.md, Design 2): a plain open `[ ]` that fails it is left out of the rows, exactly the item classify_items queues, so the guide and the open list cannot disagree. `[?]`, `[>]` and waiting rows are never filtered. The caller appends the one queued line (N_PR_SCOPE). None lists everything.
     """
-    import wl_planorder as PO  # noqa: PLC0415 -- the plan rank, shared with every other picker
+    import wl_planorder as PO
 
     me_arg = (me or "<me>")[:8] if me else "<me>"
     verdicts = verdicts or {}
@@ -1831,7 +1831,7 @@ def mark_context_fresh(event, why):
         doc = S.load_state(wl, sid)
         doc["ctx_fresh"] = {"why": why, "at": C.stamp_now()}
         S.save_state(wl, sid, doc)
-    except Exception:  # noqa: BLE001 -- a marker must never wedge a SessionStart
+    except Exception:
         pass
 
 
@@ -1898,10 +1898,10 @@ def handle_session_start(event):
         summary.append("a scheduled red on main")
     # A FIFTH: the branch's per-commit review state (agent/plans/PLAN-per-commit-review.md). Disk and local git only, so it works with the Stop hook disabled; empty when every commit is reviewed, recorded and clear.
     try:
-        import wl_review  # noqa: PLC0415 -- optional; the briefing must not need it
+        import wl_review
 
         rv_line = wl_review.session_start_line(root, wl_review.current_branch(root))
-    except Exception as exc:  # noqa: BLE001 -- a SessionStart must never fail on the review reader
+    except Exception as exc:
         rv_line = "Per-commit reviews could not be read (%s: %s)." % (type(exc).__name__, exc)
     if rv_line:
         blocks.append(rv_line)
@@ -1924,10 +1924,10 @@ def _compaction_owner(event, sid):
     if event.get("agent_id"):
         return "agent:%s" % event.get("agent_id")
     try:
-        import wl_retro as _RT  # noqa: PLC0415 -- optional; the briefing must not need it
+        import wl_retro as _RT
 
         return _RT.ctx().compaction_owner(event.get("transcript_path"), sid)
-    except Exception:  # noqa: BLE001 -- attribution must never cost the briefing
+    except Exception:
         return "unknown"
 
 
@@ -2013,7 +2013,7 @@ def handle_post_compact(event):
     # Suppressed like the hint below, because a compaction that cannot hand back the briefing is far worse than a missing retro order.
     with contextlib.suppress(Exception):
         if sid and owner == "lead":
-            import wl_retro as _RT  # noqa: PLC0415 -- optional; the briefing must not need it
+            import wl_retro as _RT
 
             _ctxb = _RT.ctx()
             _me8 = _ctxb.session_slug(sid)
@@ -2051,7 +2051,7 @@ def handle_post_compact(event):
     #
     # ADDS NOTHING WHEN NOTHING MATCHES -- `why_for_paths` returns "" -- and never raises: this is one append to a briefing that must be emitted either way.
     with contextlib.suppress(Exception):
-        import wl_planrec as _R  # noqa: PLC0415 -- optional; the briefing must not need it
+        import wl_planrec as _R
 
         _why = _R.why_for_paths(root, sorted(_R.dirty_paths(root, "."))[:60])
         if _why:
@@ -2207,7 +2207,7 @@ PRREVIEW_BUDGET_S = 45
 
 def prreview_runner(root, budget_s=PRREVIEW_BUDGET_S, call_timeout_s=PRREVIEW_CALL_TIMEOUT_S):
     """A wl_prreview runner bounded per call and in total. A spent budget or a timeout returns rc 124, which check_state reports as unreadable (rc 2)."""
-    import wl_gh  # noqa: PLC0415 -- the hook gh layer (agent/plans/PLAN-ci-consolidation.md T13)
+    import wl_gh
 
     return wl_gh.runner(root, timeout=call_timeout_s, budget_s=budget_s)
 
@@ -2231,7 +2231,7 @@ def prreview_nudge(state_doc, info, check, runner=None, focus=False, now=None):
     if not isinstance(st, dict) or now - float(memo.get("at") or 0) > PRREVIEW_TTL_S:
         try:
             got = check(int(pr), runner) if runner is not None else check(int(pr))
-        except Exception as exc:  # noqa: BLE001 -- check_state promises not to raise; a raise reads as unreadable
+        except Exception as exc:
             got = {"rc": 2, "reason": "%s: %s" % (type(exc).__name__, str(exc)[:160])}
         st = {
             "rc": int(got.get("rc", 2)),
@@ -2545,11 +2545,11 @@ def _resprofile_report(worklist, session_id, state_doc):
     if os.environ.get("WORKLIST_PROFILE") == "off":
         return
     with contextlib.suppress(Exception):
-        import wl_resprofile  # noqa: PLC0415
+        import wl_resprofile
 
         wl_resprofile.fold()
     with contextlib.suppress(Exception):
-        import wl_profile  # noqa: PLC0415
+        import wl_profile
 
         root = C.project_root(C.project_start())
         cdir = pathlib.Path(root) / ".ci" / "cache" / "profiles.prev"
@@ -2586,13 +2586,13 @@ def _ctx_late_band(session_id):
     The cap-saturated wait keeps the STATE.md demand only then: the recovery document must be current before the context is summarised. Unknown (no context module, as in an LKG snapshot, or no band state yet) is False; the PreCompact snapshot covers that case.
     """
     try:
-        import wl_retro  # noqa: PLC0415 -- the context module is loaded by path, lazily
+        import wl_retro
 
         cb = wl_retro.ctx()
         band = int(cb.load_state(session_id).get("band", -1))
         names = [b[0] for b in cb.BANDS]
         return band >= names.index("late")
-    except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+    except Exception:
         return False
 
 
@@ -2675,7 +2675,7 @@ def pr_scope_line(state, root, me8, queued_n, stood):
 
 def _solo_plans(root):
     """The ` -- solo` entries of agent/plans/QUEUE.md (wl_planqueue.solo_plans); an unreadable queue has none, so the line falls back to the picks rather than claiming a solo it cannot see."""
-    import wl_planqueue  # noqa: PLC0415 -- read only on a turbo stop
+    import wl_planqueue
 
     try:
         text = (pathlib.Path(root) / wl_planqueue.QUEUE_REL).read_text(encoding="utf-8")
@@ -2770,7 +2770,7 @@ def _judge_local_batch(state, root):
     try:
         if local_batch_open(state, root):
             return {"finished": int(state.finished), "batch": int(state.batch_size)}
-    except Exception:  # noqa: BLE001 -- the judge still runs on today's prompt
+    except Exception:
         pass
     return None
 
@@ -2957,7 +2957,7 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
         else:
             try:
                 why, err = wl_ci.focus_pr_end(root, worklist, session_id, focus)
-            except Exception as exc:  # noqa: BLE001 -- a blind read continues focus, and says so
+            except Exception as exc:
                 why, err = "", "%s: %s" % (type(exc).__name__, str(exc)[:120])
             if err:
                 outq_add(
@@ -3017,8 +3017,8 @@ GITHUB_STATUS_MODULE = "rediacc_ci.ci.github_status"
 
 def github_status_line(session_id=""):
     """The GitHub status line for the `github-status` advisory (or this session's one-time `GITHUB RECOVERED` note), or "" when GitHub is ok, the status is unknown, or anything fails. By name when `.ci` is importable (the suite patches that object), else by file; cache-only either way (`github_status.surface`)."""
-    import importlib  # noqa: PLC0415 -- only this advisory needs it
-    import importlib.util  # noqa: PLC0415
+    import importlib
+    import importlib.util
 
     try:
         gs = _sys.modules.get(GITHUB_STATUS_MODULE) or importlib.import_module(GITHUB_STATUS_MODULE)
@@ -3088,7 +3088,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         if cleaned:
             fold = S.load(worklist, sync=True)
-    except Exception:  # noqa: BLE001 -- cleanup must never break gating
+    except Exception:
         archived, orphaned = [], []
     if archived:
         # STICKY, and queued HERE rather than in the allow tail: the store is already flipped to [~], so an archived item never reports twice.
@@ -3169,7 +3169,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     _loop, _loop_err = None, ""
     try:
         _loop = wl_prscope.loop_state(root, worklist, session_id)
-    except Exception as exc:  # noqa: BLE001 -- a broken resolver must SAY SO, never wedge a stop
+    except Exception as exc:
         _loop_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     _on_loop = loop_governs(_loop)
     _scope_ids = _loop.epic_items if _loop is not None else frozenset()
@@ -3282,7 +3282,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 sorted((_roster.get("plan_holders") or {}).keys()),
                 len(_roster.get("writers") or ()),
             )
-        except Exception as exc:  # noqa: BLE001 -- a broken pick read must SAY SO, never wedge a stop
+        except Exception as exc:
             _turbo_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     # THE IN-FLIGHT BLOCK of agent/plans/QUEUE.md (operator order 2026-10-06), refreshed from this stop's own loop state, fold and roster once the turbo picks are known. Runtime state, written only when it changed and never compared by a gate; a failure must never wedge a stop.
     with contextlib.suppress(Exception):
@@ -3317,7 +3317,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         """
         try:
             cands = S.migrate_candidates(worklist, fold, session_id, projects_dir)
-        except Exception:  # noqa: BLE001 -- an advisory must never wedge a stop
+        except Exception:
             return ""
         cands = [c for c in cands if not c.get("handed_off")][:6]
         if not cands:
@@ -3459,7 +3459,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # BANKED, NOT ASKED, HEAD UNCHANGED. A stop with only docs-only ticks and no new commit fell through both branches above and saved nothing, so the same ticks were rediscovered and re-filtered on every later stop forever -- caught in review, not by a control. This is the missing third case: nothing to ask, nothing to advance the head for, but real ids to mark seen.
                 reg_state["seen_ticks"] = sorted(set(reg_state["seen_ticks"]) | set(reg_banked))
                 wl_reggate.save_reggate(reg_marker, reg_state)
-    except Exception:  # noqa: BLE001 -- detection must never break gating
+    except Exception:
         reg_signals, reg_ids, reg_sig, reg_done_tasks, reg_banked = [], [], "", [], []
         if reg_state is None:
             reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
@@ -3548,16 +3548,16 @@ def run_stop(event, event_ok, worklist, hook_file):
             # v19: the wait is only PURE if the harness queue is also empty of work this session could do right now. A pending task with no unresolved blocker makes the check-in fire (even for an all-live roster) and name it, instead of certifying the wait.
             try:
                 _bg_actionable = C.actionable_tasks(session_id, event.get("transcript_path"))
-            except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+            except Exception:
                 _bg_actionable = []
             try:
                 bg_facts = wl_liveness.bg_output_facts(event.get("cwd"), session_id, live_bg)
-            except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+            except Exception:
                 bg_facts = []
             try:
                 # Read on EVERY pure-wait stop since v17, not only when the check-in is due: a worker dying is the one change a byte-level view cannot see.
                 bg_verdicts = wl_liveness.verify_background(live_bg)
-            except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+            except Exception:
                 bg_verdicts = {}
             _bgw = state_doc.get("bgwait") or {}
             _last = _bgw.get("at", "")
@@ -3626,7 +3626,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             if _correlated:
                 _freshest = min(wl_liveness._age_min(r.get("upd", "")) for r in _correlated)
                 _supervised = _freshest is not None and _freshest <= STUCK_SUPERVISED_MAX_MIN
-        except Exception:  # noqa: BLE001 -- never let a suppression heuristic wedge a stop
+        except Exception:
             _supervised = False
 
     # Newest own stamp PLUS the own item set (id+state): stamps are second-resolution, so two moves inside one second would otherwise read as none, and an added-then-ticked item is movement even when the clock cannot show it.
@@ -3654,7 +3654,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle, _lchanged = (
             wl_liveness.ladder(fold, session_id, event, state_doc)
         )
-    except Exception:  # noqa: BLE001 -- liveness must never break gating
+    except Exception:
         ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
     # ONE ENTRY, REBUILT EVERY STOP (agent/plans/PLAN-stop-hook-retro-20260924.md R.9). The pings are recomputed on every stop from the items' own ages (wl_liveness.ladder does not fire-once the 45-minute rung), so the entry is regenerable and needs no sticky key. As a sticky `ladder:<sig>` per ping set it was never retracted when its item moved, and on 2026-09-24 twenty of them held the
     # digest's head for every blocked stop: 0 of 52 one-line advisories delivered. Class 0 still: the wording is a direct instruction that becomes a block at the 90-minute rung. The first line drops the legacy sticky entries, a migration that is a no-op once they are gone.
@@ -3686,7 +3686,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             live_plans=(_roster or {}).get("plan_holders"),
             in_scope=_in_scope,
         )
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         guide = (
             "WORKLIST GUIDE unavailable (hook bug, fix wl_checks.guided_slice): %s"
             % (str(exc)[:160])
@@ -3941,7 +3941,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             state_doc, fold, session_id, open_items, live_bg, in_flight
         )
         _stall_claims = unblocked_claims(last_msg) if open_items else []
-    except Exception:  # noqa: BLE001 -- never wedge a stop
+    except Exception:
         _stall_fired, _stall_why, _stall_claims = False, "check raised", []
     if _stall_fired:
         _rows = "\n".join("    " + i for i in open_items[:8])
@@ -3967,7 +3967,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _pa_tools, _ = wl_admit.turn_tools(event.get("transcript_path", ""))
         _pa_deferred = wl_admit.defer_created(state_doc, fold, session_id)
         _pa_fired, _pa_line = wl_admit.pending_ask(last_msg, _pa_tools, _pa_deferred)
-    except Exception:  # noqa: BLE001 -- never wedge a stop
+    except Exception:
         _pa_fired, _pa_line = False, ""
     if _pa_fired:
         vadd("pending-ask", True, M.V_PENDING_ASK % (_pa_line, me8))
@@ -3984,7 +3984,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _sweep_moment = (
             not open_items and not in_flight and not live_bg and bool(fold) and _just_closed
         )
-    except Exception:  # noqa: BLE001 -- a nudge must never wedge a stop
+    except Exception:
         _sweep_moment = False
     if _sweep_moment:
         vadd("sweep-moment", False, M.V_SWEEP_MOMENT % "an item this turn")
@@ -4094,7 +4094,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             if new_ts != prev_ts:
                 reg_state["task_status"] = new_ts
                 wl_reggate.save_reggate(reg_marker, reg_state)
-        except Exception:  # noqa: BLE001 -- bookkeeping must never break gating
+        except Exception:
             pass
     # ---- THE WORK GATE. A brief goes stale when the WORLD moves, not when the clock does: a sentence that still describes what this session is doing is still true at 91 minutes, and demanding a rewrite of an accurate sentence is noise that
     # trains the reader to dismiss the check. Same contract the STATE.md check already runs on, and the same signature, so the two cannot disagree about whether anything happened.
@@ -4136,7 +4136,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # The exit is satisfiable either way (edit the plan, or set its Status), so this cannot become a nag with no way out.
     try:
         _pdrift = plan_drift_rows(root, fold, session_id)
-    except Exception:  # noqa: BLE001 -- a plan read must never break the battery
+    except Exception:
         _pdrift = []
     if _pdrift:
         # CAPPED, with the remainder COUNTED rather than dropped: twelve rows in one block is a context bomb, and the no-silent-caps doctrine says a gate that truncates must say what it truncated or it reads as "that is all of them". Newest-first, so the plans nearest the work lead.
@@ -4217,7 +4217,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             elif not _pf_text:
                 # The state it described has moved on. Without this a queued "29 open box(es), 0 ticked" kept being delivered stops after every box of that plan was ticked (2026-10-05), the way plan-pr-open and loop-next already drop theirs.
                 outq_drop(state_doc, "plan-tasks")
-    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+    except Exception:
         pass
 
     # ---- THE NEXT PLAN (wl_backlog), read off agent/plans/QUEUE.md: Promoted first, then Generated (operator ruling 3, 2026-10-03). The loop state already computed it with the reader the merge gate and P-A1 share; off the loop it is computed here. ADVISORY, never a vadd: the loop's own post-merge push is `loop-next`.
@@ -4235,7 +4235,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             if _bl_text:
                 _bl_key = "plan-backlog:%s" % (_bl_candidate or _bl_stats).get("rel")
                 outq_add(worklist, session_id, state_doc, _bl_key, _bl_text, 2)
-    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+    except Exception:
         pass
     _blq = _outq(state_doc)
     _blq["items"] = [
@@ -4257,7 +4257,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         if _pe_state != wl_planenforce.ADVISORY:
             # The advisory copy describes a stop that had live work; once the verdict is a block or silence it is stale.
             outq_drop(state_doc, "plan-pr-open")
-    except Exception:  # noqa: BLE001 -- a plan read must never wedge a stop
+    except Exception:
         pass
 
     pstate, pahead, pref = wl_ci.publish_divergence(root)
@@ -4305,7 +4305,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- v13: CI-queue backpressure (operator, 2026-07-31). Computed before the freshness check because a saturated queue changes what that check should say. A slack-granter must fail toward pressure: any error here reads as "unknown", which is exactly today's behavior.
     try:
         qstate, qdetail = wl_ci.ci_queue_state(root, worklist, session_id)
-    except Exception:  # noqa: BLE001 -- blindness must not grant slack
+    except Exception:
         qstate, qdetail = "unknown", None
     queue_note = ""
     # FOCUS MODE ARMS BOTH PR READS from the focus's own branch: `--phase` declared the PR this session's (agent/plans/PLAN-stop-hook-focus-mode.md section 3).
@@ -4336,7 +4336,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # A hand-rolled CI watch blocks the turn. Structurally ABOVE ci_trouble because it needs no network at all: it reads the live background roster the caller already has. Unconditional by design -- see V_ADHOC_WATCH.
     try:
         _adhoc_id, _adhoc_blob = wl_ci.adhoc_watch(live_bg)
-    except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
+    except Exception as exc:
         _adhoc_id, _adhoc_blob = "", ""
         vadd(
             "adhoc-watch-broken",
@@ -4364,17 +4364,17 @@ def run_stop(event, event_ok, worklist, hook_file):
             outq_add(worklist, session_id, state_doc, "github-status", _gh_line, 1, on_change=False)
         else:
             outq_drop(state_doc, "github-status")
-    except Exception:  # noqa: BLE001 -- a status read must never wedge a stop
+    except Exception:
         pass
 
     # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7). Computed once from agent/reviews/<branch>/ and local git, no network. An open finding at or above `block_at` blocks (`commit-review`), a file that fails to parse or whose Body-Sig no longer matches blocks (`commit-review-malformed`); everything else is one advisory. The push guard enforces the same
     # state when this hook is disabled, so nothing here is the only line of defence.
     try:
-        import wl_review  # noqa: PLC0415 -- only the stop path needs it
+        import wl_review
 
         _rv_items = {r["id"]: r.get("state", " ") for r in fold.items}
         _rv = wl_review.branch_state(root, wl_review.current_branch(root), items=_rv_items)
-    except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
+    except Exception as exc:
         _rv = None
         vadd(
             "commit-review-malformed",
@@ -4410,7 +4410,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             owned=_ci_owned,
             hold="ci-red" in _turbo_parks,
         )
-    except Exception as exc:  # noqa: BLE001 -- a broken CI check must SAY SO, not vanish
+    except Exception as exc:
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
     # FILL IN THE FOCUS PR NUMBER once the CI read knows it: the spawn guard matches fix work on `pr:<n>`, so the store needs it. Same `at`, so neither the 24-hour cap nor the parked ledger restarts.
     if _focus and not _focus.get("pr") and isinstance(cidetail, dict):
@@ -4519,13 +4519,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=15,
                 on_change=False,
             )
-    except Exception:  # noqa: BLE001 -- advisory: a broken reminder read is silence, never a failed stop
+    except Exception:
         pass
     #   backup-push     a no-PR local batch whose oldest unpushed commit is older than `backup_push_h` hours (agent/plans/PLAN-turbo-local-first.md D4).
     # While a local batch fills, receipt-behind is silent: no push is due until the batch completes (D4).
     try:
         _lb_open = local_batch_open(_loop, root)
-    except Exception:  # noqa: BLE001 -- advisory: an unreadable batch reads as no batch
+    except Exception:
         _lb_open = False
     try:
         _bp = (
@@ -4546,7 +4546,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=60,
                 on_change=False,
             )
-    except Exception:  # noqa: BLE001 -- advisory: a broken read is silence
+    except Exception:
         pass
     try:
         _rb = None if _lb_open else wl_loopspeed.receipt_behind(root)
@@ -4574,7 +4574,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=15,
                 on_change=False,
             )
-    except Exception:  # noqa: BLE001 -- advisory: a broken read is silence
+    except Exception:
         pass
     # ---- SCHEDULED WORKFLOWS ON MAIN (agent/plans/PLAN-scheduled-red-detector.md, A2). A nightly red reached only a human for five nights while it held the stable promotion, because every CI read here is scoped to the PR head and a scheduled run is on no PR. So this check is NOT gated on the publish ref and NOT on being the sole live session: ownership is settled by wl_schedred
     # instead (an item that tracks the red is its owner's, an O_EXCL claim picks one session when none exists), which is what lets every session look without two of them being blocked on one red. One shared cache under a TTL keeps the read cheap; no origin means zero calls, which keeps the fixtures offline.
@@ -4643,7 +4643,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 1,
                 refresh_min=360,
             )
-    except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO, and never block on its own failure
+    except Exception as exc:
         outq_add(
             worklist,
             session_id,
@@ -4658,7 +4658,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # bounded ceiling and the gh budget live in prreview_nudge and prreview_runner.
     if cistate == "ok" and isinstance(cidetail, dict):
         try:
-            import wl_prreview  # noqa: PLC0415 -- only a green-head stop needs it
+            import wl_prreview
 
             _prr_block, _prr_note, _prr_once = prreview_nudge(
                 state_doc,
@@ -4668,7 +4668,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 focus=bool(_focus),
             )
             S.save_state(worklist, session_id, state_doc)
-        except Exception as exc:  # noqa: BLE001 -- a broken check must SAY SO
+        except Exception as exc:
             _prr_block = "THIS IS A HOOK BUG: the PR review read failed: %s: %s" % (
                 type(exc).__name__,
                 str(exc)[:160],
@@ -4772,7 +4772,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         me8,
                     ),
                 )
-    except Exception as exc:  # noqa: BLE001 -- a blind finish line must SAY SO
+    except Exception as exc:
         vadd(
             "pr-finish",
             True,
@@ -4794,7 +4794,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 outq_add(worklist, session_id, state_doc, "loop-next", _ln_text, 0, refresh_min=0)
             else:
                 outq_drop(state_doc, "loop-next")
-        except Exception as exc:  # noqa: BLE001 -- a blind loop must SAY SO
+        except Exception as exc:
             vadd(
                 "loop-next",
                 True,
@@ -4820,7 +4820,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 outq_add(worklist, session_id, state_doc, "turbo-next", _tn_text, 0, refresh_min=0)
             else:
                 outq_drop(state_doc, "turbo-next")
-        except Exception as exc:  # noqa: BLE001 -- a blind turbo arm must SAY SO
+        except Exception as exc:
             # Under the loop's own fail-closed key: the turbo arm is the live PR's half of the loop, and `loop-next` is the key the invariant tier pins for "a loop check raised" (.claude/hooks/stop/test-always-tier.py).
             vadd(
                 "loop-next",
@@ -4887,7 +4887,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # it is a prompt to think, not a fact that must be answered this turn.
     try:
         _n_mates = wl_liveness.live_teammate_transcripts(event.get("cwd"), session_id=session_id)
-    except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+    except Exception:
         _n_mates = 0
     if solo_grind_due(len(open_items), _n_mates, state_doc):
         vadd("solo-grind", False, M.V_SOLO_GRIND % (len(open_items), SOLO_GRIND_MIN_ITEMS))
@@ -4988,7 +4988,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 vadd("unread-reports", False, _ur_text)
             else:
                 outq_add(worklist, session_id, state_doc, "unread-reports", _ur_text, 2)
-    except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
+    except Exception:
         pass
     # v23: the pre-ask refusal ledger, surfaced. `block-settled-questions.sh` refuses permission-shaped git questions and, until now, left no trace anywhere the operator looks -- which .claude/hooks/test-hooks.sh names as the flaw in its own design: "a false positive is invisible by construction: the operator never learns what was not asked". The hook now appends one row per
     # refusal; this is the read side.
@@ -5006,7 +5006,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.N_ASK_REFUSALS % (_ar_n, _ar_path),
                 2,
             )
-    except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
+    except Exception:
         pass
     # v19 L2: identities that write to this store but have never stopped. The CLI check refuses them at the door from now on; this is the backstop for what it cannot reach -- history already written, and the deliberate hole where the environment cannot name the caller.
     #
@@ -5031,7 +5031,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.N_PHANTOM_IDENTITY % (len(_phantoms), _rows, _wp, me8),
                 1,
             )
-    except Exception:  # noqa: BLE001 -- a backstop must never wedge a stop
+    except Exception:
         pass
     # NO STOP-TIME DOCS-DRIFT CHECK since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.3). It counted any commit under `.claude`, so hook work -- which the CI-overhaul design docs do not describe -- ordered edits to unrelated documents. The SessionStart block still reports DRIFTED or pending, which is where a fresh session reads the docs.
     # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) -------- WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the next session seed the worklist. Prose gates nothing, so a handoff whose PROMPT.md was ignored or compacted away dropped program work silently and nobody found out. CHECKLIST.md is the machine-readable half of the same
@@ -5044,7 +5044,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             vadd(_k, _always, _t)
         for _k, _t, _p in _cl_a:
             outq_add(worklist, session_id, state_doc, _k, _t, _p)
-    except Exception as exc:  # noqa: BLE001 -- fail CLOSED: a blind gate must say so
+    except Exception as exc:
         vadd("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])
     if len(live_work_crons) > 1:
         vadd(
@@ -5061,7 +5061,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # v18: the surviving half of the deleted NEXT WAKEUPS section. A schedule this hook cannot parse is invisible to every check above -- it is not a countable work cron -- so it must be said out loud rather than left implicit in a list nobody prints any more.
     try:
         _broken_scheds = broken_schedules(event)
-    except Exception:  # noqa: BLE001 -- a shape check must never wedge a stop
+    except Exception:
         _broken_scheds = []
     if _broken_scheds:
         vadd(
@@ -5225,7 +5225,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 if r.get("state") in (" ", ">", "?") and C.owned_by_me(r.get("owner"), session_id)
             ],
         )
-    except Exception:  # noqa: BLE001 -- a detector must never crash a stop
+    except Exception:
         _deferred = []
     if _deferred:
         vadd(
@@ -5237,13 +5237,13 @@ def run_stop(event, event_ok, worklist, hook_file):
         _deflect_fired, _deflect_text = wl_deflect.check(
             worklist, session_id, event.get("transcript_path")
         )
-    except Exception:  # noqa: BLE001 -- a detector must never crash a stop
+    except Exception:
         _deflect_fired, _deflect_text = False, ""
     if _deflect_fired:
         vadd("deflected-finding", False, M.V_DEFLECTED_FINDING % _deflect_text)
     try:
         _bg_orphans = wl_bgsweep.sweep(live_ids={str(b.get("id")) for b in live_bg})
-    except Exception:  # noqa: BLE001 -- a detector must never crash a stop
+    except Exception:
         _bg_orphans = []
     if _bg_orphans:
         _rows = "\n".join(
@@ -5267,7 +5267,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _pf_note = ""
         try:
             _pf_note = planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
-        except Exception as exc:  # noqa: BLE001 -- a heuristic must never wedge a stop
+        except Exception as exc:
             _pf_note = M.V_PLANFID_DEGRADED % ("it raised %s: %s" % (type(exc).__name__, exc))[:160]
         if _pf_note:
             outq_add(
@@ -5471,7 +5471,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if _loop is not None and _on_loop:
         try:
             _pr_scope_line = pr_scope_line(_loop, root, me8, len(_queued_recs), _pr_scope_stood)
-        except Exception as exc:  # noqa: BLE001 -- a broken line must SAY SO
+        except Exception as exc:
             _pr_scope_line = "THIS IS A HOOK BUG: the N_PR_SCOPE line failed: %s: %s" % (
                 type(exc).__name__,
                 str(exc)[:120],
@@ -5784,7 +5784,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE INDEX REFRESH RUNS ON EVERY STOP THAT GETS THIS FAR (agent/plans/PLAN-stop-hook-refactor-enforcement.md, Commit 1): a mechanical counter run with no model call, and the ONLY thing that re-emits the commit-path guard's cache (`.ci/cache/shape-index/`). It first sat behind `judged_ok`, which left the guard disarmed for 36+ minutes of `continue` verdicts. Its second home was still inside the judge section, after `C.emit` on the `continue` verdict and on the deferral-audit blocks -- and `C.emit` calls `sys.exit` -- so a `continue` still exited before it ran, and a stop with nothing remaining and no fix signal never entered the section at all (found 2026-09-24 by the wide-tier writer, verified against wl_core.emit). Here it precedes every judge exit.
     try:
         sd_findings, sd_cerr = wl_shapedup.refresh_index(str(root), state_doc)
-    except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
+    except Exception as exc:
         sd_findings, sd_cerr = [], "shape index refresh errored: %s" % exc
     S.save_state(worklist, session_id, state_doc)
     audit_note = ""
@@ -6255,7 +6255,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     sd_fired, sd_reason, sd_action, sd_note = wl_shapedup.judge(
                         str(root), sd_findings, sd_cerr
                     )
-            except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
+            except Exception as exc:
                 sd_fired, sd_reason, sd_action, sd_note = (
                     False,
                     "",
@@ -6295,7 +6295,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             sw_text, sw_note = "", ""
             if wide_moment:
                 sw_text, sw_note = wl_shapedup.wide_run(str(root), state_doc, C.git_branch(root))
-        except Exception as exc:  # noqa: BLE001 -- an advisory rule must never wedge a stop
+        except Exception as exc:
             sw_text, sw_note = "", "wide shape tier errored: %s" % exc
         S.save_state(worklist, session_id, state_doc)
         if sw_text:

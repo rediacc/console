@@ -314,7 +314,7 @@ def search_hits_instance(search, root, ids):
     pattern = search_pattern(search)
     if not pattern or not ids:
         return None
-    import wl_core as C  # noqa: PLC0415
+    import wl_core as C
 
     changed: list[str] = []
     for sha in ids:

@@ -192,7 +192,7 @@ def note(root, worklist, session_id, ref=None, branch=None, now=None):
             return ""
         wl_gh.cache_write(sp, ([*seen, key])[-SEEN_KEEP:])
         return format_note(entry)
-    except Exception:  # noqa: BLE001 -- information, never a reason to wedge a stop
+    except Exception:
         return ""
 
 
@@ -212,5 +212,5 @@ def session_start_line(worklist, branch):
             "age": age_min,
             "title": entry.get("title") or v.get("verdict") or "unknown",
         }
-    except Exception:  # noqa: BLE001
+    except Exception:
         return ""

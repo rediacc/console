@@ -669,7 +669,7 @@ def _load_diagnose():
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod
-    except Exception:  # noqa: BLE001 -- a broken diagnoser is not a verdict
+    except Exception:
         return None
 
 
@@ -699,7 +699,7 @@ def ci_cancel_cause(root, info, gate):
     jobs, _err = diag.run_jobs(fetch, run_id, run.get("run_attempt"))
     try:
         return diag.cancel_cause(fetch, run, pr_head=info.get("sha") or None, jobs=jobs)
-    except Exception:  # noqa: BLE001
+    except Exception:
         return unknown
 
 
@@ -743,7 +743,7 @@ def _push_guard():
     syspath = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(syspath)
     syspath.on_sys_path(syspath.CLAUDE_DIR)
-    from rediacc_hooks.guards import block_unverified_push  # noqa: PLC0415
+    from rediacc_hooks.guards import block_unverified_push
 
     return block_unverified_push
 
@@ -762,7 +762,7 @@ def carried_at(root, sha):
         return None, "%s at %s does not parse: %s" % (CARRIED_REL, str(sha)[:8], str(exc)[:80])
     try:
         guard = _push_guard()
-    except Exception as exc:  # noqa: BLE001 -- a broken reader is an unreadable carry, never an empty one
+    except Exception as exc:
         return None, "the carry reader (block_unverified_push.parse_carried) did not import: %s" % (
             str(exc)[:120]
         )
@@ -923,7 +923,7 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
 
 def ci_carried_note(detail):
     """The one-line advisory for a `carried` ci_trouble state: every failed job's findings are carried, so nothing new is red."""
-    import worklist_messages as M  # noqa: PLC0415 -- pure text, loaded on the path that speaks
+    import worklist_messages as M
 
     info = (detail or {}).get("info") or {}
     rows = (detail or {}).get("carried") or []
@@ -985,7 +985,7 @@ def _sanctioned_match(blob):
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod.match(blob) is not None
-    except Exception:  # noqa: BLE001 -- a broken registry is not a verdict
+    except Exception:
         return False
 
 
@@ -1295,7 +1295,7 @@ def pr_link(root, worklist, session_id, branch):
 
     THE ONE PR READ of agent/plans/PLAN-stop-hook-one-plan-scope.md Design 1: a single GraphQL query over OPEN, MERGED and CLOSED, so the loop's scope (`wl_prscope.loop_state`) and focus mode's end (`focus_pr_end`) read the same node. Cached per branch for wl_standdown.FOCUS_PR_TTL_S in a `.prlink-<me8>` sidecar. A failed read returns ([], error) and is not cached, so the next stop asks again.
     """
-    import wl_standdown  # noqa: PLC0415 -- sealed, stdlib only
+    import wl_standdown
 
     branch = str(branch or "")
     if not branch:
@@ -1474,7 +1474,7 @@ def _selftest():
 
     Narrow on purpose: ci_classify is pure (info dict in, (live, hard, soft) out), so this proves the CI_NONBLOCKING_CONTEXTS filter on synthetic fixtures shaped like the real GraphQL contexts, not a live API read.
     """
-    import wl_common  # noqa: PLC0415 -- the shared selftest checker, loaded only for a selftest
+    import wl_common
 
     check = wl_common.Checker()
 
