@@ -541,7 +541,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rdc-readonly-mode.md` | executing | 227 | 0 | 23 | 31039 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
-| `agent/plans/PLAN-remove-cross-session-messaging.md` | draft | 376 | 2 | 11 | 41886 |
+| `agent/plans/PLAN-remove-cross-session-messaging.md` | draft | 377 | 1 | 12 | 42062 |
 | `agent/plans/PLAN-renet-fetch-hardening.md` | draft | 145 | 8 | 0 | 11973 |
 | `agent/plans/PLAN-repair-prose-style-findings.md` | draft | 52 | 0 | 6 | 5895 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |

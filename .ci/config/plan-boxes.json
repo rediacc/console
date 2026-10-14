@@ -1333,13 +1333,13 @@
       "owner": "unowned",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 11,
+      "open": 1,
+      "done": 12,
       "open_sigs": [
-        "0c59d5cc",
         "ee4a3a4a"
       ],
       "done_sigs": [
+        "0c59d5cc",
         "43e63a72",
         "55c635d1",
         "55d0352f",
