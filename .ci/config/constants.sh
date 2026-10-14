@@ -238,7 +238,7 @@ readonly R2_MAX_RELEASE_VERSIONS=20
 
 # nfpm configuration (replaces dpkg-deb + rpmbuild for package creation)
 readonly NFPM_VERSION="2.48.0"
-# Verified against https://github.com/goreleaser/nfpm/releases/download/v2.45.0/checksums.txt
+# Verified against https://github.com/goreleaser/nfpm/releases/download/v<NFPM_VERSION>/checksums.txt
 # The tarball is piped straight into `sudo tar` in a job that also holds release
 # secrets, so an unverified download is arbitrary root-owned code. Update both
 # this and NFPM_VERSION together.
@@ -293,8 +293,8 @@ readonly SHELLCHECK_SHA256_DARWIN_AARCH64="56affdd8de5527894dca6dc3d7e0a99a873b0
 # wrote down. But the CI Static lane is a BARE CHECKOUT (docs/agent-reference/
 # ci-gates.md:108-110 groups lanes by what they need on disk) and has no Go at
 # all, so an acquisition that requires it cannot run there. Recorded by
-# downloading the pinned release on 2026-08-25; mvdan/sh publishes no checksums
-# file, so this is trust-on-first-use, said plainly.
+# downloading the pinned release (re-recorded by the pins tool on each bump);
+# mvdan/sh publishes no checksums file, so this is trust-on-first-use, said plainly.
 readonly SHFMT_SHA256_LINUX_AMD64="76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf"
 readonly SHFMT_SHA256_LINUX_ARM64="5f2db09dae91fca848f7adbdd014632e921a383863a2ad7e0450ad3aba0c6489"
 # DARWIN, added 2026-09-06. Same reason as the shellcheck pair above. The arch spelling
