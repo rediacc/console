@@ -253,7 +253,7 @@ def run(command, root, gh, broken=False):
 
 
 def _declared_defect(source=None):
-    # Every binding of `DEFECT`, at any depth, is read from the syntax tree by what Python itself stores to: every Name in Store context (assignment of any shape, for, with, walrus, comprehension, `type` alias) and every binding that is not a Name node (a def or class name, an import alias, `except ... as`, a match capture or star or mapping rest, a type parameter). Exactly one is required, and it must be `DEFECT = <literal>` or `DEFECT: T = <literal>`: the guard module would run the last of several bindings while the harness planted the first, an indented one is still code the module runs, and literal_eval refuses anything but a literal, so a computed value is an error and not code that runs.
+    # Every binding of `DEFECT` at module or nested block level is read from the syntax tree by what Python itself stores to (function parameters are local to their function and `del` unbinds, so neither is a module binding): every Name in Store context (assignment of any shape, for, with, walrus, comprehension, `type` alias) and every binding that is not a Name node (a def or class name, an import alias, `except ... as`, a match capture or star or mapping rest, a type parameter). Exactly one is required, and it must be `DEFECT = <literal>` or `DEFECT: T = <literal>`: the guard module would run the last of several bindings while the harness planted the first, an indented one is still code the module runs, and literal_eval refuses anything but a literal, so a computed value is an error and not code that runs.
     text = GUARD.read_text(encoding="utf-8") if source is None else source
     tree = ast.parse(text)
     stores: list[ast.AST] = []
@@ -345,6 +345,12 @@ for label, source, refused in (
         True,
     ),
     ("two targets in one assignment", 'DEFECT = y = ("a", "b")\n', True),
+    (
+        "plain plus a match mapping rest",
+        'DEFECT = ("a", "b")\nmatch {}:\n    case {**DEFECT}:\n        pass\n',
+        True,
+    ),
+    ("plain plus a type parameter", 'DEFECT = ("a", "b")\ndef f[DEFECT]():\n    pass\n', True),
     ("one annotated DEFECT line", 'DEFECT: tuple = ("a", "b")\n', False),
     ("one DEFECT line", 'DEFECT = ("a", "b")\n', False),
 ):
