@@ -41,6 +41,68 @@ interface OverlayProps {
   children: React.ReactNode;
 }
 
+/** Keep Tab and Shift+Tab inside `panel` by wrapping at its first and last focusable element. */
+function trapTab(e: KeyboardEvent, panel: HTMLElement): void {
+  const focusable = panel.querySelectorAll<HTMLElement>(FOCUSABLE);
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+type OverlayHeaderProps = Pick<
+  OverlayProps,
+  'title' | 'description' | 'closeLabel' | 'closeTrackLabel' | 'onClose'
+>;
+
+const OverlayHeader: React.FC<OverlayHeaderProps> = ({
+  title,
+  description,
+  closeLabel,
+  closeTrackLabel,
+  onClose,
+}) => {
+  // Truthiness, not nullishness: an empty title must not open the header.
+  if (!title && !closeLabel) return null;
+  return (
+    <div className="overlay-header">
+      <div>
+        {title && <h2 className="overlay-title">{title}</h2>}
+        {description && <p className="overlay-description">{description}</p>}
+      </div>
+      {closeLabel && (
+        <button
+          type="button"
+          className="btn--icon overlay-close"
+          onClick={onClose}
+          aria-label={closeLabel}
+          data-track="cta_click"
+          data-track-label={closeTrackLabel}
+        >
+          <svg
+            className="icon"
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M5 5l10 10M15 5L5 15" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+};
+
 const Overlay: React.FC<OverlayProps> = ({
   open,
   onClose,
@@ -80,20 +142,8 @@ const Overlay: React.FC<OverlayProps> = ({
         dismiss();
         return;
       }
-      if (e.key !== 'Tab') return;
-      const panel = panelRef.current;
-      if (!panel) return;
-      const focusable = panel.querySelectorAll<HTMLElement>(FOCUSABLE);
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      trapTab(e, panelRef.current);
     };
 
     document.addEventListener('keydown', onKeyDown);
@@ -123,38 +173,13 @@ const Overlay: React.FC<OverlayProps> = ({
         aria-modal="true"
         aria-label={label}
       >
-        {/* Truthiness, not nullishness: an empty title must not open the header. */}
-        {(Boolean(title) || Boolean(closeLabel)) && (
-          <div className="overlay-header">
-            <div>
-              {title && <h2 className="overlay-title">{title}</h2>}
-              {description && <p className="overlay-description">{description}</p>}
-            </div>
-            {closeLabel && (
-              <button
-                type="button"
-                className="btn--icon overlay-close"
-                onClick={onClose}
-                aria-label={closeLabel}
-                data-track="cta_click"
-                data-track-label={closeTrackLabel}
-              >
-                <svg
-                  className="icon"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 5l10 10M15 5L5 15" />
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
+        <OverlayHeader
+          title={title}
+          description={description}
+          closeLabel={closeLabel}
+          closeTrackLabel={closeTrackLabel}
+          onClose={onClose}
+        />
         {children}
       </div>
     </div>

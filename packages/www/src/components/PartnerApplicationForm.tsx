@@ -1,6 +1,6 @@
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import React, { useRef, useState } from 'react';
-import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
+import { type CaptchaGuard, captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 // Route-scoped translations: this island hydrates on ONE page, so its strings ride this component's chunk instead of the catalog every route downloads.
 import { useRouteTranslation } from '../i18n/react-route';
@@ -106,6 +106,80 @@ type FormState = 'idle' | 'loading' | 'success' | 'error';
 
 const NS = 'pages.partners.form';
 
+function errorText(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
+interface PartnerApplication {
+  contactName: string;
+  email: string;
+  company: string;
+  website: string | undefined;
+  country: string;
+  message: string | undefined;
+  lang: string;
+  title: string | undefined;
+  phone: string | undefined;
+  partnerTypes: PartnerType[];
+  isDistributor: boolean;
+  howHeard: string;
+  consent: boolean;
+  /** Raw honeypot value; an empty string is dropped from the body. */
+  honeypot: string | undefined;
+  turnstileToken: string | null;
+}
+
+/** The message that blocks a submit on consent or the captcha, or null when neither does. */
+function consentOrCaptchaError(
+  consent: boolean,
+  captcha: CaptchaGuard,
+  messages: { consent: string; captchaUnavailable: string; captcha: string }
+): string | null {
+  if (!consent) return messages.consent;
+  if (captchaEnabled && !captcha.token) {
+    return captchaMessage(captcha, messages.captchaUnavailable, messages.captcha);
+  }
+  return null;
+}
+
+/** POST the application and report it; throws the server's error text, or `fallbackError`. */
+async function submitApplication(app: PartnerApplication, fallbackError: string): Promise<void> {
+  const res = await fetch(`${window.location.origin}/account/api/v1/partner/apply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contactName: app.contactName,
+      email: app.email,
+      company: app.company,
+      website: orUndef(app.website),
+      country: orUndef(app.country),
+      message: orUndef(app.message),
+      lang: app.lang,
+      title: orUndef(app.title),
+      phone: orUndef(app.phone),
+      partnerTypes: app.partnerTypes.length > 0 ? app.partnerTypes : undefined,
+      isDistributor: app.isDistributor,
+      howHeard: orUndef(app.howHeard),
+      consent: app.consent,
+      company_url: app.honeypot === '' ? undefined : app.honeypot,
+      turnstileToken: app.turnstileToken ?? undefined,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? fallbackError);
+  }
+
+  const utm = window.__pa_get_utm?.() ?? {};
+  window.plausible?.('partner_apply_submit', {
+    props: {
+      source: 'partners-page',
+      ...utm,
+    },
+  });
+}
+
 const PartnerApplicationForm: React.FC = () => {
   const currentLang = useLanguage();
   const { t } = useRouteTranslation(currentLang);
@@ -151,61 +225,44 @@ const PartnerApplicationForm: React.FC = () => {
       setErrorMsg(t(`${NS}.errors.requiredFields`));
       return;
     }
-    if (!consent) {
+    const blocked = consentOrCaptchaError(consent, captcha, {
+      consent: t(`${NS}.errors.consent`),
+      captchaUnavailable: t(`${NS}.errors.captchaUnavailable`),
+      captcha: t(`${NS}.errors.captcha`),
+    });
+    if (blocked) {
       setState('error');
-      setErrorMsg(t(`${NS}.errors.consent`));
-      return;
-    }
-    if (captchaEnabled && !captcha.token) {
-      setState('error');
-      setErrorMsg(
-        captchaMessage(captcha, t(`${NS}.errors.captchaUnavailable`), t(`${NS}.errors.captcha`))
-      );
+      setErrorMsg(blocked);
       return;
     }
 
     try {
-      const honeypotValue = honeypotRef.current?.value;
-
-      const res = await fetch(`${window.location.origin}/account/api/v1/partner/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await submitApplication(
+        {
           contactName,
           email,
           company,
-          website: orUndef(websiteRef.current?.value),
-          country: orUndef(country),
-          message: orUndef(messageRef.current?.value),
+          website: websiteRef.current?.value,
+          country,
+          message: messageRef.current?.value,
           lang: currentLang,
-          title: orUndef(jobTitleRef.current?.value),
-          phone: orUndef(phoneRef.current?.value),
-          partnerTypes: partnerTypes.length > 0 ? partnerTypes : undefined,
+          title: jobTitleRef.current?.value,
+          phone: phoneRef.current?.value,
+          partnerTypes,
           isDistributor,
-          howHeard: orUndef(howHeard),
+          howHeard,
           consent,
-          company_url: honeypotValue === '' ? undefined : honeypotValue,
-          turnstileToken: captcha.token ?? undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? t(`${NS}.errors.generic`));
-      }
+          honeypot: honeypotRef.current?.value,
+          turnstileToken: captcha.token,
+        },
+        t(`${NS}.errors.generic`)
+      );
 
       setState('success');
       captcha.reset();
-      const utm = window.__pa_get_utm?.() ?? {};
-      window.plausible?.('partner_apply_submit', {
-        props: {
-          source: 'partners-page',
-          ...utm,
-        },
-      });
     } catch (err) {
       setState('error');
-      setErrorMsg(err instanceof Error ? err.message : t(`${NS}.errors.generic`));
+      setErrorMsg(errorText(err, t(`${NS}.errors.generic`)));
       // Turnstile tokens are single-use: the failed request consumed this one, so reset the widget or every retry would fail captcha until a reload.
       captcha.reset();
       turnstileRef.current?.reset();

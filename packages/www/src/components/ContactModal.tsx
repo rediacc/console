@@ -4,6 +4,7 @@ import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
+import { sendContact } from '../utils/contact-submit';
 import Overlay from './Overlay';
 
 declare global {
@@ -105,43 +106,29 @@ const ContactModal: React.FC<ContactModalProps> = ({ lang }) => {
       return;
     }
 
-    try {
-      const res = await fetch(`${window.location.origin}/account/api/v1/contact/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          email,
-          subject: selectedSubject,
-          message,
-          source: 'contact-modal',
-          lang: currentLang,
-          company_url: honeypotRef.current?.value === '' ? undefined : honeypotRef.current?.value,
-          turnstileToken: captcha.token ?? undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? t('contactModal.error'));
-      }
-
-      setState('success');
-      captcha.reset();
-      const utm = window.__pa_get_utm?.() ?? {};
-      const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-      window.plausible?.('contact_submit', {
-        props: {
-          subject: selectedSubject,
-          source: 'contact-modal',
-          ...utm,
-          ...(lastSolution && { last_solution: lastSolution }),
+    await sendContact(
+      {
+        name,
+        email,
+        subject: selectedSubject,
+        message,
+        lang: currentLang,
+        honeypot: honeypotRef.current?.value,
+        turnstileToken: captcha.token,
+      },
+      'contact-modal',
+      t('contactModal.error'),
+      {
+        onSuccess: () => {
+          setState('success');
+          captcha.reset();
         },
-      });
-    } catch (err) {
-      setState('error');
-      setErrorMsg(err instanceof Error ? err.message : t('contactModal.error'));
-    }
+        onFailure: (failure) => {
+          setState('error');
+          setErrorMsg(failure);
+        },
+      }
+    );
   };
 
   return (

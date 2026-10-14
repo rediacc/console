@@ -1,8 +1,8 @@
-import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useRef, useState } from 'react';
 import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import CaptchaField from './CaptchaField';
 import '../styles/newsletter.css';
 
 type Variant = 'inline' | 'footer' | 'sticky-bar' | 'page' | 'modal';
@@ -23,6 +23,54 @@ const ciMode =
   String(import.meta.env.PUBLIC_CI_MODE ?? '').toLowerCase() === 'true' ||
   String(import.meta.env.PUBLIC_CI_MODE ?? '') === '1';
 const captchaEnabled = !!turnstileSiteKey && !ciMode;
+
+function errorText(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
+/** POST the subscription; throws the server's error text, or `fallbackError` when it sent none. */
+async function postSubscribe(
+  payload: { email: string; source: string; lang: string; turnstileToken: string | null },
+  fallbackError: string
+): Promise<void> {
+  const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, turnstileToken: payload.turnstileToken ?? undefined }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error ?? fallbackError);
+  }
+}
+
+function trackSignup(source: string, variant: Variant): void {
+  const utm = window.__pa_get_utm?.() ?? {};
+  window.plausible?.('newsletter_signup', { props: { source, variant, ...utm } });
+}
+
+const NewsletterHeader: React.FC<{
+  variant: Variant;
+  heading: string;
+  desc: string;
+  t: (key: string) => string;
+}> = ({ variant, heading, desc, t }) => {
+  if (variant === 'footer') {
+    return (
+      <div className="newsletter-header">
+        <h4 className="footer-heading">{t('newsletter.title')}</h4>
+        <p className="newsletter-footer-desc">{t('newsletter.description')}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="newsletter-header">
+      <h3 className="newsletter-heading">{heading}</h3>
+      <p className="newsletter-description">{desc}</p>
+    </div>
+  );
+};
 
 const NewsletterSignup: React.FC<Props> = ({
   variant,
@@ -63,30 +111,18 @@ const NewsletterSignup: React.FC<Props> = ({
     }
 
     try {
-      const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          source,
-          lang: currentLang,
-          turnstileToken: captcha.token ?? undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? t('newsletter.errorGeneric'));
-      }
+      await postSubscribe(
+        { email, source, lang: currentLang, turnstileToken: captcha.token },
+        t('newsletter.errorGeneric')
+      );
 
       setState('success');
       captcha.reset();
       onSuccess?.();
-      const utm = window.__pa_get_utm?.() ?? {};
-      window.plausible?.('newsletter_signup', { props: { source, variant, ...utm } });
+      trackSignup(source, variant);
     } catch (err) {
       setState('error');
-      setErrorMsg(err instanceof Error ? err.message : t('newsletter.errorGeneric'));
+      setErrorMsg(errorText(err, t('newsletter.errorGeneric')));
     }
   };
 
@@ -119,18 +155,8 @@ const NewsletterSignup: React.FC<Props> = ({
 
   return (
     <div className={`newsletter-signup newsletter-${variant}`}>
-      {(variant === 'inline' || variant === 'page' || variant === 'modal') && (
-        <div className="newsletter-header">
-          <h3 className="newsletter-heading">{heading}</h3>
-          <p className="newsletter-description">{desc}</p>
-        </div>
-      )}
-
-      {variant === 'footer' && (
-        <div className="newsletter-header">
-          <h4 className="footer-heading">{t('newsletter.title')}</h4>
-          <p className="newsletter-footer-desc">{t('newsletter.description')}</p>
-        </div>
+      {variant !== 'sticky-bar' && (
+        <NewsletterHeader variant={variant} heading={heading} desc={desc} t={t} />
       )}
 
       <form className="newsletter-form" onSubmit={handleSubmit} noValidate>
@@ -161,29 +187,14 @@ const NewsletterSignup: React.FC<Props> = ({
             {errorMsg}
           </p>
         )}
-        {captchaEnabled && (
-          <Turnstile
-            siteKey={turnstileSiteKey}
-            options={{ action: 'newsletter_subscribe' }}
-            key={captcha.nonce}
-            onSuccess={captcha.onSuccess}
-            onExpire={captcha.onExpire}
-            onError={captcha.onError}
-          />
-        )}
-        {captchaEnabled && captcha.failed && (
-          <p className="form-error" role="status">
-            {t('captchaUnavailable')}{' '}
-            <button
-              type="button"
-              className="form-inline-action"
-              onClick={captcha.retry}
-              data-track="captcha_retry"
-            >
-              {t('captchaRetry')}
-            </button>
-          </p>
-        )}
+        <CaptchaField
+          captcha={captcha}
+          enabled={captchaEnabled}
+          siteKey={turnstileSiteKey}
+          options={{ action: 'newsletter_subscribe' }}
+          unavailableText={t('captchaUnavailable')}
+          retryText={t('captchaRetry')}
+        />
       </form>
     </div>
   );

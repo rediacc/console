@@ -35,6 +35,51 @@ interface LearnMenuProps {
 const PANEL_ID = 'learn-menu-panel';
 const TRIGGER_ID = 'learn-menu-trigger';
 
+/** Place the panel under its trigger, clamped to the viewport, then show it. */
+function showPanelUnder(panel: HTMLElement, trigger: HTMLElement | null) {
+  if (trigger) {
+    const rect = trigger.getBoundingClientRect();
+    panel.style.left = '0px'; // measure the panel's own width unpositioned first
+    const width = panel.offsetWidth || 224;
+    const maxLeft = Math.max(8, document.documentElement.clientWidth - width - 8);
+    panel.style.left = `${Math.round(Math.min(Math.max(8, rect.left), maxLeft))}px`;
+  }
+  panel.showPopover();
+}
+
+/** Bring the popover in line with `isOpen`; the UA's own dismissals drive state back. */
+function syncPopover(panel: HTMLElement, trigger: HTMLElement | null, isOpen: boolean) {
+  const shown = panel.matches(':popover-open');
+  if (isOpen && !shown) {
+    showPanelUnder(panel, trigger);
+  } else if (!isOpen && shown) {
+    panel.hidePopover();
+  }
+}
+
+/**
+ * Where a key sends focus: an item index, 'trigger' for Escape, or null for a key the menu
+ * ignores. Arrow keys wrap around at both ends.
+ */
+function keyTarget(key: string, current: number, count: number): number | 'trigger' | null {
+  switch (key) {
+    case 'Escape':
+      return 'trigger';
+    case 'ArrowDown':
+    case 'ArrowRight':
+      return current < count - 1 ? current + 1 : 0;
+    case 'ArrowUp':
+    case 'ArrowLeft':
+      return current > 0 ? current - 1 : count - 1;
+    case 'Home':
+      return 0;
+    case 'End':
+      return count - 1;
+    default:
+      return null;
+  }
+}
+
 const LearnMenu: React.FC<LearnMenuProps> = ({ lang, isOpen, onToggle, onClose }) => {
   const { t } = useTranslation(lang);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -61,20 +106,7 @@ const LearnMenu: React.FC<LearnMenuProps> = ({ lang, isOpen, onToggle, onClose }
   useEffect(() => {
     const panel = panelRef.current;
     if (!panel) return;
-    const shown = panel.matches(':popover-open');
-    if (isOpen && !shown) {
-      const trigger = triggerRef.current;
-      if (trigger) {
-        const rect = trigger.getBoundingClientRect();
-        panel.style.left = '0px'; // measure the panel's own width unpositioned first
-        const width = panel.offsetWidth || 224;
-        const maxLeft = Math.max(8, document.documentElement.clientWidth - width - 8);
-        panel.style.left = `${Math.round(Math.min(Math.max(8, rect.left), maxLeft))}px`;
-      }
-      panel.showPopover();
-    } else if (!isOpen && shown) {
-      panel.hidePopover();
-    }
+    syncPopover(panel, triggerRef.current, isOpen);
   }, [isOpen]);
 
   useEffect(() => {
@@ -92,31 +124,16 @@ const LearnMenu: React.FC<LearnMenuProps> = ({ lang, isOpen, onToggle, onClose }
       if (!isOpen) return;
       const count = itemRefs.current.length;
       const current = itemRefs.current.indexOf(document.activeElement as HTMLAnchorElement);
-      switch (event.key) {
-        case 'Escape':
-          // The UA closes it; the focus return is ours, because a popover opened via
-          // showPopover() has no invoker for the UA to restore focus to.
-          triggerRef.current?.focus();
-          break;
-        case 'ArrowDown':
-        case 'ArrowRight':
-          event.preventDefault();
-          itemRefs.current[current < count - 1 ? current + 1 : 0]?.focus();
-          break;
-        case 'ArrowUp':
-        case 'ArrowLeft':
-          event.preventDefault();
-          itemRefs.current[current > 0 ? current - 1 : count - 1]?.focus();
-          break;
-        case 'Home':
-          event.preventDefault();
-          itemRefs.current[0]?.focus();
-          break;
-        case 'End':
-          event.preventDefault();
-          itemRefs.current[count - 1]?.focus();
-          break;
+      const target = keyTarget(event.key, current, count);
+      if (target === null) return;
+      if (target === 'trigger') {
+        // The UA closes it; the focus return is ours, because a popover opened via
+        // showPopover() has no invoker for the UA to restore focus to.
+        triggerRef.current?.focus();
+        return;
       }
+      event.preventDefault();
+      itemRefs.current[target]?.focus();
     },
     [isOpen]
   );

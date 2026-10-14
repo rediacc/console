@@ -78,6 +78,33 @@ const captchaEnabled = !!turnstileSiteKey && !ciMode;
 
 const SIZE_KEYS: CompanySize[] = ['smb', 'mid', 'enterprise', 'large'] as const;
 
+/** Ask the account worker to send the ROI report; any non-2xx answer throws. */
+async function requestRoiReport(email: string, turnstileToken: string | null): Promise<void> {
+  const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email,
+      magnetName: 'roi-report',
+      source: 'roi-calculator',
+      turnstileToken: turnstileToken ?? undefined,
+    }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+function trackRoiEmailSubmit(): void {
+  const utm = window.__pa_get_utm?.() ?? {};
+  const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
+  window.plausible?.('calculator_email_submit', {
+    props: {
+      source: 'roi-calculator',
+      ...utm,
+      ...(lastSolution && { last_solution: lastSolution }),
+    },
+  });
+}
+
 const SPRoiCalculator: React.FC<Props> = ({ content }) => {
   const [activeSize, setActiveSize] = useState<CompanySize | null>('mid');
   const [values, setValues] = useState<RoiInputs>({ ...ROI_DEFAULTS.mid });
@@ -115,30 +142,10 @@ const SPRoiCalculator: React.FC<Props> = ({ content }) => {
       setGateLoading(true);
       setGateError('');
       try {
-        const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            magnetName: 'roi-report',
-            source: 'roi-calculator',
-            turnstileToken: captcha.token ?? undefined,
-          }),
-        });
-        if (!res.ok) throw new Error(t('newsletter.errorGeneric'));
+        await requestRoiReport(email, captcha.token);
         setDetailsUnlocked(true);
         captcha.reset();
-        const utm =
-          (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
-          {};
-        const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-        window.plausible?.('calculator_email_submit', {
-          props: {
-            source: 'roi-calculator',
-            ...utm,
-            ...(lastSolution && { last_solution: lastSolution }),
-          },
-        });
+        trackRoiEmailSubmit();
       } catch {
         setGateError(t('newsletter.errorGeneric'));
       } finally {

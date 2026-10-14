@@ -105,6 +105,222 @@ function reportSearch(value: string, resultCount: number, scope: string): void {
   }
 }
 
+type KeyAction = 'down' | 'up' | 'open' | 'close' | 'none';
+
+function keyAction(key: string, selectedIndex: number): KeyAction {
+  if (key === 'ArrowDown') return 'down';
+  if (key === 'ArrowUp') return 'up';
+  if (key === 'Enter' && selectedIndex >= 0) return 'open';
+  if (key === 'Escape') return 'close';
+  return 'none';
+}
+
+function stepSelection(prev: number, action: 'down' | 'up', count: number): number {
+  if (action === 'down') return prev < count - 1 ? prev + 1 : prev;
+  return prev > 0 ? prev - 1 : -1;
+}
+
+function withLocale(prev: Set<Language>, lang: Language): Set<Language> {
+  if (prev.has(lang)) return prev;
+  const next = new Set(prev);
+  next.add(lang);
+  return next;
+}
+
+function withoutLocale(prev: Set<Language>, lang: Language): Set<Language> {
+  if (!prev.has(lang)) return prev;
+  const next = new Set(prev);
+  next.delete(lang);
+  return next;
+}
+
+/** Fetch the per-locale search index and build its Fuse instance. */
+async function loadFuse(lang: Language): Promise<Fuse<SearchItem>> {
+  const response = await fetch(`/search-index-${lang}.json`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch search index: ${response.status}`);
+  }
+  const data: SearchItem[] = await response.json();
+  return new Fuse<SearchItem>(data, {
+    keys: [
+      { name: 'content', weight: 0.5 },
+      { name: 'body', weight: 0.4 },
+      { name: 'category', weight: 0.1 },
+    ],
+    threshold: 0.3,
+    minMatchCharLength: 2,
+    shouldSort: true,
+    includeScore: true,
+    includeMatches: true,
+    ignoreLocation: true,
+  });
+}
+
+/** Group results by category, keeping first-seen category order. */
+function groupByCategory(results: SearchItem[]): Record<string, SearchItem[]> {
+  const grouped: Record<string, SearchItem[]> = {};
+  for (const item of results) {
+    if (Object.hasOwn(grouped, item.category)) {
+      grouped[item.category].push(item);
+    } else {
+      grouped[item.category] = [item];
+    }
+  }
+  return grouped;
+}
+
+/** Highlight matching text with proper escaping */
+function highlightMatch(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+
+  try {
+    // Escape special regex characters
+    const escaped = query.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escaped})`, 'gi');
+    const parts = text.split(regex);
+
+    return parts.map((part, i) => {
+      if (part.toLowerCase() === query.toLowerCase()) {
+        return <mark key={`mark-${i}-${part}`}>{part}</mark>;
+      }
+      return <span key={`span-${i}-${part}`}>{part}</span>;
+    });
+  } catch {
+    return text;
+  }
+}
+
+interface SearchResultsBodyProps {
+  t: (key: string) => string;
+  query: string;
+  results: SearchItem[];
+  groupedResults: Record<string, SearchItem[]>;
+  selectedIndex: number;
+  hasError: boolean;
+  isBusy: boolean;
+  isLoading: boolean;
+  isLoadingIndex: boolean;
+  onNavigate: (result: SearchItem) => void;
+}
+
+const SearchNoResults: React.FC<{ t: (key: string) => string; query: string }> = ({ t, query }) => (
+  <div className="search-message" role="status" aria-live="polite">
+    <h3>
+      {t('common.search.noResults')} for &quot;{query}&quot;
+    </h3>
+    <div className="search-suggestions">
+      <p>{t('common.search.suggestions.title')}</p>
+      <ul>
+        <li>{t('common.search.suggestions.differentKeywords')}</li>
+        <li>{t('common.search.suggestions.checkSpelling')}</li>
+        <li>{t('common.search.suggestions.browseSolutions')}</li>
+        <li>{t('common.search.suggestions.contactSupport')}</li>
+      </ul>
+    </div>
+  </div>
+);
+
+const SearchCategory: React.FC<{
+  category: string;
+  items: SearchItem[];
+  offset: number;
+  query: string;
+  selectedIndex: number;
+  onNavigate: (result: SearchItem) => void;
+}> = ({ category, items, offset, query, selectedIndex, onNavigate }) => (
+  <div className="search-category">
+    <h4 className="search-category-title">{category}</h4>
+    <ul className="search-results-list">
+      {items.map((result, index) => {
+        const overallIndex = offset + index;
+
+        return (
+          <li
+            id={`search-result-${overallIndex}`}
+            key={result.id}
+            className={`search-result ${selectedIndex === overallIndex ? 'selected' : ''}`}
+            role="option"
+            aria-selected={selectedIndex === overallIndex}
+            onClick={() => onNavigate(result)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onNavigate(result);
+              }
+            }}
+            tabIndex={-1}
+          >
+            <div className="search-result-title">{highlightMatch(result.content, query)}</div>
+            <div className="search-result-excerpt">{highlightMatch(result.excerpt, query)}</div>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+);
+
+const SearchResultsBody: React.FC<SearchResultsBodyProps> = ({
+  t,
+  query,
+  results,
+  groupedResults,
+  selectedIndex,
+  hasError,
+  isBusy,
+  isLoading,
+  isLoadingIndex,
+  onNavigate,
+}) => {
+  const idle = !isLoading && !hasError;
+  // Running offset of each category's first result in the flat, selectable order.
+  let offset = 0;
+  const categories = Object.entries(groupedResults).map(([category, items]) => {
+    const start = offset;
+    offset += items.length;
+    return { category, items, start };
+  });
+
+  return (
+    <>
+      {hasError && (
+        <div className="search-message" role="alert" aria-live="assertive">
+          <h3>{t('common.search.unavailable')}</h3>
+          <p>{t('common.search.unavailableMessage')}</p>
+        </div>
+      )}
+
+      {isBusy && !hasError && (
+        <div className="search-message" role="status" aria-live="polite">
+          {t('common.search.searching')}
+        </div>
+      )}
+
+      {idle && !isLoadingIndex && query.trim() && results.length === 0 && (
+        <SearchNoResults t={t} query={query} />
+      )}
+
+      {idle && results.length > 0 && (
+        <div className="sr-only" role="status" aria-live="polite">
+          {results.length} {results.length === 1 ? 'result' : 'results'} found
+        </div>
+      )}
+
+      {idle &&
+        categories.map(({ category, items, start }) => (
+          <SearchCategory
+            key={category}
+            category={category}
+            items={items}
+            offset={start}
+            query={query}
+            selectedIndex={selectedIndex}
+            onNavigate={onNavigate}
+          />
+        ))}
+    </>
+  );
+};
+
 const SearchModal: React.FC<SearchModalProps> = ({
   lang,
   isOpen,
@@ -159,33 +375,11 @@ const SearchModal: React.FC<SearchModalProps> = ({
     if (inFlight.current.has(currentLang)) return;
 
     const lang = currentLang;
-    setLoadingLocales((prev) => {
-      if (prev.has(lang)) return prev;
-      const next = new Set(prev);
-      next.add(lang);
-      return next;
-    });
+    setLoadingLocales((prev) => withLocale(prev, lang));
     const promise = (async () => {
       try {
         setHasError(false);
-        const response = await fetch(`/search-index-${lang}.json`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch search index: ${response.status}`);
-        }
-        const data: SearchItem[] = await response.json();
-        const fuseInstance = new Fuse<SearchItem>(data, {
-          keys: [
-            { name: 'content', weight: 0.5 },
-            { name: 'body', weight: 0.4 },
-            { name: 'category', weight: 0.1 },
-          ],
-          threshold: 0.3,
-          minMatchCharLength: 2,
-          shouldSort: true,
-          includeScore: true,
-          includeMatches: true,
-          ignoreLocation: true,
-        });
+        const fuseInstance = await loadFuse(lang);
         setFuseByLang((prev) => new Map(prev).set(lang, fuseInstance));
       } catch (error) {
         setHasError(true);
@@ -194,12 +388,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
         }
       } finally {
         inFlight.current.delete(lang);
-        setLoadingLocales((prev) => {
-          if (!prev.has(lang)) return prev;
-          const next = new Set(prev);
-          next.delete(lang);
-          return next;
-        });
+        setLoadingLocales((prev) => withoutLocale(prev, lang));
       }
     })();
     inFlight.current.set(lang, promise);
@@ -239,19 +428,15 @@ const SearchModal: React.FC<SearchModalProps> = ({
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === 'Enter' && selectedIndex >= 0) {
-      e.preventDefault();
-      const selected = results[selectedIndex];
-      navigateToResult(selected);
-    } else if (e.key === 'Escape') {
+    const action = keyAction(e.key, selectedIndex);
+    if (action === 'none') return;
+    if (action === 'close') {
       onClose();
+      return;
     }
+    e.preventDefault();
+    if (action === 'open') navigateToResult(results[selectedIndex]);
+    else setSelectedIndex((prev) => stepSelection(prev, action, results.length));
   };
 
   // Navigate to result
@@ -286,38 +471,7 @@ const SearchModal: React.FC<SearchModalProps> = ({
   }, [selectedIndex]);
 
   // Group results by category - memoized to prevent re-computation on every render
-  const groupedResults = useMemo(() => {
-    const grouped: Record<string, SearchItem[]> = {};
-    for (const item of results) {
-      if (Object.hasOwn(grouped, item.category)) {
-        grouped[item.category].push(item);
-      } else {
-        grouped[item.category] = [item];
-      }
-    }
-    return grouped;
-  }, [results]);
-
-  // Highlight matching text with proper escaping
-  const highlightMatch = (text: string, query: string): React.ReactNode => {
-    if (!query.trim()) return text;
-
-    try {
-      // Escape special regex characters
-      const escaped = query.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`(${escaped})`, 'gi');
-      const parts = text.split(regex);
-
-      return parts.map((part, i) => {
-        if (part.toLowerCase() === query.toLowerCase()) {
-          return <mark key={`mark-${i}-${part}`}>{part}</mark>;
-        }
-        return <span key={`span-${i}-${part}`}>{part}</span>;
-      });
-    } catch {
-      return text;
-    }
-  };
+  const groupedResults = useMemo(() => groupByCategory(results), [results]);
 
   return (
     <Overlay
@@ -385,84 +539,18 @@ const SearchModal: React.FC<SearchModalProps> = ({
         role="listbox"
         aria-label={t('common.search.results')}
       >
-        {hasError && (
-          <div className="search-message" role="alert" aria-live="assertive">
-            <h3>{t('common.search.unavailable')}</h3>
-            <p>{t('common.search.unavailableMessage')}</p>
-          </div>
-        )}
-
-        {(isLoading || isLoadingIndex) && !hasError && (
-          <div className="search-message" role="status" aria-live="polite">
-            {t('common.search.searching')}
-          </div>
-        )}
-
-        {!isLoading && !isLoadingIndex && !hasError && query.trim() && results.length === 0 && (
-          <div className="search-message" role="status" aria-live="polite">
-            <h3>
-              {t('common.search.noResults')} for &quot;{query}&quot;
-            </h3>
-            <div className="search-suggestions">
-              <p>{t('common.search.suggestions.title')}</p>
-              <ul>
-                <li>{t('common.search.suggestions.differentKeywords')}</li>
-                <li>{t('common.search.suggestions.checkSpelling')}</li>
-                <li>{t('common.search.suggestions.browseSolutions')}</li>
-                <li>{t('common.search.suggestions.contactSupport')}</li>
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {!isLoading && !hasError && results.length > 0 && (
-          <div className="sr-only" role="status" aria-live="polite">
-            {results.length} {results.length === 1 ? 'result' : 'results'} found
-          </div>
-        )}
-
-        {!isLoading &&
-          !hasError &&
-          Object.entries(groupedResults).map(([category, categoryResults]) => (
-            <div key={category} className="search-category">
-              <h4 className="search-category-title">{category}</h4>
-              <ul className="search-results-list">
-                {categoryResults.map((result, index) => {
-                  const overallIndex =
-                    Object.entries(groupedResults)
-                      .slice(0, Object.keys(groupedResults).indexOf(category))
-                      .reduce((sum, [, items]) => sum + items.length, 0) + index;
-
-                  return (
-                    <li
-                      id={`search-result-${overallIndex}`}
-                      key={result.id}
-                      className={`search-result ${
-                        selectedIndex === overallIndex ? 'selected' : ''
-                      }`}
-                      role="option"
-                      aria-selected={selectedIndex === overallIndex}
-                      onClick={() => navigateToResult(result)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          navigateToResult(result);
-                        }
-                      }}
-                      tabIndex={-1}
-                    >
-                      <div className="search-result-title">
-                        {highlightMatch(result.content, query)}
-                      </div>
-                      <div className="search-result-excerpt">
-                        {highlightMatch(result.excerpt, query)}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+        <SearchResultsBody
+          t={t}
+          query={query}
+          results={results}
+          groupedResults={groupedResults}
+          selectedIndex={selectedIndex}
+          hasError={hasError}
+          isBusy={isLoading || isLoadingIndex}
+          isLoading={isLoading}
+          isLoadingIndex={isLoadingIndex}
+          onNavigate={navigateToResult}
+        />
       </div>
     </Overlay>
   );

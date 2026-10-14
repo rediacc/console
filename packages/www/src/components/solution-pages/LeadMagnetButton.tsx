@@ -78,7 +78,7 @@ const LeadMagnetButton: React.FC<Props> = ({ magnetName, source, label, scrollGa
       observer.disconnect();
       sentinel.remove();
     };
-  }, [scrollGate, dismissed, sessionKey]);
+  }, [scrollGate, dismissed]);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
