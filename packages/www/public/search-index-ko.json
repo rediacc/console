@@ -4455,8 +4455,8 @@
   {
     "id": "search-13108",
     "content": "6.8 delete",
-    "body": "저장소와 그 데이터를 삭제합니다. 설정 항목은 유지됩니다. --archive-config를 사용하면 자격증명을 deletedRepositories로 옮겨 'repo admin archive restore'로 복구할 수 있습니다. 위치 인자로 <ref>를 받습니다. 이름만 전달하면 그랜드 계열로 해석되지만, 같은 기본 이름을 여러 저장소가 공유하면 거부되므로 포크를 지정하려면 이름:태그를 전달하세요 rdc repo delete <ref> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --archive-config | 설정 항목을 나중에 복구할 수 있도록 deletedRepositories로 이동합니다 | 아니오 | - | | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | | --debug | 디버그 출력 활성화 | 아니오 | - | | --skip-router-restart | 바이너리 업데이트 후 라우트 서버 재시작 건너뜀 | 아니오 | - | | --dry-run | 변경 없이 수행될 작업 표시 | 아니오 | - | <a id=\"cli-local-repo-commit\"></a>",
-    "excerpt": "저장소와 그 데이터를 삭제합니다. 설정 항목은 유지됩니다. --archive-config를 사용하면 자격증명을 deletedRepositories로 옮겨 'repo admin archive restore'로 복구할 수 있습니다. 위치 인자로 <ref>를 받습니다. 이름...",
+    "body": "저장소와 그 데이터를 삭제합니다. 포크의 설정 항목은 deletedRepositories로 옮겨져 이름이 해제되고 GUID는 'repo admin archive restore'로 복구할 수 있는 상태로 남습니다. 그랜드 저장소나 다른 머신으로 푸시된 저장소의 항목은 --archive-config를 지정하지 않으면 유지됩니다. 위치 인자로 <ref>를 받습니다. 이름만 전달하면 그랜드 계열로 해석되지만, 같은 기본 이름을 여러 저장소가 공유하면 거부되므로 포크를 지정하려면 이름:태그를 전달하세요 rdc repo delete <ref> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --archive-config | 설정 항목을 나중에 복구할 수 있도록 deletedRepositories로 이동합니다 | 아니오 | - | | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | | --debug | 디버그 출력 활성화 | 아니오 | - | | --skip-router-restart | 바이너리 업데이트 후 라우트 서버 재시작 건너뜀 | 아니오 | - | | --dry-run | 변경 없이 수행될 작업 표시 | 아니오 | - | <a id=\"cli-local-repo-commit\"></a>",
+    "excerpt": "저장소와 그 데이터를 삭제합니다. 포크의 설정 항목은 deletedRepositories로 옮겨져 이름이 해제되고 GUID는 'repo admin archive restore'로 복구할 수 있는 상태로 남습니다. 그랜드 저장소나 다른 머신으로 푸시된 저장소의 항목은 -...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
     "fragment": "68-delete",

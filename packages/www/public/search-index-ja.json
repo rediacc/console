@@ -4455,8 +4455,8 @@
   {
     "id": "search-11673",
     "content": "6.8 delete",
-    "body": "リポジトリとそのデータを削除する。設定エントリは保持される。--archive-config を使用すると、認証情報を deletedRepositories に移動し 'repo admin archive restore' で復元可能になる。位置引数として <ref> を取る。裸の名前はグランド系列に解決されるが、同じベース名を複数のリポジトリが共有している場合は拒否されるため、フォークを対象にするには 名前:タグ を指定すること rdc repo delete <ref> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --archive-config | 設定エントリを deletedRepositories に移動して後から復元可能にする | いいえ | - | | -y, --yes | 確認プロンプトをスキップする | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | | --skip-router-restart | バイナリ更新後のルートサーバーの再起動をスキップする | いいえ | - | | --dry-run | 変更を加えずに実行内容を表示する | いいえ | - | <a id=\"cli-local-repo-commit\"></a>",
-    "excerpt": "リポジトリとそのデータを削除する。設定エントリは保持される。--archive-config を使用すると、認証情報を deletedRepositories に移動し 'repo admin archive restore' で復元可能になる。位置引数として <ref> を取る。裸の名前はグランド...",
+    "body": "リポジトリとそのデータを削除する。フォークの設定エントリは deletedRepositories に移動し、名前が解放され、GUID は 'repo admin archive restore' で復元できる状態のまま残る。グランドリポジトリや他のマシンへプッシュ済みのリポジトリのエントリは、--archive-config を指定しない限り保持される。位置引数として <ref> を取る。裸の名前はグランド系列に解決されるが、同じベース名を複数のリポジトリが共有している場合は拒否されるため、フォークを対象にするには 名前:タグ を指定すること rdc repo delete <ref> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --archive-config | 設定エントリを deletedRepositories に移動して後から復元可能にする | いいえ | - | | -y, --yes | 確認プロンプトをスキップする | いいえ | - | | --debug | デバッグ出力を有効化 (ローカルモード) | いいえ | - | | --skip-router-restart | バイナリ更新後のルートサーバーの再起動をスキップする | いいえ | - | | --dry-run | 変更を加えずに実行内容を表示する | いいえ | - | <a id=\"cli-local-repo-commit\"></a>",
+    "excerpt": "リポジトリとそのデータを削除する。フォークの設定エントリは deletedRepositories に移動し、名前が解放され、GUID は 'repo admin archive restore' で復元できる状態のまま残る。グランドリポジトリや他のマシンへプッシュ済みのリポジトリのエントリは、--...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "68-delete",
