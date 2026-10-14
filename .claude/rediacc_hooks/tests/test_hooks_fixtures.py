@@ -989,6 +989,41 @@ def test_a_guard_judges_the_tree_the_command_touches(tmp_path):
     block.done()
 
 
+# --- block_worktree_add: a script run BY PATH is a program (#78afdc0b) --------- The guard read `-c`, heredocs and here-strings only, so a script on disk that runs `git worktree add` was allowed (rc 0 at c5c3036c3). It now reads `shellscan.interpreter_program`'s text: an untracked script is read, a tracked and unchanged one is reviewed code and is not.
+@pytest.mark.xdist_group("hooks-fixtures")
+def test_block_worktree_add_reads_a_script_run_by_path(tmp_path):
+    block = hookblocks.Block("worktree-add-by-path")
+    runs = tmp_path / "runs.py"
+    runs.write_text("import os\nos.system('git worktree add /tmp/x')\n", encoding="utf-8")
+    prints = tmp_path / "prints.py"
+    prints.write_text("print('never run git worktree add here')\n", encoding="utf-8")
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    (repo / "tracked.py").write_text(runs.read_text(encoding="utf-8"), encoding="utf-8")
+    git(repo, "add", "tracked.py")
+    git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed")
+    spec_deny = "check 2 guards/block_worktree_add.py"
+    spec_allow = "check 0 guards/block_worktree_add.py"
+    block.check(spec_deny, bash_json("python3 %s" % runs), "worktree-add: a script by path runs it")
+    block.check(
+        spec_deny,
+        bash_json("cd %s && python3 runs.py" % tmp_path),
+        "worktree-add: the same script by a path relative to a cd",
+    )
+    block.check(
+        spec_allow,
+        bash_json("python3 %s" % prints),
+        "worktree-add CONTROL: a script by path printing a sentence",
+    )
+    block.check(
+        spec_allow,
+        bash_json("python3 %s" % (repo / "tracked.py")),
+        "worktree-add CONTROL: a tracked, unchanged script is reviewed code and is not read",
+    )
+    block.done()
+
+
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The

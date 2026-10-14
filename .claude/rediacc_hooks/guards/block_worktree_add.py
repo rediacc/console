@@ -80,7 +80,7 @@ def _python_argv(run_):
 
 
 def _python_program(args):
-    """What a Python command line runs: `("c", code)`, `("stdin", None)`, or `("target", target, its own arguments)` for `-m <module>` or a script path.
+    """What a Python command line names as its entry: `("c", code)`, `("stdin", None)`, or `("target", target, its own arguments)` for `-m <module>` or a script path. Read only by `_target`, which needs the module NAME and the arguments after it; the program TEXT a run executes is `shellscan.interpreter_program`'s reading (#78afdc0b, see `_program_of` and `_script_verdict`).
 
     `-c` and `-m` may close a bundle of argument-less flags (`-Ic code`, `-Im mod`) and may carry their value attached (`-cCODE`, `-mrediacc_ci`). No target at all, or `-`, is a program read from stdin.
     """
@@ -271,8 +271,10 @@ def _program_of(name, args):
                     return _program_of(word, args[k + 1 :])
         return None
     if family == "python":
-        program = _python_program(args)
-        return (family, program[0], program[1] if program[0] == "c" else None)
+        # The option parse `shellscan.interpreter_program` reads with (#78afdc0b): the private one this replaced stepped over `--check-hash-based-pycs` alone, read its value as the script and never saw the `-c` after it.
+        kind, code = shellscan._program_parse(name.rsplit("/", 1)[-1], args)
+        mode = {"inline": "c", "stdin": "stdin"}.get(kind, kind)
+        return (family, mode, code if mode == "c" else None)
     mode, code = _eval_program(family, args)
     return (family, mode, code)
 
@@ -479,19 +481,40 @@ def _direct_verdict(cmd):
     return None
 
 
-def _program_verdict(cmd, depth):
-    """The arm a program `cmd` hands an interpreter trips, to MAX_PROGRAM_DEPTH programs deep."""
+def _code_verdict(family, code, depth):
+    return _python_verdict(code, depth) if family == "python" else _text_verdict(code, depth)
+
+
+def _program_verdict(cmd, depth, cwd=None):
+    """The arm a program `cmd` hands an interpreter trips, to MAX_PROGRAM_DEPTH programs deep: the texts `interpreter_programs` finds in the command line, then every script it runs BY PATH (`_script_verdict`)."""
     if depth >= MAX_PROGRAM_DEPTH:
         return None
     for family, code in interpreter_programs(cmd):
-        verdict = (
-            _python_verdict(code, depth + 1)
-            if family == "python"
-            else _text_verdict(code, depth + 1)
-        )
+        verdict = _code_verdict(family, code, depth + 1)
         if verdict:
             return verdict
+    return _script_verdict(cmd, depth, cwd)
+
+
+# A SCRIPT RUN BY PATH IS A PROGRAM TOO (#78afdc0b). `interpreter_programs` reads only what the command line itself holds (`-c`, `-e`, a heredoc, a here-string, a pipe), so `python3 scratch/wt.py` whose file runs `git worktree add` was allowed (rc 0, 2026-10-14) while the same text as `python3 - <<EOF` was refused. `shellscan.interpreter_program` is the reading the shell-write guards share: what an earlier run of the same command wrote into the script, else the file on disk;
+# a script tracked and unchanged from HEAD is reviewed code and is not read, and one that does not exist fails open. An "unjudgeable" script (written from a source the walk cannot read, or past its size cap) is refused when the command itself could spell the banned verb, the pre-filter `shell_verdict` applies inside a program.
+def _script_verdict(cmd, depth, cwd):
+    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
+        return None
+    for run_ in shellscan.every_run(cmd):
+        text, kind = shellscan.interpreter_program(run_, cmd, cwd)
+        if kind == "file" and text:
+            verdict = _code_verdict(_interpreter_name(run_.name), text, depth + 1)
+            if verdict:
+                return verdict
+        elif kind == "unjudgeable" and _could_spell(cmd):
+            return "unjudgeable"
     return None
+
+
+def _could_spell(text):
+    bare = re.sub(r"[\"'\\]", "", text)
+    return "worktree" in bare and ("add" in bare or "create" in bare)
 
 
 def shell_verdict(cmd, depth=0):
@@ -501,10 +524,8 @@ def shell_verdict(cmd, depth=0):
     """
     if cmd == "":
         return None
-    if depth > 0:
-        bare = re.sub(r"[\"'\\]", "", cmd)
-        if "worktree" not in bare or ("add" not in bare and "create" not in bare):
-            return None
+    if depth > 0 and not _could_spell(cmd):
+        return None
     return _direct_verdict(cmd) or _program_verdict(cmd, depth)
 
 
@@ -540,8 +561,14 @@ PORT_MESSAGE = (
 
 PROGRAM_NOTE = (
     "It was found inside the program text this command hands an interpreter (`python3 -c`, "
-    "a heredoc or here-string on stdin, `node -e`, `perl -e`, `ruby -e`): code an "
-    "interpreter runs is the same decision as the command typed at the shell."
+    "a heredoc or here-string on stdin, `node -e`, `perl -e`, `ruby -e`, or a script run by "
+    "path): code an interpreter runs is the same decision as the command typed at the shell."
+)
+
+UNJUDGEABLE_MESSAGE = (
+    "❌ BLOCKED: this command names a worktree verb and runs a script this hook cannot read: "
+    + shellscan.UNJUDGEABLE_REASON
+    + "."
 )
 
 EDGE_CASES = [
@@ -653,12 +680,17 @@ def run(ev):
     cmd = ev.field("tool_input", "command")
     if cmd == "":
         return hookio.ALLOW
-    messages = {"git": GIT_MESSAGE, "run.sh": RUN_SH_MESSAGE, "port": PORT_MESSAGE}
+    messages = {
+        "git": GIT_MESSAGE,
+        "run.sh": RUN_SH_MESSAGE,
+        "port": PORT_MESSAGE,
+        "unjudgeable": UNJUDGEABLE_MESSAGE,
+    }
     verdict = _direct_verdict(cmd)
     if verdict:
         ev.warn(messages[verdict])
         return hookio.DENY
-    verdict = _program_verdict(cmd, 0)
+    verdict = _program_verdict(cmd, 0, ev.field("cwd") or None)
     if verdict:
         ev.warn(messages[verdict] + " " + PROGRAM_NOTE)
         return hookio.DENY
