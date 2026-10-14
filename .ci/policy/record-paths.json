@@ -160,6 +160,26 @@
         {
           "id": "check:ci-suppression-liveness",
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:actions",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-ceph-image-pin",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-docker-image-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-real-provider-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:deps",
+          "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     },
@@ -277,6 +297,26 @@
         {
           "id": "check:ci-suppression-liveness",
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:actions",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-ceph-image-pin",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-docker-image-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-real-provider-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:deps",
+          "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     },
@@ -381,6 +421,26 @@
         {
           "id": "check:ci-suppression-liveness",
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:actions",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-ceph-image-pin",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-docker-image-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-real-provider-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:deps",
+          "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     },
@@ -475,8 +535,20 @@
       ],
       "notReaders": [
         {
+          "id": "check:actions",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-ceph-image-pin",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
           "id": "check:ci-devcontainer-pins",
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:ci-docker-image-freshness",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         },
         {
           "id": "check:ci-embed-asset-freshness",
@@ -487,8 +559,16 @@
           "reason": "Its one agent/ glob is the pin registry's literalExclude, an EXCLUSION: agent/** is dropped from the literal scan, and its scanners read only Dockerfile*, toolchain.env, *.sh, *.bash, *.yml, *.yaml, package-lock.json, go.mod, *.lock.json and .ceph-image-pin, none of which this record holds."
         },
         {
+          "id": "check:ci-real-provider-pins",
+          "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
           "id": "check:ci-suppression-liveness",
           "reason": "It imports scripts/lib/pins/registry.ts for its pin inventory; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
+        },
+        {
+          "id": "check:deps",
+          "reason": "It imports scripts/lib/pins/registry.ts through the npm driver of `npm run pins`; that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
         }
       ]
     }

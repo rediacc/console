@@ -48,8 +48,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WK_CEPH_IMAGE_REPO } from '../../packages/shared/src/config/well-known.generated.js';
+import { bumpRemedy } from '../lib/pins/remedy.js';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+// The seam: CEPH_IMAGE_PIN_ROOT stands a fixture tree (private/renet/.ceph-image-pin and the two Go files) in for the console, so the remedy test can drive an overdue review without editing the submodule.
+const ROOT =
+  process.env.CEPH_IMAGE_PIN_ROOT ||
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PIN_FILE = path.join(ROOT, 'private/renet/.ceph-image-pin');
 const GO_FILE = path.join(ROOT, 'private/renet/pkg/infra/ceph/provisioner.go');
 const CEPHPKG_FILE = path.join(ROOT, 'private/renet/pkg/infra/cephpkg/cephpkg.go');
@@ -306,6 +310,7 @@ function main(): number {
   const pin = parsePin(fs.readFileSync(PIN_FILE, 'utf8'));
   const goImage = goPinnedImage(fs.readFileSync(GO_FILE, 'utf8'));
   const problems: string[] = [];
+  let overdue = false;
 
   if (!fs.existsSync(CEPHPKG_FILE)) {
     console.error(
@@ -342,11 +347,14 @@ function main(): number {
   if (pin.review) {
     const left = daysUntil(pin.review, new Date());
     if (left < 0) {
+      overdue = true;
       problems.push(
         `the pin is OVERDUE for review by ${-left} day(s) (review=${pin.review}).\n` +
           `      This is not a formality: when Ubuntu's ceph-common leaves the ${pin.hostVersion?.split('.')[0] ?? '?'}.x\n` +
-          '      line, this pin must move with it or the skew returns reversed. The pin file\n' +
-          '      carries the full procedure.'
+          '      line, this pin must move with it or the skew returns reversed. The fix below\n' +
+          '      takes the newest dated quay tag of the same host-version and sets review= 90\n' +
+          '      days out; when no newer tag exists it refuses, and the pin file carries the\n' +
+          '      review procedure.'
       );
     } else if (left <= 14) {
       console.log(`⚠ Ceph image pin is due for review in ${left} day(s) (${pin.review}).`);
@@ -357,6 +365,7 @@ function main(): number {
     console.error(`\n✗ Ceph image pin: ${problems.length} problem(s)\n`);
     for (const p of problems) console.error(`    - ${p}`);
     console.error(`\n  Pin file: ${path.relative(ROOT, PIN_FILE)}`);
+    if (overdue) console.error(`\n${bumpRemedy('ceph-image')}`);
     return 1;
   }
 

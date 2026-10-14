@@ -2489,12 +2489,6 @@
     {
       "scanner": "literal",
       "repo": ".",
-      "file": ".ci/rediacc_ci/tests/gates/test_gate_embed_asset_freshness.py",
-      "reason": "BLOCKER: the gate test builds a fixture tree whose versions are chosen inputs to the upgrade path under test, independent of the real pin; moving them with a bump would change what the test exercises"
-    },
-    {
-      "scanner": "literal",
-      "repo": ".",
       "file": "docs/design/spec/09-csi-driver.md",
       "match": "verified current at research time|VolumeGroupSnapshot",
       "reason": "BLOCKER: these spec 09 lines record what the research found current on its date (the open-questions list); the unit table above them is the live copy and is a site"

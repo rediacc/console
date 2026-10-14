@@ -31,6 +31,16 @@ import { spawnSync } from 'node:child_process';
  * unknown rather than pretended to be a pass. mcr.microsoft.com is anonymous and NOT rate
  * limited, so images served from there never need credentials.
  *
+ * THE FIX LINE. A newly stale pin names `npm run pins -- bump <id> --major --reason "<why>"`
+ * when a `docker` leaf of .ci/config/pins.json claims its Dockerfile (scripts/lib/pins/
+ * remedy.ts builds it; the docker driver takes a series move only as a major). A FROM line
+ * that only the `docker` family scope claims has no leaf the pins command can move, and the
+ * finding says so rather than naming a command that would refuse.
+ *
+ * DOCKER_HUB_API_BASE points the tag listings at another host (a stub in the remedy test);
+ * set, no credential is sent. DOCKER_FRESHNESS_ROOT points the scan and the baseline at a
+ * fixture git tree.
+ *
  * Usage:
  *   npx tsx scripts/gates/check-docker-image-freshness.ts [--selftest] [--json]
  */
@@ -146,6 +156,8 @@ function readGitmodulePaths(): string[] {
 
 import { WK_IMAGE_REGISTRY } from '../../packages/shared/src/config/well-known.generated.js';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { loadRegistry } from '../lib/pins/registry.js';
+import { bumpRemedy } from '../lib/pins/remedy.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
   baselineAdditions,
@@ -154,7 +166,8 @@ import {
   writeBaselineVerdict,
 } from '../lib/shrink-only-baseline.js';
 
-const ROOT = path.resolve(import.meta.dirname, '..', '..');
+// The seam: DOCKER_FRESHNESS_ROOT stands a fixture git tree (its Dockerfiles and its baseline) in for the console, so the remedy test can plant a newly stale pin without writing to this tree.
+const ROOT = process.env.DOCKER_FRESHNESS_ROOT || path.resolve(import.meta.dirname, '..', '..');
 const BASELINE = path.join(ROOT, 'scripts/data/docker-image-freshness-baseline.json');
 
 export interface Pin {
@@ -263,9 +276,11 @@ function hubToken(): Promise<string | null> {
 /** Why a listing failed, so "unknown" can name its own cause instead of guessing. */
 const lastFailure = new Map<string, string>();
 
+const HUB_BASE = process.env.DOCKER_HUB_API_BASE;
+
 async function listHubTags(repo: string): Promise<TagInfo[] | null> {
-  const token = await hubToken();
-  const url = `https://hub.docker.com/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated`;
+  const token = HUB_BASE ? null : await hubToken();
+  const url = `${HUB_BASE || 'https://hub.docker.com'}/v2/repositories/${repo}/tags?page_size=100&ordering=last_updated`;
 
   // A REJECTED CREDENTIAL MUST NOT BE WORSE THAN NO CREDENTIAL.
   //
@@ -301,6 +316,23 @@ async function listHubTags(repo: string): Promise<TagInfo[] | null> {
   }
   lastFailure.set(repo, why);
   return null;
+}
+
+/** The `docker` leaf of .ci/config/pins.json whose site is this Dockerfile (repo-relative), or null when only the family scope claims it. */
+function leafFor(file: string): string | null {
+  for (const e of loadRegistry().entries) {
+    if (e.kind !== 'leaf' || e.driver !== 'docker') continue;
+    if (e.sites.some((s) => (s.repo === '.' ? s.file : `${s.repo}/${s.file}`) === file))
+      return e.id;
+  }
+  return null;
+}
+
+/** The fix line for one newly stale pin. */
+function remedyLine(p: Pin): string {
+  const id = leafFor(p.file);
+  if (id !== null) return bumpRemedy(id, { major: true });
+  return `  fix: none yet; no docker leaf of .ci/config/pins.json claims ${p.file}, so \`npm run pins\` cannot move ${p.image}:${p.tag}. Add the leaf (driver docker, a site on this FROM line), then run \`npm run pins -- bump <its id> --major --reason "<why>"\`.`;
 }
 
 function selftest(): number {
@@ -419,6 +451,7 @@ async function main(): Promise<void> {
   const win = getMinReleaseAgeMs();
   const now = Date.now();
   const stale: string[] = [];
+  const stalePins: Pin[] = [];
   // BASELINE IDENTITY, kept separate from the DISPLAY string above it. `stale[i]` embeds `file:line` for a human to find the pin; `staleKeys[i]` (same index, same order) is `image:tag` alone, which `seen` already proves is globally unique. A baseline keyed on the display string re-keys itself on any Dockerfile edit that shifts the FROM line -- a comment added above it, an
   // unrelated stage inserted earlier in the file -- reporting the SAME unresolved debt as simultaneously "newly stale" (new key, not in the old baseline) and "no longer stale" (old key, missing from the new run). Same
   // shape as the CSS-selector re-keying trap this repo already paid for once;
@@ -445,6 +478,7 @@ async function main(): Promise<void> {
     if (newer.length > 0) {
       stale.push(`${p.file}:${p.line}  ${p.image}:${p.tag}  ->  ${newer[0].name}`);
       staleKeys.push(`${p.image}:${p.tag}`);
+      stalePins.push(p);
     }
   }
 
@@ -516,14 +550,18 @@ async function main(): Promise<void> {
   const base: string[] = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : [];
   const known = new Set(base);
   // Filtered by INDEX against staleKeys, not re-derived from the display string: `stale[i]` and `staleKeys[i]` are the same pin, one for a human, one for identity.
-  const fresh = stale.filter((_, i) => !known.has(staleKeys[i]));
+  const freshIdx = stale.flatMap((_, i) => (known.has(staleKeys[i]) ? [] : [i]));
+  const fresh = freshIdx.map((i) => stale[i]);
   const fixed = base.filter((b) => !keyed.includes(b));
 
   if (fresh.length > 0) {
     console.error(
       `\n${RED}✗${NC} ${fresh.length} base image pin(s) newly stale past the soak window:\n`
     );
-    for (const s of fresh) console.error(`    ${s}`);
+    for (const i of freshIdx) {
+      console.error(`    ${stale[i]}`);
+      console.error(remedyLine(stalePins[i]));
+    }
     errorLines(
       `\nThe window is the SHARED one from .ci/config/release-age.json (${win / 60000} min,`,
       'rounded up to the next UTC day) so a day of upgrades surfaces together.',

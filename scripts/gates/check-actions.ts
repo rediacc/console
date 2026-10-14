@@ -48,6 +48,7 @@ import { fileURLToPath } from 'node:url';
 import { collectActionRefs } from '../lib/action-refs.js';
 import { parseBlockeredList, verifyAllBlockers } from '../lib/blocker-validator.js';
 import { BLUE, DIM, GREEN, NC, RED, YELLOW } from '../lib/console.js';
+import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
@@ -449,24 +450,10 @@ async function checkActions(): Promise<void> {
       console.log(`    ${DIM}${action.releaseUrl}${NC}`);
     }
 
-    console.log(`\n${YELLOW}To upgrade — resolves the new SHA and rewrites every pin:${NC}\n`);
-    for (const action of mustUpgrade) {
-      if (!action.sha) continue;
-      // repos/<repo>/commits/<tag> resolves to the commit SHA for BOTH lightweight and annotated tags, unlike git/ref/tags which returns the tag object for annotated tags and needs a second dereference.
-      console.log(`  NEW=$(gh api repos/${action.name}/commits/${action.latest} --jq .sha) && \\`);
-      // Search .github, not .github/workflows: composite actions under .github/actions/*/action.yml pin third-party actions too.
-      console.log(`    find .github -name '*.yml' -o -name '*.yaml' | xargs sed -i \\`);
-      console.log(
-        `      "s|${action.name}@${action.sha}\\( *\\)# ${action.version}|${action.name}@\${NEW}\\1# ${action.latest}|g"`
-      );
-    }
-    console.log(`\n  Then re-run: ${YELLOW}npm run check:actions${NC}`);
-    console.log(
-      `  Verify nothing was missed: ${DIM}grep -rn "<old-sha>" .github/${NC} should return nothing,`
-    );
-    console.log(
-      `  and every workflow must still parse. A major bump (vN -> vN+1) needs a real CI run.\n`
-    );
+    // THE ONE COMMAND. `pins bump actions` resolves each new SHA from its tag, rewrites every `uses:` pin, the gate-bind UPLOAD_ARTIFACT_PIN constant and the actions-allowlist `@sha` patterns, runs `gate-bind --write` and the gates, and restores on failure. The sed recipe printed here before missed the last two, so the next `gate-bind --write` reverted its bump.
+    console.log(`\n${YELLOW}To upgrade every outdated action in one transaction:${NC}\n`);
+    console.log(bumpRemedy('actions'));
+    console.log(`\n  A major bump (vN -> vN+1) still needs a real CI run before it merges.\n`);
     console.log(`  ${DIM}If an upgrade genuinely cannot be taken, record it in`);
     console.log(
       `  .ci/policy/.actions-upgrade-blocklist (one per line, BLOCKER reason required):${NC}`

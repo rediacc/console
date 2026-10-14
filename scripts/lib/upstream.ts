@@ -334,8 +334,6 @@ interface ReportHints {
   sources: string;
   /** How to put a missing pin back. Omitted by a gate whose pins cannot be missing. */
   noPinFix?: string[];
-  /** A missing pin is the check run's finding; --upgrade prints it and leaves the verdict to the check. */
-  noPinIsRed?: boolean;
 }
 
 /** Where every source of one gate run ended up. See the header. */
@@ -403,10 +401,9 @@ export class PinTally {
         `  scheme against ${hints.sources}.`
       );
     }
-    const noPinIsRed = hints.noPinIsRed ?? true;
     if (this.noPin.length > 0) {
       console.error('');
-      console.error(`${noPinIsRed ? RED : YELLOW}✗ a watched source has no pin to compare:${NC}`);
+      console.error(`${RED}✗ a watched source has no pin to compare:${NC}`);
       for (const line of this.noPin) console.error(`  ${line}`);
       errorLines(...(hints.noPinFix ?? []));
     }
@@ -424,7 +421,7 @@ export class PinTally {
     return (
       this.notCompared.length +
       this.unreadable.length +
-      (noPinIsRed ? this.noPin.length : 0) +
+      this.noPin.length +
       Math.abs(this.total - seen)
     );
   }

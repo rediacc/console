@@ -95,7 +95,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
-from rediacc_ci.core import toolchain
+from rediacc_ci.core import pins, toolchain
 from rediacc_ci.well_known import ETC_DIR
 
 # The npm major every lockfile is written in and every lane installs with (issue #587). CLAUDE.md's npm section is the prose half of this constant; the exact version is `NPM_VERSION` in `.devcontainer/toolchain.env`, and this only bounds it.
@@ -604,10 +604,8 @@ def main(argv: list[str] | None = None) -> int:
     for lock in lockfiles:
         directory = (root / lock).parent
         rel_dir = str(pathlib.Path(lock).parent)
-        fix = "    cd %s && npx -y %s install --package-lock-only --ignore-scripts" % (
-            rel_dir,
-            npm_spec,
-        )
+        # THE ONE COMMAND (Design 4 of agent/plans/PLAN-pins-command.md): `pins lockfiles` rewrites this directory's lockfile with the pinned npm, the canonical pass the hand-run recipe here used to spell out.
+        fix = pins.lockfiles_remedy(rel_dir)
 
         # SKIP LOUDLY. The quality-security job checks out WITHOUT submodules, so private/account* and private/growth* legitimately do not exist there. A silent skip is how a gate goes green while checking nothing.
         if not (directory / "package.json").is_file():

@@ -110,7 +110,7 @@ from collections.abc import Callable
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import age as agecheck
-from rediacc_ci.core import allowlist, upstream
+from rediacc_ci.core import allowlist, pins, upstream
 from rediacc_ci.policy_paths import policy_rel
 
 # The list moved to `.ci/policy/` in W4 P2 (commit b80552370). It used to be spelled out here, on the argument that the TypeScript seam is unreachable from Python and a literal cannot half-land while there is one location at a time. The first half of that stopped being true in W4 P4a: `rediacc_ci.policy_paths` is the seam's Python twin, a pure join with the same three rules, and
@@ -752,6 +752,9 @@ def main(argv: list[str] | None = None) -> int:
         log.warn("Outdated Go direct dependencies (minor/patch - must upgrade):")
         for line in all_minor:
             print(line)
+        # THE ONE COMMAND (Design 4 of agent/plans/PLAN-pins-command.md): the go-mod driver runs `go get` plus tidy per module, mirrors license-mint and runs the gates in one transaction.
+        print()
+        print(pins.bump_remedy("go-mod"))
     if all_major:
         print()
         log.info("Major version updates available (manual upgrade required):")
