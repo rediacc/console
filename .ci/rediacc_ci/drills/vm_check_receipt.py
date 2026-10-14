@@ -77,6 +77,14 @@ def validate(receipt: object) -> list[str]:
     tree = receipt.get("tree")
     if not isinstance(tree, str) or not _TREE.match(tree):
         errors.append("tree is not a git object id")
+    # admit reads these with .get, so a truthy non-object would raise instead of refusing.
+    errors.extend(
+        f"{key} is not an object"
+        for key in ("renet", "trigger", "fleet", "teardown")
+        if key in receipt and not isinstance(receipt[key], dict)
+    )
+    if "forks" in receipt and not isinstance(receipt["forks"], list):
+        errors.append("forks is not a list")
     steps = receipt.get("steps")
     if not isinstance(steps, list):
         errors.append("steps is not a list")
