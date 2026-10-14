@@ -92,7 +92,7 @@ This gate asks two upstreams: the Go module proxy (through `go list -u`) and OSV
 
 A `go list` that fails on the NETWORK (its stderr carries `dial tcp`, `no such host`, a timeout, or a 5xx from the proxy) is retried, and once the budget is spent it is an UPSTREAM REACHABILITY FAILURE naming the proxy host, not the toolchain-shaped probe failure the twin printed. A `go list` that fails for any other reason is the twin's probe failure exactly as before, byte for byte.
 
-An OSV that cannot be asked used to leave the demand in place with a warning ("demanding it unscreened"), so an outage turned into a "must upgrade" finding naming a version nobody had screened. It is now a module that was NOT compared, red with the same sentence. `GO_DEPS_OSV_URL` points the query at another host (a stub in the gate test). The step runs the gate with no run_external_gate wrapper, so the nightly is red too; the `no-external-quality` label on a pull request is the one hold, and the job's announcer names this gate.
+An OSV that cannot be asked used to leave the demand in place with a warning ("demanding it unscreened"), so an outage turned into a "must upgrade" finding naming a version nobody had screened. It is now a module that was NOT compared, red with the same sentence. `GO_DEPS_OSV_URL` points the query at another host (a stub in the gate test). The step runs the gate with no wrapper, so the nightly is red too; the `no-external-quality` label on a pull request is the one hold, and the job's announcer names this gate.
 """
 
 import datetime as dt

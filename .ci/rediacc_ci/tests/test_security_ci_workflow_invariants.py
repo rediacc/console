@@ -1105,21 +1105,6 @@ def test_a_conformant_upstream_gate_pair_is_clean_and_reports_its_shape() -> Non
     assert shape == ["%s in quality-go" % gate for gate in ci_workflow_invariants.UPSTREAM_GATES]
 
 
-def test_the_pre_ruling_shape_wrapped_and_soft_on_the_nightly_is_refused() -> None:
-    """THE SHAPE THE RULING RETIRED: the step goes through run_external_gate with the cadence's mode, so `soft` on a schedule turns exit 1 into a warning."""
-    ci, quality = upstream_pair()
-    step = upstream_step(quality, "check:ci-external-links")
-    step["run"] = "PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate " + step["run"]
-    step["env"]["EXTERNAL_QUALITY_MODE"] = "${{ inputs.external_quality }}"
-    assert upstream_kinds(ci, quality) == ["upstream-gate-softened"]
-
-
-def test_a_stray_mode_variable_without_the_wrapper_is_refused() -> None:
-    ci, quality = upstream_pair()
-    upstream_step(quality, "check:ci-real-provider-pins")["env"]["EXTERNAL_QUALITY_MODE"] = "hard"
-    assert upstream_kinds(ci, quality) == ["upstream-gate-softened"]
-
-
 @pytest.mark.parametrize(
     "condition",
     [
@@ -1243,21 +1228,6 @@ def test_the_real_workflow_holds_every_external_gate_hard(tmp_path: pathlib.Path
     assert "external gates hold (%d gate(s)" % len(REAL_JOB) in proc.stderr
     for gate, job in REAL_JOB.items():
         assert "%s in %s" % (gate, job) in proc.stderr
-
-
-@pytest.mark.parametrize("gate", sorted(REAL_JOB))
-def test_rewrapping_a_real_external_step_is_refused(tmp_path: pathlib.Path, gate: str) -> None:
-    """THE PLANT ON THE REAL FILE: put one step back behind the wrapper, as it was before the ruling, and the gate is red naming it."""
-    text = cut_once(
-        REAL_QUALITY.read_text(encoding="utf-8"),
-        "        run: npm run %s\n" % gate,
-        "        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run %s\n"
-        % gate,
-    )
-    proc = run_real(tmp_path, QUALITY_WORKFLOW_FILE=text)
-    assert proc.returncode == 1, proc.stderr
-    assert "INVARIANT-FAIL: upstream-gates: %s (%s step" % (gate, REAL_JOB[gate]) in proc.stderr
-    assert "hard on every cadence" in proc.stderr
 
 
 @pytest.mark.parametrize(

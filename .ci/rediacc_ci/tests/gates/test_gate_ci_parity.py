@@ -507,24 +507,8 @@ def test_parity_surface_is_computed_not_named(gate):
     gate.log_pass("the parity surface is computed by uses: iteration, not by naming files")
 
 
-def test_external_wrapper_is_transparent(gate):
-    """`rediacc_ci.quality.run_external_gate` executes its arguments and only changes what a failure MEANS (soft on schedule, hard on a PR). The resolver must see through it to the wrapped gate, or every external gate's CI pointer breaks the moment it adopts the wrapper."""
-    with harness.temp_dir() as d:
-        scaffold(
-            d,
-            "      - name: Alpha\n"
-            "        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.run_external_gate npm run check:ci-alpha",
-        )
-        manifest(d, MANIFEST_ALPHA)
-        result = run_gate(d)
-        gate.assert_exit(
-            0, result, "a gate wrapped in run_external_gate must still count as CI-covered"
-        )
-    gate.log_pass("run_external_gate is transparent to leaf resolution")
-
-
 def test_unknown_wrapper_is_not_transparent(gate):
-    """CONTROL for the case above: transparency is specific to the known wrapper. An arbitrary wrapper script hiding the same command must still fail the pointer check, or any indirection would count as coverage."""
+    """No wrapper is transparent: a script that hides a gate's command behind its own name must fail the pointer check, or any indirection would count as coverage."""
     with harness.temp_dir() as d:
         scaffold(
             d,
@@ -542,7 +526,7 @@ def test_unknown_wrapper_is_not_transparent(gate):
 def test_the_subject_and_its_seams_still_exist(gate):
     """ADDED BY THE PORT, and it is the case that keeps every other one honest.
 
-    Every case above points the subject at a fixture through two environment variables. If the subject were renamed, or either seam removed, `npx tsx` would fail identically for all 22 cases and several of them EXPECT a non-zero exit -- so a subject that no longer exists would satisfy them. Naming the seams in the source is the cheap refutation of that.
+    Every case above points the subject at a fixture through two environment variables. If the subject were renamed, or either seam removed, `npx tsx` would fail identically for all 21 cases and several of them EXPECT a non-zero exit -- so a subject that no longer exists would satisfy them. Naming the seams in the source is the cheap refutation of that.
     """
     if not GATE.is_file():
         gate.log_fail(

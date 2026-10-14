@@ -60,7 +60,7 @@
  * second host and no second request.
  *
  * HARD ON EVERY CADENCE. The step runs `npm run check:ci-devcontainer-pins`
- * directly, with no run_external_gate wrapper, so an exit 1 is red on a pull
+ * directly, with no wrapper, so an exit 1 is red on a pull
  * request, on the nightly and on a dispatch. The `no-external-quality` label on
  * a pull request is the one way the step does not run, and the job's "Announce
  * pin gates held by label" step names this gate in the log when that happens.
