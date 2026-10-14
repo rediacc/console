@@ -1656,15 +1656,26 @@ def test_the_word_secrets_outside_an_expression_is_not_a_secret() -> None:
     assert pins_kinds(doc) == []
 
 
-@pytest.mark.parametrize(
-    "write",
-    [
-        'echo "rc=$rc" >> "$GITHUB_OUTPUT"',
-        'echo "rc=${rc}" >> "${GITHUB_OUTPUT}"',
-        "echo rc=$rc >> $GITHUB_OUTPUT",
-        'echo rc=${rc} >> "$GITHUB_OUTPUT"',
-    ],
-)
+def _rc_write_spellings() -> list[str]:
+    """Every accepted spelling of the rc write: each operand fully quoted or bare, and `$name` or `${name}`, so 4 x 4 = 16."""
+    spellings = []
+    for rc_var in ("$rc", "${rc}"):
+        for rc_quoted in (True, False):
+            for out_var in ("$GITHUB_OUTPUT", "${GITHUB_OUTPUT}"):
+                for out_quoted in (True, False):
+                    left = '"rc=%s"' % rc_var if rc_quoted else "rc=%s" % rc_var
+                    right = '"%s"' % out_var if out_quoted else out_var
+                    spellings.append("echo %s >> %s" % (left, right))
+    return spellings
+
+
+def test_the_rc_write_spelling_matrix_is_all_sixteen_distinct_combinations() -> None:
+    spellings = _rc_write_spellings()
+    assert len(spellings) == 16
+    assert len(set(spellings)) == 16
+
+
+@pytest.mark.parametrize("write", _rc_write_spellings())
 def test_each_accepted_spelling_of_the_rc_write_keeps_the_red_path(write) -> None:
     doc = pins_doc()
     doc["jobs"]["soaked"]["steps"][1]["run"] = (

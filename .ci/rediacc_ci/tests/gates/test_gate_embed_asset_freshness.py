@@ -563,3 +563,23 @@ def test_hasown_fixture_lookup(gate):
     own = probe(gate, {"base": "k3s", "fixture": {"k3s": {"version": "9.9.9"}}})
     gate.assert_eq(own["hit"], {"version": "9.9.9"}, "CONTROL: an own key is still found")
     gate.log_pass("a prototype-named base is absent from the fixture, an own key is found")
+
+
+def test_pins_driver_selftest_holds_the_refusals_the_retired_upgrade_cases_proved(gate):
+    """The retired `--upgrade` cases (the shared snapshotter clone, a pin with no published checksum, an unresolvable commit, the version moving with its commit) live in the embed pins driver's selftest, which no other gate runs. Running it here keeps them proved: it must exit 0 and print a PASS line for each."""
+    require_submodule(gate)
+    npx = harness.require_tool(
+        "npx", "install node; the selftest is a TypeScript program driven through tsx"
+    )
+    result = harness.run(
+        [npx, "tsx", "scripts/lib/pins/drivers/embed-selftest.ts"], cwd=paths.repo_root()
+    )
+    gate.assert_exit(0, result, "the embed pins driver selftest must pass")
+    for line in (
+        "csisnapshotter bump: Dockerfile commit and both versions move together",
+        "a release whose tag cannot be resolved to a commit is refused whole",
+        "a held sibling that shares the clone refuses the bump of the other",
+        "rsync bump: no published checksum, so the plan is refused rather than leaving the digest behind",
+    ):
+        gate.assert_contains(result.out, "PASS  " + line, "the selftest proves: " + line)
+    gate.log_pass("the embed driver selftest proves the retired upgrade properties")

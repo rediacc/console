@@ -114,7 +114,7 @@ def argv_asserts(tree) -> set[int]:
     skipped: set[int] = set()
 
     def reads(expr, tainted) -> bool:
-        # A value is an argument vector when any operand it is built from is one: concatenation, unpacking, `or`/`and`, a conditional, a display. A call result is untainted unless it is a sequence wrapper or argparse result, a method called ON a tainted receiver (`sys.argv.copy()`), or a call handed a tainted positional argument that is returned whole by a wrapper; any other call (`build_args()`, `run(argv)`) is untainted by design, because its result is as often the output of a run as an argv and counting it would put every test that passes `argv` on to a subprocess helper on the offender list.
+        # A value is an argument vector when any operand it is built from is one: concatenation, unpacking, `or`/`and`, a conditional, a display. A call result is untainted unless it is a sequence wrapper or argparse result, a method called ON a tainted receiver (`sys.argv.copy()`), a method on a literal handed a tainted argument (`" ".join(sys.argv)`), or a call handed a tainted positional argument that is returned whole by a wrapper; any other call (`build_args()`, `run(argv)`) is untainted by design, because its result is as often the output of a run as an argv and counting it would put every test that passes `argv` on to a subprocess helper on the offender list.
         if isinstance(expr, ast.Name):
             return expr.id in tainted
         if isinstance(expr, ast.Attribute):
@@ -138,6 +138,9 @@ def argv_asserts(tree) -> set[int]:
             if isinstance(func, ast.Name) and func.id in SEQUENCE_WRAPPERS:
                 return any(reads(a, tainted) for a in expr.args)
             if isinstance(func, ast.Attribute):
+                # A method on a literal (`" ".join(sys.argv)`) is built from its arguments; any other attribute call (`subprocess.run(argv)`) stays untainted by design.
+                if isinstance(func.value, ast.Constant):
+                    return any(reads(a, tainted) for a in expr.args)
                 return reads(func.value, tainted)
         return False
 
@@ -794,6 +797,13 @@ print("unconditional reseed")
 
 args = sys.argv.copy()
 assert "%s" in args
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (line = ' '.join(sys.argv))": """import sys
+
+line = " ".join(sys.argv)
+assert "%s" in line
 print("unconditional reseed")
 """
     % FLAG,
