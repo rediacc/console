@@ -14,8 +14,8 @@ The prompt names a session prefix and a context epoch (`run <me8> <epoch>`) and 
 ## Steps
 
 1. `python3 .claude/hooks/stop/wl_effort_tune.py run <me8> <epoch>`. It reads agent/ledgers/effort-outcomes.jsonl over a 14-day window and writes `effort.json.patch`, `evidence.md`, `run.json` and, for each judge-error shape with three rows or more, `judge-rules/test_judge_rule_<shape>.py`. Exit 1 means the candidate table failed the effort-table rule; the problems are in `run.json` under `gate`.
-2. Test the candidate on a scratch copy, never on the tree: copy `.claude/config/effort.json` to `<scratch>/.claude/config/effort.json`, run `git apply <run dir>/effort.json.patch` from `<scratch>`, then `python3 .ci/scripts/quality/check_plan_record.py --effort-table <scratch>/.claude/config/effort.json`, and `pytest .claude/rediacc_hooks/tests/test_wl_effort.py .claude/rediacc_hooks/tests/test_wl_effort_tune.py -q`.
-3. Run each generated judge-rule test with pytest and read the exit code.
+2. Test the candidate on a scratch copy, never on the tree: copy `.claude/config/effort.json` to `<scratch>/.claude/config/effort.json`, run `git apply <run dir>/effort.json.patch` from `<scratch>`, then `python3 .ci/scripts/quality/check_plan_record.py --effort-table <scratch>/.claude/config/effort.json`, and `.ci/cache/toolchain/uv-tools/pytest/bin/pytest .claude/rediacc_hooks/tests/test_wl_effort.py .claude/rediacc_hooks/tests/test_wl_effort_tune.py -q` (the repo's pinned pytest; a bare `pytest` is not on PATH).
+3. Run each generated judge-rule test with that same pytest binary and read the exit code.
 4. Read `evidence.md` against the observations. A candidate the observations contradict (a check the session called useful that the numbers demote) is named in the report with both sides; the numbers are not overruled silently, and neither are the observations.
 
 ## Output
