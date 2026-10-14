@@ -253,7 +253,7 @@ def test_cold_cache_downloads_verifies_and_prints_the_cache_dir(
     old, new = run_both(fixture)
     assert old.returncode == 0, old.stderr
     assert old.stdout == "%s\n" % (fixture / ".ci" / "cache" / "bin")
-    assert old.stderr == "ensure-nfpm: fetching nfpm 2.45.0 for x86_64\n"
+    assert old.stderr == "ensure-nfpm: fetching nfpm 2.48.0 for x86_64\n"
     assert_same(old, new)
     # The port really extracted, not merely reported.
     assert os.access(str(fixture / ".ci" / "cache" / "bin" / "nfpm"), os.X_OK)
@@ -265,7 +265,7 @@ def test_a_failing_curl_exits_with_curls_own_status(tmp_path: pathlib.Path) -> N
     old, new = run_both(fixture)
     assert old.returncode == 22
     assert old.stdout == ""
-    assert old.stderr == "ensure-nfpm: fetching nfpm 2.45.0 for x86_64\n"
+    assert old.stderr == "ensure-nfpm: fetching nfpm 2.48.0 for x86_64\n"
     assert_same(old, new)
     assert not (fixture / ".ci" / "cache").exists(), "the cache dir is created only after the sum"
 
@@ -321,7 +321,7 @@ def test_defect_1_a_warm_cache_is_never_checked_against_the_pin(
 ) -> None:
     """`ensure-nfpm.sh:42-45` asks the cached binary only whether it ANSWERS.
 
-    So a `.ci/cache/bin/nfpm` left from an older pin survives a bump in `constants.sh` forever, and this measures it: the pin says 2.45.0, the cache says 1.0.0-stale, and both sides exit 0 handing out the stale directory without a single network call. Fixing this is outside the port's ownership (it would change what two workflows and a registered gate do), so it is reproduced and
+    So a `.ci/cache/bin/nfpm` left from an older pin survives a bump in `constants.sh` forever, and this measures it: the pin says 2.48.0, the cache says 1.0.0-stale, and both sides exit 0 handing out the stale directory without a single network call. Fixing this is outside the port's ownership (it would change what two workflows and a registered gate do), so it is reproduced and
     pinned here.
     """
     fixture = build_fixture(tmp_path, warm_version="1.0.0-stale", curl=CURL_REFUSE)
@@ -337,7 +337,7 @@ def test_defect_1_a_warm_cache_is_never_checked_against_the_pin(
         check=False,
     )
     assert "1.0.0-stale" in stale.stdout
-    assert 'readonly NFPM_VERSION="2.45.0"' in CONSTANTS.read_text(encoding="utf-8")
+    assert 'readonly NFPM_VERSION="2.48.0"' in CONSTANTS.read_text(encoding="utf-8")
 
 
 def test_defect_2_any_nfpm_on_path_wins_over_the_pin(tmp_path: pathlib.Path) -> None:
@@ -423,9 +423,9 @@ def test_a_planted_fix_of_defect_1_is_caught_by_the_differential(
 
 
 def test_pure_helpers_answer_the_twins_literals() -> None:
-    assert ensure_nfpm.tarball_name("2.45.0") == "nfpm_2.45.0_Linux_x86_64.tar.gz"
-    assert ensure_nfpm.download_url("2.45.0", "t.tar.gz") == (
-        "https://github.com/goreleaser/nfpm/releases/download/v2.45.0/t.tar.gz"
+    assert ensure_nfpm.tarball_name("2.48.0") == "nfpm_2.48.0_Linux_x86_64.tar.gz"
+    assert ensure_nfpm.download_url("2.48.0", "t.tar.gz") == (
+        "https://github.com/goreleaser/nfpm/releases/download/v2.48.0/t.tar.gz"
     )
     assert ensure_nfpm.is_pinned_arch("x86_64")
     assert ensure_nfpm.is_pinned_arch("amd64")
@@ -449,7 +449,7 @@ def test_bin_dir_is_the_twins_cache_path() -> None:
 
 def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `ensure-nfpm.sh` is deleted, so the prefix names the module a reader can run and find."""
-    assert ensure_nfpm.fetching_message("2.45.0", "x86_64").startswith(
+    assert ensure_nfpm.fetching_message("2.48.0", "x86_64").startswith(
         "rediacc_ci.build.ensure_nfpm: "
     )
 
@@ -457,11 +457,11 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
 def test_the_two_messages_are_the_twins_text_up_to_the_prefix() -> None:
     """Review findings db7749af.1 and db7749af.2: the docstrings say each message is the twin's `:58`/`:66` text with the port's prefix in place of `ensure-nfpm:`. Both halves pinned: the port's prefix, and the twin's bytes once `as_twin` maps it back."""
     unpinned = ensure_nfpm.unpinned_arch_message("arm64")
-    fetching = ensure_nfpm.fetching_message("2.45.0", "x86_64")
+    fetching = ensure_nfpm.fetching_message("2.48.0", "x86_64")
     for message in (unpinned, fetching):
         assert message.startswith("rediacc_ci.build.ensure_nfpm: "), message
     assert as_twin(unpinned) == (
         "ensure-nfpm: no pinned checksum for arm64 in .ci/config/constants.sh -- "
         "add one rather than downloading unverified bytes"
     )
-    assert as_twin(fetching) == "ensure-nfpm: fetching nfpm 2.45.0 for x86_64"
+    assert as_twin(fetching) == "ensure-nfpm: fetching nfpm 2.48.0 for x86_64"

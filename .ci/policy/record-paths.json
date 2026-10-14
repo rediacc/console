@@ -130,6 +130,10 @@
       ],
       "notReaders": [
         {
+          "id": "check:ci-gate-manifest",
+          "reason": "Its dead-id oracle walks tracked files and drops every path starting with agent/ (scripts/gates/check-gate-manifest.ts deadIdCorpus), so the agent/ the derivation cites at :487 is an exclusion and no file under agent/ is read."
+        },
+        {
           "id": "check:ci-paths-origin",
           "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
         },
@@ -275,6 +279,10 @@
       ],
       "notReaders": [
         {
+          "id": "check:ci-gate-manifest",
+          "reason": "Its dead-id oracle walks tracked files and drops every path starting with agent/ (scripts/gates/check-gate-manifest.ts deadIdCorpus), so the agent/ the derivation cites at :487 is an exclusion and no file under agent/ is read."
+        },
+        {
           "id": "check:ci-paths-origin",
           "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are planAdvance selftest fixtures; the runner reads .ci/policy/record-paths.json, which is not a record path, and no file under agent/."
         },
@@ -411,6 +419,10 @@
       ],
       "notReaders": [
         {
+          "id": "check:ci-gate-manifest",
+          "reason": "Its dead-id oracle walks tracked files and drops every path starting with agent/ (scripts/gates/check-gate-manifest.ts deadIdCorpus), so the agent/ the derivation cites at :487 is an exclusion and no file under agent/ is read."
+        },
+        {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
         },
@@ -546,6 +558,10 @@
         }
       ],
       "notReaders": [
+        {
+          "id": "check:ci-gate-manifest",
+          "reason": "Its dead-id oracle walks tracked files and drops every path starting with agent/ (scripts/gates/check-gate-manifest.ts deadIdCorpus), so the agent/ the derivation cites at :487 is an exclusion and no file under agent/ is read."
+        },
         {
           "id": "check:actions",
           "reason": "It imports scripts/lib/pins/registry.ts for the pin ids its fix line names (scripts/lib/pins/remedy.ts); that cites .ci/config/pins.json, whose only agent/ glob is check:ci-pin-registry's literal-scan exclusion, and this gate reads no file under agent/."
