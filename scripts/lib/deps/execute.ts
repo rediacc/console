@@ -55,7 +55,7 @@ function applyOverrideBump(b: NonNullable<InstallStep['overrideBump']>): {
   } else {
     overrides[b.name] = b.to;
   }
-  // tree-write: safe reached only from check-deps --upgrade (executeInstalls), never from the gate run, which plans and reports without writing a manifest
+  // tree-write: mode --upgrade reached only from check-deps --upgrade (executeInstalls); the gate run plans and reports without writing a manifest
   fs.writeFileSync(b.file, `${JSON.stringify(pkg, null, 2)}\n`);
   const note = pkg._overridesReasons?.[b.name];
   const advisory =
