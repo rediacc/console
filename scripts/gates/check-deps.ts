@@ -1713,12 +1713,19 @@ function planInstalls(
       for (const pkg of inRange) group.checks.push({ pkg, workspace });
       updates.set(key, group);
     }
-    if (outOfRange.length > 0) {
+    // RANGE STYLE IS KEPT (worklist #22aa3ff6). `npm install name@x` saves `^x` whatever the manifest declared, so on 2026-10-14 private/account's exact `zod: "4.6.5"` came back as `^4.6.7`. An exact pin installs in its own step with --save-exact; every other range keeps npm's default prefix.
+    const exact = outOfRange.filter((p) => EXACT_VERSION_RE.test(ranges[p.name] ?? ''));
+    const ranged = outOfRange.filter((p) => !exact.includes(p));
+    for (const [group, extra] of [
+      [ranged, []],
+      [exact, ['--save-exact']],
+    ] as const) {
+      if (group.length === 0) continue;
       installs.push({
         cwd,
-        args: ['install', ...flags, ...outOfRange.map(spec)],
+        args: ['install', ...flags, ...extra, ...group.map(spec)],
         label: `${label} (install)`,
-        packages: outOfRange,
+        packages: group,
       });
     }
   };
@@ -3202,13 +3209,14 @@ function selftest(): void {
     );
     const shown = steps.map((s) => `${s.label} :: ${s.args.join(' ')}`).sort();
     const want = [
-      'packages/www (install) :: install -w=packages/www tsx@4.23.15',
+      'packages/www (install) :: install -w=packages/www --save-exact tsx@4.23.15',
       'private/account (update) :: update react-hook-form',
-      'root (install) :: install pinned@1.0.1 vite@8.0.1',
+      'root (install) :: install --save-exact pinned@1.0.1',
+      'root (install) :: install vite@8.0.1',
       'root (update) :: update -w=packages/cli --include-workspace-root tsx typescript-eslint @typescript-eslint/parser eslint-plugin-sonarjs',
     ];
     expect(
-      'planner: an in-range bump is `npm update <names>`, ONE call per lockfile covering every workspace and the root, an out-of-range one `npm install name@exact` per manifest, judged per manifest range, in EVERY manifest that declares the package (tsx: root and both workspaces)',
+      'planner: an in-range bump is `npm update <names>`, ONE call per lockfile covering every workspace and the root, an out-of-range one `npm install name@exact` per manifest, judged per manifest range, in EVERY manifest that declares the package (tsx: root and both workspaces), and an exact pin (pinned, www tsx) installs with --save-exact so it stays exact',
       JSON.stringify(shown) === JSON.stringify(want),
       `got:\n${shown.join('\n')}\nwant:\n${want.join('\n')}`
     );
@@ -3288,9 +3296,9 @@ function selftest(): void {
   const verbInst = verb.installs.join('\n');
   const verbDetail = `installs:\n${verbInst}\noutput:\n${verb.output}`;
   expect(
-    'e2e --upgrade: the in-range bump runs as `npm update`, the pinned one as `npm install name@exact`',
+    'e2e --upgrade: the in-range bump runs as `npm update`, the exact-pinned one as `npm install --save-exact name@exact`, so the manifest keeps its exact pin',
     verbInst.includes('<root> :: update typescript-eslint ::') &&
-      verbInst.includes('<root> :: install fail-me@1.0.1 ::'),
+      verbInst.includes('<root> :: install --save-exact fail-me@1.0.1 ::'),
     verbDetail
   );
   expect(
@@ -3302,7 +3310,9 @@ function selftest(): void {
     'e2e --upgrade: a failed step is named with its exact command and exit status, and the gate exits 1',
     verb.status === 1 &&
       verb.output.includes('1 of 2 upgrade step(s) failed') &&
-      verb.output.includes('root (install): `npm install fail-me@1.0.1` in . (exit status 7)'),
+      verb.output.includes(
+        'root (install): `npm install --save-exact fail-me@1.0.1` in . (exit status 7)'
+      ),
     verbDetail
   );
   expect(
