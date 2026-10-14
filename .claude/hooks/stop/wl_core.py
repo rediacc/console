@@ -89,11 +89,35 @@ def parse_stamp(stamp):
 NOT_BEFORE = re.compile(r"\bNOT-BEFORE:[ \t]*(\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?Z)")
 
 
-def not_before_pending(line):
-    """True while the line's latest NOT-BEFORE: instant is still in the future."""
+# A hold is time-boxed too: an instant further than this past the item's last update is ignored, so a mistyped year cannot park a DEFAULT for good.
+NOT_BEFORE_MAX_DAYS = 7
+
+
+def not_before_pending(line, upd=""):
+    """True while the line's latest NOT-BEFORE: instant is in the future and within NOT_BEFORE_MAX_DAYS of `upd` (the item's last update stamp, or now when absent)."""
     stamps = NOT_BEFORE.findall(line or "")
     when = parse_stamp(stamps[-1]) if stamps else None
-    return when is not None and utcnow() < when
+    if when is None:
+        return False
+    base = parse_stamp(upd) or utcnow()
+    return utcnow() < when <= base + datetime.timedelta(days=NOT_BEFORE_MAX_DAYS)
+
+
+def not_before_problem(line, upd=""):
+    """Why the line's latest NOT-BEFORE: token holds nothing (an impossible date, or beyond the cap), or "" when it holds or is absent or already passed."""
+    stamps = NOT_BEFORE.findall(line or "")
+    if not stamps:
+        return ""
+    when = parse_stamp(stamps[-1])
+    if when is None:
+        return "NOT-BEFORE:%s is not a valid instant" % stamps[-1]
+    base = parse_stamp(upd) or utcnow()
+    if when > base + datetime.timedelta(days=NOT_BEFORE_MAX_DAYS):
+        return "NOT-BEFORE:%s is more than %d days out and is ignored" % (
+            stamps[-1],
+            NOT_BEFORE_MAX_DAYS,
+        )
+    return ""
 
 
 def stamp_age_min(stamp):
