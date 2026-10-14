@@ -1079,20 +1079,21 @@ def _pins_secret(value: object, condition: object = None) -> bool:
 
 
 _PINS_RC_CAPTURE_RE = re.compile(r"^\s*rc=\$\?\s*$")
-# Anything on the apply line that lets `$?` be another command's status: a pipe (no pipefail under the default shell), `||`, `;`, a background or `&&` operator, or a line continuation. A `>&`/`&>` redirection is not one.
-_PINS_MASK_RE = re.compile(r"\||;|(?<![>&])&(?![>&])|&&|\\\s*$")
+# Anything on the apply line that lets `$?` be another command's status: a pipe (no pipefail under the default shell), `||`, `;`, a background or `&&` operator, or a line continuation. A `>&`, `&>` or `>|` redirection is not one.
+_PINS_MASK_RE = re.compile(r"(?<!>)\||;|(?<![>&])&(?![>&])|&&|\\\s*$")
 # The write is a whole line of exactly this form, so nothing can share the line with it.
+# Each operand is either fully double-quoted or bare, so a quote cannot swallow the `>>` into the echoed string.
 _PINS_RC_OUT_RE = re.compile(
-    r"""^\s*echo\s+"?rc=\$\{?rc\}?"?\s*>>\s*"?\$\{?GITHUB_OUTPUT\}?"?\s*$"""
+    r"""^\s*echo\s+(?:"rc=\$(?:rc|\{rc\})"|rc=\$(?:rc|\{rc\}))\s*>>\s*(?:"\$(?:GITHUB_OUTPUT|\{GITHUB_OUTPUT\})"|\$(?:GITHUB_OUTPUT|\{GITHUB_OUTPUT\}))\s*$"""
 )
 _PINS_RC_WORD_RE = re.compile(r"\brc\b")
-# The apply line starts with the command itself, so no prefix (`!`, `time`, `if`, `exec`, an assignment) can change or invert its status.
+# The apply line starts with the command itself. Only `!` inverts the status and `if`/`while` move it into a condition, but the rule is a closed form rather than a list of known-bad prefixes, so `time`, `exec` and an assignment prefix are refused too.
 _PINS_APPLY_START_RE = re.compile(r"^\s*npm\s+run\b")
 _PINS_NOT_COMMAND_RE = re.compile(r"^\s*(#|echo\b|printf\b)")
 
 
 def _pins_publishes_rc(run: str) -> bool:
-    """True when the apply command's own exit status becomes the `rc` step output: the apply line starts with `npm run` and nothing on it can mask the status (`_PINS_MASK_RE`), the next non-blank line is `rc=$?`, a later line is exactly `echo "rc=$rc" >> "$GITHUB_OUTPUT"` with nothing else on it, and no line after the capture other than that write names `rc`, so nothing can reassign it. A comment or echo naming the verb is not the apply line."""
+    """True when the apply command's own exit status becomes the `rc` step output: the apply line starts with `npm run` and nothing on it can mask the status (`_PINS_MASK_RE`), the next non-blank line is `rc=$?`, a later line is exactly the write (`echo "rc=$rc" >> "$GITHUB_OUTPUT"`, with `${rc}` or `${GITHUB_OUTPUT}` allowed and each operand fully quoted or bare) with nothing else on it, and no line after the capture other than that write names `rc`, so nothing can reassign it. A comment or echo naming the verb is not the apply line."""
     lines = run.split("\n")
     for i, line in enumerate(lines):
         if not _PINS_APPLY_RE.search(line) or _PINS_NOT_COMMAND_RE.match(line):
