@@ -89,6 +89,7 @@ A lane with zero matching artifacts across every sampled run is REPORTED (a warn
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -105,7 +106,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Mapping, Sequence
 
 from rediacc_ci import log, paths
 from rediacc_ci.ci.freshness import Keyed, emit_findings, key_part
@@ -1694,7 +1695,97 @@ def compute_lane_durations(
         "stale_sample": stale_sample_findings(pr_runs),
         # Which PR runs the numbers came from, so a refresh names its sample rather than only its size.
         "sampled_runs": [_run_summary(run) for run in pr_runs],
+        # The leg contents each measured leg ran; see `job_p90_plans`.
+        "job_p90_plans": job_p90_plans(
+            pr_runs,
+            pr_jobs_by_run,
+            patterns,
+            lambda sha, rel: _git_show(tree_root, sha, rel),
+        ),
     }
+
+
+# WHICH PLAN A MEASURED LEG RAN. `job_p90_minutes` is keyed by display name, and "Quality / Pytest (3/3)" names a position, not a set of tests: a rebalance that moves files out of leg 3 leaves the name and its p90 in place while the leg it measured no longer ships. `job_p90_plans` records, per display name of a leg of a lane with a committed shard manifest, the leg contents its sampled jobs ran, read from each run's own head commit, so check-lane-budget.ts can tell a measurement of today's leg from one of a leg that has since been re-packed (2026-10-14: leg 3/3 measured 12.9m under a plan two rebalances old).
+_LEG_INDEX_RE = re.compile(r"(?:\(|, )(\d+)(?:/(\d+))?\)$")
+SHARDS_DIR_REL = ".ci/config/shards"
+
+
+def leg_plan_hash(ids: Sequence[str]) -> str:
+    """A leg's identity: sha256 over its unit ids joined by newlines, first 16 hex. `legPlanHash` in scripts/gates/check-lane-budget.ts computes the same, and both selftests pin one literal so the two cannot drift apart."""
+    return hashlib.sha256("\n".join(ids).encode()).hexdigest()[:16]
+
+
+def _git_show(root: Path, sha: str, rel: str) -> str | None:
+    """`git show <sha>:<rel>` in `root`, or None when the commit or the file is not there."""
+    proc = subprocess.run(
+        ["git", "-C", str(root), "show", "%s:%s" % (sha, rel)],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def job_p90_plans(
+    pr_runs: Sequence[dict[str, Any]],
+    pr_jobs_by_run: Sequence[Sequence[dict[str, Any]]],
+    patterns: Mapping[str, re.Pattern[str]],
+    show: Callable[[str, str], str | None],
+) -> dict[str, list[str]]:
+    """`{display name: sorted leg_plan_hash values}` for every leg of a manifest lane that a sampled job measured, over exactly the jobs `job_wall_minutes` counts. `show(sha, rel)` reads a file at a commit.
+
+    A name ANY of whose samples cannot be traced (no head_sha, no manifest at that commit, a leg count or index the manifest does not hold) gets NO entry, and the gate counts a name with no entry against today's leg. Unknown is the strict direction here, never the lenient one."""
+    out: dict[str, set[str]] = {}
+    untraced: set[str] = set()
+    manifests: dict[tuple[str, str], dict[str, Any] | None] = {}
+    for run, jobs in zip(pr_runs, pr_jobs_by_run, strict=False):
+        sha = run.get("head_sha")
+        for job in jobs:
+            name = job.get("name") or ""
+            if job_wall_minutes(job) is None:
+                continue
+            lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
+            if lane is None:
+                continue
+            leg = _LEG_INDEX_RE.search(name)
+            if leg is None or not isinstance(sha, str):
+                untraced.add(name)
+                continue
+            key = (sha, lane)
+            if key not in manifests:
+                text = show(sha, "%s/%s.json" % (SHARDS_DIR_REL, lane))
+                try:
+                    manifests[key] = json.loads(text) if text is not None else None
+                except ValueError:
+                    manifests[key] = None
+            manifest = manifests[key]
+            if manifest is None:
+                # A lane with no manifest at that commit is not a manifest lane there: nothing to trace, and nothing recorded.
+                continue
+            of_in = leg.group(2)
+            index = int(leg.group(1))
+            legs = [
+                lg
+                for lg in manifest.get("legs") or []
+                if isinstance(lg, dict) and lg.get("index") == index
+            ]
+            if (of_in is not None and int(of_in) != manifest.get("of")) or len(legs) != 1:
+                untraced.add(name)
+                continue
+            out.setdefault(name, set()).add(leg_plan_hash(legs[0].get("ids") or []))
+    return {name: sorted(hashes) for name, hashes in sorted(out.items()) if name not in untraced}
+
+
+def merged_job_p90_plans(
+    existing: Mapping[str, list[str]],
+    remeasured: Iterable[str],
+    computed: Mapping[str, list[str]],
+) -> dict[str, list[str]]:
+    """The `job_p90_plans` a refresh writes. A name this refresh re-measured takes the computed entry or NONE, because its p90 is new and an old entry would describe other samples; a name it did not re-measure keeps its p90 (`job_p90_minutes` is merged the same way) and so keeps its entry."""
+    names = set(remeasured)
+    kept = {n: v for n, v in existing.items() if n not in names}
+    return dict(sorted({**kept, **computed}.items()))
 
 
 def leg_over_budget_finding(name: str, minutes: float) -> str | None:
@@ -2149,6 +2240,13 @@ def refresh_lane_durations(
         **existing.get("job_p90_minutes", {}),
         **computed["job_p90_minutes"],
     }
+    plans = merged_job_p90_plans(
+        existing.get("job_p90_plans") or {},
+        computed["job_p90_minutes"],
+        computed.get("job_p90_plans") or {},
+    )
+    if plans:
+        updated["job_p90_plans"] = plans
     updated["gate_step_p90_seconds"] = prune_gate_steps_to_lock(
         {**existing.get("gate_step_p90_seconds", {}), **computed["gate_step_p90_seconds"]},
         repo_root_for_pruning,

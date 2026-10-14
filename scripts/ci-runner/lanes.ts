@@ -714,6 +714,23 @@ export function legCostsMs(
   );
 }
 
+/** The milliseconds `shardPlan` prices each of `lane`'s gates at under `durations`: the measured entry, else the lane's median measured gate (`withMeasuredFallback`). Only the lane's own ids, and {} when `durations` prices none of them, because the planner's currency is then a count, not milliseconds, and no leg can be priced in minutes from it. check-lane-budget reads this so its verdict and gate-bind's balance are the same arithmetic. Pure. */
+export function lanePricesMs(
+  lane: string,
+  lock: readonly ShardInput[],
+  durations: Readonly<Record<string, number>> | undefined
+): Record<string, number> {
+  const entries = lock.filter((e) => laneJobOf(e) === lane);
+  if (durations === undefined || !entries.some((e) => (durations[e.id] ?? 0) > 0)) return {};
+  const priced = withMeasuredFallback(entries, durations) ?? {};
+  const out: Record<string, number> = {};
+  for (const e of entries) {
+    const ms = priced[e.id];
+    if (ms !== undefined) out[e.id] = ms;
+  }
+  return out;
+}
+
 /** Everything structurally wrong with a committed plan for `lane` at `want` legs: a leg count or index that is off, an empty leg, a lane gate in no leg, a gate in two legs, an id the lane does not hold. Empty means the shape is sound; `stickyShardPlan` still replays it through the planner for the rules this cannot see (mutex, needs, heavy). Pure. */
 export function committedPlanFindings(
   lane: string,

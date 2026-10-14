@@ -21,13 +21,17 @@
  *   1. Per-leg estimate: each committed leg's fixed job cost plus the p90 of its own
  *      units, red over 12 minutes, naming the top 3 units. Every lane with a committed
  *      `.ci/config/shards/<lane>.json` is priced from it (quality-code, quality-pytest and
- *      the test lanes), whether or not `SHARD_COUNTS` names it.
+ *      the test lanes), whether or not `SHARD_COUNTS` names it. A lane `SHARD_COUNTS` does
+ *      name is planned by gate-bind on each gate's step p90, and is priced on exactly those
+ *      prices plus a fixed cost measured from its legs' p90s (`gateStepLanePricing`).
  *   2. Unsharded job: a quality lane with no manifest is a shard of one over its lock
  *      entries. Every OTHER runner job in `ci.yml` and its callees is judged on its whole-job
  *      p90 (`job_p90_minutes`, keyed by Actions display name and mapped back per call site
  *      by `displayNamePattern`), against 12 or against its `JOB_BUDGET_CAPS` ceiling (the
- *      2026-09-28 ruling); a job with no p90 is UNCHECKED, which is a finding. A priced
- *      lane's matrix legs are judged in the lane and skipped here.
+ *      2026-09-28 ruling); a job with no p90 is UNCHECKED, which is a finding, unless
+ *      `LABEL_GATED_JOBS` names it and every call site really needs that PR label (printed
+ *      as "not measured" every run). A priced lane's matrix legs are judged in the lane and
+ *      skipped here.
  *   3. Single unit: a unit whose own cost plus the lane's fixed cost exceeds 12 minutes
  *      is red even alone, "indivisible", unless `LANE_BUDGET_EXEMPTIONS` names it (D-W3).
  *      An exemption whose test file or job has gone is itself a finding.
@@ -71,7 +75,8 @@
  * put those legs at 30-41m against a measured 8-12m.
  *
  * MEASURED LEGS. A priced lane's legs are judged twice: the unit-sum estimate (checks 1/4)
- * and the leg's own measured p90 by display name.
+ * and the leg's own measured p90 by display name. A measured p90 whose sampled runs never ran
+ * the committed leg (`job_p90_plans`, `measuredThisLeg`) is set aside and printed, never dropped.
  *
  * VARIANT LEGS (`variantCosts`, 2026-09-28). One fixed cost per lane cannot price E2E Workers:
  * its globalSetup VM reset alone runs 1.5 minutes on debian and 3-4 on fedora, opensuse and
@@ -108,12 +113,15 @@
  * ---- end gate ----
  */
 
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
 import {
   laneCapabilities,
+  lanePricesMs,
+  legCostsMs,
   measuredStepDurations,
   mergeLaneCapabilities,
   SHARD_COUNTS,
@@ -129,6 +137,7 @@ import {
   shardManifestPath,
 } from '../ci-runner/shard-manifest.js';
 import { LANE_ENUMERATORS } from '../ci-runner/unit-enumerators.js';
+import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
@@ -285,6 +294,12 @@ export interface LaneDurations {
    */
   job_p90_minutes?: Record<string, number>;
   /**
+   * Per measured leg display name, the leg contents (`legPlanHash`) its samples RAN, read by
+   * `budget_report.py --refresh` from each sampled run's own head commit. A name with no entry
+   * counts against today's leg; one whose entry lacks today's leg is set aside, visibly.
+   */
+  job_p90_plans?: Record<string, string[]>;
+  /**
    * How many units a lane's leg runs AT ONCE (T3.1, 2026-09-28). A lane absent here runs its
    * units one after another. Each value's source is cited in the file's `$comment`.
    */
@@ -374,6 +389,7 @@ export function readDurations(root: string): LaneDurations {
     units: parsed.units ?? {},
     defaultUnitMs: parsed.defaultUnitMs,
     job_p90_minutes: parsed.job_p90_minutes,
+    job_p90_plans: parsed.job_p90_plans,
     unitParallelism: parsed.unitParallelism,
     variantCosts: parsed.variantCosts,
     rebalanceConstraints: parsed.rebalanceConstraints,
@@ -777,10 +793,180 @@ export function checkTwoPartition(
   return { judged, unchecked };
 }
 
+/**
+ * LABEL-GATED JOBS, check 2's one named exception (2026-10-14). A job reached only through a caller whose `if:` requires a PR label never runs in the PR-full sample `budget_report.py --refresh` measures, so it has no p90 and check 2 calls it UNCHECKED on every run, a finding no change to the job can clear. An entry here turns that UNCHECKED into a "not measured" line printed on every run; it never excuses a p90 that exists, which is judged like any other job.
+ *
+ * LIVENESS IS IN-GATE: an entry is refused when its reason fails the shared BLOCKER rules, when a job it names is defined nowhere, and when ANY call site of a job reaches it without that label in a purely conjunctive `if:` (`labelGateOf`), because then a PR without the label runs it and its cost is the pipeline's. check 7 still holds each job to `timeout-minutes` of 15 or less. Nothing is added without a reason that names how the job gets measured.
+ */
+export interface LabelGatedJobs {
+  label: string;
+  jobs: readonly string[];
+  reason: string;
+}
+export const LABEL_GATED_JOBS: readonly LabelGatedJobs[] = [
+  {
+    label: 'e2e-dependency-probe',
+    jobs: ['list-files', 'probe-file', 'aggregate'],
+    reason:
+      'BLOCKER: ct-e2e-probe.yml re-provisions one VM topology per E2E Workers spec file, so ci.yml runs it only on a PR labelled e2e-dependency-probe and the PR-full sample never holds it. Its jobs carry timeout-minutes 5, 15 and 10 (check 7). A green labelled PR run followed by budget_report.py --refresh gives them a p90, and from then on check 2 judges them.',
+  },
+];
+
+/** The PR label a job's own `if:` requires, as an un-negated `contains(github.event.pull_request.labels.*.name, '<label>')` in an expression with no `||`, or null. Reads the job's block in `text` (two-space job keys under `jobs:`). Pure. */
+export function labelGateOf(text: string, jobId: string): string | null {
+  const lines = text.split('\n');
+  const start = lines.findIndex((l) => l === `  ${jobId}:` || l.startsWith(`  ${jobId}: `));
+  if (start < 0) return null;
+  const block: string[] = [];
+  for (const line of lines.slice(start + 1)) {
+    if (/^ {0,2}[A-Za-z0-9_-]+:/.test(line)) break;
+    block.push(line);
+  }
+  const at = block.findIndex((l) => /^ {4}if:/.test(l));
+  if (at < 0) return null;
+  const expr = [block[at]?.replace(/^ {4}if:\s*/, '') ?? ''];
+  for (const line of block.slice(at + 1)) {
+    if (/^ {4}\S/.test(line)) break;
+    expr.push(line.trim());
+  }
+  const joined = expr.join(' ');
+  if (joined.includes('||')) return null;
+  const m =
+    /(^|[^!])contains\(\s*github\.event\.pull_request\.labels\.\*\.name\s*,\s*'([^']+)'\s*\)/.exec(
+      joined
+    );
+  return m === null ? null : (m[2] as string);
+}
+
+/**
+ * Check 2's UNCHECKED set, less the jobs a live LABEL_GATED_JOBS entry covers, plus every finding about the table itself. `gates` maps each runner job id to the label gate of each of its call sites (null for an ungated site). Pure.
+ */
+export function labelGatedPartition(
+  unchecked: readonly string[],
+  gates: ReadonlyMap<string, readonly (string | null)[]>,
+  table: readonly LabelGatedJobs[] = LABEL_GATED_JOBS
+): { unchecked: string[]; notMeasured: string[]; findings: string[] } {
+  const findings: string[] = [];
+  const covered = new Set<string>();
+  for (const entry of table) {
+    const bad = entry.reason.startsWith('BLOCKER:')
+      ? validateBlockerQuality(
+          entry.label,
+          entry.reason.replace(/^BLOCKER:\s*/, ''),
+          'check-lane-budget.ts'
+        )?.message
+      : 'the reason does not start with "BLOCKER:"';
+    if (bad !== undefined) {
+      findings.push(`LABEL_GATED_JOBS entry for label ${entry.label}: ${bad}`);
+      continue;
+    }
+    for (const job of entry.jobs) {
+      const sites = gates.get(job);
+      if (sites === undefined) {
+        findings.push(
+          `LABEL_GATED_JOBS names job ${job} under label ${entry.label}, which no workflow defines. Delete it.`
+        );
+        continue;
+      }
+      const open = sites.filter((g) => g !== entry.label).length;
+      if (open > 0) {
+        findings.push(
+          `LABEL_GATED_JOBS names job ${job} under label ${entry.label}, but ${open} of its ${sites.length} call site(s) ` +
+            'run it without that label, so every PR pays for it. Delete the entry: a job a PR runs must be measured.'
+        );
+        continue;
+      }
+      covered.add(job);
+    }
+  }
+  return {
+    unchecked: unchecked.filter((j) => !covered.has(j)),
+    notMeasured: unchecked.filter((j) => covered.has(j)),
+    findings,
+  };
+}
+
 /** The matrix leg index a display name carries: "(3/3)", "(ubuntu-24.04, 2/8)", "(1)". 1 when there is none (an unsharded job is a leg of one). */
 export function legIndexOf(label: string): number {
   const m = /(?:\(|, )(\d+)(?:\/\d+)?\)$/.exec(label);
   return m === null ? 1 : Number(m[1]);
+}
+
+/** A lane gate-bind plans (`SHARD_COUNTS`), priced in the planner's own currency. */
+export interface GateStepPricing {
+  /** Every lane gate's cost in ms, exactly as `shardPlan` prices it (`lanePricesMs`). */
+  units: Record<string, number>;
+  /** Minutes every leg pays besides its own gates: setup, the replicated gates, composite steps. */
+  fixedMinutes: number;
+  /** The leg whose measured p90 set `fixedMinutes`. */
+  calibratedOn: number;
+}
+
+/**
+ * GATE-STEP PRICING for a lane gate-bind plans. The per-unit figure this replaced (`defaultUnitMs`, one flat 22957 ms for every quality-code gate) could not agree with the planner: gate-bind balances the legs on each gate's own measured step p90, so a leg of 34 cheap gates and a leg of 13 expensive ones are equal to it and 34:13 to a flat price, and any leg over about 31 gates read red at 13m while it measured 6.5m.
+ *
+ * The units are `prices`, the planner's own. What the step p90s leave out is the leg's FIXED cost: checkout and setup, the gates gate-bind replicates onto every leg, and the composite steps (`Lint` runs three gates as one step, so none of them has a step p90 of its own and the planner costs each at the lane median). That figure is MEASURED, not assumed: each leg's measured p90 minus the price of the gates it holds, and the LARGEST such residual over the measured legs, never the mean. A measured p90 describes the plan that was live when it was sampled, so a residual can be off by whatever moved between legs since; the maximum keeps that error on the side of over-pricing, and the leg that sets it is priced at exactly what it measured.
+ *
+ * Two answers are refusals, never a 0: no lane gate has a step p90 (the planner itself is pricing by count), and no leg has a measured p90 (the fixed cost is unknown, and unknown is not within budget). Pure.
+ */
+export function gateStepLanePricing(
+  lane: string,
+  legs: readonly { index: number; ids: readonly string[] }[],
+  of: number,
+  prices: Readonly<Record<string, number>>,
+  samples: readonly { label: string; minutes: number }[]
+): GateStepPricing | { error: string } {
+  if (Object.keys(prices).length === 0) {
+    return {
+      error:
+        `${lane}: no gate of the lane has a gate_step_p90_seconds entry in ${DURATIONS_PATH}, so ` +
+        'gate-bind is planning it by count and its legs cannot be priced in minutes. Run ' +
+        '`budget_report.py --refresh` against green CI runs.',
+    };
+  }
+  const usable = samples.filter((s) => {
+    const ofIn = /\/(\d+)\)$/.exec(s.label);
+    const index = legIndexOf(s.label);
+    return (ofIn === null || Number(ofIn[1]) === of) && index >= 1 && index <= of;
+  });
+  let fixedMinutes = Number.NEGATIVE_INFINITY;
+  let calibratedOn = 0;
+  for (const s of usable) {
+    const leg = legs.find((l) => l.index === legIndexOf(s.label));
+    if (leg === undefined) continue;
+    const unitMinutes = leg.ids.reduce((sum, id) => sum + (prices[id] ?? 0), 0) / 60_000;
+    if (s.minutes - unitMinutes > fixedMinutes) {
+      fixedMinutes = s.minutes - unitMinutes;
+      calibratedOn = leg.index;
+    }
+  }
+  if (calibratedOn === 0) {
+    return {
+      error:
+        `${lane}: UNCHECKED: no job_p90_minutes entry in ${DURATIONS_PATH} is a measured leg of ` +
+        `its ${of}-leg plan, so the fixed cost each leg pays besides its gates is unknown, and ` +
+        'unknown is not within budget. Run `budget_report.py --refresh` after a green CI run.',
+    };
+  }
+  return { units: { ...prices }, fixedMinutes: Math.max(0, fixedMinutes), calibratedOn };
+}
+
+/** A leg's identity: sha256 over its unit ids joined by newlines, first 16 hex. `leg_plan_hash` in `.ci/rediacc_ci/ci/budget_report.py` computes the same, and both selftests pin one literal. Pure. */
+export function legPlanHash(ids: readonly string[]): string {
+  return createHash('sha256').update(ids.join('\n')).digest('hex').slice(0, 16);
+}
+
+/**
+ * Whether a measured leg p90 describes the leg that ships today. A display name names a POSITION ("Quality / Pytest (3/3)"), so a rebalance leaves the name and its p90 in place while the leg it measured is gone: leg 3/3 read 12.9m on 2026-10-14 from runs of a plan two rebalances old. The answer is false only when `job_p90_plans` traced every sample behind the name and none ran today's leg; no entry, or no committed leg to compare, is true, so unknown stays on the strict side. A measurement set aside here is printed every run, and the next refresh measures the new leg. Pure.
+ */
+export function measuredThisLeg(
+  label: string,
+  ids: readonly string[] | undefined,
+  plans: Readonly<Record<string, readonly string[]>> | undefined
+): boolean {
+  const ran = plans?.[label];
+  if (ran === undefined || ids === undefined) return true;
+  return ran.includes(legPlanHash(ids));
 }
 
 // --------------------------------------------------------------------------- Check 6: pipeline (advisory) ---------------------------------------------------------------------------
@@ -2130,15 +2316,20 @@ async function main(): Promise<number> {
   const timeoutSites = new Map<string, TimeoutSite>();
   // Check 8 reads each workflow once, like check 7: every file the walk reaches, ci.yml included.
   const walkedTexts = new Map<string, string>();
+  // Per runner job id, the PR label each of its call sites requires (null: none), for LABEL_GATED_JOBS.
+  const labelGates = new Map<string, (string | null)[]>();
   const walk = (
     file: string,
     text: string,
     chain: readonly string[],
-    stack: readonly string[]
+    stack: readonly string[],
+    gate: string | null = null
   ): boolean => {
     walkedTexts.set(file, text);
     for (const j of workflowJobs(text)) {
+      const siteGate = gate ?? labelGateOf(text, j.id);
       if (j.uses === null) {
+        labelGates.set(j.id, [...(labelGates.get(j.id) ?? []), siteGate]);
         runnerJobSet.add(j.id);
         sites.push({ id: j.id, pattern: displayNamePattern(chain, j.name, j.hasMatrix) });
         timeoutSites.set(`${file}\0${j.id}`, {
@@ -2153,7 +2344,7 @@ async function main(): Promise<number> {
       const callee = workflows[j.uses] ?? readOr(ROOT, j.uses, `the ${j.uses} workflow`);
       if (callee === null) return false;
       workflows[j.uses] = callee;
-      if (!walk(j.uses, callee, [...chain, j.name], [...stack, file])) return false;
+      if (!walk(j.uses, callee, [...chain, j.name], [...stack, file], siteGate)) return false;
     }
     return true;
   };
@@ -2183,6 +2374,11 @@ async function main(): Promise<number> {
   const priced = new Set<string>();
   const inert: string[] = [];
   const parallelLanes: string[] = [];
+  const gateStepNotes: string[] = [];
+  // Measured leg p90s whose runs never ran today's leg (`measuredThisLeg`), printed in the summary every run.
+  const setAside: string[] = [];
+  // The planner's prices (`measuredStepDurations`, each sharded lane at its committed snapshot), read once.
+  const stepPrices = measuredStepDurations(ROOT);
   let legCount = 0;
   let unitCount = 0;
   let measuredCount = 0;
@@ -2229,7 +2425,8 @@ async function main(): Promise<number> {
     of: number,
     fixedMinutes: number,
     defaultUnitMs: number | undefined,
-    parallel: LegParallelism | undefined
+    parallel: LegParallelism | undefined,
+    units: Readonly<Record<string, number>> = durations.units
   ): number => {
     const allIds = legs.flatMap((l) => [...l.ids]);
     const variants = durations.variantCosts?.[lane];
@@ -2246,12 +2443,10 @@ async function main(): Promise<number> {
       for (const leg of legs) {
         worst = Math.max(
           worst,
-          priceLeg(lane, leg.index, of, leg.ids, fixedMinutes, defaultUnitMs, parallel)
+          priceLeg(lane, leg.index, of, leg.ids, fixedMinutes, defaultUnitMs, parallel, units)
         );
       }
-      findings.push(
-        ...indivisibleFindings(lane, allIds, fixedMinutes, durations.units, undefined, parallel)
-      );
+      findings.push(...indivisibleFindings(lane, allIds, fixedMinutes, units, undefined, parallel));
       return worst;
     }
     let worst = 0;
@@ -2286,13 +2481,23 @@ async function main(): Promise<number> {
   };
 
   // A priced lane's legs are ALSO judged on what they measured (job_p90_minutes, one sample per matrix combination), so an estimate that misses real cost (VM setup inside the runner step) cannot hide a leg that is over. Grouped per leg: the worst combination is named, with how many were over.
-  const measuredLegFindings = (lane: string, of: number): number => {
+  const measuredLegFindings = (
+    lane: string,
+    of: number,
+    legs?: readonly { index: number; ids: readonly string[] }[]
+  ): number => {
     const byLeg = new Map<number, JobSample[]>();
     for (const sample of samplesFor(lane)) {
       const ofIn = /\/(\d+)\)$/.exec(sample.label);
       // A sample from before the lane's current shard count ("Pytest (1/2)" once it is 3 legs) describes a plan that no longer ships.
       if (ofIn !== null && Number(ofIn[1]) !== of) continue;
       const idx = legIndexOf(sample.label);
+      // The same rule one level down: a sample whose traced runs never ran today's leg describes a leg that no longer ships (`measuredThisLeg`). Printed, never dropped quietly.
+      const ids = legs?.find((l) => l.index === idx)?.ids;
+      if (!measuredThisLeg(sample.label, ids, durations.job_p90_plans)) {
+        setAside.push(`"${sample.label}" ${sample.minutes.toFixed(1)}m`);
+        continue;
+      }
       byLeg.set(idx, [...(byLeg.get(idx) ?? []), sample]);
     }
     let worst = 0;
@@ -2340,6 +2545,38 @@ async function main(): Promise<number> {
     // A committed manifest IS the shipped plan, whether or not the lane is in SHARD_COUNTS: the test lanes are sharded from theirs (T2.12-T2.15), so pricing them by lock entries would price nothing.
     if (existsSync(manifestFile)) {
       const manifest = parseShardManifest(readFileSync(manifestFile, 'utf-8'), lane);
+      // A lane gate-bind plans is priced in gate-bind's own currency (`gateStepLanePricing`), never by a flat per-unit figure the planner does not read.
+      if (Object.prototype.hasOwnProperty.call(SHARD_COUNTS, lane)) {
+        const pricing = gateStepLanePricing(
+          lane,
+          manifest.legs,
+          manifest.of,
+          lanePricesMs(lane, lock, stepPrices),
+          samplesFor(job)
+        );
+        priced.add(job);
+        if ('error' in pricing) {
+          findings.push(pricing.error);
+          continue;
+        }
+        const measuredIds = manifest.legs.flatMap((l) => l.ids.filter((id) => id in stepPrices));
+        gateStepNotes.push(
+          `${lane} by gate step p90 (${manifest.legs.flatMap((l) => l.ids).length - measuredIds.length} gate(s) at the lane median), ` +
+            `fixed ${pricing.fixedMinutes.toFixed(1)}m from leg ${pricing.calibratedOn}'s measured p90`
+        );
+        const worst = priceLegs(
+          lane,
+          job,
+          manifest.legs,
+          manifest.of,
+          pricing.fixedMinutes,
+          undefined,
+          parallel,
+          pricing.units
+        );
+        worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, manifest.of, manifest.legs)));
+        continue;
+      }
       const worst = priceLegs(
         lane,
         job,
@@ -2350,7 +2587,7 @@ async function main(): Promise<number> {
         parallel
       );
       priced.add(job);
-      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, manifest.of)));
+      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, manifest.of, manifest.legs)));
       continue;
     }
     // A contiguous lane's legs are the slices its runner cuts from the enumerator's order, read from the committed sizes.
@@ -2422,7 +2659,14 @@ async function main(): Promise<number> {
   }
 
   // Check 2 over every runner job that is not a priced lane, by the display names budget_report measured it under. A priced lane's matrix legs were judged above, per leg, and are skipped here.
-  const { judged: judgedSamples, unchecked } = checkTwoPartition(runnerJobs, priced, samplesFor);
+  const { judged: judgedSamples, unchecked: rawUnchecked } = checkTwoPartition(
+    runnerJobs,
+    priced,
+    samplesFor
+  );
+  const labelGated = labelGatedPartition(rawUnchecked, labelGates);
+  const unchecked = labelGated.unchecked;
+  findings.push(...labelGated.findings);
   const judgedJobs = new Set(judgedSamples.map((x) => x.job));
   findings.push(...judgeJobSamples(judgedSamples));
   if (unchecked.length > 0) {
@@ -2507,6 +2751,9 @@ async function main(): Promise<number> {
     `${priced.size} lane(s), ${legCount} leg(s), ${unitCount} unit(s) ` +
     `(${measuredCount} measured, ${defaultedCount} by defaultUnitMs), ` +
     `parallel: ${parallelLanes.join(', ') || 'none'}, ` +
+    `gate-step priced: ${gateStepNotes.join('; ') || 'none'}, ` +
+    `measured under a plan that no longer ships, set aside until the next refresh: ${setAside.join(', ') || 'none'}, ` +
+    `label-gated and not measured (LABEL_GATED_JOBS): ${labelGated.notMeasured.join(', ') || 'none'}, ` +
     `${judgedJobs.size}/${runnerJobs.length - priced.size} other job(s) judged ` +
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s), ` +
@@ -3097,6 +3344,223 @@ async function selftest(): Promise<number> {
           return leg !== undefined && JSON.stringify(leg.ids) === JSON.stringify(s.ids);
         });
       })(),
+    },
+    // --- gate-step pricing: a lane gate-bind plans, in gate-bind's currency -------
+    {
+      name: 'FIRES (gate-step): one 5-minute gate in a leg reds it at the measured fixed cost plus its gates',
+      ok: (() => {
+        const legs = [
+          { index: 1, ids: ['a', 'b'] },
+          { index: 2, ids: ['c', 'heavy'] },
+        ];
+        const p = gateStepLanePricing(
+          'fx',
+          legs,
+          2,
+          { a: 30_000, b: 30_000, c: 30_000, heavy: 300_000 },
+          [{ label: 'Q / Code (1)', minutes: 8 }]
+        );
+        if ('error' in p) return false;
+        return legFindings('fx', 2, 2, ['c', 'heavy'], p.fixedMinutes, p.units, undefined).some(
+          (f) => f.includes('estimated 12.5m') && f.includes('heavy (5.0m)')
+        );
+      })(),
+    },
+    {
+      name: 'MATCH (gate-step): a leg of 34 cheap gates is priced by their own costs, not 34 x a flat figure',
+      ok: (() => {
+        const ids = Array.from({ length: 34 }, (_, i) => `g${i}`);
+        const prices = Object.fromEntries(ids.map((id) => [id, 3_000]));
+        const p = gateStepLanePricing('fx', [{ index: 1, ids }], 1, prices, [
+          { label: 'Q / Code (1)', minutes: 6.5 },
+        ]);
+        return (
+          !('error' in p) &&
+          legFindings('fx', 1, 1, ids, p.fixedMinutes, p.units, undefined).length === 0
+        );
+      })(),
+    },
+    {
+      name: 'gate-step: the fixed cost is the LARGEST measured residual, named by its leg, and that leg is priced at exactly what it measured',
+      ok: (() => {
+        const p = gateStepLanePricing(
+          'fx',
+          [
+            { index: 1, ids: ['a'] },
+            { index: 2, ids: ['b'] },
+          ],
+          2,
+          { a: 60_000, b: 120_000 },
+          [
+            { label: 'Q / Code (1)', minutes: 5 },
+            { label: 'Q / Code (2)', minutes: 9 },
+          ]
+        );
+        return !('error' in p) && p.fixedMinutes === 7 && p.calibratedOn === 2;
+      })(),
+    },
+    {
+      name: 'REFUSES (gate-step): no lane gate with a step p90 is an error, never a 0-cost lane',
+      ok: (() => {
+        const p = gateStepLanePricing('fx', [{ index: 1, ids: ['a'] }], 1, {}, [
+          { label: 'Q / Code (1)', minutes: 5 },
+        ]);
+        return 'error' in p && p.error.includes('by count');
+      })(),
+    },
+    {
+      name: 'REFUSES (gate-step): no measured leg of the CURRENT leg count is UNCHECKED, never a 0 fixed cost',
+      ok: (() => {
+        const p = gateStepLanePricing(
+          'fx',
+          [
+            { index: 1, ids: ['a'] },
+            { index: 2, ids: ['b'] },
+          ],
+          2,
+          { a: 1_000, b: 1_000 },
+          [
+            { label: 'Q / Code (1/3)', minutes: 5 },
+            { label: 'Q / Code (5)', minutes: 5 },
+          ]
+        );
+        return 'error' in p && p.error.includes('UNCHECKED');
+      })(),
+    },
+    {
+      name: "CONTROL (live quality-code): the gate's per-leg unit prices are gate-bind's own (legCostsMs over measuredStepDurations), to the millisecond",
+      ok: (() => {
+        const manifestFile = path.join(ROOT, shardManifestPath('quality-code'));
+        if (!existsSync(manifestFile)) return false;
+        const manifest = parseShardManifest(readFileSync(manifestFile, 'utf-8'), 'quality-code');
+        const live = JSON.parse(readFileSync(path.join(ROOT, LOCK_PATH), 'utf-8')) as ShardInput[];
+        const steps = measuredStepDurations(ROOT);
+        const prices = lanePricesMs('quality-code', live, steps);
+        const planner = legCostsMs('quality-code', live, manifest.legs, steps);
+        const ours = manifest.legs.map((l) =>
+          l.ids.reduce((sum, id) => sum + (prices[id] ?? 0), 0)
+        );
+        return (
+          ours.length > 0 &&
+          ours.every((ms) => ms > 0) &&
+          JSON.stringify(ours) === JSON.stringify(planner)
+        );
+      })(),
+    },
+    // --- measured legs: only a measurement of the leg that ships counts ------------
+    {
+      name: "legPlanHash pins the literal budget_report.py's leg_plan_hash writes (a drift between the two would set every measurement aside, or none)",
+      ok: legPlanHash(['pytest:a.py', 'pytest:b.py']) === '6d63c78d64a1f6c7',
+      detail: legPlanHash(['pytest:a.py', 'pytest:b.py']),
+    },
+    {
+      name: 'SETS ASIDE: a measured leg whose traced runs never ran the committed leg',
+      ok: !measuredThisLeg('Q / Pytest (3/3)', ['pytest:new.py'], {
+        'Q / Pytest (3/3)': [legPlanHash(['pytest:old.py'])],
+      }),
+    },
+    {
+      name: 'COUNTS: a measured leg whose traced runs include the committed leg',
+      ok: measuredThisLeg('Q / Pytest (3/3)', ['pytest:a.py'], {
+        'Q / Pytest (3/3)': [legPlanHash(['pytest:old.py']), legPlanHash(['pytest:a.py'])],
+      }),
+    },
+    {
+      name: 'COUNTS (strict when unknown): no job_p90_plans entry, or no committed leg to compare, judges the measurement as today',
+      ok:
+        measuredThisLeg('Q / Pytest (3/3)', ['pytest:a.py'], undefined) &&
+        measuredThisLeg('Q / Pytest (3/3)', ['pytest:a.py'], {}) &&
+        measuredThisLeg('Q / Pytest (3/3)', undefined, { 'Q / Pytest (3/3)': ['x'] }),
+    },
+    {
+      name: 'CONTROL (live): job_p90_plans traces at least one measured leg to a leg committed today, so the record is not setting every measurement aside',
+      ok: (() => {
+        const plans = liveDurations.job_p90_plans ?? {};
+        const committed = ['quality-code', 'quality-pytest', 'test-e2e-workers', 'test-account-e2e']
+          .map((lane) => path.join(ROOT, shardManifestPath(lane)))
+          .filter((f) => existsSync(f))
+          .flatMap(
+            (f) =>
+              parseShardManifest(
+                readFileSync(f, 'utf-8'),
+                JSON.parse(readFileSync(f, 'utf-8')).lane
+              ).legs
+          )
+          .map((l) => legPlanHash(l.ids));
+        return Object.values(plans).some((ran) => ran.some((h) => committed.includes(h)));
+      })(),
+    },
+    // --- check 2: LABEL_GATED_JOBS, the one named exception to UNCHECKED -----------
+    {
+      name: 'labelGateOf reads the label a conjunctive job if: requires, and nothing else',
+      ok: (() => {
+        const wf = (cond: string) =>
+          `on: pull_request\njobs:\n  probe:\n    name: P\n    if: >-\n      always() &&\n      ${cond}\n    uses: ./.github/workflows/x.yml\n  next:\n    runs-on: x\n`;
+        const label = "contains(github.event.pull_request.labels.*.name, 'lbl')";
+        return (
+          labelGateOf(wf(label), 'probe') === 'lbl' &&
+          labelGateOf(wf(`${label} || github.event_name == 'push'`), 'probe') === null &&
+          labelGateOf(wf(`!${label}`), 'probe') === null &&
+          labelGateOf(wf(label), 'next') === null &&
+          labelGateOf(wf(label), 'absent') === null
+        );
+      })(),
+    },
+    {
+      name: 'COVERS: a declared job every call site of which needs the label leaves UNCHECKED for the not-measured line',
+      ok: (() => {
+        const r = labelGatedPartition(
+          ['probe', 'other'],
+          new Map([
+            ['probe', ['lbl']],
+            ['other', [null]],
+          ]),
+          [{ label: 'lbl', jobs: ['probe'], reason: LABEL_GATED_JOBS[0]?.reason ?? '' }]
+        );
+        return (
+          r.findings.length === 0 &&
+          JSON.stringify(r.unchecked) === '["other"]' &&
+          JSON.stringify(r.notMeasured) === '["probe"]'
+        );
+      })(),
+    },
+    {
+      name: 'FIRES: a declared job one call site runs WITHOUT the label is a finding and stays UNCHECKED',
+      ok: (() => {
+        const r = labelGatedPartition(['probe'], new Map([['probe', ['lbl', null]]]), [
+          { label: 'lbl', jobs: ['probe'], reason: LABEL_GATED_JOBS[0]?.reason ?? '' },
+        ]);
+        return (
+          r.findings.some((f) => f.includes('1 of its 2 call site(s)')) &&
+          JSON.stringify(r.unchecked) === '["probe"]'
+        );
+      })(),
+    },
+    {
+      name: 'FIRES: a declared job no workflow defines, and a reason that fails the BLOCKER rules, are findings',
+      ok: (() => {
+        const gone = labelGatedPartition([], new Map(), [
+          { label: 'lbl', jobs: ['gone'], reason: LABEL_GATED_JOBS[0]?.reason ?? '' },
+        ]);
+        const lazy = labelGatedPartition(['probe'], new Map([['probe', ['lbl']]]), [
+          { label: 'lbl', jobs: ['probe'], reason: 'BLOCKER: tbd' },
+        ]);
+        return (
+          gone.findings.some((f) => f.includes('no workflow defines')) &&
+          lazy.findings.length === 1 &&
+          JSON.stringify(lazy.unchecked) === '["probe"]'
+        );
+      })(),
+    },
+    {
+      name: 'CONTROL (live): every LABEL_GATED_JOBS reason passes the shared BLOCKER rules',
+      ok:
+        LABEL_GATED_JOBS.length > 0 &&
+        labelGatedPartition(
+          [],
+          new Map(LABEL_GATED_JOBS.flatMap((e) => e.jobs.map((j) => [j, [e.label]] as const))),
+          LABEL_GATED_JOBS
+        ).findings.length === 0,
     },
     // --- check 8: one job per workflow stages the embed assets --------------------
     {

@@ -33,16 +33,21 @@
     "Source: the Actions jobs API (paginated; every job, not the first 100) for the 10 latest",
     "completed pull_request runs of ci.yml, 36332829873..36370123947 (2026-09-27T16:19Z to",
     "2026-09-28T02:31Z), success-only jobs as budget_report samples them. Derivation per lane:",
-    "defaultUnitMs = (p90 job wall minutes - jobs[lane] fixed minutes) x 60000 / unit count,",
-    "and for sharded quality-code the MAX of that over its 4 legs (leg 1: 8.8m / 23 units),",
-    "so no leg is priced below its own measurement. A lane with no 'jobs' entry has its fixed",
-    "cost folded into the figure (fixed 0 in the gate). Inputs, p90 wall / units: branch",
-    "8.5m / 9 (completed jobs: the job fails every PR run on check:ci-plan-implementation,",
-    "so it has no success sample), code legs 8.8/6.2/7.5/6.4m / 23/27/27/27, content",
+    "defaultUnitMs = (p90 job wall minutes - jobs[lane] fixed minutes) x 60000 / unit count.",
+    "A lane with no 'jobs' entry has its fixed cost folded into the figure (fixed 0 in the",
+    "gate). Inputs, p90 wall / units: branch 8.5m / 9 (completed jobs: the job fails every",
+    "PR run on check:ci-plan-implementation, so it has no success sample), content",
     "3.0m / 45, gate-tests 0.8m - 0.7m fixed / 6, go 7.6m / 17, i18n 5.1m / 40, packages",
     "5.7m / 13, security 1.8m / 18, static 4.5m / 64, wiring 0.5m / 1, www-build 3.6m / 16.",
     "These quality figures are not refreshed by any tool yet: re-derive them by the recipe above",
     "when refreshed_at moves.",
+    "quality-code has NO defaultUnitMs entry (removed 2026-10-14): gate-bind plans it on each",
+    "gate's own gate_step_p90_seconds, and a flat per-gate figure priced its 34-gate leg at",
+    "13.0m against a measured 6.5m. check-lane-budget prices it the planner's way",
+    "(gateStepLanePricing), its fixed cost measured from the legs' job_p90_minutes.",
+    "'job_p90_plans' (written by --refresh): per measured leg display name, the leg contents",
+    "its samples ran (leg_plan_hash, read at each sampled run's head commit). check-lane-budget",
+    "sets aside, and prints, a measured leg p90 whose committed leg is not among them.",
     "The SHARDED test lanes and quality-pytest (added 2026-09-30, T3.1 check 4) price a unit",
     "with no 'units' entry at the p90 of that lane's own measured unit p90s, rounded UP to",
     "100 ms, from the 2026-09-30T10:07:24Z refresh: quality-pytest 23385 ms over 526 files,",
@@ -977,7 +982,6 @@
   },
   "defaultUnitMs": {
     "quality-branch": 56667,
-    "quality-code": 22957,
     "quality-content": 4000,
     "quality-go": 26824,
     "quality-i18n": 7650,
@@ -1335,6 +1339,183 @@
     "Quality / Secure Storage (keyctl)": 0.6,
     "Quality / Secure Storage (keychain)": 0.7,
     "Quality / Secure Storage (dpapi)": 2.0
+  },
+  "job_p90_plans": {
+    "Quality / Code (1)": [
+      "0be239b1cb3942c4",
+      "d687c41afd878747",
+      "f1641ecfd2686531"
+    ],
+    "Quality / Code (2)": [
+      "2bafb761f279fa82",
+      "810259ee3484e7c5"
+    ],
+    "Quality / Code (3)": [
+      "6927eeb71792994e",
+      "a41b6a2f387c4be5"
+    ],
+    "Quality / Code (4)": [
+      "57a8919b8eee3c23",
+      "bce580c1087c5bd7",
+      "c2d2aa047b1e36f8"
+    ],
+    "Quality / Pytest (1/3)": [
+      "42ebc09a297a0b3a"
+    ],
+    "Quality / Pytest (2/3)": [
+      "45ac414b27d4e720"
+    ],
+    "Quality / Pytest (3/3)": [
+      "7a8c164bdbfc0bb0"
+    ],
+    "Tests + Infra / Account E2E (1/4)": [
+      "a0174c0599d95bd1"
+    ],
+    "Tests + Infra / Account E2E (2/4)": [
+      "32ed6e48bc8876fd"
+    ],
+    "Tests + Infra / Account E2E (3/4)": [
+      "71b52007e3c859eb",
+      "7bbcb1e639863197"
+    ],
+    "Tests + Infra / Account E2E (4/4)": [
+      "4008f45254c4c054"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 1/8)": [
+      "21c117112edb0397"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 2/8)": [
+      "82174cfb75442b1b"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 3/8)": [
+      "07318f32a7c8f6f1"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 4/8)": [
+      "fc904501bf2445d4"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 5/8)": [
+      "dc446bf62492960d"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 6/8)": [
+      "51532a4115c57b43"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 7/8)": [
+      "10ae99d47af374ad"
+    ],
+    "Tests + Infra / E2E Workers (debian-13, 8/8)": [
+      "5b8b8af36b0d7e27"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 1/8)": [
+      "21c117112edb0397"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 2/8)": [
+      "82174cfb75442b1b"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 3/8)": [
+      "07318f32a7c8f6f1"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 4/8)": [
+      "fc904501bf2445d4"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 5/8)": [
+      "dc446bf62492960d"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 6/8)": [
+      "51532a4115c57b43"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 7/8)": [
+      "10ae99d47af374ad"
+    ],
+    "Tests + Infra / E2E Workers (fedora-43, 8/8)": [
+      "5b8b8af36b0d7e27"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 1/8)": [
+      "21c117112edb0397"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 2/8)": [
+      "82174cfb75442b1b"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 3/8)": [
+      "07318f32a7c8f6f1"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 4/8)": [
+      "fc904501bf2445d4"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 5/8)": [
+      "dc446bf62492960d"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 6/8)": [
+      "51532a4115c57b43"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 7/8)": [
+      "10ae99d47af374ad"
+    ],
+    "Tests + Infra / E2E Workers (opensuse-16.0, 8/8)": [
+      "5b8b8af36b0d7e27"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 1/8)": [
+      "21c117112edb0397"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 2/8)": [
+      "82174cfb75442b1b"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 3/8)": [
+      "07318f32a7c8f6f1"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 4/8)": [
+      "fc904501bf2445d4"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 5/8)": [
+      "dc446bf62492960d"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 6/8)": [
+      "51532a4115c57b43"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 7/8)": [
+      "10ae99d47af374ad"
+    ],
+    "Tests + Infra / E2E Workers (oracle-10, 8/8)": [
+      "5b8b8af36b0d7e27"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 1/8)": [
+      "21c117112edb0397"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 2/8)": [
+      "82174cfb75442b1b"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 3/8)": [
+      "07318f32a7c8f6f1"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 4/8)": [
+      "fc904501bf2445d4"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 5/8)": [
+      "dc446bf62492960d"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 6/8)": [
+      "51532a4115c57b43"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 7/8)": [
+      "10ae99d47af374ad"
+    ],
+    "Tests + Infra / E2E Workers (ubuntu-24.04, 8/8)": [
+      "5b8b8af36b0d7e27"
+    ],
+    "Tests + Infra / Renet (go, 1/2)": [
+      "f288fb8201811b76"
+    ],
+    "Tests + Infra / Renet (go, 2/2)": [
+      "35c555a1531e9bba"
+    ],
+    "Tests + Infra / Renet (integration, 1/3)": [
+      "e730392750a84e81"
+    ],
+    "Tests + Infra / Renet (integration, 2/3)": [
+      "6012c5b4d9358715"
+    ],
+    "Tests + Infra / Renet (integration, 3/3)": [
+      "59efdd5a7969f515"
+    ]
   },
   "gate_step_p90_seconds": {
     "check:version": 1.0,
