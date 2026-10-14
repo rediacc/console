@@ -115,18 +115,22 @@ def _duration(argv):
     return total if found else None
 
 
-def _heredoc_bodies(cmd):
-    """Every heredoc body in `cmd`, whatever command reads it (the 2026-08-25 ruling)."""
-    lexer = shellscan._Lexer(cmd)
-    lexer.tokens()
-    return [
-        cmd[hd.body_start : hd.body_end]
-        for hd in lexer.heredocs
-        if hd.body_start is not None and hd.body_end is not None
-    ]
+def _program_texts(cmd, cwd):
+    """The program text of every interpreter run that the heredoc scan does not already cover: an inline `-c`/`-e` program and a script run BY PATH, as `shellscan.interpreter_program` reads them (#78afdc0b). A program read from stdin is a heredoc body, scanned below whatever reads it.
+
+    An "unjudgeable" script is not refused here, unlike the shell-write guards: this guard bounds a pause's COST, and a script the walk cannot read is no more likely to hold one than any other command.
+    """
+    if not re.search(r"python|node|perl|ruby|deno|bun|tsx", cmd):
+        return []
+    out = []
+    for run_ in shellscan.every_run(cmd):
+        text, kind = shellscan.interpreter_program(run_, cmd, cwd)
+        if kind in ("inline", "file") and text:
+            out.append(text)
+    return out
 
 
-def _sleeps(cmd):
+def _sleeps(cmd, cwd=None):
     """Every sleep in `cmd`, in seconds: the commands bash runs, then the text kept on purpose."""
     found = []
     # LAUNCHED COMMANDS COUNT (#503f0ba8): `find . -exec <pause> \;` and `npx <pause>` stall the session exactly as the bare pause does, so the walk includes what `npx` and `find -exec` start (`shellscan.every_run`).
@@ -138,8 +142,12 @@ def _sleeps(cmd):
                 found.append(seconds)
         elif base in _ELSEWHERE:
             found.extend(_arith(m) for m in _TEXT_SLEEP.findall(" ".join(run_.argv)))
-    for body in _heredoc_bodies(cmd):
+    # The 2026-08-25 ruling: every heredoc body, whatever reads it, nested in a payload or not.
+    for body in shellscan.heredoc_bodies(cmd):
         found.extend(_arith(m) for m in _TEXT_SLEEP.findall(body))
+    # A PROGRAM'S TEXT IS READ THE WAY A HEREDOC BODY IS (#78afdc0b): `python3 -c 'os.system("<pause> 900")'` and the same line in a script run by path stall the session exactly as the heredoc form, which was the only one refused (rc 0 against rc 2 at c5c3036c3).
+    for text in _program_texts(cmd, cwd):
+        found.extend(_arith(m) for m in _TEXT_SLEEP.findall(text))
     return found
 
 
@@ -154,7 +162,7 @@ def run(ev):
     bg = ev.flag("tool_input", "run_in_background")
 
     # The MAXIMUM sleep in the command, not the first one.
-    ordered = sorted(_sleeps(cmd))
+    ordered = sorted(_sleeps(cmd, ev.field("cwd") or None))
     value = ordered[-1] if ordered else None
 
     limit = FG_MAX

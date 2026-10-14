@@ -4,15 +4,25 @@
 Both directions, because a one-sided control is satisfiable by a broken hook: one that always blocks passes the positive cases, one that never blocks passes the negative ones. The prose cases are the 2026-10-01 defect (#8e5a6452): the word for a pause inside a QUOTED argument was read as a command.
 """
 
+import atexit
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
+import tempfile
 
 # Derived from THIS file, never hard-coded: the guard lives beside the harness, and the dispatcher is what actually runs it.
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_long_sleep"]
 S = "sle" + "ep"  # assembled so this file is not itself a tripwire for a text scan
+# Scripts run BY PATH (#78afdc0b), untracked in the system temp directory: one runs a long pause, one a short one. Written before any case runs and removed at exit.
+_SCRIPTS = pathlib.Path(tempfile.mkdtemp(prefix="test-long-sleep-scripts-"))
+atexit.register(shutil.rmtree, str(_SCRIPTS), True)
+LONG = _SCRIPTS / "long.py"
+LONG.write_text("import os\nos.system(%r)\n" % (S + " 900"), encoding="utf-8")
+SHORT = _SCRIPTS / "short.py"
+SHORT.write_text("import os\nos.system(%r)\n" % (S + " 5"), encoding="utf-8")
 
 CASES = [
     # (name, command, background, expect_blocked)
@@ -64,6 +74,23 @@ CASES = [
         False,
         True,
     ),
+    # --- a program's text is read like a heredoc body (#78afdc0b): each BLOCKED row was allowed at c5c3036c3 ---
+    (
+        "python -c running a long pause",
+        "python3 -c 'import os; os.system(\"" + S + " 900\")'",
+        False,
+        True,
+    ),
+    ("a script by path running a long pause", "python3 %s" % LONG, False, True),
+    ("the same script from a cd", "cd %s && python3 long.py" % _SCRIPTS, False, True),
+    ("a script by path running a short pause", "python3 %s" % SHORT, False, False),
+    (
+        "python -c running a short pause",
+        "python3 -c 'import os; os.system(\"" + S + " 5\")'",
+        False,
+        False,
+    ),
+    ("a heredoc inside a sh -c payload", "sh -c 'cat <<E\n" + S + " 99\nE'", False, True),
     # --- caps ---
     ("at the cap", S + " 20", False, False),
     ("short", S + " 10", False, False),
