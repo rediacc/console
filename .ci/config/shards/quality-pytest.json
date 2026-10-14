@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-14T20:50:56.166Z",
+  "generatedAt": "2026-10-14T21:37:06.711Z",
   "legs": [
     {
       "index": 1,
@@ -608,6 +608,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
+        "pytest:.ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_cli_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_ops_host_check.py",
