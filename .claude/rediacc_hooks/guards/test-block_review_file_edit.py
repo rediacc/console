@@ -331,6 +331,25 @@ SHELL_CASES = [
         % (_SCRIPTS, WRITER.read_text(), _SCRIPTS),
         True,
     ),
+    # #7ab88f34: the same scripts run DIRECTLY by the shebang their writer put on the first line. The file does not exist when the hook runs, so its first line was read from the disk, named nothing, and the program ran unread (rc 0, against rc 2 for the interpreter-word form).
+    (
+        "a script written and run directly by its shebang in one command",
+        "cat > %s/later_direct.py <<'EOF'\n#!/usr/bin/env python3\n%sEOF\nchmod +x %s/later_direct.py; %s/later_direct.py"
+        % (_SCRIPTS, WRITER.read_text(), _SCRIPTS, _SCRIPTS),
+        True,
+    ),
+    (
+        "a script printed and run directly by its shebang in one command",
+        'printf \'#!/usr/bin/env python3\\nopen("%s", "w").write("x")\\n\' > %s/printed.py; chmod +x %s/printed.py; %s/printed.py'
+        % (L, _SCRIPTS, _SCRIPTS, _SCRIPTS),
+        True,
+    ),
+    (
+        "a script written and run directly by its shebang that only reads",
+        "cat > %s/later_direct_reader.py <<'EOF'\n#!/usr/bin/env python3\n%sEOF\nchmod +x %s/later_direct_reader.py; %s/later_direct_reader.py"
+        % (_SCRIPTS, READER.read_text(), _SCRIPTS, _SCRIPTS),
+        False,
+    ),
     (
         "a script written and run in one command that only reads",
         "cat > %s/later_reader.py <<'EOF'\n%sEOF\npython3 %s/later_reader.py"

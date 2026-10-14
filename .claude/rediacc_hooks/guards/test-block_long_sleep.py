@@ -92,6 +92,21 @@ CASES = [
     ("a script by path running a short pause", "python3 %s" % SHORT, False, False),
     ("a script run directly by its shebang", str(DIRECT), False, True),
     ("the same script directly from a cd", "cd %s && ./direct.py" % _SCRIPTS, False, True),
+    # #7ab88f34: a script an earlier run of the same command WRITES, then runs directly by its shebang. The file does not exist when the hook runs, so its first line was read from the disk, named nothing, and the pause ran unread (rc 0, against rc 2 with `python3` in front).
+    (
+        "a script printed and run directly in one command",
+        "printf '#!/usr/bin/env python3\\nimport os\\nos.system(\"%s 900\")\\n' > %s/later.py; chmod +x %s/later.py; %s/later.py"
+        % (S, _SCRIPTS, _SCRIPTS, _SCRIPTS),
+        False,
+        True,
+    ),
+    (
+        "a script printed and run directly with a short pause",
+        "printf '#!/usr/bin/env python3\\nimport os\\nos.system(\"%s 5\")\\n' > %s/later_short.py; chmod +x %s/later_short.py; %s/later_short.py"
+        % (S, _SCRIPTS, _SCRIPTS, _SCRIPTS),
+        False,
+        False,
+    ),
     ("a direct script behind timeout (review 05c4df4d.3)", "timeout 5 %s" % DIRECT, False, True),
     ("a direct script behind nohup (review 05c4df4d.3)", "nohup %s" % DIRECT, False, True),
     # Review 6623b83f.2: the text rule does not ask whether the pause RUNS, the same trade the heredoc body makes (operator ruling 2026-08-25), so a program that only prints the words is refused too.

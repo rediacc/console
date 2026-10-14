@@ -1944,6 +1944,7 @@ class _Run:
     __slots__ = (
         "argv",
         "canonical",
+        "command",
         "cwd",
         "env",
         "feed",
@@ -1999,6 +2000,8 @@ class _Run:
         self.via = ()
         # THE VARIABLES AN ENCLOSING `for`/`select` LOOP ASSIGNS (review e085085d.1 sweep): `NAME -> [word, ...]`, the list it walks, innermost loop first. `for f in .claude/settings.json; do rm "$f"; done` removes that path, and the shell state (`vars`) cannot say so, because the variable holds each word in turn. Empty outside a loop and for a loop over the positionals.
         self.loop_vars = {}
+        # THE COMMAND LINE THIS RUN WAS WALKED FROM (#7ab88f34), set by `_analyse` on every run of its walk, None for a run built any other way. `shebang_interpreter` reads it to find what an earlier run of the same line wrote into a script this one runs by path, for callers that hand it a run and no command.
+        self.command = None
 
 
 class _Analysis:
@@ -2789,6 +2792,8 @@ def _analyse(cmd):
         return hit
     analysis = _Analysis()
     _Walker(analysis, 0).text(cmd, None, persist=True)
+    for run in _every_run(analysis):
+        run.command = cmd
     if len(_ANALYSIS_CACHE) > 64:
         _ANALYSIS_CACHE.clear()
     _ANALYSIS_CACHE[cmd] = analysis
@@ -5678,19 +5683,38 @@ def heredoc_bodies(cmd):
     return [doc.body for doc in _analyse(cmd).heredocs if doc.body is not None]
 
 
-def shebang_interpreter(run, cwd=None):
-    """The interpreter a script run DIRECTLY by path names on its first line (`./long.py` with `#!/usr/bin/env python3` is `python3`), or None: a name with no slash is looked up on PATH and is not a script of the checkout, a missing or unreadable file names nothing, and a shebang naming another program (`bash`) is not an interpreter run (reviews 6623b83f.1, 6f52f7ff.1)."""
+def _written_by_path(run, cwd, cmd=None):
+    """`(True, text or None)` when an earlier run of the same command writes the script `run` runs by path (`_written_scripts`, None for content this walk cannot read), else `(False, None)`. The command is `cmd`, or the line `run` was walked from (`_Run.command`)."""
+    cmd = cmd if cmd is not None else getattr(run, "command", None)
+    if cmd is None or "/" not in run.name:
+        return False, None
+    written = _written_scripts(cmd, run, cwd)
+    target = _script_path(run.name, run.cwd, cwd)
+    if target in written:
+        return True, written[target]
+    return False, None
+
+
+def shebang_interpreter(run, cwd=None, cmd=None):
+    """The interpreter a script run DIRECTLY by path names on its first line (`./long.py` with `#!/usr/bin/env python3` is `python3`), or None: a name with no slash is looked up on PATH and is not a script of the checkout, a missing or unreadable file names nothing, and a shebang naming another program (`bash`) is not an interpreter run (reviews 6623b83f.1, 6f52f7ff.1).
+
+    THE FIRST LINE AN EARLIER RUN WRITES WINS OVER THE DISK (#7ab88f34), as it does for a script handed to an interpreter (`interpreter_program`, review b922f15c.1). `printf '#!/usr/bin/env python3\\n...' > /tmp/x.py; chmod +x /tmp/x.py; /tmp/x.py` runs a file that does not exist when the hook runs, so the disk read named nothing and every guard that reads scripts let the program run unread (rc 0, against rc 2 for the same line ending `python3 /tmp/x.py`, measured 2026-10-14 on block_long_sleep and block_review_file_shell_write). A write whose content the walk cannot read names no interpreter here; `_shebang_program` reads it as unjudgeable.
+    """
     if "/" not in run.name:
         return None
-    target = _script_path(run.name, run.cwd, cwd)
-    try:
-        # A named pipe or device is not a script: opening a FIFO would block the hook until a writer appears (review 05c4df4d.4).
-        if not os.path.isfile(target):
+    found, written = _written_by_path(run, cwd, cmd)
+    if found:
+        first = (written or "").split("\n", 1)[0][:256]
+    else:
+        target = _script_path(run.name, run.cwd, cwd)
+        try:
+            # A named pipe or device is not a script: opening a FIFO would block the hook until a writer appears (review 05c4df4d.4).
+            if not os.path.isfile(target):
+                return None
+            with open(target, "rb") as handle:
+                first = handle.readline(256).decode("utf-8", "replace")
+        except OSError:
             return None
-        with open(target, "rb") as handle:
-            first = handle.readline(256).decode("utf-8", "replace")
-    except OSError:
-        return None
     if not first.startswith("#!"):
         return None
     for word in first[2:].split():
@@ -5700,10 +5724,15 @@ def shebang_interpreter(run, cwd=None):
     return None
 
 
-def _shebang_program(run, cwd):
-    """`(text, "file")` for a script run directly by path whose shebang names an interpreter, read under the rules a script handed to an interpreter is; `(None, "unjudgeable")` when it is larger than `_SCRIPT_MAX`; `(None, None)` for anything else (a tracked and unchanged script, a missing one, a shebang naming no interpreter)."""
-    if shebang_interpreter(run, cwd) is None:
+def _shebang_program(run, cwd, cmd=None):
+    """`(text, "file")` for a script run directly by path whose shebang names an interpreter, read under the rules a script handed to an interpreter is: what an earlier run of the same command wrote into it, else the file on disk. `(None, "unjudgeable")` when an earlier run wrote it from a source this walk cannot read, or the file is larger than `_SCRIPT_MAX`; `(None, None)` for anything else (a tracked and unchanged script, a missing one, a shebang naming no interpreter)."""
+    found, written = _written_by_path(run, cwd, cmd)
+    if found and written is None:
+        return None, "unjudgeable"
+    if shebang_interpreter(run, cwd, cmd) is None:
         return None, None
+    if found:
+        return written, "file"
     text, state = _script_file_text(run.name, run.cwd, cwd)
     if state == "read":
         return text, "file"
@@ -5724,7 +5753,7 @@ def interpreter_program(run, cmd, cwd=None):
     `kind` is "inline" (`-c`/`-e` and their spellings), "stdin" (every heredoc body of `cmd`, when the run reads its program from stdin: no operand, or `-`), "file" (a script passed by path: what an earlier run of the same command wrote into it, else the file on disk, under the rules above) or "unjudgeable" (`(None, "unjudgeable")`: an earlier run wrote the script from a source this walk cannot read, or the file is larger than `_SCRIPT_MAX`). A module run (`python -m x`), a tracked and unchanged script, and one that does not exist are `(None, None)`. `cwd` is the directory the command runs in; a run that `cd`'d is resolved from its own `run.cwd` under it.
     """
     if not run.name.rsplit("/", 1)[-1].startswith(INTERPRETER_NAMES):
-        return _shebang_program(run, cwd)
+        return _shebang_program(run, cwd, cmd)
     kind, value = _program_parse(run.name.rsplit("/", 1)[-1], list(run.argv))
     if kind == "inline":
         return value, "inline"
