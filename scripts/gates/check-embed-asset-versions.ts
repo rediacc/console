@@ -183,7 +183,14 @@ const VERSION_TOKEN = /\bv?\d+\.\d+(?:\.\d+)?[\w.+-]*/;
  * it used to check, which is how a check decays into decoration. That is a
  * failure, not a shrug.
  */
-const MUST_STAY_PROBEABLE = new Set(['rsync', 'criu']);
+const MUST_STAY_PROBEABLE = new Set([
+  'rsync',
+  'criu',
+  // The CSI sidecars joined once renet's Dockerfile stamped `-X main.version=v<tag>` (worklist #669ed286); before that they answered `<binary> unknown` and a wrong one went unnoticed.
+  'csiprovisioner',
+  'csisnapshotter',
+  'snapshotcontroller',
+]);
 
 const HOST_ARCH = os.arch() === 'x64' ? 'amd64' : os.arch() === 'arm64' ? 'arm64' : os.arch();
 
@@ -228,7 +235,7 @@ async function probeAsset(
         if (statesVersion(out, pin)) {
           return { component, asset, pin, verdict: 'match', detail: `ran \`${flag}\`` };
         }
-        // A MISMATCH needs evidence of a DIFFERENT version, never merely the absence of ours. The CSI sidecars are the case that taught this: they are built without version ldflags, answer `--version` with `<binary> unknown`, and carry no version token at all. Calling that a mismatch would red-flag a perfectly good asset, and a gate that cries wolf on healthy input gets disabled,
+        // A MISMATCH needs evidence of a DIFFERENT version, never merely the absence of ours. The CSI sidecars were the case that taught this: built without version ldflags, they answered `--version` with `<binary> unknown` and carried no version token at all (renet's Dockerfile has stamped `main.version` since #669ed286). Calling that a mismatch would red-flag a perfectly good asset, and a gate that cries wolf on healthy input gets disabled,
         // which is worse than not having it.
         if (VERSION_TOKEN.test(out)) {
           return {
