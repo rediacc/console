@@ -55,6 +55,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 __all__ = [
     "DEFAULT_LOCALE",
@@ -126,12 +130,12 @@ def subset(name: str, codes: list[str] | tuple[str, ...]) -> tuple[str, ...]:
     return tuple(out)
 
 
-def assert_covered_by_site(name: str, codes: object) -> None:
+def assert_covered_by_site(name: str, codes: Iterable[str]) -> None:
     """Assert every code in `codes` is a site locale, WITHOUT deriving it from the site set.
 
     This is the correct coupling for a category B list, and for an attribute map whose keys are per-locale but whose values are independent data. It catches a typo'd key while leaving the membership decision where it belongs.
     """
-    unknown = sorted(c for c in codes if c not in SITE_LOCALES)  # type: ignore[union-attr]
+    unknown = sorted(c for c in codes if c not in SITE_LOCALES)
     if unknown:
         raise ValueError(
             f"{name} contains code(s) that are not site locales: {', '.join(unknown)}. "

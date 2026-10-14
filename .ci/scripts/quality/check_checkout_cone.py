@@ -248,8 +248,8 @@ class PyIndex:
     @staticmethod
     def chain(parent: dict[str, str | None], mod: str) -> list[str]:
         out = [mod]
-        while parent.get(out[-1]) is not None:
-            out.append(parent[out[-1]])  # type: ignore[arg-type]
+        while (up := parent.get(out[-1])) is not None:
+            out.append(up)
         return out[::-1]
 
     # -- import-time reads -------------------------------------------------
@@ -321,8 +321,10 @@ class PyIndex:
             if isinstance(f, ast.Name):
                 if f.id in defs:
                     target = (mod, f.id)
-                elif f.id in binds and binds[f.id][1]:
-                    target = (binds[f.id][0], binds[f.id][1])  # type: ignore[assignment]
+                elif f.id in binds:
+                    bound_mod, bound_name = binds[f.id]
+                    if bound_name:
+                        target = (bound_mod, bound_name)
             elif isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name):
                 b = binds.get(f.value.id)
                 if b and b[1] is None:
@@ -389,8 +391,9 @@ def script_imports(index: PyIndex, script: str) -> list[str]:
         if isinstance(n, ast.Import):
             out.update(a.name for a in n.names if a.name.startswith(PKG))
         elif isinstance(n, ast.ImportFrom) and not n.level and (n.module or "").startswith(PKG):
-            out.add(n.module)  # type: ignore[arg-type]
-            out.update("%s.%s" % (n.module, a.name) for a in n.names)
+            module = n.module or ""
+            out.add(module)
+            out.update("%s.%s" % (module, a.name) for a in n.names)
     return sorted(m for m in out if index.file_of(m))
 
 

@@ -148,7 +148,7 @@ class ReleaseAge:
         self.root = paths.repo_root() if root is None else pathlib.Path(root)
         self._runner: list[str] | None = None
         self._window: int | None = None
-        self._eligible: dict[tuple[int, int], int] = {}
+        self._eligible: dict[tuple[int | str, int], int] = {}
         # Not part of the twin. The count `test_core_release_age.py` compares against the twin's N+1 probes; see DEFECT 1.
         self.delegate_calls = 0
         self.probe_calls = 0
@@ -231,7 +231,7 @@ class ReleaseAge:
             self._window = int(answer)
         return self._window
 
-    def eligible_epoch(self, publish_epoch: int, window: int, *, err=None) -> int | None:
+    def eligible_epoch(self, publish_epoch: int | str, window: int, *, err=None) -> int | None:
         """`__release_age_ensure_eligible` (release-age.sh:168-192). None on failure.
 
         THE FAILURE IS NOT CACHED, matching `:190`: the write happens only after the regex accepts, so a transient delegate failure is retried rather than frozen into the run.
@@ -261,7 +261,7 @@ class ReleaseAge:
         """
         if window is None:
             window = self.window_seconds()
-        return self.eligible_epoch(publish_epoch, window, err=err)  # type: ignore[arg-type]
+        return self.eligible_epoch(publish_epoch, window, err=err)
 
     def is_release_deferred(
         self,

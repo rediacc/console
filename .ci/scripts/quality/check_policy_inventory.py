@@ -329,7 +329,8 @@ def python_join_sites(source: str, names: frozenset[str], policy_dir: str) -> li
             docstrings.add(id(body[0].value))
     for node in ast.walk(tree):
         for child in ast.iter_child_nodes(node):
-            child.parent = node  # type: ignore[attr-defined]
+            # The `ast` stubs declare no `parent`, but nodes take arbitrary attributes; the readers use `getattr`.
+            vars(child)["parent"] = node
 
     joiners = {"os.path.join", "posixpath.join", "pathlib.Path", "Path"}
     out = []

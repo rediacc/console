@@ -61,14 +61,10 @@ class Ctx:
     root: pathlib.Path
     env: dict[str, str] = field(default_factory=lambda: dict(os.environ))
     stdin_tty: bool = False
-    # BUILT IN `__post_init__` WHEN ABSENT, so the type is not Optional past construction and no call site needs an assert to satisfy a type checker.
-    logger: log.Logger = None  # type: ignore[assignment]
+    # BUILT BY THE DATACLASS WHEN ABSENT, so the type is not Optional past construction and no call site needs an assert to satisfy a type checker.
+    logger: log.Logger = field(default_factory=log.Logger)
     # ANSWERS EVERY PROMPT WITHOUT ASKING, and `None` means "there is nobody to ask". Held as data rather than as a method override so a fixture can say "the operator would have said yes" without subclassing anything.
     answer: bool | None = None
-
-    def __post_init__(self) -> None:
-        if self.logger is None:
-            self.logger = log.Logger()
 
     # -- probes ------------------------------------------------------------
 

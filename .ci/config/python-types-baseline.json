@@ -3194,13 +3194,6 @@
       "message": "Need type annotation for \"parts\" (hint: \"parts: list[<type>] = ...\")"
     },
     {
-      "id": "acd4709d4b62a7d1",
-      "file": "packages/locales/site_locales.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"object\" has no attribute \"__iter__\"; maybe \"__dir__\" or \"__str__\"? (not iterable)"
-    },
-    {
       "id": "660a6e9dbca2216c",
       "file": "scripts/ops/bws-map-refresh.py",
       "code": "list-item",

@@ -82,6 +82,7 @@ why: six bash enumerations answered "what a machine needs" and none compared the
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import io
 import pathlib
 import platform as _platform
@@ -89,6 +90,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
+from typing import TypedDict, Unpack
 
 # THE HOP, WRITTEN BY HAND EXACTLY ONCE, and copied deliberately from `.ci/rediacc_ci/check_pytest.py:88` rather than invented: this file is both a module and a SCRIPT, and as a script it cannot import the module that would put its own package on sys.path until its package is on sys.path. `parents[2]` is `.ci`, one level deeper than check_pytest's `parents[1]` because this file
 # sits in a subpackage. Everything after this line goes through rediacc_ci.paths.
@@ -110,6 +112,20 @@ LINUX_MANAGERS = ("apt", "dnf", "pacman", "apk")
 DARWIN_MANAGERS = ("brew",)
 REPO_MANAGER = "repo"
 ALL_MANAGERS = (*LINUX_MANAGERS, *DARWIN_MANAGERS, REPO_MANAGER)
+
+
+class ToolFields(TypedDict, total=False):
+    """The fields of a `Tool` row, each optional, for a caller that overrides some of them."""
+
+    name: str
+    purpose: str
+    pin_key: str | None
+    install: dict[str, str]
+    provenance: str
+    probe: tuple[str, ...] | None
+    note: str
+    python_dist: str
+    aliases: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -940,20 +956,19 @@ def install_plan(manager: str, table: tuple[Tool, ...] = TOOLS) -> int:
 # --------------------------------------------------------------------------- Selftest: both directions, before any real scan ---------------------------------------------------------------------------
 
 
-def _row(**kwargs: object) -> Tool:
+def _row(**kwargs: Unpack[ToolFields]) -> Tool:
     """A minimal valid row, so a control can break exactly one field.
 
     Written as a helper rather than repeated per control because a control that accidentally breaks TWO fields at once still fires, and then proves nothing about the assertion it was named after.
     """
-    base: dict[str, object] = {
-        "name": "widget",
-        "purpose": "a purpose",
-        "pin_key": None,
-        "install": {"apt": "apt install widget", "brew": "brew install widget"},
-        "provenance": "somewhere.sh:1",
-    }
-    base.update(kwargs)
-    return Tool(**base)  # type: ignore[arg-type]
+    base = Tool(
+        name="widget",
+        purpose="a purpose",
+        pin_key=None,
+        install={"apt": "apt install widget", "brew": "brew install widget"},
+        provenance="somewhere.sh:1",
+    )
+    return dataclasses.replace(base, **kwargs)
 
 
 def selftest(*, verbose: bool = True) -> int:

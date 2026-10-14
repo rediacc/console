@@ -50,14 +50,8 @@
   ".ci/rediacc_ci/core/bws_env.py": {
    "noqa S606": 1
   },
-  ".ci/rediacc_ci/core/jsonl_append.py": {
-   "type-ignore assignment": 1
-  },
   ".ci/rediacc_ci/core/local_common.py": {
    "noqa S606": 1
-  },
-  ".ci/rediacc_ci/core/release_age.py": {
-   "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/core/run_verbs.py": {
    "noqa PLW0108": 1
@@ -116,9 +110,7 @@
    "noqa BLE001": 1
   },
   ".ci/rediacc_ci/quality/gh_retry_reads.py": {
-   "noqa PLC0415": 1,
-   "type-ignore arg-type": 1,
-   "type-ignore list-item": 1
+   "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/quality/hook_exec_baseline.py": {
    "noqa PLC0415": 1
@@ -142,30 +134,17 @@
   ".ci/rediacc_ci/security/workflow_gates.py": {
    "noqa PLC0415": 2
   },
-  ".ci/rediacc_ci/setup/ctx.py": {
-   "type-ignore assignment": 1
-  },
   ".ci/rediacc_ci/setup/host.py": {
    "noqa S310": 1
   },
   ".ci/rediacc_ci/setup/machine.py": {
    "noqa S606": 1
   },
-  ".ci/rediacc_ci/setup/shadow_driver.py": {
-   "type-ignore assignment": 4,
-   "type-ignore override": 1
-  },
-  ".ci/rediacc_ci/setup/tools.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/tests/gates/harness.py": {
    "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/tests/gates/test_gate_ci_trace_branch.py": {
    "noqa PLC0415": 2
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_fanout_timeout_declarable.py": {
-   "type-ignore attr-defined": 1
   },
   ".ci/rediacc_ci/tests/regolden.py": {
    "noqa PLC0415": 2
@@ -266,9 +245,6 @@
   ".ci/rediacc_ci/tests/test_review_standing_orders_brief.py": {
    "type-ignore arg-type": 1
   },
-  ".ci/rediacc_ci/tests/test_setup_tools.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/xdist_groups.py": {
    "noqa PLC0415": 1
   },
@@ -285,10 +261,6 @@
   ".ci/scripts/quality/check_agent_session_archival.py": {
    "noqa PLC0415": 1
   },
-  ".ci/scripts/quality/check_checkout_cone.py": {
-   "type-ignore arg-type": 2,
-   "type-ignore assignment": 1
-  },
   ".ci/scripts/quality/check_gate_reachability_coverage.py": {
    "noqa PLC0415": 1
   },
@@ -301,15 +273,6 @@
   },
   ".ci/scripts/quality/check_plan_record.py": {
    "noqa BLE001": 1
-  },
-  ".ci/scripts/quality/check_policy_inventory.py": {
-   "type-ignore attr-defined": 1
-  },
-  ".ci/scripts/quality/check_pr_head_ref_completeness.py": {
-   "type-ignore import-untyped": 1
-  },
-  ".ci/scripts/quality/check_python_control_plants.py": {
-   "type-ignore attr-defined": 1
   },
   ".ci/scripts/quality/check_resprofile.py": {
    "noqa E402": 1
@@ -327,9 +290,6 @@
   },
   ".devcontainer/start-vscode.sh": {
    "shellcheck-disable SC2064": 2
-  },
-  "packages/locales/site_locales.py": {
-   "type-ignore union-attr": 1
   }
  }
 }

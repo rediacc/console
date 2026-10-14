@@ -8,9 +8,11 @@ THE DIVISION IS DELIBERATE. If a pin is renamed, the selftest stays green and th
 
 from __future__ import annotations
 
+import dataclasses
 import re
 import subprocess
 import sys
+from typing import Unpack
 
 import pytest
 
@@ -215,16 +217,15 @@ def test_report_never_gates() -> None:
 # --------------------------------------------------------------------------- The audit's own both-direction behaviour, driven from pytest ---------------------------------------------------------------------------
 
 
-def _minimal(**kwargs: object) -> tools.Tool:
-    base: dict[str, object] = {
-        "name": "widget",
-        "purpose": "a purpose",
-        "pin_key": None,
-        "install": {"apt": "a", "brew": "b"},
-        "provenance": "x.sh:1",
-    }
-    base.update(kwargs)
-    return tools.Tool(**base)  # type: ignore[arg-type]
+def _minimal(**kwargs: Unpack[tools.ToolFields]) -> tools.Tool:
+    base = tools.Tool(
+        name="widget",
+        purpose="a purpose",
+        pin_key=None,
+        install={"apt": "a", "brew": "b"},
+        provenance="x.sh:1",
+    )
+    return dataclasses.replace(base, **kwargs)
 
 
 FAKE_PINS = {"WIDGET_VERSION": "1.0", "PYTEST_VERSION": "9.1.1"}
