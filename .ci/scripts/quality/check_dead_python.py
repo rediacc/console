@@ -37,7 +37,7 @@ why: a Python file no execution route reaches is dead code sitting beside live
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import dead_python
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ why: workers/proxy's container could never build (its Dockerfile copies packages
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import container_build_context
 
 if __name__ == "__main__":

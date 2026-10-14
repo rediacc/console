@@ -35,7 +35,7 @@ import re
 import subprocess
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.controls import plant
 from rediacc_ci.well_known import UBUNTU_ARCHIVE, UBUNTU_AZURE_MIRROR
 
