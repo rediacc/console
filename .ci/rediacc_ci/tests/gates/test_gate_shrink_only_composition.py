@@ -72,6 +72,10 @@ PY_GUARD_FUNCS = ("write_verdict", "baseline_additions")
 PY_EXEMPT = (".ci/rediacc_ci/quality/shrink_only.py",)
 
 
+# The spellings of an argument vector an `assert` may read and still be an argv parse (see `py_offers_flag`).
+ARGV_NAMES = frozenset(("argv", "args"))
+
+
 def py_offers_flag(tree) -> bool:
     """True when the module PARSES the flag, not when it merely names it.
 
@@ -81,11 +85,18 @@ def py_offers_flag(tree) -> bool:
     def is_flag(node) -> bool:
         return isinstance(node, ast.Constant) and node.value == FLAG
 
-    # A membership or equality test that is an `assert` condition checks output; it parses no argv.
+    # An `assert` whose condition reads no argument vector checks output (a captured stream, a return value); it parses no argv, so its comparisons are skipped. One that does read one (`assert FLAG in sys.argv`) still parses the flag and is NOT skipped: the argument vector is any name or attribute spelled `argv` or `args`.
+    def reads_argv(test) -> bool:
+        return any(
+            (isinstance(n, ast.Name) and n.id in ARGV_NAMES)
+            or (isinstance(n, ast.Attribute) and n.attr in ARGV_NAMES)
+            for n in ast.walk(test)
+        )
+
     asserted = {
         id(inner)
         for node in ast.walk(tree)
-        if isinstance(node, ast.Assert)
+        if isinstance(node, ast.Assert) and not reads_argv(node.test)
         for inner in ast.walk(node.test)
     }
     for node in ast.walk(tree):
@@ -141,8 +152,231 @@ def py_guard_calls(tree) -> set[str]:
     return called
 
 
-# Floors, one per corpus. Neither excuses the other; see the docstring.
+# THE TYPESCRIPT HALF READS TOKENS, NOT TEXT, since 2026-10-14. Until then every `.ts`/`.js` file whose bytes held the flag was a writer, so a pin driver building the drain command as a string (`scripts/lib/pins/drivers/docker.ts`) and a selftest asserting that string's suffix (`scripts/lib/pins/drivers/selftest.ts`) were both reported as unguarded baseline writers, and
+# the check was red at HEAD for two files that parse no argv at all. The Python half made the same move on 2026-09-25 (see `py_offers_flag`).
+#
+# A TypeScript file OFFERS the flag when a string literal whose WHOLE value is the flag, outside any comment, sits in an argv-parse position:
+#
+#   .includes(FLAG) .indexOf(FLAG) .lastIndexOf(FLAG) .has(FLAG)   membership in an argument vector or set
+#   x === FLAG, FLAG !== x, and the loose == / !=                  a comparison against one argument
+#   case FLAG:                                                     a switch over the arguments
+#
+# and the same three positions count for a NAME bound to the literal (`const WRITE = FLAG`), so hoisting the flag into a constant does not hide a writer. A literal that only CONTAINS the flag (a drain command, a refusal message) is not the flag, and a literal passed to any other call (`endsWith`, `spawn`, `expect(...).toContain`) inspects a string rather than parsing one.
+#
+# THE ERROR DIRECTION IS CHOSEN. A false positive here reds the check over a file that is not a writer, which a reader sees at once and can argue with; a false negative lets an unconditional reseed through, which nobody sees. So `.includes(FLAG)` counts whatever its receiver, including a test asserting `stderr.includes(FLAG)`, and a file the lexer cannot read to the
+# end (an unterminated string, comment, template or regex) counts as a writer too, as an unparseable Python module does.
+TS_PARSE_METHODS = ("includes", "indexOf", "lastIndexOf", "has")
+TS_COMPARE_OPS = ("===", "!==", "==", "!=")
+
+# After one of these a `/` starts a regex literal, after anything else it divides. The classic heuristic; it decides only whether a quote inside `/'/` opens a string, which is exactly the mistake that would make the lexer lose its place.
+_TS_REGEX_AFTER_WORDS = frozenset(
+    ("return", "typeof", "case", "do", "else", "in", "of", "new", "delete", "void", "throw")
+)
+_TS_PUNCT = (
+    "===",
+    "!==",
+    "...",
+    "=>",
+    "==",
+    "!=",
+    "<=",
+    ">=",
+    "&&",
+    "||",
+    "??",
+    "?.",
+    "++",
+    "--",
+)
+_TS_IDENT_RE = re.compile(r"[A-Za-z_$][\w$]*")
+_TS_NUMBER_RE = re.compile(r"\d[\w.]*")
+
+
+class TsLexError(ValueError):
+    """The lexer ran off the end of the file inside a string, comment, template or regex."""
+
+
+def _ts_string(src: str, i: int, quote: str) -> tuple[str, int]:
+    """Read a '...' or "..." literal starting at the quote; return (value, index after it)."""
+    out = []
+    j = i + 1
+    while j < len(src):
+        c = src[j]
+        if c == "\\":
+            out.append(src[j : j + 2])
+            j += 2
+            continue
+        if c == quote:
+            return "".join(out), j + 1
+        if c == "\n":
+            break
+        out.append(c)
+        j += 1
+    raise TsLexError("unterminated string at offset %d" % i)
+
+
+def ts_tokens(src: str) -> list[tuple[str, str]]:
+    """The file as `(kind, text)` tokens: `str`, `ident`, `punct`, `num`. Comments vanish, a template literal is one `str` token for its literal parts plus the tokens of every `${...}` inside it, and a regex literal is one `regex` token. Raises `TsLexError` on a file it cannot read to the end."""
+    toks: list[tuple[str, str]] = []
+    # Brace depth per open `${`: when it returns to zero the template resumes.
+    templates: list[int] = []
+    i = 0
+    n = len(src)
+
+    def regex_allowed() -> bool:
+        if not toks:
+            return True
+        kind, text = toks[-1]
+        if kind == "punct":
+            return text not in (")", "]", "}", "++", "--")
+        return kind == "ident" and text in _TS_REGEX_AFTER_WORDS
+
+    def template_part(j: int) -> int:
+        """Read template text from j (just after a backtick or a closing `}`) up to the closing backtick or the next `${`."""
+        out = []
+        while j < n:
+            c = src[j]
+            if c == "\\":
+                out.append(src[j : j + 2])
+                j += 2
+                continue
+            if c == "`":
+                toks.append(("str", "".join(out)))
+                return j + 1
+            if c == "$" and src.startswith("${", j):
+                toks.append(("str", "".join(out)))
+                toks.append(("punct", "${"))
+                templates.append(0)
+                return j + 2
+            out.append(c)
+            j += 1
+        raise TsLexError("unterminated template literal")
+
+    while i < n:
+        c = src[i]
+        if c.isspace():
+            i += 1
+        elif src.startswith("//", i):
+            end = src.find("\n", i)
+            i = n if end < 0 else end
+        elif src.startswith("/*", i):
+            end = src.find("*/", i + 2)
+            if end < 0:
+                raise TsLexError("unterminated block comment at offset %d" % i)
+            i = end + 2
+        elif c in "'\"":
+            value, i = _ts_string(src, i, c)
+            toks.append(("str", value))
+        elif c == "`":
+            i = template_part(i + 1)
+        elif c == "/" and regex_allowed():
+            j = i + 1
+            in_class = False
+            while j < n and (in_class or src[j] != "/"):
+                if src[j] == "\\":
+                    j += 1
+                elif src[j] == "[":
+                    in_class = True
+                elif src[j] == "]":
+                    in_class = False
+                elif src[j] == "\n":
+                    raise TsLexError("unterminated regex literal at offset %d" % i)
+                j += 1
+            if j >= n:
+                raise TsLexError("unterminated regex literal at offset %d" % i)
+            j += 1
+            while j < n and (src[j].isalnum() or src[j] == "_"):
+                j += 1
+            toks.append(("regex", src[i:j]))
+            i = j
+        elif c == "{" and templates:
+            templates[-1] += 1
+            toks.append(("punct", c))
+            i += 1
+        elif c == "}" and templates:
+            if templates[-1] == 0:
+                templates.pop()
+                toks.append(("punct", "}"))
+                i = template_part(i + 1)
+            else:
+                templates[-1] -= 1
+                toks.append(("punct", c))
+                i += 1
+        elif m := _TS_IDENT_RE.match(src, i):
+            toks.append(("ident", m.group()))
+            i = m.end()
+        elif m := _TS_NUMBER_RE.match(src, i):
+            toks.append(("num", m.group()))
+            i = m.end()
+        else:
+            for p in _TS_PUNCT:
+                if src.startswith(p, i):
+                    toks.append(("punct", p))
+                    i += len(p)
+                    break
+            else:
+                toks.append(("punct", c))
+                i += 1
+    if templates:
+        raise TsLexError("unterminated template substitution")
+    return toks
+
+
+def ts_offers_flag(src: str) -> bool:
+    """True when the source PARSES the flag off its arguments, by the positions listed above `TS_PARSE_METHODS`. A source the lexer cannot finish counts as a writer."""
+    try:
+        toks = ts_tokens(src)
+    except TsLexError:
+        return True
+
+    def is_flag_literal(k: int) -> bool:
+        return 0 <= k < len(toks) and toks[k] == ("str", FLAG)
+
+    # Names bound straight to the literal: `const WRITE = FLAG;`.
+    names = {
+        toks[k - 2][1]
+        for k in range(3, len(toks))
+        if is_flag_literal(k)
+        and toks[k - 1] == ("punct", "=")
+        and toks[k - 2][0] == "ident"
+        and toks[k - 3] in (("ident", "const"), ("ident", "let"), ("ident", "var"))
+        and (k + 1 >= len(toks) or toks[k + 1] in (("punct", ";"), ("punct", ",")))
+    }
+
+    def is_flag(k: int) -> bool:
+        if is_flag_literal(k):
+            return True
+        return 0 <= k < len(toks) and toks[k][0] == "ident" and toks[k][1] in names
+
+    for k in range(len(toks)):
+        if not is_flag(k):
+            continue
+        # A bound name at its own declaration is not a use.
+        if toks[k][0] == "ident" and k + 1 < len(toks) and toks[k + 1] == ("punct", "="):
+            continue
+        prev = toks[k - 1] if k >= 1 else ("", "")
+        nxt = toks[k + 1] if k + 1 < len(toks) else ("", "")
+        if (
+            k >= 3
+            and prev == ("punct", "(")
+            and toks[k - 2][0] == "ident"
+            and toks[k - 2][1] in TS_PARSE_METHODS
+            and toks[k - 3] in (("punct", "."), ("punct", "?."))
+            and nxt in (("punct", ")"), ("punct", ","))
+        ):
+            return True
+        if (prev[0] == "punct" and prev[1] in TS_COMPARE_OPS) or (
+            nxt[0] == "punct" and nxt[1] in TS_COMPARE_OPS
+        ):
+            return True
+        if prev == ("ident", "case") and nxt == ("punct", ":"):
+            return True
+    return False
+
+
+# Floors, one per corpus. Neither excuses the other; see the docstring. The writer floor is the token reading's own: the text corpus can hold steady while the reading recognises nothing.
 TS_FLOOR = 8
+TS_WRITER_FLOOR = 8
 
 
 def git_bin() -> str:
@@ -229,12 +463,20 @@ def unguarded_py(root: pathlib.Path = ROOT) -> list[str]:
     ]
 
 
+def ts_is_writer(rel: str, root: pathlib.Path = ROOT) -> bool:
+    """A TypeScript/JavaScript file in the text corpus that really OFFERS the flag."""
+    return ts_offers_flag((root / rel).read_text(encoding="utf-8", errors="replace"))
+
+
+def ts_writers(root: pathlib.Path = ROOT) -> list[str]:
+    """The non-exempt TypeScript/JavaScript files that parse the flag."""
+    return [f for f in offerers(root) if f not in EXEMPT and ts_is_writer(f, root)]
+
+
 def unguarded(root: pathlib.Path = ROOT) -> list[str]:
-    """Files that offer the flag, are not exempt, and reach the guard by no route."""
+    """Files that parse the flag, are not exempt, and reach the guard by no route."""
     out = []
-    for rel in offerers(root):
-        if rel in EXEMPT:
-            continue
+    for rel in ts_writers(root):
         text = (root / rel).read_text(encoding="utf-8", errors="replace")
         if not any(pattern.search(text) for pattern in IMPORT_RE.values()):
             out.append(rel)
@@ -381,10 +623,29 @@ import sys
 
 
 def test_the_flag_refuses():
-    proc = subprocess.run([sys.executable, "gate.py", "%s"], check=False)
+    proc = subprocess.run(
+        [sys.executable, "gate.py", "%s"], capture_output=True, text=True, check=False
+    )
     assert proc.returncode == 1, "run it again with %s --first-seed"
     assert "%s" not in proc.stderr
 ''' % (FLAG, FLAG, FLAG, FLAG)
+
+# Writers whose only argv parse is an `assert` condition. Skipping every assert would drop both off the offender list; reading argv is what makes them parses.
+ASSERT_ARGV_PY_BODIES = {
+    "assert FLAG in sys.argv": """import sys
+
+assert "%s" in sys.argv, "refusing to run without the drain flag"
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert any(a == FLAG for a in args)": """import sys
+
+args = sys.argv[1:]
+assert any(a == "%s" for a in args)
+print("unconditional reseed")
+"""
+    % FLAG,
+}
 
 UNGUARDED_TS_BODY = """// Temporary control fixture. Offers %s with no composition guard.
 if (process.argv.includes('%s')) {
@@ -396,6 +657,61 @@ MENTION_TS_BODY = """// Temporary control fixture. Mentions p7-backlog and shrin
 // only, imports neither, and offers %s with no guard at all.
 if (process.argv.includes('%s')) {
   console.log('unconditional reseed');
+}
+""" % (FLAG, FLAG)
+
+# Shaped like `scripts/lib/pins/drivers/docker.ts` and its selftest: the flag in a comment that READS like an argv parse, in a block comment, inside a longer drain command, as an `endsWith` argument, in template text and as a bare literal. The regex literal holding a quote comes first, so a lexer that read it as a string would lose its place for everything below.
+STRING_ONLY_TS_BODY = """// Temporary control fixture. process.argv.includes('%s') in a comment parses nothing.
+/* if (argv.includes('%s')) { reseed(); } */
+const quote = /'/g;
+const steps = [{ run: 'npx tsx scripts/gates/check-x.ts %s' }];
+const ok = steps[0]?.run.endsWith('%s') && `${steps.length} %s`.length > 0;
+console.log(ok, quote, `drain with %s`, '%s'.length);
+""" % (FLAG, FLAG, FLAG, FLAG, FLAG, FLAG, FLAG)
+
+# Every argv-parse position the token reading names, one body each, none guarded. The first carries the regex-with-a-quote trap BEFORE its parse, the fifth hides its parse behind nested template substitutions, and the last is cut off mid-string, which must count as a writer rather than as nothing.
+WRITER_TS_BODIES = {
+    "indexOf after a regex holding a quote": """const args = process.argv.slice(2);
+const q = /'/g;
+if (args.indexOf('%s') >= 0 && q) {
+  console.log('unconditional reseed');
+}
+"""
+    % FLAG,
+    "strict equality": """for (const a of process.argv) {
+  if (a === '%s') console.log('unconditional reseed');
+}
+"""
+    % FLAG,
+    "switch case": """switch (process.argv[2]) {
+  case "%s":
+    console.log('unconditional reseed');
+}
+"""
+    % FLAG,
+    "a named constant in a Set": """const WRITE = '%s';
+if (new Set(process.argv).has(WRITE)) {
+  console.log(`unconditional reseed ${WRITE}`);
+}
+"""
+    % FLAG,
+    "after nested template substitutions": """const msg = `run ${['a'].map((x) => `${x}{`).join('')}`;
+if (process.argv?.includes(`%s`)) {
+  console.log(msg);
+}
+"""
+    % FLAG,
+    "an unterminated string": """if (process.argv.includes('%s)) {
+  console.log('unconditional reseed');
+}
+"""
+    % FLAG,
+}
+
+GUARDED_TS_BODY = """// Temporary control fixture. Parses %s and consumes the shared guard.
+import { writeBaselineVerdict } from '../lib/shrink-only-baseline.ts';
+if (process.argv.includes('%s')) {
+  writeBaselineVerdict();
 }
 """ % (FLAG, FLAG)
 
@@ -443,10 +759,25 @@ def test_every_gate_consumes_the_guard(gate):
         )
         gate.log_error("  before writing. Do NOT add the file to PENDING in this gate.")
         gate.log_fail("at least one baseline writer bypasses the composition guard")
+    named = offerers()
+    writers = ts_writers()
+    if len(writers) < TS_WRITER_FLOOR:
+        gate.log_fail(
+            "only %d of the %d TypeScript/JavaScript file(s) naming %s are read as WRITERS. "
+            "Eighteen were on 2026-10-14; a collapse means the token reading stopped "
+            "recognising the argv parse, and the guard verdict above is about nothing."
+            % (len(writers), len(named), FLAG)
+        )
     gate.log_pass(
-        "every non-exempt baseline writer consumes the guard (%d offerer(s) scanned)"
-        % len(offerers())
+        "every non-exempt TypeScript baseline writer consumes the guard (%d writer(s) among "
+        "%d file(s) naming the flag)" % (len(writers), len(named))
     )
+    # VISIBLE EVERY RUN, so neither the exemption nor the mention-only set can go quiet.
+    for f in EXEMPT:
+        gate.log_info("EXEMPT (the shared guard itself): %s" % f)
+    for f in named:
+        if f not in EXEMPT and f not in writers:
+            gate.log_info("NAMES THE FLAG, PARSES NO ARGV FOR IT (not a writer): %s" % f)
 
 
 def test_pending_set_only_shrinks(gate):
@@ -642,6 +973,65 @@ def test_control_mention_is_not_an_import(gate):
     gate.log_pass("CONTROL: naming the guard in a comment does not count as consuming it")
 
 
+def test_control_ts_string_mention_is_not_a_writer(gate):
+    """CONTROL. A TypeScript file shaped like the pin driver and its selftest names the flag in comments, a drain command, an `endsWith` argument and template text, and parses no argv, so it is NOT a writer and is not reported. The corpus still SEES it, which keeps this a statement about the token reading rather than about the enumerator."""
+    with probe("scripts", "zz-composition-string-probe-port", ".ts", STRING_ONLY_TS_BODY) as (
+        root,
+        rel,
+    ):
+        seen = rel in offerers(root)
+        writer = ts_is_writer(rel, root)
+        reported = rel in unguarded(root)
+    if (root / rel).exists():
+        gate.log_fail("ts string-mention probe was not removed")
+    if not seen:
+        gate.log_fail("CONTROL FAILED: the ts string-mention probe was not even in the corpus")
+    if writer or reported:
+        gate.log_fail(
+            "CONTROL FAILED: a TypeScript file that only names the flag in comments and "
+            "strings was read as a writer (writer=%s, reported=%s)" % (writer, reported)
+        )
+    gate.log_pass("CONTROL: naming the flag in TypeScript comments and strings is not a writer")
+
+
+def test_control_ts_writer_shapes_are_detected(gate):
+    """CONTROL, the other direction. Every argv-parse position the token reading claims to recognise, planted unguarded, is read as a writer AND reported. Without this the mention control above is satisfied by a reading that recognises nothing."""
+    missed = []
+    for label, body in WRITER_TS_BODIES.items():
+        with probe("scripts", "zz-composition-writer-probe-port", ".ts", body) as (root, rel):
+            if not (ts_is_writer(rel, root) and rel in unguarded(root)):
+                missed.append(label)
+        if (root / rel).exists():
+            gate.log_fail("ts writer probe (%s) was not removed" % label)
+    if missed:
+        gate.log_fail(
+            "CONTROL FAILED: an unguarded TypeScript reseed was NOT detected for: %s"
+            % "; ".join(missed)
+        )
+    gate.log_pass(
+        "CONTROL: %d unguarded TypeScript writer shapes are each detected" % len(WRITER_TS_BODIES)
+    )
+
+
+def test_control_ts_guarded_writer_is_not_reported(gate):
+    """CONTROL. A TypeScript writer that imports the shared guard is a writer and is NOT reported, so the token reading did not turn the check into one that flags correct work."""
+    with probe("scripts", "zz-composition-guarded-probe-port", ".ts", GUARDED_TS_BODY) as (
+        root,
+        rel,
+    ):
+        writer = ts_is_writer(rel, root)
+        reported = rel in unguarded(root)
+    if (root / rel).exists():
+        gate.log_fail("ts guarded probe was not removed")
+    if not writer:
+        gate.log_fail("CONTROL FAILED: a file parsing the flag off process.argv is not a writer")
+    if reported:
+        gate.log_fail(
+            "CONTROL FAILED: a TypeScript writer importing the guard was reported unguarded"
+        )
+    gate.log_pass("CONTROL: a guarded TypeScript writer is a writer and is not reported")
+
+
 def test_refusal_end_to_end(gate):
     """BEHAVIOURAL. The one gate that accepts `--baseline`, so the write can be aimed at a copy and the live suppression file is never touched. Proven both directions, and the live file's digest is compared before and after."""
     npx = harness.require_tool("npx", "install node (the lane's setup-workspace step provides it)")
@@ -769,4 +1159,63 @@ def test_this_module_is_not_itself_an_offender(gate):
     gate.log_pass(
         "the flag is rendered (%r), so this port is not in its own %d-file corpus"
         % (FLAG, len(corpus))
+    )
+
+
+def test_control_python_assert_on_argv_is_a_writer(gate):
+    """CONTROL. An `assert` that reads the argument vector still parses the flag, so a writer whose only parse sits in one is detected and reported, while the stream asserts of the string-only fixture stay exempt."""
+    missed = []
+    for label, body in ASSERT_ARGV_PY_BODIES.items():
+        with probe(".ci/scripts/quality", "zz_composition_assert_probe_port", ".py", body) as (
+            root,
+            rel,
+        ):
+            if not (py_is_writer(rel, root) and rel in unguarded_py(root)):
+                missed.append(label)
+        if (root / rel).exists():
+            gate.log_fail("python assert probe (%s) was not removed" % label)
+    if missed:
+        gate.log_fail(
+            "CONTROL FAILED: a writer parsing the flag inside an assert was NOT detected for: %s"
+            % "; ".join(missed)
+        )
+    if py_offers_flag(ast.parse(STRING_ONLY_PY_BODY)):
+        gate.log_fail("CONTROL FAILED: an assert on a captured stream was read as an argv parse")
+    gate.log_pass(
+        "CONTROL: %d assert-on-argv writers are detected; an assert on a stream is not a parse"
+        % len(ASSERT_ARGV_PY_BODIES)
+    )
+
+
+def test_string_only_fixture_captures_what_it_asserts_on(gate):
+    """The string-only fixture must be a coherent test, not only scannable text: every `subprocess.run` whose result's `.stderr` or `.stdout` it reads captures that stream, or the fixture asserts on None and models a test that could never run."""
+    tree = ast.parse(STRING_ONLY_PY_BODY)
+    runs = [
+        n
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "run"
+        and isinstance(n.func.value, ast.Name)
+        and n.func.value.id == "subprocess"
+    ]
+    read = {
+        n.attr
+        for n in ast.walk(tree)
+        if isinstance(n, ast.Attribute) and n.attr in ("stderr", "stdout")
+    }
+    if not runs:
+        gate.log_fail("the string-only fixture no longer calls subprocess.run; update this check")
+    for call in runs:
+        kw = {k.arg: k.value for k in call.keywords}
+        cap = kw.get("capture_output")
+        captured = isinstance(cap, ast.Constant) and cap.value is True
+        missing = sorted(s for s in read if not captured and s not in kw)
+        if missing:
+            gate.log_fail(
+                "the string-only fixture reads proc.%s from a subprocess.run that does not "
+                "capture it, so the stream is None" % "/".join(missing)
+            )
+    gate.log_pass(
+        "the string-only fixture captures every stream it asserts on (%d run call(s))" % len(runs)
     )
