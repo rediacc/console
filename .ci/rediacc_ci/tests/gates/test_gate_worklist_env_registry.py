@@ -79,11 +79,11 @@ def test_dropping_a_registered_name_reds(gate):
     with tempfile.TemporaryDirectory() as td:
         mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
         obj = json.loads(original.decode("utf-8"))
-        del obj["names"]["WORKLIST_FOCUS"]
+        del obj["names"]["WORKLIST_JUDGE"]
         mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
         result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
     gate.assert_exit(1, result, "an unregistered read must red")
-    gate.assert_contains(result.combined, "UNREGISTERED WORKLIST_FOCUS", "names it")
+    gate.assert_contains(result.combined, "UNREGISTERED WORKLIST_JUDGE", "names it")
     gate.assert_contains(result.combined, "reads as UNSET", "and says which way it fails")
     gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
     gate.log_pass("a read the registry does not know about reds, with no real file at risk")
@@ -195,14 +195,14 @@ def test_every_registered_name_carries_a_class(gate):
 
 
 def test_a_name_with_no_class_reds(gate):
-    gate.log_test("PLANT: drop WORKLIST_FOCUS's class in a REAL registry copy")
+    gate.log_test("PLANT: drop WORKLIST_JUDGE's class in a REAL registry copy")
 
     def mutate(obj):
-        del obj["names"]["WORKLIST_FOCUS"]["class"]
+        del obj["names"]["WORKLIST_JUDGE"]["class"]
 
     result = _planted_registry(mutate)
     gate.assert_exit(1, result, "a classless name must red")
-    gate.assert_contains(result.combined, "WORKLIST_FOCUS: class None", "names it")
+    gate.assert_contains(result.combined, "WORKLIST_JUDGE: class None", "names it")
     gate.assert_contains(result.combined, "npm run env:register", "and names the verb")
     gate.log_pass("a name with no class cannot render, and the gate says so")
 
@@ -225,11 +225,11 @@ def test_a_foreign_read_the_scan_can_see_reds(gate):
     def mutate(obj):
         entry = dict(obj["foreign_reads"]["WORKLIST_EPICS_LEDGER"])
         entry["reader"] = ".claude/hooks/stop/wl_standdown.py"
-        obj["foreign_reads"]["WORKLIST_FOCUS"] = entry
+        obj["foreign_reads"]["WORKLIST_JUDGE"] = entry
 
     result = _planted_registry(mutate)
     gate.assert_exit(1, result, "a scanned name cannot hide as foreign")
     gate.assert_contains(
-        result.combined, "FOREIGN WORKLIST_FOCUS is read where this scan looks", "names it"
+        result.combined, "FOREIGN WORKLIST_JUDGE is read where this scan looks", "names it"
     )
     gate.log_pass("foreign_reads cannot become a drawer for names the scan already sees")
