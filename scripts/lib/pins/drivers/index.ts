@@ -1,11 +1,8 @@
 /**
- * The T8 drivers, keyed by registry driver name, for DRIVER_TABLE in scripts/lib/pins/
- * driver.ts. Each value is built by a factory over the network and process seams of
- * ./shared.ts, so the selftest builds the same drivers over stubs.
- *
- * A driver module may not touch scripts/lib/pins/driver.ts at module evaluation (the table
- * is built while that file is still evaluating when a driver is the entry point); every use
- * of its exports sits inside a function.
+ * The T8 drivers, keyed by registry driver name; scripts/lib/pins/drivers/table.ts spreads
+ * them into the table the CLI registers with registerDrivers. Each value is built by a
+ * factory over the network and process seams of ./shared.ts, so the selftest builds the
+ * same drivers over stubs.
  */
 import type { PinDriver } from '../driver.js';
 import type { Driver } from '../registry.js';

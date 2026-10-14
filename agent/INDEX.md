@@ -527,7 +527,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
-| `agent/plans/PLAN-pins-command.md` | approved | 78 | 5 | 8 | 24105 |
+| `agent/plans/PLAN-pins-command.md` | approved | 79 | 5 | 8 | 24614 |
 | `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 50 | 7 | 0 | 7813 |
 | `agent/plans/PLAN-plan-dependencies.md` | approved | 389 | 0 | 12 | 36988 |
 | `agent/plans/PLAN-plan-per-pr-loop.md` | approved | 71 | 1 | 15 | 14314 |
@@ -586,7 +586,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tooling-transformation.md` | ready | 7504 | 2 | 152 | 752146 |
 | `agent/plans/PLAN-typecheck-orphan-packages.md` | ready | 84 | 0 | 5 | 7005 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
-| `agent/plans/PLAN-vm-check.md` | approved | 145 | 8 | 0 | 32058 |
+| `agent/plans/PLAN-vm-check.md` | approved | 145 | 8 | 0 | 32173 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
 | `agent/plans/PLAN-w7p5a-real-run-dispatch.md` | in-progress | 755 | 2 | 7 | 92666 |
