@@ -29,7 +29,7 @@ import pathlib
 import re
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 import yaml
 from rediacc_ci.core import gh_retry
 

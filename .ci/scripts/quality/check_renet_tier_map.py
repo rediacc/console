@@ -43,7 +43,7 @@ needs: go, submodules
 
 import sys
 
-import _cipath  # noqa: F401
+import _cipath
 from rediacc_ci.quality import renet_tier_map
 
 if __name__ == "__main__":
