@@ -133,7 +133,7 @@ def http_bytes(
     handlers: list[urllib.request.BaseHandler] = []
     if jar is not None:
         handlers.append(urllib.request.HTTPCookieProcessor(jar))
-    opener = urllib.request.build_opener(*handlers)
+    opener = https.build_opener(*handlers, http="any")
     data = body.encode() if isinstance(body, str) else body
     request = https.build_request(url, data=data, method=method, http="any")
     if data is not None and json_body:

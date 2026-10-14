@@ -12,6 +12,7 @@ import urllib.error
 import pytest
 
 from rediacc_ci.core import https
+from rediacc_ci.drills import wire
 
 
 @pytest.mark.parametrize(
@@ -128,6 +129,38 @@ def test_a_redirect_is_followed_only_to_a_url_the_same_mode_admits():
         # CONTROL: a redirect the mode admits is still followed.
         with https.urlopen(base + "/to-loopback", timeout=5, http="loopback") as response:
             assert response.read() == b"final"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_a_drill_request_does_not_follow_a_redirect_to_ftp():
+    """Review 1bf85a71.2: `wire.http_bytes` and the drill client built their own opener, so only the first URL was checked; both now open through `https.build_opener`."""
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == "/to-ftp":
+                self.send_response(302)
+                self.send_header("Location", "ftp://example.invalid/x")
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"ok")
+
+        def log_message(self, *_args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = "http://127.0.0.1:%d" % server.server_address[1]
+        with pytest.raises(OSError, match="may not open"):
+            wire.http_bytes("GET", base + "/to-ftp")
+        # CONTROL: a plain request through the same function still answers.
+        assert wire.http_bytes("GET", base + "/") == (200, b"ok")
     finally:
         server.shutdown()
         server.server_close()
