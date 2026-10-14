@@ -67,6 +67,19 @@ WINDOW_MAX = 1_000_000
 # case observed by 425 tokens. The early band is the insurance on that tail.
 BANDS = (("early", 0.75), ("late", 0.98))
 
+# THE EFFORT TUNER'S MOMENT (agent/plans/PLAN-stop-hook-effort-tuning.md T4, operator 2026-10-14: "at the end of each context when we detect the session is close to compaction (i.e. 85% is full?)"). Not a band: it announces nothing here. The Stop hook reads the fraction band-notice already saves (`usage` over `threshold`) and asks for the `effort-tuner` sub-agent once per epoch.
+TUNE_FRACTION = 0.85
+
+
+def used_fraction(state):
+    """`usage / threshold` from a band state file, or None when either is missing."""
+    try:
+        usage, threshold = float(state.get("usage") or 0), float(state.get("threshold") or 0)
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return usage / threshold if usage > 0 and threshold > 0 else None
+
+
 # Models with a native 1M window. Everything else Claude-shaped is 200K unless the id carries an explicit [1m] selector.
 NATIVE_1M = ("claude-sonnet-5", "claude-fable-5")
 # Models Claude Code holds to the 200K boundary when their window is under 1M.

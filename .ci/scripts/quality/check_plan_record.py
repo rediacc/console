@@ -50,10 +50,14 @@ WHAT IS ASSERTED, one rule per planted control in `--selftest`:
       exists is too. Every FLOOR key (`wl_floor.FLOOR`, the sealed literal) is
       `floor` and no other key is; `block` is never below `advise`; a blocking
       key carries `block`, an advisory-only key does not; every level's bundle
-      sets every switch with the right type. `--effort-table [<path>]` judges
-      that rule alone, against the real table or a planted copy, in about a
-      second; `--selftest` plants an unknown key, a missing key, a demoted
-      FLOOR key and `block` below `advise`, and each must red.
+      sets every switch with the right type; the `tuned` section the effort
+      tuner writes (agent/plans/PLAN-stop-hook-effort-tuning.md T5) names only
+      table rows, never a FLOOR key, each with `tuned_at`, `review_after` and a
+      direction (`wl_effort_tune.tuned_problems`). `--effort-table [<path>]`
+      judges that rule alone, against the real table or a planted copy, in
+      about a second; `--selftest` plants an unknown key, a missing key, a
+      demoted FLOOR key, a tuned FLOOR key and `block` below `advise`, and each
+      must red.
   R9  THE CROSS-REFERENCE HEADERS RESOLVE (W12 P3.4b). `Supersedes:`, `Extends:`
       and `Related:` were taught to PARSE by P3.4a -- `wl_planrec.HEADER_FIELD_KEYS`
       lists them so a `# PLAN: ...` heading is not read as a field -- and nothing
@@ -175,6 +179,7 @@ paths.on_sys_path(pathlib.Path(__file__).resolve().parent)
 try:
     import wl_checks as CK
     import wl_effort as EF
+    import wl_effort_tune as TUNE
     import wl_planfile as PF
     import wl_planindex as PI
     import wl_planqueue as PQ
@@ -1070,7 +1075,8 @@ def effort_problems(root, table_path=None):
         len(table.get("checks") or {}),
         len(EF.wl_floor.FLOOR),
     )
-    return ["RE: %s" % p for p in EF.table_problems(table, blocking, advisory)], note
+    problems = EF.table_problems(table, blocking, advisory) + TUNE.tuned_problems(table)
+    return ["RE: %s" % p for p in problems], note
 
 
 def effort_table_only(root, argv):
@@ -1110,13 +1116,13 @@ def selftest_effort():
         "RE CONTROL: the key scan finds blocking and advisory keys",
         bool(blocking) and bool(advisory),
     )
-    clean = EF.table_problems(table, blocking, advisory)
+    clean = EF.table_problems(table, blocking, advisory) + TUNE.tuned_problems(table)
     ck("RE: the real table is silent", clean == [], "; ".join(clean[:3]))
 
     def planted(label, mutate, needle):
         copy = json.loads(json.dumps(table))
         mutate(copy)
-        got = EF.table_problems(copy, blocking, advisory)
+        got = EF.table_problems(copy, blocking, advisory) + TUNE.tuned_problems(copy)
         ck(label, any(needle in p for p in got), "; ".join(got[:3]) or "(silent)")
 
     floor_key = min(EF.wl_floor.FLOOR)
@@ -1137,6 +1143,18 @@ def selftest_effort():
         "RE: a demoted FLOOR key reds",
         lambda t: t["checks"].__setitem__(floor_key, {"block": "smart", "advise": "low"}),
         "%s is a FLOOR key" % floor_key,
+    )
+    planted(
+        "RE: a tuned FLOOR key reds",
+        lambda t: t.setdefault("tuned", {}).__setitem__(
+            floor_key,
+            {
+                "direction": "demote",
+                "tuned_at": "2026-10-14T00:00:00Z",
+                "review_after": "2026-10-28T00:00:00Z",
+            },
+        ),
+        "tuned: %s is a FLOOR key" % floor_key,
     )
     planted(
         "RE: block below advise reds",

@@ -3,7 +3,8 @@
     "The Stop hook's one effort dial (agent/plans/PLAN-stop-hook-effort.md). agent/plans/QUEUE.md `## Settings` names a level, `effort: quiet|low|smart|high|ultra`, each a superset of the one before; this file says what each level turns on.",
     "`bundles` gives each level its switch values. Settings resolve as effort, then this bundle, then an explicit key in the QUEUE.md fence, which wins (`wl_planqueue.settings`).",
     "`checks` gives every Stop-hook check key exactly once. A blocking key (a `vadd` in wl_checks.py) carries `block` and `advise`: it blocks at `block` and above, rides the advisory queue from `advise` up to the level below `block`, and is off below `advise`. An advisory-only key (an `outq_add`) carries `advise` alone. A FLOOR key is the string `floor`: it blocks at every level, and the set is the literal in .claude/hooks/stop/wl_floor.py, not this file.",
-    "Kept honest by the effort-table rule of `npm run check:ci-plan-record`: every key the hook can produce appears once, no unknown key, every FLOOR key is `floor` and nothing else is, and `block` is never below `advise`."
+    "Kept honest by the effort-table rule of `npm run check:ci-plan-record`: every key the hook can produce appears once, no unknown key, every FLOOR key is `floor` and nothing else is, and `block` is never below `advise`.",
+    "`tuned` stamps every key the effort tuner changed (agent/plans/PLAN-stop-hook-effort-tuning.md, .claude/hooks/stop/wl_effort_tune.py): `direction`, the `from` entry, `tuned_at`, `review_after` and the outcome rows it rests on. Promotions are applied by the tuner with a report line; demotions only through the operator's answer to one batched /ask. A FLOOR key never appears here, and the effort-table rule refuses one that does."
   ],
   "levels": [
     "quiet",
@@ -499,6 +500,10 @@
     },
     "shapedup-wide-note": {
       "advise": "high"
+    },
+    "effort-tune": {
+      "advise": "low"
     }
-  }
+  },
+  "tuned": {}
 }

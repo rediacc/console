@@ -496,6 +496,9 @@ def drive_l1(fix) -> L1Drive:
             "[verdict: present]",
         ),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
+        # The effort tuner's verbs (agent/plans/PLAN-stop-hook-effort-tuning.md T2, T5), each driven in its listing mode: a bare `<me>` prints the proposal ledger's summary after the same _identity_or_die their write modes run.
+        ("--effort-propose", "--effort-propose @WHO@", "effort proposals:"),
+        ("--effort-answer", "--effort-answer @WHO@", "effort proposals:"),
         # Bare form: prints the effective settings and writes nothing; the write form runs the identical argv parse and _identity_or_die.
         ("--queue-set", "--queue-set @WHO@", "effort: "),
         # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
