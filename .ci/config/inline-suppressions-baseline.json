@@ -786,40 +786,6 @@
   ".claude/rediacc_hooks/hookio.py": {
    "noqa F401": 1
   },
-  ".claude/rediacc_hooks/tests/test_wl_background_waits.py": {
-   "noqa F401": 1,
-   "noqa F811": 15
-  },
-  ".claude/rediacc_hooks/tests/test_wl_cadence.py": {
-   "noqa F401": 1,
-   "noqa F811": 41
-  },
-  ".claude/rediacc_hooks/tests/test_wl_cap_wait.py": {
-   "noqa F401": 1,
-   "noqa F811": 20
-  },
-  ".claude/rediacc_hooks/tests/test_wl_checklists.py": {
-   "noqa F401": 1,
-   "noqa F811": 14
-  },
-  ".claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py": {
-   "noqa F401": 1,
-   "noqa F811": 13
-  },
-  ".claude/rediacc_hooks/tests/test_wl_ci_status.py": {
-   "noqa F401": 1,
-   "noqa F811": 17
-  },
-  ".claude/rediacc_hooks/tests/test_wl_ci_verdict_surface.py": {
-   "noqa F401": 1,
-   "noqa F811": 2,
-   "noqa PLC0415": 1
-  },
-  ".claude/rediacc_hooks/tests/test_wl_commit_remind.py": {
-   "noqa E402": 5,
-   "noqa F401": 1,
-   "noqa F811": 2
-  },
   ".claude/rediacc_hooks/tests/test_wl_continuity_surface.py": {
    "noqa F401": 1,
    "noqa F811": 15

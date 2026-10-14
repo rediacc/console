@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING
 
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_run, ci_setup, write_exec
 from rediacc_hooks.tests.test_wl_ci_status import ci_rollup as ci_status_rollup
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 if TYPE_CHECKING:
     from rediacc_hooks.tests import wlfix
@@ -78,7 +77,7 @@ def ci_queue_ready(fix) -> str:
     return stamp(30)
 
 
-def test_157_a_saturated_queue_says_do_not_push(wl):  # noqa: F811
+def test_157_a_saturated_queue_says_do_not_push(wl):
     """A 30-minute-queued newest run raises the saturation note."""
     qold = ci_queue_ready(wl)
     ci_queue_fixture(
@@ -95,7 +94,7 @@ def test_157_a_saturated_queue_says_do_not_push(wl):  # noqa: F811
     assert "DO NOT PUSH" in got.out, got.out[:300]
 
 
-def test_157b_control_an_in_progress_run_with_an_empty_queue_is_clear(wl):  # noqa: F811
+def test_157b_control_an_in_progress_run_with_an_empty_queue_is_clear(wl):
     """CONTROL: a running (not queued) newest run stays quiet."""
     qold = ci_queue_ready(wl)
     ci_queue_fixture(
@@ -111,7 +110,7 @@ def test_157b_control_an_in_progress_run_with_an_empty_queue_is_clear(wl):  # no
     assert "CI QUEUE IS SATURATED" not in got.out, "clear queue raised the note: %s" % got.out[:300]
 
 
-def test_157c_two_queued_runs_saturate_even_when_fresh(wl):  # noqa: F811
+def test_157c_two_queued_runs_saturate_even_when_fresh(wl):
     """Depth trigger: queue depth >= 2 saturates regardless of the newest run's age."""
     qold = ci_queue_ready(wl)
     ci_queue_fixture(
@@ -128,7 +127,7 @@ def test_157c_two_queued_runs_saturate_even_when_fresh(wl):  # noqa: F811
     assert "2 queued run(s)" in got.out, got.out[:300]
 
 
-def test_157d_failure_mode_a_broken_gh_grants_no_slack(wl):  # noqa: F811
+def test_157d_failure_mode_a_broken_gh_grants_no_slack(wl):
     """FAILURE MODE: the queue read fails toward pressure. A gh that dies on the runs endpoint reads as unknown, the note is absent, and no relaxation is granted."""
     qold = ci_queue_ready(wl)
     ci_queue_fixture(
@@ -142,7 +141,7 @@ def test_157d_failure_mode_a_broken_gh_grants_no_slack(wl):  # noqa: F811
     )
 
 
-def test_157e_pr_stale_folds_into_the_note_only_while_saturated(wl):  # noqa: F811
+def test_157e_pr_stale_folds_into_the_note_only_while_saturated(wl):
     """SUPPRESSION PAIR. A stale body is one whose last push came AFTER the PR-body edit (the edit is stamped in 2000 here). Under saturation the nag folds into the queue note, and the pair's control is the same stale body with the queue clear, where the check fires on its own."""
     qold = ci_queue_ready(wl)
     (wl.base / "ci-fresh.json").write_text(STALE_BODY_FRESH + "\n", encoding="utf-8")
@@ -162,7 +161,7 @@ def test_157e_pr_stale_folds_into_the_note_only_while_saturated(wl):  # noqa: F8
     )
 
 
-def test_157f_the_queue_read_is_cached_two_stops_one_gh_hit(wl):  # noqa: F811
+def test_157f_the_queue_read_is_cached_two_stops_one_gh_hit(wl):
     """Two stops inside the TTL cost exactly one hit on the runs endpoint."""
     qold = ci_queue_ready(wl)
     hits = wl.base / "runs-hits.txt"
@@ -180,7 +179,7 @@ def test_157f_the_queue_read_is_cached_two_stops_one_gh_hit(wl):  # noqa: F811
     assert count == 1, "expected exactly 1 runs-endpoint hit, got %d" % count
 
 
-def test_160_displays_show_basetext_and_the_latest_note_never_the_whole_history(wl):  # noqa: F811
+def test_160_displays_show_basetext_and_the_latest_note_never_the_whole_history(wl):
     """v14 gap 1. One live item reached ~20 concatenated notes and every block printed them all. brief_line/brief_text keep the full accumulation in the store (`--list`) and render base plus newest only."""
     wl.brief_now()
     wl.hand_now()
@@ -206,7 +205,7 @@ def test_160_displays_show_basetext_and_the_latest_note_never_the_whole_history(
     assert "second old note" in full, full[:300]
 
 
-def test_160b_own_worklist_activity_resets_the_stuck_counter(wl):  # noqa: F811
+def test_160b_own_worklist_activity_resets_the_stuck_counter(wl):
     """v14 gap 2. A session ticking/leasing/updating items hourly is MOVING even when its long-horizon harness tasks never flip; only a session doing neither counts. STUCK_ROUNDS=2 so tasks-plus-head fires at 2 unchanged stops (1 would fire on every stop by construction: a fresh signature starts its count at 1)."""
     wl.brief_now()
     wl.hand_now()
@@ -224,7 +223,7 @@ def test_160b_own_worklist_activity_resets_the_stuck_counter(wl):  # noqa: F811
     assert not fired, "160b: an active session still read as stuck: %s" % last.out[:250]
 
 
-def test_160b_control_with_no_activity_the_detector_still_fires(wl):  # noqa: F811
+def test_160b_control_with_no_activity_the_detector_still_fires(wl):
     """CONTROL: the identical shape WITHOUT worklist activity fires."""
     wl.brief_now()
     wl.hand_now()
@@ -240,7 +239,7 @@ def test_160b_control_with_no_activity_the_detector_still_fires(wl):  # noqa: F8
     assert fired, "160b CONTROL: the stuck detector never fired: %s" % last.out[:250]
 
 
-def test_160c_lease_warns_when_the_worker_id_is_not_a_running_task(wl):  # noqa: F811
+def test_160c_lease_warns_when_the_worker_id_is_not_a_running_task(wl):
     """v14 gap 3: a name-not-id lease is warned about, naming the real ids, and the CONTROL is a real task id, which is verified with no warning."""
     wl.brief_now()
     wl.hand_now()
@@ -272,7 +271,7 @@ def test_160c_lease_warns_when_the_worker_id_is_not_a_running_task(wl):  # noqa:
     assert "WARNING" not in both, both[:250]
 
 
-def test_160d_an_expired_lease_with_an_os_verified_worker_stays_in_flight(wl):  # noqa: F811
+def test_160d_an_expired_lease_with_an_os_verified_worker_stays_in_flight(wl):
     """v14 gap 4, with its CONTROL: the same expired lease with the worker GONE fails closed as before."""
     wl.brief_now()
     wl.hand_now()
@@ -320,7 +319,7 @@ def test_160d_an_expired_lease_with_an_os_verified_worker_stays_in_flight(wl):  
     )
 
 
-def test_160e_own_bookkeeping_does_not_stale_the_state_document_but_structure_does(wl):  # noqa: F811
+def test_160e_own_bookkeeping_does_not_stale_the_state_document_but_structure_does(wl):
     """v14 gap 5. The lease vehicle exists and is ALREADY `[>]` before the document is written, so the later renewal changes no structure (state stays '>', only until/upd move), which is exactly the bookkeeping-only shape this gap is about."""
     wl.brief_now()
     fid = added_id(wl.cli("--add", "deadbeef", "lease vehicle"))
@@ -351,7 +350,7 @@ def test_160e_own_bookkeeping_does_not_stale_the_state_document_but_structure_do
     )
 
 
-def test_160f_an_unchanged_world_accepts_the_banked_remaining_report(wl):  # noqa: F811
+def test_160f_an_unchanged_world_accepts_the_banked_remaining_report(wl):
     """v14 gap 6, with its CONTROL: the world moves (a new open item) and the demand returns, so the bank cannot outlive the world it described."""
     wl.brief_now()
     wl.hand_now()

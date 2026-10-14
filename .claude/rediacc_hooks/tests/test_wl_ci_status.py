@@ -13,7 +13,6 @@ import subprocess
 import sys
 
 from rediacc_hooks.tests import wlfix
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # The Actions job the shim serves for every per-job lookup: one green step and one red one, so the block can name a failing step.
 CI_JOB_PAYLOAD = {
@@ -174,7 +173,7 @@ def probe_moves(fix, super_dir) -> str:
     return proc.stdout.strip()
 
 
-def test_119_a_submodule_pointer_moved_onto_a_feature_branch_is_caught(wl):  # noqa: F811
+def test_119_a_submodule_pointer_moved_onto_a_feature_branch_is_caught(wl):
     """REGRESSION, from a real near-miss. A subagent committed inside a submodule on its own branch, which necessarily moves the superproject's gitlink, and the standing sweep-everything-with-git-add-A rule would have COMMITTED that move, silently adding the submodule's PR to this PR's merge chain. Quality / Submodule Branches only says so minutes later, in CI.
 
     A REAL git fixture with a REAL remote, because the decisive fact is which REMOTE branches contain the commit: a local-only branch proves nothing about what CI can fetch.
@@ -276,7 +275,7 @@ def test_119_a_submodule_pointer_moved_onto_a_feature_branch_is_caught(wl):  # n
         )
 
 
-def test_120_control_it_fires_a_real_per_job_failure_blocks_with_job_step_and_log(wl):  # noqa: F811
+def test_120_control_it_fires_a_real_per_job_failure_blocks_with_job_step_and_log(wl):
     """A real failure blocks and hands over the job, the failing step and the tracer verb that reads it (PLAN-ci-verdict: tool output stops printing raw `gh api` recipes)."""
     ci_setup(wl)
     ci_rollup(
@@ -300,7 +299,7 @@ def test_120_control_it_fires_a_real_per_job_failure_blocks_with_job_step_and_lo
     assert '"decision": "block"' in got.out, got.out[:400]
 
 
-def test_121_control_it_stays_silent_an_all_green_run_says_nothing(wl):  # noqa: F811
+def test_121_control_it_stays_silent_an_all_green_run_says_nothing(wl):
     """CONTROL: a green run produces no CI complaint at all."""
     ci_setup(wl)
     ci_rollup(
@@ -311,7 +310,7 @@ def test_121_control_it_stays_silent_an_all_green_run_says_nothing(wl):  # noqa:
     cichk(wl, "a green run produces no CI complaint", "no", "CI IS RED")
 
 
-def test_122_control_a_cancelled_run_with_zero_failed_jobs_is_not_red(wl):  # noqa: F811
+def test_122_control_a_cancelled_run_with_zero_failed_jobs_is_not_red(wl):
     """CONTROL. Four runs in one night ended `cancelled` with no failed job, each superseded by the session's own next push. Reading the run-level rollup would have nagged four times about nothing."""
     ci_setup(wl)
     ci_rollup(
@@ -332,7 +331,7 @@ def test_122_control_a_cancelled_run_with_zero_failed_jobs_is_not_red(wl):  # no
     )
 
 
-def test_123_a_cancelled_run_hiding_one_real_failure_still_fires(wl):  # noqa: F811
+def test_123_a_cancelled_run_hiding_one_real_failure_still_fires(wl):
     """The other half: the watchdog force-cancels a run when a gate fails, so `cancelled` also means something genuinely failed. Only per-JOB conclusions separate run 30514648812 (cancelled, Quality / Static = failure) from 30513152662."""
     ci_setup(wl)
     ci_rollup(
@@ -343,7 +342,7 @@ def test_123_a_cancelled_run_hiding_one_real_failure_still_fires(wl):  # noqa: F
     cichk(wl, "one real failure inside a cancelled run is found", "yes", "Quality / Static")
 
 
-def test_124_control_a_failing_e2e_leg_with_a_watchdog_retry_pending_does_not_block(wl):  # noqa: F811
+def test_124_control_a_failing_e2e_leg_with_a_watchdog_retry_pending_does_not_block(wl):
     """WATCHDOG_RETRY_ALLOWLIST_PATTERNS in .github/workflows/watchdog-monitor.yml. That night an opensuse E2E leg died on a Docker Hub CDN reset, was retried onto the same run, and the run finished green at 95 jobs."""
     ci_setup(wl)
     ci_rollup(
@@ -358,14 +357,14 @@ def test_124_control_a_failing_e2e_leg_with_a_watchdog_retry_pending_does_not_bl
     )
 
 
-def test_125_once_the_run_is_final_the_same_leg_is_hard(wl):  # noqa: F811
+def test_125_once_the_run_is_final_the_same_leg_is_hard(wl):
     """The pair for 124: the same allowlisted leg, still red on a finished run, becomes actionable."""
     ci_setup(wl)
     ci_rollup(wl, "FAILURE", "[%s]" % ci_job("E2E / opensuse", "FAILURE"))
     cichk(wl, "a retryable leg still red on a finished run becomes actionable", "yes", "CI IS RED")
 
 
-def test_126_a_running_background_watch_naming_this_run_silences_the_check(wl):  # noqa: F811
+def test_126_a_running_background_watch_naming_this_run_silences_the_check(wl):
     """An armed watch on the current run IS the wake-up, so the hook stays quiet."""
     ci_setup(wl)
     ci_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
@@ -382,7 +381,7 @@ def test_126_a_running_background_watch_naming_this_run_silences_the_check(wl): 
     cichk(wl, "an armed watch on the current run keeps the hook quiet", "no", "CI IS RED", bg=bg)
 
 
-def test_127_a_completed_or_superseded_watch_does_not_count_as_armed(wl):  # noqa: F811
+def test_127_a_completed_or_superseded_watch_does_not_count_as_armed(wl):
     """Both happened: a completed watch reported completed/cancelled for a run that had since been superseded, and another reported a FALSE failure because a watchdog rerun flipped a terminal run back to in_progress."""
     ci_setup(wl)
     ci_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
@@ -411,7 +410,7 @@ def test_127_a_completed_or_superseded_watch_does_not_count_as_armed(wl):  # noq
     )
 
 
-def test_128_the_block_has_a_hard_ceiling(wl):  # noqa: F811
+def test_128_the_block_has_a_hard_ceiling(wl):
     """The deadlock guard. A different check trapped this session for an entire night by demanding something it could not produce; this one cannot, by construction. And the downgrade is not silence: the failure is still reported."""
     ci_setup(wl)
     ci_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
@@ -424,7 +423,7 @@ def test_128_the_block_has_a_hard_ceiling(wl):  # noqa: F811
     assert "CI IS RED" not in got.out, "the ceiling did not downgrade the block: %s" % got.out[:300]
 
 
-def test_129_naming_the_failing_job_in_the_stop_message_clears_the_block(wl):  # noqa: F811
+def test_129_naming_the_failing_job_in_the_stop_message_clears_the_block(wl):
     """An acknowledgement that names the job is the fast exit, not a bypass."""
     ci_setup(wl)
     ci_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
@@ -437,7 +436,7 @@ def test_129_naming_the_failing_job_in_the_stop_message_clears_the_block(wl):  #
     )
 
 
-def test_130_an_unreadable_lookup_blocks_rather_than_passing_quietly(wl):  # noqa: F811
+def test_130_an_unreadable_lookup_blocks_rather_than_passing_quietly(wl):
     """Blindness is its own verdict, per no-escape-hatch."""
     ci_setup(wl)
     write_exec(
@@ -448,7 +447,7 @@ def test_130_an_unreadable_lookup_blocks_rather_than_passing_quietly(wl):  # noq
     cichk(wl, "blindness is its own verdict", "yes", "PR CI-status lookup failed")
 
 
-def test_131_two_live_sessions_mean_silence(wl):  # noqa: F811
+def test_131_two_live_sessions_mean_silence(wl):
     """A second live session silences the check, because the red may be theirs."""
     ci_setup(wl)
     ci_rollup(wl, "FAILURE", "[%s]" % ci_job("Quality / Static", "FAILURE"))
@@ -456,7 +455,7 @@ def test_131_two_live_sessions_mean_silence(wl):  # noqa: F811
     cichk(wl, "a second live session silences the check", "no", "CI IS RED")
 
 
-def test_131b_an_unset_publish_ref_costs_no_network_call(wl):  # noqa: F811
+def test_131b_an_unset_publish_ref_costs_no_network_call(wl):
     """The opt-out must cost NOTHING: a gh that dies if invoked proves the check never reaches the network when WORKLIST_PUBLISH_REF is unset.
 
     THE BASH ASSERTION HERE COULD NOT FAIL, for two independent reasons, and what is asserted below is what it meant to assert. First, its fixture was a bare `setup` with no git repo and no origin/pub ref, so the CI check had nothing to resolve and would have skipped the lookup whatever the ref said. Second, and fatal on its own, it grepped the HOOK's stderr for the shim's message:
@@ -539,7 +538,7 @@ def run_ctx(name: str, conclusion: str, ident: int = 1) -> str:
     )
 
 
-def test_132_nothing_failed_is_not_green_until_ci_complete_reports(wl):  # noqa: F811
+def test_132_nothing_failed_is_not_green_until_ci_complete_reports(wl):
     """THE 2026-10-02 FALSE GREEN at the Stop hook's seam: a head where nothing failed but CI Complete never reported is `pending`, not `ok`, so the pr-babysit finish line cannot tick its green box off it."""
     ci_setup(wl)
     ci_rollup(wl, "SUCCESS", "[%s]" % run_ctx("OBS Mirror (opensuse-16.0)", "SUCCESS"))
@@ -554,7 +553,7 @@ def test_132_nothing_failed_is_not_green_until_ci_complete_reports(wl):  # noqa:
     assert trouble(wl) == ["ok"]
 
 
-def test_133_a_watchdog_budget_cancel_is_attributed_and_noted(wl):  # noqa: F811
+def test_133_a_watchdog_budget_cancel_is_attributed_and_noted(wl):
     """Run 36953549081's own shape: 104 success, 33 skipped, 29 cancelled, nothing failed, and the cause on Watchdog Monitor run 36956399799. The note names the cause; it never says "newer push"."""
     ci_setup(wl)
     jobs = json.loads((DIAG_FIX / "jobs_36953549081_attempt1.json").read_text(encoding="utf-8"))[
@@ -579,7 +578,7 @@ def test_133_a_watchdog_budget_cancel_is_attributed_and_noted(wl):  # noqa: F811
     assert trouble(wl)[0] == "cancelled"
 
 
-def test_133b_control_an_unattributed_cancel_stays_silent(wl):  # noqa: F811
+def test_133b_control_an_unattributed_cancel_stays_silent(wl):
     """The pair for 133 and the reason test_122 stays green: with no evidence, the state is `cancelled` but the note is empty."""
     ci_setup(wl)
     ci_rollup(wl, "FAILURE", "[%s]" % run_ctx("E2E / ubuntu", "CANCELLED"))
