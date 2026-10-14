@@ -106,7 +106,7 @@ export function injectMacho({ binaryPath, resourceName, blobPath, fuse }) {
     let linkedit = null; // { cmdOff, vmaddr, fileoff }
     let codeSigRange = null; // [start,end) within lcRegion, to excise
     let linkeditCmdStart = -1; // start of __LINKEDIT command within lcRegion
-    let firstSectionOffset = Infinity;
+    let firstSectionOffset = Number.POSITIVE_INFINITY;
     let lastMappedSegEnd = 0; // max (vmaddr+vmsize) over file-backed segments
     let off = 0;
     for (let i = 0; i < ncmds; i++) {

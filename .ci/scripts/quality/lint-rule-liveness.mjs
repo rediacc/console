@@ -1070,8 +1070,7 @@ async function main() {
         continue;
       }
 
-      const instance =
-        mode === 'option-dir' ? optionProbe : mode === 'isolated' ? isolated : eslint;
+      const instance = { 'option-dir': optionProbe, isolated }[mode] ?? eslint;
       const { fired, fatals } = firedRuleIds(
         await instance.lintText(entry.code, {
           filePath: path.join(ROOT, entry.filePath),

@@ -493,7 +493,7 @@ function pull(field) {
 }
 
 function errText(e) {
-  return e && e.message ? e.message : String(e);
+  return e?.message ? e.message : String(e);
 }
 
 // One candidate, one verdict. NEVER throws: a throw from any lazy fetch becomes a named refusal, because an unreadable candidate and an unusable one have the same consequence (no greenlight from this candidate) and only the reason string should differ.
@@ -600,7 +600,7 @@ function evaluateGreenlight({ key, wantGitlinks, wantClosureHash, candidates }) 
       wantGitlinks: want,
       wantClosureHash,
     });
-    trail.push({ run_id: candidate && candidate.runId, ...verdict });
+    trail.push({ run_id: candidate?.runId, ...verdict });
     if (verdict.usable) {
       return { greenlit: true, runId: candidate.runId, reason: verdict.reason, trail };
     }
@@ -624,7 +624,7 @@ function closureHashOf(shaByPath) {
 // --------------------------------------------------------------------------- IO. git for the local side, gh for the candidate side. ---------------------------------------------------------------------------
 
 function defaultRun(cmd, args, timeoutMs) {
-  const { execFileSync } = require('child_process');
+  const { execFileSync } = require('node:child_process');
   return execFileSync(cmd, args, {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
@@ -723,7 +723,7 @@ function createCandidateReader({ repo, deadline, run = defaultRun }) {
     );
     const pages = parseJsonStream(text);
     if (pages.length === 0) throw new Error('runs payload carried no JSON');
-    return pages.flatMap((p) => (Array.isArray(p) ? p : (p && p.workflow_runs) || []));
+    return pages.flatMap((p) => (Array.isArray(p) ? p : p?.workflow_runs || []));
   };
 
   const jobsFor = (runId) => {
@@ -733,7 +733,7 @@ function createCandidateReader({ repo, deadline, run = defaultRun }) {
       if (pages.length === 0) throw new Error('jobs payload carried no JSON');
       jobsCache.set(
         runId,
-        pages.flatMap((p) => (Array.isArray(p) ? p : (p && p.jobs) || []))
+        pages.flatMap((p) => (Array.isArray(p) ? p : p?.jobs || []))
       );
     }
     return jobsCache.get(runId);
@@ -748,7 +748,7 @@ function createCandidateReader({ repo, deadline, run = defaultRun }) {
       const pages = parseJsonStream(text);
       const entries = pages.flatMap((p) => (Array.isArray(p) ? p : [p]));
       const byName = new Map();
-      for (const e of entries) if (e && e.name) byName.set(e.name, e.sha);
+      for (const e of entries) if (e?.name) byName.set(e.name, e.sha);
       contentsCache.set(cacheKey, byName);
     }
     return contentsCache.get(cacheKey);
@@ -805,7 +805,7 @@ function main(argv) {
   let limit = 25;
   let budgetSeconds = 60;
   let debug = false;
-  const repoRoot = require('path').resolve(__dirname, '../../..');
+  const repoRoot = require('node:path').resolve(__dirname, '../../..');
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -859,7 +859,7 @@ function main(argv) {
   const seen = new Set();
   const runRows = [];
   for (const r of runs) {
-    if (!r || !r.id || !r.head_sha) continue;
+    if (!r?.id || !r.head_sha) continue;
     if (selfRunId && String(r.id) === selfRunId) continue;
     if (seen.has(r.head_sha)) continue;
     seen.add(r.head_sha);
@@ -903,7 +903,7 @@ function main(argv) {
       note(`  ${'run id'.padEnd(13)} ${'head'.padEnd(9)} verdict`);
       for (let i = 0; i < verdict.trail.length; i++) {
         const t = verdict.trail[i];
-        const head = (runRows[i] && runRows[i].headSha ? runRows[i].headSha : '').slice(0, 8);
+        const head = (runRows[i]?.headSha ? runRows[i].headSha : '').slice(0, 8);
         note(`  ${String(t.run_id).padEnd(13)} ${head.padEnd(9)} ${t.reason}`);
       }
       note(

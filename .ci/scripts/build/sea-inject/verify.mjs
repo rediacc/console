@@ -160,6 +160,13 @@ function findPe(fd, resourceName) {
   return hit;
 }
 
+/** Count (possibly overlapping) occurrences of `needle` in `haystack`. */
+function countOccurrences(haystack, needle) {
+  let count = 0;
+  for (let f = haystack.indexOf(needle); f >= 0; f = haystack.indexOf(needle, f + 1)) count++;
+  return count;
+}
+
 function streamSha256(fd, offset, size) {
   const h = crypto.createHash('sha256');
   const buf = Buffer.allocUnsafe(CHUNK);
@@ -204,7 +211,7 @@ function main() {
   const fmt = detectFormat(binaryPath);
   const fd = fs.openSync(binaryPath, 'r');
   try {
-    const finder = fmt === 'elf' ? findElf : fmt === 'macho' ? findMacho : findPe;
+    const finder = { elf: findElf, macho: findMacho }[fmt] ?? findPe;
     const loc = finder(fd, resourceName);
     if (!loc) fail(`${fmt}: could not locate embedded ${resourceName}`);
 
@@ -229,8 +236,8 @@ function main() {
       const got = fs.readSync(fd, buf, 0, Math.min(buf.length, size - pos), pos);
       if (got <= 0) break;
       const w = buf.subarray(0, got);
-      for (let f = 0; (f = w.indexOf(on, f)) >= 0; f++) onCount++;
-      for (let f = 0; (f = w.indexOf(off, f)) >= 0; f++) offCount++;
+      onCount += countOccurrences(w, on);
+      offCount += countOccurrences(w, off);
       pos += CHUNK;
     }
     if (onCount !== 1 || offCount !== 0)

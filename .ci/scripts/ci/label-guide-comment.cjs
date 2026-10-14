@@ -154,13 +154,11 @@ const renderBody = (labels) => {
 // Otherwise anyone able to comment on a PR could suppress the guide forever by posting an empty comment carrying the marker. GitHub reports app and Actions
 // authors as `type: 'Bot'`, which is the property to key on -- not the login,
 // which changes with whichever token the job happens to hold.
-const isBotAuthored = (comment) => Boolean(comment && comment.user && comment.user.type === 'Bot');
+const isBotAuthored = (comment) => Boolean(comment?.user && comment.user.type === 'Bot');
 
 const postLabelGuide = async ({ github, context, core }) => {
   const { owner, repo } = context.repo;
-  const prNumber =
-    (context.payload && context.payload.pull_request && context.payload.pull_request.number) ||
-    (context.issue && context.issue.number);
+  const prNumber = context.payload?.pull_request?.number || context.issue?.number;
 
   if (!prNumber) {
     console.log('No pull request in context -- nothing to comment on.');

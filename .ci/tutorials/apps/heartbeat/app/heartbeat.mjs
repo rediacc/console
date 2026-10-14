@@ -4,7 +4,7 @@ const { Pool } = pg;
 
 const poolConfig = {
   host: process.env.DB_HOST || 'db',
-  port: parseInt(process.env.DB_PORT || '5432'),
+  port: Number.parseInt(process.env.DB_PORT || '5432', 10),
   user: process.env.POSTGRES_USER || 'heartbeat',
   password: process.env.PGPASSWORD,
   database: process.env.POSTGRES_DB || 'heartbeat',
@@ -40,7 +40,7 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-const intervalMs = parseInt(process.env.HEARTBEAT_INTERVAL_MS || '5000');
+const intervalMs = Number.parseInt(process.env.HEARTBEAT_INTERVAL_MS || '5000', 10);
 
 // In-memory counter — resets on container restart, proving statefulness
 let counter = 0;
