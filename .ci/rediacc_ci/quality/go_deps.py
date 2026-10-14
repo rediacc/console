@@ -13,6 +13,7 @@ WHY THIS MATTERS. `govulncheck` only catches registered CVEs. A package can be m
 
 Usage:
   python3 -m rediacc_ci.quality.go_deps
+  python3 -m rediacc_ci.quality.go_deps --json   # the probe's records as one JSON document, for `npm run pins`
 
 Exit codes:
   0 - All direct Go deps are up-to-date (or blocked/major only)
@@ -501,11 +502,16 @@ def _go_list(directory: pathlib.Path) -> subprocess.CompletedProcess[str]:
 
 
 def check_go_dir(
-    directory: pathlib.Path, blocked: dict[str, str], freshness: ReleaseAge
+    directory: pathlib.Path,
+    blocked: dict[str, str],
+    freshness: ReleaseAge,
+    published: dict[str, str] | None = None,
 ) -> list[str]:
     """One Go module directory. Returns `MODULE CURRENT LATEST TYPE` lines.
 
     TYPE is `major`, `minor`, `blocked`, `toofresh` or `vulnerable:<ids>`, or the whole line is a `__PROBE_FAILED__` sentinel. Warnings go to stderr, which does not disturb the machine-readable records this function returns.
+
+    `published`, when given, receives each module's update publish epoch (seconds, as text) so `--json` can hand a bump planner the instant a too-new update clears.
     """
     try:
         proc = _go_list(directory)
@@ -557,6 +563,8 @@ def check_go_dir(
                 )
             else:
                 epoch = parsed
+                if published is not None:
+                    published[path] = epoch
 
         if epoch and freshness.is_deferred(epoch):
             records.append("%s %s %s toofresh" % (path, current, latest))
@@ -595,11 +603,51 @@ def go_dirs(root: pathlib.Path) -> list[str]:
     return found
 
 
+def plan_json(root: pathlib.Path) -> int:
+    """`--json`: the gate's probe as one JSON document on stdout, for `npm run pins` (the go-mod driver).
+
+    The same probe, classification and blocklist as the gate, with no verdict: every Go directory's records are `{module, current, latest, kind, published}` (kind as in `check_go_dir`; `published` is the update's epoch seconds or null), and a probe that could not run or an upstream that did not answer lands in `probeFailures` / `unanswered` as the raw record line, never as an empty `records` list. Exit 0 whenever the document was written: the caller judges it. The blocklist's BLOCKER and age checks are the gate's, so they are not repeated here.
+    """
+    blocklist_file = root / BLOCKLIST_REL
+    blocked: dict[str, str] = {}
+    if blocklist_file.is_file():
+        blocked = allowlist.pairs(allowlist.parse_file(blocklist_file, missing_ok=True))
+    freshness = ReleaseAge(root)
+    doc: dict[str, list] = {"dirs": [], "unanswered": [], "probeFailures": []}
+    for directory in go_dirs(root):
+        name = os.path.basename(directory)
+        published: dict[str, str] = {}
+        records: list[dict] = []
+        for line in check_go_dir(pathlib.Path(directory), blocked, freshness, published):
+            path, current, latest, kind = _read_fields(line, 4)
+            if not path:
+                continue
+            if path == PROBE_SENTINEL:
+                doc["probeFailures"].append("%s: %s" % (name, line))
+            elif kind.startswith(UNANSWERED):
+                doc["unanswered"].append("%s: %s" % (name, line))
+            else:
+                records.append(
+                    {
+                        "module": path,
+                        "current": current,
+                        "latest": latest,
+                        "kind": kind,
+                        "published": int(published[path]) if path in published else None,
+                    }
+                )
+        doc["dirs"].append({"dir": "private/%s" % name, "records": records})
+    print(json.dumps(doc))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the gate. Exit 0 when nothing minor is outdated, 1 otherwise."""
     args = list(argv or [])
     if args and args[0] == "--selftest":
         return selftest()
+    if args and args[0] == "--json":
+        return plan_json(paths.repo_root())
 
     root = paths.repo_root()
     blocklist_file = root / BLOCKLIST_REL

@@ -356,3 +356,49 @@ def test_an_osv_vulns_list_is_read_as_before(monkeypatch) -> None:
         upstream, "ask_json", lambda *_a, **_k: {"vulns": [{"id": "GO-2"}, {"id": "GO-1"}, {}]}
     )
     assert go_deps.osv_affected("example.test/dep", "v1.1.0") == ["GO-1", "GO-2"]
+
+
+def test_plan_json_hands_the_probe_records_to_the_pins_planner(
+    monkeypatch, tmp_path: pathlib.Path, capsys
+) -> None:
+    """`--json` is the go-mod driver's plan source (`npm run pins`): the gate's own classification plus the publish epoch, and a probe that could not run lands in `probeFailures` instead of vanishing as an empty list."""
+    (tmp_path / "private" / "renet").mkdir(parents=True)
+    (tmp_path / "private" / "renet" / "go.mod").write_text("module x\n")
+    (tmp_path / "private" / "broken").mkdir()
+    (tmp_path / "private" / "broken" / "go.mod").write_text("module y\n")
+
+    def fake(directory, _blocked, _freshness, published=None):
+        if directory.name == "broken":
+            return ["%s go-list exit=2 boom" % go_deps.PROBE_SENTINEL]
+        assert published is not None
+        published["example.test/a"] = "1790000000"
+        return [
+            "example.test/a v1.0.0 v1.1.0 minor",
+            "example.test/b v1.0.0 v2.0.0 major",
+            "example.test/c v1.0.0 v1.0.1 %sproxy.golang.org down" % go_deps.UNANSWERED,
+        ]
+
+    monkeypatch.setattr(go_deps, "check_go_dir", fake)
+    assert go_deps.plan_json(tmp_path) == 0
+    doc = json.loads(capsys.readouterr().out)
+    renet = next(d for d in doc["dirs"] if d["dir"] == "private/renet")
+    assert renet["records"] == [
+        {
+            "module": "example.test/a",
+            "current": "v1.0.0",
+            "latest": "v1.1.0",
+            "kind": "minor",
+            "published": 1790000000,
+        },
+        {
+            "module": "example.test/b",
+            "current": "v1.0.0",
+            "latest": "v2.0.0",
+            "kind": "major",
+            "published": None,
+        },
+    ]
+    assert len(doc["unanswered"]) == 1
+    assert "example.test/c" in doc["unanswered"][0]
+    assert len(doc["probeFailures"]) == 1
+    assert doc["probeFailures"][0].startswith("broken:")
