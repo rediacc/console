@@ -785,7 +785,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.ci-parity-exempt | 9 | # comment |
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
 | .ci/policy/.dead-bash-allowlist | 5 | # comment |
-| .ci/policy/.deps-upgrade-blocklist | 6 | inline |
+| .ci/policy/.deps-upgrade-blocklist | 2 | inline |
 | .ci/policy/.devcontainer-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
 | .ci/policy/.embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
@@ -807,7 +807,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | agent/ledgers/plan-investigation.jsonl | 2 | inline |
 | agent/plans/PLAN-retire-bash-oracles.inventory.tsv | 35 | prose only (no live entry) |
 | knip.jsonc | 27 | // comment |
-| package.json | 24 | JSON value |
+| package.json | 23 | JSON value |
 | pyproject.toml | 65 | # comment |
 | scripts/ci-runner/gates.lock.json | 29 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 47 | JSON value |

@@ -10,46 +10,6 @@
     "Seeded 2026-10-01; ages measured that day with the registry's time map."
   ],
   "exceptions": {
-    "typescript": {
-      "owner": "d778be9d",
-      "reason": "typescript-eslint 8.71.0 declares peer typescript \">=4.8.4 <6.1.0\", so no typescript 7 release can be linted; line 7 first released 2026-07-08 (7.0.2), 84 days on 2026-10-01",
-      "blocker": {
-        "kind": "peer-range",
-        "package": "typescript-eslint",
-        "peer": "typescript",
-        "excludes": "7"
-      }
-    },
-    "eslint": {
-      "owner": "d778be9d",
-      "reason": "eslint-plugin-import 2.32.0 declares peer eslint up to ^9 only, so eslint 10 breaks the import rules; line 10 first released 2026-02-06 (10.0.0), 236 days on 2026-10-01",
-      "blocker": {
-        "kind": "peer-range",
-        "package": "eslint-plugin-import",
-        "peer": "eslint",
-        "excludes": "10"
-      }
-    },
-    "@eslint/js": {
-      "owner": "d778be9d",
-      "reason": "@eslint/js 10 peers eslint ^10, which is held because eslint-plugin-import 2.32.0 peers eslint up to ^9; line 10 first released 2026-02-06 (10.0.1; 10.0.0 is deprecated), 236 days on 2026-10-01",
-      "blocker": {
-        "kind": "peer-range",
-        "package": "eslint-plugin-import",
-        "peer": "eslint",
-        "excludes": "10"
-      }
-    },
-    "eslint-plugin-unicorn": {
-      "owner": "d778be9d",
-      "reason": "unicorn 66 through 76 all peer eslint >=10.4, which is held because eslint-plugin-import 2.32.0 peers eslint up to ^9; line 66 first released 2026-06-14, 108 days on 2026-10-01",
-      "blocker": {
-        "kind": "peer-range",
-        "package": "eslint-plugin-import",
-        "peer": "eslint",
-        "excludes": "10"
-      }
-    },
     "@types/node": {
       "owner": "d778be9d",
       "reason": "the engines.node floor is Node 24 (>=24.11.0 in root, packages/cli and private/account), so types for Node 25+ APIs would describe a runtime this code does not require; line 25 first released 2025-12-10, 295 days on 2026-10-01",

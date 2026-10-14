@@ -23,17 +23,5 @@
 # (peer-range, engine-floor) or an expiry at most 30 days out. Minor holds
 # are outside the clock.
 
-# ESLint v10 — blocked until typescript-eslint, eslint-plugin-import, eslint-plugin-react support v10
-@eslint/js  # BLOCKER: v10.x requires eslint v10; typescript-eslint/import/react plugins lack v10 peer dep support
-
 # @types/node major must match Node engine version (24.x)
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 24
-
-# eslint-plugin-unicorn v66 — major release with new/renamed lint rules
-eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames lint rules which would surface new violations across the whole monorepo; adoption deferred to a dedicated lint-tooling PR that audits and fixes the rule-set changes
-
-# ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
-eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
-
-# typescript v7 — the lint stack does not accept it yet (console and private/account alike)
-typescript  # BLOCKER: typescript-eslint 8.70.1, @typescript-eslint/parser 8.70.1 and @typescript-eslint/eslint-plugin 8.70.1 declare peer typescript ">=4.8.4 <6.1.0" and no release accepts 7 (newest tags 8.70.2-alpha.*); console and account both stay on ^6.0.3 so check:version agrees. Lift when typescript-eslint ships a TS 7 peer range (measured 2026-09-24).
