@@ -375,3 +375,25 @@ def test_worktree_digest_equals_the_tree_digest_of_the_same_state(world: World) 
 
 def test_unreadable_tree_has_no_digest(world: World) -> None:
     assert trig.inputs(world.root, "f" * 40) is None
+
+
+def test_a_watched_renet_file_moved_out_of_the_trigger_still_hits(world: World) -> None:
+    """A rename is a deletion of the watched path: with rename detection on, the diff names only the new, unwatched path and the move would pass unchecked."""
+    world.renet_commit({"pkg/sandbox/a.go": "package sandbox\n// body\n"})
+    base = world.commit_pointer("watched file in place")
+    (world.sub / "pkg/other").mkdir(parents=True, exist_ok=True)
+    _git(world.sub, "mv", "pkg/sandbox/a.go", "pkg/other/a.go")
+    _git(world.sub, "commit", "-q", "-m", "move")
+    world.commit_pointer("move out")
+    got = world.changed(base=base)
+    assert "private/renet/pkg/sandbox/a.go" in got.hits
+
+
+def test_a_watched_console_file_moved_out_of_the_trigger_still_hits(world: World) -> None:
+    _write(world.root, "packages/cli/src/remote/sync/x.ts", "export const x = 1;\n// body\n")
+    base = _commit(world.root, "watched console file")
+    (world.root / "packages/cli/src/moved").mkdir(parents=True)
+    _git(world.root, "mv", "packages/cli/src/remote/sync/x.ts", "packages/cli/src/moved/x.ts")
+    _commit(world.root, "move out")
+    got = world.changed(base=base)
+    assert "packages/cli/src/remote/sync/x.ts" in got.hits

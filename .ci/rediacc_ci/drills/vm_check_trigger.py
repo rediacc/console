@@ -115,11 +115,11 @@ def _renet_range(
             return [], "the new side has no private/renet gitlink"
         if subgit(["cat-file", "-e", f"{new}^{{commit}}"]) is None:
             return [], "the new gitlink commit is not in the local private/renet"
-        names = subgit(["diff", "--name-only", old, new])
+        names = subgit(["diff", "--no-renames", "--name-only", old, new])
         if names is None:
             return [], "git diff of the renet range failed"
         return _lines(names), None
-    names = subgit(["diff", "--name-only", old])
+    names = subgit(["diff", "--no-renames", "--name-only", old])
     if names is None:
         return [], "git diff of the renet worktree failed"
     found = _lines(names)
@@ -145,9 +145,9 @@ def changed_paths(root: pathlib.Path, base: str, mode: Mode, tip: str = "HEAD") 
     """
     git = make_git(root)
     if mode == "push":
-        names = git(["diff", "--name-only", base, tip])
+        names = git(["diff", "--no-renames", "--name-only", base, tip])
     else:
-        names = git(["diff", "--name-only", base])
+        names = git(["diff", "--no-renames", "--name-only", base])
     if names is None:
         return Changed(hits=(), unknown=(f"{base}: git diff failed",))
     changed = _lines(names)
