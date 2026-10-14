@@ -1604,7 +1604,7 @@ def test_fetch_runs_sorts_by_created_at_descending_explicitly(monkeypatch):
 
 
 def test_fetch_runs_drops_a_fork_pull_request_run(monkeypatch):
-    """FIRES-if-unfixed (review 68b5f243.1): a fork's pull-request run is a run of this workflow, and its unit-duration artifacts are parsed as trusted XML, so only runs of this repository's own branches are sampled."""
+    """FIRES-if-unfixed (reviews 68b5f243.1 and 4a060751.1): a fork's pull-request run is a run of this workflow, and its unit-duration artifacts are parsed as trusted XML, so only runs of this repository's own branches are sampled; a head repository that is null, nameless or named null (runs 4, 5, 6) is dropped like a fork. The limit is 7 so that every run reaches the filter rather than being cut by the count."""
     runs = [
         {"id": 1, "created_at": "2026-09-20T00:00:00Z", "head_repository": {"full_name": "o/r"}},
         {"id": 2, "created_at": "2026-09-21T00:00:00Z", "head_repository": {"full_name": "x/r"}},

@@ -339,7 +339,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
         bytesTransferred = bytes;
       }
 
-      // Count transferred files: the running maximum xfr# over the whole run, so a chunk that carries several counters is never read by its first
+      // Count transferred files: the running maximum xfr# over the whole run, so a chunk that carries several xfr# counters is never counted by its first one alone
       filesTransferred = updateRsyncCount(countState, output);
     });
 

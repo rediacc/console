@@ -74,7 +74,7 @@ class _CheckedRedirect(urllib.request.HTTPRedirectHandler):
 def build_opener(
     *handlers: urllib.request.BaseHandler, http: str = "never"
 ) -> urllib.request.OpenerDirector:
-    """`urllib.request.build_opener(*handlers)` whose redirects pass `check_url`: a caller that needs cookies or another handler gets the redirect check too, where a plain `urllib.request.build_opener` follows a redirect to any http, https or ftp URL unchecked (the stdlib refuses other schemes itself, and admits an empty scheme, a relative Location it then resolves against the request URL with `urljoin`), so a 302 to `ftp:` or to plain http would pass."""
+    """`urllib.request.build_opener(*handlers)` whose redirects pass `check_url`: a caller that needs cookies or another handler gets the redirect check too, where a plain `urllib.request.build_opener` follows a redirect to any http, https or ftp URL unchecked (the stdlib refuses other schemes itself, and admits an empty scheme, a relative Location it resolves against the request URL with `urljoin` before `redirect_request`, so `check_url` here always sees the resolved absolute URL), so a 302 to `ftp:` or to plain http would pass."""
     return urllib.request.build_opener(*handlers, _CheckedRedirect(http))
 
 
