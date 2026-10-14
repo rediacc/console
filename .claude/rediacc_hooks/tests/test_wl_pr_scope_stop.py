@@ -380,6 +380,19 @@ def test_a_not_before_beyond_the_cap_holds_nothing_and_is_named(wl):
     assert "more than 7 days out" in got.out, got.out[:2000]
 
 
+def test_a_passed_not_before_is_never_called_out_of_range():
+    core = wlfix.import_wl("wl_core")
+    now = datetime.datetime.now(datetime.UTC)
+    fmt = "%Y-%m-%dT%H:%M:%SZ"
+    upd = (now - datetime.timedelta(days=30)).strftime(fmt)
+    passed = (now - datetime.timedelta(days=20)).strftime(fmt)
+    assert core.not_before_problem("bump it? NOT-BEFORE:%s DEFAULT: x" % passed, upd) == ""
+    future = (now + datetime.timedelta(days=20)).strftime(fmt)
+    assert "more than 7 days out" in core.not_before_problem(
+        "bump it? NOT-BEFORE:%s DEFAULT: x" % future, ""
+    )
+
+
 def test_an_impossible_not_before_holds_nothing_and_is_named(wl):
     loop_world(wl)
     _plant_aged_deferral(wl, "(deadbeef) bump it? NOT-BEFORE:2026-10-32T00:00Z DEFAULT: bump it")

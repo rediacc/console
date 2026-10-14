@@ -111,6 +111,8 @@ def not_before_problem(line, upd=""):
     when = parse_stamp(stamps[-1])
     if when is None:
         return "NOT-BEFORE:%s is not a valid instant" % stamps[-1]
+    if when <= utcnow():
+        return ""
     base = parse_stamp(upd) or utcnow()
     if when > base + datetime.timedelta(days=NOT_BEFORE_MAX_DAYS):
         return "NOT-BEFORE:%s is more than %d days out and is ignored" % (
