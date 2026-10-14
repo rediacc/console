@@ -331,3 +331,19 @@ def test_an_osv_answer_that_is_not_an_object_is_not_compared(monkeypatch) -> Non
     with pytest.raises(upstream.NotComparedError) as raised:
         go_deps.osv_affected("example.test/dep", "v1.1.0")
     assert "not a JSON object" in str(raised.value)
+
+
+@pytest.mark.parametrize("vulns", ["GO-2026-0001", {"id": "GO-2026-0001"}])
+def test_an_osv_vulns_that_is_not_a_list_is_not_compared(monkeypatch, vulns) -> None:
+    """Iterating a string or a mapping drops every entry, so an answer of the wrong shape would read as 'no advisory' (f80bbd39.2)."""
+    monkeypatch.setattr(upstream, "ask_json", lambda *_a, **_k: {"vulns": vulns})
+    with pytest.raises(upstream.NotComparedError) as raised:
+        go_deps.osv_affected("example.test/dep", "v1.1.0")
+    assert "not a list" in str(raised.value)
+
+
+def test_an_osv_vulns_list_is_read_as_before(monkeypatch) -> None:
+    monkeypatch.setattr(
+        upstream, "ask_json", lambda *_a, **_k: {"vulns": [{"id": "GO-2"}, {"id": "GO-1"}, {}]}
+    )
+    assert go_deps.osv_affected("example.test/dep", "v1.1.0") == ["GO-1", "GO-2"]

@@ -667,3 +667,24 @@ def test_the_test_stage_does_not_read_the_lint_config(tmp_path):
     calls = out["calls"]
     assert isinstance(calls, list)
     assert len(calls) == 1
+
+
+def test_a_rules_sequence_at_the_indent_of_its_key_is_read() -> None:
+    """YAML lets the list sit at the key's own indent; a reason above each item is still required (75798b0c.1)."""
+    text = (
+        "linters:\n  exclusions:\n    rules:\n"
+        "    # BLOCKER: the nesting follows the tool's output grammar, one case per field of its report.\n"
+        "    - path: a\\.go$\n      linters:\n        - nestif\n"
+        "    - path: b\\.go$\n      linters:\n        - nestif\n"
+    )
+    findings, rules = port_module.exclusion_rule_findings(text, "f.yml")
+    assert rules == 2
+    assert len(findings) == 1
+    assert "carries no" in findings[0]
+
+
+def test_a_non_utf8_config_is_one_finding_not_a_traceback(tmp_path) -> None:
+    (tmp_path / ".golangci.yml").write_bytes(b"linters:\n  \xff\n")
+    findings = port_module.check_exclusion_rules(tmp_path)
+    assert len(findings) == 1
+    assert "cannot be read" in findings[0]

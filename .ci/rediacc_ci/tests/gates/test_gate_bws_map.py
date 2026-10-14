@@ -206,6 +206,22 @@ def test_twin_appearing_kills_the_exemption(gate, tmp_path):
     gate.log_pass("no-github-twin is RE-DERIVED: creating the org secret ends the exemption")
 
 
+def test_a_non_literal_rename_table_refuses_with_a_message(gate, tmp_path):
+    """RENAMES is read with ast.literal_eval; an element that is not a literal must end the gate with one line, not a traceback (881f37e4.1)."""
+    fixture(gate, tmp_path)
+    write(
+        tmp_path / "scripts/ops/secret-rename.py",
+        'RENAMES: list[tuple[str, str]] = [\n    ("OLD_" + "ALPHA", "ALPHA_TOKEN"),\n]\n',
+    )
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(
+        out, "RENAMES must hold only literal strings", "the message names the table"
+    )
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.assert_not_contains(out, "Traceback", "without a traceback")
+    gate.log_pass("a non-literal RENAMES element is refused in one line")
+
+
 def test_seller_field_dropped_from_profile_reds(gate, tmp_path):
     fixture(gate, tmp_path)
     dropped = SELLER_FIELDS[-1]

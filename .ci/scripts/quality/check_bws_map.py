@@ -258,7 +258,12 @@ def rename_pairs() -> list[tuple[str, str]]:
     node = ast.parse(m.group(0), str(RENAME_TABLE)).body[0]
     if not isinstance(node, ast.AnnAssign) or node.value is None:
         return []
-    return list(ast.literal_eval(node.value))
+    try:
+        return list(ast.literal_eval(node.value))
+    except ValueError as exc:
+        # A concatenation or a name in the table is not data this gate can read: say so, rather than a bare traceback.
+        msg = f"{RENAME_TABLE.relative_to(ROOT)}: RENAMES must hold only literal strings ({exc})"
+        raise SystemExit(msg) from exc
 
 
 def superseded_problems(name: str, rec: dict, suffixes: list[str]) -> list[str]:
