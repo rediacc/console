@@ -413,7 +413,7 @@ def test_channel_malformed_config_falls_back(sh: Shell) -> None:
     log_pass("malformed config -> stable fallback")
 
 
-def test_channel_config_without_updateChannel(sh: Shell) -> None:  # noqa: N802 -- the twin's name
+def test_channel_config_without_update_channel(sh: Shell) -> None:
     home = sh.fresh_home()
     config = _config(home)
     config.parent.mkdir(parents=True, exist_ok=True)
@@ -438,11 +438,11 @@ CASES = (
     test_channel_inherits_from_config,
     test_channel_env_overrides_config,
     test_channel_malformed_config_falls_back,
-    test_channel_config_without_updateChannel,
+    test_channel_config_without_update_channel,
 )
 
 
-def main(argv: list[str]) -> int:  # noqa: ARG001 -- the twin takes no arguments
+def main(_argv: list[str]) -> int:
     install_sh = paths.repo_root() / INSTALL_SH_REL
     temp = pathlib.Path(tempfile.mkdtemp())
     try:

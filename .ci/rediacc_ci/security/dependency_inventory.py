@@ -82,6 +82,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import typing
 
@@ -141,14 +142,14 @@ HELP_TEXT = (
 TABLE_HEADER = ("LEVEL", "DEPTH", "TYPE", "INTERNAL", "PRODREACH", "NAME", "VERSION")
 
 
-class Failure(Exception):  # noqa: N818 - it is a control-flow signal, not an error state
+class FailureError(Exception):
     """A `return 1` out of `build_npm_package` / `build_go_package`.
 
     `set -e` turns that into an immediate exit 1 of the whole script, with the `log_error` already printed. Modelled as an exception so the two builders can keep the twin's early-return shape without a rc-threading argument at every call site.
     """
 
 
-class UnboundValue(Exception):  # noqa: N818 - same, and it carries a bash diagnostic
+class UnboundValueError(Exception):
     """`$2` read under `set -u` when an option's value is missing. See port note 3."""
 
     def __init__(self, line: int) -> None:
@@ -156,7 +157,7 @@ class UnboundValue(Exception):  # noqa: N818 - same, and it carries a bash diagn
         self.line = line
 
 
-class JqAbort(Exception):  # noqa: N818 - a control-flow signal carrying jq's own text
+class JqAbortError(Exception):
     """A raw `jq` diagnostic that kills the script under `set -e`, with exit 2.
 
     TWO REACHABLE CASES, both of them defects in the twin that this wave reports rather than fixes:
@@ -454,7 +455,7 @@ def build_npm_package(
             "%s: %s missing. Run 'npm install' (+ 'npm run install:natives') first."
             % (name, nm_dir)
         )
-        raise Failure
+        raise FailureError
 
     if mode == "workspace":
         tree_all = _npm_ls(repo_root, ["--workspace", name])
@@ -466,7 +467,7 @@ def build_npm_package(
     parsed_all = _jq_empty(tree_all)
     if parsed_all is _INVALID:
         log.error("%s: npm ls produced invalid JSON" % name)
-        raise Failure
+        raise FailureError
 
     # `jq empty` on empty input EXITS 0, so an empty prod tree takes the valid branch and `jq -c '<keyset>'` then produces no output -- the empty string that kills the next jq. `_NOVALUE` is what carries that distinction; a
     # plain `None` would collapse it into the `tree_prod == "null"` case, which
@@ -481,12 +482,12 @@ def build_npm_package(
 
     package_json = os.path.join(directory, "package.json")
     if not os.path.isfile(package_json):
-        raise JqAbort(JQ_OPEN_ERROR % package_json)
+        raise JqAbortError(JQ_OPEN_ERROR % package_json)
     with open(package_json, encoding="utf-8") as handle:
         types = type_map(json.load(handle))
 
     if prodset is None:
-        raise JqAbort(jq_argjson_banner())
+        raise JqAbortError(jq_argjson_banner())
     if parsed_all is _NOVALUE:
         return None  # the package silently vanishes; see the docstring
 
@@ -606,7 +607,7 @@ def build_go_package(repo_root: str, work_dir: str) -> dict:
     if rc != 0:
         log.error("go list -m failed in %s; cannot build the Go inventory" % directory)
         _echo_probe(err)
-        raise Failure
+        raise FailureError
     main_mod = out.rstrip("\n")  # `$( )` strips trailing newlines
 
     rc, out, err = _go(directory, ["list", "-m", "-json", "all"])
@@ -614,13 +615,13 @@ def build_go_package(repo_root: str, work_dir: str) -> dict:
     if rc != 0 or modules is None:
         log.error("go list -m -json all failed in %s; cannot build the Go inventory" % directory)
         _echo_probe(err)
-        raise Failure
+        raise FailureError
 
     rc, out, err = _go(directory, ["mod", "graph"])
     if rc != 0:
         log.error("go mod graph failed in %s; the dependency graph would be empty" % directory)
         _echo_probe(err)
-        raise Failure
+        raise FailureError
     edges = out.rstrip("\n")
 
     # A module with dependencies always has edges. Zero means the probe returned nothing usable, which is not the same as a module with no dependencies.
@@ -629,7 +630,7 @@ def build_go_package(repo_root: str, work_dir: str) -> dict:
             "go mod graph returned no edges in %s; refusing to emit an empty dependency graph"
             % directory
         )
-        raise Failure
+        raise FailureError
 
     bfs = bfs_chains(edges, main_mod)
     deps = go_dependencies(modules, bfs)
@@ -791,7 +792,7 @@ def build_summary(packages: list[dict], generated: str, max_chains: int) -> dict
 def parse_args(argv: list[str]) -> tuple[str, str, int]:
     """`:38-73`. Returns (format, output, max_chains) or raises.
 
-    `SystemExit(0)` for `--help` after printing, `Failure` after a `log_error`, `UnboundValue` for a missing option value.
+    `SystemExit(0)` for `--help` after printing, `FailureError` after a `log_error`, `UnboundValueError` for a missing option value.
     """
     fmt = "table"
     output = ""
@@ -801,17 +802,17 @@ def parse_args(argv: list[str]) -> tuple[str, str, int]:
         arg = argv[index]
         if arg == "--format":
             if index + 1 >= len(argv):
-                raise UnboundValue(41)
+                raise UnboundValueError(41)
             fmt = argv[index + 1]
             index += 2
         elif arg == "--output":
             if index + 1 >= len(argv):
-                raise UnboundValue(45)
+                raise UnboundValueError(45)
             output = argv[index + 1]
             index += 2
         elif arg == "--max-chains":
             if index + 1 >= len(argv):
-                raise UnboundValue(49)
+                raise UnboundValueError(49)
             max_chains_raw = argv[index + 1]
             index += 2
         elif arg in ("-h", "--help"):
@@ -820,15 +821,15 @@ def parse_args(argv: list[str]) -> tuple[str, str, int]:
             raise SystemExit(0)
         else:
             log.error("Unknown option: %s" % arg)
-            raise Failure
+            raise FailureError
 
     if fmt not in ("json", "table"):
         log.error("--format must be 'json' or 'table'")
-        raise Failure
+        raise FailureError
     # `[[ "$MAX_CHAINS" =~ ^[0-9]+$ ]]`: ASCII digits only, and at least one.
     if not max_chains_raw or not all(char in "0123456789" for char in max_chains_raw):
         log.error("--max-chains must be a non-negative integer")
-        raise Failure
+        raise FailureError
     return fmt, output, int(max_chains_raw)
 
 
@@ -837,12 +838,12 @@ def main(argv: list[str]) -> int:
         fmt, output, max_chains = parse_args(argv)
     except SystemExit as exc:
         return exc.code if isinstance(exc.code, int) else 0
-    except UnboundValue as exc:
+    except UnboundValueError as exc:
         # See port note 3: a raw bash diagnostic naming the script and the line.
         sys.stderr.write("%s: line %d: $2: unbound variable\n" % (sys.argv[0], exc.line))
         sys.stderr.flush()
         return 1
-    except Failure:
+    except FailureError:
         return 1
 
     # `require_cmd jq npm go awk` probes ONLY `jq`; see port note 1.
@@ -853,7 +854,6 @@ def main(argv: list[str]) -> int:
     repo_root = str(paths.repo_root())
 
     # `WORK="$(mktemp -d)"` + `trap 'rm -rf "$WORK"' EXIT`.
-    import tempfile  # noqa: PLC0415 - only needed on the path that gets this far
 
     work_dir = tempfile.mkdtemp()
     try:
@@ -867,9 +867,9 @@ def main(argv: list[str]) -> int:
                     packages.append(package)
             log.step("Analyzing renet (%s)" % GO_PKG_PATH)
             packages.append(build_go_package(repo_root, work_dir))
-        except Failure:
+        except FailureError:
             return 1
-        except JqAbort as abort:
+        except JqAbortError as abort:
             sys.stderr.write(abort.text)
             sys.stderr.flush()
             return 2

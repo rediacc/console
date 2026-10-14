@@ -301,7 +301,7 @@ def test_a_stuck_job_on_a_scheduled_run_is_never_retried(gate, tmp_path):
     gate.log_pass("a stuck job on a scheduled run is recorded, not retried (%s)" % trace)
 
 
-def test_a_stuck_job_on_a_PR_run_still_cancels(gate, tmp_path):  # noqa: N802 -- the twin's case name; parity compares by name
+def test_a_stuck_job_on_a_pr_run_still_cancels(gate, tmp_path):
     """The other direction: on a normal PR the stuck branch must still terminate the run exactly as before. If this regressed, the fix would have traded one bug for another."""
     trace = run_monitor(
         gate, tmp_path, RETRY_JOB, "completed", "stuckpr", "pull_request", "1", "cancelled", "90"

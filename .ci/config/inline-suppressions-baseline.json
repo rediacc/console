@@ -16,10 +16,6 @@
   ".ci/media/venv.sh": {
    "shellcheck-disable SC1091": 2
   },
-  ".ci/rediacc_ci/build/generate_cli_manifest.py": {
-   "noqa N818": 1,
-   "noqa SIM115": 1
-  },
   ".ci/rediacc_ci/check_pytest.py": {
    "noqa PLC0415": 1,
    "noqa S314": 1
@@ -74,11 +70,6 @@
   ".ci/rediacc_ci/core/bws_env.py": {
    "noqa PLC0415": 1,
    "noqa S606": 1
-  },
-  ".ci/rediacc_ci/core/devbox.py": {
-   "noqa N818": 1,
-   "noqa PLC0415": 1,
-   "noqa SIM115": 2
   },
   ".ci/rediacc_ci/core/jsonl_append.py": {
    "type-ignore assignment": 1
@@ -238,27 +229,13 @@
   ".ci/rediacc_ci/quality/worklist_env_registry.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/release/install_script_check.py": {
-   "noqa ARG001": 1,
-   "noqa N802": 1
-  },
   ".ci/rediacc_ci/release/install_sh_config_check.py": {
    "noqa ARG001": 1
   },
   ".ci/rediacc_ci/review/standing_orders_brief.py": {
    "noqa DTZ006": 1
   },
-  ".ci/rediacc_ci/security/audit.py": {
-   "noqa N818": 1
-  },
   ".ci/rediacc_ci/security/ci_workflow_invariants.py": {
-   "noqa N818": 1,
-   "noqa PLC0415": 1,
-   "noqa UP020": 1,
-   "type-ignore union-attr": 1
-  },
-  ".ci/rediacc_ci/security/dependency_inventory.py": {
-   "noqa N818": 3,
    "noqa PLC0415": 1
   },
   ".ci/rediacc_ci/security/rdc_sh_env_check.py": {
@@ -277,10 +254,6 @@
   ".ci/rediacc_ci/setup/machine.py": {
    "noqa PLC0415": 2,
    "noqa S606": 1
-  },
-  ".ci/rediacc_ci/setup/port_parity.py": {
-   "noqa N818": 1,
-   "type-ignore misc": 2
   },
   ".ci/rediacc_ci/setup/shadow_driver.py": {
    "type-ignore assignment": 4,
@@ -335,23 +308,8 @@
   ".ci/rediacc_ci/tests/gates/test_gate_plan_housekeeping.py": {
    "noqa PLW0603": 1
   },
-  ".ci/rediacc_ci/tests/gates/test_gate_releaseversion_inject_env.py": {
-   "noqa N802": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_simulate_promotion_serverside.py": {
-   "noqa N802": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_stage_artifacts_channel.py": {
-   "noqa N802": 2
-  },
   ".ci/rediacc_ci/tests/gates/test_gate_trap_registry.py": {
    "noqa PLC0415": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_watchdog_log_capture.py": {
-   "noqa N802": 1
-  },
-  ".ci/rediacc_ci/tests/gates/test_gate_watchdog_retry_allowlist.py": {
-   "noqa N802": 1
   },
   ".ci/rediacc_ci/tests/gates/test_harness.py": {
    "noqa ARG001": 1
@@ -588,9 +546,6 @@
   },
   ".ci/scripts/quality/check_hint_corpus.py": {
    "noqa PLC0415": 2
-  },
-  ".ci/scripts/quality/check_language_policy.py": {
-   "noqa N818": 1
   },
   ".ci/scripts/quality/check_plan_boxes.py": {
    "noqa PLC0415": 1

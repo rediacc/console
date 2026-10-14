@@ -105,7 +105,7 @@ SHEBANG_SHELLS = (b"bash", b"/sh", b" sh", b"zsh")
 # --------------------------------------------------------------------------- The corpus ---------------------------------------------------------------------------
 
 
-class CannotRun(Exception):  # noqa: N818
+class CannotRunError(Exception):
     """The gate cannot reach a verdict. Exit 77, never a verdict either way."""
 
 
@@ -118,7 +118,7 @@ def git(args: list[str]) -> subprocess.CompletedProcess[bytes]:
     try:
         return subprocess.run(["git", *args], capture_output=True, check=False)
     except FileNotFoundError as exc:
-        raise CannotRun(
+        raise CannotRunError(
             "git is not on PATH, so the tracked-file enumeration this gate is built on\n"
             "  cannot run at all. Install git, or run this gate from a checkout."
         ) from exc
@@ -158,7 +158,7 @@ def tracked_files(root: pathlib.Path) -> list[str]:
     """
     proc = git(["-C", str(root), "ls-files", "-z", "--", *COVERED_ROOTS])
     if proc.returncode != 0:
-        raise CannotRun(
+        raise CannotRunError(
             "`git ls-files` failed in %s (exit %d). Without it there is no corpus, and a\n"
             "  gate with no corpus must not report anything.\n"
             "  git said: %s"
@@ -372,14 +372,14 @@ def read_baseline(path: pathlib.Path) -> list[str] | None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        raise CannotRun(
+        raise CannotRunError(
             "%s exists but cannot be read (%s). A corrupt baseline is not an empty one:\n"
             "  treating it as empty would report every frozen path as a brand new finding.\n"
             "  Repair the JSON; do not delete the file." % (BASELINE_LABEL, exc)
         ) from exc
     value = data.get(KEY)
     if not isinstance(value, list):
-        raise CannotRun(
+        raise CannotRunError(
             "%s has no `%s` array. Refusing to guess what the frozen set was."
             % (BASELINE_LABEL, KEY)
         )
@@ -639,9 +639,9 @@ def selftest() -> int:
             [],
         )
     controls.check(
-        "CONTROL: a directory that is not a checkout raises CannotRun, it does not "
+        "CONTROL: a directory that is not a checkout raises CannotRunError, it does not "
         "return a clean corpus",
-        isinstance(_corpus_error(pathlib.Path("/nonexistent-checkout")), CannotRun),
+        isinstance(_corpus_error(pathlib.Path("/nonexistent-checkout")), CannotRunError),
         True,
     )
 
@@ -653,7 +653,7 @@ def _corpus_error(root: pathlib.Path) -> object:
     """Run the enumeration and hand back whatever it raised, for the control above."""
     try:
         return bash_corpus(root)
-    except CannotRun as exc:
+    except CannotRunError as exc:
         return exc
 
 
@@ -825,7 +825,7 @@ def main(argv: list[str]) -> int:
             covered = [rel for rel in corpus if not exemption_for(rel, entries)]
             return write_baseline(covered, first_seed="--first-seed" in argv)
         return run()
-    except CannotRun as exc:
+    except CannotRunError as exc:
         print(
             "⚠ CANNOT RUN (exit 77, which is not a verdict): %s" % exc,
             file=sys.stderr,

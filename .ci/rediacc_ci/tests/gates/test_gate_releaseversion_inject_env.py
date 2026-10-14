@@ -99,7 +99,7 @@ def test_rejects_a_malformed_version(gate):
     gate.log_pass("--strict rejects malformed versions, non-strict does not")
 
 
-def test_reads_the_VERSION_env(gate):  # noqa: N802 -- the twin's case name; parity compares by name
+def test_reads_the_version_env(gate):
     result = run_inject(gate, "--strict", "--print", VERSION="1.4.0")
     gate.assert_exit(0, result, "VERSION env must be used when no --version is given")
     gate.assert_eq(result.out.strip(), "1.4.0", "and its value is what is printed")

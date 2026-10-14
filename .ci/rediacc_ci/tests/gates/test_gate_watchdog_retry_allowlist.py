@@ -355,7 +355,7 @@ def test_empty_allowlist_fails_closed(gate):
     gate.log_pass("an empty or missing allowlist fails closed")
 
 
-def test_unknown_isFailure_degrades_to_the_safe_direction(gate):  # noqa: N802 -- the twin's case name; parity compares by name
+def test_unknown_is_failure_degrades_to_the_safe_direction(gate):
     # If a future caller forgets the flag, the ambiguity must resolve toward "retry" (the pre-change behaviour), never toward "kill the run". Killing a pipeline on a missing boolean cost run 30304346151 its 39 green jobs.
     policy = Policy(gate)
     gate.assert_eq(

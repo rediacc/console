@@ -106,7 +106,7 @@ WHAT THAT COSTS, and it is not hypothetical: `gh api` fails for a 404 on an advi
 
 REPRODUCED ON BOTH COUNTS, and it is the single most uncomfortable thing in this
 file: `_fetch_one` writes the slug rather than `{}`, and `load_advisory_details`
-raises `Die(5)`. A port that quietly wrote `{}` would be a port that disagreed
+raises `DieError(5)`. A port that quietly wrote `{}` would be a port that disagreed
 with the live gate about whether the build passes.
 
 --------------------------------------------------------------------------
@@ -188,7 +188,7 @@ GHSA_RE = re.compile(r"(GHSA-[a-z0-9]+-[a-z0-9]+-[a-z0-9]+)")
 DATE_BIN = "date"
 
 
-class Die(Exception):  # noqa: N818 -- not an Error; it is bash's `set -e`, named for it
+class DieError(Exception):
     """A `set -e` death: a plain command failed and bash exited with its status.
 
     NOT an error type of this gate. It is the twin's control flow made explicit, because Python has no `set -e` and the alternative -- returning a status from every helper and checking it -- is how a port loses one of them. `main` catches it and returns the status, which is what bash would have exited with.
@@ -773,7 +773,7 @@ class Audit:
                     "npm audit failed to produce valid JSON (exit code: %d)" % audit_exit
                 )
                 advisory.log_error("This may indicate a network error or npm registry issue")
-            raise Die(1)
+            raise DieError(1)
 
     def get_advisories(self, path: str) -> list[str]:
         """`get_advisories` (audit.sh:80-82). Empty on ANY failure.
@@ -900,7 +900,7 @@ class Audit:
                 # THE UNGUARDED ASSIGNMENT, AND THE SECOND HALF OF DEFECT 6.
                 # `details=$(jq -r '...' "$cache" 2>/dev/null)` is a plain
                 # command in a function reached plainly from `main`, so jq's exit 5 IS the gate's exit 5. The `2>/dev/null` means nothing is printed, on either stream, about why.
-                raise Die(5) from exc
+                raise DieError(5) from exc
             # `<<<"$details"` feeds `read` one line: the FIRST. A cache file holding two documents therefore contributes only its first row.
             first = details.split("\n")[0] if details else ""
             vuln_range, patched, desc = bash_read_fields(first, 3)
@@ -911,7 +911,7 @@ class Audit:
     def get_advisory_fix_info(self, advisory_id: str, audit_json: str) -> dict | None:
         """`get_advisory_fix_info` (audit.sh:183-205). None when jq printed nothing.
 
-        RAISES `Die(5)` FOR A NON-NUMERIC ID, which is DEFECT 2: jq exits 5, `pipefail` promotes it through `head -1`, and the caller decides whether `set -e` is live. `should_defer_advisory` catches it (the twin is inside an `if`); `check_stale_entries` does not (the twin is not).
+        RAISES `DieError(5)` FOR A NON-NUMERIC ID, which is DEFECT 2: jq exits 5, `pipefail` promotes it through `head -1`, and the caller decides whether `set -e` is live. `should_defer_advisory` catches it (the twin is inside an `if`); `check_stale_entries` does not (the twin is not).
         """
         try:
             for document, _line in documents(audit_json):
@@ -920,7 +920,7 @@ class Audit:
                     return json.loads(rows[0])
             return None
         except JqError:
-            raise Die(5) from None
+            raise DieError(5) from None
         except (ValueError, OSError, UnicodeDecodeError):
             return None
 
@@ -968,12 +968,12 @@ class Audit:
     def should_defer_advisory(self, advisory_id: str, audit_json: str) -> bool:
         """`should_defer_advisory` (audit.sh:243-276). Sets `defer_reason`.
 
-        `set -e` IS SUSPENDED FOR THIS WHOLE FUNCTION in the twin, because both call sites are `if should_defer_advisory ...`. The `Die` that `get_advisory_fix_info` raises for a non-numeric id is therefore caught here and turned back into "no info", which is what bash does with the failed assignment.
+        `set -e` IS SUSPENDED FOR THIS WHOLE FUNCTION in the twin, because both call sites are `if should_defer_advisory ...`. The `DieError` that `get_advisory_fix_info` raises for a non-numeric id is therefore caught here and turned back into "no info", which is what bash does with the failed assignment.
         """
         self.defer_reason = ""
         try:
             info = self.get_advisory_fix_info(advisory_id, audit_json)
-        except Die:
+        except DieError:
             info = None
         if not info:
             return False
@@ -1161,7 +1161,7 @@ class Audit:
             advisory.log_warn("Upgrading npm to 11.x for Sigstore attestation key compatibility")
             proc = spawn(["npm", "install", "-g", npm_pin(), "--no-audit", "--no-fund"], line=387)
             if proc.returncode != 0:
-                raise Die(proc.returncode)
+                raise DieError(proc.returncode)
 
         advisory.log_info("Verifying package signatures and provenance")
         attempt = 0
@@ -1187,7 +1187,7 @@ class Audit:
                 self.clean_tuf_cache()
                 slept = spawn(["sleep", SIGNATURE_RETRY_SLEEP], line=403)
                 if slept.returncode != 0:
-                    raise Die(slept.returncode)
+                    raise DieError(slept.returncode)
         if not signatures_ok:
             advisory.log_error(
                 "npm audit signatures failed %s at least one installed package has an invalid "
@@ -1328,10 +1328,10 @@ class Audit:
                     value = jq_index(vulns, field)
                 except JqError as exc:
                     print(jq_error(path, end_line, str(exc)), file=sys.stderr, flush=True)
-                    raise Die(5) from None
+                    raise DieError(5) from None
                 out.append(jq_print(jq_alt(value, 0)))
         except (ValueError, OSError, UnicodeDecodeError):
-            raise Die(5) from None
+            raise DieError(5) from None
         return "\n".join(out)
 
     def _emit_failure(self, advisory_id: str, audit_json: str, allowlist_file: str) -> None:
@@ -1417,7 +1417,7 @@ def main(argv: list[str]) -> int:
     del argv
     try:
         return Audit().main()
-    except Die as death:
+    except DieError as death:
         return death.status
 
 
