@@ -67,7 +67,10 @@ export class NotCompared extends Error {
     /** The HTTP status of the last attempt, or null when no response arrived. */
     readonly status: number | null
   ) {
-    super(`${asked} -> ${what}, after ${attempts} attempt(s)`);
+    // A fixture lookup makes no request, so "after 0 attempt(s)" would claim a try that never happened.
+    super(
+      attempts > 0 ? `${asked} -> ${what}, after ${attempts} attempt(s)` : `${asked} -> ${what}`
+    );
   }
 
   /** A fixture map that holds no entry for `key`: the test seam's way of saying the upstream did not answer. */

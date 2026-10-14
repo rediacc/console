@@ -226,13 +226,27 @@ def _side_commit(root: pathlib.Path, branch: str) -> str:
     return sha
 
 
-def _cited_plan(tmp_path, cite_from) -> tuple[pathlib.Path, str, str]:
+def _spelled(sha: str, *, forced: bool = False) -> str:
+    """How a plan cites `sha`: its nine-character abbreviation, or `commit:<abbrev>` when the abbreviation is all digits or `forced`.
+
+    The extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). About 1 in 69 abbreviations is all digits and the fixture's sha moves with the clock, so a draw that lands there needs the `commit:` spelling (PR 600 run on 078a550ad drew one and the gate answered VACUOUS INPUT).
+    """
+    short = sha[:9]
+    return "commit:%s" % short if forced or short.isdigit() else short
+
+
+def test_the_spelling_helper_prefixes_an_all_digit_abbreviation():
+    assert _spelled("123456789abcdef") == "commit:123456789"
+    assert _spelled("12345678a0000000") == "12345678a"
+    assert _spelled("12345678a0000000", forced=True) == "commit:12345678a"
+
+
+def _cited_plan(tmp_path, cite_from, *, forced=False) -> tuple[pathlib.Path, str, str]:
     root = _init(tmp_path)
     _write(root, "agent/PLAN-main.md", "# PLAN: main\nStatus: in-progress\n\n- [ ] T1 a box\n")
     base = _commit(root, "base")
     sha = cite_from(root)
-    # About 1 in 69 nine-character abbreviations is all digits, and the extractor reads a bare all-digit token as a number, not a citation (check_plan_citations.py:29-35). The fixture's sha moves with the clock, so such a draw gets the `commit:` spelling, which is judged either way; PR 600 run on 078a550ad drew one and the gate answered VACUOUS INPUT.
-    cited = "commit:%s" % sha[:9] if sha[:9].isdigit() else sha[:9]
+    cited = _spelled(sha, forced=forced)
     _write(
         root,
         "agent/PLAN-main.md",
@@ -252,6 +266,29 @@ def test_a_commit_on_origin_main_resolves(gate, tmp_path):
     result = _gate(root, base)
     gate.assert_exit(0, result, "a commit reachable from origin/main is a live citation")
     gate.log_pass("a commit on origin/main, not yet in the branch, resolves")
+
+
+def test_the_commit_spelling_is_judged_like_a_bare_sha(gate, tmp_path):
+    """The `commit:` spelling is otherwise drawn only by an all-digit sha, about 1 run in 69, so it is forced here."""
+
+    def on_main(root):
+        sha = _side_commit(root, "mainline")
+        _git(root, "update-ref", "refs/remotes/origin/main", sha)
+        return sha
+
+    (tmp_path / "live").mkdir()
+    (tmp_path / "orphan").mkdir()
+    root, base, _ = _cited_plan(tmp_path / "live", on_main, forced=True)
+    gate.assert_exit(
+        0, _gate(root, base), "a `commit:` citation reachable from origin/main resolves"
+    )
+    root, base, _ = _cited_plan(
+        tmp_path / "orphan", lambda root: _side_commit(root, "orphan"), forced=True
+    )
+    result = _gate(root, base)
+    gate.assert_exit(1, result, "a `commit:` citation of an orphan commit is a finding")
+    gate.assert_contains(result.err, "EXISTS in this clone", "named as an orphan")
+    gate.log_pass("the commit: spelling resolves and refuses like a bare sha")
 
 
 def test_an_orphan_commit_is_named_as_one(gate, tmp_path):

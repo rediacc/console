@@ -418,11 +418,11 @@ RECORDER_IDS = (1000, 1000)
 
 
 def recorder_ids_here(text: str, template: str, ids: tuple[int, int] | None = None) -> str:
-    """The recorder's `uid:gid`, inside `template`, becomes this process's.
+    """The recorder's `uid:gid`, inside `template`, becomes this process's effective ids, the ones `$(id -u)` and the Devbox report.
 
     `template` is the exact context the call site vouches for (`"chown\t-R\t%d:%d\t"`), with two `%d`: a bare `1000` anywhere else in the answer is somebody's data and stays literal.
     """
-    here = ids if ids is not None else (os.getuid(), os.getgid())
+    here = ids if ids is not None else (os.geteuid(), os.getegid())
     return text.replace(template % RECORDER_IDS, template % here)
 
 
