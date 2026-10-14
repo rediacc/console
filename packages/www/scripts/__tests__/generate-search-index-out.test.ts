@@ -66,3 +66,53 @@ describe('sameDirectory', () => {
     }
   });
 });
+
+describe('inode 0 on a case-folding platform', () => {
+  // Every directory reports inode 0; `resolve` maps a path to the spelling the volume would find (identity on a case-sensitive one).
+  const withInodeZero = (body: () => boolean, resolve: (p: string) => string = (p) => p) => {
+    const realStat = fs.statSync;
+    const realReal = fs.realpathSync;
+    const statDesc = Object.getOwnPropertyDescriptor(fs, 'statSync');
+    const pathDesc = Object.getOwnPropertyDescriptor(fs, 'realpathSync');
+    (fs as { statSync: unknown }).statSync = ((p: fs.PathLike) => {
+      const s = realStat(resolve(String(p))) as fs.Stats;
+      return Object.assign(Object.create(Object.getPrototypeOf(s)), s, { ino: 0 });
+    }) as typeof fs.statSync;
+    (fs as { realpathSync: unknown }).realpathSync = Object.assign(
+      (p: fs.PathLike) => realReal(resolve(String(p))),
+      { native: realReal.native }
+    );
+    try {
+      return body();
+    } finally {
+      if (statDesc) Object.defineProperty(fs, 'statSync', statDesc);
+      if (pathDesc) Object.defineProperty(fs, 'realpathSync', pathDesc);
+    }
+  };
+  const upper = path.join(scratch, 'Pub');
+  const lower = path.join(scratch, 'pub');
+  fs.mkdirSync(upper);
+  fs.mkdirSync(lower);
+
+  it('keeps two directories that differ only by case apart on a case-sensitive volume', () => {
+    expect(withInodeZero(() => sameDirectory(upper, lower, 'darwin'))).toBe(false);
+    expect(withInodeZero(() => sameDirectory(upper, lower, 'win32'))).toBe(false);
+  });
+
+  it('CONTROL: calls two spellings of one directory equal when the volume ignores case', () => {
+    const dir = path.join(scratch, 'Only');
+    fs.mkdirSync(dir);
+    // A case-insensitive volume: a spelling that differs by case finds the one entry.
+    const insensitive = (p: string): string => {
+      const hit = fs
+        .readdirSync(path.dirname(p))
+        .find((n) => n.toLowerCase() === path.basename(p).toLowerCase());
+      return hit ? path.join(path.dirname(p), hit) : p;
+    };
+    const same = withInodeZero(
+      () => sameDirectory(dir, path.join(scratch, 'only'), 'darwin'),
+      insensitive
+    );
+    expect(same).toBe(true);
+  });
+});
