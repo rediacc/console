@@ -194,7 +194,7 @@ def defect_runner():
             "the DEFECT no longer applies to the guard outside its own declaration: %r" % old
         )
     ns: dict[str, typing.Any] = {"__name__": "broken_" + STEM, "__file__": path}
-    exec(compile(src.replace(old, new), path, "exec"), ns)  # noqa: S102
+    exec(compile(src.replace(old, new), path, "exec"), ns)
 
     def run(cmd):
         event = hookio.Event(_event(cmd))

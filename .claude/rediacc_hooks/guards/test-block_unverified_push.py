@@ -817,7 +817,7 @@ def drive_broken(where, cmd):
     body = []
     for line in GUARD.read_text(encoding="utf-8").split("\n"):
         if line.startswith("DEFECT = "):
-            exec(line, namespace)  # noqa: S102 -- the guard's own one-line literal
+            exec(line, namespace)
         else:
             body.append(line)
     # THE DECLARATION ITSELF CONTAINS THE TEXT IT PLANTS, so `old in src` alone stays true after the guarded line is deleted, and the plant then changes nothing but its own declaration. Measured 2026-10-05 with the line replaced by hand: the copy runner's assertion passed.

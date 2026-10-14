@@ -301,7 +301,7 @@ def defect_runner():
     if old not in _outside_defect(src):
         raise SystemExit("the DEFECT no longer applies to the guard outside its own declaration")
     ns: dict[str, typing.Any] = {"__name__": "broken_" + STEM, "__file__": good.__file__}
-    exec(compile(src.replace(old, new), str(good.__file__), "exec"), ns)  # noqa: S102
+    exec(compile(src.replace(old, new), str(good.__file__), "exec"), ns)
 
     def run(repo, cmd):
         event = hookio.Event(

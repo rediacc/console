@@ -154,7 +154,7 @@ GOLDEN_PATH = goldenio.golden_path("shellscan")
 
 # THE CHECKOUT PATH ITSELF, MADE INVISIBLE. `corpus._absolute_cd_cases` builds commands that `cd` into `ROOT` (and, when checked out, its `private/renet` submodule) by literal absolute path -- a different string on every checkout. That path does not stay confined to those two commands' text: any case whose `cd`/`-C` hint resolves to a git root (a same-tree relative `cd` resolves to "" and is unaffected, but a submodule hint like `cd private/renet` resolves via a real `git rev-parse --show-toplevel` to its absolute path) surfaces it too, in `troot`/`trootx`.
 # So both the golden KEY (hashed from the command text) and every FIELD VALUE derived from a command are passed through this substitution before they are hashed, written or compared, making the golden -- and its lookup -- independent of where this checkout happens to sit. A submodule's path is `ROOT`-prefixed, so substituting `ROOT` alone also normalizes it.
-REPO_TOKEN = "<REPO>"  # noqa: S105
+REPO_TOKEN = "<REPO>"
 
 
 def _detoken(text):
@@ -245,7 +245,7 @@ def test_the_differential_can_fail(tmp_path):
     broken_path = tmp_path / "broken_shellscan.py"
     broken_path.write_text(broken_src, encoding="utf-8")
     namespace = {"__name__": "broken_shellscan", "__file__": str(broken_path)}
-    exec(compile(broken_src, str(broken_path), "exec"), namespace)  # noqa: S102
+    exec(compile(broken_src, str(broken_path), "exec"), namespace)
     probe = "FOO=bar git commit -m x"
     assert namespace["scan_target"](probe) != shellscan.scan_target(probe), (
         "disabling the env-prefix strip changed nothing, so the differential's green "

@@ -569,7 +569,7 @@ def test_a_reviewer_without_the_recursion_guard_records_a_failure(world):
     mutant.__file__ = R.__file__
     sys.modules[mutant.__name__] = mutant  # dataclasses resolve annotations through sys.modules
     try:
-        exec(compile(src.replace(planted, "pass"), R.__file__, "exec"), mutant.__dict__)  # noqa: S102
+        exec(compile(src.replace(planted, "pass"), R.__file__, "exec"), mutant.__dict__)
     finally:
         del sys.modules[mutant.__name__]
     path = R.run_review(
