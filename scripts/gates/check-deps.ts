@@ -1207,20 +1207,18 @@ async function partitionByReleaseAge(
   if (minReleaseAgeMs <= 0 || packages.length === 0) {
     return { installable: packages, tooNew: [] };
   }
-  const installable: PackageInfo[] = [];
-  const tooNew: PackageInfo[] = [];
-  await Promise.all(
+  // The lookups run concurrently, but the partition keeps the input order, so two runs over the same tree print the same lines in the same order whatever order the registry answers in.
+  const fresh = await Promise.all(
     packages.map(async (pkg) => {
       const published = await fetchVersionPublishTime(pkg.name, pkg.latest);
       // Fail-closed: a null publish time (registry hiccup) is treated as too-new.
-      if (published === null || isWithinFreshnessWindow(published, nowMs, minReleaseAgeMs)) {
-        tooNew.push(pkg);
-      } else {
-        installable.push(pkg);
-      }
+      return published === null || isWithinFreshnessWindow(published, nowMs, minReleaseAgeMs);
     })
   );
-  return { installable, tooNew };
+  return {
+    installable: packages.filter((_pkg, i) => !fresh[i]),
+    tooNew: packages.filter((_pkg, i) => fresh[i]),
+  };
 }
 
 /**
