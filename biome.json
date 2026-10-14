@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -200,6 +200,9 @@
       "includes": ["**", "!private/account/**"],
       "linter": {
         "enabled": true,
+        "domains": {
+          "react": "none"
+        },
         "rules": {
           "recommended": false,
           "correctness": {
@@ -612,6 +615,199 @@
         "rules": {
           "suspicious": {
             "noControlCharactersInRegex": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        ".ci/scripts/build/sea-inject/cli.mjs",
+        ".ci/scripts/build/sea-inject/common.mjs",
+        ".ci/scripts/build/sea-inject/elf.mjs",
+        ".ci/scripts/build/sea-inject/macho.mjs",
+        ".ci/scripts/build/sea-inject/pe.mjs",
+        ".ci/scripts/build/sea-inject/verify.mjs",
+        ".ci/scripts/ci/greenlight.cjs",
+        ".ci/scripts/ci/label-guide-comment.cjs",
+        ".ci/scripts/ci/scope-engine.cjs",
+        ".ci/scripts/ci/scope-map.cjs",
+        ".ci/scripts/ci/skip-plan-reconcile.cjs",
+        ".ci/scripts/ci/validate-pr.cjs",
+        ".ci/scripts/ci/watchdog-monitor.cjs",
+        ".ci/scripts/docs/process-cast-markers.mjs",
+        ".ci/scripts/quality/lint-rule-liveness.mjs",
+        "packages/www/astro.config.mjs",
+        "packages/www/public/scripts/contact-interceptor.js",
+        "packages/www/public/scripts/main.js",
+        "packages/www/public/scripts/tracker.js",
+        "packages/www/src/plugins/heading-anchors.mjs"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "eslint-rules/__tests__/harness.js",
+        "packages/cli/src/__tests__/env-tombstones.test.ts",
+        "packages/cli/src/__tests__/renet-access-ledger.test.ts",
+        "packages/cli/src/cli.ts",
+        "packages/cli/src/commands/backup-ops.ts",
+        "packages/cli/src/commands/backup-storage.ts",
+        "packages/cli/src/commands/backup-strategy.ts",
+        "packages/cli/src/commands/backup.ts",
+        "packages/cli/src/commands/cluster/declare.ts",
+        "packages/cli/src/commands/cluster/index.ts",
+        "packages/cli/src/commands/config-ssh.ts",
+        "packages/cli/src/commands/config.ts",
+        "packages/cli/src/commands/config/audit.ts",
+        "packages/cli/src/commands/config/current.ts",
+        "packages/cli/src/commands/config/edit.ts",
+        "packages/cli/src/commands/config/field.ts",
+        "packages/cli/src/commands/machine/infra.ts",
+        "packages/cli/src/commands/machine/register.ts",
+        "packages/cli/src/commands/machine/status.ts",
+        "packages/cli/src/commands/mcp/executor.ts",
+        "packages/cli/src/commands/ops/check.ts",
+        "packages/cli/src/commands/ops/status.ts",
+        "packages/cli/src/commands/repo-batch-utils.ts",
+        "packages/cli/src/commands/repo-branching.ts",
+        "packages/cli/src/commands/repo-cat.ts",
+        "packages/cli/src/commands/repo-container.ts",
+        "packages/cli/src/commands/repo-extended.ts",
+        "packages/cli/src/commands/repo-fork.ts",
+        "packages/cli/src/commands/repo-maintenance.ts",
+        "packages/cli/src/commands/storage-endpoints.ts",
+        "packages/cli/src/commands/term.ts",
+        "packages/cli/src/commands/update.ts",
+        "packages/cli/src/commands/vscode-browser.ts",
+        "packages/cli/src/commands/vscode.ts",
+        "packages/cli/src/config/__tests__/command-help-coverage.test.ts",
+        "packages/cli/src/remote/msys2/paths.ts",
+        "packages/cli/src/remote/sftp/client.ts",
+        "packages/cli/src/remote/sync/rsync.ts",
+        "packages/cli/src/remote/vscode/settings.ts",
+        "packages/cli/src/remote/vscode/sshConfig.ts",
+        "packages/cli/src/services/__tests__/backup-schedule.test.ts",
+        "packages/cli/src/services/__tests__/license-refresh-datastore.test.ts",
+        "packages/cli/src/services/__tests__/renet-provisioner.test.ts",
+        "packages/cli/src/services/__tests__/update-apply-race.test.ts",
+        "packages/cli/src/services/__tests__/updater.test.ts",
+        "packages/cli/src/services/backup/backup-schedule-reconcile.ts",
+        "packages/cli/src/services/backup/backup-schedule.ts",
+        "packages/cli/src/services/cluster/__tests__/cluster-kube.test.ts",
+        "packages/cli/src/services/cluster/cluster-fork.ts",
+        "packages/cli/src/services/config/config-cluster-logic.ts",
+        "packages/cli/src/services/config/config-reconcile.ts",
+        "packages/cli/src/services/executor/daemon/client.ts",
+        "packages/cli/src/services/executor/local-executor.ts",
+        "packages/cli/src/services/executor/output-lines.ts",
+        "packages/cli/src/services/executor/proxy-command.ts",
+        "packages/cli/src/services/executor/renet-output.ts",
+        "packages/cli/src/services/machine/ssh-connection.ts",
+        "packages/cli/src/services/renet/renet-binary-transfer.ts",
+        "packages/cli/src/services/renet/renet-execution.ts",
+        "packages/cli/src/services/renet/renet-provisioner.ts",
+        "packages/cli/src/services/serve/command-dispatch.ts",
+        "packages/cli/src/services/serve/server.ts",
+        "packages/cli/src/services/state.ts",
+        "packages/cli/src/services/telemetry/telemetry-attrs.ts",
+        "packages/cli/src/services/tofu/provision.ts",
+        "packages/cli/src/utils/mode-guard.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "scripts/gates/check-browser-smoke.ts",
+        "scripts/gates/check-builder-env-contract.ts",
+        "scripts/gates/check-ci-parity.ts",
+        "scripts/gates/check-ci-step-env-parity.ts",
+        "scripts/gates/check-component-hardcoded-strings.ts",
+        "scripts/gates/check-dkim-notify.ts",
+        "scripts/gates/check-translation-completeness.ts"
+      ],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "useOptionalChain": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "scripts/gates/check-bootstrap-idempotency.ts",
+        "scripts/gates/check-docs-inline-translations.ts",
+        "scripts/gates/check-external-links.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "useConsistentArrayType": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/cli/src/remote/vscode/settings.ts",
+        "packages/cli/src/services/telemetry/telemetry-attrs.ts",
+        "scripts/gates/check-docs-untranslated-text.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noUselessElse": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "scripts/gates/check-docs-untranslated-text.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "useCollapsedElseIf": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "eslint-rules/i18n/shared/key-extractor.js"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noAssignInExpressions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/www/src/components/TutorialVideoPlayer.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useExhaustiveDependencies": {
+              "level": "error",
+              "options": {
+                "reportUnnecessaryDependencies": false
+              }
+            }
           }
         }
       }
