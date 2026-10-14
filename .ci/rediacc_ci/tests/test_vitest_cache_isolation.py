@@ -5,6 +5,7 @@ vitest's default cache is `node_modules/.vitest-cache`, shared by every workspac
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 
@@ -47,8 +48,11 @@ def test_each_workspace_that_runs_vitest_has_a_config():
     for rel in _tracked(":(glob)packages/*/package.json") + _tracked(
         ":(glob)workers/*/package.json"
     ):
-        text = paths.from_root(*rel.split("/")).read_text(encoding="utf-8")
-        if re.search(r'"test(:unit)?":\s*"vitest\b', text):
+        scripts = json.loads(paths.from_root(*rel.split("/")).read_text(encoding="utf-8")).get(
+            "scripts", {}
+        )
+        # Any script that runs vitest counts, whatever it is named: an indirection such as "test": "npm run x" reaches vitest through the script it names.
+        if any(re.search(r"\bvitest\b", str(cmd)) for cmd in scripts.values()):
             config = rel.rsplit("/", 1)[0] + "/vitest.config.ts"
             if not paths.from_root(*config.split("/")).is_file():
                 missing.append(config)
