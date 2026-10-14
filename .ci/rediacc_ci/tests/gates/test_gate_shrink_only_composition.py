@@ -138,8 +138,8 @@ def argv_asserts(tree) -> set[int]:
             if isinstance(func, ast.Name) and func.id in SEQUENCE_WRAPPERS:
                 return any(reads(a, tainted) for a in expr.args)
             if isinstance(func, ast.Attribute):
-                # A method on a literal (`" ".join(sys.argv)`) is built from its arguments; any other attribute call (`subprocess.run(argv)`) stays untainted by design.
-                if isinstance(func.value, ast.Constant):
+                # A method on a literal (`" ".join(sys.argv)`, `f"{sep}".join(sys.argv)`) is built from its arguments; any other attribute call (`subprocess.run(argv)`) stays untainted by design.
+                if isinstance(func.value, (ast.Constant, ast.JoinedStr)):
                     return any(reads(a, tainted) for a in expr.args)
                 return reads(func.value, tainted)
         return False
@@ -803,6 +803,14 @@ print("unconditional reseed")
     "assert FLAG in (line = ' '.join(sys.argv))": """import sys
 
 line = " ".join(sys.argv)
+assert "%s" in line
+print("unconditional reseed")
+"""
+    % FLAG,
+    "assert FLAG in (line = f'{sep}'.join(sys.argv))": """import sys
+
+sep = " "
+line = f"{sep}".join(sys.argv)
 assert "%s" in line
 print("unconditional reseed")
 """
