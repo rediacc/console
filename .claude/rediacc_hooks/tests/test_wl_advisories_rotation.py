@@ -16,7 +16,6 @@ from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_checklists import additem, cldeliver, clfile, pyprobe
 from rediacc_hooks.tests.test_wl_event_store import LEASE_BG, plant
 from rediacc_hooks.tests.test_wl_event_store import stamp as evstamp
-from rediacc_hooks.tests.wlfix import wl  # noqa: F401
 
 # --- the checklist bodies the cases plant -----------------------------------
 
@@ -143,7 +142,7 @@ print("VERDICT-INTACT" if v["verdict"] == "stop" and v["reason"] == "clean" else
 """
 
 
-def test_204_two_handoffs_two_keys_the_rotation_serves_both_one_per_stop(wl):  # noqa: F811
+def test_204_two_handoffs_two_keys_the_rotation_serves_both_one_per_stop(wl):
     """Two uncovered waves in one check class are both itemized across two stops, one per stop in battery order, and the CONTROL at the end proves the per-slug key does not outlive the wave it belonged to."""
     wl.say("done for now")
     wl.brief_now()
@@ -176,7 +175,7 @@ def test_204_two_handoffs_two_keys_the_rotation_serves_both_one_per_stop(wl):  #
     assert '"decision": "block"' not in got.out, outlived
 
 
-def test_205_control_one_foreign_handoff_one_advisory_and_betas_needle_can_be_absent(wl):  # noqa: F811
+def test_205_control_one_foreign_handoff_one_advisory_and_betas_needle_can_be_absent(wl):
     """Leg 1 of bash case 205, and it is the needle's own control: with only alpha planted, beta's needle must be MISSING. Without it the main leg could pass on a match that hits anything, which is the failure mode a two-needle assertion hides best.
 
     EACH LEG GETS ITS OWN FIXTURE, and that is not tidiness. Draining an advisory latches it in the queue's `shown` ledger, so planting beta beside an ALREADY-SHOWN alpha suppresses alpha through the refresh window: correct behaviour that looks exactly like the overwrite bug, and it would have made the main leg fire for the wrong reason.
@@ -195,7 +194,7 @@ def test_205_control_one_foreign_handoff_one_advisory_and_betas_needle_can_be_ab
     assert "agent/programs/beta/CHECKLIST.md" not in got.out, baseline
 
 
-def test_205_two_foreign_advisories_two_keys_the_second_no_longer_eats_the_first(wl):  # noqa: F811
+def test_205_two_foreign_advisories_two_keys_the_second_no_longer_eats_the_first(wl):
     """Both foreign handoffs ride the report; neither advisory overwrites the other."""
     wl.say("done for now")
     wl.brief_now()
@@ -213,7 +212,7 @@ def test_205_two_foreign_advisories_two_keys_the_second_no_longer_eats_the_first
     assert "agent/programs/beta/CHECKLIST.md is 'Status: producing'" in got.out, replaced
 
 
-def test_206_a_foreign_drift_advisory_reports_it_and_issues_no_order(wl):  # noqa: F811
+def test_206_a_foreign_drift_advisory_reports_it_and_issues_no_order(wl):
     """A non-owner is told about the drift and is handed no instruction to act on, and it says out loud that repairing it here would overwrite live work. The CONTROL at the end continues on the same world with the owner flipped: the SAME drift under its owner still blocks, imperative intact, so ownership is what decides who is ordered to repair."""
     wl.say("done for now")
     wl.brief_now()
@@ -243,7 +242,7 @@ def test_206_a_foreign_drift_advisory_reports_it_and_issues_no_order(wl):  # noq
     assert "in this turn" in got.out, whose
 
 
-def test_207_the_judge_advises_and_does_not_order_the_operators_three_things(wl):  # noqa: F811
+def test_207_the_judge_advises_and_does_not_order_the_operators_three_things(wl):
     """Paid for on 2026-08-09: the stop gate read a session sitting on four green stacked PRs and returned a next action of merging three of them. The session declined, which is the right outcome reached by the WRONG mechanism: it survived on the model's judgement at the moment of reading, and this whole program exists because judgement at the moment of reading is the faculty that
     fails. The filter is deterministic so a tireder session cannot comply with its own stop gate.
     """
@@ -267,7 +266,7 @@ def test_207_the_judge_advises_and_does_not_order_the_operators_three_things(wl)
     )
 
 
-def test_208_a_dead_worker_gets_the_remedy_that_can_actually_resolve_it(wl):  # noqa: F811
+def test_208_a_dead_worker_gets_the_remedy_that_can_actually_resolve_it(wl):
     """Paid for live on 2026-08-10. The 90-minute rung reported that the declared worker is not in the harness background list any more and printed `--update <id>` as the command. A session ran exactly that, with real evidence, and the IDENTICAL complaint fired on the next stop: `--update` refreshes the item's text and its liveness clock and leaves the false `worker:X` claim
     standing. The prose offered three remedies and the one printed command was the only one that cannot work. One full round trip lost.
 
@@ -298,7 +297,7 @@ def test_208_a_dead_worker_gets_the_remedy_that_can_actually_resolve_it(wl):  # 
     assert not re.search(r"worklist\.py --update deadbeef", got.out), still
 
 
-def test_208_control_a_still_listed_worker_is_never_called_gone(wl):  # noqa: F811
+def test_208_control_a_still_listed_worker_is_never_called_gone(wl):
     """CONTROL: a worker the harness still lists is merely quiet, not gone, and must NOT be pushed onto the dead-worker path."""
     wl.brief_now()
     wl.hand_now()
@@ -315,7 +314,7 @@ def test_208_control_a_still_listed_worker_is_never_called_gone(wl):  # noqa: F8
     )
 
 
-def test_209a_a_matching_last_message_produces_the_hint_on_an_allow_stop(wl):  # noqa: F811
+def test_209a_a_matching_last_message_produces_the_hint_on_an_allow_stop(wl):
     """WHY THE WHOLE 209 GROUP EXISTS. On 2026-08-14 the operator had to hint twice by hand, naming the bench server deployment and pointing at `.claude/agents/`, because nothing surfaced the seven specialists that already existed: the word "bench" appeared ZERO times across all seven `description` fields and exactly once in the whole directory, in a BODY. The knowledge existed and
     the matching surface did not. The hook now says so unprompted.
 
@@ -332,7 +331,7 @@ def test_209a_a_matching_last_message_produces_the_hint_on_an_allow_stop(wl):  #
     )
 
 
-def test_209a_control_neutral_text_earns_no_hint(wl):  # noqa: F811
+def test_209a_control_neutral_text_earns_no_hint(wl):
     """CONTROL, and it leads with a POSITIVE PRESENCE check rather than the absence alone. This suite documents the trap at case 208: a mutation that suppressed a whole block made an absence-only assertion PASS, because with no feature there is nothing to find. So the stop must be shown to have spoken at all first."""
     wl.mk_agent("fixtureagent", HINT_DESC)
     wl.say(
@@ -348,7 +347,7 @@ def test_209a_control_neutral_text_earns_no_hint(wl):  # noqa: F811
     assert hint_n(got.out) == 0, neutral
 
 
-def test_209b_the_hint_rides_an_allow_and_never_blocks(wl):  # noqa: F811
+def test_209b_the_hint_rides_an_allow_and_never_blocks(wl):
     """ADVISORY, NEVER A BLOCK. `vadd` has 46 call sites and every one of them stops the session; blocking a session for not consulting a specialist is the fastest possible way to get this feature switched off."""
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
@@ -360,7 +359,7 @@ def test_209b_the_hint_rides_an_allow_and_never_blocks(wl):  # noqa: F811
     assert "Do not stop yet" not in got.out, blocked
 
 
-def test_209c_a_tie_is_silence_by_construction(wl):  # noqa: F811
+def test_209c_a_tie_is_silence_by_construction(wl):
     """A TIE IS SILENCE, BY CONSTRUCTION: a tie makes the margin 0, which is below any positive threshold, so there is no tie-break rule to get wrong. Inventing a winner is how a matcher starts lying.
 
     The CONTROL continues on the same fixture with a haystack naming only ONE of the two agents. Without it, the silence above would pass just as well on a matcher that had simply stopped working.
@@ -383,7 +382,7 @@ def test_209c_a_tie_is_silence_by_construction(wl):  # noqa: F811
     )
 
 
-def test_209d_the_same_specialist_is_not_suggested_twice(wl):  # noqa: F811
+def test_209d_the_same_specialist_is_not_suggested_twice(wl):
     """RATE LIMIT: the same specialist is not suggested twice. A hint that fires on every stop is wallpaper, and wallpaper gets ignored."""
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
@@ -396,7 +395,7 @@ def test_209d_the_same_specialist_is_not_suggested_twice(wl):  # noqa: F811
     assert hint_n(out) + hint_n(out2) == 1, counts
 
 
-def test_209e_a_deleted_agent_cannot_be_recommended(wl):  # noqa: F811
+def test_209e_a_deleted_agent_cannot_be_recommended(wl):
     """A DELETED AGENT CANNOT BE RECOMMENDED. The corpus is re-read from disk on every stop for exactly this reason, which is also why there is no cache: a cache is what would let a deleted agent keep being recommended.
 
     The second stop matches a DIFFERENT agent on the same text, deliberately. A case that merely re-ran the deleted agent's own haystack would pass on the refresh window alone, proving nothing about the corpus being re-read.
@@ -416,7 +415,7 @@ def test_209e_a_deleted_agent_cannot_be_recommended(wl):  # noqa: F811
     assert "Traceback" not in got2.err, stale
 
 
-def test_209f_the_hint_is_independent_of_the_judge(wl):  # noqa: F811
+def test_209f_the_hint_is_independent_of_the_judge(wl):
     """INDEPENDENT OF THE JUDGE. `wl_judge` spends one haiku call per eventful stop at 4.9 to 20.0 seconds and has BLOCKED a stop on a timeout; a second model call was refused. This pins that the hint is deterministic and does not ride that call: the judge is off and the fixture PATH holds no `claude` at all."""
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
@@ -426,7 +425,7 @@ def test_209f_the_hint_is_independent_of_the_judge(wl):  # noqa: F811
     assert "Stop-gate judge" not in got.out, needed
 
 
-def test_209g_a_malformed_corpus_is_loud_and_degrades_rather_than_disables(wl):  # noqa: F811
+def test_209g_a_malformed_corpus_is_loud_and_degrades_rather_than_disables(wl):
     """A file that cannot be parsed is an agent that has silently stopped being reachable, which is the exact failure this whole feature exists to end, so it is reported, while every sibling that IS well-formed keeps matching."""
     wl.mk_agent("goodagent", HINT_DESC)
     (wl.base / "agents" / "brokenagent.md").write_text(BROKEN_AGENT, encoding="utf-8")
@@ -438,7 +437,7 @@ def test_209g_a_malformed_corpus_is_loud_and_degrades_rather_than_disables(wl): 
     assert "Specialist agent available: goodagent" in got.out, swallowed
 
 
-def test_209h_postcompact_hands_the_compacted_session_its_specialist(wl):  # noqa: F811
+def test_209h_postcompact_hands_the_compacted_session_its_specialist(wl):
     """POSTCOMPACT, which is the highest-value delivery in the design: a compacted session is precisely the one that has forgotten a specialist exists, and additionalContext is read rather than skimmed. Once per compaction by construction, so it needs no rate limit."""
     wl.mk_agent("fixtureagent", HINT_DESC)
     wl.python(["--state", wlfix.ME], stdin=HINT_BRIEFING)
@@ -448,7 +447,7 @@ def test_209h_postcompact_hands_the_compacted_session_its_specialist(wl):  # noq
     assert "Specialist agent available: fixtureagent" in got.out, carried
 
 
-def test_209h_control_an_off_domain_briefing_still_arrives_without_a_hint(wl):  # noqa: F811
+def test_209h_control_an_off_domain_briefing_still_arrives_without_a_hint(wl):
     """CONTROL: the same corpus, a briefing in no agent's domain. The briefing must still arrive, since absence of the hint alone would also describe a broken PostCompact."""
     wl.mk_agent("fixtureagent", HINT_DESC)
     wl.hand_now()
@@ -458,7 +457,7 @@ def test_209h_control_an_off_domain_briefing_still_arrives_without_a_hint(wl):  
     assert hint_n(got.out) == 0, broke
 
 
-def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):  # noqa: F811
+def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):
     """THE KILL SWITCH. Positive presence first, for the reason case 208 records."""
     wl.settings(agent_hint=False)
     wl.mk_agent("fixtureagent", HINT_DESC)
@@ -472,7 +471,7 @@ def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):  # noqa: F
     assert hint_n(got.out) == 0, killed
 
 
-def test_209j_the_per_session_cap_holds_across_two_different_agents(wl):  # noqa: F811
+def test_209j_the_per_session_cap_holds_across_two_different_agents(wl):
     """THE PER-SESSION CAP, across DIFFERENT agents. The refresh window in 209D only bounds one agent; without a cap, eight specialists could each get a turn."""
     wl.env["WORKLIST_AGENT_HINT_MAX_PER_SESSION"] = "1"
     wl.mk_agent("alphaagent", HINT_DESC)
@@ -487,7 +486,7 @@ def test_209j_the_per_session_cap_holds_across_two_different_agents(wl):  # noqa
     assert hint_n(out) + hint_n(out2) == 1, leaked
 
 
-def test_209j_control_raise_the_cap_by_one_and_the_second_specialist_lands(wl):  # noqa: F811
+def test_209j_control_raise_the_cap_by_one_and_the_second_specialist_lands(wl):
     """CONTROL: one planted fact differs, the cap. The second agent must then land, or 209J was measuring a matcher that could only ever hit once."""
     wl.env["WORKLIST_AGENT_HINT_MAX_PER_SESSION"] = "2"
     wl.mk_agent("alphaagent", HINT_DESC)
@@ -502,7 +501,7 @@ def test_209j_control_raise_the_cap_by_one_and_the_second_specialist_lands(wl): 
     assert "Specialist agent available: betaagent" in out2, never
 
 
-def test_209k_priority_3_never_displaces_a_real_section(wl):  # noqa: F811
+def test_209k_priority_3_never_displaces_a_real_section(wl):
     """This is the case to write first: it PROVES the noise control instead of asserting it. Every existing advisory is priority 2 or better and `outq_drain` releases one section per stop, so a hint reaches the operator only on a stop with nothing more important to say. That property costs nothing to obtain and is the whole reason this feature is not wallpaper.
 
     The CONTROL is what makes this a measurement rather than a coincidence: widen the drain on the very next stop and the hint is STILL THERE, so what the first leg observed was a queued hint being outranked, not a hint that never fired.
@@ -546,7 +545,7 @@ def test_209k_priority_3_never_displaces_a_real_section(wl):  # noqa: F811
     )
 
 
-def test_209l_the_operators_own_sentence_fires_on_a_description_without_deployment(wl):  # noqa: F811
+def test_209l_the_operators_own_sentence_fires_on_a_description_without_deployment(wl):
     """THE OPERATOR'S OWN SENTENCE, verbatim. REGRESSION 2026-08-15. The sentence that caused this feature to be built named the bench server deployment, and when the matcher was first wired up it returned NOTHING for it. The corpus carried `deploy`, `deploying` and `deploys`, three variants of one verb, hand-enumerated, and not `deployment`, so the query lost that hit to
     morphology, landed on `bench` alone at 1.0, and died against MIN_SCORE=2. The feature would have shipped unable to answer the only query a real session is KNOWN to have needed.
 
@@ -585,7 +584,7 @@ def test_209l_the_operators_own_sentence_fires_on_a_description_without_deployme
     )
 
 
-def test_209m_counting_words_never_route_a_dismissal_to_a_specialist(wl):  # noqa: F811
+def test_209m_counting_words_never_route_a_dismissal_to_a_specialist(wl):
     """WHY THIS EXISTS. The specialist PUSHBACK (the "already covers" text) had no case at all, and it misrouted live: a session reporting "33 errors total, 32 pre-existing" about TypeScript in packages/www was sent to the LICENSING specialist, matched on the single token `total`, because licensing-ops' description happens to say "the total tier map" and `discriminative()` hands a
     term unique to one description that description at full weight.
 
@@ -664,7 +663,7 @@ def ladder_backlog(fix):
     return path
 
 
-def test_r9_the_digest_collapses_the_ladder_and_delivers_the_one_liners(wl):  # noqa: F811
+def test_r9_the_digest_collapses_the_ladder_and_delivers_the_one_liners(wl):
     """CONTROL: before R.9 the digest was six identical `ladder` lines and delivered nothing."""
     doc = ladder_backlog(wl)
     proc = subprocess.run(
@@ -718,7 +717,7 @@ def ladder_entries(fix) -> list:
     ]
 
 
-def test_r9_the_ladder_entry_is_retracted_once_its_item_moves(wl):  # noqa: F811
+def test_r9_the_ladder_entry_is_retracted_once_its_item_moves(wl):
     """CONTROL: before R.9 the sticky entry outlived its item's move and kept the digest's head."""
     quiet_lease(wl)
     wl.say("answer with no report section")  # blocks, so the multi-line ping stays queued

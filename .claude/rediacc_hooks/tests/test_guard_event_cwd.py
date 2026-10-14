@@ -27,7 +27,7 @@ def _git(repo, *args):
 
 
 def _stale_branch():
-    today = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- the guard reads local time
+    today = datetime.datetime.now().astimezone().strftime("%m%d")
     return "%s-1" % ("0102" if today == "0101" else "0101")
 
 

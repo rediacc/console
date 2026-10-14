@@ -3,6 +3,7 @@
 The two guards that call `plan_merge_refusal` have their own suites beside them (`guards/test-block_admin_merge.py`, `guards/test-block_push_to_protected_branch.py`); this file pins the module's parsing and the one writer of the link, `.claude/hooks/post-bash/refresh_pr_body.py`, driven through the same stubbed `git`/`gh` world `test_post_bash_differential.py` builds.
 """
 
+import importlib
 import json
 import pathlib
 import re
@@ -10,7 +11,7 @@ import subprocess
 
 import pytest
 
-from rediacc_hooks import plan_gate
+from rediacc_hooks import plan_gate, syspath
 from rediacc_hooks.tests import test_post_bash_differential as pbd
 from rediacc_hooks.wellknown import GH_REPO
 
@@ -255,12 +256,9 @@ def test_refresh_leaves_a_foreign_repo_unlinked(tmp_path):
 
 
 def _pq():
-    from rediacc_hooks import syspath  # noqa: PLC0415 -- the stop dir joins sys.path first
 
     syspath.on_sys_path(plan_gate.STOP_DIR)
-    import wl_planqueue  # noqa: PLC0415
-
-    return wl_planqueue
+    return importlib.import_module("wl_planqueue")
 
 
 def _plan(status, priority="P2", extra=""):
@@ -367,8 +365,8 @@ def test_the_committed_queue_is_fresh_and_its_head_is_the_first_promoted_plan():
 def test_refresh_index_also_refreshes_the_queue(qroot):
     """The `--plan-tick` path: `wl_planrec.refresh_index` leaves the queue fresh, so a tick that changes a plan's rank cannot leave check:ci-plan-record red."""
     pq = _pq()
-    import wl_checks  # noqa: PLC0415 -- importable once _pq() put the stop dir on sys.path
-    import wl_planrec  # noqa: PLC0415
+    wl_checks = importlib.import_module("wl_checks")
+    wl_planrec = importlib.import_module("wl_planrec")
 
     assert pq.problems(qroot)
     wl_planrec.refresh_index(str(qroot), wl_checks.plan_records, wl_checks.plan_box_census)

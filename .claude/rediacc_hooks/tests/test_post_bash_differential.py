@@ -16,6 +16,7 @@ comparison against the GOOD port to go red, because a green that has never been 
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import pathlib
@@ -542,7 +543,6 @@ print("ok")
 
 
 def _hook_module(subject):
-    import importlib.util  # noqa: PLC0415 - only these tests load a hook as a module
 
     spec = importlib.util.spec_from_file_location(
         "hook_" + subject.replace("-", "_"), SUBJECTS[subject]

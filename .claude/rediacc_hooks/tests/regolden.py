@@ -63,11 +63,11 @@ _syspath.on_sys_path(_HERE.parents[2])
 # ALWAYS THE FULL CROSS PRODUCT for a guard recording, never the default 40-of-378 sample. A golden built from the sample would have no record for the other 338 payloads any default-mode differential run might legitimately ask about once `cross_sample`'s deterministic hash picks a different 40 for a guard whose corpus grew; recording the full pool once makes every later default-mode lookup a strict subset lookup. Must be set BEFORE `test_guards_differential` is imported: its `CASES`/`POOL` are built at import time from this flag.
 os.environ["REDIACC_GUARD_DIFF_FULL"] = "1"
 
-from rediacc_hooks import guards  # noqa: E402
-from rediacc_hooks.tests import goldenio  # noqa: E402
-from rediacc_hooks.tests import test_guards_differential as gd  # noqa: E402
-from rediacc_hooks.tests import test_post_bash_differential as pd  # noqa: E402
-from rediacc_hooks.tests import test_shellscan_differential as sd  # noqa: E402
+guards = importlib.import_module("rediacc_hooks.guards")
+goldenio = importlib.import_module("rediacc_hooks.tests.goldenio")
+gd = importlib.import_module("rediacc_hooks.tests.test_guards_differential")
+pd = importlib.import_module("rediacc_hooks.tests.test_post_bash_differential")
+sd = importlib.import_module("rediacc_hooks.tests.test_shellscan_differential")
 
 
 def _write_path(path, out_dir):
