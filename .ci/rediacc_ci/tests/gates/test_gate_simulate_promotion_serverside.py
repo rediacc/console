@@ -199,7 +199,7 @@ def test_all_four_formats_are_copied(gate, tmp_path: pathlib.Path):
     gate.log_pass("all four repo formats are promoted")
 
 
-def test_a_key_outside_the_prefix_is_REFUSED(gate, tmp_path: pathlib.Path):  # noqa: N802
+def test_a_key_outside_the_prefix_is_refused(gate, tmp_path: pathlib.Path):
     gate.log_test("a listing key outside the source prefix must be refused")
     # A key that does not start with the source prefix would make the strip a silent no-op and write to a DOUBLED destination such as apk/edge-promoted/apt/edge/... The install tests that follow would then read a channel nobody wrote, so this must fail loudly instead.
     fx = build_fixture(gate, tmp_path, rogue=True)

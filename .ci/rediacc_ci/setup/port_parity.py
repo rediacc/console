@@ -103,7 +103,7 @@ PORTED_AS = {
 }
 
 
-class CannotRun(Exception):  # noqa: N818
+class CannotRunError(Exception):
     """The gate cannot see its subject, so its green would mean nothing."""
 
 
@@ -256,19 +256,19 @@ def ledger_trees(root: pathlib.Path) -> tuple[int, str]:
 
 
 def audit(root: pathlib.Path, shape: Shape) -> list[str]:
-    """Every finding, as text. Raises CannotRun when the subject is not visible."""
+    """Every finding, as text. Raises CannotRunError when the subject is not visible."""
     findings: list[str] = []
     keys = phases.PHASE_KEYS
     shape.table = len(keys)
     if not keys:
-        raise CannotRun(
+        raise CannotRunError(
             "phases.PHASE_KEYS is EMPTY, so every set comparison below is between "
             "two empty sets and would pass"
         )
 
     machine_src = _read(root / ".ci" / "rediacc_ci" / "setup" / "machine.py")
     if not machine_src:
-        raise CannotRun("cannot read .ci/rediacc_ci/setup/machine.py, so A1 compares nothing")
+        raise CannotRunError("cannot read .ci/rediacc_ci/setup/machine.py, so A1 compares nothing")
 
     twin_text = _read(root / TWIN)
     body_text = _read(root.joinpath(*phases.SETUP_BODY_FILE))
@@ -278,7 +278,7 @@ def audit(root: pathlib.Path, shape: Shape) -> list[str]:
     shape.ledger_trees = trees
 
     if not bash_body and trees == 0:
-        raise CannotRun(
+        raise CannotRunError(
             "the bash setup() is gone AND the ledger proves nothing (%s). Those are the "
             "two things this gate knows about the port, and with neither it would skip "
             "its way to a green." % (why or "no EQUIVALENT rows")
@@ -456,17 +456,17 @@ def selftest(*, verbose: bool = True) -> int:
     # -- the refusals ------------------------------------------------------
     saved = phases.PHASE_KEYS
     try:
-        phases.PHASE_KEYS = ()  # type: ignore[misc]
+        phases.PHASE_KEYS = ()
         sink = io.StringIO()
         raised = False
         try:
             audit(pathlib.Path("/nonexistent"), Shape())
-        except CannotRun:
+        except CannotRunError:
             raised = True
         del sink
         ctl.truthy("MUST FIRE: an empty PHASE_KEYS is a REFUSAL, not a pass", raised)
     finally:
-        phases.PHASE_KEYS = saved  # type: ignore[misc]
+        phases.PHASE_KEYS = saved
 
     ctl.truthy(
         "MUST NOT FIRE: the real table is non-empty",
@@ -502,7 +502,7 @@ def main(argv: list[str]) -> int:
     shape = Shape()
     try:
         findings = audit(root, shape)
-    except CannotRun as exc:
+    except CannotRunError as exc:
         print("setup-port-parity: CANNOT RUN: %s" % exc, file=sys.stderr)
         return EXIT_CANNOT_RUN
 

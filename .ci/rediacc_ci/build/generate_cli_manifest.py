@@ -79,6 +79,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-generate-cli-manifest.observations.jsonl`.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import shutil
@@ -157,7 +158,7 @@ NO_VERSION_MESSAGE = "--version is required"
 UNKNOWN_OPTION_LEAD = "Unknown option: "
 
 
-class Stop(Exception):  # noqa: N818 - a bash `exit`, not a Python error condition
+class StopError(Exception):
     """One `exit <n>` from the twin, with the status it exits with."""
 
     def __init__(self, code: int) -> None:
@@ -191,7 +192,7 @@ def _strip_trailing_newlines(text: str) -> str:
 def capture_strict(argv: list[str], line: int, stdin: str | None = None) -> str:
     """`VAR="$(cmd)"`, whose own status IS the substitution's under `set -e`.
 
-    stderr is INHERITED, exactly as the twin's is: a `jq: error` or an awk diagnostic still reaches the caller's terminal, it is only stdout that is captured. A non-zero status raises `Stop`, which is `set -e` firing.
+    stderr is INHERITED, exactly as the twin's is: a `jq: error` or an awk diagnostic still reaches the caller's terminal, it is only stdout that is captured. A non-zero status raises `StopError`, which is `set -e` firing.
     """
     sys.stdout.flush()
     sys.stderr.flush()
@@ -206,12 +207,12 @@ def capture_strict(argv: list[str], line: int, stdin: str | None = None) -> str:
         )
     except PermissionError:
         print(bash_diagnostic(line, "%s: Permission denied" % argv[0]), file=sys.stderr, flush=True)
-        raise Stop(126) from None
+        raise StopError(126) from None
     except FileNotFoundError:
         print(bash_diagnostic(line, "%s: command not found" % argv[0]), file=sys.stderr, flush=True)
-        raise Stop(127) from None
+        raise StopError(127) from None
     if proc.returncode != 0:
-        raise Stop(proc.returncode)
+        raise StopError(proc.returncode)
     return _strip_trailing_newlines(proc.stdout)
 
 
@@ -241,12 +242,12 @@ def run_strict(argv: list[str], line: int) -> None:
         code = subprocess.run(argv, check=False).returncode
     except PermissionError:
         print(bash_diagnostic(line, "%s: Permission denied" % argv[0]), file=sys.stderr, flush=True)
-        raise Stop(126) from None
+        raise StopError(126) from None
     except FileNotFoundError:
         print(bash_diagnostic(line, "%s: command not found" % argv[0]), file=sys.stderr, flush=True)
-        raise Stop(127) from None
+        raise StopError(127) from None
     if code != 0:
-        raise Stop(code)
+        raise StopError(code)
 
 
 class Options:
@@ -263,7 +264,7 @@ class Options:
 def parse_argv(argv: list[str]) -> Options:
     """`:25-56`, arm for arm, including defect 4.
 
-    Returns the filled `Options`. Raises `Stop(0)` for `--help` (after printing the usage line to STDOUT, as `echo` does) and `Stop(1)` for an unknown option or a value-taking flag with no value.
+    Returns the filled `Options`. Raises `StopError(0)` for `--help` (after printing the usage line to STDOUT, as `echo` does) and `StopError(1)` for an unknown option or a value-taking flag with no value.
     """
     opts = Options()
     setters = {
@@ -284,16 +285,16 @@ def parse_argv(argv: list[str]) -> Options:
                     file=sys.stderr,
                     flush=True,
                 )
-                raise Stop(1)
+                raise StopError(1)
             setattr(opts, setters[token], argv[i + 1])
             i += 2
         elif token in ("-h", "--help"):
             # `:48` uses `echo`, so this is STDOUT and not the logger.
             print(usage_line(), flush=True)
-            raise Stop(0)
+            raise StopError(0)
         else:
             log.error(UNKNOWN_OPTION_LEAD + token)
-            raise Stop(1)
+            raise StopError(1)
     return opts
 
 
@@ -406,17 +407,17 @@ def _body(argv: list[str]) -> int:
     # `:137`. `>` truncates the destination BEFORE jq runs, so a jq failure here leaves a zero-byte manifest behind. Reproduced by opening in "w".
     sys.stdout.flush()
     sys.stderr.flush()
-    try:
-        handle = open(output_path, "w", encoding="utf-8")  # noqa: SIM115 - closed below
-    except OSError as exc:
-        # bash's own redirect failure: `<script>: line 137: <path>: <reason>`.
-        print(
-            bash_diagnostic(WRITE_LINE, "%s: %s" % (output_path, exc.strerror)),
-            file=sys.stderr,
-            flush=True,
-        )
-        raise Stop(1) from None
-    with handle:
+    with contextlib.ExitStack() as stack:
+        try:
+            handle = stack.enter_context(open(output_path, "w", encoding="utf-8"))
+        except OSError as exc:
+            # bash's own redirect failure: `<script>: line 137: <path>: <reason>`.
+            print(
+                bash_diagnostic(WRITE_LINE, "%s: %s" % (output_path, exc.strerror)),
+                file=sys.stderr,
+                flush=True,
+            )
+            raise StopError(1) from None
         proc = subprocess.run(
             ["jq", "."],
             input=manifest + "\n",
@@ -427,7 +428,7 @@ def _body(argv: list[str]) -> int:
         )
     if proc.returncode != 0:
         # `pipefail`: `echo | jq` takes jq's status, and `set -e` stops on it.
-        raise Stop(proc.returncode)
+        raise StopError(proc.returncode)
 
     log.info("Manifest generated: %s" % output_path)  # `:139`
     return 0
@@ -437,7 +438,7 @@ def main(argv: list[str]) -> int:
     """The twin's whole body, in its order."""
     try:
         return _body(argv)
-    except Stop as stop:
+    except StopError as stop:
         return stop.code
 
 

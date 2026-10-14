@@ -492,13 +492,6 @@
       "message": "Need type annotation for \"written\" (hint: \"written: set[<type>] = ...\")"
     },
     {
-      "id": "3dbe36bc7af15785",
-      "file": ".ci/rediacc_ci/security/ci_workflow_invariants.py",
-      "code": "attr-defined",
-      "count": 1,
-      "message": "\"object\" has no attribute \"get\""
-    },
-    {
       "id": "1c4725e5fcdd1b66",
       "file": ".ci/rediacc_ci/security/workflow_gates.py",
       "code": "attr-defined",

@@ -34,7 +34,7 @@ THE SHELL SEMANTICS THE PORT MODELS, AND WHY EACH ONE IS OBSERVABLE
 --------------------------------------------------------------------------
 Every sourcer runs this library under `set -euo pipefail`. Those three flags are not background noise here: they decide several of the twin's observable outcomes, so the port models them explicitly rather than approximating them.
 
-  ERREXIT, WITH ITS SUPPRESSION RULES. `Devbox.errexit` is True at the top of a call, as it is under the driver's `( set -e; "$@" )` and under `run-legacy.sh`'s own `set -e`. A failing command in statement position raises `ShellExit` through `checked()`.
+  ERREXIT, WITH ITS SUPPRESSION RULES. `Devbox.errexit` is True at the top of a call, as it is under the driver's `( set -e; "$@" )` and under `run-legacy.sh`'s own `set -e`. A failing command in statement position raises `ShellExitError` through `checked()`.
   A function called as a CONDITION (`if f`, `f || x`, `! f`) runs with errexit OFF for its whole body, however deeply it nests, which is `cond()`. A COMMAND SUBSTITUTION does not inherit errexit at all (bash does not set `inherit_errexit` here), which is `sub()`: the function inside it runs to completion and only its final status comes back to the assignment, where errexit judges it.
 
   PIPEFAIL. A pipeline's status is its rightmost non-zero member. That is what turns `getent group docker | cut -d: -f3` into a death on a host with no docker group (Rule T fix D1 below), and what makes `cid="$(devbox_container_id)"` carry `docker ps`'s failure through `head -1`.
@@ -102,6 +102,7 @@ from typing import Any
 
 from rediacc_ci import log
 from rediacc_ci.core import release_age
+from rediacc_ci.core.common import is_ci
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT, IMAGE_REGISTRY
 from rediacc_ci.well_known import DEVBOX_UID_IMAGE_REPO as WK_DEVBOX_UID_IMAGE_REPO
 
@@ -231,7 +232,7 @@ class DevboxError(RuntimeError):
         self.code = code
 
 
-class ShellExit(Exception):  # noqa: N818 -- it is not an error, it is a shell ending
+class ShellExitError(Exception):
     """The shell ends here: errexit, a nounset death, or a status the caller must propagate.
 
     Raised by `checked()` and `_req()`, caught at the boundaries bash itself has: a command substitution (`sub()`), and the top of an `invoke()`. A condition (`cond()`) does NOT catch it, because a nounset death inside `if f` still ends the shell.
@@ -604,7 +605,7 @@ class Devbox:
     def checked(self, status: int) -> int:
         """errexit: a non-zero status in statement position ends the shell, when errexit is armed."""
         if status != 0 and self.errexit:
-            raise ShellExit(status)
+            raise ShellExitError(status)
         return status
 
     def cond(self, fn, *argv: str) -> int:
@@ -619,27 +620,26 @@ class Devbox:
     def sub(self, fn, *argv: str, err: str = INHERIT) -> tuple[int, str]:
         """`x="$(fn args)"`: (the subshell's status, what it printed minus EVERY trailing newline).
 
-        errexit is NOT inherited into a command substitution here (no `inherit_errexit`), and a `ShellExit` inside ends only the subshell. NUL bytes are dropped, as bash drops them with a warning. `err` is the substitution's own stderr redirection: INHERIT, NULL (`2>/dev/null`) or TO_OUT (`2>&1`, captured with stdout).
+        errexit is NOT inherited into a command substitution here (no `inherit_errexit`), and a `ShellExitError` inside ends only the subshell. NUL bytes are dropped, as bash drops them with a warning. `err` is the substitution's own stderr redirection: INHERIT, NULL (`2>/dev/null`) or TO_OUT (`2>&1`, captured with stdout).
         """
         buffer = io.BytesIO()
         saved = (self.stdout, self.stderr, self.errexit)
         # A SUBSHELL'S ENVIRONMENT DIES WITH IT. `d="$(devbox_docker)"` may seed the docker memo inside the substitution, and bash drops that on the way out; only `devbox_docker_init` called from the parent persists it.
         saved_env = dict(self.env)
         self.stdout = buffer
-        if err == NULL:
-            self.stderr = open(os.devnull, "wb")  # noqa: SIM115 -- closed in the finally below
-        elif err == TO_OUT:
-            self.stderr = buffer
-        self.errexit = False
-        try:
-            status = fn(*argv)
-        except ShellExit as exc:
-            status = exc.code
-        finally:
+        with open(os.devnull, "wb") if err == NULL else contextlib.nullcontext() as null:
             if err == NULL:
-                self.stderr.close()
-            self.stdout, self.stderr, self.errexit = saved
-            self.env = saved_env
+                self.stderr = null
+            elif err == TO_OUT:
+                self.stderr = buffer
+            self.errexit = False
+            try:
+                status = fn(*argv)
+            except ShellExitError as exc:
+                status = exc.code
+            finally:
+                self.stdout, self.stderr, self.errexit = saved
+                self.env = saved_env
         text = buffer.getvalue().replace(b"\0", b"").decode("utf-8", "surrogateescape")
         return status, text.rstrip("\n")
 
@@ -647,28 +647,26 @@ class Devbox:
     def redirected(self, out: str = INHERIT, err: str = INHERIT):
         """`fn >/dev/null 2>&1` and friends around a FUNCTION call rather than an external."""
         saved = (self.stdout, self.stderr)
-        null = open(os.devnull, "wb") if NULL in (out, err) else None  # noqa: SIM115 -- closed below
-        try:
-            if out == NULL:
-                self.stdout = null
-            elif out == TO_ERR:
-                self.stdout = saved[1]
-            if err == NULL:
-                self.stderr = null
-            elif err == TO_OUT:
-                self.stderr = self.stdout
-            yield
-        finally:
-            self.stdout, self.stderr = saved
-            if null is not None:
-                null.close()
+        with open(os.devnull, "wb") if NULL in (out, err) else contextlib.nullcontext() as null:
+            try:
+                if out == NULL:
+                    self.stdout = null
+                elif out == TO_ERR:
+                    self.stdout = saved[1]
+                if err == NULL:
+                    self.stderr = null
+                elif err == TO_OUT:
+                    self.stderr = self.stdout
+                yield
+            finally:
+                self.stdout, self.stderr = saved
 
     def _req(self, argv: tuple[str, ...], index: int) -> str:
         """`"$N"` under `set -u`: the argument, or the nounset death with bash's message."""
         if len(argv) > index:
             return argv[index]
         self.write("$%d: unbound variable\n" % (index + 1), self.stderr)
-        raise ShellExit(UNBOUND_STATUS)
+        raise ShellExitError(UNBOUND_STATUS)
 
     @staticmethod
     def _opt(argv: tuple[str, ...], index: int, default: str = "") -> str:
@@ -1608,7 +1606,6 @@ class Devbox:
         NEVER FAILS: it returns 0 whether the routes converge, the container stops, or the ceiling passes, because a slow but healthy service must not turn `devbox_up` into a failure. Past `DEVBOX_READY_NOMINAL_S` (90) it says so once and keeps going; at `DEVBOX_READY_CEILING_S` (300) it stops waiting.
         A spinner on a terminal (stderr a tty, NO_COLOR unset, not CI); otherwise one plain line every ten seconds. `sleep 1` is the external the transcript records.
         """
-        from rediacc_ci.core.common import is_ci  # noqa: PLC0415 -- only this method needs it
 
         cid = self._opt(argv, 0)
         if not cid:
@@ -2339,13 +2336,13 @@ class Devbox:
     def invoke(self, name: str, argv: list[str] | tuple[str, ...] = ()) -> int:
         """`( set -e; <name> "$@" )`: call a twin function by its BASH name, and return the subshell's status.
 
-        errexit is armed, as it is under every sourcer. A `ShellExit` is the subshell ending; a `DevboxError` is a refusal of an input this port does not reproduce, reported on stderr with status 1 rather than as a traceback.
+        errexit is armed, as it is under every sourcer. A `ShellExitError` is the subshell ending; a `DevboxError` is a refusal of an input this port does not reproduce, reported on stderr with status 1 rather than as a traceback.
         """
         method = getattr(self, BASH_NAMES[name])
         self.errexit = True
         try:
             return method(*argv)
-        except ShellExit as exc:
+        except ShellExitError as exc:
             return exc.code
         except DevboxError as exc:
             self.write("%s\n" % exc, self.stderr)

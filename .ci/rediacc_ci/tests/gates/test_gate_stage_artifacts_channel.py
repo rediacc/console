@@ -92,7 +92,7 @@ def test_complete_tree_on_a_release_channel_passes(gate, stage):
     gate.log_pass("a complete tree on a release channel passes")
 
 
-def test_metadata_assertions_STILL_FIRE_on_a_release_channel(gate, stage):  # noqa: N802
+def test_metadata_assertions_still_fire_on_a_release_channel(gate, stage):
     # THE CONTROL. The channel gate must not have turned these assertions off
     # for the runs that actually publish. This is the case that proves the fix
     # narrowed the check rather than deleting it.
@@ -150,7 +150,7 @@ def test_the_skip_is_announced_not_silent(gate, stage):
     gate.log_pass("the skip announces itself in both the log and the step summary")
 
 
-def test_empty_channel_does_NOT_weaken_the_other_assertions(gate, stage):  # noqa: N802
+def test_empty_channel_does_not_weaken_the_other_assertions(gate, stage):
     # THE OTHER DANGEROUS DIRECTION, and the one a careless fix gets wrong: the channel gate must cover ONLY the two metadata checks. If a nightly stops producing CLI binaries or half the packages, that must still be red -- otherwise "fix the nightly" would have quietly become "stop checking it".
     stage.seed_dist()
     stage.drop_metadata()

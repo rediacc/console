@@ -110,7 +110,6 @@ two files sit at the same depth (`.ci/scripts/security/x.sh` and `.ci/rediacc_ci
 
 from __future__ import annotations
 
-import io
 import os
 import re
 import shutil
@@ -139,7 +138,7 @@ KINDS = (
 )
 
 
-class SetupExit(Exception):  # noqa: N818 - it is a control-flow signal, not an error state
+class SetupExitError(Exception):
     """The heredoc's `sys.stderr.write(...); sys.exit(2)` pair, as an object.
 
     Carried rather than raised as SystemExit so `_guarded` can tell a deliberate setup exit from a crash: bash treats them identically (both take the `||` branch and both become exit 1), but the STDERR differs -- a setup exit writes one `SETUP: ...` line and a crash writes a traceback -- and a port that conflated them would print the wrong bytes on one of the two paths.
@@ -159,14 +158,14 @@ def load_workflow(path: str) -> dict:
     """
     yaml = _import_yaml()
     if yaml is None:
-        raise SetupExit("SETUP: PyYAML is not importable\n")
+        raise SetupExitError("SETUP: PyYAML is not importable\n")
     try:
         # `io.open(path, encoding="utf-8")` in the twin. The handle is left to
         # the garbage collector there; closed properly here, which changes no observable byte.
-        with io.open(path, encoding="utf-8") as handle:  # noqa: UP020 - the twin's spelling
+        with open(path, encoding="utf-8") as handle:
             return yaml.safe_load(handle)
     except Exception as exc:  # the twin catches bare `Exception` here too
-        raise SetupExit("SETUP: %s does not parse as YAML: %s\n" % (path, exc)) from exc
+        raise SetupExitError("SETUP: %s does not parse as YAML: %s\n" % (path, exc)) from exc
 
 
 def _import_yaml() -> ModuleType | None:
@@ -187,7 +186,7 @@ def analyse(doc: object) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     # A non-mapping document raises here, exactly as the twin's heredoc does;
     # the crash is reproduced, not repaired. See the module docstring.
-    jobs = (doc or {}).get("jobs") or {}  # type: ignore[union-attr]
+    jobs = typing.cast("dict[str, object]", doc or {}).get("jobs") or {}
     if not isinstance(jobs, dict) or not jobs:
         out.append(("no-jobs", "<none>"))
         return out
@@ -981,7 +980,7 @@ def _upstream_gate_phase(ci_file: str, quality_file: str) -> tuple[list[str], li
             ], []
         try:
             docs[key] = load_workflow(path)
-        except SetupExit as exc:
+        except SetupExitError as exc:
             return ["INVARIANT-FAIL: upstream-gates: %s" % exc.message.strip()], []
     findings, shape = analyse_upstream_gates(docs["ci"], docs["quality"])
     errors = [m for k, n in findings if (m := upstream_gate_message_for(k, n, files)) is not None]
@@ -1006,7 +1005,7 @@ def _preflight_phase(ci_file: str, cd_file: str, hk_file: str) -> tuple[list[str
             ], []
         try:
             docs[key] = load_workflow(path)
-        except SetupExit as exc:
+        except SetupExitError as exc:
             return ["INVARIANT-FAIL: cd-preflight: %s" % exc.message.strip()], []
     findings, shape = analyse_preflight(docs["ci"], docs["cd"], docs["housekeeping"])
     errors = [m for k, n in findings if (m := preflight_message_for(k, n, files)) is not None]
@@ -1026,7 +1025,7 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
             ], []
         try:
             docs[key] = load_workflow(path)
-        except SetupExit as exc:
+        except SetupExitError as exc:
             return ["INVARIANT-FAIL: release-order: %s" % exc.message.strip()], []
     findings, shape = analyse_release(docs["ci"], docs["cd"], docs["action"])
     errors = [m for k, n in findings if (m := release_message_for(k, n, files)) is not None]
@@ -1059,7 +1058,7 @@ def _guarded(path: str) -> tuple[list[tuple[str, str]] | None, int]:
     try:
         doc = load_workflow(path)
         return analyse(doc), 0
-    except SetupExit as exc:
+    except SetupExitError as exc:
         sys.stderr.write(exc.message)
         sys.stderr.flush()
         return None, 2
