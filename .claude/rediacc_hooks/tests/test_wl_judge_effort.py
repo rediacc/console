@@ -56,6 +56,17 @@ def test_high_and_ultra_keep_the_block(level):
     assert "effort_advised" not in got
 
 
+def test_the_handed_back_order_is_sanitized_like_a_blocking_one():
+    """settle_by_effort blanks `next_action`, so the closing sanitizer never sees it; an operator-only order must not reach the advisory queue unrewritten (19f83ada.1)."""
+    answer = {**REPORT_ONLY, "next_action": "Merge 563 once the list is complete."}
+    got = J.settle_by_effort(dict(answer), "smart")
+    [(_key, text)] = got["effort_advised"]
+    assert "rejected by the stop gate" in text, text
+    assert "Next: Merge 563" not in text, text
+    control = J.settle_by_effort(dict(REPORT_ONLY), "smart")["effort_advised"][0][1]
+    assert "List every open item by id." in control
+
+
 @pytest.mark.parametrize(
     ("label", "change"),
     [

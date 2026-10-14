@@ -238,3 +238,12 @@ def test_the_stop_hook_writes_rows_to_the_project_ledger(wl):
     keys = {(r["key"], r["verdict"], r["level"]) for r in rows}
     assert ("open-items", "block", "low") in keys, rows
     assert all(r["outcome"] in OUT.OUTCOMES for r in rows if r.get("kind") == "outcome")
+
+
+def test_read_rows_skips_a_non_utf8_byte_instead_of_raising(tmp_path):
+    """One stray byte in a ledger must cost its own line, not the classification of every later stop (04fd0798.4)."""
+    path = tmp_path / "rows.jsonl"
+    path.write_bytes(b'{"id": "a"}\n{"id": "b\xff"}\nnot json\n{"id": "c"}\n')
+    ids = [r["id"] for r in OUT.read_rows(path)]
+    assert "a" in ids
+    assert "c" in ids

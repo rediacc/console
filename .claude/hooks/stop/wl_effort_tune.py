@@ -597,7 +597,7 @@ def mark_requested(root, session_id, epoch, frac):
             {
                 "id": O.new_id("ep"),
                 "kind": "tuner-request",
-                "session": str(session_id or "")[:8],
+                "session": _ctx().session_slug(session_id),
                 "epoch": epoch,
                 "fraction": round(float(frac), 3),
                 "at": O.now_stamp(),
@@ -756,7 +756,8 @@ def evidence_md(doc, st, observations=""):
     lines += ["- %s" % p for p in doc["gate"]] or ["- clean"]
     lines += ["", "## Replay: recorded emissions whose verdict changes", ""]
     lines += [
-        "- session %s epoch %s stop %s: %s at %s %s -> %s (was %s, %s)" % r for r in doc["replay"]
+        "- session %s epoch %s stop %s: %s at %s %s -> %s (outcome %s, %s)" % r
+        for r in doc["replay"]
     ] or ["- none"]
     lines += ["", "## Dead keys (no row in a window of at least %d stops)" % DEAD_MIN_STOPS, ""]
     lines += ["- %s" % k for k in doc["dead"]] or ["- none, or the window is too thin to say"]
@@ -829,7 +830,8 @@ def apply(root, me8, run_path, now=None):
                 }
             )
     prior = proposal_rows(root)
-    asks = []
+    asks: list[dict] = []
+    unasked = 0
     for c in doc["changes"]:
         if c["direction"] != "demote" or not tunable(c["key"], table):
             continue
@@ -837,6 +839,10 @@ def apply(root, me8, run_path, now=None):
             report.append(
                 "effort-tune: demotion of %s already answered; not asked again" % c["key"]
             )
+            continue
+        if len(asks) >= ASK_OPTIONS * ASK_QUESTIONS:
+            # The one /ask holds ASK_QUESTIONS x ASK_OPTIONS; a demotion past that is neither recorded as pending nor claimed as waiting, so the next run proposes it again.
+            unasked += 1
             continue
         asks.append(c)
         rows.append(
@@ -861,6 +867,11 @@ def apply(root, me8, run_path, now=None):
         report.append(
             "effort-tune: %d demotion(s) wait for the operator: ONE /ask, payload %s/ask.json; record each answer with worklist.py --effort-answer %s <key> accept|reject"
             % (len(asks), run_path.as_posix(), me8)
+        )
+    if unasked:
+        report.append(
+            "effort-tune: %d more demotion(s) did not fit the one /ask (%d at most) and stay proposed for the next run"
+            % (unasked, ASK_OPTIONS * ASK_QUESTIONS)
         )
     if not report:
         report.append("effort-tune: nothing to apply")

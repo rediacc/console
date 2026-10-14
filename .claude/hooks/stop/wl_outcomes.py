@@ -5,7 +5,7 @@ THE ASK (operator 2026-10-14): the `smart` effort level should improve itself fr
 EVERY EMISSION GETS AN ID. A check that fires on a stop becomes one pending entry in the session's state doc (`effort_outcomes`): its key, the verdict the effort level gave it (`block`, `advise` or `off`), the level, the subjects its text names (item ids, plan files, paths) and when. `observe` runs once per stop, beside the effort verdicts in `wl_checks.run_stop`, and `note` runs inside `outq_add` for every advisory. A key already pending, or the same key with the same text as the emission last classified, is not a new emission: a check that holds a stop for ten stops with the same words is one emission.
 
 THE FOLLOW-UP IS CLASSIFIED within WINDOW_STOPS stops (operator ruling: "A commit or tick naming the item, within 3 stops"):
-  `work`       a worklist tick or lease, a plan tick (the plan file moved) or a commit touching what the check named after it fired; a check that names nothing takes any of this session's ticks, leases or commits;
+  `work`       a worklist tick or lease, a plan tick (the plan file moved) or a commit touching what the check named after it fired; a check that names nothing takes any of this session's ticks or leases, or any commit on HEAD since it fired (a commit carries no session id, so another session's counts);
   `overruled`  the operator lowered the effort level so the key is quieter now, answered a demotion /ask for the key, or the check's claim was refuted at emission (every item it named was already closed);
   `paperwork`  the window closed and only a status reply (a `## Remaining` section) or a STATE.md rewrite followed;
   `expired`    the window closed with neither.
@@ -79,10 +79,10 @@ def proposals_path(root):
 
 
 def read_rows(path):
-    """Every JSON object line of `path`; a torn or foreign line is skipped, a missing file is []."""
+    """Every JSON object line of `path`; a torn, foreign or non-UTF-8 line is skipped, a missing file is []."""
     out = []
     with contextlib.suppress(OSError):
-        for line in pathlib.Path(path).read_text(encoding="utf-8").splitlines():
+        for line in pathlib.Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
             with contextlib.suppress(ValueError):
                 row = json.loads(line)
                 if isinstance(row, dict):

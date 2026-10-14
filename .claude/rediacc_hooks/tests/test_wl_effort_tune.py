@@ -232,6 +232,24 @@ def test_t4_the_request_is_due_once_per_context_past_85_percent(proj, band):
     assert T.request_due(proj, wlfix.SID) is not None, "a new context earns its own request"
 
 
+def test_t4_the_dedupe_key_is_the_slug_the_request_stored(proj, tmp_path, monkeypatch):
+    """request_due compares against `session_slug`, so mark_requested must store the same spelling for an id the slug rewrites (fb45d045.3)."""
+    odd = "ab cdefg-hij"
+    slug = T._ctx().session_slug(odd)
+    assert slug != odd[:8]
+    d = tmp_path / "slugband"
+    d.mkdir()
+    monkeypatch.setenv("CTX_BAND_STATE_DIR", str(d))
+    (d / ("%s.json" % slug)).write_text(
+        json.dumps({"epoch": 1, "band": 0, "usage": 900_000, "threshold": 1_000_000}),
+        encoding="utf-8",
+    )
+    due = T.request_due(proj, odd)
+    assert due is not None
+    T.mark_requested(proj, odd, due[1], due[2])
+    assert T.request_due(proj, odd) is None, "once per context, whatever the id's spelling"
+
+
 def test_t4_the_stop_hook_asks_exactly_once_per_context(wl):
     d = wl.base / "ctxband"
     d.mkdir()
@@ -308,6 +326,34 @@ def test_t5_promotions_apply_with_a_report_and_demotions_wait_for_one_ask(proj):
     assert '+      "block": "ultra",' in question["options"][0]["preview"]
     assert json.loads((out / "ask.json").read_text(encoding="utf-8")) == payload
     assert T.tuned_problems(table) == []
+
+
+def test_t5_demotions_past_the_one_ask_are_reported_as_unasked_not_as_waiting(proj):
+    """The one /ask holds ASK_QUESTIONS x ASK_OPTIONS options; the report may not claim more wait than the payload carries (fb45d045.2)."""
+    T.run(proj, ME, 1, now=NOW)
+    out = T.run_dir(proj, ME, 1)
+    run_file = out / "run.json"
+    doc = json.loads(run_file.read_text(encoding="utf-8"))
+    base = next(c for c in doc["changes"] if c["direction"] == "demote")
+    capacity = T.ASK_OPTIONS * T.ASK_QUESTIONS
+    table = table_of(proj)
+    keys = [
+        k
+        for k in sorted(table["checks"])
+        if T.tunable(k, table) and k not in {DEMOTE_KEY, PROMOTE_KEY}
+    ][: capacity + 2]
+    assert len(keys) == capacity + 2, "the real table must hold enough tunable rows for the plant"
+    doc["changes"] = [base] + [{**base, "key": k, "ids": ["eo-x"]} for k in keys]
+    run_file.write_text(json.dumps(doc), encoding="utf-8")
+    report, payload = T.apply(proj, ME, out, now=NOW)
+    asked = sum(len(q["options"]) for q in payload["questions"])
+    assert asked == capacity
+    waiting = next(line for line in report if "wait for the operator" in line)
+    assert "%d demotion(s) wait" % capacity in waiting, waiting
+    over = len(doc["changes"]) - capacity
+    assert any("%d more demotion(s) did not fit" % over in line for line in report), report
+    pending = [r for r in T.proposal_rows(proj) if r.get("kind") == "demotion-pending"]
+    assert len(pending) == capacity
 
 
 def test_t5_an_accepted_answer_applies_and_is_never_asked_again(proj):
