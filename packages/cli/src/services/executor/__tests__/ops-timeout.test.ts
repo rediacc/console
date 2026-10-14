@@ -20,6 +20,7 @@ describe('ops-executor timeout kills the process tree', () => {
   let fakeRenet: string;
   let gcPidFile: string;
   let termFile: string;
+  let renetPidFile: string;
   // The in-flight executor run, so a failed readiness wait still ends the process tree it started.
   let pending: Promise<unknown> | null;
 
@@ -73,6 +74,7 @@ describe('ops-executor timeout kills the process tree', () => {
     dir = mkdtempSync(join(tmpdir(), 'ops-timeout-'));
     gcPidFile = join(dir, 'grandchild.pid');
     termFile = join(dir, 'sigterm.mark');
+    renetPidFile = join(dir, 'renet.pid');
     pending = null;
     fakeRenet = join(dir, 'fake-renet');
     // Fake renet: ignore SIGTERM (wedged), spawn a grandchild in the SAME process group (default, not detached) that also ignores SIGTERM and hangs, then hang too. Only a group-wide SIGKILL ends it. The grandchild records its own pid once its handler is in place.
@@ -80,6 +82,7 @@ describe('ops-executor timeout kills the process tree', () => {
       fakeRenet,
       `#!/usr/bin/env node
 const { spawn } = require('node:child_process');
+require('node:fs').writeFileSync(${JSON.stringify(renetPidFile)}, String(process.pid));
 process.on('SIGTERM', () => { require('node:fs').appendFileSync(${JSON.stringify(termFile)}, 'term\\n'); });
 const grandchild = "process.on('SIGTERM',()=>{}); require('node:fs').writeFileSync(" + JSON.stringify(${JSON.stringify(gcPidFile)}) + ", String(process.pid)); setInterval(()=>{}, 1e9)";
 spawn(process.execPath, ['-e', grandchild], { stdio: 'ignore' });
@@ -92,25 +95,62 @@ setInterval(() => {}, 1e9);
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
   });
 
-  afterEach(async () => {
-    // A run still in flight (the readiness wait threw) is ended through the executor's own timers: the timeout sends SIGTERM and the grace window then sends the group SIGKILL.
-    try {
-      if (pending) {
-        vi.advanceTimersByTime(60_000);
-        const settled = await Promise.race([
-          pending.then(() => true),
-          realSleep(5000).then(() => false),
-        ]);
-        if (!settled)
-          throw new Error(
-            'the executor never settled after the group SIGKILL; the fake renet tree may still be alive'
-          );
+  // The pids of the fake renet tree that are known and still running: the renet itself (it records its pid first thing) and the grandchild.
+  const livePids = (): number[] => {
+    const pids = [renetPidFile, gcPidFile].map((file) => {
+      try {
+        return Number.parseInt(readFileSync(file, 'utf8').trim(), 10);
+      } catch {
+        return Number.NaN; // never written
       }
+    });
+    return pids.filter((pid) => Number.isInteger(pid) && alive(pid));
+  };
+
+  const killLive = (): void => {
+    for (const pid of livePids()) {
+      try {
+        process.kill(pid, 'SIGKILL');
+      } catch {
+        // already gone
+      }
+    }
+  };
+
+  // Ends a run still in flight (the readiness wait threw) through the executor's own timers: the timeout sends SIGTERM and the grace window then sends the group SIGKILL. When that does not settle it, the recorded pids are killed directly; the returned directory is kept (and named in the thrown error) only when one of them survives, so a leaked tree stays diagnosable.
+  const settlePending = async (): Promise<boolean> => {
+    if (!pending) return false;
+    vi.advanceTimersByTime(60_000);
+    const settled = await Promise.race([
+      pending.then(() => true),
+      realSleep(5000).then(() => false),
+    ]);
+    if (settled) return false;
+    killLive();
+    await realSleep(500);
+    const leaked = livePids();
+    throw Object.assign(
+      new Error(
+        leaked.length > 0
+          ? `the executor never settled after the group SIGKILL and pid(s) ${leaked.join(', ')} are still alive; their files are kept in ${dir}`
+          : 'the executor never settled after the group SIGKILL; the fake renet tree was killed directly'
+      ),
+      { keepDir: leaked.length > 0 }
+    );
+  };
+
+  afterEach(async () => {
+    let keepDir = false;
+    try {
+      await settlePending();
+    } catch (error) {
+      keepDir = (error as { keepDir?: boolean }).keepDir === true;
+      throw error;
     } finally {
-      // Runs even when the settle wait throws, so fake timers, mocks and the temp dir never leak into later tests.
+      // Runs even when the settle wait throws, so fake timers and mocks never leak into later tests.
       vi.useRealTimers();
       vi.restoreAllMocks();
-      rmSync(dir, { recursive: true, force: true });
+      if (!keepDir) rmSync(dir, { recursive: true, force: true });
     }
   }, 10_000);
 
