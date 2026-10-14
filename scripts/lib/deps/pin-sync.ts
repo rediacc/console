@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { BLUE, NC, RED } from '../console.js';
 import { type InstallStep, readDeclaredRanges } from './plan.js';
 import {
   CONSOLE_ROOT,
@@ -145,10 +144,8 @@ export function planPinSync(
   return out;
 }
 
-/**
- * After a successful --upgrade, bring the syncpack pin groups along with the packages the steps moved. Returns false (naming each group) when a group cannot be moved safely, so the run stays red instead of leaving check:version to fail later.
- */
-export function syncPinGroups(steps: InstallStep[]): boolean {
+/** What each package the steps moved was moved to (the newest when several steps name one). */
+function movedPackages(steps: InstallStep[]): Map<string, string> {
   const moved = new Map<string, string>();
   for (const step of steps) {
     if (step.refused) continue;
@@ -157,31 +154,44 @@ export function syncPinGroups(steps: InstallStep[]): boolean {
       if (prev === undefined || compareVersions(p.latest, prev) > 0) moved.set(p.name, p.latest);
     }
   }
-  if (moved.size === 0) return true;
-  if (MUTANT === 'skip-pin-sync') return true;
+  return moved;
+}
+
+interface PinSyncResult {
+  /** The new .syncpackrc.json text; null when nothing is to be written. */
+  text: string | null;
+  groups: number;
+  involved: number;
+  rewritten: string[];
+  errors: string[];
+}
+
+/**
+ * Plan the move of the syncpack pin groups that follow the packages the steps moved. Pure: the caller writes the text (scripts/lib/pins/drivers/npm-steps.ts, inside the pins transaction), so no gate module in this file's import closure writes the tree. `errors` names each group that cannot be moved safely, so the run stays red instead of leaving check:version to fail later.
+ */
+export function planPinGroupSync(steps: InstallStep[]): PinSyncResult {
+  const none: PinSyncResult = { text: null, groups: 0, involved: 0, rewritten: [], errors: [] };
+  const moved = movedPackages(steps);
+  if (moved.size === 0) return none;
+  if (MUTANT === 'skip-pin-sync') return none;
   let text: string;
   try {
     text = fs.readFileSync(SYNCPACK_RC, 'utf-8');
   } catch (e) {
-    if (FIXTURE_ROOT) return true;
-    console.error(
-      `${RED}✗${NC} cannot read .syncpackrc.json to move its pin groups: ${(e as Error).message}`
-    );
-    return false;
+    if (FIXTURE_ROOT) return none;
+    return {
+      ...none,
+      errors: [`cannot read .syncpackrc.json to move its pin groups: ${(e as Error).message}`],
+    };
   }
   const plan = planPinSync(text, moved, syncpackSourceDirs().map(readDeclaredRanges));
-  // A plan with no text rewrote nothing (it carries only errors), so it neither prints nor counts rewrites it did not make.
-  const written = plan.text !== null ? plan.rewrites : [];
-  // tree-write: mode --upgrade reached only from check-deps --upgrade (syncPinGroups after executeInstalls), never from the gate run
-  if (plan.text !== null) fs.writeFileSync(SYNCPACK_RC, plan.text);
-  console.log(
-    `\n${BLUE}syncpack pin groups:${NC} ${plan.groups} groups, ${plan.involved} hold a moved package, ${written.length} rewritten`
-  );
-  for (const r of written) console.log(`  .syncpackrc.json ${r}`);
-  if (plan.errors.length === 0) return true;
-  console.error(
-    `${RED}✗${NC} ${plan.errors.length} syncpack pin group(s) not moved (check:version stays red until each is):`
-  );
-  for (const e of plan.errors) console.error(`  ${e}`);
-  return false;
+  return {
+    text: plan.errors.length === 0 ? plan.text : null,
+    groups: plan.groups,
+    involved: plan.involved,
+    rewritten: plan.text !== null && plan.errors.length === 0 ? plan.rewrites : [],
+    errors: plan.errors,
+  };
 }
+
+export const SYNCPACK_RC_PATH = SYNCPACK_RC;

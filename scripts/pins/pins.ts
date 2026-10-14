@@ -12,6 +12,9 @@
  *   apply-soaked [--task <id>] [--json] [--out <dir>]
  *                                          bump --all limited to patches and in-range minors
  *   hold <id> --reason "<why>" [--expires YYYY-MM-DD] [--task <id>]
+ *   remove <pkg> [--task <id>]             npm uninstall from every declaring manifest and drop
+ *                                          every policy, override, syncpack and knip line for it
+ *   lockfiles [<dir>] [--task <id>]        the canonical lockfile pass over every npm project
  *   verify [--restore <stamp> [--inflight <file>]...] [--json]
  *                                          every leaf site matches its count and agrees;
  *                                          no run was killed mid-write
@@ -24,10 +27,10 @@
  * failure. A finished run prints, per repo and submodules first, the exact `git add` and
  * `git commit -F <draft> -- <paths>` lines, with the drafts under .ci/cache/pins/<stamp>/.
  *
- * THE DRIVERS are scripts/lib/pins/driver.ts's seam. They land with T4/T6 (npm), T7 (embed,
- * devcontainer, toolchain) and T8 (actions, go-mod, the ceph pins, real-provider, docker);
- * until then an entry whose driver is absent reads as NOT COMPARED, and every verb that
- * needs a driver refuses it, fail closed.
+ * THE DRIVERS are scripts/lib/pins/driver.ts's seam. The npm driver (T4/T6) has landed; T7 (embed,
+ * devcontainer, toolchain) and T8 (actions, go-mod, the ceph pins, real-provider, docker)
+ * register as they land. Until then an entry whose driver is absent reads as NOT COMPARED, and
+ * every verb that needs a driver refuses it, fail closed.
  *
  * THE FIXTURE SEAM: PINS_ROOT moves the root to a fixture tree; PINS_FIXTURE (honoured only
  * with PINS_ROOT) supplies the releases, the clock and a stub runner for every command;
@@ -58,6 +61,7 @@ import {
   readFixture,
   registerDrivers,
 } from '../lib/pins/driver.js';
+import { planLockfiles, planRemove } from '../lib/pins/drivers/npm.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import {
   loadRegistry,
@@ -718,6 +722,32 @@ async function cmdHold(w: World, f: Flags): Promise<number> {
   return apply(w, f, s, `chore(pins): hold ${entry.name} at ${cur}`);
 }
 
+/** `remove <pkg>` and `lockfiles [<dir>]`: the npm driver's two plans that are not a version move (scripts/lib/pins/drivers/npm.ts). */
+function cmdNpmPlan(w: World, f: Flags, verb: 'remove' | 'lockfiles'): number {
+  const entry = w.reg.entries.find((e) => e.driver === 'npm');
+  if (!entry) throw new Usage('no npm entry in .ci/config/pins.json');
+  const arg = f.pos[0];
+  if (verb === 'remove' && !arg) throw new Usage('remove needs a package name');
+  const ctx = contextOf(w);
+  let plan: PinPlan;
+  try {
+    plan = verb === 'remove' ? planRemove(entry, ctx, arg) : planLockfiles(entry, ctx, arg);
+  } catch (err) {
+    if (!(err instanceof PlanRefused)) throw err;
+    w.err.push(`REFUSED ${verb}: ${err.message}`);
+    return 1;
+  }
+  const s: Selected = { plans: [plan], views: new Map(), refused: [], skipped: [] };
+  return apply(
+    w,
+    f,
+    s,
+    verb === 'remove'
+      ? `chore(deps): remove ${arg}`
+      : `chore(deps): canonical lockfiles${arg ? ` (${arg})` : ''}`
+  );
+}
+
 function cmdVerify(w: World, f: Flags): number {
   if (f.restore) {
     let r: ReturnType<typeof restoreJournal>;
@@ -785,13 +815,11 @@ export async function runCli(
     else if (verb === 'apply-soaked') rc = await cmdBump(w, f, true);
     else if (verb === 'hold') rc = await cmdHold(w, f);
     else if (verb === 'verify') rc = cmdVerify(w, f);
-    else if (verb === 'remove' || verb === 'lockfiles')
-      throw new Usage(
-        `\`${verb}\` lands with the npm driver (agent/plans/PLAN-pins-command.md ${verb === 'remove' ? 'T6' : 'T4'})`
-      );
+    else if (verb === 'remove') rc = cmdNpmPlan(w, f, 'remove');
+    else if (verb === 'lockfiles') rc = cmdNpmPlan(w, f, 'lockfiles');
     else
       throw new Usage(
-        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, verify`
+        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, remove, lockfiles, verify`
       );
     return { rc, out: w.out.join('\n'), err: w.err.join('\n') };
   } catch (err) {
@@ -1193,6 +1221,48 @@ const CASES: Record<string, Case> = {
           cmds[i + 2] === 'npx -y npm@11.20.0 run install:natives' &&
           cmds.at(-1)?.startsWith('npm run ci -- --only') === true,
         detail: `rc=${r.rc} ${r.err} ${cmds.join(' | ')}`,
+      },
+    ];
+  },
+  async npmbump(m) {
+    const fx = fixtureTree((f) => {
+      f.steps = {
+        'embed:tool': [
+          {
+            label: 'move the pinned npm and relock',
+            run: 'relock-new-npm',
+            cwd: '.',
+            writes: [
+              { repo: '.', file: 'package-lock.json' },
+              { repo: '.', file: '.devcontainer/toolchain.env' },
+            ],
+          },
+        ],
+      };
+      f.commands.push({ match: '^npx -y npm@11\\.21\\.0 ', rc: 0 });
+      f.commands.push({
+        match: '^relock-new-npm$',
+        rc: 0,
+        writes: {
+          'package-lock.json': '{ "lockfileVersion": 3, "x": 2 }\n',
+          '.devcontainer/toolchain.env': 'NPM_VERSION=11.21.0\n',
+        },
+      });
+    });
+    const r = await runCli(['bump', 'embed:tool', '--json'], withMutant(fx, m));
+    const cmds =
+      r.rc === 0
+        ? (JSON.parse(r.out) as { commands: CommandRecord[] }).commands.map((c) => c.cmd)
+        : [];
+    return [
+      {
+        name: 'bump: a run that moves NPM_VERSION canonicalises, installs and runs install:natives under the NEW npm, never the one read at startup',
+        ok:
+          cmds.includes('npx -y npm@11.21.0 install --package-lock-only --ignore-scripts') &&
+          cmds.includes('npx -y npm@11.21.0 ci') &&
+          cmds.includes('npx -y npm@11.21.0 run install:natives') &&
+          !cmds.some((c) => c.includes('npm@11.20.0')),
+        detail: `rc=${r.rc} ${r.err} ${r.out.slice(0, 2500).replace(/\s+/g, ' ')} ${cmds.join(' | ')}`,
       },
     ];
   },

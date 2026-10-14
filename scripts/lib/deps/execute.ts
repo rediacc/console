@@ -1,39 +1,30 @@
-import { spawnSync } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-import { BLUE, GREEN, NC, RED, YELLOW } from '../console.js';
 import type { InstallStep } from './plan.js';
 import {
-  CONSOLE_ROOT,
   compareVersions,
   type LockEntry,
-  MAJOR_ALLOW_REL,
   type PackageInfo,
   parseRange,
   parseVersion,
-  printPackage,
   rangeAdmits,
-  readLockPackages,
 } from './shared.js';
 
 /**
- * Move one `overrides` entry in a package.json, refusing any file it cannot rewrite byte for byte (npm's own two-space form with a trailing newline), so nothing but that one value ever changes. Returns an error line, or null plus an advisory when the `_overridesReasons` note still names the old version. The note itself is never rewritten: it is the human justification check:ci-overrides-reasons enforces, and only a human can say why the new version is the right floor.
+ * Plan the move of one `overrides` entry in a package.json's text, refusing any file it cannot rewrite byte for byte (npm's own two-space form with a trailing newline), so nothing but that one value ever changes. Pure: it returns the new text and never writes (the pins transaction writes it, journaled). `after` is null when the move is refused, with the reason in `error`. The advisory is set when the `_overridesReasons` note still names the old version; the note itself is never rewritten, since it is the human justification check:ci-overrides-reasons enforces and only a human can say why the new version is the right floor.
  */
-function applyOverrideBump(b: NonNullable<InstallStep['overrideBump']>): {
-  error: string | null;
-  advisory: string | null;
-} {
-  const rel = path.relative(CONSOLE_ROOT, b.file) || 'package.json';
-  let text: string;
+export function planOverrideBump(
+  text: string,
+  b: { name: string; from: string; to: string },
+  rel: string
+): { after: string | null; error: string | null; advisory: string | null } {
   let pkg: { overrides?: Record<string, unknown>; _overridesReasons?: Record<string, unknown> };
   try {
-    text = fs.readFileSync(b.file, 'utf-8');
     pkg = JSON.parse(text) as typeof pkg;
   } catch (e) {
-    return { error: `cannot read ${rel}: ${(e as Error).message}`, advisory: null };
+    return { after: null, error: `cannot read ${rel}: ${(e as Error).message}`, advisory: null };
   }
   if (`${JSON.stringify(pkg, null, 2)}\n` !== text) {
     return {
+      after: null,
       error: `${rel} is not in npm's two-space JSON form, so its override is not rewritten blind; set overrides["${b.name}"] to "${b.to}" by hand, then run \`npm update ${b.name}\``,
       advisory: null,
     };
@@ -46,7 +37,8 @@ function applyOverrideBump(b: NonNullable<InstallStep['overrideBump']>): {
       : current;
   if (self !== b.from) {
     return {
-      error: `${rel} overrides["${b.name}"] is no longer "${b.from}" (it changed after the plan was made); re-run the upgrade`,
+      after: null,
+      error: `${rel} overrides["${b.name}"] is no longer "${b.from}" (it changed after the plan was made); re-run the plan`,
       advisory: null,
     };
   }
@@ -55,25 +47,12 @@ function applyOverrideBump(b: NonNullable<InstallStep['overrideBump']>): {
   } else {
     overrides[b.name] = b.to;
   }
-  // tree-write: mode --upgrade reached only from check-deps --upgrade (executeInstalls); the gate run plans and reports without writing a manifest
-  fs.writeFileSync(b.file, `${JSON.stringify(pkg, null, 2)}\n`);
   const note = pkg._overridesReasons?.[b.name];
   const advisory =
     typeof note === 'string' && note.includes(b.from)
       ? `${rel} _overridesReasons["${b.name}"] still names ${b.from}; the override is now ${b.to}. Update the note before committing.`
       : null;
-  return { error: null, advisory };
-}
-
-/**
- * The environment a planned npm step runs in: this process's, minus any inherited npm loglevel. `npm run -s check:deps -- --upgrade` exports `npm_config_loglevel=silent` to this script, and a child npm that inherits it prints NOTHING when it fails; on 2026-09-30 that turned an ERESOLVE into a bare "Some upgrades failed". Without the variable the child falls back to .npmrc or npm's default level, so its own error reaches the terminal.
- */
-export function upgradeChildEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...base };
-  for (const key of Object.keys(env)) {
-    if (key.toLowerCase() === 'npm_config_loglevel') delete env[key];
-  }
-  return env;
+  return { after: `${JSON.stringify(pkg, null, 2)}\n`, error: null, advisory };
 }
 
 /**
@@ -144,89 +123,4 @@ export function updateMismatches(
     out.push({ line, held });
   }
   return out;
-}
-
-/** Run the planned steps, printing what each one takes, and name every step that failed with its exact command and exit status. An `(update)` step that exits 0 still fails when verifyUpdatedVersions finds a version the gate did not judge. */
-export function executeInstalls(steps: InstallStep[]): boolean {
-  if (steps.length === 0) {
-    console.log(`${GREEN}No packages to upgrade${NC}`);
-    return true;
-  }
-  const failures: string[] = [];
-  const advisories: string[] = [];
-  const env = upgradeChildEnv();
-  for (const step of steps) {
-    if (step.refused) {
-      failures.push(
-        `  ${step.label}: ${step.packages.map((p) => `${p.name} ${p.current} -> ${p.latest}`).join(', ')} not applied: ${step.refused}`
-      );
-      continue;
-    }
-    console.log(`${BLUE}Upgrading ${step.packages.length} package(s) in ${step.label}...${NC}`);
-    console.log(`  \`npm ${step.args.join(' ')}\`\n`);
-    for (const pkg of step.packages) printPackage(pkg);
-    console.log();
-    if (step.overrideBump) {
-      const b = step.overrideBump;
-      const bumped = applyOverrideBump(b);
-      if (bumped.error) {
-        failures.push(`  ${step.label}: ${bumped.error}`);
-        continue;
-      }
-      console.log(
-        `  overrides["${b.name}"]: "${b.from}" -> "${b.to}" in ${path.relative(CONSOLE_ROOT, b.file) || 'package.json'}\n`
-      );
-      if (bumped.advisory) advisories.push(bumped.advisory);
-    }
-    const result = spawnSync('npm', step.args, {
-      cwd: step.cwd,
-      stdio: 'inherit',
-      shell: true,
-      env,
-    });
-    if (result.status !== 0) {
-      const why = result.error
-        ? `could not start: ${result.error.message}`
-        : result.signal
-          ? `killed by ${result.signal}`
-          : `exit status ${result.status}`;
-      failures.push(
-        `  ${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'} (${why})` +
-          (step.overrideBump
-            ? `; overrides["${step.overrideBump.name}"] was already moved to "${step.overrideBump.to}", so package.json and the lockfile disagree until it succeeds`
-            : '')
-      );
-      continue;
-    }
-    if (step.args[0] !== 'update') continue;
-    const mismatches = updateMismatches(step, readLockPackages(step.cwd));
-    const stepRef = `${step.label}: \`npm ${step.args.join(' ')}\` in ${path.relative(CONSOLE_ROOT, step.cwd) || '.'}`;
-    const unjudged = mismatches.filter((m) => !m.held);
-    const heldBack = mismatches.filter((m) => m.held);
-    if (unjudged.length > 0) {
-      failures.push(
-        `  ${stepRef} resolved a version the gate did not judge (freshness-window guard, .ci/config/release-age.json):\n` +
-          unjudged.map((m) => `      ${m.line}`).join('\n') +
-          '\n    package.json and package-lock.json in that directory now hold the unjudged version; revert them there before committing.'
-      );
-    }
-    if (heldBack.length > 0) {
-      failures.push(
-        `  ${stepRef} left ${heldBack.length} package(s) below the judged version (npm kept the installed one, so nothing unjudged landed):\n` +
-          heldBack.map((m) => `      ${m.line}`).join('\n') +
-          `\n    A package an installed sibling pins exactly moves only with that sibling: take the sibling's bump (an allow entry in ${MAJOR_ALLOW_REL} when it is a held major, which --upgrade installs before this update), or wait for a sibling release that admits the judged version.`
-      );
-    }
-  }
-  for (const a of advisories) console.log(`\n${YELLOW}${a}${NC}`);
-  if (failures.length === 0) {
-    console.log(`\n${GREEN}Upgrades completed${NC}`);
-    return true;
-  }
-  console.error(`\n${RED}✗${NC} ${failures.length} of ${steps.length} upgrade step(s) failed:`);
-  for (const f of failures) console.error(f);
-  console.error(
-    '  The npm error for each is printed above its step; re-run that command to see it again.'
-  );
-  return false;
 }

@@ -2,12 +2,12 @@
 /**
  * Check that all dependencies are up-to-date.
  *
- * This script runs `npm outdated` in the console root and in every private/ manifest CI also checks out, and fails if any dependency is outdated, unless it is in the blocklist (packages that should NOT be upgraded) or still inside the release-age freshness window.
+ * This script runs `npm outdated` in the console root, in the four workers/ manifests and in every private/ manifest CI also checks out, and fails if any dependency is outdated, unless it is in the blocklist (packages that should NOT be upgraded) or still inside the release-age freshness window.
  *
  * Blocklist format (.ci/policy/.deps-upgrade-blocklist):
  *   package-name  # BLOCKER: reason for blocking
  *
- * BREAKING UPGRADES ARE NEVER APPLIED BY DEFAULT. A version outside the current caret range (a new major, or a new minor on a 0.x line) is reported as a major awaiting a decision, and --upgrade does not install it anywhere, in the root or in a private/ manifest, unless .ci/config/deps-major-allow.json names it with a reason. Before 2026-09-26 no such rule existed: the root looked safe only because every outdated root major happened to carry its own blocklist line, and `--upgrade` took lucide-react 0 -> 1, @vitejs/plugin-react 4 -> 6 and vite 6 -> 8 in private/account/web because nothing there did.
+ * BREAKING UPGRADES ARE NEVER APPLIED BY DEFAULT. A version outside the current caret range (a new major, or a new minor on a 0.x line) is reported as a major awaiting a decision, and the pins command (`npm run pins -- bump npm`) does not install it anywhere, in the root, a workers/ manifest or a private/ manifest, unless `bump npm --to <package>@<line> --major --reason "<why now>"` names it. Before 2026-09-26 no such rule existed: the root looked safe only because every outdated root major happened to carry its own blocklist line, and the old `--upgrade` took lucide-react 0 -> 1, @vitejs/plugin-react 4 -> 6 and vite 6 -> 8 in private/account/web because nothing there did.
  *
  * WHAT IS SCANNED, AND WHY LOCAL AND CI NOW AGREE. The private/ manifests scanned are the ones inside a git SUBMODULE declared in .gitmodules (plus the nested manifests in NESTED_PRIVATE_PACKAGE_DIRS), which is exactly the set the quality-content job checks out with `submodules: true`. A gitignored local-only directory such as private/growth is never scanned, because a verdict CI never reaches is not a gate. And every `current` version is read from the manifest's committed package-lock.json, because CI installs no node_modules under private/ and `npm outdated` then reports NO `current` at all: until 2026-09-26 the gate dropped every such entry as "nothing to judge", so CI's private scan examined all of private/account and judged none of it, while a developer's installed node_modules made the same scan judge real packages locally. Without node_modules `npm outdated` also OMITS every devDependency, optionalDependency and peerDependency outright (it reads the installed tree whatever flag it is given), so until 2026-10-01 CI never judged private/account's dev tooling at all and a fresh clone advised deleting valid held-major exceptions; those are now judged from the lockfile and the registry (see blindEdges), and an uninstalled root refuses the run.
  *
@@ -15,12 +15,12 @@
  *
  * Usage:
  *   npx tsx scripts/gates/check-deps.ts           # Check for outdated packages
- *   npx tsx scripts/gates/check-deps.ts --upgrade # Upgrade every non-blocked, non-breaking package
+ *   npm run pins -- bump npm                      # Upgrade every non-blocked, non-breaking package
  *   npx tsx scripts/gates/check-deps.ts --help    # Show help
  *
  * Exit codes:
- *   0 - All dependencies are up-to-date (or blocked, or too new), or upgrade succeeded with no major left undecided
- *   1 - Outdated dependencies found (check mode), a major awaits a decision, a blocklisted major is past 90 days and unexcused (or cannot be dated), a held-major exception is invalid, expired, stale or dead, a version could not be determined, an allow entry is dead, or an upgrade failed
+ *   0 - All dependencies are up-to-date (or blocked, or too new)
+ *   1 - Outdated dependencies found (check mode), a major awaits a decision, a blocklisted major is past 90 days and unexcused (or cannot be dated), a held-major exception is invalid, expired, stale or dead, a version could not be determined, or an allow entry is dead
  *
  * ASKS THE NPM REGISTRY (`npm outdated`, and registry.npmjs.org for the
  * packuments of uninstalled edges), so it is an external gate: the
@@ -53,14 +53,8 @@ import {
   verifyAllBlockers,
 } from '../lib/blocker-validator.js';
 import { BLUE, GREEN, joinReport, NC, RED, YELLOW } from '../lib/console.js';
-import {
-  executeInstalls,
-  pinningHolders,
-  updateMismatches,
-  upgradeChildEnv,
-  verifyUpdatedVersions,
-} from '../lib/deps/execute.js';
-import { planPinSync, syncPinGroups } from '../lib/deps/pin-sync.js';
+import { pinningHolders, updateMismatches, verifyUpdatedVersions } from '../lib/deps/execute.js';
+import { planPinSync } from '../lib/deps/pin-sync.js';
 import {
   freshnessCutoffMs,
   type InstallStep,
@@ -90,6 +84,8 @@ import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** The pinned npm the fixture trees declare in .devcontainer/toolchain.env. */
+const FIXTURE_NPM_VERSION = '11.20.0';
 const BLOCKLIST_FILE = policyPath('.deps-upgrade-blocklist', CONSOLE_ROOT);
 const MAJOR_ALLOW_FILE = path.join(CONSOLE_ROOT, MAJOR_ALLOW_REL);
 const RELEASE_AGE_FILE = path.join(CONSOLE_ROOT, '.ci', 'config', 'release-age.json');
@@ -98,8 +94,8 @@ const MAJOR_EXCEPTIONS_REL = path
   .relative(CONSOLE_ROOT, MAJOR_EXCEPTIONS_FILE)
   .split(path.sep)
   .join('/');
-// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder; `skip-pin-sync` skips the .syncpackrc.json pinVersion rewrite after an upgrade (worklist #3b831146), so the selftest can prove its syncpack-style check finds the group left behind. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
-const MUTANTS = ['ignore-clock', 'split-update', 'update-first', 'skip-pin-sync'];
+// The selftest's mutant seam: `ignore-clock` skips the held-major clock, so the selftest can prove its 91-day control goes green WITHOUT the clock (i.e. the control depends on it); `split-update` restores the pre-2026-10-02 planner, one `npm update` per manifest instead of one per lockfile, so the selftest can prove its lockstep case goes red without the grouping; `update-first` restores the pre-2026-10-08 step order, every lockfile's `npm update` before its out-of-range `npm install` steps, so the selftest can prove its exact-pinned-sibling case goes red without the reorder; `skip-pin-sync` skips the .syncpackrc.json pinVersion rewrite after an upgrade (worklist #3b831146), so the selftest can prove its syncpack-style check finds the group left behind; `ambient-npm` makes the pins npm driver plan its commands for the ambient `npm` instead of `npx -y npm@<NPM_VERSION>`, so the selftest can prove its pinned-npm case goes red without the pin. Honoured only under CHECK_DEPS_ROOT; on a real tree it is refused loudly, so it can never weaken a real run.
+const MUTANTS = ['ignore-clock', 'split-update', 'update-first', 'skip-pin-sync', 'ambient-npm'];
 /** A blocklisted major fails at this age, measured from the first release of the first line past `current`. */
 const HOLD_DEADLINE_DAYS = 90;
 /** ... and warns from this age. */
@@ -110,7 +106,12 @@ const EXCEPTION_MAX_DAYS = 30;
 // Parse command line arguments
 const args = process.argv.slice(2);
 const showHelp = args.includes('--help') || args.includes('-h');
-const upgradeMode = args.includes('--upgrade') || args.includes('-u');
+/** `--plan-json`: print the read-only plan the pins npm driver consumes (scripts/lib/pins/drivers/npm.ts) as one `PLAN-JSON <json>` line and exit 0; nothing is installed or written, and the held-major clock is not judged. */
+const planJson = args.includes('--plan-json');
+/** `--allow <key>`: treat that allow entry as present for this plan only (the transient entry of a `--major` bump). */
+const planAllow = args.flatMap((a, i) => (a === '--allow' ? [args[i + 1]] : []));
+/** `--unblock <key>`: treat that blocklist line as absent for this plan only. */
+const planUnblock = args.flatMap((a, i) => (a === '--unblock' ? [args[i + 1]] : []));
 
 interface BlocklistEntry {
   reason: string;
@@ -451,6 +452,9 @@ async function runNpmOutdated(
  */
 const NESTED_PRIVATE_PACKAGE_DIRS = ['account/web', 'account/e2e'];
 
+/** The four Worker projects in the console tree, each with its own package.json and package-lock.json and none a workspace of the root, so the root's report never reaches them (until 2026-10-14 nothing judged their freshness). Judged from the lockfile and the registry like the private/ manifests. */
+const WORKER_PACKAGE_DIRS = ['account', 'mta-sts', 'proxy', 'www'];
+
 /** The `private/<x>` submodule paths .gitmodules declares, which is the set CI checks out. */
 function declaredPrivateSubmodules(root: string): string[] {
   const gm = path.join(root, '.gitmodules');
@@ -464,7 +468,7 @@ function declaredPrivateSubmodules(root: string): string[] {
 }
 
 /**
- * The private manifests this gate judges: every declared private/ SUBMODULE that carries a package.json, plus the nested manifests listed above inside one. A directory under private/ that is not a submodule (private/growth and private/generative are gitignored local checkouts) is never scanned, because CI does not have it and a verdict CI never reaches is not a gate.
+ * The non-root manifests this gate judges: the workers/ projects, then every declared private/ SUBMODULE that carries a package.json, plus the nested manifests listed above inside one. A directory under private/ that is not a submodule (private/growth and private/generative are gitignored local checkouts) is never scanned, because CI does not have it and a verdict CI never reaches is not a gate.
  *
  * `uninitialized` names declared submodules with no checkout (no `.git` inside). Locally that is tolerated and PRINTED; in CI the caller refuses it, since the quality-content job checks submodules out and an empty one there means the checkout failed.
  *
@@ -476,6 +480,10 @@ function getPrivatePackageDirs(root: string = CONSOLE_ROOT): {
 } {
   const dirs: string[] = [];
   const uninitialized: string[] = [];
+  for (const w of WORKER_PACKAGE_DIRS) {
+    const wAbs = path.join(root, 'workers', w);
+    if (fs.existsSync(path.join(wAbs, 'package.json'))) dirs.push(wAbs);
+  }
   for (const rel of declaredPrivateSubmodules(root)) {
     const abs = path.join(root, rel);
     if (!fs.existsSync(path.join(abs, '.git'))) {
@@ -1157,7 +1165,7 @@ async function ageHeldMajors(
       } else {
         out.fail.push(
           `✗ Held major past ${HOLD_DEADLINE_DAYS} days: ${name} ${current} -> ${latest} (${m}): ${firstText}; deadline ${isoDate(deadlineMs)} passed. ` +
-            `A .ci/policy/.deps-upgrade-blocklist line alone no longer excuses it: take it (add "${suggestedAllowKey(h.pkg, h.manifest || undefined)}" to ${MAJOR_ALLOW_REL} and drop the blocklist line) ` +
+            `A .ci/policy/.deps-upgrade-blocklist line alone no longer excuses it: take it (npm run pins -- bump npm --to ${suggestedAllowKey(h.pkg, h.manifest || undefined)} --major --reason "<why now>", which drops the blocklist line) ` +
             `or add an entry to ${MAJOR_EXCEPTIONS_REL} with a mechanical blocker or an expiry at most ${EXCEPTION_MAX_DAYS} days out.`
         );
       }
@@ -1251,15 +1259,16 @@ ${YELLOW}USAGE${NC}
   npx tsx scripts/gates/check-deps.ts [OPTIONS]
 
 ${YELLOW}OPTIONS${NC}
-  --upgrade, -u   Upgrade every outdated package that is not blocked and not breaking
+  --plan-json     Print the read-only npm plan the pins command consumes (one PLAN-JSON line)
   --help, -h      Show this help message
 
 ${YELLOW}DESCRIPTION${NC}
-  Checks for outdated npm dependencies in the console root and in the private/
-  submodule manifests, and fails if any are found.
+  Checks for outdated npm dependencies in the console root, the workers/
+  manifests and the private/ submodule manifests, and fails if any are found.
+  The fix is \`npm run pins -- bump npm\`; this gate never installs anything.
   Packages can be blocklisted in .ci/policy/.deps-upgrade-blocklist to hold them.
   A breaking upgrade (new major, or new minor on 0.x) is never applied by
-  --upgrade unless ${MAJOR_ALLOW_REL} names it with a reason.
+  \`pins -- bump npm\` unless \`--to <package>@<line> --major --reason\` names it.
   A blocklisted major is aged from the first release of the first line past
   its current version: it warns at ${HOLD_WARN_DAYS} days and fails at ${HOLD_DEADLINE_DAYS} unless
   ${MAJOR_EXCEPTIONS_REL} excuses it (owner, reason, and exactly
@@ -1277,9 +1286,8 @@ ${YELLOW}EXCEPTION FORMAT${NC} (${MAJOR_EXCEPTIONS_REL})
 
 ${YELLOW}EXAMPLES${NC}
   npx tsx scripts/gates/check-deps.ts           # Check for outdated packages
-  npx tsx scripts/gates/check-deps.ts --upgrade # Upgrade non-breaking outdated packages
+  npm run pins -- bump npm                # Upgrade non-breaking outdated packages
   npm run check:deps                      # Via npm script
-  npm run check:deps -- --upgrade         # Upgrade via npm script
   ./go quality deps                       # Via go script
 `);
 }
@@ -1309,7 +1317,7 @@ async function checkDependencies(): Promise<void> {
     if (!FIXTURE_ROOT || !MUTANTS.includes(MUTANT)) {
       console.error(
         `${RED}✗${NC} CHECK_DEPS_MUTANT=${MUTANT} refused: the mutants are ${MUTANTS.map((m) => `"${m}"`).join(', ')}, honoured only under ` +
-          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree they would switch the held-major clock off, split a lockstep update, run an update before the install that unpins it or leave a syncpack pin group behind, so they are never honoured there.'
+          'CHECK_DEPS_ROOT (a selftest fixture). On a real tree they would switch the held-major clock off, split a lockstep update, run an update before the install that unpins it, leave a syncpack pin group behind or plan an unpinned npm, so they are never honoured there.'
       );
       process.exit(1);
     }
@@ -1320,17 +1328,43 @@ async function checkDependencies(): Promise<void> {
           ? `${YELLOW}MUTANT split-update: one npm update per manifest for this fixture run${NC}\n`
           : MUTANT === 'skip-pin-sync'
             ? `${YELLOW}MUTANT skip-pin-sync: the .syncpackrc.json pin groups are NOT rewritten for this fixture run${NC}\n`
-            : `${YELLOW}MUTANT update-first: every npm update runs before the npm install steps for this fixture run${NC}\n`
+            : MUTANT === 'ambient-npm'
+              ? `${YELLOW}MUTANT ambient-npm: the pins npm driver plans the ambient npm for this fixture run${NC}\n`
+              : `${YELLOW}MUTANT update-first: every npm update runs before the npm install steps for this fixture run${NC}\n`
     );
   }
-  const clockOff = MUTANT === 'ignore-clock';
+  const clockOff = MUTANT === 'ignore-clock' || planJson;
 
   console.log('Checking dependency versions...\n');
 
   const startMs = Date.now();
   const blocklist = loadBlocklist();
+  const heldKeys = new Set(blocklist.keys());
   const allow = loadMajorAllow();
   const exceptions = loadMajorExceptions(blocklist, startMs);
+  // The transient entries of a `--major` plan (--plan-json only): an allow entry that exists for this plan alone, and a blocklist line that is treated as absent. Nothing is written; the pins driver removes the real blocklist line and exception in the same transaction as the install.
+  if (planJson) {
+    for (const key of planUnblock) blocklist.delete(key);
+    for (const key of planAllow) {
+      const m = key.match(ALLOW_KEY_RE);
+      if (!m) {
+        console.error(
+          `${RED}✗${NC} --allow "${key}" is not '<package>@<line>' or '<dir>:<package>@<line>'`
+        );
+        process.exit(1);
+      }
+      allow.push({
+        key,
+        scope: m[1] ?? null,
+        name: m[2],
+        line: m[3],
+        reason: 'transient: a pins --major plan',
+      });
+    }
+  } else if (planAllow.length > 0 || planUnblock.length > 0) {
+    console.error(`${RED}✗${NC} --allow and --unblock are honoured only with --plan-json`);
+    process.exit(1);
+  }
 
   const scan = getPrivatePackageDirs();
   if (scan.uninitialized.length > 0) {
@@ -1484,13 +1518,13 @@ async function checkDependencies(): Promise<void> {
   const printHeld = (changelogUrls?: Map<string, string | null>) => {
     if (totalHeld === 0) return;
     console.log(
-      `${RED}Major upgrades awaiting a decision (${totalHeld}); --upgrade never applies these:${NC}\n`
+      `${RED}Major upgrades awaiting a decision (${totalHeld}); \`npm run pins -- bump npm\` never applies these:${NC}\n`
     );
     for (const g of groups) {
       for (const pkg of g.heldMajor) {
         printPackage(pkg, { suffix: where(g.name), changelogUrls });
         console.log(
-          `    Take it:  add "${suggestedAllowKey(pkg, g.name || undefined)}": "<why now>" to ${MAJOR_ALLOW_REL}`
+          `    Take it:  npm run pins -- bump npm --to ${suggestedAllowKey(pkg, g.name || undefined)} --major --reason "<why now>"`
         );
       }
     }
@@ -1499,44 +1533,51 @@ async function checkDependencies(): Promise<void> {
     );
   };
 
-  if (upgradeMode) {
-    const rootGroup = groups[0];
+  if (planJson) {
     const steps = planInstalls(
       CONSOLE_ROOT,
-      rootGroup.mustUpgrade,
+      groups[0].mustUpgrade,
       groups.slice(1).map((g) => ({ dir: g.dir, name: g.name, packages: g.mustUpgrade })),
       freshnessCutoffMs(nowMs, minReleaseAgeMs)
     );
-    if (steps.length === 0 && totalHeld === 0 && clockFailures === 0) {
-      printClock();
-      console.log(`${GREEN}All dependencies are up-to-date${NC}${deferredSummary()}; ${shape}`);
-      for (const g of groups) {
-        for (const pkg of g.blocked)
-          printPackage(pkg, { suffix: ` (blocked${g.name ? `, ${g.name}` : ''})` });
-        for (const pkg of g.tooNew)
-          printPackage(pkg, {
-            suffix: ` (too new, deferred until next UTC day${g.name ? `, ${g.name}` : ''})`,
-          });
-      }
-      process.exit(0);
-    }
-    const installed = executeInstalls(steps);
-    const success = installed && syncPinGroups(steps);
-    printHeld();
-    printClock();
-    if (totalHeld > 0) {
-      console.log(
-        `${RED}${totalHeld} major upgrade(s) held; check:deps stays red until each is taken or blocklisted.${NC}`
-      );
-      process.exit(1);
-    }
-    if (clockFailures > 0) {
-      console.log(
-        `${RED}${clockFailures} held-major clock failure(s); check:deps stays red until each is taken or excused.${NC}`
-      );
-      process.exit(1);
-    }
-    process.exit(success ? 0 : 1);
+    const blockedMajors = groups.flatMap((g) =>
+      g.blocked.filter((pkg) => isBreakingBump(pkg.current, pkg.latest)).map((pkg) => ({ g, pkg }))
+    );
+    // Held majors were window-partitioned above; a blocklisted one is not, so it is dated here.
+    const blockedAge = await Promise.all(
+      blockedMajors.map(({ pkg }) =>
+        minReleaseAgeMs > 0 ? fetchVersionPublishTime(pkg.name, pkg.latest) : Promise.resolve(null)
+      )
+    );
+    const majors = [
+      ...groups.flatMap((g) =>
+        g.heldMajor.map((pkg) => ({
+          key: suggestedAllowKey(pkg, g.name || undefined),
+          blockKey: null as string | null,
+          pkg,
+          manifest: g.name,
+          publishedMs: null as number | null,
+        }))
+      ),
+      ...blockedMajors.map(({ g, pkg }, i) => ({
+        key: suggestedAllowKey(pkg, g.name || undefined),
+        blockKey:
+          g.name && heldKeys.has(`${g.name}:${pkg.name}`) ? `${g.name}:${pkg.name}` : pkg.name,
+        pkg,
+        manifest: g.name,
+        publishedMs: blockedAge[i],
+      })),
+    ];
+    const plan = {
+      nowMs,
+      minReleaseAgeMs,
+      steps,
+      majors,
+      tooNew: groups.flatMap((g) => g.tooNew.map((pkg) => ({ pkg, manifest: g.name }))),
+      manifests: groups.map((g) => g.name || '.'),
+    };
+    console.log(`PLAN-JSON ${JSON.stringify(plan)}`);
+    process.exit(0);
   }
 
   // Check mode - fetch changelog URLs for all packages that will be displayed (never for a fixture root).
@@ -1559,8 +1600,7 @@ async function checkDependencies(): Promise<void> {
     printPackageGroup(header, g.mustUpgrade, { changelogUrls });
   }
   if (totalMust > 0) {
-    console.log(`Run: npm run check:deps -- --upgrade`);
-    console.log(`Or:  npx tsx scripts/gates/check-deps.ts --upgrade`);
+    console.log(`Run: npm run pins -- bump npm`);
     console.log();
   }
   printHeld(changelogUrls);
@@ -1652,14 +1692,17 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
   );
   write('private/account/.git', 'gitdir: ../../.git/modules/private/account\n');
   write('.ci/config/release-age.json', '{"minimum_release_age_minutes": 0}\n');
-  write('.ci/config/deps-major-allow.json', JSON.stringify({ allow: spec.allow ?? {} }));
+  write(
+    '.ci/config/deps-major-allow.json',
+    `${JSON.stringify({ allow: spec.allow ?? {} }, null, 2)}\n`
+  );
   write(
     path.relative(root, policyPath('.deps-upgrade-blocklist', root)),
     spec.blocklist ?? '# fixture blocklist\n'
   );
   write(
     path.relative(root, policyPath('deps-major-exceptions.json', root)),
-    JSON.stringify({ exceptions: spec.exceptions ?? {} })
+    `${JSON.stringify({ exceptions: spec.exceptions ?? {} }, null, 2)}\n`
   );
   for (const [name, doc] of Object.entries(spec.registry ?? {})) {
     write(path.join('.fixture-registry', `${encodeURIComponent(name)}.json`), JSON.stringify(doc));
@@ -1767,6 +1810,29 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       '',
     ].join('\n')
   );
+  // `npm uninstall <names> [-w=<ws>]... [--include-workspace-root]`: drops the names from the manifests it is scoped to and from the lockfile, as real npm does.
+  write(
+    'bin/uninstall.cjs',
+    [
+      "const fs = require('node:fs');",
+      'const args = process.argv.slice(2);',
+      "const names = args.filter((a) => !a.startsWith('-'));",
+      "const ws = args.filter((a) => a.startsWith('-w=')).map((a) => a.slice(3));",
+      "const dirs = [...ws, ...(ws.length === 0 || args.includes('--include-workspace-root') ? ['.'] : [])];",
+      'for (const d of dirs) {',
+      '  const f = `${d}/package.json`;',
+      "  const j = JSON.parse(fs.readFileSync(f, 'utf8'));",
+      "  for (const k of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) for (const n of names) if (j[k]) delete j[k][n];",
+      '  fs.writeFileSync(f, `${JSON.stringify(j, null, 2)}\n`);',
+      '}',
+      "if (fs.existsSync('package-lock.json')) {",
+      "  const l = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));",
+      '  for (const n of names) delete (l.packages || {})[`node_modules/${n}`];',
+      "  fs.writeFileSync('package-lock.json', JSON.stringify(l));",
+      '}',
+      '',
+    ].join('\n')
+  );
   const pins = `"${process.execPath}" "${path.join(root, 'bin', 'exact-pins.cjs')}"`;
   write(
     'bin/npm',
@@ -1775,7 +1841,13 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
       'case "$1" in',
       '  outdated) if [ -f .fixture-outdated.json ]; then cat .fixture-outdated.json; else echo "{}"; fi; exit 1 ;;',
       // Every install/update is recorded with the loglevel the child inherited, and a spec naming `fail-me` exits 7, so the selftest can see both the verb chosen and the failure report.
-      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-lockstep.cjs')}" "$@" || exit 1; fi; if [ "$1" = install ]; then ${pins} install "$@"; fi; if [ "$1" = update ]; then ${pins} pre "$@"; fi; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then ${pins} post "$@"; "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
+      // The canonical lockfile pass, `npm ci` and `npm run ...` are the pins transaction's own steps; they are logged apart so the install log keeps only the driver's planned verbs.
+      `  ci|run) echo "$(pwd) :: $*" >> "${log}.other"; exit 0 ;;`,
+      `  uninstall) shift; echo "$(pwd) :: uninstall $*" >> "${log}"; "${process.execPath}" "${path.join(root, 'bin', 'uninstall.cjs')}" "$@"; exit 0 ;;`,
+      `  install) case "$*" in *--package-lock-only*) echo "$(pwd) :: $*" >> "${log}.other"; exit 0 ;; esac ;;`,
+      `  esac`,
+      `case "$1" in`,
+      `  install|update) echo "$(pwd) :: $* :: loglevel=\${npm_config_loglevel:-} :: via=\${FIXTURE_VIA_NPX:-ambient}" >> "${log}"; case "$*" in *fail-me*) echo "fixture npm: refusing $*" >&2; exit 7 ;; esac; if [ "$1" = update ]; then "${process.execPath}" "${path.join(root, 'bin', 'check-lockstep.cjs')}" "$@" || exit 1; fi; if [ "$1" = install ]; then ${pins} install "$@"; fi; if [ "$1" = update ]; then ${pins} pre "$@"; fi; if [ "$1" = update ] && [ -f .fixture-update-lock.json ]; then cp .fixture-update-lock.json package-lock.json; fi; if [ "$1" = update ]; then ${pins} post "$@"; "${process.execPath}" "${path.join(root, 'bin', 'clamp-overrides.cjs')}" "$@"; fi; exit 0 ;;`,
       '  *) echo "fixture npm stub: unexpected: $*" >&2; exit 2 ;;',
       'esac',
       '',
@@ -1794,40 +1866,161 @@ function buildFixture(spec: FixtureSpec): { root: string; log: string; env: Node
   return { root, log, env };
 }
 
-function runFixture(
-  spec: FixtureSpec,
-  mode: 'check' | 'upgrade'
-): {
+/** The pins CLI, which `bump npm` and friends run through (the old `--upgrade` verb lives there now). */
+const PINS_CLI = path.join(__dirname, '..', 'pins', 'pins.ts');
+
+/**
+ * Turn a built fixture into a tree the pins CLI can run in: the pinned npm in toolchain.env, a registry holding only the npm family, a stub `npx` that accepts `-y npm@<version>` only and records it, and a git repository (the transaction refuses a site file another session changed, and a submodule is its own repository). The stub's logs, `bin/` and the fixture's scratch files are excluded from git, so the transaction sees only what a step really changed.
+ */
+function preparePinsFixture(root: string): void {
+  const w = (rel: string, text: string) => {
+    fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    fs.writeFileSync(path.join(root, rel), text);
+  };
+  w('.devcontainer/toolchain.env', `NPM_VERSION=${FIXTURE_NPM_VERSION}\n`);
+  const real = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', '.ci', 'config', 'pins.json'), 'utf8')
+  ) as { entries: Array<{ driver: string }> } & Record<string, unknown>;
+  const reg = {
+    ...real,
+    submodules: { scanned: ['private/account'], unscanned: [] },
+    entries: real.entries.filter((e) => e.driver === 'npm'),
+    ignores: [],
+  };
+  w('.ci/config/pins.json', `${JSON.stringify(reg, null, 2)}\n`);
+  w(
+    'bin/npx',
+    [
+      '#!/bin/sh',
+      'if [ "$1" != "-y" ]; then echo "fixture npx: unexpected: $*" >&2; exit 2; fi',
+      'spec="$2"; shift 2',
+      'case "$spec" in npm@*) ;; *) echo "fixture npx: not a pinned npm: $spec" >&2; exit 2 ;; esac',
+      'n=$#',
+      'while [ "$n" -gt 0 ]; do a="$1"; shift; case "$a" in --loglevel=*) export npm_config_loglevel="${a#--loglevel=}" ;; *) set -- "$@" "$a" ;; esac; n=$((n-1)); done',
+      'export FIXTURE_VIA_NPX="$spec"',
+      'exec npm "$@"',
+      '',
+    ].join('\n')
+  );
+  fs.chmodSync(path.join(root, 'bin', 'npx'), 0o755);
+  const git = (cwd: string, ...args: string[]): void => {
+    const r = spawnSync(
+      'git',
+      ['-c', 'user.email=f@x', '-c', 'user.name=f', '-c', 'commit.gpgsign=false', ...args],
+      { cwd, encoding: 'utf8' }
+    );
+    if (r.status !== 0) throw new Error(`fixture git ${args.join(' ')}: ${r.stderr}`);
+  };
+  const exclude = ['/bin/', '/npm-install.log*', '.fixture-*', '/.ci/cache/', '/private/growth/'];
+  for (const dir of [root, path.join(root, 'private', 'account')]) {
+    fs.rmSync(path.join(dir, '.git'), { recursive: true, force: true });
+    git(dir, 'init', '-q');
+    fs.appendFileSync(path.join(dir, '.git', 'info', 'exclude'), `${exclude.join('\n')}\n`);
+    if (dir !== root) {
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'fixture');
+    }
+  }
+  git(root, 'add', '-A');
+  git(root, 'commit', '-q', '-m', 'fixture');
+}
+
+interface FixtureRun {
   status: number | null;
   output: string;
   installs: string[];
+  /** The canonical lockfile passes, `npm ci` and `npm run` calls, which the pins transaction makes itself. */
+  other: string[];
   root: string;
   /** The root package.json as the run left it. */
   rootManifest: string;
   /** The .syncpackrc.json as the run left it, or null when the fixture had none. */
   syncpackrc: string | null;
+  /** Every file under the fixture (relative path to text), for the cases that assert a net diff. */
+  files: Map<string, string>;
+}
+
+/** The parsed `--plan-json` of a fixture tree: what the pins npm driver would be handed. */
+function planJsonOf(
+  spec: FixtureSpec,
+  flags: string[] = []
+): {
+  steps: InstallStep[];
+  majors: Array<{ key: string; blockKey: string | null; pkg: PackageInfo; manifest: string }>;
 } {
   const fx = buildFixture(spec);
   try {
     const child = spawnSync(
       process.execPath,
-      [...process.execArgv, process.argv[1], ...(mode === 'upgrade' ? ['--upgrade'] : [])],
+      [...process.execArgv, process.argv[1], '--plan-json', ...flags],
       { cwd: fx.root, encoding: 'utf-8', env: fx.env }
     );
-    const installs = fs
-      .readFileSync(fx.log, 'utf-8')
-      .split('\n')
-      .filter(Boolean)
-      .map((l) => l.replace(fx.root, '<root>'));
+    const line = (child.stdout ?? '').split('\n').find((l) => l.startsWith('PLAN-JSON '));
+    if (!line) throw new Error(`no plan: ${child.stdout}${child.stderr}`);
+    return JSON.parse(line.slice('PLAN-JSON '.length));
+  } finally {
+    fs.rmSync(fx.root, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Run the real script on a fixture tree. `check` runs the gate; `upgrade` runs the pins CLI (`pinsArgs`, default `bump npm`) against the same tree with the recording npm stub, the replacement of the retired `check-deps --upgrade`. The output of a pins run includes the transaction's command log, where a failed step's own stderr is.
+ */
+function runFixture(
+  spec: FixtureSpec,
+  mode: 'check' | 'upgrade',
+  pinsArgs: string[] = ['bump', 'npm']
+): FixtureRun {
+  const fx = buildFixture(spec);
+  try {
+    if (mode === 'upgrade') preparePinsFixture(fx.root);
+    const child = spawnSync(
+      process.execPath,
+      [...process.execArgv, ...(mode === 'upgrade' ? [PINS_CLI, ...pinsArgs] : [process.argv[1]])],
+      {
+        cwd: fx.root,
+        encoding: 'utf-8',
+        env: mode === 'upgrade' ? { ...fx.env, PINS_ROOT: fx.root } : fx.env,
+      }
+    );
+    const read = (f: string): string[] =>
+      fs.existsSync(f)
+        ? fs
+            .readFileSync(f, 'utf-8')
+            .split('\n')
+            .filter(Boolean)
+            .map((l) => l.replaceAll(fx.root, '<root>'))
+        : [];
+    const cache = path.join(fx.root, '.ci', 'cache', 'pins');
+    const cmdLogs = fs.existsSync(cache)
+      ? fs
+          .readdirSync(cache)
+          .sort()
+          .map((d) => path.join(cache, d, 'commands.log'))
+          .filter((f) => fs.existsSync(f))
+          .map((f) => fs.readFileSync(f, 'utf-8'))
+      : [];
+    const files = new Map<string, string>();
+    const walk = (dir: string): void => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (['.git', 'bin', 'cache'].includes(e.name)) continue;
+        const full = path.join(dir, e.name);
+        if (e.isDirectory()) walk(full);
+        else files.set(path.relative(fx.root, full), fs.readFileSync(full, 'utf-8'));
+      }
+    };
+    walk(fx.root);
     return {
       status: child.status,
-      output: `${child.stdout ?? ''}${child.stderr ?? ''}`,
-      installs,
+      output: `${child.stdout ?? ''}${child.stderr ?? ''}${cmdLogs.join('\n')}`,
+      installs: read(fx.log),
+      other: read(`${fx.log}.other`),
       root: fx.root,
       rootManifest: fs.readFileSync(path.join(fx.root, 'package.json'), 'utf-8'),
       syncpackrc: fs.existsSync(path.join(fx.root, '.syncpackrc.json'))
         ? fs.readFileSync(path.join(fx.root, '.syncpackrc.json'), 'utf-8')
         : null,
+      files,
     };
   } finally {
     fs.rmSync(fx.root, { recursive: true, force: true });
@@ -2116,47 +2309,58 @@ async function selftest(): Promise<void> {
   const inst = up.installs.join('\n');
   const detail = `installs:\n${inst}\noutput:\n${up.output}`;
   expect(
-    'e2e --upgrade: the sub-manifest minor IS applied',
+    'e2e pins: the sub-manifest minor IS applied',
     /<root>\/private\/account\/web :: install .*react-hook-form@7\.89\.0/.test(inst),
     detail
   );
   expect(
-    'e2e --upgrade: the sub-manifest majors are NOT applied',
+    'e2e pins: the sub-manifest majors are NOT applied',
     !/vite@|lucide-react@/.test(inst),
     detail
   );
+  const upMajors = planJsonOf(incident)
+    .majors.map((m) => m.key)
+    .sort();
   expect(
-    'e2e --upgrade: the majors are reported as awaiting a decision',
-    up.output.includes('awaiting a decision') &&
-      up.output.includes('vite: 6.4.2 -> 8.0.1 (major) (private/account/web)'),
-    detail
+    'e2e pins: the majors are offered as releases of their own, named by the allow key a `--to` takes',
+    upMajors.join() === 'private/account/web:lucide-react@1,private/account/web:vite@8',
+    `${upMajors.join()}\n${detail}`
   );
   expect(
-    'e2e --upgrade: the root array-shaped minor is applied',
+    'e2e pins: the root array-shaped minor is applied',
     inst.includes('<root> :: install tsx@4.23.15'),
     detail
   );
   expect(
-    'e2e --upgrade: nothing is installed in the local-only private/growth',
+    'e2e pins: nothing is installed in the local-only private/growth',
     !inst.includes('growth'),
     detail
   );
-  expect('e2e --upgrade: exits non-zero while a major is undecided', up.status === 1, detail);
+  expect(
+    'e2e pins: the safe bumps apply and exit 0 while a major is undecided',
+    up.status === 0,
+    detail
+  );
 
   const reason = 'vite 8 is taken with the plugin-react 6 migration in the same change';
-  const taken = runFixture(
-    { ...incident, allow: { 'private/account/web:vite@8': reason } },
-    'upgrade'
-  );
+  const taken = runFixture(incident, 'upgrade', [
+    'bump',
+    'npm',
+    '--to',
+    'private/account/web:vite@8',
+    '--major',
+    '--reason',
+    reason,
+  ]);
   const takenInst = taken.installs.join('\n');
   expect(
-    'e2e --upgrade: an allow-listed major IS applied, at the exact version judged',
+    'e2e pins: a major named by `--to <key> --major --reason` IS applied, at the exact version judged, with the safe bumps beside it',
     /private\/account\/web :: install .*vite@8\.0\.1/.test(takenInst) &&
       takenInst.includes('react-hook-form@7.89.0'),
     `${takenInst}\n${taken.output}`
   );
   expect(
-    'e2e --upgrade: CONTROL: the other major is still held',
+    'e2e pins: CONTROL: the other major is still held',
     !takenInst.includes('lucide-react@'),
     takenInst
   );
@@ -2334,64 +2538,73 @@ async function selftest(): Promise<void> {
     freshnessCutoffMs(Date.now(), 0) === null
   );
 
-  const childEnv = upgradeChildEnv({
-    npm_config_loglevel: 'silent',
-    NPM_CONFIG_LOGLEVEL: 'silent',
-    PATH: '/bin',
-  });
-  expect(
-    'the child npm environment carries no inherited loglevel, and keeps the rest',
-    !Object.keys(childEnv).some((k) => k.toLowerCase() === 'npm_config_loglevel') &&
-      childEnv.PATH === '/bin',
-    JSON.stringify(childEnv)
-  );
-
   const rootLock = {
     'node_modules/typescript-eslint': { version: '8.70.1' },
     'node_modules/fail-me': { version: '1.0.0' },
   };
-  const verbCase: FixtureSpec = {
+  const verbCase = (exact: string): FixtureSpec => ({
     outdated: {
       '': {
         'typescript-eslint': { current: '8.70.1', wanted: '8.71.0', latest: '8.71.0' },
-        'fail-me': { current: '1.0.0', wanted: '1.0.0', latest: '1.0.1' },
+        [exact]: { current: '1.0.0', wanted: '1.0.0', latest: '1.0.1' },
       },
       'private/account': {},
     },
-    locks: { '': rootLock, 'private/account': {} },
+    locks: {
+      '': { ...rootLock, [`node_modules/${exact}`]: { version: '1.0.0' } },
+      'private/account': {},
+    },
     // npm update resolves the version the gate judged: the freshness guard must let it through.
     updateLocks: {
       '': { ...rootLock, 'node_modules/typescript-eslint': { version: '8.71.0' } },
     },
-    manifests: { '': { devDependencies: { 'typescript-eslint': '^8.70.1', 'fail-me': '1.0.0' } } },
+    manifests: { '': { devDependencies: { 'typescript-eslint': '^8.70.1', [exact]: '1.0.0' } } },
     env: { npm_config_loglevel: 'silent' },
-  };
-  const verb = runFixture(verbCase, 'upgrade');
+  });
+  const verb = runFixture(verbCase('keep-me'), 'upgrade');
   const verbInst = verb.installs.join('\n');
   const verbDetail = `installs:\n${verbInst}\noutput:\n${verb.output}`;
   expect(
-    'e2e --upgrade: the in-range bump runs as `npm update`, the exact-pinned one as `npm install --save-exact name@exact`, so the manifest keeps its exact pin',
-    verbInst.includes('<root> :: update typescript-eslint ::') &&
-      verbInst.includes('<root> :: install --save-exact fail-me@1.0.1 ::'),
+    'e2e pins: PINNED NPM: every install and update ran through `npx -y npm@<NPM_VERSION>`, and the canonical lockfile pass followed under the same pin',
+    verb.installs.every((l) => l.endsWith(`via=npm@${FIXTURE_NPM_VERSION}`)) &&
+      verb.other.some((l) => l.includes('install --package-lock-only --ignore-scripts')),
+    `${verbDetail}\nother:\n${verb.other.join('\n')}`
+  );
+  expect(
+    'e2e pins: the in-range bump runs as `npm update`, the exact-pinned one as `npm install --save-exact name@exact`, so the manifest keeps its exact pin',
+    verb.status === 0 &&
+      verbInst.includes('<root> :: update typescript-eslint ::') &&
+      verbInst.includes('<root> :: install --save-exact keep-me@1.0.1 ::'),
     verbDetail
   );
   expect(
-    'e2e --upgrade: a child npm under `npm run -s` does not inherit loglevel=silent',
-    verb.installs.length === 2 && verb.installs.every((l) => l.endsWith('loglevel=')),
+    'e2e pins: a child npm under `npm run -s` does not inherit loglevel=silent (every step passes --loglevel=notice)',
+    verb.installs.length === 2 && verb.installs.every((l) => l.includes('loglevel=notice')),
     verbDetail
   );
-  expect(
-    'e2e --upgrade: a failed step is named with its exact command and exit status, and the gate exits 1',
-    verb.status === 1 &&
-      verb.output.includes('1 of 2 upgrade step(s) failed') &&
-      verb.output.includes(
-        'root (install): `npm install --save-exact fail-me@1.0.1` in . (exit status 7)'
-      ),
-    verbDetail
+  const ambient = runFixture(
+    { ...verbCase('keep-me'), env: { CHECK_DEPS_MUTANT: 'ambient-npm' } },
+    'upgrade'
   );
   expect(
-    'e2e --upgrade: CONTROL: an update that resolves exactly the judged version passes the freshness guard',
-    !verb.output.includes('did not judge') && !verb.output.includes('root (update):'),
+    'e2e pins: CONTROL: the ambient-npm mutant plans a bare `npm`, so the pinned-npm case above goes red',
+    ambient.installs.length > 0 &&
+      ambient.installs.every((l) => !l.endsWith(`via=npm@${FIXTURE_NPM_VERSION}`)),
+    ambient.installs.join('\n')
+  );
+  const failing = runFixture(verbCase('fail-me'), 'upgrade');
+  expect(
+    'e2e pins: a failed step is named with its exact command and exit status, the run exits 1, and the tree is back as it was',
+    failing.status === 1 &&
+      failing.output.includes('step failed (rc=7): root (install)') &&
+      failing.output.includes('fixture npm: refusing install --save-exact fail-me@1.0.1') &&
+      failing.rootManifest === verb.rootManifest.replace('keep-me', 'fail-me'),
+    `${failing.installs.join('\n')}\n${failing.output}`
+  );
+  expect(
+    'e2e pins: CONTROL: an update that resolves exactly the judged version passes the freshness guard',
+    !verb.output.includes('did not judge') &&
+      verb.output.includes('freshness guard: every updated package resolved to its judged version'),
     verbDetail
   );
 
@@ -2444,18 +2657,20 @@ async function selftest(): Promise<void> {
   );
 
   const tooNewCase: FixtureSpec = {
-    ...verbCase,
+    ...verbCase('keep-me'),
     updateLocks: {
       '': { ...rootLock, 'node_modules/typescript-eslint': { version: '8.72.0' } },
     },
   };
   const tooNewRun = runFixture(tooNewCase, 'upgrade');
   expect(
-    'e2e --upgrade: an update that resolves a newer-than-judged version fails, naming package, both versions and the guard',
+    'e2e pins: an update that resolves a newer-than-judged version fails the run, naming package, both versions and the guard, and the lockfile is restored',
     tooNewRun.status === 1 &&
-      tooNewRun.output.includes('2 of 2 upgrade step(s) failed') &&
-      tooNewRun.output.includes('root (update): `npm update typescript-eslint`') &&
+      tooNewRun.output.includes('step failed (rc=1): freshness guard: root (update)') &&
+      tooNewRun.output.includes('`npm update typescript-eslint') &&
       tooNewRun.output.includes('freshness-window guard') &&
+      tooNewRun.files.get('package-lock.json') ===
+        JSON.stringify({ packages: tooNewCase.locks[''] }) &&
       tooNewRun.output.includes('typescript-eslint: judged 8.71.0, installed 8.72.0'),
     tooNewRun.output
   );
@@ -2501,24 +2716,20 @@ async function selftest(): Promise<void> {
   const family = runFixture(familyCase(), 'upgrade');
   const familyDetail = `installs:\n${family.installs.join('\n')}\noutput:\n${family.output}`;
   expect(
-    'e2e --upgrade: a lockstep family held by two workspaces and the root moves in ONE npm update covering every workspace',
+    'e2e pins: a lockstep family held by two workspaces and the root moves in ONE npm update covering every workspace',
     family.status === 0 &&
       family.installs.length === 1 &&
       family.installs[0].startsWith(
         '<root> :: update -w=packages/cli -w=packages/www --include-workspace-root vitest @vitest/ui dotenv ::'
-      ) &&
-      family.output.includes('Upgrades completed'),
+      ),
     familyDetail
   );
   const split = runFixture(familyCase({ CHECK_DEPS_MUTANT: 'split-update' }), 'upgrade');
   const splitDetail = `installs:\n${split.installs.join('\n')}\noutput:\n${split.output}`;
   expect(
-    'e2e --upgrade: CONTROL: the split-update mutant (one npm update per workspace) fails ERESOLVE on the same tree',
+    'e2e pins: CONTROL: the split-update mutant (one npm update per workspace) fails ERESOLVE on the same tree',
     split.status === 1 &&
-      split.installs.length === 3 &&
-      split.output.includes(
-        'packages/cli (update): `npm update -w=packages/cli vitest @vitest/ui` in . (exit status 1)'
-      ) &&
+      split.output.includes('step failed (rc=1): packages/cli (update)') &&
       split.output.includes('ERESOLVE'),
     splitDetail
   );
@@ -2562,25 +2773,36 @@ async function selftest(): Promise<void> {
     },
     ...over,
   });
-  const otel = runFixture(otelCase(), 'upgrade');
+  const otelTake = [
+    'bump',
+    'npm',
+    '--to',
+    `${otelNode}@0.223`,
+    '--major',
+    '--reason',
+    'the 0.223 experimental family is taken with core 2.12 in one change',
+  ];
+  const otel = runFixture(otelCase({ allow: {} }), 'upgrade', otelTake);
   const otelDetail = `installs:\n${otel.installs.join('\n')}\noutput:\n${otel.output}`;
   expect(
-    'e2e --upgrade: the allow-listed sibling that pins an in-range package exactly is installed BEFORE the npm update of its lockfile, and the update lands the judged version',
+    'e2e pins: the major sibling that pins an in-range package exactly is installed BEFORE the npm update of its lockfile, and the update lands the judged version',
     otel.status === 0 &&
       otel.installs.length === 2 &&
       otel.installs[0].startsWith(`<root> :: install -w=packages/cli ${otelNode}@0.223.0 ::`) &&
-      otel.installs[1].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`) &&
-      otel.output.includes('Upgrades completed'),
+      otel.installs[1].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`),
     otelDetail
   );
-  const updFirst = runFixture(otelCase({ env: { CHECK_DEPS_MUTANT: 'update-first' } }), 'upgrade');
+  const updFirst = runFixture(
+    otelCase({ allow: {}, env: { CHECK_DEPS_MUTANT: 'update-first' } }),
+    'upgrade',
+    otelTake
+  );
   const updFirstDetail = `installs:\n${updFirst.installs.join('\n')}\noutput:\n${updFirst.output}`;
   expect(
-    'e2e --upgrade: CONTROL: the update-first mutant (every update before the installs) leaves core on the pinned 2.11.0 and fails, naming the pinning sibling',
+    'e2e pins: CONTROL: the update-first mutant (every update before the installs) leaves core on the pinned 2.11.0 and fails, naming the pinning sibling',
     updFirst.status === 1 &&
-      updFirst.installs.length === 2 &&
+      updFirst.installs.length === 1 &&
       updFirst.installs[0].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`) &&
-      updFirst.output.includes('MUTANT update-first') &&
       updFirst.output.includes(
         `${otelCore}: judged 2.12.0, installed 2.11.0; held back by ${otelNode}@0.222.0 requires "2.11.0"`
       ) &&
@@ -2592,12 +2814,14 @@ async function selftest(): Promise<void> {
   const heldSib = runFixture(otelCase({ allow: {} }), 'upgrade');
   const heldSibDetail = `installs:\n${heldSib.installs.join('\n')}\noutput:\n${heldSib.output}`;
   expect(
-    'e2e --upgrade: with the pinning sibling held, the in-range update fails naming that sibling, and asks for no revert',
+    'e2e pins: with the pinning sibling held, the in-range update fails naming that sibling, and asks for no revert',
     heldSib.status === 1 &&
       heldSib.installs.length === 1 &&
       heldSib.installs[0].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`) &&
       heldSib.output.includes(`held back by ${otelNode}@0.222.0 requires "2.11.0"`) &&
-      heldSib.output.includes(`take the sibling's bump (an allow entry in ${MAJOR_ALLOW_REL}`) &&
+      heldSib.output.includes(
+        "take the sibling's bump (`bump npm --to <package>@<line> --major --reason`"
+      ) &&
       !heldSib.output.includes('revert them there'),
     heldSibDetail
   );
@@ -2700,7 +2924,7 @@ async function selftest(): Promise<void> {
     'clock: CONTROL: the same hold at 91 days fails, naming package and manifest',
     at91.status === 1 &&
       at91.output.includes('✗ Held major past 90 days: widget 1.2.0 -> 2.4.1 (root)') &&
-      at91.output.includes('add "widget@2" to .ci/config/deps-major-allow.json'),
+      at91.output.includes('npm run pins -- bump npm --to widget@2 --major --reason'),
     at91.detail
   );
 
@@ -3220,6 +3444,7 @@ async function selftest(): Promise<void> {
     },
   });
   const pinned = runFixture(fxpCase('5.11.1'), 'upgrade');
+  const pinnedPlan = runFixture(fxpCase('5.11.1'), 'upgrade', ['plan', 'npm']);
   const pinnedInst = pinned.installs.join('\n');
   const pinnedDetail = `installs:\n${pinnedInst}\noutput:\n${pinned.output}\npackage.json:\n${pinned.rootManifest}`;
   const pinnedPkg = JSON.parse(pinned.rootManifest) as {
@@ -3237,7 +3462,7 @@ async function selftest(): Promise<void> {
   expect(
     'override: the _overridesReasons note is kept intact, and its stale version is named for review',
     pinnedPkg._overridesReasons['fast-xml-parser'] === fxpReason &&
-      pinned.output.includes('_overridesReasons["fast-xml-parser"] still names 5.11.1'),
+      pinnedPlan.output.includes('_overridesReasons["fast-xml-parser"] still names 5.11.1'),
     pinnedDetail
   );
   const ranged = runFixture(fxpCase('>=5.0.0'), 'upgrade');
@@ -3315,7 +3540,7 @@ async function selftest(): Promise<void> {
       .map((g) => g.label);
   };
   const pinCase = (rcText: string, over: Partial<FixtureSpec> = {}): FixtureSpec =>
-    otelCase({ syncpackrc: rcText, ...over });
+    otelCase({ syncpackrc: rcText, allow: {}, ...over });
   const startRc = pinGroups('^0.222.0', '^2.11.0');
   const pinSpec = pinCase(startRc);
   const pinBefore = behindGroups(startRc, pinSpec);
@@ -3324,7 +3549,7 @@ async function selftest(): Promise<void> {
     pinBefore.length === 2,
     pinBefore.join(', ')
   );
-  const pinRun = runFixture(pinSpec, 'upgrade');
+  const pinRun = runFixture(pinSpec, 'upgrade', otelTake);
   const pinAfter =
     pinRun.syncpackrc === null ? ['no file'] : behindGroups(pinRun.syncpackrc, pinSpec);
   const pinGroupsOut = (
@@ -3344,15 +3569,13 @@ async function selftest(): Promise<void> {
   );
   const skipRun = runFixture(
     pinCase(startRc, { env: { CHECK_DEPS_MUTANT: 'skip-pin-sync' } }),
-    'upgrade'
+    'upgrade',
+    otelTake
   );
   const skipBehind = skipRun.syncpackrc === null ? [] : behindGroups(skipRun.syncpackrc, pinSpec);
   expect(
     'pin groups: CONTROL: with the rewrite disabled (skip-pin-sync mutant) the same upgrade exits 0 yet the syncpack-style check finds both groups behind',
-    skipRun.status === 0 &&
-      skipRun.output.includes('MUTANT skip-pin-sync') &&
-      skipRun.syncpackrc === startRc &&
-      skipBehind.length === 2,
+    skipRun.status === 0 && skipRun.syncpackrc === startRc && skipBehind.length === 2,
     `${skipRun.output}\n${skipRun.syncpackrc}`
   );
   // A group with a second member that is declared, on the old line, and did not move: pinning it to 0.223 would only fail syncpack on that member, so the group is refused by name and left alone while the other group still moves.
@@ -3368,11 +3591,11 @@ async function selftest(): Promise<void> {
       },
     },
   });
-  const lagRun = runFixture(lagSpec, 'upgrade');
+  const lagRun = runFixture(lagSpec, 'upgrade', otelTake);
   expect(
-    'pin groups: a partial lockstep move is refused naming the group and the laggard, the group stays put and the run is red',
+    'pin groups: a partial lockstep move is refused naming the group and the laggard, the whole run is restored (the other group does not move alone) and the run is red',
     lagRun.status === 1 &&
-      lagRun.syncpackrc === pinGroups('^0.222.0', '^2.12.0', ['@opentelemetry/sdk-logs']) &&
+      lagRun.syncpackrc === pinGroups('^0.222.0', '^2.11.0', ['@opentelemetry/sdk-logs']) &&
       lagRun.output.includes(
         'group "Pin the OpenTelemetry 0.x line in lockstep" has members on different lines'
       ) &&
@@ -3381,7 +3604,7 @@ async function selftest(): Promise<void> {
   );
   // Nothing in the groups moved: the file is not rewritten at all.
   const idleRc = `${JSON.stringify({ versionGroups: [{ label: 'Pin i18next for CLI', packages: ['**'], dependencies: ['i18next'], pinVersion: '^26.4.2' }] }, null, 2)}\n`;
-  const idleRun = runFixture(pinCase(idleRc), 'upgrade');
+  const idleRun = runFixture(pinCase(idleRc), 'upgrade', otelTake);
   expect(
     'pin groups: a group whose packages did not move is untouched, and the shape says 0 groups hold a moved package',
     idleRun.status === 0 &&
@@ -3467,7 +3690,7 @@ async function selftest(): Promise<void> {
   }
   // A file the rewrite cannot reproduce byte for byte is refused, not reformatted.
   const oddRc = startRc.replace(/\n/g, '\r\n');
-  const oddRun = runFixture(pinCase(oddRc), 'upgrade');
+  const oddRun = runFixture(pinCase(oddRc), 'upgrade', otelTake);
   expect(
     'pin groups: an rc file that is not in the exact form it would rewrite is refused and left byte-identical',
     oddRun.status === 1 &&
@@ -3533,6 +3756,345 @@ async function selftest(): Promise<void> {
     `installable=${ordered.installable.map((x) => x.name).join(',')} tooNew=${ordered.tooNew.map((x) => x.name).join(',')}`
   );
 
+  // 14. T4: THE NPM DRIVER'S LOCKFILE BEHAVIOUR. The workers/ projects are judged (nothing did until 2026-10-14), a changed root lockfile is followed by the canonical pass, `npm ci` and `npm run install:natives` in that order with no hand step, and `lockfiles` runs the canonical pass over every npm project of the registry.
+  const wkLock = { 'node_modules/hono': { version: '4.12.25' } };
+  const workers: FixtureSpec = {
+    outdated: {
+      '': { tsx: { current: '4.22.1', wanted: '4.23.15', latest: '4.23.15' } },
+      'private/account': {},
+      'workers/account': { hono: { current: '4.12.25', wanted: '4.12.26', latest: '4.12.26' } },
+    },
+    locks: {
+      '': { 'node_modules/tsx': { version: '4.22.1' } },
+      'private/account': {},
+      'workers/account': wkLock,
+    },
+    updateLocks: {
+      '': { 'node_modules/tsx': { version: '4.23.15' } },
+      'workers/account': { 'node_modules/hono': { version: '4.12.26' } },
+    },
+    manifests: {
+      '': { devDependencies: { tsx: '^4.22.1' } },
+      'workers/account': { dependencies: { hono: '^4.12.25' } },
+    },
+  };
+  const wChk = runFixture(workers, 'check');
+  expect(
+    'workers: check names the workers/ manifest among those judged and reports its outdated package',
+    wChk.status === 1 &&
+      wChk.output.includes('(root, workers/account, private/account)') &&
+      wChk.output.includes('Outdated packages in workers/account (must upgrade)') &&
+      wChk.output.includes('hono: 4.12.25 -> 4.12.26') &&
+      wChk.output.includes('Run: npm run pins -- bump npm'),
+    wChk.output
+  );
+  expect(
+    'workers: the failure text names the pins remedy and no longer the deleted --upgrade',
+    !wChk.output.includes('--upgrade'),
+    wChk.output
+  );
+  const wRun = runFixture(workers, 'upgrade');
+  expect(
+    'workers: `bump npm` updates the workers/ project in its own directory under the pinned npm',
+    wRun.status === 0 &&
+      wRun.installs.some((l) => l.startsWith('<root>/workers/account :: update hono ::')) &&
+      wRun.installs.every((l) => l.endsWith(`via=npm@${FIXTURE_NPM_VERSION}`)),
+    `${wRun.installs.join('\n')}\n${wRun.output}`
+  );
+  const canon = wRun.other.map((l) => l.replace(/^<root>/, '').split(' :: ')[1]);
+  expect(
+    'lockfile: a changed root lockfile is followed by the canonical pass per touched lockfile, then `npm ci`, then `npm run install:natives`, with no hand step',
+    canon.filter((c) => c === 'install --package-lock-only --ignore-scripts').length === 2 &&
+      canon.indexOf('ci') > canon.lastIndexOf('install --package-lock-only --ignore-scripts') &&
+      canon.indexOf('run install:natives') === canon.indexOf('ci') + 1 &&
+      wRun.other.some((l) => l.includes('<root>/workers/account ::')),
+    wRun.other.join('\n')
+  );
+  const lf = runFixture(workers, 'upgrade', ['lockfiles']);
+  expect(
+    'lockfile: `lockfiles` runs the canonical pass under the pinned npm over every npm project of the registry that has a lockfile, and nothing else',
+    lf.status === 0 &&
+      lf.other.filter((l) => l.includes('--package-lock-only')).length === 3 &&
+      lf.installs.length === 0 &&
+      lf.output.includes(`npx -y npm@${FIXTURE_NPM_VERSION} install --package-lock-only`),
+    `${lf.other.join('\n')}\n${lf.output}`
+  );
+  const lf1 = runFixture(workers, 'upgrade', ['lockfiles', 'workers/account']);
+  expect(
+    'lockfile: `lockfiles <dir>` runs it for that project alone, and an unknown directory is refused naming the known ones',
+    lf1.status === 0 && lf1.other.filter((l) => l.includes('--package-lock-only')).length === 1,
+    lf1.other.join('\n')
+  );
+  const lfBad = runFixture(workers, 'upgrade', ['lockfiles', 'packages/nope']);
+  expect(
+    'lockfile: CONTROL: an unknown directory is refused and nothing runs',
+    lfBad.status === 1 &&
+      lfBad.output.includes('is not an npm project of the registry') &&
+      lfBad.other.length === 0,
+    lfBad.output
+  );
+
+  // 15. T6: A MAJOR BY NAME. `bump npm --to <key> --major --reason` takes a blocklisted major in one transaction: the install, and the removal of its blocklist line and its held-major exception, with no allow entry left behind (the entry is transient, so the allow liveness check has nothing dead to refuse).
+  const blockedBlock =
+    '# Widget 2 rewrites its plugin API.\nwidget  # BLOCKER: widget 2 rewrites its plugin API, so it needs a coordinated migration of every plugin\n\n';
+  const keepBlock =
+    'keeper  # BLOCKER: keeper stays on 1.x because the exporter pins its peer range to the 1.x line\n';
+  const majorSpec = (over: Partial<FixtureSpec> = {}): FixtureSpec => ({
+    outdated: {
+      '': {
+        widget: { current: '1.2.0', wanted: '1.2.0', latest: '2.4.1' },
+        keeper: { current: '1.0.0', wanted: '1.0.0', latest: '2.0.0' },
+      },
+      'private/account': {},
+    },
+    locks: {
+      '': {
+        'node_modules/widget': { version: '1.2.0' },
+        'node_modules/keeper': { version: '1.0.0' },
+      },
+      'private/account': {},
+    },
+    manifests: { '': { dependencies: { widget: '^1.2.0', keeper: '^1.0.0' } } },
+    blocklist: `# fixture blocklist\n\n${blockedBlock}${keepBlock}`,
+    exceptions: {
+      widget: {
+        owner: 'd778be9d',
+        reason:
+          'widget 2 needs the plugin API migration, which is scheduled with the lint-tooling change',
+        expires: isoDate(utcDay(Date.now()) + 10 * DAY_MS),
+      },
+    },
+    ...over,
+  });
+  const takeWidget = [
+    'bump',
+    'npm',
+    '--to',
+    'widget@2',
+    '--major',
+    '--reason',
+    'widget 2 is taken now that the plugin API migration landed',
+  ];
+  const mj = runFixture(majorSpec(), 'upgrade', takeWidget);
+  const mjAllow = mj.files.get('.ci/config/deps-major-allow.json');
+  const mjEx = JSON.parse(mj.files.get('.ci/policy/deps-major-exceptions.json') ?? '{}') as {
+    exceptions: Record<string, unknown>;
+  };
+  const mjBlock = mj.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '';
+  expect(
+    'major: the net diff of a blocklisted major is the install, the dropped blocklist line with its comment, and the dropped exception, and nothing else',
+    mj.status === 0 &&
+      mj.installs.length === 1 &&
+      mj.installs[0].startsWith('<root> :: install widget@2.4.1 ::') &&
+      !mjBlock.includes('widget') &&
+      !mjBlock.includes('Widget 2 rewrites') &&
+      mjBlock.includes('keeper  # BLOCKER:') &&
+      !('widget' in mjEx.exceptions) &&
+      mjAllow === `${JSON.stringify({ allow: {} }, null, 2)}\n`,
+    `${mj.installs.join('\n')}\n${mjBlock}\n${mj.output}`
+  );
+  expect(
+    'major: CONTROL: without `--major` the same `--to` is refused as a major and nothing is written',
+    runFixture(majorSpec(), 'upgrade', ['bump', 'npm', '--to', 'widget@2']).status === 1,
+    ''
+  );
+  const noReason = runFixture(majorSpec(), 'upgrade', [
+    'bump',
+    'npm',
+    '--to',
+    'widget@2',
+    '--major',
+  ]);
+  expect(
+    'major: CONTROL: `--major` without `--reason` is refused',
+    noReason.status === 2 && noReason.output.includes('--reason'),
+    noReason.output
+  );
+  const youngMajor = runFixture(
+    majorSpec({
+      files: { '.ci/config/release-age.json': '{"minimum_release_age_minutes": 1440}\n' },
+      registry: {
+        widget: {
+          'dist-tags': { latest: '2.4.1' },
+          versions: { '1.2.0': {}, '2.4.1': {} },
+          time: {
+            '1.2.0': new Date(Date.now() - 400 * DAY_MS).toISOString(),
+            '2.4.1': new Date(Date.now() - 3_600_000).toISOString(),
+          },
+        } as Packument,
+        keeper: {
+          'dist-tags': { latest: '2.0.0' },
+          versions: { '1.0.0': {}, '2.0.0': {} },
+          time: { '2.0.0': new Date(Date.now() - 400 * DAY_MS).toISOString() },
+        } as Packument,
+      },
+    }),
+    'upgrade',
+    takeWidget
+  );
+  expect(
+    'major: CONTROL: a blocklisted major published inside the release-age window is refused, and the tree is untouched',
+    youngMajor.status === 1 &&
+      youngMajor.output.includes('inside the release-age window') &&
+      youngMajor.installs.length === 0 &&
+      (youngMajor.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '').includes(
+        'widget  # BLOCKER:'
+      ),
+    youngMajor.output
+  );
+
+  // 16. T6: `remove <pkg>` uninstalls from every declaring manifest and drops every line that named the package.
+  const rmBlock = (pkg: string) =>
+    `# ${pkg} is held on 1.x for the exporter.\n${pkg}  # BLOCKER: ${pkg} stays on 1.x because the exporter pins its peer range to the 1.x line\n\n`;
+  const rmRc = `${JSON.stringify(
+    {
+      versionGroups: [
+        {
+          label: 'Pin gizmo and keeper together',
+          packages: ['**'],
+          dependencies: ['gizmo', 'keeper'],
+          pinVersion: '^1.0.0',
+        },
+        {
+          label: 'Pin gizmo alone',
+          packages: ['**'],
+          dependencies: ['gizmo'],
+          pinVersion: '^1.0.0',
+        },
+      ],
+    },
+    null,
+    2
+  )}\n`;
+  const rmKnip =
+    '{\n  "ignoreDependencies": [\n    // BLOCKER: gizmo is spawned by a script knip cannot trace to a call site\n    "gizmo",\n    // BLOCKER: keeper is loaded lazily and knip cannot trace the call\n    "keeper"\n  ]\n}\n';
+  const rmSpec = (over: Partial<FixtureSpec> = {}): FixtureSpec => ({
+    outdated: { '': {}, 'private/account': {} },
+    locks: {
+      '': {
+        'node_modules/gizmo': { version: '1.0.0' },
+        'node_modules/keeper': { version: '1.0.0' },
+      },
+      'private/account': {},
+    },
+    manifests: {
+      '': {
+        workspaces: ['packages/cli'],
+        dependencies: { gizmo: '^1.0.0', keeper: '^1.0.0' },
+        overrides: { gizmo: '1.0.0', keeper: '1.0.0' },
+        _overridesReasons: {
+          gizmo: 'BLOCKER: pinned for the exporter',
+          keeper: 'BLOCKER: pinned for the exporter',
+        },
+      },
+      'packages/cli': { devDependencies: { gizmo: '^1.0.0' } },
+    },
+    blocklist: `# fixture blocklist\n\n${rmBlock('gizmo')}${rmBlock('keeper')}`,
+    exceptions: {
+      gizmo: {
+        owner: 'd778be9d',
+        reason:
+          'gizmo 2 needs the exporter migration, which is scheduled with the lint-tooling change',
+        expires: isoDate(utcDay(Date.now()) + 10 * DAY_MS),
+      },
+    },
+    allow: {},
+    syncpackrc: rmRc,
+    files: { 'knip.jsonc': rmKnip },
+    ...over,
+  });
+  const rm = runFixture(rmSpec(), 'upgrade', ['remove', 'gizmo']);
+  const rmRoot = JSON.parse(rm.rootManifest) as {
+    dependencies: Record<string, string>;
+    overrides: Record<string, string>;
+    _overridesReasons: Record<string, string>;
+  };
+  const rmCli = JSON.parse(rm.files.get('packages/cli/package.json') ?? '{}') as {
+    devDependencies: Record<string, string>;
+  };
+  const rmRcAfter = JSON.parse(rm.syncpackrc ?? '{}') as {
+    versionGroups: Array<{ label: string; dependencies: string[] }>;
+  };
+  const rmKnipAfter = rm.files.get('knip.jsonc') ?? '';
+  expect(
+    'remove: the package leaves every declaring manifest and every policy, override, syncpack and knip line, while its neighbours stay byte-identical',
+    rm.status === 0 &&
+      !('gizmo' in rmRoot.dependencies) &&
+      'keeper' in rmRoot.dependencies &&
+      !('gizmo' in rmCli.devDependencies) &&
+      !('gizmo' in rmRoot.overrides) &&
+      'keeper' in rmRoot.overrides &&
+      !('gizmo' in rmRoot._overridesReasons) &&
+      'keeper' in rmRoot._overridesReasons &&
+      !(rm.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '').includes('gizmo') &&
+      (rm.files.get('.ci/policy/.deps-upgrade-blocklist') ?? '').includes('keeper  # BLOCKER:') &&
+      !(
+        'gizmo' in
+        (
+          JSON.parse(rm.files.get('.ci/policy/deps-major-exceptions.json') ?? '{}') as {
+            exceptions: object;
+          }
+        ).exceptions
+      ) &&
+      rmRcAfter.versionGroups.length === 1 &&
+      rmRcAfter.versionGroups[0].label === 'Pin gizmo and keeper together' &&
+      rmRcAfter.versionGroups[0].dependencies.join() === 'keeper' &&
+      !rmKnipAfter.includes('gizmo') &&
+      rmKnipAfter.includes('"keeper"') &&
+      !rmKnipAfter.includes(',\n  ]'),
+    `${rm.output}\n${rm.rootManifest}\n${rmKnipAfter}`
+  );
+  expect(
+    'remove: the uninstall runs once per npm project under the pinned npm with the workspace scoped by -w, then the canonical pass',
+    rm.installs.length === 1 &&
+      rm.installs[0].startsWith(
+        '<root> :: uninstall gizmo -w=packages/cli --include-workspace-root'
+      ) &&
+      rm.other.some((l) => l.includes('--package-lock-only')),
+    rm.installs.join('\n')
+  );
+  const rmImported = runFixture(
+    rmSpec({
+      files: {
+        'knip.jsonc': rmKnip,
+        'src/use.ts': "import { g } from 'gizmo';\nexport const x = g;\n",
+      },
+    }),
+    'upgrade',
+    ['remove', 'gizmo']
+  );
+  expect(
+    'remove: CONTROL: a package a source file still imports is refused naming the file, and nothing is written',
+    rmImported.status === 1 &&
+      rmImported.output.includes('still imported by src/use.ts') &&
+      rmImported.installs.length === 0 &&
+      rmImported.rootManifest.includes('"gizmo": "^1.0.0"'),
+    rmImported.output
+  );
+  const rmNone = runFixture(rmSpec(), 'upgrade', ['remove', 'ghost']);
+  expect(
+    'remove: CONTROL: a package no manifest declares is refused',
+    rmNone.status === 1 && rmNone.output.includes('no npm manifest of the registry declares it'),
+    rmNone.output
+  );
+
+  const realAmbient: NodeJS.ProcessEnv = { ...process.env, CHECK_DEPS_MUTANT: 'ambient-npm' };
+  delete realAmbient.CHECK_DEPS_ROOT;
+  delete realAmbient.CHECK_DEPS_FORCE_PROBE_FAILURE;
+  const realAmbientRun = spawnSync(process.execPath, [...process.execArgv, process.argv[1]], {
+    cwd: CONSOLE_ROOT,
+    encoding: 'utf-8',
+    env: realAmbient,
+  });
+  expect(
+    'mutant: CONTROL: ambient-npm without CHECK_DEPS_ROOT is refused',
+    realAmbientRun.status === 1 &&
+      `${realAmbientRun.stdout}${realAmbientRun.stderr}`.includes(
+        'CHECK_DEPS_MUTANT=ambient-npm refused'
+      ),
+    `${realAmbientRun.stdout}${realAmbientRun.stderr}`
+  );
+
   console.log(
     joinReport(
       `${GREEN}✓${NC} ${checks} selftest checks: the probe fails closed on both shapes; a breaking bump is held in `,
@@ -3548,7 +4110,7 @@ async function selftest(): Promise<void> {
       'private devDependency is judged from lockfile and registry (and refused when they cannot answer) while an ',
       'installed one is left to npm, and an uninstalled root refuses the run; an exact-pin override is moved to the ',
       'judged version before a root npm update, while an admitting override is left alone and a bounding one is refused; ',
-      'a lockstep family moves in one npm update per lockfile, and the split-update mutant fails ERESOLVE; an allow-listed ',
+      'a lockstep family moves in one npm update per lockfile, and the split-update mutant fails ERESOLVE; every npm command the pins driver plans is `npx -y npm@<NPM_VERSION>` (the ambient-npm mutant fails), the canonical lockfile pass, `npm ci` and `install:natives` follow a changed root lockfile, and `lockfiles` covers every npm project; the workers/ projects are judged; a major is taken by name with its blocklist line and exception dropped and no allow entry left behind, a young blocklisted major is refused, and `remove` drops every line that named the package and refuses one a source file still imports; an allow-listed ',
       'sibling that pins an in-range package exactly is installed before its lockfile is updated, the update-first mutant ',
       'leaves that package held back, and a held-back package names its pinning sibling instead of a freshness breach; ',
       'every step carries --before=<the freshness cutoff>, which agrees with the window rule at its boundary; an upgrade ',
