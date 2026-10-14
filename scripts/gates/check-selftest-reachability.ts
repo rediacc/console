@@ -183,8 +183,30 @@ function pythonImports(file: string, text: string, has: (f: string) => boolean):
   return out;
 }
 
+/** Whether a `/` after `before` starts a regex literal rather than dividing: true at the start, after an operator or opener, or after a keyword that takes an operand. */
+function regexAllowed(before: string): boolean {
+  const t = before.trimEnd();
+  if (t === '') return true;
+  if (/[(,=:[!&|?{};+\-*%<>~^]$/.test(t)) return true;
+  return /(?:^|[^\w$.])(?:return|typeof|case|in|of|void|delete|throw|yield|await)$/.test(t);
+}
+
+/** The index just past the regex literal opening at `start`, or past the `/` alone when the line holds no closing one. */
+function regexEnd(text: string, start: number): number {
+  let inClass = false;
+  for (let i = start + 1; i < text.length; i++) {
+    const c = text[i];
+    if (c === '\n') return start + 1;
+    if (c === '\\') i++;
+    else if (c === '[') inClass = true;
+    else if (c === ']') inClass = false;
+    else if (c === '/' && !inClass) return i + 1;
+  }
+  return start + 1;
+}
+
 /**
- * `text` with its JS/TS comments blanked (newlines kept), found by one scan that tracks string state. A commented-out import is no edge; a `//` or `/*` inside a quoted string or template (a glob path, a URL) opens nothing; a `/*` inside a line comment opens nothing; `\r` does not stop a line comment from ending at its `\n`. A quote left open at a line end closes there, so a stray apostrophe in a regex literal cannot swallow the rest of the file.
+ * `text` with its JS/TS comments blanked (newlines kept), found by one scan that tracks string state. A commented-out import is no edge; a `//` or `/*` inside a quoted string or template (a glob path, a URL) opens nothing; a `/*` inside a line comment opens nothing; `\r` does not stop a line comment from ending at its `\n`. A regex literal (a `/` where an expression may start) is copied whole, so `/https?:\/\//` opens no comment. A quote left open at a line end closes there, so a stray apostrophe in a regex literal cannot swallow the rest of the file.
  */
 export function stripJsComments(text: string): string {
   let out = '';
@@ -203,6 +225,10 @@ export function stripJsComments(text: string): string {
       if (c === quote || (c === '\n' && quote !== '`')) quote = '';
       out += c;
       i++;
+    } else if (c === '/' && two !== '//' && two !== '/*' && regexAllowed(out)) {
+      const stop = regexEnd(text, i);
+      out += text.slice(i, stop);
+      i = stop;
     } else if (two === '//') {
       const end = text.indexOf('\n', i);
       const stop = end === -1 ? text.length : end;
@@ -458,6 +484,13 @@ function selftestCases(): ControlCase[] {
       !stripJsComments("x=/* import './a' */ 1;").includes("'./a'") &&
       stripJsComments("const g = './s/*/*.ts'; import './b.js';").includes("'./b.js'") &&
       stripJsComments('// see /* a\nimport "./c.js";').includes('"./c.js"'),
+  });
+  cases.push({
+    name: 'a regex literal holding // does not blank the rest of its line, and a division is not one',
+    ok:
+      stripJsComments("const r = /https?:\\/\\//; import './d.js';").includes("'./d.js'") &&
+      stripJsComments("const q = a / b; // import './e.js'").includes("'./e.js'") === false &&
+      stripJsComments("x = [/\\//, 1]; import './f.js';").includes("'./f.js'"),
   });
   expect('scripts/lib/prose-selftest.ts', true, 'a selftest named only in parenthesised prose');
   expect('.ci/rediacc_ci/quality/mod_c.py', true, 'a --selftest handler nothing imports');
