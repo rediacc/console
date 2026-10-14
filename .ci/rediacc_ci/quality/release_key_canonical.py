@@ -248,14 +248,21 @@ def _read(path: pathlib.Path) -> str:
         return ""
 
 
-def _gpg(args: list[str], home: str, *, capture: bool = True) -> subprocess.CompletedProcess:
-    """One gpg invocation with GNUPGHOME pinned, stderr discarded as the twin does."""
+def _gpg(
+    args: list[str],
+    home: str,
+    *,
+    capture: bool = True,
+    keep_stderr: bool = False,
+    tool: str = "gpg",
+) -> subprocess.CompletedProcess:
+    """One gpg (or gpgconf) invocation with GNUPGHOME pinned, stderr discarded as the twin does unless `keep_stderr`."""
     env = dict(os.environ)
     env["GNUPGHOME"] = home
     return subprocess.run(
-        ["gpg", *args],
+        [tool, *args],
         stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.PIPE if keep_stderr else subprocess.DEVNULL,
         text=True,
         errors="replace",
         env=env,
@@ -448,11 +455,22 @@ def _run_canon(canon: pathlib.Path, target: pathlib.Path, passphrase: str) -> in
 def _sign_with(tmp: pathlib.Path, key: pathlib.Path, passphrase: str, tag: str) -> str:
     """`_sign_with` -- import into a fresh GNUPGHOME, then try to detach-sign.
 
-    Returns "signed" or "refused", which is what the twin echoes.
+    Returns "signed", "refused" (gpg said the passphrase is bad), or "error: <gpg's last stderr line>".
+
+    THE AGENT IS STARTED AND STOPPED HERE (worklist #538ba810). Under a loaded ci:quick the right-passphrase control read "refused" while a dozen gpg-agent processes were alive: gpg started each fresh GNUPGHOME's agent on demand, a slow start failed the signing, and any failure counted as a refusal. `gpgconf --launch` returns once the agent answers, only a bad-passphrase failure reads as a refusal, and `gpgconf --kill` stops the agent so no run leaves one behind.
     """
     home = tmp / ("sign-%s" % tag)
     home.mkdir(parents=True, exist_ok=True)
     home.chmod(0o700)
+    gnupghome = str(home)
+    _gpg(["--launch", "gpg-agent"], gnupghome, capture=False, tool="gpgconf")
+    try:
+        return _import_and_sign(home, key, passphrase)
+    finally:
+        _gpg(["--kill", "gpg-agent"], gnupghome, capture=False, tool="gpgconf")
+
+
+def _import_and_sign(home: pathlib.Path, key: pathlib.Path, passphrase: str) -> str:
     gnupghome = str(home)
     _gpg(
         [
@@ -484,8 +502,17 @@ def _sign_with(tmp: pathlib.Path, key: pathlib.Path, passphrase: str, tag: str) 
         ],
         gnupghome,
         capture=False,
+        keep_stderr=True,
     )
-    return "signed" if signed.returncode == 0 else "refused"
+    if signed.returncode == 0:
+        return "signed"
+    err = signed.stderr or ""
+    if "Bad passphrase" in err:
+        return "refused"
+    lines = [ln for ln in err.splitlines() if ln.strip()]
+    return "error: %s" % (
+        lines[-1] if lines else "gpg exited %d with no message" % signed.returncode
+    )
 
 
 # A four-line armor block in the shape gpg emits: BEGIN, blank, body, body, END. The base every plant below mutates, and asserted CANONICAL first: without that, each plant would "fire" against a fixture that was already malformed.
