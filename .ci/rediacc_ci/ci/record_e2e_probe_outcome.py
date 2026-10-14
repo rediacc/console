@@ -5,7 +5,7 @@ Replaces `.ci/scripts/test/record-e2e-probe-outcome.sh` (deleted; ruling 7, 2026
 
 Usage: `record-e2e-probe-outcome.py <file> <job-status>`
 
-Writes `$RUNNER_TEMP/e2e-probe/result.json` (default `/tmp` when `RUNNER_TEMP` is unset, matching the twin's `${RUNNER_TEMP:-/tmp}`), one line, `{"file":"<file>","outcome":"pass"|"fail"}`. The line is built the same way the twin's `printf` built it -- neither escapes the file argument -- because every real caller passes a bare spec path (`tests/13-postgres-fork-isolation.test.ts`) with no character that would need it.
+Writes `$RUNNER_TEMP/e2e-probe/result.json` (default `/tmp` when `RUNNER_TEMP` is unset, matching the twin's `${RUNNER_TEMP:-/tmp}`), one line, `{"file":"<file>","outcome":"pass"|"fail"}`. The line is built the same way the twin's `printf` built it -- neither escapes the file argument -- because every real caller passes a bare unit id tail (`13-postgres-fork-isolation.test.ts#part2`) with no character that would need it.
 """
 
 from __future__ import annotations

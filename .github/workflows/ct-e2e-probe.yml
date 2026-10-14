@@ -5,23 +5,23 @@ name: Console CT - E2E Dependency Probe
 # spec file is independent enough to land on any leg. The config comment
 # "Order maintained by workers:1 + fullyParallel:false"
 # (packages/e2e-tests/playwright.config.ts) says some of that independence
-# may not be real, so this probes it directly: run each file the shard
+# may not be real, so this probes it directly: run each unit the shard
 # manifest currently ships ALONE, on its own fresh VM, and let
 # e2e-probe-edges.ts turn "failed alone" into a proposed `needs` edge.
 #
 # NEVER TOUCHES THE MANIFEST. This workflow only measures and reports; a
 # human reviews the aggregate job's printed/uploaded edges and applies them
-# to unit-enumerators.ts by hand. A file that fails alone fails its leg, and
+# to unit-enumerators.ts by hand. A unit that fails alone fails its leg, and
 # ci.yml's CI Complete reads this call's result as soft-required, so the PR
 # that introduces a hidden dependency between spec files is the one that goes
 # red. ci.yml calls it whenever E2E Workers runs (no PR label gates it, ruling
-# 2026-10-14); it re-provisions one full VM topology per file, which is the
+# 2026-10-14); it re-provisions one full VM topology per unit, which is the
 # price of that verdict on every such run.
 #
 # MIRRORS ct-tests.yml's `test-e2e-workers` JOB, deliberately, one distro
-# (ubuntu-24.04) and one file per leg instead of a shard's worth: same
+# (ubuntu-24.04) and one unit per leg instead of a shard's worth: same
 # composite actions, same renet build, same VM bridge topology, so the only
-# variable is which spec file(s) the leg selects.
+# variable is which unit the leg selects.
 
 on:
   workflow_call:
@@ -35,13 +35,14 @@ permissions: {}
 
 jobs:
   # ==========================================================================
-  # List the exact file set T2.10's committed shard manifest ships today, so
+  # List the exact unit set T2.10's committed shard manifest ships today, so
   # the probe measures what CI actually shards rather than a fresh
-  # enumeration that could silently disagree with it (a file the manifest
+  # enumeration that could silently disagree with it (a unit the manifest
   # does not run yet has no "passes in the full suite" baseline to probe
-  # against). One entry per FILE, not per manifest id: the describe-group
-  # buckets `13-postgres-fork-isolation.test.ts#part1/2/3` split one file
-  # into three shard units, and this probe runs that file whole.
+  # against). One entry per manifest UNIT: the describe-group buckets
+  # `13-postgres-fork-isolation.test.ts#part1/2/3` are three legs here, each
+  # selected by the grep E2E Workers uses, because the whole file ran 15.7
+  # minutes alone (run 36311800722), past this job's 15-minute timeout.
   # ==========================================================================
   list-files:
     name: E2E Probe / List Files
@@ -50,7 +51,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 5
     outputs:
-      files: ${{ steps.list.outputs.files }}
+      units: ${{ steps.list.outputs.units }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -60,7 +61,7 @@ jobs:
         with:
           runner-label: ubuntu-slim
 
-      - name: Derive the probe file list from the committed shard manifest
+      - name: Derive the probe unit list from the committed shard manifest
         id: list
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.list_e2e_probe_files
 
@@ -139,13 +140,13 @@ jobs:
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
 
   # ==========================================================================
-  # One leg per file, ubuntu-24.04 only (T2.12: "one distro"). Provisioning
+  # One leg per unit, ubuntu-24.04 only (T2.12: "one distro"). Provisioning
   # steps are ct-tests.yml's test-e2e-workers job, unchanged, down to the
   # embed-assets cache key so a run here can share that cache with a
   # concurrent real CI run instead of paying to stage it twice.
   # ==========================================================================
   probe-file:
-    name: E2E Probe (${{ matrix.file }})
+    name: E2E Probe (${{ matrix.probe.unit }})
     permissions:
       contents: read
       packages: read
@@ -155,7 +156,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        file: ${{ fromJson(needs.list-files.outputs.files) }}
+        probe: ${{ fromJson(needs.list-files.outputs.units) }}
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -258,9 +259,13 @@ jobs:
       - name: Create E2E Test Environment
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
-      - name: Run E2E test alone (${{ matrix.file }})
+      - name: Run E2E unit alone (${{ matrix.probe.unit }})
         id: run
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test "tests/${{ matrix.file }}"
+        # An empty PROBE_GREP is a whole-file unit: the runner adds no --grep for an empty value.
+        env:
+          PROBE_TEST: ${{ matrix.probe.test }}
+          PROBE_GREP: ${{ matrix.probe.grep }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test "tests/$PROBE_TEST" --grep "$PROBE_GREP"
 
       - name: Record outcome
         if: always()
@@ -269,12 +274,15 @@ jobs:
         # marks the job failed and every later `if: always()` step,
         # including this one, still runs -- the same pattern
         # test-e2e-workers' own create_complete step relies on.
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.record_e2e_probe_outcome "${{ matrix.file }}" "${{ job.status }}"
+        env:
+          PROBE_UNIT: ${{ matrix.probe.unit }}
+          JOB_STATUS: ${{ job.status }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.record_e2e_probe_outcome "$PROBE_UNIT" "$JOB_STATUS"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
-          name: e2e-probe-result-${{ matrix.file }}-${{ github.sha }}
+          name: e2e-probe-result-${{ matrix.probe.slug }}-${{ github.sha }}
           path: ${{ runner.temp }}/e2e-probe/result.json
           retention-days: 3
           if-no-files-found: error
