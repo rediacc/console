@@ -66,7 +66,7 @@ def stub_dir(body):
 GH_EMPTY = stub_dir("#!/bin/sh\nexit 0\n")
 GH_DOWN = stub_dir("#!/bin/sh\necho 'gh: offline' >&2\nexit 1\n")
 
-TODAY = datetime.datetime.now().strftime("%m%d")  # noqa: DTZ005 -- the guard reads local time too
+TODAY = datetime.datetime.now().astimezone().strftime("%m%d")
 NEXT = "%s-1" % TODAY
 
 FEATURE = make_repo("0923-1")

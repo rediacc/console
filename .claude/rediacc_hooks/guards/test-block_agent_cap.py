@@ -8,6 +8,7 @@ LOAD-BEARING, NOT OPTIONAL. The guard declares `OWN_SUITE = True` (it was never 
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER against a real fixture on disk: a projects store with subagent metas and transcripts (`CLAUDE_CONFIG_DIR`), a project root (`CLAUDE_PROJECT_DIR`) and a worklist directory (`TMPDIR`) where the last Stop event is written. The fixture lives in ONE pid-stamped directory that is removed on exit.
 """
 
+import importlib.util
 import json
 import os
 import pathlib
@@ -36,15 +37,15 @@ def world(writers=0, readers=0, finished=0, lastevent=None, custom_ro=False, age
     (BASE / "tmp").mkdir()
     if cap is not None:
         # The cap is the fixture QUEUE.md's `writer_cap:` line, written by the verb's own writer.
-        import importlib.util  # noqa: PLC0415
-
         spec = importlib.util.spec_from_file_location(
             "rediacc_hooks_syspath", pathlib.Path(DISPATCH).resolve().parent / "syspath.py"
         )
-        syspath = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
-        spec.loader.exec_module(syspath)  # type: ignore[union-attr]
+        if spec is None or spec.loader is None:
+            raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
+        syspath = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(syspath)
         syspath.on_sys_path(pathlib.Path(DISPATCH).resolve().parents[1] / "hooks" / "stop")
-        import wl_planqueue  # noqa: PLC0415
+        wl_planqueue = importlib.import_module("wl_planqueue")
 
         queue = proj / wl_planqueue.QUEUE_REL
         queue.parent.mkdir(parents=True)

@@ -12,6 +12,7 @@ THE X FIELDS ARE MANDATORY (PLAN-plan-priority-concurrency.md T11). A plan with 
 THE DEFECT IS PROVEN HERE TOO. The guard's declared `DEFECT` is planted in-process and run on the same payloads; at least one answer must change.
 """
 
+import ast
 import atexit
 import datetime
 import importlib.util
@@ -365,8 +366,6 @@ def _outside_defect(src: str, *names: str) -> str:
 
     `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
     """
-    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
-
     wanted = names or ("DEFECT",)
     cut = [
         n
@@ -415,7 +414,7 @@ def main():
     _pkg = importlib.util.module_from_spec(_spec)
     sys.modules["rediacc_hooks"] = _pkg
     _spec.loader.exec_module(_pkg)
-    from rediacc_hooks import hookio  # noqa: PLC0415 -- the package is registered just above
+    hookio = importlib.import_module("rediacc_hooks.hookio")
 
     good: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
     exec(compile(SOURCE, str(GUARD), "exec"), good)

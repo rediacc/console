@@ -6,6 +6,7 @@ This file runs the Edit half; `test-block_review_file_shell_write.py` beside it 
     test-block_review_file_edit.py        run every Edit case through dispatch.py, then the DEFECT run
 """
 
+import ast
 import atexit
 import importlib
 import importlib.util
@@ -483,8 +484,6 @@ def _outside_defect(src: str, *names: str) -> str:
 
     `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
     """
-    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
-
     wanted = names or ("DEFECT",)
     cut = [
         n

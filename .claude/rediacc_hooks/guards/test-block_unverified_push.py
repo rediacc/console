@@ -813,7 +813,7 @@ def step(frm, to, gates, paths=(REVIEW,), findings=None):
 
 def drive_broken(where, cmd):
     """The guard with its own declared DEFECT planted, in a child, exactly as test-block_second_branch.py drives its copy."""
-    namespace: dict[str, object] = {}
+    namespace: dict[str, Any] = {}
     body = []
     for line in GUARD.read_text(encoding="utf-8").split("\n"):
         if line.startswith("DEFECT = "):
@@ -821,7 +821,7 @@ def drive_broken(where, cmd):
         else:
             body.append(line)
     # THE DECLARATION ITSELF CONTAINS THE TEXT IT PLANTS, so `old in src` alone stays true after the guarded line is deleted, and the plant then changes nothing but its own declaration. Measured 2026-10-05 with the line replaced by hand: the copy runner's assertion passed.
-    old_text = namespace["DEFECT"][0]  # type: ignore[index]
+    old_text = namespace["DEFECT"][0]
     if old_text not in "\n".join(body):
         # A FAILING RESULT, not an abort: the summary then still names every case the missing line broke.
         print("  the guard's DEFECT %r no longer names a line of code" % old_text)

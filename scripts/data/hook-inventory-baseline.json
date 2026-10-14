@@ -9,6 +9,7 @@
   ".claude/hooks/trapguard/dispatch.py",
   ".claude/rediacc_hooks/dispatch.py",
   ".claude/rediacc_hooks/guards/__init__.py",
+  ".claude/rediacc_hooks/guards/_hookpath.py",
   ".claude/rediacc_hooks/guards/block_adhoc_sanctioned.py",
   ".claude/rediacc_hooks/guards/block_admin_merge.py",
   ".claude/rediacc_hooks/guards/block_agent_browser_repo_output.py",

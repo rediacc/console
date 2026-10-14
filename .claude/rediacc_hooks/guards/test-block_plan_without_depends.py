@@ -14,6 +14,7 @@ PRE-BACKFILL RATCHET. The expectation of "an Edit to a plan that already lacks t
 THE X FIELDS AND THE OPERATOR FREEZE (agent/plans/PLAN-plan-priority-concurrency.md section 8, T4). Every fixture plan carries a valid Priority/Concurrency/Owns triple unless a case is about its absence, and the absence cases are always refused: the X fields are mandatory (T11). The freeze cases run against an on-disk `(operator)` plan, and the escape against transcript fixtures whose operator turn (or AskUserQuestion answer) names the plan and the level. BOTH declared defects are planted: `DEFECT` (the freeze) and `VERDICT_DEFECT` (the D1-D7 verdict); each must change at least one answer.
 """
 
+import ast
 import atexit
 import importlib.util
 import json
@@ -94,8 +95,6 @@ def _outside_defect(src: str, *names: str) -> str:
 
     `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
     """
-    import ast  # noqa: PLC0415 -- only the planted-defect controls need it
-
     wanted = names or ("DEFECT",)
     cut = [
         n
@@ -527,7 +526,7 @@ def main():
     _pkg = importlib.util.module_from_spec(_spec)
     sys.modules["rediacc_hooks"] = _pkg
     _spec.loader.exec_module(_pkg)
-    from rediacc_hooks import hookio  # noqa: PLC0415 -- the package is registered just above
+    hookio = importlib.import_module("rediacc_hooks.hookio")
 
     _good_ns: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
     exec(compile(SOURCE, str(GUARD), "exec"), _good_ns)
