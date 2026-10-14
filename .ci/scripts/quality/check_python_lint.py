@@ -80,6 +80,8 @@ THE REAL TREE WAS NEVER WRITTEN TO for this gate. `git status --porcelain` carri
 INVARIANT 5 IS DISCHARGED: `.ci/scripts/quality/check-python-lint.sh` stayed on disk as the differential twin through this cutover, and W7P5-c DELETED it on 2026-09-23 (blob `471b915b87984c59aeaca380951aa3dd5bd3b702`, `git cat-file -p` still yields it). The licence is `.ci/shadow/w7p2-python-lint.observations.jsonl`: 6 rows, 6 distinct trees, 6 distinct fingerprints,
 every one `EQUIVALENT`. The nine cases that executed the twin now compare against its own recorded bytes in `.ci/rediacc_ci/tests/goldens/python-lint/`, captured from the tracked script on its last day in the tree.
 
+A SECOND CHECK RIDES THIS ENTRY POINT SINCE 2026-10-13, and it is deliberately not in the module the recordings pin. `rediacc_ci.quality.lint_config_liveness.chained` runs `python_lint.main` first and returns its status unchanged when that is non-zero, so every refusal above still reads exactly as recorded; on a clean lint it then holds the ruff suppression tables of pyproject.toml (`per-file-ignores` and `allowed-unused-imports`) to a BLOCKER reason per entry and to liveness, with ruff as the oracle. Inline suppression markers are banned (operator ruling 2026-10-08), so those tables are where a deliberate pattern now lives, and a table nobody re-proves is how 101 dead allowlist entries once outlived the dependency they excused. That module's docstring says why it is a sibling and not a branch of `python_lint.main`.
+
 ---- gate ----
 step: Python lint + format (ruff)
 needs: none
@@ -90,7 +92,7 @@ selftest: true
 import sys
 
 import _cipath  # noqa: F401
-from rediacc_ci.quality import python_lint
+from rediacc_ci.quality import lint_config_liveness
 
 if __name__ == "__main__":
-    raise SystemExit(python_lint.main(sys.argv[1:]))
+    raise SystemExit(lint_config_liveness.chained(sys.argv[1:]))
