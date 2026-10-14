@@ -3,6 +3,7 @@ import React, { useRef, useState } from 'react';
 import { useLanguage } from '../hooks/useLanguage';
 import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useTranslation } from '../i18n/react';
+import { sendContact } from '../utils/contact-submit';
 
 const INTEREST_TO_SUBJECT: Record<string, string> = {
   'disaster-recovery': 'disasterRecovery',
@@ -64,46 +65,29 @@ const ContactForm: React.FC<Props> = ({ interest }) => {
       return;
     }
 
-    try {
-      const honeypotValue = honeypotRef.current?.value;
-      const res = await fetch(`${window.location.origin}/account/api/v1/contact/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          email,
-          subject: selectedSubject,
-          message,
-          source: 'contact-page',
-          lang: currentLang,
-          company_url: honeypotValue === '' ? undefined : honeypotValue,
-          turnstileToken: captcha.token ?? undefined,
-        }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error ?? t('contactModal.error'));
-      }
-
-      setState('success');
-      captcha.reset();
-      const utm =
-        (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
-        {};
-      const lastSolution = sessionStorage.getItem('__pa_last_solution') ?? undefined;
-      window.plausible?.('contact_submit', {
-        props: {
-          subject: selectedSubject,
-          source: 'contact-page',
-          ...utm,
-          ...(lastSolution && { last_solution: lastSolution }),
+    await sendContact(
+      {
+        name,
+        email,
+        subject: selectedSubject,
+        message,
+        lang: currentLang,
+        honeypot: honeypotRef.current?.value,
+        turnstileToken: captcha.token,
+      },
+      'contact-page',
+      t('contactModal.error'),
+      {
+        onSuccess: () => {
+          setState('success');
+          captcha.reset();
         },
-      });
-    } catch (err) {
-      setState('error');
-      setErrorMsg(err instanceof Error ? err.message : t('contactModal.error'));
-    }
+        onFailure: (failure) => {
+          setState('error');
+          setErrorMsg(failure);
+        },
+      }
+    );
   };
 
   if (state === 'success') {

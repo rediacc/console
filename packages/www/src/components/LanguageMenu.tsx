@@ -45,6 +45,84 @@ interface LanguageMenuProps {
   icon?: React.ReactNode;
 }
 
+interface LanguageOptionProps {
+  lang: Language;
+  /** Render an <a href> (link mode) instead of a <button>. */
+  asLink: boolean;
+  href: string;
+  isCurrent: boolean;
+  isActive: boolean;
+  itemRef: (el: HTMLButtonElement | HTMLAnchorElement | null) => void;
+  onSelect: (lang: Language) => void;
+}
+
+const CheckmarkIcon: React.FC = () => (
+  <svg
+    className="checkmark"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const LanguageOption: React.FC<LanguageOptionProps> = ({
+  lang,
+  asLink,
+  href,
+  isCurrent,
+  isActive,
+  itemRef,
+  onSelect,
+}) => {
+  const content = (
+    <>
+      <span className="flag">{getLanguageFlag(lang)}</span>
+      <span className="name">{getLanguageName(lang)}</span>
+      {isCurrent && <CheckmarkIcon />}
+    </>
+  );
+  const common = {
+    className: `language-option ${isCurrent ? 'active' : ''}`,
+    onClick: () => onSelect(lang),
+    role: 'menuitem',
+    tabIndex: isActive ? 0 : -1,
+    'aria-current': isCurrent ? ('true' as const) : undefined,
+  };
+
+  if (asLink) {
+    return (
+      <a
+        ref={itemRef}
+        href={href}
+        {...common}
+        data-track="cta_click"
+        data-track-label="language-option"
+      >
+        {content}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      ref={itemRef}
+      {...common}
+      data-track="cta_click"
+      data-track-label="language-option"
+    >
+      {content}
+    </button>
+  );
+};
+
 const LanguageMenu: React.FC<LanguageMenuProps> = ({
   variant = 'flag-name',
   currentLang,
@@ -260,82 +338,21 @@ const LanguageMenu: React.FC<LanguageMenuProps> = ({
   };
 
   // Render menu items
-  const renderMenuItems = () => {
-    if (navigationMode === 'link') {
-      return languageList.map((lang, index) => (
-        <a
-          key={lang}
-          ref={(el) => {
-            menuItemsRef.current[index] = el;
-          }}
-          href={getLanguageUrl(lang)}
-          className={`language-option ${lang === currentLang ? 'active' : ''}`}
-          onClick={() => handleLanguageSelect(lang)}
-          role="menuitem"
-          tabIndex={index === activeIndex ? 0 : -1}
-          aria-current={lang === currentLang ? 'true' : undefined}
-          data-track="cta_click"
-          data-track-label="language-option"
-        >
-          <span className="flag">{getLanguageFlag(lang)}</span>
-          <span className="name">{getLanguageName(lang)}</span>
-          {lang === currentLang && (
-            <svg
-              className="checkmark"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          )}
-        </a>
-      ));
-    }
-
-    // Button mode
-    return languageList.map((lang, index) => (
-      <button
-        type="button"
+  const renderMenuItems = () =>
+    languageList.map((lang, index) => (
+      <LanguageOption
         key={lang}
-        ref={(el) => {
+        lang={lang}
+        asLink={navigationMode === 'link'}
+        href={getLanguageUrl(lang)}
+        isCurrent={lang === currentLang}
+        isActive={index === activeIndex}
+        itemRef={(el) => {
           menuItemsRef.current[index] = el;
         }}
-        className={`language-option ${lang === currentLang ? 'active' : ''}`}
-        onClick={() => handleLanguageSelect(lang)}
-        role="menuitem"
-        tabIndex={index === activeIndex ? 0 : -1}
-        aria-current={lang === currentLang ? 'true' : undefined}
-        data-track="cta_click"
-        data-track-label="language-option"
-      >
-        <span className="flag">{getLanguageFlag(lang)}</span>
-        <span className="name">{getLanguageName(lang)}</span>
-        {lang === currentLang && (
-          <svg
-            className="checkmark"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-      </button>
+        onSelect={handleLanguageSelect}
+      />
     ));
-  };
 
   return (
     <div className={`language-selector ${className ?? ''}`} ref={dropdownRef}>

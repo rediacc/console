@@ -215,6 +215,247 @@ function applySnapshot(video: HTMLVideoElement, pending: PlaybackSnapshot): void
   }
 }
 
+/** The locales this cast is published in, ordered by the site's own locale list. */
+function publishedLangs(sources: TutorialVideoPlayerProps['sources']): Language[] {
+  if (!sources) return [];
+  return SUPPORTED_LANGUAGES.filter((l) => Boolean(sources[l]));
+}
+
+/**
+ * Subscribe to the portrait breakpoint. `isNarrowRef` holds the PREVIOUS value, so the
+ * listener can tell a real crossing from a repeat without re-subscribing; `onChange` runs
+ * only on a crossing. Returns the unsubscribe.
+ */
+function bindNarrowQuery(
+  isNarrowRef: { current: boolean },
+  onChange: (next: boolean) => void
+): () => void {
+  const mq = window.matchMedia('(max-width: 768px)');
+  const apply = () => {
+    const next = mq.matches;
+    // ROTATING A PHONE USED TO RESTART THE VIDEO. `usePortrait` is part of the React `key`, so crossing this breakpoint tears the whole subtree down and builds a new player on the other cut -- and nothing captured the clock on the way through, unlike the language switch. Turning a phone sideways to watch something is the most natural gesture there is, and it sent the viewer back to 00:00.
+    if (next === isNarrowRef.current) return;
+    isNarrowRef.current = next;
+    onChange(next);
+  };
+  apply();
+  mq.addEventListener('change', apply);
+  return () => mq.removeEventListener('change', apply);
+}
+
+interface ActiveMedia {
+  src: string;
+  poster: string;
+  subtitles: string | undefined;
+  chapters: string | undefined;
+  words: string | undefined;
+  usePortrait: boolean;
+}
+
+/**
+ * The URLs in play. The locale's source set is the whole truth once present; the individual
+ * props stay the fallback so a page built before the attribute existed still plays.
+ */
+function resolveActiveMedia(
+  props: Pick<
+    TutorialVideoPlayerProps,
+    'src' | 'posterSrc' | 'subtitlesSrc' | 'chaptersSrc' | 'wordsSrc' | 'verticalSrc'
+  >,
+  active: TutorialSourceSet | undefined,
+  isNarrow: boolean
+): ActiveMedia {
+  const landscape = active?.mp4 ?? props.src;
+  const vertical = active?.vertical ?? props.verticalSrc;
+  const usePortrait = isNarrow && Boolean(vertical);
+  return {
+    src: usePortrait && vertical ? vertical : landscape,
+    poster: active?.poster ?? props.posterSrc,
+    subtitles: active?.vtt ?? props.subtitlesSrc,
+    chapters: active?.chapters ?? props.chaptersSrc,
+    words: active?.words ?? props.wordsSrc,
+    usePortrait,
+  };
+}
+
+/** Fetch the words sidecar once; the returned cleanup drops a late answer. */
+function fetchWords(url: string, onDoc: (doc: WordsDoc) => void): () => void {
+  let cancelled = false;
+  fetch(url)
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    .then((doc: WordsDoc) => {
+      if (!cancelled) onDoc(doc);
+    })
+    .catch(() => undefined);
+  return () => {
+    cancelled = true;
+  };
+}
+
+/** The site locale a media locale maps to, and the label shown for it in the picker. */
+function describeLanguage(activeLang: string): { base: Language; langLabel: string } {
+  const raw = activeLang.split('-')[0].toLowerCase();
+  const isSiteLocale = (SUPPORTED_LANGUAGES as readonly string[]).includes(raw);
+  const base = (isSiteLocale ? raw : 'en') as Language;
+  // getLanguageName, not a local table: the one this component used to carry had twelve entries and no `et`, so Estonian rendered as a raw "ET" next to twelve real names.
+  return { base, langLabel: isSiteLocale ? getLanguageName(base) : raw.toUpperCase() };
+}
+
+/**
+ * Per-mount wiring of the native element: the snapshot restore, the stored preferences,
+ * captions state and iOS fullscreen. Returns the teardown.
+ */
+function bindVideo(
+  video: HTMLVideoElement,
+  pending: PlaybackSnapshot | null,
+  caption: HTMLDivElement | null
+): () => void {
+  const restore = () => {
+    if (pending) applySnapshot(video, pending);
+  };
+  if (pending) {
+    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) restore();
+    else video.addEventListener('loadedmetadata', restore, { once: true });
+  }
+
+  const nativeFs = bindNativeFullscreen(video);
+  const unbindPrefs = bindPreferences(video, nativeFs.active);
+  const unbindCaption = caption ? bindCaptionVisibility(video, caption) : undefined;
+
+  return () => {
+    video.removeEventListener('loadedmetadata', restore);
+    nativeFs.off();
+    unbindPrefs();
+    unbindCaption?.();
+  };
+}
+
+interface CaptionPaint {
+  cueIdx: number;
+  wordIdx: number;
+  /** The cue currently painted into the DOM, if any. */
+  domCue: CueEntry | null;
+}
+
+/** Bring the overlay in line with the active cue and word, repainting only what changed. */
+function paintCaption(
+  caption: HTMLDivElement,
+  last: CaptionPaint,
+  cue: CueEntry | null,
+  cueIdx: number,
+  wordIdx: number
+): void {
+  if (cueIdx !== last.cueIdx) {
+    if (cue) {
+      renderCueIntoOverlay(caption, cue, wordIdx);
+      caption.classList.add('is-visible');
+    } else {
+      caption.innerHTML = '';
+      caption.classList.remove('is-visible');
+    }
+    last.domCue = cue;
+  } else if (cue && wordIdx !== last.wordIdx && last.domCue === cue) {
+    // Cue unchanged: only flip the is-active class on the relevant spans.
+    const spans = caption.querySelectorAll<HTMLSpanElement>('.tvp-caption-word');
+    spans.forEach((s, i) => {
+      s.classList.toggle('is-active', i === wordIdx);
+    });
+  }
+  last.cueIdx = cueIdx;
+  last.wordIdx = wordIdx;
+}
+
+/** Word-by-word caption overlay driven by RAF + media events. Returns the teardown. */
+function bindCaptionOverlay(
+  video: HTMLVideoElement,
+  caption: HTMLDivElement,
+  cues: CueEntry[]
+): () => void {
+  let raf = 0;
+  const last: CaptionPaint = { cueIdx: -2, wordIdx: -2, domCue: null };
+
+  const tick = () => {
+    const t = video.currentTime + HIGHLIGHT_LEAD_SEC;
+    const cueIdx = findActiveCueIndex(cues, t);
+    const cue = cueIdx >= 0 ? cues[cueIdx] : null;
+    const wordIdx = cue ? findActiveWordIndex(cue.words, t) : -1;
+    paintCaption(caption, last, cue, cueIdx, wordIdx);
+    raf = requestAnimationFrame(tick);
+  };
+
+  const start = () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  };
+  const stop = () => {
+    cancelAnimationFrame(raf);
+    raf = 0;
+  };
+  // A single tick after scrubbing so the overlay reflects the new position even while paused.
+  const stepOnce = () => {
+    cancelAnimationFrame(raf);
+    tick();
+    if (video.paused) cancelAnimationFrame(raf);
+  };
+
+  video.addEventListener('play', start);
+  video.addEventListener('playing', start);
+  video.addEventListener('pause', stop);
+  video.addEventListener('ended', stop);
+  video.addEventListener('seeked', stepOnce);
+  video.addEventListener('loadedmetadata', stepOnce);
+
+  // Initial paint.
+  if (video.paused) {
+    stepOnce();
+  } else {
+    start();
+  }
+
+  return () => {
+    cancelAnimationFrame(raf);
+    video.removeEventListener('play', start);
+    video.removeEventListener('playing', start);
+    video.removeEventListener('pause', stop);
+    video.removeEventListener('ended', stop);
+    video.removeEventListener('seeked', stepOnce);
+    video.removeEventListener('loadedmetadata', stepOnce);
+  };
+}
+
+const LanguagePicker: FC<{
+  base: Language;
+  languages: Language[];
+  onLanguageChange: (next: Language) => void;
+  ariaLabel: string;
+}> = ({ base, languages, onLanguageChange, ariaLabel }) => (
+  <div className="tvp-toolbar">
+    <svg
+      className="tvp-toolbar-icon"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3c-2.5 3-2.5 15 0 18M12 3c2.5 3 2.5 15 0 18" />
+      <path d="M3 12h18" />
+    </svg>
+    <LanguageMenu
+      variant="flag-name"
+      currentLang={base}
+      languages={languages}
+      position="top"
+      navigationMode="button"
+      onLanguageChange={onLanguageChange}
+      persistPreference={false}
+      ariaLabel={ariaLabel}
+    />
+  </div>
+);
+
 const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   src,
   posterSrc,
@@ -236,10 +477,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const { t } = useTranslation(lang as Language);
 
   // The picker offers what the manifest published for THIS cast, ordered by the site's own locale list rather than by JSON key order, and disappears below two entries.
-  const pickerLangs = useMemo<Language[]>(
-    () => (sources ? SUPPORTED_LANGUAGES.filter((l) => Boolean(sources[l])) : []),
-    [sources]
-  );
+  const pickerLangs = useMemo<Language[]>(() => publishedLangs(sources), [sources]);
 
   // PORTRAIT BELOW 768px, and chosen in JS rather than by rendering both cuts and hiding one in CSS: two <video> elements would mean two players, two sets of listeners and two caption overlays, only one of them reachable. `matchMedia` gives the same breakpoint with one element.
   /**
@@ -266,32 +504,27 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   const [isNarrow, setIsNarrow] = useState(false);
   /** Read inside the listener, which must know the PREVIOUS value without re-subscribing. */
   const isNarrowRef = useRef(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 768px)');
-    const apply = () => {
-      const next = mq.matches;
-      // ROTATING A PHONE USED TO RESTART THE VIDEO. `usePortrait` is part of the React `key`, so crossing this breakpoint tears the whole subtree down and builds a new player on the other cut -- and nothing captured the clock on the way through, unlike the language switch. Turning a phone sideways to watch something is the most natural gesture there is, and it sent the viewer back to 00:00.
-      if (next === isNarrowRef.current) return;
-      isNarrowRef.current = next;
-      capturePlayback();
-      setIsNarrow(next);
-    };
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, [capturePlayback]);
+  useEffect(
+    () =>
+      bindNarrowQuery(isNarrowRef, (next) => {
+        capturePlayback();
+        setIsNarrow(next);
+      }),
+    [capturePlayback]
+  );
 
   // The URLs in play. `sources` is the whole truth once present; the individual props stay the fallback so a page built before the attribute existed still plays.
-  const active = sources?.[activeLang];
-  const activeLandscape = active?.mp4 ?? src;
-  const activeVertical = active?.vertical ?? verticalSrc;
+  const media = resolveActiveMedia(
+    { src, posterSrc, subtitlesSrc, chaptersSrc, wordsSrc, verticalSrc },
+    sources?.[activeLang],
+    isNarrow
+  );
   // ONE named condition, used by the src, the remount key and the class. It was spelled out three times and each repeat is a branch the complexity limit counts.
-  const usePortrait = isNarrow && Boolean(activeVertical);
-  const activeSrc = usePortrait && activeVertical ? activeVertical : activeLandscape;
-  const activePoster = active?.poster ?? posterSrc;
-  const activeSubtitles = active?.vtt ?? subtitlesSrc;
-  const activeChapters = active?.chapters ?? chaptersSrc;
-  const activeWords = active?.words ?? wordsSrc;
+  const { src: activeSrc, usePortrait } = media;
+  const activePoster = media.poster;
+  const activeSubtitles = media.subtitles;
+  const activeChapters = media.chapters;
+  const activeWords = media.words;
 
   const handleLanguageChange = useCallback(
     (next: Language) => {
@@ -304,16 +537,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
   // Fetch words.json once per source change.
   useEffect(() => {
     if (!activeWords) return;
-    let cancelled = false;
-    fetch(activeWords)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((doc: WordsDoc) => {
-        if (!cancelled) setWords({ src: activeWords, doc });
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
+    return fetchWords(activeWords, (doc) => setWords({ src: activeWords, doc }));
   }, [activeWords]);
 
   // Null until the sidecar for the CURRENT video has landed.
@@ -329,25 +553,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     // `readyState` is 0 here because the src attribute changed in the same commit, so the restore waits for metadata of the NEW file.
     const pending = restoreRef.current;
     restoreRef.current = null;
-    const restore = () => {
-      if (pending) applySnapshot(video, pending);
-    };
-    if (pending) {
-      if (video.readyState >= HTMLMediaElement.HAVE_METADATA) restore();
-      else video.addEventListener('loadedmetadata', restore, { once: true });
-    }
-
-    const nativeFs = bindNativeFullscreen(video);
-    const unbindPrefs = bindPreferences(video, nativeFs.active);
-    const caption = captionRef.current;
-    const unbindCaption = caption ? bindCaptionVisibility(video, caption) : undefined;
-
-    return () => {
-      video.removeEventListener('loadedmetadata', restore);
-      nativeFs.off();
-      unbindPrefs();
-      unbindCaption?.();
-    };
+    return bindVideo(video, pending, captionRef.current);
     // `activeSrc`, `activeLang` and `usePortrait` are what the root's `key` is built from, so they are what puts a NEW <video> behind videoRef; the effect has to rerun exactly then. They are not read inside, which is why they are named here rather than inferred.
   }, [activeSrc, activeLang, usePortrait]);
 
@@ -357,118 +563,23 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
     const caption = captionRef.current;
     if (!video || !caption || !wordsDoc) return;
 
-    const cues = wordsDoc.cues;
-    let raf = 0;
-    let lastCueIdx = -2;
-    let lastWordIdx = -2;
-    let lastDomCue: CueEntry | null = null;
-
-    const tick = () => {
-      const t = video.currentTime + HIGHLIGHT_LEAD_SEC;
-      const cueIdx = findActiveCueIndex(cues, t);
-      const cue = cueIdx >= 0 ? cues[cueIdx] : null;
-      const wordIdx = cue ? findActiveWordIndex(cue.words, t) : -1;
-
-      if (cueIdx !== lastCueIdx) {
-        if (cue) {
-          renderCueIntoOverlay(caption, cue, wordIdx);
-          caption.classList.add('is-visible');
-          lastDomCue = cue;
-        } else {
-          caption.innerHTML = '';
-          caption.classList.remove('is-visible');
-          lastDomCue = null;
-        }
-      } else if (cue && wordIdx !== lastWordIdx && lastDomCue === cue) {
-        // Cue unchanged: only flip the is-active class on the relevant spans.
-        const spans = caption.querySelectorAll<HTMLSpanElement>('.tvp-caption-word');
-        spans.forEach((s, i) => {
-          s.classList.toggle('is-active', i === wordIdx);
-        });
-      }
-      lastCueIdx = cueIdx;
-      lastWordIdx = wordIdx;
-      raf = requestAnimationFrame(tick);
-    };
-
-    const start = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(tick);
-    };
-    const stop = () => {
-      cancelAnimationFrame(raf);
-      raf = 0;
-    };
-    // A single tick after scrubbing so the overlay reflects the new position even while paused.
-    const stepOnce = () => {
-      cancelAnimationFrame(raf);
-      tick();
-      if (video.paused) cancelAnimationFrame(raf);
-    };
-
-    video.addEventListener('play', start);
-    video.addEventListener('playing', start);
-    video.addEventListener('pause', stop);
-    video.addEventListener('ended', stop);
-    video.addEventListener('seeked', stepOnce);
-    video.addEventListener('loadedmetadata', stepOnce);
-
-    // Initial paint.
-    if (video.paused) {
-      stepOnce();
-    } else {
-      start();
-    }
-
-    return () => {
-      cancelAnimationFrame(raf);
-      video.removeEventListener('play', start);
-      video.removeEventListener('playing', start);
-      video.removeEventListener('pause', stop);
-      video.removeEventListener('ended', stop);
-      video.removeEventListener('seeked', stepOnce);
-      video.removeEventListener('loadedmetadata', stepOnce);
-    };
+    return bindCaptionOverlay(video, caption, wordsDoc.cues);
     // `activeSrc`, `activeLang` and `usePortrait` build the root's `key`, so a change puts a NEW <video> behind videoRef; the listeners must be rebound to it even when `wordsDoc` is unchanged (the same cue file serves both cuts). They are not read inside.
   }, [wordsDoc, activeSrc, activeLang, usePortrait]);
 
-  const raw = activeLang.split('-')[0].toLowerCase();
-  const isSiteLocale = (SUPPORTED_LANGUAGES as readonly string[]).includes(raw);
-  const base = (isSiteLocale ? raw : 'en') as Language;
-  // getLanguageName, not a local table: the one this component used to carry had twelve entries and no `et`, so Estonian rendered as a raw "ET" next to twelve real names.
-  const langLabel = isSiteLocale ? getLanguageName(base) : raw.toUpperCase();
+  const { base, langLabel } = describeLanguage(activeLang);
   const selectLabel = t('navigation.selectLanguage');
   // The skin's own labels follow the PAGE locale, like the rest of the chrome; Video.js ships a pack for every site locale and loads the one needed on demand.
   const pageBase = lang.split('-')[0].toLowerCase();
 
   const toolbar =
     pickerLangs.length > 1 ? (
-      <div className="tvp-toolbar">
-        <svg
-          className="tvp-toolbar-icon"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9" />
-          <path d="M12 3c-2.5 3-2.5 15 0 18M12 3c2.5 3 2.5 15 0 18" />
-          <path d="M3 12h18" />
-        </svg>
-        <LanguageMenu
-          variant="flag-name"
-          currentLang={base}
-          languages={pickerLangs}
-          position="top"
-          navigationMode="button"
-          onLanguageChange={handleLanguageChange}
-          persistPreference={false}
-          ariaLabel={selectLabel}
-        />
-      </div>
+      <LanguagePicker
+        base={base}
+        languages={pickerLangs}
+        onLanguageChange={handleLanguageChange}
+        ariaLabel={selectLabel}
+      />
     ) : null;
 
   return (

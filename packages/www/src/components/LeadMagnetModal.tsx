@@ -1,8 +1,8 @@
-import { Turnstile } from '@marsidev/react-turnstile';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { captchaMessage, useCaptchaGuard } from '../hooks/useCaptchaGuard';
 import { useLanguage } from '../hooks/useLanguage';
 import { useTranslation } from '../i18n/react';
+import CaptchaField from './CaptchaField';
 import Overlay from './Overlay';
 import '../styles/lead-magnet-modal.css';
 
@@ -30,6 +30,64 @@ const ciMode =
 const captchaEnabled = !!turnstileSiteKey && !ciMode;
 
 const AUTO_CLOSE_MS = 3500;
+
+interface LeadMagnetRequest {
+  email: string;
+  magnetName: string;
+  source: string;
+  lang: string;
+  turnstileToken: string | null;
+}
+
+function errorText(err: unknown, fallback: string): string {
+  return err instanceof Error ? err.message : fallback;
+}
+
+/** Route the pre-opened tab to the PDF, or open a fresh one when the pre-open was blocked. */
+function routePdfWindow(pdfWindow: Window | null, pdfUrl: string): void {
+  // This keeps the popup-blocker happy because the open() call was inside the user-activation window.
+  if (pdfWindow) {
+    pdfWindow.location.href = pdfUrl;
+  } else {
+    window.open(pdfUrl, '_blank', 'noopener,noreferrer');
+  }
+}
+
+/**
+ * Ask the account worker for the PDF link, send the pre-opened tab there and report the
+ * submission. Throws the server's message (or `fallbackError`); the caller closes the tab.
+ */
+async function deliverLeadMagnet(
+  request: LeadMagnetRequest,
+  pdfWindow: Window | null,
+  fallbackError: string
+): Promise<void> {
+  const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...request, turnstileToken: request.turnstileToken ?? undefined }),
+  });
+  const body = (await res.json().catch(() => null)) as {
+    message?: string;
+    pdfUrl?: string;
+    error?: string;
+  } | null;
+  if (!res.ok || !body?.pdfUrl) {
+    throw new Error(body?.error ?? fallbackError);
+  }
+
+  routePdfWindow(pdfWindow, body.pdfUrl);
+
+  const utm = window.__pa_get_utm?.() ?? {};
+  window.plausible?.('lead_magnet_submit', {
+    props: {
+      source: request.source,
+      magnetName: request.magnetName,
+      lang: request.lang,
+      ...utm,
+    },
+  });
+}
 
 const LeadMagnetModal: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -121,46 +179,17 @@ const LeadMagnetModal: React.FC = () => {
     const pdfWindow = window.open('about:blank', '_blank', 'noopener,noreferrer');
 
     try {
-      const res = await fetch(`${window.location.origin}/account/api/v1/newsletter/lead-magnet`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      await deliverLeadMagnet(
+        {
           email,
           magnetName: opts.magnetName,
           source: opts.source,
           lang: currentLang,
-          turnstileToken: captcha.token ?? undefined,
-        }),
-      });
-      const body = (await res.json().catch(() => null)) as {
-        message?: string;
-        pdfUrl?: string;
-        error?: string;
-      } | null;
-      if (!res.ok || !body?.pdfUrl) {
-        pdfWindow?.close();
-        throw new Error(body?.error ?? t('pages.solutionPages.leadMagnetModal.errorGeneric'));
-      }
-
-      // Route the pre-opened tab to the PDF; this keeps the popup-blocker
-      // happy because the open() call was inside the user-activation window.
-      if (pdfWindow) {
-        pdfWindow.location.href = body.pdfUrl;
-      } else {
-        window.open(body.pdfUrl, '_blank', 'noopener,noreferrer');
-      }
-
-      const utm =
-        (window as unknown as { __pa_get_utm?: () => Record<string, string> }).__pa_get_utm?.() ??
-        {};
-      window.plausible?.('lead_magnet_submit', {
-        props: {
-          source: opts.source,
-          magnetName: opts.magnetName,
-          lang: currentLang,
-          ...utm,
+          turnstileToken: captcha.token,
         },
-      });
+        pdfWindow,
+        t('pages.solutionPages.leadMagnetModal.errorGeneric')
+      );
 
       setState('success');
       captcha.reset();
@@ -168,9 +197,7 @@ const LeadMagnetModal: React.FC = () => {
     } catch (err) {
       pdfWindow?.close();
       setState('error');
-      setErrorMsg(
-        err instanceof Error ? err.message : t('pages.solutionPages.leadMagnetModal.errorGeneric')
-      );
+      setErrorMsg(errorText(err, t('pages.solutionPages.leadMagnetModal.errorGeneric')));
     }
   };
 
@@ -225,29 +252,14 @@ const LeadMagnetModal: React.FC = () => {
               disabled={state === 'loading'}
             />
           </div>
-          {captchaEnabled && (
-            <Turnstile
-              key={captcha.nonce}
-              siteKey={turnstileSiteKey}
-              options={{ action: 'newsletter_lead_magnet', size: 'flexible' }}
-              onSuccess={captcha.onSuccess}
-              onExpire={captcha.onExpire}
-              onError={captcha.onError}
-            />
-          )}
-          {captchaEnabled && captcha.failed && (
-            <p className="form-error" role="status">
-              {t('pages.solutionPages.leadMagnetModal.captchaUnavailable')}{' '}
-              <button
-                type="button"
-                className="form-inline-action"
-                onClick={captcha.retry}
-                data-track="captcha_retry"
-              >
-                {t('pages.solutionPages.leadMagnetModal.captchaRetry')}
-              </button>
-            </p>
-          )}
+          <CaptchaField
+            captcha={captcha}
+            enabled={captchaEnabled}
+            siteKey={turnstileSiteKey}
+            options={{ action: 'newsletter_lead_magnet', size: 'flexible' }}
+            unavailableText={t('pages.solutionPages.leadMagnetModal.captchaUnavailable')}
+            retryText={t('pages.solutionPages.leadMagnetModal.captchaRetry')}
+          />
           {state === 'error' && (
             <p className="form-error" role="alert">
               {errorMsg}

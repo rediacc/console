@@ -22,6 +22,37 @@ function isEligiblePath(pathname: string): boolean {
   return !EXCLUDED_PATHS.some((segment) => pathname.includes(segment));
 }
 
+function shouldSuppress(): boolean {
+  if (!isEligiblePath(window.location.pathname)) return true;
+  if (localStorage.getItem(SUBSCRIBED_KEY) === '1') return true;
+
+  const dismissedUntilRaw = localStorage.getItem(DISMISSED_UNTIL_KEY);
+  if (!dismissedUntilRaw) return false;
+
+  const dismissedUntil = Number(dismissedUntilRaw);
+  return Number.isFinite(dismissedUntil) && dismissedUntil > Date.now();
+}
+
+/** True when the tab was hidden at `hiddenAt` and for at least the threshold since. */
+function wasHiddenLongEnough(hiddenAt: number | null): boolean {
+  if (!hiddenAt) return false;
+  return Date.now() - hiddenAt >= HIDE_THRESHOLD_MS;
+}
+
+function shouldShowPopup(shownOnce: boolean, open: boolean, hiddenAt: number | null): boolean {
+  if (shownOnce || open || shouldSuppress()) return false;
+  return wasHiddenLongEnough(hiddenAt) && !hasAnyOpenDialog();
+}
+
+function trackPopup(event: string): void {
+  window.plausible?.(event, {
+    props: {
+      source: 'tab-return-popup',
+      path: window.location.pathname,
+    },
+  });
+}
+
 interface NewsletterReturnPopupProps {
   /** Locale from BaseLayout; authoritative on the server. See the note above. */
   lang?: Language;
@@ -44,17 +75,6 @@ const NewsletterReturnPopup: React.FC<NewsletterReturnPopupProps> = ({ lang }) =
   const currentLang = lang ?? detectedLang;
   const { t } = useTranslation(currentLang);
 
-  const shouldSuppress = () => {
-    if (!isEligiblePath(window.location.pathname)) return true;
-    if (localStorage.getItem(SUBSCRIBED_KEY) === '1') return true;
-
-    const dismissedUntilRaw = localStorage.getItem(DISMISSED_UNTIL_KEY);
-    if (!dismissedUntilRaw) return false;
-
-    const dismissedUntil = Number(dismissedUntilRaw);
-    return Number.isFinite(dismissedUntil) && dismissedUntil > Date.now();
-  };
-
   useEffect(() => {
     if (currentLang !== 'en') return;
 
@@ -64,23 +84,11 @@ const NewsletterReturnPopup: React.FC<NewsletterReturnPopupProps> = ({ lang }) =
         return;
       }
 
-      if (shownOnceRef.current || open || shouldSuppress()) return;
-
-      const hiddenAt = hiddenAtRef.current;
-      if (!hiddenAt) return;
-
-      const hiddenFor = Date.now() - hiddenAt;
-      if (hiddenFor < HIDE_THRESHOLD_MS) return;
-      if (hasAnyOpenDialog()) return;
+      if (!shouldShowPopup(shownOnceRef.current, open, hiddenAtRef.current)) return;
 
       shownOnceRef.current = true;
       setOpen(true);
-      window.plausible?.('newsletter_return_popup_shown', {
-        props: {
-          source: 'tab-return-popup',
-          path: window.location.pathname,
-        },
-      });
+      trackPopup('newsletter_return_popup_shown');
     };
 
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -96,14 +104,7 @@ const NewsletterReturnPopup: React.FC<NewsletterReturnPopupProps> = ({ lang }) =
   const dismiss = (fromCloseButton: boolean) => {
     localStorage.setItem(DISMISSED_UNTIL_KEY, String(Date.now() + DISMISS_COOLDOWN_MS));
     setOpen(false);
-    if (fromCloseButton) {
-      window.plausible?.('newsletter_return_popup_dismissed', {
-        props: {
-          source: 'tab-return-popup',
-          path: window.location.pathname,
-        },
-      });
-    }
+    if (fromCloseButton) trackPopup('newsletter_return_popup_dismissed');
   };
 
   if (currentLang !== 'en') return null;
@@ -129,12 +130,7 @@ const NewsletterReturnPopup: React.FC<NewsletterReturnPopupProps> = ({ lang }) =
           onSuccess={() => {
             localStorage.setItem(SUBSCRIBED_KEY, '1');
             setOpen(false);
-            window.plausible?.('newsletter_return_popup_submitted', {
-              props: {
-                source: 'tab-return-popup',
-                path: window.location.pathname,
-              },
-            });
+            trackPopup('newsletter_return_popup_submitted');
           }}
         />
         <p className="newsletter-return-popup-note">{t('newsletter.returnPopup.note')}</p>

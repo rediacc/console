@@ -103,50 +103,47 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ id, label, code, copyText, copied
   );
 };
 
-/** Return code blocks for a given method, optionally filtered by platform */
-function getMethodBlocks(
-  method: InstallMethod,
-  filter: FilterTab
-): { id: string; label: string; code: string }[] {
-  switch (method) {
-    case 'quick': {
-      const blocks: { id: string; label: string; code: string }[] = [];
-      if (filter === 'all' || filter === 'linux' || filter === 'macos') {
-        blocks.push({ id: 'quick-unix', label: 'bash', code: QUICK_INSTALL_UNIX });
-      }
-      if (filter === 'all' || filter === 'windows') {
-        blocks.push({ id: 'quick-win', label: 'powershell', code: QUICK_INSTALL_WIN });
-      }
-      return blocks;
-    }
-    case 'binary': {
-      if (filter === 'all') {
-        // Show all platforms combined like the original static page
-        const combined = [
-          BINARY_COMMANDS.linux,
-          BINARY_COMMANDS.macos,
-          BINARY_COMMANDS.windows,
-        ].join('\n\n');
-        return [{ id: 'binary', label: 'bash', code: combined }];
-      }
-      const lang = filter === 'windows' ? 'powershell' : 'bash';
-      return [{ id: `binary-${filter}`, label: lang, code: BINARY_COMMANDS[filter] }];
-    }
-    case 'docker':
-      return [{ id: 'docker', label: 'bash', code: DOCKER_COMMANDS }];
-    case 'apt':
-      return [{ id: 'apt', label: 'bash', code: APT_COMMANDS }];
-    case 'dnf':
-      return [{ id: 'dnf', label: 'bash', code: DNF_COMMANDS }];
-    case 'apk':
-      return [{ id: 'apk', label: 'sh', code: APK_COMMANDS }];
-    case 'pacman':
-      return [{ id: 'pacman', label: 'bash', code: PACMAN_COMMANDS }];
-    case 'homebrew':
-      return [{ id: 'homebrew', label: 'bash', code: HOMEBREW_COMMAND }];
-    default:
-      return [];
+type MethodBlock = { id: string; label: string; code: string };
+
+function getQuickBlocks(filter: FilterTab): MethodBlock[] {
+  const blocks: MethodBlock[] = [];
+  if (filter === 'all' || filter === 'linux' || filter === 'macos') {
+    blocks.push({ id: 'quick-unix', label: 'bash', code: QUICK_INSTALL_UNIX });
   }
+  if (filter === 'all' || filter === 'windows') {
+    blocks.push({ id: 'quick-win', label: 'powershell', code: QUICK_INSTALL_WIN });
+  }
+  return blocks;
+}
+
+function getBinaryBlocks(filter: FilterTab): MethodBlock[] {
+  if (filter === 'all') {
+    // Show all platforms combined like the original static page
+    const combined = [BINARY_COMMANDS.linux, BINARY_COMMANDS.macos, BINARY_COMMANDS.windows].join(
+      '\n\n'
+    );
+    return [{ id: 'binary', label: 'bash', code: combined }];
+  }
+  const lang = filter === 'windows' ? 'powershell' : 'bash';
+  return [{ id: `binary-${filter}`, label: lang, code: BINARY_COMMANDS[filter] }];
+}
+
+/** Single-block methods: the shell label and the commands, whatever the platform filter. */
+const FIXED_METHOD_BLOCKS: Partial<Record<InstallMethod, { label: string; code: string }>> = {
+  docker: { label: 'bash', code: DOCKER_COMMANDS },
+  apt: { label: 'bash', code: APT_COMMANDS },
+  dnf: { label: 'bash', code: DNF_COMMANDS },
+  apk: { label: 'sh', code: APK_COMMANDS },
+  pacman: { label: 'bash', code: PACMAN_COMMANDS },
+  homebrew: { label: 'bash', code: HOMEBREW_COMMAND },
+};
+
+/** Return code blocks for a given method, optionally filtered by platform */
+function getMethodBlocks(method: InstallMethod, filter: FilterTab): MethodBlock[] {
+  if (method === 'quick') return getQuickBlocks(filter);
+  if (method === 'binary') return getBinaryBlocks(filter);
+  const fixed = FIXED_METHOD_BLOCKS[method];
+  return fixed ? [{ id: method, ...fixed }] : [];
 }
 
 const InstallMethods: React.FC<InstallMethodsProps> = ({ lang }) => {

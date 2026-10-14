@@ -10,6 +10,156 @@ import SearchModal from './SearchModal';
 import Sidebar from './Sidebar';
 import type { Language } from '../i18n/types';
 
+type Translate = ReturnType<typeof useTranslation>['t'];
+type Crumb = { href: string; label: string };
+
+const SEGMENT_KEYS: Record<string, string> = {
+  pricing: 'navigation.pricing',
+  blog: 'navigation.blog',
+  docs: 'navigation.docs',
+  solutions: 'navigation.solutions',
+  contact: 'navigation.contact',
+  install: 'navigation.install',
+  downloads: 'navigation.downloads',
+  partners: 'navigation.partners',
+  account: 'navigation.account',
+  'for-devops': 'navigation.forDevops',
+  'for-ctos': 'navigation.forCtos',
+  'for-ceos': 'navigation.forCeos',
+  'for-ai-agents': 'navigation.forAiAgents',
+  'disaster-recovery': 'navigation.disasterRecovery',
+  'roi-calculator': 'navigation.roiCalculator',
+};
+
+const deslug = (s: string) => {
+  const words = s.replaceAll('-', ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
+function segmentLabel(
+  segment: string,
+  isLast: boolean,
+  t: Translate,
+  documentTitle: string
+): string {
+  const key = SEGMENT_KEYS[segment];
+  if (key) return t(key);
+  if (isLast && documentTitle.includes('|')) return documentTitle.split('|')[0].trim();
+  return deslug(segment);
+}
+
+/** Breadcrumb trail for a pathname: `parts[0]` is the locale, every later part is one crumb. */
+function buildTrail(
+  pathname: string,
+  fallbackLang: string,
+  t: Translate,
+  documentTitle: string
+): Crumb[] {
+  const parts = pathname.split('/').filter(Boolean);
+  const segments = parts.slice(1);
+  let href = `/${parts[0] ?? fallbackLang}`;
+  return segments.map((segment, i) => {
+    href += `/${segment}`;
+    return { href, label: segmentLabel(segment, i === segments.length - 1, t, documentTitle) };
+  });
+}
+
+const Breadcrumb: React.FC<{ trail: Crumb[]; ariaLabel: string }> = ({ trail, ariaLabel }) => {
+  if (trail.length === 0) return null;
+  return (
+    <ol className="nav-breadcrumb" aria-label={ariaLabel}>
+      {trail.map((crumb, i) => (
+        <li key={crumb.href} className="nav-breadcrumb-item">
+          {i < trail.length - 1 ? (
+            <>
+              <a href={crumb.href} data-track="nav_click" data-track-label="breadcrumb">
+                {crumb.label}
+              </a>
+              <span className="nav-breadcrumb-sep" aria-hidden="true">
+                /
+              </span>
+            </>
+          ) : (
+            <span aria-current="page">{crumb.label}</span>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+};
+
+interface ScrollState {
+  frame: number;
+  measured: number;
+  lastY: number;
+  returned: boolean; // full nav re-shown by an upward scroll while deep
+}
+
+/** Remeasure the wordmark's natural width at scrollY 0; only frames that land there call it. */
+function remeasureWordmark(el: HTMLElement | null, root: HTMLElement, state: ScrollState) {
+  if (el === null) return;
+  // Measure with the clamp OFF. `scrollWidth` on the clamped box returns max(clientWidth, content), so it only ever corrects the stored width UPWARD: at 390px the wordmark steps down a font size to ~96px of text and the reading stayed pinned at the 120px fallback, padding a nav that already overflows that viewport. Clearing the inline size first costs one synchronous layout,
+  // and only on frames where the width is not animating.
+  el.style.inlineSize = 'auto';
+  const width = Math.ceil(el.getBoundingClientRect().width);
+  el.style.inlineSize = '';
+  if (width > 0 && width !== state.measured) {
+    state.measured = width;
+    root.style.setProperty('--nav-wordmark-w', `${width}px`);
+  }
+}
+
+/** One scroll frame: write the fade variables, remeasure at the top, collapse or restore the bar. */
+function updateNavScroll(state: ScrollState, wordmark: HTMLElement | null, onCollapse: () => void) {
+  const root = document.documentElement;
+  const body = document.body;
+  state.frame = 0;
+  const rawY = window.scrollY;
+  const dy = rawY - state.lastY;
+  state.lastY = rawY;
+  if (dy < -2) state.returned = true;
+  else if (dy > 2) state.returned = false;
+  const y = Math.min(Math.max(rawY, 0), 80);
+  // Position-linked fade over the first 80px; a scroll-up return pins it
+  // fully visible until the next downward motion.
+  const fade = state.returned ? 1 : 1 - y / 80;
+  // Translate range is half the scroll range so items progressively clip against the nav top edge instead of jumping out of view in the first few pixels (item center is ~16px from the nav's top edge).
+  root.style.setProperty('--nav-scroll-y', `${-(1 - fade) * 40}px`);
+  root.style.setProperty('--nav-scroll-fade', `${fade}`);
+  if (rawY === 0) remeasureWordmark(wordmark, root, state);
+  root.style.setProperty('--nav-wordmark-fade', `${fade}`);
+  if (!state.returned && y >= 80) {
+    body.setAttribute('data-nav-collapsed', 'true');
+    onCollapse();
+  } else {
+    body.removeAttribute('data-nav-collapsed');
+  }
+}
+
+/** Installs the single scroll listener (and its first frame); returns the teardown. */
+function startNavScroll(
+  wordmarkRef: React.RefObject<HTMLElement | null>,
+  onCollapse: () => void
+): () => void {
+  const root = document.documentElement;
+  const body = document.body;
+  const state: ScrollState = { frame: 0, measured: 0, lastY: window.scrollY, returned: false };
+  const update = () => updateNavScroll(state, wordmarkRef.current, onCollapse);
+  const onScroll = () => {
+    if (state.frame) return;
+    state.frame = requestAnimationFrame(update);
+  };
+  update();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  return () => {
+    window.removeEventListener('scroll', onScroll);
+    if (state.frame) cancelAnimationFrame(state.frame);
+    body.removeAttribute('data-nav-collapsed');
+    root.style.removeProperty('--nav-wordmark-fade');
+    root.style.removeProperty('--nav-wordmark-w');
+  };
+}
+
 interface NavigationProps {
   /** Locale from BaseLayout; authoritative on the server. See the note above. */
   lang?: Language;
@@ -49,67 +199,15 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   // the same handler and the same rAF for the same reason.
   //
   // The wordmark's natural width is REMEASURED at scrollY 0 rather than baked into the stylesheet: `.nav-wordmark` steps down a font size below 48rem, so a literal would be wrong on phones, and `scrollWidth` reports the content width even while the box is clamped, which makes the reading self-correcting instead of needing a resize listener.
-  useEffect(() => {
-    const root = document.documentElement;
-    const body = document.body;
-    let frame = 0;
-    let measured = 0;
-    let lastY = window.scrollY;
-    let returned = false; // full nav re-shown by an upward scroll while deep
-    // Lifted out of `update` to keep that function under the cognitive-complexity limit. It is a self-contained branch, so extracting it changes nothing about when it runs -- still only on frames that land at scrollY 0.
-    const remeasureWordmark = () => {
-      const el = wordmarkRef.current;
-      if (el === null) return;
-      // Measure with the clamp OFF. `scrollWidth` on the clamped box returns max(clientWidth, content), so it only ever corrects the stored width UPWARD: at 390px the wordmark steps down a font size to ~96px of text and the reading stayed pinned at the 120px fallback, padding a nav that already overflows that viewport. Clearing the inline size first costs one synchronous layout,
-      // and only on frames where the width is not animating.
-      el.style.inlineSize = 'auto';
-      const width = Math.ceil(el.getBoundingClientRect().width);
-      el.style.inlineSize = '';
-      if (width > 0 && width !== measured) {
-        measured = width;
-        root.style.setProperty('--nav-wordmark-w', `${width}px`);
-      }
-    };
-    const update = () => {
-      frame = 0;
-      const rawY = window.scrollY;
-      const dy = rawY - lastY;
-      lastY = rawY;
-      if (dy < -2) returned = true;
-      else if (dy > 2) returned = false;
-      const y = Math.min(Math.max(rawY, 0), 80);
-      // Position-linked fade over the first 80px; a scroll-up return pins it
-      // fully visible until the next downward motion.
-      const fade = returned ? 1 : 1 - y / 80;
-      // Translate range is half the scroll range so items progressively clip against the nav top edge instead of jumping out of view in the first few pixels (item center is ~16px from the nav's top edge).
-      root.style.setProperty('--nav-scroll-y', `${-(1 - fade) * 40}px`);
-      root.style.setProperty('--nav-scroll-fade', `${fade}`);
-      if (rawY === 0) remeasureWordmark();
-      root.style.setProperty('--nav-wordmark-fade', `${fade}`);
-      const collapsed = !returned && y >= 80;
-      if (collapsed) {
-        body.setAttribute('data-nav-collapsed', 'true');
+  useEffect(
+    () =>
+      startNavScroll(wordmarkRef, () => {
         setIsPersonaMenuOpen(false);
         setIsCtaMenuOpen(false);
         setIsLearnMenuOpen(false);
-      } else {
-        body.removeAttribute('data-nav-collapsed');
-      }
-    };
-    const onScroll = () => {
-      if (frame) return;
-      frame = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (frame) cancelAnimationFrame(frame);
-      body.removeAttribute('data-nav-collapsed');
-      root.style.removeProperty('--nav-wordmark-fade');
-      root.style.removeProperty('--nav-wordmark-w');
-    };
-  }, []);
+      }),
+    []
+  );
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -159,45 +257,8 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
   // trail is localized and no new i18n keys exist for the gates to police);
   // the last segment falls back to the document title's own name (the part before the "| Rediacc"-style suffix), which is already localized per page, and any remaining segment is de-slugged. The homepage renders no trail: the mark is the breadcrumb there.
   useEffect(() => {
-    const SEGMENT_KEYS: Record<string, string> = {
-      pricing: 'navigation.pricing',
-      blog: 'navigation.blog',
-      docs: 'navigation.docs',
-      solutions: 'navigation.solutions',
-      contact: 'navigation.contact',
-      install: 'navigation.install',
-      downloads: 'navigation.downloads',
-      partners: 'navigation.partners',
-      account: 'navigation.account',
-      'for-devops': 'navigation.forDevops',
-      'for-ctos': 'navigation.forCtos',
-      'for-ceos': 'navigation.forCeos',
-      'for-ai-agents': 'navigation.forAiAgents',
-      'disaster-recovery': 'navigation.disasterRecovery',
-      'roi-calculator': 'navigation.roiCalculator',
-    };
-    const deslug = (s: string) => {
-      const words = s.replaceAll('-', ' ');
-      return words.charAt(0).toUpperCase() + words.slice(1);
-    };
     const compute = () => {
-      const parts = window.location.pathname.split('/').filter(Boolean);
-      const segments = parts.slice(1); // parts[0] is the locale
-      let href = `/${parts[0] ?? currentLang}`;
-      const next = segments.map((segment, i) => {
-        href += `/${segment}`;
-        const key = SEGMENT_KEYS[segment];
-        let label: string;
-        if (key) {
-          label = t(key);
-        } else if (i === segments.length - 1 && document.title.includes('|')) {
-          label = document.title.split('|')[0].trim();
-        } else {
-          label = deslug(segment);
-        }
-        return { href, label };
-      });
-      setTrail(next);
+      setTrail(buildTrail(window.location.pathname, currentLang, t, document.title));
     };
     compute();
     document.addEventListener('astro:after-swap', compute);
@@ -281,26 +342,7 @@ const Navigation: React.FC<NavigationProps> = ({ lang, origin }) => {
           {/* Condensed-bar breadcrumb; visible only under body[data-nav-collapsed].
               An <ol>, not a nested <nav>: the whole bar is already a navigation
               landmark, and the aria-label names the list. */}
-          {trail.length > 0 && (
-            <ol className="nav-breadcrumb" aria-label={t('common.aria.breadcrumbNavigation')}>
-              {trail.map((crumb, i) => (
-                <li key={crumb.href} className="nav-breadcrumb-item">
-                  {i < trail.length - 1 ? (
-                    <>
-                      <a href={crumb.href} data-track="nav_click" data-track-label="breadcrumb">
-                        {crumb.label}
-                      </a>
-                      <span className="nav-breadcrumb-sep" aria-hidden="true">
-                        /
-                      </span>
-                    </>
-                  ) : (
-                    <span aria-current="page">{crumb.label}</span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          )}
+          <Breadcrumb trail={trail} ariaLabel={t('common.aria.breadcrumbNavigation')} />
           <div className="nav-links nav-translate">
             <a
               href={`/${currentLang}#solutions`}
