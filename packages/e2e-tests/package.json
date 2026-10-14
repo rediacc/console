@@ -5,8 +5,8 @@
   "type": "commonjs",
   "scripts": {
     "clean:reports": "rimraf reports test-results",
-    "lint": "eslint src tests --ext .ts",
-    "lint:fix": "eslint src tests --ext .ts --fix",
+    "lint": "biome lint src tests",
+    "lint:fix": "biome lint --write src tests",
     "test": "playwright test",
     "test:01-checks": "playwright test tests/01-system-checks.test.ts",
     "test:02-machine": "playwright test tests/02-machine-setup.test.ts",

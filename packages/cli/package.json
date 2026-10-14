@@ -12,7 +12,7 @@
     "export:command-tree": "tsx scripts/export-command-tree.ts",
     "generate:cli-contract": "tsx scripts/generate-cli-contract.ts",
     "generate:skill-reference": "tsx scripts/generate-skill-reference.ts --write",
-    "lint": "eslint src --ext .ts",
+    "lint": "biome lint src",
     "prepublishOnly": "npm run build && npm run build:bundle",
     "start": "node dist/index.js",
     "test:unit": "vitest run",

@@ -115,7 +115,7 @@ process.stdout.write(JSON.stringify({
     www5: refusal('quality-www-build', 5),
     submodule2: refusal('quality-submodule-branches', 2),
     nowhere2: refusal('quality-nowhere', 2),
-    code2: refusal('quality-code', 2),
+    code1: refusal('quality-code', 1),
     go2: refusal('quality-go', 2),
     go8: refusal('quality-go', 8),
     static0: JSON.stringify(shardPlan(lock, real, { 'quality-static': 0 })),
@@ -126,6 +126,7 @@ process.stdout.write(JSON.stringify({
     JSON.stringify(plan('quality-security', 4)) === JSON.stringify(plan('quality-security', 4)),
   heavyFloors: { 'quality-code': heavyFloor('quality-code') },
   lintStepIds: stepIds('quality-code', 'Lint'),
+  sharedStepIds: stepIds('quality-i18n', 'i18n cross-locale'),
   // Map does not survive JSON.stringify (it serialises to `{}`), so pull out plain
   // values before this whole object is stringified once at the end.
   d2: (() => {
@@ -583,7 +584,7 @@ def test_more_heavy_gates_than_shards_refuses(gate):
     if floor < 2:
         gate.log_fail("quality-code's heavy-unit floor measured %d, expected >= 2" % floor)
     gate.assertions += 1
-    message = probe(gate)["refusals"]["code2"]
+    message = probe(gate)["refusals"]["code1"]
     gate.assert_contains(
         message,
         "Ask for at least %d shards" % floor,
@@ -612,14 +613,21 @@ def test_step_merge_lowered_the_floor_enough_to_shard_code_at_four(gate):
 
 
 def test_a_step_shared_group_never_splits(gate):
-    """`check:lint`, `check:lint:cli`, `check:lint:web`, `check:lint:tooling` and `check:lint:account` all carry `ci.step: 'Lint'` -- one `run:` of four npm scripts chained with `&&` in one shell. A plan that put two of them on different legs would be unrealisable: gate-bind can attach exactly one conjunct to that one step."""
+    """`check:ci-i18n-cross-locale` and its three siblings all carry `ci.step: 'i18n cross-locale'` -- one emitted step. A plan that put two of them on different legs would be unrealisable: gate-bind can attach exactly one conjunct to that one step. (The five `check:lint*` ids this test used to drive collapsed into one `check:lint` when biome replaced eslint, which left no shared step in `quality-code`.)"""
     gate.log_test("ids sharing one emitted step land in the same shard")
-    plan = probe(gate)["plans"]["code8"]
-    homes = {_home_of(plan, gid) for gid in probe(gate)["lintStepIds"]}
-    if len(homes) != 1:
-        gate.log_fail("the Lint step's ids span shards %s; one `run:` cannot honour that" % homes)
+    plan = probe(gate)["plans"]["i18n4"]
+    ids = probe(gate)["sharedStepIds"]
+    # The control: a group of one id cannot split, so a lock change that dissolves the group would turn this test into a pass over nothing.
+    if len(ids) < 2:
+        gate.log_fail(
+            "the 'i18n cross-locale' step carries %d id(s); the test needs a shared step" % len(ids)
+        )
     gate.assertions += 1
-    gate.log_pass("every id riding the Lint step lands in the same shard")
+    homes = {_home_of(plan, gid) for gid in ids}
+    if len(homes) != 1:
+        gate.log_fail("the shared step's ids span shards %s; one `run:` cannot honour that" % homes)
+    gate.assertions += 1
+    gate.log_pass("every id riding the 'i18n cross-locale' step lands in the same shard")
 
 
 def test_two_heavies_in_one_mutex_group_shard_because_they_never_coexist(gate):

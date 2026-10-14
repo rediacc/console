@@ -1,46 +1,19 @@
 #!/usr/bin/env python3
-"""No tracked source file may be invisible to every linter, and biome's allowlist must actually be in force.
+"""No tracked source file may be invisible to the linter, and biome's allowlist must actually be in force.
 
-WHY THIS EXISTS. Two failures on 2026-08-06, and neither was a rule being wrong about code -- both were code no rule ever looked at.
+WHY THIS EXISTS. Biome is the only linter. Its scope is biome.json's `files.includes` allowlist, and the lint commands in package.json choose how much of it they hand over. Four failures this gate keeps shut:
 
-  1. SCOPE INVISIBILITY. `check:lint` ran eslint over `packages scripts
-     private/account`, and four ignore entries removed most of what remained.
-     93 files were linted by nothing: eslint-rules/ (42 -- the repo's own custom
-     lint rules), .ci/ (21, including the live CI scope engine), and
-     packages/*/scripts/ (18, which implement TEN check:ci-* gates), plus
-     workers/ and .github/actions/ which were simply never passed as arguments.
-     Every gate was green the whole time, because a file outside scope cannot
-     produce a finding.
+  1. SCOPE INVISIBILITY. A file the allowlist does not name is linted by nothing, and every gate stays green because a file outside scope cannot produce a finding. On 2026-08-06 that hid 93 files (the repo's own lint rules, the live CI scope engine, ten gate implementations).
 
-  2. A SILENTLY DISCARDED ALLOWLIST. A single `//` comment anywhere in
-     biome.json's `files` object makes biome throw away the entire `includes`
-     list -- no parse error, no warning. Measured: `biome lint private/account/`
-     goes from 631 files to 1428 and reports 3657 errors. The failure LOOKS like
-     a lint explosion in unrelated code, which is why it cost two attempts to
-     attribute.
+  2. A SILENTLY DISCARDED ALLOWLIST. A single `//` comment anywhere in biome.json's `files` object makes biome throw away the entire `includes` list -- no parse error, no warning. Measured: `biome lint private/account/` goes from 631 files to 1428 and reports 3657 errors. The failure LOOKS like a lint explosion in unrelated code.
 
-  3. A SCOPE THAT CAN SILENTLY SHRINK. Fixed on 2026-09-06, when the roots were
-     widened to the seven below. Failures 1 and 2 were both cured by PASSING
-     MORE ROOTS, and nothing then held that widening in place: the roots are
-     positional arguments in package.json, so deleting one is a one-word edit
-     that removes files from every linter's view and leaves every gate green,
-     including this one. The original scan could not see it, because it feeds
-     eslint FILE PATHS directly and so only ever measured config-level
-     `ignores` -- the root list was the one part of lint scope it did not read.
+  3. A COMMAND THAT NARROWS THE CONFIG. `lint`, `fix:lint` and `check:lint` must reach the same files, and the same files the allowlist declares: a root deleted from one of them removes files from the linter's view and leaves every gate green. The roots are compared by BIOME'S OWN COUNT, not by reimplementing its glob semantics (the pattern check_format_scope.py uses for the formatter).
 
-  4. A SHARD THAT DROPS A ROOT. `check:lint` is one eslint process over every
-     root, which measured 171s and pinned one worker for the whole of it, so it
-     is split into four scripts run in parallel. That split is a NEW way to
-     commit failure 3: a shard is a place a root can be deleted from, and a gate
-     that still believed the single old root list would report full coverage
-     while eslint stopped looking at a package. So the root list is followed
-     THROUGH the `npm run` links rather than read off one script -- see
-     script_roots(). The shard names are deliberately not written down here; a
-     fifth shard registers itself simply by being linked.
+  4. A PROBE THAT CANNOT FAIL. "Everything is covered" is satisfied by an oracle that answers yes to everything, so the allowlist is probed in both directions first (an anchor that must be in, a canary that must be out).
 
-Both are the same shape as the dead i18n rules: the instrument reports success because it never examined anything. check_lint_rule_liveness.py proves an ENABLED RULE can fire; this proves the FILES reach a rule at all.
+THE ORACLE IS BIOME'S "Checked N files". Handed N candidate paths, biome reports N when it reaches all of them and fewer when its file selection drops some; the dropped ones are then named by bisection. A file excluded on purpose is listed in BIOME_EXEMPT with the reason it is not source.
 
-WHAT IT DOES NOT DO. It does not judge whether a file's rules are the right rules -- only that some linter sees it. A file linted by a config that happens to enable nothing would pass here and be caught by the liveness gate instead. The two are complements and neither subsumes the other.
+WHAT IT DOES NOT DO. It does not judge whether a file's rules are the right rules -- only that biome sees it. check_lint_rule_liveness.py proves a rule can fire; the two are complements and neither subsumes the other.
 
 ---- gate ----
 step: Every source file reaches a linter
@@ -56,78 +29,45 @@ import pathlib
 import re
 import subprocess
 import sys
-import typing
 
-# Extensions a linter is expected to cover, and the tool responsible.
+# Extensions a linter is expected to cover.
 JS_EXT = (".js", ".jsx", ".cjs", ".mjs", ".ts", ".tsx")
 
-# Paths eslint legitimately does not lint, each with the reason it is exempt.
+# Paths biome legitimately does not lint, each with the reason it is exempt.
 # An entry here is a claim that the file is not source, and it is reviewable.
-ESLINT_EXEMPT = {
+BIOME_EXEMPT = {
     "packages/cli/templates/": "shipped template files, embedded into the CLI binary rather than executed here",
     "packages/www/public/": "static site assets, including large generated search-index bundles",
     "packages/json/": "data templates for the JSON package, not program source",
     "private/": "submodules and sibling repos with their own CI",
     ".ci/cache/": "generated CI state, rewritten by CI on every run",
-    "eslint.config/": (
-        "the flat config itself, split out of eslint.config.js into six modules. "
-        "Same exemption as that file for the same two reasons, and one more that "
-        "is specific to the directory: no lint root reaches it, and no tsconfig "
-        "covers it, so the repo-wide type-aware block cannot parse these files at "
-        "all -- `npx eslint eslint.config/` answers with six 'was not found by the "
-        "project service' fatals and nothing else. Bringing them in means widening "
-        "a lint root AND a tsconfig, which is a scoped decision of its own"
-    ),
 }
 
-# Suffix-matched exemptions, same contract: each is a claim that the file is not executable source, and each is reviewable.
-ESLINT_EXEMPT_SUFFIX = {
+# Suffix-matched exemptions, same contract: each is a claim that the file is not hand-written source.
+BIOME_EXEMPT_SUFFIX = {
     ".d.ts": (
         "type declarations only -- no executable code for a rule to have an "
         "opinion about; tsc is the checker that matters for these"
     ),
+    ".generated.ts": "emitted by a generator and rewritten on every run; the generator is the source",
+    "/renet-contract/data/functions.schema.ts": "generated from the renet contract",
+    "/renet-contract/data/vault.schema.ts": "generated from the renet contract",
 }
 
-# Whole-file exemptions, for files that ARE source but that a GLOBAL ignore pattern blocks. A `files:` block cannot override a global `ignores` entry in flat config, so bringing these in means editing the ignore itself.
-ESLINT_EXEMPT_EXACT = {
-    "eslint.config.js": (
-        "blocked by the global '*.config.js' ignore, which also covers the vite, "
-        "vitest and astro configs -- un-ignoring it is a scoped decision of its "
-        "own. It additionally contains a no-restricted-syntax selector that "
-        "matches ITSELF (the string literal that defines the ban), so linting it "
-        "needs that one rule off for that one file"
-    ),
-}
-
-# The npm scripts that carry eslint's ROOT LIST. All three must agree about the
-# FILES they reach: widening check:lint while `lint` and `fix:lint` keep the old list gives a developer a clean local run over a narrower tree than CI enforces, which is the same invisible-scope failure one script down.
+# The npm scripts that carry biome's lint command. All of them must reach the
+# FILES the config declares: a developer script narrower than CI gives a clean local run over a tree CI lints more of.
 LINT_ROOT_SCRIPTS = ("check:lint", "fix:lint", "lint")
-
-# The one of them CI runs. Its roots are the authority; the other two are compared against it, because a developer script that is NARROWER than CI is the failure and a developer script that is WIDER is a different one (a clean local run over files CI never lints is still a lie about scope).
-LINT_CI_SCRIPT = "check:lint"
-
-# The wrapper the roots are positional arguments to. Its first argument is a heap size in MB, so the roots begin two tokens later.
-ESLINT_RUNNER = "eslint_heap.py"
-
-# `npm run <key>` inside a lint script. See script_roots() for why the links are followed rather than treated as opaque.
-NPM_RUN = re.compile(r"\bnpm\s+run\s+([^\s&|;]+)")
-
-# Roots whose load-bearingness this gate CANNOT measure, each with the reason.
-# Same contract as ESLINT_EXEMPT: an entry is a reviewable claim, not a waiver.
-ROOT_UNMEASURABLE = {
-    "private/account": (
-        "a git submodule (gitlink, mode 160000), so `git ls-files` returns the "
-        "pointer and none of the files under it. Dropping this root therefore "
-        "uncovers nothing HERE while still narrowing the real lint run, so the "
-        "mutant below cannot speak for it. It is separately linted by the second "
-        "half of the same npm script, `biome lint private/account/`"
-    ),
-}
 
 # A path that MUST be outside biome's includes. If biome starts processing it, the allowlist has been discarded -- which is exactly what a stray comment in the `files` object does, silently.
 BIOME_CANARY = "packages/www/src/i18n/translations/.translation-hashes.json"
 # A path that MUST be inside it, so "everything is out of scope" cannot pass.
 BIOME_ANCHOR = "packages/cli/src/index.ts"
+
+CHECKED = re.compile(r"Checked (\d+) files?")
+
+
+class BiomeUnreadableError(Exception):
+    """biome did not answer the question at all."""
 
 
 def tracked(root, patterns):
@@ -143,210 +83,20 @@ def tracked(root, patterns):
 
 
 def exempt(path):
-    if path in ESLINT_EXEMPT_EXACT:
-        return ESLINT_EXEMPT_EXACT[path]
-    for suffix, why in ESLINT_EXEMPT_SUFFIX.items():
+    for suffix, why in BIOME_EXEMPT_SUFFIX.items():
         if path.endswith(suffix):
             return why
-    return next((why for prefix, why in ESLINT_EXEMPT.items() if path.startswith(prefix)), None)
+    return next((why for prefix, why in BIOME_EXEMPT.items() if path.startswith(prefix)), None)
 
 
-def eslint_ignored(root, paths):
-    """The subset of `paths` eslint reports as ignored by configuration."""
-    out = subprocess.run(
-        ["npx", "eslint", "-f", "json", "--no-error-on-unmatched-pattern", *paths],
-        capture_output=True,
-        text=True,
-        cwd=str(root),
-        check=False,
-    )
-    try:
-        report = json.loads(out.stdout)
-    except ValueError:
-        return None
-    ignored = []
-    for entry in report:
-        rel = entry["filePath"].split("/console/")[-1]
-        if any("File ignored" in (m.get("message") or "") for m in entry.get("messages", [])):
-            ignored.append(rel)
-    return ignored
+def biome_count(root, args):
+    """How many files `biome lint <args>` reports, from biome's own summary line.
 
-
-class LintScope(typing.NamedTuple):
-    """What one lint script points eslint at, after following its `npm run` links."""
-
-    #: every positional root, first-seen order, deduped
-    roots: list
-    #: how many eslint invocations were reached. 0 means the script lints nothing.
-    calls: int
-    #: `npm run` links naming a script package.json does not define
-    dangling: list
-    #: the script keys walked to get here, for the error messages
-    chain: list
-
-
-def segment_roots(segment):
-    """The positional roots one `&&`-segment hands to eslint_heap.py."""
-    tokens = segment.split()
-    start = next(i for i, t in enumerate(tokens) if ESLINT_RUNNER in t) + 2
-    roots = []
-    for token in tokens[start:]:
-        if token.startswith("-"):
-            break
-        roots.append(token)
-    return roots
-
-
-def script_roots(scripts, name, seen=None):
-    """Every eslint root `npm run <name>` ultimately reaches, following `npm run` links.
-
-    PARSED, NOT DUPLICATED, and TRANSITIVE for the same reason. A hard-coded copy of the root list here would be a second source of truth that drifts from the scripts it claims to describe, and a gate comparing its own constant against
-    itself proves nothing about what eslint actually runs over. A hard-coded list
-    of SHARD NAMES is the same mistake one level up: `check:lint` is an aggregate of four sharded scripts, and naming those four here would mean a fifth shard lints files this gate never counts, silently, which is failure 3 in the docstring wearing a different hat. So the links are followed instead, and the
-    question stays the only one that matters: what is eslint actually pointed at.
-
-    A cycle contributes nothing and is not an error here -- npm itself would spin forever on it, so it is not a scope failure this gate can usefully report.
-
-    Returns a LintScope, or None when `name` is not a script at all.
-    """
-    if seen is None:
-        seen = set()
-    if name in seen:
-        return LintScope([], 0, [], [])
-    seen.add(name)
-    body = scripts.get(name)
-    if body is None:
-        return None
-    roots, calls, dangling, chain = [], 0, [], [name]
-    for segment in body.split("&&"):
-        # The eslint call is one `&&`-joined segment; the rest of the script may be
-        # biome, whose scope is biome.json's allowlist and not these arguments, or a link to another script, which is followed.
-        if ESLINT_RUNNER in segment:
-            calls += 1
-            roots.extend(segment_roots(segment))
-            continue
-        link = NPM_RUN.search(segment)
-        if link is None:
-            continue
-        sub = script_roots(scripts, link.group(1), seen)
-        if sub is None:
-            dangling.append(link.group(1))
-            continue
-        roots.extend(sub.roots)
-        calls += sub.calls
-        dangling.extend(sub.dangling)
-        chain.extend(sub.chain)
-    return LintScope(list(dict.fromkeys(roots)), calls, dangling, chain)
-
-
-def lint_roots(root):
-    """{script name: LintScope} for the three lint scripts, parsed from package.json.
-
-    Returns None when package.json cannot be read at all -- which is refused rather than treated as "no roots", because an empty list would make every file look uncovered and blame the wrong thing.
-    """
-    try:
-        scripts = json.loads((root / "package.json").read_text())["scripts"]
-    except (OSError, ValueError, KeyError):
-        return None
-    found = {}
-    for name in LINT_ROOT_SCRIPTS:
-        scope = script_roots(scripts, name)
-        if scope is None or scope.calls == 0:
-            continue
-        found[name] = scope
-    return found
-
-
-def covers(candidates, some_roots):
-    """The candidate files a root list reaches."""
-    return {p for p in candidates if any(p == r or p.startswith(r + "/") for r in some_roots)}
-
-
-def unmeasured(candidates, some_roots):
-    """The roots that reach no tracked candidate, so coverage cannot speak for them."""
-    return {r for r in some_roots if not covers(candidates, [r])}
-
-
-def scope_disagreements(by_script, roots, candidates):
-    """Lines explaining how the lint scripts differ in SCOPE, or [] when they do not.
-
-    THE THREE MUST REACH THE SAME FILES, which is not the same as passing the same LIST. `check:lint` is sharded into four scripts whose roots are packages/cli, packages/www and so on, while `lint` and `fix:lint` stay unsharded and pass `packages`. Different strings, identical scope. String equality would red on that refinement while still missing the failure that matters -- a
-    shard whose roots stop reaching files CI lints -- so this compares COVERAGE over the tracked candidates, plus set-equality on the roots coverage cannot speak for. That second half is not decoration: a submodule root contributes no tracked file here, so dropping it from one script only would otherwise be invisible.
-
-    ONE FUNCTION, TWO CALLERS, for the same reason uncovered_by() has one: the direction tests drive exactly the code the verdict comes from, not a lookalike.
-    """
-    out = []
-    ci_covers = covers(candidates, roots)
-    ci_unmeasured = unmeasured(candidates, roots)
-    for name in LINT_ROOT_SCRIPTS:
-        if name == LINT_CI_SCRIPT:
-            continue
-        other = by_script[name].roots
-        other_covers = covers(candidates, other)
-        other_unmeasured = unmeasured(candidates, other)
-        only_ci = ci_covers - other_covers
-        only_other = other_covers - ci_covers
-        only_ci_um = ci_unmeasured - other_unmeasured
-        only_other_um = other_unmeasured - ci_unmeasured
-        if not (only_ci or only_other or only_ci_um or only_other_um):
-            continue
-        out.append("the lint scripts disagree about which files eslint sees:")
-        for label in LINT_ROOT_SCRIPTS:
-            scope = by_script[label]
-            via = "" if not scope.chain[1:] else "   (via %s)" % ", ".join(scope.chain[1:])
-            out.append("    %-16s %s%s" % (label, " ".join(scope.roots), via))
-        for title, files in (
-            ("%s lints, %s does not" % (LINT_CI_SCRIPT, name), sorted(only_ci)),
-            ("%s lints, %s does not" % (name, LINT_CI_SCRIPT), sorted(only_other)),
-        ):
-            if not files:
-                continue
-            out.append("")
-            out.append("  %d file(s) %s:" % (len(files), title))
-            out.extend("    %s" % path for path in files[:20])
-            if len(files) > 20:
-                out.append("    ... and %d more" % (len(files) - 20))
-        for title, missed in (
-            ("only %s passes" % LINT_CI_SCRIPT, sorted(only_ci_um)),
-            ("only %s passes" % name, sorted(only_other_um)),
-        ):
-            if not missed:
-                continue
-            out.append("")
-            out.append(
-                "  root(s) %s, and no tracked file here can speak for them: %s"
-                % (title, " ".join(missed))
-            )
-        out.append("")
-        out.append(
-            "  All of %s must reach the SAME files. Widening one alone gives a clean\n"
-            "  local run over a tree CI lints more of." % ", ".join(LINT_ROOT_SCRIPTS)
-        )
-        return out
-    return out
-
-
-def uncovered_by(paths, roots):
-    """The files no lint root reaches.
-
-    The gate's real question when handed the WHOLE root list, and the mutant's when handed the list minus one. One function for both so the mutant exercises the same code the verdict comes from, rather than a lookalike of it.
-    """
-    return [p for p in paths if not any(p == r or p.startswith(r + "/") for r in roots)]
-
-
-class BiomeUnreadableError(Exception):
-    """biome did not answer the question at all."""
-
-
-def biome_processes(root, path):
-    """True when biome's file selection admits `path`, False when it excludes it.
-
-    RAISES rather than guessing when biome did not run. The first version returned `"No files were processed" not in output`, which quietly turned "biome is missing" into "biome processed the file" -- and that is exactly how it failed: green locally, and on CI it accused biome.json of a discarded allowlist when the real story was that biome never executed. A probe that cannot
-    distinguish absence from a negative answer is not a probe.
+    RAISES rather than guessing when biome did not run: a probe that cannot distinguish absence from a negative answer is not a probe. "No files were processed" is a real answer (zero).
     """
     try:
         out = subprocess.run(
-            ["npx", "--no-install", "biome", "format", path],
+            ["npx", "--no-install", "biome", "lint", "--max-diagnostics=0", *args],
             capture_output=True,
             text=True,
             cwd=str(root),
@@ -355,18 +105,115 @@ def biome_processes(root, path):
     except OSError as exc:
         raise BiomeUnreadableError("could not launch biome: %s" % exc) from exc
     blob = out.stdout + out.stderr
+    found = CHECKED.search(blob)
+    if found:
+        return int(found.group(1))
     if "No files were processed" in blob:
-        return False
-    if "Checked " in blob:
-        return True
+        return 0
     raise BiomeUnreadableError(
-        "biome produced neither 'Checked' nor 'No files were processed' for %s\n"
-        "  exit=%s\n  output:\n%s" % (path, out.returncode, blob[:800] or "  (empty)")
+        "biome produced neither 'Checked N files' nor 'No files were processed' for %d path(s)\n"
+        "  exit=%s\n  output:\n%s" % (len(args), out.returncode, blob[:800] or "  (empty)")
     )
 
 
+def unreached(root, paths):
+    """The subset of `paths` biome's file selection drops, named by bisection.
+
+    The common case is ONE biome run (the count equals the number of paths). Bisection runs only when something is dropped, to name it.
+    """
+    if not paths:
+        return []
+    if biome_count(root, paths) == len(paths):
+        return []
+    if len(paths) == 1:
+        return list(paths)
+    mid = len(paths) // 2
+    return unreached(root, paths[:mid]) + unreached(root, paths[mid:])
+
+
+def lint_roots(scripts, name):
+    """The path arguments of every `biome lint` call in script `name`.
+
+    Returns None when the script is missing or invokes no `biome lint` at all.
+    """
+    body = scripts.get(name)
+    if body is None:
+        return None
+    found: list[str] = []
+    calls = 0
+    for segment in body.split("&&"):
+        tokens = segment.split()
+        for i in range(len(tokens) - 1):
+            if tokens[i] == "biome" and tokens[i + 1] == "lint":
+                calls += 1
+                found.extend(t for t in tokens[i + 2 :] if not t.startswith("-"))
+                break
+    if calls == 0:
+        return None
+    return list(dict.fromkeys(found))
+
+
+def narrowing(root, scripts):
+    """Lines explaining which lint script reaches fewer files than the config declares, or []."""
+    out = []
+    try:
+        full = biome_count(root, ["."])
+    except BiomeUnreadableError as exc:
+        return ["CANNOT PROBE BIOME: %s" % exc]
+    for name in LINT_ROOT_SCRIPTS:
+        roots = lint_roots(scripts, name)
+        if roots is None:
+            out.append(
+                "package.json script %r does not invoke `biome lint` (renamed, removed, or\n"
+                "  moved to another tool). Until it parses, nothing here can speak for its scope."
+                % name
+            )
+            continue
+        mine = full if roots in ([], ["."]) else biome_count(root, roots)
+        if mine < full:
+            out.append(
+                "%s hands biome %s and reaches %d file(s), but biome.json's scope is %d.\n"
+                "  %d tracked file(s) are linted by nothing through that command. Make it\n"
+                "  `biome lint .` and let biome.json own the scope."
+                % (name, " ".join(roots), mine, full, full - mine)
+            )
+    return out
+
+
+def selftest(root):
+    """Controls on the oracle itself. Returns the number of failures."""
+    bad = 0
+
+    def check(name, ok, detail=""):
+        nonlocal bad
+        print(
+            "  %s  %s%s"
+            % ("PASS" if ok else "FAIL", name, "\n        " + detail if (detail and not ok) else "")
+        )
+        if not ok:
+            bad += 1
+
+    anchor, canary = BIOME_ANCHOR, BIOME_CANARY
+    check("the anchor is inside biome's allowlist", biome_count(root, [anchor]) == 1)
+    check("the canary is outside biome's allowlist", biome_count(root, [canary]) == 0)
+    # PLANT: one reachable path and one unreachable one must be told apart by the very function the verdict uses.
+    check(
+        "PLANT: an excluded path among reachable ones is named by unreached()",
+        unreached(root, [anchor, canary]) == [canary],
+        str(unreached(root, [anchor, canary])),
+    )
+    check("CONTROL: a reachable path alone is not reported", unreached(root, [anchor]) == [])
+    scripts = {"lint": "biome lint packages/cli", "ok": "biome lint . --error-on-warnings"}
+    check("a narrowed command parses to its roots", lint_roots(scripts, "lint") == ["packages/cli"])
+    check("a whole-tree command parses to the root `.`", lint_roots(scripts, "ok") == ["."])
+    check("a non-biome command parses to None", lint_roots({"lint": "eslint ."}, "lint") is None)
+    return bad
+
+
 def main(argv=None):
-    argparse.ArgumentParser(description=__doc__).parse_args(argv)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--selftest", action="store_true", help="run the oracle controls only")
+    args = parser.parse_args(argv)
     root = pathlib.Path(__file__).resolve().parents[3]
 
     files = tracked(root, ["*" + e for e in JS_EXT])
@@ -381,10 +228,9 @@ def main(argv=None):
         )
         return 1
 
-    # ---- CONTROL: biome's allowlist must be demonstrably IN FORCE ----------- Both directions, because one alone is satisfiable by a broken config: an allowlist that admits everything passes the anchor, and one that admits nothing passes the canary.
+    # ---- CONTROLS: biome's allowlist must be demonstrably IN FORCE, in both directions.
     try:
-        anchor_in = biome_processes(root, BIOME_ANCHOR)
-        canary_in = biome_processes(root, BIOME_CANARY)
+        failures = selftest(root)
     except BiomeUnreadableError as exc:
         print(
             "CANNOT PROBE BIOME, so no verdict about its scope is possible:\n  %s\n"
@@ -393,159 +239,60 @@ def main(argv=None):
             file=sys.stderr,
         )
         return 1
-    if not anchor_in:
+    if failures:
         print(
-            "CONTROL FAILED: biome does not process %s, which is squarely inside its\n"
-            "includes. Its file selection is broken, so nothing below is meaningful."
-            % BIOME_ANCHOR,
+            "CONTROL FAILED: %d probe(s) above. biome's file selection is not behaving as\n"
+            "  biome.json declares (a `//` comment inside the `files` object discards the\n"
+            "  whole `includes` list with no warning), so nothing below is meaningful." % failures,
             file=sys.stderr,
         )
         return 1
-    if canary_in:
-        print(
-            "biome is processing %s, which is EXCLUDED by biome.json.\n"
-            "  Its `includes` allowlist is not in force. The usual cause is a `//`\n"
-            "  comment somewhere in the `files` object: biome then discards the whole\n"
-            "  list with NO parse error and NO warning, and lint scope silently\n"
-            "  widens (measured 2026-08-06: 631 files -> 1428, 3657 errors).\n"
-            "  Move the comment outside `files`." % BIOME_CANARY,
-            file=sys.stderr,
-        )
-        return 1
+    if args.selftest:
+        return 0
 
-    # ---- LINT ROOTS: they must cover everything, and must not silently shrink -
-    # The scan below hands eslint FILE PATHS, so it measures config `ignores` and
-    # is blind to the root list. This section is the other half: what package.json
-    # actually points eslint at.
-    candidates = [f for f in files if not exempt(f)]
-    by_script = lint_roots(root)
-    if by_script is None:
+    try:
+        scripts = json.loads((root / "package.json").read_text())["scripts"]
+    except (OSError, ValueError, KeyError):
         print(
-            "could not read package.json's scripts, so the lint ROOT LIST cannot be\n"
+            "could not read package.json's scripts, so the lint commands cannot be\n"
             "  checked. This is an ENVIRONMENT failure, not a scope failure.",
             file=sys.stderr,
         )
         return 1
-    missing = [n for n in LINT_ROOT_SCRIPTS if n not in by_script]
-    if missing:
-        print(
-            "no eslint root list found in package.json script(s): %s\n"
-            "  Either the script was renamed, or it stopped invoking %s -- directly or\n"
-            "  through the `npm run` links this gate follows. Until this parses, nothing\n"
-            "  below can speak for eslint's scope." % (", ".join(missing), ESLINT_RUNNER),
-            file=sys.stderr,
-        )
-        return 1
 
-    dangling = sorted({d for scope in by_script.values() for d in scope.dangling})
-    if dangling:
-        print(
-            "a lint script links to %d npm script(s) package.json does not define: %s\n"
-            "  The link contributes no eslint roots, so the scope measured below is a\n"
-            "  subset of what the script MEANT to lint -- and `npm run` would fail on it\n"
-            "  anyway. Fix the name rather than reading the numbers below."
-            % (len(dangling), ", ".join(dangling)),
-            file=sys.stderr,
-        )
-        return 1
-
-    roots = by_script[LINT_CI_SCRIPT].roots
-
-    # VACUITY: no roots at all would make every file "uncovered" and report a scope catastrophe when the truth is that the parse failed.
-    if not roots:
-        print(
-            "VACUOUS: parsed an EMPTY root list out of the lint scripts. eslint would\n"
-            "  be given no paths at all, so the coverage numbers below are meaningless.",
-            file=sys.stderr,
-        )
-        return 1
-
-    findings = scope_disagreements(by_script, roots, candidates)
-    if findings:
-        for line in findings:
+    problems = narrowing(root, scripts)
+    if problems:
+        for line in problems:
             print(line, file=sys.stderr)
         return 1
 
-    outside = uncovered_by(candidates, roots)
-    if outside:
+    candidates = [f for f in files if not exempt(f)]
+    try:
+        dropped = unreached(root, candidates)
+    except BiomeUnreadableError as exc:
+        print("CANNOT PROBE BIOME: %s" % exc, file=sys.stderr)
+        return 1
+    if dropped:
         print(
-            "%d tracked file(s) are outside every eslint ROOT, so no amount of config\n"
-            "correctness can reach them (roots: %s):" % (len(outside), " ".join(roots)),
+            "%d tracked file(s) are linted by NOTHING -- biome.json's `files.includes` does\n"
+            "  not reach them and they carry no documented exemption:" % len(dropped),
             file=sys.stderr,
         )
-        for path in sorted(outside)[:40]:
+        for path in sorted(dropped)[:40]:
             print("    %s" % path, file=sys.stderr)
-        if len(outside) > 40:
-            print("    ... and %d more" % (len(outside) - 40), file=sys.stderr)
+        if len(dropped) > 40:
+            print("    ... and %d more" % (len(dropped) - 40), file=sys.stderr)
         print(
-            "\n  Add the root to all of %s, or exempt the prefix in ESLINT_EXEMPT here\n"
-            "  WITH THE REASON it is not source." % ", ".join(LINT_ROOT_SCRIPTS),
-            file=sys.stderr,
-        )
-        return 1
-
-    # ---- CONTROL: the assertion above must have TEETH ------------------------ "Everything is covered" is satisfied just as well by a root list that is too WIDE, and a passing coverage check says nothing about whether removing a root would be noticed. So mutate: drop each root in turn and require the very same uncovered_by() call to come back non-empty. A root whose removal
-    # changes nothing is a root this gate would let someone delete in silence.
-    for dropped in roots:
-        if uncovered_by(candidates, [r for r in roots if r != dropped]):
-            continue
-        why = ROOT_UNMEASURABLE.get(dropped)
-        if why is not None:
-            continue
-        print(
-            "CONTROL FAILED: dropping the root '%s' leaves every tracked file still\n"
-            "  covered, so this gate would stay GREEN if someone deleted it from\n"
-            "  package.json. The scope check above is not holding that root in place.\n"
-            "\n  Either the root is redundant (another root already contains it, and it\n"
-            "  should be removed deliberately rather than left as decoration), or its\n"
-            "  files are untracked/exempt here -- in which case add it to\n"
-            "  ROOT_UNMEASURABLE with the reason, the way private/account is." % dropped,
-            file=sys.stderr,
-        )
-        return 1
-
-    proven = [r for r in roots if r not in ROOT_UNMEASURABLE]
-    shards = by_script[LINT_CI_SCRIPT].chain[1:]
-    via = ""
-    if shards:
-        via = "\n  %s reaches them through %d shard(s): %s" % (
-            LINT_CI_SCRIPT,
-            len(shards),
-            " ".join(shards),
-        )
-    print(
-        "%d eslint root(s) cover every tracked file; %d proven load-bearing by the\n"
-        "  drop-one mutant (%s)%s" % (len(roots), len(proven), " ".join(proven), via)
-    )
-
-    # ---- the real scan ------------------------------------------------------
-    ignored = eslint_ignored(root, candidates)
-    if ignored is None:
-        print("could not read eslint's report; refusing a verdict", file=sys.stderr)
-        return 1
-
-    if ignored:
-        print(
-            "%d tracked file(s) are linted by NOTHING -- eslint ignores them and they\n"
-            "carry no documented exemption:" % len(ignored),
-            file=sys.stderr,
-        )
-        for path in sorted(ignored)[:40]:
-            print("    %s" % path, file=sys.stderr)
-        if len(ignored) > 40:
-            print("    ... and %d more" % (len(ignored) - 40), file=sys.stderr)
-        print(
-            "\n  Either bring them into scope (that is what happened to eslint-rules/,\n"
-            "  .ci/, workers/ and packages/*/scripts/ on 2026-08-06, and it surfaced a\n"
-            "  build-breaking crash plus five dead rules), or add the prefix to\n"
-            "  ESLINT_EXEMPT here WITH THE REASON it is not source.",
+            "\n  Either add the root to `files.includes` in biome.json, or exempt the prefix\n"
+            "  in BIOME_EXEMPT here WITH THE REASON it is not source.",
             file=sys.stderr,
         )
         return 1
 
     print(
-        "%d tracked js/ts file(s) reach a linter (%d exempt by documented reason); "
-        "biome's allowlist is in force" % (len(candidates), len(files) - len(candidates))
+        "%d tracked js/ts file(s) reach biome (%d exempt by documented reason); the %d lint "
+        "command(s) reach the whole config scope and its allowlist is in force"
+        % (len(candidates), len(files) - len(candidates), len(LINT_ROOT_SCRIPTS))
     )
     return 0
 

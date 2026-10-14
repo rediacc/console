@@ -1652,9 +1652,6 @@
     ".ci/rediacc_ci/tests/test_quality_browser_smoke.py": [
       "HOME"
     ],
-    ".ci/rediacc_ci/tests/test_quality_eslint_heap.py": [
-      "HOME"
-    ],
     ".ci/rediacc_ci/tests/test_quality_lockfile.py": [
       "PATH",
       "REDIACC_CI_ROOT"

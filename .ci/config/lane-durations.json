@@ -967,7 +967,6 @@
     "pytest:.ci/rediacc_ci/tests/test_gate_ledger.py": 6732.2,
     "pytest:.ci/rediacc_ci/tests/test_gate_model.py": 3163.2,
     "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py": 1601.4,
-    "pytest:.ci/rediacc_ci/tests/test_quality_eslint_heap.py": 344.8,
     "pytest:.ci/rediacc_ci/tests/test_quality_guard_mention_anchoring.py": 3302.2,
     "pytest:.ci/rediacc_ci/tests/test_quality_inline_suppressions.py": 70.9,
     "pytest:.ci/rediacc_ci/tests/test_release_assert_r2_sentinel.py": 943.0,
