@@ -242,6 +242,19 @@ SHELL_CASES = [
     ("a bracket glob", "cp /tmp/a.md agent/revie[w]s/0930-1/", True),
     ("a brace", "cp /tmp/a.md agent/{reviews,x}/0930-1/", True),
     ("a redirect through two globs", "echo x > ag*/rev*/0930-1/new.md", True),
+    # The reading of a deep glob is not lost to a cap on combinations (review c6dc18ec.1): five `a*t` segments read as `agent` or as themselves, so 2^7 combinations precede the one where `ag*` and `revi*s` spell the directory, and a cap of 64 never reached it.
+    (
+        "a deep glob past the old combination cap",
+        "echo x > ag*/revi*s/a*t/a*t/a*t/a*t/a*t/f.md",
+        True,
+    ),
+    ("a deep glob of stars", "echo x > */*/*/*/*/*/*/f.md", True),
+    ("the same deep glob read out", "cat ag*/revi*s/a*t/a*t/a*t/a*t/a*t/f.md > /tmp/x", False),
+    (
+        "a deep glob that cannot spell the directory",
+        "echo x > docs/ab*/cd*/ef*/gh*/ij*/kl*/f.md",
+        False,
+    ),
     ("a glob read out", "cat agent/revi*s/0930-1/clean.jsonl > /tmp/x", False),
     ("a glob in arithmetic text", "echo 3*4 > /tmp/x", False),
     ("a brace elsewhere", "cp /tmp/a.md /tmp/{a,b}/c.md", False),

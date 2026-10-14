@@ -117,10 +117,11 @@ def test_09_focus_off_puts_every_violation_in_one_block(wl):
     assert counted, msg["systemMessage"]
     total = int(counted.group(1))
     assert total >= 3, "expected >=3 violations in one block, got %d" % total
+    # One indented line per outstanding check: the quoted pick's item and each named check.
     named = msg["reason"].count("\n    ")
-    assert named >= total - 2, (
-        "every outstanding check is quoted or named: %s" % msg["reason"][:600]
-    )
+    assert named == total, "every outstanding check is quoted or named: %s" % msg["reason"][:600]
+    for key in ("undefaulted:", "agent-state:", "no-remaining:"):
+        assert key in msg["reason"], "%s is named in the one block: %s" % (key, msg["reason"][:600])
 
 
 def test_10_the_recursion_guard_exits_silently(wl):

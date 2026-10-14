@@ -831,6 +831,8 @@ export function labelGateOf(text: string, jobId: string): string | null {
   }
   const joined = expr.join(' ');
   if (joined.includes('||')) return null;
+  // A negation reaches the call through any number of opening parentheses: `!(contains(...))` requires the label ABSENT.
+  if (/!\s*\(*\s*contains\(\s*github\.event\.pull_request\.labels/.test(joined)) return null;
   const m =
     /(^|[^!])contains\(\s*github\.event\.pull_request\.labels\.\*\.name\s*,\s*'([^']+)'\s*\)/.exec(
       joined
@@ -3501,6 +3503,8 @@ async function selftest(): Promise<number> {
           labelGateOf(wf(label), 'probe') === 'lbl' &&
           labelGateOf(wf(`${label} || github.event_name == 'push'`), 'probe') === null &&
           labelGateOf(wf(`!${label}`), 'probe') === null &&
+          labelGateOf(wf(`!(${label})`), 'probe') === null &&
+          labelGateOf(wf(`! ( ${label} )`), 'probe') === null &&
           labelGateOf(wf(label), 'next') === null &&
           labelGateOf(wf(label), 'absent') === null
         );

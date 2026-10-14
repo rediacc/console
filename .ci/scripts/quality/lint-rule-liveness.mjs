@@ -1070,7 +1070,10 @@ async function main() {
         continue;
       }
 
-      const instance = { 'option-dir': optionProbe, isolated }[mode] ?? eslint;
+      // Every mode names its instance. A mode with no instance throws: falling back to the shared one would probe the rule with the wrong config and report a verdict about it.
+      const instance = { 'in-config': eslint, 'option-dir': optionProbe, isolated }[mode];
+      if (instance === undefined)
+        throw new Error(`${ruleId}: matrix mode '${mode}' has no probe instance`);
       const { fired, fatals } = firedRuleIds(
         await instance.lintText(entry.code, {
           filePath: path.join(ROOT, entry.filePath),

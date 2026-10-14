@@ -3,16 +3,6 @@
  * Supports bash scripts, rsync, rclone, and renet progress formats
  */
 
-/**
- * Extract the most recent progress percentage from console output
- * Supports multiple formats:
- * - bash msg_progress "- N%"
- * - rsync/rclone "N%"
- * - renet "[operation] N% - message"
- *
- * @param output - Console output string
- * @returns Progress percentage (0-100) or null if not found
- */
 /** The last match of a progress pattern: its percentage and where it sits in the output. */
 function lastProgressMatch(
   output: string,
@@ -24,6 +14,16 @@ function lastProgressMatch(
   return { percentage: Number.parseFloat(lastMatch[1]), index: lastMatch.index || -1 };
 }
 
+/**
+ * Extract the most recent progress percentage from console output
+ * Supports multiple formats:
+ * - bash msg_progress "- N%"
+ * - rsync/rclone "N%"
+ * - renet "[operation] N% - message"
+ *
+ * @param output - Console output string
+ * @returns Progress percentage (0-100) or null if not found
+ */
 export function extractMostRecentProgress(output: string): number | null {
   if (!output) return null;
 
