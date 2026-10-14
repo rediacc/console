@@ -1713,7 +1713,7 @@ function planInstalls(
       for (const pkg of inRange) group.checks.push({ pkg, workspace });
       updates.set(key, group);
     }
-    // AN EXACT PIN IS KEPT (worklist #22aa3ff6). `npm install name@x` saves `^x` whatever the manifest declared, so on 2026-10-14 private/account's exact `zod: "4.6.5"` came back as `^4.6.7`. An exact pin installs in its own step with --save-exact. Every other out-of-range package (a caret, a tilde, a comparator) installs with npm's default prefix, so a `~x` or `>=x` range is rewritten to `^x`; the selftest pins that.
+    // AN EXACT PIN IS KEPT (worklist #22aa3ff6). `npm install name@x` saves `^x` whatever the manifest declared, so on 2026-10-14 private/account's exact `zod: "4.6.5"` came back as `^4.6.7`. An exact pin installs in its own step with --save-exact. Every other out-of-range package (a caret, a tilde, a comparator) installs with npm's default prefix, so a `~x` or `>=x` range is rewritten to `^x`; the selftest pins that such a package installs WITHOUT `--save-exact`.
     const exact = outOfRange.filter((p) => EXACT_VERSION_RE.test(ranges[p.name] ?? ''));
     const ranged = outOfRange.filter((p) => !exact.includes(p));
     for (const [group, extra] of [
