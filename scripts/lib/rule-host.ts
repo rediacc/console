@@ -254,7 +254,7 @@ function declarationTargetScope(kind: string | undefined, innermost: HostScope):
 const JSX_ENTITY = /&(#x[0-9a-fA-F]+|#[0-9]+|[A-Za-z0-9]+);/g;
 
 /**
- * Decode the character references in JSX text or a JSX attribute string the way acorn-jsx does: a hex or decimal reference becomes its code unit, a name in the XHTML table becomes its character, and anything else stays as written. oxc-parser leaves both raw (`"&mdash; "`), so without this a rule reading `.value` sees letters ESLint never showed it.
+ * Decode the character references in JSX text or a JSX attribute string the way acorn-jsx does: a hex or decimal reference becomes the single UTF-16 code unit `String.fromCharCode` gives it (acorn-jsx's own call, so a reference above U+FFFF keeps only its low 16 bits there too), a name in the XHTML table becomes its character, and anything else stays as written. oxc-parser leaves both raw (`"&mdash; "`), so without this a rule reading `.value` sees letters ESLint never showed it.
  */
 export function decodeJsxEntities(text: string): string {
   if (!text.includes('&')) return text;
