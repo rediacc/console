@@ -265,7 +265,7 @@ def _declared_defect(source=None):
             return binds(target.value)
         return False
 
-    bindings = []
+    bindings: list[tuple[ast.Assign | ast.AnnAssign | ast.AugAssign, ast.expr]] = []
     for node in ast.walk(ast.parse(text)):
         if isinstance(node, ast.Assign):
             bindings += [(node, t) for t in node.targets if binds(t)]
