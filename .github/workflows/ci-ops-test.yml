@@ -90,7 +90,7 @@ jobs:
   # ── Full VM provisioning test (KVM available) ──────────────────
   ops-vm-provision:
     needs: [renet-embed-assets]
-    # T2.16 (PLAN-ci-time-budget, D-W4): 5 shards, each a full independent
+    # T2.16 (PLAN-ci-time-budget, D-W4): 6 shards (5 until 2026-10-14), each a full independent
     # leg -- its own runner, its own `ops up` cluster, its own tutorial
     # slice (`.ci/tutorials/run-sequence.sh`'s `TUTORIAL_SHARD`). D-W4
     # replaces the earlier "4 contiguous segments with a `needs` chain"
@@ -133,31 +133,37 @@ jobs:
             arch: x86_64
             full_test: true
             shard: 1
-            shard_of: 5
+            shard_of: 6
           - runner: ubuntu-latest
             name: linux-amd64
             arch: x86_64
             full_test: true
             shard: 2
-            shard_of: 5
+            shard_of: 6
           - runner: ubuntu-latest
             name: linux-amd64
             arch: x86_64
             full_test: true
             shard: 3
-            shard_of: 5
+            shard_of: 6
           - runner: ubuntu-latest
             name: linux-amd64
             arch: x86_64
             full_test: true
             shard: 4
-            shard_of: 5
+            shard_of: 6
           - runner: ubuntu-latest
             name: linux-amd64
             arch: x86_64
             full_test: true
             shard: 5
-            shard_of: 5
+            shard_of: 6
+          - runner: ubuntu-latest
+            name: linux-amd64
+            arch: x86_64
+            full_test: true
+            shard: 6
+            shard_of: 6
     steps:
       # Same preinstalled-bloat removal ct-tests.yml uses (5 sites): this job
       # (VM images + renet artifacts + 18 tutorials of casts) crashed the
@@ -362,7 +368,7 @@ jobs:
       # on the first failing command).
       #
       # T2.16 (D-W4): cross-tutorial machine state is no longer exercised
-      # ACROSS a shard boundary -- 5 shards means 5 independently provisioned
+      # ACROSS a shard boundary -- 6 shards means 6 independently provisioned
       # clusters, each running only its own slice. It is still incidentally
       # exercised BETWEEN two tutorials the shard's contiguous slice happens
       # to keep adjacent, same as before (renet#60 escaped exactly there:
@@ -376,7 +382,7 @@ jobs:
       # `TUTORIAL_SHARD`, so adding/removing/reordering a tutorial updates
       # every shard automatically. Deliberately INSIDE ops-vm-provision: a
       # separate job means a second runner reprovisioning the cluster
-      # (~14 min); sharding this job already pays that cost 5 times over for
+      # (~14 min); sharding this job already pays that cost 6 times over for
       # the parallelism, and a further split would only add a 6th.
       - name: "Tutorial prep: add second worker"
         # ssh-keys, delta-transfer, and live-migration use a second machine.
