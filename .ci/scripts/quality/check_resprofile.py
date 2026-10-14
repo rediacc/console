@@ -33,7 +33,9 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
+import time as _t
 from pathlib import Path
 
 import _cipath
@@ -137,8 +139,6 @@ def selftest() -> int:
     )
 
     # THE BASH ANTI-VACUITY ARM, both answers. This arm exists because silence from the bash corpus read as a clean tree for the running devbox's whole life, so a control that only proves the happy path would reproduce the original defect in the check that was written to catch it.
-    import tempfile  # noqa: PLC0415
-    import time as _t  # noqa: PLC0415
 
     with tempfile.TemporaryDirectory() as td:
         empty = Path(td) / "empty"
@@ -306,7 +306,6 @@ def bash_corpus_today(corpus: Path | None = None) -> tuple[int, str]:
 
     Counted rather than merely existence-checked: bash_env.sh creates the day folder before it knows whether the supervisor is there, so an EMPTY bash.jsonl -- or a missing one beside a populated exit.jsonl -- is the exact signature of the hole.
     """
-    import time  # noqa: PLC0415
 
     # `corpus` is injectable ONLY so selftest() can drive both answers against a fixture. ROOT cannot serve that purpose: it is also this file's import path for wl_profile, so pointing it at a temp dir makes the module fail to load rather than report an empty corpus -- which is how the first attempt at this control "passed" by crashing before it reached the check.
     root = corpus or (Path.home() / ".claude" / "resprofile")

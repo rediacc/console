@@ -96,6 +96,7 @@ why: a plan must not start before the plans it needs are finished, and a plan
 from __future__ import annotations
 
 import dataclasses
+import datetime
 import difflib
 import hashlib
 import json
@@ -1367,8 +1368,6 @@ def seed_row(root: pathlib.Path, rel: str, text: str, files: list[str], today: s
 
 
 def _days_between(a: str, b: str) -> int:
-    import datetime  # noqa: PLC0415 -- the migration verb alone
-
     try:
         return abs((datetime.date.fromisoformat(b) - datetime.date.fromisoformat(a)).days)
     except ValueError:
@@ -1376,8 +1375,6 @@ def _days_between(a: str, b: str) -> int:
 
 
 def migrate_rows(root: pathlib.Path, today: str | None = None) -> list[dict]:
-    import datetime  # noqa: PLC0415
-
     today = today or datetime.datetime.now(datetime.UTC).date().isoformat()
     graph = D.Graph.load(root)
     files = _repo_files(root)

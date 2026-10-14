@@ -37,12 +37,6 @@
    "noqa PLC0415": 1,
    "noqa S310": 1
   },
-  ".ci/rediacc_ci/ci/scope_reconcile_shadow.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/ci/scope_shadow.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/core/account.py": {
    "noqa S104": 2,
    "noqa S606": 2
@@ -105,26 +99,12 @@
   ".ci/rediacc_ci/drills/wire.py": {
    "noqa S310": 1
   },
-  ".ci/rediacc_ci/infra/ci_start_account.py": {
-   "type-ignore arg-type": 1
-  },
-  ".ci/rediacc_ci/infra/ci_stop_elite.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/infra/obs_mirror.py": {
    "noqa S310": 1,
-   "noqa S314": 2,
-   "type-ignore call-overload": 1,
-   "type-ignore misc": 1,
-   "type-ignore no-any-return": 1
+   "noqa S314": 2
   },
   ".ci/rediacc_ci/infra/vm_bake_image.py": {
-   "noqa S310": 1,
-   "type-ignore call-overload": 1,
-   "type-ignore no-any-return": 1
-  },
-  ".ci/rediacc_ci/proc.py": {
-   "noqa PLC0415": 1
+   "noqa S310": 1
   },
   ".ci/rediacc_ci/quality/account_probes.py": {
    "noqa PLW1509": 1
@@ -271,9 +251,6 @@
   ".ci/rediacc_ci/tests/test_proxies_unit_tests.py": {
    "type-ignore call-overload": 6
   },
-  ".ci/rediacc_ci/tests/test_quality_agent_session_archival.py": {
-   "type-ignore arg-type": 1
-  },
   ".ci/rediacc_ci/tests/test_quality_announce_gate_skips.py": {
    "type-ignore arg-type": 1
   },
@@ -306,8 +283,7 @@
    "noqa PLC0415": 1
   },
   ".ci/scripts/quality/check_agent_session_archival.py": {
-   "noqa PLC0415": 2,
-   "type-ignore arg-type": 1
+   "noqa PLC0415": 1
   },
   ".ci/scripts/quality/check_checkout_cone.py": {
    "type-ignore arg-type": 2,
@@ -317,12 +293,6 @@
    "noqa PLC0415": 1
   },
   ".ci/scripts/quality/check_hint_corpus.py": {
-   "noqa PLC0415": 2
-  },
-  ".ci/scripts/quality/check_plan_boxes.py": {
-   "noqa PLC0415": 1
-  },
-  ".ci/scripts/quality/check_plan_deps.py": {
    "noqa PLC0415": 2
   },
   ".ci/scripts/quality/check_plan_implementation.py": {
@@ -342,8 +312,7 @@
    "type-ignore attr-defined": 1
   },
   ".ci/scripts/quality/check_resprofile.py": {
-   "noqa E402": 1,
-   "noqa PLC0415": 3
+   "noqa E402": 1
   },
   ".ci/scripts/quality/check_tree_shape.py": {
    "noqa PLC0415": 1

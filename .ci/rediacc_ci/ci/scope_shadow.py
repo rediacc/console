@@ -90,6 +90,12 @@ import pathlib
 import re
 import subprocess
 import sys
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Unpack
+
+    from rediacc_ci.proc import TextRunKwargs
 
 # --------------------------------------------------------------------------- The five inline node programs, copied verbatim out of the twin.
 #
@@ -289,12 +295,14 @@ def main(argv: list[str]) -> int:
 
     scope_timeout = os.environ.get("SCOPE_SHADOW_TIMEOUT") or DEFAULT_SCOPE_TIMEOUT
 
-    def bounded(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+    def bounded(
+        args: list[str], **kwargs: Unpack[TextRunKwargs]
+    ) -> subprocess.CompletedProcess[str]:
         """`bounded() { timeout "$SCOPE_TIMEOUT" "$@"; }` (:116), the real binary."""
         return subprocess.run(
             ["timeout", scope_timeout, *args],
             check=False,
-            **kwargs,  # type: ignore[arg-type]
+            **kwargs,
         )
 
     def _git(args: list[str], *, quiet: bool) -> tuple[int, str]:

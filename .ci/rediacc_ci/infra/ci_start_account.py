@@ -61,6 +61,12 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import Unpack
+
+    from rediacc_ci.proc import TextRunKwargs
 
 # The twin's `local timeout=180` / `local interval=3` (:100-102) and the bare
 # `sleep 2` on :145. Named rather than inlined so a test can assert the real twin still carries the same three numbers. The differential does NOT shrink them -- it nulls the three `sleep` calls instead, so both sides keep the real arithmetic and still perform all 60 probes.
@@ -142,13 +148,13 @@ def env_file_body(env: dict[str, str]) -> str:
     )
 
 
-def _docker(args: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+def _docker(args: list[str], **kwargs: Unpack[TextRunKwargs]) -> subprocess.CompletedProcess[str]:
     """`docker <args>`, treating a missing binary as bash's 127 rather than raising.
 
     The twin never probes for the binary; a missing one just makes every call fail with bash's own "command not found", caught by the same guards that catch a real failure.
     """
     try:
-        return subprocess.run(["docker", *args], check=False, **kwargs)  # type: ignore[arg-type]
+        return subprocess.run(["docker", *args], check=False, **kwargs)
     except FileNotFoundError:
         # Bash prints `<script>: line N: docker: command not found` wherever the call's stderr points: the script's stderr by default, the captured stdout under `2>&1`, nowhere under `2>/dev/null`. The port prints the same words without its own path and line (a line number inside a shell file is not reproducible).
         target = kwargs.get("stderr")

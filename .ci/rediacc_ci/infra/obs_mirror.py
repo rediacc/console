@@ -44,13 +44,15 @@ import urllib.error
 import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, Unpack
 
 from rediacc_ci.infra.vm_bake_image import REPOSITORY, BakeImageError, install_oras, tag_exists
 from rediacc_ci.well_known import ETC_DIR, GH_ORIGIN, GH_REPO
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
+
+    from rediacc_ci.proc import RunKwargs
 
     RunFn = Callable[..., subprocess.CompletedProcess[str]]
     GetFn = Callable[[str], bytes]
@@ -430,8 +432,8 @@ def parse_rpm_qa(stdout: str) -> list[tuple[str, str, str]]:
 # --- gpg ------------------------------------------------------------------------
 
 
-def _run(argv: Sequence[str], **kw: object) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(list(argv), text=True, check=False, **kw)  # type: ignore[call-overload,no-any-return]
+def _run(argv: Sequence[str], **kw: Unpack[RunKwargs]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(list(argv), text=True, check=False, **kw)
 
 
 def key_fingerprints(key: pathlib.Path, home: pathlib.Path, run: RunFn = _run) -> list[str]:
@@ -717,7 +719,7 @@ def check_rpm_signatures(ctx: Ctx, stage: pathlib.Path, run: RunFn = _run) -> Ve
 
 
 def _installed_evr(stdout: str) -> dict[str, str]:
-    return dict(tuple(ln.split(None, 1)) for ln in stdout.splitlines() if len(ln.split()) == 2)  # type: ignore[misc]
+    return dict(ln.split(None, 1) for ln in stdout.splitlines() if len(ln.split()) == 2)
 
 
 def check_positive(ctx: Ctx, stage: pathlib.Path, run: RunFn = _run) -> Verdict:

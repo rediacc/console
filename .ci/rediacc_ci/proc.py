@@ -66,9 +66,12 @@ WHY stdout AND stderr ARE NEVER MERGED. Rule 3 of this repo's session defaults, 
 
 import contextlib
 import os
+import shutil
 import signal
 import subprocess
 import time
+from collections.abc import Mapping
+from typing import IO, Any, TypedDict
 
 # The codes, named once. See the module docstring for where each already lives.
 TIMEOUT_RC = 124
@@ -82,6 +85,34 @@ DEFAULT_TIMEOUT = 60.0
 DEFAULT_ATTEMPTS = 3
 DEFAULT_DELAY = 2.0
 DEFAULT_FACTOR = 2.0
+
+
+class PipeKwargs(TypedDict, total=False):
+    """The `subprocess.run` keywords the thin wrappers around it forward, spelled field by field.
+
+    A wrapper typed `**kwargs: object` hands `subprocess.run` a `dict[str, object]`, which matches none of its overloads. Typed with `Unpack[PipeKwargs]`, a caller's `stdout=` or `capture_output=` is checked against the same types `subprocess.run` declares. `text` and `timeout` are deliberately absent: a wrapper that pins either itself would otherwise receive it twice. Add them with `RunKwargs` (timeout) or `TextRunKwargs` (timeout and text) where the caller chooses.
+    """
+
+    cwd: str | os.PathLike[str] | None
+    env: Mapping[str, str] | None
+    input: str | bytes | None
+    stdin: int | IO[Any] | None
+    stdout: int | IO[Any] | None
+    stderr: int | IO[Any] | None
+    capture_output: bool
+    start_new_session: bool
+
+
+class RunKwargs(PipeKwargs, total=False):
+    """`PipeKwargs` plus the caller's own `timeout=`."""
+
+    timeout: float | None
+
+
+class TextRunKwargs(RunKwargs, total=False):
+    """`RunKwargs` plus the caller's own `text=`, for a wrapper that does not pin it."""
+
+    text: bool
 
 
 class Result:
@@ -353,7 +384,6 @@ def which(name: str, env: dict[str, str] | None = None) -> str | None:
 
     Here rather than in a caller because the twelve `timeout(1)` sites exist precisely because nobody asked this question first. `shutil.which` with an explicit PATH, so a differential can pass a controlled environment.
     """
-    import shutil  # noqa: PLC0415 -- a stdlib import used by one function
 
     environ = os.environ if env is None else env
     return shutil.which(name, path=environ.get("PATH"))
@@ -366,8 +396,11 @@ __all__ = [
     "DEFAULT_TIMEOUT",
     "SPAWN_FAILED_RC",
     "TIMEOUT_RC",
+    "PipeKwargs",
     "Result",
     "RetryOutcome",
+    "RunKwargs",
+    "TextRunKwargs",
     "backoff_delays",
     "retry_command",
     "retry_with_backoff",

@@ -33,13 +33,15 @@ import sys
 import tarfile
 import tempfile
 import urllib.request
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Unpack
 
 from rediacc_ci.infra import vm_bake_key
 from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, IMAGE_REGISTRY
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
+
+    from rediacc_ci.proc import RunKwargs
 
     RunFn = Callable[..., subprocess.CompletedProcess[str]]
 
@@ -98,8 +100,8 @@ def _emit(kind: str, pairs: dict[str, str]) -> None:
         sys.stdout.write(lines)
 
 
-def _run(argv: Sequence[str], **kw: object) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(list(argv), text=True, check=False, **kw)  # type: ignore[call-overload,no-any-return]
+def _run(argv: Sequence[str], **kw: Unpack[RunKwargs]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(list(argv), text=True, check=False, **kw)
 
 
 # --- install-oras ------------------------------------------------------------
