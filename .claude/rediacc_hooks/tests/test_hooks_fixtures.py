@@ -1078,6 +1078,37 @@ def test_shebang_interpreter_does_not_open_a_named_pipe(tmp_path):
     assert done.stdout.strip() == "None"
 
 
+def test_a_script_written_then_run_by_its_shebang_is_read_from_the_write(tmp_path):
+    """#7ab88f34: a script an earlier run of the same command writes and a later one runs DIRECTLY by path does not exist when the hook runs. Its shebang and its program are what the write puts there, read with or without the command in hand; a write the walk cannot read is unjudgeable."""
+    script = tmp_path / "x.py"
+    printed = "printf '#!/usr/bin/env python3\\nprint(1)\\n' > %s; chmod +x %s; %s" % (
+        script,
+        script,
+        script,
+    )
+    direct = shellscan.every_run(printed)[-1]
+    assert direct.name == str(script)
+    assert not script.exists()
+    assert shellscan.shebang_interpreter(direct, str(tmp_path)) == "python3"
+    assert shellscan.interpreter_program(direct, printed, str(tmp_path)) == (
+        "#!/usr/bin/env python3\nprint(1)\n\n",
+        "file",
+    )
+    copied = "cp /nowhere/tool %s && %s" % (script, script)
+    assert shellscan.interpreter_program(
+        shellscan.every_run(copied)[-1], copied, str(tmp_path)
+    ) == (None, "unjudgeable")
+    # CONTROLS: a written shebang naming a shell is not an interpreter run, and a script nothing in the command writes still reads the disk (absent here, so nothing).
+    shell = "printf '#!/bin/sh\\necho 1\\n' > %s; %s" % (script, script)
+    assert shellscan.interpreter_program(shellscan.every_run(shell)[-1], shell, None) == (
+        None,
+        None,
+    )
+    assert shellscan.interpreter_program(
+        shellscan.every_run(str(script))[-1], str(script), None
+    ) == (None, None)
+
+
 def test_program_prefilter_admits_a_script_behind_a_wrapper_word():
     """Review 05c4df4d.3: `timeout 5 ./wt.py` and `nohup ./long.py` name a script by path, so the pre-filter must start the lexer for them."""
     for cmd in ("timeout 5 ./wt.py", "nohup ./long.py", "env X=1 /tmp/s.py", "sudo ../x/y.py"):
