@@ -27,6 +27,16 @@ import {
  *   }]
  */
 
+/** True when the key resolves in the locale resources (an empty key path counts as resolved). */
+function translationKeyExists(resources, keyValue) {
+  const { namespace, path: keyPath } = splitKey(keyValue);
+  const segments = keyPath.split('.').filter(Boolean);
+  if (segments.length === 0) return true;
+
+  const candidateNamespaces = namespace ? [namespace] : [...resources.keys()];
+  return candidateNamespaces.some((ns) => hasPath(resources.get(ns), segments));
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const requireTranslationKeyArg = {
   meta: {
@@ -87,19 +97,13 @@ export const requireTranslationKeyArg = {
 
         if (isNotTranslationKey(keyValue)) return;
 
-        const { namespace, path: keyPath } = splitKey(keyValue);
-        const segments = keyPath.split('.').filter(Boolean);
-        if (segments.length === 0) return;
+        if (translationKeyExists(resources, keyValue)) return;
 
-        const candidateNamespaces = namespace ? [namespace] : [...resources.keys()];
-        const exists = candidateNamespaces.some((ns) => hasPath(resources.get(ns), segments));
-        if (!exists) {
-          context.report({
-            node: argNode,
-            messageId: 'missingKey',
-            data: { key: keyValue, fn: node.callee.name },
-          });
-        }
+        context.report({
+          node: argNode,
+          messageId: 'missingKey',
+          data: { key: keyValue, fn: node.callee.name },
+        });
       },
     };
   },

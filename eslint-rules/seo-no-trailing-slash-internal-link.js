@@ -101,7 +101,7 @@ function hasTrailingSlashIssue(raw) {
  * need to know what the resulting string looks like at the slash boundary. */
 function templateLiteralRaw(node) {
   return node.quasis
-    .map((q, i) => q.value.raw + (i < node.quasis.length - 1 ? '${...}' : ''))
+    .map((q, i) => q.value.raw + (i < node.quasis.length - 1 ? `\${...}` : ''))
     .join('');
 }
 
@@ -111,6 +111,46 @@ function propertyKeyName(key) {
   if (key?.type === 'Identifier') return key.name;
   if (key?.type === 'Literal') return key.value;
   return null;
+}
+
+function checkValueNode(context, valueNode) {
+  if (!valueNode) return;
+
+  // String literal: href="/en/"
+  if (valueNode.type === 'Literal' && typeof valueNode.value === 'string') {
+    if (hasTrailingSlashIssue(valueNode.value)) {
+      context.report({
+        node: valueNode,
+        messageId: 'trailingSlash',
+        data: { value: valueNode.value },
+      });
+    }
+    return;
+  }
+
+  // Template literal: href={`/${lang}/`}
+  if (valueNode.type === 'TemplateLiteral') {
+    const raw = templateLiteralRaw(valueNode);
+    if (hasTrailingSlashIssue(raw)) {
+      context.report({
+        node: valueNode,
+        messageId: 'trailingSlash',
+        data: { value: raw },
+      });
+    }
+  }
+}
+
+function checkUrlAttribute(context, node) {
+  const name = node.name?.type === 'JSXIdentifier' ? node.name.name : null;
+  if (!name || !URL_ATTR_NAMES.has(name)) return;
+  const value = node.value;
+  if (!value) return;
+  if (value.type === 'Literal') {
+    checkValueNode(context, value);
+  } else if (value.type === 'JSXExpressionContainer') {
+    checkValueNode(context, value.expression);
+  }
 }
 
 export const seoNoTrailingSlashInternalLink = {
@@ -129,46 +169,10 @@ export const seoNoTrailingSlashInternalLink = {
   },
 
   create(context) {
-    function checkValueNode(valueNode) {
-      if (!valueNode) return;
-
-      // String literal: href="/en/"
-      if (valueNode.type === 'Literal' && typeof valueNode.value === 'string') {
-        if (hasTrailingSlashIssue(valueNode.value)) {
-          context.report({
-            node: valueNode,
-            messageId: 'trailingSlash',
-            data: { value: valueNode.value },
-          });
-        }
-        return;
-      }
-
-      // Template literal: href={`/${lang}/`}
-      if (valueNode.type === 'TemplateLiteral') {
-        const raw = templateLiteralRaw(valueNode);
-        if (hasTrailingSlashIssue(raw)) {
-          context.report({
-            node: valueNode,
-            messageId: 'trailingSlash',
-            data: { value: raw },
-          });
-        }
-      }
-    }
-
     return {
       // <a href={...}> / <Link to={...}> / <img src={...}>
       JSXAttribute(node) {
-        const name = node.name?.type === 'JSXIdentifier' ? node.name.name : null;
-        if (!name || !URL_ATTR_NAMES.has(name)) return;
-        const value = node.value;
-        if (!value) return;
-        if (value.type === 'Literal') {
-          checkValueNode(value);
-        } else if (value.type === 'JSXExpressionContainer') {
-          checkValueNode(value.expression);
-        }
+        checkUrlAttribute(context, node);
       },
 
       // { href: '/en/', url: `/${lang}/`, to: ... }
@@ -176,7 +180,7 @@ export const seoNoTrailingSlashInternalLink = {
         if (node.computed) return;
         const keyName = propertyKeyName(node.key);
         if (!keyName || !URL_PROP_KEYS.has(keyName)) return;
-        checkValueNode(node.value);
+        checkValueNode(context, node.value);
       },
     };
   },

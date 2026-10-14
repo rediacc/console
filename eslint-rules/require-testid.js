@@ -5,6 +5,131 @@
  * attributes on buttons, inputs, modals, and other interactive components.
  */
 
+/**
+ * Get the full element name (handles Input.Password, etc.)
+ */
+function getElementName(node) {
+  if (node.type === 'JSXIdentifier') {
+    return node.name;
+  }
+  if (node.type === 'JSXMemberExpression') {
+    return `${getElementName(node.object)}.${node.property.name}`;
+  }
+  return '';
+}
+
+/**
+ * Check if element has data-testid attribute
+ */
+function hasTestId(attributes) {
+  return attributes.some((attr) => {
+    if (attr.type !== 'JSXAttribute') return false;
+    const name = attr.name?.name;
+    return name === 'data-testid';
+  });
+}
+
+/**
+ * Check if element has a dynamic testid (template literal)
+ */
+function hasDynamicTestId(attributes) {
+  return attributes.some((attr) => {
+    if (attr.type !== 'JSXAttribute') return false;
+    if (attr.name?.name !== 'data-testid') return false;
+    // Check if value is a JSXExpressionContainer with TemplateLiteral
+    if (attr.value?.type === 'JSXExpressionContainer') {
+      return attr.value.expression?.type === 'TemplateLiteral';
+    }
+    return false;
+  });
+}
+
+/**
+ * Check if element has onClick or onSubmit handler
+ */
+function hasInteractiveHandler(attributes) {
+  return attributes.some((attr) => {
+    if (attr.type !== 'JSXAttribute') return false;
+    const name = attr.name?.name;
+    return name === 'onClick' || name === 'onSubmit' || name === 'onChange';
+  });
+}
+
+/**
+ * Check if this is inside a dropdown menu (common pattern where individual items don't need testids)
+ */
+function isInsideMenuOrDropdown(node) {
+  let parent = node.parent;
+  while (parent) {
+    if (parent.type === 'JSXElement') {
+      const parentName = getElementName(parent.openingElement.name);
+      if (parentName === 'Menu' || parentName === 'Dropdown' || parentName === 'Menu.Item') {
+        return true;
+      }
+    }
+    parent = parent.parent;
+  }
+  return false;
+}
+
+/**
+ * Check if element is passed as a prop (e.g., icon={<Button />})
+ */
+function isPassedAsProp(node) {
+  let parent = node.parent;
+  while (parent) {
+    if (parent.type === 'JSXExpressionContainer' && parent.parent?.type === 'JSXAttribute') {
+      return true;
+    }
+    parent = parent.parent;
+  }
+  return false;
+}
+
+/** True when the element is exempt from the testid requirement regardless of its tag. */
+function isSkippedElement(node, attributes, allowTemplateLiterals) {
+  // Skip if already has data-testid
+  if (hasTestId(attributes)) return true;
+
+  // Skip template literals if allowed
+  if (allowTemplateLiterals && hasDynamicTestId(attributes)) return true;
+
+  // Skip elements inside menus/dropdowns
+  if (isInsideMenuOrDropdown(node)) return true;
+
+  // Skip elements passed as props
+  return isPassedAsProp(node);
+}
+
+/** True when an element without a testid should be reported. */
+function needsTestId(elementName, attributes, env) {
+  const { requiredElements, interactiveElements, formElements } = env;
+
+  // Check required elements (Modal, Drawer)
+  if (requiredElements.includes(elementName)) return true;
+
+  // Check interactive elements (Button with onClick)
+  if (interactiveElements.includes(elementName)) return hasInteractiveHandler(attributes);
+
+  // Check form elements
+  return formElements.some((fe) => elementName === fe || elementName.startsWith(`${fe}.`));
+}
+
+function checkOpeningElement(env, node) {
+  const elementName = getElementName(node.name);
+  const attributes = node.attributes;
+
+  if (isSkippedElement(node, attributes, env.allowTemplateLiterals)) return;
+
+  if (needsTestId(elementName, attributes, env)) {
+    env.context.report({
+      node,
+      messageId: 'missingTestId',
+      data: { element: elementName },
+    });
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const requireTestId = {
   meta: {
@@ -84,142 +209,17 @@ export const requireTestId = {
     ];
     const allowTemplateLiterals = options.allowTemplateLiterals !== false;
 
-    /**
-     * Get the full element name (handles Input.Password, etc.)
-     */
-    function getElementName(node) {
-      if (node.type === 'JSXIdentifier') {
-        return node.name;
-      }
-      if (node.type === 'JSXMemberExpression') {
-        return `${getElementName(node.object)}.${node.property.name}`;
-      }
-      return '';
-    }
-
-    /**
-     * Check if element has data-testid attribute
-     */
-    function hasTestId(attributes) {
-      return attributes.some((attr) => {
-        if (attr.type !== 'JSXAttribute') return false;
-        const name = attr.name?.name;
-        return name === 'data-testid';
-      });
-    }
-
-    /**
-     * Check if element has a dynamic testid (template literal)
-     */
-    function hasDynamicTestId(attributes) {
-      return attributes.some((attr) => {
-        if (attr.type !== 'JSXAttribute') return false;
-        if (attr.name?.name !== 'data-testid') return false;
-        // Check if value is a JSXExpressionContainer with TemplateLiteral
-        if (attr.value?.type === 'JSXExpressionContainer') {
-          return attr.value.expression?.type === 'TemplateLiteral';
-        }
-        return false;
-      });
-    }
-
-    /**
-     * Check if element has onClick or onSubmit handler
-     */
-    function hasInteractiveHandler(attributes) {
-      return attributes.some((attr) => {
-        if (attr.type !== 'JSXAttribute') return false;
-        const name = attr.name?.name;
-        return name === 'onClick' || name === 'onSubmit' || name === 'onChange';
-      });
-    }
-
-    /**
-     * Check if this is inside a dropdown menu (common pattern where individual items don't need testids)
-     */
-    function isInsideMenuOrDropdown(node) {
-      let parent = node.parent;
-      while (parent) {
-        if (parent.type === 'JSXElement') {
-          const parentName = getElementName(parent.openingElement.name);
-          if (parentName === 'Menu' || parentName === 'Dropdown' || parentName === 'Menu.Item') {
-            return true;
-          }
-        }
-        parent = parent.parent;
-      }
-      return false;
-    }
-
-    /**
-     * Check if element is passed as a prop (e.g., icon={<Button />})
-     */
-    function isPassedAsProp(node) {
-      let parent = node.parent;
-      while (parent) {
-        if (parent.type === 'JSXExpressionContainer' && parent.parent?.type === 'JSXAttribute') {
-          return true;
-        }
-        parent = parent.parent;
-      }
-      return false;
-    }
+    const env = {
+      context,
+      requiredElements,
+      interactiveElements,
+      formElements,
+      allowTemplateLiterals,
+    };
 
     return {
       JSXOpeningElement(node) {
-        const elementName = getElementName(node.name);
-        const attributes = node.attributes;
-
-        // Skip if already has data-testid
-        if (hasTestId(attributes)) {
-          return;
-        }
-
-        // Skip template literals if allowed
-        if (allowTemplateLiterals && hasDynamicTestId(attributes)) {
-          return;
-        }
-
-        // Skip elements inside menus/dropdowns
-        if (isInsideMenuOrDropdown(node)) {
-          return;
-        }
-
-        // Skip elements passed as props
-        if (isPassedAsProp(node)) {
-          return;
-        }
-
-        // Check required elements (Modal, Drawer)
-        if (requiredElements.includes(elementName)) {
-          context.report({
-            node,
-            messageId: 'missingTestId',
-            data: { element: elementName },
-          });
-          return;
-        }
-
-        // Check interactive elements (Button with onClick)
-        if (interactiveElements.includes(elementName)) {
-          if (hasInteractiveHandler(attributes)) {
-            context.report({
-              node,
-              messageId: 'missingTestId',
-              data: { element: elementName },
-            });
-          }
-          return;
-        }
-
-        // Check form elements
-        if (formElements.some((fe) => elementName === fe || elementName.startsWith(`${fe}.`))) {
-          context.report({
-            node,
-            messageId: 'missingTestId',
-            data: { element: elementName },
-          });
-        }
+        checkOpeningElement(env, node);
       },
     };
   },

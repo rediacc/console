@@ -23,6 +23,43 @@ const VAGUE_PATTERNS = [
   /^info$/i,
 ];
 
+/**
+ * Extract static text content from JSX children (string literals only).
+ * Returns null if any child is dynamic (expressions, components).
+ */
+function getStaticText(node) {
+  if (node.parent?.type !== 'JSXElement') return null;
+  const children = node.parent.children || [];
+  const parts = [];
+
+  for (const child of children) {
+    if (child.type === 'JSXText') {
+      parts.push(child.value);
+    } else if (child.type === 'Literal' && typeof child.value === 'string') {
+      parts.push(child.value);
+    } else {
+      // Dynamic content (expressions, components) - skip check
+      return null;
+    }
+  }
+
+  return parts.join('').trim();
+}
+
+/** The anchor text of an `<a href>` opening element, or null when it is not one or its text is dynamic. */
+function staticAnchorText(node) {
+  // Only check <a> elements
+  if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'a') return null;
+
+  // Must have href
+  const hasHref = node.attributes.some(
+    (attr) => attr.type === 'JSXAttribute' && attr.name?.name === 'href'
+  );
+  if (!hasHref) return null;
+
+  return getStaticText(node); // null for dynamic text, can't check
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const seoNoVagueAnchorText = {
   meta: {
@@ -39,52 +76,17 @@ export const seoNoVagueAnchorText = {
   },
 
   create(context) {
-    /**
-     * Extract static text content from JSX children (string literals only).
-     * Returns null if any child is dynamic (expressions, components).
-     */
-    function getStaticText(node) {
-      if (!node.parent || node.parent.type !== 'JSXElement') return null;
-      const children = node.parent.children || [];
-      const parts = [];
-
-      for (const child of children) {
-        if (child.type === 'JSXText') {
-          parts.push(child.value);
-        } else if (child.type === 'Literal' && typeof child.value === 'string') {
-          parts.push(child.value);
-        } else {
-          // Dynamic content (expressions, components) - skip check
-          return null;
-        }
-      }
-
-      return parts.join('').trim();
-    }
-
     return {
       JSXOpeningElement(node) {
-        // Only check <a> elements
-        if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'a') return;
+        const text = staticAnchorText(node);
+        if (text === null) return;
 
-        // Must have href
-        const hasHref = node.attributes.some(
-          (attr) => attr.type === 'JSXAttribute' && attr.name?.name === 'href'
-        );
-        if (!hasHref) return;
-
-        const text = getStaticText(node);
-        if (text === null) return; // Dynamic text, can't check
-
-        for (const pattern of VAGUE_PATTERNS) {
-          if (pattern.test(text)) {
-            context.report({
-              node,
-              messageId: 'vagueText',
-              data: { text },
-            });
-            return;
-          }
+        if (VAGUE_PATTERNS.some((pattern) => pattern.test(text))) {
+          context.report({
+            node,
+            messageId: 'vagueText',
+            data: { text },
+          });
         }
       },
     };

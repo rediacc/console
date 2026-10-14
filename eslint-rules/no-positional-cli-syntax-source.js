@@ -84,6 +84,55 @@ const loadPathsFromTree = () => {
   return { leaves, parents };
 };
 
+const USAGE_PLACEHOLDER_PATTERNS = [
+  /^\[options\](?!\w)/,
+  /^\[command\.\.\.\](?!\w)/,
+  /^\[command\](?!\w)/,
+  /^\[komut\.\.\.\](?!\w)/,
+  /^\[seçenekler\](?!\w)/,
+];
+
+function isUsagePlaceholder(afterPath) {
+  return USAGE_PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(afterPath));
+}
+
+/** Report `entry` once per line position and once per path+line when it matches `line`. */
+function tryReport(env, node, line, seen, entry) {
+  const m = entry.regex.exec(line);
+  if (!m) return;
+  const rdcIndex = line.indexOf('rdc ', m.index);
+  const trailing = line.slice(rdcIndex);
+  const afterPath = trailing.slice(`rdc ${entry.path} `.length);
+  if (isUsagePlaceholder(afterPath)) return;
+  const posKey = `${rdcIndex}`;
+  if (seen.reportedPerLine.has(posKey)) return;
+  seen.reportedPerLine.add(posKey);
+  const reportKey = `${entry.path}|${line.trim()}`;
+  if (seen.reported.has(reportKey)) return;
+  seen.reported.add(reportKey);
+  env.context.report({
+    node,
+    messageId: 'positionalSyntax',
+    data: { path: entry.path },
+  });
+}
+
+function checkStringValue(env, node, strValue) {
+  if (typeof strValue !== 'string') return;
+  if (!strValue.includes('rdc ')) return;
+
+  const { exemptPrefixes, leafEntries, parentEntries } = env;
+  const lines = strValue.split(/\r?\n/);
+  const reported = new Set();
+  for (const line of lines) {
+    const trimmedStart = line.trimStart();
+    if (exemptPrefixes.some((p) => trimmedStart.startsWith(p))) continue;
+    const seen = { reported, reportedPerLine: new Set() };
+    for (const entry of leafEntries) tryReport(env, node, line, seen, entry);
+    for (const entry of parentEntries) tryReport(env, node, line, seen, entry);
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noPositionalCliSyntaxSource = {
   meta: {
@@ -128,57 +177,17 @@ export const noPositionalCliSyntaxSource = {
 
     if (leafEntries.length === 0 && parentEntries.length === 0) return {};
 
-    const checkStringValue = (node, strValue) => {
-      if (typeof strValue !== 'string') return;
-      if (!strValue.includes('rdc ')) return;
-
-      const lines = strValue.split(/\r?\n/);
-      const reported = new Set();
-      for (const line of lines) {
-        const trimmedStart = line.trimStart();
-        if (exemptPrefixes.some((p) => trimmedStart.startsWith(p))) continue;
-        const reportedPerLine = new Set();
-        const tryReport = (entry) => {
-          const m = entry.regex.exec(line);
-          if (!m) return;
-          const rdcIndex = line.indexOf('rdc ', m.index);
-          const trailing = line.slice(rdcIndex);
-          const afterPath = trailing.slice(`rdc ${entry.path} `.length);
-          if (
-            /^\[options\](?!\w)/.test(afterPath) ||
-            /^\[command\.\.\.\](?!\w)/.test(afterPath) ||
-            /^\[command\](?!\w)/.test(afterPath) ||
-            /^\[komut\.\.\.\](?!\w)/.test(afterPath) ||
-            /^\[seçenekler\](?!\w)/.test(afterPath)
-          ) {
-            return;
-          }
-          const posKey = `${rdcIndex}`;
-          if (reportedPerLine.has(posKey)) return;
-          reportedPerLine.add(posKey);
-          const reportKey = `${entry.path}|${line.trim()}`;
-          if (reported.has(reportKey)) return;
-          reported.add(reportKey);
-          context.report({
-            node,
-            messageId: 'positionalSyntax',
-            data: { path: entry.path },
-          });
-        };
-        for (const entry of leafEntries) tryReport(entry);
-        for (const entry of parentEntries) tryReport(entry);
-      }
-    };
+    const env = { context, exemptPrefixes, leafEntries, parentEntries };
 
     return {
       Literal(node) {
-        checkStringValue(node, node.value);
+        checkStringValue(env, node, node.value);
       },
       TemplateElement(node) {
-        checkStringValue(node, node.value?.cooked ?? node.value?.raw);
+        checkStringValue(env, node, node.value?.cooked ?? node.value?.raw);
       },
       JSXText(node) {
-        checkStringValue(node, node.value);
+        checkStringValue(env, node, node.value);
       },
     };
   },

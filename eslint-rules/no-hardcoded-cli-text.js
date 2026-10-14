@@ -121,6 +121,107 @@ const ARGUMENT_CHECKS = [
   },
 ];
 
+/**
+ * Report `arg` when it carries a hardcoded user-facing string.
+ * Returns true when the whole visitor should stop, which is the case the
+ * inline `return`s used to encode: the argument is already a t() call.
+ */
+function checkArgument(context, arg, messageId) {
+  // Skip if arg is a t() call
+  if (arg && isTranslationCall(arg)) return true;
+
+  const value = getStringValue(arg);
+  if (value && !shouldIgnore(value)) {
+    context.report({
+      node: arg,
+      messageId,
+      data: { text: value.slice(0, 50) },
+    });
+  }
+  return false;
+}
+
+/** One line of an addHelpText template literal. */
+function checkHelpTextLine(context, quasi, line) {
+  const trimmed = line.trim();
+  if (!trimmed) return;
+
+  // For command example lines ($ rdc ...), check for hardcoded
+  // descriptions trailing after 2+ spaces (e.g., "$ rdc foo  Description here")
+  if (/^\$\s+/.test(trimmed)) {
+    const descMatch = trimmed.match(/\s{2,}([A-Z][a-zA-Z].*)$/);
+    const desc = descMatch ? descMatch[1].trim() : '';
+    if (desc && /[a-zA-Z]{2,}/.test(desc) && !shouldIgnore(desc)) {
+      context.report({
+        node: quasi,
+        messageId: 'hardcodedHelpText',
+        data: { text: desc.slice(0, 50) },
+      });
+    }
+    return;
+  }
+
+  // Flag any other user-facing text (including labels like "Examples:")
+  if (/[a-zA-Z]{2,}/.test(trimmed) && !shouldIgnore(trimmed)) {
+    context.report({
+      node: quasi,
+      messageId: 'hardcodedHelpText',
+      data: { text: trimmed.slice(0, 50) },
+    });
+  }
+}
+
+/** .addHelpText('after', `...`) - template literal quasis, or a plain string. */
+function checkHelpText(context, contentArg) {
+  if (!contentArg) return;
+
+  if (contentArg.type === 'TemplateLiteral') {
+    for (const quasi of contentArg.quasis) {
+      // Split into lines; check each line for user-facing text
+      for (const line of (quasi.value.cooked ?? '').split('\n')) {
+        checkHelpTextLine(context, quasi, line);
+      }
+    }
+    return;
+  }
+
+  // Plain string literal in addHelpText — should use template with t()
+  const value = getStringValue(contentArg);
+  if (value && !shouldIgnore(value)) {
+    context.report({
+      node: contentArg,
+      messageId: 'hardcodedHelpText',
+      data: { text: value.slice(0, 50) },
+    });
+  }
+}
+
+function isValidationErrorThrow(node) {
+  return (
+    node.argument &&
+    node.argument.type === 'NewExpression' &&
+    node.argument.callee.type === 'Identifier' &&
+    node.argument.callee.name === 'ValidationError'
+  );
+}
+
+/** Check one call: skip t() calls, then each argument shape, then addHelpText. */
+function checkCall(context, node) {
+  const callee = node.callee;
+
+  // Skip t() calls themselves
+  if (isTranslationCall(node)) return;
+
+  for (const check of ARGUMENT_CHECKS) {
+    if (!check.matches(callee)) continue;
+    if (checkArgument(context, node.arguments[check.argIndex], check.messageId)) return;
+  }
+
+  if (isMethodCall(callee, ['addHelpText'])) {
+    checkHelpText(context, node.arguments[1]);
+  }
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noHardcodedCliText = {
   meta: {
@@ -144,107 +245,15 @@ export const noHardcodedCliText = {
   },
 
   create(context) {
-    /**
-     * Report `arg` when it carries a hardcoded user-facing string.
-     * Returns true when the whole visitor should stop, which is the case the
-     * inline `return`s used to encode: the argument is already a t() call.
-     */
-    const checkArgument = (arg, messageId) => {
-      // Skip if arg is a t() call
-      if (arg && isTranslationCall(arg)) return true;
-
-      const value = getStringValue(arg);
-      if (value && !shouldIgnore(value)) {
-        context.report({
-          node: arg,
-          messageId,
-          data: { text: value.slice(0, 50) },
-        });
-      }
-      return false;
-    };
-
-    /** One line of an addHelpText template literal. */
-    const checkHelpTextLine = (quasi, line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
-
-      // For command example lines ($ rdc ...), check for hardcoded
-      // descriptions trailing after 2+ spaces (e.g., "$ rdc foo  Description here")
-      if (/^\$\s+/.test(trimmed)) {
-        const descMatch = trimmed.match(/\s{2,}([A-Z][a-zA-Z].*)$/);
-        const desc = descMatch ? descMatch[1].trim() : '';
-        if (desc && /[a-zA-Z]{2,}/.test(desc) && !shouldIgnore(desc)) {
-          context.report({
-            node: quasi,
-            messageId: 'hardcodedHelpText',
-            data: { text: desc.slice(0, 50) },
-          });
-        }
-        return;
-      }
-
-      // Flag any other user-facing text (including labels like "Examples:")
-      if (/[a-zA-Z]{2,}/.test(trimmed) && !shouldIgnore(trimmed)) {
-        context.report({
-          node: quasi,
-          messageId: 'hardcodedHelpText',
-          data: { text: trimmed.slice(0, 50) },
-        });
-      }
-    };
-
-    /** .addHelpText('after', `...`) - template literal quasis, or a plain string. */
-    const checkHelpText = (contentArg) => {
-      if (!contentArg) return;
-
-      if (contentArg.type === 'TemplateLiteral') {
-        for (const quasi of contentArg.quasis) {
-          // Split into lines; check each line for user-facing text
-          for (const line of (quasi.value.cooked ?? '').split('\n')) {
-            checkHelpTextLine(quasi, line);
-          }
-        }
-        return;
-      }
-
-      // Plain string literal in addHelpText — should use template with t()
-      const value = getStringValue(contentArg);
-      if (value && !shouldIgnore(value)) {
-        context.report({
-          node: contentArg,
-          messageId: 'hardcodedHelpText',
-          data: { text: value.slice(0, 50) },
-        });
-      }
-    };
-
     return {
       CallExpression(node) {
-        const callee = node.callee;
-
-        // Skip t() calls themselves
-        if (isTranslationCall(node)) return;
-
-        for (const check of ARGUMENT_CHECKS) {
-          if (!check.matches(callee)) continue;
-          if (checkArgument(node.arguments[check.argIndex], check.messageId)) return;
-        }
-
-        if (isMethodCall(callee, ['addHelpText'])) {
-          checkHelpText(node.arguments[1]);
-        }
+        checkCall(context, node);
       },
 
       // Check throw new ValidationError('...')
       ThrowStatement(node) {
-        if (
-          node.argument &&
-          node.argument.type === 'NewExpression' &&
-          node.argument.callee.type === 'Identifier' &&
-          node.argument.callee.name === 'ValidationError'
-        ) {
-          checkArgument(node.argument.arguments[0], 'hardcodedError');
+        if (isValidationErrorThrow(node)) {
+          checkArgument(context, node.argument.arguments[0], 'hardcodedError');
         }
       },
     };

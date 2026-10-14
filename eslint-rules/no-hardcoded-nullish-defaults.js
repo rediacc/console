@@ -23,6 +23,88 @@
  * const tag = repo.tag ?? DEFAULTS.REPOSITORY.TAG;
  */
 
+/**
+ * Check if a string looks like an i18n translation key.
+ * i18n keys follow the pattern "namespace:path.to.key" (e.g., "common:errors.unknownError")
+ */
+function isI18nKey(str) {
+  // Match patterns like "common:errors.xyz" or "machines:validation.error"
+  return /^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9.]*$/.test(str);
+}
+
+/**
+ * Check if a node is a number literal (including negative numbers)
+ */
+function getNumberValue(node) {
+  if (node.type === 'Literal' && typeof node.value === 'number') {
+    return node.value;
+  }
+  // Handle negative numbers: -1, -22, etc.
+  if (
+    node.type === 'UnaryExpression' &&
+    node.operator === '-' &&
+    node.argument?.type === 'Literal' &&
+    typeof node.argument.value === 'number'
+  ) {
+    return -node.argument.value;
+  }
+  return null;
+}
+
+/**
+ * Check if a node is a string literal
+ */
+function getStringValue(node) {
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    return node.value;
+  }
+  // Handle simple template literals with no expressions
+  if (
+    node.type === 'TemplateLiteral' &&
+    node.expressions.length === 0 &&
+    node.quasis.length === 1
+  ) {
+    return node.quasis[0].value.cooked;
+  }
+  return null;
+}
+
+/** Report the right-hand side of a `??` when it is a hardcoded number or string outside the allowed sets. */
+function checkNullishDefault(context, right, allowedNumbers, allowedStrings) {
+  // Check for number literals
+  const numberValue = getNumberValue(right);
+  if (numberValue !== null) {
+    if (!allowedNumbers.has(numberValue)) {
+      context.report({
+        node: right,
+        messageId: 'hardcodedNumber',
+        data: { value: String(numberValue) },
+      });
+    }
+    return;
+  }
+
+  // Check for string literals
+  const stringValue = getStringValue(right);
+  if (stringValue !== null) {
+    // Allow i18n translation keys (e.g., "common:errors.xyz")
+    if (isI18nKey(stringValue)) {
+      return;
+    }
+    if (!allowedStrings.has(stringValue)) {
+      context.report({
+        node: right,
+        messageId: 'hardcodedString',
+        data: { value: stringValue },
+      });
+    }
+    return;
+  }
+
+  // Allow: booleans, arrays, objects, identifiers, member expressions, etc. These are not flagged as they're either: - Acceptable primitives (true/false) - Already using constants (identifiers/member expressions)
+  // - Structural defaults ([], {})
+}
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noHardcodedNullishDefaults = {
   meta: {
@@ -86,52 +168,6 @@ export const noHardcodedNullishDefaults = {
     // Always allow empty string (intentional clearing pattern)
     allowedStrings.add('');
 
-    /**
-     * Check if a string looks like an i18n translation key.
-     * i18n keys follow the pattern "namespace:path.to.key" (e.g., "common:errors.unknownError")
-     */
-    function isI18nKey(str) {
-      // Match patterns like "common:errors.xyz" or "machines:validation.error"
-      return /^[a-zA-Z][a-zA-Z0-9]*:[a-zA-Z][a-zA-Z0-9.]*$/.test(str);
-    }
-
-    /**
-     * Check if a node is a number literal (including negative numbers)
-     */
-    function getNumberValue(node) {
-      if (node.type === 'Literal' && typeof node.value === 'number') {
-        return node.value;
-      }
-      // Handle negative numbers: -1, -22, etc.
-      if (
-        node.type === 'UnaryExpression' &&
-        node.operator === '-' &&
-        node.argument?.type === 'Literal' &&
-        typeof node.argument.value === 'number'
-      ) {
-        return -node.argument.value;
-      }
-      return null;
-    }
-
-    /**
-     * Check if a node is a string literal
-     */
-    function getStringValue(node) {
-      if (node.type === 'Literal' && typeof node.value === 'string') {
-        return node.value;
-      }
-      // Handle simple template literals with no expressions
-      if (
-        node.type === 'TemplateLiteral' &&
-        node.expressions.length === 0 &&
-        node.quasis.length === 1
-      ) {
-        return node.quasis[0].value.cooked;
-      }
-      return null;
-    }
-
     return {
       LogicalExpression(node) {
         // Only check nullish coalescing operator (??)
@@ -139,40 +175,7 @@ export const noHardcodedNullishDefaults = {
           return;
         }
 
-        const right = node.right;
-
-        // Check for number literals
-        const numberValue = getNumberValue(right);
-        if (numberValue !== null) {
-          if (!allowedNumbers.has(numberValue)) {
-            context.report({
-              node: right,
-              messageId: 'hardcodedNumber',
-              data: { value: String(numberValue) },
-            });
-          }
-          return;
-        }
-
-        // Check for string literals
-        const stringValue = getStringValue(right);
-        if (stringValue !== null) {
-          // Allow i18n translation keys (e.g., "common:errors.xyz")
-          if (isI18nKey(stringValue)) {
-            return;
-          }
-          if (!allowedStrings.has(stringValue)) {
-            context.report({
-              node: right,
-              messageId: 'hardcodedString',
-              data: { value: stringValue },
-            });
-          }
-          return;
-        }
-
-        // Allow: booleans, arrays, objects, identifiers, member expressions, etc. These are not flagged as they're either: - Acceptable primitives (true/false) - Already using constants (identifiers/member expressions)
-        // - Structural defaults ([], {})
+        checkNullishDefault(context, node.right, allowedNumbers, allowedStrings);
       },
     };
   },
