@@ -273,7 +273,10 @@ def run(subject: pathlib.Path, workdir: pathlib.Path, name: str) -> tuple[int, s
         timeout=180,
     )
     known_hosts = home / ".ssh" / "known_hosts"
-    mask = lambda text: text.replace(str(workdir), "<work>").replace(str(home), "<home>")  # noqa: E731
+
+    def mask(text):
+        return text.replace(str(workdir), "<work>").replace(str(home), "<home>")
+
     return (
         proc.returncode,
         mask(proc.stdout),

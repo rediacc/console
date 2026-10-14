@@ -63,9 +63,12 @@ def _build_repo(repo: pathlib.Path) -> dict[str, str]:
         GIT_COMMITTER_NAME="w7p5a",
         GIT_COMMITTER_EMAIL="w7p5a@example.invalid",
     )
-    run = lambda *args: subprocess.run(  # noqa: E731
-        ["git", *args], cwd=str(repo), env=env, capture_output=True, text=True, check=True
-    )
+
+    def run(*args):
+        return subprocess.run(
+            ["git", *args], cwd=str(repo), env=env, capture_output=True, text=True, check=True
+        )
+
     run("init", "-q", "-b", "main")
     (repo / "f.txt").write_text("one\n", encoding="utf-8")
     run("add", "f.txt")

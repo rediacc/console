@@ -124,7 +124,8 @@ def manifest_body(
         "createdAt": wire.iso_now(),
     }
     if parent:
-        assert parent_plan is not None  # noqa: S101
+        if parent_plan is None:
+            raise RuntimeError("parent_plan is not set")
         changed = {str(i): h for i, h in enumerate(plan["cells"]) if parent_plan["cells"][i] != h}
         return wire.compact({**base, "parent": parent, "changedCells": changed})
     return wire.compact({**base, "cells": plan["cells"]})
@@ -136,8 +137,10 @@ def manifest_body(
 class BackupDrill(lib.Drill):
     """`lib.Drill` plus the environment only the dev gateway receives (Rule T 2)."""
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
-        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+    def __init__(
+        self, name: str, selftest: bool = False, keep_work: bool | None = None, stdout=None
+    ) -> None:
+        super().__init__(name, selftest, keep_work, stdout)
         self.gateway_extra: dict[str, str] = {}
 
     def gateway_env(self) -> dict[str, str]:
@@ -280,7 +283,8 @@ class Backup:
 
     @property
     def work(self) -> pathlib.Path:
-        assert self.d.work is not None  # noqa: S101
+        if self.d.work is None:
+            raise RuntimeError("self.d.work is not set")
         return self.d.work
 
     def store_url(self) -> str:
@@ -353,7 +357,8 @@ class Backup:
         return wire.lookup(parsed, path)
 
     def patch_subscription(self, patch: dict) -> None:
-        assert self.admin_jar is not None  # noqa: S101
+        if self.admin_jar is None:
+            raise RuntimeError("self.admin_jar is not set")
         self.d.account_patch_subscription(self.admin_jar, self.subscription_id, patch)
 
     # ------------------------------------------------------------------ preflight
@@ -1181,7 +1186,8 @@ class Backup:
         )
 
         # The other half of the contract: the CLI's parser turns THIS output into preview rows. Reading the struct tags cannot catch a parser that never sees real output.
-        assert d.stdout_file is not None  # noqa: S101
+        if d.stdout_file is None:
+            raise RuntimeError("d.stdout_file is not set")
         shutil.copyfile(d.stdout_file, self.work / "prune.json")
         script = self.work / "parse-prune.ts"
         script.write_text(

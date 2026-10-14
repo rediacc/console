@@ -665,7 +665,10 @@ def test_actions_match_the_live_twin(scenario, case) -> None:
             "abcfa6a9d4df344d1781bc2560b5e4cdcae08b39ed303063535e7e1e926a304a"
         )
         assert new_out[0].endswith(hashlib.sha256(b"").hexdigest())
-        rest = lambda lines: [x for x in lines if "out#0|" not in x]  # noqa: E731
+
+        def rest(lines):
+            return [x for x in lines if "out#0|" not in x]
+
         assert rest(old) == rest(new)
         return
     assert old == new, "case %s/%s diverged" % (scenario, case.name)

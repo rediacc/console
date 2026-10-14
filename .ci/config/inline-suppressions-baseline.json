@@ -82,7 +82,6 @@
    "noqa PLW0108": 1
   },
   ".ci/rediacc_ci/core_lease.py": {
-   "noqa S101": 1,
    "noqa S606": 2
   },
   ".ci/rediacc_ci/deploy/clone_d1.py": {
@@ -105,24 +104,18 @@
    "noqa S606": 1
   },
   ".ci/rediacc_ci/drills/backup.py": {
-   "noqa S101": 4,
-   "noqa S105": 1,
-   "type-ignore arg-type": 1
+   "noqa S105": 1
   },
   ".ci/rediacc_ci/drills/lib.py": {
-   "noqa S101": 1,
    "noqa S310": 2
   },
   ".ci/rediacc_ci/drills/license.py": {
-   "noqa S101": 2,
    "noqa S105": 1
   },
   ".ci/rediacc_ci/drills/transfer.py": {
-   "noqa S101": 4,
    "noqa S105": 2
   },
   ".ci/rediacc_ci/drills/universe.py": {
-   "noqa S101": 3,
    "noqa S105": 1
   },
   ".ci/rediacc_ci/drills/wire.py": {
@@ -166,9 +159,6 @@
   },
   ".ci/rediacc_ci/quality/ci_watch_recipe.py": {
    "noqa BLE001": 1
-  },
-  ".ci/rediacc_ci/quality/devcontainer_scripts.py": {
-   "noqa E731": 1
   },
   ".ci/rediacc_ci/quality/gh_retry_reads.py": {
    "noqa PLC0415": 1,
@@ -235,12 +225,6 @@
   ".ci/rediacc_ci/setup/tools.py": {
    "type-ignore arg-type": 1
   },
-  ".ci/rediacc_ci/testrun/e2e.py": {
-   "noqa S101": 1
-  },
-  ".ci/rediacc_ci/testrun/rdc_update.py": {
-   "noqa S101": 1
-  },
   ".ci/rediacc_ci/tests/differential.py": {
    "noqa PLC0415": 4
   },
@@ -299,9 +283,6 @@
    "type-ignore arg-type": 2,
    "type-ignore attr-defined": 7
   },
-  ".ci/rediacc_ci/tests/test_core_local_common.py": {
-   "noqa E731": 1
-  },
   ".ci/rediacc_ci/tests/test_core_platform.py": {
    "noqa PLC0415": 1
   },
@@ -332,9 +313,6 @@
   ".ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py": {
    "type-ignore arg-type": 1
   },
-  ".ci/rediacc_ci/tests/test_housekeeping_cleanup_stale_d1.py": {
-   "noqa E731": 1
-  },
   ".ci/rediacc_ci/tests/test_infra_ci_start_account.py": {
    "type-ignore arg-type": 2
   },
@@ -344,30 +322,15 @@
   ".ci/rediacc_ci/tests/test_infra_obs_mirror.py": {
    "type-ignore func-returns-value": 1
   },
-  ".ci/rediacc_ci/tests/test_infra_wait_for_vm_ssh.py": {
-   "noqa E731": 1
-  },
   ".ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py": {
    "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/tests/test_ops_build_server.py": {
    "type-ignore arg-type": 1
   },
-  ".ci/rediacc_ci/tests/test_ops_cf_family.py": {
-   "noqa E731": 1
-  },
   ".ci/rediacc_ci/tests/test_ops_units.py": {
    "type-ignore arg-type": 1,
    "type-ignore assignment": 1
-  },
-  ".ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py": {
-   "noqa E731": 2
-  },
-  ".ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py": {
-   "noqa E731": 2
-  },
-  ".ci/rediacc_ci/tests/test_private_renet_csi_sanity.py": {
-   "noqa E731": 1
   },
   ".ci/rediacc_ci/tests/test_proc.py": {
    "noqa B023": 1
@@ -408,17 +371,11 @@
   ".ci/rediacc_ci/tests/test_quality_plan_housekeeping.py": {
    "noqa PLC0415": 1
   },
-  ".ci/rediacc_ci/tests/test_quality_shape_cluster_diff.py": {
-   "noqa E731": 1
-  },
   ".ci/rediacc_ci/tests/test_quality_staging_tag_guard.py": {
    "type-ignore arg-type": 1
   },
   ".ci/rediacc_ci/tests/test_release_check_soak_period.py": {
    "noqa DTZ005": 1
-  },
-  ".ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py": {
-   "noqa E731": 1
   },
   ".ci/rediacc_ci/tests/test_review_clean_ledger.py": {
    "noqa E402": 1

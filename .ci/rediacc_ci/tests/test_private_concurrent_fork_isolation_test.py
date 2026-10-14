@@ -409,8 +409,13 @@ def _live(
     raw = log.read_text(encoding="utf-8") if log.exists() else ""
     calls, drifting = _split_drifting(_records(raw))
     uploaded = tmp_path.resolve() / "uploaded.txt"
-    decode = lambda raw_bytes: raw_bytes.decode("utf-8", "surrogateescape")  # noqa: E731
-    mask = lambda line: _mask(line, root, tmp_path.resolve())  # noqa: E731
+
+    def decode(raw_bytes):
+        return raw_bytes.decode("utf-8", "surrogateescape")
+
+    def mask(line):
+        return _mask(line, root, tmp_path.resolve())
+
     return {
         "exit": proc.returncode,
         "stdout": _mask(decode(proc.stdout), root, tmp_path.resolve()),
