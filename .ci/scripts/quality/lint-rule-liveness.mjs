@@ -1,27 +1,25 @@
 #!/usr/bin/env node
 /**
- * Lint-rule liveness, as a matrix derived from eslint.config.js itself.
+ * Lint-rule liveness, as a matrix derived from scripts/data/source-rules.ts.
  *
  * WHY A MATRIX AND NOT A LIST. The predecessor gate (see the docstring history
  * in check_lint_rule_liveness.py, which is still the entry point) proved three
  * i18n rules at one probe path and was silent about the other twenty-seven. A
  * hand-written probe list is exactly the artefact that misses a config block,
- * so the universe here is READ OUT OF THE CONFIG: every rule registered under
- * the `custom`, `i18n` and `i18n-source` plugins, and every one of those that
- * any block assigns a severity other than off. The matrix key set must EQUAL
+ * so the universe here is READ OUT OF THE RULE TABLE: every rule id
+ * scripts/data/source-rules.ts enables for at least one path. The matrix key set must EQUAL
  * the enabled set, both directions, or the run fails. A new enabled rule with
  * no specimen is `unproven`; a specimen for a rule that stopped being enabled
  * is a `stale matrix entry`.
  *
- * WHY ONE PROCESS. `npx eslint` costs ~2.05 s per lint and ~1.03 s per
- * --print-config. Thirty of those is over 90 s, which is how a gate gets
- * switched off. Everything below runs against node_modules/eslint's JS API in
- * a single process, where the second lint inside an already-warm TypeScript
- * project costs 3-40 ms.
+ * WHY ONE PROCESS. A process per lint is how a gate gets switched off.
+ * Everything below runs the rule modules through scripts/lib/rule-host.ts (the
+ * oxc/momoa host that replaced ESLint) in a single process, where a lint of
+ * one specimen costs milliseconds.
  *
  * WHY NOTHING IS WRITTEN INTO THE REPO. 29 of the 30 specimens go through
- * `lintText`, which takes a VIRTUAL filePath (it decides which config block
- * applies) and never touches disk. Only the two cross-file locale rules need a
+ * `HostLinter.lintText`, which takes a VIRTUAL filePath (it decides which table
+ * entries apply) and never touches disk. Only the two cross-file locale rules need a
  * real directory, and that fixture is an OS temp dir removed in a `finally`.
  * It must NEVER be created inside a locales tree: the cross-file rules
  * enumerate languages by listing `localesDir`, so a probe directory planted
@@ -36,7 +34,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { minimatch } from 'minimatch';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // .ci/scripts/quality/ -> repo root
@@ -423,14 +420,6 @@ const REQUIRES_JSX = new Set([
 // --------------------------------------------------------------------------- Helpers ---------------------------------------------------------------------------
 const err = (...args) => console.error(...args);
 
-const severityOf = (value) => {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (raw === 'off' || raw === 0 || raw === undefined) return 0;
-  if (raw === 'warn') return 1;
-  if (raw === 'error') return 2;
-  return typeof raw === 'number' ? raw : 0;
-};
-
 /**
  * The universe used to come from walking eslint.config.js's `plugins`/`rules`
  * blocks (last-match-wins across 6 modules). It now comes from
@@ -446,7 +435,12 @@ const severityOf = (value) => {
  */
 async function sourceRulesUniverse() {
   const mod = await import(path.join(ROOT, 'scripts/data/source-rules.ts'));
-  return { RULE_IDS: mod.RULE_IDS, RULE_INSTANCES: mod.RULE_INSTANCES };
+  return {
+    RULE_IDS: mod.RULE_IDS,
+    RULE_INSTANCES: mod.RULE_INSTANCES,
+    matchesEslintGlob: mod.matchesEslintGlob,
+    isGloballyIgnored: mod.isGloballyIgnored,
+  };
 }
 
 /** Every `.js` rule module file under eslint-rules/, excluding helpers and tests:
@@ -796,8 +790,9 @@ function reportBiomeHalf(biomeHalf) {
 async function main() {
   const started = Date.now();
   // Bare specifiers: this file lives inside the repo, so Node's resolver walks up to the repo's own node_modules. The launcher has already proven it exists.
-  const { ESLint } = await import('eslint');
-  const { RULE_IDS, RULE_INSTANCES, GLOBAL_IGNORES } = await sourceRulesUniverse();
+  const { RULE_IDS, RULE_INSTANCES, matchesEslintGlob, isGloballyIgnored } =
+    await sourceRulesUniverse();
+  const host = await import(path.join(ROOT, 'scripts/lib/rule-host.ts'));
 
   if (!Array.isArray(RULE_IDS) || !Array.isArray(RULE_INSTANCES)) {
     err(
@@ -818,16 +813,73 @@ async function main() {
     list.push(instance);
     ruleInstancesById.set(instance.ruleId, list);
   }
-  const globalIgnores = Array.isArray(GLOBAL_IGNORES) ? GLOBAL_IGNORES : [];
+  const inScope = (info, posix) =>
+    info.files.some((g) => matchesEslintGlob(posix, g)) &&
+    !(info.ignores ?? []).some((g) => matchesEslintGlob(posix, g));
   function isEnabledAtPath(ruleId, relPath) {
     const instances = ruleInstancesById.get(ruleId);
     if (!instances || instances.length === 0) return false;
     const posix = relPath.split(path.sep).join('/');
-    if (globalIgnores.some((g) => minimatch(posix, g))) return false;
-    return instances.some((info) => {
-      if (!info.files.some((g) => minimatch(posix, g))) return false;
-      return !(info.ignores ?? []).some((g) => minimatch(posix, g));
-    });
+    if (isGloballyIgnored(posix)) return false;
+    return instances.some((info) => inScope(info, posix));
+  }
+
+  // The host-backed stand-in for the ESLint instance this gate used to drive. With no `overrides` it runs every table entry in scope for the file (the "in-config" mode); with `overrides` ({ruleId: options[]}) it runs exactly those rules, whether or not the table enables them -- how a parked rule, an option-dir probe and an isolated specimen are all reached.
+  const rulesByModule = new Map();
+  const loadRule = async (modulePath, exportName) => {
+    const key = `${modulePath}#${exportName}`;
+    if (!rulesByModule.has(key)) {
+      rulesByModule.set(key, (await import(path.join(ROOT, modulePath)))[exportName]);
+    }
+    return rulesByModule.get(key);
+  };
+  const camel = (name) => name.replace(/-([a-z])/g, (_m, c) => c.toUpperCase());
+  const targetFor = async (ruleId, options) => {
+    const info = ruleInstancesById.get(ruleId)?.[0];
+    if (info) {
+      return { ruleId, kind: info.kind, rule: await loadRule(info.modulePath, info.exportName), options };
+    }
+    const parked = KNOWN_OFF_MODULES[ruleId];
+    if (!parked) return null;
+    return { ruleId, kind: 'json', rule: await loadRule(parked, camel(ruleId.split('/')[1])), options };
+  };
+  class HostLinter {
+    constructor(overrides = null) {
+      this.overrides = overrides;
+    }
+    async lintText(code, { filePath }) {
+      const posix = path.relative(ROOT, filePath).split(path.sep).join('/');
+      const targets = [];
+      if (this.overrides) {
+        for (const [ruleId, options] of Object.entries(this.overrides)) {
+          const target = await targetFor(ruleId, options);
+          if (target) targets.push(target);
+        }
+      } else if (!isGloballyIgnored(posix)) {
+        for (const info of RULE_INSTANCES.filter((i) => inScope(i, posix))) {
+          targets.push({
+            ruleId: info.ruleId,
+            kind: info.kind,
+            rule: await loadRule(info.modulePath, info.exportName),
+            options: info.options ?? [],
+          });
+        }
+      }
+      const messages = [];
+      for (const target of targets) {
+        const run = { filename: filePath, cwd: ROOT, options: target.options };
+        try {
+          const found =
+            target.kind === 'json'
+              ? host.runJsonRule(target.rule, code, run)
+              : host.runSourceRule(target.rule, code, run);
+          for (const f of found) messages.push({ ruleId: target.ruleId, message: f.message });
+        } catch (error) {
+          messages.push({ fatal: true, message: String(error?.message ?? error) });
+        }
+      }
+      return [{ messages }];
+    }
   }
 
   if (registered.size < MIN_REGISTERED) {
@@ -911,7 +963,7 @@ async function main() {
   }
   if (unproven.length > 0 || stale.length > 0) return 1;
 
-  const eslint = new ESLint({ cwd: ROOT });
+  const inConfig = new HostLinter();
 
   // ------------------------------------------------------------------------- The temp fixture for the two cross-file locale rules. NEVER inside a locales tree: those rules enumerate languages by listing localesDir, so a directory planted there becomes a fourteenth language for every i18n rule and for the locale-set gates that read @rediacc/locales.
   // -------------------------------------------------------------------------
@@ -933,12 +985,7 @@ async function main() {
 
     const optionRules = [...matrixKeys].filter((r) => MATRIX[r].mode === 'option-dir');
     const optionInstance = (dir) =>
-      new ESLint({
-        cwd: ROOT,
-        overrideConfig: {
-          rules: Object.fromEntries(optionRules.map((r) => [r, ['error', MATRIX[r].options(dir)]])),
-        },
-      });
+      new HostLinter(Object.fromEntries(optionRules.map((r) => [r, [MATRIX[r].options(dir)]])));
 
     // --------------------------------------------------------------------- CONTROLS. One per execution mode, all inline on every run, none behind a flag: a mode nobody remembers to run is how a control stops controlling anything. If any of these FIRES, the harness cannot tell firing from not firing and every verdict below it is meaningless.
     // ---------------------------------------------------------------------
@@ -946,10 +993,7 @@ async function main() {
 
     // 1. in-config mode: sorted-keys on already-sorted input (severity forced on, since the rule is off by documented decision).
     {
-      const probe = new ESLint({
-        cwd: ROOT,
-        overrideConfig: { rules: { 'i18n/sorted-keys': 'error' } },
-      });
+      const probe = new HostLinter({ 'i18n/sorted-keys': [] });
       const { fired } = firedRuleIds(
         await probe.lintText(JSON.stringify({ a: '1', b: '2' }, null, 2), {
           filePath: path.join(ROOT, 'packages/www/src/i18n/translations/tr.json'),
@@ -986,37 +1030,15 @@ async function main() {
     const isolatedRuleIds = [...matrixKeys]
       .filter((r) => (MATRIX[r].mode ?? 'in-config') === 'isolated')
       .sort();
-    const isolatedRules = {};
     for (const ruleId of isolatedRuleIds) {
-      if (!ruleId.startsWith('custom/')) {
-        err(`${ruleId}: isolated mode only supports the 'custom' namespace today (this file's`);
-        err('  isolated ESLint instance registers everything under one "custom" plugin object).');
-        return 1;
-      }
-      const info = ruleInstancesById.get(ruleId)?.[0];
-      const ruleModule = info
-        ? (await import(path.join(ROOT, info.modulePath)))[info.exportName]
-        : null;
-      if (!ruleModule) {
+      if (!ruleInstancesById.get(ruleId)?.[0]) {
         err(
-          `${ruleId} has no RULE_INSTANCES entry (or its module has no ` +
-            `${info?.exportName ?? '<unknown>'} export), so the isolated probe has nothing to run.`
+          `${ruleId} has no RULE_INSTANCES entry, so the isolated probe has nothing to run.`
         );
         return 1;
       }
-      isolatedRules[ruleId.slice('custom/'.length)] = ruleModule;
     }
-    const tsParser = await import('@typescript-eslint/parser');
-    const isolated = new ESLint({
-      cwd: ROOT,
-      overrideConfigFile: true,
-      overrideConfig: {
-        files: ['**/*.ts'],
-        languageOptions: { parser: tsParser.default ?? tsParser },
-        plugins: { custom: { rules: isolatedRules } },
-        rules: Object.fromEntries(isolatedRuleIds.map((r) => [r, 'error'])),
-      },
-    });
+    const isolated = new HostLinter(Object.fromEntries(isolatedRuleIds.map((r) => [r, []])));
     for (const ruleId of isolatedRuleIds) {
       const entry = MATRIX[ruleId];
       if (entry.controlCode === undefined) continue;
@@ -1071,7 +1093,7 @@ async function main() {
       }
 
       // Every mode names its instance. A mode with no instance throws: falling back to the shared one would probe the rule with the wrong config and report a verdict about it.
-      const instance = { 'in-config': eslint, 'option-dir': optionProbe, isolated }[mode];
+      const instance = { 'in-config': inConfig, 'option-dir': optionProbe, isolated }[mode];
       if (instance === undefined)
         throw new Error(`${ruleId}: matrix mode '${mode}' has no probe instance`);
       const { fired, fatals } = firedRuleIds(
@@ -1100,11 +1122,8 @@ async function main() {
     }
     const reach = new Map([...REQUIRES_JSX].map((r) => [r, 0]));
     for (const rel of candidates) {
-      const abs = path.join(ROOT, rel);
-      if (await eslint.isPathIgnored(abs)) continue;
-      const cfg = await eslint.calculateConfigForFile(abs);
       for (const rule of REQUIRES_JSX) {
-        if (severityOf(cfg.rules?.[rule]) > 0) reach.set(rule, reach.get(rule) + 1);
+        if (isEnabledAtPath(rule, rel)) reach.set(rule, reach.get(rule) + 1);
       }
     }
     const unreachable = [...reach].filter(([, n]) => n === 0).map(([r]) => r);
