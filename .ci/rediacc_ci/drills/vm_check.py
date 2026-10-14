@@ -421,6 +421,23 @@ def last_lines(text: str, count: int = 3) -> str:
     return " | ".join(lines[-count:])
 
 
+def rdc_failure(res: Result) -> str:
+    """Why an `rdc` call failed. With `-o json` the CLI puts its errors in the JSON envelope on stdout and only progress lines on stderr, so a reason read from stderr alone named "Listing repositories..." and dropped `SSH connection error: connect EHOSTUNREACH` (2026-10-14T23:53Z)."""
+    try:
+        doc = json.loads(res.out)
+    except (ValueError, TypeError):
+        doc = None
+    if isinstance(doc, dict):
+        msgs = [
+            str(e.get("message") or e.get("code") or e)
+            for e in (doc.get("errors") or [])
+            if isinstance(e, dict)
+        ]
+        if msgs:
+            return " | ".join(msgs[:3])
+    return last_lines(res.err) or last_lines(res.out)
+
+
 # --------------------------------------------------------------------------- options
 
 
@@ -749,7 +766,7 @@ class VmCheck:
         status = self.rdc("ops", "status", "-o", "json")
         if status.rc != 0:
             raise NotVerifiedError(
-                "fleet-unavailable", "ops status rc=%d: %s" % (status.rc, last_lines(status.err))
+                "fleet-unavailable", "ops status rc=%d: %s" % (status.rc, rdc_failure(status))
             )
         running = lib.running_ips(status.out)
         have = {self.bridge_ip in running, self.worker_ip in running}
@@ -802,7 +819,7 @@ class VmCheck:
             raise NotVerifiedError(
                 "fleet-unavailable",
                 "./rdc.sh %s rc=%d after %d s: %s"
-                % (" ".join(args), res.rc, res.ms // 1000, last_lines(res.err)),
+                % (" ".join(args), res.rc, res.ms // 1000, rdc_failure(res)),
             )
         self.say("        cold start: ./rdc.sh %s took %d s" % (" ".join(args), res.ms // 1000))
 
@@ -811,7 +828,7 @@ class VmCheck:
         if res.rc != 0:
             raise NotVerifiedError(
                 "fleet-unavailable",
-                "machine scan-keys %s rc=%d: %s" % (self.machine, res.rc, last_lines(res.err)),
+                "machine scan-keys %s rc=%d: %s" % (self.machine, res.rc, rdc_failure(res)),
             )
         probe = self.probe(PROBE_OS_RELEASE)
         parts = probe.out.split()
@@ -860,7 +877,7 @@ class VmCheck:
         if check.rc != 0:
             raise NotVerifiedError(
                 "account-unavailable",
-                "subscription status refused the minted token: %s" % first_line(check.err),
+                "subscription status refused the minted token: %s" % rdc_failure(check),
             )
         self.record("P4", "token minted for %s, passed as REDIACC_TOKEN only" % ACCOUNT_LOGIN, True)
 
@@ -869,7 +886,7 @@ class VmCheck:
         if res.rc != 0:
             raise NotVerifiedError(
                 "fleet-unavailable",
-                "repo list -m %s rc=%d: %s" % (self.machine, res.rc, last_lines(res.err)),
+                "repo list -m %s rc=%d: %s" % (self.machine, res.rc, rdc_failure(res)),
             )
         names = [str(e.get("name", "")) for e in entries]
         if self.opts.parent not in names:
