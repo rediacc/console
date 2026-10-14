@@ -4161,10 +4161,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-search-index',
     run: 'npm run check:ci-search-index',
     gate: true,
-    // check:ci-gate-tree-writes V9, the lint-rule-liveness shape: the generator rewrites TRACKED files in place and a `finally` restores them, which a hard kill skips. Pointing the generator at a temp output directory is the real fix.
-    mutex: ['tree:repo'],
-    writesTree:
-      'regenerates the tracked packages/www/public search-index files in place and restores them from a temp backup',
+    // NO `tree:` CLAIM SINCE 2026-10-14. It held `mutex: ['tree:repo']` plus `writesTree` while the generator could only rewrite the tracked packages/www/public copies in place, restored by a `finally` a hard kill skips; the generator now takes `--out`, and this gate points it at a temp directory.
     leaves: ['scripts/gates/check-search-index-freshness.ts'],
     ci: {
       kind: 'step',

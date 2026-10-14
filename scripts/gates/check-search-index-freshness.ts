@@ -1,14 +1,15 @@
 /**
  * CI freshness check for packages/www/public/search-index*.json.
  *
- * Per-locale indexes are generated at Astro build time from
- * packages/www/src/content/{blog,docs} by
- * packages/www/scripts/generate-search-index.js — and committed to git.
- * If someone edits a doc or blog post without re-running the build, the
- * committed indexes go stale and users search against outdated content.
+ * Per-locale indexes are generated from packages/www/src/content/{blog,docs} by
+ * packages/www/scripts/generate-search-index.js. The build writes its own copy into
+ * the build output; the committed public/ copies are what `npm run dev` serves, and
+ * only `--write-public` refreshes them. A doc or blog edit without that step leaves
+ * them stale, and a reader of the dev site searches outdated content.
  *
- * This check regenerates all indexes into a sandboxed copy and diffs each
- * against the committed version. Fails fast with a fix command on drift.
+ * This check regenerates all indexes into a temp directory (`--out`) and diffs each
+ * against the committed version, so it never writes the tree. Fails fast with a fix
+ * command on drift.
  *
  * Run via: `npm run check:ci-search-index`
  *
@@ -20,7 +21,7 @@
  * ---- end gate ----
  */
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +33,10 @@ const PUBLIC_DIR = path.join(REPO_ROOT, 'packages/www/public');
 // Matches the legacy combined file (`search-index.json`, kept as a byte- identical copy of the English file for backward compat) plus every per-locale file (`search-index-<lang>.json`). Restricted to lowercase 2-letter codes so unrelated public/ artifacts aren't swept by mistake.
 const INDEX_PATTERN = /^search-index(?:-[a-z]{2})?\.json$/;
 
+const tmpDir = mkdtempSync(path.join(tmpdir(), 'search-index-check-'));
+
 function fail(msg: string): never {
+  rmSync(tmpDir, { recursive: true, force: true });
   process.stderr.write(`\n\x1b[31mFAIL\x1b[0m  ${msg}\n\n`);
   process.exit(1);
 }
@@ -48,47 +52,22 @@ const committedFiles = readdirSync(PUBLIC_DIR)
 
 if (committedFiles.length === 0) {
   fail(
-    `No committed search-index*.json files in ${PUBLIC_DIR}.\n` + `Did packages/www build ever run?`
+    `No committed search-index*.json files in ${PUBLIC_DIR}.\n` +
+      `Regenerate them: cd packages/www && node scripts/generate-search-index.js --write-public`
   );
 }
 
-// Stash committed copies so we can restore regardless of drift outcome. copyFileSync is portable — `cp` assumed unix.
-const tmpDir = mkdtempSync(path.join(tmpdir(), 'search-index-check-'));
-const committedBefore = new Map<string, string>();
-const backupPaths = new Map<string, string>();
-for (const file of committedFiles) {
-  const src = path.join(PUBLIC_DIR, file);
-  const backup = path.join(tmpDir, file);
-  committedBefore.set(file, readFileSync(src, 'utf8'));
-  copyFileSync(src, backup);
-  backupPaths.set(file, backup);
-}
-
-const restore = () => {
-  // Sweep any new index files the generator just produced (e.g. for a freshly added locale) so the check is truly non-destructive in dev — otherwise those files would persist after the script exits, polluting git status.
-  for (const file of readdirSync(PUBLIC_DIR)) {
-    if (INDEX_PATTERN.test(file) && !committedFiles.includes(file)) {
-      rmSync(path.join(PUBLIC_DIR, file), { force: true });
-    }
-  }
-  for (const file of committedFiles) {
-    copyFileSync(backupPaths.get(file)!, path.join(PUBLIC_DIR, file));
-  }
-  rmSync(tmpDir, { recursive: true, force: true });
-};
-
 try {
-  execFileSync('node', [GENERATOR], {
+  execFileSync('node', [GENERATOR, '--out', tmpDir], {
     cwd: path.join(REPO_ROOT, 'packages/www'),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 } catch (err) {
-  restore();
   fail(`Generator script failed: ${(err as Error).message}`);
 }
 
 // The generator may have created files we didn't have committed (new locale added) or removed ones we did (locale removed). Both are drift.
-const regeneratedFiles = readdirSync(PUBLIC_DIR)
+const regeneratedFiles = readdirSync(tmpDir)
   .filter((f) => INDEX_PATTERN.test(f))
   .sort();
 
@@ -96,8 +75,10 @@ const allFiles = [...new Set([...committedFiles, ...regeneratedFiles])].sort();
 const stale: { file: string; committedSize: number; regeneratedSize: number; reason: string }[] =
   [];
 
+const committedText = (file: string): string => readFileSync(path.join(PUBLIC_DIR, file), 'utf8');
+
 for (const file of allFiles) {
-  const filePath = path.join(PUBLIC_DIR, file);
+  const filePath = path.join(tmpDir, file);
   const wasCommitted = committedFiles.includes(file);
   const exists = existsSync(filePath);
 
@@ -112,10 +93,9 @@ for (const file of allFiles) {
     continue;
   }
   if (wasCommitted && !exists) {
-    const before = committedBefore.get(file)!;
     stale.push({
       file,
-      committedSize: Buffer.byteLength(before, 'utf8'),
+      committedSize: Buffer.byteLength(committedText(file), 'utf8'),
       regeneratedSize: 0,
       reason: 'committed but no longer generated',
     });
@@ -123,7 +103,7 @@ for (const file of allFiles) {
   }
   if (!wasCommitted && !exists) continue;
 
-  const before = committedBefore.get(file)!;
+  const before = committedText(file);
   const regenerated = readFileSync(filePath, 'utf8');
   if (before !== regenerated) {
     stale.push({
@@ -155,20 +135,18 @@ const countPlaceholders = (text: string): string[] =>
 
 // CONTROL, both directions, inline on every run. A detector that matches nothing reports a clean index forever, which is precisely the failure this assertion exists to end.
 if (countPlaceholders('a {{t:cli.docs.tableHeaders.flag}} b').length !== 1) {
-  restore();
   fail(
     'control failed: the placeholder detector did not match a known-good placeholder.\n' +
       '  Every "no unresolved placeholders" result below would have been vacuous.'
   );
 }
 if (countPlaceholders('a plain sentence with no keys in it').length !== 0) {
-  restore();
   fail('control failed: the placeholder detector matched text containing no placeholder.');
 }
 
 const unresolved: { file: string; count: number; sample: string }[] = [];
 for (const file of regeneratedFiles) {
-  const filePath = path.join(PUBLIC_DIR, file);
+  const filePath = path.join(tmpDir, file);
   if (!existsSync(filePath)) continue;
   const hits = countPlaceholders(readFileSync(filePath, 'utf8'));
   if (hits.length > 0) {
@@ -180,7 +158,7 @@ for (const file of regeneratedFiles) {
   }
 }
 
-restore();
+rmSync(tmpDir, { recursive: true, force: true });
 
 if (unresolved.length > 0) {
   const total = unresolved.reduce((n, u) => n + u.count, 0);
@@ -213,8 +191,8 @@ const lines = stale.map((s) => {
 fail(
   `${stale.length} search-index file(s) stale:\n\n${lines.join('\n')}\n\n` +
     `Fix:\n` +
-    `  cd packages/www && node scripts/generate-search-index.js\n` +
+    `  cd packages/www && node scripts/generate-search-index.js --write-public\n` +
     `  git add public/search-index*.json\n\n` +
-    `(The indexes are rebuilt automatically on every \`npm run build\`, so the\n` +
-    ` common cause is editing blog/docs without running a build before commit.)`
+    `(A build writes its index into dist/ and never refreshes these committed copies,\n` +
+    ` so editing blog/docs without the command above leaves them stale.)`
 );

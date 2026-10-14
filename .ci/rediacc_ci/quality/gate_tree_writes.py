@@ -8,7 +8,8 @@ WHAT RUNS. For every lock entry the pool can schedule (`gate: true`, and `gate: 
   - Python closure and sites: `rediacc_ci.quality.gate_tree_writes_py`.
   - TS/JS closure and sites: `scripts/lib/tree-write-sites.ts` (oxc-parser).
   - bash leaves: `pool_writer_safety.scan_text`, imported rather than copied.
-  - spawn edges cross the languages in both directions until nothing new is reached.
+  - a bare tool leaf in TOOL_CONFIGS (`astro`): the config module the tool executes joins the TS/JS closure, so a hook in it and every script the hook spawns are read.
+  - spawn edges cross the languages in both directions until nothing new is reached, and the flags a spawn passes join the entry's invocations, between JS modules too.
 
 EVERY SITE ENDS AS EXACTLY ONE OF:
   SAFE         TEMP, OUTSIDE or SCRATCH (`.ci/cache/`): silent, counted.
@@ -58,15 +59,34 @@ SH_EXT = (".sh",)
 MIN_REASON = 20
 SAFE_ORIGINS = ("TEMP", "OUTSIDE", "SCRATCH")
 
-# The one spawn edge whose absence is a refusal: the file that actually wrote the tree in the incident this gate exists for.
-REQUIRED_SPAWNS = {"check:ci-lint-rule-liveness": ".ci/scripts/quality/lint-rule-liveness.mjs"}
+# The spawn edges whose absence is a refusal. lint-rule-liveness.mjs is the file that wrote the tree in the incident this gate exists for; generate-search-index.js is the one `build:www` reached only through its astro config (see TOOL_CONFIGS), and rewrote 14 tracked files unseen until 2026-10-14.
+REQUIRED_SPAWNS = {
+    "check:ci-lint-rule-liveness": ".ci/scripts/quality/lint-rule-liveness.mjs",
+    "build:www": "packages/www/scripts/generate-search-index.js",
+}
+
+# A bare TOOL leaf that loads and EXECUTES a module of the project is not opaque: that module is a scannable entry, followed as a TS/JS leaf of every entry invoking the tool. Until 2026-10-14 `build:www` (leaf `astro`) was a bare leaf, so `packages/www/astro.config.mjs` and the `execSync` in its `astro:build:start` hook were never read, while that hook deleted and rewrote the 14 tracked
+# `packages/www/public/search-index*.json` files on every build. Followed for EVERY subcommand of the tool, not only `build`: `astro check` and `astro sync` load the same file and run its setup hooks, and over-reading a closure can only surface a site, never hide one.
+#
+# The config is FOUND, not named per entry: the invocation resolver keeps the leaf and its argv but not the workspace it ran in, so every config file of that name at the root or one or two directories down (`packages/www/`) is followed, skipping `node_modules` and dot directories. An entry invoking a listed tool where no config exists is a REFUSAL, since its hooks would go unread.
+#
+# Not listed, and why: tsc, biome and syncpack read data, not code; vitest and knip execute code (a vitest config, every test file, a `knip.ts`), which is a whole test tree rather than one hook file, and stays a bare leaf, printed every run under --report.
+TOOL_CONFIGS: dict[str, tuple[str, ...]] = {
+    "astro": (
+        "astro.config.mjs",
+        "astro.config.ts",
+        "astro.config.mts",
+        "astro.config.js",
+        "astro.config.cjs",
+    ),
+}
 
 # Floors at roughly 80% of the live counts measured 2026-09-24 after the resolver work of plan task 2.2 (Python 1069 sites, TS/JS 322; the first report-only run saw 1065 and 324). A scanner that stopped reading the tree falls under them long before it reads as clean.
 FLOOR_PY = 855
 FLOOR_TS = 257
 
 # Every control in `run_controls`, plus the TS helper's selftest. A count under it means controls stopped executing.
-SELFTEST_FLOOR = 27
+SELFTEST_FLOOR = 35
 
 PRAGMA_RE = re.compile(r"(?:#|//)\s*tree-write:\s*(safe|mode)\b\s*(.*)$")
 MODE_RE = re.compile(r"^(--?[A-Za-z0-9][\w-]*)\s+(.*)$")
@@ -107,6 +127,8 @@ class Result:
     bare: list[str]
     product: set[str]
     pragmas: dict[str, int]
+    # `<entry>: <tool> -> <config>` for every TOOL_CONFIGS leaf followed into its config module.
+    followed: list[str] = dataclasses.field(default_factory=list)
 
 
 # --------------------------------------------------------------------------- inputs
@@ -146,6 +168,27 @@ def run_helper(
         return json.loads(proc.stdout), ""
     except ValueError:
         return None, "the TS extractor printed non-JSON: %r" % proc.stdout[:200]
+
+
+def tool_configs(root: pathlib.Path, tool: str) -> list[str]:
+    """Every config module `tool` loads, as repo-relative paths: the TOOL_CONFIGS names at the root and one or two directories down, `node_modules` and dot directories skipped."""
+    names = TOOL_CONFIGS.get(tool, ())
+
+    def subdirs(d: pathlib.Path) -> list[pathlib.Path]:
+        try:
+            return sorted(
+                p
+                for p in d.iterdir()
+                if p.is_dir() and p.name != "node_modules" and not p.name.startswith(".")
+            )
+        except OSError:
+            return []
+
+    dirs = [root]
+    for first in subdirs(root):
+        dirs.append(first)
+        dirs.extend(subdirs(first))
+    return [(d / n).relative_to(root).as_posix() for d in dirs for n in names if (d / n).is_file()]
 
 
 def scheduled(entries: list[dict]) -> list[dict]:
@@ -416,6 +459,7 @@ def analyze(
     py = Analyzer(root, load_mutators(root, repo))
     plan: dict[str, dict[str, set[str]]] = {}
     argvs: dict[str, list[set[str]]] = {}
+    configs_of: dict[str, list[str]] = {}
     for e in entries:
         eid = e["id"]
         files: dict[str, set[str]] = {"py": set(), "ts": set(), "sh": set()}
@@ -423,6 +467,19 @@ def analyze(
         for leaf in inv.get(eid, []):
             name = leaf.get("leaf", "")
             argvs[eid].append({a for a in leaf.get("argv", []) if isinstance(a, str)})
+            if name in TOOL_CONFIGS and not (root / name).is_file():
+                if name not in configs_of:
+                    configs_of[name] = tool_configs(root, name)
+                if not configs_of[name]:
+                    res.refusals.append(
+                        "%s runs `%s`, which executes its config module, and no %s was found "
+                        "at the root or two directories down: the tool's hooks would go unread"
+                        % (eid, name, " / ".join(TOOL_CONFIGS[name]))
+                    )
+                    continue
+                files["ts"].update(configs_of[name])
+                res.followed.extend("%s: %s -> %s" % (eid, name, f) for f in configs_of[name])
+                continue
             if not (root / name).is_file():
                 res.bare.append("%s: %s" % (eid, name))
                 continue
@@ -682,6 +739,13 @@ FIXTURE: dict[str, str] = {
     "c10m/gate.py": 'from rediacc_ci import paths\n\n(paths.repo_root() / "packages" / "www" / "dist").mkdir()\n',
     "c12/gate.sh": '#!/bin/bash\nREPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"\nBIN_DIR="$REPO_ROOT/.ci/cache/bin"\nmkdir -p "$BIN_DIR"\nchmod +x "$BIN_DIR/tool"\n',
     "c12m/gate.sh": '#!/bin/bash\nREPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"\nBIN_DIR="$REPO_ROOT/.ci/cache/bin"\nOUT="$REPO_ROOT/dist"\nESC="$REPO_ROOT/.ci/cache/../../dist"\nmkdir -p "$OUT"\ncp "$BIN_DIR/tool" "$OUT/tool"\nmkdir -p "$ESC"\n',
+    # The build:www shape: a bare `astro` leaf whose config carries an inline hook spawning a generator. Line 4 of gen.js is gated by a flag the hook does not pass; line 5 writes the tree unconditionally.
+    "c13/site/astro.config.mjs": "import { execFileSync } from 'node:child_process';\nexport default {\n  integrations: [{ name: 'gen', hooks: { 'astro:build:done': () => { execFileSync('node', ['scripts/gen.js', '--out', 'x']); } } }],\n};\n",
+    "c13/site/scripts/gen.js": "import fs from 'node:fs';\nimport path from 'node:path';\nconst ROOT = path.resolve(import.meta.dirname, '..');\nif (process.argv.includes('--write-public')) fs.writeFileSync(path.join(ROOT, 'public', 'gated.json'), '');\nfs.writeFileSync(path.join(ROOT, 'public', 'always.json'), '');\n",
+    # A flag one JS module passes to another it spawns: the child's write gated on it is reached through c14 and gated through c14m.
+    "c14/a.mjs": "import { execFileSync } from 'node:child_process';\nexecFileSync('node', ['c14/b.mjs', '--write']);\n",
+    "c14/b.mjs": "import fs from 'node:fs';\nif (process.argv.includes('--write')) fs.writeFileSync('b.json', '');\n",
+    "c14m/a.mjs": "import { execFileSync } from 'node:child_process';\nexecFileSync('node', ['c14/b.mjs']);\n",
 }
 
 CONTROL_LOCK: list[dict] = [
@@ -730,8 +794,16 @@ CONTROL_LOCK: list[dict] = [
     {"id": "c11m", "run": "c11/gate.sh --write", "gate": True},
     {"id": "c12", "run": "c12/gate.sh", "gate": True},
     {"id": "c12m", "run": "c12m/gate.sh", "gate": True},
+    {"id": "c13", "run": "astro build", "gate": True},
+    {"id": "c13v", "run": "vitest run", "gate": True},
+    {"id": "c14", "run": "node c14/a.mjs", "gate": True},
+    {"id": "c14m", "run": "node c14m/a.mjs", "gate": True},
 ]
-CONTROL_REQUIRED = {"c4": "c4/d.mjs", "c4m": "c4m/missing.mjs"}
+CONTROL_REQUIRED = {
+    "c4": "c4/d.mjs",
+    "c4m": "c4m/missing.mjs",
+    "c13": "c13/site/scripts/gen.js",
+}
 
 
 def _red(res: Result, eid: str) -> list[str]:
@@ -860,6 +932,52 @@ def run_controls(repo: pathlib.Path, check: object) -> None:
             "C12': a non-cache target, a line mixing cache with tree, and a `..` escape out of the cache all stay red",
             sum(v.bucket == "TREE" for v in res.verdicts if v.entry == "c12m") == 3,
         )
+        c13 = _red(res, "c13")
+        _call(
+            record,
+            "C13: a bare `astro` leaf is followed into its config, through the hook's spawn, and the generator's unconditional write is red",
+            "c13: astro -> c13/site/astro.config.mjs" in res.followed
+            and len(c13) == 1
+            and "gen.js:5:" in c13[0]
+            and "gen.js:4:" not in c13[0],
+        )
+        _call(
+            record,
+            "C13': the generator's write gated by a flag the hook does not pass is MODE-GATED, not red",
+            sorted((v.site.line, v.bucket) for v in res.verdicts if v.entry == "c13")
+            == [(4, "MODE-GATED"), (5, "TREE")],
+        )
+        _call(
+            record,
+            "C13'': a tool with no TOOL_CONFIGS row (vitest) stays a bare leaf and reaches no config",
+            "c13v: vitest" in res.bare and not any(f.startswith("c13v:") for f in res.followed),
+        )
+        _call(
+            record,
+            "C14: a JS module spawning another with --write reaches the child's --write-gated write, which is red",
+            any("c14/b.mjs:2:" in f for f in _red(res, "c14")),
+        )
+        _call(
+            record,
+            "C14': the same child spawned without the flag stays MODE-GATED and green",
+            not _red(res, "c14m")
+            and [v.bucket for v in res.verdicts if v.entry == "c14m" and v.site.file == "c14/b.mjs"]
+            == ["MODE-GATED"],
+        )
+    with tempfile.TemporaryDirectory(prefix="gate-tree-writes-noconf-") as tmp:
+        root = pathlib.Path(tmp)
+        (root / ".ci" / "config").mkdir(parents=True)
+        shutil.copyfile(repo / MUTATORS_REL, root / MUTATORS_REL)
+        (root / "lock.json").write_text(
+            json.dumps([{"id": "c13n", "run": "astro build", "gate": True}]), encoding="utf-8"
+        )
+        (root / "package.json").write_text(json.dumps({"scripts": {}}), encoding="utf-8")
+        res = analyze(root, root / "lock.json", root / "package.json", repo, {})
+        _call(
+            record,
+            "C13n: an `astro` leaf with no astro config anywhere is a refusal, not a bare leaf",
+            any(r.startswith("c13n runs `astro`") for r in res.refusals),
+        )
 
 
 def _call(record: object, label: str, cond: bool) -> None:
@@ -903,6 +1021,9 @@ def print_report(res: Result, full: bool) -> None:
         "gate-tree-writes: %d entr(ies) scanned, %d bare leaf/leaves not scanned, %d product module(s) not entered"
         % (res.entries_scanned, len(res.bare), len(res.product))
     )
+    # VISIBLE EVERY RUN: a tool leaf read through its config is a scan the leaf list alone does not show.
+    for f in res.followed:
+        print("  tool config followed: %s" % f)
     for lang in langs:
         c = res.counts[lang]
         print("  %-3s %s" % (lang, ", ".join("%s=%d" % (k, c[k]) for k in sorted(c))))

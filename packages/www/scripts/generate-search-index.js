@@ -11,6 +11,9 @@ const projectRoot = path.join(__dirname, '..');
 /** Locale an index entry belongs to when it carries none (the flat, pre-i18n layout). */
 const DEFAULT_LANG = 'en';
 
+/** The files this generator owns in its output directory: `search-index.json` and `search-index-<lang>.json`. */
+const INDEX_FILE = /^search-index(-[a-z]{2})?\.json$/;
+
 /**
  * The first of `value` / `fallback` that actually has content.
  *
@@ -47,7 +50,11 @@ function withContent(value, fallback) {
  * Recursively extracts all text content and auto-categorizes it
  */
 
-function generateSearchIndex() {
+/**
+ * @param {string} outDir An existing directory; every `search-index*.json` in it is rewritten.
+ * @returns {boolean}
+ */
+function generateSearchIndex(outDir) {
   try {
     const searchIndex = [];
     let idCounter = 0;
@@ -75,13 +82,7 @@ function generateSearchIndex() {
       'docs'
     );
 
-    // Ensure public directory exists
-    const publicDir = path.join(projectRoot, 'public');
-    if (!fs.existsSync(publicDir)) {
-      fs.mkdirSync(publicDir, { recursive: true });
-    }
-
-    // Group entries by language and write one JSON per locale. The runtime fetches /search-index-<lang>.json so visitors only download their own locale (~10x smaller than the combined file). search-index.json is kept as a byte-identical copy of the English file for backward compat.
+    // Group entries by language, one JSON per locale. The runtime fetches /search-index-<lang>.json so visitors only download their own locale (~10x smaller than the combined file).
     const byLang = new Map();
     for (const entry of searchIndex) {
       const lang = entry.language ?? DEFAULT_LANG;
@@ -89,29 +90,28 @@ function generateSearchIndex() {
       byLang.get(lang).push(entry);
     }
 
-    // Stale per-locale files left over from a previous generation would pollute git status and confuse the freshness check. Sweep before write.
-    for (const file of fs.readdirSync(publicDir)) {
-      if (/^search-index(-[a-z]{2})?\.json$/.test(file)) {
-        fs.unlinkSync(path.join(publicDir, file));
-      }
-    }
-
     const langs = [...byLang.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    const files = new Map();
     for (const lang of langs) {
       const entries = byLang.get(lang);
-      const outPath = path.join(publicDir, `search-index-${lang}.json`);
-      fs.writeFileSync(outPath, `${JSON.stringify(entries, null, 2)}\n`);
-      console.log(`  → ${path.relative(projectRoot, outPath)}: ${entries.length} items`);
+      files.set(`search-index-${lang}.json`, `${JSON.stringify(entries, null, 2)}\n`);
+      console.log(`  ${lang}: ${entries.length} items`);
     }
+    // Backward-compat fallback, byte-identical to the English file: any consumer that hardcoded the legacy URL gets English content rather than a 404. With no English content indexed (src/content/docs/en/ gone) it is an empty array, so the runtime fetch still succeeds.
+    files.set('search-index.json', files.get('search-index-en.json') ?? '[]\n');
 
-    // Backward-compat fallback: any consumer that hardcoded the legacy URL gets English content rather than a 404.
-    const enPath = path.join(publicDir, 'search-index-en.json');
-    const fallbackPath = path.join(publicDir, 'search-index.json');
-    if (fs.existsSync(enPath)) {
-      fs.copyFileSync(enPath, fallbackPath);
-    } else {
-      // No English content was indexed (would happen only if src/content/docs/en/ vanished). Write an empty array so the runtime fetch still succeeds.
-      fs.writeFileSync(fallbackPath, '[]\n');
+    // A locale that stopped being generated leaves a stale file behind, which would ship and confuse the freshness check. Only those are removed; every other file is overwritten in place, so a dev server reading the directory never sees it without an index.
+    for (const file of fs.readdirSync(outDir)) {
+      if (INDEX_FILE.test(file) && !files.has(file)) {
+        // tree-write: mode --write-public only --write-public names the tracked public/ copies; --out writes the caller's directory
+        fs.unlinkSync(path.join(outDir, file));
+      }
+    }
+    for (const [file, text] of files) {
+      const outPath = path.join(outDir, file);
+      // tree-write: mode --write-public only --write-public names the tracked public/ copies; --out writes the caller's directory
+      fs.writeFileSync(outPath, text);
+      console.log(`  → ${outPath}`);
     }
 
     console.log(
@@ -391,5 +391,24 @@ function stripMarkdown(text) {
   );
 }
 
-// Run generator. The boolean is the verdict; exiting 0 on failure made a lost index invisible to both the CLI caller and the build integration.
-process.exit(generateSearchIndex() ? 0 : 1);
+// WHERE THE INDEX GOES IS THE CALLER'S CHOICE, and exactly one choice is required. The build passes its outDir from `astro:build:done` (astro.config.mjs) and the freshness gate a temp directory, so neither touches a tracked file; only `--write-public`, the step that refreshes the committed copies `npm run dev` serves, rewrites packages/www/public. Until 2026-10-14 every build
+// rewrote those 14 tracked files in place, because this script had no other destination.
+const USAGE =
+  'usage: node scripts/generate-search-index.js --out <existing dir>   (the build, the freshness gate)\n' +
+  '       node scripts/generate-search-index.js --write-public       (refresh the committed public/ copies)';
+const argv = process.argv.slice(2);
+const writePublic = argv.includes('--write-public');
+const outAt = argv.indexOf('--out');
+const outArg = outAt === -1 ? undefined : argv[outAt + 1];
+if (writePublic === (outAt !== -1) || (outAt !== -1 && !outArg)) {
+  console.error(`✗ name exactly one destination.\n${USAGE}`);
+  process.exit(2);
+}
+const outDir = writePublic ? path.join(projectRoot, 'public') : path.resolve(outArg);
+if (!fs.statSync(outDir, { throwIfNoEntry: false })?.isDirectory()) {
+  console.error(`✗ ${outDir} is not an existing directory.\n${USAGE}`);
+  process.exit(2);
+}
+
+// The boolean is the verdict; exiting 0 on failure made a lost index invisible to both the CLI caller and the build integration.
+process.exit(generateSearchIndex(outDir) ? 0 : 1);
