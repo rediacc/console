@@ -1083,6 +1083,36 @@ FILE_RUNS = {
     "run.pl": 'system("git", "worktree", "add", "/tmp/x");\n',
     "unparsable.py": "import os\nos.system('git worktree add /tmp/x'\n",
 }
+# A STRING REACHES A CALL BY MORE ROADS THAN A NAME ASSIGNMENT. The first cut traced a string into an exec call only through a name a plain assignment binds, so each file below ran the phrase and was allowed. A file that can run a command is now judged by every string it holds, so none of these shapes needs tracing.
+FILE_RUNS_UNTRACED = {
+    "for_target.py": "import subprocess\nfor c in ['git worktree add /tmp/x']:\n    subprocess.run(c, shell=True)\n",
+    "tuple_unpack.py": "import os\ncmd, other = 'git worktree add /tmp/x', 1\nos.system(cmd)\n",
+    "comprehension.py": "import os\n[os.system(c) for c in ['git worktree add /tmp/x']]\n",
+    "walrus.py": "import os\nif (c := 'git worktree add /tmp/x'):\n    os.system(c)\n",
+    "default.py": "import os\ndef go(c='git worktree add /tmp/x'):\n    os.system(c)\ngo()\n",
+    "class_attr.py": "import os\nclass K:\n    c = 'git worktree add /tmp/x'\nos.system(K.c)\n",
+    "concat.py": "import os\nos.system('git worktree ' + 'add /tmp/x')\n",
+    "fstring.py": "import os\nverb = 'add'\nos.system(f'git worktree {verb} /tmp/x')\n",
+    "percent.py": "import os\nos.system('git worktree %s /tmp/x' % 'add')\n",
+    "argv_loop.py": "import subprocess\nfor v in ['add']:\n    subprocess.run(['git', 'worktree', v, 'x'])\n",
+    "getattr.py": "import os\ngetattr(os, 'system')('git worktree add /tmp/x')\n",
+    "eval.py": "eval(\"__import__('os').system('git worktree add /tmp/x')\")\n",
+    "map.py": "import os\nlist(map(os.system, ['git worktree add /tmp/x']))\n",
+    "other_file.py": "from helper import sh\nsh('git worktree add /tmp/x')\n",
+    "loop.js": 'for (const c of ["git worktree add /tmp/x"]) require("child_process").execSync(c);\n',
+    "concat.js": 'require("child_process").execSync("git worktree " + "add /tmp/x");\n',
+    "multiline.js": 'require("child_process").execFileSync(\n  "git", ["worktree", "add", "/tmp/x"]);\n',
+    "concat.pl": 'my $c = "git worktree " . "add /tmp/x";\nsystem($c);\n',
+    "interpolate.rb": 'v = "add"\nsystem("git worktree #{v} /tmp/x")\n',
+}
+# A file with no way to run a command still mentions the phrase freely, however it builds the string, and a file that runs commands but never spells the phrase still runs.
+FILE_MENTIONS_UNTRACED = {
+    "built_table.py": "CASES = ['git worktree ' + 'add x', f'git worktree {1}', 'git worktree %s' % 'add']\nprint(CASES)\n",
+    "os_path.py": "import os\nprint(os.path.join('a', 'b'), 'git worktree add /tmp/x')\n",
+    "doc_read.py": "import helper\nprint(helper.__doc__, 'git worktree add /tmp/x')\n",
+    "commented.js": '// run the cases below\nconst cases = ["git worktree " + "add /tmp/x"];\nconsole.log(cases);\n',
+    "list_only.py": "import subprocess\nrepo = '.'\nsubprocess.run(['git', '-C', repo, 'worktree', 'list'])\n",
+}
 
 
 @pytest.mark.xdist_group("hooks-fixtures")
@@ -1090,15 +1120,17 @@ def test_block_worktree_add_judges_a_script_by_its_calls_not_its_text(tmp_path):
     block = hookblocks.Block("worktree-add-file-calls")
     spec_deny = "check 2 guards/block_worktree_add.py"
     spec_allow = "check 0 guards/block_worktree_add.py"
-    interpreter = {".py": "python3", ".js": "node", ".pl": "perl"}
-    for name, text in {**FILE_MENTIONS, **FILE_RUNS}.items():
+    interpreter = {".py": "python3", ".js": "node", ".pl": "perl", ".rb": "ruby"}
+    mentions = {**FILE_MENTIONS, **FILE_MENTIONS_UNTRACED}
+    runs = {**FILE_RUNS, **FILE_RUNS_UNTRACED}
+    for name, text in {**mentions, **runs}.items():
         (tmp_path / name).write_text(text, encoding="utf-8")
-    for name in FILE_MENTIONS:
+    for name in mentions:
         run_ = "%s %s" % (interpreter[os.path.splitext(name)[1]], tmp_path / name)
         block.check(
             spec_allow, bash_json(run_), "worktree-add CONTROL: a file that only lists it: " + name
         )
-    for name in FILE_RUNS:
+    for name in runs:
         run_ = "%s %s" % (interpreter[os.path.splitext(name)[1]], tmp_path / name)
         block.check(spec_deny, bash_json(run_), "worktree-add: a file that runs it: " + name)
     # The same file run from a cd, and directly by its shebang.
