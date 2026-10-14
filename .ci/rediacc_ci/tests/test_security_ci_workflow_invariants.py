@@ -1619,12 +1619,29 @@ def test_a_red_path_watching_another_step_is_no_red_path() -> None:
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/; true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/ && true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
         'npm run --silent pins -- apply-soaked --json --out pins-soaked/ \\\n  || true\nrc=$?\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\nrc=0\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
+        'npm run --silent pins -- apply-soaked --json --out pins-soaked/\nrc=$?\nlet rc=0\necho "rc=${rc}" >> "$GITHUB_OUTPUT"',
     ],
 )
 def test_an_rc_output_that_is_not_the_apply_exit_status_is_no_red_path(run) -> None:
     doc = pins_doc()
     doc["jobs"]["soaked"]["steps"][1]["run"] = run
     assert pins_kinds(doc) == ["pins-soaked-no-red-path"]
+
+
+def test_a_comment_or_echo_naming_the_verb_above_the_apply_is_not_the_apply_line() -> None:
+    doc = pins_doc()
+    step = doc["jobs"]["soaked"]["steps"][1]
+    step["run"] = (
+        "# runs npm run pins -- apply-soaked below\necho 'pins -- apply-soaked'\n" + step["run"]
+    )
+    assert pins_kinds(doc) == []
+
+
+def test_the_word_secrets_outside_an_expression_is_not_a_secret() -> None:
+    doc = pins_doc()
+    doc["jobs"]["soaked"]["steps"].append({"run": "echo this job holds no secrets, by design"})
+    assert pins_kinds(doc) == []
 
 
 def test_a_redirection_on_the_apply_line_keeps_the_red_path() -> None:
@@ -1657,6 +1674,12 @@ def test_an_apply_step_that_never_publishes_rc_has_no_red_path() -> None:
             "services", {"db": {"image": "x", "env": {"P": "${{ secrets['DB'] }}"}}}
         ),
         lambda d: d["jobs"]["soaked"]["steps"].append({"run": "./tool ${{ secrets.DEPLOY_KEY }}"}),
+        lambda d: d["jobs"]["soaked"]["steps"].append({"run": "./tool '${{ secrets }}'"}),
+        lambda d: d["jobs"]["soaked"]["steps"].append({"run": "x", "if": "secrets.K != ''"}),
+        lambda d: d["jobs"]["soaked"]["steps"].append(
+            {"run": "x", "env": {"A": "${{ secrets || 'x' }}"}}
+        ),
+        lambda d: d["jobs"]["soaked"].__setitem__("if", "${{ secrets.K == '' }}"),
     ],
 )
 def test_a_secret_through_the_workflow_env_or_a_secrets_block_is_refused(mutate) -> None:
