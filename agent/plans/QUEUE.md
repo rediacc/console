@@ -69,16 +69,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 785 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 4 live of writer_cap 15 (session d778be9d): worker:a6b8aa4c86a2b757d, worker:a975f0cbf80dfcbd4, worker:a68c30018d9fc2487, worker:a2eb038a5fc61b215.
-- Leased items: 9: #50cb9316 (worker:a6b8aa4c86a2b757d, d778be9d), #6361fc5b (worker:a6b8aa4c86a2b757d, d778be9d), #656e9168 (worker:af46891a17ca667c9, d778be9d), #66e2e0ef (worker:a975f0cbf80dfcbd4, d778be9d), #75aa2eb0 (worker:a2eb038a5fc61b215, d778be9d), #809a3054 (worker:a6b8aa4c86a2b757d, d778be9d), #97a7ced2 (worker:af46891a17ca667c9, d778be9d), #c275adc4 (worker:a6b8aa4c86a2b757d, d778be9d), #fe2d3ad2 (worker:a68c30018d9fc2487, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 794 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a975f0cbf80dfcbd4, worker:a48d80587a06d7d5d, worker:a3b0d3eff8ba52170.
+- Leased items: 10: #50cb9316 (worker:bjti7ixw4, d778be9d), #6361fc5b (worker:bjti7ixw4, d778be9d), #66e2e0ef (worker:a975f0cbf80dfcbd4, d778be9d), #809a3054 (worker:bjti7ixw4, d778be9d), #97a7ced2 (worker:bjti7ixw4, d778be9d), #97b9af80 (worker:a48d80587a06d7d5d, d778be9d), #9b2100de (worker:a0ed61cca0c1f42ba, d778be9d), #c275adc4 (worker:bjti7ixw4, d778be9d), #d5c182eb (worker:a3b0d3eff8ba52170, d778be9d), #fe2d3ad2 (worker:a975f0cbf80dfcbd4, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 13 of 16 plans done, 188 of 197 boxes done (95%).
+Promoted: 13 of 16 plans done, 190 of 197 boxes done (96%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -97,7 +97,7 @@ Promoted: 13 of 16 plans done, 188 of 197 boxes done (95%).
 | 13 | PLAN-inline-suppressions.md | 11/11 | done |
 | 14 | PLAN-stop-hook-effort.md | 7/7 | done |
 | 15 | PLAN-stop-hook-effort-tuning.md | 7/7 | done |
-| 16 | PLAN-pins-command.md | 6/13 | 7 open |
+| 16 | PLAN-pins-command.md | 8/13 | 5 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
@@ -138,14 +138,15 @@ Promoted: 13 of 16 plans done, 188 of 197 boxes done (95%).
 16. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 17. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 18. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-19. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-20. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-21. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-22. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-23. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-24. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-25. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-26. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+19. agent/plans/PLAN-vm-check.md -- P1, approved, not started
+20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+23. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
