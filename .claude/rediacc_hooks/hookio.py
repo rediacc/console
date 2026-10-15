@@ -433,15 +433,17 @@ def _stdin_bytes(text):
     Encoding a str that holds a lone surrogate with plain `encode("utf-8")` raised UnicodeEncodeError out of run_out, and a crashed guard is no decision, so the command ran (review 46b000ae.1); swallowing it as a command that did not run hid the caller's text instead (review dd407156.2). Neither is needed, because every lone surrogate has a byte form.
     A surrogate in U+DC80..U+DCFF is what a `surrogateescape` decode makes of a byte that is not UTF-8, and run_out decodes command output exactly that way, so `surrogateescape` hands such text back as the bytes it came from.
     Any other lone surrogate (U+D800..U+DC7F, U+DD00..U+DFFF) never came from a decode, and `surrogatepass` writes it as its three-byte form; `surrogatepass` encodes every code point, so the fallback cannot raise.
+    A HIGH SURROGATE FOLLOWED BY A LOW ONE IS ONE CODE POINT (review 2925782e.2), and goes as that code point's four UTF-8 bytes: the per-character rule alone sent U+D83D U+DE00 as two three-byte surrogate forms instead of the bytes of U+1F600. A round trip through UTF-16 joins every valid pair and leaves each lone surrogate where it was.
     """
     try:
         return text.encode("utf-8", "surrogateescape")
     except UnicodeEncodeError:
+        joined = text.encode("utf-16-le", "surrogatepass").decode("utf-16-le", "surrogatepass")
         return b"".join(
             bytes([ord(char) - 0xDC00])
             if 0xDC80 <= ord(char) <= 0xDCFF
             else char.encode("utf-8", "surrogatepass")
-            for char in text
+            for char in joined
         )
 
 

@@ -2094,6 +2094,241 @@ def test_runtime_lines_are_read_by_every_guard(tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
+# BASH'S `set -P` AND A PHYSICAL FLOOR (#91f1787a, #97d3d908), measured on bash 5.3.9 with `lnk` a link to `far/inner`. `set -P` / `set -o physical` makes every later `cd` and `pushd` physical, so `set -P; cd lnk/..` lands in `far`; at cfacdc927 the walk had no slot for the option and read the root, so each `far` row below was rc 0 over a `git worktree add` program. A physical change is also a floor: after `cd -P lnk` bash's $PWD is the resolved path, so a later logical `cd ..` lands in `far` as well, and the walk popped the name and read the root.
+# Each row is `(command, lands in far)`; Layout A puts the program in `far/q.py` and Layout B in the root's `q.py`, so neither reading can pass by refusing everything.
+PHYSICAL_OPTION_ROWS = (
+    ("set -P; cd lnk/..; python3 q.py", True),
+    ("set -o physical; cd lnk/.. && python3 q.py", True),
+    ("set -eP; cd lnk/.. && python3 q.py", True),
+    ("set -Pe; cd lnk/.. && python3 q.py", True),
+    ("set -oe physical; cd lnk/.. && python3 q.py", True),
+    ("set -P; pushd lnk/.. && python3 q.py", True),
+    ("set -P; cd lnk; cd .. && python3 q.py", True),
+    ("f() { set -P; }; f; cd lnk/.. && python3 q.py", True),
+    ('eval "set -P"; cd lnk/.. && python3 q.py', True),
+    ("bash -P -c 'cd lnk/.. && python3 q.py'", True),
+    ("set -P; (cd lnk/.. && python3 q.py)", True),
+    ("set -e; cd lnk/.. && python3 q.py", False),
+    ("(set -P); cd lnk/.. && python3 q.py", False),
+    ("x=$(set -P); cd lnk/.. && python3 q.py", False),
+    ("set -P | true; cd lnk/.. && python3 q.py", False),
+    ("set -P; set +P; cd lnk/.. && python3 q.py", False),
+    ("set -P; set +o physical; cd lnk/.. && python3 q.py", False),
+    ("set -P; cd -L lnk/.. && python3 q.py", False),
+    ("set -P; bash -c 'cd lnk/.. && python3 q.py'", False),
+    ("set -e -- -P; cd lnk/.. && python3 q.py", False),
+    ("set -Pz; cd lnk/.. && python3 q.py", False),
+    ("set -o nosuch -P; cd lnk/.. && python3 q.py", False),
+    ("set -P -o nosuch; cd lnk/.. && python3 q.py", True),
+    ("cd -- lnk/.. && python3 q.py", False),
+    ("set -P; cd -- lnk/.. && python3 q.py", True),
+    # #97d3d908: a logical `..` under a physical floor steps up on disk; a name a logical change added above the floor still drops as text, and an absolute logical change resets the floor.
+    ("cd -P lnk && cd .. && python3 q.py", True),
+    ("set -P; cd lnk; set +P; cd .. && python3 q.py", True),
+    ("cd -P lnk && bash -c 'cd .. && python3 q.py'", True),
+    ("cd -P lnk/.. && cd inner && cd .. && python3 q.py", True),
+    ("cd lnk && cd .. && python3 q.py", False),
+    ("cd -P lnk && cd {root} && cd sub && cd .. && python3 q.py", False),
+)
+
+
+def test_set_physical_and_the_physical_floor_reach_every_guard_review_91f1787a(tmp_path):
+    assert "worktree" not in str(tmp_path).lower(), tmp_path
+    root = os.path.realpath(tmp_path)
+    (tmp_path / "far" / "inner").mkdir(parents=True)
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "lnk").symlink_to("far/inner", target_is_directory=True)
+    wrong = []
+    for layout, far_program in (("A", True), ("B", False)):
+        (tmp_path / "q.py").write_text(
+            "print(1)\n" if far_program else WT_ARGV_PY, encoding="utf-8"
+        )
+        (tmp_path / "far" / "q.py").write_text(
+            WT_ARGV_PY if far_program else "print(1)\n", encoding="utf-8"
+        )
+        for spelled, in_far in PHYSICAL_OPTION_ROWS:
+            command = spelled.replace("{root}", root)
+            want = 2 if in_far == far_program else 0
+            rc, err = _worktree_rc(command, tmp_path)
+            if rc != want:
+                wrong.append((layout, command, rc, want, err[:160]))
+    assert len(PHYSICAL_OPTION_ROWS) == 31
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+def test_cd_and_pushd_read_their_options_as_bash_does_review_91f1787a():
+    # Each command ends in `&& true`, so the last run is the one after the change; None is the walk's root, the reading of a `cd` that leaves the directory where it is. A kept `<name>/..` pair is read through its `physical` form when the directory carries one.
+    walked = {
+        "cd -- -P && true": "-P",
+        "cd -- sub && true": "sub",
+        "pushd -- -P && true": "-P",
+        "pushd -n sub && true": None,
+        "pushd -n -- sub && true": None,
+        "pushd +1 && true": "~",
+        "pushd -1 && true": "~",
+        "pushd -n +1 && true": None,
+        "pushd -x sub && true": None,
+        "pushd -nn sub && true": None,
+        "cd -x sub && true": None,
+        "cd -@ sub && true": None,
+        "cd sub far && true": None,
+        "pushd sub far && true": None,
+        "cd && true": "~",
+        "set -P; cd lnk/.. && true": "lnk/..",
+        "set -P; cd sub && true": "sub",
+        "command set -P; cd lnk/.. && true": "lnk/..",
+        "set -P; pushd -- lnk/.. && true": "lnk/..",
+        "set -P; cd -P -L lnk/.. && true": ".",
+        # #97d3d908
+        "cd -P lnk && cd .. && true": "lnk/..",
+        "set -P; cd bin && cd -L .. && true": "bin/..",
+        "cd -P lnk && cd x && cd .. && true": "lnk",
+        "cd -P lnk && cd ../x && true": "lnk/../x",
+        "cd -P lnk && cd /abs && cd x && cd .. && true": "/abs",
+        "cd sub && cd .. && true": ".",
+        "cd -P lnk/.. && cd -L inner/.. && cd .. && true": "lnk/../..",
+    }
+    got = {}
+    for cmd in walked:
+        cwd = shellscan.every_run(cmd)[-1].cwd
+        got[cmd] = getattr(cwd, "physical", cwd)
+    assert got == walked, {c: (got[c], w) for c, w in walked.items() if got[c] != w}
+
+
+def test_set_physical_follows_bash_set_grammar_review_91f1787a():
+    rows = [
+        # (argv, physical before, physical after), each measured on bash 5.3.9.
+        (["-P"], False, True),
+        (["+P"], True, False),
+        (["-eP"], False, True),
+        (["-Pe"], False, True),
+        (["-Px"], False, True),
+        (["+P", "-P"], False, True),
+        (["-P", "+P"], False, False),
+        (["-o", "physical"], False, True),
+        (["+o", "physical"], True, False),
+        (["-o", "errexit", "-o", "physical"], False, True),
+        (["-eo", "physical"], False, True),
+        (["-oe", "physical"], False, True),
+        (["-o"], False, False),
+        (["+o"], True, True),
+        (["-o", "-P"], False, True),
+        (["+", "-P"], False, True),
+        (["-o", "nosuch", "-P"], False, False),
+        (["-P", "-o", "nosuch"], False, True),
+        (["-o", "physical=1"], False, False),
+        (["-Pz"], False, False),
+        (["-zP"], False, False),
+        (["--physical"], False, False),
+        (["-e", "--", "-P"], False, False),
+        (["-o", "physical", "--", "x"], False, True),
+        (["-", "-P"], False, False),
+        (["-P", "x", "y"], False, True),
+        (["--", "-P"], False, False),
+        (["-e"], True, True),
+    ]
+    wrong = [
+        (row, got) for row in rows if (got := shellscan._set_physical(row[0], row[1])) != row[2]
+    ]
+    assert not wrong, wrong
+    shells = [
+        (["-P", "-c", "x"], True),
+        (["-o", "physical", "-c", "x"], True),
+        (["-eP", "-c", "x"], True),
+        (["-P", "+P", "-c", "x"], False),
+        (["-c", "x"], False),
+        (["-c", "-P", "x"], True),
+        (["-c", "x", "-P"], False),
+        (["--", "-P"], False),
+        (["--rcfile", "-P", "-c", "x"], False),
+    ]
+    wrong_shells = [
+        (row, got) for row in shells if (got := shellscan._shell_physical(row[0])) != row[1]
+    ]
+    assert not wrong_shells, wrong_shells
+
+
+# DECLARING BUILTINS STOP READING OPTIONS AT THE FIRST OPERAND (#d1800b1b), as bash's internal_getopt does, and only declare/typeset/local take `+` options. Measured on bash 5.3.9: `declare FOO=1 -x` leaves FOO unexported (`-x` is refused as an identifier), `export FOO=1 -n` exports it, `export +x FOO=1` exports it, `unset FOO -f` unsets the variable. At cfacdc927 `_shell_builtin` gathered letters from the whole argv, so the first read as exported, the second as an unexported nameref, and the last left FOO set. A sibling in the same function: `export -n FOO=1` assigns 1 and unexports, while `_NOT_TEXT` read export's `-n` as declare's nameref and the value as unresolved.
+def test_declaring_builtins_stop_at_the_first_operand_review_d1800b1b():
+    rows = [
+        ("declare", ["FOO=1", "-x"], ("1", None)),
+        ("declare", ["-x", "FOO=1"], ("1", True)),
+        ("declare", ["+x", "FOO=1"], ("1", False)),
+        ("declare", ["-x", "--", "FOO=1"], ("1", True)),
+        ("declare", ["--", "-x", "FOO=1"], ("1", None)),
+        ("typeset", ["FOO=1", "+x"], ("1", None)),
+        ("export", ["FOO=1", "-n"], ("1", True)),
+        ("export", ["+x", "FOO=1"], ("1", True)),
+        ("export", ["-n", "FOO=1"], ("1", False)),
+        ("readonly", ["+x", "FOO=1"], ("1", None)),
+        ("unset", ["FOO", "-f"], (None, False)),
+    ]
+    wrong = [
+        (row, got)
+        for row in rows
+        if (got := shellscan._shell_builtin(row[0], row[1], {}).get("FOO")) != row[2]
+    ]
+    assert not wrong, wrong
+    exported = {
+        "declare FOO=1 -x && printenv": False,
+        "declare -x FOO=1 && printenv": True,
+        "export FOO=1 -n && printenv": True,
+    }
+    got = {cmd: "FOO" in shellscan.every_run(cmd)[-1].env for cmd in exported}
+    assert got == exported, got
+
+
+# A WRITE THROUGH A KEPT PAIR LANDS WHERE THE DISK RESOLVES IT (review 2925782e.1). With `reviews-lnk` a link to `agent/reviews/sub`, `cd reviews-lnk && env -C .. tee x.md` writes `agent/reviews/x.md`; at 6651820a2 each write guard joined the lexical text `.` and judged the root's `x.md`, so every `2` row below was allowed (rc 0). Each link and plain directory is named with the guard's pre-filter word, so every row reaches the judgement rather than the text pre-filter.
+WRITE_THROUGH_PAIR_ROWS = (
+    ("block_review_file_shell_write", "cd reviews-lnk && env -C .. tee x.md", 2),
+    ("block_review_file_shell_write", "cd -P reviews-lnk && cd .. && echo x > x.md", 2),
+    ("block_review_file_shell_write", "cd reviews-lnk && cd -P .. && cp /tmp/a x.md", 2),
+    ("block_review_file_shell_write", "cd reviews-lnk && sudo -D .. dd of=x.md", 2),
+    ("block_review_file_shell_write", "cd reviews-plain && env -C .. tee x.md", 0),
+    ("block_review_file_shell_write", "cd reviews-lnk && cd .. && tee x.md", 0),
+    (
+        "block_user_only_command_shell_write",
+        "cd clnk && echo 'disable-model-invocation: true' | env -C .. tee x.md",
+        2,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        "cd reviews-plain && echo 'disable-model-invocation: true' | env -C .. tee x.md",
+        0,
+    ),
+)
+
+
+def test_a_write_through_a_kept_pair_is_judged_where_it_lands_review_2925782e(tmp_path):
+    root = os.path.realpath(tmp_path)
+    (tmp_path / "agent" / "reviews" / "sub").mkdir(parents=True)
+    (tmp_path / ".claude" / "commands" / "sub").mkdir(parents=True)
+    (tmp_path / "reviews-plain").mkdir()
+    (tmp_path / "reviews-lnk").symlink_to("agent/reviews/sub", target_is_directory=True)
+    (tmp_path / "clnk").symlink_to(".claude/commands/sub", target_is_directory=True)
+    wrong = []
+    for stem, command, want in WRITE_THROUGH_PAIR_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    # The helper every write reader goes through: the text for a plain directory, the disk's answer for a kept pair, and the text again when no hook directory is known.
+    landed = shellscan.every_run("cd reviews-lnk && env -C .. cp /tmp/a x.md")[-1]
+    assert landed.cwd == ".", landed.cwd
+    assert shellscan._physical(landed.cwd) == "reviews-lnk/..", shellscan._physical(landed.cwd)
+    assert shellscan.write_directory(landed.cwd, root) == os.path.join(root, "agent", "reviews")
+    assert shellscan.write_directory(landed.cwd, None) is landed.cwd
+    assert shellscan.write_directory("sub", root) == "sub"
+    assert shellscan.write_directory(None, root) is None
+    assert shellscan.copy_landings(landed, root) == [
+        (os.path.join(root, "agent", "reviews", "x.md"), False)
+    ]
+    assert shellscan._run_directory(landed, root) == os.path.join(root, "agent", "reviews")
+
+
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The

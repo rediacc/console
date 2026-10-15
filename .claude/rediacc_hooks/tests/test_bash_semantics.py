@@ -2200,6 +2200,29 @@ def test_a_str_stdin_holding_a_lone_surrogate_reaches_the_command_as_bytes(text,
     assert hookio.run_out([sys.executable, "-c", echo_hex], stdin=text, want_rc=True) == sent.hex()
 
 
+# Built with chr() so the file holds the two surrogate code points themselves, never a character an editor or a JSON layer joined on the way in.
+_HIGH, _LOW = chr(0xD83D), chr(0xDE00)
+
+
+@pytest.mark.parametrize(
+    ("text", "sent"),
+    [
+        ("x" + _HIGH + _LOW, b"x\xf0\x9f\x98\x80"),
+        (_HIGH + _LOW + chr(0xDCFF), b"\xf0\x9f\x98\x80\xff"),
+        (_HIGH + chr(0xDC80), b"\xf0\x9f\x92\x80"),
+        (_LOW + _HIGH, b"\xed\xb8\x80\xed\xa0\xbd"),
+        (_HIGH + "a", b"\xed\xa0\xbda"),
+    ],
+)
+def test_a_str_stdin_holding_a_surrogate_pair_reaches_the_command_as_its_code_point_review_2925782e(
+    text, sent
+):
+    """Review 2925782e.2: `_stdin_bytes`' fallback encoded each half of a valid pair as a three-byte surrogatepass form, so U+D83D U+DE00 reached the command as six bytes and not the four of U+1F600. A pair in the wrong order and a high surrogate with no low one stay lone surrogates."""
+    assert any(0xD800 <= ord(ch) <= 0xDFFF for ch in text), ascii(text)
+    echo_hex = "import sys; sys.stdout.write(sys.stdin.buffer.read().hex())"
+    assert hookio.run_out([sys.executable, "-c", echo_hex], stdin=text, want_rc=True) == sent.hex()
+
+
 def test_a_pr_head_holding_a_nul_byte_is_refused_not_a_crash():
     """`gh pr create --head` with a NUL reached `git rev-parse` in block_unproven_bulk_transform._pr_head and crashed it, which admitted the create."""
     payload = json.dumps(

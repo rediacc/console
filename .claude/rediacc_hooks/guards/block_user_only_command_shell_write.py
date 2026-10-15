@@ -223,8 +223,10 @@ def _list_write(runs, analysis, cmd, cwd):
     for run in runs:
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
+        # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), as block_review_file_shell_write reads it.
+        here = shellscan.write_directory(run.cwd, cwd)
         operands = _run_operands(run, argv)
-        prefix = str(run.cwd).rstrip("/") + "/" if run.cwd else ""
+        prefix = str(here).rstrip("/") + "/" if here else ""
         on_list = [
             a
             for a in operands
@@ -233,8 +235,7 @@ def _list_write(runs, analysis, cmd, cwd):
         ]
         for target in run.writes:
             if model_invocation.is_exception_list(target) or (
-                run.cwd
-                and model_invocation.is_exception_list(str(run.cwd).rstrip("/") + "/" + target)
+                here and model_invocation.is_exception_list(str(here).rstrip("/") + "/" + target)
             ):
                 return "a redirect into %s" % target
         # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` are in place.
@@ -316,24 +317,24 @@ def _offending(cmd, cwd):
     for run in runs:
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
+        # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), as block_review_file_shell_write reads it.
+        here = shellscan.write_directory(run.cwd, cwd)
         operands = _run_operands(run, argv)
         for target in run.writes:
-            why = redirect_refusal(target, run.cwd, target in appends)
+            why = redirect_refusal(target, here, target in appends)
             if why:
                 return "flag", why
         if name == "tee":
             appending = "-a" in argv or "--append" in argv
             for target in operands:
-                why = redirect_refusal(target, run.cwd, appending)
+                why = redirect_refusal(target, here, appending)
                 if why:
                     return "flag", why
         # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` rewrote the key into a command file unrefused. Its scripts join the non-option words, so the scripts read can only grow.
         edit = shellscan.in_place_edit(run)
-        hits = [a for a in operands if _is_target(a, run.cwd)]
+        hits = [a for a in operands if _is_target(a, here)]
         if edit is not None and hits:
-            exprs = edit[0] + [
-                a for a in argv if not a.startswith("-") and not _is_target(a, run.cwd)
-            ]
+            exprs = edit[0] + [a for a in argv if not a.startswith("-") and not _is_target(a, here)]
             for expr in exprs:
                 added = "\n".join(m.group("rep") for m in _SED_SUB.finditer(expr))
                 if not _SED_SUB.search(expr):
@@ -341,7 +342,7 @@ def _offending(cmd, cwd):
                 if model_invocation.flag_in_text(added):
                     return "flag", "%s -i adding the key to %s" % (name, hits[0])
             # A listed file keeps its key exactly as the list says, so an in-place edit whose script names the key is refused on it: that is a removal or a rewrite of the flag.
-            listed = [h for h in hits if _listed(_abs(h, run.cwd, cwd)) is not None]
+            listed = [h for h in hits if _listed(_abs(h, here, cwd)) is not None]
             if listed and any(model_invocation.MENTION.search(e) for e in exprs):
                 return (
                     "flag",
@@ -354,11 +355,11 @@ def _offending(cmd, cwd):
         # `cwd` places a relative fed glob in the run's own directory (#e5b0540a).
         copies = shellscan.run_copies(run, None, cwd)
         for dest in copies[1] if copies is not None else []:
-            if not _is_target(dest, run.cwd):
+            if not _is_target(dest, here):
                 continue
-            dest_abs = _abs(dest, run.cwd, cwd)
+            dest_abs = _abs(dest, here, cwd)
             for source in copies[0]:
-                source_abs = _abs(source, run.cwd, cwd)
+                source_abs = _abs(source, here, cwd)
                 landing, problems = _copy_problems(
                     source_abs, _landing(source_abs, dest_abs, dest, copies[2])
                 )
@@ -374,7 +375,7 @@ def _offending(cmd, cwd):
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
             name = shebang
         if name.startswith(INTERPRETERS):
-            in_dir = _is_target(".", run.cwd)
+            in_dir = _is_target(".", here)
             code, verdict, kind = _program(run, cmd, cwd, _names_dir)
             # A program this hook cannot read (review b922f15c.1, .4): the same command wrote the script from an unknown source, or it is too large to read. The pre-filter already matched, so it is refused rather than run unread.
             if kind == "unjudgeable":

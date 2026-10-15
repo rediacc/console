@@ -151,6 +151,8 @@ def _language(engine, target, content):
 
 
 def _abs(target, run_cwd, cwd):
+    # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), so the baseline counted is the file the write replaces.
+    run_cwd = shellscan.write_directory(run_cwd, cwd)
     base = (
         cwd
         if run_cwd is None
