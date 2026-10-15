@@ -9,8 +9,8 @@ Design 2 of agent/plans/PLAN-vm-check.md is the specification; each step below c
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`).
   P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
-  P4  the stored token is used when `subscription status` accepts it. Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment: never on argv, never in the config, never printed, never in the receipt.
-  P5  the parent must be a grand on the worker (`parent-grand-missing`); stale `vmc-` forks of it older than an hour are deleted, nothing else is touched.
+  P4  the stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it (a dev token checked against the config's production server is refused): never on argv, never in the config, never printed, never in the receipt.
+  P5  the parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted, nothing else is touched.
   V1.1-V1.7  two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
   T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, `ops down` only for a fleet this run started, then the lock. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them.
 
@@ -78,6 +78,10 @@ ACCOUNT_LOGIN = "vm-check@rediacc.dev"
 ACCOUNT_PLAN = "PROFESSIONAL"
 MINT_LABEL = "vm-check"
 TOKEN_SCOPES = ("license:read", "license:activate", "subscription:read")
+
+# The development-only ops VM network, the /24 packages/cli/src/utils/ops-vm.ts exempts from the agent-mode grand guards (VM_NETWORK.BRIDGE_IP in @rediacc/shared). Like that predicate it ignores VM_NET_BASE: an environment variable cannot widen what counts as disposable.
+OPS_VM_NETWORK = "192.168.111"
+GRAND_SIZE = "2G"
 
 TAG_PREFIX = "vmc"
 STALE_FORK_S = 3600
@@ -252,6 +256,8 @@ class Account(Protocol):
 
     def mint(self, password: str) -> str: ...
 
+    def server_url(self) -> str: ...
+
 
 class DrillAccount:
     """The dev gateway through `lib.Drill`'s helpers. Never starts or restarts the gateway: every start re-randomizes the dev passwords."""
@@ -274,6 +280,11 @@ class DrillAccount:
         if not subscription:
             raise lib.GatewayError("no subscription for %s" % ACCOUNT_LOGIN)
         return d.account_mint_token(jar, subscription, MINT_LABEL, list(TOKEN_SCOPES))
+
+    def server_url(self) -> str:
+        """The gateway that minted the token, spelled as `./rdc.sh --dev` spells it; empty when no port is recorded."""
+        port = self.drill.gateway_port_cached or self.drill.gateway_port()
+        return "http://localhost:%s" % port if port else ""
 
 
 # --------------------------------------------------------------------------- the lock
@@ -409,6 +420,14 @@ def stamp_age_s(stamp: str, now: float) -> float | None:
     return None
 
 
+def is_ops_vm_ip(ip: str) -> bool:
+    """True only for a dotted IPv4 literal inside OPS_VM_NETWORK/24: a hostname, an IPv6 form or a look-alike such as `192.168.111.11.example.com` is not an ops VM."""
+    parts = ip.split(".")
+    if len(parts) != 4 or not all(p.isascii() and p.isdigit() and int(p) <= 255 for p in parts):
+        return False
+    return ".".join(parts[:3]) == OPS_VM_NETWORK
+
+
 def first_line(text: str) -> str:
     for line in text.splitlines():
         if line.strip():
@@ -518,7 +537,10 @@ class VmCheck:
         self.leftovers: list[str] = []
         # Run state
         self.token: str | None = None
+        self.account_server = ""
         self.password: str | None = None
+        self.machine_ip = ""
+        self.grand_created = False
         self.locked = False
         self.fleet_mode = ""
         self.fleet_started = False
@@ -604,6 +626,7 @@ class VmCheck:
         env = dict(self.environ)
         if self.token:
             env["REDIACC_TOKEN"] = self.token
+            env["REDIACC_ACCOUNT_SERVER"] = self.account_server
         return env
 
     def git(self, *args: str, cwd: pathlib.Path | None = None) -> str:
@@ -801,6 +824,7 @@ class VmCheck:
                     % (self.worker_ip, self.worker_ip, self.ssh_user),
                 )
             self.machine = names[0]
+            self.machine_ip = self.worker_ip
         self.record(
             "P2",
             "fleet %s (%s), worker %s" % (self.fleet_mode, " ".join(running), self.machine),
@@ -902,7 +926,14 @@ class VmCheck:
             raise NotVerifiedError(
                 "account-unavailable", "minting a token for %s failed: %s" % (ACCOUNT_LOGIN, exc)
             ) from None
+        server = self.account.server_url()
+        if not server:
+            raise NotVerifiedError(
+                "account-unavailable",
+                "a token was minted but the dev gateway's address is unknown (no gateway_port in .account-state)",
+            )
         self.token = token
+        self.account_server = server
         self.say(
             "        "
             + "minted a token for %s (scopes %s)" % (ACCOUNT_LOGIN, ",".join(TOKEN_SCOPES))
@@ -913,7 +944,11 @@ class VmCheck:
                 "account-unavailable",
                 "subscription status refused the minted token: %s" % rdc_failure(check),
             )
-        self.record("P4", "token minted for %s, passed as REDIACC_TOKEN only" % ACCOUNT_LOGIN, True)
+        self.record(
+            "P4",
+            "token minted for %s on %s, passed as REDIACC_TOKEN only" % (ACCOUNT_LOGIN, server),
+            True,
+        )
 
     def p5_parent(self) -> None:
         res, entries = self.repo_list()
@@ -935,23 +970,30 @@ class VmCheck:
         names = [str(e.get("name", "")) for e in entries]
         if self.opts.parent not in names:
             grands = sorted(n for n in names if n and ":" not in n)
-            raise NotVerifiedError(
-                "parent-grand-missing",
-                "no grand %s on %s (grands present: %s); the operator creates it once, outside agent mode: %s./rdc.sh repo create %s -m %s --size 2G%s"
-                % (
-                    self.opts.parent,
-                    self.machine,
-                    ", ".join(grands) or "none",
-                    # A cold run boots fresh VMs and `ops down` removes them, so its worker can never hold the grand (2026-10-15T00:27Z); the fleet comes up first, then the grand is created on it.
-                    "./rdc.sh ops up --basic, then " if self.fleet_started else "",
-                    self.opts.parent,
-                    self.machine,
-                    ", and leave the fleet up for vm:check to reuse (this run started it cold, "
-                    "and fresh VMs never hold a grand)"
-                    if self.fleet_started
-                    else "",
-                ),
-            )
+            ip = self._machine_ip()
+            if not is_ops_vm_ip(ip):
+                raise NotVerifiedError(
+                    "parent-grand-missing",
+                    "no grand %s on %s (%s, not the ops VM network %s.0/24; grands present: %s); the operator creates it once, outside agent mode: %s./rdc.sh repo create %s -m %s --size %s%s"
+                    % (
+                        self.opts.parent,
+                        self.machine,
+                        ip or "address unknown",
+                        OPS_VM_NETWORK,
+                        ", ".join(grands) or "none",
+                        # A cold run boots fresh VMs and `ops down` removes them, so its worker can never hold the grand (2026-10-15T00:27Z); the fleet comes up first, then the grand is created on it.
+                        "./rdc.sh ops up --basic, then " if self.fleet_started else "",
+                        self.opts.parent,
+                        self.machine,
+                        GRAND_SIZE,
+                        ", and leave the fleet up for vm:check to reuse (this run started it cold, "
+                        "and fresh VMs never hold a grand)"
+                        if self.fleet_started
+                        else "",
+                    ),
+                )
+            self._create_grand(ip, grands)
+            return
         swept: list[str] = []
         kept: list[str] = []
         for name in names:
@@ -972,6 +1014,53 @@ class VmCheck:
             "parent grand %s present; %d stale fork(s) swept" % (self.opts.parent, len(swept)),
             True,
             evidence=evidence.strip("; "),
+        )
+
+    def _machine_ip(self) -> str:
+        """The worker's configured address: known from P2 when the worker was found by its ip, read from `machine list` when `--machine` named it."""
+        if not self.machine_ip:
+            machines = _data_list(self.rdc("machine", "list", "-o", "json").out)
+            ips = [str(m.get("ip", "")) for m in machines if str(m.get("name")) == self.machine]
+            self.machine_ip = ips[0] if ips else ""
+        return self.machine_ip
+
+    def _create_grand(self, ip: str, grands: Sequence[str]) -> None:
+        """Create the missing parent grand on an ops VM worker, under P4's credential; the ops VMs are development-only (operator ruling 2026-10-15), so this is never an operator's step."""
+        args = ("repo", "create", self.opts.parent, "-m", self.machine, "--size", GRAND_SIZE)
+        credential = "the minted token" if self.token else "the config's stored token"
+        self.say(
+            "        no grand %s on %s (%s, a development-only ops VM; grands present: %s); creating it with ./rdc.sh %s under %s"
+            % (
+                self.opts.parent,
+                self.machine,
+                ip,
+                ", ".join(grands) or "none",
+                " ".join(args),
+                credential,
+            )
+        )
+        res = self.rdc(*args, timeout=1800)
+        if res.rc != 0:
+            raise NotVerifiedError(
+                "parent-grand-missing",
+                "no grand %s on %s, and creating it on the ops VM failed: ./rdc.sh %s rc=%d: %s"
+                % (self.opts.parent, self.machine, " ".join(args), res.rc, rdc_failure(res)),
+            )
+        listed, entries = self.repo_list()
+        if self.opts.parent not in [str(e.get("name", "")) for e in entries]:
+            raise NotVerifiedError(
+                "parent-grand-missing",
+                "./rdc.sh %s exited 0 but repo list -m %s (rc=%d) does not show %s"
+                % (" ".join(args), self.machine, listed.rc, self.opts.parent),
+            )
+        self.grand_created = True
+        self.record(
+            "P5",
+            "parent grand %s created on %s (ops VM %s) under %s"
+            % (self.opts.parent, self.machine, ip, credential),
+            True,
+            res,
+            evidence="./rdc.sh %s rc=0 in %d s" % (" ".join(args), res.ms // 1000),
         )
 
     # ------------------------------------------------------------------ V

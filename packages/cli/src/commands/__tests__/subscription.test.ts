@@ -272,12 +272,12 @@ describe('subscription command helpers', () => {
     );
   });
 
-  it('status handles missing token state without fetching report, and prints would-use server', async () => {
+  // Regression (2026-10-15): with no token the verb exited 0 having printed "Not logged in", so vm:check's P4 read an absent token as a valid one and the next `repo create` refused with tokenRequired.
+  it('status fails on a missing token without fetching the report, and prints the would-use server', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
 
-    await executeSubscriptionStatus();
+    await expect(executeSubscriptionStatus()).rejects.toThrow('errors.subscription.notLoggedIn');
 
-    expect(mockOutputInfo).toHaveBeenCalledWith('errors.subscription.notLoggedIn');
     expect(mockOutputInfo).toHaveBeenCalledWith(
       `commands.subscription.status.serverWouldUse:http://localhost:${WK_ACCOUNT_DEV_PORT}`
     );

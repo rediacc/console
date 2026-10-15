@@ -38,6 +38,12 @@ TOKEN = "tok-PLANTED-7f3a9c2e1b5d4a60"
 NET = "192.168.111"
 BRIDGE = NET + ".1"
 WORKER = NET + ".11"
+PROD_IP = "203.0.113.7"
+GATEWAY = "http://localhost:48123"
+TOKEN_REQUIRED = (
+    "Subscription token required. Either set REDIACC_SUBSCRIPTION_TOKEN env var, "
+    "or run `rdc subscription login` in your terminal."
+)
 PARENT = "vmcheck-base"
 # 2026-10-14T18:00:00Z
 NOW = 1792000800.0
@@ -52,6 +58,10 @@ MUTANTS = {
     "down-reused-fleet": (
         "        if self.fleet_mode == COLD and self.fleet_started:\n",
         "        if self.fleet_mode:\n",
+    ),
+    "create-on-any-worker": (
+        "            if not is_ops_vm_ip(ip):\n",
+        "            if False:\n",
     ),
 }
 
@@ -82,6 +92,10 @@ class World(vm_check.Host):
         self.signal_on = over.pop("signal_on", "")
         self.sftp_refusal = over.pop("sftp_refusal", "remote open: Permission denied")
         self.minted_check_err = over.pop("minted_check_err", "")
+        # The `repo create` answer: rc and the CLI's JSON error message when it fails.
+        self.create_rc = over.pop("create_rc", 0)
+        self.create_err = over.pop("create_err", "")
+        self.gateway = over.pop("gateway", GATEWAY)
         # "yes" (the config holds a key the VMs authorize), "no" (empty credentials) or "wrong" (a key they reject).
         self.cli_key = over.pop("cli_key", "yes")
         self.key_set: list[str] = []
@@ -183,9 +197,17 @@ class World(vm_check.Host):
         if head == ("machine", "list"):
             return vm_check.Result(0, json.dumps({"success": True, "data": self.machines}))
         if head == ("subscription", "status"):
-            if self.stored_ok or (env.get("REDIACC_TOKEN") == TOKEN and not self.minted_check_err):
+            if self.stored_ok or (self._minted(env) and not self.minted_check_err):
                 return vm_check.Result(0, '{"success":true}')
             return vm_check.Result(1, "", self.minted_check_err or "Unauthorized")
+        if head == ("repo", "create"):
+            # The CLI's provisioning pre-flight: a token from the env or the config, checked on the server it names.
+            if not (self.stored_ok or self._minted(env)):
+                return self._json_error(2, TOKEN_REQUIRED)
+            if self.create_rc:
+                return self._json_error(self.create_rc, self.create_err)
+            self.repos[args[2]] = "guid-" + args[2]
+            return vm_check.Result(0, json.dumps({"success": True, "data": {"name": args[2]}}))
         if head == ("config", "ssh") and args[2:3] == ["show"]:
             if self.key_show == "fail":
                 return vm_check.Result(1, "", "config is locked")
@@ -253,6 +275,17 @@ class World(vm_check.Host):
             return vm_check.Result(0, "%s%s/mnt/rediacc/mounts/x\n" % (vm_check.URI_PREFIX, alias))
         return ok
 
+    def _minted(self, env: dict[str, str]) -> bool:
+        """The minted token counts only on the gateway that minted it; the config's production server refuses it."""
+        return (
+            env.get("REDIACC_TOKEN") == TOKEN and env.get("REDIACC_ACCOUNT_SERVER") == self.gateway
+        )
+
+    @staticmethod
+    def _json_error(rc: int, message: str) -> vm_check.Result:
+        envelope = {"success": False, "errors": [{"code": "ERROR", "message": message}]}
+        return vm_check.Result(rc, json.dumps(envelope), "Creating repository...\n")
+
     def _shell(self, ref: str, command: str) -> vm_check.Result:
         tag = ref.split(":", 1)[1]
         mine = self.guid(tag)
@@ -288,8 +321,15 @@ class World(vm_check.Host):
 
 
 class FakeAccount:
-    def __init__(self, healthy: bool = True, token: str = TOKEN, mint_error: str = "") -> None:
+    def __init__(
+        self,
+        healthy: bool = True,
+        token: str = TOKEN,
+        mint_error: str = "",
+        server: str = GATEWAY,
+    ) -> None:
         self.mint_error = mint_error
+        self.server = server
         self.password = ""
         self.healthy = healthy
         self.token = token
@@ -305,6 +345,9 @@ class FakeAccount:
         if self.mint_error:
             raise OSError(self.mint_error % password)
         return self.token
+
+    def server_url(self) -> str:
+        return self.server
 
 
 @pytest.fixture(autouse=True)
@@ -415,7 +458,23 @@ def scenario_reused_fleet_is_never_downed(m: types.ModuleType, tmp_path: pathlib
     assert world.running == [BRIDGE, WORKER]
 
 
+NON_OPS_MACHINES = [{"name": "vm11", "ip": WORKER}, {"name": "prod-1", "ip": PROD_IP}]
+
+
+def scenario_a_non_ops_worker_never_gets_a_grand_created(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    world = make_world(tmp_path, grands=("other-grand",), machines=NON_OPS_MACHINES)
+    rc, out, receipt = run_check(tmp_path, world, "--machine", "prod-1", m=m)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "parent-grand-missing", receipt["reason"]
+    assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "create"]]
+    assert "the operator creates it once" in receipt["reason"]["detail"]
+    assert PROD_IP in receipt["reason"]["detail"]
+
+
 SCENARIOS = {
+    "create-on-any-worker": scenario_a_non_ops_worker_never_gets_a_grand_created,
     "skip-teardown": scenario_crash_mid_v13,
     "pass-on-zero-steps": scenario_zero_assertions_is_not_verified,
     "print-token": scenario_token_never_written,
@@ -696,7 +755,7 @@ NOT_VERIFIED_CASES: dict[str, dict[str, Any]] = {
     "fleet-os-mismatch": {"os_release": "ubuntu 22.04"},
     "worker-not-in-config": {"machines": []},
     "account-unavailable": {},
-    "parent-grand-missing": {"grands": ("other-grand",)},
+    "parent-grand-missing": {"grands": ("other-grand",), "machines": NON_OPS_MACHINES},
     "agent-policy-refused": {"refuse_fork": True},
     "vscode-absent": {"vscode": False},
     "teardown-failed": {"undeletable_suffix": "-b"},
@@ -713,6 +772,8 @@ def test_each_not_verified_class(tmp_path: pathlib.Path, cls: str) -> None:
         argv = ["--os", "ubuntu-24.04"]
     if cls == "account-unavailable":
         account = FakeAccount(healthy=False)
+    if cls == "parent-grand-missing":
+        argv = ["--machine", "prod-1"]
     world = make_world(tmp_path, **over)
     rc, out, receipt = run_check(tmp_path, world, *argv, account=account)
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
@@ -938,19 +999,129 @@ def test_a_config_holding_another_key_is_not_overwritten_and_names_the_fix(
     assert receipt.get("status") == "NOT_VERIFIED", receipt
 
 
-def test_a_cold_run_missing_the_grand_says_to_leave_a_warm_fleet(tmp_path: pathlib.Path) -> None:
-    """A cold run's fresh VMs never hold the grand, and `ops down` removes them (2026-10-15T00:27Z)."""
-    world = make_world(tmp_path, running=(), grands=())
-    rc, out, _receipt = run_check(tmp_path, world)
+def test_a_cold_run_missing_the_grand_on_another_worker_says_to_leave_a_warm_fleet(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A cold run's fresh VMs never hold the grand, and `ops down` removes them (2026-10-15T00:27Z); off the ops network the step stays the operator's."""
+    world = make_world(tmp_path, running=(), grands=(), machines=NON_OPS_MACHINES)
+    rc, out, _receipt = run_check(tmp_path, world, "--machine", "prod-1")
     assert rc != vm_check.EXIT_VERIFIED, out
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up for vm:check to reuse" in out, out
     assert "ops up --basic, then ./rdc.sh repo create" in out, out
     (tmp_path / "warm").mkdir(exist_ok=True)
-    warm = make_world(tmp_path / "warm", grands=())
-    rc, out, _receipt = run_check(tmp_path / "warm", warm)
+    warm = make_world(tmp_path / "warm", grands=(), machines=NON_OPS_MACHINES)
+    rc, out, _receipt = run_check(tmp_path / "warm", warm, "--machine", "prod-1")
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up" not in out, out
+
+
+def _creates(world: World) -> list[list[str]]:
+    return [c for c in world.rdc_calls() if c[:2] == ["repo", "create"]]
+
+
+@pytest.mark.parametrize("stored_ok", [False, True])
+def test_a_missing_grand_on_the_ops_worker_is_created_and_the_run_is_verified(
+    tmp_path: pathlib.Path, stored_ok: bool
+) -> None:
+    """Operator ruling 2026-10-15: the ops VMs are development-only, so creating the grand there is the check's own step."""
+    world = make_world(tmp_path, grands=(), stored_ok=stored_ok)
+    account = FakeAccount()
+    rc, out, receipt = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _creates(world) == [["repo", "create", PARENT, "-m", "vm11", "--size", "2G"]]
+    assert PARENT in world.repos
+    assert account.minted == (0 if stored_ok else 1)
+    credential = "the config's stored token" if stored_ok else "the minted token"
+    assert (
+        "creating it with ./rdc.sh repo create %s -m vm11 --size 2G under %s"
+        % (
+            PARENT,
+            credential,
+        )
+        in out
+    ), out
+    rows = [r for r in receipt["steps"] if r["id"] == "P5"]
+    assert len(rows) == 1, rows
+    assert rows[0]["verdict"] == "ok"
+    assert "created on vm11 (ops VM %s)" % WORKER in rows[0]["desc"], rows[0]
+    assert "operator" not in out
+    assert TOKEN not in out
+    assert TOKEN not in json.dumps(receipt)
+
+
+def test_a_cold_ops_run_creates_the_grand_and_still_downs_its_fleet(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, running=(), grands=())
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert len(_creates(world)) == 1
+    assert world.rdc_calls()[-1] == ["ops", "down"]
+    assert "leave the fleet up" not in out, out
+
+
+def test_a_failed_grand_create_is_not_verified_and_names_the_cli_error(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(
+        tmp_path, grands=(), create_rc=1, create_err="Machine slot limit reached for this plan"
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "parent-grand-missing"
+    detail = receipt["reason"]["detail"]
+    assert "creating it on the ops VM failed" in detail, detail
+    assert "rc=1: Machine slot limit reached for this plan" in detail, detail
+    assert "Creating repository..." not in detail, detail
+    assert world.forks_left() == []
+    assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+
+
+def test_a_minted_token_sent_to_the_wrong_server_never_creates(tmp_path: pathlib.Path) -> None:
+    """The 05:00Z failure, rebuilt: a dev-minted token without its gateway is no credential, and P4 says so before P5 tries a create."""
+    world = make_world(tmp_path, grands=())
+    rc, out, receipt = run_check(
+        tmp_path, world, account=FakeAccount(server="https://eu.rediacc.com")
+    )
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-unavailable", receipt["reason"]
+    assert _creates(world) == []
+
+
+def test_the_minted_token_rides_with_its_gateway(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    rdc_envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[0] == world.rdc_path]
+    minted = [e for e in rdc_envs if e.get("REDIACC_TOKEN") == TOKEN]
+    assert minted
+    assert all(e.get("REDIACC_ACCOUNT_SERVER") == GATEWAY for e in minted)
+
+
+def test_an_unknown_gateway_address_is_account_unavailable(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, account=FakeAccount(server=""))
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-unavailable"
+    assert "address is unknown" in receipt["reason"]["detail"]
+
+
+@pytest.mark.parametrize(
+    ("ip", "ok"),
+    [
+        ("192.168.111.11", True),
+        ("192.168.111.1", True),
+        ("192.168.112.11", False),
+        ("203.0.113.7", False),
+        ("192.168.111.11.example.com", False),
+        ("192.168.111", False),
+        ("192.168.111.256", False),
+        ("192.168.111.x", False),
+        ("", False),
+        ("::ffff:192.168.111.11", False),
+    ],
+)
+def test_is_ops_vm_ip(ip: str, ok: bool) -> None:
+    assert vm_check.is_ops_vm_ip(ip) is ok
 
 
 @pytest.mark.parametrize(

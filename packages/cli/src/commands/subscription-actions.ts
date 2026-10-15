@@ -107,12 +107,18 @@ async function resolveSubscriptionCommandContext(
   return resolveMachineContext(machineName, 'provision');
 }
 
-/** `subscription status` with no `-m`: the account view. */
+/**
+ * `subscription status` with no `-m`: the account view. No token is a failure, not a status:
+ * the verb exited 0 printing "Not logged in" (empty stdout under `-o json`), so automation read
+ * an absent token as a valid one, and the next `repo create` refused with tokenRequired (vm:check P4, 2026-10-15).
+ */
 export async function executeSubscriptionStatus(): Promise<void> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
-    handleSubscriptionTokenState(tokenState);
-    return;
+    outputService.info(
+      t('commands.subscription.status.serverWouldUse', { server: getSubscriptionServerUrl() })
+    );
+    throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
 
