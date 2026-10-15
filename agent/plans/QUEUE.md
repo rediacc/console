@@ -69,9 +69,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1042 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a8233ed5bdb9c66c5, worker:a29f0da8acf8b109b, worker:a4813d1a1fbd90505.
-- Leased items: 3: #61fb7bc3 (worker:a4813d1a1fbd90505, d778be9d), #74f261a9 (worker:a8233ed5bdb9c66c5, d778be9d), #c56c1e5e (worker:a29f0da8acf8b109b, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1065 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a98c9fb6b06affd23, worker:a1713efb5d715a556, worker:adb528b3a8fd8f94a.
+- Leased items: 5: #59082342 (worker:a1713efb5d715a556, d778be9d), #78df53cf (worker:a82a6843d10d5f7d8, d778be9d), #8d8ba5a2 (worker:a417671fbd165e09a, d778be9d), #c5305ed9 (worker:adb528b3a8fd8f94a, d778be9d), #e13fb555 (worker:a98c9fb6b06affd23, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 

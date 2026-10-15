@@ -2,7 +2,7 @@
 
 # STATE d778be9d (2026-10-15T10:25Z)
 
-Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. The operator returned at ~08:0xZ ("You can continue for the rest."), lifting the pause; the merge is authorized at the babysit finish line. Pushes follow the hooks (ci:quick receipt, VERIFIED vm:check receipt), never an extra approval step.
+Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. The operator returned at about 08:00Z ("You can continue for the rest.") <!-- style-ok -->, lifting the pause. The standing orders cover the push and merge: /pr-babysit (2026-10-09, #6361fc5b) pushes and drives CI, and /pr-merge is authorized at the babysit finish line; each push still needs the hooks' receipts (ci:quick, a VERIFIED vm:check).
 
 ## Next action
 1) Four writers in flight (leases): r65 #78df53cf (five code review findings: subscription-actions.ts, vm_check.py, hookio.py, backup.ts), r66 #e13fb555 (block_cli_bundle reads expanded words), r67 #59082342 (config lost-update in config-file-storage.ts/config.ts/rdc.sh), r68 #8d8ba5a2 (prune misses an orphan). Apply each patch, verify, commit, answer its review.
