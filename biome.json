@@ -70,6 +70,7 @@
       ".ci/**/*.cjs",
       ".ci/**/*.mjs",
       ".ci/**/*.ts",
+      "vitest.config.ts",
       "eslint-rules/**/*.js",
       "workers/**/*.ts",
       ".github/actions/**/*.js",

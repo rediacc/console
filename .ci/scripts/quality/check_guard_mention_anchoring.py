@@ -140,9 +140,14 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "so the guard can substitute the argument; it rewrites a parsed string value and never reads the command text."
     ),
     ("block_review_file_shell_write.py", "_LITERAL"): (
-        "BLOCKER: extracts the body of each quoted or backticked literal on a line of interpreter program text that "
-        "already names the review directory beside a shell call (SHELL_CALL); quote shapes with no word, applied to "
-        "program text, never to the command, and each body is judged as a command by the guard's own shell reading."
+        "BLOCKER: extracts the body of each quoted or backticked literal in interpreter program text: on a line that "
+        "already names the review directory beside a shell call (SHELL_CALL), and as a path resolved on disk for a write "
+        "through a link (_code_writes_through_disk); quote shapes with no word, applied to program text, never to the command."
+    ),
+    ("block_user_only_command_shell_write.py", "_LITERAL"): (
+        "BLOCKER: extracts the body of each quoted or backticked literal in interpreter program text, each resolved on disk "
+        "as a path for a write through a link into a command or skill directory (_code_writes_through_disk); quote shapes "
+        "with no word, applied to program text, never to the command."
     ),
     ("block_worktree_add.py", "QUOTE_LIKE"): (
         "BLOCKER: extracts the body of perl q{}/qq{}/qw and ruby %q()/%w() literals from interpreter program text for "
