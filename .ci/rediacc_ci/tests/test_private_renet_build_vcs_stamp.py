@@ -313,7 +313,8 @@ def _runs_build(line: str, i: int) -> bool:
         elif bare.startswith("-"):
             continue
         else:
-            return bare == "build"
+            # The verb word can carry the closer of an enclosing `$(...)`, subshell or backquote (`x=$(go build)`), so it matches as a word prefix, as the old `build\b` did.
+            return re.match(r"build(?![\w.-])", bare) is not None
 
 
 @pytest.mark.parametrize(
@@ -338,6 +339,10 @@ def _runs_build(line: str, i: int) -> bool:
         'go -C "$(dirname "$0")/.." build ./cmd/renet',
         'go -C $(dirname "$0") build ./cmd/renet',
         'go -C "$(dirname "$(dirname "$0")")/.." build ./cmd/renet',
+        "x=$(go build)",
+        "(go build)",
+        "x=`go build`",
+        "y=$(go -C /x build)",
         'go -C "$(a "$(b "$(c)")")" build ./cmd/renet',
     ],
 )
@@ -355,6 +360,8 @@ def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
         "go -C /x generate ./pkg/ebpf/...",
         'go -C "$dir" test -tags build ./...',
         "go test -tags build ./...",
+        "go build-cache-info",
+        "(go buildx)",
         '_go_build() (\n    go build "$@"\n)',
     ],
 )
