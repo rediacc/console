@@ -191,6 +191,8 @@ class World(vm_check.Host):
                 return vm_check.Result(1, "", "config is locked")
             if self.key_show == "nodata":
                 return vm_check.Result(0, json.dumps({"success": True, "data": {}}))
+            if self.key_show == "notjson":
+                return vm_check.Result(0, "config ssh: ok\n")
             embedded = "no" if self.cli_key == "no" else "yes"
             return vm_check.Result(0, json.dumps({"success": True, "data": {"embedded": embedded}}))
         if head == ("config", "ssh") and args[2:3] == ["set"]:
@@ -956,6 +958,7 @@ def test_a_cold_run_missing_the_grand_says_to_leave_a_warm_fleet(tmp_path: pathl
     [
         ("fail", "config ssh show gave no key state (rc=1: config is locked)"),
         ("nodata", "config ssh show gave no key state (its JSON has no data.embedded)"),
+        ("notjson", "config ssh show gave no key state (its output is not JSON)"),
     ],
 )
 def test_an_unreadable_key_state_changes_nothing_and_p5_judges(
@@ -966,3 +969,15 @@ def test_an_unreadable_key_state_changes_nothing_and_p5_judges(
     assert rc == vm_check.EXIT_VERIFIED, out
     assert world.key_set == [], "an unreadable key state must not set a key"
     assert says in out, out
+
+
+def test_an_unreadable_key_state_on_a_keyless_config_sets_nothing_and_p5_names_the_key(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review edb5f14e.2: with a config that really has no key, the early return must set nothing, so the run reaches P5 and stops at the ssh refusal with the fix named."""
+    world = make_world(tmp_path, key_show="fail", cli_key="no")
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc != vm_check.EXIT_VERIFIED, out
+    assert world.key_set == [], "an unreadable key state must not set a key"
+    assert "NOT VERIFIED (worker-ssh-key)" in out, out
+    assert "config ssh set --key" in out, out

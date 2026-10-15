@@ -828,13 +828,14 @@ class VmCheck:
     def _ensure_cli_key(self) -> None:
         """Give a config with no SSH key the key the ops VMs authorize (2026-10-15: an empty `credentials` made the CLI offer ~/.ssh/id_ed25519, and `repo list` failed `All configured authentication methods failed`). An unreadable `config ssh show` changes nothing and is said; P5's repo list then judges the key."""
         show = self.rdc("config", "ssh", "show", "-o", "json")
+        parsed = True
         try:
             embedded = (json.loads(show.out).get("data") or {}).get("embedded")
         except (ValueError, AttributeError):
-            embedded = None
+            embedded, parsed = None, False
         if show.rc != 0 or embedded is None:
             why = (
-                "its JSON has no data.embedded"
+                ("its JSON has no data.embedded" if parsed else "its output is not JSON")
                 if show.rc == 0
                 else "rc=%d: %s" % (show.rc, rdc_failure(show))
             )
