@@ -42,8 +42,8 @@ thousand lines for provision/delete only (not CSI, no snapshots); topolvm and op
 |---|---|---|---|---|
 | `rediacc-csi.service` | renet itself: `renet kube csi-serve` | every node currently mounting ≥1 datastore | datastore attach (restart on attach/detach to re-register topology); removed when last datastore detaches | `--node-name <k8s-node>`, `--kubelet-root <kubelet-root>` |
 | `rediacc-csi-provisioner.service` | embedded `csi-provisioner` (external-provisioner **v6.4.0**) | same nodes | same lifecycle | `--csi-address <sock>`, `--node-deployment`, `--enable-capacity`, `--capacity-ownerref-level=-1`, `--extra-create-metadata`, `--default-fstype=ext4`, `--kubeconfig <csi-kubeconfig>`; env `NODE_NAME=<node>` |
-| `rediacc-csi-snapshotter.service` | embedded `csi-snapshotter` (external-snapshotter **v8.6.0**) | same nodes | same lifecycle | `--csi-address <sock>`, `--node-deployment`, `--extra-create-metadata`, `--kubeconfig <csi-kubeconfig>`; env `NODE_NAME=<node>` |
-| `rediacc-csi-snapshot-controller.service` | embedded `snapshot-controller` (external-snapshotter **v8.6.0**) | CP node only (one per cluster) | cluster install; moves with the CP datastore attach | `--enable-distributed-snapshotting`, `--kubeconfig <csi-kubeconfig>` |
+| `rediacc-csi-snapshotter.service` | embedded `csi-snapshotter` (external-snapshotter **v8.7.0**) | same nodes | same lifecycle | `--csi-address <sock>`, `--node-deployment`, `--extra-create-metadata`, `--kubeconfig <csi-kubeconfig>`; env `NODE_NAME=<node>` |
+| `rediacc-csi-snapshot-controller.service` | embedded `snapshot-controller` (external-snapshotter **v8.7.0**) | CP node only (one per cluster) | cluster install; moves with the CP datastore attach | `--enable-distributed-snapshotting`, `--kubeconfig <csi-kubeconfig>` |
 
 Dropped sidecars, with reasons:
 
