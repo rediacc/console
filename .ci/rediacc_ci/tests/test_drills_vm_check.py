@@ -141,6 +141,10 @@ class World(vm_check.Host):
         self.vscode = over.pop("vscode", True)
         self.refuse_fork = over.pop("refuse_fork", False)
         self.undeletable_suffix = over.pop("undeletable_suffix", "")
+        # A delete that answers rc 0 and leaves the fork listed, and a repo list that fails once any delete ran (review a6e93fb9.2).
+        self.sticky_suffix = over.pop("sticky_suffix", "")
+        self.list_fails_after_delete = over.pop("list_fails_after_delete", False)
+        self.deleted_any = False
         self.crash_on = over.pop("crash_on", "")
         self.signal_on = over.pop("signal_on", "")
         # None: sftp-server's real answer to a refused leg, the bare `Failure` status line naming the path (2026-10-15 live run); a string replaces it.
@@ -357,6 +361,8 @@ class World(vm_check.Host):
                 ],
             }
             return vm_check.Result(1, json.dumps(envelope), "Listing repositories...\n")
+        if head == ("repo", "list") and self.list_fails_after_delete and self.deleted_any:
+            return vm_check.Result(1, "", "list unavailable")
         if head == ("repo", "list"):
             return vm_check.Result(0, json.dumps({"success": True, "data": self._repo_data()}))
         if head == ("repo", "fork"):
@@ -369,8 +375,11 @@ class World(vm_check.Host):
             self.forked.append(args[4])
             return ok
         if head == ("repo", "delete"):
+            self.deleted_any = True
             if self.undeletable_suffix and args[2].endswith(self.undeletable_suffix):
                 return vm_check.Result(1, "", "device busy")
+            if self.sticky_suffix and args[2].endswith(self.sticky_suffix):
+                return ok
             self.repos.pop(args[2], None)
             return ok
         if head == ("term", "connect"):
@@ -1300,6 +1309,27 @@ def test_a_teardown_leftover_names_the_delete_error_and_the_run_says_it_judged(
     assert "delete rc=1: device busy" in receipt["reason"]["detail"], receipt["reason"]
     assert "assertion(s) ran, and the run still does not count" in out, out
     assert "Nothing on the VMs was judged" not in out, out
+
+
+def test_a_delete_that_answers_rc0_and_stays_listed_is_named(tmp_path: pathlib.Path) -> None:
+    """Review a6e93fb9.2: a fork the delete reported gone but the list still shows is a leftover with its own wording."""
+    world = make_world(tmp_path, sticky_suffix="-b")
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "teardown-failed"
+    assert any("-b (delete rc=0, still listed)" in x for x in receipt["teardown"]["leftovers"]), (
+        receipt["teardown"]
+    )
+
+
+def test_an_unreadable_list_still_names_the_delete_error(tmp_path: pathlib.Path) -> None:
+    """Review a6e93fb9.1: when the repo list fails after the deletes, each leftover still carries its delete's own error."""
+    world = make_world(tmp_path, undeletable_suffix="-b", list_fails_after_delete=True)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    left = receipt["teardown"]["leftovers"]
+    assert any("-b (repo list unreadable; delete rc=1: device busy)" in x for x in left), left
+    assert any(x.endswith("-a (repo list unreadable)") for x in left), left
 
 
 @pytest.mark.parametrize("cls", sorted(NOT_VERIFIED_CASES))

@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: low -- operator 2026-10-15: "switch effort: smart to effort: low"
+effort: low -- operator 2026-10-15: "switch effort: smart to effort: low", agent/plans/PLAN-stop-hook-effort.md
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -67,8 +67,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
 - Work outside the PR's plans (2 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1109 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-  - epic 4e9f05b6, plan agent/plans/PLAN-backup-program.md, outside the set, 4 commit(s) on the branch, 0 open item(s): backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1112 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 4e9f05b6, plan agent/plans/PLAN-backup-program.md, outside the set, 5 commit(s) on the branch, 0 open item(s): backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover
 - Writers: 1 live of writer_cap 15 (session d778be9d): worker:a57ee40e6713785f9.
 - Leased items: 1: #3e921991 (worker:a57ee40e6713785f9, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.

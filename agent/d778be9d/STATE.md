@@ -2,7 +2,7 @@
 
 # STATE d778be9d (2026-10-15T12:35Z)
 
-Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. Operator /ask 10:5xZ: account plan ships as the next PR after #600; keep REDIACC_SKIP_FILE_WRITE_GUARD on vm:check write rows.
+Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. Operator /ask 10:55Z: account plan ships as the next PR after #600; keep REDIACC_SKIP_FILE_WRITE_GUARD on vm:check write rows.
 
 ## Next action
 1) Two writers running: guard follow-ups (#d6d000ad, #f6334e52, #a1852a9e; agent a690cb9f6b211bbf4, patch r85-guards.patch) and review findings plus the test_landing feed regression from a7b3a36f6 (#e85d23f5; agent a0f96ae37525a8dc8, patch r86-reviews.patch). Both deliver into the session scratch dir. Apply, verify, commit, answer reviews; commit review records (`worklist.py --review-commit d778be9d`).
