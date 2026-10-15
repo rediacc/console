@@ -238,7 +238,7 @@ _READINGS_CAP = 64
 
 
 def _expansions(word):
-    """`(start, end, kind, name)` for each outermost expansion in a quote-removed word: kind "var" (`$NAME`, `${NAME}`), "op" (`${NAME...}` with an operator), "positional" (`$1`, `$@`, `$*`), "number" (`$#`, `$?`, `$$`, `$!`, `$-`, `$0`, `$((...))`) or "subst" (`$(...)`, a backquoted span)."""
+    """`(start, end, kind, name)` for each outermost expansion in a quote-removed word: kind "var" (`$NAME`, `${NAME}`), "op" (`${NAME...}` with an operator), "positional" (`$1`, `$@`, `$*`), "number" (`$#`, `$?`, `$$`, `$!`, `$-`, `$0`, `$((...))`), "indirect" (`${!NAME}`, and with an empty name any other `${!...}` form) or "subst" (`$(...)`, a backquoted span)."""
     out = []
     i = 0
     while i < len(word):
@@ -265,6 +265,10 @@ def _expansions(word):
             body = word[i + 2 : j - 1]
             if nxt == "(":
                 out.append((i, j, "number" if body.startswith("(") else "subst", ""))
+            elif body.startswith("!") and len(body) > 1:
+                # `${!NAME}` is the value of the variable NAME names (8ef78586.1), not `$!`: `P=D; D=agent/reviews/x; echo hi > ${!P}/y.md` writes the review file (bash 5.3). Any other `${!...}` form (`${!P:-x}`, `${!pre*}`, `${!a[@]}`) keeps an empty name and is read as unknowable.
+                m = re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", body[1:])
+                out.append((i, j, "indirect", m.group(0) if m else ""))
             else:
                 m = re.match(r"[A-Za-z_][A-Za-z0-9_]*|[0-9]+|[@*#?$!-]", body)
                 name = m.group(0) if m else ""
@@ -308,6 +312,20 @@ def _span_choices(span, word, run, cmd):
         return [_WORST if _SPELLS_REVIEWS.search(source) else _OUTSIDE], False
     if kind == "subst":
         return [_WORST if _SPELLS_REVIEWS.search(text) else _OUTSIDE], False
+    if kind == "indirect":
+        # Read through both names when the walk knows both (`P=D; D=x` gives `x`); a name it cannot know, or a value that is not a variable name, leaves the line's unknown.
+        if name:
+            targets, definite = _span_choices((start, end, "var", name), word, run, cmd)
+            if definite and all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", t) for t in targets):
+                values = []
+                for target in targets:
+                    got, known = _span_choices((start, end, "var", target), word, run, cmd)
+                    if not known:
+                        break
+                    values.extend(got)
+                else:
+                    return values, True
+        return [on_line], False
     if kind == "op":
         # `${D:?msg}` is D's value; `${D:-x}` and `${D:=x}` are D's or `x`; `${D:+x}` is `x` or nothing; `${f#p}`, `${f##p}`, `${f%p}` and `${f%%p}` trim a known value. Any other operator (`${D/a/b}`, `${D:1}`) derives a value this reading does not compute.
         trim = re.match(r"[A-Za-z_][A-Za-z0-9_]*(##?|%%?)(.*)\Z", text[2:-1], re.DOTALL)
@@ -1024,7 +1042,7 @@ def _programs_name_reviews(cmd, cwd):
     """The pre-filter's program question: does a script `cmd` runs by path name `reviews` in its text (#c4542b69), or does a program it runs have text this hook cannot read whose sources may (#b53f586d)?
 
     AN UNJUDGEABLE PROGRAM IS JUDGED BY WHAT IT CAN BE MADE FROM. `mkdir -p "$(echo n)" && cp rv.py n && python3 n/rv.py` runs `rv.py`, which writes a review file, while the walk cannot say where the copy landed: the line names no review word, so the pre-filter allowed it (rc 0), and the same line with one was refused. Refusing every such program instead turns the planting loop this repository runs (`sed -i ... x.py && python3 x.py`: 522 of 158,263 distinct Bash commands in this repository's session transcripts on 2026-10-15 run an unjudgeable program, 518 of them naming no review word) into review-record refusals.
-    So the program is read through its possible sources: every file a word of the line names (each run's words, as typed and as expanded, joined to the run's directory), and the command goes to the full check, which refuses the program as unjudgeable, when one of those files is larger than a script read or holds code the full check reads as a write into the review directory (`_source_writes_review`), or when `curl`/`wget` fetches a URL, whose content no file on disk holds.
+    So the program is read through its possible sources: every file a word of the line names (each run's words, as typed and as expanded, joined to the run's directory), and the command goes to the full check, which refuses the program as unjudgeable, when one of those files is larger than a script read or holds code the full check reads as a write into the review directory (`_source_writes_review`), or when `curl`/`wget` fetches a URL or an archive is extracted, whose content no file on disk holds as code.
     Testing a source for the bare word `reviews` instead sent 55 of those 518 to the refusal, on scripts that only mention the directory; the code reading sends 1, and changes the verdict on none of the 158,263. A program generated by a command whose own files never write there (`python3 gen.py > n.py` where `gen.py` imports what does), and one downloaded by a tool other than curl or wget, are the residue this reading cannot see.
     """
     if not shellscan.PROGRAM_PREFILTER.search(cmd):
@@ -1041,6 +1059,9 @@ def _programs_name_reviews(cmd, cwd):
     for run in runs:
         words = {*run.argv, *(run.xargv or ())}
         if run.name.rsplit("/", 1)[-1] in _FETCHERS and any("://" in w for w in words):
+            return True
+        # An archive extraction writes files whose text no file on disk holds as code either (#63109cf2): `tar -xf x.tar && python3 a.py`.
+        if shellscan._tool_outputs(run)[1]:
             return True
         base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
         for word in words:

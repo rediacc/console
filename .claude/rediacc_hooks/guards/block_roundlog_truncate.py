@@ -37,6 +37,7 @@ as an array subscript to shellcheck (SC1087, an error not a warning), and here t
 
 import ast
 import builtins
+import fnmatch
 import functools
 import os
 import re
@@ -1246,7 +1247,36 @@ def _delimiter_as_text(code, start):
     return all(opener != "(" or callee in _TEXT_CALLS for opener, callee in stack)
 
 
-def _program_could_name_log(code, family="python"):
+# A GLOB LITERAL PUTS A LOG IN PLAY ONLY WHERE IT CAN REACH THE LOG'S DIRECTORY (#63109cf2). A round log is `agent/pr-babysit-<branch>.md` (`reports/` for the pre-edit guard's copy), and every glob made only of classes and stars meets its name: the regex `[A-Za-z_][A-Za-z0-9_]*` in a python heredoc that edits a guard, or a test script that slices and
+# writes an unrelated file, was refused as a round-log truncation (rc 2) with no log anywhere near it. A glob literal now counts when one of its words has a directory part whose last segment can be a log directory (`agent/*.md`, `*/x.md`, any `**`), or has none (or `.`/`..`) and either holds a fixed character of its own (`*.md`, `pr-*`: a file name's shape, not a regex's) or the program or the command around it spells a log directory as a whole path word (`os.listdir('agent')`, `cd agent`), or the run's own directory is one.
+_LOG_DIRS = ("agent", "reports")
+_SPELLS_LOG_DIR = re.compile(r"(?<![\w.-])(?:agent|reports)/?(?=['\"`\s;)&|,]|\Z)")
+
+
+def _glob_reaches_log_dir(literal, context):
+    """Can the glob `literal` name a file in a round-log directory? `context` is the text a bare glob's directory is read from: the program, the command around it and the run's directory (the comment above)."""
+    for token in literal.split():
+        for alt in shellscan._brace_alternatives(token):
+            base = alt.rsplit("/", 1)[-1]
+            if not (any(ch in base for ch in _GLOB) and _glob_meets_log(base)) and not re.search(
+                RL, alt
+            ):
+                continue
+            if "**" in alt:
+                return True
+            parent = alt.rsplit("/", 1)[0] if "/" in alt else "."
+            segment = parent.rsplit("/", 1)[-1]
+            if segment in (".", ".."):
+                # A bare glob that holds a character of its own (`*.md`, `pr-*`) is a file name's shape; one made only of classes and stars (`[A-Za-z_][A-Za-z0-9_]*`) is a regex's, and reaches a log only where a log directory is spelled.
+                literal = any(e is not None and len(e) == 1 for e in _glob_elements(base))
+                if literal or _SPELLS_LOG_DIR.search(context):
+                    return True
+            elif any(fnmatch.fnmatchcase(d, segment) for d in _LOG_DIRS):
+                return True
+    return False
+
+
+def _program_could_name_log(code, family="python", context=None):
     """Could an interpreter program's own text spell a round-log path? It names the round-log stem (`pr-babysit`, in a literal or an f-string alike), or one of its STRING LITERALS is a glob or brace that can meet the round-log pattern (`glob.glob('agent/*.md')`) in a program that is not provably inert (`_program_inert`). Code outside a literal is never read for globs: `3 * 4`, `from os import *` and `r']*'` are Python, not paths (#e5b0540a's false positive, reported live by w2).
 
     INERT IS PROVEN, NEVER PRESUMED (review db54423c.1). A glob literal names files only through something that expands it, and the set of things that can is open: a library (shelljs, Open3, python `sh`, zx, execa, globby), a shell-out, a computed name, a directory listing the literal filters. So a glob literal counts unless every import is on a short inert list and the text holds none of those constructs; an unknown module is enough to keep the log in play, and the program is then read by `_follow`, which refuses what it cannot follow.
@@ -1260,6 +1290,7 @@ def _program_could_name_log(code, family="python"):
         m
         for m in re.finditer(r"'(?:[^'\\\n]|\\.)*'|\"(?:[^\"\\\n]|\\.)*\"", code)
         if _word_could_name_log(m.group(0)[1:-1])
+        and _glob_reaches_log_dir(m.group(0)[1:-1], code + "\n" + (context or ""))
         and not (
             m.group(0)[1:-1] in _DELIMITERS
             and not _NOT_TEXT.search(code)
@@ -1293,7 +1324,12 @@ def _shell_words(cmd):
     return words
 
 
-def _could_name_log(cmd):
+def _log_context(cmd, cwd):
+    """The text a bare glob's directory is read from beside the program's own (`_glob_reaches_log_dir`): the command, and the last segment of the directory it runs in."""
+    return "%s\n%s" % (cmd, os.path.basename(str(cwd or "").rstrip("/")))
+
+
+def _could_name_log(cmd, cwd=None):
     """The prefilter. A command passes when it names the round-log stem at all (`pr-babysit`), when one of its SHELL WORDS that a truncating arm judges holds a glob or brace that could spell a log (`_shell_words`, `_word_could_name_log`), or when an interpreter program's text could spell one (`_program_could_name_log`). A glob is put to the round-log pattern's automaton, never to the disk.
 
     SHELL WORDS, NEVER PROGRAM TEXT (#e5b0540a, live false positive reported by w2). The first version tokenised the whole command, so a lone `*` anywhere (`3 * 4` in a Python heredoc) met the pattern, the program's write through a variable then failed closed, and every Python heredoc that wrote a file and multiplied was refused.
@@ -1305,7 +1341,8 @@ def _could_name_log(cmd):
     if any(_word_could_name_log(w) for w in _shell_words(cmd)):
         return True
     return any(
-        _program_could_name_log(code, family) for family, code in WT.interpreter_programs(cmd)
+        _program_could_name_log(code, family, _log_context(cmd, cwd))
+        for family, code in WT.interpreter_programs(cmd)
     )
 
 
@@ -2536,14 +2573,14 @@ def _literal_names_log(text):
     return _is_log(text) or _LOG_STEM in text or _word_could_name_log(text)
 
 
-def _program_truncates(code, handed=False, family="python"):
+def _program_truncates(code, handed=False, family="python", context=None):
     """Does an interpreter program replace or remove a round log, or leave that open?
 
     ONLY A PROGRAM WITH A LOG IN PLAY IS READ: one the run was HANDED a log (`handed`: an argument, an environment value, its stdin), or whose own text could spell one (`_program_could_name_log`, the 2026-08-19 `p.write_text(s[:i] + new)` shape). Any other program is left alone, whatever it does.
 
     A program in play must be FOLLOWED (`_follow`): it is refused when a write lands on a literal that names a log, and equally when anything in it could not be followed, an unresolved write target included. A program whose every call is known, and whose every write goes to a named path that is not a log, writes those files and no other, whatever it reads.
     """
-    if not handed and not _program_could_name_log(code, family):
+    if not handed and not _program_could_name_log(code, family, context):
         return False
     literals, lost = _follow(code, family)
     return lost or any(_literal_names_log(text) for text in literals)
@@ -2574,7 +2611,7 @@ def run(ev):
     cmd = ev.field("tool_input", "command")
 
     # A round-log path must appear at all, literally or as a glob or brace that could spell one (#e5b0540a: `echo pr-babysit-*.md | xargs cp /tmp/x.md` was allowed here before the walk ran), which is also what keeps the walk below off every command that cannot touch one.
-    if not _could_name_log(cmd):
+    if not _could_name_log(cmd, ev.field("cwd")):
         return hookio.ALLOW
 
     # The redirects bash performs, with their operator: `>` truncates, `>>` appends (`2>&1`-style descriptor plumbing names no file).
@@ -2588,7 +2625,8 @@ def run(ev):
     truncating = truncating or any(_verb_truncates(r, cwd) for r in shellscan.every_run(cmd))
     # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern in a program not provably inert), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
     truncating = truncating or any(
-        _program_truncates(code, False, family) for family, code in WT.interpreter_programs(cmd)
+        _program_truncates(code, False, family, _log_context(cmd, cwd))
+        for family, code in WT.interpreter_programs(cmd)
     )
     # The same question of each interpreter run with what the command line HANDS it (review 1d4e1754.1): a program that takes its target from argv, the environment or stdin names no path in its text.
     if not truncating:
@@ -2603,7 +2641,7 @@ def run(ev):
                 continue
             # A script this walk cannot read (an earlier clause wrote it from a source it cannot follow) is every program at once: handed a log, it is refused.
             if _handed_a_log(run_, code, kind, cwd) and (
-                code is None or _program_truncates(code, True, family)
+                code is None or _program_truncates(code, True, family, _log_context(cmd, cwd))
             ):
                 truncating = True
                 break

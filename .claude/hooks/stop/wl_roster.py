@@ -1038,7 +1038,7 @@ _LOOP_CAP = 64
 
 
 def _loop_values(word, run):
-    """`word` once per combination of the values its `for`/`select` variables take (`shellscan._Run.loop_vars`), each `$NAME` or `${NAME}` replaced by one word of the list its loop walks (#b53f586d); [] when the word names no loop variable, or past `_LOOP_CAP` combinations, where the literal directory stands in as it does for any unknowable word.
+    """`word` once per combination of the values its `for`/`select` variables take (`shellscan._Run.loop_vars`), each `$NAME` or `${NAME}` replaced by one word of the list its loop walks (#b53f586d); [] when the word names no loop variable. Past `_LOOP_CAP` combinations only the word's first reference is replaced, once per value of its variable, and the rest stay as typed, so each answer is cut back to its literal directory as any unknowable word is.
 
     The walk keeps a loop variable unknown, since one value cannot stand for every iteration, so `D=other; for D in src; do echo x > $D/a.md; done` reached the fix-set as `$D/a.md`, whose literal directory is the root, and wrote nothing (`[]`) while bash writes `src/a.md`.
     """
@@ -1053,7 +1053,12 @@ def _loop_values(word, run):
     for name in names:
         combos *= max(1, len(loop[name]))
     if combos > _LOOP_CAP:
-        return []
+        # Past the cap only the first loop variable the word names is read once per value, and every later one is left as typed for `_norm_under` to cut back to the directory in front of it (8ef78586.2): `$D/$f` over 65 x 2 values covers each `D`. Answering [] cut `$D/$f` to the root, which is never returned, so the loop's writes were not subtracted from the lead's fix-set.
+        lead = refs[0].group(1) or refs[0].group(2)
+        return [
+            str(word)[: refs[0].start()] + value + str(word)[refs[0].end() :]
+            for value in loop[lead] or [""]
+        ]
 
     def substituted(value):
         return _LOOP_REF.sub(lambda m: value.get(m.group(1) or m.group(2), m.group(0)), str(word))

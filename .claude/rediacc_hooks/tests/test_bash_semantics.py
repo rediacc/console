@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 import types
 import uuid
 from dataclasses import dataclass, field
@@ -3011,6 +3012,15 @@ COPY_ROWS = [
         "1\n",
         "unjudgeable",
     ),
+    # Review 6238f04a.1: only an earlier run that may make or remove the directory leaves the answer unknown. The first two were "unjudgeable" at 8ef785864, any `git` or `rm` with an unexpandable word counting, while neither can make `n` a directory; the last two still may, and stay unjudgeable.
+    ('git -C "$X" status 2>/dev/null; cp {T}/src.py {T}/n && python3 {T}/n', "1\n", "file"),
+    ('rm -f -- "$X"; cp {T}/src.py {T}/n && python3 {T}/n', "1\n", "file"),
+    (
+        'git -C "$X" checkout 2>/dev/null; cp {T}/src.py {T}/n && python3 {T}/n',
+        "1\n",
+        "unjudgeable",
+    ),
+    ('rm -f "$X"; cp {T}/src.py {T}/n && python3 {T}/n', "1\n", "unjudgeable"),
 ]
 
 
@@ -3061,6 +3071,110 @@ def test_a_copy_carries_its_source_3ff3bb16(bash, tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
+# A FILE A TOOL WRITES THROUGH ITS OWN OUTPUT OPTION IS WRITTEN (#63109cf2). The scratch directory holds `src.py` (prints 1), `w.tar` holding `a.py` (prints 4) and an empty `o/`; each row runs under real bash, then the files and directories it made are removed, so the walk reads the world as it was before the command ran. The first four were `(None, None)` at 8ef785864, the script read as absent, while bash ran it; the last two are controls whose script nothing in the line writes.
+TOOL_OUTPUT_ROWS = [
+    ("curl -s -o {T}/a.py file://{T}/src.py && python3 {T}/a.py", "1\n", "unjudgeable"),
+    ("cd {T}/o && curl -sO file://{T}/src.py && python3 src.py", "1\n", "unjudgeable"),
+    ("mkdir -p {T}/x && tar -xf {T}/w.tar -C {T}/x && python3 {T}/x/a.py", "4\n", "unjudgeable"),
+    ("cd {T}/o && tar -xf {T}/w.tar && python3 a.py", "4\n", "unjudgeable"),
+    ("curl -s -o {T}/b.py file://{T}/src.py && python3 {T}/src.py", "1\n", "file"),
+    ("tar -cf {T}/n.tar -C {T} src.py && python3 {T}/src.py", "1\n", "file"),
+]
+
+
+def _tool_output_wrong(module, bash_path, tmp_path):
+    wrong = []
+    for k, (script, prints, kind) in enumerate(TOOL_OUTPUT_ROWS):
+        tmp = tmp_path / ("t%d" % k)
+        (tmp / "o").mkdir(parents=True)
+        (tmp / "src.py").write_text("print(1)\n", encoding="utf-8")
+        (tmp / "a.py").write_text("print(4)\n", encoding="utf-8")
+        with tarfile.open(tmp / "w.tar", "w") as archive:
+            archive.add(tmp / "a.py", arcname="a.py")
+        (tmp / "a.py").unlink()
+        command = _subst(script, tmp)
+        _rc, out = run_bash(bash_path, Fact("O%d" % k, "tool output", script), tmp)
+        assert out == prints, "bash printed %r for %s" % (out, script)
+        for path in list(tmp.rglob("*")):
+            rel = path.relative_to(tmp)
+            if (
+                path.is_file()
+                and str(rel) not in ("src.py", "w.tar")
+                and rel.parts[0] not in ("bin", "home")
+            ):
+                path.unlink()
+        for path in tmp.iterdir():
+            if path.is_dir() and path.name not in ("o", "bin", "home"):
+                shutil.rmtree(path)
+        module._ANALYSIS_CACHE.clear()
+        try:
+            run = [r for r in module.every_run(command) if r.name == "python3"][-1]
+            _text, got = module.interpreter_program(run, command, str(tmp))
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != kind:
+            wrong.append((script, got, kind))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_a_tool_output_option_writes_its_file_63109cf2(bash, tmp_path):
+    wrong = _tool_output_wrong(shellscan, bash, tmp_path)
+    assert not wrong, "\n".join(map(repr, wrong))
+    # The options each tool spells, read without running it: wget is not driven against a URL here.
+    shellscan._ANALYSIS_CACHE.clear()
+    outputs = {
+        cmd: shellscan._tool_outputs(next(iter(shellscan.every_run(cmd))))
+        for cmd in (
+            "wget -qO a.py https://x.invalid/y",
+            "wget --output-document=a.py https://x.invalid/y",
+            "wget -nv -P d https://x.invalid/s/a.py",
+            "wget -r https://x.invalid/",
+            "curl -sSLo a.py https://x.invalid/y",
+            "curl --output-dir d -O https://x.invalid/s/a.py?v=1",
+            "unzip -q x.zip -d d",
+            "unzip -l x.zip",
+            "tar -czf x.tgz d",
+            "curl -o - https://x.invalid/y",
+        )
+    }
+    assert outputs == {
+        "wget -qO a.py https://x.invalid/y": (["a.py"], []),
+        "wget --output-document=a.py https://x.invalid/y": (["a.py"], []),
+        "wget -nv -P d https://x.invalid/s/a.py": (["d/a.py"], []),
+        "wget -r https://x.invalid/": (["index.html"], ["."]),
+        "curl -sSLo a.py https://x.invalid/y": (["a.py"], []),
+        "curl --output-dir d -O https://x.invalid/s/a.py?v=1": (["d/a.py"], []),
+        "unzip -q x.zip -d d": ([], ["d"]),
+        "unzip -l x.zip": ([], []),
+        "tar -czf x.tgz d": ([], []),
+        "curl -o - https://x.invalid/y": ([], []),
+    }
+
+
+TOOL_OUTPUT_PLANTS = [
+    (
+        "a tool's own output files not recorded",
+        "        for target in files:\n            record(target, run.cwd, None)\n",
+        "",
+    ),
+    (
+        "an extraction's directory not recorded",
+        "        out.unpacked.extend(_script_path(d, run.cwd, cwd) for d in dirs)\n",
+        "",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "old", "new"), TOOL_OUTPUT_PLANTS, ids=[p[0] for p in TOOL_OUTPUT_PLANTS]
+)
+def test_each_tool_output_plant_turns_a_row_63109cf2(bash, tmp_path, label, old, new):
+    assert _tool_output_wrong(_planted_shellscan(old, new), bash, tmp_path), (
+        "plant %r turns no row: the table cannot see it" % label
+    )
+
+
 # THE PLANTS for #4deea064, #3ff3bb16 and review 2e50ca28.1/.3. Each puts one piece back the way it was at d73b26844 (or the way the review feared) in a copy of shellscan loaded from source and must turn at least one row of the tables above.
 EXPANDED_WRITE_PLANTS = [
     (
@@ -3102,6 +3216,16 @@ EXPANDED_WRITE_PLANTS = [
         "a copy's directory read off the disk (0600a464.1)",
         "            directory = _directory_answer(_script_path(dest, run.cwd, cwd), earlier, cwd)\n",
         "            directory = os.path.isdir(_script_path(dest, run.cwd, cwd))\n",
+    ),
+    (
+        "any directory-touching tool with an unexpandable word counts (6238f04a.1)",
+        "        if not _may_touch_directories(run):\n",
+        "        if _base(run.name) not in _DIR_TOUCHERS:\n",
+    ),
+    (
+        "a git status counted as making directories (6238f04a.1)",
+        "        return run.git_sub not in _GIT_TREE_KEEPERS\n",
+        "        return True\n",
     ),
     (
         "via sliced from the typed words (2e50ca28.1)",
@@ -3182,6 +3306,11 @@ ASSIGN_ROWS = [
     ("D=1; : ${D:-2} $((D+1)); echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
     ("D=1; read -r E <<< x; printf -v F y; echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
     ("D=1; f() { E=2; }; f; echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
+    # Review 6238f04a.2: only a parameter expansion's subscript and substring offset and length are arithmetic. The first two were `["$a.md"]` at 8ef785864, `a=2` in a default or a trimmed pattern read as an assignment; the last two still assign.
+    ("a=1; : ${D:-a=2}; echo x > $a.md", ["1.md"], ["$a.md", "1.md"], ["$a.md"]),
+    ("a=1; : ${D#a=2}; echo x > $a.md", ["1.md"], ["$a.md", "1.md"], ["$a.md"]),
+    ("D=xyz; a=1; : ${D:a=2}; echo x > $a.md", ["2.md"], ["$a.md"], None),
+    ("a=1; R=(p q); : ${R[a=0]}; echo x > $a.md", ["0.md"], ["$a.md"], None),
 ]
 
 
@@ -3271,6 +3400,16 @@ def test_function_bodies_and_loops_are_still_walked_97ed76a7():
 
 # THE PLANTS for #97ed76a7. Each puts one piece back the way it was at 2672ed8f6 in a copy of shellscan and must turn at least one row above.
 ASSIGN_PLANTS = [
+    (
+        "a parameter expansion's whole body read as arithmetic (6238f04a.2)",
+        "                names.update(_arith_names(_param_arith_text(p.raw)))\n",
+        '                names.update(_arith_names(p.raw[2:-1]) if p.raw.startswith("${") else ())\n',
+    ),
+    (
+        "a parameter expansion's subscript not read as arithmetic (6238f04a.2)",
+        '    if rest.startswith("["):\n',
+        "    if False:\n",
+    ),
     (
         "a builtin's assignment ignored",
         "        self.effects = _builtin_assigns(words, before)\n",
