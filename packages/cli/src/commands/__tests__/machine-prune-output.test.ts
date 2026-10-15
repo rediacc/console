@@ -93,6 +93,15 @@ describe('machine prune output', () => {
     expect(doc.data.protected_repos).toEqual([{ guid: KNOWN, reason: 'active in dev' }]);
   });
 
+  it('carries dry_run, orphaned_repos and protected_repos without --orphaned-repos', async () => {
+    mocks.format = 'json';
+    await run('--dry-run');
+    const doc = JSON.parse(stdout);
+    expect(doc.data.dry_run).toBe(true);
+    expect(doc.data.orphaned_repos).toEqual([]);
+    expect(doc.data.protected_repos).toEqual([]);
+  });
+
   it('prints no data document in table output', async () => {
     mocks.format = 'table';
     await run('--orphaned-repos', '--dry-run');

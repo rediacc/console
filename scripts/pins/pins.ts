@@ -2488,14 +2488,15 @@ const CASES: Record<string, Case> = {
         const nul = lockDrift(JSON.stringify({ lockfileVersion: 3, packages: null }), same);
         const arr = lockDrift(JSON.stringify({ lockfileVersion: 3, packages: [] }), same);
         return {
-          name: 'drift: a lockfile with no packages map (absent or null) is one finding naming the rewrite, not one per installed package',
+          name: 'drift: a lockfile with no packages map (absent or null) is one finding naming the rewrite, and a packages value of the wrong type (an array) is one finding calling it malformed, not one per installed package',
           ok:
             v1.length === 1 &&
             v1[0].includes('no packages map (lockfileVersion 1)') &&
             nul.length === 1 &&
             nul[0].includes('no packages map') &&
             arr.length === 1 &&
-            arr[0].includes('no packages map'),
+            arr[0].includes('packages map is malformed') &&
+            !arr[0].includes('no packages map'),
           detail: `${JSON.stringify(v1)} ${JSON.stringify(nul)} ${JSON.stringify(arr)}`,
         };
       })(),

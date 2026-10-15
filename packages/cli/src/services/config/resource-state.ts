@@ -366,7 +366,31 @@ function rebaseRecord<T>(
   return out;
 }
 
-/** Rebase one bucket: records key by key, the list and the ssh pair whole (this process's value if it changed). */
+function archiveKey(record: ArchivedRepository): string {
+  return `${record.repositoryGuid}\u0000${record.deletedAt}`;
+}
+
+/**
+ * Re-apply this process's edit of the archive list onto the fresh list: an entry this process appended is added, one it removed is dropped, every other entry keeps the fresh list's. An entry is identified by its GUID and deletion time. Replacing the list whole lost an entry another process archived in the meantime.
+ */
+function rebaseArchive(
+  fresh: ArchivedRepository[],
+  base: ArchivedRepository[],
+  mine: ArchivedRepository[]
+): ArchivedRepository[] {
+  const baseKeys = new Set(base.map(archiveKey));
+  const mineKeys = new Set(mine.map(archiveKey));
+  const removed = new Set([...baseKeys].filter((key) => !mineKeys.has(key)));
+  const out = fresh.filter((record) => !removed.has(archiveKey(record)));
+  const present = new Set(out.map(archiveKey));
+  for (const record of mine) {
+    const key = archiveKey(record);
+    if (!baseKeys.has(key) && !present.has(key)) out.push(record);
+  }
+  return out;
+}
+
+/** Rebase one bucket: records key by key, the archive list entry by entry, the ssh pair whole (this process's value if it changed). */
 function rebaseBucket(
   bucket: keyof LocalState,
   fresh: LocalState,
@@ -382,6 +406,15 @@ function rebaseBucket(
       return {
         ...fresh,
         repositories: rebaseRecord(fresh.repositories, base.repositories, mine.repositories),
+      };
+    case 'deletedRepositories':
+      return {
+        ...fresh,
+        deletedRepositories: rebaseArchive(
+          fresh.deletedRepositories,
+          base.deletedRepositories,
+          mine.deletedRepositories
+        ),
       };
     default:
       return sameJson(mine[bucket], base[bucket]) ? fresh : { ...fresh, [bucket]: mine[bucket] };

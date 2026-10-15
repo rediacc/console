@@ -37,13 +37,18 @@ interface ConfigScanResult {
   unreadableConfigs: string[];
 }
 
-/** Record an archive entry, keeping the most recent deletedAt when several configs name the GUID. */
+/**
+ * Record an archive entry, keeping the most recent deletedAt when several configs name the GUID.
+ * An unparseable deletedAt is skipped, so it never displaces or shadows a parseable one; a GUID whose
+ * every record is unparseable has no archive entry and is judged as never archived.
+ */
 function recordArchived(
   archived: Map<string, Date>,
   record: { repositoryGuid?: string; deletedAt?: string }
 ): void {
   if (!record.repositoryGuid || !record.deletedAt) return;
   const at = new Date(record.deletedAt);
+  if (Number.isNaN(at.getTime())) return;
   const known = archived.get(record.repositoryGuid);
   if (!known || at > known) archived.set(record.repositoryGuid, at);
 }

@@ -101,6 +101,20 @@ describe('archive records of other configs', () => {
     expect((await analyzePrune([ORPHAN])).protected[0]?.reason).toMatch(/^archived/);
   });
 
+  it('never let an unparseable deletedAt shadow a valid one, whatever the scan order', async () => {
+    mocks.archived = [{ repositoryGuid: ORPHAN, deletedAt: 'not-a-date' }];
+    mocks.others = { rediacc: archivedIn(new Date()) };
+    expect((await analyzePrune([ORPHAN])).protected[0]?.reason).toMatch(/^archived 0d ago/);
+  });
+
+  it('treat a GUID whose every deletedAt is unparseable as never archived', async () => {
+    mocks.archived = [{ repositoryGuid: ORPHAN, deletedAt: 'not-a-date' }];
+    mocks.others = {
+      rediacc: { resources: { deletedRepositories: [{ repositoryGuid: ORPHAN, deletedAt: 'x' }] } },
+    };
+    expect((await analyzePrune([ORPHAN])).orphaned.map((o) => o.guid)).toEqual([ORPHAN]);
+  });
+
   it('are bypassed by --force', async () => {
     mocks.others = { rediacc: archivedIn(new Date()) };
     expect((await analyzePrune([ORPHAN], { force: true })).orphaned.map((o) => o.guid)).toEqual([

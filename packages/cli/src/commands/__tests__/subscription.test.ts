@@ -323,6 +323,17 @@ describe('subscription command helpers', () => {
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
+  it('status -m still renders the repo table for a token kind with no diagnostic', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'expired' });
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
+
+    await executeMachineStatus('hostinger');
+
+    expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.parseFailed');
+    expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
+    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
+  });
+
   it('status fails hard when token team and current config team differ', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
