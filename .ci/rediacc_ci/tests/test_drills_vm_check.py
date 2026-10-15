@@ -925,3 +925,17 @@ def test_a_config_holding_another_key_is_not_overwritten_and_names_the_fix(
     assert "All configured authentication methods failed" in out, out
     assert "config ssh set --key" in out, out
     assert receipt.get("status") == "NOT_VERIFIED", receipt
+
+
+def test_a_cold_run_missing_the_grand_says_to_leave_a_warm_fleet(tmp_path: pathlib.Path) -> None:
+    """A cold run's fresh VMs never hold the grand, and `ops down` removes them (2026-10-15T00:27Z)."""
+    world = make_world(tmp_path, running=(), grands=())
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc != vm_check.EXIT_VERIFIED, out
+    assert "NOT VERIFIED (parent-grand-missing)" in out, out
+    assert "leave the fleet up for vm:check to reuse" in out, out
+    (tmp_path / "warm").mkdir(exist_ok=True)
+    warm = make_world(tmp_path / "warm", grands=())
+    rc, out, _receipt = run_check(tmp_path / "warm", warm)
+    assert "NOT VERIFIED (parent-grand-missing)" in out, out
+    assert "leave the fleet up" not in out, out

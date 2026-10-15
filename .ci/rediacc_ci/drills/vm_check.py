@@ -929,13 +929,18 @@ class VmCheck:
             grands = sorted(n for n in names if n and ":" not in n)
             raise NotVerifiedError(
                 "parent-grand-missing",
-                "no grand %s on %s (grands present: %s); the operator creates it once, outside agent mode: ./rdc.sh repo create %s -m %s --size 2G"
+                "no grand %s on %s (grands present: %s); the operator creates it once, outside agent mode: ./rdc.sh repo create %s -m %s --size 2G%s"
                 % (
                     self.opts.parent,
                     self.machine,
                     ", ".join(grands) or "none",
                     self.opts.parent,
                     self.machine,
+                    # A cold run boots fresh VMs and `ops down` removes them, so its worker can never hold the grand (2026-10-15T00:27Z).
+                    "; this run started the fleet cold, whose fresh VMs never hold a grand, so "
+                    "first ./rdc.sh ops up --basic and leave the fleet up for vm:check to reuse"
+                    if self.fleet_started
+                    else "",
                 ),
             )
         swept: list[str] = []
