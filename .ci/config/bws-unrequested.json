@@ -132,10 +132,6 @@
       "kind": "no-github-twin",
       "reason": "A constant endpoint (the OTLP collector URL), seeded 2026-09-24 from private/account/.env for PLAN-env-to-bitwarden-v2 box 27 so local .env hydration reads the vault; no workflow sends telemetry through it, so no call site requests it."
     },
-    "R2_TOKEN_AUTH_API": {
-      "kind": "no-github-twin",
-      "reason": "the raw bearer VALUE of a Cloudflare R2 API token, the third artifact beside id and sha256(value). Unattributed; identify it in the Cloudflare dashboard before revoking."
-    },
     "RELEASE_GPG_REVOCATION_CERT": {
       "kind": "no-github-twin",
       "reason": "The release key's revocation certificate, generated and stored 2026-09-24 (docs/code-signing-guide.md:559). It is kept, never used by CI: importing it revokes the signing key, so no workflow may request it."
