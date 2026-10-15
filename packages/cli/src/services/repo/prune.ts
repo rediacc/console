@@ -32,7 +32,20 @@ interface AnalyzeOptions {
 
 interface ConfigScanResult {
   guidSources: Map<string, string[]>;
+  /** GUID -> most recent deletedAt across the deletedRepositories of every readable config */
+  archived: Map<string, Date>;
   unreadableConfigs: string[];
+}
+
+/** Record an archive entry, keeping the most recent deletedAt when several configs name the GUID. */
+function recordArchived(
+  archived: Map<string, Date>,
+  record: { repositoryGuid?: string; deletedAt?: string }
+): void {
+  if (!record.repositoryGuid || !record.deletedAt) return;
+  const at = new Date(record.deletedAt);
+  const known = archived.get(record.repositoryGuid);
+  if (!known || at > known) archived.set(record.repositoryGuid, at);
 }
 
 /** Add a GUID → config-name entry to the sources map. */
@@ -58,10 +71,22 @@ async function scanCurrentConfig(
   }
 }
 
+/** Add every repository GUID a non-current config names to the sources map. */
+function addConfigGuids(guidSources: Map<string, string[]>, config: RdcConfig, name: string): void {
+  const repos = config.resources?.repositories ?? {};
+  for (const family of Object.values(repos)) {
+    for (const record of Object.values(family.tags)) {
+      const guid = record.repositoryGuid;
+      if (guid) addGuidSource(guidSources, guid, name);
+    }
+  }
+}
+
 /** Scan a single non-current config file for repository GUIDs. */
 async function scanOtherConfig(
   guidSources: Map<string, string[]>,
   unreadableConfigs: string[],
+  archived: Map<string, Date>,
   name: string
 ): Promise<void> {
   try {
@@ -73,12 +98,9 @@ async function scanOtherConfig(
       return;
     }
 
-    const repos = config.resources?.repositories ?? {};
-    for (const family of Object.values(repos)) {
-      for (const record of Object.values(family.tags)) {
-        const guid = record.repositoryGuid;
-        if (guid) addGuidSource(guidSources, guid, name);
-      }
+    addConfigGuids(guidSources, config, name);
+    for (const record of config.resources?.deletedRepositories ?? []) {
+      recordArchived(archived, record);
     }
   } catch {
     unreadableConfigs.push(name);
@@ -86,7 +108,7 @@ async function scanOtherConfig(
 }
 
 /**
- * Scan all config files and collect every referenced repository GUID.
+ * Scan all config files and collect every referenced repository GUID and archive record.
  * Returns a map of GUID -> list of config names that reference it,
  * plus a list of configs that couldn't be fully read (encrypted without password).
  *
@@ -97,6 +119,7 @@ async function scanOtherConfig(
 async function collectAllConfigGuids(): Promise<ConfigScanResult> {
   const guidSources = new Map<string, string[]>();
   const unreadableConfigs: string[] = [];
+  const archived = await collectArchivedGuids();
   const currentConfigName = configService.getCurrentName();
 
   await scanCurrentConfig(guidSources, currentConfigName);
@@ -104,10 +127,10 @@ async function collectAllConfigGuids(): Promise<ConfigScanResult> {
   const configNames = await configFileStorage.list();
   for (const name of configNames) {
     if (name === currentConfigName) continue;
-    await scanOtherConfig(guidSources, unreadableConfigs, name);
+    await scanOtherConfig(guidSources, unreadableConfigs, archived, name);
   }
 
-  return { guidSources, unreadableConfigs };
+  return { guidSources, archived, unreadableConfigs };
 }
 
 /**
@@ -118,9 +141,7 @@ async function collectArchivedGuids(): Promise<Map<string, Date>> {
   try {
     const repos = await configService.listArchivedRepositories();
     for (const repo of repos) {
-      if (repo.repositoryGuid && repo.deletedAt) {
-        archived.set(repo.repositoryGuid, new Date(repo.deletedAt));
-      }
+      recordArchived(archived, repo);
     }
   } catch {
     // No archived repos or can't read
@@ -184,7 +205,7 @@ function classifyGuid(
  * Safety model:
  * 1. In current config's active repos -> protected (keep)
  * 2. In another config's repos -> protected unless --force
- * 3. In archivedRepositories within grace period -> protected unless --force
+ * 3. In any config's deletedRepositories within grace period -> protected unless --force
  * 4. Otherwise -> orphaned (delete)
  */
 export async function analyzePrune(
@@ -196,8 +217,11 @@ export async function analyzePrune(
   const cutoff = new Date(Date.now() - graceDays * 86400000);
   const currentConfigName = configService.getCurrentName();
 
-  const { guidSources: allConfigGuids, unreadableConfigs } = await collectAllConfigGuids();
-  const archivedGuids = await collectArchivedGuids();
+  const {
+    guidSources: allConfigGuids,
+    archived: archivedGuids,
+    unreadableConfigs,
+  } = await collectAllConfigGuids();
 
   // Warn about unreadable configs, block deletion unless --force
   if (unreadableConfigs.length > 0) {
@@ -235,6 +259,22 @@ export async function analyzePrune(
   }
 
   return { orphaned, protected: protectedItems };
+}
+
+/** Structured form of a prune analysis, folded into the single json/yaml document of `machine prune`. */
+export interface PruneReport {
+  dry_run: boolean;
+  orphaned_repos: PruneCandidate[];
+  protected_repos: PruneCandidate[];
+}
+
+/** Build the structured report of an analysis. */
+export function buildPruneReport(analysis: PruneAnalysis, dryRun: boolean): PruneReport {
+  return {
+    dry_run: dryRun,
+    orphaned_repos: analysis.orphaned,
+    protected_repos: analysis.protected,
+  };
 }
 
 /**

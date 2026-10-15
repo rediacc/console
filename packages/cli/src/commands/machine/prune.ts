@@ -8,6 +8,7 @@ import {
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { getExecutor } from '../../services/executor/executor-factory.js';
+import type { PruneReport } from '../../services/repo/prune.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { assertMachineExists } from '../_validate.js';
@@ -27,8 +28,25 @@ interface PruneOptions {
   debug?: boolean;
 }
 
+/** What the phases found, folded into one document for the non-table output formats. */
+export interface PruneOutcome {
+  datastore?: unknown;
+  units?: unknown;
+  report?: PruneReport;
+  failed: boolean;
+}
+
+/** Table output renders as each phase runs; any other format is printed once, at the end. */
+function isTableOutput(): boolean {
+  return getOutputFormat() === 'table';
+}
+
 /** Phase 1: Run datastore prune via renet and render what it found/removed. */
-async function pruneDatastore(machineName: string, options: PruneOptions): Promise<void> {
+async function pruneDatastore(
+  machineName: string,
+  options: PruneOptions,
+  outcome: PruneOutcome
+): Promise<void> {
   const params: Record<string, unknown> = {};
   if (options.dryRun) params.dry_run = true;
 
@@ -43,6 +61,7 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
   });
 
   if (!result.success) {
+    outcome.failed = true;
     renderLocalExecutionFailure(result, t('commands.machine.prune.datastoreFailed'));
     return;
   }
@@ -54,11 +73,13 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
   } catch {
     // Report passthrough, not a parse: renet's diagnostics now arrive on stderr (data/diag channel split), so include both streams.
     const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
-    if (raw) outputService.print(raw);
+    outcome.datastore = raw;
+    if (raw && isTableOutput()) outputService.print(raw);
     outputService.success(t('commands.machine.prune.datastoreCompleted'));
     return;
   }
 
+  outcome.datastore = parsed;
   renderPruneOutcome(parsed, Boolean(options.dryRun));
 }
 
@@ -75,7 +96,11 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
  * out of *live* networks, which is a separate and riskier decision that this
  * phase deliberately does not make.
  */
-async function pruneUnits(machineName: string, options: PruneOptions): Promise<void> {
+async function pruneUnits(
+  machineName: string,
+  options: PruneOptions,
+  outcome: PruneOutcome
+): Promise<void> {
   const params: Record<string, unknown> = { units_only: true };
   if (options.dryRun) params.dry_run = true;
 
@@ -90,24 +115,22 @@ async function pruneUnits(machineName: string, options: PruneOptions): Promise<v
   });
 
   if (!result.success) {
+    outcome.failed = true;
     renderLocalExecutionFailure(result, t('commands.machine.prune.unitsFailed'));
     return;
   }
 
   // `renet prune` emits a human-readable report, not JSON, so pass it through rather than inventing a parse for a format that has no schema. Diagnostics arrive on stderr since the data/diag channel split, include both streams.
   const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
-  if (raw) outputService.print(raw);
+  outcome.units = raw;
+  if (raw && isTableOutput()) outputService.print(raw);
   outputService.success(t('commands.machine.prune.unitsCompleted'));
 }
 
 /** Render the parsed prune payload: a preview table (dry-run) or a removed-count
  * summary (real run) in table mode; the raw structured object in JSON mode. */
 function renderPruneOutcome(parsed: Record<string, unknown>, dryRun: boolean): void {
-  const format = getOutputFormat();
-  if (format !== 'table') {
-    outputService.print(parsed, format);
-    return;
-  }
+  if (!isTableOutput()) return;
   if (dryRun) {
     const rows = buildPrunePreviewRows(parsed);
     if (rows.length === 0) {
@@ -290,8 +313,12 @@ async function pruneUnknownRepos(machineName: string, options: PruneOptions): Pr
 }
 
 /** Phase 2: Prune orphaned repos not in any config. */
-async function pruneOrphanedRepos(machineName: string, options: PruneOptions): Promise<void> {
-  const { analyzePrune, printPruneAnalysis, purgeExpiredArchives } = await import(
+async function pruneOrphanedRepos(
+  machineName: string,
+  options: PruneOptions,
+  outcome: PruneOutcome
+): Promise<void> {
+  const { analyzePrune, buildPruneReport, printPruneAnalysis, purgeExpiredArchives } = await import(
     '../../services/repo/prune.js'
   );
   const { fetchMachineStatus } = await import('../../services/machine/machine-status.js');
@@ -309,6 +336,7 @@ async function pruneOrphanedRepos(machineName: string, options: PruneOptions): P
 
   if (deployedGuids.length === 0) {
     outputService.info(t('commands.machine.prune.noReposFound'));
+    outcome.report = buildPruneReport({ orphaned: [], protected: [] }, Boolean(options.dryRun));
     return;
   }
 
@@ -317,6 +345,7 @@ async function pruneOrphanedRepos(machineName: string, options: PruneOptions): P
     graceDays: options.graceDays,
   });
   printPruneAnalysis(analysis, Boolean(options.dryRun));
+  outcome.report = buildPruneReport(analysis, Boolean(options.dryRun));
 
   if (!options.dryRun && analysis.orphaned.length > 0) {
     await deleteOrphanedItems(analysis.orphaned, machineName, options.debug);
@@ -330,6 +359,22 @@ async function pruneOrphanedRepos(machineName: string, options: PruneOptions): P
   }
 
   await purgeExpiredArchives(options.graceDays);
+}
+
+/** Fold the phases into exactly one document for json/yaml; a failed phase already printed its own error envelope. */
+export function printPruneOutcome(outcome: PruneOutcome): void {
+  const format = getOutputFormat();
+  if (format === 'table' || outcome.failed) return;
+  outputService.print(buildPruneData(outcome), format);
+}
+
+/** The `data` payload of the single document: datastore, units and the orphaned-repos report. */
+export function buildPruneData(outcome: PruneOutcome): Record<string, unknown> {
+  return {
+    datastore: outcome.datastore ?? null,
+    units: outcome.units ?? null,
+    ...(outcome.report ?? {}),
+  };
 }
 
 export function registerPruneCommand(machine: Command): void {
@@ -348,11 +393,12 @@ export function registerPruneCommand(machine: Command): void {
     .action(async (machineName: string, options: PruneOptions) => {
       try {
         await assertMachineExists(machineName);
-        await pruneDatastore(machineName, options);
-        await pruneUnits(machineName, options);
+        const outcome: PruneOutcome = { failed: false };
+        await pruneDatastore(machineName, options, outcome);
+        await pruneUnits(machineName, options, outcome);
 
         if (options.orphanedRepos) {
-          await pruneOrphanedRepos(machineName, options);
+          await pruneOrphanedRepos(machineName, options, outcome);
         }
 
         if (options.pruneUnknown) {
@@ -360,6 +406,7 @@ export function registerPruneCommand(machine: Command): void {
         }
 
         outputService.success(t('commands.machine.prune.completed'));
+        printPruneOutcome(outcome);
       } catch (error) {
         handleError(error);
       }
