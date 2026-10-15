@@ -209,7 +209,27 @@ def _reaches_reviews(cmd, cwd):
             words.extend(run.feed.split())
         if run.launch is not None:
             words.extend(run.launch.starts)
+        # A program's code is one argv word, so a link it names (`python3 -c "open('lnk/x.md','w')"`) is read as each string literal it holds (review 84fdeff8.1).
+        words.extend(lit for w in run.argv for lit in _literals(w))
         if any(_lands_in_reviews(w, base) for w in words):
+            return True
+    return False
+
+
+def _literals(text):
+    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
+    for m in _LITERAL.finditer(text):
+        yield next(g for g in m.groups() if g is not None)
+
+
+def _code_writes_through_disk(code, base):
+    """Interpreter code with a write on a line whose string literal resolves on disk, from the run's directory, into the review directory: `open('lnk/x.md','w')` with `lnk` a link into it spells no review path (review 84fdeff8.1)."""
+    for line in code.splitlines():
+        if WRITE_CODE.search(line) and any(
+            # A literal that spells the directory is the precise readings' to judge (a read-only os.open, a URL); this one is for a path that reaches it only on disk.
+            _lands_in_reviews(lit, base) and not REVIEW_WORD.search(lit)
+            for lit in _literals(line)
+        ):
             return True
     return False
 
@@ -390,6 +410,8 @@ def _offending(cmd, depth=0, cwd=None):
             # A PROGRAM RUN INSIDE THE REVIEW DIRECTORY writes there by any relative path (#816a7c93, as block_user_only_command_shell_write reads a command directory): `cd agent/reviews/b && python3 -c "open('a.md','w')"` named no review path in its code and was allowed (rc 0), through a link or not. Any write in its code is refused there.
             if _lands_in_reviews(".", base) and WRITE_CODE.search(code):
                 return "%s code that writes inside the review directory" % name
+            if _code_writes_through_disk(code, base):
+                return "%s code that writes through a link into the review directory" % name
             program = text if kind is not None and re.match(r"^python[0-9.]*$", name) else None
             verdict = _python_writes_review(program, depth) if program is not None else None
             if verdict is None:
