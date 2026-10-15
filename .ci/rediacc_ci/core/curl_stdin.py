@@ -6,7 +6,7 @@ Every argument of every process on a host is readable through `ps` and `/proc/<p
 
 `argv_with_config` is the inverse, the argv curl acts on once it has read the config. The recording fake `curl` of each differential applies it, so the recorded request is the twin's request and the frozen goldens keep their meaning.
 
-A caller that already feeds curl's stdin (`--data @-`, `-T -`) cannot use this: there is one stdin. `stdin_headers` refuses such an argv rather than letting the body and the config collide.
+A caller that already feeds curl's stdin (`--data @-`, `-T -`) AND carries a credential header cannot use this: there is one stdin. `stdin_headers` refuses such an argv rather than letting the body and the config collide; one without a credential header is returned as it is.
 """
 
 from __future__ import annotations
@@ -29,18 +29,34 @@ def _quoted(value: str) -> str:
 
 
 def stdin_headers(argv: list[str]) -> tuple[list[str], str | None]:
-    """(argv without credential headers, the curl config carrying them), or (argv, None) when it carries none. ValueError when the argv already reads curl's stdin."""
+    """(argv without credential headers, the curl config carrying them), or (argv, None) when it carries none, stdin untouched. ValueError when the argv carries a credential header AND already reads curl's stdin (review 6d354ee8.1: an argv with no credential needs no config, so its stdin use is no conflict). Every spelling curl takes a header in is read: `-H v`, `--header v`, `-Hv` and `--header=v` (review 6d354ee8.2)."""
     out: list[str] = []
     lines: list[str] = []
+
+    def take(header: str) -> None:
+        if not lines:
+            out.extend(STDIN_CONFIG)
+        lines.append("header = %s\n" % _quoted(header))
+
     i = 0
     while i < len(argv):
-        if argv[i] == "-H" and i + 1 < len(argv) and _is_credential(argv[i + 1]):
-            if not lines:
-                out.extend(STDIN_CONFIG)
-            lines.append("header = %s\n" % _quoted(argv[i + 1]))
+        arg = argv[i]
+        if arg in ("-H", "--header") and i + 1 < len(argv) and _is_credential(argv[i + 1]):
+            take(argv[i + 1])
             i += 2
             continue
-        out.append(argv[i])
+        attached = (
+            arg[2:]
+            if arg.startswith("-H") and len(arg) > 2
+            else arg[len("--header=") :]
+            if arg.startswith("--header=")
+            else None
+        )
+        if attached is not None and _is_credential(attached):
+            take(attached)
+            i += 1
+            continue
+        out.append(arg)
         i += 1
     if not lines:
         return list(argv), None

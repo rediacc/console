@@ -53,6 +53,28 @@ def test_an_argv_that_already_reads_stdin_is_refused() -> None:
         curl_stdin.stdin_headers(["curl", *BEARER, "--data", "@-", "u"])
 
 
+def test_a_credential_free_argv_that_reads_stdin_is_returned_as_is() -> None:
+    """Review 6d354ee8.1: no credential header means no config, so its own stdin use is no conflict."""
+    argv = ["curl", "--data", "@-", "-H", "Accept: a", "u"]
+    assert curl_stdin.stdin_headers(argv) == (argv, None)
+
+
+@pytest.mark.parametrize(
+    "spelling",
+    [
+        ["--header", "Authorization: Bearer %s" % SENTINEL],
+        ["-HAuthorization: Bearer %s" % SENTINEL],
+        ["--header=Authorization: Bearer %s" % SENTINEL],
+    ],
+)
+def test_every_header_spelling_leaves_argv(spelling: list[str]) -> None:
+    """Review 6d354ee8.2: `--header v`, `-Hv` and `--header=v` carry a credential as surely as `-H v`."""
+    out, config = curl_stdin.stdin_headers(["curl", "-s", *spelling, "u"])
+    assert not any(SENTINEL in a for a in out), out
+    assert out == ["curl", "-s", "-K", "-", "u"]
+    assert config == 'header = "Authorization: Bearer %s"\n' % SENTINEL
+
+
 @pytest.mark.skipif(shutil.which("curl") is None, reason="curl is not installed")
 def test_real_curl_sends_the_header_from_its_stdin_config() -> None:
     """The mechanism itself, against real curl and a loopback server: the header named in the `-K -` config arrives, byte for byte, and the argv curl ran with never held it."""
