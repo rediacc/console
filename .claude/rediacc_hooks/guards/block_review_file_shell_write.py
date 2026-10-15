@@ -205,7 +205,8 @@ def _reaches_reviews(cmd, cwd):
         return True
     for run in shellscan.every_run(cmd):
         base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
-        words = [".", *run.argv, *run.writes, *(run.xargv or ()), *(run.feed_words or ())]
+        words = [".", *run.argv, *shellscan.redirect_targets(run), *(run.xargv or ())]
+        words.extend(run.feed_words or ())
         if run.feed:
             words.extend(run.feed.split())
         if run.launch is not None:
@@ -235,7 +236,8 @@ def _globs_reviews(cmd, cwd):
         where = shellscan.write_directory(run.cwd, cwd)
         if where and spells(str(where), None):
             return True
-        words = [*run.argv, *(run.xargv or ()), *run.writes, *(run.feed_words or ())]
+        words = [*run.argv, *(run.xargv or ()), *shellscan.redirect_targets(run)]
+        words.extend(run.feed_words or ())
         words = shellscan.xargs_fed_operands(run, words)
         if run.launch is not None:
             words.extend(run.launch.starts)
@@ -429,7 +431,8 @@ def _offending(cmd, depth=0, cwd=None):
         base = _base(where, cwd)
         if any(a.rsplit("/", 1)[-1] in SANCTIONED for a in [run.name, *argv[:2]]):
             continue
-        for target in run.writes:
+        # Each redirect target as typed and as bash expands it (#4deea064): under `cd agent`, `D=reviews/x; echo hi > $D/y.md` writes a review file that only the run's own directory joined to the expanded target names.
+        for target in shellscan.redirect_targets(run):
             if _is_review(target, where, base):
                 return "redirect into %s" % target
         # THE WORDS ARE READ TWICE, as typed and as bash expands them (#f6334e52): `D=agent/reviews/x; tee $D/y.md`, `sudo tee $D/y.md` and `timeout 5 tee $D/y.md` write the review file while the typed operand reads `$D/y.md`, and each was allowed (rc 0). A word the walk cannot know stays unknown in the expanded form, so the typed form is still read beside it.
