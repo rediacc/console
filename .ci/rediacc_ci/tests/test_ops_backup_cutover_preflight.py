@@ -17,12 +17,12 @@ if typing.TYPE_CHECKING:
 
 STORE = {
     "ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.r2.example.invalid/",
-    "ACCOUNT_BACKUP_S3_BUCKET": "rediacc-backups-probe",
+    "ACCOUNT_BACKUP_S3_BUCKET": "example-backups-test",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "key-id",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "key-secret",
 }
 HEAD_OK = [
-    {"method": "GET", "match": "rediacc-backups-probe", "raw": "", "status": 200, "bare": True}
+    {"method": "GET", "match": "example-backups-test", "raw": "", "status": 200, "bare": True}
 ]
 
 
@@ -79,9 +79,9 @@ def test_all_pass_matches_bash(world: h.World) -> None:
     _same(b, p)
     assert p[0] == 0
     assert "6 checks, all passed" in p[2]
-    head = [c for c in calls_p if c["method"] == "GET" and "rediacc-backups-probe" in c["url"]]
+    head = [c for c in calls_p if c["method"] == "GET" and "example-backups-test" in c["url"]]
     assert head
-    assert head[0]["url"] == "https://acct.r2.example.invalid/rediacc-backups-probe"
+    assert head[0]["url"] == "https://acct.r2.example.invalid/example-backups-test"
 
 
 def test_no_store_env_is_a_refusal_in_both(world: h.World) -> None:
@@ -101,7 +101,7 @@ def test_store_statuses_match_bash(world: h.World, status: int, needle: str) -> 
         [
             {
                 "method": "GET",
-                "match": "rediacc-backups-probe",
+                "match": "example-backups-test",
                 "raw": "",
                 "status": status,
                 "bare": True,
@@ -165,8 +165,8 @@ def test_delta_the_secret_is_not_on_curls_argv(world: h.World) -> None:
     _populate(world)
     world.set_routes(HEAD_OK)
     _, _, calls_b, calls_p = _both(world, **STORE)
-    head_b = next(c for c in calls_b if "rediacc-backups-probe" in c["url"])
-    head_p = next(c for c in calls_p if "rediacc-backups-probe" in c["url"])
+    head_b = next(c for c in calls_b if "example-backups-test" in c["url"])
+    head_p = next(c for c in calls_p if "example-backups-test" in c["url"])
     assert head_b["creds_on_argv"] is True  # the control: `--user key:secret` on argv
     assert head_p["creds_on_argv"] is False
     assert head_p["creds_on_stdin"] is True

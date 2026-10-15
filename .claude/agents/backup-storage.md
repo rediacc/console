@@ -77,7 +77,7 @@ client never composes an object key; that coupling is what caused the wrong-leve
 feature; every user gets the same functionality. Restore is registered `TierNone` deliberately, because gating disaster recovery behind a licence tier would let an expired subscription lock a customer out of their own data.
 - **Quota counts PHYSICAL unique stored bytes** per subscription, so the dedup benefit
 passes to the user. Enforced at grant-mint time, before any I/O is spent.
-- **The probe bucket is `rediacc-backups-probe`, NEVER `rediacc-backups`**, so no
+- **A test bucket is named distinctly (for example `example-backups-test`), NEVER `rediacc-backups`**, so no
 misconfiguration can cross test and production backups.
 - **Clean break on scheduling.** One operator, no external consumers, no compatibility
 shims.

@@ -267,7 +267,7 @@ Metadata lives in D1 (lightweight, queryable for conflict detection and listing)
 
 ### R2 Bucket Structure
 
-One bucket per deployment (`rediacc-configs`, `edge-rediacc-configs`), keyed by team and config:
+One bucket per deployment and region (`rediacc-configs-{eu,us,asia}`, `edge-rediacc-configs-{eu,us,asia}`), keyed by team and config:
 
 ```
   {teamId | _default}/{configId}/

@@ -49,7 +49,7 @@ Once you have created a bucket:
 
 ```bash
 ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
-ACCOUNT_BACKUP_S3_BUCKET="rediacc-backups-probe" \
+ACCOUNT_BACKUP_S3_BUCKET="<test bucket>" \
 ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="..." \
 ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="..." \
   PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_cutover_preflight
@@ -63,7 +63,7 @@ These need operator-only powers (external accounts, secrets, production deploys)
 
 ### 2.1 Create the probe bucket FIRST
 
-Name it **`rediacc-backups-probe`**, never `rediacc-backups`. Your instruction, and the preflight enforces it: a bare production name is a hard failure, so no misconfiguration can cross test and production backups.
+Name it distinctly (for example `example-backups-test`), never `rediacc-backups`. The operator's instruction, and the preflight enforces it: a bare production name is a hard failure, so no misconfiguration can cross test and production backups.
 
 ### 2.2 Decide the grant minter — this changes what you set
 
@@ -89,7 +89,7 @@ Substitute your account id and the key pair, then run from the repo root:
 ```bash
 # 1. Confirm the bucket exists and the credentials are scoped to it (read-only).
 ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
-ACCOUNT_BACKUP_S3_BUCKET="rediacc-backups-probe" \
+ACCOUNT_BACKUP_S3_BUCKET="<test bucket>" \
 ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="<key id>" \
 ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
   PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_cutover_preflight
