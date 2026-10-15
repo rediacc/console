@@ -1,5 +1,6 @@
 """The differential's repository identity does not depend on where the checkout was cloned from."""
 
+import pathlib
 import subprocess
 
 from rediacc_hooks import shellscan
@@ -54,16 +55,37 @@ def test_a_file_url_and_a_relative_origin_are_followed_like_a_path(tmp_path):
         assert shellscan.target_repo("", "", str(root)) == "rediacc/console", name
 
 
-def test_a_windows_drive_origin_is_local_and_a_hosted_one_is_not(tmp_path):
-    assert differential._local_origin(tmp_path, "C:\\src\\console") is not None
-    assert differential._local_origin(tmp_path, "D:/src/console") is not None
+def test_origin_spellings_follow_git_on_posix(tmp_path):
+    """Review fb481875.2, .3, .5: a bare relative origin is a path, and a colon before the first slash is git's scp form, a drive letter included."""
+    for local, want in (
+        ("upstream", tmp_path / "upstream"),
+        ("../up", tmp_path / "../up"),
+        ("/abs/console", pathlib.Path("/abs/console")),
+        ("file:///abs/my%20console", pathlib.Path("/abs/my console")),
+        ("dir/with:colon", tmp_path / "dir/with:colon"),
+    ):
+        assert differential._local_origin(tmp_path, local) == want, local
     for hosted in (
         "https://github.com/rediacc/console.git",
         "ssh://git@github.com/rediacc/console.git",
         "git@github.com:rediacc/console.git",
+        "C:/src/console",
+        "C:\\src\\console",
         "",
     ):
         assert differential._local_origin(tmp_path, hosted) is None, hosted
+
+
+def test_a_bare_relative_origin_resolves_to_the_hosted_identity(tmp_path):
+    upstream = tmp_path / "upstream"
+    clone = tmp_path / "clone"
+    _git("init", "-q", str(upstream))
+    _git("-C", str(upstream), "remote", "add", "origin", "https://github.com/rediacc/console.git")
+    _git("init", "-q", str(clone))
+    _git("-C", str(clone), "remote", "add", "origin", "../upstream")
+    sub = clone / "upstream"
+    assert differential.identity_root(clone).resolve() == upstream.resolve()
+    assert not sub.exists()
 
 
 def test_ci_never_takes_the_submodule_exemption(monkeypatch):
@@ -71,5 +93,6 @@ def test_ci_never_takes_the_submodule_exemption(monkeypatch):
     want = {"troot": differential.REPO_TOKEN + "/private/zz-absent-submodule/x"}
     monkeypatch.delenv("CI", raising=False)
     assert differential.root_exemption(want) == "private/zz-absent-submodule"
-    monkeypatch.setenv("CI", "true")
-    assert differential.root_exemption(want) is None
+    for value in ("true", ""):
+        monkeypatch.setenv("CI", value)
+        assert differential.root_exemption(want) is None, value

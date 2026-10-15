@@ -63,12 +63,17 @@ def identity_root(checkout):
 
 
 def _local_origin(checkout, url):
-    """The directory a LOCAL origin names, else None for a hosted one (`https://`, `ssh://`, `git@host:path`) or none at all. Local is every spelling git clones from a path: absolute, relative to the checkout, `file://` (review 878aa247.3), and a Windows drive path."""
+    """The directory a LOCAL origin names, else None for a hosted one or none at all. Git's own POSIX rule decides (review fb481875.2, .3): `file://` is a path, any other `<scheme>://` is hosted, a colon before the first slash is the scp form `[user@]host:path` (hosted, `C:/x` included, which git on POSIX reads as host `C`), and everything else is a path, absolute or relative to the checkout (`/x`, `../x`, a bare `upstream`)."""
+    if not url:
+        return None
     if url.startswith("file://"):
         return pathlib.Path(urllib.parse.unquote(url[len("file://") :]))
-    if url.startswith(("/", "./", "../")) or re.match(r"^[A-Za-z]:[\\/]", url):
-        return pathlib.Path(checkout) / url
-    return None
+    if "://" in url:
+        return None
+    colon, slash = url.find(":"), url.find("/")
+    if colon != -1 and (slash == -1 or colon < slash):
+        return None
+    return pathlib.Path(checkout) / url
 
 
 IDENTITY_ROOT = identity_root(ROOT)
@@ -232,8 +237,8 @@ def uncheckedout_submodule(want):
 
 
 def root_exemption(want):
-    """The submodule whose absence exempts `want`'s root fields from comparison, or None. Never under CI, which checks the submodules out (review 878aa247.1)."""
-    return None if os.environ.get("CI") else uncheckedout_submodule(want)
+    """The submodule whose absence exempts `want`'s root fields from comparison, or None. Never when `CI` is set at all, empty included (review fb481875.4), since CI checks the submodules out (review 878aa247.1)."""
+    return None if "CI" in os.environ else uncheckedout_submodule(want)
 
 
 @pytest.mark.parametrize(("label", "cmd"), CASES, ids=[label for label, _ in CASES])
