@@ -138,15 +138,16 @@ Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
 14. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 15. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
 16. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-17. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-18. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-19. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-23. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+17. agent/plans/PLAN-backup-program.md -- P1, approved, not started, dep-blocked
+18. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+19. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+20. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+21. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+22. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+23. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+24. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+25. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+26. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+27. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+28. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
