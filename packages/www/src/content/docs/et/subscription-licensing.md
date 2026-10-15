@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: et
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ Vt [rdc vs renet](/en/docs/rdc-vs-renet), et mõista tööjaama ja serveri jagam
 Automatiseerimise ja AI-agentide jaoks kasuta brauseri sisselogimise asemel ulatuspiiratud tellimustokenit:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Tokeni saab süstida ka otse keskkonna kaudu, et CLI saaks repositooriumilitsentse väljastada ja uuendada ilma interaktiivse sisselogimiseta:
@@ -213,7 +213,7 @@ rdc subscription login
 Automatiseerimise või AI-agendi sisselogimine:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Mitteinteraktiivsetes keskkondades on `REDIACC_TOKEN` seadistamine lihtsaim valik. Token peaks olema ulatuspiiratud ainult nende tellimuse ja repositooriumilitsentsi toimingute jaoks, mida agent vajab.

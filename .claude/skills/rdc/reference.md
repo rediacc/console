@@ -1879,7 +1879,7 @@ Authenticate via browser or API token
 
 **Options:**
 
-- `-t, --token <token>`: API token (rdt_...)
+- `-t, --token <token>`: API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list).
 - `--server <url>`: Account server URL
 
 ### rdc subscription logout

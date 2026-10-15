@@ -7,7 +7,7 @@ tags:
 subcategory: account
 order: 7
 language: zh
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -49,7 +49,7 @@ Rediacc 许可证管理分为三个组成部分：
 对于自动化和 AI 代理，请使用范围受限的订阅令牌而非浏览器登录：
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 您也可以直接通过环境注入令牌，使 CLI 无需任何交互式登录步骤即可发放和刷新仓库许可证：
@@ -211,7 +211,7 @@ rdc subscription login
 自动化或 AI 代理登录：
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 对于非交互式环境，设置 `REDIACC_TOKEN` 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。

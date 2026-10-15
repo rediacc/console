@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: fr
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ Consultez [rdc vs renet](/fr/docs/rdc-vs-renet) pour la répartition station de 
 Pour l'automatisation et les agents IA, utilisez un token d'abonnement à portée limitée plutôt que la connexion par navigateur :
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Vous pouvez également injecter le token directement via l'environnement afin que le CLI puisse émettre et renouveler les licences de dépôt sans aucune étape de connexion interactive :
@@ -213,7 +213,7 @@ rdc subscription login
 Connexion pour automatisation ou agent IA :
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Pour les environnements non interactifs, définir `REDIACC_TOKEN` est l'option la plus simple. Le token ne doit avoir une portée que pour les opérations d'abonnement et de licence de dépôt dont l'agent a besoin.

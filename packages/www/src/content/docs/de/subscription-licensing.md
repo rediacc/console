@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: de
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ Siehe [rdc vs renet](/de/docs/rdc-vs-renet) für die Aufteilung Workstation/Serv
 Für Automatisierung und KI-Agenten verwenden Sie statt Browser-Login ein bereichsspezifisches Abonnement-Token:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Sie können das Token auch direkt über die Umgebung injizieren, sodass die CLI Repo-Lizenzen ohne interaktiven Login-Schritt ausstellen und aktualisieren kann:
@@ -213,7 +213,7 @@ rdc subscription login
 Automatisierungs- oder KI-Agenten-Anmeldung:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Für nicht-interaktive Umgebungen ist das Setzen von `REDIACC_TOKEN` die einfachste Option. Das Token sollte nur für die Abonnement- und Repo-Lizenz-Operationen des Agenten berechtigt sein.

@@ -7,7 +7,7 @@ tags:
 subcategory: account
 order: 7
 language: ko
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -49,7 +49,7 @@ Rediacc 라이선싱은 세 가지 주요 부분으로 나뉩니다:
 자동화 및 AI 에이전트의 경우 브라우저 로그인 대신 범위가 지정된 구독 토큰을 사용합니다:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 환경을 통해 토큰을 직접 주입하면 CLI가 대화형 로그인 단계 없이 저장소 라이선스를 발급하고 새로 고칠 수 있습니다:
@@ -211,7 +211,7 @@ rdc subscription login
 자동화 또는 AI 에이전트 로그인:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 비대화형 환경의 경우 `REDIACC_TOKEN`을 설정하는 것이 가장 간단한 옵션입니다. 토큰은 에이전트가 필요한 구독 및 저장소 라이선스 작업만으로 범위를 지정해야 합니다.

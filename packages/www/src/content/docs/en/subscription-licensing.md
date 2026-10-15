@@ -47,7 +47,7 @@ See [rdc vs renet](/en/docs/rdc-vs-renet) for the workstation-vs-server split, a
 For automation and AI agents, use a scoped subscription token instead of browser login:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 You can also inject the token directly through the environment so the CLI can issue and refresh repo licenses without any interactive login step:
@@ -209,7 +209,7 @@ rdc subscription login
 Automation or AI-agent login:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 For non-interactive environments, setting `REDIACC_TOKEN` is the simplest option. The token should be scoped only for the subscription and repo-license operations the agent needs.
