@@ -4,7 +4,7 @@ WHO USES IT: `backup_d1`, `reset_bench` and `deploy_bench` in this package. The 
 
 WHAT IT DOES. `resolve()` picks a Cloudflare credential: a ready scoped token in `CF_MANAGEMENT_TOKEN`, or the Global API Key pair `CF_GLOBAL_API_KEY` + `CF_EMAIL` from which it mints a scoped management token, or an interactive prompt for either. `self_destruct()` deletes that token at the end of a run so a deploy leaves no stale tokens in the account.
 
-THE CURL CALLS ARE KEPT AS `curl -s -X <METHOD> <url> -H ...` SUBPROCESSES, with the argv the bash built, so the differential compares the recorded call sequence of both sides against one fake `curl`. The Global API Key therefore appears on curl's argv exactly as it did.
+THE CURL CALLS ARE KEPT AS `curl -s -X <METHOD> <url> -H ...` SUBPROCESSES, with the request the bash built, so the differential compares the recorded call sequence of both sides against one fake `curl`. The credential headers (the token, or the Global API Key and its email) are the one difference: they reach curl as a `-K -` config on its stdin (`rediacc_ci.core.curl_stdin`), never on its argv, where the bash put them in `ps` for every request (worklist #a2d19f74).
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH, each one pinned by a test that fails on the bash behaviour (`tests/test_ops_cf_auth.py`).
 
@@ -28,6 +28,7 @@ import time
 import typing
 
 from rediacc_ci import log
+from rediacc_ci.core import curl_stdin
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 CF_API_BASE = WK_CF_API_BASE
@@ -106,7 +107,8 @@ def curl_json(
         argv += ["-H", "Content-Type: application/json"]
     if body is not None:
         argv += ["-d", body]
-    proc = subprocess.run(argv, capture_output=True, text=True, check=False)
+    argv, config = curl_stdin.stdin_headers(argv)
+    proc = subprocess.run(argv, input=config, capture_output=True, text=True, check=False)
     try:
         decoded = json.loads(proc.stdout)
     except ValueError:

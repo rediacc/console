@@ -44,6 +44,12 @@ import os
 import sys
 
 argv = sys.argv[1:]
+if "-K" in argv:
+    # The port hands credential headers to curl as a `-K -` config on stdin (rediacc_ci.core.curl_stdin); record the request curl acts on.
+    sys.path.insert(0, "@CI_DIR@")
+    from rediacc_ci.core.curl_stdin import argv_with_config
+
+    argv = argv_with_config(argv, sys.stdin.read())
 log = os.environ["FAKE_CALL_LOG"]
 with open(log, "a") as fh:
     fh.write("curl\\t" + "\\t".join(argv) + "\\n")
@@ -67,7 +73,7 @@ if fail_on and call_index == int(fail_on):
     sys.exit(0)
 
 sys.stdout.write(json.dumps({"success": True, "errors": [], "result": {"id": "purge"}}) + "\\n")
-"""
+""".replace("@CI_DIR@", str(ROOT / ".ci"))
 
 # `jq` is a real prerequisite of BOTH sides (the port shells out to the same binary, for the reasons in its docstring) `sed` is what the twin's --help is made of, and `python3` and `dirname` are what the registry loader (env_file_load) runs. Nothing else is on the scratch PATH, so a tool leaking in would be visible as a behaviour change rather than as a silent convenience.
 PATH_MINIMUM = ("jq", "sed", "python3", "dirname")

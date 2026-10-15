@@ -50,6 +50,7 @@ import os
 import subprocess
 import sys
 
+from rediacc_ci.core import curl_stdin
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 from rediacc_ci.well_known import RELEASES_ORIGIN
 
@@ -259,9 +260,10 @@ def payload_for(batch: list[str]) -> str:
 
 
 def _curl(argv: list[str]) -> str:
-    """`RESPONSE=$(curl ...)`: stdout captured, stderr inherited, `set -e` armed."""
+    """`RESPONSE=$(curl ...)`: stdout captured, stderr inherited, `set -e` armed. The credential headers go on curl's stdin (`curl_stdin`), never on its argv."""
+    argv, config = curl_stdin.stdin_headers(argv)
     try:
-        proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
+        proc = subprocess.run(argv, input=config, stdout=subprocess.PIPE, text=True, check=False)
     except FileNotFoundError as exc:
         raise _missing_tool(argv[0]) from exc
     if proc.returncode != 0:

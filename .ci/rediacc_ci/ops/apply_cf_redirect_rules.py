@@ -25,6 +25,7 @@ import os
 import subprocess
 import sys
 
+from rediacc_ci.core import curl_stdin
 from rediacc_ci.well_known import APEX_DOMAIN, CF_API_BASE, SITE_ORIGIN
 
 ZONE_ID = "9e802649c143c9cefd811d8fd671d31c"  # rediacc.com
@@ -75,7 +76,9 @@ def _api(headers: list[str], method: str, url: str, body: dict | None = None) ->
     if body is not None:
         argv += ["-H", "Content-Type: application/json", "-d", json.dumps(body)]
     argv.append(url)
-    proc = subprocess.run(argv, capture_output=True, text=True, check=False)
+    # The credential headers go on curl's stdin (`curl_stdin`), never on its argv.
+    argv, config = curl_stdin.stdin_headers(argv)
+    proc = subprocess.run(argv, input=config, capture_output=True, text=True, check=False)
     if proc.returncode != 0:
         raise ApplyError("%s %s failed: %s" % (method, url, proc.stderr.strip()[:300]))
     try:

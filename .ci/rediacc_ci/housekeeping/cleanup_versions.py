@@ -116,7 +116,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common, gh_retry
+from rediacc_ci.core import common, curl_stdin, gh_retry
 from rediacc_ci.core import release_state_validator as rsv
 from rediacc_ci.housekeeping.cleanup_pr_environments import PrStateReader
 from rediacc_ci.release import check_stable_manifest, retention_contract
@@ -311,7 +311,7 @@ def arith_cmp(left: object, op: str, right: object) -> bool:
 # =============================================================================
 
 
-def _capture(argv: list[str], *, stderr: int | None) -> tuple[int, str]:
+def _capture(argv: list[str], *, stderr: int | None, stdin: str | None = None) -> tuple[int, str]:
     """One command inside `$( )`: returns its status and its stdout, denewlined.
 
     `$( )` strips ALL trailing newlines, not one, which matters for the several places the twin compares a captured value against the empty string.
@@ -321,7 +321,13 @@ def _capture(argv: list[str], *, stderr: int | None) -> tuple[int, str]:
     sys.stdout.flush()
     sys.stderr.flush()
     try:
-        proc = subprocess.run(argv, stdout=subprocess.PIPE, stderr=stderr, check=False)
+        proc = subprocess.run(
+            argv,
+            input=None if stdin is None else stdin.encode("utf-8"),
+            stdout=subprocess.PIPE,
+            stderr=stderr,
+            check=False,
+        )
     except FileNotFoundError:
         sys.stderr.write("%s: command not found\n" % argv[0])
         sys.stderr.flush()
@@ -334,10 +340,10 @@ def capture(argv: list[str]) -> tuple[int, str]:
     return _capture(argv, stderr=None)
 
 
-def capture_quiet(argv: list[str]) -> tuple[int, str]:
-    """`$(cmd 2>/dev/null)` -- the shape almost every `gh api` here uses."""
+def capture_quiet(argv: list[str], stdin: str | None = None) -> tuple[int, str]:
+    """`$(cmd 2>/dev/null)` -- the shape almost every `gh api` here uses. `stdin`, when given, is the child's whole stdin."""
     with open(os.devnull, "wb") as null:
-        return _capture(argv, stderr=null.fileno())
+        return _capture(argv, stderr=null.fileno(), stdin=stdin)
 
 
 # A paginated listing can legitimately outlast ghx's 30 s default.
@@ -1194,13 +1200,13 @@ class Housekeeping:
     def cf_api(self, method: str, endpoint: str, *extra: str) -> tuple[int, str]:
         """`cf_api <method> <endpoint> [curl args...]` (:193-201).
 
-        The argv is the twin's, in the twin's order, including the two headers it always sends. Every call site wraps this in `$( ... 2>/dev/null || echo
+        The request is the twin's, in the twin's order, including the two headers it always sends, with one difference: the token header reaches curl as a `-K -` config on its stdin (`curl_stdin`), never on its argv, where the twin put it in `ps` (worklist #a2d19f74). Every call site wraps this in `$( ... 2>/dev/null || echo
         '{"success":false}')`, so the status is returned rather than acted on
         here.
 
         `$CLOUDFLARE_API_TOKEN` IS UNGUARDED IN THE TWIN -- under `set -u` an unset token would abort the whole run inside this function. Every caller checks it first, so the path is unreachable; the port reads it with a `""` default rather than reproducing an abort nothing can trigger.
         """
-        return capture_quiet(
+        argv, config = curl_stdin.stdin_headers(
             [
                 "curl",
                 "-s",
@@ -1214,6 +1220,7 @@ class Housekeeping:
                 *extra,
             ]
         )
+        return capture_quiet(argv, stdin=config)
 
     def r2_credentials_exported(self) -> bool:
         """Export the R2 credentials as the aws CLI's own variables; False when any of the three is unset.

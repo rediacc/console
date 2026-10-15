@@ -51,6 +51,12 @@ import re
 import sys
 
 argv = sys.argv[1:]
+if "-K" in argv:
+    # The port hands credential headers to curl as a `-K -` config on stdin (rediacc_ci.core.curl_stdin); record the request curl acts on.
+    sys.path.insert(0, "@CI_DIR@")
+    from rediacc_ci.core.curl_stdin import argv_with_config
+
+    argv = argv_with_config(argv, sys.stdin.read())
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
     fh.write("curl\\t" + "\\t".join(argv) + "\\n")
 
@@ -104,7 +110,7 @@ for i in range(per_page):
     )
 sys.stdout.write(json.dumps({"success": True, "result": result}) + "\\n")
 sys.exit(0)
-"""
+""".replace("@CI_DIR@", str(ROOT / ".ci"))
 
 # The twin's `common.sh` needed `dirname` and `uname` at source time and `tr` in parse_args; `jq` is a REQUIRED command of the subject and is therefore the real binary on both sides -- the port shells out to the same one.
 PATH_MINIMUM = ("dirname", "uname", "tr", "jq")

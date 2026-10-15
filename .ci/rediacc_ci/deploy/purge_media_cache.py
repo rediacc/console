@@ -38,7 +38,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, curl_stdin
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 from rediacc_ci.well_known import MEDIA_ORIGIN
 
@@ -115,8 +115,9 @@ def _jq(args: list[str], stdin_text: str) -> str:
 
 
 def _curl(argv: list[str]) -> str:
-    """`RESPONSE="$(curl -s ...)"`: stdout captured, `set -e` armed on failure."""
-    proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
+    """`RESPONSE="$(curl -s ...)"`: stdout captured, `set -e` armed on failure. The credential headers go on curl's stdin (`curl_stdin`), never on its argv."""
+    argv, config = curl_stdin.stdin_headers(argv)
+    proc = subprocess.run(argv, input=config, stdout=subprocess.PIPE, text=True, check=False)
     if proc.returncode != 0:
         raise BashExitError(proc.returncode)
     return proc.stdout.rstrip("\n")

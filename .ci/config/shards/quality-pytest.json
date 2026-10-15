@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-15T15:32:30.639Z",
+  "generatedAt": "2026-10-15T17:23:03.590Z",
   "legs": [
     {
       "index": 1,
@@ -71,6 +71,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ci_publish_verdict.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_trace_pr_signals.py",
         "pytest:.ci/rediacc_ci/tests/test_core_blocker_validator.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_curl_stdin.py",
         "pytest:.ci/rediacc_ci/tests/test_core_pins.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_account.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_docker_to_stable_hotfix.py",
