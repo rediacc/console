@@ -364,17 +364,19 @@ PLAN_REF_RE = re.compile(r"^agent/plans/(?:(?:_done|_removed)/)?(PLAN-[A-Za-z0-9
 
 def _resolves(root: pathlib.Path, ref: str) -> bool:
     """A path ref resolves where it names a file inside the tree; a PLAN ref (`agent/plans/[_done/|_removed/]PLAN-<slug>.md`, nothing deeper) also resolves where the same plan now sits in any of those three places, so a retirement plan that closes into `_done/` and loses its stub does not turn every run into a CannotRunError (reviews 44fdd3b7.1, e34c5d6f.1-.3). A ref that leaves the tree (through `..` or a symlink) never resolves; one that stays inside it, `..` included, resolves as written (review dcd58b41.1)."""
-    try:
-        inside = (root / ref).resolve().is_relative_to(root.resolve())
-    except OSError:
-        return False
-    if not inside:
-        return False
+
+    def in_tree_file(path: pathlib.Path) -> bool:
+        # Every candidate, the moved-plan copies included, must resolve inside the tree (review bf93555d.2); a symlink loop raises RuntimeError on Python 3.10-3.12 and OSError later (review bf93555d.3).
+        try:
+            return path.resolve().is_relative_to(root.resolve()) and path.is_file()
+        except (OSError, RuntimeError):
+            return False
+
     m = PLAN_REF_RE.match(ref)
     if m:
         plans = root / "agent" / "plans"
-        return any((plans / sub / m.group(1)).is_file() for sub in ("", "_done", "_removed"))
-    return (root / ref).is_file()
+        return any(in_tree_file(plans / sub / m.group(1)) for sub in ("", "_done", "_removed"))
+    return in_tree_file(root / ref)
 
 
 def tracked_paths(root: pathlib.Path, refs: list[str]) -> set[str]:
