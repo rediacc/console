@@ -433,18 +433,27 @@ def _stdin_bytes(text):
     Encoding a str that holds a lone surrogate with plain `encode("utf-8")` raised UnicodeEncodeError out of run_out, and a crashed guard is no decision, so the command ran (review 46b000ae.1); swallowing it as a command that did not run hid the caller's text instead (review dd407156.2). Neither is needed, because every lone surrogate has a byte form.
     A surrogate in U+DC80..U+DCFF is what a `surrogateescape` decode makes of a byte that is not UTF-8, and run_out decodes command output exactly that way, so `surrogateescape` hands such text back as the bytes it came from.
     Any other lone surrogate (U+D800..U+DC7F, U+DD00..U+DFFF) never came from a decode, and `surrogatepass` writes it as its three-byte form; `surrogatepass` encodes every code point, so the fallback cannot raise.
-    A HIGH SURROGATE FOLLOWED BY A LOW ONE IS ONE CODE POINT (review 2925782e.2), and goes as that code point's four UTF-8 bytes: the per-character rule alone sent U+D83D U+DE00 as two three-byte surrogate forms instead of the bytes of U+1F600. A round trip through UTF-16 joins every valid pair and leaves each lone surrogate where it was.
+    A HIGH SURROGATE FOLLOWED BY A LOW ONE IS ONE CODE POINT (review 2925782e.2), and goes as that code point's four UTF-8 bytes: the per-character rule alone sent U+D83D U+DE00 as two three-byte surrogate forms instead of the bytes of U+1F600.
+    THE ESCAPED-BYTE RULE WINS OVER THE JOIN (review 98777d8c.1): a low half in U+DC80..U+DCFF is never joined, because a UTF-16 round trip merged a lone U+D83D before the escaped byte U+DCFF into U+1F4FF and the byte 0xFF was lost. Such a high surrogate goes as its own three-byte form, and the escaped byte as the byte.
     """
     try:
         return text.encode("utf-8", "surrogateescape")
     except UnicodeEncodeError:
-        joined = text.encode("utf-16-le", "surrogatepass").decode("utf-16-le", "surrogatepass")
-        return b"".join(
-            bytes([ord(char) - 0xDC00])
-            if 0xDC80 <= ord(char) <= 0xDCFF
-            else char.encode("utf-8", "surrogatepass")
-            for char in joined
-        )
+        out = []
+        i = 0
+        while i < len(text):
+            code = ord(text[i])
+            low = ord(text[i + 1]) if i + 1 < len(text) else 0
+            if 0xD800 <= code <= 0xDBFF and 0xDC00 <= low <= 0xDFFF and not 0xDC80 <= low <= 0xDCFF:
+                out.append(chr(0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00)).encode("utf-8"))
+                i += 2
+                continue
+            if 0xDC80 <= code <= 0xDCFF:
+                out.append(bytes([code - 0xDC00]))
+            else:
+                out.append(text[i].encode("utf-8", "surrogatepass"))
+            i += 1
+        return b"".join(out)
 
 
 def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):

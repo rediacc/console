@@ -87,11 +87,9 @@ interface RestoreOptions {
   debug?: boolean;
 }
 
-/** Resolve which machine a restored repo lands on. */
 /**
- * The placement a restore asks for, read for the agent create-gate only (its
- * ops VM exemption). Both flags, or neither, is no placement: the gate keeps its
- * refusal and resolveRestoreMachine reports the flag error to a human.
+ * The placement a restore asks for, read from the flags alone for the agent create-gate (its ops VM exemption): no state lookup and no validation.
+ * Both flags, or neither, is no placement, so the gate keeps its refusal and resolveRestoreMachine reports the flag error to a human.
  */
 function restorePlacementOf(options: RestoreOptions): Placement | undefined {
   if (options.machine && options.datastore) return undefined;
@@ -100,6 +98,7 @@ function restorePlacementOf(options: RestoreOptions): Placement | undefined {
   return undefined;
 }
 
+/** Resolve which machine a restored repo lands on. */
 async function resolveRestoreMachine(options: RestoreOptions): Promise<string> {
   if (options.machine && options.datastore) {
     throw new ValidationError(t('commands.backup.restore.placementExclusive'));

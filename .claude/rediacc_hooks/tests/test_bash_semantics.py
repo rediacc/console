@@ -2209,7 +2209,12 @@ _HIGH, _LOW = chr(0xD83D), chr(0xDE00)
     [
         ("x" + _HIGH + _LOW, b"x\xf0\x9f\x98\x80"),
         (_HIGH + _LOW + chr(0xDCFF), b"\xf0\x9f\x98\x80\xff"),
-        (_HIGH + chr(0xDC80), b"\xf0\x9f\x92\x80"),
+        # Review 98777d8c.1: a low half in U+DC80..U+DCFF is an escaped byte, never the second half of a pair.
+        (_HIGH + chr(0xDC80), b"\xed\xa0\xbd\x80"),
+        (_HIGH + chr(0xDCFF), b"\xed\xa0\xbd\xff"),
+        ("x" + _HIGH + chr(0xDCFF) + _HIGH + _LOW, b"x\xed\xa0\xbd\xff\xf0\x9f\x98\x80"),
+        (_HIGH + chr(0xDC7F), b"\xf0\x9f\x91\xbf"),
+        (_HIGH + chr(0xDD00), b"\xf0\x9f\x94\x80"),
         (_LOW + _HIGH, b"\xed\xb8\x80\xed\xa0\xbd"),
         (_HIGH + "a", b"\xed\xa0\xbda"),
     ],
