@@ -156,10 +156,11 @@ def alias_block(text: str, alias: str) -> list[str] | None:
     block: list[str] | None = None
     for line in text.splitlines():
         words = line.split()
-        if words and words[0].lower() == "host":
+        # A Host line lists several patterns, and a Match line ends a Host block as surely as another Host does (review 5a9861e8.4).
+        if words and words[0].lower() in ("host", "match"):
             if block is not None:
                 return block
-            if len(words) > 1 and words[1] == alias:
+            if words[0].lower() == "host" and alias in words[1:]:
                 block = []
             continue
         if block is not None and line.strip() and not line.strip().startswith("#"):
@@ -1352,6 +1353,16 @@ class VmCheck:
         if probe.rc == 0 and probe.out.strip():
             self._positive(ref, "vi writes ~/v", VI_WRITE)
             return
+        # `command -v` exits 1 for a missing command; any other failure (an ssh drop, a refused shell) established nothing about vi (review 5a9861e8.2).
+        if probe.rc != 1:
+            self.check(
+                "V1.3",
+                "A: the vi probe answered (present or absent)",
+                False,
+                probe,
+                "%s rc=%d; %s" % (VI_PROBE, probe.rc, self.remote_evidence(probe)),
+            )
+            return
         res = self.shell(ref, SED_WRITE, WRITE_ROW_ENV)
         ok = res.rc == 0
         absent = "vi absent on %s (%s rc=%d)" % (self.fleet_os or "the worker", VI_PROBE, probe.rc)
@@ -1562,7 +1573,10 @@ class VmCheck:
                 identity = pathlib.Path(drive_path(value, drive_root))
                 copy = self.work / "sftp_identity"
                 try:
-                    copy.write_bytes(identity.read_bytes())
+                    # Created 0600, never widened then narrowed: a umask-mode copy of a private key is readable by other local users until the chmod (review 5a9861e8.3).
+                    fd = os.open(copy, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                    with os.fdopen(fd, "wb") as out:
+                        out.write(identity.read_bytes())
                 except OSError as exc:
                     self.check(
                         "V1.7",

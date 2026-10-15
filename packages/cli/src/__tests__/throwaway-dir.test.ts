@@ -1,24 +1,50 @@
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { assertThrowawayDir } from './throwaway-dir.js';
 
+// A path that is never under the temp directory, whatever HOME is (a CI container may keep HOME in /tmp, review 1f969add.2).
+const REAL_CONFIG_HOME = path.join(
+  path.parse(os.tmpdir()).root,
+  'var',
+  'lib',
+  'rdc-probe',
+  '.config',
+  'rediacc'
+);
+
 describe('assertThrowawayDir', () => {
+  const made: string[] = [];
+  afterEach(() => {
+    for (const p of made.splice(0)) fs.rmSync(p, { recursive: true, force: true });
+  });
+
   it('admits a directory under the temp directory', () => {
     expect(() =>
       assertThrowawayDir(path.join(os.tmpdir(), 'rdc-cli-test-home-x', 'config'))
     ).not.toThrow();
   });
 
-  it("refuses the developer's real config home, the 2026-10-14 deletion (#61fb7bc3)", () => {
-    expect(() => assertThrowawayDir(path.join(os.homedir(), '.config', 'rediacc'))).toThrow(
-      /refusing to delete/
-    );
+  it('refuses a config home outside the temp directory, the 2026-10-14 deletion (#61fb7bc3)', () => {
+    expect(() => assertThrowawayDir(REAL_CONFIG_HOME)).toThrow(/refusing to delete/);
   });
 
   it('refuses the temp directory itself and a sibling that only shares its prefix', () => {
     expect(() => assertThrowawayDir(os.tmpdir())).toThrow(/refusing to delete/);
     expect(() => assertThrowawayDir(`${path.resolve(os.tmpdir())}-other/x`)).toThrow(
+      /refusing to delete/
+    );
+  });
+
+  it('judges a symlink under the temp directory where it lands (review 1f969add.1)', () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'rdc-throwaway-'));
+    made.push(base);
+    const outside = fs.mkdtempSync(path.join(os.homedir(), '.rdc-throwaway-outside-'));
+    made.push(outside);
+    if (fs.realpathSync(outside).startsWith(`${fs.realpathSync(os.tmpdir())}${path.sep}`)) return;
+    fs.symlinkSync(outside, path.join(base, 'link'));
+    expect(() => assertThrowawayDir(path.join(base, 'link', 'config'))).toThrow(
       /refusing to delete/
     );
   });

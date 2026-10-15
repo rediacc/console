@@ -31,12 +31,15 @@ ROOT_REFUSAL = "vitest.config.ts"
 
 
 def test_the_root_vitest_config_only_refuses():
+    """The throw must be the file's first statement and nothing may be exported: a commented-out throw beside a real config, or a throw after an export, would let a root-level run load (review 1f969add.3)."""
     text = paths.from_root(ROOT_REFUSAL).read_text(encoding="utf-8")
-    assert "throw new Error(" in text, (
-        "the root vitest.config.ts no longer refuses a root-level run"
+    code = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+    code = re.sub(r"(?m)^\s*//.*$", "", code).strip()
+    assert code.startswith("throw new Error("), (
+        "the root vitest.config.ts no longer opens with its refusal"
     )
-    assert "defineConfig" not in text, (
-        "the root vitest.config.ts defines a config, so it needs a cache"
+    assert not re.search(r"\bexport\b|\bdefineConfig\b|\bimport\b", code), (
+        "the root vitest.config.ts exports or imports something, so it is a config and needs a cache"
     )
 
 
