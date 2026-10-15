@@ -23,6 +23,9 @@ import type { ConnectionDetails } from '../machine/ssh-connection.js';
 /** Mutable per-repo server state root, inside the sandbox overlay home. */
 const STATE_ROOT = '$HOME/.rediacc-vscode';
 
+/** Remote command that runs the bash script arriving on its stdin. */
+export const LAUNCH_FROM_STDIN = `bash -c 'eval "$(cat)"'`;
+
 /** Deterministic remote port base; collisions probe upward (max +9). */
 const REMOTE_PORT_BASE = 9300;
 const REMOTE_PORT_SPAN = 200;
@@ -40,11 +43,15 @@ interface SSHExecResult {
   stderr: string;
 }
 
-/** Run a command over SSH with the given private key, capturing output. */
+/**
+ * Run a command over SSH with the given private key, capturing output.
+ * `stdin`, when given, is written to the remote command's stdin and closed.
+ */
 async function execSSH(
   connectionDetails: ConnectionDetails,
   privateKey: string,
-  command: string
+  command: string,
+  stdin?: string
 ): Promise<SSHExecResult> {
   const conn = new SSHConnection(privateKey, connectionDetails.known_hosts, {
     port: connectionDetails.port,
@@ -58,6 +65,10 @@ async function execSSH(
       stdio: 'pipe',
       agentSocketPath: conn.agentSocketPath,
     });
+    child.stdin?.on('error', () => {
+      // An early exit closes the pipe; the exit code reports the failure.
+    });
+    child.stdin?.end(stdin ?? '');
     let stdout = '';
     let stderr = '';
     child.stdout?.on('data', (d: Buffer) => {
@@ -265,13 +276,13 @@ echo $! > "$STATE/server.pid"
 echo "VSCODE_SERVER reused=0 port=$PORT secret=${secret}"
 `;
 
-  // Run under bash explicitly: the launch script uses bash-only features
-  // (parameter-expansion replacement ${ARGS//__PORT__/$PORT}); if the remote
-  // login shell is dash/sh it would fail. Single-quote-escape the script body.
+  // Run under bash explicitly: the launch script uses bash-only features (parameter-expansion replacement ${ARGS//__PORT__/$PORT}), and a dash/sh login shell would fail on them.
+  // The script carries the per-launch secret, so it travels on stdin, never on a command line (local ssh argv, the gateway's `bash -c`, the remote `ps`). It is read whole before it runs, so no command inside it can swallow the rest of it from stdin.
   const result = await execSSH(
     connectionDetails,
     connectionDetails.privateKey,
-    `bash -c 'eval "$1"' -- '${script.replaceAll("'", "'\\''")}'`
+    LAUNCH_FROM_STDIN,
+    script
   );
   const line = result.stdout.split('\n').find((l) => l.startsWith('VSCODE_SERVER '));
   if (result.code !== 0 || !line) {

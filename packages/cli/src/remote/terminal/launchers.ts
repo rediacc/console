@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { splitSecretEnv } from '../../utils/secret-env.js';
 import type { TerminalLaunchOptions, TerminalType } from '../types/index.js';
 import { getPlatform, isWSL } from '../utils/platform.js';
 import { findMSYS2Installation } from './detector.js';
@@ -49,14 +50,33 @@ function escapeCommand(cmd: string): string {
 }
 
 /**
- * Builds environment variable exports for bash
+ * Builds environment variable exports for bash. Secret values
+ * (`REDIACC_SECRET_*`) are left out: this text lands in the argv of cmd.exe,
+ * wt.exe and wsl.exe, so secrets cross into WSL by name through WSLENV
+ * (withWslEnv) instead.
  */
-function buildBashExports(env?: Record<string, string>): string {
-  if (!env) return '';
-  const exports = Object.entries(env)
+export function buildBashExports(env?: Record<string, string>): string {
+  const { plain } = splitSecretEnv(env);
+  const exports = Object.entries(plain)
     .map(([key, value]) => `export ${key}='${escapeCommand(value)}'`)
     .join(' && ');
   return exports ? `${exports} && ` : '';
+}
+
+/**
+ * The spawn environment for a WSL launch from inside WSL: the terminal
+ * environment plus a WSLENV entry naming each secret, so the values pass from
+ * this process to the Windows side and back into the WSL bash through the
+ * environment, never through a command line.
+ */
+export function withWslEnv(
+  base: NodeJS.ProcessEnv,
+  env?: Record<string, string>
+): NodeJS.ProcessEnv {
+  const { secretNames } = splitSecretEnv(env);
+  if (secretNames.length === 0) return base;
+  const wslenv = [base.WSLENV, ...secretNames].filter(Boolean).join(':');
+  return { ...base, WSLENV: wslenv };
 }
 
 /**
@@ -335,7 +355,10 @@ const launchers: Record<TerminalType, LauncherFn> = {
           stdio: 'ignore',
           detached: true,
           cwd: process.env.WINDIR ?? DEFAULTS.PLATFORM.WINDOWS_SYSTEM,
-          env: { ...filterSensitiveEnv(process.env), ...options.environmentVariables },
+          env: withWslEnv(
+            { ...filterSensitiveEnv(process.env), ...options.environmentVariables },
+            options.environmentVariables
+          ),
         });
         proc.unref();
         return { success: true, process: proc };
@@ -348,7 +371,10 @@ const launchers: Record<TerminalType, LauncherFn> = {
             {
               stdio: 'ignore',
               detached: true,
-              env: { ...filterSensitiveEnv(process.env), ...options.environmentVariables },
+              env: withWslEnv(
+                { ...filterSensitiveEnv(process.env), ...options.environmentVariables },
+                options.environmentVariables
+              ),
             }
           );
           proc.unref();
