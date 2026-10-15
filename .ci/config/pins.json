@@ -2779,13 +2779,6 @@
     },
     {
       "scanner": "literal",
-      "repo": ".",
-      "file": "docs/design/spec/09-csi-driver.md",
-      "match": "verified current at research time|VolumeGroupSnapshot",
-      "reason": "BLOCKER: these spec 09 lines record what the research found current on its date (the open-questions list); the unit table above them is the live copy and is a site"
-    },
-    {
-      "scanner": "literal",
       "repo": "private/renet",
       "file": "Dockerfile",
       "match": "both declare `go 1\\.26\\.0`",

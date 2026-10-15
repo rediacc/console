@@ -786,7 +786,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/actions-vars.json | 1 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 1 | JSON value |
-| .ci/config/pins.json | 16 | JSON value |
+| .ci/config/pins.json | 15 | JSON value |
 | .ci/config/prose-style-rules.json | 9 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
 | .ci/config/syncpack-source-exclusions.json | 8 | JSON value |
