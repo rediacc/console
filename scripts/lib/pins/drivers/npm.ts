@@ -482,7 +482,13 @@ export function lockDrift(
   onDisk: readonly string[] = []
 ): string[] {
   type Pkgs = Record<string, { version?: string; link?: boolean } | undefined>;
-  const locked = ((JSON.parse(lockText) as { packages?: Pkgs }).packages ?? {}) as Pkgs;
+  const lock = JSON.parse(lockText) as { packages?: Pkgs; lockfileVersion?: number };
+  // A lockfile with no `packages` map (lockfileVersion 1) names no installed path, so every package would read as extraneous (review f56ddcde.1); it is one finding, not hundreds.
+  if (lock.packages === undefined)
+    return [
+      `package-lock.json has no packages map (lockfileVersion ${lock.lockfileVersion ?? 'unknown'}); rewrite it with the pinned npm before comparing`,
+    ];
+  const locked = lock.packages;
   const installed = ((JSON.parse(hiddenText) as { packages?: Pkgs }).packages ?? {}) as Pkgs;
   const name = (k: string): string => k.replace(/^(?:.*\/)?node_modules\//, '');
   const out: string[] = [];
