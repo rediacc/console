@@ -21,7 +21,17 @@
  * ONE SYNTHETIC RELEASE stands for "every non-breaking package the window has cleared" (a
  * family answers `inspect` that way, see driver.ts); each held or blocklisted MAJOR is its own
  * release, named by its allow key (`vite@8`, `private/account/web:vite@8`), taken only by
- * `bump npm --to <key> --major --reason "<why>"`. A major plan runs the planner with the
+ * `bump npm --to <key> --major --reason "<why>"`, and that run carries the in-range release
+ * too, since check:deps judges the whole tree. A HELD major (no blocklist line, what check:deps
+ * reds on as "awaiting a decision") cannot be left behind: a run that does not name every one
+ * is refused before it writes, with the one `--to ... --major` line that takes them all
+ * (driver.ts splitFamilySet). A blocklisted major is held on purpose and never forces that.
+ *
+ * THE INSTALLED TREE MUST BE THE LOCKED ONE. check-deps judges what `npm outdated` reports,
+ * which is the installed tree; a node_modules that disagrees with its package-lock.json (a
+ * failed run's npm steps, before txn.ts learned to reinstall after a restore) makes the plan
+ * describe a tree nobody committed. inspect refuses such a project as not compared, naming the
+ * package and the `npm ci` that resyncs it. A major plan runs the planner with the
  * allow entry TRANSIENT (check-deps `--allow`, never written) and removes the package's
  * blocklist line and held-major exception in the same transaction, so the net diff of a major
  * is the manifest, the lockfile and those two removals.
@@ -47,6 +57,7 @@ import {
   PlanRefused,
   type PlanStep,
   type Release,
+  splitFamilySet,
 } from '../driver.js';
 import type { PinEntry, RepoPath } from '../registry.js';
 
@@ -339,16 +350,26 @@ function majorRelease(m: MajorCandidate, plan: NpmPlanJson): Release {
 /** Synthetic version of the all-in-range release, `1.<n>` for n packages, so the core reads it as a same-major step from `1.0`. */
 const IN_RANGE_BASE = '1.0';
 
+/** The synthetic in-range release a plan answers, or null when nothing in range is past the window. */
+const inRangeVersion = (plan: NpmPlanJson): string | null =>
+  plan.steps.length > 0 ? `1.${names(plan.steps).length}` : null;
+
 export const npmDriver: PinDriver = {
   name: 'npm',
   holdKey: () => null,
-  inspect(_entry, ctx): Promise<Inspection> {
+  inspect(entry, ctx): Promise<Inspection> {
+    const drift = installedDrift(entry, ctx);
+    if (drift.length > 0)
+      throw new Error(
+        `the installed tree disagrees with its lockfile, so npm outdated would judge versions nobody locked: ${drift.slice(0, 4).join('; ')}${drift.length > 4 ? `; and ${drift.length - 4} more` : ''}`
+      );
     const plan = loadPlan(ctx, []);
     const releases: Release[] = [];
     const pkgs = names(plan.steps);
-    if (plan.steps.length > 0)
+    const inRange = inRangeVersion(plan);
+    if (inRange !== null)
       releases.push({
-        version: `1.${pkgs.length}`,
+        version: inRange,
         publishedMs: null,
         verdict: {
           eligible: true,
@@ -369,15 +390,15 @@ export const npmDriver: PinDriver = {
   },
   plan(entry, to, ctx, also = []): Promise<PinPlan> {
     const base = loadPlan(ctx, []);
-    const found = [to, ...also].map((r) => base.majors.find((m) => m.key === r.version));
-    if (also.length > 0 && found.some((m) => m === undefined))
-      throw new PlanRefused(
-        `${entry.id}: several --to are taken together only as majors; ${[to, ...also]
-          .filter((_, i) => found[i] === undefined)
-          .map((r) => r.version)
-          .join(', ')} is not one`
-      );
-    const majors = found.filter((m): m is MajorCandidate => m !== undefined);
+    // The core hands a set run its in-range release and its majors together (scripts/lib/pins/status.ts); anything else is refused by name.
+    const set = splitFamilySet(
+      entry.id,
+      inRangeVersion(base),
+      base.majors.map((m) => m.key),
+      base.majors.filter((m) => m.blockKey === null).map((m) => m.key),
+      [to, ...also]
+    );
+    const majors = set.majors.map((k) => base.majors.find((m) => m.key === k) as MajorCandidate);
     if (majors.length === 0) {
       if (base.steps.length === 0)
         throw new PlanRefused(`${entry.id}: nothing past the window to bump`);
@@ -424,6 +445,9 @@ export const npmDriver: PinDriver = {
       }
     }
     const [first] = majors;
+    // The in-range packages that ride the same run are named in the release label, so the drafted subject does not read as the major alone.
+    const riders = names(plan.steps).filter((n) => !majors.some((m) => m.pkg.name === n));
+    const withRiders = riders.length > 0 ? ` with ${riders.length} in-range package(s)` : '';
     return Promise.resolve(
       npmPlanOf(
         entry,
@@ -432,10 +456,7 @@ export const npmDriver: PinDriver = {
           ? `${first.pkg.name} ${first.pkg.current}`
           : `${majors.length} majors (${majors.map((m) => m.key).join(', ')})`,
         {
-          version:
-            majors.length === 1
-              ? `${first.pkg.name} ${first.pkg.latest}`
-              : `${majors.length} majors`,
+          version: `${majors.length === 1 ? `${first.pkg.name} ${first.pkg.latest}` : `${majors.length} majors`}${withRiders}`,
           publishedMs: to.publishedMs,
         },
         plan,
@@ -445,6 +466,41 @@ export const npmDriver: PinDriver = {
     );
   },
 };
+
+// ---- the installed tree against its lockfile ------------------------------------------------
+
+/**
+ * The packages whose installed version (npm's hidden lockfile, node_modules/.package-lock.json) differs from package-lock.json, as `<path> installed <v>, locked <v>`. Pure. Only an entry both files carry with a version is compared: npm leaves another platform's optional packages uninstalled, and a workspace link carries no version.
+ */
+export function lockDrift(lockText: string, hiddenText: string): string[] {
+  type Pkgs = Record<string, { version?: string } | undefined>;
+  const locked = ((JSON.parse(lockText) as { packages?: Pkgs }).packages ?? {}) as Pkgs;
+  const installed = ((JSON.parse(hiddenText) as { packages?: Pkgs }).packages ?? {}) as Pkgs;
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(installed)) {
+    const want = locked[k]?.version;
+    if (v?.version === undefined || want === undefined || v.version === want) continue;
+    out.push(`${k.replace(/^(?:.*\/)?node_modules\//, '')} installed ${v.version}, locked ${want}`);
+  }
+  return out;
+}
+
+/** lockDrift over every npm project of the family that has an installed tree, each finding prefixed with its project and the line that resyncs it. */
+function installedDrift(entry: PinEntry, ctx: DriverContext): string[] {
+  const out: string[] = [];
+  for (const d of projectDirs(entry, ctx)) {
+    const lock = path.join(d.abs, 'package-lock.json');
+    const hidden = path.join(d.abs, 'node_modules/.package-lock.json');
+    if (!fs.existsSync(lock) || !fs.existsSync(hidden)) continue;
+    const found = lockDrift(fs.readFileSync(lock, 'utf8'), fs.readFileSync(hidden, 'utf8'));
+    const dir = relDir(ctx, d.abs);
+    if (found.length > 0)
+      out.push(
+        `${dir}: ${found.slice(0, 3).join(', ')}${found.length > 3 ? ` (+${found.length - 3})` : ''}; run (cd ${dir} && npx -y npm@${pinnedNpm(ctx.root)} ci${dir === '.' ? ' && npm run install:natives' : ''})`
+      );
+  }
+  return out;
+}
 
 // ---- lockfiles ------------------------------------------------------------------------------
 

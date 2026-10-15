@@ -180,6 +180,10 @@ export interface PinView {
   target: Release | null;
   /** The further releases of a multi-`--to` selection, planned in the same transaction as `target`. */
   also: Release[];
+  /** The selection takes a major or out-of-range release (`--major` with a selection that takes none is refused by the CLI). */
+  takesMajor: boolean;
+  /** Every eligible major or out-of-range release the source answered, for the `--to` line of that refusal. */
+  eligibleMajors: string[];
   /** The newest release inside the window, when one is. */
   deferred: (Release & { clearsAt: number | null }) | null;
   verdict: Verdict | null;
@@ -210,6 +214,8 @@ export async function viewOf(
     current: entry.kind === 'leaf' ? leafCurrent(entry, ctx) : null,
     target: null,
     also: [],
+    takesMajor: false,
+    eligibleMajors: [],
     deferred: null,
     verdict: null,
     hold: null,
@@ -251,6 +257,30 @@ export async function viewOf(
     const b = majorOf(r.version);
     return a === null || b === null || a !== b;
   };
+  const soak = (r: Release) => judge(entry, r, w.nowMs, w.windowMs, w.mutant === 'ignore-soak');
+  base.eligibleMajors = insp.releases
+    .filter((r) => isMajor(r) && soak(r).eligible)
+    .map((r) => r.version);
+  // A SET ENTRY (the npm family) converges only as a whole: its gate judges every member at once, so a run that takes a major takes the eligible in-range release with it (2026-10-15: oxc-parser 0.154 beside two in-range minors).
+  const isSet = entry.driver === 'npm';
+  const bumpable = (taken: Release[], why: string): PinView => {
+    const withRange =
+      isSet && taken.some(isMajor)
+        ? insp.releases
+            .filter((r) => !isMajor(r) && !taken.includes(r) && soak(r).eligible)
+            .slice(0, 1)
+        : [];
+    const all = [...taken, ...withRange];
+    return {
+      ...base,
+      state: 'bumpable',
+      target: all[0],
+      also: all.slice(1),
+      takesMajor: all.some(isMajor),
+      verdict: soak(all[0]),
+      detail: `${insp.current} -> ${all.map((r) => r.version).join(' + ')}${why}`,
+    };
+  };
   if (wanted && wanted.length > 1) {
     if (entry.driver !== 'npm')
       return {
@@ -266,7 +296,7 @@ export async function viewOf(
           state: 'major-only',
           detail: `${r.version} is a major or out-of-range release; \`bump ${entry.id} --major --reason "<why>"\``,
         };
-      const j = judge(entry, r, w.nowMs, w.windowMs, w.mutant === 'ignore-soak');
+      const j = soak(r);
       if (!j.eligible)
         return {
           ...base,
@@ -277,28 +307,14 @@ export async function viewOf(
         };
       taken.push(r);
     }
-    return {
-      ...base,
-      state: 'bumpable',
-      target: taken[0],
-      also: taken.slice(1),
-      verdict: judge(entry, taken[0], w.nowMs, w.windowMs, w.mutant === 'ignore-soak'),
-      detail: `${insp.current} -> ${taken.map((r) => r.version).join(' + ')}`,
-    };
+    return bumpable(taken, '');
   }
   const admitted = pool.filter((r) =>
     sel.onlyInRange ? inRange(insp.current, r.version) : sel.allowMajor || !isMajor(r)
   );
   for (const r of admitted) {
-    const v = judge(entry, r, w.nowMs, w.windowMs, w.mutant === 'ignore-soak');
-    if (v.eligible)
-      return {
-        ...base,
-        state: 'bumpable',
-        target: r,
-        verdict: v,
-        detail: `${insp.current} -> ${r.version} (${v.why})`,
-      };
+    const v = soak(r);
+    if (v.eligible) return bumpable([r], ` (${v.why})`);
     if (!base.deferred) base.deferred = { ...r, clearsAt: v.clearsAt };
     base.verdict ??= v;
   }

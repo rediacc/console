@@ -1602,7 +1602,15 @@ async function checkDependencies(): Promise<void> {
     printPackageGroup(header, g.mustUpgrade, { changelogUrls });
   }
   if (totalMust > 0) {
-    console.log(`Run: npm run pins -- bump npm`);
+    // A held major beside the in-range bumps makes the plain bump refuse (scripts/lib/pins/driver.ts splitFamilySet), so the line names every held major instead.
+    const heldKeys = groups.flatMap((g) =>
+      g.heldMajor.map((pkg) => suggestedAllowKey(pkg, g.name || undefined))
+    );
+    console.log(
+      heldKeys.length > 0
+        ? `Run: npm run pins -- bump npm ${heldKeys.map((k) => `--to ${k}`).join(' ')} --major --reason "<why now>"`
+        : 'Run: npm run pins -- bump npm'
+    );
     console.log();
   }
   printHeld(changelogUrls);
@@ -2285,7 +2293,7 @@ async function selftest(): Promise<void> {
     fs.rmSync(scanRoot, { recursive: true, force: true });
   }
 
-  // 8. END TO END, the real script on a fixture tree with a recording npm stub. The web manifest is CI-shaped: `npm outdated` gives NO `current`, only the lockfile knows it. This is the control for the 2026-09-26 incident: the major must be reported and NOT installed, the minor beside it must be installed.
+  // 8. END TO END, the real script on a fixture tree with a recording npm stub. The web manifest is CI-shaped: `npm outdated` gives NO `current`, only the lockfile knows it. This is the control for the 2026-09-26 incident: the major must be reported and NOT installed. Since 2026-10-15 a plain bump beside a held major is refused before any write: check:deps judges the whole tree and reds on the held major, so the minor-only run could only fail its own gate (oxc-parser 0.154 beside two minors deadlocked every bump); the minors land with the majors in the one run that names them all.
   const webLock = {
     'node_modules/vite': { version: '6.4.2' },
     'node_modules/lucide-react': { version: '0.575.0' },
@@ -2313,9 +2321,11 @@ async function selftest(): Promise<void> {
   const up = runFixture(incident, 'upgrade');
   const inst = up.installs.join('\n');
   const detail = `installs:\n${inst}\noutput:\n${up.output}`;
+  const bothKeysLine =
+    'npm run pins -- bump npm --to private/account/web:vite@8 --to private/account/web:lucide-react@1 --major --reason';
   expect(
-    'e2e pins: the sub-manifest minor IS applied',
-    /<root>\/private\/account\/web :: install .*react-hook-form@7\.89\.0/.test(inst),
+    'e2e pins: a plain bump beside held majors is refused before any write, naming the --to line of every held major',
+    up.status === 1 && up.installs.length === 0 && up.output.includes(bothKeysLine),
     detail
   );
   expect(
@@ -2332,18 +2342,8 @@ async function selftest(): Promise<void> {
     `${upMajors.join()}\n${detail}`
   );
   expect(
-    'e2e pins: the root array-shaped minor is applied',
-    inst.includes('<root> :: install tsx@4.23.15'),
-    detail
-  );
-  expect(
     'e2e pins: nothing is installed in the local-only private/growth',
     !inst.includes('growth'),
-    detail
-  );
-  expect(
-    'e2e pins: the safe bumps apply and exit 0 while a major is undecided',
-    up.status === 0,
     detail
   );
 
@@ -2357,17 +2357,10 @@ async function selftest(): Promise<void> {
     '--reason',
     reason,
   ]);
-  const takenInst = taken.installs.join('\n');
   expect(
-    'e2e pins: a major named by `--to <key> --major --reason` IS applied, at the exact version judged, with the safe bumps beside it',
-    /private\/account\/web :: install .*vite@8\.0\.1/.test(takenInst) &&
-      takenInst.includes('react-hook-form@7.89.0'),
-    `${takenInst}\n${taken.output}`
-  );
-  expect(
-    'e2e pins: CONTROL: the other major is still held',
-    !takenInst.includes('lucide-react@'),
-    takenInst
+    'e2e pins: naming one of two held majors is refused before any write, with the line naming both',
+    taken.status === 1 && taken.installs.length === 0 && taken.output.includes(bothKeysLine),
+    `${taken.installs.join('\n')}\n${taken.output}`
   );
 
   const twoMajors = runFixture(incident, 'upgrade', [
@@ -2387,6 +2380,12 @@ async function selftest(): Promise<void> {
     twoMajors.status === 0 &&
       /private\/account\/web :: install .*vite@8\.0\.1/.test(bothInst) &&
       /private\/account\/web :: install .*lucide-react@1/.test(bothInst),
+    `${bothInst}\n${twoMajors.output}`
+  );
+  expect(
+    'e2e pins: the run that names every held major applies the safe bumps beside them, the sub-manifest minor and the root array-shaped one',
+    /<root>\/private\/account\/web :: install .*react-hook-form@7\.89\.0/.test(bothInst) &&
+      bothInst.includes('<root> :: install tsx@4.23.15'),
     `${bothInst}\n${twoMajors.output}`
   );
   const comma = runFixture(incident, 'upgrade', [
@@ -2865,19 +2864,14 @@ async function selftest(): Promise<void> {
       !updFirst.output.includes('freshness-window guard'),
     updFirstDetail
   );
-  // Without the allow entry the sibling is a held major, so nothing in the run releases the pin: the update must still fail, and must say WHY (the held sibling), not claim an unjudged version landed.
+  // Without the allow entry the sibling is a held major. Since 2026-10-15 the plain bump is refused before any write rather than run into the held-back update: the sibling is held, so check:deps stays red whatever the update does, and the refusal names the --to line that takes it (the guard's held-back wording stays covered by pinningHolders and updateMismatches below).
   const heldSib = runFixture(otelCase({ allow: {} }), 'upgrade');
   const heldSibDetail = `installs:\n${heldSib.installs.join('\n')}\noutput:\n${heldSib.output}`;
   expect(
-    'e2e pins: with the pinning sibling held, the in-range update fails naming that sibling, and asks for no revert',
+    'e2e pins: with the pinning sibling held, the plain bump is refused before any write, naming the --to line that takes the sibling',
     heldSib.status === 1 &&
-      heldSib.installs.length === 1 &&
-      heldSib.installs[0].startsWith(`<root> :: update -w=packages/cli ${otelCore} ::`) &&
-      heldSib.output.includes(`held back by ${otelNode}@0.222.0 requires "2.11.0"`) &&
-      heldSib.output.includes(
-        "take the sibling's bump (`bump npm --to <package>@<line> --major --reason`"
-      ) &&
-      !heldSib.output.includes('revert them there'),
+      heldSib.installs.length === 0 &&
+      heldSib.output.includes(`npm run pins -- bump npm --to ${otelNode}@0.223 --major --reason`),
     heldSibDetail
   );
   const pinLock: Record<string, LockEntry> = {
@@ -4284,7 +4278,7 @@ async function selftest(): Promise<void> {
   console.log(
     joinReport(
       `${GREEN}✓${NC} ${checks} selftest checks: the probe fails closed on both shapes; a breaking bump is held in `,
-      'every manifest and applied only when allow-listed, while a minor beside it is applied (end to end, CI-shaped ',
+      'every manifest and applied only when allow-listed, a plain bump beside a held major is refused before any write naming the --to line of every held major, and the run naming them all applies the minors beside them (end to end, CI-shaped ',
       'lockfile input); array and lockfile-only reports are judged, not dropped; dead allow entries and unknown ',
       'versions fail; the scan set is exactly the checked-out submodules; an in-range bump runs as npm update and ',
       'an out-of-range one as a pinned npm install, and an update that resolves anything but the judged version fails ',

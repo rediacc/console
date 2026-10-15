@@ -10,6 +10,8 @@
  *   bump <id> [--to <v>]... [--major --reason "<why>"] [--task <id>] [--json] [--out <dir>]
  *                                          one --reason covers every major the run's --to names,
  *                                          since the run is one transaction with one commit subject
+ *                                          `bump npm --major` with no --to takes every pending held
+ *                                          major with the in-range set, since check:deps judges all
  *   bump --all [--task <id>] [--json] [--out <dir>]
  *   apply-soaked [--task <id>] [--json] [--out <dir>]
  *                                          bump --all limited to patches and in-range minors
@@ -63,7 +65,7 @@ import {
   readFixture,
   registerDrivers,
 } from '../lib/pins/driver.js';
-import { planLockfiles, planRemove } from '../lib/pins/drivers/npm.js';
+import { lockDrift, planLockfiles, planRemove } from '../lib/pins/drivers/npm.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { loadRegistry, type PinEntry, siteMatches } from '../lib/pins/registry.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
@@ -453,7 +455,12 @@ async function selectAndPlan(
   explicit: boolean
 ): Promise<Selected> {
   const ctx = contextOf(w);
-  const out: Selected = { plans: [], views: new Map(), refused: [], skipped: [] };
+  const out: Selected = {
+    plans: [],
+    views: new Map(),
+    refused: [],
+    skipped: [],
+  };
   for (const entry of entries) {
     const v = await viewOf(w, ctx, entry, sel);
     out.views.set(entry.id, v);
@@ -466,6 +473,18 @@ async function selectAndPlan(
     const drv = driverFor(entry, ctx);
     try {
       const plan = await (drv as NonNullable<typeof drv>).plan(entry, v.target, ctx, v.also);
+      // --MAJOR NAMES A MAJOR. A run given --major whose selection takes none (a family lists its in-range batch first, so the first eligible release is that batch) is refused before any write, with the --to line that names the majors; the first-eligible mutant lets it through (2026-10-15: `bump npm --major` planned only the in-range batch).
+      if (sel.allowMajor && !v.takesMajor && ctx.mutant !== 'first-eligible') {
+        out.refused.push({
+          id: entry.id,
+          why: `--major was given but the selection takes no major (${v.target.version}); ${
+            v.eligibleMajors.length > 0
+              ? `name the major(s) to take: npm run pins -- bump ${entry.id} ${v.eligibleMajors.map((k) => `--to ${k}`).join(' ')} --major --reason "<why now>"`
+              : 'no eligible major is pending, so drop --major'
+          }`,
+        });
+        continue;
+      }
       for (const wr of plan.writes) ctx.overlay.set(keyOf(wr), wr.after);
       out.plans.push(plan);
     } catch (err) {
@@ -538,6 +557,7 @@ function report(
     commands: res?.commands ?? [],
     gates: res?.gates ?? null,
     restored: res?.restored ?? [],
+    resynced: res?.resynced ?? [],
     leftAlone: res?.leftAlone ?? [],
     repos: drafts.map((d) => ({
       repo: d.repo,
@@ -623,6 +643,10 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   if (!res.ok) {
     w.err.push(`FAILED: ${res.failure}`);
     if (res.restored.length) w.err.push(`restored: ${res.restored.join(', ')}`);
+    if (res.resynced.length)
+      w.err.push(
+        `reinstalled to match the restored lockfiles (npm ci): ${res.resynced.join(', ')}`
+      );
     if (res.leftAlone.length)
       w.err.push(
         `left alone (changed after this run wrote them, so not this run's to restore): ${res.leftAlone.join(', ')}`
@@ -747,7 +771,12 @@ function cmdNpmPlan(w: World, f: Flags, verb: 'remove' | 'lockfiles'): number {
     w.err.push(`REFUSED ${verb}: ${err.message}`);
     return 1;
   }
-  const s: Selected = { plans: [plan], views: new Map(), refused: [], skipped: [] };
+  const s: Selected = {
+    plans: [plan],
+    views: new Map(),
+    refused: [],
+    skipped: [],
+  };
   return apply(
     w,
     f,
@@ -950,8 +979,8 @@ function lockNoHardLinkCase(root: string): { name: string; ok: boolean; detail: 
   };
 }
 
-/** A fixture console with a nested private/renet repo, both committed; `tune` edits the fixture JSON. */
-function fixtureTree(tune: (fx: Fixture) => void = () => {}): Fx {
+/** A fixture console with a nested private/renet repo, both committed; `tune` edits the fixture JSON, and `family` adds an `npm` family entry the fixture family driver answers from `fixture.families`. */
+function fixtureTree(tune: (fx: Fixture) => void = () => {}, family = false): Fx {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));
   FIXTURE_ROOTS.push(root);
   const files: Record<string, string> = {
@@ -1005,6 +1034,21 @@ function fixtureTree(tune: (fx: Fixture) => void = () => {}): Fx {
     ],
     ignores: [],
   };
+  if (family)
+    reg.entries.push({
+      id: 'npm',
+      kind: 'family',
+      name: 'npm trees',
+      driver: 'npm',
+      source: { type: 'npm-registry', package: '*' },
+      safety: { mode: 'release-age', major: 'allow-file' },
+      holds: ['.ci/policy/.fixture-blocklist'],
+      gates: ['check:fixture-deps'],
+      scope: [{ scanner: 'npm-lockfile', repo: '.', files: ['package-lock.json'] }],
+      sites: [],
+      derive: [],
+      literals: [],
+    } as unknown as (typeof reg.entries)[number]);
   files['.ci/config/pins.json'] = `${JSON.stringify(reg, null, 2)}\n`;
   for (const [rel, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
@@ -1187,8 +1231,12 @@ const CASES: Record<string, Case> = {
         detail: `rc=${r.rc} ${r.err}\n${fx.read('Dockerfile')}`,
       },
       {
-        name: 'bump: the gates run once as `npm run ci -- --only <ids>`',
-        ok: cmds.includes('npm run ci -- --only check:fixture-tool'),
+        name: 'bump: the gates run once as `npm run ci -- --only <ids> --events <journal>/gates.jsonl`',
+        ok:
+          cmds.filter((c) => c.startsWith('npm run ci -- ')).length === 1 &&
+          cmds.some((c) =>
+            /^npm run ci -- --only check:fixture-tool --events \/\S+\/gates\.jsonl$/.test(c)
+          ),
         detail: cmds.join(' | '),
       },
       {
@@ -1196,7 +1244,7 @@ const CASES: Record<string, Case> = {
         ok:
           /^chore\(pins\): bump tool 1\.0\.0 to 1\.1\.0$/m.test(draft) &&
           draft.includes('published 2026-10-01T00:00:00Z, soak cleared 2026-10-03T00:00:00Z') &&
-          draft.includes('npm run ci -- --only check:fixture-tool (in .) rc=0') &&
+          /npm run ci -- --only check:fixture-tool --events \S+ \(in \.\) rc=0/.test(draft) &&
           /\nPR-TASK: cafe1234\n$/.test(draft),
         detail: draft,
       },
@@ -1722,8 +1770,8 @@ const CASES: Record<string, Case> = {
         ok:
           rep !== null &&
           rep.pins.length === 2 &&
-          rep.commands.some(
-            (c) => c.cmd === 'npm run ci -- --only check:fixture-tool,check:fixture-zed'
+          rep.commands.some((c) =>
+            c.cmd.startsWith('npm run ci -- --only check:fixture-tool,check:fixture-zed --events ')
           ),
         detail: `rc=${r.rc} ${r.err}`,
       },
@@ -2017,6 +2065,264 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async setmajor(m) {
+    // The 2026-10-15 deadlock in fixture form: a held major (`held`, what check:deps reds on as awaiting a decision) and the in-range batch pending in the npm family at once, beside a blocklisted major that is held on purpose.
+    const OLD = '2026-10-01T00:00:00Z';
+    type Rel = { version: string; published: string | null; held?: boolean };
+    const world = (releases: Rel[], inRange: string | null = '1.2') =>
+      fixtureTree((f) => {
+        f.commands.unshift({ match: '^npm run ci -- --only check:fixture-deps ', rc: 0 });
+        f.families = { npm: { current: '1.0', inRange, releases } };
+      }, true);
+    const IN: Rel = { version: '1.2', published: OLD };
+    const OXC: Rel = { version: 'oxc@0.154', published: OLD, held: true };
+    const VITE: Rel = { version: 'vite@8', published: OLD, held: true };
+    const TYPES: Rel = { version: 'types@26', published: OLD };
+    const moved = (fx: Fx): string | null =>
+      fs.existsSync(path.join(fx.root, 'families/npm.txt')) ? fx.read('families/npm.txt') : null;
+    const reason = ['--reason', 'oxc-parser 0.154 is a parser-only release the lint tree absorbs'];
+    const toLine = (...keys: string[]): string =>
+      `npm run pins -- bump npm ${keys.map((k) => `--to ${k}`).join(' ')} --major --reason`;
+
+    // (1) --to <held major> --major: one run, the in-range batch rides it, and it writes nothing else (no allow entry).
+    const both = world([IN, OXC, TYPES]);
+    const rBoth = await runCli(
+      ['bump', 'npm', '--to', 'oxc@0.154', '--major', ...reason, '--json'],
+      withMutant(both, m)
+    );
+    const bothRep =
+      rBoth.rc === 0 ? (JSON.parse(rBoth.out) as { repos: Array<{ paths: string[] }> }) : null;
+    // (2) --major with no --to: refused before any write, with the --to line.
+    const bare = world([IN, OXC, TYPES]);
+    const rBare = await runCli(['bump', 'npm', '--major', ...reason], withMutant(bare, m));
+    // (3) a plain bump with a held major pending: refused before any write.
+    const plain = world([IN, OXC, TYPES]);
+    const rPlain = await runCli(['bump', 'npm'], withMutant(plain, m));
+    // (4) CONTROL: a blocklisted major alone never forces the refusal; the in-range batch applies.
+    const blocked = world([IN, TYPES]);
+    const rBlocked = await runCli(['bump', 'npm'], withMutant(blocked, m));
+    // (5) two held majors: naming one is refused with both; naming both moves both.
+    const two = world([IN, OXC, VITE]);
+    const rOne = await runCli(
+      ['bump', 'npm', '--to', 'oxc@0.154', '--major', ...reason],
+      withMutant(two, m)
+    );
+    const movedAfterOne = moved(two);
+    const rTwo = await runCli(
+      ['bump', 'npm', '--to', 'oxc@0.154', '--to', 'vite@8', '--major', ...reason],
+      withMutant(two, m)
+    );
+    // (6) bump --all: the other pins move, npm is REFUSED by name.
+    const all = world([IN, OXC]);
+    const rAll = await runCli(['bump', '--all'], withMutant(all, m));
+    // (7) a family of [1.N, 2.M] with no held mark: --major must not exit 0 having planned only 1.N.
+    const fam = world([IN, { version: '2.1', published: OLD }]);
+    const rFam = await runCli(['bump', 'npm', '--major', ...reason], withMutant(fam, m));
+    // The same rule for a leaf: --major whose newest eligible release is a minor.
+    const leaf = fixtureTree();
+    const rLeaf = await runCli(['bump', 'embed:tool', '--major', ...reason], withMutant(leaf, m));
+    return [
+      {
+        name: 'bump npm --to <held major> --major: one run takes the major AND the in-range batch, writes no allow entry, and its gates pass',
+        ok:
+          rBoth.rc === 0 &&
+          moved(both) === '1.2\noxc@0.154\n' &&
+          bothRep !== null &&
+          JSON.stringify(bothRep.repos.map((r) => r.paths)) === '[["families/npm.txt"]]',
+        detail: `rc=${rBoth.rc} moved=${JSON.stringify(moved(both))} ${rBoth.err} ${rBoth.out.slice(0, 600)}`,
+      },
+      {
+        name: 'bump npm --major with no --to is refused before any write, printing the --to line of the held major',
+        ok: rBare.rc === 1 && rBare.err.includes(toLine('oxc@0.154')) && moved(bare) === null,
+        detail: `rc=${rBare.rc} moved=${JSON.stringify(moved(bare))} ${rBare.err}`,
+      },
+      {
+        name: 'bump npm with a held major pending is refused before any write, naming the line that clears it',
+        ok:
+          rPlain.rc === 1 &&
+          rPlain.err.includes('REFUSED npm') &&
+          rPlain.err.includes(toLine('oxc@0.154')) &&
+          moved(plain) === null,
+        detail: `rc=${rPlain.rc} ${rPlain.err}`,
+      },
+      {
+        name: 'CONTROL: a blocklisted major alone does not block the in-range batch, which applies',
+        ok: rBlocked.rc === 0 && moved(blocked) === '1.2\n',
+        detail: `rc=${rBlocked.rc} moved=${JSON.stringify(moved(blocked))} ${rBlocked.err}`,
+      },
+      {
+        name: 'two held majors: naming one is refused with the line naming both, naming both moves both with the batch',
+        ok:
+          rOne.rc === 1 &&
+          rOne.err.includes(toLine('oxc@0.154', 'vite@8')) &&
+          movedAfterOne === null &&
+          rTwo.rc === 0 &&
+          moved(two) === '1.2\noxc@0.154\nvite@8\n',
+        detail: `one rc=${rOne.rc} ${rOne.err} | two rc=${rTwo.rc} moved=${JSON.stringify(moved(two))} ${rTwo.err}`,
+      },
+      {
+        name: 'bump --all with a held npm major moves every other pin and reports npm REFUSED',
+        ok:
+          rAll.rc === 1 &&
+          rAll.err.includes('REFUSED npm') &&
+          rAll.err.includes(toLine('oxc@0.154')) &&
+          moved(all) === null &&
+          all.read('Dockerfile').includes('TOOL_VERSION=1.1.0') &&
+          all.read('private/renet/Dockerfile').includes('ZED_VERSION=2.1.0'),
+        detail: `rc=${rAll.rc} ${rAll.err} ${rAll.out}`,
+      },
+      {
+        name: 'a family of [1.N, 2.M] given --major never exits 0 having planned only 1.N; the refusal names --to 2.1',
+        ok: rFam.rc !== 0 && moved(fam) === null && rFam.err.includes(toLine('2.1')),
+        detail: `rc=${rFam.rc} moved=${JSON.stringify(moved(fam))} ${rFam.err}`,
+      },
+      {
+        name: 'a leaf given --major whose newest eligible release is a minor is refused, and nothing is written',
+        ok:
+          rLeaf.rc === 1 &&
+          rLeaf.err.includes('selection takes no major') &&
+          leaf.read('Dockerfile').includes('TOOL_VERSION=1.0.0'),
+        detail: `rc=${rLeaf.rc} ${rLeaf.err}`,
+      },
+    ];
+  },
+  async gatenames(m) {
+    // RED comes from the runner's event rows; the text carries an ok line for the passing gate, and the failed gate's own stdout holds a verdict-shaped line that must not count.
+    const runnerOut = [
+      '  ok    check:fixture-zed       49.8s',
+      '\x1b[31mFAIL\x1b[0m  check:fixture-tool      62.4s   exit 1',
+      '  --- stdout ---',
+      '  ok    check:fixture-tool  (a line the gate itself printed)',
+      'FAILED:',
+      '  check:fixture-tool      npm run check:fixture-tool',
+    ].join('\n');
+    const red = (gate: string): string =>
+      JSON.stringify({ ev: 'gate-red', run: 'r', gate, t_ms: 1, rerun: `npm run ${gate}` });
+    const fx = fixtureTree((f) => {
+      f.commands[0] = {
+        match: '^npm run ci -- --only ',
+        rc: 1,
+        out: runnerOut,
+        events: [JSON.stringify({ ev: 'run-start' }), red('check:fixture-tool')],
+      };
+    });
+    const r = await runCli(['bump', '--all', '--json'], withMutant(fx, m));
+    const rep = JSON.parse(r.out) as {
+      failure: string;
+      gates: { failed: string[] };
+      commands: CommandRecord[];
+    };
+    // CONTROL: a red run whose event stream carries no red row blames no gate.
+    const quiet = fixtureTree((f) => {
+      f.commands[0] = { match: '^npm run ci -- --only ', rc: 1, out: runnerOut, events: [] };
+    });
+    const rq = await runCli(['bump', '--all'], withMutant(quiet, m));
+    return [
+      {
+        name: 'bump: the FAILED line names only the gate the runner reported red, the passing one as ok, and gates.failed carries it',
+        ok:
+          r.rc === 1 &&
+          rep.failure === 'gates failed (rc=1): check:fixture-tool (ok: check:fixture-zed)' &&
+          JSON.stringify(rep.gates.failed) === '["check:fixture-tool"]' &&
+          rep.commands.some((c) => / --events \/\S+\/gates\.jsonl$/.test(c.cmd)),
+        detail: `rc=${r.rc} failure=${rep.failure} failed=${JSON.stringify(rep.gates?.failed)}`,
+      },
+      {
+        name: 'CONTROL: a red run with no gate-red row says no gate reported red, and names none as failed',
+        ok:
+          rq.rc === 1 &&
+          rq.err.includes(
+            'gates failed (rc=1): no gate reported red; see commands.log (ok: check:fixture-zed; no verdict: check:fixture-tool)'
+          ) &&
+          !rq.err.includes('check:fixture-tool,') &&
+          !/: check:fixture-tool[ ,]/.test(rq.err),
+        detail: rq.err,
+      },
+    ];
+  },
+  async drift() {
+    const lock = JSON.stringify({
+      packages: {
+        '': { name: 'x' },
+        'node_modules/a': { version: '1.0.0' },
+        'node_modules/b': { version: '2.0.0' },
+        'node_modules/@esbuild/win32-x64': { version: '0.25.0', optional: true },
+        'node_modules/ws': { resolved: 'packages/ws', link: true },
+        'packages/cli/node_modules/c': { version: '3.0.0' },
+      },
+    });
+    const same = JSON.stringify({
+      packages: {
+        'node_modules/a': { version: '1.0.0' },
+        'node_modules/b': { version: '2.0.0' },
+        'node_modules/ws': { resolved: 'packages/ws', link: true },
+        'packages/cli/node_modules/c': { version: '3.0.0' },
+      },
+    });
+    const moved = JSON.stringify({
+      packages: {
+        'node_modules/a': { version: '1.0.0' },
+        'node_modules/b': { version: '2.1.0' },
+        'packages/cli/node_modules/c': { version: '3.0.1' },
+      },
+    });
+    const clean = lockDrift(lock, same);
+    const found = lockDrift(lock, moved);
+    return [
+      {
+        name: 'drift: an installed version the lockfile does not name is found, nested ones too',
+        ok:
+          found.length === 2 &&
+          found.includes('b installed 2.1.0, locked 2.0.0') &&
+          found.includes('c installed 3.0.1, locked 3.0.0'),
+        detail: JSON.stringify(found),
+      },
+      {
+        name: 'CONTROL: drift: a tree installed from its lockfile, with another platform optional package absent and a workspace link, is clean',
+        ok: clean.length === 0,
+        detail: JSON.stringify(clean),
+      },
+    ];
+  },
+  async resync(m) {
+    // A red run that restored the root lockfile puts the installed tree back to it (npm ci and install:natives AFTER the gates), so the next plan reads the versions the lockfile names.
+    const fx = fixtureTree((f) => {
+      f.commands[0].rc = 1;
+      f.steps = {
+        'embed:tool': [
+          {
+            label: 'relock',
+            run: 'relock',
+            cwd: '.',
+            writes: [{ repo: '.', file: 'package-lock.json' }],
+          },
+        ],
+      };
+      f.commands.push({
+        match: '^relock$',
+        rc: 0,
+        writes: { 'package-lock.json': '{ "lockfileVersion": 3, "x": 1 }\n' },
+      });
+    });
+    const lock = fx.read('package-lock.json');
+    const r = await runCli(['bump', 'embed:tool', '--json'], withMutant(fx, m));
+    const rep = JSON.parse(r.out) as { commands: CommandRecord[]; resynced: string[] };
+    const cmds = rep.commands.map((c) => c.cmd);
+    const gate = cmds.findIndex((c) => c.startsWith('npm run ci -- --only'));
+    const after = gate < 0 ? [] : cmds.slice(gate + 1);
+    return [
+      {
+        name: 'bump: a red run that restored the root lockfile reinstalls the tree from it (npm ci, install:natives) after the restore',
+        ok:
+          r.rc === 1 &&
+          fx.read('package-lock.json') === lock &&
+          after[0] === 'npx -y npm@11.20.0 ci' &&
+          after[1] === 'npx -y npm@11.20.0 run install:natives' &&
+          rep.resynced.includes('.'),
+        detail: `rc=${r.rc} after-gate=${after.join(' | ')} resynced=${rep.resynced}`,
+      },
+    ];
+  },
   async refusals(m) {
     const fx = fixtureTree();
     const live = await runCli(['status'], { PINS_MUTANT: 'no-restore' });
@@ -2092,6 +2398,9 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'no-dirty-check': 'dirty',
   'no-restore': 'restore',
   'blind-restore': 'compare',
+  'first-eligible': 'setmajor',
+  'no-resync': 'resync',
+  'all-gates': 'gatenames',
 };
 
 async function selftest(env: NodeJS.ProcessEnv): Promise<number> {

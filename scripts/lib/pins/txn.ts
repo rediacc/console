@@ -69,7 +69,9 @@ export function fixtureRunner(root: string, fixture: Fixture): Runner {
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       fs.writeFileSync(abs, text);
     }
-    return { rc: hit.rc, out: '' };
+    const events = /--events (\S+)/.exec(cmd)?.[1];
+    if (events && hit.events) fs.writeFileSync(events, hit.events.map((l) => `${l}\n`).join(''));
+    return { rc: hit.rc, out: hit.out ?? '' };
   };
 }
 
@@ -276,10 +278,68 @@ export interface TxnResult {
   dir: string;
   failure: string | null;
   commands: CommandRecord[];
-  gates: { ids: string[]; rc: number } | null;
+  /** `failed` holds the gates the runner's event stream reported red; empty when it reported none. */
+  gates: { ids: string[]; rc: number; failed: string[] } | null;
   restored: string[];
   leftAlone: string[];
+  /** Project directories whose installed tree a failed run put back to the restored lockfile (`npm ci`). */
+  resynced: string[];
   changes: RepoChange[];
+}
+
+type Verdict = 'red' | 'ok' | 'skip' | 'block';
+
+/**
+ * The verdict of each gate a `npm run ci -- --only <ids> --events <file>` run judged. RED comes only from the runner's own `{"ev":"gate-red","gate":...}` event rows (scripts/ci-runner/report.ts), never from text a gate printed; `ok`, `SKIP` and `BLOCK` come from the runner's per-gate verdict lines, which carry no event. Pure.
+ */
+export function gateVerdicts(
+  out: string,
+  eventsText: string,
+  ids: readonly string[]
+): Map<string, Verdict> {
+  const v = new Map<string, Verdict>();
+  for (const line of eventsText.split('\n')) {
+    if (line.trim() === '') continue;
+    let row: { ev?: unknown; gate?: unknown };
+    try {
+      row = JSON.parse(line) as { ev?: unknown; gate?: unknown };
+    } catch {
+      continue;
+    }
+    if (row.ev === 'gate-red' && typeof row.gate === 'string' && ids.includes(row.gate))
+      v.set(row.gate, 'red');
+  }
+  const word = { ok: 'ok', SKIP: 'skip', BLOCK: 'block' } as const;
+  // A gate with a FAIL line is never read as ok from a later line: its own stdout follows that line and may hold anything.
+  const failedText = new Set<string>();
+  for (const l of out.replace(/\x1b\[[0-9;]*m/g, '').split('\n')) {
+    const m = /^\s*(ok|FAIL|SKIP|BLOCK)\s+(\S+)(?:\s|$)/.exec(l);
+    if (!m || !ids.includes(m[2]) || v.has(m[2]) || failedText.has(m[2])) continue;
+    if (m[1] === 'FAIL') failedText.add(m[2]);
+    else v.set(m[2], word[m[1] as keyof typeof word]);
+  }
+  return v;
+}
+
+/** The FAILED line of a red gate run: the gates the runner reported red, never the whole selection, with the rest by verdict. The all-gates mutant names every gate, the line before 2026-10-15. Pure. */
+export function gateFailure(
+  rc: number,
+  ids: readonly string[],
+  v: ReadonlyMap<string, Verdict>,
+  allGates = false
+): string {
+  if (allGates) return `gates failed (rc=${rc}): ${ids.join(', ')}`;
+  const by = (s: Verdict): string[] => ids.filter((id) => v.get(id) === s);
+  const rest = [
+    by('ok').length > 0 ? `ok: ${by('ok').join(', ')}` : '',
+    by('skip').length > 0 ? `skipped: ${by('skip').join(', ')}` : '',
+    by('block').length > 0 ? `blocked: ${by('block').join(', ')}` : '',
+    ids.some((id) => !v.has(id)) ? `no verdict: ${ids.filter((id) => !v.has(id)).join(', ')}` : '',
+  ].filter((x) => x !== '');
+  const tail = rest.length > 0 ? ` (${rest.join('; ')})` : '';
+  if (by('red').length === 0)
+    return `gates failed (rc=${rc}): no gate reported red; see commands.log${tail}`;
+  return `gates failed (rc=${rc}): ${by('red').join(', ')}${tail}`;
 }
 
 /** NPM_VERSION as .devcontainer/toolchain.env declares it right now; null when the file or the line is absent. */
@@ -310,6 +370,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     gates: null,
     restored: [],
     leftAlone: [],
+    resynced: [],
     changes: [],
   };
   const steps: PlanStep[] = plans.flatMap((p) => [
@@ -372,15 +433,16 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
   j.state = 'writing';
   saveJournal(dir, j);
 
-  const run = (cmd: string, cwdRel: string): number => {
+  const runOut = (cmd: string, cwdRel: string): { rc: number; out: string } => {
     const r = o.runner(cmd, path.join(o.root, cwdRel));
     res.commands.push({ cmd, cwd: cwdRel, rc: r.rc });
     fs.appendFileSync(
       path.join(dir, 'commands.log'),
       `$ (cd ${cwdRel} && ${cmd})  # rc=${r.rc}\n${r.out}\n`
     );
-    return r.rc;
+    return r;
   };
+  const run = (cmd: string, cwdRel: string): number => runOut(cmd, cwdRel).rc;
 
   // A file a step changed without declaring it is named and never restored: nothing proves the step wrote it rather than a peer session working in the same tree at that moment.
   const undeclared: string[] = [];
@@ -459,9 +521,20 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     // 5. The gates.
     const ids = [...new Set(plans.flatMap((p) => p.entry.gates))];
     if (ids.length > 0) {
-      const rc = run(`npm run ci -- --only ${ids.join(',')}`, '.');
-      res.gates = { ids, rc };
-      if (rc !== 0) throw new Error(`gates failed (rc=${rc}): ${ids.join(', ')}`);
+      // The runner's event stream names each red gate; its text output interleaves every gate's own stdout.
+      const events = path.join(dir, 'gates.jsonl');
+      fs.rmSync(events, { force: true });
+      const g = runOut(
+        `npm run ci -- --only ${ids.join(',')} --events ${/^[\w@%+=:,./-]+$/.test(events) ? events : `'${events.replace(/'/g, `'\\''`)}'`}`,
+        '.'
+      );
+      const v = gateVerdicts(
+        g.out,
+        fs.existsSync(events) ? fs.readFileSync(events, 'utf8') : '',
+        ids
+      );
+      res.gates = { ids, rc: g.rc, failed: ids.filter((id) => v.get(id) === 'red') };
+      if (g.rc !== 0) throw new Error(gateFailure(g.rc, ids, v, o.mutant === 'all-gates'));
     }
   } catch (err) {
     res.failure = (err as Error).message;
@@ -470,6 +543,25 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     res.leftAlone = [...new Set([...r.leftAlone, ...undeclared])];
     j.state = 'restored';
     saveJournal(dir, j);
+    // 6. THE INSTALLED TREE FOLLOWS THE RESTORED LOCKFILE. The restore puts back package.json and package-lock.json only, while the steps had already moved node_modules; on 2026-10-15 the next plan read the moved versions back from it (`npm outdated` judges what is installed), planned oxc-parser alone, and that run's own `npm ci` reinstalled the two minors it had left out, so check:deps went red on them.
+    if (o.mutant !== 'no-resync') {
+      const npmVersion = pinnedNpmNow(o.root) ?? o.npmVersion;
+      const dirs = [
+        ...new Set(
+          r.restored
+            .filter((k) => path.basename(k) === 'package-lock.json')
+            .map((k) => path.dirname(k))
+        ),
+      ].filter((d) => d === '.' || fs.existsSync(path.join(o.root, d, 'node_modules')));
+      for (const d of dirs) {
+        const rc = npmVersion === null ? 1 : run(`npx -y npm@${npmVersion} ci`, d);
+        const natives =
+          rc === 0 && d === '.' ? run(`npx -y npm@${npmVersion} run install:natives`, d) : 0;
+        if (rc === 0 && natives === 0) res.resynced.push(d);
+        else
+          res.failure += `; the installed tree under ${d} still holds what this run installed (${npmVersion === null ? 'NPM_VERSION is missing from .devcontainer/toolchain.env' : `rc=${rc || natives}`}), so put it back before the next plan, which otherwise reads versions the lockfile no longer names: (cd ${d} && npx -y npm@<NPM_VERSION> ci${d === '.' ? ' && npm run install:natives' : ''})`;
+      }
+    }
     return res;
   }
 
