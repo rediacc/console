@@ -18,7 +18,52 @@ Done before this plan (2026-10-15, not repeated here):
 - BACKUP_S3_* removed from the six regional account workers
 - BWS R2_TOKEN_AUTH_API deleted
 - hostinger: rclone and 16 old renet slots removed
-- eu-remote config: r2-cloudflare storage and my-server removed
+- eu-remote config: r2-cloudflare storage, the microsoft (OneDrive) storage, both legacy strategies (twiceweekly-hot, weekly-cold) and my-server removed; the config holds no storage and no strategy now
+
+## Operating context (read this first)
+
+**The production config is `eu-remote`.** It is a named rdc config whose content lives in the encrypted remote config storage of the EU account server (https://eu.rediacc.com). The local file `~/.config/rediacc/eu-remote.json` is only a cache. Never use the default `rediacc` or `dev` configs for production work, and never use `~/.config/rediacc.quarantine/` (an untrusted downloaded copy).
+
+- Every production command carries `--config eu-remote`, run through the repo wrapper: `./rdc.sh <command> --config eu-remote`. Bare `./rdc.sh` builds the CLI from this tree and targets production; `./rdc.sh --dev` targets the local dev account server instead.
+- Check the link first: `./rdc.sh config remote status --config eu-remote` must say `connected`; `./rdc.sh config remote refresh --config eu-remote` pulls the newest version.
+- If the login token has expired: `./rdc.sh subscription login --server https://eu.rediacc.com --config eu-remote` prints an authorize URL the operator opens. If the remote link itself is lost: `./rdc.sh config remote enable --api-url https://eu.rediacc.com --config eu-remote` prints a portal link plus a pairing code; the operator approves it in a browser (2FA).
+- Machines: `./rdc.sh machine list --config eu-remote` shows `hostinger` (the only production machine; user `muhammed`, datastore `/mnt/rediacc`, Ubuntu 24.04, about 50 GB free in the datastore). The address comes from that command; it is not written here.
+- Repos on hostinger (all grand repos, none forked): demo-stackoverflow 128 GB, miscellaneous 48 GB, hermes 32 GB (100% full), nextcloud 26 GB, erpnext 20 GB, marketing 16 GB, observability 16 GB, gitlab 14 GB, mautic 8 GB, mail 4 GB, demo-heartbeat 2 GB (unmounted, no Rediaccfile). Routes are `https://*.<repo>.hostinger.rediacc.io`.
+- Reading state is always allowed: `./rdc.sh machine status hostinger --config eu-remote` (add `--repositories`, `--containers`, `--licenses`, `--storage-health`; add `-o json` and parse stdout only, since build noise goes to stderr).
+- Grand repos are guarded: an agent cannot open a shell inside one (`term connect <repo>`) or change it unless the operator starts the session with `REDIACC_ALLOW_GRAND_REPO=<repo>` (or `*`). The normal path is fork first (`./rdc.sh repo fork <repo> --tag <tag> --config eu-remote`) and work on `<repo>:<tag>`.
+- A machine-level shell is `./rdc.sh term connect hostinger --config eu-remote -c '<cmd>'` (sudo is available as `sudo -n`). The CLI refuses machine commands that mention `docker` or a repo mount path even when they only read (C7/C8); until those boxes land, name units with a glob such as `rediacc-d?cker-*`.
+- `machine setup hostinger` uploads this tree's renet and restarts rediacc-router; the operator approved running it. It does not restart the hub, plugins or per-repo supervisors (Phase C).
+- Cloudflare and R2: the Bitwarden machine token is at `~/.config/rediacc/bws-access-token`; `bws secret list -o json` with `BWS_ACCESS_TOKEN` set returns `CF_EMAIL`, `CF_GLOBAL_API_KEY` and `CLOUDFLARE_ACCOUNT_ID`, which drive the Cloudflare REST API. Never print a value. EU buckets are in the EU jurisdiction and are only listed with the header `cf-r2-jurisdiction: eu`.
+- Buckets: stable `rediacc-backups-{eu,us,asia}`, edge `edge-rediacc-backups-{eu,us,asia}` (both EU ones in the EU jurisdiction), bound as `BACKUP_BUCKET` to the workers `rediacc-account-{eu,us,asia}` and `edge-rediacc-account-{eu,us,asia}`. hostinger's repo licences come from the stable EU server, so its backups land in `rediacc-backups-eu`. On 2026-10-15 every backup bucket was empty.
+- Dev and test machines are the local KVM VMs from `./rdc.sh ops up` (192.168.111.*), used with `./rdc.sh --dev`; they are dev-only and never added to `eu-remote`.
+- hostinger state on 2026-10-15: renet updated by `machine setup`, but 21 renet processes (hub, 10 plugins, 10 per-repo supervisors) still run the replaced binary until Phase C restarts them; no backup timer exists.
+
+## Known defects (each maps to the box that fixes it)
+
+| Defect | Evidence | Box |
+|---|---|---|
+| A restore reuses the source GUID and renames over an unmounted source image | private/renet/cmd/renet/backup_restore.go:259-305, packages/cli/src/commands/backup.ts:162 | E1, K5 |
+| Retention keep set and newest-kept floor are per lineage, so forks or a second machine prune another stream | backup-gc.service.ts retentionKeepSet | E2, K3 |
+| Commit accepts a missing or foreign parent; restore fails later | backup-storage.service.ts commitManifest | E3 |
+| `restore --at` picks another fork's or machine's snapshot | packages/cli/src/commands/backup.ts:311-318 | E4 |
+| A first seed runs on the 30 s I/O budget | private/renet/cmd/renet/functions_commands.go:902 | E5 |
+| No default retention; strategy.retention is never sent | packages/shared/src/config-schema/schemas.ts:482-499 | F2, F4, A8 |
+| Schedules pass repo names to the GUID-only `--repo`, and refuse `exclude` | packages/cli/src/services/backup/backup-schedule-unit-generator.ts:136-161 | G1, G9 |
+| `backup status` says idle with no timer; nothing warns on stale backups | live hostinger, 2026-10-15 | G6, G7 |
+| `IsDockerRunning` reads the dead plugin's PID file | private/renet/pkg/orchestration/orchestrator.go:98-104 | B1 |
+| `daemon cleanup-ips` treats every live service IP as unused | private/renet/pkg/daemon/loopback.go:388 | B2 |
+| Hub, plugins and supervisors keep running a replaced binary; old renet slots pile up and are globbed as fallbacks | live hostinger; private/renet/pkg/config/constants.go:281 | C1-C6 |
+| State-mirror records stay 0600 after an upgrade, so every repo shell fails | live hostinger, 2026-10-15 | C10 |
+| renet's real error is reduced to "SSH exited with code 1, Generic error" | live `term connect hermes` | C11 |
+| A newer CLI passes flags an older remote renet refuses on read-only paths | live `term connect` (`unknown flag: --datastore`) | C12 |
+| Machine commands that only mention docker or a mount path are refused | live `term connect hostinger` | C7, C8 |
+| Unresolved repos widen to the whole datastore; names fall back to raw keys | private/renet/pkg/functions/commands/backup.go:603 | D1-D4 |
+| Offline plane: region fixed, presign host internal, partial env silent | private/account/src/services/backup-chunk-store.ts:171-187 | I1-I6 |
+| The released CLI cannot read a config the dev CLI enrolled | live, rdc 1.3.12 against eu-remote | R1 |
+| The remote config version climbs without a deliberate write | live, version 5 to 15 on 2026-10-15 | R2 |
+| The server counts 0 valid licences of 35 while hostinger reports 11 valid | live `subscription status` vs `machine status --licenses` | R3 |
+| hermes is 100% full | live `machine status --storage-health` | R4 |
+| Chunk-store Go tests are never run before a push; suite 26 never runs in CI | .ci/rediacc_ci/proxies/go_unit.py:26 | J1-J6 |
 
 ## Design notes
 
@@ -69,6 +114,9 @@ Done before this plan (2026-10-15, not repeated here):
 - [ ] C7: Fix the term connect keyword guard: a machine-level command that only names a unit or path containing "docker" (systemctl list-units rediacc-docker-*, find -path /var/lib/docker) is not a docker client call. Detect real docker invocations only. Accept: tests for both false positives and a real `docker ps` still refused.
 - [ ] C8: Fix the repo-mount-path guard false positive the same way (a read of /mnt/rediacc/mounts/<guid> metadata is allowed); keep refusing commands that need DOCKER_HOST. Accept: tests.
 - [ ] C9: Fix the hub X-Rediacc-Repo marker so it records the GUID (systemd_install_hub.service.tmpl:4, private/renet/cmd/renet/main.go:1184-1187) and systemd_installed is detected. Accept: list test with a named hub repo.
+- [ ] C10: Verify the state-mirror fix handed to another session on 2026-10-15 landed: `renet setup` rewrites every existing `<datastore>/.interim/state/*/.rediacc.json` to 0644 (regular files only, no symlink following), and writeForkMirror writes a readable record. Add the missing half if either is absent. Accept: tests for both; on an ops VM, a pre-fix 0600 record becomes 0644 after `machine setup` and `term connect <repo>` works.
+- [ ] C11: Carry renet's own error into the CLI result: when a remote renet exits non-zero, its stderr message becomes the JSON `errors[].message` instead of "SSH exited with code 1, Generic error". Accept: CLI test with a fake remote; live `term connect` against a planted failure shows renet's text.
+- [ ] C12: Version skew on read-only paths: a forced-command or read-only call that would pass a flag the remote renet does not know answers "renet on <machine> is older than this CLI; run machine setup" before running anything. Accept: test with an old renet binary on an ops VM.
 
 ### Phase D: GUID-only repo identity
 
@@ -211,6 +259,14 @@ Done before this plan (2026-10-15, not repeated here):
 
 - [ ] O1: Holds the place until A2 copies the 11 boxes verbatim here after PR #600 merges; the A2 commit ticks it.
 
+### Phase R: config, licence and machine findings from 2026-10-15
+
+- [ ] R1: The released CLI (rdc 1.3.12) refuses `eu-remote`, reporting that the config was encrypted with a different key than the reader's slot holds, while the dev CLI reads it. Find whether this is format skew between versions or a real slot-key mismatch, and fix the side that is wrong; an older CLI must refuse with a message that names the version gap. Accept: a test with a config enrolled by the new code and read by the old reader path, plus a live read by the next released CLI.
+- [ ] R2: The remote config version went from 5 to 15 on 2026-10-15 with no deliberate write by the session that held it. Trace which commands push (machine setup, key deployment, infra push, refresh, strategy and storage edits) and make every push intentional and visible in the command output. Accept: `config remote versions --config eu-remote` explained entry by entry; a test that a read-only command never pushes.
+- [ ] R3: `subscription status --config eu-remote` counts 35 tracked licences, 0 valid, 16 refresh recommended and 19 hard expired, while `machine status hostinger --licenses` reports all 11 valid. Reconcile the server's licence ledger with the machines (deleted repos and forks are the likely extra rows) and make the two views agree. Accept: both commands agree after the fix; a test covers a deleted repo's licence row.
+- [ ] R4: hermes is 100% full (31.4G of 31.4G). Before the first seed in Q11, inside a fork or with REDIACC_ALLOW_GRAND_REPO=hermes granted by the operator, find what fills it and either free space or grow the image online (`./rdc.sh repo expand hermes --config eu-remote`, zero downtime, grow-only; the datastore has about 50 GB free). Accept: hermes below 90% used and its services healthy.
+- [ ] R5: Removing a resource that others reference is refused or cascades on purpose: `storage remove` left both strategies pointing at a removed storage on 2026-10-15. H1 deletes `rdc storage`; sweep the remaining remove verbs (machine, strategy, datastore) for the same gap. Accept: a test per verb.
+
 ### Phase P: local integration proof (dev VMs, account gateway, RustFS)
 
 - [ ] P1: Bring up the stack with `./run.sh account dev` (gateway, portal, RustFS) and `./rdc.sh ops up --basic`; `./rdc.sh --dev config current` shows the dev server. Accept: gateway health 200, two VMs ready.
@@ -234,7 +290,7 @@ Done before this plan (2026-10-15, not repeated here):
 - [ ] Q1: Merge the program's PR through the loop (CD deploys edge). Deploy stable EU locally per .claude/skills/deploy/SKILL.md: `./run.sh devbox exec -- env PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- bash -c 'npm run build:packages && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region eu --target stable'` (with the portal build step the skill names), then the M1 secrets path for eu stable. Record the rollback version id and the D1 bookmark. Accept: https://eu.rediacc.com/account/api/v1/health answers 200 and the portal assets load.
 - [ ] Q2: `./rdc.sh machine setup hostinger --config eu-remote`, then `./rdc.sh machine status hostinger --config eu-remote`. Accept: no stale_binary, no renet plugin process, state-mirror records at 0644, and every authorized_keys line carries --guid (D12).
 - [ ] Q3: In a quiet window, `./rdc.sh machine restart-services hostinger --include-docker --config eu-remote` restarts what the upgrade reported stale, repo by repo with health checks. Accept: `./rdc.sh machine status hostinger --containers --health-check --config eu-remote` exits 0 for all 11 repos.
-- [ ] Q4: Replace the legacy strategies: `./rdc.sh backup strategy remove weekly-cold --config eu-remote`, `./rdc.sh backup strategy remove twiceweekly-hot --config eu-remote`, then `./rdc.sh backup strategy set nightly-hot --destination hosted --cron "0 2 * * *" --mode hot --retention "last=7,daily=7,weekly=4,monthly=6" --config eu-remote`. Accept: `./rdc.sh backup strategy show nightly-hot --config eu-remote` shows one hosted destination and the policy.
+- [ ] Q4: The legacy OneDrive strategies and storage were removed on 2026-10-15, so `./rdc.sh backup strategy list --config eu-remote` starts empty. Create the new strategy: `./rdc.sh backup strategy set nightly-hot --destination hosted --cron "0 2 * * *" --mode hot --retention "last=7,daily=7,weekly=4,monthly=6" --config eu-remote`. Accept: `./rdc.sh backup strategy show nightly-hot --config eu-remote` shows one hosted destination and the policy.
 - [ ] Q5: Fork probe: `./rdc.sh repo fork mail --tag bp-probe --config eu-remote`, `./rdc.sh backup snapshot mail:bp-probe --config eu-remote`, `./rdc.sh backup manifests mail:bp-probe --config eu-remote`. Accept: a manifest id; `./rdc.sh backup usage --config eu-remote` shows storedBytes > 0, and the rediacc-backups-eu object count (Cloudflare API, cf-r2-jurisdiction: eu) is non-zero.
 - [ ] Q6: A second, unchanged `backup snapshot mail:bp-probe`. Accept: about 0 new bytes uploaded.
 - [ ] Q7: `./rdc.sh backup restore mail:bp-probe --as bp-restore -m hostinger --config eu-remote`; compare file trees of mail:bp-probe and bp-restore (`rdc repo sync download` of both, or a hash walk inside each). Accept: identical trees, bp-restore has a new GUID, and the source fork's image hash is unchanged.
