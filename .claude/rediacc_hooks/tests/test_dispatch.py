@@ -228,7 +228,7 @@ def test_the_entry_point_runs_as_a_process():
     ],
 )
 def test_a_bad_argument_is_named_not_a_traceback(argv, rc, says):
-    """`dispatch.py --help` and an unknown stem reached importlib and ended in a traceback (found 2026-10-14T23:5xZ); each now names the problem and exits."""
+    """`dispatch.py --help` and an unknown stem reached importlib and ended in a traceback (found 2026-10-14); each now names the problem and exits."""
     proc = subprocess.run(
         [sys.executable, str(ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"), *argv],
         input=b"",
