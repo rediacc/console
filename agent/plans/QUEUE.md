@@ -69,16 +69,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1024 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 3 live of writer_cap 15 (session d778be9d): worker:acf12f594f5fa0bc8, worker:a9add41263c1e8a6e, worker:a44ed5c8708b1cf69.
-- Leased items: 4: #2355a934 (worker:a9add41263c1e8a6e, d778be9d), #4ad8d230 (worker:acf12f594f5fa0bc8, d778be9d), #c5305ed9 (worker:a951de0329bd4f7fa, d778be9d), #d0079b4e (worker:a44ed5c8708b1cf69, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1042 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 3 live of writer_cap 15 (session d778be9d): worker:a8233ed5bdb9c66c5, worker:a29f0da8acf8b109b, worker:a4813d1a1fbd90505.
+- Leased items: 3: #61fb7bc3 (worker:a4813d1a1fbd90505, d778be9d), #74f261a9 (worker:a8233ed5bdb9c66c5, d778be9d), #c56c1e5e (worker:a29f0da8acf8b109b, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 13 of 16 plans done, 194 of 197 boxes done (98%).
+Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -98,6 +98,7 @@ Promoted: 13 of 16 plans done, 194 of 197 boxes done (98%).
 | 14 | PLAN-stop-hook-effort.md | 7/7 | done |
 | 15 | PLAN-stop-hook-effort-tuning.md | 7/7 | done |
 | 16 | PLAN-pins-command.md | 12/13 | 1 open |
+| 17 | PLAN-account-vm-check.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
@@ -116,6 +117,7 @@ Promoted: 13 of 16 plans done, 194 of 197 boxes done (98%).
 14. agent/plans/PLAN-stop-hook-effort.md -- operator /ask 2026-10-14 (#d5506fb8): one effort level (quiet/low/smart/high/ultra) replaces the stop_hook, focus and turbo switches, with check thresholds in .claude/config/effort.json; "implement PLAN-stop-hook-effort.md now"; 0 of 7 boxes, writer on E1-E6
 15. agent/plans/PLAN-stop-hook-effort-tuning.md -- operator 2026-10-14 (asked to plan it and then ask the implementation questions; /ask: tuner runs near compaction at about 85% through a sub-agent, demotions by one batched /ask, work = a commit or tick within 3 stops, promotions auto-apply): the effort table tunes itself from measured outcomes; depends on entry 14; 0 of 7 boxes
 16. agent/plans/PLAN-pins-command.md -- operator 2026-10-14 (asked to extend the dependency tool so future sessions skip manual steps; /ask: "Approve, this PR", daily job artifact only, unwatched pins red at once, check:deps --upgrade deleted): one pin registry and one `npm run pins` command bump every pinned version, and every freshness gate names it; 0 of 13 boxes
+17. agent/plans/PLAN-account-vm-check.md -- operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner", "Widen to deployed renet code"; on return "You can continue for the rest."): one vm:check runner, receipt and push guard prove renet, the CLI remote paths and private/account before a push; wave 1 (AV1-AV3) is written as patches now and lands with AV4/AV5 after PR #600 merges, since a schema-2 receipt alone would refuse every push; 0 of 7 boxes
 
 ## Generated
 
@@ -136,18 +138,17 @@ Promoted: 13 of 16 plans done, 194 of 197 boxes done (98%).
 14. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 15. agent/plans/PLAN-stop-hook-rulings-campaign.md -- P3, draft, in progress (3 of 17 boxes ticked)
 16. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-17. agent/plans/PLAN-account-vm-check.md -- P1, direction, not started, dep-blocked
-18. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
-19. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
-20. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-21. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-22. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-23. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-24. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-25. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-26. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-27. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-28. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+17. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
+18. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
+19. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
+20. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+21. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+22. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+23. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+24. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+25. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+26. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+27. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 
 ### Not queued
 
