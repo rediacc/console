@@ -337,6 +337,24 @@ bp_regex_escape() {
     printf '%s' "$1" | sed -E 's/[][(){}.*+?^$|\\]/\\&/g'
 }
 
+# bp_curl_auth_config <token> -- the curl `-K -` config line for a bearer token
+#
+# Written by the printf BUILTIN and piped to `curl -K -`, so the token is on no
+# process's argv. A quoted curl config value reads `\\` and `\"` as escapes, so
+# both are escaped here; unescaped, a token holding either would end the value
+# early or lose a byte. A token with a line break would start a second config
+# line, so it is refused and nothing is written.
+bp_curl_auth_config() {
+    local value="$1"
+    if [[ "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
+        log_error "a bearer token holds a line break; refusing to write it into a curl config"
+        return 1
+    fi
+    value="${value//\\/\\\\}"
+    value="${value//\"/\\\"}"
+    printf 'header = "Authorization: Bearer %s"\n' "$value"
+}
+
 # bp_state_get <key>  -- empty string when unset or when there is no state file
 bp_state_get() {
     local key="$1" file

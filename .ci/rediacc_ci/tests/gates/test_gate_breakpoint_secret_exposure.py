@@ -208,7 +208,7 @@ def function_text(text: str, name: str) -> str:
     return match.group(0) if match else ""
 
 
-def curl_calls(gate, source: str, call: str, var: str) -> tuple[str, str]:
+def curl_calls(gate, source: str, call: str, var: str, token: str = ARGV_TOKEN) -> tuple[str, str]:
     """(every curl argv, everything curl read on stdin) for one helper run against a recording fake curl."""
     bash = harness.require_tool("bash", "install bash; the subjects are bash functions")
     with harness.temp_dir() as tmp:
@@ -224,7 +224,7 @@ def curl_calls(gate, source: str, call: str, var: str) -> tuple[str, str]:
                 "CF_API": "https://cf.invalid",
                 "GH_API": "https://gh.invalid",
                 "REPO": "o/r",
-                var: ARGV_TOKEN,
+                var: token,
             },
         )
         argv = argv_log.read_text(encoding="utf-8") if argv_log.is_file() else ""
@@ -234,9 +234,27 @@ def curl_calls(gate, source: str, call: str, var: str) -> tuple[str, str]:
     return argv, stdin
 
 
+COMMON = BP / "lib" / "breakpoint-common.sh"
+
+
+def helper_source(script: str, name: str) -> str:
+    """The helper as written, preceded by the shared `bp_curl_auth_config` it pipes from; empty when the helper is gone."""
+    helper = function_text((BP / "scripts" / script).read_text(encoding="utf-8"), name)
+    common = function_text(COMMON.read_text(encoding="utf-8"), "bp_curl_auth_config")
+    return common + helper if helper else ""
+
+
+def curl_config_value(line: str) -> str:
+    """The value of a `header = "..."` curl config line, unescaped the way curl reads a quoted value (`\\\\` and `\\"`; the other escapes do not occur here)."""
+    match = re.fullmatch(r'header = "((?:[^"\\]|\\.)*)"', line)
+    if match is None:
+        return ""
+    return re.sub(r"\\(.)", lambda m: m.group(1), match.group(1))
+
+
 def test_bearer_tokens_reach_curl_on_stdin_not_argv(gate):
     for script, name, call, var in TOKEN_HELPERS:
-        source = function_text((BP / "scripts" / script).read_text(encoding="utf-8"), name)
+        source = helper_source(script, name)
         if not source:
             gate.log_fail(
                 "%s no longer defines %s(); this case would test nothing" % (script, name)
@@ -252,6 +270,54 @@ def test_bearer_tokens_reach_curl_on_stdin_not_argv(gate):
     gate.log_pass(
         "every breakpoint bearer token reaches curl on stdin (%d calls)" % len(TOKEN_HELPERS)
     )
+
+
+# Review a98fe53d.6: a token holding the two characters a quoted curl config value treats as escapes.
+QUOTED_TOKEN = 'bp-"quoted"-\\back\\slash-0123'
+
+
+def test_a_token_holding_a_quote_and_a_backslash_reaches_curl_intact(gate):
+    for script, name, call, var in TOKEN_HELPERS:
+        source = helper_source(script, name)
+        if not source:
+            gate.log_fail(
+                "%s no longer defines %s(); this case would test nothing" % (script, name)
+            )
+        argv, stdin = curl_calls(gate, source, call, var, QUOTED_TOKEN)
+        if "quoted" in argv or "slash" in argv:
+            gate.log_fail("%s %s puts the token on curl's argv: %s" % (script, name, argv))
+        lines = stdin.splitlines()
+        if len(lines) != 1:
+            gate.log_fail(
+                "%s %s wrote %d config lines, not one: %r" % (script, name, len(lines), stdin)
+            )
+        if curl_config_value(lines[0] if lines else "") != "Authorization: Bearer " + QUOTED_TOKEN:
+            gate.log_fail(
+                "%s %s: curl would read a different header from %r" % (script, name, stdin)
+            )
+    gate.log_pass("a token with a quote and a backslash survives the curl config escape")
+
+
+def test_the_escape_probe_fires_on_an_unescaped_config(gate):
+    """ANTI-VACUITY: the pre-review shape, the token printed into the quoted value as is, must read back as a different header."""
+    leaky = 'cf_api() {\n    printf \'header = "Authorization: Bearer %s"\\n\' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" | curl -sS -K -\n}\n'
+    _argv, stdin = curl_calls(
+        gate, leaky, "cf_api", "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN", QUOTED_TOKEN
+    )
+    if curl_config_value(stdin.strip()) == "Authorization: Bearer " + QUOTED_TOKEN:
+        gate.log_fail("an unescaped config line read back intact; the escape probe is blind")
+    gate.log_pass("the escape probe fires on an unescaped config line")
+
+
+def test_a_token_with_a_line_break_writes_no_config(gate):
+    """A line break would start a second curl config line; the helper refuses and writes nothing."""
+    source = "log_error() { :; }\n" + helper_source("stop-breakpoint.sh", "cf_api")
+    _argv, stdin = curl_calls(
+        gate, source, "cf_api GET /x", "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN", "a\nurl = evil"
+    )
+    if "evil" in stdin:
+        gate.log_fail("a token with a line break reached curl's config: %r" % stdin)
+    gate.log_pass("a token with a line break is refused")
 
 
 def test_the_argv_probe_fires_on_a_header_flag(gate):

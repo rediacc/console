@@ -182,9 +182,9 @@ function renderLoginSummary(
   }
 }
 
-/** The `--token` value, or, for `-`, the token read from stdin: that form keeps the token off argv and out of the process list. An empty token is refused. */
+/** The `--token` value, or, for `-`, the token read from stdin: that form keeps the token off argv and out of the process list. Either form is trimmed, and an empty or whitespace-only token is refused. */
 export async function resolveLoginToken(option: string): Promise<string> {
-  const token = option === '-' ? (await readStdinValue()).trim() : option;
+  const token = (option === '-' ? await readStdinValue() : option).trim();
   if (token.length === 0) {
     throw new ValidationError(t('commands.subscription.login.emptyToken'));
   }
@@ -205,6 +205,10 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
+        // Read and validate the token FIRST: a refused token (empty stdin, whitespace) must not leave a region prompt or a server rewrite behind it. `--token ""` is a token given and refused, not the device-code flow.
+        const token =
+          options.token === undefined ? undefined : await resolveLoginToken(String(options.token));
+
         if (options.server) {
           await persistExplicitServer(options.server);
         } else {
@@ -213,9 +217,8 @@ export function registerSubscriptionCommands(program: Command): void {
 
         const serverUrl = await resolveAndSyncServer(options);
 
-        if (options.token) {
+        if (token !== undefined) {
           // Direct token mode (fallback)
-          const token = await resolveLoginToken(options.token as string);
           const status = await withSpinner(
             t('commands.subscription.login.validating'),
             () =>

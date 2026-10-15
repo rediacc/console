@@ -449,6 +449,11 @@ def calls_of(files: dict[str, str | None]) -> str:
 
 
 def assert_identical(old, new, files) -> None:
+    """The port against the twin's frozen answer with the one declared delta applied (`token_delta`, worklist #773eccc5)."""
+    old = (old[0], token_delta(old[1]), token_delta(old[2]))
+    files = {
+        key: token_delta(value) if key.startswith("old_") else value for key, value in files.items()
+    }
     assert new[0] == old[0], "exit code: %r vs %r" % (old, new)
     assert as_twin(new[1]) == old[1], "stdout:\n%s\n---\n%s" % (old[1], new[1])
     assert strip_prog(as_twin(new[2])) == strip_prog(old[2]), "stderr:\n%s\n---\n%s" % (
@@ -654,6 +659,22 @@ TOKEN_CONFIG_CALL = "git config --global --replace-all --fixed-value include.pat
     TOKEN_INCLUDE_PATH,
 )
 
+# RULE T, worklist #773eccc5: the one delta the port declares against the twin's frozen answer. The twin handed GITHUB_PAT to two children on argv: `git config --global url.https://x-access-token:<pat>@github.com/.insteadOf https://github.com/` and the `git fetch` URL (and its redacted echo on stderr). The port writes the rewrite into a 0600 include file and fetches from the bare remote. The golden keeps the TWIN's bytes; `token_delta` maps exactly those two shapes onto the port's before `assert_identical` compares, so every other byte is still the twin's, and `test_delta_773eccc5_the_token_leaves_argv` proves the recording still carries the credential (a re-record from the port would fail it).
+TWIN_TOKEN_CONFIG = re.compile(
+    r"^git config --global url\.https://x-access-token:[^@\s]+@%s/\.insteadOf %s/\n"
+    % (re.escape(GH_HOST), re.escape(GH_ORIGIN)),
+    re.MULTILINE,
+)
+TWIN_TOKEN_URL = re.compile(r"https://x-access-token:[^@\s]+@%s/" % re.escape(GH_HOST))
+
+
+def token_delta(text: str | None) -> str | None:
+    """The twin's answer with the 773eccc5 delta applied: the credentialed config line becomes the include call, a credentialed URL the bare one."""
+    if text is None:
+        return None
+    text = TWIN_TOKEN_CONFIG.sub(lambda _m: TOKEN_CONFIG_CALL, text)
+    return TWIN_TOKEN_URL.sub(GH_ORIGIN + "/", text)
+
 
 def test_the_token_reaches_no_child_argv(tmp_path: pathlib.Path) -> None:
     """Worklist #773eccc5. Every argv the port hands a child is readable through `ps` and `/proc/<pid>/cmdline` for the child's lifetime, so GITHUB_PAT may appear in none of them: not in `git config`, not in the `git fetch` URL. The credential lives in a 0600 include file under HOME, and reaches git only through the global config that names it."""
@@ -679,6 +700,23 @@ def test_the_token_reaches_no_child_argv(tmp_path: pathlib.Path) -> None:
     assert include.read_text(encoding="utf-8") == port.token_section(PAT_ENV["GITHUB_PAT"])
 
 
+def assert_delta_773eccc5(files: dict[str, str | None]) -> None:
+    """INTENTIONAL DELTA (Rule T), worklist #773eccc5, review a98fe53d.4. Both halves, on a run that reaches the config call and the fetch:
+
+    * the RECORDING is still the twin's: its call log carries the credential in the config key and in the fetch URL. A golden re-recorded from the port would carry neither, and this assertion is what catches that silent re-baseline;
+    * the PORT's call log carries the token nowhere, and equals the recording with `token_delta` applied, so the delta is the whole difference.
+    """
+    twin_calls = calls_of(files)
+    port_calls = files["new_calls"] or ""
+    assert TWIN_TOKEN_CONFIG.search(twin_calls), "the recording lost the twin's config call"
+    # Two: the config key and the fetch URL.
+    assert len(TWIN_TOKEN_URL.findall(twin_calls)) == 2, "the recording lost the twin's fetch URL"
+    assert PAT_ENV["GITHUB_PAT"] not in port_calls
+    assert TOKEN_CONFIG_CALL in port_calls
+    assert token_delta(twin_calls) == port_calls
+    assert token_delta(twin_calls) != twin_calls, "the delta changed nothing; it is not a delta"
+
+
 def test_the_token_section_is_the_insteadof_rewrite_and_refuses_a_newline() -> None:
     assert port.token_section("tok") == (
         '[url "https://x-access-token:tok@%s/"]\n\tinsteadOf = %s/\n' % (GH_HOST, GH_ORIGIN)
@@ -690,6 +728,94 @@ def test_the_token_section_is_the_insteadof_rewrite_and_refuses_a_newline() -> N
         except ValueError:
             continue
         raise AssertionError("a token carrying %r was written" % bad)
+
+
+def _install_in(home: pathlib.Path, monkeypatch, pat: str = "tok") -> tuple[int, list[list[str]]]:
+    """`install_token_rewrite` with HOME at `home` and git recorded instead of run."""
+    calls: list[list[str]] = []
+
+    def record(argv: list[str], *_a: object, **_k: object) -> int:
+        calls.append(argv)
+        return 0
+
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setattr(port, "run_inherit", record)
+    return port.install_token_rewrite(pat), calls
+
+
+def test_a_symlink_planted_at_the_include_is_replaced_never_followed(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """Review a98fe53d.1. A link planted where the include goes must not carry the token into its target, and no mode change may reach that target."""
+    home = tmp_path / "home"
+    include = home / port.TOKEN_INCLUDE
+    include.parent.mkdir(parents=True, mode=0o700)
+    victim = tmp_path / "victim"
+    victim.write_text("untouched\n", encoding="utf-8")
+    victim.chmod(0o644)
+    include.symlink_to(victim)
+    status, calls = _install_in(home, monkeypatch, "s3cr3t")
+    assert status == 0
+    assert victim.read_text(encoding="utf-8") == "untouched\n", "the token went through the link"
+    assert stat.S_IMODE(victim.stat().st_mode) == 0o644, "the link's target was re-moded"
+    assert not include.is_symlink()
+    assert stat.S_IMODE(include.stat().st_mode) == 0o600
+    assert include.read_text(encoding="utf-8") == port.token_section("s3cr3t")
+    assert [p.name for p in include.parent.iterdir()] == [include.name], "a temp file was left"
+    assert calls, "git was never told to include the file"
+    assert calls[0][-1] == str(include)
+
+
+def test_a_symlinked_include_directory_is_refused(
+    tmp_path: pathlib.Path, monkeypatch, capsys
+) -> None:
+    """Review a98fe53d.1. The directory itself pointing elsewhere is refused before a byte is written, and git is never told to include anything."""
+    home = tmp_path / "home"
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    link = home / port.TOKEN_INCLUDE
+    link.parent.parent.mkdir(parents=True)
+    link.parent.symlink_to(elsewhere)
+    status, calls = _install_in(home, monkeypatch)
+    assert status == 1
+    assert calls == []
+    assert list(elsewhere.iterdir()) == []
+    assert "cannot write the token include" in capsys.readouterr().err
+
+
+def test_an_unwritable_home_is_a_failed_step_not_a_traceback(
+    tmp_path: pathlib.Path, monkeypatch, capsys
+) -> None:
+    """Review a98fe53d.2. HOME under a regular file cannot hold the include: the step fails with status 1 and one log line, where the twin's failing `git config` also ended the run non-zero."""
+    blocker = tmp_path / "a-file"
+    blocker.write_text("", encoding="utf-8")
+    status, calls = _install_in(blocker / "home", monkeypatch)
+    assert status == 1
+    assert calls == []
+    err = capsys.readouterr().err
+    assert "cannot write the token include" in err
+    assert "Traceback" not in err
+
+
+def test_a_short_write_is_resumed_until_every_byte_is_down(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """Review a98fe53d.3. An `os.write` that takes three bytes at a time still leaves the whole section in the include."""
+    real_write = os.write
+    sizes: list[int] = []
+
+    def short_write(fd: int, data) -> int:
+        sizes.append(real_write(fd, bytes(data[:3])))
+        return sizes[-1]
+
+    monkeypatch.setattr(port.os, "write", short_write)
+    home = tmp_path / "home"
+    status, _calls = _install_in(home, monkeypatch, "a-longer-token")
+    monkeypatch.undo()
+    assert status == 0
+    expected = port.token_section("a-longer-token")
+    assert len(sizes) > 1, "the fake never shortened a write"
+    assert (home / port.TOKEN_INCLUDE).read_text(encoding="utf-8") == expected
 
 
 def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path) -> None:
@@ -722,14 +848,19 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         "",
     ]
     assert files["old_calls"] == (
-        TOKEN_CONFIG_CALL
+        (
+            "git config --global "
+            "url.https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/.insteadOf "
+        )
+        + GH_ORIGIN
+        + "/\n"
         + SUBMODULE_CALL
         + closure_calls("web")
         + closure_calls("rdc")
         + BUMP_CALLS
         + DECIDE_CALL
         + "git fetch --tags --force --no-recurse-submodules "
-        + (GH_ORIGIN + "/")
+        + ("https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/")
         + GH_REPO
         + ".git\n"
         + "git tag -l v* --sort=-v:refname\n" * 3
@@ -743,6 +874,7 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         + IMAGE_REGISTRY
         + "/rdc:rdc-<hash>-1.2.4\n"
     )
+    assert_delta_773eccc5(files)
     assert_identical(old, new, files)
 
 
@@ -1093,9 +1225,13 @@ def test_an_empty_repository_slug_is_accepted_and_fetched(tmp_path: pathlib.Path
         },
     )
     assert old[0] == 0
-    assert ("git fetch --tags --force --no-recurse-submodules " + GH_ORIGIN + "/.git\n") in files[
-        "old_calls"
-    ]
+    assert (
+        "git fetch --tags --force --no-recurse-submodules "
+        "https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/.git\n"
+    ) in files["old_calls"]
+    assert ("git fetch --tags --force --no-recurse-submodules " + GH_ORIGIN + "/.git\n") in (
+        files["new_calls"] or ""
+    ), "the 773eccc5 delta: the port fetches from the bare remote"
     assert_identical(old, new, files)
     assert port.fetch_url("") == GH_ORIGIN + "/.git"
 
@@ -1123,7 +1259,11 @@ def test_three_failed_fetches_refuse_to_compute_a_version(tmp_path: pathlib.Path
         "tag list that may be stale.\n"
     ) in old[2]
     assert "s3cr3t-app-token" not in old[2], "the app token must never reach the log"
-    assert ("%s/%s.git" % (GH_ORIGIN, GH_REPO)) in old[2], "the diagnostic must survive"
+    assert ("@" + GH_HOST) in old[2], "the diagnostic must survive"
+    assert "***" in old[2], "redacted, not suppressed"
+    assert ("%s/%s.git" % (GH_ORIGIN, GH_REPO)) in new[2], (
+        "the port's diagnostic names the bare URL"
+    )
     # The two closure tags read the tag list themselves (step 5); no further read may follow the refused fetch.
     assert calls_of(files).count("git tag") == 2, "no version may be computed from a stale list"
     assert calls_of(files).endswith(".git\n"), "the refused fetch is the last call"

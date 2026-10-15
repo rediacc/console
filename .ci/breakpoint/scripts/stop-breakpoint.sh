@@ -97,7 +97,7 @@ CF_API="https://api.cloudflare.com/client/v4"
 # on argv, where `ps` would show it for the length of the request.
 cf_api() {
     local method="$1" path="$2"
-    printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+    bp_curl_auth_config "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
         curl -sS -X "$method" "${CF_API}${path}" -K - \
             -H "Content-Type: application/json" \
             --max-time 30

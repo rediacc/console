@@ -32,6 +32,7 @@ const {
   mockDiscoverRegions,
   mockPromptRegionSelection,
   mockReadStdinValue,
+  mockHandleError,
 } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(),
   mockFetchLicenseReportOrThrow: vi.fn(),
@@ -67,6 +68,7 @@ const {
   mockDiscoverRegions: vi.fn(),
   mockPromptRegionSelection: vi.fn(),
   mockReadStdinValue: vi.fn(),
+  mockHandleError: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -142,6 +144,11 @@ vi.mock('../../utils/stdin.js', () => ({
   readStdinValue: mockReadStdinValue,
 }));
 
+vi.mock('../../utils/errors.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/errors.js')>()),
+  handleError: mockHandleError,
+}));
+
 const {
   executeSubscriptionStatus,
   executeMachineStatus,
@@ -149,7 +156,9 @@ const {
   executeMachineRefresh,
   executeRepoLicenseRefresh,
   resolveLoginToken,
+  registerSubscriptionCommands,
 } = await import('../subscription.js');
+const { Command } = await import('commander');
 
 const { renderRepoBatchRefreshSummary } = await import('../subscription-output.js');
 
@@ -688,5 +697,41 @@ describe('subscription command helpers', () => {
         'commands.subscription.login.emptyToken'
       );
     });
+
+    it('trims a literal --token and refuses one that is only whitespace', async () => {
+      await expect(resolveLoginToken('  rdt_literal \t')).resolves.toBe('rdt_literal');
+      for (const blank of [' ', '\t\n', '']) {
+        await expect(resolveLoginToken(blank)).rejects.toThrow(
+          'commands.subscription.login.emptyToken'
+        );
+      }
+      expect(mockReadStdinValue).not.toHaveBeenCalled();
+    });
+
+    // The token is read and refused before the region prompt and the server resolution run, so a bad token leaves no prompt and no rewritten server behind it.
+    for (const [label, argv, stdin] of [
+      ['an empty stdin for --token -', ['--token', '-'], '\n'],
+      ['a whitespace-only --token', ['--token', '   '], undefined],
+      ['an empty --token', ['--token', ''], undefined],
+    ] as const) {
+      it(`login refuses ${label} before the region prompt or the server sync`, async () => {
+        mockReadAccountPointer.mockReturnValue({} as { accountServer: string });
+        if (stdin !== undefined) mockReadStdinValue.mockResolvedValue(stdin);
+        const program = new Command();
+        program.exitOverride();
+        registerSubscriptionCommands(program);
+
+        await program.parseAsync(['subscription', 'login', ...argv], { from: 'user' });
+
+        expect(mockHandleError).toHaveBeenCalledTimes(1);
+        expect(String(mockHandleError.mock.calls[0][0])).toContain(
+          'commands.subscription.login.emptyToken'
+        );
+        expect(mockDiscoverRegions).not.toHaveBeenCalled();
+        expect(mockPromptRegionSelection).not.toHaveBeenCalled();
+        expect(mockGetSubscriptionServerUrl).not.toHaveBeenCalled();
+        expect(mockAuthorizeSubscriptionViaDeviceCode).not.toHaveBeenCalled();
+      });
+    }
   });
 });
