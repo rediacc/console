@@ -612,7 +612,7 @@ def _gh_submodule(seg, scan):
     ]
     found = set()
     for run in mine or ghs:
-        m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")
+        m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", _lexical(run.cwd))
         found.add("private/" + m.group(2) if m else "")
     return found.pop() if len(found) == 1 else ""
 
@@ -2037,13 +2037,58 @@ def write_targets(cmd):
     return out
 
 
-def _join_dir(cwd, arg):
-    """Where `cd <arg>` lands from `cwd`, as a path string relative to the root the walk started in (None means that root)."""
-    if arg.startswith("/"):
-        return posixpath.normpath(arg)
-    if cwd is None:
-        return posixpath.normpath(arg)
-    return posixpath.normpath(cwd + "/" + arg)
+def _lexical(directory):
+    """`directory` (a `_Run.cwd`) with any `<name>/..` pair a physical change kept dropped by the text, as every reader that matches a path by pattern saw it before #362f37b2; "" for None."""
+    return posixpath.normpath(directory) if directory else ""
+
+
+def _cd_physical(argv):
+    """True when `cd`'s own options make it physical: the last of `-L` and `-P` wins, across bundles (`-LP`, `-P -L`), and options end at `--` or the first operand. `pushd` takes neither and follows bash's own `set -P`, which this walk does not track."""
+    physical = False
+    for arg in argv:
+        if (
+            arg == "--"
+            or not (arg.startswith("-") and len(arg) > 1)
+            or not set(arg[1:]) <= set("LPe@")
+        ):
+            break
+        for ch in arg[1:]:
+            if ch in "LP":
+                physical = ch == "P"
+    return physical
+
+
+def _kept_pair(parts):
+    """True when `parts` holds a `..` right after a name: a step up this walk left for the disk to resolve."""
+    return any(p == ".." and k > 0 and parts[k - 1] not in ("", "..") for k, p in enumerate(parts))
+
+
+# A `..` IS THE KERNEL'S WHEN THE CHANGE IS PHYSICAL (#362f37b2, the sibling of review c5f0fd12.3 in `_script_path`). bash's own `cd` and `pushd` are LOGICAL by default: `cd lnk/..` drops `lnk` from the text of $PWD and lands back where it started, whatever `lnk` points to, so the lexical join is right for them (measured with bash 5, `lnk` a link to `far/inner`: `cd lnk/.. && pwd -P` prints the root).
+# `cd -P`, `env -C`/`--chdir`, `sudo -D`/`--chdir` and `git -C` call chdir(2) instead, and the kernel steps up from where `lnk` POINTS: each lands in `far`, so the walk read `q.py` beside `lnk` while python ran `far/q.py`. The walk is a pure function of the command text and cannot ask the disk, so a physical join keeps every `<name>/..` pair in the path it returns (`lnk/..`); the readers that touch the disk (`_script_path`, `_resolve_root` through `git -C`) resolve it there.
+# A later logical `..` pops only a name the walk added after the kept pair (bash's $PWD is the physical path by then), and a join that involves no kept pair is the old `normpath` expression, so every path this walk produced before stays byte for byte the same.
+def _join_dir(cwd, arg, physical=False):
+    """Where a change of directory to `arg` lands from `cwd`, as a path string relative to the root the walk started in (None means that root). `physical` is chdir(2)'s reading (`cd -P`, `env -C`, `sudo -D`, `git -C`), bash's `cd` the logical one."""
+    base = "" if arg.startswith("/") or cwd is None else cwd
+    new = arg.split("/")
+    if not (physical and ".." in new) and not _kept_pair(base.split("/")):
+        if arg.startswith("/") or cwd is None:
+            return posixpath.normpath(arg)
+        return posixpath.normpath(cwd + "/" + arg)
+    absolute = (base or arg).startswith("/")
+    # The base is already in this form, kept pairs included, so it is taken as it stands and only `arg` is stepped through.
+    stack = [p for p in base.split("/") if p not in ("", ".")]
+    for part in new:
+        if part in ("", "."):
+            continue
+        if part != "..":
+            stack.append(part)
+        elif not physical and stack and stack[-1] != "..":
+            # Logical: a trailing name is text in bash's $PWD, so `..` drops it; a kept `..` is not, so another one stacks on it.
+            stack.pop()
+        elif not (absolute and not stack):
+            stack.append("..")
+    text = "/".join(stack)
+    return ("/" + text) if absolute else (text or ".")
 
 
 def _shell_payload(argv):
@@ -2427,7 +2472,8 @@ def _git_invocation(argv, cwd):
     while k < len(argv):
         arg = argv[k]
         if arg == "-C" and k + 1 < len(argv):
-            here = _join_dir(here, argv[k + 1])
+            # git calls chdir(2) for each `-C`: a physical change.
+            here = _join_dir(here, argv[k + 1], physical=True)
             k += 2
             continue
         if arg in GIT_GLOBAL_WITH_VALUE and k + 1 < len(argv):
@@ -2650,7 +2696,8 @@ class _Walker:
             name,
             argv,
             " ".join([name, *rendered]),
-            _join_dir(state[0], found["chdir"]) if "chdir" in found else state[0],
+            # `env -C` and `sudo -D` call chdir(2): a physical change.
+            _join_dir(state[0], found["chdir"], physical=True) if "chdir" in found else state[0],
             _apply_env(_exported(before), env_ops),
         )
         run.xargv = [x for x in (_expand_word(w, before) for w in words[1:]) if x is not None]
@@ -2706,7 +2753,7 @@ class _Walker:
             operands = [a for a in argv if not (a.startswith("-") and len(a) > 1)]
             # `cd` with no operand, `cd -` and `cd ~` land somewhere this walk cannot name; an unresolvable directory makes every caller keep judging its own root, the direction the guards fail safe in.
             target = operands[0] if operands else "~"
-            state[0] = _join_dir(state[0], target)
+            state[0] = _join_dir(state[0], target, physical=base == "cd" and _cd_physical(argv))
         elif base == "git":
             run.git_sub, run.git_dir = _git_invocation(argv, state[0])
         elif base == "eval":
@@ -5294,7 +5341,7 @@ def gh_run_repo(run, cwd, inherited=None):
     named = gh_named_repo(run, inherited)
     if named:
         return named
-    m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")
+    m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", _lexical(run.cwd))
     if m:
         return "rediacc/" + m.group(2)
     return _origin_repo(cwd)
