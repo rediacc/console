@@ -1016,7 +1016,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1045,7 +1045,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1074,7 +1074,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1103,7 +1103,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1132,7 +1132,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1178,7 +1178,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1223,7 +1223,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1260,7 +1260,7 @@
       "holds": [
         ".ci/policy/.devcontainer-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1929,7 +1929,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -1968,7 +1968,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2130,7 +2130,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2166,7 +2166,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2195,7 +2195,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2224,7 +2224,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2260,7 +2260,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2289,7 +2289,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2318,7 +2318,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": ".",
@@ -2347,7 +2347,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": "private/renet",
@@ -2390,7 +2390,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": "private/renet",
@@ -2419,7 +2419,7 @@
       "holds": [
         ".ci/policy/.pins-upgrade-blocklist"
       ],
-      "gates": [],
+      "gates": ["check:ci-pin-registry"],
       "sites": [
         {
           "repo": "private/renet",
