@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  displayName,
   formatSkippedWarning,
   parseSkippedEntries,
   SKIPPED_NAMES_SHOWN,
@@ -58,5 +59,18 @@ describe('formatSkippedWarning', () => {
     expect(out).toContain('commands.sync.skippedMore');
     expect(out).toContain('\\"count\\":2');
     expect(out).not.toContain(`l${SKIPPED_NAMES_SHOWN}`);
+  });
+});
+
+describe('displayName', () => {
+  it('escapes control characters a remote name could carry (review ef6dbb53.2)', () => {
+    expect(displayName('ok-name')).toBe('ok-name');
+    expect(displayName('evil\u001b[2Jname')).toBe('evil\\x1b[2Jname');
+    expect(displayName('a\u0007b\u009bc\u007f')).toBe('a\\x07b\\x9bc\\x7f');
+    expect(displayName('ünïcode')).toBe('ünïcode');
+  });
+
+  it('is applied to the names the warning shows', () => {
+    expect(summarizeSkipped(['x\u001by']).shown).toEqual(['x\\x1by']);
   });
 });

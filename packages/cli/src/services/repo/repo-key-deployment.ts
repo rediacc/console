@@ -134,7 +134,8 @@ export function buildKeyRemovalScript(repoName: string, repositoryGuid: string):
   return [
     'set -e',
     'AUTH_KEYS="$HOME/.ssh/authorized_keys"',
-    `if [ -f "$AUTH_KEYS" ] && grep -qF '${marker}' "$AUTH_KEYS"; then TEMP=$(mktemp) && (grep -vF '${marker}' "$AUTH_KEYS" > "$TEMP" || true) && cat "$TEMP" > "$AUTH_KEYS" && rm -f "$TEMP"; fi`,
+    // grep -v exits 1 when it kept no line (the key was the only one) and 2 on a read error; only 0 and 1 may replace the file, or a partial read would overwrite authorized_keys and lock the machine out (review ef6dbb53.1).
+    `if [ -f "$AUTH_KEYS" ] && grep -qF '${marker}' "$AUTH_KEYS"; then TEMP=$(mktemp); RC=0; grep -vF '${marker}' "$AUTH_KEYS" > "$TEMP" || RC=$?; if [ "$RC" -gt 1 ]; then rm -f "$TEMP"; echo "authorized_keys read failed (grep rc=$RC); left unchanged" >&2; exit 1; fi; cat "$TEMP" > "$AUTH_KEYS"; rm -f "$TEMP"; fi`,
   ].join('; ');
 }
 
