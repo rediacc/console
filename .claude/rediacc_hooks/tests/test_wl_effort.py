@@ -38,6 +38,16 @@ def blocked_keys(fx) -> set[str]:
 
 
 # ---- the table, one key per family --------------------------------------------------------------
+# The effort tuner rewrites rows of the real table in place and records each old entry under `tuned.<key>.from` (wl_effort_tune.apply_changes), so a family's levels are read from the untuned table: the real one with every tuned row put back to its `from`.
+
+
+def untuned_table():
+    table = json.loads(E.TABLE_PATH.read_text(encoding="utf-8"))
+    for key, rec in (table.get("tuned") or {}).items():
+        table["checks"][key] = {**table["checks"][key], **rec["from"]}
+    return table
+
+
 # (family, key, verdict at quiet, low, smart, high, ultra)
 FAMILIES = [
     ("floor", "ci-red", ("block",) * 5),
@@ -52,9 +62,10 @@ FAMILIES = [
 @pytest.mark.parametrize(("family", "key", "want"), FAMILIES, ids=[f[0] for f in FAMILIES])
 def test_one_key_per_family_through_every_level(family, key, want):
     del family
-    assert tuple(E.verdict(key, level) for level in LEVELS) == want
+    table = untuned_table()
+    assert tuple(E.verdict(key, level, table) for level in LEVELS) == want
     # A `:<subject>` suffix is the same check class.
-    assert E.verdict(key + ":x", "smart") == want[2]
+    assert E.verdict(key + ":x", "smart", table) == want[2]
 
 
 def test_the_floor_blocks_at_quiet_whatever_the_table_says():
@@ -88,8 +99,12 @@ def test_advisory_keys_follow_their_advise_level():
 # ---- through the real Stop hook ------------------------------------------------------------------
 
 
+# The two report checks this world trips besides `open-items`. The hook reads the real, tuned table, so which level blocks or only advises each one is read from that table, never written down here.
+REPORT_KEYS = ("no-remaining", "agent-state")
+
+
 def test_e3_one_world_through_all_five_levels(world):
-    """An open item and a message with no `## Remaining`: `open-items` (mission), `no-remaining` and `agent-state` (high) fire, and each level blocks on exactly its share. A fresh world per level, so every level judges the same first stop."""
+    """An open item and a message with no `## Remaining`: `open-items` (mission), `no-remaining` and `agent-state` fire, and each level blocks on exactly its share as the real table gives it. A fresh world per level, so every level judges the same first stop."""
     seen = {}
     for level in LEVELS:
         world.setup()
@@ -100,11 +115,13 @@ def test_e3_one_world_through_all_five_levels(world):
         seen[level] = (got.decision, blocked_keys(world))
     assert seen["quiet"] == ("allow", set()), seen["quiet"]
     assert seen["low"] == ("block", {"open-items"}), seen["low"]
-    assert seen["smart"][0] == "block"
-    assert "open-items" in seen["smart"][1], seen["smart"]
-    assert not {"no-remaining", "agent-state"} & seen["smart"][1], seen["smart"]
+    for level in ("smart", "high", "ultra"):
+        assert seen[level][0] == "block"
+        assert "open-items" in seen[level][1], seen[level]
+        for key in REPORT_KEYS:
+            assert (key in seen[level][1]) == (E.verdict(key, level) == "block"), (level, key, seen)
     for level in ("high", "ultra"):
-        assert {"open-items", "no-remaining", "agent-state"} <= seen[level][1], seen[level]
+        assert {"open-items", *REPORT_KEYS} <= seen[level][1], seen[level]
     # The levels are supersets of one another, as the plan says.
     order = [seen[lv][1] for lv in LEVELS]
     assert all(a <= b for a, b in itertools.pairwise(order)), order
@@ -117,29 +134,35 @@ def queued_keys(fx) -> set[str]:
     return {str(e.get("key")) for e in ((doc.get("outq") or {}).get("items") or [])}
 
 
-def test_e3_smart_turns_no_remaining_into_an_advisory(world):
-    """At smart `no-remaining` does not block: it rides the advisory queue in the block's place. At high it blocks and is not queued; at low it is neither."""
-    assert world.cli("--add", wlfix.ME, "(%s) do the thing" % wlfix.ME).rc == 0
-    world.say("done for now")
-    world.settings(effort="smart")
-    world.run()
-    assert "no-remaining" not in blocked_keys(world)
-    assert "no-remaining" in queued_keys(world)
-    # CONTROL, the same world at high: it blocks.
+def stop_at(world, level):
+    """One fresh stop of this world (an open item, no `## Remaining`) at `level`: (blocked keys, queued keys)."""
     world.setup()
     assert world.cli("--add", wlfix.ME, "(%s) do the thing" % wlfix.ME).rc == 0
     world.say("done for now")
-    world.settings(effort="high")
+    world.settings(effort=level)
     world.run()
-    assert "no-remaining" in blocked_keys(world)
-    assert "no-remaining" not in queued_keys(world)
+    return blocked_keys(world), queued_keys(world)
+
+
+def test_e3_an_advise_level_turns_a_report_check_into_an_advisory(world):
+    """At a level where the real table only advises a report check, the check does not block: it rides the advisory queue in the block's place. At its block level it blocks and is not queued; at low it is neither."""
+    advised = [
+        (key, level) for key in REPORT_KEYS for level in LEVELS if E.verdict(key, level) == "advise"
+    ]
+    assert advised, "the table advises none of %s at any level" % (REPORT_KEYS,)
+    key, level = advised[0]
+    blocked, queued = stop_at(world, level)
+    assert key not in blocked, (key, level, blocked)
+    assert key in queued, (key, level, queued)
+    # CONTROL, the same world at the first level that blocks it: it blocks.
+    above = next(lv for lv in LEVELS if E.verdict(key, lv) == "block")
+    blocked, queued = stop_at(world, above)
+    assert key in blocked, (key, above, blocked)
+    assert key not in queued, (key, above, queued)
     # CONTROL, at low: neither blocked nor queued.
-    world.setup()
-    assert world.cli("--add", wlfix.ME, "(%s) do the thing" % wlfix.ME).rc == 0
-    world.say("done for now")
-    world.settings(effort="low")
-    world.run()
-    assert "no-remaining" not in blocked_keys(world) | queued_keys(world)
+    assert E.verdict(key, "low") == "off"
+    blocked, queued = stop_at(world, "low")
+    assert key not in blocked | queued
 
 
 @pytest.mark.parametrize(

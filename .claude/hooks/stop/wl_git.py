@@ -1740,6 +1740,8 @@ def selftest():
     try:
         _g = ["git", "-c", "user.email=s@example.invalid", "-c", "user.name=selftest"]
         _g += ["-c", "commit.gpgsign=false", "-c", "core.hooksPath=/dev/null"]
+        # The user's global ignore file is not the fixture's: a ~/.config/git/ignore listing `**/.claude/settings.local.json` (one did on 2026-10-15) made `git add` leave the fixture's settings.local.json untracked, and the session-state case counted 3 paths instead of 4.
+        _g += ["-c", "core.excludesFile=/dev/null"]
 
         def _sh(cwd, *argv):
             return subprocess.run([*_g, *argv], cwd=cwd, capture_output=True, check=False)

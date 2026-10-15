@@ -2,7 +2,7 @@
 
 THE ASK (operator 2026-10-14): one `effort` instead of a hook switch, a focus verb, turbo and four more booleans, with "a modifiable list, to move some of the checks/tasks between the options instead of that complex switchings". agent/plans/QUEUE.md `## Settings` names the level; `.claude/config/effort.json` is the modifiable list.
 
-THE LEVELS, each a superset of the one before: `quiet` (the FLOOR only), `low` (plus the mission: open items, the PR's plan, its finish line, reviews, the turbo and loop orders), `smart` (plus owed work and record integrity; `no-remaining` and `out-of-sync` only advise; the judge runs without riders), `high` (every check, the full judge), `ultra` (high plus the throughput bundle).
+THE LEVELS, each a superset of the one before: `quiet` (the FLOOR only), `low` (plus the mission: open items, the PR's plan, its finish line, reviews, the turbo and loop orders), `smart` (plus owed work and record integrity; `no-remaining` and `out-of-sync` start advise-only, and the table's `tuned` section names any the tuner has moved since; the judge runs without riders), `high` (every check, the full judge), `ultra` (high plus the throughput bundle).
 
 ONE VERDICT PER KEY AND LEVEL, `verdict(key, level)`: `block`, `advise` (the check rides the advisory queue instead of holding the stop) or `off`. A FLOOR key (`wl_floor`) blocks at every level and is never read from the table. An unreadable table, or a key the table does not list, BLOCKS: the dial can only quiet the hook on purpose, the same rule `stop_hook: off` followed, and the effort-table rule of `npm run check:ci-plan-record` keeps the table complete so the second case does not ship.
 
