@@ -544,7 +544,11 @@ class License:
         # Sync the target server's E2E public key before anything tunnels; without this the first tunnelled call dies as "Decryption failed".
         self.cli("config", "current", "-o", "json")
         self.cli("config", "ssh", "set", "--key", o.ssh_key)
-        self.cli("subscription", "login", "--token", self.api_token, "--server", self.server_url)
+        # `--token -` reads the token from stdin, so it never enters argv (worklist #773eccc5).
+        self.d.setup_run(
+            [self.rdc, "subscription", "login", "--token", "-", "--server", self.server_url],
+            stdin_text=self.api_token,
+        )
         # `rdc machine add` also writes an SSH alias into the user's real home (on WSL, into the WINDOWS home), which no sandbox here can contain: reported, unavoidable for a drill that must drive a registered machine.
         self.cli("machine", "add", MACHINE_NAME, "--ip", o.vm_ip, "--user", o.ssh_user)
         if o.enabled("b"):

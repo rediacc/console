@@ -264,29 +264,40 @@ class Drill:
 
     # ------------------------------------------------------------------ command execution
 
-    def run(self, argv: list[str], env: dict[str, str] | None = None) -> None:
-        """Run a command with stdout and stderr captured to SEPARATE files; the exit code lands in `self.code`. Never aborts the drill."""
+    def run(
+        self, argv: list[str], env: dict[str, str] | None = None, stdin_text: str | None = None
+    ) -> None:
+        """Run a command with stdout and stderr captured to SEPARATE files; the exit code lands in `self.code`. Never aborts the drill.
+
+        `stdin_text` is fed to the child's stdin, which is how a secret reaches a command (`rdc subscription login --token -`) without entering its argv: every argument is readable through `ps` and `/proc/<pid>/cmdline` for the child's lifetime (worklist #773eccc5). Without it the child inherits this process's stdin, as before."""
         if self.stdout_file is None or self.stderr_file is None:
             raise RuntimeError("Drill.init() must run before Drill.run()")
         self.last_cmd = " ".join(argv)
         with self.stdout_file.open("wb") as out, self.stderr_file.open("wb") as err:
             try:
                 self.code = subprocess.run(
-                    argv, stdout=out, stderr=err, env=env or self.cli_env(), check=False
+                    argv,
+                    stdout=out,
+                    stderr=err,
+                    env=env or self.cli_env(),
+                    input=None if stdin_text is None else stdin_text.encode("utf-8"),
+                    check=False,
                 ).returncode
             except OSError as exc:
                 err.write(("%s: %s\n" % (argv[0], exc.strerror or exc)).encode())
                 self.code = 127
 
-    def run_with(self, argv: list[str], **env: str) -> None:
+    def run_with(self, argv: list[str], *, stdin_text: str | None = None, **env: str) -> None:
         """`run` with per-command environment overrides (the bash `env K=V cmd ...`). The overrides are NOT part of `last_cmd`, so a token or password passed this way never reaches a failure report (Rule T: the bash printed the whole `env ...` line, secrets included)."""
         merged = self.cli_env()
         merged.update(env)
-        self.run(argv, env=merged)
+        self.run(argv, env=merged, stdin_text=stdin_text)
 
-    def setup_run(self, argv: list[str], env: dict[str, str] | None = None) -> None:
+    def setup_run(
+        self, argv: list[str], env: dict[str, str] | None = None, stdin_text: str | None = None
+    ) -> None:
         """A SETUP command that must succeed: on failure both captured streams and the exit code are printed and the drill aborts with exit 2."""
-        self.run(argv, env)
+        self.run(argv, env, stdin_text)
         if self.code != 0:
             log.error("setup command failed (exit %d): %s" % (self.code, self.last_cmd))
             log.error("--- captured stdout ---")

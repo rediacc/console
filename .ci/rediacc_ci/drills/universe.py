@@ -204,13 +204,10 @@ class Universe:
         d.step("Phase 5: per-config token files")
         a_before = self.md5("drill-a.json")
         b_before = self.md5("drill-b.json")
-        self.cli(
-            "subscription",
-            "login",
-            "--token",
-            self.api_token,
-            "--server",
-            self.server_url,
+        # `--token -` reads the token from stdin, so it never enters argv (worklist #773eccc5).
+        self.d.run_with(
+            [self.rdc, "subscription", "login", "--token", "-", "--server", self.server_url],
+            stdin_text=self.api_token,
             REDIACC_CONFIG="drill-a",
         )
         d.assert_exit(0, "subscription login --token succeeds against the dev gateway")
