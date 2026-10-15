@@ -294,96 +294,175 @@ def _program_of(name, args):
     return (family, mode, code)
 
 
-def _stdin_texts(redirs, upstream):
-    """What a command reads on stdin, as far as the command line itself supplies it: a heredoc body, a here-string, or the output of a `cat <<EOF` / `cat <<<` / `echo` / `printf` feeding it through a pipe. The same sources shellscan's walker hands a shell reading stdin."""
-    out: list[tuple[Any, str | None]] = []
-    for redir in redirs:
-        hd = redir.heredoc
-        if hd is not None and hd.body_start is not None:
-            out.append((hd, None))
-        elif redir.op == "<<<" and redir.target is not None:
-            out.append((None, shellscan._word_value(redir.target)))
-    if upstream is None or upstream[0] != "cmd":
-        return out
-    words, _ = shellscan._strip_prefixes([t for t in upstream[1] if isinstance(t, shellscan._Word)])
-    if not words:
-        return out
-    feeder = shellscan._word_value(words[0]).rsplit("/", 1)[-1]
-    if feeder == "cat":
-        out.extend(_stdin_texts([t for t in upstream[1] if isinstance(t, shellscan._Redir)], None))
-    elif feeder in ("echo", "printf"):
-        argv = [shellscan._word_value(w) for w in words[1:]]
-        while argv and feeder == "echo" and re.match(r"^-[neE]+$", argv[0]):
-            argv = argv[1:]
-        out.append((None, " ".join(argv)))
-    return out
-
-
-# A FILE ON STDIN IS A SCRIPT ON DISK (0d227c80 sibling). `_stdin_texts` reads only text the command line holds, so `python3 - < p.py`, `cat p.py | python3 -`, `{ python3 -; } < p.py` and `bash < x.sh` ran a file holding `git worktree add` with rc 0 (2026-10-15) while `python3 p.py` was refused. `_stdin_files` names every file a stdin program is read from: a `<` or `<>` redirect on descriptor 0, and the file operands and stdin redirect of a `cat` feeding the pipe. `_redirect_verdict` reads each under the rules a script run by path is read by.
+# A FILE ON STDIN IS A SCRIPT ON DISK (0d227c80 sibling). Reading only the text the command line holds let `python3 - < p.py`, `cat p.py | python3 -`, `{ python3 -; } < p.py` and `bash < x.sh` run a file holding `git worktree add` with rc 0 (2026-10-15) while `python3 p.py` was refused. Each file a stdin program is read from is named, and `_redirect_verdict` reads it under the rules a script run by path is read by.
 STDIN_REDIRECTS = ("<", "<>")
 
-
-def _stdin_files(redirs, upstream):
-    """The words naming each file a command reads on stdin, as far as the command line names them: its own `<`/`<>` redirect on descriptor 0, and what a `cat` in front of it reads (its file operands, or its own stdin redirect)."""
-    out = [
-        shellscan._word_value(redir.target)
-        for redir in redirs
-        if redir.op in STDIN_REDIRECTS
-        and redir.fd in (None, "0")
-        and redir.heredoc is None
-        and redir.target is not None
-    ]
-    if upstream is None or upstream[0] != "cmd":
-        return out
-    words, _ = shellscan._strip_prefixes([t for t in upstream[1] if isinstance(t, shellscan._Word)])
-    if not words or shellscan._word_value(words[0]).rsplit("/", 1)[-1] != "cat":
-        return out
-    out.extend(_stdin_files([t for t in upstream[1] if isinstance(t, shellscan._Redir)], None))
-    operands = False
-    for word in (shellscan._word_value(w) for w in words[1:]):
-        if word == "--" and not operands:
-            operands = True
-        elif word != "-" and (operands or not word.startswith("-")):
-            out.append(word)
-    return out
+# A STDIN THE HOOK CANNOT READ IS REFUSED, NOT PASSED (#faca6bd7). Two spellings ran a program holding `git worktree add` with rc 0 at c5f0fd121: a duplicated descriptor (`python3 - <&3 3< p.py`, `exec 3<p.py; python3 - <&3`), and a pipe from a producer whose output the command line does not hold (`git show HEAD:p.py | python3 -`, `curl -s URL | python3 -`, `some_tool | bash`). A `<&N` is followed to whatever opens N in the same command line, and a stdin fed by anything but a heredoc, a here-string, a file, `echo`, `printf` or `cat` of one of those is an "unread" source naming its producer.
+# Only a STDIN PROGRAM is judged this way: `python3 -c ...`, `python3 script.py` and `perl -ne ...` take their program from the command line or a file, and a pipe into them carries data.
+STDIN_DEPTH = 16
+DUP_TARGET = re.compile(r"^(\d+)-?$")
 
 
-def interpreter_programs(cmd, depth=0, files=None):
+def _stdin_ctx(redirs=(), upstream=None, outer=()):
+    """What a command's stdin is when its own redirects leave it alone: `redirs`, the redirects of every group around it; `upstream`, `(stage, ctx)` for the pipeline stage feeding it; `outer`, the sources a shell running this command line as `-c` handed it (`_stdin_sources`)."""
+    return (tuple(redirs), upstream, tuple(outer))
+
+
+def interpreter_programs(cmd, depth=0, files=None, stdin=()):
     """Every `(family, program text)` `cmd` hands an interpreter: `python3 -c`, `node -e`, `perl -e`, `ruby -e`, and each of them reading a heredoc, a here-string or a piped `cat`/`echo` as its program.
 
     It walks the same token structure `shellscan._analyse` walks (subshells, brace groups, pipelines, `$(...)`, the prefix commands `_strip_prefixes` drops), and descends into a shell's own payload (`sh -c`, `bash <<EOF`, `eval`), because `sh -c "python3 - <<EOF ..."` is the same program one level down. `_Run` records argv but not redirects, which is why this cannot read `_analyse(cmd).runs` alone: a heredoc is a redirect.
 
-    A group's stdin (`{ ...; } < f`, `(...) <<EOF`, `cat f | { ...; }`) is the stdin of the first command of each pipeline inside it. When `files` is a list, each `(family, word)` naming a FILE a stdin program is read from (`_stdin_files`) is appended to it, `family` being "shell" for a shell reading its script on stdin; `_redirect_verdict` reads those, since a file's text is not the command line's.
+    A group's stdin (`{ ...; } < f`, `(...) <<EOF`, `cat f | { ...; }`) is the stdin of the first command of each pipeline inside it, and a shell's stdin (`git show | sh -c 'python3 -'`) is the stdin `stdin` hands the first commands of its payload. When `files` is a list, each `(family, kind, value)` a stdin program reads that is not text the command line holds is appended to it, `family` being "shell" for a shell reading its script on stdin: `("file", word)` for a file, read by `_redirect_verdict`, and `("unread", producer)` for a source the hook cannot read.
     """
     out: list[tuple[str, str]] = []
     if depth > MAX_PROGRAM_DEPTH or cmd == "":
         return out
     lexer = shellscan._Lexer(cmd)
     toks = lexer.tokens()
+    tree = shellscan._parse(toks)
 
-    def text_of(item):
-        hd, text = item
-        return lexer.src[hd.body_start : hd.body_end] if hd is not None else text
+    def heredoc_text(hd):
+        return lexer.src[hd.body_start : hd.body_end]
+
+    # `exec 3< p.py` opens a descriptor for every later command of the same shell. The walk does not order commands, so every redirect-only `exec` in the command line counts, the over-reading direction.
+    exec_redirs: list[Any] = []
+
+    def collect_exec(items):
+        for item in items:
+            if item[0] == "sep":
+                continue
+            for stage in item[1]:
+                if stage[0] in ("sub", "brace"):
+                    collect_exec(stage[1])
+                    continue
+                raw = [t for t in stage[1] if isinstance(t, shellscan._Word)]
+                words, _ = shellscan._strip_prefixes(raw)
+                if not words and "exec" in (shellscan._word_value(w) for w in raw):
+                    exec_redirs.extend(t for t in stage[1] if isinstance(t, shellscan._Redir))
+
+    collect_exec(tree)
+
+    def opened(redir, redirs, seen, level):
+        """The sources a read of the descriptor `redir` opens carries."""
+        hd = redir.heredoc
+        if hd is not None:
+            return [("text", heredoc_text(hd))] if hd.body_start is not None else []
+        if redir.target is None:
+            return [("unread", "descriptor %s, opened with no target" % redir.fd)]
+        target = shellscan._word_value(redir.target)
+        if redir.op == "<<<":
+            return [("text", target)]
+        if redir.op in STDIN_REDIRECTS:
+            return [("file", target)]
+        if redir.op == "<&":
+            return duplicated(target, redirs, seen, level)
+        return [("unread", "descriptor %s, opened for writing" % redir.fd)]
+
+    def duplicated(target, redirs, seen, level):
+        """The sources `<&target` reads: nothing for `<&-`, the command's own stdin ("inherit") for `<&0`, and otherwise what the command line opens on that descriptor. One it does not open is supplied by the shell, so it is "unread"."""
+        if target == "-":
+            return []
+        found = DUP_TARGET.match(target)
+        if not found:
+            return [("unread", "a descriptor named by `%s`" % target)]
+        fd = found.group(1)
+        if fd == "0":
+            return [("inherit", None)]
+        if fd in seen or level > STDIN_DEPTH:
+            return [("unread", "descriptor %s, duplicated in a cycle" % fd)]
+        openers = [r for r in list(redirs) + exec_redirs if r.fd == fd]
+        if not openers:
+            return [("unread", "descriptor %s, which the command line does not open" % fd)]
+        got: list[tuple[str, Any]] = []
+        for redir in openers:
+            got.extend(opened(redir, redirs, seen | {fd}, level + 1))
+        return got
+
+    def stdin_sources(own, ctx, level=0, piped=True):
+        """`(kind, value)` for everything a command with redirects `own` reads on stdin under `ctx`: "text" the command line holds, a "file" word, or an "unread" producer. Every heredoc and here-string counts whatever its descriptor and every stdin redirect counts, the over-reading direction; the pipe or group stdin counts unless a redirect replaces it, so a pipe into `python3 - < f` is not read as the program."""
+        if level > STDIN_DEPTH:
+            return [("unread", "a pipeline nested deeper than the hook follows")]
+        redirs = list(own) + list(ctx[0])
+        got: list[tuple[str, Any]] = []
+        replaced = False
+        for redir in redirs:
+            on_stdin = redir.fd in (None, "0")
+            if redir.heredoc is not None or redir.op == "<<<":
+                got.extend(opened(redir, redirs, frozenset(), level))
+                replaced = replaced or on_stdin
+            elif on_stdin and redir.op in STDIN_REDIRECTS and redir.target is not None:
+                got.append(("file", shellscan._word_value(redir.target)))
+                replaced = True
+            elif on_stdin and redir.op == "<&" and redir.target is not None:
+                dup = duplicated(shellscan._word_value(redir.target), redirs, frozenset(), level)
+                replaced = replaced or ("inherit", None) not in dup
+                got.extend(s for s in dup if s[0] != "inherit")
+        if piped and not replaced:
+            got.extend(pipe_sources(ctx, level))
+        return got
+
+    def pipe_sources(ctx, level):
+        """What the pipe, the group stdin or the shell's stdin hands a command whose own redirects leave stdin alone."""
+        if ctx[1] is None:
+            return list(ctx[2])
+        stage, up = ctx[1]
+        if stage[0] != "cmd":
+            return [("unread", "a subshell or brace group")]
+        own = [t for t in stage[1] if isinstance(t, shellscan._Redir)]
+        words, _ = shellscan._strip_prefixes(
+            [t for t in stage[1] if isinstance(t, shellscan._Word)]
+        )
+        if not words:
+            return []
+        argv = [shellscan._word_value(w) for w in words]
+        feeder = argv[0].rsplit("/", 1)[-1]
+        if feeder in ("echo", "printf"):
+            args = argv[1:]
+            while args and feeder == "echo" and re.match(r"^-[neE]+$", args[0]):
+                args = args[1:]
+            return [("text", " ".join(args))]
+        if feeder == "cat":
+            names: list[str] = []
+            reads_stdin = False
+            operands = False
+            for word in argv[1:]:
+                if word == "--" and not operands:
+                    operands = True
+                elif word == "-":
+                    reads_stdin = True
+                elif operands or not word.startswith("-"):
+                    names.append(word)
+            got = [("file", name) for name in names]
+            return got + stdin_sources(own, up, level + 1, piped=reads_stdin or not names)
+        return [("unread", "`%s`" % _shorten(" ".join(argv)))]
+
+    def take(family, ctx_own, ctx):
+        for kind, value in stdin_sources(ctx_own, ctx):
+            if kind == "text":
+                if family == "shell":
+                    out.extend(interpreter_programs(value, depth + 1, files))
+                else:
+                    out.append((family, value))
+            elif files is not None:
+                files.append((family, kind, value))
 
     def words_subs(parts):
         for part in parts:
             if part.sub is not None:
-                walk(shellscan._parse(part.sub))
+                walk(shellscan._parse(part.sub), _stdin_ctx())
             if part.parts:
                 words_subs(part.parts)
 
-    def element(stage, upstream, inherited):
-        group_redirs, group_upstream = inherited
-        if upstream is None:
-            upstream = group_upstream
+    def element(stage, ctx):
         if stage[0] in ("sub", "brace"):
             own = [
                 t for t in (stage[2] if len(stage) > 2 else []) if isinstance(t, shellscan._Redir)
             ]
-            walk(stage[1], (own + group_redirs, upstream))
+            walk(stage[1], _stdin_ctx(own + list(ctx[0]), ctx[1], ctx[2]))
             return
         words = [t for t in stage[1] if isinstance(t, shellscan._Word)]
-        redirs = [t for t in stage[1] if isinstance(t, shellscan._Redir)] + group_redirs
+        own = [t for t in stage[1] if isinstance(t, shellscan._Redir)]
         for word in words:
             words_subs(word.parts)
         words, _ = shellscan._strip_prefixes(words)
@@ -398,39 +477,40 @@ def interpreter_programs(cmd, depth=0, files=None):
             if mode == "c" and code is not None:
                 out.append((family, code))
             elif mode == "stdin":
-                out.extend((family, text_of(item)) for item in _stdin_texts(redirs, upstream))
-                if files is not None:
-                    files.extend((family, word) for word in _stdin_files(redirs, upstream))
+                take(family, own, ctx)
         elif base in shellscan.SHELL_NAMES:
             mode, payload = shellscan._shell_payload(argv)
             if mode == "c" and payload is not None:
-                out.extend(interpreter_programs(payload, depth + 1, files))
+                out.extend(interpreter_programs(payload, depth + 1, files, stdin_sources(own, ctx)))
             elif mode == "stdin":
-                for item in _stdin_texts(redirs, upstream):
-                    out.extend(interpreter_programs(text_of(item), depth + 1, files))
-                if files is not None:
-                    files.extend(("shell", word) for word in _stdin_files(redirs, upstream))
+                take("shell", own, ctx)
         elif base == "eval":
-            out.extend(interpreter_programs(" ".join(argv), depth + 1, files))
+            out.extend(
+                interpreter_programs(" ".join(argv), depth + 1, files, stdin_sources(own, ctx))
+            )
         else:
             # A LAUNCHER'S COMMAND (#503f0ba8): `find . -exec python3 -c '...' \;` and `npx -c '...'` hand an interpreter its program one level down, so the launched command is walked as a command line of its own, quoted back so its program text stays one word.
             for how, launched in shellscan._launched(base, argv):
                 src = launched if how == "text" else shellscan._quote_argv(launched)
                 out.extend(interpreter_programs(src, depth + 1, files))
 
-    def walk(items, inherited=((), None)):
+    def walk(items, ctx):
         for item in items:
             if item[0] == "sep":
                 continue
             stages = item[1]
+            prev = ctx
             for pos, stage in enumerate(stages):
-                if pos:
-                    element(stage, stages[pos - 1], ([], None))
-                else:
-                    element(stage, None, (list(inherited[0]), inherited[1]))
+                here = ctx if pos == 0 else _stdin_ctx((), (stages[pos - 1], prev))
+                element(stage, here)
+                prev = here
 
-    walk(shellscan._parse(toks))
+    walk(tree, _stdin_ctx((), None, stdin))
     return out
+
+
+def _shorten(text, limit=80):
+    return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
 def _const_str(node):
@@ -583,7 +663,9 @@ def _unread_reason(run_, cmd, cwd):
             return "a descriptor the shell supplies"
         mode = os.stat(target).st_mode
         if stat.S_ISDIR(mode):
-            reason = "a directory" if interpreter else None
+            # A DIRECTORY PERL IS HANDED RUNS NOTHING (#faca6bd7). Python runs `pkg/__main__.py` and node runs `dir/index.js` (measured, node v24.21.0), but perl stops with `Can't open perl script "/tmp": Is a directory` and rc 25 (measured, perl 5.40.1), so `perl -x /tmp -e 'print 1'`, the pinned hookcases control, is not a script the hook failed to read. Ruby was not measurable here and stays refused.
+            perl = run_.name.rsplit("/", 1)[-1].startswith("perl")
+            reason = "a directory" if interpreter and not perl else None
         elif not stat.S_ISREG(mode):
             reason = None if os.path.realpath(target) == os.devnull else "not a regular file"
         else:
@@ -647,7 +729,7 @@ def _stdin_file(target):
 
 
 def _redirect_verdict(family, word, cmd, cwd, depth):
-    """The arm a file fed to a stdin program trips (`_stdin_files`), read under the rules a script run by path is read by: what an earlier run of `cmd` writes into it, and the file on disk, are both judged as `_file_verdict` judges a script; one that cannot be read in full is "unread"; a tracked file unchanged from HEAD is reviewed code and passes; one that does not exist fails open. A relative word is resolved in every directory a run of `cmd` executes in, the over-reading direction, because the walk that finds the redirect does not follow `cd`."""
+    """The arm a file fed to a stdin program trips (a "file" source `interpreter_programs` hands back), read under the rules a script run by path is read by: what an earlier run of `cmd` writes into it, and the file on disk, are both judged as `_file_verdict` judges a script; one that cannot be read in full is "unread"; a tracked file unchanged from HEAD is reviewed code and passes; one that does not exist fails open. A relative word is resolved in every directory a run of `cmd` executes in, the over-reading direction, because the walk that finds the redirect does not follow `cd`."""
     if "\0" in word or word.startswith(("<(", ">(")):
         return "unread"
     if _stdin_path(word):
@@ -880,16 +962,18 @@ def _file_verdict(family, text, depth):
 
 
 def _program_verdict(cmd, depth, cwd=None):
-    """The arm a program `cmd` hands an interpreter trips, to MAX_PROGRAM_DEPTH programs deep: the texts `interpreter_programs` finds in the command line, then every script it runs BY PATH (`_script_verdict`)."""
+    """The arm a program `cmd` hands an interpreter trips, to MAX_PROGRAM_DEPTH programs deep: the texts `interpreter_programs` finds in the command line, the files and unread producers a stdin program is read from, then every script it runs BY PATH (`_script_verdict`). An unread producer is the verdict "unread:<producer>", which `run` names in the refusal."""
     if depth >= MAX_PROGRAM_DEPTH:
         return None
-    files: list[tuple[str, str]] = []
+    files: list[tuple[str, str, str]] = []
     for family, code in interpreter_programs(cmd, files=files):
         verdict = _code_verdict(family, code, depth + 1)
         if verdict:
             return verdict
-    for family, word in files:
-        verdict = _redirect_verdict(family, word, cmd, cwd, depth)
+    for family, kind, value in files:
+        if kind == "unread":
+            return "unread:" + value
+        verdict = _redirect_verdict(family, value, cmd, cwd, depth)
         if verdict:
             return verdict
     return _script_verdict(cmd, depth, cwd)
@@ -1001,6 +1085,14 @@ UNREAD_MESSAGE = (
     "and the script is untracked or differs from HEAD, so whether it runs "
     "`git worktree add` cannot be judged. Hand the command to the operator to run with the `!` "
     "prefix, which bypasses this hook, or run a script the hook can read."
+)
+
+# The "unread:<producer>" verdict: a program an interpreter or shell reads on stdin from a source the hook cannot read (#faca6bd7).
+UNREAD_STDIN_MESSAGE = (
+    "❌ BLOCKED: this runs a program an interpreter or shell reads on stdin from %s, which "
+    "this hook could not read in full, so whether it runs `git worktree add` cannot be judged. "
+    "Hand the command to the operator to run with the `!` prefix, which bypasses this hook, or "
+    "hand the interpreter its program as `-c`, a heredoc or a file the hook can read."
 )
 
 EDGE_CASES = [
@@ -1126,10 +1218,14 @@ def run(ev):
         return hookio.DENY
     verdict = _program_verdict(cmd, 0, ev.field("cwd") or None)
     if verdict:
+        key, _, producer = verdict.partition(":")
+        if key == "unread" and producer:
+            ev.warn(UNREAD_STDIN_MESSAGE % producer)
+            return hookio.DENY
         # An unjudgeable or unread script found nothing, and a script naming the phrase was refused for its text: the note says where a worktree verb was found, so it is for the other verdicts only.
         ev.warn(
-            messages[verdict]
-            + ("" if verdict in ("unjudgeable", "unread", "script") else " " + PROGRAM_NOTE)
+            messages[key]
+            + ("" if key in ("unjudgeable", "unread", "script") else " " + PROGRAM_NOTE)
         )
         return hookio.DENY
     return hookio.ALLOW
