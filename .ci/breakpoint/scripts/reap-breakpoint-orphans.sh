@@ -140,12 +140,13 @@ record_delete() {
 
 # Cloudflare request helper. Same shape as stop-breakpoint.sh so the two read
 # alike; the token is the breakpoint-scoped one, not the account-wide CF token.
+# It reaches curl as a `-K -` config on stdin (printf is a builtin), never on argv.
 cf_api() {
     local method="$1" path="$2"
-    curl -sS -X "$method" "${CF_API}${path}" \
-        -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
-        -H "Content-Type: application/json" \
-        --max-time 30
+    printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+        curl -sS -X "$method" "${CF_API}${path}" -K - \
+            -H "Content-Type: application/json" \
+            --max-time 30
 }
 
 cf_ok() { echo "$1" | jq -e '.success == true' >/dev/null 2>&1; }
@@ -176,12 +177,12 @@ cf_deleted_ok() {
 # `|| true` and normalise an empty/short body instead.
 gh_run_status() {
     local run_id="$1" resp code body
-    resp="$(curl -sS -w $'\n%{http_code}' \
-        -H "Authorization: Bearer ${GH_TOKEN}" \
-        -H "Accept: application/vnd.github+json" \
-        -H "X-GitHub-Api-Version: 2022-11-28" \
-        --max-time 30 --retry 2 --retry-delay 5 \
-        "${GH_API}/repos/${REPO}/actions/runs/${run_id}" 2>/dev/null || true)"
+    resp="$(printf 'header = "Authorization: Bearer %s"\n' "$GH_TOKEN" |
+        curl -sS -w $'\n%{http_code}' -K - \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            --max-time 30 --retry 2 --retry-delay 5 \
+            "${GH_API}/repos/${REPO}/actions/runs/${run_id}" 2>/dev/null || true)"
 
     if [[ -z "$resp" ]]; then
         echo "__error__"

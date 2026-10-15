@@ -179,3 +179,102 @@ def test_workflow_commands_never_hit_stdout(gate):
     if "::warning::careful" not in result.err:
         gate.log_fail("bp_gha_warning emitted no ::warning:: at all")
     gate.log_pass("workflow commands are still emitted (on stderr), so masking keeps working")
+
+
+# The request helpers that carry a bearer token: (script, function, the call that drives it, the token variable). Worklist #773eccc5: an argument of any process is readable through `ps` and /proc/<pid>/cmdline for its lifetime, so each token reaches curl as a `-K -` config on stdin.
+TOKEN_HELPERS = (
+    ("start-tunnel.sh", "cf_api", "cf_api GET /zones", "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN"),
+    (
+        "start-tunnel.sh",
+        "cf_api",
+        "cf_api POST /x '{\"a\":1}'",
+        "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN",
+    ),
+    ("stop-breakpoint.sh", "cf_api", "cf_api DELETE /x", "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN"),
+    ("reap-breakpoint-orphans.sh", "cf_api", "cf_api GET /x", "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN"),
+    ("reap-breakpoint-orphans.sh", "gh_run_status", "gh_run_status 7", "GH_TOKEN"),
+)
+ARGV_TOKEN = "bp-argv-probe-token-0123456789"
+FAKE_CURL = """#!/bin/bash
+printf '%s\\n' "$*" >>"$FAKE_CURL_ARGV"
+cat >>"$FAKE_CURL_STDIN"
+printf '{}\\n200'
+"""
+
+
+def function_text(text: str, name: str) -> str:
+    """`name() { ... }` as written, up to the first line that is a bare `}`."""
+    match = re.search(r"^%s\(\) \{\n.*?^\}\n" % re.escape(name), text, re.MULTILINE | re.DOTALL)
+    return match.group(0) if match else ""
+
+
+def curl_calls(gate, source: str, call: str, var: str) -> tuple[str, str]:
+    """(every curl argv, everything curl read on stdin) for one helper run against a recording fake curl."""
+    bash = harness.require_tool("bash", "install bash; the subjects are bash functions")
+    with harness.temp_dir() as tmp:
+        (tmp / "curl").write_text(FAKE_CURL, encoding="utf-8")
+        (tmp / "curl").chmod(0o755)
+        argv_log, stdin_log = tmp / "argv.log", tmp / "stdin.log"
+        harness.run(
+            [bash, "-c", "set -uo pipefail\n%s\n%s >/dev/null" % (source, call)],
+            env={
+                "PATH": "%s%s%s" % (tmp, os.pathsep, os.defpath),
+                "FAKE_CURL_ARGV": str(argv_log),
+                "FAKE_CURL_STDIN": str(stdin_log),
+                "CF_API": "https://cf.invalid",
+                "GH_API": "https://gh.invalid",
+                "REPO": "o/r",
+                var: ARGV_TOKEN,
+            },
+        )
+        argv = argv_log.read_text(encoding="utf-8") if argv_log.is_file() else ""
+        stdin = stdin_log.read_text(encoding="utf-8") if stdin_log.is_file() else ""
+    if not argv:
+        gate.log_fail("the helper never reached curl: %s" % call)
+    return argv, stdin
+
+
+def test_bearer_tokens_reach_curl_on_stdin_not_argv(gate):
+    for script, name, call, var in TOKEN_HELPERS:
+        source = function_text((BP / "scripts" / script).read_text(encoding="utf-8"), name)
+        if not source:
+            gate.log_fail(
+                "%s no longer defines %s(); this case would test nothing" % (script, name)
+            )
+        argv, stdin = curl_calls(gate, source, call, var)
+        if ARGV_TOKEN in argv:
+            gate.log_fail("%s %s puts the token on curl's argv: %s" % (script, name, argv))
+        gate.assert_contains(
+            stdin,
+            'header = "Authorization: Bearer %s"' % ARGV_TOKEN,
+            "%s %s must hand curl the header as a -K - config on stdin" % (script, name),
+        )
+    gate.log_pass(
+        "every breakpoint bearer token reaches curl on stdin (%d calls)" % len(TOKEN_HELPERS)
+    )
+
+
+def test_the_argv_probe_fires_on_a_header_flag(gate):
+    """ANTI-VACUITY: the pre-#773eccc5 shape, `-H "Authorization: Bearer ${TOKEN}"` on argv, must trip the probe."""
+    leaky = 'cf_api() {\n    curl -sS -X "$1" "${CF_API}$2" -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}"\n}\n'
+    argv, _stdin = curl_calls(gate, leaky, "cf_api GET /x", "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN")
+    if ARGV_TOKEN not in argv:
+        gate.log_fail("the argv probe did NOT see a token passed with -H; this gate is blind")
+    gate.log_pass("the argv probe fires on the reinstated -H shape")
+
+
+def test_the_connector_token_is_not_on_argv(gate):
+    """cloudflared runs for the whole session; `--token` would publish the tunnel token in its argv for all of it. TUNNEL_TOKEN in its environment is read the same way."""
+    text = (BP / "scripts" / "start-tunnel.sh").read_text(encoding="utf-8")
+    runs = [line for line in text.splitlines() if "tunnel --no-autoupdate run" in line]
+    if not runs:
+        gate.log_fail(
+            "start-tunnel.sh no longer starts the connector; this case would test nothing"
+        )
+    for line in runs:
+        if "--token" in line:
+            gate.log_fail("the connector is started with --token on argv: %s" % line.strip())
+        gate.assert_contains(
+            line, 'TUNNEL_TOKEN="$tunnel_token"', "the connector takes TUNNEL_TOKEN"
+        )
+    gate.log_pass("the connector token rides TUNNEL_TOKEN, not argv")
