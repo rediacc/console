@@ -99,6 +99,92 @@ def _rotation_notice(returncode: int, stderr: str) -> list[str]:
 
 UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
+#: The ONLY fields that survive the listing. `bws secret list` returns each secret's decrypted value beside these, and the projection below is the first thing done with a row.
+PROJECTED_FIELDS = ("id", "key", "projectId")
+
+
+class ListingError(Exception):
+    """`bws` could not produce a listing. `notice` is the rotation notice to print BEFORE the message, on stderr."""
+
+    def __init__(self, message: str, notice: list[str] | None = None) -> None:
+        super().__init__(message)
+        self.message = message
+        self.notice = list(notice or [])
+
+
+def project_listing(raw: object) -> list[dict[str, str]]:
+    """Each row down to {id, key, projectId}, as strings. NOTHING else survives, the value least of all.
+
+    Shared with `.ci/rediacc_ci/quality/bws_map_live.py` (check:ci-bws-map-live), which loads this file by path and asserts in its controls that a planted value appears nowhere in the result.
+    """
+    if not isinstance(raw, list):
+        raise ListingError(
+            "bws secret list did not return a JSON list (stdout withheld: it may carry values)"
+        )
+    return [{f: str(s.get(f, "")) for f in PROJECTED_FIELDS} for s in raw if isinstance(s, dict)]
+
+
+def list_live(bws: str, project: str, env: dict[str, str] | None = None) -> list[dict[str, str]]:
+    """The live secrets of `project`, PROJECTED. Raises ListingError; never returns or raises a value.
+
+    `env` is the child's whole environment (the token rides in it as BWS_ACCESS_TOKEN); None inherits this process's.
+    """
+    # `--color no` is load-bearing: bws 2.1.0's default `--color auto` does not detect a non-tty and wraps `--output json` in truecolor ANSI escapes even when stdout is a pipe (verified 2026-09-02 against the hash-pinned 2.1.0 binary). Without it every run of this script died on the json.JSONDecodeError below -- i.e. it had never worked from a pipe, which is the only way it runs.
+    proc = subprocess.run(
+        [bws, "--color", "no", "secret", "list", str(project), "--output", "json"],
+        capture_output=True,
+        text=True,
+        check=False,  # the return code is judged below, with stderr only
+        env=env,
+    )
+    if proc.returncode != 0:
+        # THE NOTICE COMES BEFORE THE DEATH AND ON THE SAME STREAM, which is why it is stderr and not stdout. The first version printed it to stdout and it arrived AFTER `die`'s line under a pipe: stderr is unbuffered and a piped stdout is block-buffered, so the two came out in the opposite order to the one they were written in. A procedure that appears below the exception
+        # reads as trailing noise.
+        notice = _rotation_notice(proc.returncode, proc.stderr or "")
+        # stderr only: stdout on a partial failure could carry secret material.
+        raise ListingError(
+            f"bws secret list exited {proc.returncode}: {proc.stderr.strip()}", notice
+        )
+    try:
+        raw = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        raise ListingError(
+            "bws secret list did not return JSON (stdout withheld: it may carry values)"
+        ) from None
+    del proc
+    # PROJECTION FIRST. Everything after this line has no access to any value.
+    return project_listing(raw)
+
+
+def split_archives(entries: list[dict[str, str]]) -> tuple[list[dict[str, str]], list[str]]:
+    """(entries without archive clones, the archive clone names). A clone is never mapped."""
+    leaked = sorted(e["key"] for e in entries if ARCHIVE_RE.search(e["key"]))
+    return [e for e in entries if not ARCHIVE_RE.search(e["key"])], leaked
+
+
+def listing_problems(
+    entries: list[dict[str, str]], project: str, floor: int = MIN_ENTRIES
+) -> list[str]:
+    """Every reason the listing cannot be trusted, in the order the refresh refuses on them."""
+    if len(entries) < floor:
+        return [
+            f"listing returned {len(entries)} secret(s), floor is {floor}; refusing to shrink the map"
+        ]
+    out = []
+    bad = [e["key"] for e in entries if not UUID_RE.match(e["id"])]
+    if bad:
+        out.append(f"malformed id on: {', '.join(sorted(bad))}")
+    foreign = [e["key"] for e in entries if e["projectId"] != project]
+    if foreign:
+        out.append(
+            f"listing carried secrets outside project {project}: {', '.join(sorted(foreign))}"
+        )
+    keys = [e["key"] for e in entries]
+    dupes = sorted({k for k in keys if keys.count(k) > 1})
+    if dupes:
+        out.append(f"duplicate secret name(s) in the listing: {', '.join(dupes)}")
+    return out
+
 
 def die(msg: str) -> None:
     print(f"✗ {msg}", file=sys.stderr)
@@ -122,58 +208,23 @@ def main() -> int:
     if not bws or not Path(bws).exists():
         die("bws not found; install it as .devcontainer/Dockerfile does, or pass --bws")
 
-    # `--color no` is load-bearing: bws 2.1.0's default `--color auto` does not detect a non-tty and wraps `--output json` in truecolor ANSI escapes even when stdout is a pipe (verified 2026-09-02 against the hash-pinned 2.1.0 binary). Without it every run of this script died on the json.JSONDecodeError below -- i.e. it had never worked from a pipe, which is the only way it runs.
-    proc = subprocess.run(
-        [bws, "--color", "no", "secret", "list", str(project), "--output", "json"],
-        capture_output=True,
-        text=True,
-        check=False,  # the return code is judged below, with stderr only
-    )
-    if proc.returncode != 0:
-        # THE NOTICE COMES BEFORE THE DEATH AND ON THE SAME STREAM, which is why it is stderr and not stdout. The first version printed it to stdout and it arrived AFTER `die`'s line under a pipe: stderr is unbuffered and a piped stdout is block-buffered, so the two came out in the opposite order to the one they were written in. A procedure that appears below the exception
-        # reads as trailing noise.
-        for line in _rotation_notice(proc.returncode, proc.stderr or ""):
-            print(line, file=sys.stderr)
-        # stderr only: stdout on a partial failure could carry secret material.
-        die(f"bws secret list exited {proc.returncode}: {proc.stderr.strip()}")
     try:
-        raw = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        die("bws secret list did not return JSON (stdout withheld: it may carry values)")
+        entries = list_live(str(bws), str(project))
+    except ListingError as exc:
+        for line in exc.notice:
+            print(line, file=sys.stderr)
+        die(exc.message)
 
-    # PROJECTION FIRST. Everything below this line has no access to any value.
-    entries = [
-        {
-            "id": str(s.get("id", "")),
-            "key": str(s.get("key", "")),
-            "projectId": str(s.get("projectId", "")),
-        }
-        for s in raw
-    ]
-    del raw, proc
-
-    leaked = sorted(e["key"] for e in entries if ARCHIVE_RE.search(e["key"]))
-    entries = [e for e in entries if not ARCHIVE_RE.search(e["key"])]
+    entries, leaked = split_archives(entries)
     for key in leaked:
         print(
             f"! excluded archive clone {key}; delete it: ./run.sh rotation bws-gc --apply",
             file=sys.stderr,
         )
 
-    if len(entries) < MIN_ENTRIES:
-        die(
-            f"listing returned {len(entries)} secret(s), floor is {MIN_ENTRIES}; refusing to shrink the map"
-        )
-    bad = [e["key"] for e in entries if not UUID_RE.match(e["id"])]
-    if bad:
-        die(f"malformed id on: {', '.join(sorted(bad))}")
-    foreign = [e["key"] for e in entries if e["projectId"] != project]
-    if foreign:
-        die(f"listing carried secrets outside project {project}: {', '.join(sorted(foreign))}")
-    keys = [e["key"] for e in entries]
-    dupes = sorted({k for k in keys if keys.count(k) > 1})
-    if dupes:
-        die(f"duplicate secret name(s) in the listing: {', '.join(dupes)}")
+    problems = listing_problems(entries, str(project))
+    if problems:
+        die(problems[0])
 
     new = dict(doc)  # preserve every top-level field, in its existing order
     new["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")

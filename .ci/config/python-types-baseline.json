@@ -3145,13 +3145,6 @@
       "message": "Need type annotation for \"parts\" (hint: \"parts: list[<type>] = ...\")"
     },
     {
-      "id": "660a6e9dbca2216c",
-      "file": "scripts/ops/bws-map-refresh.py",
-      "code": "list-item",
-      "count": 1,
-      "message": "List item 0 has incompatible type \"Any | str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
-    },
-    {
       "id": "62ada453e699633a",
       "file": "scripts/ops/secret-rename.py",
       "code": "assignment",
