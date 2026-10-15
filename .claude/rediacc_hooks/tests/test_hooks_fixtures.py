@@ -2379,6 +2379,12 @@ LINK_INTO_TREE_ROWS = (
         "python3 -c \"s = open('lnk/x.md').read(); open('plain/y.md', 'w').write(s)\"",
         0,
     ),
+    # Review 5dbdf567.1: a CDPATH longer than the walk's old 16-choice cap, whose last entry holds the target, lands where bash lands.
+    (
+        "block_review_file_shell_write",
+        "CDPATH=%s:agent/reviews cd sub && tee y.md" % ":".join("e%d" % i for i in range(20)),
+        2,
+    ),
     # CONTROLS: a read through the link, a write beside it, a logical step back out, and commands that touch no link.
     ("block_review_file_shell_write", "python3 -c \"print(open('lnk/x.md').read())\"", 0),
     ("block_review_file_shell_write", "python3 -c \"open('plain/x.md','w').write('x')\"", 0),

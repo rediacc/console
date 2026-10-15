@@ -2059,7 +2059,8 @@ def _physical(directory):
 # A `cd` THROUGH CDPATH LANDS IN THE FIRST ENTRY HOLDING THE DIRECTORY (#d0079b4e sweep). With CDPATH set, bash's `cd x` tries `<entry>/x` for each entry in order (an empty entry is `.`) and falls back to `./x` only when none exists: measured on bash 5.3.9, `CDPATH=a; cd x` lands in `a/x` and `CDPATH=a; cd b` in `b`. Which one is a question for the disk, and the walk has no root, so the landing carries every choice in bash's order, the fallback last.
 # The text is the fallback, which is what every reader saw before (the walk ignored CDPATH), and `write_directory` picks the first choice the disk holds. A CDPATH this command does not assign (the session's) is read as unset, as it always was.
 # EACH CHOICE KEEPS THE PATH AS TYPED FOR THAT QUESTION. A later `cd ..` makes the choice `a/x` into `a`, a directory that exists whether or not `a/x` ever did, so the existence test asks the kernel about `a/x/..`, which fails where `a/x` is missing; `CDPATH=a; cd x; cd ..` lands in `a` exactly when `a/x` is there.
-_SEARCH_CAP = 16
+# THE CAP BOUNDS CHAINED SEARCHES, NOT ONE. A single searched `cd` has one choice per CDPATH entry, which the command's own text bounds; a chain of them multiplies (`CDPATH=a:b cd x; cd y` tries every entry from every choice). At 16 a CDPATH of 16 or more entries fell back to `./x` and missed the entry bash lands in (review 5dbdf567.1, rc 0 for a write into agent/reviews/sub through a 21-entry CDPATH). 4096 choices stays far past any real CDPATH while a chain still cannot run away; over it the fallback is taken, which every reader read before the walk knew CDPATH.
+_SEARCH_CAP = 4096
 
 
 class _SearchedDir(str):
