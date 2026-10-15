@@ -1700,6 +1700,70 @@ STATIC: list[Case] = [
         bash_json("cp /tmp/a.py /tmp/wt-78afdc0b.py && python3 /tmp/wt-78afdc0b.py"),
         "worktree-add CONTROL: an unreadable script on a line naming no worktree verb (#78afdc0b)",
     ),
+    # A noexec shell (`bash -n`, a cluster holding `n`, `-o noexec`) parses its script and runs none of it, so a syntax check of an edited script that names the phrase is not a run (#bfe569ca: `bash -n .ci/bootstrap.sh` was refused for its `per-worktree` comment). Each 0 row was rc 2 before; the 2 rows pin that only noexec is exempt.
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -n /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add CONTROL: `bash -n` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -xn /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add CONTROL: `bash -xn` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -o noexec /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add CONTROL: `bash -o noexec` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash --norc -n /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add CONTROL: `bash --norc -n` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; sh -n /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add CONTROL: `sh -n` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add: `bash` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -x /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add: `bash -x` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash +n /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add: `bash +n` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -o errexit /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add: `bash -o errexit` on a written script naming the phrase (#bfe569ca)",
+    ),
     # block_user_only_command and its shell twin (operator ruling 2026-10-09, #18c7e53c): no slash command or skill is user-only, except a file on the operator's exception list.
     case(
         "check 2 guards/block_user_only_command.py",

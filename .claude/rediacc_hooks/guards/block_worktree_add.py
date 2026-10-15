@@ -645,6 +645,28 @@ def _shell_operand(argv):
     return argv[k] if k < len(argv) else None
 
 
+def _noexec(argv):
+    """Does a shell's option list turn on `noexec` (`bash -n x.sh`, `-xn`, `-o noexec`) before its operand? Such a shell parses its script and runs none of it, `set +n` inside included, so it is a syntax check, not a run (#bfe569ca). Options are walked as `_shell_operand` walks them."""
+    k = 0
+    while k < len(argv):
+        arg = argv[k]
+        if arg in ("--", "-"):
+            return False
+        if arg.startswith("--"):
+            k += 2 if arg in SHELL_VALUE_LONG else 1
+            continue
+        if len(arg) > 1 and arg[0] in "-+":
+            flags = arg[1:]
+            if arg[0] == "-" and "n" in flags:
+                return True
+            if arg[0] == "-" and "o" in flags and k + 1 < len(argv) and argv[k + 1] == "noexec":
+                return True
+            k += 2 if ("o" in flags or "O" in flags) else 1
+            continue
+        return False
+    return False
+
+
 def _shell_script_path(run_, cmd, cwd):
     """The script a shell run reads by path: `bash x.sh`, `source x.sh`, `. x.sh`, or `./x.sh` run directly whose shebang names no interpreter `shellscan.interpreter_program` reads (a shell, or none). None for anything else."""
     base = run_.name.rsplit("/", 1)[-1]
@@ -652,6 +674,8 @@ def _shell_script_path(run_, cmd, cwd):
     if base.startswith(shellscan.INTERPRETER_NAMES):
         return None
     if base in shellscan.SHELL_NAMES:
+        if _noexec(argv):
+            return None
         return _shell_operand(argv) if shellscan._shell_payload(argv)[0] == "file" else None
     if base in SOURCE_WORDS:
         return argv[0] if argv else None
