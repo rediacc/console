@@ -108,19 +108,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 1,
+      "done": 7,
       "open_sigs": [
+        "e644e195"
+      ],
+      "done_sigs": [
         "0d7d3859",
         "3be4a295",
         "40d16d85",
         "71542b3f",
         "738b8555",
         "84a24b2f",
-        "e5d46d41",
-        "e644e195"
-      ],
-      "done_sigs": []
+        "e5d46d41"
+      ]
     },
     "agent/plans/PLAN-backup-list-executor-fix.md": {
       "status": "compacted",
