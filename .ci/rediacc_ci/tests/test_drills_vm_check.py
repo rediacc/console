@@ -1774,6 +1774,15 @@ def test_a_failed_vi_probe_is_a_failed_row_not_an_absence(tmp_path: pathlib.Path
     assert not [s for s in receipt["steps"] if "vi absent" in s["desc"]]
 
 
+def test_a_vi_probe_that_exits_0_with_nothing_is_a_failed_row(tmp_path: pathlib.Path) -> None:
+    """Review f434e6dc.3: `command -v vi` printing nothing at rc 0 answered neither present nor absent, so it is a failed row and no sed fallback claims vi absent."""
+    world = make_world(tmp_path, vi=False, vi_probe_rc=0)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    assert [s["verdict"] for s in receipt["steps"] if "vi probe answered" in s["desc"]] == ["FAIL"]
+    assert not [s for s in receipt["steps"] if "vi absent" in s["desc"]]
+
+
 def test_alias_block_finds_a_later_pattern_and_stops_at_match() -> None:
     """Review 5a9861e8.4: a Host line lists several patterns, and a Match block's directives are not the alias's."""
     text = "Host other want\n  HostName 2\nMatch host x\n  User root\n"
