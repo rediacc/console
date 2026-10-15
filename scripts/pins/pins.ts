@@ -149,6 +149,129 @@ interface RepoDraft extends RepoChange {
 
 const slug = (repo: string): string => (repo === '.' ? 'console' : repo.replace(/[^\w.-]+/g, '-'));
 
+/** The repository a site line or a command directory belongs to: the longest submodule path its leading path token is, or lies under; the console otherwise. A label such as `private/account (update)` carries no slash after the repository, so a `${repo}/` prefix test alone misses it. Pure. */
+export function repoOfPath(token: string, subs: readonly string[]): string {
+  const head = /^[^\s:]+/.exec(token)?.[0] ?? '';
+  const hit = [...subs]
+    .sort((a, b) => b.length - a.length)
+    .find((s) => head === s || head.startsWith(`${s}/`));
+  return hit ?? '.';
+}
+
+export interface DraftInput {
+  repo: string;
+  /** The run's subject, which the console draft carries as is. */
+  subject: string;
+  /** Every plan of the run, with its release line and its site lines. */
+  plans: Array<{ id: string; name: string; pinLine: string; changes: string[] }>;
+  commands: CommandRecord[];
+  gates: { ids: string[]; rc: number } | null;
+  ungated: string[];
+  /** The submodules whose commits the console commit moves the pointer of. */
+  pointers: string[];
+  /** Every scanned submodule path, for attributing site lines and command directories. */
+  submodules: string[];
+  /** The repository's own changed paths, for a subject when it carries no site line. */
+  paths: string[];
+  stamp: string;
+  task: string | null;
+  /** The shared-message mutant: the drafting before 2026-10-15, one change list for every repository. */
+  shared?: boolean;
+}
+
+/**
+ * One repository's drafted commit message. Each draft lists only what that repository's own commit changes: its own site lines and the commands run in it. A submodule's subject names the repository and its own changes, and the run's release lines appear in a submodule draft only for a plan whose every site lies in that submodule. The console draft carries the run's subject and release lines, and one pointer line per submodule naming that submodule's own commit. Pure.
+ */
+export function draftMessage(d: DraftInput): string {
+  const cmdLine = (c: CommandRecord): string => `Ran: ${c.cmd} (in ${c.cwd}) rc=${c.rc}`;
+  const gateLines = (): string[] =>
+    d.ungated.length > 0
+      ? [
+          `Gates: none ran for ${d.ungated.join(', ')}; the registry entry names no gate (.ci/config/pins.json).`,
+        ]
+      : [];
+  const tail = (lines: string[]): string =>
+    [...lines, ...(d.task ? ['', `PR-TASK: ${d.task}`] : [])]
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  if (d.shared) {
+    const subs = d.pointers;
+    return tail([
+      d.subject,
+      '',
+      ...d.plans.flatMap((p) => [p.pinLine, '']),
+      ...d.plans
+        .flatMap((p) =>
+          p.changes.filter((ch) =>
+            d.repo === '.' ? !ch.startsWith('private/') : ch.startsWith(`${d.repo}/`)
+          )
+        )
+        .map((ch) => `Site: ${ch}`),
+      '',
+      ...d.commands.map(cmdLine),
+      ...(d.repo === '.' && subs.length > 0
+        ? [
+            '',
+            `Pointer: ${subs.join(', ')} moves to its own pins commit, committed in that repository first (submodule-first) and pushed before this one.`,
+          ]
+        : []),
+    ]);
+  }
+  const mine = (ch: string): boolean => repoOfPath(ch, d.submodules) === d.repo;
+  const sites = d.plans.flatMap((p) => p.changes.filter(mine));
+  const ran = d.commands.filter((c) => repoOfPath(c.cwd, d.submodules) === d.repo);
+  if (d.repo === '.')
+    return tail([
+      d.subject,
+      '',
+      ...d.plans.flatMap((p) => [p.pinLine, '']),
+      ...sites.map((ch) => `Site: ${ch}`),
+      '',
+      ...ran.map(cmdLine),
+      '',
+      ...gateLines(),
+      ...(d.pointers.length > 0
+        ? [
+            '',
+            ...d.pointers.map(
+              (s) =>
+                `Pointer: ${s} moves to the ${s} pins commit, committed in ${s} first (submodule-first) and pushed before this one.`
+            ),
+          ]
+        : []),
+    ]);
+  const verb = /^chore\(pins\): (\S+)/.exec(d.subject)?.[1] ?? 'update';
+  const owners = d.plans.filter((p) => p.changes.some(mine));
+  const items = sites.map((ch) => ch.replace(/^[^:]*:\s*/, ''));
+  const what =
+    items.length > 0
+      ? `${items.slice(0, 2).join(', ')}${items.length > 2 ? ` and ${items.length - 2} more` : ''}`
+      : `${d.paths.length} file(s)`;
+  const names =
+    owners.length > 0
+      ? owners.map((p) => p.name).join(', ')
+      : d.plans.map((p) => p.name).join(', ');
+  return tail([
+    `chore(pins): ${verb} ${names} in ${d.repo}: ${what}`,
+    '',
+    `The ${d.repo} part of pins run ${d.stamp} (${d.plans.map((p) => p.id).join(', ')}); the console commit carries the run's release lines and the console's own sites.`,
+    '',
+    ...owners.filter((p) => p.changes.every(mine)).flatMap((p) => [p.pinLine, '']),
+    ...sites.map((ch) => `Site: ${ch}`),
+    '',
+    ...ran.map(cmdLine),
+    ...(d.gates
+      ? [
+          '',
+          `Gates: npm run ci -- --only ${d.gates.ids.join(',')} rc=${d.gates.rc}, run from the console over this tree.`,
+        ]
+      : []),
+    '',
+    ...gateLines(),
+  ]);
+}
+
 function writeDrafts(
   w: World,
   res: TxnResult,
@@ -161,7 +284,7 @@ function writeDrafts(
   const repos = [...res.changes];
   if (subs.length > 0 && !repos.some((c) => c.repo === '.'))
     repos.push({ repo: '.', paths: [], added: [] });
-  const pinLines = plans.map((p) => {
+  const pinLineOf = (p: PinPlan): string => {
     if (p.from === p.to.version) return `${p.entry.id}: held at ${p.from}.`;
     const v = views.get(p.entry.id);
     const pub =
@@ -171,32 +294,31 @@ function writeDrafts(
         ? ''
         : `, soak cleared ${iso(soakClearsAt(p.to.publishedMs, w.windowMs) ?? p.to.publishedMs)}`;
     return `${p.entry.id}: ${p.from ?? '?'} -> ${p.to.version}, ${pub}${clear}${v?.verdict ? ` (${v.verdict.why})` : ''}.`;
-  });
-  const cmdLine = (c: CommandRecord): string => `${c.cmd} (in ${c.cwd}) rc=${c.rc}`;
+  };
+  const drafted = plans.map((p) => ({
+    id: p.entry.id,
+    name: p.entry.name,
+    pinLine: pinLineOf(p),
+    changes: p.changes,
+  }));
   return repos.map((c) => {
     const paths = c.repo === '.' ? [...c.paths, ...subs] : c.paths;
-    const body = [
+    const body = draftMessage({
+      repo: c.repo,
       subject,
-      '',
-      ...pinLines.flatMap((l) => [l, '']),
-      ...plans
-        .flatMap((p) =>
-          p.changes.filter((ch) =>
-            c.repo === '.' ? !ch.startsWith('private/') : ch.startsWith(`${c.repo}/`)
-          )
-        )
-        .map((ch) => `Site: ${ch}`),
-      '',
-      ...res.commands.map((cm) => `Ran: ${cmdLine(cm)}`),
-      ...(c.repo === '.' && subs.length > 0
-        ? ['', `Pointer: ${subs.join(', ')} moves to its own pins commit, committed in that repository first (submodule-first) and pushed before this one.`]
-        : []),
-      ...(task ? ['', `PR-TASK: ${task}`] : []),
-    ]
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n');
+      plans: drafted,
+      commands: res.commands,
+      gates: res.gates,
+      ungated: res.ungated,
+      pointers: subs,
+      submodules: [...new Set([...w.reg.submodules.scanned, ...subs])],
+      paths: c.paths,
+      stamp: res.stamp,
+      task,
+      shared: w.mutant === 'shared-message',
+    });
     const draft = path.join(res.dir, `${slug(c.repo)}.msg`);
-    fs.writeFileSync(draft, `${body.trim()}\n`);
+    fs.writeFileSync(draft, `${body}\n`);
     const g = c.repo === '.' ? 'git' : `git -C ${c.repo}`;
     const lines = [
       ...(c.added.length ? [`${g} add -- ${c.added.join(' ')}`] : []),
@@ -261,8 +383,20 @@ function dirtyState(root: string): Map<string, { hash: string; added: boolean }>
   return out;
 }
 
+/** The files a `gen-docs.ts --write` run reports writing, from its `wrote <file> (<providers>)` lines. Pure. */
+export function generatorWrote(out: string): Set<string> {
+  const files = new Set<string>();
+  for (const l of out.replace(/\x1b\[[0-9;]*m/g, '').split('\n')) {
+    const m = /^wrote (\S+) \(/.exec(l.trim());
+    if (m) files.add(m[1]);
+  }
+  return files;
+}
+
 /**
  * Regenerates the generated doc regions after a verb's writes landed. A hold moves the row counts in .ci/policy/README.md and scripts/data/doc-registry.md, and a bump can move any region that quotes a version, so the regeneration runs after every verb that wrote; a no-op when nothing moved. Returns the files the run changed that were clean beforehand (they belong in the commit), the files it changed that already held another session's edits (they do not), and the command record. A file this run itself wrote (`written`) is never foreign, whatever it held before; one of those that regeneration moved again is returned in `late`, as is every file it added to the commit, because the gates ran before it. A tree without the generator, or a fixture without a matching command, skips it.
+ *
+ * ONLY A FILE THE GENERATOR REPORTS WRITING IS ATTRIBUTED. The tree diff around the run sees every writer in the tree, not this one alone: on 2026-10-15 the per-commit reviewer wrote agent/reviews/1008-1/7a32b551...md while gen-docs ran, and the 01:18Z `bump --all` drafted a `git add` and a commit pathspec for it. A file the diff shows and the generator's `wrote` lines do not name is returned in `unclaimed` and stays out of the commit.
  */
 function regenDocs(
   w: World,
@@ -273,9 +407,18 @@ function regenDocs(
   added: string[];
   foreign: string[];
   late: string[];
+  unclaimed: string[];
   failure: string | null;
 } {
-  const none = { record: null, changed: [], added: [], foreign: [], late: [], failure: null };
+  const none = {
+    record: null,
+    changed: [],
+    added: [],
+    foreign: [],
+    late: [],
+    unclaimed: [],
+    failure: null,
+  };
   const has = w.fixture
     ? w.fixture.commands.some((c) => new RegExp(c.match).test(REGEN_CMD))
     : fs.existsSync(path.join(w.root, 'scripts/gen/gen-docs.ts'));
@@ -296,10 +439,14 @@ function regenDocs(
   const added: string[] = [];
   const foreign: string[] = [];
   const late: string[] = [];
+  const unclaimed: string[] = [];
+  const claimed = generatorWrote(r.out);
   for (const [file, now] of after) {
     const was = before.get(file);
     if (was?.hash === now.hash) continue;
-    if (was && written.has(file)) late.push(file);
+    if (w.mutant !== 'tree-diff-attribution' && !claimed.has(file) && !written.has(file))
+      unclaimed.push(file);
+    else if (was && written.has(file)) late.push(file);
     else if (was) foreign.push(file);
     else {
       changed.push(file);
@@ -307,7 +454,7 @@ function regenDocs(
       if (now.added) added.push(file);
     }
   }
-  return { record, changed, added, foreign, late, failure: null };
+  return { record, changed, added, foreign, late, unclaimed, failure: null };
 }
 
 /** The epic id a commit on this branch carries: the one `PR-TASK:` id of agent/pr/<branch>.md, the snapshot block_untagged_commit validates a trailer against. Null when the branch has none or several (the caller then names the ids and asks for --task). */
@@ -556,6 +703,7 @@ function report(
     failure: res?.failure ?? null,
     commands: res?.commands ?? [],
     gates: res?.gates ?? null,
+    ungated: res?.ungated ?? [],
     restored: res?.restored ?? [],
     resynced: res?.resynced ?? [],
     leftAlone: res?.leftAlone ?? [],
@@ -598,6 +746,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   let regenFailure: string | null = null;
   let foreignDocs: string[] = [];
   let lateDocs: string[] = [];
+  let unclaimedDocs: string[] = [];
   if (res.ok) {
     const g = regenDocs(
       w,
@@ -606,6 +755,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
     regenFailure = g.failure;
     foreignDocs = g.foreign;
     lateDocs = g.late;
+    unclaimedDocs = g.unclaimed;
     if (g.record) res.commands.push(g.record);
     if (g.changed.length > 0) {
       const home = res.changes.find((c) => c.repo === '.');
@@ -635,6 +785,10 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
     w.err.push(
       `note: ${d} was regenerated but already held another session's edits, so it is not in the commit line`
     );
+  for (const d of unclaimedDocs)
+    w.err.push(
+      `note: ${d} changed while the generated docs were regenerated, but the generator did not report writing it (another writer in the tree), so it is not in the commit line`
+    );
   if (res.ok && res.gates)
     for (const d of lateDocs)
       w.err.push(
@@ -657,6 +811,10 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   for (const p of s.plans) w.out.push(`${p.entry.id}: ${p.from} -> ${p.to.version}`);
   if (res.gates)
     w.out.push(`gates: npm run ci -- --only ${res.gates.ids.join(',')} rc=${res.gates.rc}`);
+  if (res.ungated.length > 0)
+    w.out.push(
+      `gates: none ran for ${res.ungated.join(', ')}; the registry entry names no gate (.ci/config/pins.json gates)`
+    );
   if (!f.task)
     w.out.push(
       derived.ids.length > 1
@@ -1887,7 +2045,8 @@ const CASES: Record<string, Case> = {
     const regenCmd = {
       match: 'gen-docs\\.ts --write$',
       rc: 0,
-      writes: { 'docs/generated.md': 'rows: 6\n' },
+      writes: { 'docs/generated.md': 'rows: 6\n' } as Record<string, string>,
+      out: 'wrote docs/generated.md (fixture-rows)\n',
     };
     const branchOf = (fx: Fx): string =>
       (
@@ -1932,9 +2091,25 @@ const CASES: Record<string, Case> = {
 
     // A file this run wrote is the run's own even when regeneration moves it again.
     const own = fixtureTree((x) =>
-      x.commands.push({ ...regenCmd, writes: { '.ci/policy/.fixture-blocklist': 'regenerated\n' } })
+      x.commands.push({
+        ...regenCmd,
+        writes: { '.ci/policy/.fixture-blocklist': 'regenerated\n' },
+        out: 'wrote .ci/policy/.fixture-blocklist (fixture-rows)\n',
+      })
     );
     const rOwn = await hold(own);
+
+    // Another writer in the tree adds a file while the generator runs (the per-commit reviewer's record, 2026-10-15): the tree diff sees it, the generator's `wrote` lines do not name it, so it is not the run's.
+    const stray = fixtureTree((x) =>
+      x.commands.push({
+        ...regenCmd,
+        writes: {
+          'docs/generated.md': 'rows: 6\n',
+          'agent/reviews/1008-1/abc.md': 'a review another process wrote\n',
+        },
+      })
+    );
+    const rStray = await hold(stray);
 
     const late = fixtureTree((x) => x.commands.push(regenCmd));
     const rLate = await runCli(['bump', 'embed:tool', '--task', 'cafe1234'], withMutant(late, m));
@@ -1987,6 +2162,17 @@ const CASES: Record<string, Case> = {
           !rOwn.err.includes('already held') &&
           /commit -F \S+ -- .*\.fixture-blocklist/.test(rOwn.out),
         detail: `rc=${rOwn.rc} ${rOwn.err} ${rOwn.out}`,
+      },
+      {
+        name: 'hold: a file another writer adds during the regeneration is named and kept out of the add and commit lines, while the generated doc stays in',
+        ok:
+          rStray.rc === 0 &&
+          !rStray.out.includes('agent/reviews') &&
+          /commit -F \S+ -- .*docs\/generated\.md/.test(rStray.out) &&
+          rStray.err.includes(
+            'note: agent/reviews/1008-1/abc.md changed while the generated docs were regenerated, but the generator did not report writing it'
+          ),
+        detail: `rc=${rStray.rc} ${rStray.err} ${rStray.out}`,
       },
       {
         name: 'bump: a doc regenerated after the gates ran is named as unseen by them',
@@ -2266,8 +2452,18 @@ const CASES: Record<string, Case> = {
         'packages/cli/node_modules/c': { version: '3.0.1' },
       },
     });
-    const clean = lockDrift(lock, same);
+    const clean = lockDrift(lock, same, ['node_modules/a', 'node_modules/b', 'node_modules/ws']);
     const found = lockDrift(lock, moved);
+    // A package a failed run installed and the restore took out of the lockfile: listed by the hidden lockfile, or (after a lockfile-only pass rewrote that) present only on disk.
+    const extra = JSON.stringify({
+      packages: {
+        'node_modules/a': { version: '1.0.0' },
+        'node_modules/zz': { version: '9.0.0' },
+        'node_modules/@rediacc/shared': { resolved: 'packages/shared', link: true },
+      },
+    });
+    const extraFound = lockDrift(lock, extra);
+    const diskFound = lockDrift(lock, same, ['node_modules/a', 'node_modules/@x/stale']);
     return [
       {
         name: 'drift: an installed version the lockfile does not name is found, nested ones too',
@@ -2276,6 +2472,15 @@ const CASES: Record<string, Case> = {
           found.includes('b installed 2.1.0, locked 2.0.0') &&
           found.includes('c installed 3.0.1, locked 3.0.0'),
         detail: JSON.stringify(found),
+      },
+      {
+        name: 'drift: an installed package the lockfile does not name is extraneous, from the hidden lockfile and from node_modules on disk; a workspace link the lockfile omits is not',
+        ok:
+          extraFound.length === 1 &&
+          extraFound[0] === 'zz installed 9.0.0, not in the lockfile' &&
+          diskFound.length === 1 &&
+          diskFound[0] === '@x/stale present in node_modules, not in the lockfile',
+        detail: `${JSON.stringify(extraFound)} ${JSON.stringify(diskFound)}`,
       },
       {
         name: 'CONTROL: drift: a tree installed from its lockfile, with another platform optional package absent and a workspace link, is clean',
@@ -2362,6 +2567,168 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async drafts(m) {
+    // The 2026-10-15 npm run, as its plan reported it: root, a submodule labelled without a slash after its path, and a project inside it.
+    const npm = {
+      id: 'npm',
+      name: 'npm trees',
+      pinLine:
+        'npm: oxc-parser 0.153.0 -> oxc-parser 0.154.0 with 3 in-range package(s), publish time unknown (major 0.153.0 -> 0.154.0 in root).',
+      changes: [
+        'root: oxc-parser 0.153.0 -> 0.154.0',
+        'root: @videojs/react 10.0.1 -> 10.1.0',
+        'private/account (update): @hono/node-server 2.1.4 -> 2.1.5',
+        'private/account/web (update): @testing-library/user-event 14.6.7 -> 14.6.8',
+      ],
+    };
+    const zed = {
+      id: 'embed:zed',
+      name: 'zed',
+      pinLine: 'embed:zed: 2.0.0 -> 2.1.0, published 2026-10-01T00:00:00.000Z.',
+      changes: ['private/renet/Dockerfile: version 2.0.0 -> 2.1.0'],
+    };
+    const base = {
+      subject: 'chore(pins): bump 2 pins (npm trees, zed)',
+      plans: [npm, zed],
+      commands: [
+        { cmd: 'npm install oxc-parser@0.154.0', cwd: '.', rc: 0 },
+        { cmd: 'npm update @hono/node-server', cwd: 'private/account', rc: 0 },
+        { cmd: 'npm update @testing-library/user-event', cwd: 'private/account/web', rc: 0 },
+        { cmd: 'npm run ci -- --only check:deps', cwd: '.', rc: 0 },
+      ],
+      gates: { ids: ['check:deps'], rc: 0 },
+      ungated: [],
+      pointers: ['private/account', 'private/renet'],
+      submodules: ['private/account', 'private/renet'],
+      stamp: '20261015T011423Z-aa4994',
+      task: 'cafe1234',
+      shared: m === 'shared-message',
+    };
+    const acct = draftMessage({
+      ...base,
+      repo: 'private/account',
+      paths: ['package-lock.json', 'web/package-lock.json'],
+    });
+    const renet = draftMessage({ ...base, repo: 'private/renet', paths: ['Dockerfile'] });
+    const con = draftMessage({ ...base, repo: '.', paths: ['package-lock.json'] });
+    const subj = (t: string): string => t.split('\n')[0];
+    const pointers = con.split('\n').filter((l) => l.startsWith('Pointer: '));
+
+    // The same property end to end: `bump --all` over the fixture moves a console pin and a private/renet pin in one run.
+    const fx = fixtureTree();
+    const r = await runCli(['bump', '--all', '--task', 'cafe1234'], withMutant(fx, m));
+    const subDraft = /git -C private\/renet commit -F (\S+)/.exec(r.out)?.[1];
+    const renetMsg = subDraft ? fs.readFileSync(subDraft, 'utf8') : '';
+    return [
+      {
+        name: 'drafts: a submodule draft lists only its own sites and commands, its subject names the repository and its own changes',
+        ok:
+          subj(acct) ===
+            'chore(pins): bump npm trees in private/account: @hono/node-server 2.1.4 -> 2.1.5, @testing-library/user-event 14.6.7 -> 14.6.8' &&
+          acct.includes('Site: private/account (update): @hono/node-server 2.1.4 -> 2.1.5') &&
+          acct.includes('Site: private/account/web (update): @testing-library/user-event') &&
+          !/oxc-parser|@videojs\/react|in root/.test(acct) &&
+          !acct.includes('(in .)') &&
+          acct.includes('Ran: npm update @hono/node-server (in private/account) rc=0') &&
+          acct.includes('Gates: npm run ci -- --only check:deps rc=0') &&
+          acct.trimEnd().endsWith('PR-TASK: cafe1234'),
+        detail: acct,
+      },
+      {
+        name: 'drafts: a plan whose every site lies in the submodule keeps its release line there, and the console draft keeps only its own sites',
+        ok:
+          renet.includes('embed:zed: 2.0.0 -> 2.1.0') &&
+          !renet.includes('npm:') &&
+          subj(renet) === 'chore(pins): bump zed in private/renet: version 2.0.0 -> 2.1.0' &&
+          con.includes('Site: root: oxc-parser 0.153.0 -> 0.154.0') &&
+          !con.includes('Site: private/') &&
+          !con.includes('(in private/account)'),
+        detail: `${renet}\n----\n${con}`,
+      },
+      {
+        name: 'drafts: the console draft names each moved submodule pointer on its own line, with that repository own commit',
+        ok:
+          pointers.length === 2 &&
+          pointers[0] ===
+            'Pointer: private/account moves to the private/account pins commit, committed in private/account first (submodule-first) and pushed before this one.' &&
+          pointers[1].startsWith('Pointer: private/renet moves to the private/renet pins commit'),
+        detail: pointers.join(' | '),
+      },
+      {
+        name: 'drafts: bump --all over a console pin and a submodule pin gives the submodule draft none of the console pin',
+        ok:
+          r.rc === 0 &&
+          renetMsg.startsWith('chore(pins): bump zed in private/renet: version 2.0.0 -> 2.1.0') &&
+          !/embed:tool: |TOOL_VERSION|tool\.lock|gen-credits|Site: (?!private\/renet\/)/.test(
+            renetMsg
+          ),
+        detail: `rc=${r.rc} ${r.err}\n${renetMsg}`,
+      },
+    ];
+  },
+  async ungated(m) {
+    // An entry with `gates: []` is judged by no gate; the run says so in its output, its draft and its commands.log (2026-10-15: `bump --all` moved three such pins and printed nothing about gates).
+    const ungate = (fx: Fx): void => {
+      const reg = JSON.parse(fx.read('.ci/config/pins.json')) as {
+        entries: Array<{ id: string; gates: string[] }>;
+      };
+      for (const e of reg.entries) if (e.id === 'embed:tool') e.gates = [];
+      fx.write('.ci/config/pins.json', `${JSON.stringify(reg, null, 2)}\n`);
+      sh(
+        fx.root,
+        '-c',
+        'user.email=fx@example.invalid',
+        '-c',
+        'user.name=fx',
+        'commit',
+        '-qam',
+        'ungate'
+      );
+    };
+    const fx = fixtureTree();
+    ungate(fx);
+    const r = await runCli(
+      ['bump', 'embed:tool', '--task', 'cafe1234', '--json'],
+      withMutant(fx, m)
+    );
+    const rep = r.out.startsWith('{')
+      ? (JSON.parse(r.out) as {
+          ungated?: string[];
+          journal: string;
+          repos: Array<{ draft: string }>;
+        })
+      : null;
+    const log = rep ? path.join(rep.journal, 'commands.log') : '';
+    const logText = log && fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '';
+    const draft = rep?.repos[0] ? fs.readFileSync(rep.repos[0].draft, 'utf8') : '';
+    const fx2 = fixtureTree();
+    ungate(fx2);
+    const plain = await runCli(['bump', 'embed:tool'], withMutant(fx2, m));
+    // CONTROL: a gated pin runs its gates and claims no ungated pin.
+    const gated = fixtureTree();
+    const g = await runCli(['bump', 'embed:tool'], withMutant(gated, m));
+    return [
+      {
+        name: 'ungated: a bump of a pin whose entry names no gate prints, journals and drafts that no gate ran for it',
+        ok:
+          r.rc === 0 &&
+          JSON.stringify(rep?.ungated) === '["embed:tool"]' &&
+          logText.includes('# no gate ran for embed:tool') &&
+          draft.includes('Gates: none ran for embed:tool') &&
+          plain.rc === 0 &&
+          plain.out.includes('gates: none ran for embed:tool; the registry entry names no gate'),
+        detail: `rc=${r.rc} ${r.err} ungated=${JSON.stringify(rep?.ungated)} log=${JSON.stringify(logText)} | ${plain.out}`,
+      },
+      {
+        name: 'CONTROL: ungated: a gated pin prints its gate line and no ungated line',
+        ok:
+          g.rc === 0 &&
+          g.out.includes('gates: npm run ci -- --only check:fixture-tool rc=0') &&
+          !g.out.includes('none ran'),
+        detail: `rc=${g.rc} ${g.out} ${g.err}`,
+      },
+    ];
+  },
   async cli(m) {
     if (m) return [];
     const fx = fixtureTree();
@@ -2401,6 +2768,9 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'first-eligible': 'setmajor',
   'no-resync': 'resync',
   'all-gates': 'gatenames',
+  'silent-ungated': 'ungated',
+  'tree-diff-attribution': 'regen',
+  'shared-message': 'drafts',
 };
 
 async function selftest(env: NodeJS.ProcessEnv): Promise<number> {
