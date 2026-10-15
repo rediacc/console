@@ -18,9 +18,11 @@ WHERE THE RECORDED ANSWER CAME FROM, since PLAN-retire-bash-oracles A3. Until th
 and A3 deleted the oracle and the driver once the golden was proven to match. `test_scan_matches_golden`/`test_hook_init_matches_golden` below are now the only comparison.
 """
 
+import os
 import pathlib
 import re
 import subprocess
+import urllib.parse
 
 import pytest
 
@@ -53,11 +55,20 @@ def identity_root(checkout):
     """
     current = pathlib.Path(checkout)
     for _hop in range(8):
-        url = _origin_url(current)
-        if not url.startswith("/"):
+        local = _local_origin(current, _origin_url(current))
+        if local is None:
             return current
-        current = pathlib.Path(url)
+        current = local
     return current
+
+
+def _local_origin(checkout, url):
+    """The directory a LOCAL origin names, else None for a hosted one (`https://`, `ssh://`, `git@host:path`) or none at all. Local is every spelling git clones from a path: absolute, relative to the checkout, `file://` (review 878aa247.3), and a Windows drive path."""
+    if url.startswith("file://"):
+        return pathlib.Path(urllib.parse.unquote(url[len("file://") :]))
+    if url.startswith(("/", "./", "../")) or re.match(r"^[A-Za-z]:[\\/]", url):
+        return pathlib.Path(checkout) / url
+    return None
 
 
 IDENTITY_ROOT = identity_root(ROOT)
@@ -204,17 +215,25 @@ def _decode_record(record):
     return {k: goldenio.decode_field(v) for k, v in record.items() if k != "intentional"}
 
 
+ROOT_FIELDS = ("troot", "trootx")
+
+
 def uncheckedout_submodule(want):
     """The `private/<name>` submodule a recorded root points into when it is not checked out here, else None.
 
     `hook_target_root` resolves a `cd private/renet` through a real `git rev-parse --show-toplevel`, which answers the SUPERPROJECT's root (or nothing) from an empty submodule directory, so the recorded `<REPO>/private/renet` is unreachable. A fresh `git clone --shared` has all four `private/*` empty. These cases are skipped by name, never compared loosely.
     """
-    for key in ("troot", "trootx"):
+    for key in ROOT_FIELDS:
         value = want.get(key) or ""
         match = re.match(re.escape(REPO_TOKEN) + r"/(private/[^/]+)", value)
         if match and not (ROOT / match.group(1) / ".git").exists():
             return match.group(1)
     return None
+
+
+def root_exemption(want):
+    """The submodule whose absence exempts `want`'s root fields from comparison, or None. Never under CI, which checks the submodules out (review 878aa247.1)."""
+    return None if os.environ.get("CI") else uncheckedout_submodule(want)
 
 
 @pytest.mark.parametrize(("label", "cmd"), CASES, ids=[label for label, _ in CASES])
@@ -227,14 +246,16 @@ def test_scan_matches_golden(label, cmd):
         % (label, key)
     )
     want = _decode_record(want)
-    missing = uncheckedout_submodule(want)
+    # Only the two root fields wait on a checked-out submodule, so every other field is still compared, and CI (which checks the submodules out) never takes the exemption: a CI checkout without them fails here rather than going green (review 878aa247.1).
+    missing = root_exemption(want)
+    unreachable = ("case", *ROOT_FIELDS) if missing is not None else ("case",)
+    diffs = diff_fields(want, python_fields(cmd), skip=unreachable)
+    assert not diffs, render(diffs, label, cmd)
     if missing is not None:
         pytest.skip(
-            "%s is not checked out in this clone; its recorded root needs the real submodule"
-            % missing
+            "%s: %s not compared, %s is not checked out here (every other field matched)"
+            % (label, "/".join(ROOT_FIELDS), missing)
         )
-    diffs = diff_fields(want, python_fields(cmd))
-    assert not diffs, render(diffs, label, cmd)
 
 
 @pytest.mark.parametrize(("label", "payload"), JSON_CASES, ids=[label for label, _ in JSON_CASES])
