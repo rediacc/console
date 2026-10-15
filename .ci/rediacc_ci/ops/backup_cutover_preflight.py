@@ -167,7 +167,7 @@ def check_store(pf: Preflight) -> None:
     if bucket == "rediacc-backups":
         pf.failed(
             "ACCOUNT_BACKUP_S3_BUCKET is the bare production name 'rediacc-backups'",
-            "Test targets must be named distinctly (e.g. rediacc-backups-probe) so no "
+            "Test targets must be named distinctly (e.g. example-backups-test) so no "
             "misconfiguration can cross test and production backups.",
         )
     if not _curl_has_sigv4():

@@ -49,7 +49,7 @@ Rediacc is an Estonian company (Rediacc OU, Tallinn). All customer data must be 
 | Account DB | `account-db` | EEUR |
 | Config store | `rediacc-configs` | **ENAM (USA)** |
 | Edge account DB | `edge-account-db` | EEUR |
-| Edge config store | `edge-rediacc-configs` | **ENAM (USA)** |
+| Edge config store | `edge-rediacc-configs-{eu,us,asia}` | per region |
 | Releases | `rediacc-releases` | ENAM |
 | AWS SES | eu-central-1 | EU |
 | Stripe | Single account | USA |
