@@ -252,11 +252,13 @@ def _bypassing_go_builds(text: str) -> list[str]:
     code = "\n".join(ln for ln in outside.splitlines() if not ln.lstrip().startswith("#"))
     joined = re.sub(r"\\\n\s*", " ", code)
     # `go`, `/usr/local/go/bin/go`, `"go"`, `'go'`, `$(go ...)`, `` `go ...` ``, then `build`.
-    # Global flags may sit between `go` and the verb: `-C <dir>` with any value spelling (`"$(pwd)"`, `$(pwd)`, `=/x`), or a bare flag. Only flags are stepped over, so a verb's own value (`go -C "$d" test -tags build`) never reads as the verb.
+    # Global flags may sit between `go` and the verb: `-C <dir>` with any value spelling (`"$(pwd)"`, `"$(dirname "$0")/.."`, `$(dirname "$0")`, `=/x`), or a bare flag. `-C` is the only go flag that takes a separate value before the command (`go help`: `go [-C dir] <command>`), so a `-flag value` pair is not stepped over and a verb's own value (`go -C "$d" test -tags build`) never reads as the verb.
+    cmd_sub = r"""\$\((?:[^()]|\([^()]*\))*\)"""
     go_build = re.compile(
         r"""(?:^|[\s;&|(`])["']?(?:[^\s;&|()`"']*/)?go["']?"""
-        r"""(?:\s+(?:-C(?:=|\s+)(?:"[^"]*"|'[^']*'|[^\s;&|]+)|-[A-Za-z][^\s;&|()`"']*))*"""
-        r"""\s+["']?build\b"""
+        r"""(?:\s+(?:-C(?:=|\s+)(?:"(?:%s|[^"])*"|'[^']*'|(?:%s|[^\s;&|()])+)|-[A-Za-z][^\s;&|()`"']*))*"""
+        % (cmd_sub, cmd_sub)
+        + r"""\s+["']?build\b"""
     )
     return [ln for ln in joined.splitlines() if go_build.search(ln)]
 
@@ -280,6 +282,8 @@ def _bypassing_go_builds(text: str) -> list[str]:
         "GOFLAGS= go -C /x -v build ./cmd/renet",
         'go -C "$(pwd)" build ./cmd/renet',
         "go -C $(pwd) build ./cmd/renet",
+        'go -C "$(dirname "$0")/.." build ./cmd/renet',
+        'go -C $(dirname "$0") build ./cmd/renet',
     ],
 )
 def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
