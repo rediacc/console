@@ -34,12 +34,12 @@ THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the o
      which read one unsuffixed pair for every Worker:
      agent/plans/PLAN-backup-credential-isolation.md B2).
 
-SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe into `wrangler` and nowhere else.
+SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN, and the OTLP shape probe reads its value on jq's stdin too. No child's argv carries a value (a divergence from the twin, which passed all twenty-nine as `jq --arg` pairs; worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND the bytes on its stdin. As with the www sibling the document IS the evidence on the happy path: this twin prints nothing
 of its own when it succeeds, so a port that sent the wrong bucket, the wrong region's SES key, or an un-jurisdictioned endpoint would produce byte-identical streams and exit 0.
 
-`jq` IS CALLED, NOT REIMPLEMENTED, for the reason `set_preview_worker_secrets.py` states at length: the bytes on wrangler's stdin ARE the contract, and `json.dumps` differs from jq on inputs a secret can really contain (raw UTF-8 versus `\\uXXXX`, and U+007F). A secret is opaque bytes chosen by someone else.
+`jq` STILL WRITES THE DOCUMENT, for the reason `set_preview_worker_secrets.py` states at length: the bytes on wrangler's stdin ARE the contract, and `json.dumps` output differs from jq's on inputs a secret can really contain (raw UTF-8 versus `\\uXXXX`, and U+007F). A secret is opaque bytes chosen by someone else. jq now reads the values as one ASCII `json.dumps` object on its stdin instead of `--arg`, and re-encodes each string exactly as it encoded the argument; the one difference is invalid UTF-8, where a truncated trailing sequence may become two U+FFFD instead of one.
 
 PIPEFAIL IS REPRODUCED, NOT APPROXIMATED. The twin's header (:94-98) records that the workflow block it came from ran under plain `bash -e` and that `-uo pipefail` were added because "a jq failure previously went unnoticed because wrangler's status won". So the run's status is the RIGHTMOST non-zero one, and `main` runs both halves even when jq fails. The concurrency caveat is the
 siblings': a wrangler exiting 0 without draining stdin would SIGPIPE jq in bash and cannot here.
@@ -95,6 +95,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-set-account-worker-secrets.observations.jsonl`.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -252,7 +253,7 @@ REQUIRED_NONEMPTY_STABLE: tuple[str, ...] = (
 # one. The store held base64 `user:pass` for all three regions until 2026-09-24, and every region served {otlp: null}. jq decides, as for the document, so the two sides cannot disagree about what counts as JSON.
 JSON_SHAPE_KEY = "OBS_OTLP_CREDENTIALS"
 JSON_SHAPE_FILTER = (
-    '$v | fromjson | type == "object" and (.user | type) == "string" and (.pass | type) == "string"'
+    'fromjson | type == "object" and (.user | type) == "string" and (.pass | type) == "string"'
 )
 JSON_SHAPE_EXPLANATION: tuple[str, ...] = (
     "  The Worker JSON.parses it and serves {otlp: null} for any other shape, so telemetry",
@@ -475,15 +476,16 @@ def check_nonempty(values: dict[str, str], env: dict[str, str]) -> None:
             raise GuardError(name, env.get("WORKER_NAME", ""), target, env.get("SUFFIX", ""))
 
 
-def json_shape_argv(value: str) -> list[str]:
-    """`jq -e -n --arg v ... '<filter>'`, the twin's shape probe, as an argv a test can pin."""
-    return ["jq", "-e", "-n", "--arg", "v", value, JSON_SHAPE_FILTER]
+def json_shape_argv() -> list[str]:
+    """`jq -e -R -s '<filter>'`, the twin's shape probe with the value on STDIN (`-R -s` reads it as one raw string, the string `--arg v` bound in the twin), as an argv a test can pin."""
+    return ["jq", "-e", "-R", "-s", JSON_SHAPE_FILTER]
 
 
 def _json_shape_ok(value: str) -> bool:
-    """Both streams DISCARDED, as in the twin: jq's parse error quotes its input, and the input is a secret."""
+    """Both streams DISCARDED, as in the twin: jq's parse error quotes its input, and the input is a secret. The value goes on stdin as the bytes the environment held."""
     proc = subprocess.run(
-        json_shape_argv(value),
+        json_shape_argv(),
+        input=value.encode("utf-8", "surrogateescape"),
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
@@ -509,29 +511,30 @@ def check_json_shape(values: dict[str, str], env: dict[str, str]) -> None:
 
 
 def jq_filter() -> str:
-    """The object constructor (:248-277), rebuilt from `KEYS`.
+    """The object constructor (:248-277), rebuilt from `KEYS`, reading each value from the input object's field of the twin's jq variable name.
 
     Whitespace inside a jq program does not reach the output, so this is the twin's filter in meaning rather than in indentation. What MUST match is the key list and its order.
     """
-    body = ", ".join("%s: $%s" % (key, var) for key, var, _source in KEYS)
+    body = ", ".join("%s: .%s" % (key, var) for key, var, _source in KEYS)
     return "{%s}" % body
 
 
-def jq_argv(values: dict[str, str]) -> list[str]:
-    """`jq -n --arg ... '{...}'` (:218-277), as an argv a test can pin."""
-    argv = ["jq", "-n"]
-    for _key, var, _source in KEYS:
-        argv += ["--arg", var, values.get(var, "")]
-    argv.append(jq_filter())
-    return argv
+def jq_argv() -> list[str]:
+    """`jq '{...}'` (:248-277) as an argv a test can pin. It carries the program only; the values are on stdin (`jq_input`)."""
+    return ["jq", jq_filter()]
 
 
-def _jq(argv: list[str]) -> tuple[int, str]:
-    """The left half of the pipe: stdout captured, stderr INHERITED.
+def jq_input(values: dict[str, str]) -> str:
+    """The values as one JSON object keyed by jq variable, in `KEYS` order, an absent one as the empty string. ASCII only (`ensure_ascii`), so a value the environment decoded with surrogate escapes still reaches jq."""
+    return json.dumps({var: values.get(var, "") for _key, var, _source in KEYS})
+
+
+def _jq(argv: list[str], document: str) -> tuple[int, str]:
+    """The left half of the pipe: the values on stdin, stdout captured, stderr INHERITED.
 
     jq's diagnostics are the only explanation a workflow log would get if the document could not be built, and the twin's header records that this status used to be swallowed. Not captured here either.
     """
-    proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
+    proc = subprocess.run(argv, input=document, stdout=subprocess.PIPE, text=True, check=False)
     return proc.returncode, proc.stdout
 
 
@@ -574,7 +577,7 @@ def main(argv: list[str]) -> int:
             print(line, file=sys.stderr)
         return exc.code
 
-    jq_status, payload = _jq(jq_argv(values))
+    jq_status, payload = _jq(jq_argv(), jq_input(values))
     wrangler_status = _wrangler(wrangler_argv(env["WORKER_NAME"]), payload)
 
     # `set -o pipefail`: the rightmost non-zero status wins.

@@ -268,6 +268,17 @@ def test_secret_names_reads_the_array_and_refuses_no_array() -> None:
         pbc.secret_names("Error: not authenticated")
 
 
+def test_secret_names_skips_a_bracketed_log_line_and_trailing_text() -> None:
+    """Review dcdd1ab6.2: slicing from the first `[` to the last `]` read `[WARNING] ...` as the start of the array and refused a good listing."""
+    rows = '[\n  {"name": "B", "type": "secret_text"},\n  {"name": "A", "type": "secret_text"}\n]'
+    out = "[WARNING] wrangler 3.x is out of date [update]\n%s\n[INFO] done in 1s [ok]\n" % rows
+    assert pbc.secret_names(out) == ["A", "B"]
+    assert pbc.secret_names("[]\n" + rows) == ["A", "B"], "an empty array does not hide the listing"
+    assert pbc.secret_names("[WARNING] none\n[]\n") == []
+    with pytest.raises(pbc.PushError, match="no JSON array"):
+        pbc.secret_names("[WARNING] not authenticated [code 10000]\n")
+
+
 def test_main_re_executes_under_its_own_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     seen: list[list[str]] = []
 
@@ -286,3 +297,37 @@ def test_main_re_executes_under_its_own_profile(monkeypatch: pytest.MonkeyPatch)
 def test_main_usage_error_exits_2_before_any_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pbc.subprocess, "run", lambda *_a, **_k: pytest.fail("re-executed"))
     assert pbc.main(["--target", "stable"]) == 2
+    assert pbc.main(["--target", "bench", "--region", "eu"]) == 2
+    assert pbc.main(["--target", "edge", "--region", "mars"]) == 2
+
+
+def test_main_a_config_mismatch_is_a_refusal_and_exits_1(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review dcdd1ab6.1: regions.json contradicting the Worker's wrangler config is a refusal (exit 1), not a usage error (exit 2)."""
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    (tmp_path / "regions.json").write_text(
+        json.dumps(
+            {
+                "regions": [
+                    {
+                        "id": "eu",
+                        "domain": "eu.example.test",
+                        "edgeDomain": "edge-eu.example.test",
+                        "workerName": "w-eu",
+                        "edgeWorkerName": "edge-w-eu",
+                        "backupR2": {"name": "b-eu"},
+                        "edgeBackupR2": {"name": "edge-b-eu"},
+                        "r2Jurisdiction": "eu",
+                    }
+                ]
+            }
+        )
+    )
+    (tmp_path / "workers" / "account" / "wrangler.eu.toml").write_text(
+        'name = "w-eu"\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "edge-b-eu"\njurisdiction = "eu"\n'
+    )
+    monkeypatch.setattr(pbc.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(pbc.subprocess, "run", lambda *_a, **_k: pytest.fail("re-executed"))
+    assert pbc.main(["--target", "stable", "--region", "eu"]) == 1
+    assert "disagree" in capsys.readouterr().err
