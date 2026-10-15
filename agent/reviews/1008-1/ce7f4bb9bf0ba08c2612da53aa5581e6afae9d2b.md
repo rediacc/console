@@ -21,4 +21,4 @@ Body-Sig: 397de79a2451e6f1
 ### ce7f4bb9.1 [low] scripts/pins/pins.ts:192
 Anchor: in-diff
 Claim: The new drafted text 'Pointer: ${subs.join(', ')} moves to its own pins commit' is singular even when subs holds several submodules, so a console commit that moves two pointers reads 'a, b moves to its own pins commit' and 'its own' does not say which repository's commit is meant. Low because it only affects the drafted message wording.
-Resolution: open
+Resolution: fixed f56ddcde1a0daf9a7c0a564e096dfcadded26f58 | d778be9d 2026-10-15T02:02:05Z
