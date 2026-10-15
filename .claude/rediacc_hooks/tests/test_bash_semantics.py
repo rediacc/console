@@ -2287,6 +2287,8 @@ DIRECTORY_ROWS = (
     ("CDPATH=cp1:a; cd x && {P}", "cp1/x"),
     ("CDPATH=nosuch:a; cd x && {P}", "a/x"),
     ("CDPATH=:a; cd x && {P}", "a/x"),
+    # Past the old 16-choice cap (review 5dbdf567.1): forty missing entries, then the one holding x.
+    ("CDPATH=%s:a; cd x && {P}" % ":".join("n%d" % i for i in range(40)), "a/x"),
     ("CDPATH=b; cd ./a && {P}", "a"),
     ("CDPATH=a; pushd x && {P}", "a/x"),
     ("CDPATH=a; pushd -n x; popd && {P}", "a/x"),
@@ -2473,3 +2475,16 @@ def test_the_write_guards_read_the_expanded_directory_review_d0079b4e(tmp_path):
         verdicts = [w for s, _c, w in EXPANDED_DIRECTORY_GUARD_ROWS if s == stem]
         assert 2 in verdicts, stem
         assert 0 in verdicts, stem
+
+
+def test_a_cdpath_chain_past_the_search_cap_takes_the_fallback_review_4a08d9e8():
+    """One searched cd keeps every CDPATH choice; a chain whose product passes `_SEARCH_CAP` takes the plain fallback, the reading every reader had before the walk knew CDPATH (review 4a08d9e8.2)."""
+    entries = ":".join("n%d" % i for i in range(64))
+    one = [r for r in shellscan.every_run("CDPATH=%s cd x && tee y" % entries) if r.name == "tee"]
+    assert len(getattr(one[0].cwd, "choices", ())) == 65
+    # Two chained searches multiply: 65 x 65 = 4225 choices, past the cap.
+    chain = "export CDPATH=%s; cd x; cd y && tee w" % entries
+    runs = [r for r in shellscan.every_run(chain) if r.name == "tee"]
+    assert shellscan._SEARCH_CAP < 65 * 65
+    assert not hasattr(runs[0].cwd, "choices"), "a product past the cap keeps a choice list"
+    assert str(runs[0].cwd) == "x/y"
