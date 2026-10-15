@@ -445,7 +445,8 @@ def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):
             env=env,
             input=stdin.encode("utf-8") if isinstance(stdin, str) else stdin,
         )
-    except OSError:
+    # ValueError is what subprocess raises for an argument or cwd holding a NUL byte, which bash itself cuts at. Uncaught, it crashed the guard, and a crashed guard is no decision, so the command ran (block_unproven_bulk_transform `gh pr create --head` with a NUL, 2026-10-15); a word that cannot be passed is a command that did not run.
+    except (OSError, ValueError):
         return None if want_rc else ""
     if want_rc and proc.returncode != 0:
         return None
@@ -456,7 +457,7 @@ def run_rc(argv, cwd=None, env=None):
     """`cmd >/dev/null 2>&1; echo $?` -- the status alone."""
     try:
         proc = subprocess.run(argv, capture_output=True, check=False, cwd=cwd, env=env)
-    except OSError:
+    except (OSError, ValueError):
         return 127
     return proc.returncode
 
