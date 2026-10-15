@@ -1,9 +1,9 @@
 /**
- * The daemon's environment identity: a client whose principal, server or
- * agent-mode switches differ from the daemon's must not be served by it.
+ * The daemon's environment scope: a client whose principal, server or
+ * agent-mode switches differ from a daemon's reaches a daemon of its own.
  */
-import { describe, expect, it } from 'vitest';
-import { environmentIdentity } from '../daemon/lifecycle.js';
+import { afterEach, describe, expect, it } from 'vitest';
+import { daemonSocketPath, environmentIdentity } from '../daemon/lifecycle.js';
 
 const base = {
   REDIACC_TOKEN: 'token-a',
@@ -40,5 +40,23 @@ describe('daemon environment identity', () => {
     const id = environmentIdentity(base);
     expect(id).toMatch(/^[0-9a-f]{16}$/);
     expect(id).not.toContain('token-a');
+  });
+});
+
+describe('daemon socket scope', () => {
+  const saved = process.env.REDIACC_TOKEN;
+  afterEach(() => {
+    if (saved === undefined) delete process.env.REDIACC_TOKEN;
+    else process.env.REDIACC_TOKEN = saved;
+  });
+
+  it('gives a client with another REDIACC environment another socket, so neither evicts the other (review b3e07699.1)', () => {
+    process.env.REDIACC_TOKEN = 'token-a';
+    const a = daemonSocketPath();
+    process.env.REDIACC_TOKEN = 'token-b';
+    const b = daemonSocketPath();
+    expect(b).not.toBe(a);
+    process.env.REDIACC_TOKEN = 'token-a';
+    expect(daemonSocketPath()).toBe(a);
   });
 });
