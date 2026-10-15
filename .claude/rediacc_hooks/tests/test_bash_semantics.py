@@ -19,6 +19,7 @@ import pathlib
 import re
 import shutil
 import subprocess
+import sys
 import uuid
 from dataclasses import dataclass, field
 
@@ -2182,6 +2183,21 @@ def test_a_nul_byte_in_an_argument_is_a_command_that_did_not_run(tmp_path):
     assert hookio.run_out(["git", "rev-parse", "a\0b"]) == ""
     assert hookio.run_rc(["true", "a\0b"]) == 127
     assert hookio.git_out(["rev-parse", "HEAD"], cwd=str(tmp_path) + "\0x", want_rc=True) is None
+
+
+@pytest.mark.parametrize(
+    ("text", "sent"),
+    [
+        ("a\udcffb", b"a\xffb"),
+        ("x\ud800y", b"x\xed\xa0\x80y"),
+        ("\udcff\ud800", b"\xff\xed\xa0\x80"),
+        ("plain é", "plain é".encode()),
+    ],
+)
+def test_a_str_stdin_holding_a_lone_surrogate_reaches_the_command_as_bytes(text, sent):
+    """Review 46b000ae.1/.2: a str stdin holding a lone surrogate raised UnicodeEncodeError out of run_out and crashed the guard, which admits the command; an escaped byte (U+DC80..U+DCFF) goes back to the byte it was decoded from, and any other lone surrogate goes as its surrogatepass bytes."""
+    echo_hex = "import sys; sys.stdout.write(sys.stdin.buffer.read().hex())"
+    assert hookio.run_out([sys.executable, "-c", echo_hex], stdin=text, want_rc=True) == sent.hex()
 
 
 def test_a_pr_head_holding_a_nul_byte_is_refused_not_a_crash():

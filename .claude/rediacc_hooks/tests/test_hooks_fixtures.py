@@ -1835,42 +1835,89 @@ def test_a_physical_change_of_directory_resolves_its_dotdot_on_disk_review_362f3
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-def test_join_dir_keeps_a_physical_dotdot_and_nothing_else_review_362f37b2():
+def test_join_dir_keeps_a_physical_dotdot_beside_its_lexical_text_review_ec6ec533():
+    """Review ec6ec533.1: the text of every join is the old lexical one, and a physical `<name>/..` pair rides in `.physical` for the disk readers alone."""
+    lnk = shellscan._join_dir(None, "lnk/..", physical=True)
     rows = [
-        # (cwd, arg, physical, lands)
-        (None, "a/../b", False, "b"),
-        ("x", "..", False, "."),
-        (None, "/a/../..", False, "/"),
-        ("a/b", "../../..", False, ".."),
-        ("sub", "x", True, "sub/x"),
-        (None, "lnk/..", True, "lnk/.."),
-        (None, "/l/..", True, "/l/.."),
-        (None, "/..", True, "/"),
-        (None, "..", True, ".."),
-        ("lnk/..", "inner/..", False, "lnk/.."),
-        ("lnk/..", "..", False, "lnk/../.."),
-        ("lnk/..", "x", False, "lnk/../x"),
-        ("lnk/..", "/abs", False, "/abs"),
+        # (cwd, arg, physical, text, kept pair or None)
+        (None, "a/../b", False, "b", None),
+        ("x", "..", False, ".", None),
+        (None, "/a/../..", False, "/", None),
+        ("a/b", "../../..", False, "..", None),
+        ("sub", "x", True, "sub/x", None),
+        ("sub", "..", True, ".", "sub/.."),
+        (None, "lnk/..", True, ".", "lnk/.."),
+        (None, "/l/..", True, "/", "/l/.."),
+        (None, "/..", True, "/", None),
+        (None, "..", True, "..", None),
+        (lnk, "inner/..", False, ".", "lnk/.."),
+        (lnk, "..", False, "..", "lnk/../.."),
+        (lnk, "x", False, "x", "lnk/../x"),
+        (lnk, "/abs", False, "/abs", None),
     ]
-    wrong = [
-        (row, got)
-        for row in rows
-        if (got := shellscan._join_dir(row[0], row[1], physical=row[2])) != row[3]
-    ]
+    wrong = []
+    for cwd, arg, physical, text, kept in rows:
+        got = shellscan._join_dir(cwd, arg, physical=physical)
+        if str(got) != text or getattr(got, "physical", None) != kept:
+            wrong.append(((cwd, arg, physical), str(got), getattr(got, "physical", None)))
     assert not wrong, wrong
     walked = {
-        "cd -P lnk/.. && true": "lnk/..",
-        "cd -Pe lnk/.. && true": "lnk/..",
-        "cd -P -- lnk/.. && true": "lnk/..",
-        "cd lnk/.. && true": ".",
-        "pushd lnk/.. && true": ".",
+        "cd -P lnk/.. && true": (".", "lnk/.."),
+        "cd -Pe lnk/.. && true": (".", "lnk/.."),
+        "cd -P -- lnk/.. && true": (".", "lnk/.."),
+        "cd lnk/.. && true": (".", None),
+        "pushd lnk/.. && true": (".", None),
     }
-    got = {cmd: shellscan.every_run(cmd)[-1].cwd for cmd in walked}
+    got = {}
+    for cmd in walked:
+        cwd = shellscan.every_run(cmd)[-1].cwd
+        got[cmd] = (str(cwd), getattr(cwd, "physical", None))
     assert got == walked, got
-    assert shellscan._git_invocation(["-C", "lnk/..", "status"], None) == ("status", "lnk/..")
-    # The `private/<submodule>` readers match the text as before: a kept pair is dropped lexically for them.
-    assert shellscan._lexical("private/renet/..") == "private"
-    assert shellscan._lexical(None) == ""
+    sub, git_dir = shellscan._git_invocation(["-C", "lnk/..", "status"], None)
+    assert (sub, git_dir, git_dir.physical) == ("status", ".", "lnk/..")
+    # The `private/<submodule>` readers match the text, which is lexical: `git -C ..` from renet is not renet.
+    run = shellscan.every_run("cd private/renet && git -C .. status")[-1]
+    assert (run.cwd, run.git_dir, run.git_dir.physical) == (
+        "private/renet",
+        "private",
+        "private/renet/..",
+    )
+
+
+# A PLAIN DIRECTORY BEFORE `..` READS AS IT DID BEFORE ec6ec5338 (review ec6ec533.1). There the kept pair was the walked text itself, so `cd agent/reviews && env -C .. tee 1008-1/x.md` read as `agent/reviews/../1008-1/x.md` and block_review_file_shell_write refused a write to `agent/1008-1` (rc 0 -> 2, three spellings). The writes INTO the review directory stay refused.
+def test_a_plain_directory_before_a_physical_dotdot_reads_lexically_review_ec6ec533(tmp_path):
+    (tmp_path / "agent" / "reviews" / "1008-1").mkdir(parents=True)
+    rows = [
+        ("cd agent/reviews && env -C .. tee 1008-1/x.md < /dev/null", 0),
+        ("cd agent/reviews && sudo -D .. tee 1008-1/x.md < /dev/null", 0),
+        ("cd agent/reviews && cd -P .. && tee 1008-1/x.md < /dev/null", 0),
+        ("cd agent/reviews && env -C . tee 1008-1/x.md < /dev/null", 2),
+        ("cd agent && env -C reviews tee 1008-1/x.md < /dev/null", 2),
+        ("cd agent/reviews && cd -P .. && tee reviews/1008-1/x.md < /dev/null", 2),
+    ]
+    wrong = []
+    for command, want in rows:
+        rc, _out, err = dispatch.run_one(
+            "block_review_file_shell_write",
+            json.dumps(
+                {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(tmp_path)}
+            ),
+            cwd=str(tmp_path),
+        )
+        if rc != want:
+            wrong.append((command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+def test_what_a_run_starts_starts_in_the_runs_own_directory_review_ec6ec533():
+    """`env -C`/`sudo -D` move the run, not the shell: git's `-C` base, a launched program and a child shell's script start from `run.cwd` (each read the shell's directory before)."""
+    git = shellscan.every_run("cd sub && env -C .. git push origin main")[-1]
+    assert (git.cwd, git.git_dir) == (".", ".")
+    assert shellscan.every_run("cd sub && env -C .. git -C x status")[-1].git_dir == "x"
+    runs = shellscan.every_run("cd sub && env -C .. npx prettier --write .")
+    assert [(r.name, r.cwd) for r in runs[1:]] == [("npx", "."), ("prettier", ".")]
+    inner = shellscan.every_run("cd sub && sudo -D .. sh -c 'git status'")[-1]
+    assert (inner.name, inner.cwd, inner.git_dir) == ("git", ".", ".")
 
 
 # ONE PROGRAM PARSE FOR EVERY GUARD (#a2599946). At bd4ead963 `shellscan._program_parse` read deno, bun and tsx with node's table after a leading `run`, so the words in the `was` column are what every shell-write guard and block_long_sleep took for the program; and it returned the FIRST inline program, where node runs the last and perl and ruby join them all (measured on node v24.21.0 and perl 5.40.1).

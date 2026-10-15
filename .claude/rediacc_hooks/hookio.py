@@ -427,6 +427,24 @@ def _glob_to_re(pattern):
 # --------------------------------------------------------------------------- Running things, the way a guard's `$( ... 2>/dev/null )` runs them ---------------------------------------------------------------------------
 
 
+def _stdin_bytes(text):
+    """The bytes a str stdin stands for, with no input that can raise.
+
+    Encoding a str that holds a lone surrogate with plain `encode("utf-8")` raised UnicodeEncodeError out of run_out, and a crashed guard is no decision, so the command ran (review 46b000ae.1); swallowing it as a command that did not run hid the caller's text instead (review dd407156.2). Neither is needed, because every lone surrogate has a byte form.
+    A surrogate in U+DC80..U+DCFF is what a `surrogateescape` decode makes of a byte that is not UTF-8, and run_out decodes command output exactly that way, so `surrogateescape` hands such text back as the bytes it came from.
+    Any other lone surrogate (U+D800..U+DC7F, U+DD00..U+DFFF) never came from a decode, and `surrogatepass` writes it as its three-byte form; `surrogatepass` encodes every code point, so the fallback cannot raise.
+    """
+    try:
+        return text.encode("utf-8", "surrogateescape")
+    except UnicodeEncodeError:
+        return b"".join(
+            bytes([ord(char) - 0xDC00])
+            if 0xDC80 <= ord(char) <= 0xDCFF
+            else char.encode("utf-8", "surrogatepass")
+            for char in text
+        )
+
+
 def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):
     """A command substitution: stdout with its trailing newlines stripped.
 
@@ -436,8 +454,7 @@ def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):
     and drops the status, which is the `x=$(cmd 2>/dev/null)` shape. Confusing
     the two is how a failing command becomes an empty string that reads as a real answer, so the caller has to choose.
     """
-    # Encoded before the try (review dd407156.2): UnicodeEncodeError is a ValueError, and a caller's undecodable stdin is a bug to surface, not a command that did not run.
-    data = stdin.encode("utf-8") if isinstance(stdin, str) else stdin
+    data = _stdin_bytes(stdin) if isinstance(stdin, str) else stdin
     try:
         proc = subprocess.run(
             list(argv),

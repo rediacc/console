@@ -578,6 +578,8 @@ def _resolve_root(directory, this_root, created=frozenset()):
 
     bash `case "$hint" in /*) ... ;; *) ...` -- a leading slash, nothing more elaborate. A `~` or a `$HOME` is NOT expanded here, so it never resolves.
     """
+    # git resolves a kept `<name>/..` pair on disk (`_join_dir`), so it is handed the pair and not the lexical text.
+    directory = _physical(directory)
     if directory is None or directory in ("", "."):
         return ""
     abs_path = directory if directory.startswith("/") else this_root + "/" + directory
@@ -612,7 +614,7 @@ def _gh_submodule(seg, scan):
     ]
     found = set()
     for run in mine or ghs:
-        m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", _lexical(run.cwd))
+        m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")
         found.add("private/" + m.group(2) if m else "")
     return found.pop() if len(found) == 1 else ""
 
@@ -2037,9 +2039,21 @@ def write_targets(cmd):
     return out
 
 
-def _lexical(directory):
-    """`directory` (a `_Run.cwd`) with any `<name>/..` pair a physical change kept dropped by the text, as every reader that matches a path by pattern saw it before #362f37b2; "" for None."""
-    return posixpath.normpath(directory) if directory else ""
+class _PhysicalDir(str):
+    """A directory a physical change reached through a `<name>/..` pair: the text IS the lexical path every reader compared and prefixed before #362f37b2, and `physical` keeps the pair for the disk to resolve (review ec6ec533.1)."""
+
+    __slots__ = ("physical",)
+    physical: str
+
+    def __new__(cls, lexical, kept):
+        landing = super().__new__(cls, lexical)
+        landing.physical = kept
+        return landing
+
+
+def _physical(directory):
+    """The form of `directory` (a `_Run.cwd` or `_Run.git_dir`) a reader that touches the disk resolves: the kept `<name>/..` pairs of a physical change, else the text itself."""
+    return getattr(directory, "physical", directory)
 
 
 def _cd_physical(argv):
@@ -2064,16 +2078,18 @@ def _kept_pair(parts):
 
 
 # A `..` IS THE KERNEL'S WHEN THE CHANGE IS PHYSICAL (#362f37b2, the sibling of review c5f0fd12.3 in `_script_path`). bash's own `cd` and `pushd` are LOGICAL by default: `cd lnk/..` drops `lnk` from the text of $PWD and lands back where it started, whatever `lnk` points to, so the lexical join is right for them (measured with bash 5, `lnk` a link to `far/inner`: `cd lnk/.. && pwd -P` prints the root).
-# `cd -P`, `env -C`/`--chdir`, `sudo -D`/`--chdir` and `git -C` call chdir(2) instead, and the kernel steps up from where `lnk` POINTS: each lands in `far`, so the walk read `q.py` beside `lnk` while python ran `far/q.py`. The walk is a pure function of the command text and cannot ask the disk, so a physical join keeps every `<name>/..` pair in the path it returns (`lnk/..`); the readers that touch the disk (`_script_path`, `_resolve_root` through `git -C`) resolve it there.
-# A later logical `..` pops only a name the walk added after the kept pair (bash's $PWD is the physical path by then), and a join that involves no kept pair is the old `normpath` expression, so every path this walk produced before stays byte for byte the same.
+# `cd -P`, `env -C`/`--chdir`, `sudo -D`/`--chdir` and `git -C` call chdir(2) instead, and the kernel steps up from where `lnk` POINTS: each lands in `far`, so the walk read `q.py` beside `lnk` while python ran `far/q.py`. A physical join therefore keeps every `<name>/..` pair (`lnk/..`), and the readers that touch the disk (`_script_path`, `_resolve_root` through `git -C`) resolve it there.
+# THE PAIR RIDES BESIDE THE TEXT, NEVER IN IT (review ec6ec533.1). Returned as the text, `cd agent/reviews && env -C .. tee 1008-1/x.md` read `agent/reviews/../1008-1/x.md` for every guard that prefixes or matches `run.cwd`, and block_review_file_shell_write refused that write to `agent/1008-1` (rc 0 -> 2 from ec6ec5338, `sub` a plain directory).
+# A pair matters only when the name before `..` is a symlink, and the walk cannot ask: it has no root (each guard joins `run.cwd` onto its own: the payload `cwd`, the hook's, or the repository's), and `_analyse` caches it by the command text alone, so an answer read from one disk would be served for another. So the text stays the lexical join, byte for byte what every reader saw before #362f37b2, and a `_PhysicalDir` carries the kept pair to the readers that resolve it on disk, which is where a plain directory and a link part ways.
+# A later logical `..` pops only a name the walk added after the kept pair (bash's $PWD is the physical path by then), and the text is the `normpath` of the kept form, which is the old lexical join of the same words.
 def _join_dir(cwd, arg, physical=False):
-    """Where a change of directory to `arg` lands from `cwd`, as a path string relative to the root the walk started in (None means that root). `physical` is chdir(2)'s reading (`cd -P`, `env -C`, `sudo -D`, `git -C`), bash's `cd` the logical one."""
-    base = "" if arg.startswith("/") or cwd is None else cwd
+    """Where a change of directory to `arg` lands from `cwd`, as a path string relative to the root the walk started in (None means that root). `physical` is chdir(2)'s reading (`cd -P`, `env -C`, `sudo -D`, `git -C`), bash's `cd` the logical one; a physical landing reached through a `<name>/..` pair is a `_PhysicalDir`."""
+    base = "" if arg.startswith("/") or cwd is None else _physical(cwd)
     new = arg.split("/")
     if not (physical and ".." in new) and not _kept_pair(base.split("/")):
         if arg.startswith("/") or cwd is None:
             return posixpath.normpath(arg)
-        return posixpath.normpath(cwd + "/" + arg)
+        return posixpath.normpath(base + "/" + arg)
     absolute = (base or arg).startswith("/")
     # The base is already in this form, kept pairs included, so it is taken as it stands and only `arg` is stepped through.
     stack = [p for p in base.split("/") if p not in ("", ".")]
@@ -2088,7 +2104,11 @@ def _join_dir(cwd, arg, physical=False):
         elif not (absolute and not stack):
             stack.append("..")
     text = "/".join(stack)
-    return ("/" + text) if absolute else (text or ".")
+    kept = ("/" + text) if absolute else (text or ".")
+    lexical = posixpath.normpath(kept)
+    if not _kept_pair(stack):
+        return lexical
+    return _PhysicalDir(lexical, kept)
 
 
 def _shell_payload(argv):
@@ -2728,13 +2748,14 @@ class _Walker:
         at_root = lexer is self.analysis.root
         if at_root:
             self.analysis.names.append((words[0].start, words[0].end, words[-1].end))
+        # WHAT A RUN STARTS, STARTS WHERE THE RUN IS (review ec6ec533.1 sweep). `env -C` and `sudo -D` move the run itself and not the shell, so a launched program, a child shell's script and git's own `-C` base start from `run.cwd`. Each read the shell's directory instead: `cd sub && env -C .. git push` gave git `sub` while its run said `.`, and `env -C .. npx prettier` put prettier in `sub`.
         for how, launched, launch, span in _launches(base, argv):
             if at_root and span is not None:
                 first, last = words[1 + span[0]], words[1 + span[1]]
                 self.analysis.names.append((first.start, first.end, last.end))
             sub = _Analysis()
             src = launched if how == "text" else _quote_argv(launched)
-            _Walker(sub, self.depth + 1).text(src, state[0], persist=False, shell=state[1])
+            _Walker(sub, self.depth + 1).text(src, run.cwd, persist=False, shell=state[1])
             if base == "find":
                 for inner_run in sub.runs:
                     inner_run.via = (*inner_run.via, "find")
@@ -2755,7 +2776,7 @@ class _Walker:
             target = operands[0] if operands else "~"
             state[0] = _join_dir(state[0], target, physical=base == "cd" and _cd_physical(argv))
         elif base == "git":
-            run.git_sub, run.git_dir = _git_invocation(argv, state[0])
+            run.git_sub, run.git_dir = _git_invocation(argv, run.cwd)
         elif base == "eval":
             state[0], state[1] = self.nested(" ".join(argv), state[0], persist=True, shell=state[1])
         elif base in SHELL_NAMES:
@@ -2763,15 +2784,15 @@ class _Walker:
             child = {n: (v, v is not None) for n, v in run.env.items()}
             mode, payload = _shell_payload(argv)
             if mode == "c" and payload is not None:
-                self.nested(payload, state[0], persist=False, shell=child)
+                self.nested(payload, run.cwd, persist=False, shell=child)
             elif mode == "stdin":
-                self.stdin(redirs, lexer, [state[0], child], upstream)
+                self.stdin(redirs, lexer, [run.cwd, child], upstream)
         elif base == "bun" and argv:
             # `bun exec "<command line>"` runs it through Bun's shell (#a2599946): walked as `sh -c` is, so every guard reads the commands inside. `bun exec 'echo y > <review file>'` was allowed (rc 0, 2026-10-15) where the same line through `sh -c` was refused.
             kind, payload = program_parse(base, argv)
             if kind == "shell" and payload:
                 child = {n: (v, v is not None) for n, v in run.env.items()}
-                self.nested(payload, state[0], persist=False, shell=child)
+                self.nested(payload, run.cwd, persist=False, shell=child)
         elif base in _DECLARING:
             declared = [_expand_word(w, before, split=False) or "" for w in words[1:]]
             state[1] = _shell_builtin(base, declared, state[1])
@@ -5341,7 +5362,7 @@ def gh_run_repo(run, cwd, inherited=None):
     named = gh_named_repo(run, inherited)
     if named:
         return named
-    m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", _lexical(run.cwd))
+    m = re.search(r"(^|/)private/(renet|account|elite|homebrew-tap)(/|$)", run.cwd or "")
     if m:
         return "rediacc/" + m.group(2)
     return _origin_repo(cwd)
@@ -5915,7 +5936,8 @@ def program_parse(base, argv):
 def _script_path(path, run_cwd, cwd):
     base = cwd or os.getcwd()
     if run_cwd is not None:
-        base = os.path.join(base, run_cwd)
+        # The kept `<name>/..` pair of a physical change, which the realpath below resolves where the kernel does (`_join_dir`).
+        base = os.path.join(base, _physical(run_cwd))
     joined = path if os.path.isabs(path) else os.path.join(base, path)
     if ".." not in joined.split("/") or "\0" in joined:
         return joined if os.path.isabs(path) else os.path.normpath(joined)
