@@ -1573,10 +1573,7 @@ class VmCheck:
                 identity = pathlib.Path(drive_path(value, drive_root))
                 copy = self.work / "sftp_identity"
                 try:
-                    # Created 0600, never widened then narrowed: a umask-mode copy of a private key is readable by other local users until the chmod (review 5a9861e8.3).
-                    fd = os.open(copy, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-                    with os.fdopen(fd, "wb") as out:
-                        out.write(identity.read_bytes())
+                    key_bytes = identity.read_bytes()
                 except OSError as exc:
                     self.check(
                         "V1.7",
@@ -1585,7 +1582,20 @@ class VmCheck:
                         evidence="%s (from %s): %s" % (identity, source, exc),
                     )
                     return None
-                copy.chmod(0o600)
+                try:
+                    # Created 0600 and exclusively, never widened then narrowed: a umask-mode copy of a private key is readable by other local users until a chmod, and an existing file would keep its own mode through O_CREAT (review 5a9861e8.3, f434e6dc.4).
+                    copy.unlink(missing_ok=True)
+                    fd = os.open(copy, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                    with os.fdopen(fd, "wb") as out:
+                        out.write(key_bytes)
+                except OSError as exc:
+                    self.check(
+                        "V1.7",
+                        "the alias's identity is copied into the work directory",
+                        False,
+                        evidence="%s: %s" % (copy, exc),
+                    )
+                    return None
                 value = str(copy)
             elif key.lower() == "userknownhostsfile":
                 value = drive_path(value, drive_root)

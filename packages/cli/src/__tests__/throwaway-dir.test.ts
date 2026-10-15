@@ -40,12 +40,17 @@ describe('assertThrowawayDir', () => {
   it('judges a symlink under the temp directory where it lands (review 1f969add.1)', () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), 'rdc-throwaway-'));
     made.push(base);
-    const outside = fs.mkdtempSync(path.join(os.homedir(), '.rdc-throwaway-outside-'));
-    made.push(outside);
-    if (fs.realpathSync(outside).startsWith(`${fs.realpathSync(os.tmpdir())}${path.sep}`)) return;
-    fs.symlinkSync(outside, path.join(base, 'link'));
+    // The filesystem root is outside the temp directory on every machine, and linking to it writes nothing there (review f434e6dc.1, .6).
+    fs.symlinkSync(path.parse(base).root, path.join(base, 'link'));
     expect(() => assertThrowawayDir(path.join(base, 'link', 'config'))).toThrow(
       /refusing to delete/
     );
+  });
+
+  it('judges a dangling symlink by where it points (review f434e6dc.2)', () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'rdc-throwaway-'));
+    made.push(base);
+    fs.symlinkSync(REAL_CONFIG_HOME, path.join(base, 'dangling'));
+    expect(() => assertThrowawayDir(path.join(base, 'dangling'))).toThrow(/refusing to delete/);
   });
 });
