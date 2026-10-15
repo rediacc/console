@@ -194,6 +194,9 @@ def mask(a):
 
 with open(os.environ["FAKE_CALL_LOG"], "a", encoding="utf-8") as fh:
     fh.write("FAKEBIN canonicalise-gpg-key.sh" + "".join("\\t" + mask(a) for a in sys.argv[1:]) + "\\n")
+# Beside the call log, what the canonicaliser found in its ENVIRONMENT: the port hands it the passphrase there (worklist #3a8d1f46).
+with open(os.environ["FAKE_CALL_LOG"] + ".canon-env", "a", encoding="utf-8") as fh:
+    fh.write("RELEASE_GPG_PASSPHRASE=%s\\n" % os.environ.get("RELEASE_GPG_PASSPHRASE", "<unset>"))
 raise SystemExit(int(os.environ.get("FAKE_CANON_RC", "0")))
 """
 
@@ -408,9 +411,20 @@ def _mask(text: str, *, lines: bool = False, tool: str = "") -> str:
     return LINE_RE.sub("line <N>: ", masked) if lines else masked
 
 
+# RULE T, worklist #3a8d1f46: the one delta the port declares against the twin's frozen call log. The twin ran the canonicaliser as `canonicalise-gpg-key.sh <key> <passphrase>`, with the passphrase readable through `ps`; the port runs it with the key alone and the passphrase in RELEASE_GPG_PASSPHRASE, inherited. `canon_argv_delta` drops exactly that trailing argument from the twin's line, and `test_a_passphrase_is_masked_on_stdout_and_exported_to_both_packagers` proves the recording still carries it while the port's line does not.
+CANON_PASSPHRASE_ARG = re.compile(
+    r"^(FAKEBIN canonicalise-gpg-key\.sh\t[^\t\n]*)\t[^\n]*$", re.MULTILINE
+)
+
+
+def canon_argv_delta(calls: str) -> str:
+    return CANON_PASSPHRASE_ARG.sub(lambda m: m.group(1), calls)
+
+
 def _agree(old_t, new_t, label: str, *, lines: bool = False, tool: str = "") -> None:
-    """`tool` names the ONE coreutils program whose diagnostic WORDING is left out of the stderr comparison, for a case that makes that program fail (`diff.mask_coreutils_diagnostic`)."""
+    """`tool` names the ONE coreutils program whose diagnostic WORDING is left out of the stderr comparison, for a case that makes that program fail (`diff.mask_coreutils_diagnostic`). The twin's call log is compared through `canon_argv_delta`."""
     old, old_calls, old_env, old_files, old_tmp = old_t
+    old_calls = canon_argv_delta(old_calls)
     new, new_calls, new_env, new_files, new_tmp = new_t
     assert new.returncode == old.returncode, (
         "%s: exit diverged: %r vs %r\nold stderr: %r\nnew stderr: %r"
@@ -1098,8 +1112,15 @@ def test_a_passphrase_is_masked_on_stdout_and_exported_to_both_packagers(tmp_pat
     assert seen["NFPM_RPM_PASSPHRASE"] == FIXTURE_PHRASE
     assert seen["NFPM_DEB_PASSPHRASE"] == FIXTURE_PHRASE
     assert old_t[1].splitlines()[0].endswith("\t%s" % FIXTURE_PHRASE), (
-        "the passphrase is passed to the canonicaliser as argv"
+        "the recording no longer carries the twin's passphrase argument; it was re-recorded"
     )
+    # The delta, port side: the canonicaliser gets the key alone on argv, and the passphrase in its environment.
+    assert (
+        new_t[1].splitlines()[0] == "FAKEBIN canonicalise-gpg-key.sh\t<BUILD_DIR>/signing-key.gpg"
+    )
+    assert FIXTURE_PHRASE not in new_t[1]
+    canon_env = (root / "new-calls.log.canon-env").read_text(encoding="utf-8")
+    assert canon_env == "RELEASE_GPG_PASSPHRASE=%s\n" % FIXTURE_PHRASE
     _agree(old_t, new_t, "passphrase")
 
 

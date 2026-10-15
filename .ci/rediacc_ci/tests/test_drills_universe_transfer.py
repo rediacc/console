@@ -328,6 +328,9 @@ def test_universe_logs_in_without_the_token_on_any_argv(
     calls = [json.loads(line) for line in log_path.read_text().splitlines()]
     leaked = [c["argv"] for c in calls if any(token in arg for arg in c["argv"])]
     assert not leaked, "the token reached a child argv: %r" % leaked
+    # Worklist #3a8d1f46: the setup note names the token by a sha256 fingerprint, never by its leading characters.
+    assert token[:8] not in p[1] + p[2], "a prefix of the token reached the drill's output"
+    assert "token sha256:" in p[1]
     logins = [c for c in calls if c["argv"][:2] == ["subscription", "login"]]
     assert logins, "the run never logged in"
     for call in logins:

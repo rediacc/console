@@ -53,6 +53,9 @@
       "VARIANT",
       "WEB_TAG"
     ],
+    ".ci/rediacc_ci/build/canonicalise_gpg_key.py": [
+      "RELEASE_GPG_PASSPHRASE"
+    ],
     ".ci/rediacc_ci/build/generate_cli_manifest.py": [
       "GITHUB_SHA",
       "RELEASES_BASE_URL"

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 DOCKER_STUB = """#!/bin/sh
 echo "$@" >> "$DOCKER_LOG"
+echo "env AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-} AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}" >> "$DOCKER_LOG"
 echo "$STUB_STDERR" >&2
 exit "${STUB_RC:-0}"
 """
@@ -64,6 +65,21 @@ def test_the_bucket_command_targets_the_local_rustfs_only() -> None:
     assert "--bucket" in cmd
     assert cmd[cmd.index("--bucket") + 1] == "rediacc-backups-probe"
     assert cmd[cmd.index("--endpoint-url") + 1] == "http://127.0.0.1:9100"
+
+
+def test_the_rustfs_keys_reach_docker_through_its_environment_not_argv(
+    docker: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Worklist #3a8d1f46. `-e NAME` with no value: the keys are on no docker argv, and docker's environment carries them for the container."""
+    monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+    monkeypatch.delenv("AWS_SECRET_ACCESS_KEY", raising=False)
+    k = plane.knobs({**os.environ, "RUSTFS_KEY": "rk-id-0123", "RUSTFS_SECRET": "rk-secret-0123"})
+    assert plane.create_bucket(k) is None
+    argv, env_line = docker.read_text(encoding="utf-8").splitlines()[:2]
+    assert "rk-id-0123" not in argv, argv
+    assert "rk-secret-0123" not in argv, argv
+    assert "-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION=us-east-1" in argv
+    assert env_line == "env AWS_ACCESS_KEY_ID=rk-id-0123 AWS_SECRET_ACCESS_KEY=rk-secret-0123"
 
 
 def test_an_existing_bucket_is_not_a_problem(
