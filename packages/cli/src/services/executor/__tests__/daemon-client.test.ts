@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { outputService } from '../../core/output.js';
 import {
   createDaemonExecutor,
   type DaemonClientDeps,
@@ -239,73 +240,92 @@ suite('daemon-backed executor', () => {
     expect(daemon.calls).toHaveLength(0);
   });
 
-  it('redraws the CLI-side provision timeline from result.cliSteps', async () => {
+  /** Run `options` through a daemon whose result carries `steps`, and return what reached stdout and stderr. */
+  async function drawnSteps(
+    options: ExecuteOptions,
+    steps: { name: string; duration_ms: number }[]
+  ): Promise<{ stdout: string; stderr: string; result: ExecuteResult }> {
     const socketPath = tmpSocket();
-    const daemon = fakeExecutorWithSteps([
-      { name: 'config', duration_ms: 2 },
-      { name: 'ssh_connect', duration_ms: 0 },
-      { name: 'renet_provision', duration_ms: 0 },
-      { name: 'machine_verify', duration_ms: 0 },
-    ]);
+    const daemon = fakeExecutorWithSteps(steps);
     await startServer(socketPath, daemon.executor);
     const fallback = fallbackExecutor();
-
-    // Capture what the client draws to stdout (renderJobEvent → process.stdout).
-    const written: string[] = [];
-    const spy = vi
+    const out: string[] = [];
+    const err: string[] = [];
+    const text = (chunk: string | Uint8Array) =>
+      typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString();
+    const outSpy = vi
       .spyOn(process.stdout, 'write')
       .mockImplementation((chunk: string | Uint8Array) => {
-        written.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString());
+        out.push(text(chunk));
         return true;
       });
-
+    const errSpy = vi
+      .spyOn(process.stderr, 'write')
+      .mockImplementation((chunk: string | Uint8Array) => {
+        err.push(text(chunk));
+        return true;
+      });
+    // vitest replaces console with its own logger, so the stderr channel the CLI uses (console.error) is captured here too.
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      err.push(`${args.map(String).join(' ')}\n`);
+    });
+    let result: ExecuteResult;
     try {
-      // No onEvent, not captureOutput, not quiet: the direct path would show the four provision lines, so the daemon path must too.
-      await daemonClient(fallback.executor, {
+      result = await daemonClient(fallback.executor, {
         socketPath,
         identity: SERVER_IDENTITY,
         spawnDaemon: () => {},
-      }).execute(OPTIONS);
+      }).execute(options);
     } finally {
-      spy.mockRestore();
+      outSpy.mockRestore();
+      errSpy.mockRestore();
+      consoleSpy.mockRestore();
     }
-
-    const out = written.join('');
-    // The exact labels the direct timedStep path prints, via getDoneLabel.
-    expect(out).toContain('Config loaded');
-    expect(out).toContain('Connected');
-    expect(out).toContain('Renet provisioned');
-    expect(out).toContain('Machine verified');
     expect(daemon.calls).toHaveLength(1);
     expect(fallback.calls).toHaveLength(0);
+    return { stdout: out.join(''), stderr: err.join(''), result };
+  }
+
+  const PROVISION = [
+    { name: 'config', duration_ms: 2 },
+    { name: 'ssh_connect', duration_ms: 0 },
+    { name: 'renet_provision', duration_ms: 0 },
+    { name: 'machine_verify', duration_ms: 0 },
+  ];
+
+  it('redraws the CLI-side provision timeline from result.cliSteps on stderr, never stdout', async () => {
+    // No onEvent, not quiet: the direct path shows the four provision lines on stderr, so the daemon path must too.
+    const { stdout, stderr } = await drawnSteps(OPTIONS, PROVISION);
+    // The exact labels the direct timedStep path prints, via getDoneLabel.
+    for (const label of ['Config loaded', 'Connected', 'Renet provisioned', 'Machine verified']) {
+      expect(stderr).toContain(label);
+    }
+    expect(stdout).not.toContain('Config loaded');
+  });
+
+  it("leaves a captured command's stdout parseable (the vm:check repo list, #74f261a9)", async () => {
+    // Every `-o json` command the daemon served began with the step lines ahead of the JSON, so a parser read nothing.
+    const { stdout, result } = await drawnSteps({ ...OPTIONS, captureOutput: true }, PROVISION);
+    expect(stdout).toBe('');
+    expect(result.stdout).toBe('DATA');
+  });
+
+  it('draws no step line under --quiet, as the direct path draws none', async () => {
+    outputService.setQuiet(true);
+    try {
+      const { stdout, stderr } = await drawnSteps(OPTIONS, PROVISION);
+      expect(stdout + stderr).not.toContain('Config loaded');
+    } finally {
+      outputService.setQuiet(false);
+    }
   });
 
   it('does not redraw the timeline when the caller renders its own (onEvent set)', async () => {
-    const socketPath = tmpSocket();
-    const daemon = fakeExecutorWithSteps([{ name: 'config', duration_ms: 2 }]);
-    await startServer(socketPath, daemon.executor);
-    const fallback = fallbackExecutor();
-
-    const written: string[] = [];
-    const spy = vi
-      .spyOn(process.stdout, 'write')
-      .mockImplementation((chunk: string | Uint8Array) => {
-        written.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString());
-        return true;
-      });
-
-    try {
-      await daemonClient(fallback.executor, {
-        socketPath,
-        identity: SERVER_IDENTITY,
-        spawnDaemon: () => {},
-      }).execute({ ...OPTIONS, onEvent: () => {} });
-    } finally {
-      spy.mockRestore();
-    }
-
-    // The caller owns rendering (it set onEvent); the client must not double-draw.
-    expect(written.join('')).not.toContain('Config loaded');
+    const { stdout, stderr } = await drawnSteps({ ...OPTIONS, onEvent: () => {} }, [
+      { name: 'config', duration_ms: 2 },
+    ]);
+    // The caller owns rendering (it set onEvent); the client must not double-draw, on either stream.
+    expect(stdout + stderr).not.toContain('Config loaded');
   });
 
   it('routes direct when REDIACC_NO_DAEMON=1', async () => {

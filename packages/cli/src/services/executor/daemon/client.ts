@@ -16,6 +16,8 @@
 import { randomUUID } from 'node:crypto';
 import * as net from 'node:net';
 import { debugEnabled } from '../../../utils/debug.js';
+import { formatStepDuration, getDoneLabel } from '../../../utils/timeline.js';
+import { outputService } from '../../core/output.js';
 import { currentRequestContext, writeStderr } from '../../core/request-context.js';
 import { renderJobEvent } from '../job-remote.js';
 import { shouldEchoRelayLive, writeWrappedToStderr } from '../output-lines.js';
@@ -139,9 +141,8 @@ interface ResolvedDeps {
  * "Config loaded / Connected / Renet provisioned / Machine verified" are NOT
  * renet events, the direct path draws them from its own spinners (timedStep),
  * which in the daemon write to a /dev/null stdout. They survive in
- * result.cliSteps, so we synthesize a step_done event per entry and route it
- * through the SAME renderer the detached-job and serve paths use (renderJobEvent
- * → getDoneLabel), reproducing the exact "✔ Config loaded (2ms)" lines. Warm
+ * result.cliSteps, so each entry is printed with the same label the direct path
+ * draws (getDoneLabel), "✔ Config loaded (2ms)", on the same channel: stderr. Warm
  * daemon runs make these near-zero, which is true.
  *
  * Gated exactly like the direct path's spinners: only when the caller drew no
@@ -150,9 +151,9 @@ interface ResolvedDeps {
  */
 function renderCliSteps(options: ExecuteOptions, result: ExecuteResult): void {
   if (options.onEvent || options.quietSpinners) return;
+  // STDERR, LIKE THE DIRECT PATH, never stdout. renderJobEvent writes a step_done line to stdout, so every `-o json` command the daemon served began with "✔ Config loaded (5ms)" ahead of the JSON, and a caller parsing it read nothing: vm:check's repo list came back empty after a create (2026-10-15, #74f261a9). outputService.info is the direct path's non-TTY channel and also honours --quiet.
   for (const step of result.cliSteps ?? []) {
-    const event: RenetEvent = { type: 'step_done', name: step.name, duration_ms: step.duration_ms };
-    renderJobEvent(event);
+    outputService.info(`${getDoneLabel(step.name)} (${formatStepDuration(step.duration_ms)})`);
   }
 }
 
