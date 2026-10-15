@@ -1693,9 +1693,16 @@ class VmCheck:
             res = self.rdc("vscode", "cleanup", "-c", self.connection, refuse=False)
             if res.rc != 0:
                 leftovers.append("vscode connection %s (cleanup rc=%d)" % (self.connection, res.rc))
+        delete_errors: dict[str, str] = {}
         for fork in self.forks:
             res = self.rdc("repo", "delete", self.ref(fork["tag"]), "-y", refuse=False)
             fork["deleted"] = res.rc == 0
+            if res.rc != 0:
+                # The delete's own answer, so a leftover says why it stayed (2026-10-15: a teardown left both forks and the receipt named neither cause).
+                delete_errors[self.ref(fork["tag"])] = "delete rc=%d: %s" % (
+                    res.rc,
+                    rdc_failure(res),
+                )
         if self.forks:
             res, entries = self.repo_list()
             names = {str(e.get("name", "")) for e in entries}
@@ -1706,7 +1713,8 @@ class VmCheck:
             for fork in self.forks:
                 if self.ref(fork["tag"]) in names:
                     fork["deleted"] = False
-                    leftovers.append("fork %s" % self.ref(fork["tag"]))
+                    why = delete_errors.get(self.ref(fork["tag"]), "delete rc=0, still listed")
+                    leftovers.append("fork %s (%s)" % (self.ref(fork["tag"]), why))
                 elif res.rc == 0:
                     fork["deleted"] = True
         if self.fleet_mode == COLD and self.fleet_started:
@@ -1770,9 +1778,13 @@ class VmCheck:
             label = "FAILED" if status == receipt_mod.FAILED else "NOT VERIFIED"
             self.say("  vm:check %s (%s): %s" % (label, reason["class"], reason["detail"]))
             if status == receipt_mod.NOT_VERIFIED:
-                self.say(
-                    "  Nothing on the VMs was judged. The push guard treats this tree as NOT verified."
+                # Teardown runs after the assertions, so a run that only failed to clean up did judge the VMs.
+                judged = (
+                    "%d assertion(s) ran, and the run still does not count" % self.assertions
+                    if self.assertions
+                    else "Nothing on the VMs was judged"
                 )
+                self.say("  %s. The push guard treats this tree as NOT verified." % judged)
         if path is not None:
             self.say(
                 "  receipt: %s (status %s, tree %s, renet %s)"

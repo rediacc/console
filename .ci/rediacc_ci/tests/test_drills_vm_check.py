@@ -1289,6 +1289,19 @@ NOT_VERIFIED_CASES: dict[str, dict[str, Any]] = {
 }
 
 
+def test_a_teardown_leftover_names_the_delete_error_and_the_run_says_it_judged(
+    tmp_path: pathlib.Path,
+) -> None:
+    """2026-10-15 live: a teardown left both forks and the receipt named neither cause, and the summary claimed nothing was judged after 32 assertions ran."""
+    world = make_world(tmp_path, undeletable_suffix="-b")
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "teardown-failed"
+    assert "delete rc=1: device busy" in receipt["reason"]["detail"], receipt["reason"]
+    assert "assertion(s) ran, and the run still does not count" in out, out
+    assert "Nothing on the VMs was judged" not in out, out
+
+
 @pytest.mark.parametrize("cls", sorted(NOT_VERIFIED_CASES))
 def test_each_not_verified_class(tmp_path: pathlib.Path, cls: str) -> None:
     over = dict(NOT_VERIFIED_CASES[cls])
@@ -1309,7 +1322,7 @@ def test_each_not_verified_class(tmp_path: pathlib.Path, cls: str) -> None:
     assert lock_is_free(tmp_path)
     if cls == "teardown-failed":
         assert receipt["teardown"]["ok"] is False
-        assert any(x.endswith("-b") for x in receipt["teardown"]["leftovers"])
+        assert any("-b (delete rc=1: device busy)" in x for x in receipt["teardown"]["leftovers"])
     else:
         assert world.forks_left() == []
     if cls == "renet-build-mismatch":
