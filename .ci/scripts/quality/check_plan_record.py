@@ -292,23 +292,24 @@ def _git_rc(*args):
     return got.returncode, got.stdout
 
 
-def main_view(rel):
-    """How main sees `rel`: ("self", "") when HEAD IS the main ref (the main branch's own CI), ("base", text) for a branch, text "" when main has no such file, and None when no main ref resolves or git fails (review f15c2fcc.2: a failing read never passes for an absent file)."""
-    ref = PL.main_ref(ROOT)
+def main_view(rel, git=None, ref_of=None):
+    """How main sees `rel`: ("self", "") when HEAD IS the main ref (the main branch's own CI), ("base", text) for a branch, text "" when main has no such file, and None when no main ref resolves or git fails (review f15c2fcc.2: a failing read never passes for an absent file). `git` and `ref_of` are seams for the selftest, which drives each failing call (review 7d63b458.2)."""
+    git = git or _git_rc
+    ref = (ref_of or PL.main_ref)(ROOT)
     if not ref:
         return None
-    rc_head, head = _git_rc("rev-parse", "HEAD")
-    rc_main, main = _git_rc("rev-parse", ref + "^{commit}")
+    rc_head, head = git("rev-parse", "HEAD")
+    rc_main, main = git("rev-parse", ref + "^{commit}")
     if rc_head or rc_main:
         return None
     if head.strip() == main.strip():
         return ("self", "")
-    rc_ls, listed = _git_rc("ls-tree", "--name-only", ref, "--", rel)
+    rc_ls, listed = git("ls-tree", "--name-only", ref, "--", rel)
     if rc_ls:
         return None
     if not listed.strip():
         return ("base", "")
-    rc_show, text = _git_rc("show", "%s:%s" % (ref, rel))
+    rc_show, text = git("show", "%s:%s" % (ref, rel))
     return ("base", text) if rc_show == 0 else None
 
 
@@ -2215,6 +2216,51 @@ def selftest():
         not calls,
         f"{len(calls)} call(s)",
     )
+
+    # main_view itself, git answered by a script: each failing call is None (refuse), never "absent" (review 7d63b458.2).
+    def scripted_view(answers, heads=((0, "aaa\n"), (0, "aaa\n")), ref="origin/main"):
+        parses = iter(heads)
+
+        def git(*args):
+            if args[0] == "rev-parse":
+                return next(parses)
+            return answers.get(args[0], (0, ""))
+
+        return main_view(rf_live, git=git, ref_of=lambda _root: ref)
+
+    branch = ((0, "aaa\n"), (0, "bbb\n"))
+    listed = (0, rf_live + "\n")
+    view_rows: list[tuple[str, tuple[str, str] | None, tuple[str, str] | None]] = [
+        ("main_view: no main ref is None", scripted_view({}, ref=""), None),
+        (
+            "main_view: a failing rev-parse is None",
+            scripted_view({}, heads=((128, ""), (0, "a"))),
+            None,
+        ),
+        ("main_view: HEAD equal to main is self", scripted_view({}), ("self", "")),
+        (
+            "main_view: a failing ls-tree is None, not absent",
+            scripted_view({"ls-tree": (128, "")}, heads=branch),
+            None,
+        ),
+        (
+            "main_view: an empty ls-tree is absent on main",
+            scripted_view({"ls-tree": (0, "")}, heads=branch),
+            ("base", ""),
+        ),
+        (
+            "main_view: a failing show is None",
+            scripted_view({"ls-tree": listed, "show": (128, "")}, heads=branch),
+            None,
+        ),
+        (
+            "main_view: a listed file is its text on main",
+            scripted_view({"ls-tree": listed, "show": (0, "T")}, heads=branch),
+            ("base", "T"),
+        ),
+    ]
+    for vlabel, got_view, want_view in view_rows:
+        ck(vlabel, got_view == want_view, f"got {got_view!r}")
 
     # -- RB: a started plan carries boxes. Pure over (rel, text), so every direction is a planted string. --
     live = "agent/plans/PLAN-rb-fixture.md"
