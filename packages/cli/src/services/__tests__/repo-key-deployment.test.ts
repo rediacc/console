@@ -282,6 +282,32 @@ describe('buildKeyRemovalScript', () => {
     }
   });
 
+  it('leaves authorized_keys unchanged when the rewrite cannot read it (review ef6dbb53.1)', () => {
+    const home = mkdtempSync(join(tmpdir(), 'keyrm-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      mkdirSync(join(home, 'bin'));
+      const keys = join(home, '.ssh', 'authorized_keys');
+      const before = `command="renet sandbox-gateway app:stage --guid ${GUID} --datastore /mnt/x" ssh-ed25519 A\nssh-rsa team\n`;
+      writeFileSync(keys, before);
+      // A grep that finds the line but fails the -v rewrite with a read error (exit 2) after printing part of the file.
+      writeFileSync(
+        join(home, 'bin', 'grep'),
+        '#!/bin/bash\ncase "$1" in -vF) echo partial; exit 2;; *) exec /usr/bin/env -i PATH=/usr/bin:/bin grep "$@";; esac\n',
+        { mode: 0o755 }
+      );
+      expect(() =>
+        execFileSync('bash', ['-c', buildKeyRemovalScript('app:stage', GUID)], {
+          env: { ...process.env, HOME: home, PATH: `${join(home, 'bin')}:${process.env.PATH}` },
+          stdio: 'pipe',
+        })
+      ).toThrow();
+      expect(readFileSync(keys, 'utf8')).toBe(before);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
   it('refuses unsafe names', () => {
     expect(() => buildKeyRemovalScript("a'; rm -rf ~; '", GUID)).toThrow(/unsafe/);
   });

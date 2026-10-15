@@ -1391,7 +1391,7 @@
   "commands.sync.noChanges": "No changes to sync.",
   "commands.sync.previewingChanges": "\nPreviewing changes...\n",
   "commands.sync.skippedMore": "{{names}}, and {{count}} more",
-  "commands.sync.skippedNonRegular": "Warning: {{count}} symlinks or special files were not transferred (a privileged sync carries regular files only): {{names}}",
+  "commands.sync.skippedNonRegular": "Warning: symlinks and special files not transferred, {{count}} in all (a privileged sync carries regular files only): {{names}}",
   "commands.sync.status.description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)",
   "commands.sync.status.descriptionShort": "Compare local and remote files (dry-run)",
   "commands.sync.totalSize": "Total size: {{size}}",

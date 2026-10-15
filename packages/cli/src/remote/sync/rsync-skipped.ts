@@ -17,10 +17,21 @@ export function parseSkippedEntries(stderr: string): string[] {
   return names;
 }
 
+/** A name as the terminal may show it: control characters (C0, DEL, C1) become `\\xNN`, since a download's names are the remote machine's and an escape sequence in one would drive the terminal (review ef6dbb53.2). */
+export function displayName(name: string): string {
+  let out = '';
+  for (const ch of name) {
+    const code = ch.codePointAt(0) ?? 0;
+    const control = code < 0x20 || (code >= 0x7f && code <= 0x9f);
+    out += control ? `\\x${code.toString(16).padStart(2, '0')}` : ch;
+  }
+  return out;
+}
+
 /** The first names for display plus how many were left out. */
 export function summarizeSkipped(names: string[]): { shown: string[]; more: number } {
   return {
-    shown: names.slice(0, SKIPPED_NAMES_SHOWN),
+    shown: names.slice(0, SKIPPED_NAMES_SHOWN).map(displayName),
     more: Math.max(0, names.length - SKIPPED_NAMES_SHOWN),
   };
 }
