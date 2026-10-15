@@ -1,7 +1,8 @@
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import lockfile from 'proper-lockfile';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createEmptyRdcConfig, type RdcConfig } from '../../types/index.js';
 import { ConfigFileStorage } from '../config-file-storage.js';
 
@@ -408,6 +409,16 @@ describe('ConfigFileStorage', () => {
       await storage.init('test');
 
       await expect(storage.init('test')).rejects.toThrow('Config "test" already exists');
+    });
+
+    it('creates once when two inits race, never truncating the winner', async () => {
+      const results = await Promise.allSettled([storage.init('race'), storage.init('race')]);
+
+      expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      const rejected = results.find((r) => r.status === 'rejected');
+      expect((rejected as PromiseRejectedResult).reason).toMatchObject({
+        message: 'Config "race" already exists',
+      });
     });
 
     it('should create the directory if it does not exist', async () => {
@@ -989,6 +1000,38 @@ describe('ConfigFileStorage', () => {
     it('should succeed deleting config even when no .bak exists', async () => {
       await storage.init('test');
       await expect(storage.delete('test')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('read-modify-write under the lock', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('the migration persist re-reads the file inside the lock instead of saving its unlocked read', async () => {
+      // A pre-v3 file: the load migrates it and persists the upgraded shape.
+      await fs.writeFile(
+        join(testDir, 'mig.json'),
+        JSON.stringify({ id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f', version: 1 })
+      );
+      // Another process upgrades and writes the file in the window between the unlocked read and the lock.
+      const concurrent = {
+        ...createEmptyRdcConfig(),
+        id: '7c8d1e9f-2a3b-4c5d-8e6f-1a2b3c4d5e6f',
+        version: 5,
+        resources: { machines: { added: { ip: '192.0.2.9', user: 'root' } } },
+      } as unknown as RdcConfig;
+      const realLock = lockfile.lock.bind(lockfile);
+      vi.spyOn(lockfile, 'lock').mockImplementationOnce(async (file, opts) => {
+        await writeRawConfig('mig', concurrent);
+        return realLock(file, opts);
+      });
+
+      await storage.load('mig');
+
+      const onDisk = await readRawConfig('mig');
+      expect(onDisk.resources?.machines?.added).toBeDefined();
+      expect(onDisk.version).toBe(5);
     });
   });
 });
