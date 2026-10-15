@@ -148,6 +148,8 @@ class World(vm_check.Host):
         # The live ops VM image: the CLI's file-write guard refuses `echo x > f` through `term connect` unless REDIACC_SKIP_FILE_WRITE_GUARD=1 (False: a CLI that no longer honours the variable), vi is absent, and the grand holds no compose file.
         self.write_guard_honours_skip = over.pop("write_guard_honours_skip", True)
         self.vi = over.pop("vi", False)
+        # The vi probe's exit when vi is absent: 1 is `command -v` saying so, anything else a probe that failed.
+        self.vi_probe_rc = over.pop("vi_probe_rc", 1)
         # A planted remote failure for `chmod 600` in the mount: (stdout, stderr), stdout being the CLI's JSON envelope.
         self.chmod_fail = over.pop("chmod_fail", None)
         # "wsl": `vscode connect` writes the alias into the Windows home under the drive mounts with C:/ paths and a 0777 key, as getSSHHome() does on WSL; "linux": into $HOME with a 0600 key.
@@ -484,7 +486,11 @@ class World(vm_check.Host):
                 return vm_check.Result(1, "", "Error: no compose file found")
             return vm_check.Result(0, "NAME IMAGE COMMAND SERVICE CREATED STATUS PORTS\n")
         if command == vm_check.VI_PROBE:
-            return vm_check.Result(0, "/usr/bin/vi\n") if self.vi else vm_check.Result(1)
+            return (
+                vm_check.Result(0, "/usr/bin/vi\n")
+                if self.vi
+                else vm_check.Result(self.vi_probe_rc)
+            )
         if command == vm_check.VI_WRITE:
             return vm_check.Result(0) if self.vi else vm_check.Result(127, "", "vi: not found")
         if command.startswith("test ! -L "):
@@ -1755,6 +1761,23 @@ def test_sftp_refused_reads_failure_status_lines_only_for_the_named_path() -> No
 )
 def test_drive_path_spells_windows_drives_for_wsl(value: str, spelled: str) -> None:
     assert vm_check.drive_path(value) == spelled
+
+
+def test_a_failed_vi_probe_is_a_failed_row_not_an_absence(tmp_path: pathlib.Path) -> None:
+    """Review 5a9861e8.2: an ssh failure answering the probe (rc 255) established nothing about vi, so no sed fallback runs and nothing claims vi is absent."""
+    world = make_world(tmp_path, vi=False, vi_probe_rc=255)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    rows = [s for s in receipt["steps"] if "vi probe answered" in s["desc"]]
+    assert len(rows) == 1
+    assert rows[0]["verdict"] == "FAIL"
+    assert not [s for s in receipt["steps"] if "vi absent" in s["desc"]]
+
+
+def test_alias_block_finds_a_later_pattern_and_stops_at_match() -> None:
+    """Review 5a9861e8.4: a Host line lists several patterns, and a Match block's directives are not the alias's."""
+    text = "Host other want\n  HostName 2\nMatch host x\n  User root\n"
+    assert vm_check.alias_block(text, "want") == ["HostName 2"]
 
 
 def test_alias_block_reads_only_the_named_host() -> None:

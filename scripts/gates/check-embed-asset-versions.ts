@@ -473,12 +473,12 @@ function runControls(): string[] {
   const depOnPin = modinfo([
     'path\tgithub.com/kubernetes-csi/external-snapshotter/v8/cmd/snapshot-controller',
     'mod\tgithub.com/kubernetes-csi/external-snapshotter/v8\t(devel)\t',
-    'dep\tgithub.com/kubernetes-csi/external-snapshotter/client/v8\tv8.7.0\t',
+    'dep\tgithub.com/kubernetes-csi/external-snapshotter/client/v8\tv8.97.0\t',
   ]);
   // A header whose module info runs past 127 bytes takes a two-byte length, and must still be excluded whole. Unwrapped on purpose: `debug/buildinfo` reads inline module info with or without the sentinels, and a wrapped one would be excluded by the sentinel scan whatever the length parse did.
   const longDep = [
-    `dep\tgithub.com/${'x'.repeat(140)}\tv8.7.0\t`,
-    'dep\tgithub.com/y\tv8.7.0\t',
+    `dep\tgithub.com/${'x'.repeat(140)}\tv8.97.0\t`,
+    'dep\tgithub.com/y\tv8.97.0\t',
   ].join('\n');
   const spanCovers = (text: string, needle: string): boolean => {
     const buf = Buffer.from(text, 'latin1');
@@ -490,7 +490,7 @@ function runControls(): string[] {
     }
     return seen > 0;
   };
-  if (!spanCovers(`\u0000${header(longDep)}\u0000`, 'v8.7.0')) {
+  if (!spanCovers(`\u0000${header(longDep)}\u0000`, 'v8.97.0')) {
     failures.push(
       'control: a build info header with a two-byte module info length was not excluded whole'
     );
@@ -507,8 +507,8 @@ function runControls(): string[] {
     { text: `${nul}  3.5.0 ${nul}`, pin: '3.5.0', expected: true, label: 'space-padded run' },
     { text: `${nul}v2.1.2\n`, pin: '2.1.2', expected: true, label: 'v-prefixed run' },
     {
-      text: `\u00ff\u00a0Lv8.7.0${nul}`,
-      pin: '8.7.0',
+      text: `\u00ff\u00a0Lv8.97.0${nul}`,
+      pin: '8.97.0',
       expected: true,
       label: 'THE 2026-10-15 CASE: the arm64 snapshot-controller stamp after a float byte `L`',
     },
@@ -525,26 +525,26 @@ function runControls(): string[] {
       label: 'a space then prose on the right is a boundary',
     },
     {
-      text: `${nul}v8.7.0Kq${nul}`,
-      pin: '8.7.0',
+      text: `${nul}v8.97.0Kq${nul}`,
+      pin: '8.97.0',
       expected: true,
       label: 'a chance letter on the right',
     },
     { text: `${nul}3.5.01${nul}`, pin: '3.5.0', expected: false, label: 'prefix-sharing version' },
-    { text: `${nul}v8.7.01${nul}`, pin: '8.7.0', expected: false, label: 'longer patch, v form' },
-    { text: `${nul}v18.7.0${nul}`, pin: '8.7.0', expected: false, label: 'longer major, v form' },
-    { text: `${nul}1.8.7.0${nul}`, pin: '8.7.0', expected: false, label: 'a dotted prefix' },
-    { text: `${nul}v8.7.0-rc.1${nul}`, pin: '8.7.0', expected: false, label: 'a pre-release' },
+    { text: `${nul}v8.97.01${nul}`, pin: '8.97.0', expected: false, label: 'longer patch, v form' },
+    { text: `${nul}v18.97.0${nul}`, pin: '8.97.0', expected: false, label: 'longer major, v form' },
+    { text: `${nul}1.8.97.0${nul}`, pin: '8.97.0', expected: false, label: 'a dotted prefix' },
+    { text: `${nul}v8.97.0-rc.1${nul}`, pin: '8.97.0', expected: false, label: 'a pre-release' },
     { text: `${nul}v1.37.1+k3s1${nul}`, pin: '1.37.1', expected: false, label: 'a build suffix' },
     {
-      text: `${nul}github.com/kubernetes-csi/external-snapshotter/client/v8@v8.99.0/apis/volumesnapshot.go${nul}`,
-      pin: '8.99.0',
+      text: `${nul}github.com/kubernetes-csi/external-snapshotter/client/v8@v8.97.0/apis/volumesnapshot.go${nul}`,
+      pin: '8.97.0',
       expected: false,
       label: 'a module path @v (a -trimpath source path)',
     },
     {
-      text: `${nul}github.com/x/y@v8.7.0${nul}`,
-      pin: '8.7.0',
+      text: `${nul}github.com/x/y@v8.97.0${nul}`,
+      pin: '8.97.0',
       expected: false,
       label: 'a module path @v at the end of a run',
     },
@@ -555,7 +555,7 @@ function runControls(): string[] {
       expected: false,
       label: 'a letter before the bare needle',
     },
-    { text: `${nul}go8.7.0${nul}`, pin: '8.7.0', expected: false, label: 'a toolchain version' },
+    { text: `${nul}go8.97.0${nul}`, pin: '8.97.0', expected: false, label: 'a toolchain version' },
     { text: `${nul}3.4.4${nul}`, pin: '3.5.0', expected: false, label: 'THE REGRESSION as bytes' },
     { text: `${nul}1.2${nul}1${nul}`, pin: '1', expected: false, label: 'needle under 3 bytes' },
     {
@@ -566,58 +566,58 @@ function runControls(): string[] {
     },
     {
       text: `${nul}${depOnPin}${nul}`,
-      pin: '8.7.0',
+      pin: '8.97.0',
       expected: false,
       label: 'THE HOLE: a runtime.modinfo dep line on the pin, no stamp',
     },
     {
       text: `${nul}${header(depOnPin)}${nul}`,
-      pin: '8.7.0',
+      pin: '8.97.0',
       expected: false,
       label: 'a build info header dep line on the pin, no stamp',
     },
     {
       text: `${nul}${header(longDep)}${nul}`,
-      pin: '8.7.0',
+      pin: '8.97.0',
       expected: false,
       label: 'a build info header past 127 bytes, no stamp',
     },
     {
-      text: `${nul}${latin1(GO_MODINFO_START)}mod\tm\tv8.7.0\t`,
-      pin: '8.7.0',
+      text: `${nul}${latin1(GO_MODINFO_START)}mod\tm\tv8.97.0\t`,
+      pin: '8.97.0',
       expected: false,
       label: 'module info with no end sentinel excludes to the end',
     },
     {
-      text: `${nul}${depOnPin}${nul}v8.7.0${nul}${header(depOnPin)}`,
-      pin: '8.7.0',
+      text: `${nul}${depOnPin}${nul}v8.97.0${nul}${header(depOnPin)}`,
+      pin: '8.97.0',
       expected: true,
       label: 'a stamp between two build info copies is still found',
     },
     {
-      text: `${nul}v8.7.0${depOnPin}`,
-      pin: '8.7.0',
+      text: `${nul}v8.97.0${depOnPin}`,
+      pin: '8.97.0',
       expected: false,
       label:
-        'a version right before a start sentinel reads v8.7.00 in the raw bytes (the sentinel opens with 0x30)',
+        'a version right before a start sentinel reads v8.97.00 in the raw bytes (the sentinel opens with 0x30)',
     },
     {
-      text: `${nul}v8.7.0\n${depOnPin}`,
-      pin: '8.7.0',
+      text: `${nul}v8.97.0\n${depOnPin}`,
+      pin: '8.97.0',
       expected: true,
       label: 'a stamp before a start sentinel with a non-digit gap',
     },
     {
-      text: `${nul}${depOnPin}v8.7.0${nul}`,
-      pin: '8.7.0',
+      text: `${nul}${depOnPin}v8.97.0${nul}`,
+      pin: '8.97.0',
       expected: true,
       label: 'a stamp right after an end sentinel (its last byte 0xf2 is a boundary)',
     },
     {
-      text: `${nul}${header('dep\tm\tv1')}8.7.0${nul}`,
-      pin: '8.7.0',
+      text: `${nul}${header('dep\tm\tv1')}8.97.0${nul}`,
+      pin: '8.97.0',
       expected: false,
-      label: 'a version right after a header span ending in a digit reads v18.7.0 in the raw bytes',
+      label: 'a version right after a header span ending in a digit reads v18.97.0 in the raw bytes',
     },
   ];
   for (const { text, pin, expected, label } of bufferCases) {
