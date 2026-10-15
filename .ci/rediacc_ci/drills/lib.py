@@ -461,10 +461,9 @@ class Drill:
             lines = state.read_text(errors="replace").splitlines()
         except OSError:
             return ""
-        for line in lines:
-            if line.startswith("gateway_port="):
-                return line.split("=", 1)[1]
-        return ""
+        # The LAST line wins, as in rdc.sh (`grep ... | tail -1`), so a minted token and the dev config always name the same gateway.
+        ports = [ln.split("=", 1)[1] for ln in lines if ln.startswith("gateway_port=")]
+        return ports[-1] if ports else ""
 
     def _health(self, port: str | int, timeout: float = 2.0) -> bool:
         try:
