@@ -33,10 +33,28 @@ Done before this plan (2026-10-15, not repeated here):
 - Grand repos are guarded: an agent cannot open a shell inside one (`term connect <repo>`) or change it unless the operator starts the session with `REDIACC_ALLOW_GRAND_REPO=<repo>` (or `*`). The normal path is fork first (`./rdc.sh repo fork <repo> --tag <tag> --config eu-remote`) and work on `<repo>:<tag>`.
 - A machine-level shell is `./rdc.sh term connect hostinger --config eu-remote -c '<cmd>'` (sudo is available as `sudo -n`). The CLI refuses machine commands that mention `docker` or a repo mount path even when they only read (C7/C8); until those boxes land, name units with a glob such as `rediacc-d?cker-*`.
 - `machine setup hostinger` uploads this tree's renet and restarts rediacc-router; the operator approved running it. It does not restart the hub, plugins or per-repo supervisors (Phase C).
-- Cloudflare and R2: the Bitwarden machine token is at `~/.config/rediacc/bws-access-token`; `bws secret list -o json` with `BWS_ACCESS_TOKEN` set returns `CF_EMAIL`, `CF_GLOBAL_API_KEY` and `CLOUDFLARE_ACCOUNT_ID`, which drive the Cloudflare REST API. Never print a value. EU buckets are in the EU jurisdiction and are only listed with the header `cf-r2-jurisdiction: eu`.
+- Cloudflare, R2 and secrets: see "Credentials and live validation" below.
 - Buckets: stable `rediacc-backups-{eu,us,asia}`, edge `edge-rediacc-backups-{eu,us,asia}` (both EU ones in the EU jurisdiction), bound as `BACKUP_BUCKET` to the workers `rediacc-account-{eu,us,asia}` and `edge-rediacc-account-{eu,us,asia}`. hostinger's repo licences come from the stable EU server, so its backups land in `rediacc-backups-eu`. On 2026-10-15 every backup bucket was empty.
 - Dev and test machines are the local KVM VMs from `./rdc.sh ops up` (192.168.111.*), used with `./rdc.sh --dev`; they are dev-only and never added to `eu-remote`.
 - hostinger state on 2026-10-15: renet updated by `machine setup`, but 21 renet processes (hub, 10 plugins, 10 per-repo supervisors) still run the replaced binary until Phase C restarts them; no backup timer exists.
+
+## Credentials and live validation (tools and concepts; no secret is written here)
+
+Every live claim in this plan (bucket contents, worker bindings, token scopes, portal health) can be checked from this host. The rule that keeps it safe: a secret goes from Bitwarden into an environment variable inside one script and is never echoed, logged, written to a file or passed on a command line that shows up in `ps`.
+
+- **Bitwarden Secrets Manager (bws), not the Bitwarden password manager (bw).** The CLI is `~/.local/bin/bws`; the machine-account token is the file `~/.config/rediacc/bws-access-token` (mode 0600). Export it as `BWS_ACCESS_TOKEN` for the one command that needs it.
+- **Names first, values only in memory.** `bws secret list -o json` returns `key`, `note`, `id` and `value` for each secret; read `key` and `note` to find what exists and what it is for, and pick a `value` only inside the script that uses it. `.ci/config/bws-secret-map.json` and `.ci/config/secret-supply.json` say which repo code reads which name.
+- **Repo wrapper.** `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile <profile> -- <command>` runs a command with a named profile's secrets exported (profiles are in secret-supply.json: deploy-workers, deploy-bench, rotation and others). There is no all-secrets mode by design; M1 adds a tracked profile for account worker secrets.
+- **Names used for live checks:** `CF_EMAIL` and `CF_GLOBAL_API_KEY` (Cloudflare API, sent as the `X-Auth-Email` and `X-Auth-Key` headers), `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` (the deploy token), `ACCOUNT_BACKUP_S3_ENDPOINT`, `ACCOUNT_BACKUP_S3_ACCESS_KEY_ID` and `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY` (the backup plane's S3 credential; S1 splits it per environment).
+- **Cloudflare REST calls that answer this plan's questions** (base `https://api.cloudflare.com/client/v4/accounts/<account id>`):
+  - `GET /r2/buckets` lists buckets. EU-jurisdiction buckets appear only with the header `cf-r2-jurisdiction: eu`, which every object or bucket call on them also needs.
+  - `GET /r2/buckets/<bucket>/objects?per_page=1000` (paginate with `cursor`) counts objects and bytes; `DELETE .../objects/<key>` and `DELETE /r2/buckets/<bucket>` remove them.
+  - `GET /r2/buckets/<bucket>/domains/managed`, `/domains/custom` and `/cors` show whether a bucket is publicly reachable (all off on 2026-10-15).
+  - `GET /workers/scripts` lists workers; `GET /workers/scripts/<worker>/settings` lists bindings, which show secret names and R2 bucket bindings but never secret values; `/deployments` and `/versions/<id>` give rollback points.
+  - `DELETE /workers/scripts/<worker>/secrets/<name>` removes a worker secret and keeps the ASSETS binding (measured 2026-10-15); `wrangler secret put` mints a version that can detach static assets.
+  - An R2 S3 access key id is the id of a Cloudflare API token, so `GET /tokens/<access key id>` returns that token's name, status and policies, which is how a credential's real scope is read without touching its secret.
+- **Health probe after any worker change:** `https://<host>/account/login` and its first `/account/assets/*.js` return 200, and `https://<host>/account/api/v1/health` returns 200. The hosts are eu.rediacc.com, us.rediacc.com, asia.rediacc.com, edge-eu, edge-us and edge-asia under rediacc.com, and bench.rediacc.com. A CDN cache HIT proves nothing about a new version; read the version's bindings instead.
+- **Ask before** rotating or revoking a token or deleting a non-empty bucket. Worker deploys and secret changes go ahead without asking (no active users), each with its rollback version id recorded.
 
 ## Known defects (each maps to the box that fixes it)
 
@@ -63,6 +81,14 @@ Done before this plan (2026-10-15, not repeated here):
 | The remote config version climbs without a deliberate write | live, version 5 to 15 on 2026-10-15 | R2 |
 | The server counts 0 valid licences of 35 while hostinger reports 11 valid | live `subscription status` vs `machine status --licenses` | R3 |
 | hermes is 100% full | live `machine status --storage-health` | R4 |
+| Config blob keys carry no store id, so one org can delete another org's configs | private/account/src/services/config.service.ts:2681-2698 | S1 (fixed by another session) |
+| An account-wide R2 key can reach bench; one backup key serves stable, edge and bench | .ci/rediacc_ci/ops/deploy_bench.py:74-86 | S1 (fixed by another session) |
+| A licence never expires as a backup credential, and the machineId check trusts the client | private/account/src/services/repo-license-verify.service.ts:79 | S2 |
+| A backup session reaches every lineage of the subscription, not only its own repo | private/account/src/services/backup-storage.service.ts:187-195 | S3 |
+| Team-scoped tokens can read and prune other teams' backups | private/account/src/routes/backups.ts:126-208 | S4 |
+| Presigned PUTs carry no size or checksum; billing trusts client numbers | private/account/src/services/backup-chunk-store.ts:826 | S5 |
+| One tenant can stall maintenance for all | private/account/src/services/backup-gc.service.ts:129-150 | S6 |
+| Executor tokens can be minted as any team member and can write | private/account/src/routes/configs.ts:837-892 | S7 |
 | Chunk-store Go tests are never run before a push; suite 26 never runs in CI | .ci/rediacc_ci/proxies/go_unit.py:26 | J1-J6 |
 
 ## Design notes
@@ -266,6 +292,23 @@ Done before this plan (2026-10-15, not repeated here):
 - [ ] R3: `subscription status --config eu-remote` counts 35 tracked licences, 0 valid, 16 refresh recommended and 19 hard expired, while `machine status hostinger --licenses` reports all 11 valid. Reconcile the server's licence ledger with the machines (deleted repos and forks are the likely extra rows) and make the two views agree. Accept: both commands agree after the fix; a test covers a deleted repo's licence row.
 - [ ] R4: hermes is 100% full (31.4G of 31.4G). Before the first seed in Q11, inside a fork or with REDIACC_ALLOW_GRAND_REPO=hermes granted by the operator, find what fills it and either free space or grow the image online (`./rdc.sh repo expand hermes --config eu-remote`, zero downtime, grow-only; the datastore has about 50 GB free). Accept: hermes below 90% used and its services healthy.
 - [ ] R5: Removing a resource that others reference is refused or cascades on purpose: `storage remove` left both strategies pointing at a removed storage on 2026-10-15. H1 deletes `rdc storage`; sweep the remaining remove verbs (machine, strategy, datastore) for the same gap. Accept: a test per verb.
+
+### Phase S: tenant isolation and security holes (audit of 2026-10-15)
+
+Two holes went to another session on 2026-10-15 for an immediate fix: cross-tenant config deletion (config blob keys carry no store id) and the backup credentials (an account-wide R2 key reachable by bench, and one backup key shared by stable, edge and bench). S1 only verifies that work landed. Verified as sound on 2026-10-15: no backup or config bucket has r2.dev access, a custom domain or CORS; the backup subscription is always taken from the server; /exists and restore chains stay inside the tenant prefix; grants are single-key, single-verb and create-only.
+
+- [ ] S1: Verify the hand-off landed: config blob keys carry the store id (private/account/src/services/config.service.ts:2681-2698) with a two-stores-one-configId test; separate stable, edge and bench backup tokens scoped to their own buckets; no fallback to CLOUDFLARE_R2_* in .ci/rediacc_ci/ops/deploy_bench.py:74-86; the shared token revoked; the credential gate exists. Accept: the commits and the Cloudflare token list (names and scopes only).
+- [ ] S2: Licences expire as backup credentials: the backup session refuses a blob past hardExpiresAt (private/account/src/services/repo-license-verify.service.ts:79 parses it and nothing checks it), with a short restore-only grace if chosen; the session requires a live activation for the machineId instead of trusting the echoed machineId (private/account/src/services/subscription.service.ts:1190-1204); chainHash is required when the ledger has an entry. Accept: vitest for an expired blob, an echoed machineId with no activation, and a stripped chainHash; each fails on today's code.
+- [ ] S3: Bind the backup session to the licence's grandGuid: store it on the session and require lineageGuid to match on /streams, /grants, /read-grants, /exists and /commit (private/account/src/services/backup-storage.service.ts:187-195,550-563). Accept: vitest: a licence for repo A cannot read or write repo B's lineage in the same subscription.
+- [ ] S4: Team scope on backup token routes: map each lineage to its team through the licence issuance and filter /backups/usage, /manifests and /retention by apiTokenTeamId (private/account/src/routes/backups.ts:126-208); make backup:manage an owner/admin scope. Accept: vitest: a team-scoped token cannot see or change another team's lineage.
+- [ ] S5: Size-bound uploads: presigned PUTs sign ContentLength (a per-chunk maximum) and x-amz-checksum-sha256 (private/account/src/services/backup-chunk-store.ts:826); cap hashes per grant call and require them to fit declaredBytes (private/account/src/dto/backup.dto.ts:59-61); bill from stored sizes, not client numbers. Accept: a drill PUT larger than declared is refused by RustFS and R2; vitest for the caps.
+- [ ] S6: Maintenance isolation: runMaintenance wraps each subscription in its own error boundary with a CPU, time and subrequest budget and resumes from a cursor (private/account/src/services/backup-gc.service.ts:129-150); commit HEADs and caps manifest size. Accept: vitest: one failing or oversized tenant does not stop the sweep for the rest.
+- [ ] S7: Executor tokens: /configs/executor-token (private/account/src/routes/configs.ts:837-892) mints only for a user who granted the session, the token is read-only, and minting proxy:exec is admin-only. Accept: vitest: a member cannot mint a token as the team admin, and an executor token cannot PUT.
+- [ ] S8: Strict identifiers: lineageGuid, repositoryGuid, snapshotId and streamId are UUIDs or `^[A-Za-z0-9-]{1,64}$` in every DTO (private/account/src/dto/backup.dto.ts:6). Accept: vitest refusing `/`, `..` and other separators.
+- [ ] S9: Rate limits at the edge for /backups/session and /licenses/renew, and sampled refusal logging so garbage blobs cannot flood D1 (private/account/src/routes/backups.ts:70, private/account/src/middleware/rate-limit.ts:43-51). Accept: test or Cloudflare rule recorded.
+- [ ] S10: Self-hosted hardening: trust X-Forwarded-For and X-Real-IP only from a configured proxy list (private/account/src/utils/request.ts:13-18); elite refuses to start with the default admin and RustFS credentials, or generates them on first start (private/elite/.env.template:11). Accept: tests for both.
+- [ ] S11: Small fixes: requireTwoFactor on DELETE /configs/:id (private/account/src/routes/configs.ts:1436), /rotate-cek/status limited to admins (:812), CI_MODE pinned false in the Workers entry (private/account/src/entry/cloudflare.ts:36). Accept: vitest per route.
+- [ ] S12: An isolation test suite that keeps these closed: two subscriptions, two orgs, two teams and two stores sharing ids, run in account vitest and in the RustFS drill (J4 receipt). Accept: the suite fails if any of S2-S8 is reverted.
 
 ### Phase P: local integration proof (dev VMs, account gateway, RustFS)
 
