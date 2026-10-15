@@ -2,14 +2,13 @@
 
 T2 the `--effort-propose` verb refuses evidence that cites no outcome row and appends one that does. T3 on a fixture ledger the core proposes the planted demotion and promotion, flags the planted dead key, and the replay names the emissions that change. T4 the near-compaction request fires once per context through the real Stop hook, and a fixture run writes the patch and evidence. T5 a promotion applies with a report line, a demotion waits for one /ask whose answer is recorded and not asked again, the FLOOR is never tuned, and a demoted key quiet before a miss is promoted back. T6 three re-raised finished items yield one proposed judge rule whose test passes.
 
-Every write goes to a scratch project holding a copy of the real effort.json; the real table is only read.
+Every write goes to a scratch project holding a copy of the real effort.json with the planted keys pinned to the levels their rows assume; the real table is only read.
 """
 
 from __future__ import annotations
 
 import datetime
 import json
-import shutil
 import subprocess
 import sys
 
@@ -82,12 +81,28 @@ def wl(tmp_path):
     return fixture
 
 
+# The levels the planted rows are written against. The real table is tuned in place (a promotion moved no-remaining to block at smart on 2026-10-14), so the copy pins the planted keys back to these and drops their `tuned` records; every other row stays the real one.
+PLANTED = {
+    DEMOTE_KEY: {"block": "high", "advise": "smart"},
+    PROMOTE_KEY: {"block": "high", "advise": "smart"},
+}
+
+
+def planted_table():
+    """The real effort.json with the planted keys at their PLANTED levels and untuned."""
+    table = json.loads((REPO / E.TABLE_REL).read_text(encoding="utf-8"))
+    for key, entry in PLANTED.items():
+        table["checks"][key] = dict(entry)
+        (table.get("tuned") or {}).pop(key, None)
+    return table
+
+
 @pytest.fixture
 def proj(tmp_path):
-    """A scratch project: a copy of the real effort.json and the fixture ledger."""
+    """A scratch project: the real effort.json with the planted keys pinned (planted_table), and the fixture ledger."""
     root = tmp_path / "proj"
     (root / ".claude" / "config").mkdir(parents=True)
-    shutil.copy(REPO / E.TABLE_REL, root / E.TABLE_REL)
+    (root / E.TABLE_REL).write_text(T.render(planted_table()), encoding="utf-8")
     OUT.append_rows(OUT.ledger_path(root), fixture_ledger())
     yield root
     E._CACHE.clear()
@@ -171,6 +186,7 @@ def test_t3_the_diff_applies_with_git(proj, tmp_path):
 
 
 def test_t4_a_fixture_run_writes_the_patch_and_the_evidence(proj):
+    before = (proj / E.TABLE_REL).read_text(encoding="utf-8")
     doc = T.run(proj, ME, 1, now=NOW)
     out = T.run_dir(proj, ME, 1)
     patch = (out / "effort.json.patch").read_text(encoding="utf-8")
@@ -182,9 +198,9 @@ def test_t4_a_fixture_run_writes_the_patch_and_the_evidence(proj):
     assert "- %s" % DEAD_KEY in evidence
     assert doc["gate"] == [], doc["gate"]
     assert json.loads((out / "run.json").read_text(encoding="utf-8"))["changes"] == doc["changes"]
-    assert (proj / E.TABLE_REL).read_text(encoding="utf-8") == (REPO / E.TABLE_REL).read_text(
-        encoding="utf-8"
-    ), "a run proposes; it never edits the table"
+    assert (proj / E.TABLE_REL).read_text(encoding="utf-8") == before, (
+        "a run proposes; it never edits the table"
+    )
 
 
 def test_t4_the_brief_hands_over_this_contexts_rows(proj):

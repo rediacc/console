@@ -10,6 +10,7 @@ THE GUARD IS DRIVEN THROUGH dispatch.py, the path every hook event takes, and th
 
 import ast
 import importlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -154,7 +155,12 @@ def run(cmd):
 
 
 # THE CONTROLS ARE PLANTED, AND EACH MUST TURN AT LEAST ONE ROW. The declared DEFECT (the `.*` back between the program slot and the bundle name) and the defect #e13fb555 fixed (the program read from the words as typed): a harness neither one turns red proves nothing about the code it names.
-sys.path.insert(0, str(HOOKS.parent))
+_SYSPATH = importlib.util.spec_from_file_location("rediacc_hooks_syspath", HOOKS / "syspath.py")
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
+_syspath.on_sys_path(str(HOOKS.parent))
 hookio = importlib.import_module("rediacc_hooks.hookio")
 GUARD = importlib.import_module("rediacc_hooks.guards.block_cli_bundle")
 GUARD_SRC = (HOOKS / "guards" / "block_cli_bundle.py").read_text(encoding="utf-8")

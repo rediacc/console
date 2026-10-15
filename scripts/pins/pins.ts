@@ -2431,7 +2431,7 @@ const CASES: Record<string, Case> = {
         'node_modules/a': { version: '1.0.0' },
         'node_modules/b': { version: '2.0.0' },
         'node_modules/@esbuild/win32-x64': { version: '0.25.0', optional: true },
-        'node_modules/ws': { resolved: 'packages/ws', link: true },
+        'node_modules/@rediacc/cli': { resolved: 'packages/cli', link: true },
         'packages/cli/node_modules/c': { version: '3.0.0' },
       },
     });
@@ -2439,7 +2439,7 @@ const CASES: Record<string, Case> = {
       packages: {
         'node_modules/a': { version: '1.0.0' },
         'node_modules/b': { version: '2.0.0' },
-        'node_modules/ws': { resolved: 'packages/ws', link: true },
+        'node_modules/@rediacc/cli': { resolved: 'packages/cli', link: true },
         'packages/cli/node_modules/c': { version: '3.0.0' },
       },
     });
@@ -2450,7 +2450,11 @@ const CASES: Record<string, Case> = {
         'packages/cli/node_modules/c': { version: '3.0.1' },
       },
     });
-    const clean = lockDrift(lock, same, ['node_modules/a', 'node_modules/b', 'node_modules/ws']);
+    const clean = lockDrift(lock, same, [
+      'node_modules/a',
+      'node_modules/b',
+      'node_modules/@rediacc/cli',
+    ]);
     const found = lockDrift(lock, moved);
     // A package a failed run installed and the restore took out of the lockfile: listed by the hidden lockfile, or (after a lockfile-only pass rewrote that) present only on disk.
     const extra = JSON.stringify({
