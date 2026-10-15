@@ -69,7 +69,7 @@
       "run.ps1",
       "run.sh",
       "tsconfig.json",
-      "vitest.config.ts"
+      "vitest.config.mjs"
     ]
   },
   "root_dirs": {

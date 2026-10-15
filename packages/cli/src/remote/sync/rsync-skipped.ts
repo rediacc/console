@@ -31,15 +31,18 @@ const INVISIBLE_LAYOUT = new Set([
  */
 export function displayName(name: string): string {
   let out = '';
-  for (const ch of name) {
-    const code = ch.codePointAt(0) ?? 0;
-    if (ch === '\\') out += '\\\\';
-    else if (code < 0x20 || (code >= 0x7f && code <= 0x9f))
-      out += `\\x${code.toString(16).padStart(2, '0')}`;
-    else if (INVISIBLE_LAYOUT.has(code)) out += `\\u${code.toString(16).padStart(4, '0')}`;
-    else out += ch;
-  }
+  for (const ch of name) out += displayChar(ch);
   return out;
+}
+
+/** One character as displayName shows it. */
+function displayChar(ch: string): string {
+  if (ch === '\\') return '\\\\';
+  const code = ch.codePointAt(0) ?? 0;
+  if (code < 0x20 || (code >= 0x7f && code <= 0x9f))
+    return `\\x${code.toString(16).padStart(2, '0')}`;
+  if (INVISIBLE_LAYOUT.has(code)) return `\\u${code.toString(16).padStart(4, '0')}`;
+  return ch;
 }
 
 /** The first names for display plus how many were left out. */
@@ -60,4 +63,14 @@ export function formatSkippedWarning(names: string[], translate: Translate): str
   const listed =
     more > 0 ? translate('commands.sync.skippedMore', { names: list, count: more }) : list;
   return translate('commands.sync.skippedNonRegular', { count: names.length, names: listed });
+}
+
+/** Write the skipped-entries warning (stderr in the CLI; the exit code is untouched), or nothing when nothing was skipped. */
+export function warnSkippedEntries(
+  names: string[],
+  translate: Translate,
+  write: (text: string) => void
+): void {
+  const warning = formatSkippedWarning(names, translate);
+  if (warning !== undefined) write(`${warning}\n`);
 }

@@ -617,7 +617,8 @@ function runControls(): string[] {
       text: `${nul}${header('dep\tm\tv1')}8.97.0${nul}`,
       pin: '8.97.0',
       expected: false,
-      label: 'a version right after a header span ending in a digit reads v18.97.0 in the raw bytes',
+      label:
+        'a version right after a header span ending in a digit reads v18.97.0 in the raw bytes',
     },
   ];
   for (const { text, pin, expected, label } of bufferCases) {

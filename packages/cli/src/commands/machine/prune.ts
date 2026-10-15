@@ -29,7 +29,7 @@ interface PruneOptions {
 }
 
 /** What the phases found, folded into one document for the non-table output formats. */
-export interface PruneOutcome {
+interface PruneOutcome {
   datastore?: unknown;
   units?: unknown;
   report?: PruneReport;
@@ -362,14 +362,14 @@ async function pruneOrphanedRepos(
 }
 
 /** Fold the phases into exactly one document for json/yaml; a failed phase already printed its own error envelope. */
-export function printPruneOutcome(outcome: PruneOutcome, dryRun: boolean): void {
+function printPruneOutcome(outcome: PruneOutcome, dryRun: boolean): void {
   const format = getOutputFormat();
   if (format === 'table' || outcome.failed) return;
   outputService.print(buildPruneData(outcome, dryRun), format);
 }
 
 /** The `data` payload of the single document: datastore, units and the orphaned-repos report; the report keys are always present (empty when that phase did not run). */
-export function buildPruneData(outcome: PruneOutcome, dryRun: boolean): Record<string, unknown> {
+function buildPruneData(outcome: PruneOutcome, dryRun: boolean): Record<string, unknown> {
   return {
     datastore: outcome.datastore ?? null,
     units: outcome.units ?? null,
