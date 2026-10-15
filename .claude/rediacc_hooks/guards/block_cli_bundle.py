@@ -116,40 +116,18 @@ def _is_bundle(word, directory):
     return BUNDLE_PATH.search(landed) is not None
 
 
-# A word that is one variable and nothing else, quoted or not: `$N`, `${N}`, `"$B"`. shellscan expands a run's operands (`xargv`) but not its command name, and not the words fed to xargs, so those two are looked up here in the shell state the walk recorded for the run (`_Run.vars`).
-SOLE_VARIABLE = re.compile(r'^"?\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))"?$')
-
-
-def _value(word, shell):
-    """`word` with a sole variable replaced by the value the walk gave it, else `word` unchanged (an unknown variable stays the typed `$NAME`, which names no bundle)."""
-    m = SOLE_VARIABLE.match(word)
-    if m is None:
-        return word
-    got = shell.get(m.group(1) or m.group(2))
-    return got[0] if got and isinstance(got[0], str) else word
-
-
 def _programs(run):
-    """`(runner base, its expanded argv)` for every runner this run starts: itself, and each command a launcher among `npx`/`npm exec`/`find -exec` starts, re-read from the launcher's EXPANDED words. shellscan walks a launched command from the words as typed (`_quote_argv(argv)`), so in `B=...; npx node $B` the launched node run reads the literal `$B`."""
-    xargv = run.xargv if run.xargv is not None else run.argv
-    base = _value(run.name, run.vars).rsplit("/", 1)[-1]
+    """`(runner base, its expanded argv)` when this run starts node, deno, bun or tsx, else nothing. shellscan hands every command bash would run as its own run, a launcher's commands (`npx`, `npm exec`, `find -exec`) and a `-c` payload included, with its command name resolved and its words expanded (#156caed2), so the run's own name and `xargv` are the program and the words the interpreter gets."""
+    base = run.name.rsplit("/", 1)[-1]
     if base in RUNNERS:
-        yield base, xargv
-    for how, words, _launch, _span in shellscan._launches(base, xargv):
-        if how == "argv" and words and not shellscan.unresolved(words[0]):
-            inner = words[0].rsplit("/", 1)[-1]
-            if inner in RUNNERS:
-                yield inner, words[1:]
+        yield base, run.xargv if run.xargv is not None else run.argv
 
 
 def _fed(run, kind, value):
-    """The program paths an xargs in front of `run` may hand it. With no program on the runner's own line (`kind` "stdin"), xargs appends what it reads, so every fed word is a candidate; a program holding a replace marker (`-I{}`) is each fed word in the marker's place. Over-read on purpose: the fed text is every word of the producer unless shellscan knows it exactly."""
+    """The program paths an xargs in front of `run` may hand it. With no program on the runner's own line (`kind` "stdin"), xargs appends what it reads, so every fed word is a candidate; a program holding a replace marker (`-I{}`) is each fed word in the marker's place. Over-read on purpose: the fed text is every word of the producer unless shellscan knows it exactly, and shellscan expands a known variable in either (#156caed2)."""
     if "xargs" not in run.via or not run.feed:
         return []
-    fed = [
-        _value(w, run.vars)
-        for w in (run.feed_words if run.feed_words is not None else run.feed.split())
-    ]
+    fed = list(run.feed_words if run.feed_words is not None else run.feed.split())
     if kind == "stdin":
         return fed
     if kind != "file":
@@ -158,7 +136,7 @@ def _fed(run, kind, value):
     return [value.replace(m, w) for m in markers for w in fed]
 
 
-def _runs_bundle(cmd, cwd, depth=0):
+def _runs_bundle(cmd, cwd):
     """True when a command bash would run starts the bundle through node, deno, bun or tsx (#e13fb555)."""
     for run in shellscan.every_run(cmd):
         directory = shellscan._run_directory(run, cwd) if cwd else None
@@ -166,23 +144,6 @@ def _runs_bundle(cmd, cwd, depth=0):
             kind, value = shellscan.program_parse(base, argv)
             candidates = ([value] if kind == "file" else []) + _fed(run, kind, value)
             if any(_is_bundle(c, directory) for c in candidates):
-                return True
-        # A double-quoted `-c` payload is expanded by the OUTER shell before the inner one parses it: `B=...; bash -c "node $B"` runs `node <bundle>`, while shellscan walks the payload as typed. The expanded payload is walked again, in the run's directory.
-        # The shell's name is resolved as `_programs` resolves a runner's (review 06ac1c92.1): `N=bash; $N -c "node $B"` is a shell too. shellscan does not walk a payload under a variable name at all, so such a run is re-walked even when its words needed no expansion (`$N -c 'node <bundle>'`).
-        xargv = run.xargv or []
-        shell_name = _value(run.name, run.vars)
-        if (
-            depth < 4
-            and shell_name.rsplit("/", 1)[-1] in shellscan.SHELL_NAMES
-            and (xargv != run.argv or shell_name != run.name)
-        ):
-            how, payload = shellscan._shell_payload(xargv)
-            if (
-                how == "c"
-                and payload
-                and not shellscan.unresolved(payload)
-                and _runs_bundle(payload, directory, depth + 1)
-            ):
                 return True
     return False
 

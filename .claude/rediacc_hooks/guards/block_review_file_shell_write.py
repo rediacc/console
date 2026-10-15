@@ -164,10 +164,11 @@ EDGE_CASES = [
 def _is_review(word, cwd=None, base=None):
     if not word:
         return False
-    return any(
-        REVIEW_WORD.search(form) or (cwd and REVIEW_WORD.search(str(cwd).rstrip("/") + "/" + form))
-        for form in _review_forms(word)
-    ) or _lands_in_reviews(word, base)
+    # The directory is read with the word, so a glob in it counts as one in the word does: `cd agen? && tee revi*s/x.md` writes a review file, and joining the typed `agen?` onto the word's forms read `agen?/reviews/x.md` (rc 0).
+    joined = [word, str(cwd).rstrip("/") + "/" + word] if cwd else [word]
+    return any(REVIEW_WORD.search(form) for w in joined for form in _review_forms(w)) or (
+        _lands_in_reviews(word, base)
+    )
 
 
 # A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93). With `lnk` a link to `agent/reviews/sub`, `cd lnk && tee x.md`, `echo x > lnk/x.md` and `cp /tmp/a lnk/` write review files while no word, and no directory text the walk keeps, spells the review directory: the lexical reading allowed all three (rc 0), logical `cd` or physical. `base` is the absolute directory the run executes in, and the word is resolved against it on disk.
@@ -212,6 +213,33 @@ def _reaches_reviews(cmd, cwd):
         # A program's code is one argv word, so a link it names (`python3 -c "open('lnk/x.md','w')"`) is read as each string literal it holds (review 84fdeff8.1).
         words.extend(lit for w in run.argv for lit in _literals(w))
         if any(_lands_in_reviews(w, base) for w in words):
+            return True
+    return False
+
+
+_GLOB_OR_BRACE = frozenset("*?[{")
+
+
+def _globs_reviews(cmd, cwd):
+    """The pre-filter's glob question: does any word the full check reads hold a glob or brace that `_review_forms` reads as the review directory, alone or under the directory its run executes in? Each run's words as typed and as bash expands them, its redirects, what xargs feeds it (alone and in a marker's place) and what a `find -exec` walks, so `cp x agent/revi*s/` and `echo revi*s/x | xargs cp a` under `cd agent` reach the full check.
+
+    A GLOB INSIDE PROGRAM TEXT IS NOT A PATH (#a1852a9e). Testing for any `*?[{` in the command sent `sed -i 's/a.*b/c/' x.py && python3 x.py` to the full check, whose unreadable-script refusal then fired on a command that names no review path at all (rc 2). `a.*b` is one segment no fnmatch reads as `agent` or `reviews`, so it stays on the cheap path; a sed or perl expression that does spell the directory through a glob (`s|x|agent/revi*s|`) still goes to the full check, which judges it as before.
+    """
+
+    def spells(word, where):
+        return any(ch in word for ch in _GLOB_OR_BRACE) and _is_review(word, where)
+
+    if any(spells(t, None) for t in shellscan.write_targets(cmd)):
+        return True
+    for run in shellscan.every_run(cmd):
+        where = shellscan.write_directory(run.cwd, cwd)
+        if where and spells(str(where), None):
+            return True
+        words = [*run.argv, *(run.xargv or ()), *run.writes, *(run.feed_words or ())]
+        words = shellscan.xargs_fed_operands(run, words)
+        if run.launch is not None:
+            words.extend(run.launch.starts)
+        if any(spells(w, where) for w in words):
             return True
     return False
 
@@ -357,6 +385,27 @@ def _run_operands(run, argv):
     return out
 
 
+def _operand_write(run, name, argv, where, base, cwd):
+    """A description of the review file `run` writes through one of its operands read from `argv` (tee, an in-place sed or perl, a copy's destination, truncate, `dd of=`), or ""."""
+    operands = _run_operands(run, argv)
+    if name == "tee" and any(_is_review(a, where, base) for a in operands):
+        return "tee into the review directory"
+    # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
+    in_place = shellscan.in_place_edit(run) is not None
+    if in_place and any(_is_review(a, where, base) for a in operands):
+        return "%s -i on a review file" % name
+    # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
+    # `cwd` places a relative fed glob in the run's own directory (#e5b0540a). Two kinds of run get the shape reading instead: a command a PROGRAM hands down (the recursion in `_offending` passes no `cwd`, since it runs wherever that program does), and one a launcher starts (`find -exec`, `npx`: `shellscan._feed_directories`, review 9ed30a8a.1).
+    copies = shellscan.run_copies(run, argv, cwd)
+    if copies is not None and any(_is_review(d, where, base) for d in copies[1]):
+        return "%s onto the review directory" % name
+    if name == "truncate" and any(_is_review(a, where, base) for a in operands):
+        return "truncate of a review file"
+    if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], where, base) for a in argv):
+        return "dd of= a review file"
+    return ""
+
+
 def _offending(cmd, depth=0, cwd=None):
     """A short description of the first hand write to a review file in `cmd`, or "". `depth` counts the programs a shell command was handed down through (`os.system`, `subprocess.run`, `execSync`), so a command quoting itself cannot recurse forever.
 
@@ -383,24 +432,11 @@ def _offending(cmd, depth=0, cwd=None):
         for target in run.writes:
             if _is_review(target, where, base):
                 return "redirect into %s" % target
-        operands = _run_operands(run, argv)
-        if name == "tee" and any(_is_review(a, where, base) for a in operands):
-            return "tee into the review directory"
-        # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
-        in_place = shellscan.in_place_edit(run) is not None
-        if in_place and any(_is_review(a, where, base) for a in operands):
-            return "%s -i on a review file" % name
-        # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
-        # `cwd` places a relative fed glob in the run's own directory (#e5b0540a). Two kinds of run get the shape reading instead: a command a PROGRAM hands down (the recursion below passes no `cwd`, since it runs wherever that program does), and one a launcher starts (`find -exec`, `npx`: `shellscan._feed_directories`, review 9ed30a8a.1).
-        copies = shellscan.run_copies(run, None, cwd)
-        if copies is not None and any(_is_review(d, where, base) for d in copies[1]):
-            return "%s onto the review directory" % name
-        if name == "truncate" and any(_is_review(a, where, base) for a in operands):
-            return "truncate of a review file"
-        if name == "dd" and any(
-            a.startswith("of=") and _is_review(a[3:], where, base) for a in argv
-        ):
-            return "dd of= a review file"
+        # THE WORDS ARE READ TWICE, as typed and as bash expands them (#f6334e52): `D=agent/reviews/x; tee $D/y.md`, `sudo tee $D/y.md` and `timeout 5 tee $D/y.md` write the review file while the typed operand reads `$D/y.md`, and each was allowed (rc 0). A word the walk cannot know stays unknown in the expanded form, so the typed form is still read beside it.
+        for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
+            what = _operand_write(run, name, list(words), where, base, cwd)
+            if what:
+                return what
         # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
         # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
         for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
@@ -667,11 +703,11 @@ def run(ev):
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
-    # A script run by path names the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named. A glob or brace can spell the directory without the word (`echo revi*s/... | xargs cp ...` under `cd agent`, #7094b75e), so a command holding one is read too.
+    # A script run by path names the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named. A glob or brace can spell the directory without the word (`echo revi*s/... | xargs cp ...` under `cd agent`, #7094b75e), so a command with a word the full check would read as one is read too (`_globs_reviews`).
     # A LINK SPELLS THE DIRECTORY WITHOUT THE WORD (#816a7c93): with `lnk` a link into `agent/reviews`, `cd lnk && tee x.md` names neither, so a command the text test passes is read once more against the disk, and only one whose directories and words stay outside the review directory takes the cheap path.
     if (
         "reviews" not in cmd
-        and not any(ch in cmd for ch in "*?[{")
+        and not _globs_reviews(cmd, cwd)
         and not any("reviews" in text for text in shellscan.interpreter_scripts(cmd, cwd))
         and not _reaches_reviews(cmd, cwd)
     ):
