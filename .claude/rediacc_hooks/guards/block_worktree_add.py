@@ -646,25 +646,27 @@ def _shell_operand(argv):
 
 
 def _noexec(argv):
-    """Does a shell's option list turn on `noexec` (`bash -n x.sh`, `-xn`, `-o noexec`) before its operand? Such a shell parses its script and runs none of it, `set +n` inside included, so it is a syntax check, not a run (#bfe569ca). Options are walked as `_shell_operand` walks them."""
+    """Does a shell's option list turn on `noexec` (`bash -n x.sh`, `-xn`, `-o noexec`) before its operand? Such a shell parses its script and runs none of it, `set +n` inside included, so it is a syntax check, not a run (#bfe569ca). Options are walked as `_shell_operand` walks them, and the LAST setting wins: `bash -n +n x.sh` and `-o noexec +o noexec` run the script (measured, bash 5.3.9). `-i` does not undo it for a script operand: `bash -in x.sh`, `-i -n` and `-i -o noexec` ran nothing in the same measurement (review 02425af7.1)."""
+    on = False
     k = 0
     while k < len(argv):
         arg = argv[k]
         if arg in ("--", "-"):
-            return False
+            break
         if arg.startswith("--"):
             k += 2 if arg in SHELL_VALUE_LONG else 1
             continue
         if len(arg) > 1 and arg[0] in "-+":
             flags = arg[1:]
-            if arg[0] == "-" and "n" in flags:
-                return True
-            if arg[0] == "-" and "o" in flags and k + 1 < len(argv) and argv[k + 1] == "noexec":
-                return True
-            k += 2 if ("o" in flags or "O" in flags) else 1
+            if "n" in flags:
+                on = arg[0] == "-"
+            takes = "o" in flags or "O" in flags
+            if "o" in flags and k + 1 < len(argv) and argv[k + 1] == "noexec":
+                on = arg[0] == "-"
+            k += 2 if takes else 1
             continue
-        return False
-    return False
+        break
+    return on
 
 
 def _shell_script_path(run_, cmd, cwd):

@@ -1764,6 +1764,35 @@ STATIC: list[Case] = [
         ),
         "worktree-add: `bash -o errexit` on a written script naming the phrase (#bfe569ca)",
     ),
+    # The last setting wins (`+n`, `+o noexec` turn it off again) and `-i` does not undo it for a script operand, each measured on bash 5.3.9 (review 02425af7.1).
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -in /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add CONTROL: `bash -in` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 0 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -i -o noexec /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add CONTROL: `bash -i -o noexec` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -n +n /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add: `bash -n +n` on a written script naming the phrase (#bfe569ca)",
+    ),
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' '# per-worktree cache' 'git worktree add x' > /tmp/wt-bfe569ca.sh; bash -o noexec +o noexec /tmp/wt-bfe569ca.sh"
+        ),
+        "worktree-add: `bash -o noexec +o noexec` on a written script naming the phrase (#bfe569ca)",
+    ),
     # block_user_only_command and its shell twin (operator ruling 2026-10-09, #18c7e53c): no slash command or skill is user-only, except a file on the operator's exception list.
     case(
         "check 2 guards/block_user_only_command.py",
