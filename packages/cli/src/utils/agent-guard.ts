@@ -1,6 +1,8 @@
+import type { Placement } from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
 import { ValidationError } from './errors.js';
 import { isGrandEnvWildcard, isRepoAllowedByGrandEnv } from './grand-env.js';
+import { isOpsVmMachine, isOpsVmPlacement } from './ops-vm.js';
 import {
   _resetAncestryCache,
   isAgentByAncestry,
@@ -69,10 +71,12 @@ export function isLegitimateWildcardOverride(): boolean {
 /**
  * Assert that the current agent is allowed to access a machine directly (no repository context).
  * Machine-level SSH is extremely powerful, agents should only connect to repository contexts.
- * Throws ValidationError unless REDIACC_ALLOW_GRAND_REPO=* is set by the user.
+ * Throws ValidationError unless REDIACC_ALLOW_GRAND_REPO=* is set by the user, or the
+ * machine's configured address is on the development-only ops VM network (ops-vm.ts).
  */
-export function assertAgentMachineAccess(machineName: string): void {
+export async function assertAgentMachineAccess(machineName: string): Promise<void> {
   if (!isAgentEnvironment()) return;
+  if (await isOpsVmMachine(machineName)) return;
   if (isGrandEnvWildcard()) {
     if (isOverrideAllowed()) return;
     const errorKey = isAncestryVerificationAvailable()
@@ -88,10 +92,15 @@ export function assertAgentMachineAccess(machineName: string): void {
  * Agents operate in fork-only mode, creating a grand repo is blocked because the agent
  * can't operate on it afterwards. Use `repo fork` instead.
  * Throws ValidationError unless the user authorized this repo by name (or `*`)
- * via REDIACC_ALLOW_GRAND_REPO, set before the agent started.
+ * via REDIACC_ALLOW_GRAND_REPO, set before the agent started, or the placement the
+ * repo is created on executes on the development-only ops VM network (ops-vm.ts).
  */
-export function assertAgentRepoCreate(repoName: string): void {
+export async function assertAgentRepoCreate(
+  repoName: string,
+  placement: Placement | undefined
+): Promise<void> {
   if (!isAgentEnvironment()) return;
+  if (await isOpsVmPlacement(placement)) return;
   if (isRepoAllowedByGrandEnv(repoName)) {
     if (isOverrideAllowed()) return;
     const errorKey = isAncestryVerificationAvailable()

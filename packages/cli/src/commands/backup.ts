@@ -1,3 +1,4 @@
+import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
@@ -87,6 +88,18 @@ interface RestoreOptions {
 }
 
 /** Resolve which machine a restored repo lands on. */
+/**
+ * The placement a restore asks for, read for the agent create-gate only (its
+ * ops VM exemption). Both flags, or neither, is no placement: the gate keeps its
+ * refusal and resolveRestoreMachine reports the flag error to a human.
+ */
+function restorePlacementOf(options: RestoreOptions): Placement | undefined {
+  if (options.machine && options.datastore) return undefined;
+  if (options.machine) return { machine: options.machine };
+  if (options.datastore) return { datastore: options.datastore };
+  return undefined;
+}
+
 async function resolveRestoreMachine(options: RestoreOptions): Promise<string> {
   if (options.machine && options.datastore) {
     throw new ValidationError(t('commands.backup.restore.placementExclusive'));
@@ -221,7 +234,7 @@ async function resolveRestoreTarget(
   if (existing) {
     throw new ValidationError(t('commands.backup.restore.targetExists', { name: targetName }));
   }
-  assertAgentRepoCreate(targetName);
+  await assertAgentRepoCreate(targetName, restorePlacementOf(options));
 
   // The artifact carries its source repo's identity; the pushed copy on <place>
   // is that repo under its GUID (06 §6.5). Look it up to learn the GUID we pull, then register the restored name as a fresh live record.

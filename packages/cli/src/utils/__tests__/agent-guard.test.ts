@@ -28,6 +28,42 @@ vi.mock('../process-ancestry.js', () => ({
   OVERRIDE_VAR_CONFIG_EDIT: 'REDIACC_ALLOW_CONFIG_EDIT',
 }));
 
+// The active config the ops VM predicate (ops-vm.ts) reads machine addresses from.
+// `ops-worker` and `ops-ds-host` sit on the ops fleet's network; `prod-1` does not;
+// `ops-worker-prod` carries an ops-looking NAME on a production address; `edge-112`
+// sits one /24 away; `ops-hostname` is a hostname that merely starts with the prefix.
+const OPS_CONFIG = vi.hoisted(() => ({
+  resources: {
+    machines: {
+      'prod-1': { ip: '10.0.0.5', user: 'root' },
+      'ops-worker': { ip: '192.168.111.11', user: 'muhammed' },
+      'ops-ds-host': { ip: '192.168.111.12', user: 'muhammed' },
+      'ops-worker-prod': { ip: '203.0.113.7', user: 'root' },
+      'edge-112': { ip: '192.168.112.11', user: 'muhammed' },
+      'ops-hostname': { ip: '192.168.111.11.example.com', user: 'root' },
+    },
+    datastores: {
+      'ops-pool': { backend: { kind: 'local', machine: 'ops-ds-host', path: '/mnt/pool' } },
+      'prod-pool': { backend: { kind: 'local', machine: 'prod-1', path: '/mnt/pool' } },
+      'ops-ceph': {
+        cluster: 'ops-k8s',
+        backend: { kind: 'local', machine: 'ops-worker', path: '/x' },
+      },
+    },
+  },
+  state: {
+    datastores: {
+      'ops-pool': { attachedTo: 'ops-ds-host' },
+      'prod-pool': { attachedTo: 'prod-1' },
+      'ops-ceph': { attachedTo: 'ops-worker' },
+    },
+  },
+}));
+
+vi.mock('../../services/config/config-resources.js', () => ({
+  configService: { getCurrent: vi.fn(() => Promise.resolve(OPS_CONFIG)) },
+}));
+
 import {
   _resetCache,
   assertAgentMachineAccess,
@@ -140,66 +176,66 @@ describe('assertAgentMachineAccess', () => {
     restoreEnv(envBackup);
   });
 
-  it('does nothing when not in agent environment', () => {
-    expect(() => assertAgentMachineAccess('prod-1')).not.toThrow();
+  it('does nothing when not in agent environment', async () => {
+    await expect(assertAgentMachineAccess('prod-1')).resolves.toBeUndefined();
   });
 
-  it('throws in agent mode for machine-level access', () => {
+  it('throws in agent mode for machine-level access', async () => {
     process.env.REDIACC_AGENT = '1';
-    expect(() => assertAgentMachineAccess('prod-1')).toThrow();
+    await expect(assertAgentMachineAccess('prod-1')).rejects.toThrow();
   });
 
-  it('respects legitimate REDIACC_ALLOW_GRAND_REPO=* wildcard', () => {
+  it('respects legitimate REDIACC_ALLOW_GRAND_REPO=* wildcard', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = '*';
     mockIsOverrideLegitimate.mockReturnValue(true);
-    expect(() => assertAgentMachineAccess('prod-1')).not.toThrow();
+    await expect(assertAgentMachineAccess('prod-1')).resolves.toBeUndefined();
   });
 
-  it('blocks illegitimate override (injected by agent)', () => {
+  it('blocks illegitimate override (injected by agent)', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = '*';
     mockIsOverrideLegitimate.mockReturnValue(false);
-    expect(() => assertAgentMachineAccess('prod-1')).toThrow();
+    await expect(assertAgentMachineAccess('prod-1')).rejects.toThrow();
   });
 
-  it('uses the agent-injected error when ancestry verification is available', () => {
+  it('uses the agent-injected error when ancestry verification is available', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = '*';
     mockIsOverrideLegitimate.mockReturnValue(false);
     mockIsAncestryAvailable.mockReturnValue(true);
-    expect(() => assertAgentMachineAccess('prod-1')).toThrow(
+    await expect(assertAgentMachineAccess('prod-1')).rejects.toThrow(
       /errors\.agent\.machineGuardOverride$/
     );
   });
 
-  it('uses the cannot-verify error when ancestry verification is unavailable', () => {
+  it('uses the cannot-verify error when ancestry verification is unavailable', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = '*';
     mockIsOverrideLegitimate.mockReturnValue(false);
     mockIsAncestryAvailable.mockReturnValue(false);
-    expect(() => assertAgentMachineAccess('prod-1')).toThrow(
+    await expect(assertAgentMachineAccess('prod-1')).rejects.toThrow(
       'errors.agent.machineGuardOverrideNonLinux'
     );
   });
 
-  it('does not allow specific repo name as machine access consent', () => {
+  it('does not allow specific repo name as machine access consent', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
-    expect(() => assertAgentMachineAccess('prod-1')).toThrow();
+    await expect(assertAgentMachineAccess('prod-1')).rejects.toThrow();
   });
 
-  it('does not allow a comma-separated repo list as machine access consent', () => {
+  it('does not allow a comma-separated repo list as machine access consent', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,web,gitlab';
-    expect(() => assertAgentMachineAccess('prod-1')).toThrow();
+    await expect(assertAgentMachineAccess('prod-1')).rejects.toThrow();
   });
 
-  it('allows machine access when `*` appears inside a comma list', () => {
+  it('allows machine access when `*` appears inside a comma list', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'mail,*,web';
     mockIsOverrideLegitimate.mockReturnValue(true);
-    expect(() => assertAgentMachineAccess('prod-1')).not.toThrow();
+    await expect(assertAgentMachineAccess('prod-1')).resolves.toBeUndefined();
   });
 });
 
@@ -219,68 +255,169 @@ describe('assertAgentRepoCreate', () => {
     restoreEnv(envBackup);
   });
 
-  it('does nothing when not in agent environment', () => {
-    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+  it('does nothing when not in agent environment', async () => {
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).resolves.toBeUndefined();
   });
 
-  it('throws in agent mode', () => {
+  it('throws in agent mode', async () => {
     process.env.REDIACC_AGENT = '1';
-    expect(() => assertAgentRepoCreate('my-app')).toThrow();
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).rejects.toThrow();
   });
 
-  it('respects legitimate wildcard override', () => {
+  it('respects legitimate wildcard override', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = '*';
     mockIsOverrideLegitimate.mockReturnValue(true);
-    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).resolves.toBeUndefined();
   });
 
-  it('blocks illegitimate override', () => {
+  it('blocks illegitimate override', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = '*';
     mockIsOverrideLegitimate.mockReturnValue(false);
-    expect(() => assertAgentRepoCreate('my-app')).toThrow();
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).rejects.toThrow();
   });
 
-  it('allows when the exact repo name is set (ancestry-legitimate)', () => {
+  it('allows when the exact repo name is set (ancestry-legitimate)', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app';
     mockIsOverrideLegitimate.mockReturnValue(true);
-    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).resolves.toBeUndefined();
   });
 
-  it('allows when a comma list contains the exact name (ancestry-legitimate)', () => {
+  it('allows when a comma list contains the exact name (ancestry-legitimate)', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app,other';
     mockIsOverrideLegitimate.mockReturnValue(true);
-    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).resolves.toBeUndefined();
   });
 
-  it('blocks when a different repo name is set', () => {
+  it('blocks when a different repo name is set', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'other';
-    expect(() => assertAgentRepoCreate('my-app')).toThrow('Cannot create repository "my-app"');
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).rejects.toThrow(
+      'Cannot create repository "my-app"'
+    );
   });
 
-  it('blocks when a comma list does not contain the target name', () => {
+  it('blocks when a comma list does not contain the target name', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'other,web';
-    expect(() => assertAgentRepoCreate('my-app')).toThrow('Cannot create repository "my-app"');
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).rejects.toThrow(
+      'Cannot create repository "my-app"'
+    );
   });
 
-  it('throws the override error when the exact name is set but ancestry is illegitimate', () => {
+  it('throws the override error when the exact name is set but ancestry is illegitimate', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app';
     mockIsOverrideLegitimate.mockReturnValue(false);
     mockIsAncestryAvailable.mockReturnValue(true);
-    expect(() => assertAgentRepoCreate('my-app')).toThrow(/errors\.agent\.createGuardOverride$/);
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).rejects.toThrow(
+      /errors\.agent\.createGuardOverride$/
+    );
   });
 
-  it('allows when `*` appears inside a comma list', () => {
+  it('allows when `*` appears inside a comma list', async () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app,*';
     mockIsOverrideLegitimate.mockReturnValue(true);
-    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).resolves.toBeUndefined();
+  });
+});
+
+describe('ops VM exemption (operator ruling 2026-10-15)', () => {
+  const envBackup: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    _resetCache();
+    vi.clearAllMocks();
+    mockIsAgentByAncestry.mockReturnValue(false);
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    mockIsAncestryAvailable.mockReturnValue(true);
+    backupAndClearEnv(envBackup);
+    process.env.REDIACC_AGENT = '1';
+  });
+
+  afterEach(() => {
+    restoreEnv(envBackup);
+  });
+
+  it('allows machine-level access to a machine on the ops VM network', async () => {
+    await expect(assertAgentMachineAccess('ops-worker')).resolves.toBeUndefined();
+  });
+
+  it('still refuses machine-level access to a non-ops machine with the same message', async () => {
+    await expect(assertAgentMachineAccess('prod-1')).rejects.toThrow(
+      'Cannot access machine "prod-1" directly in agent mode.'
+    );
+  });
+
+  it('refuses an ops-looking machine NAME on a production address', async () => {
+    await expect(assertAgentMachineAccess('ops-worker-prod')).rejects.toThrow(
+      'Cannot access machine "ops-worker-prod" directly in agent mode.'
+    );
+  });
+
+  it('refuses an address one /24 outside the ops network', async () => {
+    await expect(assertAgentMachineAccess('edge-112')).rejects.toThrow(
+      'Cannot access machine "edge-112" directly in agent mode.'
+    );
+  });
+
+  it('refuses a hostname that merely starts with the ops prefix', async () => {
+    await expect(assertAgentMachineAccess('ops-hostname')).rejects.toThrow(
+      'Cannot access machine "ops-hostname" directly in agent mode.'
+    );
+  });
+
+  it('refuses a machine the config does not know', async () => {
+    await expect(assertAgentMachineAccess('ghost')).rejects.toThrow(
+      'Cannot access machine "ghost" directly in agent mode.'
+    );
+  });
+
+  it('allows creating a grand on an ops VM machine', async () => {
+    await expect(
+      assertAgentRepoCreate('vmcheck-base', { machine: 'ops-worker' })
+    ).resolves.toBeUndefined();
+  });
+
+  it('allows creating a grand on a datastore attached to an ops VM', async () => {
+    await expect(
+      assertAgentRepoCreate('vmcheck-base', { datastore: 'ops-pool' })
+    ).resolves.toBeUndefined();
+  });
+
+  it('still refuses creating a grand on a non-ops machine with the same message', async () => {
+    await expect(assertAgentRepoCreate('my-app', { machine: 'prod-1' })).rejects.toThrow(
+      'Cannot create repository "my-app" in agent mode.'
+    );
+  });
+
+  it('still refuses creating a grand on a datastore attached to a non-ops machine', async () => {
+    await expect(assertAgentRepoCreate('my-app', { datastore: 'prod-pool' })).rejects.toThrow(
+      'Cannot create repository "my-app" in agent mode.'
+    );
+  });
+
+  it('keeps a cluster datastore protected even when attached to an ops VM', async () => {
+    await expect(assertAgentRepoCreate('my-app', { datastore: 'ops-ceph' })).rejects.toThrow(
+      'Cannot create repository "my-app" in agent mode.'
+    );
+  });
+
+  it('refuses create on an ops-looking name, an address just outside the range, and no placement', async () => {
+    for (const placement of [
+      { machine: 'ops-worker-prod' },
+      { machine: 'edge-112' },
+      { machine: 'ops-hostname' },
+      undefined,
+    ]) {
+      await expect(assertAgentRepoCreate('my-app', placement)).rejects.toThrow(
+        'Cannot create repository "my-app" in agent mode.'
+      );
+    }
   });
 });
 

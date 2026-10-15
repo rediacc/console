@@ -358,7 +358,7 @@ async function resolveVSCodeTarget(target: string, options: VSCodeConnectOptions
     // Gate B on the repo arm only; the place arm below is a machine shell (class A).
     await assertCommandPolicy(CMD.VSCODE_CONNECT, resolved.repoKey);
   } else {
-    assertAgentMachineAccess(resolved.machineName);
+    await assertAgentMachineAccess(resolved.machineName);
   }
 
   return {

@@ -99,6 +99,72 @@ describe('command-policy', () => {
       );
     });
 
+    describe('ops VM exemption (operator ruling 2026-10-15)', () => {
+      const config = {
+        resources: {
+          machines: {
+            'ops-worker': { ip: '192.168.111.11', user: 'muhammed' },
+            'ops-worker-prod': { ip: '203.0.113.7', user: 'root' },
+            'edge-112': { ip: '192.168.112.11', user: 'muhammed' },
+          },
+          datastores: { 'ops-pool': {} },
+        },
+        state: { datastores: { 'ops-pool': { attachedTo: 'ops-worker' } } },
+      };
+      const grandOn = (placement: RepositoryConfig['placement']): RepositoryConfig => ({
+        repositoryGuid: 'abc-123',
+        placement,
+      });
+
+      beforeEach(() => {
+        mockIsAgent.mockReturnValue(true);
+        vi.mocked(configService.getCurrent).mockResolvedValue(config as never);
+      });
+
+      afterEach(() => {
+        vi.mocked(configService.getCurrent).mockResolvedValue(null);
+      });
+
+      it('allows a grand-guarded write to a grand placed on an ops VM', async () => {
+        mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker' }));
+        await expect(assertCommandPolicy(CMD.REPO_UP, 'vmcheck-base')).resolves.toBeUndefined();
+        await expect(assertCommandPolicy(CMD.REPO_DELETE, 'vmcheck-base')).resolves.toBeUndefined();
+      });
+
+      it('allows a grand on a datastore attached to an ops VM', async () => {
+        mockGetRepo.mockResolvedValue(grandOn({ datastore: 'ops-pool' }));
+        await expect(assertCommandPolicy(CMD.REPO_UP, 'vmcheck-base')).resolves.toBeUndefined();
+      });
+
+      it('still blocks an ops-looking machine name on a production address', async () => {
+        mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker-prod' }));
+        await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
+          'errors.agent.grandGuard:{"name":"mail"}'
+        );
+      });
+
+      it('still blocks an address just outside the ops range', async () => {
+        mockGetRepo.mockResolvedValue(grandOn({ machine: 'edge-112' }));
+        await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
+          'errors.agent.grandGuard:{"name":"mail"}'
+        );
+      });
+
+      it('still blocks a grand with no recorded placement', async () => {
+        mockGetRepo.mockResolvedValue(grandOn(undefined));
+        await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
+          'errors.agent.grandGuard:{"name":"mail"}'
+        );
+      });
+
+      it('keeps `rdc run` blocked on an ops VM', async () => {
+        mockGetRepo.mockResolvedValue(grandOn({ machine: 'ops-worker' }));
+        await expect(assertCommandPolicy(CMD.RUN, 'vmcheck-base')).rejects.toThrow(
+          'errors.agent.commandBlocked'
+        );
+      });
+    });
+
     it('respects REDIACC_ALLOW_GRAND_REPO=*', async () => {
       mockIsAgent.mockReturnValue(true);
       process.env.REDIACC_ALLOW_GRAND_REPO = '*';

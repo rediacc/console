@@ -13,6 +13,7 @@ import { isAgentEnvironment } from './agent-guard.js';
 import { isClusterAllowedByEnv } from './cluster-env.js';
 import { ValidationError } from './errors.js';
 import { isRepoAllowedByGrandEnv } from './grand-env.js';
+import { isOpsVmPlacement } from './ops-vm.js';
 import {
   isAncestryVerificationAvailable,
   isOverrideLegitimate,
@@ -247,7 +248,8 @@ export async function assertCommandPolicy(
   if (!repo) return;
   const isFork = !!(repo.grandGuid && repo.grandGuid !== repo.repositoryGuid);
 
-  if (policy.grandGuard && !isFork) {
+  // The development-only ops VM fleet is exempt (ops-vm.ts): the placement, not the ref's name, decides.
+  if (policy.grandGuard && !isFork && !(await isOpsVmPlacement(repo.placement))) {
     enforceGrandGuard(repoName);
   }
 

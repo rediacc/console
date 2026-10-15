@@ -146,7 +146,7 @@ async function handleRepoCreateOnMachine(
 ): Promise<void> {
   let registered = false;
   try {
-    assertAgentRepoCreate(name);
+    await assertAgentRepoCreate(name, { machine: options.machine });
     await assertMachineExists(options.machine);
 
     // R2-F12: a repo on a cluster machine needs a datastore, not --machine.
@@ -225,7 +225,7 @@ async function handleRepoCreateOnDatastore(
 ): Promise<void> {
   let registered = false;
   try {
-    assertAgentRepoCreate(name);
+    await assertAgentRepoCreate(name, { datastore: options.datastore });
     const placement = await resolveDatastorePlacement(options.datastore);
     const isK8s = placement.kubeCluster !== undefined;
 
