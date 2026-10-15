@@ -93,12 +93,14 @@ bp_kill_recorded cloudflared
 # =============================================================================
 CF_API="https://api.cloudflare.com/client/v4"
 
+# The token reaches curl as a `-K -` config on stdin (printf is a builtin), never
+# on argv, where `ps` would show it for the length of the request.
 cf_api() {
     local method="$1" path="$2"
-    curl -sS -X "$method" "${CF_API}${path}" \
-        -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
-        -H "Content-Type: application/json" \
-        --max-time 30
+    printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+        curl -sS -X "$method" "${CF_API}${path}" -K - \
+            -H "Content-Type: application/json" \
+            --max-time 30
 }
 
 cf_ok() { echo "$1" | jq -e '.success == true' >/dev/null 2>&1; }

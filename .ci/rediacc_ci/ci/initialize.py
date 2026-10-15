@@ -121,6 +121,9 @@ WRITE_OUTPUT_LINE = 43
 #: `git config --global url."..."` -- reached only when `git` itself is missing.
 GIT_CONFIG_LINE = 104
 
+#: Where the credentialed `insteadOf` rewrite lives, relative to HOME. The twin wrote it with `git config --global url.https://x-access-token:<pat>@...`, which put the token on git's argv, readable through `ps` and `/proc/<pid>/cmdline` by every process on the runner (worklist #773eccc5). The port writes the section into this file itself, mode 0600, and the global config only INCLUDES it, so git's argv names a path and never the token.
+TOKEN_INCLUDE = os.path.join(".config", "rediacc-ci", "github-token.gitconfig")
+
 #: `if ! git submodule update --init --recursive private/ 2>/dev/null; then`
 GIT_SUBMODULE_LINE = 111
 
@@ -287,9 +290,50 @@ def is_bot_commit(event_name: str, commit_author: str) -> tuple[str, str]:
     return "false", "Non-push event or no author info, running CI normally"
 
 
-def fetch_url(pat: str, repository: str) -> str:
-    """Twin :219. The credentialed remote, token and all."""
-    return "https://x-access-token:%s@github.com/%s.git" % (pat, repository)
+def fetch_url(repository: str) -> str:
+    """Twin :219, WITHOUT the token. The twin embedded `x-access-token:<pat>@` in the URL it handed `git fetch` on argv; the global `insteadOf` rewrite `install_token_rewrite` registers supplies the credential inside git instead."""
+    return "%s/%s.git" % (GH_ORIGIN, repository)
+
+
+def token_section(pat: str) -> str:
+    """The git config text of the credentialed `insteadOf` rewrite. A subsection name escapes `\\` and `"`; a token carrying a newline or NUL cannot be written as one, and is refused rather than truncated."""
+    if "\n" in pat or "\0" in pat:
+        raise ValueError("GITHUB_PAT carries a newline or NUL; it cannot name a git config section")
+    host = GH_ORIGIN.removeprefix("https://")
+    url = "https://x-access-token:%s@%s/" % (pat, host)
+    escaped = url.replace("\\", "\\\\").replace('"', '\\"')
+    return '[url "%s"]\n\tinsteadOf = %s/\n' % (escaped, GH_ORIGIN)
+
+
+def install_token_rewrite(pat: str) -> int:
+    """Step 3's credential: the rewrite written to `~/TOKEN_INCLUDE` (0600, created that way, never widened afterwards), and the global config told to include it. `--replace-all --fixed-value` keeps a rerun to one `include.path` line for this file and leaves every other include alone. git's argv carries the PATH, never the token."""
+    include = os.path.join(os.path.expanduser("~"), TOKEN_INCLUDE)
+    try:
+        text = token_section(pat)
+    except ValueError as err:
+        log.error("ERROR: %s" % err)
+        return 1
+    os.makedirs(os.path.dirname(include), mode=0o700, exist_ok=True)
+    fd = os.open(include, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.fchmod(fd, 0o600)
+        os.write(fd, text.encode("utf-8", "surrogateescape"))
+    finally:
+        os.close(fd)
+    return run_inherit(
+        [
+            "git",
+            "config",
+            "--global",
+            "--replace-all",
+            "--fixed-value",
+            "include.path",
+            include,
+            include,
+        ],
+        GIT_CONFIG_LINE,
+        searched=True,
+    )
 
 
 def redact(data: bytes, pat: str) -> bytes:
@@ -478,18 +522,7 @@ def run(check_only: str, output_file: str) -> int:
     # ----------------------------------------------------------------------- Step 3: submodules -----------------------------------------------------------------------
     log.step("Initializing private submodules...")
 
-    pat = os.environ.get("GITHUB_PAT", "")
-    status = run_inherit(
-        [
-            "git",
-            "config",
-            "--global",
-            "url.https://x-access-token:%s@github.com/.insteadOf" % pat,
-            (GH_ORIGIN + "/"),
-        ],
-        GIT_CONFIG_LINE,
-        searched=True,
-    )
+    status = install_token_rewrite(os.environ.get("GITHUB_PAT", ""))
     if status != 0:
         return status
 
@@ -610,7 +643,7 @@ def run(check_only: str, output_file: str) -> int:
         )
         sys.stderr.flush()
         return 1
-    url = fetch_url(os.environ.get("GITHUB_PAT", ""), os.environ.get("GITHUB_REPOSITORY", ""))
+    url = fetch_url(os.environ.get("GITHUB_REPOSITORY", ""))
 
     status, _latest_tag = fetch_latest_tag(url, os.environ.get("GITHUB_PAT", ""))
     if status != 0:

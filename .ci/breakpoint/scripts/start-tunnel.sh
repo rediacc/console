@@ -217,18 +217,22 @@ CF_API="https://api.cloudflare.com/client/v4"
 # reads CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN -- deliberately NOT the account-wide
 # CLOUDFLARE_API_TOKEN, which carries Workers/D1/R2/Pages rights that have no
 # business being on a box that hands out an interactive shell.
+#
+# The Authorization header reaches curl as a `-K -` config on STDIN, written by
+# the printf BUILTIN: an argument of any process is readable through `ps` and
+# /proc/<pid>/cmdline for its lifetime, so the token is never one.
 cf_api() {
     local method="$1" path="$2" body="${3:-}"
     if [[ -n "$body" ]]; then
-        curl -sS -X "$method" "${CF_API}${path}" \
-            -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --max-time 30 --data "$body"
+        printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+            curl -sS -X "$method" "${CF_API}${path}" -K - \
+                -H "Content-Type: application/json" \
+                --max-time 30 --data "$body"
     else
-        curl -sS -X "$method" "${CF_API}${path}" \
-            -H "Authorization: Bearer ${CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --max-time 30
+        printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+            curl -sS -X "$method" "${CF_API}${path}" -K - \
+                -H "Content-Type: application/json" \
+                --max-time 30
     fi
 }
 
@@ -323,7 +327,9 @@ start_named() {
     # --- run the connector ---------------------------------------------------
     log_step "starting connector..."
     : >"$LOG_FILE"
-    "$CF_BIN" tunnel --no-autoupdate run --token "$tunnel_token" --url "$ORIGIN" >"$LOG_FILE" 2>&1 &
+    # TUNNEL_TOKEN in the environment, not `--token` on argv: the connector lives
+    # for the whole session, and its argv is world-readable that whole time.
+    TUNNEL_TOKEN="$tunnel_token" "$CF_BIN" tunnel --no-autoupdate run --url "$ORIGIN" >"$LOG_FILE" 2>&1 &
     local pid=$!
     bp_record_pid cloudflared "$pid"
     bp_state_set BP_CLOUDFLARED_PID "$pid"

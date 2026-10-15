@@ -321,39 +321,48 @@ def run_both(
         tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kwargs
     )
     files.update(frozen)
-    for side in ("new",):
-        root = fixture_root(tmp_path, side, **fixture_kwargs)
-        call_log = root / "calls.log"
-        call_log.write_text("", encoding="utf-8")
-        argv = list(args) + (["--output", output] if output is not None else [])
-        quoted = " ".join(shlex.quote(a) for a in argv)
-
-        env: dict[str, str | None] = {
-            "PATH": "%s:%s" % (root / "bin", tools),
-            "HOME": str(root / "home"),
-            "FAKE_LOG": str(call_log),
-            **(env_extra or {}),
-        }
-        env["PYTHONPATH"] = "%s/.ci" % diff.repo()
-        env["PYTHONDONTWRITEBYTECODE"] = "1"
-        env["REDIACC_CI_ROOT"] = str(root)
-        command = "python3 -m %s %s" % (MODULE, quoted)
-
-        result = diff.bash_streams(
-            command, env=diff.env_for(**env), cwd=str(root), tty=tty, timeout=timeout
-        )
-
-        def scrub(text: str, root: pathlib.Path = root) -> str:
-            return mask_closure_tags(text.replace(str(root), "<root>"))
-
-        results[side] = (result[0], scrub(result[1]), scrub(result[2]))
-        files["%s_calls" % side] = scrub(call_log.read_text(encoding="utf-8"))
-        for name in ("output", "true"):
-            target = root / (output if name == "output" and output else name)
-            files["%s_%s" % (side, name)] = (
-                scrub(target.read_text(encoding="utf-8")) if target.is_file() else None
-            )
+    results["new"], live = run_port(
+        tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kwargs
+    )
+    files.update(live)
     return results["old"], results["new"], files
+
+
+def run_port(
+    tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kwargs
+) -> tuple[tuple[int, str, str], dict[str, str | None]]:
+    """The port's normalised answer and files, on its own `new-root` fixture."""
+    root = fixture_root(tmp_path, "new", **fixture_kwargs)
+    call_log = root / "calls.log"
+    call_log.write_text("", encoding="utf-8")
+    argv = list(args) + (["--output", output] if output is not None else [])
+    quoted = " ".join(shlex.quote(a) for a in argv)
+
+    env: dict[str, str | None] = {
+        "PATH": "%s:%s" % (root / "bin", tools),
+        "HOME": str(root / "home"),
+        "FAKE_LOG": str(call_log),
+        **(env_extra or {}),
+    }
+    env["PYTHONPATH"] = "%s/.ci" % diff.repo()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["REDIACC_CI_ROOT"] = str(root)
+    command = "python3 -m %s %s" % (MODULE, quoted)
+
+    result = diff.bash_streams(
+        command, env=diff.env_for(**env), cwd=str(root), tty=tty, timeout=timeout
+    )
+
+    def scrub(text: str) -> str:
+        return mask_closure_tags(text.replace(str(root), "<root>"))
+
+    files: dict[str, str | None] = {"new_calls": scrub(call_log.read_text(encoding="utf-8"))}
+    for name in ("output", "true"):
+        target = root / (output if name == "output" and output else name)
+        files["new_%s" % name] = (
+            scrub(target.read_text(encoding="utf-8")) if target.is_file() else None
+        )
+    return (result[0], scrub(result[1]), scrub(result[2])), files
 
 
 def _old_side(tmp_path, tools, args, env_extra, output, tty, timeout, fixture_kwargs):
@@ -639,6 +648,48 @@ BUMP_CALLS = (
     "gh api repos/%s/commits/%s/pulls\n" % (GH_REPO, HEAD_SHA)
 )
 DECIDE_CALL = "gh api repos/%s/commits/%s/pulls\n" % (GH_REPO, MERGE_SHA)
+TOKEN_INCLUDE_PATH = "<root>/home/" + port.TOKEN_INCLUDE
+TOKEN_CONFIG_CALL = "git config --global --replace-all --fixed-value include.path %s %s\n" % (
+    TOKEN_INCLUDE_PATH,
+    TOKEN_INCLUDE_PATH,
+)
+
+
+def test_the_token_reaches_no_child_argv(tmp_path: pathlib.Path) -> None:
+    """Worklist #773eccc5. Every argv the port hands a child is readable through `ps` and `/proc/<pid>/cmdline` for the child's lifetime, so GITHUB_PAT may appear in none of them: not in `git config`, not in the `git fetch` URL. The credential lives in a 0600 include file under HOME, and reaches git only through the global config that names it."""
+    result, files = run_port(
+        tmp_path,
+        minbin(tmp_path),
+        (),
+        {**PUSH_MAIN, "FAKE_GH_DECIDE_ROWS": "571 feature", "FAKE_DOCKER_HAVE": ""},
+        "outputs.txt",
+        None,
+        60,
+        {"docker": True},
+    )
+    assert result[0] == 0, result
+    calls = files["new_calls"]
+    assert calls is not None
+    assert "git fetch" in calls, "the run never reached the fetch"
+    assert "git config" in calls, "the run never wrote the token rewrite"
+    assert PAT_ENV["GITHUB_PAT"] not in calls, "the token reached a child argv:\n%s" % calls
+    assert PAT_ENV["GITHUB_PAT"] not in result[1] + result[2]
+    include = tmp_path / "new-root" / "home" / port.TOKEN_INCLUDE
+    assert stat.S_IMODE(include.stat().st_mode) == 0o600
+    assert include.read_text(encoding="utf-8") == port.token_section(PAT_ENV["GITHUB_PAT"])
+
+
+def test_the_token_section_is_the_insteadof_rewrite_and_refuses_a_newline() -> None:
+    assert port.token_section("tok") == (
+        '[url "https://x-access-token:tok@%s/"]\n\tinsteadOf = %s/\n' % (GH_HOST, GH_ORIGIN)
+    )
+    assert port.token_section('a"b\\c').startswith('[url "https://x-access-token:a\\"b\\\\c@')
+    for bad in ("a\nb", "a\0b"):
+        try:
+            port.token_section(bad)
+        except ValueError:
+            continue
+        raise AssertionError("a token carrying %r was written" % bad)
 
 
 def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path) -> None:
@@ -671,19 +722,14 @@ def test_the_whole_push_to_main_run_agrees_line_for_line(tmp_path: pathlib.Path)
         "",
     ]
     assert files["old_calls"] == (
-        (
-            "git config --global "
-            "url.https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/.insteadOf "
-        )
-        + GH_ORIGIN
-        + "/\n"
+        TOKEN_CONFIG_CALL
         + SUBMODULE_CALL
         + closure_calls("web")
         + closure_calls("rdc")
         + BUMP_CALLS
         + DECIDE_CALL
         + "git fetch --tags --force --no-recurse-submodules "
-        + ("https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/")
+        + (GH_ORIGIN + "/")
         + GH_REPO
         + ".git\n"
         + "git tag -l v* --sort=-v:refname\n" * 3
@@ -1047,12 +1093,11 @@ def test_an_empty_repository_slug_is_accepted_and_fetched(tmp_path: pathlib.Path
         },
     )
     assert old[0] == 0
-    assert (
-        "git fetch --tags --force --no-recurse-submodules "
-        "https://x-access-token:s3cr3t-app-token@" + GH_HOST + "/.git\n"
-    ) in files["old_calls"]
+    assert ("git fetch --tags --force --no-recurse-submodules " + GH_ORIGIN + "/.git\n") in files[
+        "old_calls"
+    ]
     assert_identical(old, new, files)
-    assert port.fetch_url("tok", "") == ("https://x-access-token:tok@" + GH_HOST + "/.git")
+    assert port.fetch_url("") == GH_ORIGIN + "/.git"
 
 
 def test_three_failed_fetches_refuse_to_compute_a_version(tmp_path: pathlib.Path) -> None:
@@ -1078,8 +1123,7 @@ def test_three_failed_fetches_refuse_to_compute_a_version(tmp_path: pathlib.Path
         "tag list that may be stale.\n"
     ) in old[2]
     assert "s3cr3t-app-token" not in old[2], "the app token must never reach the log"
-    assert ("@" + GH_HOST) in old[2], "the diagnostic must survive"
-    assert "***" in old[2], "redacted, not suppressed"
+    assert ("%s/%s.git" % (GH_ORIGIN, GH_REPO)) in old[2], "the diagnostic must survive"
     # The two closure tags read the tag list themselves (step 5); no further read may follow the refused fetch.
     assert calls_of(files).count("git tag") == 2, "no version may be computed from a stale list"
     assert calls_of(files).endswith(".git\n"), "the refused fetch is the last call"

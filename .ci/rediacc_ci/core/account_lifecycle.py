@@ -248,7 +248,11 @@ def _check_node() -> None:
 
 
 def spawn_background(
-    argv: list[str], *, cwd: str | None = None, log_path: str | None = None
+    argv: list[str],
+    *,
+    cwd: str | None = None,
+    log_path: str | None = None,
+    extra_env: dict[str, str] | None = None,
 ) -> int:
     """`account_spawn`, `.ci/lib/account.sh:74-82`: `( cd CWD && ARGV ) >LOG 2>&1 &`, remembered in `PIDS`. Returns the pid, `$!`.
 
@@ -272,6 +276,7 @@ def spawn_background(
                 cwd=cwd,
                 stdout=handle,
                 stderr=subprocess.STDOUT if handle is not None else None,
+                env={**os.environ, **extra_env} if extra_env else None,
                 process_group=0,
             )
     threading.Thread(target=proc.wait, daemon=True).start()
@@ -417,14 +422,14 @@ def stripe_auto() -> int:
         [
             "stripe",
             "listen",
-            "--api-key",
-            key,
             "--forward-to",
             "http://localhost:%s/account/api/v1/webhooks/stripe" % gateway_port,
             # Stripe CLI 1.52 refuses to start without an event selector ("must specify events to forward using --events, --all-snapshot, or --all-thin"); --all-snapshot is the forwarding older CLIs did by default.
             "--all-snapshot",
         ],
         log_path=stripe_log,
+        # STRIPE_API_KEY, not `--api-key`: the listener lives for the whole session, and its argv is readable through `ps` by every user for all of it (worklist #773eccc5; `testrun/account_e2e.py` made the same move).
+        extra_env={"STRIPE_API_KEY": key},
     )
 
     secret = ""
