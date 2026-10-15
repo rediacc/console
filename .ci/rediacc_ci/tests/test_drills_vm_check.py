@@ -82,6 +82,9 @@ class World(vm_check.Host):
         self.signal_on = over.pop("signal_on", "")
         self.sftp_refusal = over.pop("sftp_refusal", "remote open: Permission denied")
         self.minted_check_err = over.pop("minted_check_err", "")
+        # "yes" (the config holds a key the VMs authorize), "no" (empty credentials) or "wrong" (a key they reject).
+        self.cli_key = over.pop("cli_key", "yes")
+        self.key_set: list[str] = []
         assert not over, over
         self.store = root / "remote-store"
         self.calls: list[list[str]] = []
@@ -181,6 +184,24 @@ class World(vm_check.Host):
             if self.stored_ok or (env.get("REDIACC_TOKEN") == TOKEN and not self.minted_check_err):
                 return vm_check.Result(0, '{"success":true}')
             return vm_check.Result(1, "", self.minted_check_err or "Unauthorized")
+        if head == ("config", "ssh") and args[2:3] == ["show"]:
+            embedded = "no" if self.cli_key == "no" else "yes"
+            return vm_check.Result(0, json.dumps({"success": True, "data": {"embedded": embedded}}))
+        if head == ("config", "ssh") and args[2:3] == ["set"]:
+            self.key_set.append(args[args.index("--key") + 1])
+            self.cli_key = "yes"
+            return ok
+        if head == ("repo", "list") and self.cli_key != "yes":
+            envelope = {
+                "success": False,
+                "errors": [
+                    {
+                        "code": "LOCAL_EXECUTION_FAILED",
+                        "message": "SSH connection error: All configured authentication methods failed",
+                    }
+                ],
+            }
+            return vm_check.Result(1, json.dumps(envelope), "Listing repositories...\n")
         if head == ("repo", "list"):
             data = [
                 {"name": n, "guid": g, "networkId": "29%02d" % i}
@@ -882,3 +903,25 @@ def test_an_rdc_failure_is_named_by_its_json_error_not_its_progress_lines() -> N
     assert vm_check.rdc_failure(res) == "SSH connection error"
     assert vm_check.rdc_failure(vm_check.Result(1, "", "a\nb\nboom\n")) == "a | b | boom"
     assert vm_check.rdc_failure(vm_check.Result(1, "plain failure\n", "")) == "plain failure"
+
+
+def test_a_config_with_no_ssh_key_gets_the_key_the_vms_authorize(tmp_path: pathlib.Path) -> None:
+    """Empty credentials made the CLI offer ~/.ssh/id_ed25519 and repo list fail auth (2026-10-15T00:0xZ)."""
+    world = make_world(tmp_path, cli_key="no")
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert len(world.key_set) == 1, world.key_set
+    assert "the config had no SSH key; set " in out
+
+
+def test_a_config_holding_another_key_is_not_overwritten_and_names_the_fix(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, cli_key="wrong")
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc != vm_check.EXIT_VERIFIED, out
+    assert world.key_set == [], "a config with a key of its own is never overwritten"
+    assert "NOT VERIFIED (worker-ssh-key)" in out, out
+    assert "All configured authentication methods failed" in out, out
+    assert "config ssh set --key" in out, out
+    assert receipt.get("status") == "NOT_VERIFIED", receipt

@@ -8,7 +8,7 @@ Design 2 of agent/plans/PLAN-vm-check.md is the specification; each step below c
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`).
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`).
-  P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`).
+  P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and an ssh refusal later is `worker-ssh-key`.
   P4  the stored token is used when `subscription status` accepts it. Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment: never on argv, never in the config, never printed, never in the receipt.
   P5  the parent must be a grand on the worker (`parent-grand-missing`); stale `vmc-` forks of it older than an hour are deleted, nothing else is touched.
   V1.1-V1.7  two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
@@ -823,6 +823,31 @@ class VmCheck:
             )
         self.say("        cold start: ./rdc.sh %s took %d s" % (" ".join(args), res.ms // 1000))
 
+    def _ensure_cli_key(self) -> None:
+        """Give a config with no SSH key the key the ops VMs authorize (2026-10-15T00:0xZ: an empty `credentials` made the CLI offer ~/.ssh/id_ed25519, and `repo list` failed `All configured authentication methods failed`)."""
+        show = self.rdc("config", "ssh", "show", "-o", "json")
+        try:
+            embedded = (json.loads(show.out).get("data") or {}).get("embedded")
+        except (ValueError, AttributeError):
+            embedded = None
+        if show.rc != 0 or embedded is None:
+            raise NotVerifiedError(
+                "worker-ssh-key",
+                "config ssh show rc=%d: %s" % (show.rc, rdc_failure(show)),
+            )
+        if embedded != "no":
+            return
+        res = self.rdc("config", "ssh", "set", "--key", self.ssh_key)
+        if res.rc != 0:
+            raise NotVerifiedError(
+                "worker-ssh-key",
+                "config ssh set --key %s rc=%d: %s" % (self.ssh_key, res.rc, rdc_failure(res)),
+            )
+        self.say(
+            "        the config had no SSH key; set %s, the key the ops VMs authorize"
+            % self.ssh_key
+        )
+
     def p3_keys(self) -> None:
         res = self.rdc("machine", "scan-keys", self.machine)
         if res.rc != 0:
@@ -830,6 +855,7 @@ class VmCheck:
                 "fleet-unavailable",
                 "machine scan-keys %s rc=%d: %s" % (self.machine, res.rc, rdc_failure(res)),
             )
+        self._ensure_cli_key()
         probe = self.probe(PROBE_OS_RELEASE)
         parts = probe.out.split()
         if probe.rc != 0 or len(parts) < 2:
@@ -884,9 +910,19 @@ class VmCheck:
     def p5_parent(self) -> None:
         res, entries = self.repo_list()
         if res.rc != 0:
+            why = rdc_failure(res)
             raise NotVerifiedError(
-                "fleet-unavailable",
-                "repo list -m %s rc=%d: %s" % (self.machine, res.rc, rdc_failure(res)),
+                "worker-ssh-key" if "authentication methods failed" in why else "fleet-unavailable",
+                "repo list -m %s rc=%d: %s%s"
+                % (
+                    self.machine,
+                    res.rc,
+                    why,
+                    "; the config's SSH key is not one the ops VMs authorize: "
+                    "./rdc.sh config ssh set --key %s" % self.ssh_key
+                    if "authentication methods failed" in why
+                    else "",
+                ),
             )
         names = [str(e.get("name", "")) for e in entries]
         if self.opts.parent not in names:
