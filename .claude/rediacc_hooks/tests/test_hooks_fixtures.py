@@ -1587,6 +1587,147 @@ def test_a_stdin_program_from_a_source_the_hook_cannot_read_is_refused(tmp_path)
     assert not wrong, "\n".join(map(repr, wrong))
 
 
+# DENO, BUN AND TSX PROGRAMS ARE JUDGED BY THEIR TEXT (#80712245). At 4132c3f7e the guard had no reader for deno or bun: `deno eval`, `bun -e`/`--eval`/`-p`/`--print`, `bun exec`, `deno run -`/`bun run -` on a heredoc, a file or a pipe, `deno run -c <config> x.ts` and `deno serve x.ts` all ran `git worktree add` with rc 0; tsx's `-e`, `watch` and `--tsconfig` were missed the same way.
+WT_DENO = "new Deno.Command('git',{args:['worktree','add','/tmp/x']}).outputSync()"
+WT_BUN = "Bun.spawnSync(['git','worktree','add','/tmp/x'])"
+
+
+def test_deno_and_bun_programs_are_judged_by_their_text(tmp_path):
+    # The command line must not spell the verb itself unless the case says so, or the command-line pre-filter refuses it and the case proves nothing.
+    assert "worktree" not in str(tmp_path).lower(), tmp_path
+    (tmp_path / "p.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    (tmp_path / "x.ts").write_text(WT_DENO + "\n", encoding="utf-8")
+    (tmp_path / "ok.ts").write_text("console.log(1)\n", encoding="utf-8")
+    found = "git worktree add is not run"
+    script = "names `worktree`"
+    unread = "reads on stdin from"
+    wrong = []
+    for command, needle in (
+        ('deno eval "%s"' % WT_DENO, found),
+        ('deno eval -p "%s"' % WT_DENO, found),
+        ('deno repl --eval "%s"' % WT_DENO, found),
+        ('bun -e "%s"' % WT_BUN, found),
+        ('bun --eval "%s"' % WT_BUN, found),
+        ('bun --eval="%s"' % WT_BUN, found),
+        ('bun -p "%s"' % WT_BUN, found),
+        ('bun --print "%s"' % WT_BUN, found),
+        ('bun exec "git worktree add /tmp/x"', found),
+        ("tsx -e \"require('child_process').execSync('git worktree add /tmp/x')\"", found),
+        ('deno run "data:text/javascript,%s"' % WT_DENO.replace(" ", "%20"), found),
+        # A program on stdin: a heredoc, a file, and a pipe from a producer the hook cannot read.
+        ("deno run - <<'EOF'\n%s\nEOF" % WT_DENO, found),
+        ("deno run - < p.py", script),
+        ("deno - < p.py", script),
+        ("bun - < p.py", script),
+        ("bun run - < p.py", script),
+        ("git show HEAD:x.ts | deno run -", unread),
+        ("git show HEAD:x.ts | bun run -", unread),
+        ("git show HEAD:x.ts | deno", unread),
+        ("git show HEAD:x.ts | tsx", unread),
+        # A script by path, through every option walk.
+        ("deno run x.ts", script),
+        ("deno run -A x.ts", script),
+        ("deno -A x.ts", script),
+        ("deno x.ts", script),
+        ("deno run -c deno.json x.ts", script),
+        ("deno run --allow-read=/tmp,/etc x.ts", script),
+        ("deno serve x.ts", script),
+        ("bun x.ts", script),
+        ("bun run x.ts", script),
+        ("bun --cwd . run x.ts", script),
+        ("bun run --smol x.ts", script),
+        ("tsx --tsconfig t.json x.ts", script),
+        ("tsx watch x.ts", script),
+        ("deno run https://example.invalid/x.ts", "could not read in full"),
+        # An option the walk does not know hides the operand, so a command line that could spell the verb is refused.
+        ("deno run --frobnicate worktree add x.ts", "cannot read"),
+    ):
+        rc, err = _worktree_rc(command, tmp_path)
+        if rc != 2 or needle not in err:
+            wrong.append((command, rc, err[:160]))
+    # CONTROLS: a program that runs nothing, a benign script, a package.json script NAME that is no file, no program at all, and an unknown option on a command line that cannot spell the verb.
+    for command in (
+        'deno eval "console.log(1)"',
+        'bun -e "console.log(1)"',
+        'tsx -e "console.log(1)"',
+        "deno run ok.ts",
+        "bun ok.ts",
+        "bun run build",
+        "bun build",
+        'bun exec "ls -la"',
+        "deno --version",
+        "bun --version",
+        "deno fmt",
+        "deno",
+        "deno run npm:cowsay",
+        "deno run --frobnicate ok.ts",
+    ):
+        rc, err = _worktree_rc(command, tmp_path)
+        if rc != 0:
+            wrong.append((command, rc, err[:160]))
+    # A script tracked and unchanged from HEAD is reviewed code and is not read.
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    git(repo, "init", "-q", "-b", "main")
+    (repo / "x.ts").write_text(WT_DENO + "\n", encoding="utf-8")
+    git(repo, "add", "x.ts")
+    git(repo, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "seed")
+    for command in ("deno run x.ts", "bun run x.ts"):
+        rc, err = _worktree_rc(command, repo)
+        if rc != 0:
+            wrong.append(("tracked: " + command, rc, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+# A PIPE READ THROUGH /dev/stdin, AND A PIPE AN INLINE PROGRAM EVALUATES, IS A PROGRAM (13fdcda2.1, 13fdcda2.2). At 13fdcda23 `git show HEAD:p.py | python3 - < /dev/stdin` and `... | cat /dev/stdin | python3 -` ran with rc 0 because /dev/stdin was taken for a file, and `git show HEAD:p.py | python3 -c 'import sys; exec(sys.stdin.read())'` ran with rc 0 because a pipe into `-c` was read as data whatever the program did with it.
+def test_a_pipe_through_dev_stdin_or_into_an_evaluator_is_a_program(tmp_path):
+    assert "worktree" not in str(tmp_path).lower(), tmp_path
+    (tmp_path / "p.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    unread = "reads on stdin from"
+    wrong = []
+    for command, needle in (
+        ("git show HEAD:p.py | python3 - < /dev/stdin", unread),
+        ("git show HEAD:p.py | python3 - < /dev/fd/0", unread),
+        ("git show HEAD:p.py | cat /dev/stdin | python3 -", unread),
+        ("git show HEAD:p.py | cat /proc/self/fd/0 | python3 -", unread),
+        ("git show HEAD:p.py | python3 - <&3 3</dev/stdin", unread),
+        ("git show HEAD:p.py | python3 -c 'import sys; exec(sys.stdin.read())'", unread),
+        ("git show HEAD:p.py | python3 -c 'exec(open(0).read())'", unread),
+        ('git show HEAD:p.py | node -e \'eval(require("fs").readFileSync(0,"utf8"))\'', unread),
+        ("git show HEAD:p.py | perl -e 'eval join \"\", <STDIN>'", unread),
+        ("git show HEAD:p.py | ruby -e 'eval STDIN.read'", unread),
+        (
+            "git show HEAD:p.py | deno eval 'eval(await new Response(Deno.stdin.readable).text())'",
+            unread,
+        ),
+        ("cat p.py | python3 -c 'import sys; exec(sys.stdin.read())'", "names `worktree`"),
+        ("python3 -c 'import sys; exec(sys.stdin.read())' < p.py", "names `worktree`"),
+        (
+            "echo 'git worktree add /tmp/x' | python3 -c 'import os,sys; os.system(sys.stdin.read())'",
+            "git worktree add is not run",
+        ),
+    ):
+        rc, err = _worktree_rc(command, tmp_path)
+        if rc != 2 or needle not in err:
+            wrong.append((command, rc, err[:160]))
+    # CONTROLS: a program that reads stdin and evaluates nothing takes the pipe as data; a benign program evaluated from a known source; /dev/stdin with no pipe in front.
+    for command in (
+        "echo x | python3 -c 'import sys; print(sys.stdin.read())'",
+        "git log | python3 -c 'import json,sys; print(json.loads(sys.stdin.read()))'",
+        "git log | node -e 'process.stdin.pipe(process.stdout)'",
+        "git log | ruby -e 'puts STDIN.read'",
+        "git log | perl -ne 'print'",
+        "echo 'print(1)' | python3 -c 'import sys; exec(sys.stdin.read())'",
+        "git log | python3 -c 'import subprocess; subprocess.run([\"ls\"])'",
+        "python3 - < /dev/stdin",
+        "echo 'print(1)' | cat /dev/stdin | python3 -",
+    ):
+        rc, err = _worktree_rc(command, tmp_path)
+        if rc != 0:
+            wrong.append((command, rc, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The
