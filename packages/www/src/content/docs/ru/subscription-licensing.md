@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: ru
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 Для автоматизации и AI-агентов используйте токен подписки с ограниченной областью вместо входа через браузер:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Вы также можете передать токен непосредственно через переменную окружения, чтобы CLI мог выпускать и обновлять лицензии репозиториев без интерактивного входа:
@@ -214,7 +214,7 @@ rdc subscription login
 Вход для автоматизации или AI-агента:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Для неинтерактивных сред установка `REDIACC_TOKEN` является самым простым вариантом. Токен должен быть ограничен только операциями подписки и лицензирования репозиториев, которые нужны агенту.

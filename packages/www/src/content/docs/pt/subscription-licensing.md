@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: pt
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ Veja [rdc vs renet](/pt/docs/rdc-vs-renet) para a divisão estação de trabalho
 Para automação e agentes de IA, use um token de assinatura com escopo em vez de login pelo navegador:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Você também pode injetar o token diretamente através do ambiente para que a CLI possa emitir e atualizar licenças de repositório sem qualquer etapa de login interativo:
@@ -213,7 +213,7 @@ rdc subscription login
 Login de automação ou agente de IA:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Para ambientes não interativos, definir `REDIACC_TOKEN` é a opção mais simples. O token deve ter escopo apenas para as operações de assinatura e licenças de repositório que o agente precisa.

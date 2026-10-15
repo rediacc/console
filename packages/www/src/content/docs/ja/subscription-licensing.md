@@ -7,7 +7,7 @@ tags:
 subcategory: account
 order: 7
 language: ja
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -49,7 +49,7 @@ Rediaccのライセンス管理には3つの可動部品があります：
 自動化およびAIエージェントには、ブラウザログインの代わりにスコープ付きサブスクリプショントークンを使用してください：
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 環境を通じてトークンを直接注入することで、CLIが対話的なログインステップなしにリポジトリライセンスを発行・更新できるようにすることもできます：
@@ -211,7 +211,7 @@ rdc subscription login
 自動化またはAIエージェントによるログイン：
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 非対話型環境では、`REDIACC_TOKEN` を設定するのが最もシンプルな選択肢です。トークンはエージェントが必要とするサブスクリプションとリポジトリライセンス操作のみにスコープを限定する必要があります。

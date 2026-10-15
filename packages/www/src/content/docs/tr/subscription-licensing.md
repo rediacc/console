@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: tr
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ Normal akış şöyle görünür:
 Otomasyon ve yapay zeka ajanları için tarayıcı girişi yerine kapsamlı bir abonelik tokeni kullanın:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 CLI'ın herhangi bir etkileşimli giriş adımı olmadan depo lisansları düzenleyip yenileyebilmesi için tokeni doğrudan ortam üzerinden de enjekte edebilirsiniz:
@@ -213,7 +213,7 @@ rdc subscription login
 Otomasyon veya yapay zeka ajanı girişi:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Etkileşimli olmayan ortamlar için `REDIACC_TOKEN` ayarlamak en basit seçenektir. Token, ajanın ihtiyaç duyduğu abonelik ve depo lisansı işlemleriyle sınırlı kapsamda olmalıdır.

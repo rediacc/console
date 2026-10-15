@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: ar
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 للأتمتة ووكلاء الذكاء الاصطناعي، استخدم رمز اشتراك محدد النطاق بدلاً من تسجيل الدخول عبر المتصفح:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 يمكنك أيضاً حقن الرمز مباشرةً عبر البيئة حتى يتمكن CLI من إصدار وتجديد تراخيص المستودع دون أي خطوة تسجيل دخول تفاعلية:
@@ -213,7 +213,7 @@ rdc subscription login
 تسجيل دخول للأتمتة أو وكيل الذكاء الاصطناعي:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 للبيئات غير التفاعلية، يُعدّ ضبط `REDIACC_TOKEN` أبسط خيار. يجب أن يكون نطاق الرمز محدوداً بعمليات الاشتراك وترخيص المستودع التي يحتاجها الوكيل.

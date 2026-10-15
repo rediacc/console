@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: es
-sourceHash: "15886ad7ee04e90c"
+sourceHash: "53e0bdad5b3654a2"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -51,7 +51,7 @@ Consulta [rdc vs renet](/es/docs/rdc-vs-renet) para conocer la división estaci�
 Para automatización y agentes de IA, utiliza un token de suscripción con alcance limitado en lugar de inicio de sesión en navegador:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 También puedes inyectar el token directamente a través del entorno para que la CLI pueda emitir y actualizar licencias de repositorio sin ningún paso de inicio de sesión interactivo:
@@ -213,7 +213,7 @@ rdc subscription login
 Inicio de sesión de automatización o agente de IA:
 
 ```bash
-rdc subscription login --token "$REDIACC_TOKEN"
+printf '%s' "$REDIACC_TOKEN" | rdc subscription login --token -
 ```
 
 Para entornos no interactivos, establecer `REDIACC_TOKEN` es la opción más simple. El token debe tener alcance solo para las operaciones de suscripción y licencia de repositorio que necesita el agente.
