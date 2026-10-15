@@ -11,6 +11,7 @@ The Rule T differences from the bash twin are listed in `rediacc_ci.drills.lib` 
 
 from __future__ import annotations
 
+import hashlib
 import http.cookiejar
 import pathlib
 import subprocess
@@ -83,7 +84,9 @@ class Universe:
         self.api_token = d.account_mint_token(
             jar, sub, "drill-universe", ["license:read", "subscription:read"]
         )
-        d.note("subscription %s, token %s..." % (sub, self.api_token[:12]))
+        # A fingerprint, never characters of the token: a log line is not a place for any part of a credential (worklist #3a8d1f46; the twin printed its first twelve characters).
+        fingerprint = hashlib.sha256(self.api_token.encode("utf-8")).hexdigest()[:12]
+        d.note("subscription %s, token sha256:%s" % (sub, fingerprint))
 
     def md5(self, name: str) -> str:
         return lib.md5(self.config_dir / name)

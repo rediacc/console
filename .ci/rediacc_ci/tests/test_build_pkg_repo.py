@@ -548,6 +548,14 @@ CASES = [
 
 DEFAULT_ENV = {"RELEASE_GPG_PRIVATE_KEY": "PRIVATE-KEY-MATERIAL"}
 
+# RULE T, worklist #3a8d1f46: the one delta the port declares against the twin's frozen answer. The twin handed every gpg call `--passphrase <value>` on argv; the port writes the value to a 0600 file in a fresh temp directory and hands gpg `--passphrase-file <that path>` (masked to `<tmp>/passphrase` like every temp path). The golden keeps the TWIN's call log; `passphrase_delta` maps exactly that pair of words onto the port's before `_assert_agree` compares, and the passphrase case below asserts the recording still carries the value (a re-record from the port would fail it) while the port's log carries it nowhere.
+PASSPHRASE_ARG = re.compile(r"--passphrase \S+")
+PASSPHRASE_FILE_ARG = "--passphrase-file <tmp>/passphrase"
+
+
+def passphrase_delta(calls: list[str]) -> list[str]:
+    return [PASSPHRASE_ARG.sub(PASSPHRASE_FILE_ARG, line) for line in calls]
+
 
 @pytest.mark.parametrize(("fixture_kw", "run_kw"), CASES)
 def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
@@ -562,6 +570,17 @@ def test_port_and_twin_agree(tmp_path, fixture_kw, run_kw):
     root_b = _fixture(tmp_path / "b", **fixture_kw)
     new = _run(PORT_REL, root_b, **run_kw)
 
+    passphrase = env_extra.get("RELEASE_GPG_PASSPHRASE", "")
+    if passphrase:
+        old_calls = typing.cast("list[str]", old["calls"])
+        new_calls = typing.cast("list[str]", new["calls"])
+        gpg_calls = [c for c in new_calls if c.startswith("call: gpg ")]
+        assert any("--passphrase %s" % passphrase in c for c in old_calls), (
+            "the recording no longer carries the twin's --passphrase; it was re-recorded"
+        )
+        assert gpg_calls, "the port never reached gpg"
+        assert not any(passphrase in c for c in new_calls), new_calls
+        assert all(PASSPHRASE_FILE_ARG in c for c in gpg_calls if "--pinentry-mode" in c), gpg_calls
     _assert_agree(old, new)
 
 
@@ -571,6 +590,7 @@ def _assert_agree(old: dict[str, object], new: dict[str, object]) -> None:
     A whole-dict `assert a == b` over the artifact map prints two multi-kilobyte
     repr()s of binary content, which is unreadable and therefore unactionable. This names the paths that differ and shows only those.
     """
+    old = {**old, "calls": passphrase_delta(typing.cast("list[str]", old["calls"]))}
     for field in ("exit", "stdout", "stderr", "calls"):
         assert new[field] == old[field], "%s diverged:\n twin: %r\n port: %r" % (
             field,
@@ -589,6 +609,19 @@ def _assert_agree(old: dict[str, object], new: dict[str, object]) -> None:
             old_art[name],
             new_art[name],
         )
+
+
+def test_the_passphrase_file_is_private_and_cleaned_up_with_the_rest(tmp_path, monkeypatch):
+    """Worklist #3a8d1f46. The file gpg reads the passphrase from is 0600 in a 0700 directory of its own, and that directory is on the EXIT cleanup list."""
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    monkeypatch.setattr(build_pkg_repo.tempfile, "tempdir", None)
+    cleanup: list[str] = []
+    path = pathlib.Path(build_pkg_repo._passphrase_file("pass phrase", cleanup))
+    assert path.read_text(encoding="utf-8") == "pass phrase"
+    assert path.stat().st_mode & 0o777 == 0o600
+    assert path.parent.stat().st_mode & 0o777 == 0o700
+    assert cleanup == [str(path.parent)]
+    assert path.parent.parent == tmp_path
 
 
 def test_the_fakes_are_actually_reached_and_the_repository_is_real(tmp_path):

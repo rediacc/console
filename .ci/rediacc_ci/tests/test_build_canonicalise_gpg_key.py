@@ -154,6 +154,13 @@ def _run_live(
     )
 
 
+def _run_port(
+    key_file: pathlib.Path, passphrase: str, *, subject: pathlib.Path = PORT
+) -> subprocess.CompletedProcess[str]:
+    """The port's side of a twin call that passed the passphrase as `argv[2]`: the same value in RELEASE_GPG_PASSPHRASE (the declared delta of worklist #3a8d1f46; the twin's calls and their golden keys are unchanged)."""
+    return _run_live(subject, key_file, env={**os.environ, "RELEASE_GPG_PASSPHRASE": passphrase})
+
+
 def _streams(proc: subprocess.CompletedProcess[str]) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -229,7 +236,7 @@ def test_garbage_key_cannot_import(tmp_path: pathlib.Path) -> None:
     key = tmp_path / "garbage.asc"
     key.write_text("this is not a pgp key\n", encoding="utf-8")
     old = _run(TWIN, key, PASSPHRASE)
-    new = _run(PORT, key, PASSPHRASE)
+    new = _run_port(key, PASSPHRASE)
     _assert_same_shape(old, new, "garbage-key")
     assert "gpg could not import the key" in old.stderr
 
@@ -263,7 +270,7 @@ def test_public_key_only_has_no_secret_key(tmp_path: pathlib.Path, real_key: str
     key_new.write_text(pub.stdout, encoding="utf-8")
 
     old = _run(TWIN, key_old, PASSPHRASE)
-    new = _run(PORT, key_new, PASSPHRASE)
+    new = _run_port(key_new, PASSPHRASE)
     _assert_same_shape(old, new, "public-key-only")
     assert "no secret key after import" in old.stderr
 
@@ -275,7 +282,7 @@ def test_wrong_passphrase_export_fails(tmp_path: pathlib.Path, real_key: str) ->
     key_new.write_text(real_key, encoding="utf-8")
 
     old = _run(TWIN, key_old, WRONG_PASSPHRASE)
-    new = _run(PORT, key_new, WRONG_PASSPHRASE)
+    new = _run_port(key_new, WRONG_PASSPHRASE)
     _assert_same_shape(old, new, "wrong-passphrase")
     assert "re-export produced nothing" in old.stderr
 
@@ -289,7 +296,7 @@ def test_clean_key_is_untouched_in_substance(tmp_path: pathlib.Path, real_key: s
     key_new.write_text(real_key, encoding="utf-8")
 
     old = _run(TWIN, key_old, PASSPHRASE)
-    new = _run(PORT, key_new, PASSPHRASE)
+    new = _run_port(key_new, PASSPHRASE)
     _assert_same_shape(old, new, "clean-key")
     assert old.returncode == 0
 
@@ -322,7 +329,7 @@ def test_welded_key_is_repaired(tmp_path: pathlib.Path, real_key: str) -> None:
     key_new.write_text(welded, encoding="utf-8")
 
     old = _run(TWIN, key_old, PASSPHRASE)
-    new = _run(PORT, key_new, PASSPHRASE)
+    new = _run_port(key_new, PASSPHRASE)
     _assert_same_shape(old, new, "welded-key")
     assert old.returncode == 10, "fixture stopped exercising the repair path; test is wrong"
 
@@ -381,7 +388,7 @@ def test_planted_defect_is_caught() -> None:
             key_new.write_text(clean_key, encoding="utf-8")
 
             old = _run(TWIN, key_old, PASSPHRASE)
-            new = _run(mutant_path, key_new, PASSPHRASE)
+            new = _run_port(key_new, PASSPHRASE, subject=mutant_path)
             assert old.returncode == 0, "twin must treat the boundary case as already-canonical"
             assert new.returncode == 10, (
                 "the mutant did not misclassify the boundary; plant did not fire"
@@ -395,3 +402,61 @@ def test_planted_defect_is_caught() -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+FAKE_GPG = """#!/bin/bash
+printf '%s\\n' "$*" >>"$FAKE_GPG_ARGV"
+case " $* " in
+  *" --passphrase-fd 0 "*) cat >>"$FAKE_GPG_STDIN" ;;
+esac
+case " $* " in
+  *" --list-secret-keys "*) echo "fpr:::::::::ABCDEF0123456789:" ;;
+  *" --export-secret-keys "*) echo "-----BEGIN PGP PRIVATE KEY BLOCK-----"; echo "abc"; echo "-----END PGP PRIVATE KEY BLOCK-----" ;;
+esac
+exit 0
+"""
+
+
+def test_delta_3a8d1f46_the_passphrase_reaches_gpg_on_stdin_not_argv(
+    tmp_path: pathlib.Path,
+) -> None:
+    """INTENTIONAL DELTA (Rule T), worklist #3a8d1f46. The twin gave gpg `--passphrase <value>`; the port reads RELEASE_GPG_PASSPHRASE and gives gpg `--passphrase-fd 0`, so the value is on no argv. Against a recording gpg: both calls that need the passphrase get it on stdin, and no argv carries it."""
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    (bindir / "gpg").write_text(FAKE_GPG, encoding="utf-8")
+    (bindir / "gpg").chmod(0o755)
+    argv_log, stdin_log = tmp_path / "argv.log", tmp_path / "stdin.log"
+    key = tmp_path / "key.asc"
+    key.write_text(
+        "-----BEGIN PGP PRIVATE KEY BLOCK-----\nabc\n-----END PGP PRIVATE KEY BLOCK-----\n",
+        encoding="utf-8",
+    )
+    env = {
+        **os.environ,
+        "PATH": "%s%s%s" % (bindir, os.pathsep, os.defpath),
+        "FAKE_GPG_ARGV": str(argv_log),
+        "FAKE_GPG_STDIN": str(stdin_log),
+        "RELEASE_GPG_PASSPHRASE": PASSPHRASE,
+    }
+    proc = _run_live(PORT, key, env=env)
+    assert proc.returncode == 0, proc.stderr
+    argv = argv_log.read_text(encoding="utf-8")
+    assert PASSPHRASE not in argv, argv
+    assert argv.count("--passphrase-fd 0") == 2, argv
+    assert stdin_log.read_text(encoding="utf-8") == ("%s\n" % PASSPHRASE) * 2
+
+
+def test_a_passphrase_on_argv_is_refused(tmp_path: pathlib.Path) -> None:
+    """A caller still passing the passphrase as a second argument fails loudly (exit 2) instead of signing with an empty one."""
+    key = tmp_path / "key.asc"
+    key.write_text("x\n", encoding="utf-8")
+    proc = subprocess.run(
+        ["python3", str(PORT), str(key), PASSPHRASE],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=30,
+    )
+    assert proc.returncode == 2
+    assert "RELEASE_GPG_PASSPHRASE" in proc.stderr
+    assert PASSPHRASE not in proc.stderr

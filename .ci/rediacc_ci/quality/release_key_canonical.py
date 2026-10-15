@@ -444,9 +444,10 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run_canon(canon: pathlib.Path, target: pathlib.Path, passphrase: str) -> int:
-    """`python canonicalise_gpg_key.py <file> <pass> >/dev/null 2>&1`. Returns the code."""
+    """`RELEASE_GPG_PASSPHRASE=<pass> python canonicalise_gpg_key.py <file> >/dev/null 2>&1`. Returns the code. The canonicaliser takes the passphrase from its environment and refuses it on argv (worklist #3a8d1f46)."""
     completed = subprocess.run(
-        [sys.executable, str(canon), str(target), passphrase],
+        [sys.executable, str(canon), str(target)],
+        env={**os.environ, "RELEASE_GPG_PASSPHRASE": passphrase},
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,

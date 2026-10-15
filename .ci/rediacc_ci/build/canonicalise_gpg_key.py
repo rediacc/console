@@ -4,12 +4,14 @@
 Rewrites an armored GPG private key into CANONICAL armor, in place. See the twin's own header for the incident (run 33990640584, 2026-09-05) and the structural repair this performs: a key stored as two Bitwarden fields gets welded when the halves are concatenated without a newline, producing one over-long armor line that gpg reads leniently and Go's `openpgp.ReadArmoredKeyRing`
 rejects outright. Importing and re-exporting through gpg repairs every variant gpg can read.
 
-Usage: canonicalise_gpg_key.py <key-file> [passphrase] Exit 0 the key was ALREADY canonical; the file is unchanged in substance
+Usage: RELEASE_GPG_PASSPHRASE=<passphrase> canonicalise_gpg_key.py <key-file> Exit 0 the key was ALREADY canonical; the file is unchanged in substance
      10 the key was REPAIRED -- the stored value is malformed and should be
         fixed at source, not left to this script
      1  gpg could not read the key at all
 
 PORT NOTES.
+
+THE PASSPHRASE COMES FROM THE ENVIRONMENT AND REACHES gpg ON STDIN, a divergence from the twin (worklist #3a8d1f46). The twin took it as `argv[2]` and handed it to gpg as `--passphrase <value>`; an argument of any process is readable through `ps` and `/proc/<pid>/cmdline` for its lifetime, so this port reads `RELEASE_GPG_PASSPHRASE` (unset reads as empty, which the twin's absent second argument also meant) and gives gpg `--passphrase-fd 0` with the value on stdin. Both gpg calls that need it read the key from a file or the keyring, so stdin is free. A second argument is refused with exit 2 rather than silently ignored, so a caller still passing the value on argv fails loudly.
 
 THE USAGE-ERROR TEXT DOES NOT MATCH THE TWIN BYTE FOR BYTE, and that is a
 deliberate, checked call rather than an oversight. The twin's `${1:?msg}`
@@ -70,13 +72,19 @@ def _max_body_line_length(key_file: pathlib.Path) -> int:
 def main(argv: list[str]) -> int:
     if not argv or argv[0] == "":
         print(
-            "rediacc_ci.build.canonicalise_gpg_key: usage: PYTHONPATH=.ci python3 -m rediacc_ci.build.canonicalise_gpg_key <key-file> [passphrase]",
+            "rediacc_ci.build.canonicalise_gpg_key: usage: RELEASE_GPG_PASSPHRASE=<passphrase> PYTHONPATH=.ci python3 -m rediacc_ci.build.canonicalise_gpg_key <key-file>",
             file=sys.stderr,
         )
         return 1
+    if len(argv) > 1:
+        print(
+            "rediacc_ci.build.canonicalise_gpg_key: the passphrase is read from RELEASE_GPG_PASSPHRASE, never from argv",
+            file=sys.stderr,
+        )
+        return 2
 
     key_file = pathlib.Path(argv[0])
-    passphrase = argv[1] if len(argv) > 1 else ""
+    passphrase_input = (os.environ.get("RELEASE_GPG_PASSPHRASE", "") + "\n").encode("utf-8")
 
     if not key_file.is_file() or key_file.stat().st_size == 0:
         print(
@@ -101,12 +109,13 @@ def main(argv: list[str]) -> int:
                 "--batch",
                 "--pinentry-mode",
                 "loopback",
-                "--passphrase",
-                passphrase,
+                "--passphrase-fd",
+                "0",
                 "--import",
                 str(key_file),
             ],
             env=env,
+            input=passphrase_input,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=False,
@@ -141,13 +150,14 @@ def main(argv: list[str]) -> int:
                     "--batch",
                     "--pinentry-mode",
                     "loopback",
-                    "--passphrase",
-                    passphrase,
+                    "--passphrase-fd",
+                    "0",
                     "--armor",
                     "--export-secret-keys",
                     fpr,
                 ],
                 env=env,
+                input=passphrase_input,
                 stdout=out_fh,
                 stderr=subprocess.DEVNULL,
                 check=False,

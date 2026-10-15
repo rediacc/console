@@ -135,13 +135,15 @@ def _run(
     quiet_out: bool = False,
     quiet_err: bool = False,
     extra_env: dict[str, str] | None = None,
+    stdin_text: str | None = None,
 ) -> int:
-    """A bare command line of the twin's: streams inherited unless it redirects them. 127 where bash says "command not found"."""
+    """A bare command line of the twin's: streams inherited unless it redirects them. 127 where bash says "command not found". `stdin_text`, when given, is the child's whole stdin, which is how a value stays off its argv."""
     _flush()
     try:
         return subprocess.run(
             argv,
             cwd=cwd,
+            input=None if stdin_text is None else stdin_text.encode("utf-8", "surrogateescape"),
             stdout=subprocess.DEVNULL if quiet_out else None,
             stderr=subprocess.DEVNULL if quiet_err else None,
             env={**os.environ, **extra_env} if extra_env else None,
@@ -160,12 +162,15 @@ def _must(argv: list[str], **kwargs) -> None:
         raise ErrexitError(status, "%s exited %d under errexit" % (argv[0], status))
 
 
-def _capture(argv: list[str], *, quiet_err: bool = False) -> tuple[int, str]:
-    """`$(argv)`: stdout captured and trailing newlines dropped, stderr inherited unless discarded."""
+def _capture(
+    argv: list[str], *, quiet_err: bool = False, stdin_text: str | None = None
+) -> tuple[int, str]:
+    """`$(argv)`: stdout captured and trailing newlines dropped, stderr inherited unless discarded. `stdin_text`, when given, is the child's whole stdin."""
     _flush()
     try:
         proc = subprocess.run(
             argv,
+            input=stdin_text,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL if quiet_err else None,
             text=True,
@@ -503,10 +508,15 @@ def _first_fields(text: str) -> str:
     return "\n".join((line.split() or [""])[0] for line in lines).rstrip("\n")
 
 
+# `--data @-`: the JSON body, which carries the dev logins' passwords, reaches curl on stdin, never on its argv, where `ps` shows it to every user (worklist #3a8d1f46; the twin passed it as `-d PAYLOAD`).
+CURL_BODY_ON_STDIN = ("--data", "@-")
+
+
 def _post(url: str, payload: str) -> bool:
-    """`curl -sf -X POST URL -H 'Content-Type: application/json' -d PAYLOAD >/dev/null 2>&1`."""
-    argv = ["curl", "-sf", "-X", "POST", url, "-H", "Content-Type: application/json", "-d", payload]
-    return _run(argv, quiet_out=True, quiet_err=True) == 0
+    """`curl -sf -X POST URL -H 'Content-Type: application/json' --data @- >/dev/null 2>&1`, PAYLOAD on stdin."""
+    argv = ["curl", "-sf", "-X", "POST", url, "-H", "Content-Type: application/json"]
+    argv += CURL_BODY_ON_STDIN
+    return _run(argv, quiet_out=True, quiet_err=True, stdin_text=payload) == 0
 
 
 def dev_credentials(gateway_port: str) -> int:
@@ -564,10 +574,10 @@ def dev_credentials(gateway_port: str) -> int:
             base + "/test/seed-config-store",
             "-H",
             "Content-Type: application/json",
-            "-d",
-            '{"email":"%s","password":"%s"}' % (DEV_USER_EMAIL, STORE_PASSWORD),
+            *CURL_BODY_ON_STDIN,
         ],
         quiet_err=True,
+        stdin_text='{"email":"%s","password":"%s"}' % (DEV_USER_EMAIL, STORE_PASSWORD),
     )
     seed_existing = seed_recovery = seed_totp = ""
     if seed_json:
@@ -720,10 +730,11 @@ def _start_rustfs() -> None:
                 "--rm",
                 "--network",
                 "host",
+                # `-e NAME` with no value: docker copies NAME from its own environment, so the keys never sit on docker's argv (worklist #3a8d1f46; the twin wrote `-e NAME=VALUE`).
                 "-e",
-                "AWS_ACCESS_KEY_ID=%s" % rustfs_key,
+                "AWS_ACCESS_KEY_ID",
                 "-e",
-                "AWS_SECRET_ACCESS_KEY=%s" % rustfs_secret,
+                "AWS_SECRET_ACCESS_KEY",
                 "-e",
                 "AWS_DEFAULT_REGION=us-east-1",
                 "amazon/aws-cli",
@@ -736,6 +747,7 @@ def _start_rustfs() -> None:
             ],
             quiet_out=True,
             quiet_err=True,
+            extra_env={"AWS_ACCESS_KEY_ID": rustfs_key, "AWS_SECRET_ACCESS_KEY": rustfs_secret},
         )
         log.info("Config blob storage: %s/rediacc-configs" % endpoint)
     else:

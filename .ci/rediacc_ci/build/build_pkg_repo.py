@@ -1035,6 +1035,20 @@ def build(argv: list[str]) -> int:
             shutil.rmtree(path, ignore_errors=True)
 
 
+def _passphrase_file(passphrase: str, cleanup_dirs: list[str]) -> str:
+    """The release passphrase in a 0600 file inside a fresh 0700 temp directory, removed by the EXIT cleanup with the others; returns its path.
+
+    A DIVERGENCE FROM THE TWIN (worklist #3a8d1f46). The twin handed every gpg call `--passphrase <value>`, and an argument of any process is readable through `ps` and `/proc/<pid>/cmdline` for its lifetime. gpg reads `--passphrase-file` itself, so no gpg argv carries the value; `--pinentry-mode loopback` is what lets gpg use it, as it did for `--passphrase`. Pinned by `test_build_pkg_repo.py`'s `PASSPHRASE_DELTA`.
+    """
+    holder = tempfile.mkdtemp(prefix="tmp.")
+    cleanup_dirs.append(holder)
+    path = os.path.join(holder, "passphrase")
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(passphrase)
+    return path
+
+
 def _phases(
     version: str,
     local_pkgs: str,
@@ -1056,7 +1070,7 @@ def _phases(
     if passphrase:
         # STDOUT, and it is the only thing besides `--help` that goes there.
         print("::add-mask::%s" % passphrase, flush=True)
-        gpg_opts += ["--passphrase", passphrase]
+        gpg_opts += ["--passphrase-file", _passphrase_file(passphrase, cleanup_dirs)]
 
     key_id = _phase1_gpg(output_dir, dry_run, gpg_opts, cleanup_dirs)
 

@@ -59,10 +59,11 @@ def bucket_command(k: dict[str, str]) -> list[str]:
         "--rm",
         "--network",
         "host",
+        # `-e NAME` with no value: docker copies NAME from its own environment (`bucket_environment`), so the keys are on no argv (worklist #3a8d1f46).
         "-e",
-        "AWS_ACCESS_KEY_ID=%s" % k["RUSTFS_KEY"],
+        "AWS_ACCESS_KEY_ID",
         "-e",
-        "AWS_SECRET_ACCESS_KEY=%s" % k["RUSTFS_SECRET"],
+        "AWS_SECRET_ACCESS_KEY",
         "-e",
         "AWS_DEFAULT_REGION=us-east-1",
         "amazon/aws-cli",
@@ -75,11 +76,25 @@ def bucket_command(k: dict[str, str]) -> list[str]:
     ]
 
 
+def bucket_environment(k: dict[str, str]) -> dict[str, str]:
+    """docker's environment for `bucket_command`: this process's, plus the two RustFS keys its `-e NAME` flags copy into the container."""
+    return {
+        **os.environ,
+        "AWS_ACCESS_KEY_ID": k["RUSTFS_KEY"],
+        "AWS_SECRET_ACCESS_KEY": k["RUSTFS_SECRET"],
+    }
+
+
 def create_bucket(k: dict[str, str]) -> str | None:
     """Create the probe bucket. None on success or when it exists; otherwise the first line of why not."""
     try:
         proc = subprocess.run(
-            bucket_command(k), capture_output=True, text=True, check=False, stdin=subprocess.DEVNULL
+            bucket_command(k),
+            env=bucket_environment(k),
+            capture_output=True,
+            text=True,
+            check=False,
+            stdin=subprocess.DEVNULL,
         )
     except OSError as exc:
         return "cannot run docker: %s" % exc.strerror

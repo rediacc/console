@@ -958,6 +958,15 @@ LIFECYCLE_DELTA_CASES = {
 # L7: the state file's `pids=` line is comma separated now. The twin wrote spaces, so this one spelling is normalised on both sides.
 _PIDS_LINE = re.compile(r"(state pids=)([N,]+)")
 
+# RULE T, worklist #3a8d1f46: two argv shapes the twin used and the port no longer does, each rewritten from the twin's spelling onto the port's (idempotent on the port's own lines). The dev logins' JSON body reaches curl on stdin, `--data @-`, where the twin wrote `-d <payload>`; docker reads the RustFS keys from its environment, `-e NAME`, where the twin wrote `-e NAME=VALUE`. The body no longer shows in a call transcript, so `test_delta_3a8d1f46_dev_credentials_send_every_body_on_stdin` pins what reaches stdin, and `test_delta_3a8d1f46_the_recording_still_carries_the_twins_argv` proves both rewrites still meet a twin line.
+_CURL_BODY_ARG = re.compile(r"( -H Content-Type:\\ application/json) -d \S+$")
+_DOCKER_ENV_VALUE = re.compile(r"(-e AWS_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY))=\S+")
+
+
+def _argv_delta_3a8d1f46(line: str) -> str:
+    line = _CURL_BODY_ARG.sub(lambda m: m.group(1) + " --data @-", line)
+    return _DOCKER_ENV_VALUE.sub(lambda m: m.group(1), line)
+
 
 def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
     skip = LIFECYCLE_DELTA_CASES.get(scenario, set())
@@ -966,7 +975,8 @@ def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
         parts = line.split(" ", 2)
         if len(parts) > 1 and parts[0] == "obs" and parts[1] in skip:
             continue
-        kept.append(_PIDS_LINE.sub(lambda m: m.group(1) + m.group(2).replace(",", " "), line))
+        delta = _argv_delta_3a8d1f46(line)
+        kept.append(_PIDS_LINE.sub(lambda m: m.group(1) + m.group(2).replace(",", " "), delta))
     return kept
 
 
@@ -1409,6 +1419,106 @@ def test_delta_l5_a_failing_stripe_sync_says_so(monkeypatch, capsys, tmp_path) -
         account_lifecycle.stripe_auto()
     assert excinfo.value.code == 3
     assert "Stripe product sync failed" in capsys.readouterr().err
+
+
+def test_stripe_listen_takes_its_key_from_the_environment(monkeypatch, tmp_path) -> None:
+    """Review a98fe53d.5, worklist #773eccc5. A real `stripe` on PATH (a recording script) is spawned the way the port spawns it: the key is in its environment as STRIPE_API_KEY and nowhere on its argv, and its webhook secret is still read back."""
+    key = "sk_test_" + "k" * 24
+    record = tmp_path / "stripe.record"
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    fake = bindir / "stripe"
+    fake.write_text(
+        "#!/bin/sh\n"
+        'printf "argv=%%s\\n" "$*" >"%s"\n'
+        'printf "env=%%s\\n" "$STRIPE_API_KEY" >>"%s"\n'
+        "echo 'Ready! Your webhook signing secret is whsec_0123456789abcdef'\n" % (record, record),
+        encoding="utf-8",
+    )
+    fake.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (bindir, os.environ["PATH"]))
+    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", key)
+    monkeypatch.delenv("STRIPE_API_KEY", raising=False)
+    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
+    monkeypatch.setattr(account_lifecycle, "_capture", lambda _argv, **_kw: (1, ""))
+    monkeypatch.setattr(account_lifecycle, "_tail", lambda *_a, **_kw: None)
+    monkeypatch.setattr(account_lifecycle, "_sleep", lambda _s: __import__("time").sleep(0.05))
+    assert account_lifecycle.stripe_auto() == 0
+    lines = record.read_text(encoding="utf-8").splitlines()
+    assert lines[0].startswith("argv=listen --forward-to "), lines
+    assert key not in lines[0], "the stripe key reached the listener's argv"
+    assert lines[1] == "env=%s" % key, "the listener did not get the key in its environment"
+
+
+def _recording_run(calls: list[tuple[list[str], object, dict | None]]):
+    """A `subprocess.run` that records argv, stdin and environment, and answers the few programs `dev_credentials` and `_start_rustfs` read."""
+
+    def run(argv, **kwargs):
+        calls.append((list(argv), kwargs.get("input"), kwargs.get("env")))
+        text = "a" * 16 if argv[0] == "openssl" else ""
+        rc = 1 if argv[0] == "hostname" else 0
+        out: str | bytes = text if kwargs.get("text") else text.encode()
+        return subprocess.CompletedProcess(argv, rc, stdout=out, stderr=None)
+
+    return run
+
+
+def test_delta_3a8d1f46_dev_credentials_send_every_body_on_stdin(monkeypatch, capsys) -> None:
+    """Worklist #3a8d1f46. Every `/test` POST carries its JSON body on curl's stdin (`--data @-`), so the fresh dev passwords and the store password reach no argv."""
+    calls: list[tuple[list[str], object, dict | None]] = []
+    monkeypatch.setattr(account_lifecycle.subprocess, "run", _recording_run(calls))
+    assert account_lifecycle.dev_credentials("4800") == 0
+    capsys.readouterr()
+    posts = [(argv, body) for argv, body, _env in calls if argv[0] == "curl" and "POST" in argv]
+    assert len(posts) == 6, [argv for argv, _ in posts]
+    bodies: list[str] = []
+    for argv, body in posts:
+        assert argv[-2:] == ["--data", "@-"], argv
+        assert "-d" not in argv, argv
+        assert "password" not in " ".join(argv), argv
+        assert isinstance(body, (bytes, str)), argv
+        bodies.append(body.decode() if isinstance(body, bytes) else body)
+        assert bodies[-1], argv
+    assert sum('"password":"%s"' % ("a" * 16) in b for b in bodies) == 3
+    assert any('"password":"%s"' % account_lifecycle.STORE_PASSWORD in b for b in bodies)
+
+
+def test_delta_3a8d1f46_the_rustfs_keys_reach_docker_through_its_environment(
+    monkeypatch, capsys
+) -> None:
+    """Worklist #3a8d1f46. `docker run -e NAME` copies NAME from docker's own environment, so the RustFS keys are on no argv, and the bucket call still gets them."""
+    calls: list[tuple[list[str], object, dict | None]] = []
+    monkeypatch.setenv("CONFIG_R2_ACCESS_KEY_ID", "rustfs-key-id")
+    monkeypatch.setenv("CONFIG_R2_SECRET_ACCESS_KEY", "rustfs-secret")
+    for name in ("CONFIG_R2_ENDPOINT", "CONFIG_R2_BUCKET"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(account_lifecycle, "_docker_usable", lambda: True)
+    monkeypatch.setattr(account_lifecycle.account, "rustfs_alive", lambda _port: True)
+    monkeypatch.setattr(account_lifecycle.subprocess, "run", _recording_run(calls))
+    account_lifecycle._start_rustfs()
+    capsys.readouterr()
+    ((argv, _body, env),) = [c for c in calls if c[0][:2] == ["docker", "run"]]
+    assert "rustfs-secret" not in " ".join(argv), argv
+    assert "rustfs-key-id" not in " ".join(argv), argv
+    assert argv[argv.index("AWS_ACCESS_KEY_ID") - 1] == "-e"
+    assert argv[argv.index("AWS_SECRET_ACCESS_KEY") - 1] == "-e"
+    assert env is not None
+    assert env["AWS_ACCESS_KEY_ID"] == "rustfs-key-id"
+    assert env["AWS_SECRET_ACCESS_KEY"] == "rustfs-secret"
+
+
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
+def test_delta_3a8d1f46_the_recording_still_carries_the_twins_argv() -> None:
+    """The control on `_argv_delta_3a8d1f46`: the frozen twin transcripts still spell both shapes the twin's way, the port's spell them the new way, and the rewrite is what makes them meet. A golden re-recorded from the port would fail the first two assertions."""
+    _, old_dev, _ = drive_lifecycle("old", "dev")
+    _, new_dev, _ = drive_lifecycle("new", "dev")
+    assert "-e AWS_SECRET_ACCESS_KEY=configadmin" in old_dev
+    assert ' -d \\{\\"email\\"' in old_dev
+    assert "-e AWS_SECRET_ACCESS_KEY=" not in new_dev
+    assert " -d \\{" not in new_dev
+    assert "application/json --data @-" in new_dev
+    twin_line = next(line for line in old_dev.splitlines() if "ensure-login" in line)
+    assert _argv_delta_3a8d1f46(twin_line) != twin_line
 
 
 def test_delta_l6_a_failing_install_shows_more_than_its_last_line(tmp_path, capsys) -> None:

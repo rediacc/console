@@ -380,15 +380,8 @@ def _setup_gpg_signing(fmt: str, build_dir: str, root: pathlib.Path) -> None:
     # because exit 10 is a SIGNAL and a bare call under `set -e` aborted every build whose key needed repairing.
     canonicaliser = str(root / CANONICALISER_REL)
     try:
-        canon = subprocess.run(
-            [
-                sys.executable,
-                canonicaliser,
-                key_file,
-                os.environ.get("RELEASE_GPG_PASSPHRASE", ""),
-            ],
-            check=False,
-        )
+        # The passphrase reaches the canonicaliser in RELEASE_GPG_PASSPHRASE, inherited from this process, never as an argument: the twin passed it as argv[2], readable through `ps` for the child's lifetime (worklist #3a8d1f46, an intentional delta; `test_build_linux_pkg.py` declares it).
+        canon = subprocess.run([sys.executable, canonicaliser, key_file], check=False)
         canon_rc = canon.returncode
     except OSError:
         # `|| canon_rc=$?` catches an exec failure too: bash prints its own
