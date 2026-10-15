@@ -273,6 +273,60 @@ def boxless_verdict(rel, text):
     )
 
 
+# --------------------------------------------------------------------------- RF: a plan whose every box is ticked is CLOSED (operator 2026-10-15, worklist #1201d7b9).
+#
+# THE GAP. `wl_planqueue` already knew: a live plan with no open box and at least one done box is filed under `### Not queued` as `all boxes ticked: close it` (`wl_planqueue.ALL_TICKED`). That line was a render, not a refusal, so PLAN-rdc-readonly-mode sat there with 23 of 23 boxes ticked and `Status: executing` while `npm run ci:quick` stayed green. RF turns the same
+# reading into a refusal: outside `_done/` and `_removed/`, a plan that is not a stub, not finished and not removed, with zero open boxes and at least one done box, is refused until its Status says done and check_plan_folders.py --move files it. The subject set and the counter are the queue's own (`PF.plan_boxes`), so the two readers cannot disagree about which plan is finished.
+
+RF_REMEDY = (
+    "set a done Status (`Status: done -- <date>, <evidence>`), then "
+    "`python3 .ci/scripts/quality/check_plan_folders.py --move` and "
+    "`npm run check:ci-plan-record -- --update`"
+)
+
+
+def main_plan_text(rel):
+    """`rel` at the main ref: its text, "" when main has no such file, None when no main ref resolves (RF then refuses)."""
+    ref = PL.main_ref(ROOT)
+    if not ref:
+        return None
+    got = subprocess.run(
+        ["git", "-C", str(ROOT), "show", "%s:%s" % (ref, rel)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return got.stdout if got.returncode == 0 else ""
+
+
+def finished_verdict(rel, text, main_text=None):
+    """("refuse" | "warn" | "", message) for one plan. Pure: no filesystem, no git.
+
+    `main_text` is the plan at the main ref, "" when the plan is not there, None when no main ref resolves. A plan whose last box was ticked on THIS branch only warns: its tick commits are not on main yet, so `check_plan_folders.py --move` cannot remap their citations and refuses the move, and F2 refuses a done Status left outside _done/ (measured 2026-10-15 on six plans). It closes on the branch after the merge, where main already reads it as finished and RF refuses. Without a main ref RF refuses, so a checkout that cannot tell never goes quiet."""
+    if PL.folder_of(rel) in PL.TERMINAL_DIRS:
+        return "", ""
+    plan = PL.parse_plan(rel, text or "")
+    # A compaction record (`Status: compacted`, ...) is a snapshot of a plan's boxes at compaction, judged by R1..R8, never a plan to close.
+    if PL.classify(plan) in (PL.STATE_STUB, PL.STATE_DONE, PL.STATE_REMOVED, PL.STATE_RECORD):
+        return "", ""
+    open_t, done_t = PF.plan_boxes(text or "")
+    if open_t or not done_t:
+        return "", ""
+    status = plan.status or "(none)"
+    if main_text is not None:
+        main_open, main_done = PF.plan_boxes(main_text)
+        if main_open or not main_done:
+            return "warn", (
+                f"{rel}: RF every box is ticked ({len(done_t)} of {len(done_t)}) on this branch, "
+                f"not yet on main; close it on the next branch, after the merge. Then: {RF_REMEDY}."
+            )
+    return "refuse", (
+        f"{rel}: RF every box is ticked ({len(done_t)} of {len(done_t)}) but `Status: "
+        f"{status}` is not a finished word and the plan sits outside _done/, so the queue "
+        f"reads `all boxes ticked: close it` and nothing closes it. Fix: {RF_REMEDY}."
+    )
+
+
 # --------------------------------------------------------------------------- W12 P3.4b. R9: the three cross-reference header keys RESOLVE.
 #
 # P3.4a made `Supersedes`, `Extends` and `Related` PARSE: `wl_planrec.py:203-215` lists them in HEADER_FIELD_KEYS so a `# PLAN: ...` heading is not mistaken for a field. That is the whole of what "parse" bought. NOTHING RESOLVED THEM. Measured 2026-09-09: `wl_planrec.parse()` does not even return their values (`:584-598`), and `git grep Supersedes -- '.ci/scripts/quality/*'`
@@ -2041,6 +2095,83 @@ def selftest():
             header_xref_block("# t\n%sExtends: `%s`\n" % ("f\n" * 12, real_plan), "Extends") == "",
         )
 
+    # -- RF: a plan whose every box is ticked is closed. Pure over (rel, text), both directions planted. --
+    rf_live = "agent/plans/PLAN-rf-fixture.md"
+    done_box = "- [x] built the thing -- acceptance: `npm run check:thing` exits 0\n"
+    open_box = "- [ ] build the other thing -- acceptance: `npm run check:other` exits 0\n"
+    for label, rel, text, want in (
+        (
+            "RF: all ticked, `Status: executing`, live folder is REFUSED",
+            rf_live,
+            "# t\nStatus: executing\n\n" + done_box,
+            True,
+        ),
+        (
+            "RF: all ticked, no Status line is REFUSED",
+            rf_live,
+            "# t\nOwner: x\n\n" + done_box,
+            True,
+        ),
+        (
+            "RF: all ticked, `Status: draft` is REFUSED",
+            rf_live,
+            "# t\nStatus: draft\n\n" + done_box,
+            True,
+        ),
+        (
+            "RF CONTROL: a compaction record is R1..R8's subject, not RF's",
+            rf_live,
+            "# t\nStatus: compacted\n\n" + done_box,
+            False,
+        ),
+        (
+            "RF CONTROL: one box still open is not refused",
+            rf_live,
+            "# t\nStatus: executing\n\n" + done_box + open_box,
+            False,
+        ),
+        (
+            "RF CONTROL: no box at all is RB's business, not RF's",
+            rf_live,
+            "# t\nStatus: executing\n",
+            False,
+        ),
+        (
+            "RF CONTROL: `Status: done` is not refused",
+            rf_live,
+            "# t\nStatus: done -- 2026-10-15\n\n" + done_box,
+            False,
+        ),
+        (
+            "RF CONTROL: a plan under _done/ is not refused",
+            "agent/plans/_done/PLAN-rf-fixture.md",
+            "# t\nStatus: executing\n\n" + done_box,
+            False,
+        ),
+        (
+            "RF CONTROL: a ticked box inside a fenced sample does not count",
+            rf_live,
+            "# t\nStatus: executing\n\n```\n" + done_box + "```\n",
+            False,
+        ),
+    ):
+        got = finished_verdict(rel, text)
+        ck(label, (got[0] == "refuse") == want, f"got {got!r}")
+    # Main decides refuse against warn: finished on main already is refused, finished on this branch only warns, no main ref refuses.
+    rf_text = "# t\nStatus: executing\n\n" + done_box
+    for label, main_text, want in (
+        ("RF: all ticked on main too is REFUSED", rf_text, "refuse"),
+        (
+            "RF: an open box on main WARNS (finished on this branch, closes after the merge)",
+            rf_text + open_box,
+            "warn",
+        ),
+        ("RF: a plan new on this branch WARNS", "", "warn"),
+        ("RF: no main ref REFUSES (fail closed)", None, "refuse"),
+    ):
+        got = finished_verdict(rf_live, rf_text, main_text)
+        ck(label, got[0] == want, f"got {got!r}")
+
     # -- RB: a started plan carries boxes. Pure over (rel, text), so every direction is a planted string. --
     live = "agent/plans/PLAN-rb-fixture.md"
     box = "- [ ] build the thing -- acceptance: `npm run check:thing` exits 0\n"
@@ -2303,6 +2434,11 @@ def main(argv):
             problems.append(rb_msg)
         elif rb_kind == "warn":
             rb_warnings.append(rb_msg)
+        rf_kind, rf_msg = finished_verdict(rel, text, main_plan_text(rel))
+        if rf_kind == "refuse":
+            problems.append(rf_msg)
+        elif rf_kind == "warn":
+            rb_warnings.append(rf_msg)
         if not any(header_xref_block(text, k) for k in HEADER_XREF_KEYS):
             continue
         n_xref += 1
