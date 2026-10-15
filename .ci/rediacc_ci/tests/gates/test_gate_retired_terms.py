@@ -6,7 +6,6 @@ WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. The controls exercise the pure co
 import json
 import pathlib
 import sys
-import tempfile
 
 from rediacc_ci import paths
 from rediacc_ci.quality import retired_terms as RT
@@ -188,20 +187,24 @@ def test_a_retired_by_plan_moved_to_done_still_resolves(tmp_path):
     assert "NEW plan agent/plans/PLAN-retire-zorp.md" in result.combined
 
 
-def test_retired_by_resolution_is_exact():
-    """Review e34c5d6f.1-.3: only a top-level plan ref follows a move, nested folders and non-plan names do not, and `..` never resolves."""
-    with tempfile.TemporaryDirectory() as td:
-        root = pathlib.Path(td)
-        (root / "agent/plans/_done").mkdir(parents=True)
-        (root / "agent/plans/sub/_done").mkdir(parents=True)
-        (root / "agent/plans/_done/PLAN-a.md").write_text("x")
-        (root / "agent/plans/sub/_done/PLAN-b.md").write_text("x")
-        (root / "agent/plans/_done/notes.txt").write_text("x")
-        assert RT._resolves(root, "agent/plans/PLAN-a.md")
-        assert RT._resolves(root, "agent/plans/_removed/PLAN-a.md")
-        assert not RT._resolves(root, "agent/plans/sub/PLAN-b.md")
-        assert not RT._resolves(root, "agent/plans/notes.txt")
-        assert not RT._resolves(root, "agent/plans/../../PLAN-a.md")
+def test_retired_by_resolution_is_exact(tmp_path):
+    """Reviews e34c5d6f.1-.3 and dcd58b41.1: only a top-level plan ref follows a move, nested folders and non-plan names do not, a ref leaving the tree never resolves, and a non-plan ref with `..` that stays inside resolves as written."""
+    root = tmp_path / "tree"
+    (root / "agent/plans/_done").mkdir(parents=True)
+    (root / "agent/plans/sub/_done").mkdir(parents=True)
+    (root / "docs").mkdir()
+    (root / "agent/plans/_done/PLAN-a.md").write_text("x")
+    (root / "agent/plans/sub/_done/PLAN-b.md").write_text("x")
+    (root / "agent/plans/_done/notes.txt").write_text("x")
+    (root / "README.md").write_text("x")
+    (tmp_path / "PLAN-out.md").write_text("x")
+    assert RT._resolves(root, "agent/plans/PLAN-a.md")
+    assert RT._resolves(root, "agent/plans/_removed/PLAN-a.md")
+    assert not RT._resolves(root, "agent/plans/sub/PLAN-b.md")
+    assert not RT._resolves(root, "agent/plans/notes.txt")
+    assert not RT._resolves(root, "agent/plans/../../PLAN-a.md")
+    assert not RT._resolves(root, "../PLAN-out.md")
+    assert RT._resolves(root, "docs/../README.md")
 
 
 def test_a_pattern_failing_its_own_texts_cannot_run(tmp_path):
