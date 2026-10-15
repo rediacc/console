@@ -85,6 +85,8 @@ class World(vm_check.Host):
         # Two configs, as on the host: the operator's default one and the dev one `./rdc.sh` selects under RDC_DEV=1. `machines` and `cli_key` describe the default config; the dev config starts as a freshly seeded dev.json (no machine, no key) unless `dev_machines` and `dev_key` say otherwise.
         self.machines = over.pop("machines", [{"name": "vm11", "ip": WORKER}])
         self.dev_machines = list(over.pop("dev_machines", ()))
+        # A `machine list` refusal in the dev config only, e.g. "Decryption failed".
+        self.dev_list_err = over.pop("dev_list_err", "")
         self.os_release = over.pop("os_release", "ubuntu 24.04")
         self.stored_ok = over.pop("stored_ok", False)
         self.repos: dict[str, str] = {g: "guid-" + g for g in over.pop("grands", (PARENT,))}
@@ -219,6 +221,8 @@ class World(vm_check.Host):
             self.running = []
             return ok
         if head == ("machine", "list"):
+            if self.dev_list_err and self.config_of(env) == "dev":
+                return self._json_error(1, self.dev_list_err)
             return vm_check.Result(0, json.dumps({"success": True, "data": self._machines(env)}))
         if head == ("machine", "add"):
             if self.add_rc:
@@ -855,6 +859,29 @@ def test_a_dev_config_already_holding_the_worker_registers_nothing(
     assert not [c for c in world.rdc_calls() if c[:2] == ["machine", "add"]]
     assert world.key_set == []
     assert ["machine", "scan-keys", "vm11"] in world.rdc_calls()
+
+
+def test_a_machine_named_and_present_in_the_dev_config_is_used_as_is(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, dev_machines=[{"name": "devw", "ip": WORKER}], dev_key="yes")
+    rc, out, _ = run_check(tmp_path, world, "--machine", "devw")
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert not [c for c in world.rdc_calls() if c[:2] == ["machine", "add"]]
+    assert ["machine", "scan-keys", "devw"] in world.rdc_calls()
+    assert _creates(world) == []
+
+
+def test_an_unreadable_dev_config_is_account_unavailable_not_a_registration(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, dev_list_err="Decryption failed")
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "account-unavailable", receipt["reason"]
+    assert "rc=1: Decryption failed" in receipt["reason"]["detail"]
+    assert "machine add" not in receipt["reason"]["detail"]
+    assert not [c for c in world.rdc_calls() if c[:2] == ["machine", "add"]]
 
 
 def test_a_failed_dev_registration_is_worker_not_in_config(tmp_path: pathlib.Path) -> None:
