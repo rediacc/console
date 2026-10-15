@@ -1012,6 +1012,26 @@ def test_a_negative_sftp_leg_needs_a_denial_not_just_a_non_zero_exit(
     assert len(refused) == 2, receipt["steps"]
 
 
+def test_a_key_copy_that_cannot_be_written_names_the_work_directory(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review bf6289c7.2: a write error on the identity copy is its own row, not "the alias's identity is readable"."""
+    real_open = vm_check.os.open
+
+    def failing_open(path, flags, *args):
+        if str(path).endswith("sftp_identity"):
+            raise OSError(28, "No space left on device")
+        return real_open(path, flags, *args)
+
+    monkeypatch.setattr(vm_check.os, "open", failing_open)
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    rows = [s for s in receipt["steps"] if s["id"] == "V1.7" and s["verdict"] == "FAIL"]
+    assert [s["desc"] for s in rows] == ["the alias's identity is copied into the work directory"]
+    assert "No space left on device" in rows[0]["evidence"]
+
+
 def test_a_failed_ssh_login_is_not_a_refusal(tmp_path: pathlib.Path) -> None:
     ssh_failure = (
         "rediacc@10.0.0.7: Permission denied (publickey,password,keyboard-interactive).\n"

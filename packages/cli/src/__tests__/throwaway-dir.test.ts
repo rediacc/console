@@ -50,7 +50,19 @@ describe('assertThrowawayDir', () => {
   it('judges a dangling symlink by where it points (review f434e6dc.2)', () => {
     const base = fs.mkdtempSync(path.join(os.tmpdir(), 'rdc-throwaway-'));
     made.push(base);
+    // The target must not exist, or this is an ordinary link and the dangling path is never taken (review bf6289c7.3).
+    expect(fs.existsSync(REAL_CONFIG_HOME)).toBe(false);
     fs.symlinkSync(REAL_CONFIG_HOME, path.join(base, 'dangling'));
     expect(() => assertThrowawayDir(path.join(base, 'dangling'))).toThrow(/refusing to delete/);
+  });
+
+  it('refuses a symlink loop instead of walking it forever (review bf6289c7.4)', () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'rdc-throwaway-'));
+    made.push(base);
+    fs.symlinkSync(path.join(base, 'b'), path.join(base, 'a'));
+    fs.symlinkSync(path.join(base, 'a'), path.join(base, 'b'));
+    expect(() => assertThrowawayDir(path.join(base, 'a', 'config'))).toThrow(
+      /refusing to delete .*too many symlinks/
+    );
   });
 });

@@ -17,13 +17,26 @@ export function parseSkippedEntries(stderr: string): string[] {
   return names;
 }
 
-/** A name as the terminal may show it: control characters (C0, DEL, C1) become `\\xNN`, since a download's names are the remote machine's and an escape sequence in one would drive the terminal (review ef6dbb53.2). */
+/** Code points that reorder or break a terminal line without drawing: the bidi embeddings, overrides and isolates, and the line and paragraph separators (review 589a76af.1). */
+const INVISIBLE_LAYOUT = new Set([
+  0x2028, 0x2029, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069,
+]);
+
+/**
+ * A name as the terminal may show it. A download's names are the remote machine's, and an escape sequence or a bidi override in
+ * one would drive or reorder the terminal (review ef6dbb53.2), so a control character (C0, DEL, C1) is spelled as a backslash,
+ * `x` and two hex digits (ESC shows as \x1b), a layout code point as a backslash, `u` and four (\u202e), and a literal
+ * backslash is doubled so an escaped byte and the same text typed in a name never look alike (review 589a76af.2).
+ */
 export function displayName(name: string): string {
   let out = '';
   for (const ch of name) {
     const code = ch.codePointAt(0) ?? 0;
-    const control = code < 0x20 || (code >= 0x7f && code <= 0x9f);
-    out += control ? `\\x${code.toString(16).padStart(2, '0')}` : ch;
+    if (ch === '\\') out += '\\\\';
+    else if (code < 0x20 || (code >= 0x7f && code <= 0x9f))
+      out += `\\x${code.toString(16).padStart(2, '0')}`;
+    else if (INVISIBLE_LAYOUT.has(code)) out += `\\u${code.toString(16).padStart(4, '0')}`;
+    else out += ch;
   }
   return out;
 }

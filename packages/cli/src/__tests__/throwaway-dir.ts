@@ -12,8 +12,9 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 /**
- * The path a recursive delete would reach: every symlink on the way followed, a dangling one too, since `fs.rm` removes what the
- * link's final target names once it exists (review 1f969add.1, f434e6dc.2). A component that does not exist yet is kept as typed.
+ * The path with every symlink on it followed, a dangling one too. A link in the middle of the path redirects a recursive delete
+ * into its target (review 1f969add.1, f434e6dc.2); a link as the last component is only unlinked by `fs.rm`, so judging it by its
+ * target is stricter than the delete needs, never looser. A component that does not exist yet is kept as typed.
  */
 function realPathOf(dir: string): string {
   let rest = path.resolve(dir).split(path.sep).filter(Boolean);
