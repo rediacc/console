@@ -113,6 +113,12 @@ export interface PinDriver {
  *   no-resync      a failed run that restored a lockfile leaves the installed tree as the run
  *                  left it, so the next plan reads versions the lockfile no longer names
  *   all-gates      a red gate run names every gate it ran as failed, not the ones that failed
+ *   silent-ungated a run over a pin whose entry names no gate prints and journals nothing about it
+ *                  (the output before 2026-10-15, when `bump --all` showed no gate line at all)
+ *   tree-diff-attribution  the generated-docs pass attributes to the run every file the tree
+ *                  diff shows, not only the files the generator reports writing
+ *   shared-message every repository's draft carries the whole run's subject, release lines,
+ *                  sites and commands, not only its own
  */
 export const MUTANTS = [
   'skip-site',
@@ -125,6 +131,9 @@ export const MUTANTS = [
   'first-eligible',
   'no-resync',
   'all-gates',
+  'silent-ungated',
+  'tree-diff-attribution',
+  'shared-message',
 ] as const;
 export type Mutant = (typeof MUTANTS)[number];
 

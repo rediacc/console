@@ -280,6 +280,8 @@ export interface TxnResult {
   commands: CommandRecord[];
   /** `failed` holds the gates the runner's event stream reported red; empty when it reported none. */
   gates: { ids: string[]; rc: number; failed: string[] } | null;
+  /** The pins of the run whose registry entry names no gate, so no gate judged them; printed and drafted, never silent. */
+  ungated: string[];
   restored: string[];
   leftAlone: string[];
   /** Project directories whose installed tree a failed run put back to the restored lockfile (`npm ci`). */
@@ -368,6 +370,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     failure: null,
     commands: [],
     gates: null,
+    ungated: [],
     restored: [],
     leftAlone: [],
     resynced: [],
@@ -520,6 +523,15 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
 
     // 5. The gates.
     const ids = [...new Set(plans.flatMap((p) => p.entry.gates))];
+    // A pin whose entry names no gate is judged by none. On 2026-10-15 `bump --all` moved gemini-cli, agent-browser and wrangler with `gates: []` and printed no gate line and wrote no commands.log, so nothing said that no gate had run; the journal and the output now name them.
+    if (o.mutant !== 'silent-ungated') {
+      res.ungated = plans.filter((p) => p.entry.gates.length === 0).map((p) => p.entry.id);
+      if (res.ungated.length > 0)
+        fs.appendFileSync(
+          path.join(dir, 'commands.log'),
+          `# no gate ran for ${res.ungated.join(', ')}: the registry entry names none (.ci/config/pins.json gates)\n`
+        );
+    }
     if (ids.length > 0) {
       // The runner's event stream names each red gate; its text output interleaves every gate's own stdout.
       const events = path.join(dir, 'gates.jsonl');

@@ -470,17 +470,52 @@ export const npmDriver: PinDriver = {
 // ---- the installed tree against its lockfile ------------------------------------------------
 
 /**
- * The packages whose installed version (npm's hidden lockfile, node_modules/.package-lock.json) differs from package-lock.json, as `<path> installed <v>, locked <v>`. Pure. Only an entry both files carry with a version is compared: npm leaves another platform's optional packages uninstalled, and a workspace link carries no version.
+ * The packages whose installed tree disagrees with package-lock.json, one line each. Pure.
+ *
+ * VERSION DRIFT: an entry npm's hidden lockfile (node_modules/.package-lock.json) and package-lock.json both carry with a version, at different versions (`<pkg> installed <v>, locked <v>`). Only such entries are compared for version: npm leaves another platform's optional packages uninstalled, and a workspace link carries no version.
+ *
+ * EXTRANEOUS: an installed package package-lock.json does not name at all (`<pkg> installed <v>, not in the lockfile`), such as one a failed run installed and the restore took out of the lockfile again. It is read from two places, because neither alone is complete: the hidden lockfile lists what npm last installed, and a later `npm install --package-lock-only` rewrites the hidden lockfile without touching node_modules (measured 2026-10-15 under npm 11.21.0: is-number stayed in node_modules while the hidden lockfile went to `{}`), so `onDisk` carries the top-level package directories actually present, as `node_modules/<name>` keys. A workspace link (`link: true`) and npm's own root entry (`""`) are never extraneous.
  */
-export function lockDrift(lockText: string, hiddenText: string): string[] {
-  type Pkgs = Record<string, { version?: string } | undefined>;
+export function lockDrift(
+  lockText: string,
+  hiddenText: string,
+  onDisk: readonly string[] = []
+): string[] {
+  type Pkgs = Record<string, { version?: string; link?: boolean } | undefined>;
   const locked = ((JSON.parse(lockText) as { packages?: Pkgs }).packages ?? {}) as Pkgs;
   const installed = ((JSON.parse(hiddenText) as { packages?: Pkgs }).packages ?? {}) as Pkgs;
+  const name = (k: string): string => k.replace(/^(?:.*\/)?node_modules\//, '');
   const out: string[] = [];
+  const extraneous = new Set<string>();
   for (const [k, v] of Object.entries(installed)) {
+    if (k === '' || v?.link === true) continue;
+    if (!(k in locked)) {
+      extraneous.add(k);
+      out.push(`${name(k)} installed ${v?.version ?? '(no version)'}, not in the lockfile`);
+      continue;
+    }
     const want = locked[k]?.version;
     if (v?.version === undefined || want === undefined || v.version === want) continue;
-    out.push(`${k.replace(/^(?:.*\/)?node_modules\//, '')} installed ${v.version}, locked ${want}`);
+    out.push(`${name(k)} installed ${v.version}, locked ${want}`);
+  }
+  for (const k of onDisk)
+    if (!(k in locked) && !extraneous.has(k))
+      out.push(`${name(k)} present in node_modules, not in the lockfile`);
+  return out;
+}
+
+/** The top-level package directories under a node_modules directory, as `node_modules/<name>` and `node_modules/@scope/<name>` keys; npm's own dot entries (.bin, .package-lock.json, .cache) are not packages. */
+export function installedDirs(nmAbs: string): string[] {
+  if (!fs.existsSync(nmAbs)) return [];
+  const out: string[] = [];
+  for (const n of fs.readdirSync(nmAbs)) {
+    if (n.startsWith('.')) continue;
+    if (n.startsWith('@')) {
+      const scope = path.join(nmAbs, n);
+      if (!fs.statSync(scope).isDirectory()) continue;
+      for (const s of fs.readdirSync(scope))
+        if (!s.startsWith('.')) out.push(`node_modules/${n}/${s}`);
+    } else out.push(`node_modules/${n}`);
   }
   return out;
 }
@@ -492,7 +527,11 @@ function installedDrift(entry: PinEntry, ctx: DriverContext): string[] {
     const lock = path.join(d.abs, 'package-lock.json');
     const hidden = path.join(d.abs, 'node_modules/.package-lock.json');
     if (!fs.existsSync(lock) || !fs.existsSync(hidden)) continue;
-    const found = lockDrift(fs.readFileSync(lock, 'utf8'), fs.readFileSync(hidden, 'utf8'));
+    const found = lockDrift(
+      fs.readFileSync(lock, 'utf8'),
+      fs.readFileSync(hidden, 'utf8'),
+      installedDirs(path.join(d.abs, 'node_modules'))
+    );
     const dir = relDir(ctx, d.abs);
     if (found.length > 0)
       out.push(
