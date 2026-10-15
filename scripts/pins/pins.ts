@@ -248,12 +248,10 @@ export function draftMessage(d: DraftInput): string {
     items.length > 0
       ? `${items.slice(0, 2).join(', ')}${items.length > 2 ? ` and ${items.length - 2} more` : ''}`
       : `${d.paths.length} file(s)`;
-  const names =
-    owners.length > 0
-      ? owners.map((p) => p.name).join(', ')
-      : d.plans.map((p) => p.name).join(', ');
+  // A repository with changed paths but no owning site names no pin rather than every pin of the run (review f56ddcde.2).
+  const names = owners.length > 0 ? `${owners.map((p) => p.name).join(', ')} ` : '';
   return tail([
-    `chore(pins): ${verb} ${names} in ${d.repo}: ${what}`,
+    `chore(pins): ${verb} ${names}in ${d.repo}: ${what}`,
     '',
     `The ${d.repo} part of pins run ${d.stamp} (${d.plans.map((p) => p.id).join(', ')}); the console commit carries the run's release lines and the console's own sites.`,
     '',
@@ -2482,6 +2480,17 @@ const CASES: Record<string, Case> = {
           diskFound[0] === '@x/stale present in node_modules, not in the lockfile',
         detail: `${JSON.stringify(extraFound)} ${JSON.stringify(diskFound)}`,
       },
+      (() => {
+        // Review f56ddcde.1: a lockfileVersion 1 file has no packages map, which read every installed package as extraneous.
+        const v1 = lockDrift(JSON.stringify({ lockfileVersion: 1, dependencies: {} }), same, [
+          'node_modules/a',
+        ]);
+        return {
+          name: 'drift: a lockfile with no packages map is one finding naming the rewrite, not one per installed package',
+          ok: v1.length === 1 && v1[0].includes('no packages map (lockfileVersion 1)'),
+          detail: JSON.stringify(v1),
+        };
+      })(),
       {
         name: 'CONTROL: drift: a tree installed from its lockfile, with another platform optional package absent and a workspace link, is clean',
         ok: clean.length === 0,
@@ -2611,6 +2620,8 @@ const CASES: Record<string, Case> = {
     });
     const renet = draftMessage({ ...base, repo: 'private/renet', paths: ['Dockerfile'] });
     const con = draftMessage({ ...base, repo: '.', paths: ['package-lock.json'] });
+    // Review f56ddcde.2: a repository with changed paths but no owning site names no pin from another repository.
+    const orphan = draftMessage({ ...base, repo: 'private/elite', paths: ['notes.txt'] });
     const subj = (t: string): string => t.split('\n')[0];
     const pointers = con.split('\n').filter((l) => l.startsWith('Pointer: '));
 
@@ -2653,6 +2664,13 @@ const CASES: Record<string, Case> = {
             'Pointer: private/account moves to the private/account pins commit, committed in private/account first (submodule-first) and pushed before this one.' &&
           pointers[1].startsWith('Pointer: private/renet moves to the private/renet pins commit'),
         detail: pointers.join(' | '),
+      },
+      {
+        name: 'drafts: a repository with changed paths and no site of its own names no other repository pin in its subject',
+        ok:
+          m === 'shared-message' ||
+          subj(orphan) === 'chore(pins): bump in private/elite: 1 file(s)',
+        detail: subj(orphan),
       },
       {
         name: 'drafts: bump --all over a console pin and a submodule pin gives the submodule draft none of the console pin',
