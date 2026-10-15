@@ -16,6 +16,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   4. THE SIX REQUIRED SIGNING KEYS REPORT THROUGH THE LOGGER with the same wording, instead of bash's `script: line N: NAME: message` text, which named a line number that no longer meant anything after any edit.
   5. THE SECRETS ARE VALIDATED BEFORE THE FIRST REMOTE WRITE. The six signing keys, the non-empty checks and the OTLP probe ran after the migrations and the deploy, so a missing value left bench on new code with the old secrets, the 2026-09-24 failure shape (state changed, then refused). Only the rotation drift check still runs after the deploy, as it did.
   6. A FAILED STEP NAMES ITSELF. Under `set -e` a failing `npm install`, `vite build`, migration or deploy ended the script silently with that command's status; each exits 1 with `<step> failed (exit N)`.
+  7. THE BACKUP CREDENTIAL HAS NO FALLBACK. The bash filled each empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account. Only the three `ACCOUNT_BACKUP_S3_*` names are read now, bound from the bench-scoped store entries, and a missing one is a DeployError naming it before the first remote write (agent/plans/PLAN-backup-credential-isolation.md B2).
 
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
@@ -63,26 +64,26 @@ class DeployError(Exception):
     """A step failed; the message is printed and the run exits 1."""
 
 
-def _first(*values: str | None) -> str:
-    """The first non-empty value, as bash `${A:-${B:-}}` resolves it."""
-    for value in values:
-        if value:
-            return value
-    return ""
+# The three backup-plane values, read by these names and no others. The deploy-bench profile binds the two credential names from the bench-only store entries (`ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH`, `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH`), a token scoped to object read and write on the bench backup bucket. There is NO fallback: the account-wide R2 token once filled these three slots whenever they were empty, which put an account-wide key on the public bench Worker (agent/plans/PLAN-backup-credential-isolation.md). `check:ci-backup-credential-isolation` refuses that fallback's return.
+BACKUP_NAMES: tuple[str, ...] = (
+    "ACCOUNT_BACKUP_S3_ENDPOINT",
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+)
 
 
 def _backup_values() -> tuple[str, str, str]:
-    endpoint = _first(
-        os.environ.get("ACCOUNT_BACKUP_S3_ENDPOINT"), os.environ.get("CLOUDFLARE_R2_ENDPOINT")
-    )
-    key_id = _first(
-        os.environ.get("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"),
-        os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID"),
-    )
-    secret = _first(
-        os.environ.get("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"),
-        os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY"),
-    )
+    """The endpoint, key id and secret for the bench backup bucket. Raises DeployError naming the first one that is missing or empty."""
+    endpoint = os.environ.get("ACCOUNT_BACKUP_S3_ENDPOINT") or ""
+    key_id = os.environ.get("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID") or ""
+    secret = os.environ.get("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY") or ""
+    for name, value in zip(BACKUP_NAMES, (endpoint, key_id, secret), strict=True):
+        if not value:
+            raise DeployError(
+                "%s is EMPTY for bench. The deploy-bench profile binds it (the key pair from "
+                "the bench-scoped store entries, .ci/config/secret-supply.json); the "
+                "account-wide R2 token is never a fallback for it" % name
+            )
     return endpoint, key_id, secret
 
 
@@ -121,16 +122,13 @@ def secrets_payload() -> dict[str, str]:
     for name, value in signing.items():
         if not value:
             raise DeployError(MISSING % name)
-    endpoint, backup_key, backup_secret = _backup_values()
     require_nonempty("ROOT_EMAIL", os.environ.get("ROOT_EMAIL") or "")
     require_nonempty("AWS_SES_ACCESS_KEY_ID", os.environ.get("AWS_SES_ACCESS_KEY_ID") or "")
     require_nonempty("AWS_SES_SECRET_ACCESS_KEY", os.environ.get("AWS_SES_SECRET_ACCESS_KEY") or "")
     require_nonempty(
         "CLOUDFLARE_TURNSTILE_SECRET_KEY", os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or ""
     )
-    require_nonempty("ACCOUNT_BACKUP_S3_ENDPOINT", endpoint)
-    require_nonempty("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", backup_key)
-    require_nonempty("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", backup_secret)
+    endpoint, backup_key, backup_secret = _backup_values()
     otlp = os.environ.get("OBS_OTLP_CREDENTIALS") or ""
     require_nonempty("OBS_OTLP_CREDENTIALS", otlp)
     if not otlp_credentials_valid(otlp):

@@ -1714,6 +1714,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Each environment's account Workers hold only their own bucket-scoped backup key pair (agent/plans/PLAN-backup-credential-isolation.md): no CLOUDFLARE_R2_* fallback in deploy_bench, one environment's pair per secret-supply profile, the stable pair fetched only under `inputs.target == 'stable'` and the edge pair only under the negation, nothing account-wide feeding an ACCOUNT_BACKUP_S3_* name, and disjoint, bucket-equal rotation scopes. Names only.
+    // NO `paths:` DELIBERATELY. Its inputs span .ci/config, .ci/rediacc_ci/ops, every workflow file, regions.json, the bench wrangler config and a file in the account submodule; an entry without paths is always selected.
+    id: 'check:ci-backup-credential-isolation',
+    run: 'npm run check:ci-backup-credential-isolation',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_backup_credential_isolation.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Backup credential isolation',
+    },
+  },
+  {
     id: 'check:ci-actions-allowlist',
     run: 'npm run check:ci-actions-allowlist',
     gate: true,

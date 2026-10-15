@@ -26,7 +26,13 @@ THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the o
      with its own four-line message; the endpoint follows the region's R2
      JURISDICTION, and an EU bucket is reachable only at
      `<account>.eu.r2.cloudflarestorage.com`, so the jurisdiction label is
-     spliced into the host when it is not already there.
+     spliced into the host when it is not already there. The KEY PAIR follows
+     the channel too (`ACCOUNT_BACKUP_S3_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_STABLE`
+     / `..._EDGE`), each a token scoped to object read and write on that
+     channel's three buckets, and a run refuses when the other channel's pair
+     or the retired unsuffixed pair is also set (a divergence from the twin,
+     which read one unsuffixed pair for every Worker:
+     agent/plans/PLAN-backup-credential-isolation.md B2).
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe into `wrangler` and nowhere else.
 
@@ -135,6 +141,28 @@ ASIA_BORROWS = ("AWS_SES_ACCESS_KEY_ID_EU", "AWS_SES_SECRET_ACCESS_KEY_EU")
 BUCKET_VAR_STABLE = "BACKUP_BUCKET_STABLE"
 BUCKET_VAR_EDGE = "BACKUP_BUCKET_EDGE"
 
+# The backup key pair, by channel, exactly as the bucket is: (key id variable, secret variable). Each pair is a separate bucket-scoped token (object read and write on its own channel's three buckets, agent/plans/PLAN-backup-credential-isolation.md), so a stable Worker can never be handed a key that reaches edge's buckets, or the other way round.
+BACKUP_PAIR_STABLE = (
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE",
+)
+BACKUP_PAIR_EDGE = (
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
+)
+# The one shared pair every Worker took before the split. Set at all, it is refused: it is the account-wide-reach credential the split retires.
+BACKUP_PAIR_RETIRED = (
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+)
+
+# The lines under a backup-pair refusal; the first is dynamic. Names only, never a value.
+BACKUP_PAIR_REFUSAL: tuple[str, ...] = (
+    "  Each channel's Workers take only that channel's bucket-scoped backup key pair",
+    "  (the deploy workflow fetches one pair per run). Refusing to deploy with a key",
+    "  that reaches another environment's buckets.",
+)
+
 # The four lines of the bucket refusal (:151-154). The first is dynamic; the other three are byte for byte, including their two-space indent.
 BUCKET_REFUSAL: tuple[str, ...] = (
     "  Expected BACKUP_BUCKET_STABLE / BACKUP_BUCKET_EDGE from the deploy",
@@ -156,7 +184,7 @@ GUARD_EXPLANATION: tuple[str, ...] = (
 
 # The twenty-nine `--arg <var> <value>` pairs (:219-247) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
-# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the seven values this script COMPUTES rather than reads, and those seven are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET is the one Worker key with no same-named variable anywhere: it comes from the channel.
+# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the nine values this script COMPUTES rather than reads, and those nine are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name.
 KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv", "ACCOUNT_ED25519_PRIVATE_KEY"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub", "ACCOUNT_ED25519_PUBLIC_KEY"),
@@ -176,12 +204,8 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("OBS_OTLP_CREDENTIALS", "otlp_creds", ""),
     ("ACCOUNT_BACKUP_S3_ENDPOINT", "backup_endpoint", ""),
     ("ACCOUNT_BACKUP_S3_BUCKET", "backup_bucket", ""),
-    ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "backup_akid", "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"),
-    (
-        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
-        "backup_secret",
-        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
-    ),
+    ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "backup_akid", ""),
+    ("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", "backup_secret", ""),
     ("SELLER_NAME", "seller_name", "SELLER_NAME"),
     ("SELLER_VAT_NUMBER", "seller_vat", "SELLER_VAT_NUMBER"),
     ("SELLER_REGISTRATION_NUMBER", "seller_reg", "SELLER_REGISTRATION_NUMBER"),
@@ -296,9 +320,22 @@ def read_env() -> dict[str, str]:
         "AWS_SES_CONFIGURATION_SET": os.environ.get("AWS_SES_CONFIGURATION_SET", ""),
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY", ""),
         "ACCOUNT_BACKUP_S3_ENDPOINT": os.environ.get("ACCOUNT_BACKUP_S3_ENDPOINT", ""),
+        # Read so that `resolve` can REFUSE them: the retired shared pair, and both channels' pairs (only the run's own channel may be set).
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": os.environ.get("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", ""),
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": os.environ.get(
             "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", ""
+        ),
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE": os.environ.get(
+            "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE", ""
+        ),
+        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE": os.environ.get(
+            "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE", ""
+        ),
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": os.environ.get(
+            "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE", ""
+        ),
+        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": os.environ.get(
+            "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE", ""
         ),
         "SELLER_NAME": os.environ.get("SELLER_NAME", ""),
         "SELLER_VAT_NUMBER": os.environ.get("SELLER_VAT_NUMBER", ""),
@@ -344,6 +381,26 @@ def apply_jurisdiction(endpoint: str, jurisdiction: str) -> str:
     return endpoint
 
 
+def backup_pair(env: dict[str, str], target: str) -> tuple[str, str]:
+    """The (key id, secret) for TARGET's channel: the `_STABLE` pair on stable, the `_EDGE` pair on every other TARGET, as the bucket chooses.
+
+    Raises `ScriptRefusalError` when the other channel's pair or the retired unsuffixed pair carries a value. An EMPTY own pair is not refused here: `check_nonempty` names it as the Worker key, in its turn, as before.
+    """
+    own, other = (
+        (BACKUP_PAIR_STABLE, BACKUP_PAIR_EDGE)
+        if target == STABLE
+        else (BACKUP_PAIR_EDGE, BACKUP_PAIR_STABLE)
+    )
+    stray = [name for name in (*other, *BACKUP_PAIR_RETIRED) if env.get(name, "")]
+    if stray:
+        raise ScriptRefusalError(
+            "%s: TARGET=%s takes its backup key pair from %s / %s only, and %s %s also set."
+            % (SELF, target, own[0], own[1], ", ".join(stray), "is" if len(stray) == 1 else "are"),
+            *BACKUP_PAIR_REFUSAL,
+        )
+    return env.get(own[0], ""), env.get(own[1], "")
+
+
 def resolve(env: dict[str, str]) -> dict[str, str]:
     """The four decisions, in the twin's order, as jq variable -> value.
 
@@ -379,6 +436,8 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
             "%s: no backup bucket for TARGET=%s." % (SELF, target), *BUCKET_REFUSAL
         )
 
+    backup_akid, backup_secret = backup_pair(env, target)
+
     backup_endpoint = apply_jurisdiction(
         env.get("ACCOUNT_BACKUP_S3_ENDPOINT", ""), env.get("R2_JURISDICTION", "")
     )
@@ -393,6 +452,8 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
             "otlp_creds": otlp_creds,
             "backup_endpoint": backup_endpoint,
             "backup_bucket": backup_bucket,
+            "backup_akid": backup_akid,
+            "backup_secret": backup_secret,
         }
     )
     return values

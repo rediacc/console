@@ -360,8 +360,12 @@
     ".ci/rediacc_ci/deploy/set_account_worker_secrets.py": [
       "*name",
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+      "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
+      "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE",
       "ACCOUNT_BACKUP_S3_ENDPOINT",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+      "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
+      "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE",
       "ACCOUNT_ED25519_PRIVATE_KEY",
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "ACCOUNT_JWT_SECRET",
@@ -656,9 +660,6 @@
       "AWS_SES_FROM",
       "AWS_SES_REGION",
       "AWS_SES_SECRET_ACCESS_KEY",
-      "CLOUDFLARE_R2_ACCESS_KEY_ID",
-      "CLOUDFLARE_R2_ENDPOINT",
-      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
       "OBS_OTLP_CREDENTIALS",
       "REDIACC_BWS_PROFILES",
@@ -683,10 +684,18 @@
       "NETWORK_CIDR",
       "PROVIDER"
     ],
+    ".ci/rediacc_ci/ops/push_backup_credentials.py": [
+      "*name",
+      "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+      "ACCOUNT_BACKUP_S3_ENDPOINT",
+      "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+      "REDIACC_BWS_PROFILES"
+    ],
     ".ci/rediacc_ci/ops/reset_bench.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT",
-      "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+      "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
+      "REDIACC_BWS_PROFILES"
     ],
     ".ci/rediacc_ci/ops/scrub_sentinel.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",

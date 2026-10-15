@@ -8,6 +8,7 @@ The real-target runs that are the acceptance for these scripts are the lead's re
 from __future__ import annotations
 
 import json
+import subprocess
 import typing
 
 import pytest
@@ -356,6 +357,12 @@ def test_delta_all_filtered_output_is_not_a_failure(world: h.World) -> None:
 
 # ---------------------------------------------------------------- reset_bench
 
+
+def _reset_env(env: dict[str, str]) -> dict[str, str]:
+    """The port's environment: already bound to its own `reset-bench` profile, so it does not re-execute under `bws_env`. The twin had no profile, so its environment, and every golden key, is unchanged."""
+    return {**env, "REDIACC_BWS_PROFILES": reset_bench.PROFILE}
+
+
 D1_TABLES = {
     "method": "POST",
     "match": "/d1/database/",
@@ -401,7 +408,9 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     bash_calls = world.calls()
     world.reset_log()
     world.add_routes(*h.PROBE_ROUTES)  # after the twin: the route table keys its golden
-    rc_p, out_p, err_p = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
+    rc_p, out_p, err_p = world.port(
+        "rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], _reset_env(env)
+    )
     # DECLARED DELTA: the port probes the minted token's readiness (the bash did not wait at all); compared without the probe block.
     port_calls, probes = h.split_probe_block(world.calls())
     assert not h.split_probe_block(bash_calls)[1]  # the control: the bash sent no probe
@@ -455,7 +464,7 @@ def test_delta_the_drop_goes_children_first_with_deferred_fks(world: h.World) ->
     assert bash_sql.startswith("PRAGMA foreign_keys = OFF;")  # the control: D1 ignores this
     assert bash_sql.index('"users"') < bash_sql.index('"we"ird"')  # and parents dropped first
     world.reset_log()
-    world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
+    world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], _reset_env(env))
     sql = next(
         c["body"]["sql"] for c in _curl_calls(world) if c["body"] and "DROP" in c["body"]["sql"]
     )
@@ -484,7 +493,7 @@ def test_drop_order_handles_chains_cycles_and_missing_sql() -> None:
 def test_reset_bench_r2_half_uses_the_s3_api(world: h.World) -> None:
     _reset_routes(world)
     env = world.env(**TOKEN_ENV, **R2_ENV)
-    rc, _, err = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--r2-only"], env)
+    rc, _, err = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--r2-only"], _reset_env(env))
     assert rc == 0, err
     curls = [c for c in world.calls() if c["tool"] == "curl" and "r2.example.invalid" in c["url"]]
     assert [(c["method"], c["url"].split("invalid/")[1]) for c in curls] == [
@@ -500,14 +509,14 @@ def test_reset_bench_unknown_argument_and_confirmation_match_bash(world: h.World
     _reset_routes(world)
     env = world.env(**TOKEN_ENV, **R2_ENV)
     rc_b, _, err_b = world.twin_run("scripts/ops/reset-bench.sh", ["--nope"], env)
-    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", ["--nope"], env)
+    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", ["--nope"], _reset_env(env))
     assert rc_b == rc_p == 2
     assert h.strip(err_b) == h.strip(err_p)
     world.reset_log()
     rc_b, _, err_b = world.twin_run("scripts/ops/reset-bench.sh", [], env, stdin="no\n")
     assert [c for c in world.calls() if c["tool"] == "npx"] == []
     world.reset_log()
-    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", [], env, stdin="no\n")
+    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", [], _reset_env(env), stdin="no\n")
     assert rc_b == rc_p == 1
     assert "Aborted." in err_b
     assert "Aborted." in err_p
@@ -532,7 +541,9 @@ def test_delta_a_failed_r2_listing_is_not_an_empty_bucket(world: h.World) -> Non
     assert rc_b == 0
     assert "bench has been reset" in err_b
     world.reset_log()
-    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--r2-only"], env)
+    rc_p, _, err_p = world.port(
+        "rediacc_ci.ops.reset_bench", ["--yes", "--r2-only"], _reset_env(env)
+    )
     assert rc_p == 1
     assert "HTTP 403" in err_p
     assert "bench has been reset" not in err_p
@@ -541,7 +552,7 @@ def test_delta_a_failed_r2_listing_is_not_an_empty_bucket(world: h.World) -> Non
 def test_delta_the_r2_credentials_are_checked_before_anything_is_wiped(world: h.World) -> None:
     _reset_routes(world)
     env = world.env(**TOKEN_ENV)
-    rc, _, err = world.port("rediacc_ci.ops.reset_bench", ["--yes"], env)
+    rc, _, err = world.port("rediacc_ci.ops.reset_bench", ["--yes"], _reset_env(env))
     assert rc == 1
     assert "CLOUDFLARE_R2_ENDPOINT" in err
     assert world.calls() == []
@@ -556,7 +567,7 @@ def test_delta_table_names_are_quoted_as_data(world: h.World) -> None:
     )
     assert 'DROP TABLE IF EXISTS "we"ird"' in bash_sql  # the control: unescaped
     world.reset_log()
-    world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
+    world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], _reset_env(env))
     port_sql = next(
         c["body"]["sql"] for c in _curl_calls(world) if c["body"] and "DROP" in c["body"]["sql"]
     )
@@ -572,7 +583,9 @@ def test_delta_a_failed_object_delete_names_the_count(world: h.World) -> None:
     }
     _reset_routes(world, refused)
     env = world.env(**TOKEN_ENV, **R2_ENV)
-    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--r2-only"], env)
+    rc_p, _, err_p = world.port(
+        "rediacc_ci.ops.reset_bench", ["--yes", "--r2-only"], _reset_env(env)
+    )
     assert rc_p == 1
     assert "0 of 2 objects deleted" in err_p
 
@@ -580,7 +593,7 @@ def test_delta_a_failed_object_delete_names_the_count(world: h.World) -> None:
 def test_delta_end_of_input_at_the_prompt_aborts(world: h.World) -> None:
     _reset_routes(world)
     env = world.env(**TOKEN_ENV, **R2_ENV)
-    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", [], env, stdin="")
+    rc_p, _, err_p = world.port("rediacc_ci.ops.reset_bench", [], _reset_env(env), stdin="")
     assert rc_p == 1
     assert "Aborted." in err_p
 
@@ -588,7 +601,7 @@ def test_delta_end_of_input_at_the_prompt_aborts(world: h.World) -> None:
 def test_delta_a_minted_token_is_awaited_before_the_first_query(world: h.World) -> None:
     _reset_routes(world, *h.PROBE_ROUTES)
     env = world.env(**GLOBAL_ENV, **R2_ENV)
-    rc, _, err = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], env)
+    rc, _, err = world.port("rediacc_ci.ops.reset_bench", ["--yes", "--d1-only"], _reset_env(env))
     assert rc == 0, err
     curls = _curl_calls(world)
     assert [c["method"] for c in curls][:3] == ["GET", "GET", "POST"]
@@ -618,6 +631,7 @@ def test_delta_a_token_never_accepted_is_a_named_error_not_a_traceback(
     # In-process, so the 60 s bound can be shortened without a test-only knob in the port.
     for key, value in world.env(**GLOBAL_ENV, **R2_ENV).items():
         monkeypatch.setenv(key, value)
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", reset_bench.PROFILE)
     monkeypatch.chdir(world.root)
     monkeypatch.setattr(cf_auth, "READY_DEADLINE_S", 1.0)
     monkeypatch.setattr(cf_auth, "READY_INTERVAL_S", 0.2)
@@ -630,6 +644,26 @@ def test_delta_a_token_never_accepted_is_a_named_error_not_a_traceback(
         "/query" in c["url"] for c in _curl_calls(world)
     )  # nothing ran on the refused token
     assert any(c["method"] == "DELETE" for c in _curl_calls(world))  # and it was still destroyed
+
+
+def test_delta_reset_bench_re_executes_under_its_own_profile(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PLAN-backup-credential-isolation B2: the R2 trio left the deploy-bench profile, so reset_bench binds its own. Not yet under `reset-bench` (here: under deploy-bench), it re-executes through `bws_env exec --profile reset-bench` with its arguments, and returns that run's status."""
+    seen: list[list[str]] = []
+
+    def fake_run(argv, **_kw):
+        seen.append(list(argv))
+        return subprocess.CompletedProcess(argv, 7)
+
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
+    monkeypatch.setattr(reset_bench.shutil, "which", lambda cmd: "/usr/bin/" + cmd)
+    monkeypatch.setattr(reset_bench.subprocess, "run", fake_run)
+    assert reset_bench.main(["--yes", "--r2-only"]) == 7
+    assert len(seen) == 1
+    argv = seen[0]
+    assert argv[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "reset-bench"]
+    assert argv[-3:] == ["rediacc_ci.ops.reset_bench", "--yes", "--r2-only"]
 
 
 # ---------------------------------------------------------------- deploy_bench
@@ -654,8 +688,28 @@ DEPLOY_ENV = {
 }
 
 
+# PLAN-backup-credential-isolation B2 (Rule T 7 in deploy_bench's docstring): the retired bash filled ACCOUNT_BACKUP_S3_* from the account-wide R2 trio, and its golden was frozen with only that trio in the environment. The port reads only ACCOUNT_BACKUP_S3_*, so its side of each differential receives the SAME values under the backup names and without the R2 trio. The twin's environment, and with it every golden key, is unchanged.
+R2_TO_BACKUP = {
+    "CLOUDFLARE_R2_ENDPOINT": "ACCOUNT_BACKUP_S3_ENDPOINT",
+    "CLOUDFLARE_R2_ACCESS_KEY_ID": "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+}
+
+
+def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
+    """The twin's environment as the port's profile binds it: the R2 trio renamed to the three backup names."""
+    return {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
+
+
 def _deploy_shape(calls: list[dict]) -> list[dict]:
-    return [c for c in h.normalise_calls(calls) if c["tool"] != "sleep"]
+    """The comparable call list. The R2 trio is dropped from each call's `cf_env` (the CLOUDFLARE_* names its environment carried) because only the twin's environment holds it; `test_deploy_bench_matches_bash` asserts separately that no port call inherits it."""
+    out = []
+    for raw in h.normalise_calls(calls):
+        if raw["tool"] == "sleep":
+            continue
+        kept = [n for n in raw.get("cf_env") or () if n not in R2_TO_BACKUP]
+        out.append({**raw, "cf_env": kept} if raw.get("cf_env") else raw)
+    return out
 
 
 def test_deploy_bench_matches_bash(world: h.World) -> None:
@@ -663,7 +717,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     rc_b, out_b, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
     bash_calls = world.calls()
     world.reset_log()
-    rc_p, out_p, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    rc_p, out_p, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     port_calls = world.calls()
     assert rc_b == rc_p == 0, (err_b, err_p)
     assert out_b == out_p
@@ -676,6 +730,12 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     ]
     assert secrets["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
+    # The bash's fallback fired: with only the R2 trio in its environment it pushed the trio as the backup credential. The port received the same values under the backup names (`_port_deploy_env`).
+    bash_secrets = next(c["stdin"] for c in bash_calls if c["tool"] == "npx" and c["stdin"])
+    assert bash_secrets["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "r2-secret"
+    # And no wrangler child of the port inherits the account-wide trio, where every one of the bash's did.
+    assert any(set(R2_TO_BACKUP) <= set(c.get("cf_env") or ()) for c in bash_calls)
+    assert not any(set(R2_TO_BACKUP) & set(c.get("cf_env") or ()) for c in port_calls)
     assert secrets["STRIPE_SECRET_KEY"] == ""
     # Self-destruct output is a delta (the bash sent it to /dev/null). The portal build line is the other: bench is built with no Turnstile sitekey since the operator ruling of 2026-10-13, and the bash still names its key.
     bash_build = "→ Building account portal SPA (Turnstile sitekey: 0x4AAAAAAC46Rczgin0T1o04)"
@@ -698,7 +758,7 @@ def test_deploy_bench_tokens_minted_from_the_global_key_wait_then_are_destroyed(
     assert any(c["tool"] == "sleep" for c in bash_calls)  # the control: the bash slept a fixed 5 s
     world.reset_log()
     world.add_routes(*h.PROBE_ROUTES)  # after the twin: the route table keys its golden
-    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert rc == 0, err
     # The port probes instead: the probe block sits between the mint and the first wrangler call.
     port_calls, probes = h.split_probe_block(world.calls())
@@ -716,7 +776,7 @@ def test_delta_a_supplied_token_does_not_wait(world: h.World) -> None:
     assert any(c["tool"] == "sleep" for c in world.calls())  # the control
     world.reset_log()
     world.add_routes(*h.PROBE_ROUTES)
-    world.port("rediacc_ci.ops.deploy_bench", [], env)
+    world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert not any(c["tool"] == "sleep" for c in world.calls())
     assert not any(
         c["tool"] == "curl" and ("/d1/database?" in c["url"] or "/workers/scripts" in c["url"])
@@ -748,16 +808,30 @@ def test_delta_secrets_are_validated_before_the_first_remote_write(world: h.Worl
         c["tool"] == "npx" and c["argv"][:2] == ["wrangler", "deploy"] for c in world.calls()
     )  # the control: deployed first
     world.reset_log()
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert rc_p == 1
     assert "ROOT_EMAIL is EMPTY" in h.strip(err_p)
+    assert not any(c["tool"] == "npx" for c in world.calls())
+
+
+def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write(
+    world: h.World,
+) -> None:
+    """Rule T 7. `test_deploy_bench_matches_bash` is the control: handed only the R2 trio, the bash deployed and pushed the trio's values as the backup credential. The port, handed that same environment untranslated, refuses before the first remote write and names the missing backup value."""
+    env = world.env(**TOKEN_ENV, **DEPLOY_ENV)
+    assert "ACCOUNT_BACKUP_S3_ENDPOINT" not in env
+    assert _port_deploy_env(env)["ACCOUNT_BACKUP_S3_ENDPOINT"] == env["CLOUDFLARE_R2_ENDPOINT"]
+    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    assert rc_p == 1
+    assert "ACCOUNT_BACKUP_S3_ENDPOINT is EMPTY for bench" in h.strip(err_p)
+    assert "r2-secret" not in err_p
     assert not any(c["tool"] == "npx" for c in world.calls())
 
 
 def test_deploy_bench_rotation_drift_matches_bash(world: h.World) -> None:
     env = world.env(FAKE_ROTATION_RC="1", **TOKEN_ENV, **DEPLOY_ENV)
     rc_b, _, err_b = world.twin_run("scripts/ops/deploy-bench.sh", [], env)
-    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    rc_p, _, err_p = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert rc_b == rc_p == 1
     assert "rotation drift detected" in h.strip(err_b)
     assert "rotation drift detected" in h.strip(err_p)
@@ -778,7 +852,7 @@ def test_deploy_bench_refuses_on_a_check_that_could_not_run_and_never_pushes(
     env = world.env(
         FAKE_ROTATION_RC="2", FAKE_ROTATION_STDERR=UNCHECKED_STDERR, **TOKEN_ENV, **DEPLOY_ENV
     )
-    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert rc == 1, err
     text = h.strip(err)
     refusal = text.split("rotation check could NOT READ every credential", 1)[1]
@@ -797,7 +871,7 @@ def test_deploy_bench_still_refuses_on_drift_and_never_pushes(world: h.World) ->
     env = world.env(
         FAKE_ROTATION_RC="1", FAKE_ROTATION_STDERR=UNCHECKED_STDERR, **TOKEN_ENV, **DEPLOY_ENV
     )
-    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], env)
+    rc, _, err = world.port("rediacc_ci.ops.deploy_bench", [], _port_deploy_env(env))
     assert rc == 1
     assert "rotation drift detected" in h.strip(err)
     assert not any(

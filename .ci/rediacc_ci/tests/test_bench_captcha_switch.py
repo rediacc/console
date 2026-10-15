@@ -83,9 +83,9 @@ def test_deploy_secrets_never_push_the_switch(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setenv("AWS_SES_ACCESS_KEY_ID", "id")
     monkeypatch.setenv("AWS_SES_SECRET_ACCESS_KEY", "secret")
     monkeypatch.setenv("CLOUDFLARE_TURNSTILE_SECRET_KEY", "turn")
-    monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://r2.invalid")
-    monkeypatch.setenv("CLOUDFLARE_R2_ACCESS_KEY_ID", "r2id")
-    monkeypatch.setenv("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "r2secret")
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_ENDPOINT", "https://r2.invalid")
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "bench-id")
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", "bench-secret")
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     for switch in SWITCHES:
         monkeypatch.setenv(switch, "true")

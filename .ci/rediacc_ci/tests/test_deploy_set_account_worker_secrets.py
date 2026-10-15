@@ -154,6 +154,19 @@ def _run(
     )
 
 
+# THE ONE PLACE THE TWO SIDES ARE HANDED DIFFERENT ENVIRONMENTS, and it is a rename, not a value change. The twin read one unsuffixed backup key pair for every Worker; the port reads the run's own channel's pair (`ACCOUNT_BACKUP_S3_*_STABLE` on stable, `_EDGE` otherwise) and REFUSES the unsuffixed one (agent/plans/PLAN-backup-credential-isolation.md B2). So the port side receives the twin's values under its channel's names, after `drop_env`, and every golden key, which is built from the twin's arguments, is unchanged. The port-only cases below drive the raw names with `translate=False`.
+RETIRED_PAIR = port.BACKUP_PAIR_RETIRED
+
+
+def _as_port_env(env: dict[str, str]) -> dict[str, str]:
+    own = port.BACKUP_PAIR_STABLE if env.get("TARGET") == port.STABLE else port.BACKUP_PAIR_EDGE
+    out = dict(env)
+    for retired, channel in zip(RETIRED_PAIR, own, strict=True):
+        if retired in out:
+            out[channel] = out.pop(retired)
+    return out
+
+
 def _run_live(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
@@ -161,6 +174,18 @@ def _run_live(
     drop: str = "",
     drop_env: tuple[str, ...] = (),
     **extra: str,
+):
+    return _run_env(subject, tmp_path, drop, drop_env, extra, translate=True)
+
+
+def _run_env(
+    subject: pathlib.Path,
+    tmp_path: pathlib.Path,
+    drop: str,
+    drop_env: tuple[str, ...],
+    extra: dict[str, str],
+    *,
+    translate: bool,
 ):
     side = "old" if subject.suffix == ".sh" else "new"
     call_log = tmp_path / f"{side}-calls.log"
@@ -178,6 +203,8 @@ def _run_live(
     env.update(extra)
     for name in drop_env:
         env.pop(name, None)
+    if side == "new" and translate:
+        env = _as_port_env(env)
     runner = [BASH] if subject.suffix == ".sh" else [sys.executable]
     proc = subprocess.run(
         [*runner, str(subject)],
@@ -746,3 +773,97 @@ def test_planted_otlp_shape_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# ---------------------------------------------------------------- the backup key pair follows the channel (port only)
+#
+# agent/plans/PLAN-backup-credential-isolation.md B2. The twin read ONE unsuffixed pair for every Worker, so it has nothing to say about these cases: each drives the port with the raw names (`translate=False`) and asserts the recorded document or the refusal directly.
+
+STABLE_PAIR = {
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE": "bk-stable",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE": "bs-stable",
+}
+EDGE_PAIR = {
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": "bk-edge",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": "bs-edge",
+}
+
+
+def _port_raw(tmp_path: pathlib.Path, **extra: str):
+    """The port with the fixture's retired pair removed, unless the case sets it itself."""
+    drop = tuple(name for name in RETIRED_PAIR if name not in extra)
+    return _run_env(PORT, tmp_path, "", drop, extra, translate=False)
+
+
+def test_stable_takes_the_stable_pair_and_edge_takes_the_edge_pair(tmp_path: pathlib.Path) -> None:
+    for target, pair, want in (
+        ("stable", STABLE_PAIR, ("bk-stable", "bs-stable")),
+        ("edge", EDGE_PAIR, ("bk-edge", "bs-edge")),
+        (
+            "Stable",
+            EDGE_PAIR,
+            ("bk-edge", "bs-edge"),
+        ),  # not `stable` is the edge channel, as for the bucket
+    ):
+        case = tmp_path / ("pair-" + target)
+        case.mkdir()
+        proc, calls = _port_raw(case, TARGET=target, **pair)
+        assert proc.returncode == 0, proc.stderr
+        doc = document(calls)
+        assert '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "%s"' % want[0] in doc
+        assert '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "%s"' % want[1] in doc
+
+
+@pytest.mark.parametrize(
+    ("target", "pair", "stray"),
+    [
+        ("stable", STABLE_PAIR, {"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": "bk-edge"}),
+        ("stable", STABLE_PAIR, {"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": "bs-edge"}),
+        ("edge", EDGE_PAIR, {"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE": "bk-stable"}),
+        ("edge", EDGE_PAIR, {"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE": "bs-stable"}),
+        ("stable", STABLE_PAIR, {"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "bk-shared"}),
+        ("edge", EDGE_PAIR, {"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "bs-shared"}),
+    ],
+)
+def test_the_other_channels_pair_or_the_retired_pair_is_refused(
+    tmp_path: pathlib.Path, target: str, pair: dict[str, str], stray: dict[str, str]
+) -> None:
+    """A second credential in the environment is refused by NAME before anything is pushed, and no value is echoed."""
+    proc, calls = _port_raw(tmp_path, TARGET=target, **pair, **stray)
+    assert proc.returncode == 1
+    assert calls == "", "a refused run still called wrangler"
+    (name,) = stray
+    first = proc.stderr.splitlines()[0]
+    assert first.startswith("%s: TARGET=%s takes its backup key pair from" % (port.SELF, target))
+    assert first.endswith("%s is also set." % name)
+    for value in (*pair.values(), *stray.values()):
+        assert value not in proc.stderr
+        assert value not in proc.stdout
+
+
+def test_the_retired_pair_alone_is_refused_not_used(tmp_path: pathlib.Path) -> None:
+    """The fixture's unsuffixed pair, untranslated and with no channel pair: the twin's own input is refused by the port, naming both retired names."""
+    proc, calls = _run_env(PORT, tmp_path, "", (), {}, translate=False)
+    assert proc.returncode == 1
+    assert calls == ""
+    assert proc.stderr.splitlines()[0].endswith(
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID, ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY are also set."
+    )
+
+
+def test_an_empty_own_pair_is_the_ordinary_guard(tmp_path: pathlib.Path) -> None:
+    """With only the OTHER channel's names absent and the own pair blank, the refusal is the Worker-key guard it always was."""
+    proc, calls = _port_raw(tmp_path, TARGET="edge", **dict.fromkeys(EDGE_PAIR, ""))
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID is EMPTY for" in proc.stderr
+
+
+def test_backup_pair_helper() -> None:
+    assert port.backup_pair({**STABLE_PAIR, **dict.fromkeys(EDGE_PAIR, "")}, "stable") == (
+        "bk-stable",
+        "bs-stable",
+    )
+    assert port.backup_pair(EDGE_PAIR, "edge") == ("bk-edge", "bs-edge")
+    with pytest.raises(port.ScriptRefusalError):
+        port.backup_pair({**STABLE_PAIR, **EDGE_PAIR}, "stable")

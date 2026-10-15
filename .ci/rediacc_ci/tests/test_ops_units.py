@@ -82,20 +82,53 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("AWS_SES_ACCESS_KEY_ID", "id")
     monkeypatch.setenv("AWS_SES_SECRET_ACCESS_KEY", "secret")
     monkeypatch.setenv("CLOUDFLARE_TURNSTILE_SECRET_KEY", "turn")
-    monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://r2.invalid")
-    monkeypatch.setenv("CLOUDFLARE_R2_ACCESS_KEY_ID", "r2id")
-    monkeypatch.setenv("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "r2secret")
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_ENDPOINT", "https://r2.invalid")
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "bench-id")
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", "bench-secret")
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
-    monkeypatch.delenv("ACCOUNT_BACKUP_S3_ENDPOINT", raising=False)
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     payload = deploy_bench.secrets_payload()
     assert len(payload) == 29
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
+    assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
+    assert payload["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "bench-secret"
     assert payload["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
     assert payload["STRIPE_SECRET_KEY"] == ""
     monkeypatch.delenv("ACCOUNT_JWT_SECRET")
     with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_JWT_SECRET missing"):
         deploy_bench.secrets_payload()
+
+
+@pytest.mark.parametrize("missing", deploy_bench.BACKUP_NAMES)
+def test_deploy_bench_refuses_the_account_wide_r2_token_as_a_backup_credential(
+    monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    """PLAN-backup-credential-isolation B2: the account-wide R2 trio, present alone, no longer fills a missing ACCOUNT_BACKUP_S3_* value. Each of the three is driven missing with the R2 trio set, and the refusal names the missing one and never a value."""
+    for name in (
+        "ACCOUNT_ED25519_PRIVATE_KEY",
+        "ACCOUNT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_X25519_PRIVATE_KEY",
+        "ACCOUNT_X25519_PUBLIC_KEY",
+        "ACCOUNT_SERVER_API_KEY",
+        "ACCOUNT_JWT_SECRET",
+    ):
+        monkeypatch.setenv(name, "v-" + name)
+    monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")
+    monkeypatch.setenv("AWS_SES_ACCESS_KEY_ID", "id")
+    monkeypatch.setenv("AWS_SES_SECRET_ACCESS_KEY", "secret")
+    monkeypatch.setenv("CLOUDFLARE_TURNSTILE_SECRET_KEY", "turn")
+    monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
+    monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://r2.invalid")
+    monkeypatch.setenv("CLOUDFLARE_R2_ACCESS_KEY_ID", "r2-account-wide-id")
+    monkeypatch.setenv("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "r2-account-wide-secret")
+    for name in deploy_bench.BACKUP_NAMES:
+        monkeypatch.setenv(name, "bench-" + name)
+    monkeypatch.delenv(missing)
+    with pytest.raises(deploy_bench.DeployError) as raised:
+        deploy_bench.secrets_payload()
+    message = str(raised.value)
+    assert message.startswith("%s is EMPTY for bench" % missing)
+    assert "r2-account-wide" not in message
 
 
 def test_object_count_reads_aws_text_output(monkeypatch: pytest.MonkeyPatch) -> None:
