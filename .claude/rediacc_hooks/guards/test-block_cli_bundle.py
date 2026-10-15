@@ -16,6 +16,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 ROOT = HOOKS.parents[1]
@@ -188,7 +189,7 @@ def planted_runner(old, new):
     """The guard with `old` replaced by `new`, run in-process; None when `old` is not in the guard outside its DEFECT declaration."""
     if old not in _outside_declarations(GUARD_SRC):
         return None
-    ns = {
+    ns: dict[str, Any] = {
         "__name__": "planted_block_cli_bundle",
         "__file__": str(HOOKS / "guards" / "block_cli_bundle.py"),
     }
