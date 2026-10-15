@@ -1,6 +1,6 @@
 # PLAN: one vm:check runner proves renet, the CLI remote paths and private/account before a push, and the renet trigger covers the deployed binary
 
-Status: direction approved by operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner (Recommended)", "Widen to deployed renet code (Recommended)"); on return the operator said "You can continue for the rest.", so it is QUEUE.md ## Promoted entry 17; wave 1 is written as patches during PR #600 and lands with AV4/AV5 after that merge. Written 2026-10-15 by d778be9d's Plan agent from code on branch 1008-1.
+Status: direction approved by operator /ask 2026-10-15 (#c5305ed9: "Account drills via one runner (Recommended)", "Widen to deployed renet code (Recommended)"); on return the operator said "You can continue for the rest.", so it is QUEUE.md ## Promoted entry 17; wave 1 is written as patches during PR #600 and lands with AV4/AV5 after that merge. Written 2026-10-15 by d778be9d's Plan agent from code on branch 1008-1. <!-- style-ok -->
 Depends-On: PLAN-vm-check.md
 Priority: P1 -- operator ask; today a private/account change reaches a push with no local proof against a live gateway or VM
 Concurrency: exclusive -- one runner, receipt and guard; wave 1 (AV1-AV3) and wave 2 (AV4-AV6) each have three disjoint writers, AV7 is the lead's live run

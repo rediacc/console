@@ -68,7 +68,8 @@
       "run.cmd",
       "run.ps1",
       "run.sh",
-      "tsconfig.json"
+      "tsconfig.json",
+      "vitest.config.ts"
     ]
   },
   "root_dirs": {

@@ -187,7 +187,7 @@ function isModulePathByte(b: number): boolean {
  * Why the old rule was replaced (2026-10-15). It required a non-printable byte on both sides, which is what strings(1) would call a whole run. Go packs string data without separators, so a `-X main.version=v8.7.0` stamp lands wherever the linker puts it: the arm64 snapshot-controller rebuilt for 8.7.0 carried `\xa0Lv8.7.0\x00` (the `L` is the high byte of a float constant) and went UNPROBED, while zot carried `\x08@v2.1.22\x00` and only passed because its module version sat in a `mod` line. The neighbour bytes are chance, so the rule now rejects only the bytes that change what the token means:
  *
  * - right: any version continuation (`0-9 . + - _ /`).
- * - left: any version continuation; for the bare needle (no `v`) also a letter or `@`, because `go1.26.9` is a toolchain version and not a pin of 1.26.9, and the `v` form is its own needle.
+ * - left: any version continuation; for the bare needle (no `v`) also a letter or `@`, because `go1.99.0` is a toolchain version and not a pin of 1.99.0, and the `v` form is its own needle.
  * - left `@` for the `v` needle when the byte before the `@` is a module path byte: `github.com/x/y@v8.7.0` is a dependency, as in a `-trimpath` source path.
  * - the neighbours are the RAW bytes, even when one opens or closes a build info span: the start sentinel begins with `0x30` (`0`), so `v8.7.0` right before it reads as `v8.7.00` in the byte stream and is not a stamp of 8.7.0. Spans only remove candidates (a needle overlapping one is a module version); they never supply a boundary.
  *
@@ -467,7 +467,7 @@ function runControls(): string[] {
   const modinfo = (lines: string[]): string =>
     latin1(GO_MODINFO_START) + lines.join('\n') + latin1(GO_MODINFO_END);
   const header = (mod: string): string => {
-    const toolchain = 'go1.26.9';
+    const toolchain = 'go1.99.0';
     return `${latin1(GO_BUILDINFO_MAGIC)}\u0008\u0002${'\u0000'.repeat(16)}${uvarint(toolchain.length)}${toolchain}${uvarint(mod.length)}${mod}`;
   };
   const depOnPin = modinfo([
@@ -495,7 +495,7 @@ function runControls(): string[] {
       'control: a build info header with a two-byte module info length was not excluded whole'
     );
   }
-  if (!spanCovers(`\u0000${header('')}\u0000`, 'go1.26.9')) {
+  if (!spanCovers(`\u0000${header('')}\u0000`, 'go1.99.0')) {
     failures.push('control: the build info toolchain version was not excluded');
   }
 
@@ -537,8 +537,8 @@ function runControls(): string[] {
     { text: `${nul}v8.7.0-rc.1${nul}`, pin: '8.7.0', expected: false, label: 'a pre-release' },
     { text: `${nul}v1.37.1+k3s1${nul}`, pin: '1.37.1', expected: false, label: 'a build suffix' },
     {
-      text: `${nul}github.com/kubernetes-csi/external-snapshotter/client/v8@v8.7.0/apis/volumesnapshot.go${nul}`,
-      pin: '8.7.0',
+      text: `${nul}github.com/kubernetes-csi/external-snapshotter/client/v8@v8.99.0/apis/volumesnapshot.go${nul}`,
+      pin: '8.99.0',
       expected: false,
       label: 'a module path @v (a -trimpath source path)',
     },
