@@ -972,6 +972,9 @@
       "GITHUB_REPOSITORY",
       "PR_NUMBER"
     ],
+    ".ci/rediacc_ci/quality/retired_terms.py": [
+      "WORKLIST_STORE_DIR"
+    ],
     ".ci/rediacc_ci/quality/review_comments.py": [
       "GH_TOKEN",
       "GITHUB_REPOSITORY",
@@ -2233,6 +2236,9 @@
     ],
     ".claude/rediacc_hooks/tests/test_settings_collapse.py": [
       "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_shellscan_differential.py": [
+      "CI"
     ],
     ".claude/rediacc_hooks/tests/test_wl_commit_remind.py": [
       "TMPDIR"
