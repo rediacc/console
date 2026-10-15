@@ -20,6 +20,7 @@ and A3 deleted the oracle and the driver once the golden was proven to match. `t
 
 import pathlib
 import re
+import subprocess
 
 import pytest
 
@@ -33,6 +34,33 @@ ROOT = corpus.repo_root()
 
 # A root that cannot resolve, so `hook_target_root`'s "git said no" branch is exercised on every case rather than only on the ones with a real `cd`.
 ABSENT_ROOT = "/nonexistent-root-for-the-shellscan-differential"
+
+
+def _origin_url(checkout):
+    done = subprocess.run(
+        ["git", "-C", str(checkout), "remote", "get-url", "origin"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def identity_root(checkout):
+    """The checkout whose origin names the hosted repository, for the cases that read `origin`.
+
+    A `git clone --shared <path>` checkout has a LOCAL-PATH origin, so `target_repo` reads `<parent>/<dir>` from it (`developer/console`) where the golden recorded the hosted identity `rediacc/console`. The identity belongs to the repository, not to where this clone sits, so a local-path origin is followed to the checkout it names until one has a URL origin (or none, which falls to the default identity). The hop is bounded, so a cycle cannot hang the run.
+    """
+    current = pathlib.Path(checkout)
+    for _hop in range(8):
+        url = _origin_url(current)
+        if not url.startswith("/"):
+            return current
+        current = pathlib.Path(url)
+    return current
+
+
+IDENTITY_ROOT = identity_root(ROOT)
 
 
 def build_cases():
@@ -67,7 +95,7 @@ def python_fields(cmd):
         out["sel:%s" % verb] = shellscan.pr_selector(seg, verb)
         out["repo:%s" % verb] = shellscan.target_repo(seg, scan, "")
     merge_seg = shellscan.gh_pr_segment(scan, "merge").rstrip("\n")
-    out["repocwd"] = shellscan.target_repo(merge_seg, scan, str(ROOT))
+    out["repocwd"] = shellscan.target_repo(merge_seg, scan, str(IDENTITY_ROOT))
     for flag in FLAGS:
         out["flag:%s" % flag] = "0" if shellscan.flag_present(cmd, flag) else "1"
     out["troot"] = shellscan.target_root(scan, str(ROOT))
@@ -176,6 +204,19 @@ def _decode_record(record):
     return {k: goldenio.decode_field(v) for k, v in record.items() if k != "intentional"}
 
 
+def uncheckedout_submodule(want):
+    """The `private/<name>` submodule a recorded root points into when it is not checked out here, else None.
+
+    `hook_target_root` resolves a `cd private/renet` through a real `git rev-parse --show-toplevel`, which answers the SUPERPROJECT's root (or nothing) from an empty submodule directory, so the recorded `<REPO>/private/renet` is unreachable. A fresh `git clone --shared` has all four `private/*` empty. These cases are skipped by name, never compared loosely.
+    """
+    for key in ("troot", "trootx"):
+        value = want.get(key) or ""
+        match = re.match(re.escape(REPO_TOKEN) + r"/(private/[^/]+)", value)
+        if match and not (ROOT / match.group(1) / ".git").exists():
+            return match.group(1)
+    return None
+
+
 @pytest.mark.parametrize(("label", "cmd"), CASES, ids=[label for label, _ in CASES])
 def test_scan_matches_golden(label, cmd):
     _header, silent, records = goldenio.read_golden(GOLDEN_PATH)
@@ -185,7 +226,14 @@ def test_scan_matches_golden(label, cmd):
         "no golden record for %r (key %s) -- run regolden.py shellscan --reason '<why>'"
         % (label, key)
     )
-    diffs = diff_fields(_decode_record(want), python_fields(cmd))
+    want = _decode_record(want)
+    missing = uncheckedout_submodule(want)
+    if missing is not None:
+        pytest.skip(
+            "%s is not checked out in this clone; its recorded root needs the real submodule"
+            % missing
+        )
+    diffs = diff_fields(want, python_fields(cmd))
     assert not diffs, render(diffs, label, cmd)
 
 
