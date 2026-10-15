@@ -17,6 +17,7 @@
 import { promises as fs } from 'node:fs';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { assertThrowawayDir } from '../../__tests__/throwaway-dir.js';
 import type { RdcConfig } from '../../types/index.js';
 
 const { server, secureMem, relay, account, pushSpy, messages, active } = vi.hoisted(() => ({
@@ -297,6 +298,7 @@ async function refusal(...args: string[]): Promise<Error> {
 beforeEach(async () => {
   // One local config per test: a slot secret is shared by every local config that names its key id (F17), so a
   // leftover file of an earlier test would keep the secret alive through a cleanup.
+  assertThrowawayDir(configFileStorage.getConfigDir());
   await fs.rm(configFileStorage.getConfigDir(), { recursive: true, force: true });
   configFileStorage.clearCache();
   sequence += 1;
