@@ -1927,6 +1927,8 @@
       "fetchingDetails": "Recupero dettagli di connessione in corso...",
       "noChanges": "Nessuna modifica da sincronizzare.",
       "previewingChanges": "\nAnteprima modifiche...\n",
+      "skippedMore": "{{names}} e altri {{count}}",
+      "skippedNonRegular": "Avviso: collegamenti simbolici e file speciali non trasferiti, totale: {{count}} (una sincronizzazione con privilegi trasferisce solo file regolari): {{names}}",
       "status": {
         "description": "Confronto dry-run di file locali e remoti (mostra cosa verrebbe trasferito senza trasferire effettivamente)",
         "descriptionShort": "Confronta file locali e remoti (dry-run)"

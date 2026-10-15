@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "Получение деталей подключения...",
   "commands.sync.noChanges": "Нет изменений для синхронизации.",
   "commands.sync.previewingChanges": "\nПредпросмотр изменений...\n",
+  "commands.sync.skippedMore": "{{names}} и ещё {{count}}",
+  "commands.sync.skippedNonRegular": "Предупреждение: символические ссылки и специальные файлы не переданы, всего: {{count}} (привилегированная синхронизация передаёт только обычные файлы): {{names}}",
   "commands.sync.status.description": "Проверить статус синхронизации и сравнить локальные/удаленные файлы",
   "commands.sync.status.descriptionShort": "Сравнить локальные и удалённые файлы (пробный запуск)",
   "commands.sync.totalSize": "Общий размер: {{size}}",

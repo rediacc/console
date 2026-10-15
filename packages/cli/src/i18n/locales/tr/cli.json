@@ -1927,6 +1927,8 @@
       "fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
       "noChanges": "Senkronize edilecek değişiklik yok.",
       "previewingChanges": "\nDeğişiklikler önizleniyor...\n",
+      "skippedMore": "{{names}} ve {{count}} tane daha",
+      "skippedNonRegular": "Uyarı: sembolik bağlantılar ve özel dosyalar aktarılmadı, toplam: {{count}} (ayrıcalıklı eşitleme yalnızca normal dosyaları aktarır): {{names}}",
       "status": {
         "description": "Senkronizasyon durumunu kontrol edin ve yerel/uzak dosyaları karşılaştırın",
         "descriptionShort": "Yerel ve uzak dosyaları karşılaştır (simülasyon)"

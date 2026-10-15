@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "接続詳細を取得中です...",
   "commands.sync.noChanges": "同期する変更がありません。",
   "commands.sync.previewingChanges": "\n変更をプレビュー中です...\n",
+  "commands.sync.skippedMore": "{{names}}、ほか {{count}} 件",
+  "commands.sync.skippedNonRegular": "警告: シンボリックリンクと特殊ファイルは転送されませんでした（合計: {{count}}）。特権同期では通常ファイルのみ転送されます: {{names}}",
   "commands.sync.status.description": "同期ステータスを確認して、ローカル/リモートファイルを比較する",
   "commands.sync.status.descriptionShort": "ローカルとリモートのファイルを比較する（ドライラン）",
   "commands.sync.totalSize": "合計サイズ: {{size}}",

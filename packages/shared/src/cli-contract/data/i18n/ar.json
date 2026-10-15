@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "جاري جلب تفاصيل الاتصال...",
   "commands.sync.noChanges": "لا توجد تغييرات للمزامنة.",
   "commands.sync.previewingChanges": "\nجاري معاينة التغييرات...\n",
+  "commands.sync.skippedMore": "{{names}}، و{{count}} أخرى",
+  "commands.sync.skippedNonRegular": "تحذير: لم يتم نقل الروابط الرمزية والملفات الخاصة، العدد الإجمالي: {{count}} (المزامنة المميزة تنقل الملفات العادية فقط): {{names}}",
   "commands.sync.status.description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة",
   "commands.sync.status.descriptionShort": "مقارنة الملفات المحلية والبعيدة (تشغيل تجريبي)",
   "commands.sync.totalSize": "الحجم الإجمالي: {{size}}",

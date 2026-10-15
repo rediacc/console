@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "Récupération des détails de connexion...",
   "commands.sync.noChanges": "Aucune modification à synchroniser.",
   "commands.sync.previewingChanges": "\nAperçu des modifications...\n",
+  "commands.sync.skippedMore": "{{names}} et {{count}} de plus",
+  "commands.sync.skippedNonRegular": "Avertissement : liens symboliques et fichiers spéciaux non transférés, total : {{count}} (une synchronisation privilégiée ne transfère que les fichiers ordinaires) : {{names}}",
   "commands.sync.status.description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants",
   "commands.sync.status.descriptionShort": "Comparer les fichiers locaux et distants (à blanc)",
   "commands.sync.totalSize": "Taille totale : {{size}}",

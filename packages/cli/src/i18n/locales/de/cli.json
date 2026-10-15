@@ -1927,6 +1927,8 @@
       "fetchingDetails": "Verbindungsdetails werden abgerufen...",
       "noChanges": "Keine Änderungen zum Synchronisieren.",
       "previewingChanges": "\nÄnderungen werden angezeigt...\n",
+      "skippedMore": "{{names}} und {{count}} weitere",
+      "skippedNonRegular": "Warnung: Symbolische Links und Spezialdateien wurden nicht übertragen, insgesamt: {{count}} (eine privilegierte Synchronisierung überträgt nur reguläre Dateien): {{names}}",
       "status": {
         "description": "Synchronisierungsstatus prüfen und lokale/Remote-Dateien vergleichen",
         "descriptionShort": "Lokale und Remote-Dateien vergleichen (Trockenlauf)"

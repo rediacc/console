@@ -1927,6 +1927,8 @@
       "fetchingDetails": "Ühendusteavet laaditakse...",
       "noChanges": "Muudatusi sünkroonimiseks pole.",
       "previewingChanges": "\nMuudatuste eelvaade...\n",
+      "skippedMore": "{{names}} ja veel {{count}}",
+      "skippedNonRegular": "Hoiatus: sümboolseid linke ja erifaile ei edastatud, kokku: {{count}} (privilegeeritud sünkroonimine edastab ainult tavafaile): {{names}}",
       "status": {
         "description": "Kohalike ja kaugfailide proovijooks (näitab, mida kantaks üle, ilma tegelikult üle kandmata)",
         "descriptionShort": "Võrdleb kohalikke ja kaugfaile (proovijooks)"

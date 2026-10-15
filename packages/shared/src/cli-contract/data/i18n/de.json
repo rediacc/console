@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "Verbindungsdetails werden abgerufen...",
   "commands.sync.noChanges": "Keine Änderungen zum Synchronisieren.",
   "commands.sync.previewingChanges": "\nÄnderungen werden angezeigt...\n",
+  "commands.sync.skippedMore": "{{names}} und {{count}} weitere",
+  "commands.sync.skippedNonRegular": "Warnung: Symbolische Links und Spezialdateien wurden nicht übertragen, insgesamt: {{count}} (eine privilegierte Synchronisierung überträgt nur reguläre Dateien): {{names}}",
   "commands.sync.status.description": "Synchronisierungsstatus prüfen und lokale/Remote-Dateien vergleichen",
   "commands.sync.status.descriptionShort": "Lokale und Remote-Dateien vergleichen (Trockenlauf)",
   "commands.sync.totalSize": "Gesamtgröße: {{size}}",

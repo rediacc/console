@@ -1927,6 +1927,8 @@
       "fetchingDetails": "正在获取连接详情...",
       "noChanges": "没有要同步的更改。",
       "previewingChanges": "\n正在预览更改...\n",
+      "skippedMore": "{{names}}，以及另外 {{count}} 个",
+      "skippedNonRegular": "警告：符号链接和特殊文件未传输，共计：{{count}}（特权同步仅传输常规文件）：{{names}}",
       "status": {
         "description": "检查同步状态并比较本地/远程文件",
         "descriptionShort": "比较本地和远程文件（模拟运行）"
