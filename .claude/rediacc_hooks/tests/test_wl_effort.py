@@ -113,15 +113,15 @@ def test_e3_one_world_through_all_five_levels(world):
         world.settings(effort=level)
         got = world.run()
         seen[level] = (got.decision, blocked_keys(world))
-    assert seen["quiet"] == ("allow", set()), seen["quiet"]
-    assert seen["low"] == ("block", {"open-items"}), seen["low"]
-    for level in ("smart", "high", "ultra"):
-        assert seen[level][0] == "block"
-        assert "open-items" in seen[level][1], seen[level]
-        for key in REPORT_KEYS:
-            assert (key in seen[level][1]) == (E.verdict(key, level) == "block"), (level, key, seen)
-    for level in ("high", "ultra"):
-        assert {"open-items", *REPORT_KEYS} <= seen[level][1], seen[level]
+    # Every level's share is read from the real table, the mission check included, so a tuner promotion or demotion moves the expectation with it (review 31c4e5c3.1): no level's set is written down here.
+    watched = ("open-items", *REPORT_KEYS)
+    for level in LEVELS:
+        want = {key for key in watched if E.verdict(key, level) == "block"}
+        assert seen[level][1] & set(watched) == want, (level, want, seen[level])
+        assert seen[level][0] == ("block" if want else "allow"), (level, seen[level])
+    # NOT VACUOUS: the table blocks at least one watched check at some level and leaves at least one level unblocked, so the loop above judges both directions.
+    assert any(seen[lv][1] for lv in LEVELS), seen
+    assert any(not seen[lv][1] & set(watched) for lv in LEVELS), seen
     # The levels are supersets of one another, as the plan says.
     order = [seen[lv][1] for lv in LEVELS]
     assert all(a <= b for a, b in itertools.pairwise(order)), order

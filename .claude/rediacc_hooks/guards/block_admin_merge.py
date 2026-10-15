@@ -45,7 +45,10 @@ CHAIN = "pre-bash"
 ORDER = 26
 
 # The outright ban is arm 1 and the whole 2026-07-22 ruling. Dropping it does not merely change a message: an --admin merge falls through to the ordinary resolution path and is judged as if it were a normal one.
-DEFECT = ('if shellscan.flag_present(cmd, "admin"):', "if False:")
+DEFECT = (
+    'if shellscan.flag_present(cmd, "admin") or any(_admin_word(r) for r in runs):',
+    "if False:",
+)
 
 ADMIN_MESSAGE = (
     "❌ BLOCKED: 'gh pr merge --admin' is banned. It bypasses the required CI Complete check "
@@ -156,6 +159,11 @@ EDGE_CASES = [
         "git commit -m '...gh api repos/o/r/pulls/589/merge -X PUT...'",
     ),
 ]
+
+
+def _admin_word(run):
+    """Whether a walked `gh pr merge` hands gh `--admin` (or `--admin=<v>`), read from the words bash expands as well as the typed ones."""
+    return any(w == "--admin" or w.startswith("--admin=") for w in [*run.argv, *(run.xargv or ())])
 
 
 def review_refusals(root, branch, repo, head_sha=""):
@@ -297,7 +305,8 @@ def run(ev):
 
     # --admin ban: match the flag in ANY form on the raw command (=value,
     # assignment, inside a wrapper payload). Over-blocking is the safe direction.
-    if shellscan.flag_present(cmd, "admin"):
+    # The raw text misses a flag that only expansion spells (review a7b3a36f.2): `A=--adm; gh pr merge 42 ${A}in`, `X=-; eval "gh pr merge 42 $X-admin"` and the `bash -c` form passed the ban (rc 0 against a green PR, 2026-10-15), so each walked merge's expanded words are read too.
+    if shellscan.flag_present(cmd, "admin") or any(_admin_word(r) for r in runs):
         ev.warn(ADMIN_MESSAGE)
         return hookio.DENY
 
