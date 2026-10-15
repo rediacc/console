@@ -261,34 +261,35 @@ def _bypassing_go_builds(text: str) -> list[str]:
 
 
 def _shell_word(line: str, i: int) -> tuple[str, int]:
-    """The shell word starting at `line[i]` and the index after it, read through quotes and `$(...)` / backquotes at any depth in one linear pass (no regex backtracking)."""
-    out, quote, depth = [], "", 0
+    """The shell word starting at `line[i]` and the index after it, in one linear pass with a stack of the quoting contexts bash nests: `'`, `"`, backquote and `$(`. Each frame obeys its own rules (nothing but `'` closes a single quote, a `)` closes only a `$(` frame), so a `)` or space inside quotes inside a substitution stays in the word."""
+    out: list[str] = []
+    stack: list[str] = []
     while i < len(line):
         ch = line[i]
-        if quote:
-            if ch == quote:
-                quote = ""
-            elif ch == "\\" and quote == '"' and i + 1 < len(line):
-                out.append(ch)
-                i += 1
-                ch = line[i]
-            elif quote == '"' and line.startswith("$(", i):
-                depth += 1
-                out.append("$(")
-                i += 2
-                continue
-            elif quote == '"' and ch == ")" and depth:
-                depth -= 1
-        elif ch in "'\"`":
-            quote = ch
+        top = stack[-1] if stack else ""
+        if top == "'":
+            if ch == "'":
+                stack.pop()
+        elif ch == "\\" and i + 1 < len(line):
+            out.append(line[i : i + 2])
+            i += 2
+            continue
+        elif top == '"' and ch == '"':
+            stack.pop()
+        elif top == "`" and ch == "`":
+            stack.pop()
         elif line.startswith("$(", i):
-            depth += 1
+            stack.append("$(")
             out.append("$(")
             i += 2
             continue
-        elif ch == ")" and depth:
-            depth -= 1
-        elif not depth and (ch.isspace() or ch in ";&|"):
+        elif top == "$(" and ch == ")":
+            stack.pop()
+        elif top != '"' and ch in "'\"`":
+            stack.append(ch)
+        elif top == '"' and ch == "`":
+            stack.append(ch)
+        elif not stack and (ch.isspace() or ch in ";&|"):
             break
         out.append(ch)
         i += 1
@@ -343,6 +344,8 @@ def _runs_build(line: str, i: int) -> bool:
         "(go build)",
         "x=`go build`",
         "y=$(go -C /x build)",
+        'go -C "$(echo \')\' "a b")" build ./cmd/renet',
+        'go -C "$(printf \'%s\' "$(pwd)")" build ./cmd/renet',
         'go -C "$(a "$(b "$(c)")")" build ./cmd/renet',
     ],
 )
