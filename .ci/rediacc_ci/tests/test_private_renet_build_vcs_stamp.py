@@ -274,9 +274,7 @@ def _shell_word(line: str, i: int) -> tuple[str, int]:
             out.append(line[i : i + 2])
             i += 2
             continue
-        elif top == '"' and ch == '"':
-            stack.pop()
-        elif top == "`" and ch == "`":
+        elif top in ('"', "`") and ch == top:
             stack.pop()
         elif line.startswith("$(", i):
             stack.append("$(")
@@ -285,9 +283,7 @@ def _shell_word(line: str, i: int) -> tuple[str, int]:
             continue
         elif top == "$(" and ch == ")":
             stack.pop()
-        elif top != '"' and ch in "'\"`":
-            stack.append(ch)
-        elif top == '"' and ch == "`":
+        elif (top != '"' and ch in "'\"`") or (top == '"' and ch == "`"):
             stack.append(ch)
         elif not stack and (ch.isspace() or ch in ";&|"):
             break
