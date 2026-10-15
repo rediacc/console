@@ -174,6 +174,16 @@ def test_a_retired_by_path_naming_no_file_cannot_run(tmp_path):
     assert "PLAN-nowhere.md is no file in the tree" in result.err
 
 
+def test_a_retired_by_plan_moved_to_done_still_resolves(tmp_path):
+    """Review 44fdd3b7.1: a retirement plan that closes moves to _done/ and may lose its stub; its citation still resolves."""
+    term = dict(TERM, retired_by=["agent/plans/PLAN-closed-retirement.md"])
+    root, config = _tree(tmp_path, term=term)
+    _write(root, "agent/plans/_done/PLAN-closed-retirement.md", _plan("done", "finished"))
+    result = _gate(root, config)
+    assert result.rc != 2, result.combined
+    assert "is no file in the tree" not in result.err
+
+
 def test_a_pattern_failing_its_own_texts_cannot_run(tmp_path):
     term = dict(TERM, must_not_match=["zorpify"])
     root, config = _tree(tmp_path, term=term)

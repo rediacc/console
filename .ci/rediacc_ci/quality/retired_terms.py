@@ -359,8 +359,19 @@ def plan_subjects(root: pathlib.Path) -> tuple[list[Subject], int]:
     return out, len(rels)
 
 
+def _resolves(root: pathlib.Path, ref: str) -> bool:
+    """A path ref resolves where it names a file, or, for a plan, where its file now sits under a terminal folder: a retirement plan that closes and moves to `_done/` (its stub at the old path may be pruned later) must not turn every run into a CannotRunError (review 44fdd3b7.1)."""
+    if (root / ref).is_file():
+        return True
+    parent, name = ref.rsplit("/", 1) if "/" in ref else ("", ref)
+    if parent.rstrip("/").endswith("agent/plans") or "/agent/plans/" in "/" + parent + "/":
+        base = parent.split("/_done")[0].split("/_removed")[0]
+        return any((root / base / sub / name).is_file() for sub in ("_done", "_removed"))
+    return False
+
+
 def tracked_paths(root: pathlib.Path, refs: list[str]) -> set[str]:
-    return {ref for ref in refs if not ID_REF_RE.match(ref) and (root / ref).is_file()}
+    return {ref for ref in refs if not ID_REF_RE.match(ref) and _resolves(root, ref)}
 
 
 @dataclasses.dataclass
