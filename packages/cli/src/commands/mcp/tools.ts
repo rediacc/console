@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { Placement } from '@rediacc/shared/config-schema';
 import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
 import { t } from '../../i18n/index.js';
 import { isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
@@ -65,7 +66,7 @@ function checkForkBlocked(tool: ToolDef): ToolResult | null {
 async function getRepoInfo(
   repoName: string,
   configName?: string
-): Promise<{ repositoryGuid: string; grandGuid?: string } | null> {
+): Promise<{ repositoryGuid: string; grandGuid?: string; placement?: Placement } | null> {
   try {
     const { configService } = await import('../../services/config/config-resources.js');
     if (configName) {
@@ -116,6 +117,10 @@ async function guardNamedRepo(
   if (!repoInfo) return null;
 
   if (isForkRepo(repoInfo)) return checkForkBlocked(tool);
+
+  // The development-only ops VM fleet is exempt, the same predicate the CLI's own grand guard reads.
+  const { isOpsVmPlacement } = await import('../../utils/ops-vm.js');
+  if (await isOpsVmPlacement(repoInfo.placement)) return null;
 
   return guardGrandRepo(repoName);
 }

@@ -189,7 +189,7 @@ async function enforceTermPolicy(
     // Gate B on the repo arm only; the place arm below is a machine shell (class A).
     await assertCommandPolicy(CMD.TERM_CONNECT, target.repoKey);
   } else {
-    assertAgentMachineAccess(target.machineName);
+    await assertAgentMachineAccess(target.machineName);
   }
 }
 
