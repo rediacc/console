@@ -1790,6 +1790,89 @@ def test_stdin_spellings_review_c5f0fd12_and_db1e9409(tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
+# A PHYSICAL CHANGE OF DIRECTORY STEPS UP FROM WHERE THE LINK POINTS (#362f37b2). With `lnk` a link to `far/inner`, bash's own `cd lnk/..` and `pushd lnk/..` are logical and land back in the root, while `cd -P`, `env -C`/`--chdir`, `sudo -D` and `git -C` call chdir(2) and land in `far` (measured with bash 5 and `pwd -P`). At a34ee2781 `shellscan._join_dir` read every change lexically, so every guard that reads the program a run executes read the root's `q.py` while python ran `far/q.py`: 9 of the 18 cases below missed, rc 0 on each physical `git worktree add`.
+def test_a_physical_change_of_directory_resolves_its_dotdot_on_disk_review_362f37b2(tmp_path):
+    assert "worktree" not in str(tmp_path).lower(), tmp_path
+    (tmp_path / "far" / "inner").mkdir(parents=True)
+    (tmp_path / "sub").mkdir()
+    (tmp_path / "lnk").symlink_to("far/inner", target_is_directory=True)
+    physical = (
+        "cd -P lnk/.. && python3 q.py",
+        "cd -LP lnk/.. && python3 q.py",
+        "env -C lnk/.. python3 q.py",
+        "env --chdir=lnk/.. python3 q.py",
+        "sudo -D lnk/.. python3 q.py",
+        "cd lnk && cd -P .. && python3 q.py",
+    )
+    # CONTROLS: the logical changes bash's `cd` makes by default, the last of `-P -L` winning, and plain `cd sub` with no link at all.
+    logical = (
+        "cd lnk/.. && python3 q.py",
+        "pushd lnk/.. && python3 q.py",
+        "cd -P -L lnk/.. && python3 q.py",
+        "cd lnk && cd .. && python3 q.py",
+        "cd sub && python3 ../q.py",
+        "cd sub && cd .. && python3 q.py",
+    )
+    wrong = []
+
+    def expect(commands, want):
+        for command in commands:
+            rc, err = _worktree_rc(command, tmp_path)
+            if rc != want:
+                wrong.append((command, rc, want, err[:160]))
+
+    # The program runs where the change lands: `far/q.py` for a physical one, `q.py` in the root for a logical one. Each direction is checked both ways round, so neither reading can pass by refusing everything.
+    (tmp_path / "q.py").write_text("print(1)\n", encoding="utf-8")
+    (tmp_path / "far" / "q.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    expect(physical, 2)
+    expect(logical, 0)
+    (tmp_path / "q.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    (tmp_path / "far" / "q.py").write_text("print(1)\n", encoding="utf-8")
+    expect(physical[:3], 0)
+    expect(logical[:4], 2)
+    # A logical step after a physical one: `cd -P lnk/..` is in `far`, `cd -L inner/..` stays there, and `cd ..` reaches the root.
+    expect(("cd -P lnk/.. && cd -L inner/.. && cd .. && python3 q.py",), 2)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+def test_join_dir_keeps_a_physical_dotdot_and_nothing_else_review_362f37b2():
+    rows = [
+        # (cwd, arg, physical, lands)
+        (None, "a/../b", False, "b"),
+        ("x", "..", False, "."),
+        (None, "/a/../..", False, "/"),
+        ("a/b", "../../..", False, ".."),
+        ("sub", "x", True, "sub/x"),
+        (None, "lnk/..", True, "lnk/.."),
+        (None, "/l/..", True, "/l/.."),
+        (None, "/..", True, "/"),
+        (None, "..", True, ".."),
+        ("lnk/..", "inner/..", False, "lnk/.."),
+        ("lnk/..", "..", False, "lnk/../.."),
+        ("lnk/..", "x", False, "lnk/../x"),
+        ("lnk/..", "/abs", False, "/abs"),
+    ]
+    wrong = [
+        (row, got)
+        for row in rows
+        if (got := shellscan._join_dir(row[0], row[1], physical=row[2])) != row[3]
+    ]
+    assert not wrong, wrong
+    walked = {
+        "cd -P lnk/.. && true": "lnk/..",
+        "cd -Pe lnk/.. && true": "lnk/..",
+        "cd -P -- lnk/.. && true": "lnk/..",
+        "cd lnk/.. && true": ".",
+        "pushd lnk/.. && true": ".",
+    }
+    got = {cmd: shellscan.every_run(cmd)[-1].cwd for cmd in walked}
+    assert got == walked, got
+    assert shellscan._git_invocation(["-C", "lnk/..", "status"], None) == ("status", "lnk/..")
+    # The `private/<submodule>` readers match the text as before: a kept pair is dropped lexically for them.
+    assert shellscan._lexical("private/renet/..") == "private"
+    assert shellscan._lexical(None) == ""
+
+
 # ONE PROGRAM PARSE FOR EVERY GUARD (#a2599946). At bd4ead963 `shellscan._program_parse` read deno, bun and tsx with node's table after a leading `run`, so the words in the `was` column are what every shell-write guard and block_long_sleep took for the program; and it returned the FIRST inline program, where node runs the last and perl and ruby join them all (measured on node v24.21.0 and perl 5.40.1).
 PROGRAM_PARSE_ROWS = [
     # (base, argv, now, was)
