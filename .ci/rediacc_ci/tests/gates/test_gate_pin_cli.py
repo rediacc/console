@@ -2,7 +2,7 @@
 
 The pins command writes pinned versions across the console and its submodules, so its safety properties are the whole of its value: a pin whose sites do not all match is refused whole, a site file holding another session's changes is refused by name, every write is journaled, and a failed run restores only the files that still hold the bytes it wrote. `--selftest` builds a throwaway fixture tree per case under PINS_ROOT and PINS_FIXTURE, with the releases, the clock and a stub runner for every command, so nothing here touches the network or the tracked tree.
 
-THE MUTANTS ARE THE POINT. Each PINS_MUTANT disables one safety property (skip-site, ignore-soak, no-canonical, partial-write, no-dirty-check, no-restore, blind-restore). The selftest already proves each one turns its own case red in-process; the parametrized case below proves it again from outside, through the process exit code, so a selftest that stopped honouring PINS_MUTANT, or one whose cases stopped failing, cannot stay green.
+THE MUTANTS ARE THE POINT. Each PINS_MUTANT disables one safety property (skip-site, ignore-soak, no-canonical, partial-write, no-dirty-check, no-restore, blind-restore, first-eligible, no-resync, all-gates). The selftest already proves each one turns its own case red in-process; the parametrized case below proves it again from outside, through the process exit code, so a selftest that stopped honouring PINS_MUTANT, or one whose cases stopped failing, cannot stay green.
 """
 
 import pytest
@@ -19,6 +19,9 @@ MUTANTS = (
     "no-dirty-check",
     "no-restore",
     "blind-restore",
+    "first-eligible",
+    "no-resync",
+    "all-gates",
 )
 
 

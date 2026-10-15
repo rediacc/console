@@ -108,6 +108,11 @@ export interface PinDriver {
  *   no-dirty-check the refusal of a site file holding another session's changes is off
  *   no-restore     a failed run keeps what it wrote
  *   blind-restore  a failed run restores every journaled file without comparing bytes
+ *   first-eligible a run may leave a pending held major behind, and `--major` may take no major
+ *                  (the selection before 2026-10-15, which planned only the in-range batch)
+ *   no-resync      a failed run that restored a lockfile leaves the installed tree as the run
+ *                  left it, so the next plan reads versions the lockfile no longer names
+ *   all-gates      a red gate run names every gate it ran as failed, not the ones that failed
  */
 export const MUTANTS = [
   'skip-site',
@@ -117,6 +122,9 @@ export const MUTANTS = [
   'no-dirty-check',
   'no-restore',
   'blind-restore',
+  'first-eligible',
+  'no-resync',
+  'all-gates',
 ] as const;
 export type Mutant = (typeof MUTANTS)[number];
 
@@ -237,10 +245,56 @@ export interface Fixture {
     string,
     Array<{ version: string; published: string | null; values?: Record<string, string> }>
   >;
-  /** Commands the stub runner answers: the first whose regex matches the command line wins. */
-  commands: Array<{ match: string; rc: number; writes?: Record<string, string> }>;
+  /** Commands the stub runner answers: the first whose regex matches the command line wins; `out` is what it prints, and `events` the lines it writes to the file the command's `--events <file>` names. */
+  commands: Array<{
+    match: string;
+    rc: number;
+    writes?: Record<string, string>;
+    out?: string;
+    events?: string[];
+  }>;
   /** Extra plan steps per entry id, for the lockfile and undeclared-write cases. */
   steps?: Record<string, PlanStep[]>;
+  /**
+   * Family entries the fixture answers, by id: the synthetic current, the in-range release (null when none is pending) and the releases; `held` marks a held major (the npm driver's blockKey null), which no run may leave behind. A plan writes `families/<id>.txt` listing the releases it took, one per line.
+   */
+  families?: Record<
+    string,
+    {
+      current: string;
+      inRange: string | null;
+      releases: Array<{
+        version: string;
+        published: string | null;
+        held?: boolean;
+      }>;
+    }
+  >;
+}
+
+/**
+ * Split the releases a family run takes into its in-range release and its majors, refusing any other, and refusing a run that leaves a held major behind: a held major (npm: no blocklist line) is what check:deps reds on as "awaiting a decision", and check:deps judges the whole tree, so such a run could only fail its gate (2026-10-15). The refusal names the one line that takes every held major with the rest. The npm driver plans through it, and so does the fixture family driver, so the selftest exercises the same acceptance. `lenient` is the first-eligible mutant.
+ */
+export function splitFamilySet(
+  entryId: string,
+  inRange: string | null,
+  majorKeys: readonly string[],
+  heldKeys: readonly string[],
+  taken: readonly Release[],
+  lenient = false
+): { inRange: boolean; majors: string[] } {
+  const bad = taken.filter((r) => r.version !== inRange && !majorKeys.includes(r.version));
+  if (bad.length > 0)
+    throw new PlanRefused(
+      `${entryId}: ${bad.map((r) => r.version).join(', ')} ${bad.length > 1 ? 'are' : 'is'} neither the in-range release (${inRange ?? 'none pending'}) nor a pending major (${majorKeys.join(', ') || 'none'})`
+    );
+  const majors = [...new Set(taken.filter((r) => r.version !== inRange).map((r) => r.version))];
+  const left = heldKeys.filter((k) => !majors.includes(k));
+  if (left.length > 0 && !lenient)
+    throw new PlanRefused(
+      `${entryId}: ${left.length} held major(s) awaiting a decision (${left.join(', ')}) would stay behind, and the entry's gates judge the whole tree, so this run could only fail them; nothing is written. Take every held major with the in-range set: npm run pins -- bump ${entryId} ${heldKeys.map((k) => `--to ${k}`).join(' ')} --major --reason "<why now>" (or hold one with a BLOCKER line in its hold file)`
+    );
+  return { inRange: taken.some((r) => r.version === inRange), majors };
 }
 
 export function readFixture(file: string): Fixture {
@@ -283,6 +337,50 @@ function fixtureDriver(name: Driver): PinDriver {
   };
 }
 
+/** One driver for every family under a fixture: releases from `fixture.families`, a plan that lists what it took. */
+function fixtureFamilyDriver(name: Driver): PinDriver {
+  const famOf = (entry: PinEntry, ctx: DriverContext) => {
+    const fam = (ctx.fixture as Fixture).families?.[entry.id];
+    if (!fam) throw new Error(`the fixture carries no family ${entry.id}`);
+    return fam;
+  };
+  return {
+    name,
+    inspect(entry, ctx) {
+      const fam = famOf(entry, ctx);
+      return Promise.resolve({
+        current: fam.current,
+        releases: fam.releases.map((r) => ({
+          version: r.version,
+          publishedMs: r.published === null ? null : Date.parse(r.published),
+        })),
+      });
+    },
+    plan(entry, to, ctx, also = []) {
+      const fam = famOf(entry, ctx);
+      const majorKeys = fam.releases.map((r) => r.version).filter((v) => v !== fam.inRange);
+      const set = splitFamilySet(
+        entry.id,
+        fam.inRange,
+        majorKeys,
+        fam.releases.filter((r) => r.held === true).map((r) => r.version),
+        [to, ...also],
+        ctx.mutant === 'first-eligible'
+      );
+      const taken = [...(set.inRange && fam.inRange ? [fam.inRange] : []), ...set.majors];
+      return Promise.resolve({
+        entry,
+        from: fam.current,
+        to,
+        writes: [{ repo: '.', file: `families/${entry.id}.txt`, after: `${taken.join('\n')}\n` }],
+        steps: [],
+        changes: taken.map((v) => `take ${v}`),
+      });
+    },
+    holdKey: () => null,
+  };
+}
+
 /**
  * The real drivers, keyed by registry driver name. This module never imports a driver: the
  * drivers import it, so a table built here would be a cycle that breaks whichever module a
@@ -298,6 +396,9 @@ export function registerDrivers(table: Partial<Record<Driver, PinDriver>>): void
 
 /** The driver for an entry; under a fixture, the fixture driver for every leaf. */
 export function driverFor(entry: PinEntry, ctx: DriverContext): PinDriver | null {
-  if (ctx.fixture !== null) return entry.kind === 'leaf' ? fixtureDriver(entry.driver) : null;
+  if (ctx.fixture !== null) {
+    if (entry.kind === 'leaf') return fixtureDriver(entry.driver);
+    return ctx.fixture.families?.[entry.id] ? fixtureFamilyDriver(entry.driver) : null;
+  }
   return DRIVER_TABLE[entry.driver] ?? null;
 }
