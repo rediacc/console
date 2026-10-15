@@ -92,21 +92,17 @@ function versionNeedles(pin: string): string[] {
   return [...needles].filter(Boolean);
 }
 
-/** True when `output` states `pin`. Substring, because a binary wraps its version in prose. */
+/**
+ * True when `output` states `pin`. A substring, because a binary wraps its version in prose, but never one that is part of a longer number: `3.5.0` inside `3.5.01` or `13.5.0` is a different version. A following `-` or `+` stays allowed, because zot answers `--version` only with the git-describe form `v2.1.22-0-g6bbc7e5`, which names exactly the tag.
+ */
 function statesVersion(output: string, pin: string): boolean {
-  return versionNeedles(pin).some((n) => output.includes(n));
+  return versionNeedles(pin).some((n) =>
+    new RegExp(`(?<![0-9])(?<![0-9]\\.)${escapeRegExp(n)}(?![0-9])(?!\\.[0-9])`).test(output)
+  );
 }
 
-/**
- * True when a cross-architecture binary's string table carries the pin as a
- * WHOLE line. Stricter than `statesVersion` on purpose: without the prose
- * around it, a loose substring would match any longer version that merely
- * starts with the same digits (3.5.0 inside 3.5.01), and a version check that
- * can be satisfied by a different version is not a version check.
- */
-function stringsCarryVersion(lines: string[], pin: string): boolean {
-  const needles = new Set(versionNeedles(pin));
-  return lines.some((l) => needles.has(l.trim()));
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Printable ASCII, the same range strings(1) uses by default. */
@@ -114,58 +110,125 @@ function isPrintable(b: number): boolean {
   return b >= 0x20 && b <= 0x7e;
 }
 
+// ─── Go build info: module versions that are NOT the stamp ──────────────────
+
+/** The 16-byte sentinels Go's linker wraps around every copy of the module info string (cmd/go `modload.infoStart` / `infoEnd`), both the `runtime.modinfo` copy and the one inside the build info blob. */
+const GO_MODINFO_START = Buffer.from('3077af0c9274080241e1c107e6d618e6', 'hex');
+const GO_MODINFO_END = Buffer.from('f932433186182072008242104116d8f2', 'hex');
+/** The build info header magic, as `debug/buildinfo` searches for it. */
+const GO_BUILDINFO_MAGIC = Buffer.from('\xff Go buildinf:', 'latin1');
+
+/** A byte range `[start, end)` of a binary. */
+type Span = [number, number];
+
+/** Read an unsigned LEB128 varint at `at`, as `encoding/binary.Uvarint` does; undefined when it runs off the buffer or overflows. */
+function readUvarint(buf: Buffer, at: number): { value: number; next: number } | undefined {
+  let value = 0;
+  let shift = 0;
+  for (let i = at; i < buf.length && shift <= 49; i++) {
+    const b = buf[i];
+    value += (b & 0x7f) * 2 ** shift;
+    if (b < 0x80) return { value, next: i + 1 };
+    shift += 7;
+  }
+  return undefined;
+}
+
 /**
- * True when `buf` contains the pin as a COMPLETE printable run.
+ * The byte ranges `[start, end)` of `buf` that hold Go build info: every sentinel-wrapped module info string (its `path`, `mod`, `dep` and `=>` lines) and the build info header with the toolchain version and module info inlined after it (Go 1.18+, flag bit 2).
  *
- * Equivalent to `strings -a <bin> | grep -x <pin>`, done in process. Whole-run
- * rather than substring for the same reason as `stringsCarryVersion`: a loose
- * match would accept 3.5.01 as 3.5.0.
+ * A `dep` line carries a module version as a tab-delimited whole token (`dep\tgithub.com/kubernetes-csi/external-snapshotter/client/v8\tv8.6.0`), so a binary whose dependency happened to share the pin's version would satisfy a string-table probe with no stamp at all. zot did exactly that: its arm64 asset passed on `mod\tzotregistry.dev/zot/v2\tv2.1.22`, a module version, while its real stamp sat beside a float byte. Excluding these ranges makes the probe answer only to a version the binary was stamped with.
  *
- * It searches for each needle with the native `Buffer.indexOf` and then checks
- * the match is a whole run: only spaces (the one printable byte `trim()` drops)
- * may sit between it and a non-printable byte or the buffer edge on each side,
- * and the run is at least 3 bytes, strings(1)'s default minimum. That is the
- * same predicate `bufferCarriesVersionReference` computes by materialising every
- * run, which cost about 20 of this gate's 24 seconds on ~900 MB of binaries; the
- * controls compare the two on planted buffers every run.
+ * A start sentinel with no end sentinel after it excludes to the end of the buffer: excluding too much can only turn a match into a loud UNPROBED, never a wrong version into a match.
+ */
+function goBuildInfoSpans(buf: Buffer): Span[] {
+  const spans: Span[] = [];
+  for (let s = buf.indexOf(GO_MODINFO_START); s !== -1; s = buf.indexOf(GO_MODINFO_START, s + 1)) {
+    const e = buf.indexOf(GO_MODINFO_END, s + GO_MODINFO_START.length);
+    spans.push([s, e === -1 ? buf.length : e + GO_MODINFO_END.length]);
+  }
+  for (
+    let m = buf.indexOf(GO_BUILDINFO_MAGIC);
+    m !== -1;
+    m = buf.indexOf(GO_BUILDINFO_MAGIC, m + 1)
+  ) {
+    // Header: magic (14), pointer size (1), flags (1), then two pointer-or-padding words, 32 bytes in all.
+    let end = Math.min(buf.length, m + 32);
+    if (m + 16 <= buf.length && (buf[m + 15] & 0x2) !== 0) {
+      // Inline strings: a varint-length toolchain version, then a varint-length module info.
+      const ver = readUvarint(buf, m + 32);
+      const mod = ver && readUvarint(buf, ver.next + ver.value);
+      end = mod ? Math.min(buf.length, mod.next + mod.value) : buf.length;
+    }
+    spans.push([m, end]);
+  }
+  return spans.sort((a, b) => a[0] - b[0]);
+}
+
+// ─── The stamp predicate ────────────────────────────────────────────────────
+
+/** Bytes that continue a version number or a module path: a stamp has none of these on either side, so `v18.7.0`, `v8.7.01`, `v8.7.0-rc.1`, `1.8.7.0` and `/v8.7.0/` are all a different token. */
+const VERSION_CONTINUATION = new Set([...'0123456789.+-_/'].map((c) => c.charCodeAt(0)));
+
+function isLetter(b: number): boolean {
+  return (b >= 0x41 && b <= 0x5a) || (b >= 0x61 && b <= 0x7a);
+}
+
+/** A byte that can sit inside a module path (`golang.org/x/mod/module` allows letters, digits and `-._~/`, plus `+` in a version). */
+function isModulePathByte(b: number): boolean {
+  return isLetter(b) || VERSION_CONTINUATION.has(b) || b === 0x7e;
+}
+
+/**
+ * True when `buf` carries the pin as a STAMPED version: outside every Go build info span, and bounded so that it is not part of a longer token. Equivalent to `bufferCarriesVersionReference`, which states the same rule as one regular expression over the blanked string; the controls compare the two on planted buffers every run.
+ *
+ * Why the old rule was replaced (2026-10-15). It required a non-printable byte on both sides, which is what strings(1) would call a whole run. Go packs string data without separators, so a `-X main.version=v8.7.0` stamp lands wherever the linker puts it: the arm64 snapshot-controller rebuilt for 8.7.0 carried `\xa0Lv8.7.0\x00` (the `L` is the high byte of a float constant) and went UNPROBED, while zot carried `\x08@v2.1.22\x00` and only passed because its module version sat in a `mod` line. The neighbour bytes are chance, so the rule now rejects only the bytes that change what the token means:
+ *
+ * - right: any version continuation (`0-9 . + - _ /`).
+ * - left: any version continuation; for the bare needle (no `v`) also a letter or `@`, because `go1.26.9` is a toolchain version and not a pin of 1.26.9, and the `v` form is its own needle.
+ * - left `@` for the `v` needle when the byte before the `@` is a module path byte: `github.com/x/y@v8.7.0` is a dependency, as in a `-trimpath` source path.
+ * - a neighbour inside a build info span counts as a boundary, so the two implementations agree at a span edge.
+ *
+ * A needle shorter than 3 bytes never matches (strings(1)'s default minimum, kept from the old rule).
  */
 function bufferCarriesVersion(buf: Buffer, pin: string): boolean {
+  const spans = goBuildInfoSpans(buf);
+  const spanAt = (i: number): Span | undefined => spans.find(([s, e]) => i >= s && i < e);
+  const byteAt = (i: number): number =>
+    i < 0 || i >= buf.length || spanAt(i) !== undefined ? -1 : buf[i];
   for (const needle of versionNeedles(pin)) {
-    // A needle with a non-printable byte, or leading/trailing space, can never equal a trimmed printable run.
-    if (needle !== needle.trim() || ![...needle].every((c) => isPrintable(c.charCodeAt(0)))) {
-      continue;
-    }
+    if (needle.length < 3 || ![...needle].every((c) => isPrintable(c.charCodeAt(0)))) continue;
     const pat = Buffer.from(needle, 'latin1');
+    const bare = !needle.startsWith('v');
     for (let at = buf.indexOf(pat); at !== -1; at = buf.indexOf(pat, at + 1)) {
-      let start = at;
-      while (start > 0 && buf[start - 1] === 0x20) start--;
-      if (start > 0 && isPrintable(buf[start - 1])) continue;
-      let end = at + pat.length;
-      while (end < buf.length && buf[end] === 0x20) end++;
-      if (end < buf.length && isPrintable(buf[end])) continue;
-      if (end - start >= 3) return true;
+      const end = at + pat.length;
+      // Overlapping a span: a module version, or a needle cut by a span edge.
+      if (spans.some(([s, e]) => at < e && end > s)) continue;
+      const after = byteAt(end);
+      if (VERSION_CONTINUATION.has(after)) continue;
+      const before = byteAt(at - 1);
+      if (VERSION_CONTINUATION.has(before)) continue;
+      if (bare && (isLetter(before) || before === 0x40)) continue;
+      if (!bare && before === 0x40 && isModulePathByte(byteAt(at - 2))) continue;
+      return true;
     }
   }
   return false;
 }
 
-/** The run-materialising form of `bufferCarriesVersion`, kept as the oracle its controls compare against. */
+/** The regular expression form of `bufferCarriesVersion`, kept as the oracle its controls compare against: build info spans are blanked to NUL first, then one lookaround pattern per needle states the boundary rule. */
 function bufferCarriesVersionReference(buf: Buffer, pin: string): boolean {
-  const needles = versionNeedles(pin);
-  if (needles.length === 0) return false;
-  const runs: string[] = [];
-  let cur = '';
-  for (const b of buf) {
-    // Printable ASCII, the same range strings(1) uses by default.
-    if (b >= 0x20 && b <= 0x7e) {
-      cur += String.fromCharCode(b);
-      continue;
-    }
-    if (cur.length >= 3) runs.push(cur);
-    cur = '';
-  }
-  if (cur.length >= 3) runs.push(cur);
-  return stringsCarryVersion(runs, pin);
+  const bytes = Buffer.from(buf);
+  for (const [s, e] of goBuildInfoSpans(buf)) bytes.fill(0, s, e);
+  const text = bytes.toString('latin1');
+  const cont = '0-9.+\\-_/';
+  return versionNeedles(pin).some((needle) => {
+    if (needle.length < 3 || !/^[\x20-\x7e]+$/.test(needle)) return false;
+    const left = needle.startsWith('v')
+      ? `(?<![${cont}])(?<![A-Za-z${cont}~]@)`
+      : `(?<![${cont}A-Za-z@])`;
+    return new RegExp(`${left}${escapeRegExp(needle)}(?![${cont}])`).test(text);
+  });
 }
 
 // ─── Probing a real artifact ────────────────────────────────────────────────
@@ -191,6 +254,9 @@ const MUST_STAY_PROBEABLE = new Set([
   'csiprovisioner',
   'csisnapshotter',
   'snapshotcontroller',
+  // zot and k3s joined on 2026-10-15, once the string-table probe stopped counting Go build info: both arm64 assets carry their own stamp (zot `v2.1.22`, k3s `v1.37.1+k3s1`) outside it. zot's arm64 asset had been passing only on its `mod` line, a module version, which is no evidence of a stamp.
+  'zot',
+  'k3s',
 ]);
 
 const HOST_ARCH = os.arch() === 'x64' ? 'amd64' : os.arch() === 'arm64' ? 'arm64' : os.arch();
@@ -266,7 +332,7 @@ async function probeAsset(
         asset,
         pin,
         verdict: 'match',
-        detail: 'string table carries the pin as a whole token',
+        detail: 'string table carries the stamped pin, outside Go build info',
       };
     }
     return {
@@ -274,7 +340,8 @@ async function probeAsset(
       asset,
       pin,
       verdict: 'unprobed',
-      detail: 'no version token in the string table',
+      detail:
+        'no stamped version in the string table (Go build info module versions are not counted)',
     };
   } catch (error) {
     return { component, asset, pin, verdict: 'unprobed', detail: `read failed: ${String(error)}` };
@@ -356,41 +423,170 @@ function runControls(): string[] {
     }
   }
 
-  // The strict cross-arch form must reject a longer version that merely shares a prefix, or it would certify 3.5.01 as 3.5.0.
-  if (stringsCarryVersion(['3.5.01'], '3.5.0')) {
-    failures.push('control: a prefix-sharing version was accepted by the string-table check');
-  }
-  if (!stringsCarryVersion(['irrelevant', '3.5.0', 'more'], '3.5.0')) {
-    failures.push('control: an exact version line was not accepted by the string-table check');
+  // The digit boundary on `--version` output: a longer number is a different version, and the git-describe suffix zot answers with is the same one.
+  const outputCases: Array<{ output: string; pin: string; expected: boolean; label: string }> = [
+    { output: 'rsync  version 3.5.01', pin: '3.5.0', expected: false, label: 'longer patch' },
+    { output: 'tool v13.5.0', pin: '3.5.0', expected: false, label: 'longer major' },
+    { output: 'version 3.5.0.', pin: '3.5.0', expected: true, label: 'sentence full stop' },
+    {
+      output: '"commit":"v2.1.22-0-g6bbc7e5"',
+      pin: '2.1.22',
+      expected: true,
+      label: 'git-describe of the tag (zot)',
+    },
+  ];
+  for (const { output, pin, expected, label } of outputCases) {
+    if (statesVersion(output, pin) !== expected) {
+      failures.push(`control: output ${label} (pin ${pin}) did not behave as ${expected}`);
+    }
   }
 
-  // The fast buffer scan must agree with the run-materialising oracle, including where they could plausibly diverge: buffer edges, space padding (trimmed), printable neighbours, a prefix-sharing longer version, the v-prefixed form, runs under 3 bytes, and a first occurrence that is not whole followed by a later one that is.
+  // Go build info as the linker writes it: a sentinel-wrapped module info string (the `runtime.modinfo` copy), and the same string inlined after a build info header with the toolchain version (Go 1.18+, flag bit 2).
+  const latin1 = (b: Buffer): string => b.toString('latin1');
+  const uvarint = (n: number): string => {
+    let out = '';
+    let v = n;
+    while (v >= 0x80) {
+      out += String.fromCharCode((v & 0x7f) | 0x80);
+      v = Math.floor(v / 128);
+    }
+    return out + String.fromCharCode(v);
+  };
+  const modinfo = (lines: string[]): string =>
+    latin1(GO_MODINFO_START) + lines.join('\n') + latin1(GO_MODINFO_END);
+  const header = (mod: string): string => {
+    const toolchain = 'go1.26.9';
+    return `${latin1(GO_BUILDINFO_MAGIC)}\u0008\u0002${'\u0000'.repeat(16)}${uvarint(toolchain.length)}${toolchain}${uvarint(mod.length)}${mod}`;
+  };
+  const depOnPin = modinfo([
+    'path\tgithub.com/kubernetes-csi/external-snapshotter/v8/cmd/snapshot-controller',
+    'mod\tgithub.com/kubernetes-csi/external-snapshotter/v8\t(devel)\t',
+    'dep\tgithub.com/kubernetes-csi/external-snapshotter/client/v8\tv8.7.0\t',
+  ]);
+  // A header whose module info runs past 127 bytes takes a two-byte length, and must still be excluded whole. Unwrapped on purpose: `debug/buildinfo` reads inline module info with or without the sentinels, and a wrapped one would be excluded by the sentinel scan whatever the length parse did.
+  const longDep = [
+    `dep\tgithub.com/${'x'.repeat(140)}\tv8.7.0\t`,
+    'dep\tgithub.com/y\tv8.7.0\t',
+  ].join('\n');
+  const spanCovers = (text: string, needle: string): boolean => {
+    const buf = Buffer.from(text, 'latin1');
+    const spans = goBuildInfoSpans(buf);
+    let at = buf.indexOf(needle);
+    let seen = 0;
+    for (; at !== -1; at = buf.indexOf(needle, at + 1), seen++) {
+      if (!spans.some(([s, e]) => at >= s && at + needle.length <= e)) return false;
+    }
+    return seen > 0;
+  };
+  if (!spanCovers(`\u0000${header(longDep)}\u0000`, 'v8.7.0')) {
+    failures.push(
+      'control: a build info header with a two-byte module info length was not excluded whole'
+    );
+  }
+  if (!spanCovers(`\u0000${header('')}\u0000`, 'go1.26.9')) {
+    failures.push('control: the build info toolchain version was not excluded');
+  }
+
+  // The fast buffer scan must agree with the regular expression oracle, including where they could plausibly diverge: buffer edges, space padding, printable neighbours of chance (the linker packs strings with no separator), a longer version on either side, the v-prefixed form, needles under 3 bytes, module paths, Go build info, and a first occurrence that is rejected followed by a later one that is not.
   const nul = '\u0000';
   const bufferCases: Array<{ text: string; pin: string; expected: boolean; label: string }> = [
     { text: `${nul}3.5.0${nul}`, pin: '3.5.0', expected: true, label: 'NUL-delimited run' },
     { text: '3.5.0', pin: '3.5.0', expected: true, label: 'run at both buffer edges' },
     { text: `${nul}  3.5.0 ${nul}`, pin: '3.5.0', expected: true, label: 'space-padded run' },
     { text: `${nul}v2.1.2\n`, pin: '2.1.2', expected: true, label: 'v-prefixed run' },
-    { text: `${nul}3.5.01${nul}`, pin: '3.5.0', expected: false, label: 'prefix-sharing version' },
     {
-      text: `${nul}x3.5.0${nul}`,
-      pin: '3.5.0',
-      expected: false,
-      label: 'printable left neighbour',
+      text: `\u00ff\u00a0Lv8.7.0${nul}`,
+      pin: '8.7.0',
+      expected: true,
+      label: 'THE 2026-10-15 CASE: the arm64 snapshot-controller stamp after a float byte `L`',
+    },
+    {
+      text: `\u00e1z\u0014\u00aeG\u00e1\u0008@v2.1.22${nul}`,
+      pin: '2.1.22',
+      expected: true,
+      label: 'the arm64 zot stamp after a float byte `@`',
     },
     {
       text: `${nul}3.5.0 x${nul}`,
       pin: '3.5.0',
-      expected: false,
-      label: 'printable right after space',
+      expected: true,
+      label: 'a space then prose on the right is a boundary',
     },
-    { text: `${nul}3.4.4${nul}`, pin: '3.5.0', expected: false, label: 'THE REGRESSION as bytes' },
-    { text: `${nul}1.2${nul}1${nul}`, pin: '1', expected: false, label: 'run under 3 bytes' },
     {
-      text: `${nul}3.5.0x${nul}3.5.0${nul}`,
+      text: `${nul}v8.7.0Kq${nul}`,
+      pin: '8.7.0',
+      expected: true,
+      label: 'a chance letter on the right',
+    },
+    { text: `${nul}3.5.01${nul}`, pin: '3.5.0', expected: false, label: 'prefix-sharing version' },
+    { text: `${nul}v8.7.01${nul}`, pin: '8.7.0', expected: false, label: 'longer patch, v form' },
+    { text: `${nul}v18.7.0${nul}`, pin: '8.7.0', expected: false, label: 'longer major, v form' },
+    { text: `${nul}1.8.7.0${nul}`, pin: '8.7.0', expected: false, label: 'a dotted prefix' },
+    { text: `${nul}v8.7.0-rc.1${nul}`, pin: '8.7.0', expected: false, label: 'a pre-release' },
+    { text: `${nul}v1.37.1+k3s1${nul}`, pin: '1.37.1', expected: false, label: 'a build suffix' },
+    {
+      text: `${nul}github.com/kubernetes-csi/external-snapshotter/client/v8@v8.7.0/apis/volumesnapshot.go${nul}`,
+      pin: '8.7.0',
+      expected: false,
+      label: 'a module path @v (a -trimpath source path)',
+    },
+    {
+      text: `${nul}github.com/x/y@v8.7.0${nul}`,
+      pin: '8.7.0',
+      expected: false,
+      label: 'a module path @v at the end of a run',
+    },
+    { text: `${nul}x@3.5.0${nul}`, pin: '3.5.0', expected: false, label: 'a bare version after @' },
+    {
+      text: `${nul}x3.5.0${nul}`,
+      pin: '3.5.0',
+      expected: false,
+      label: 'a letter before the bare needle',
+    },
+    { text: `${nul}go8.7.0${nul}`, pin: '8.7.0', expected: false, label: 'a toolchain version' },
+    { text: `${nul}3.4.4${nul}`, pin: '3.5.0', expected: false, label: 'THE REGRESSION as bytes' },
+    { text: `${nul}1.2${nul}1${nul}`, pin: '1', expected: false, label: 'needle under 3 bytes' },
+    {
+      text: `${nul}3.5.01${nul}3.5.0${nul}`,
       pin: '3.5.0',
       expected: true,
-      label: 'later whole run',
+      label: 'a later stamp after a rejected occurrence',
+    },
+    {
+      text: `${nul}${depOnPin}${nul}`,
+      pin: '8.7.0',
+      expected: false,
+      label: 'THE HOLE: a runtime.modinfo dep line on the pin, no stamp',
+    },
+    {
+      text: `${nul}${header(depOnPin)}${nul}`,
+      pin: '8.7.0',
+      expected: false,
+      label: 'a build info header dep line on the pin, no stamp',
+    },
+    {
+      text: `${nul}${header(longDep)}${nul}`,
+      pin: '8.7.0',
+      expected: false,
+      label: 'a build info header past 127 bytes, no stamp',
+    },
+    {
+      text: `${nul}${latin1(GO_MODINFO_START)}mod\tm\tv8.7.0\t`,
+      pin: '8.7.0',
+      expected: false,
+      label: 'module info with no end sentinel excludes to the end',
+    },
+    {
+      text: `${nul}${depOnPin}${nul}v8.7.0${nul}${header(depOnPin)}`,
+      pin: '8.7.0',
+      expected: true,
+      label: 'a stamp between two build info copies is still found',
+    },
+    {
+      text: `${nul}v8.7.0${depOnPin}`,
+      pin: '8.7.0',
+      expected: true,
+      label: 'a stamp right before a sentinel (its 0 is not a digit of the stamp)',
     },
   ];
   for (const { text, pin, expected, label } of bufferCases) {
