@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildRemoteRenetCommand, buildRenetEnvPrefix } from '../executor/local-executor.js';
+import { buildRemoteRenetCommand, buildRenetEnv } from '../executor/local-executor.js';
 
-describe('buildRenetEnvPrefix — envSecrets', () => {
-  it('emits no prefix when nothing is needed', () => {
+describe('buildRenetEnv: envSecrets', () => {
+  it('emits no prefix and no secrets when nothing is needed', () => {
     expect(
-      buildRenetEnvPrefix({
+      buildRenetEnv({
         isDevelopment: false,
         telemetryDisabled: false,
       })
-    ).toBe('');
+    ).toEqual({ prefix: '', secrets: {} });
   });
 
-  it('shell-quotes secret values; tolerates spaces, $ and quotes', () => {
-    const out = buildRenetEnvPrefix({
+  it('keeps secret values verbatim and out of the prefix; tolerates spaces, $ and quotes', () => {
+    const out = buildRenetEnv({
       isDevelopment: false,
       telemetryDisabled: true,
       envSecrets: {
@@ -23,73 +23,86 @@ describe('buildRenetEnvPrefix — envSecrets', () => {
         REDIACC_SECRET_QUOTE: "it's a quote",
       },
     });
-    expect(out).toContain("REDIACC_SECRET_PLAIN='simple'");
-    expect(out).toContain("REDIACC_SECRET_SPACE='with space'");
-    expect(out).toContain("REDIACC_SECRET_DOLLAR='has $variable'");
-    // single-quote escape: ' → '\'' (the only safe inner-quote pattern in sh)
-    expect(out).toContain("REDIACC_SECRET_QUOTE='it'\\''s a quote'");
+    expect(out.prefix).toBe('env REDIACC_TELEMETRY_DISABLED=1 ');
+    expect(out.secrets).toEqual({
+      REDIACC_SECRET_PLAIN: 'simple',
+      REDIACC_SECRET_SPACE: 'with space',
+      REDIACC_SECRET_DOLLAR: 'has $variable',
+      REDIACC_SECRET_QUOTE: "it's a quote",
+    });
   });
 
-  it('handles multi-line values (PEMs etc) without breaking', () => {
-    const out = buildRenetEnvPrefix({
+  it('preserves newlines (multiline PEM secrets)', () => {
+    const out = buildRenetEnv({
       isDevelopment: false,
-      telemetryDisabled: true,
+      telemetryDisabled: false,
       envSecrets: {
         REDIACC_SECRET_PEM: '-----BEGIN-----\nA\nB\n-----END-----',
       },
     });
-    expect(out).toContain("REDIACC_SECRET_PEM='-----BEGIN-----\nA\nB\n-----END-----'");
+    expect(out.secrets.REDIACC_SECRET_PEM).toBe('-----BEGIN-----\nA\nB\n-----END-----');
   });
 
-  it('combines telemetry-disabled and envSecrets into a single env prefix', () => {
-    const out = buildRenetEnvPrefix({
-      isDevelopment: true,
+  it('telemetry disabled still forwards secrets', () => {
+    const out = buildRenetEnv({
+      isDevelopment: false,
       telemetryDisabled: true,
       envSecrets: { REDIACC_SECRET_X: 'x' },
     });
-    expect(out).toMatch(/^env /);
-    expect(out).toContain('REDIACC_ENVIRONMENT=development');
-    expect(out).toContain('REDIACC_TELEMETRY_DISABLED=1');
-    expect(out).toContain("REDIACC_SECRET_X='x'");
-    expect(out).toMatch(/ $/); // trailing space for splice
+    expect(out.prefix).toContain('REDIACC_TELEMETRY_DISABLED=1');
+    expect(out.secrets).toEqual({ REDIACC_SECRET_X: 'x' });
   });
 
-  it('does NOT inject envSecrets into the OTLP-credential branch when telemetry is enabled', () => {
-    // Telemetry enabled (telemetryDisabled=false) AND otlpCreds present:
-    // OTLP creds are exported. envSecrets are still appended after them.
-    const out = buildRenetEnvPrefix({
+  it('OTLP creds and secrets travel together, off the prefix', () => {
+    const out = buildRenetEnv({
       isDevelopment: false,
       telemetryDisabled: false,
       otlpCreds: { user: 'u', pass: 'p' },
       envSecrets: { REDIACC_SECRET_X: 'x' },
     });
-    expect(out).toContain("REDIACC_OTLP_USER='u'");
-    expect(out).toContain("REDIACC_OTLP_PASS='p'");
-    expect(out).toContain("REDIACC_SECRET_X='x'");
+    expect(out.prefix).toBe('');
+    expect(out.secrets).toEqual({
+      REDIACC_OTLP_USER: 'u',
+      REDIACC_OTLP_PASS: 'p',
+      REDIACC_SECRET_X: 'x',
+    });
   });
 });
 
 describe('buildRemoteRenetCommand — envSecrets', () => {
-  it('produces a sudo invocation that splices the env prefix', () => {
-    const cmd = buildRemoteRenetCommand({
+  it('puts the secret on stdin and only the reader on the command', () => {
+    const launch = buildRemoteRenetCommand({
       remoteRenetPath: '/usr/bin/renet',
       isDevelopment: false,
       telemetryDisabled: true,
       envSecrets: { REDIACC_SECRET_FOO: 'bar' },
     });
-    expect(cmd).toBe(
-      "sudo env REDIACC_TELEMETRY_DISABLED=1 REDIACC_SECRET_FOO='bar' /usr/bin/renet execute --executor local"
+    expect(launch.command).toBe(
+      `sudo bash -c 'while IFS= read -r -d '\\'''\\'' kv && [ -n "$kv" ]; do export "$kv"; done; exec env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local'`
     );
+    expect(launch.stdinPrefix).toBe('REDIACC_SECRET_FOO=bar\0\0');
   });
 
   it('omits envSecrets when undefined (no extra space, no extra tokens)', () => {
-    const cmd = buildRemoteRenetCommand({
+    const launch = buildRemoteRenetCommand({
       remoteRenetPath: '/usr/bin/renet',
       isDevelopment: false,
       telemetryDisabled: true,
     });
-    expect(cmd).toBe(
-      'sudo env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local'
-    );
+    expect(launch).toEqual({
+      command: 'sudo env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local',
+      stdinPrefix: '',
+    });
+  });
+
+  it('refuses a name the remote reader could not export', () => {
+    expect(() =>
+      buildRemoteRenetCommand({
+        remoteRenetPath: '/usr/bin/renet',
+        isDevelopment: false,
+        telemetryDisabled: true,
+        envSecrets: { 'BAD NAME': 'x' },
+      })
+    ).toThrow(/Invalid environment variable name/);
   });
 });

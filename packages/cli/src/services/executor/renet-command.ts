@@ -1,25 +1,17 @@
 /**
  * The env prefix and command line the CLI runs over SSH to start renet, and
- * the environment and per-repo secrets that go into it.
+ * the environment and per-repo secrets that go into it. Secrets ride stdin,
+ * never argv.
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import { isDevBuild } from '../../utils/platform.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { configService } from '../config/config-resources.js';
+import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
 
-/**
- * Build the `env K=V K=V ` prefix that carries telemetry state into a
- * renet subprocess launched over SSH. Shared by the `renet execute`
- * path (buildRemoteRenetCommand) and the `renet list all` path
- * (machine-status.ts) so both invocations get the same telemetry
- * handling, emit spans/metrics/logs when OTLP creds were fetched, or
- * go default-deny when the user opted out via CI / REDIACC_TELEMETRY_DISABLED.
- *
- * Returns a trailing-space string ready to splice into the command, or
- * an empty string when nothing needs to be injected.
- */
-export function buildRenetEnvPrefix(params: {
+/** The settings a renet launch carries, split by whether they may ride argv. */
+export interface RenetEnvParams {
   isDevelopment: boolean;
   telemetryDisabled: boolean;
   otlpCreds?: { user: string; pass: string } | null;
@@ -35,9 +27,20 @@ export function buildRenetEnvPrefix(params: {
    * DOCKER_HOST. The `renet kube` wrapper reads it to talk to the cluster.
    */
   kubeconfig?: string;
-}): string {
+}
+
+/**
+ * Compose the environment that carries telemetry state and per-repo secrets
+ * into a renet subprocess launched over SSH. Shared by the `renet execute`
+ * path (buildRemoteRenetCommand), the detached `renet job start` path and the
+ * `renet list all` path (machine-status.ts), so every invocation gets the same
+ * telemetry handling: spans/metrics/logs when OTLP creds were fetched, or
+ * default-deny when the user opted out via CI / REDIACC_TELEMETRY_DISABLED.
+ */
+export function buildRenetEnv(params: RenetEnvParams): RenetEnv {
   const { isDevelopment, telemetryDisabled, otlpCreds, envSecrets, kubeconfig } = params;
   const envParts: string[] = [];
+  const secrets: Record<string, string> = {};
   if (isDevelopment) {
     // REMOTE plane: this REDIACC_ENVIRONMENT travels to the renet process on the machine, a different plane from the local CLI's dev signal. Keep the name; the env-tombstone test allowlists this one literal.
     envParts.push('REDIACC_ENVIRONMENT=development');
@@ -49,20 +52,18 @@ export function buildRenetEnvPrefix(params: {
     // Propagate the opt-out to renet. When set, renet skips its OTel SDK setup entirely (see pkg/telemetry/telemetry.go:disabled). We deliberately do NOT pass OTLP creds in this branch, even if the caller passed `otlpCreds`, ignoring them here matches the user's intent to send zero telemetry from any process.
     envParts.push('REDIACC_TELEMETRY_DISABLED=1');
   } else if (otlpCreds) {
-    envParts.push(`REDIACC_OTLP_USER=${shellQuote(otlpCreds.user)}`);
-    envParts.push(`REDIACC_OTLP_PASS=${shellQuote(otlpCreds.pass)}`);
+    secrets.REDIACC_OTLP_USER = otlpCreds.user;
+    secrets.REDIACC_OTLP_PASS = otlpCreds.pass;
   }
   if (envSecrets) {
-    for (const [k, v] of Object.entries(envSecrets)) {
-      envParts.push(`${k}=${shellQuote(v)}`);
-    }
+    Object.assign(secrets, envSecrets);
   }
-  return envParts.length > 0 ? `env ${envParts.join(' ')} ` : '';
+  return { prefix: envParts.length > 0 ? `env ${envParts.join(' ')} ` : '', secrets };
 }
 
 /**
- * Build the `sudo env ... renet execute ...` command string that the CLI
- * executes over SSH on the target machine.
+ * Build the sudo `renet execute ...` launch that the CLI executes over SSH
+ * on the target machine; its `stdinPrefix` goes ahead of the vault.
  *
  * Exported as a pure function so unit tests can exercise all combinations
  * of (telemetry disabled, OTLP creds present, events mode, dev environment)
@@ -72,26 +73,22 @@ export function buildRenetEnvPrefix(params: {
  * injected INSTEAD OF OTLP credentials, the user's opt-out takes
  * precedence over any credentials the caller may have pre-fetched.
  */
-export function buildRemoteRenetCommand(params: {
-  remoteRenetPath: string;
-  eventsMode?: boolean;
-  isDevelopment: boolean;
-  telemetryDisabled: boolean;
-  otlpCreds?: { user: string; pass: string } | null;
-  envSecrets?: Record<string, string>;
-  kubeconfig?: string;
-}): string {
+export function buildRemoteRenetCommand(
+  params: RenetEnvParams & { remoteRenetPath: string; eventsMode?: boolean }
+): RenetLaunch {
   const { remoteRenetPath, eventsMode, ...envParams } = params;
   const eventsFlag = eventsMode ? ' --events' : '';
-  const envPrefix = buildRenetEnvPrefix(envParams);
-  return `sudo ${envPrefix}${remoteRenetPath} execute --executor local${eventsFlag}`;
+  return sudoRenet(
+    buildRenetEnv(envParams),
+    `${remoteRenetPath} execute --executor local${eventsFlag}`
+  );
 }
 
 /**
  * Resolve env-mode per-repo secrets for the focal repository, prefixed
  * `REDIACC_SECRET_<NAME>`. Returns undefined when no repo is targeted.
- * File-mode secrets are out of band, they ride the vault stdin (Step 6),
- * not the shell prefix, so they never appear in `ps`.
+ * File-mode secrets ride inside the vault; env-mode secrets ride the stdin
+ * prefix that `sudoRenet` puts ahead of it. Neither appears in `ps`.
  */
 export async function resolveEnvSecrets(
   repoRef: string | undefined

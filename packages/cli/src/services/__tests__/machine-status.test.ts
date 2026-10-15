@@ -42,7 +42,7 @@ vi.mock('../renet/renet-execution.js', () => ({
 }));
 
 vi.mock('../executor/local-executor.js', () => ({
-  buildRenetEnvPrefix: vi.fn().mockReturnValue(''),
+  buildRenetEnv: vi.fn().mockReturnValue({ prefix: '', secrets: {} }),
 }));
 
 vi.mock('../telemetry/otlp-credentials.js', () => ({
@@ -55,28 +55,28 @@ vi.mock('../telemetry/telemetry.js', () => ({
 
 describe('buildListCommand', () => {
   const base = {
-    envPrefix: '',
+    env: { prefix: '', secrets: {} },
     remoteRenetPath: '/usr/lib/rediacc/renet/current/renet',
     datastore: WK_DATASTORE_PATH,
   };
 
   it('omits --sections when no filter is given', () => {
-    expect(buildListCommand(base)).toBe(
+    expect(buildListCommand(base).command).toBe(
       `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json`
     );
   });
 
   it('propagates a caller-provided sections filter', () => {
-    expect(buildListCommand({ ...base, sections: ['containers'] })).toBe(
+    expect(buildListCommand({ ...base, sections: ['containers'] }).command).toBe(
       `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json --sections containers`
     );
-    expect(buildListCommand({ ...base, sections: ['system', 'repositories'] })).toBe(
+    expect(buildListCommand({ ...base, sections: ['system', 'repositories'] }).command).toBe(
       `sudo /usr/lib/rediacc/renet/current/renet list all --datastore ${WK_DATASTORE_PATH} --json --sections system,repositories`
     );
   });
 
   it('treats an empty sections array as no filter', () => {
-    expect(buildListCommand({ ...base, sections: [] })).not.toContain('--sections');
+    expect(buildListCommand({ ...base, sections: [] }).command).not.toContain('--sections');
   });
 });
 
