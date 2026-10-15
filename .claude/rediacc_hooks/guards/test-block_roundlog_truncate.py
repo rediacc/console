@@ -34,6 +34,32 @@ CASES = [
     ("truncate through a name holding another file", "L=/tmp/notes.md; echo x > $L", False),
     ("truncate through an unset variable", "echo x > $UNSET_L", False),
     ("redirect bash refuses as ambiguous", 'L="%s %s"; echo x > $L' % (LOG, LOG), False),
+    # #63109cf2: a glob literal puts a log in play only where it can reach a log directory. The first two were refused (rc 2) at 8ef785864, a regex read as a glob meeting the log name while the program writes another file or none; the last three still reach `agent/` and stay refused.
+    (
+        "a regex in a program that slices an unrelated file",
+        "python3 - <<'PY'\nimport pathlib, re, tempfile\np = pathlib.Path(tempfile.mkdtemp()) / 'out.txt'\ns = 'abc def'\nm = re.search(r'[A-Za-z_][A-Za-z0-9_]*', s)\np.write_text(s[:m.end()])\nPY",
+        False,
+    ),
+    (
+        "a program that imports the guard and prints",
+        "python3 -c \"import sys; sys.path.insert(0, '.claude'); from rediacc_hooks.guards import block_roundlog_truncate as g; print(g._glob_meets_log('[a-z]*'))\"",
+        False,
+    ),
+    (
+        "a bare glob under cd agent",
+        "cd agent && python3 - <<'PY'\nimport glob\nfor p in glob.glob('[a-z]*'):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a bare glob after chdir into agent",
+        "python3 - <<'PY'\nimport glob, os\nos.chdir('agent')\nfor p in glob.glob('[a-z]*'):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "a recursive glob",
+        "python3 - <<'PY'\nimport glob\nfor p in glob.glob('**/[a-z]*', recursive=True):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
 ]
 
 # The two readers overlap (each alone refuses the same rows), so the plant takes both.
@@ -48,6 +74,15 @@ MUTANTS = [
             (
                 "        for op, target in _redirects(shellscan._analyse(cmd))\n",
                 "        for op, target in shellscan._analyse(cmd).writes\n",
+            ),
+        ],
+    ),
+    (
+        "any glob literal puts a log in play (#63109cf2)",
+        [
+            (
+                '        and _glob_reaches_log_dir(m.group(0)[1:-1], code + "\\n" + (context or ""))\n',
+                "",
             ),
         ],
     ),

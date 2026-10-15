@@ -3207,6 +3207,33 @@ def _arith_names(text):
     return {a or b for a, b in _ARITH_ASSIGN.findall(text)}
 
 
+_PARAM_HEAD = re.compile(r"[!#]?([A-Za-z_][A-Za-z0-9_]*|[0-9]+|[@*#?$!-])")
+
+
+def _param_arith_text(raw):
+    """The parts of a `${...}` expansion bash evaluates arithmetically: an array subscript (`${a[i=1]}`) and the offset and length of a substring (`${D:off:len}`), joined; "" for any other form (review 6238f04a.2). The word of `${D:-a=1}`, `${D#a=1}` or `${D/a=1/b}` is text, and reading it as arithmetic marked `a` unknown though bash 5.3 leaves it as it was."""
+    if not raw.startswith("${") or not raw.endswith("}"):
+        return ""
+    body = raw[2:-1]
+    m = _PARAM_HEAD.match(body)
+    if m is None:
+        return ""
+    out, rest = [], body[m.end() :]
+    if rest.startswith("["):
+        depth, k = 0, 0
+        while k < len(rest):
+            depth += rest[k] == "["
+            depth -= rest[k] == "]"
+            k += 1
+            if depth == 0:
+                break
+        out.append(rest[1 : k - 1])
+        rest = rest[k:]
+    if rest.startswith(":") and rest[1:2] not in ("-", "=", "?", "+"):
+        out.append(rest[1:])
+    return "\n".join(out)
+
+
 def _opaque(shell):
     """`shell` with every variable unknown, IFS included: what is left after a command that may assign any of them."""
     out = {
@@ -3249,7 +3276,7 @@ def _expansion_assigns(tokens):
                 m = _DEFAULT_ASSIGN.match(p.raw)
                 if m:
                     names.add(m.group(1))
-                names.update(_arith_names(p.raw[2:-1]) if p.raw.startswith("${") else ())
+                names.update(_arith_names(_param_arith_text(p.raw)))
             elif p.kind == "arith":
                 names.update(_arith_names(p.raw))
             elif p.kind == "lit" and "$[" in p.raw:
@@ -7373,9 +7400,185 @@ def writer_text(run, cmd):
     return "\n".join(f for f in [feed, own] if f)
 
 
+# A FILE A TOOL WRITES THROUGH ITS OWN OUTPUT OPTION IS WRITTEN (#63109cf2). `curl -o a.py URL && python3 a.py`, `wget -O a.py URL && python3 a.py` and `tar -xf x.tar && python3 a.py` run a program that is not on disk when the hook reads it, so the script was absent, `(None, None)`, and every guard judged the line as running nothing, while `curl URL > a.py` already made it unjudgeable. A downloader's output file
+# (`curl -o`/`--output`, `-O` and `--remote-name` naming the URL's last segment, `-D`/`-c` and their long forms; `wget -O`/`--output-document`, `-o`/`-a`, and with no `-O` the URL's last segment under `-P`) is a write of unknown content; an archive extraction (`tar`/`bsdtar` with `x`, `--extract` or `--get`, `unzip` short of `-l`/`-t`/`-p`/`-v`/`-Z`), a recursive `wget` and a `curl -J` leave every file under the directory they write into unknown, since which files they make cannot be read here.
+_CURL_VALUED = frozenset("AbcCdDeEFHKmoPQrtTuUwxXyYz")
+_CURL_LONG_OUT = {
+    "--output": "file",
+    "--dump-header": "file",
+    "--cookie-jar": "file",
+    "--output-dir": "dir",
+}
+_WGET_VALUED = frozenset("OoaPeitTwQUlARDIXB")
+_URL = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S+")
+
+
+def _url_name(url):
+    """The file name a download of `url` lands under by default: the last segment of its path, `index.html` when there is none."""
+    path = re.sub(r"[?#].*\Z", "", url.split("://", 1)[-1])
+    name = path.rsplit("/", 1)[-1] if "/" in path else ""
+    return name or "index.html"
+
+
+def _tool_outputs(run):
+    """`(files, dirs)` a downloader or archive tool writes through its own options, as words relative to the run's directory: each file holds content this walk cannot read, and each directory may receive any file (the comment above)."""
+    base = _base(run.name)
+    words = list(
+        run.xargv
+        if run.xargv is not None and not any(_UNRESOLVED in w for w in run.xargv)
+        else run.argv
+    )
+    files: list[str] = []
+    dirs: list[str] = []
+    if base == "curl":
+        remote, header, out_dir, k = False, False, "", 0
+        while k < len(words):
+            word = words[k]
+            k += 1
+            if word.startswith("--"):
+                key, eq, value = word.partition("=")
+                if key in _CURL_LONG_OUT:
+                    if not eq and k < len(words):
+                        value = words[k]
+                        k += 1
+                    if _CURL_LONG_OUT[key] == "dir":
+                        out_dir = value
+                    else:
+                        files.append(value)
+                remote |= key in ("--remote-name", "--remote-name-all")
+                header |= key == "--remote-header-name"
+                continue
+            if word.startswith("-") and len(word) > 1:
+                for at, letter in enumerate(word[1:], 1):
+                    remote |= letter == "O"
+                    header |= letter == "J"
+                    if letter in _CURL_VALUED:
+                        value = word[at + 1 :]
+                        if not value and k < len(words):
+                            value = words[k]
+                            k += 1
+                        if letter in "oDc":
+                            files.append(value)
+                        break
+        urls = [w for w in words if _URL.fullmatch(w)]
+        if remote:
+            files.extend(
+                os.path.join(out_dir, _url_name(u)) if out_dir else _url_name(u) for u in urls
+            )
+        if header:
+            dirs.append(out_dir or ".")
+        return [f for f in files if f and f != "-"], dirs
+    if base == "wget":
+        document, prefix, recursive, k = None, "", False, 0
+        while k < len(words):
+            word = words[k]
+            k += 1
+            if word.startswith("--"):
+                key, eq, value = word.partition("=")
+                if key in (
+                    "--output-document",
+                    "--output-file",
+                    "--append-output",
+                    "--directory-prefix",
+                ):
+                    if not eq and k < len(words):
+                        value = words[k]
+                        k += 1
+                    if key == "--output-document":
+                        document = value
+                    elif key == "--directory-prefix":
+                        prefix = value
+                    else:
+                        files.append(value)
+                recursive |= key in ("--recursive", "--mirror", "--page-requisites")
+                continue
+            if word.startswith("-") and len(word) > 1:
+                for at, letter in enumerate(word[1:], 1):
+                    if letter == "n":
+                        break
+                    recursive |= letter in "rmp"
+                    if letter in _WGET_VALUED:
+                        value = word[at + 1 :]
+                        if not value and k < len(words):
+                            value = words[k]
+                            k += 1
+                        if letter == "O":
+                            document = value
+                        elif letter == "P":
+                            prefix = value
+                        elif letter in "oa":
+                            files.append(value)
+                        break
+        if document is not None:
+            files.append(document)
+        else:
+            urls = [w for w in words if _URL.fullmatch(w)]
+            files.extend(
+                os.path.join(prefix, _url_name(u)) if prefix else _url_name(u) for u in urls
+            )
+        if recursive:
+            dirs.append(prefix or ".")
+        return [f for f in files if f and f != "-"], dirs
+    if base in ("tar", "bsdtar"):
+        bundle = words[0] if words and not words[0].startswith("-") else ""
+        extract = "x" in bundle or any(
+            w in ("--extract", "--get") or (re.fullmatch(r"-[A-Za-z]+", w) and "x" in w)
+            for w in words
+        )
+        if not extract:
+            return [], []
+        target = "."
+        for k, word in enumerate(words):
+            if word in ("-C", "--directory") and k + 1 < len(words):
+                target = words[k + 1]
+            elif word.startswith("--directory="):
+                target = word.split("=", 1)[1]
+            elif word.startswith("-C") and len(word) > 2:
+                target = word[2:]
+        return [], [target]
+    if base == "unzip":
+        if any(re.fullmatch(r"-[A-Za-z]*[ltpvZ][A-Za-z]*", w) for w in words):
+            return [], []
+        target = "."
+        for k, word in enumerate(words):
+            if word == "-d" and k + 1 < len(words):
+                target = words[k + 1]
+        return [], [target]
+    return [], []
+
+
+class _Written(dict):
+    """`_written_scripts`' record: `{absolute path: text or None}`, where a path under a directory an archive or a recursive download wrote into (`unpacked`) is present and holds None."""
+
+    def __init__(self):
+        super().__init__()
+        self.unpacked: list[str] = []
+
+    def _under(self, key):
+        return isinstance(key, str) and any(
+            key == d or key.startswith(d.rstrip("/") + "/") for d in self.unpacked
+        )
+
+    def __contains__(self, key):
+        return dict.__contains__(self, key) or self._under(key)
+
+    def __getitem__(self, key):
+        if dict.__contains__(self, key):
+            return dict.__getitem__(self, key)
+        if self._under(key):
+            return None
+        raise KeyError(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+
 def _written_scripts(cmd, until, cwd):
-    """`{absolute path: text or None}` for every file the runs of `cmd` before `until` write; None is a write whose content this walk cannot read."""
-    out: dict = {}
+    """`{absolute path: text or None}` for every file the runs of `cmd` before `until` write; None is a write whose content this walk cannot read, and every path under a directory an extraction or a recursive download wrote into reads as None (`_Written`)."""
+    out = _Written()
 
     def record(path, run_cwd, text):
         target = _script_path(path, run_cwd, cwd)
@@ -7408,6 +7611,10 @@ def _written_scripts(cmd, until, cwd):
             for a in argv:
                 if a.startswith("of="):
                     record(a[3:], run.cwd, None)
+        files, dirs = _tool_outputs(run)
+        for target in files:
+            record(target, run.cwd, None)
+        out.unpacked.extend(_script_path(d, run.cwd, cwd) for d in dirs)
     return out
 
 
@@ -7462,6 +7669,68 @@ def _made_directory(run):
     return operands, known
 
 
+# A RUN THAT CANNOT MAKE OR REMOVE A DIRECTORY LEAVES THE DISK'S ANSWER STANDING (review 6238f04a.1). `git -C "$X" status && cp src.py n` recorded `n` at both places with content unknown, since any `git` run with an unexpandable word counted, while a `git status` makes and removes nothing. A `git` run counts only for a subcommand that is not one of these, which change no
+# file in the work tree (an alias, or an unexpandable subcommand, counts), and an `rm` only when it may recurse or remove a directory (`-r`, `-R`, `-d` and their long forms, or an unexpandable word before `--`, which bash may hand it as such an option).
+_GIT_TREE_KEEPERS = frozenset(
+    (
+        "status",
+        "log",
+        "show",
+        "diff",
+        "rev-parse",
+        "rev-list",
+        "ls-files",
+        "ls-tree",
+        "ls-remote",
+        "cat-file",
+        "config",
+        "remote",
+        "fetch",
+        "blame",
+        "grep",
+        "describe",
+        "branch",
+        "tag",
+        "shortlog",
+        "reflog",
+        "for-each-ref",
+        "show-ref",
+        "symbolic-ref",
+        "merge-base",
+        "name-rev",
+        "count-objects",
+        "check-ignore",
+        "check-attr",
+        "diff-tree",
+        "diff-files",
+        "diff-index",
+        "add",
+        "commit",
+        "push",
+        "version",
+        "var",
+    )
+)
+_RM_DIR_OPTION = re.compile(r"-[A-Za-z]*[rRd][A-Za-z]*|--recursive|--dir")
+
+
+def _may_touch_directories(run):
+    """True when `run` may make, move, link or remove a directory (`_DIR_TOUCHERS`, narrowed for `git` and `rm` as the comment above says)."""
+    base = _base(run.name)
+    if base not in _DIR_TOUCHERS:
+        return False
+    if base == "git":
+        return run.git_sub not in _GIT_TREE_KEEPERS
+    if base == "rm" and "xargs" not in run.via and run.launch is None:
+        for word in run.xargv if run.xargv is not None else run.argv:
+            if word == "--":
+                return False
+            if _RM_DIR_OPTION.fullmatch(word) or "$" in word or "`" in word or _UNRESOLVED in word:
+                return True
+        return False
+    return True
+
+
 def _directory_answer(dest_abs, earlier, cwd):
     """True when `dest_abs` is a directory by the time a copy after `earlier` (the runs of the same command before it) runs, False when it is not, None when that cannot be known (see the comment above)."""
     for run in earlier:
@@ -7475,7 +7744,7 @@ def _directory_answer(dest_abs, earlier, cwd):
                 if dest_abs == path or path.startswith(dest_abs.rstrip("/") + "/"):
                     return True
             continue
-        if _base(run.name) not in _DIR_TOUCHERS:
+        if not _may_touch_directories(run):
             continue
         words = run.xargv
         if words is None or any(_UNRESOLVED in w for w in words):

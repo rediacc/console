@@ -1706,6 +1706,42 @@ def test_b53f586d_a_loop_variable_is_each_word_it_walks(tmp_path, cmd, want):
     assert json.loads(proc.stdout) == want, cmd
 
 
+_D65 = " ".join("d%02d" % i for i in range(65))
+_F65 = " ".join("f%02d" % i for i in range(65))
+# 8ef78586.2: past the 64-combination cap the first loop variable is still read once per value. The first two rows answered `[]` at 8ef785864 (the target cut to the root), the third `["docs"]`, while bash 5.3 writes under every `dNN`; the last is a control under the cap.
+LOOP_CAP_CASES = [
+    (
+        "for D in %s; do for f in a b; do echo > $D/$f; done; done" % _D65,
+        ["d%02d" % i for i in range(65)],
+    ),
+    ("for D in %s; do echo x > $D/a.md; done" % _D65, ["d%02d/a.md" % i for i in range(65)]),
+    (
+        "for f in %s; do echo x > docs/$f; done" % _F65,
+        ["docs", *("docs/f%02d" % i for i in range(65))],
+    ),
+    (
+        "for D in d1 d2; do for f in a b; do echo > $D/$f; done; done",
+        ["d1/a", "d1/b", "d2/a", "d2/b"],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("cmd", "want"),
+    LOOP_CAP_CASES,
+    ids=["two-vars-130", "one-var-65", "docs-prefix-65", "under-cap"],
+)
+def test_8ef78586_past_the_loop_cap_the_first_variable_is_still_read(tmp_path, cmd, want):
+    proc = subprocess.run(
+        [sys.executable, "-c", WRITE_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == sorted(want), cmd
+
+
 @pytest.mark.parametrize(("cmd", "landing", "not_landing"), EXPANDED_REDIRECT_CASES)
 def test_97ed76a7_a_redirect_lands_where_bash_writes_it(tmp_path, cmd, landing, not_landing):
     proc = subprocess.run(
