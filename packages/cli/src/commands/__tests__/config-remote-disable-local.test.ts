@@ -16,6 +16,7 @@
 import { promises as fs } from 'node:fs';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { assertThrowawayDir } from '../../__tests__/throwaway-dir.js';
 import type { RdcConfig } from '../../types/index.js';
 
 interface FakeServer {
@@ -227,6 +228,7 @@ async function refusal(...args: string[]): Promise<Error> {
 const gone = () => new ConfigServerError('Config not found', 404);
 
 beforeEach(async () => {
+  assertThrowawayDir(configFileStorage.getConfigDir());
   await fs.rm(configFileStorage.getConfigDir(), { recursive: true, force: true });
   configFileStorage.clearCache();
   sequence += 1;

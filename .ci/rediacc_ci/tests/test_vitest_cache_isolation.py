@@ -26,11 +26,25 @@ def _tracked(pattern: str) -> list[str]:
     return sorted(rel for rel in out.split("\0") if rel)
 
 
+# The repository root's vitest.config.ts runs no test: it throws so a root-level run, which no workspace config isolates, stops (#61fb7bc3). It has no cache to name, and the test below proves it still refuses.
+ROOT_REFUSAL = "vitest.config.ts"
+
+
+def test_the_root_vitest_config_only_refuses():
+    text = paths.from_root(ROOT_REFUSAL).read_text(encoding="utf-8")
+    assert "throw new Error(" in text, (
+        "the root vitest.config.ts no longer refuses a root-level run"
+    )
+    assert "defineConfig" not in text, (
+        "the root vitest.config.ts defines a config, so it needs a cache"
+    )
+
+
 def test_each_vitest_config_names_its_own_cache_directory():
     configs = [
         rel
         for rel in _tracked(":(glob)**/vitest.config.ts")
-        if not rel.startswith("private/") and "node_modules" not in rel
+        if not rel.startswith("private/") and "node_modules" not in rel and rel != ROOT_REFUSAL
     ]
     assert len(configs) >= 7, "the scan found %d vitest config(s): %s" % (len(configs), configs)
     seen: dict[str, str] = {}
