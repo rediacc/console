@@ -492,11 +492,13 @@ def _offending(cmd, cwd):
             if in_dir:
                 verdict = None
             # A write through a link spells no protected path, so neither the parsed program's verdict nor the named-path test sees it (review 84fdeff8.2).
-            text, program_kind = shellscan.interpreter_program(run, cmd, cwd)
-            python = program_kind in ("inline", "stdin", "file") and re.match(
-                r"^python[0-9.]*$", run.name.rsplit("/", 1)[-1]
-            )
-            if _code_writes_through_disk(code, base, text if python else None):
+            # Only a Python program is read by its write targets, so only it needs the program text (review b53a6fad.3).
+            program = None
+            if re.match(r"^python[0-9.]*$", run.name.rsplit("/", 1)[-1]):
+                text, program_kind = shellscan.interpreter_program(run, cmd, cwd)
+                if program_kind in ("inline", "stdin", "file"):
+                    program = text
+            if _code_writes_through_disk(code, base, program):
                 verdict = True
             if verdict is None:
                 names_dir = _NAMED_PATH.search(code) is not None or in_dir

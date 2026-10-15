@@ -2357,6 +2357,22 @@ LINK_INTO_TREE_ROWS = (
         "node -e \"const p = 'lnk/x.md'\nrequire('fs').writeFileSync(p, 'x')\"",
         2,
     ),
+    # Review b53a6fad.1: the parse-tree reading answers for a Python program, so its other write calls must follow the link too.
+    (
+        "block_review_file_shell_write",
+        "python3 -c \"import shutil; shutil.copy('/etc/hostname', 'lnk/x.md')\"",
+        2,
+    ),
+    (
+        "block_review_file_shell_write",
+        "python3 -c \"import os; os.replace('plain/a', 'lnk/x.md')\"",
+        2,
+    ),
+    (
+        "block_review_file_shell_write",
+        "python3 -c \"import pathlib; pathlib.Path('lnk/x.md').write_text('x')\"",
+        2,
+    ),
     # Review f25b1360.3 CONTROL: the link is only read, and the write lands elsewhere.
     (
         "block_review_file_shell_write",
