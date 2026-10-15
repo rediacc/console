@@ -49,15 +49,16 @@ interface RemoteEnvSetupResult {
 }
 
 /**
- * Builds the JSON configuration handed to setup-script.py as a single argv
- * element.
+ * Builds the JSON configuration handed to setup-script.py on its stdin.
+ *
+ * Not argv: the env block carries the repo's secret values, and an argument is
+ * readable by `ps` on both hosts (the local ssh, the remote python3).
  *
  * NOT interpolated into the script. The Python used to live in a template
  * literal here, with values pasted into its source; four of six went in
  * unescaped, so a universalUser of `'; import os; os.system('id'); x='` parsed
  * as code and ran on the remote host under `sudo -u`. Passing an opaque JSON
- * argument means a value can no longer become a statement -- the only quoting
- * left is shell-quoting one argument.
+ * payload means a value can no longer become a statement.
  */
 function buildSetupConfig(
   envBlock: string,
@@ -114,6 +115,8 @@ function executeRemoteCommand(
   options?: {
     agentSocketPath?: string;
     timeout?: number;
+    /** Written to the remote command's stdin, which is then closed. */
+    stdin?: string;
   }
 ): Promise<{ success: boolean; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
@@ -129,6 +132,10 @@ function executeRemoteCommand(
       stdio: 'pipe',
       env,
     });
+    ssh.stdin.on('error', () => {
+      // An early exit closes the pipe; the 'close' handler reports the failure.
+    });
+    ssh.stdin.end(options?.stdin ?? '');
 
     let stdout = '';
     let stderr = '';
@@ -203,12 +210,13 @@ export async function ensureVSCodeEnvSetup(
 
     // The script is a fixed program; only the config varies.
     const script = shellSingleQuote(await loadSetupScript());
-    const config = shellSingleQuote(buildSetupConfig(envBlock, universalUser, serverInstallPath));
+    const config = buildSetupConfig(envBlock, universalUser, serverInstallPath);
 
-    // Build command to execute If we need user switching, wrap in sudo
+    // Build command to execute If we need user switching, wrap in sudo. The
+    // config, secrets included, goes on stdin.
     const command = needsUserSwitch(sshUser, universalUser)
-      ? `sudo -u ${shellSingleQuote(universalUser)} python3 -c ${script} ${config}`
-      : `python3 -c ${script} ${config}`;
+      ? `sudo -u ${shellSingleQuote(universalUser)} python3 -c ${script}`
+      : `python3 -c ${script}`;
 
     log('Executing remote setup script...');
 
@@ -216,6 +224,7 @@ export async function ensureVSCodeEnvSetup(
     const result = await executeRemoteCommand(sshDestination, sshOptions, command, {
       agentSocketPath,
       timeout: 60000, // 1 minute timeout for setup
+      stdin: config,
     });
 
     if (!result.success) {

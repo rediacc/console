@@ -30,6 +30,7 @@ import {
   detectRepoContextCommand,
 } from '../utils/repo-context-guard.js';
 import { type ConnectTarget, resolveConnectTarget } from '../utils/repo-target.js';
+import { sendEnvOptions, splitSecretEnv } from '../utils/secret-env.js';
 import { withSpinner } from '../utils/spinner.js';
 
 /**
@@ -48,11 +49,19 @@ export interface TermConnectOptions {
   resetHome?: boolean;
 }
 
+/**
+ * The shell prefix that sets up a remote session: the non-secret environment,
+ * the kube namespace pin and the working directory. Secret values
+ * (`REDIACC_SECRET_*`) are left out; they reach the session through the SSH
+ * environment (`SendEnv`, see sshSessionOptions), never through this text,
+ * which lands in the local ssh argv and the remote `ps`.
+ */
 export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   const parts: string[] = [];
 
   if (connectionDetails?.environment) {
-    for (const [key, value] of Object.entries(connectionDetails.environment)) {
+    const { plain } = splitSecretEnv(connectionDetails.environment);
+    for (const [key, value] of Object.entries(plain)) {
       const escaped = String(value).replaceAll("'", "'\\''");
       parts.push(`export ${key}='${escaped}'`);
     }
@@ -71,6 +80,20 @@ export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   }
 
   return parts.length > 0 ? `${parts.join('; ')}; ` : '';
+}
+
+/**
+ * The ssh options for a term session: the connection's own, plus a `SendEnv`
+ * for each secret in the connection environment. The ssh process is spawned
+ * with that environment, so the values travel in the SSH protocol's env
+ * requests and never on a command line.
+ */
+export function sshSessionOptions(
+  sshConnection: Pick<SSHConnection, 'sshOptions'>,
+  connectionDetails: ConnectionDetails
+): string[] {
+  const { secretNames } = splitSecretEnv(connectionDetails.environment);
+  return [...sshConnection.sshOptions, ...sendEnvOptions(secretNames)];
 }
 
 // Sandbox is enforced server-side via ForceCommand in authorized_keys. The CLI just sends the raw command, sandbox-gateway on the remote reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
@@ -351,7 +374,7 @@ async function launchExternalTerminal(
   title: string,
   connectionDetails: ConnectionDetails
 ): Promise<void> {
-  const sshArgs = [...sshConnection.sshOptions, destination];
+  const sshArgs = [...sshSessionOptions(sshConnection, connectionDetails), destination];
   if (remoteCommand) {
     sshArgs.push(remoteCommand);
   }
@@ -416,11 +439,16 @@ async function runInlineSSH(
     writeStderr(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
-  const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {
-    env: { ...process.env, ...connectionDetails.environment },
-    stdio: 'inherit',
-    agentSocketPath: sshConnection.agentSocketPath,
-  });
+  const child = spawnSSH(
+    destination,
+    sshSessionOptions(sshConnection, connectionDetails),
+    remoteCommand,
+    {
+      env: { ...process.env, ...connectionDetails.environment },
+      stdio: 'inherit',
+      agentSocketPath: sshConnection.agentSocketPath,
+    }
+  );
 
   await new Promise<void>((resolve, reject) => {
     child.on('exit', (code: number | null) => {
