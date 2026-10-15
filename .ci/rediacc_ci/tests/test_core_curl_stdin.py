@@ -186,3 +186,28 @@ def test_no_call_site_puts_a_credential_on_curl_argv(
         assert not any(SENTINEL in arg for arg in argv), "%s: the credential is on argv" % site
         text = stdin.decode() if isinstance(stdin, bytes) else str(stdin)
         assert SENTINEL in text, "%s: the credential never reached curl's stdin" % site
+
+
+@pytest.mark.parametrize(
+    ("spelling", "kept"),
+    [
+        (["-sH", "Authorization: Bearer %s" % SENTINEL], ["-s"]),
+        (["-vsHAuthorization: Bearer %s" % SENTINEL], ["-vs"]),
+    ],
+)
+def test_a_cluster_of_flags_ending_in_h_is_read(spelling: list[str], kept: list[str]) -> None:
+    """Review 9b39fee1.1: `-sH v` and `-vsHv` carry the header as surely as `-H v`; the other flags in the cluster stay."""
+    out, config = curl_stdin.stdin_headers(["curl", *spelling, "u"])
+    assert not any(SENTINEL in a for a in out), out
+    assert out == ["curl", *kept, "-K", "-", "u"]
+    assert config == 'header = "Authorization: Bearer %s"\n' % SENTINEL
+
+
+def test_a_credential_in_an_unread_spelling_is_refused() -> None:
+    """Review 9b39fee1.1: an argument-taking letter before H (`-oH`) or any other place a credential header hides is refused, never started."""
+    with pytest.raises(ValueError, match="unrecognised spelling"):
+        curl_stdin.stdin_headers(["curl", "-oHAuthorization: Bearer %s" % SENTINEL, "u"])
+    with pytest.raises(ValueError, match="unrecognised spelling"):
+        curl_stdin.stdin_headers(
+            ["curl", "--proxy-header", "Authorization: Bearer %s" % SENTINEL, "u"]
+        )
