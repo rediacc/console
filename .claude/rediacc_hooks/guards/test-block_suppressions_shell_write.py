@@ -53,7 +53,7 @@ def _own_cases(shared):
             False,
         ),
         ("append through an unset variable (control)", "echo '%s' >> $UNSET_F" % marker, False),
-        # Review ff357dfa.1: text bash cannot expand, appended through an assigned source name, stays allowed as the typed form does (measured rc 0 for both), because no marker is spelled.
+        # Review ff357dfa.1: text the hook cannot read (`$X` is assigned nowhere in the command, so its value is unknowable to the hook, whatever the calling shell holds), appended through an assigned source name, stays allowed as the typed form does (measured rc 0 for both), because no marker is spelled.
         (
             "append of unexpandable text through an assigned name (control)",
             'F=%s; echo "$X" >> $F' % shared.KEPT,
