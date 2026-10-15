@@ -97,9 +97,12 @@ ONE DELIBERATE DIVERGENCE, AND IT IS THE SAME ONE `common.repo_root` CARRIES
 from __future__ import annotations
 
 import contextlib
+import errno
 import io
 import os
+import secrets
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -305,21 +308,59 @@ def token_section(pat: str) -> str:
     return '[url "%s"]\n\tinsteadOf = %s/\n' % (escaped, GH_ORIGIN)
 
 
+def write_all(fd: int, data: bytes) -> None:
+    """`os.write` until every byte is down: one call may write fewer bytes than it was handed (a pipe, a signal, a full disk), and the rest would be lost silently."""
+    view = memoryview(data)
+    while view:
+        written = os.write(fd, view)
+        if written <= 0:
+            raise OSError(0, "write made no progress")
+        view = view[written:]
+
+
+def write_private_file(path: str, data: bytes) -> None:
+    """Write `data` to `path` as a 0600 file this user owns, never through a link.
+
+    The directory is created 0700 if missing and REFUSED if it is a symlink or another user's. The bytes go to a fresh name created `O_EXCL | O_NOFOLLOW` beside the target and are renamed over it, so a symlink planted at `path` is replaced rather than followed: the token never lands in the link's target, and no mode change reaches it. Raises OSError, which the caller turns into a failed step.
+    """
+    directory = os.path.dirname(path)
+    os.makedirs(directory, mode=0o700, exist_ok=True)
+    info = os.lstat(directory)
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+        raise OSError(errno.ENOTDIR, "%s is a symlink or not a directory" % directory)
+    if info.st_uid != os.getuid():
+        raise OSError(
+            errno.EPERM, "%s is owned by uid %d, not this user" % (directory, info.st_uid)
+        )
+    temp = os.path.join(directory, ".%s.%s.tmp" % (os.path.basename(path), secrets.token_hex(8)))
+    fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    try:
+        try:
+            write_all(fd, data)
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        os.replace(temp, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(temp)
+        raise
+
+
 def install_token_rewrite(pat: str) -> int:
-    """Step 3's credential: the rewrite written to `~/TOKEN_INCLUDE` (0600, created that way, never widened afterwards), and the global config told to include it. `--replace-all --fixed-value` keeps a rerun to one `include.path` line for this file and leaves every other include alone. git's argv carries the PATH, never the token."""
+    """Step 3's credential: the rewrite written to `~/TOKEN_INCLUDE` through `write_private_file` (0600, created that way, renamed into place, never written through a link), and the global config told to include it. `--replace-all --fixed-value` keeps a rerun to one `include.path` line for this file and leaves every other include alone. git's argv carries the PATH, never the token."""
     include = os.path.join(os.path.expanduser("~"), TOKEN_INCLUDE)
     try:
         text = token_section(pat)
     except ValueError as err:
         log.error("ERROR: %s" % err)
         return 1
-    os.makedirs(os.path.dirname(include), mode=0o700, exist_ok=True)
-    fd = os.open(include, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
-        os.fchmod(fd, 0o600)
-        os.write(fd, text.encode("utf-8", "surrogateescape"))
-    finally:
-        os.close(fd)
+        write_private_file(include, text.encode("utf-8", "surrogateescape"))
+    except OSError as err:
+        # The twin's failing `git config` ended the step with a non-zero status and git's own line on stderr; an unwritable HOME ends it the same way, never with a traceback.
+        log.error("ERROR: cannot write the token include %s: %s" % (include, err.strerror or err))
+        return 1
     return run_inherit(
         [
             "git",

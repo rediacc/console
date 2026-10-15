@@ -224,12 +224,12 @@ CF_API="https://api.cloudflare.com/client/v4"
 cf_api() {
     local method="$1" path="$2" body="${3:-}"
     if [[ -n "$body" ]]; then
-        printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+        bp_curl_auth_config "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
             curl -sS -X "$method" "${CF_API}${path}" -K - \
                 -H "Content-Type: application/json" \
                 --max-time 30 --data "$body"
     else
-        printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+        bp_curl_auth_config "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
             curl -sS -X "$method" "${CF_API}${path}" -K - \
                 -H "Content-Type: application/json" \
                 --max-time 30

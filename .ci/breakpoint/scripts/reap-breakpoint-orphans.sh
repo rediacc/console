@@ -143,7 +143,7 @@ record_delete() {
 # It reaches curl as a `-K -` config on stdin (printf is a builtin), never on argv.
 cf_api() {
     local method="$1" path="$2"
-    printf 'header = "Authorization: Bearer %s"\n' "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
+    bp_curl_auth_config "$CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN" |
         curl -sS -X "$method" "${CF_API}${path}" -K - \
             -H "Content-Type: application/json" \
             --max-time 30
@@ -177,7 +177,7 @@ cf_deleted_ok() {
 # `|| true` and normalise an empty/short body instead.
 gh_run_status() {
     local run_id="$1" resp code body
-    resp="$(printf 'header = "Authorization: Bearer %s"\n' "$GH_TOKEN" |
+    resp="$(bp_curl_auth_config "$GH_TOKEN" |
         curl -sS -w $'\n%{http_code}' -K - \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
