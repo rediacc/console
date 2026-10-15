@@ -5023,6 +5023,16 @@ def _verb_matches(run, verb):
     return run.argv[: len(words) - 1] == words[1:]
 
 
+def analysis_redirects(analysis):
+    """Every output redirect of `analysis` as `(operator, target)`, each as typed and then, where it differs, as bash expands it (`_Analysis.xwrites`, #7b3f34ae): `F=zz.py; echo x >> $F` appends to `zz.py`. The one copy the guards that need the operator bind as `_redirects` (review ff357dfa.2)."""
+    out = []
+    for (op, target), (_op, expanded) in zip(analysis.writes, analysis.xwrites, strict=True):
+        out.append((op, target))
+        if expanded != target:
+            out.append((op, expanded))
+    return out
+
+
 def redirect_targets(run):
     """Every file a walked run's own output redirects write, each as typed (`_Run.writes`) and, where it differs, as bash expands it (`_Run.xwrites`, #4deea064), in order. A run built any other way has only the typed form."""
     out: list[str] = []
