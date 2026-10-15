@@ -1238,6 +1238,29 @@ def _quote_argv(argv):
     )
 
 
+# WHAT A LAUNCHER, A `-c` SHELL, `eval` AND `ssh` ARE HANDED IS THE EXPANDED WORDS (#156caed2). bash expands every word once before the command runs, so in `B=q; npx node $B`, `B=q; find . -exec node $B \;` and `B=q; bash -c "node $B"` node is handed `q`. The walk used to read each of those from the words as typed: the launched node run held the literal `$B`, the payload was read in the child shell where an unexported B is unknown, and a guard reading the launched run saw neither.
+# `_launch_words` is the one list every such reader takes: a word whose value the walk knows is that value, a word that vanishes (an unquoted empty expansion) is gone, and a word the walk cannot know (an unassigned name, a substitution, a value bash would split or glob, a positional) keeps its TYPED text, today's reading. The typed fallback is load-bearing: block_unscoped_formatter_run refuses `npx prettier --write $files` because the literal `$` survives into the launched run.
+def _launch_words(words, shell):
+    """`(expanded, mixed, keep)` for a command's operand words under the walk's shell state: `expanded` is `_expand_word` of each word (None where it vanishes), `mixed` the words bash hands the command with an unknowable one kept as typed, and `keep` the index into `words` of each `mixed` entry, so an index into `mixed` maps back to the word it came from."""
+    expanded = [_expand_word(w, shell) for w in words]
+    mixed: list[str] = []
+    keep: list[int] = []
+    for i, (word, value) in enumerate(zip(words, expanded, strict=True)):
+        if value is None:
+            continue
+        mixed.append(_word_value(word) if _UNRESOLVED in value else value)
+        keep.append(i)
+    return expanded, mixed, keep
+
+
+def _expanded_name(word, shell):
+    """The command name bash runs for `word`, the first word of a simple command, when it is held in a variable whose value the walk knows (`N=bash; $N -c ...` runs bash), else None. A name that vanishes, splits or cannot be known stays as typed, as before (#156caed2)."""
+    value = _expand_word(word, shell)
+    if value is None or value == "" or _UNRESOLVED in value or any(ch in value for ch in " \t\n"):
+        return None
+    return value if value != _word_value(word) else None
+
+
 def _stage_feed(stage, lexer):
     """The literal text a pipeline stage could write to its stdout: every word of it, quote-removed, plus the here-strings and heredoc bodies it reads. What the words PRINT is not known here, so all of them count."""
     out: list[str] = []
@@ -1288,19 +1311,52 @@ def _stdout_away(redirs):
     return False
 
 
-def _literal_feed(producers, redirs, lexer):
-    """The exact words on a command's stdin (`_Run.feed_words`), or None. Its own stdin redirect wins over the pipe, as bash's redirection does, and any input redirect this cannot read exactly (a heredoc whose body was not found, a here-string with no word, a file, a descriptor) makes the feed unknown. Else the stage right in front must be an `echo` of literal words; one whose stdout goes elsewhere feeds nothing."""
+# A FED WORD HOLDING A VARIABLE IS FED ITS VALUE (#156caed2). `B=q; echo $B | xargs node` and `xargs node <<< $B` hand node `q`, and the fed words read the typed `$B`. A word is expanded only when nothing but parameter expansion and quoting touches it (its unquoted text is `_PLAIN_WORD` characters): a tilde, a brace or a glob around the variable keeps the feed unknown, as before.
+_FED_PARAM_KINDS = frozenset(("lit", "param", "sq", "dq", "esc"))
+
+
+def _expanded_fed_word(word, shell, split):
+    """The words xargs reads from `word`, a shell word holding a variable, printed by `echo` (`split`, bash splits and globs the unquoted value) or given as a here-string, under the walk's shell state; None when it holds no variable or its value cannot be known exactly."""
+    if shell is None or not any(
+        p.kind == "param" or (p.kind in ("lit", "dq") and "$" in p.raw) for p in word.parts
+    ):
+        return None
+    for part in word.parts:
+        if part.kind not in _FED_PARAM_KINDS:
+            return None
+        if (
+            part.kind == "lit"
+            and part.value
+            and not _PLAIN_WORD.fullmatch(part.value.replace("$", ""))
+        ):
+            return None
+        if part.kind == "dq" and any(q.kind not in ("lit", "param", "esc") for q in part.parts):
+            return None
+    value = _expand_word(word, shell, split=split)
+    if value is None:
+        return []
+    if _UNRESOLVED in value or _XARGS_QUOTING.search(value):
+        return None
+    return value.split()
+
+
+def _literal_feed(producers, redirs, lexer, shell=None):
+    """The exact words on a command's stdin (`_Run.feed_words`), or None. Its own stdin redirect wins over the pipe, as bash's redirection does, and any input redirect this cannot read exactly (a heredoc whose body was not found, a here-string with no word, a file, a descriptor) makes the feed unknown. Else the stage right in front must be an `echo` of literal words; one whose stdout goes elsewhere feeds nothing. With `shell`, the walk's state where the command runs, a word or an unquoted heredoc holding a variable the walk knows is fed its value."""
     for redir in reversed(redirs):
         if redir.heredoc is not None:
             hd = redir.heredoc
             if hd.body_start is None:
                 return None
             body = lexer.src[hd.body_start : hd.body_end]
-            return None if _EXPANDS_IN_HEREDOC.search(body) else body.split()
+            if not _EXPANDS_IN_HEREDOC.search(body):
+                return body.split()
+            text = _expand_heredoc(body, shell) if shell is not None and not hd.quoted else None
+            return None if text is None or _EXPANDS_IN_HEREDOC.search(text) else text.split()
         if redir.op == "<<<":
             if redir.target is None:
                 return None
-            return _literal_word(lexer.src[redir.target.start : redir.target.end])
+            got = _literal_word(lexer.src[redir.target.start : redir.target.end])
+            return got if got is not None else _expanded_fed_word(redir.target, shell, False)
         if redir.op in ("<", "<>", "<&") and redir.fd in (None, "0"):
             return None
     if not producers or producers[-1][0] != "cmd":
@@ -1315,8 +1371,10 @@ def _literal_feed(producers, redirs, lexer):
     while raw and re.fullmatch(r"-[neE]+", raw[0]):
         raw = raw[1:]
     out: list[str] = []
-    for text in raw:
+    for text, word in zip(raw, words[len(words) - len(raw) :], strict=True):
         got = _literal_word(text)
+        if got is None:
+            got = _expanded_fed_word(word, shell, True)
         if got is None:
             return None
         out.extend(got)
@@ -2635,8 +2693,8 @@ class _Literal:
         self.value = value
 
 
-def _expanded_chdir(prefix_words, shell, typed):
-    """The directory `env -C`/`sudo -D` changes to, read from the expanded words (`D=sub; env -C $D x` runs `x` in `sub`, #d0079b4e sweep), or `typed` when a word holds a value this walk cannot know."""
+def _expanded_found(prefix_words, shell, key, typed):
+    """What a prefix command's option `key` holds (`"chdir"`, `"split"`), read from the expanded words (`D=sub; env -C $D x` runs `x` in `sub`, #d0079b4e sweep; `C='rm x'; env -S "$C"` runs `rm x`, #156caed2), or `typed` when a word holds a value this walk cannot know."""
     if "$" not in typed:
         return typed
     values = [_expand_word(w, shell) for w in prefix_words]
@@ -2644,7 +2702,7 @@ def _expanded_chdir(prefix_words, shell, typed):
         return typed
     found: dict = {}
     _strip_prefixes([_Expanded(v) for v in values if v is not None], found)
-    return found.get("chdir", typed)
+    return found.get(key, typed)
 
 
 def _child_shell(run, shell):
@@ -3218,10 +3276,11 @@ class _Walker:
         found: dict = {}
         words, _prefixed = _strip_prefixes(words, found)
         if "split" in found:
-            # `env -S "rm x" y` runs `rm x y`: the string is split into the command, the words after it are its arguments.
-            rest = _quote_argv([_word_value(w) for w in words])
+            # `env -S "rm x" y` runs `rm x y`: the string is split into the command, the words after it are its arguments. Both are what bash hands env, expanded (#156caed2): `B=q; env -S node $B` runs `node q`.
+            rest = _quote_argv(_launch_words(words, before)[1])
+            split = _expanded_found(prefix_words, before, "split", found["split"])
             self.nested(
-                " ".join(f for f in (found["split"], rest) if f),
+                " ".join(f for f in (split, rest) if f),
                 state[0],
                 False,
                 state[1],
@@ -3235,13 +3294,15 @@ class _Walker:
             for w in prefix_words[: len(prefix_words) - len(words)]
             if _base(_word_value(w)) in _PREFIX_COMMANDS
         )
-        name = _word_value(words[0])
+        # A NAME HELD IN A VARIABLE IS THE COMMAND BASH RUNS (#156caed2): `N=bash; $N -c ...` is a shell and `G=git; $G push --force` a push, and every decision below keys on the name.
+        name = _expanded_name(words[0], before) or _word_value(words[0])
         if name == "" or any(ch in name for ch in " \t\n"):
             return
         argv = [_word_value(w) for w in words[1:]]
+        expanded, mixed, keep = _launch_words(words[1:], before)
         rendered = [r for r in (_word_render(w) for w in words[1:]) if r != ""]
         if "chdir" in found:
-            found["chdir"] = _expanded_chdir(prefix_words, before, found["chdir"])
+            found["chdir"] = _expanded_found(prefix_words, before, "chdir", found["chdir"])
         run = _Run(
             name,
             argv,
@@ -3250,7 +3311,7 @@ class _Walker:
             _join_dir(state[0], found["chdir"], physical=True) if "chdir" in found else state[0],
             _apply_env(_exported(before), env_ops),
         )
-        run.xargv = [x for x in (_expand_word(w, before) for w in words[1:]) if x is not None]
+        run.xargv = [x for x in expanded if x is not None]
         run.vars = before
         run.writes = own_writes
         if tested or any(w in ("if", "elif", "while", "until", "!") for w in lead):
@@ -3273,7 +3334,12 @@ class _Walker:
         if feed:
             run.feed = " ".join(feed)
             if not inherited:
-                run.feed_words = _literal_feed(producers, redirs, lexer)
+                run.feed_words = _literal_feed(producers, redirs, lexer, before)
+                # A fed word the walk expanded is in the feed text too, for the readers that over-read it (`xargs_fed_operands`).
+                typed = run.feed.split()
+                extra = [w for w in run.feed_words or () if w not in typed]
+                if extra:
+                    run.feed = " ".join([run.feed, *extra])
         if "xargs" in found:
             run.xargs = tuple(found["xargs"])
         self.analysis.runs.append(run)
@@ -3281,11 +3347,13 @@ class _Walker:
         if at_root:
             self.analysis.names.append((words[0].start, words[0].end, words[-1].end))
         # WHAT A RUN STARTS, STARTS WHERE THE RUN IS (review ec6ec533.1 sweep). `env -C` and `sudo -D` move the run itself and not the shell, so a launched program, a child shell's script and git's own `-C` base start from `run.cwd`. Each read the shell's directory instead: `cd sub && env -C .. git push` gave git `sub` while its run said `.`, and `env -C .. npx prettier` put prettier in `sub`.
-        for how, launched, launch, span in _launches(base, argv):
+        # The launcher reads the words bash hands it (`_launch_words`); a span indexes those, and is mapped back through `keep` to the typed word it came from, since a vanished word shifts every index after it.
+        for how, launched, launch, span in _launches(base, mixed):
             if at_root and span is not None:
-                first, last = words[1 + span[0]], words[1 + span[1]]
+                first, last = words[1 + keep[span[0]]], words[1 + keep[span[1]]]
                 self.analysis.names.append((first.start, first.end, last.end))
             sub = _Analysis()
+            # An argv launch is executed without a shell (execvp), so its words stay literal; a text launch (`npx -c`) is a shell string and is parsed.
             src = launched if how == "text" else _quote_argv(launched)
             _Walker(sub, self.depth + 1).text(
                 src, run.cwd, persist=False, shell=state[1], floor=child_floor
@@ -3293,7 +3361,7 @@ class _Walker:
             if base == "find":
                 for inner_run in sub.runs:
                     inner_run.via = (*inner_run.via, "find")
-                    inner_run.feed = " ".join(f for f in (inner_run.feed, " ".join(argv)) if f)
+                    inner_run.feed = " ".join(f for f in (inner_run.feed, " ".join(mixed)) if f)
                     inner_run.feed_words = None
             # The innermost launcher names the run; an outer `elsewhere` still holds for everything nested under it (`find -execdir npx -c '...'`).
             for inner_run in _every_run(sub):
@@ -3303,7 +3371,8 @@ class _Walker:
                     inner_run.launch = inner_run.launch._replace(elsewhere=True)
             run.launched.append(sub)
         if base == "ssh":
-            run.remote = _ssh_remote(argv)
+            # ssh joins the words bash hands it (`C=docker; ssh h $C ps` sends `docker ps`, #156caed2).
+            run.remote = _ssh_remote(mixed)
         if base in ("cd", "pushd", "popd", "dirs"):
             _dir_builtin(base, _builtin_argv(words[1:], before), state, _cdpath(before, env_ops))
         elif base == "set":
@@ -3313,8 +3382,9 @@ class _Walker:
             known = run.xargv is not None and not any(_UNRESOLVED in x for x in run.xargv)
             run.git_sub, run.git_dir = _git_invocation(run.xargv if known else argv, run.cwd)
         elif base == "eval":
+            # eval parses the words bash hands it, joined (#156caed2): `B="x; rm f"; eval "echo $B"` runs `rm f`.
             state[:] = self.nested(
-                " ".join(argv),
+                " ".join(mixed),
                 state[0],
                 persist=True,
                 shell=state[1],
@@ -3325,23 +3395,24 @@ class _Walker:
         elif base in SHELL_NAMES:
             # A child shell inherits the environment, never the parent's unexported variables; a KNOWN-unset name stays known unset there.
             child = _child_shell(run, state[1])
-            mode, payload = _shell_payload(argv)
+            # The OUTER shell expands the `-c` payload before the inner one parses it (#156caed2): `B=q; bash -c "node $B"` runs `node q`, while a single-quoted payload reaches the inner shell as typed.
+            mode, payload = _shell_payload(mixed)
             if mode == "c" and payload is not None:
                 self.nested(
                     payload,
                     run.cwd,
                     persist=False,
                     shell=child,
-                    physical=_shell_physical(argv),
+                    physical=_shell_physical(mixed),
                     floor=child_floor,
                 )
             elif mode == "stdin":
                 self.stdin(
-                    redirs, lexer, [run.cwd, child, _shell_physical(argv), child_floor], upstream
+                    redirs, lexer, [run.cwd, child, _shell_physical(mixed), child_floor], upstream
                 )
         elif base == "bun" and argv:
             # `bun exec "<command line>"` runs it through Bun's shell (#a2599946): walked as `sh -c` is, so every guard reads the commands inside. `bun exec 'echo y > <review file>'` was allowed (rc 0, 2026-10-15) where the same line through `sh -c` was refused.
-            kind, payload = program_parse(base, argv)
+            kind, payload = program_parse(base, mixed)
             if kind == "shell" and payload:
                 child = _child_shell(run, state[1])
                 self.nested(payload, run.cwd, persist=False, shell=child)

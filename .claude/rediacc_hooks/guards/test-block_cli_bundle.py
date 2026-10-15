@@ -164,14 +164,11 @@ _syspath.on_sys_path(str(HOOKS.parent))
 hookio = importlib.import_module("rediacc_hooks.hookio")
 GUARD = importlib.import_module("rediacc_hooks.guards.block_cli_bundle")
 GUARD_SRC = (HOOKS / "guards" / "block_cli_bundle.py").read_text(encoding="utf-8")
+# The mutant for review 06ac1c92.1 (the shell's name read as typed) is retired: shellscan resolves a variable shell name itself since #156caed2, so the guard's own lookup no longer decides any row; the rows it guarded stay, now refused through shellscan.
 MUTANTS = [
     (
         "the program read as typed (#e13fb555)",
         ("run.xargv if run.xargv is not None else run.argv", "run.argv"),
-    ),
-    (
-        "the shell's name read as typed (06ac1c92.1)",
-        ("shell_name = _value(run.name, run.vars)", "shell_name = run.name"),
     ),
 ]
 
