@@ -14,7 +14,7 @@ Design 2 of agent/plans/PLAN-vm-check.md is the specification; each step below c
   V1.1-V1.7  two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
   T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, `ops down` only for a fleet this run started, then the lock. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them.
 
-THE RULES. Every VM action goes through `./rdc.sh`. Nothing here sets or clears REDIACC_AGENT, CLAUDECODE or REDIACC_ALLOW_*: a verb the CLI's agent guard refuses ends the run NOT_VERIFIED `agent-policy-refused` with the refusal's first line. The raw `ssh` probes and the `sftp -b` leg are built from the constants below. Nothing is uploaded with scp.
+THE RULES. Every VM action goes through `./rdc.sh`. Nothing here sets or clears REDIACC_AGENT, CLAUDECODE or REDIACC_ALLOW_*: a verb the CLI's agent guard refuses ends the run NOT_VERIFIED `agent-policy-refused` with the refusal's first line. The one guard variable set is REDIACC_SKIP_FILE_WRITE_GUARD=1, and only on the child of a V1.3 write row: the CLI's file-write guard (packages/cli/src/utils/repo-context-guard.ts) refuses `echo x > f` through `term connect` in an agent session with "File write detected", and that variable is its documented usability override (docs/environment-variables.md), not a security boundary. The raw `ssh` probes and the `sftp -b` leg are built from the constants below, the leg under `-F` with a config built from the alias block `vscode connect` wrote. Nothing is uploaded with scp.
 
 VERDICTS. VERIFIED exit 0 (assertions ran, none failed, teardown clean); FAILED exit 1 (a V-step assertion failed); NOT_VERIFIED exit 77 (the check could not judge). A run that recorded no assertion is never VERIFIED. `--selftest` touches no machine: it feeds one planted failing assertion through the same `verdict` the real run uses and exits non-zero, printing "selftest fired as designed" only when that verdict came out FAILED.
 
@@ -100,10 +100,15 @@ SYNC_BIG_BYTES = 1024 * 1024
 # The raw probes: read-only, and the only ssh/sftp argv this module builds besides `sftp -b` below.
 PROBE_RENET_HASH = "renet hash"
 PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
-SFTP_BATCH = ("sftp", "-q", "-o", "BatchMode=yes", "-b")
+# No `-q`: an alias that does not resolve or a key ssh refuses must reach the row's evidence.
+SFTP_BATCH = ("sftp", "-o", "BatchMode=yes")
 # A refused sftp leg counts as confinement only when the server says so; a dropped connection or a missing path is not a refusal.
 SFTP_DENIAL = re.compile(
     r"permission denied|read-only file system|operation not permitted", re.IGNORECASE
+)
+# sftp-server answers a refused write with the bare SSH2_FX_FAILURE status, which sftp prints as `dest open "<path>": Failure` (put) or `remote setstat "<path>": Failure` (chmod). Such a line is a refusal only when its path is the neighbour's; the 2026-10-15 run's legs were confined but read as "not refused".
+SFTP_STATUS_FAILURE = re.compile(
+    r'^\s*[a-z][a-z ]*"([^"\n]+)":\s*Failure\s*$', re.IGNORECASE | re.MULTILINE
 )
 # ssh's own failed login (`user@host: Permission denied (publickey,password).`) is not a server-side refusal: the connection never authenticated, so nothing was confined. The method list is hyphenated words joined by single commas, with an optional trailing comma: the comma is the only separator, so each character has one way to match and a line with no closing paren fails in linear time.
 SSH_AUTH_FAILURE = re.compile(
@@ -112,10 +117,67 @@ SSH_AUTH_FAILURE = re.compile(
 )
 
 
-def sftp_refused(output: str) -> bool:
-    """True when the sftp output holds a refusal from the server's side of an authenticated session. Lines that report an ssh authentication failure are set aside before the denial is looked for."""
-    lines = [ln for ln in output.splitlines() if not SSH_AUTH_FAILURE.search(ln)]
-    return bool(SFTP_DENIAL.search("\n".join(lines)))
+def sftp_refused(output: str, path: str = "") -> bool:
+    """True when the sftp output holds a refusal from the server's side of an authenticated session: a denial, or a `Failure` status line naming `path` or a file under it. Lines that report an ssh authentication failure are set aside first, so a connection-level failure is never a refusal."""
+    text = "\n".join(ln for ln in output.splitlines() if not SSH_AUTH_FAILURE.search(ln))
+    if SFTP_DENIAL.search(text):
+        return True
+    if not path:
+        return False
+    prefix = path.rstrip("/") + "/"
+    return any(
+        m.group(1) == path or m.group(1).startswith(prefix)
+        for m in SFTP_STATUS_FAILURE.finditer(text)
+    )
+
+
+# The CLI's file-write guard, and the one override the V1.3 write rows pass (see THE RULES).
+SKIP_FILE_WRITE_GUARD = "REDIACC_SKIP_FILE_WRITE_GUARD"
+WRITE_ROW_ENV = {SKIP_FILE_WRITE_GUARD: "1"}
+# `renet compose -- ps` needs a compose file in the mount, and the grand is empty; the smallest valid one is uploaded into fork A, never into the grand.
+COMPOSE_FILE = "docker-compose.yml"
+COMPOSE_BODY = "services: {}\n"
+# vi is absent on the ops VM image (Ubuntu 24.04 ships no editor). The same temp-file-plus-rename write vi does is then asserted with `sed -i`: the content changes and the inode is new.
+VI_PROBE = "command -v vi"
+VI_WRITE = "vi -es -c wq ~/v"
+SED_WRITE = (
+    "printf 'vmc\\n' > ~/v && before=$(stat -c %i ~/v) && sed -i 's/^vmc$/vmc-sed/' ~/v"
+    ' && test "$(cat ~/v)" = vmc-sed && test "$(stat -c %i ~/v)" != "$before"'
+)
+# Fixture entries a privileged sync never carries: it passes --no-links (packages/cli/src/remote/sync/rsync.ts) and the renet gateway refuses symlinks by design, so the link must be ABSENT on the remote rather than equal.
+SYNC_DROPPED = ("link",)
+# Where `vscode connect` writes its aliases: getSSHHome()/.ssh/config_rediacc (packages/cli/src/remote/vscode/sshConfig.ts), which on WSL is the Windows home under the drive mounts, never read by a plain `sftp <alias>`.
+ALIAS_CONFIG = "config_rediacc"
+WINDOWS_DRIVE_PATH = re.compile(r"^([A-Za-z]):[\\/](.*)$")
+
+
+def alias_block(text: str, alias: str) -> list[str] | None:
+    """The directive lines of the `Host <alias>` block in an ssh config, stripped; None when no block names it."""
+    block: list[str] | None = None
+    for line in text.splitlines():
+        words = line.split()
+        if words and words[0].lower() == "host":
+            if block is not None:
+                return block
+            if len(words) > 1 and words[1] == alias:
+                block = []
+            continue
+        if block is not None and line.strip() and not line.strip().startswith("#"):
+            block.append(line.strip())
+    return block
+
+
+def drive_path(value: str, drive_root: str = "/mnt") -> str:
+    """A config value with its quotes stripped and a Windows drive path (`C:/Users/x`, `C:\\Users\\x`) spelled as the WSL mount sees it (`/mnt/c/Users/x`); any other value unchanged."""
+    value = value.strip().strip('"')
+    match = WINDOWS_DRIVE_PATH.match(value)
+    if not match:
+        return value
+    return "%s/%s/%s" % (
+        drive_root.rstrip("/"),
+        match.group(1).lower(),
+        match.group(2).replace("\\", "/"),
+    )
 
 
 # First-line markers of a refusal by the CLI's agent guard (packages/cli/src/utils/agent-guard.ts, command-policy.ts).
@@ -126,6 +188,8 @@ AGENT_REFUSALS = (
     "Agent-initiated overrides",
     "not available on fork repositories",
     "origin could not be verified",
+    # The file-write guard (packages/cli/src/commands/term.ts enforceFileWriteGuard); the write rows pass its override, so seeing it means the CLI no longer honours that.
+    "File write detected",
 )
 
 # What a step can raise that still ends in a receipt and a teardown; anything else propagates after the teardown in `finally`.
@@ -244,6 +308,18 @@ class Host:
             return hashlib.sha256(path.read_bytes()).hexdigest()
         except OSError:
             return None
+
+    def drive_root(self) -> str:
+        """Where WSL mounts the Windows drives."""
+        return "/mnt"
+
+    def alias_configs(self, environ: Mapping[str, str]) -> list[pathlib.Path]:
+        """Every file `vscode connect` may have written its alias to: the Windows home's under the drive mounts first (getSSHHome() on WSL), then $HOME's."""
+        found = sorted(pathlib.Path(self.drive_root()).glob("*/Users/*/.ssh/" + ALIAS_CONFIG))
+        home = (environ.get("HOME") or "").strip()
+        if home:
+            found.append(pathlib.Path(home) / ".ssh" / ALIAS_CONFIG)
+        return found
 
     def now(self) -> float:
         return time.time()
@@ -641,9 +717,17 @@ class VmCheck:
         res = self.host.run(["git", "-C", str(cwd or self.root), *args], env=self.environ)
         return res.out.strip() if res.rc == 0 else ""
 
-    def rdc(self, *args: str, timeout: float | None = None, refuse: bool = True) -> Result:
-        """`./rdc.sh <args>` with the child environment. A refusal by the agent guard ends the run (unless `refuse` is False, as in teardown)."""
-        res = self.host.run([self.rdc_sh, *args], env=self.child_env(), timeout=timeout)
+    def rdc(
+        self,
+        *args: str,
+        timeout: float | None = None,
+        refuse: bool = True,
+        extra_env: Mapping[str, str] | None = None,
+    ) -> Result:
+        """`./rdc.sh <args>` with the child environment, plus `extra_env` for this one call. A refusal by the agent guard ends the run (unless `refuse` is False, as in teardown)."""
+        env = self.child_env()
+        env.update(extra_env or {})
+        res = self.host.run([self.rdc_sh, *args], env=env, timeout=timeout)
         if refuse and res.rc != 0 and any(m in res.err for m in AGENT_REFUSALS):
             raise NotVerifiedError(
                 "agent-policy-refused",
@@ -651,8 +735,16 @@ class VmCheck:
             )
         return res
 
-    def shell(self, fork: str, command: str) -> Result:
-        return self.rdc("term", "connect", fork, "-c", command)
+    def shell(self, fork: str, command: str, extra_env: Mapping[str, str] | None = None) -> Result:
+        return self.rdc("term", "connect", fork, "-c", command, extra_env=extra_env)
+
+    def remote_evidence(self, res: Result) -> str:
+        """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope alone filled the 200-byte evidence (2026-10-15)."""
+        return "rc=%d stderr: %s | stdout: %s" % (
+            res.rc,
+            last_lines(res.err) or "<empty>",
+            last_lines(res.out) or "<empty>",
+        )
 
     def probe(self, command: str) -> Result:
         return self.host.run(
@@ -1212,26 +1304,64 @@ class VmCheck:
 
     def v1_3_positive(self) -> None:
         a = self.tags[0]
+        ref = self.ref(a)
         mnt = shlex.quote(self.mount(a))
         marker = "vmc-shm-%s" % self.run_id
-        commands = (
+        for desc, command in (
             ("write ~", "echo vmc > ~/vmc-home"),
             ("write /tmp", "echo vmc > /tmp/vmc-tmp"),
             ("write /dev/shm", "echo vmc > /dev/shm/%s" % marker),
             ("write the mount", "echo vmc > %s/vmc-mount" % mnt),
-            ("chmod 600 in the mount", "chmod 600 %s/vmc-mount" % mnt),
-            ("docker ps", "docker ps"),
-            ("renet compose -- ps", "cd %s && renet compose -- ps" % mnt),
-            (
-                "git commit in the mount",
-                "cd %s && rm -rf vmc-git && mkdir vmc-git && cd vmc-git && git init -q && git -c user.email=vm@check -c user.name=vmcheck commit -q --allow-empty -m vmcheck"
-                % mnt,
-            ),
-            ("vi writes ~/v", "vi -es -c wq ~/v"),
+        ):
+            self._positive(ref, desc, command, WRITE_ROW_ENV)
+        self._positive(ref, "chmod 600 in the mount", "chmod 600 %s/vmc-mount" % mnt)
+        self._positive(ref, "docker ps", "docker ps")
+        if self._upload_compose(ref):
+            self._positive(ref, "renet compose -- ps", "cd %s && renet compose -- ps" % mnt)
+        else:
+            self.record(
+                "V1.3", "A: renet compose -- ps not run: no compose file in the mount", None
+            )
+        self._positive(
+            ref,
+            "git commit in the mount",
+            "cd %s && rm -rf vmc-git && mkdir vmc-git && cd vmc-git && git init -q && git -c user.email=vm@check -c user.name=vmcheck commit -q --allow-empty -m vmcheck"
+            % mnt,
         )
-        for desc, command in commands:
-            res = self.shell(self.ref(a), command)
-            self.check("V1.3", "A: %s" % desc, res.rc == 0, res)
+        self._editor_write(ref)
+
+    def _positive(
+        self, ref: str, desc: str, command: str, extra_env: Mapping[str, str] | None = None
+    ) -> bool:
+        res = self.shell(ref, command, extra_env)
+        ok = res.rc == 0
+        return self.check("V1.3", "A: %s" % desc, ok, res, "" if ok else self.remote_evidence(res))
+
+    def _upload_compose(self, ref: str) -> bool:
+        """The minimal compose file, synced into fork A's mount root; the grand stays as it is."""
+        up = self.work / "compose-up"
+        up.mkdir(parents=True, exist_ok=True)
+        (up / COMPOSE_FILE).write_text(COMPOSE_BODY)
+        res = self.rdc("repo", "sync", "upload", ref, "--local", str(up) + "/")
+        return self.check(
+            "V1.3", "A: %s uploaded into the mount by sync" % COMPOSE_FILE, res.rc == 0, res
+        )
+
+    def _editor_write(self, ref: str) -> None:
+        probe = self.shell(ref, VI_PROBE)
+        if probe.rc == 0 and probe.out.strip():
+            self._positive(ref, "vi writes ~/v", VI_WRITE)
+            return
+        res = self.shell(ref, SED_WRITE, WRITE_ROW_ENV)
+        ok = res.rc == 0
+        absent = "vi absent on %s (%s rc=%d)" % (self.fleet_os or "the worker", VI_PROBE, probe.rc)
+        self.check(
+            "V1.3",
+            "A: sed -i rewrites ~/v by temp file and rename (vi absent)",
+            ok,
+            res,
+            absent if ok else absent + "; " + self.remote_evidence(res),
+        )
 
     def v1_4_isolation(self) -> None:
         a, b = self.tags
@@ -1317,13 +1447,25 @@ class VmCheck:
         if not self.check("V1.5", "sync download", res.rc == 0, res):
             return
         sent, got = self._tree_of(up), self._tree_of(down)
-        differ = sorted(k for k in set(sent) | set(got) if sent.get(k) != got.get(k))
+        expected = {k: v for k, v in sent.items() if k not in SYNC_DROPPED}
+        differ = sorted(k for k in set(expected) | set(got) if expected.get(k) != got.get(k))
         self.check(
             "V1.5",
-            "round trip is byte-identical (%d entries)" % len(sent),
+            "round trip is byte-identical (%d entries; %s left out, never synced)"
+            % (len(expected), ", ".join(SYNC_DROPPED)),
             not differ,
             evidence="differ: %s" % ", ".join(differ),
         )
+        for name in SYNC_DROPPED:
+            target = shlex.quote("%s/%s/%s" % (self.mount(a), remote, name))
+            res = self.shell(self.ref(a), "test ! -L %s && test ! -e %s" % (target, target))
+            self.check(
+                "V1.5",
+                "the %s is absent on the remote (a privileged sync carries no symlink)" % name,
+                res.rc == 0,
+                res,
+                "" if res.rc == 0 else self.remote_evidence(res),
+            )
 
     def v1_6_vscode(self) -> None:
         a = self.tags[0]
@@ -1353,6 +1495,9 @@ class VmCheck:
         if not self.connection:
             self.record("V1.7", "sftp not run: V1.6 wrote no ssh alias", None)
             return
+        config = self._sftp_config()
+        if config is None:
+            return
         a, b = self.tags
         payload = self.work / "sftp-payload.txt"
         payload.write_text("vm:check sftp %s\n" % self.run_id)
@@ -1371,9 +1516,11 @@ class VmCheck:
             batch = self.work / ("sftp-%d.batch" % index)
             batch.write_text(line + "\n")
             res = self.host.run(
-                [*SFTP_BATCH, str(batch), self.connection], env=self.environ, timeout=120
+                [*SFTP_BATCH, "-F", str(config), "-b", str(batch), self.connection],
+                env=self.environ,
+                timeout=120,
             )
-            ok = res.rc == 0 if allowed else res.rc != 0 and sftp_refused(res.text())
+            ok = res.rc == 0 if allowed else res.rc != 0 and sftp_refused(res.text(), other_dir)
             self.check("V1.7", "sftp: %s" % desc, ok, res, evidence=res.text())
         after = self.shell(
             self.ref(b), "stat -c '%%a %%Y' %s" % shlex.quote("%s/%s" % (other_dir, GUARDED_FILE))
@@ -1385,6 +1532,61 @@ class VmCheck:
             after,
             evidence="before %s after %s" % (self.b_stat, after.out.strip()),
         )
+
+    def _sftp_config(self) -> pathlib.Path | None:
+        """An ssh config holding only the alias block `vscode connect` wrote, with Windows drive paths spelled for WSL and the identity copied to a 0600 file (a key under /mnt/c reads as 0777, which ssh refuses). None after a failed row when no block or no identity can be read."""
+        drive_root = self.host.drive_root()
+        searched = self.host.alias_configs(self.environ)
+        source: pathlib.Path | None = None
+        block: list[str] | None = None
+        for path in searched:
+            try:
+                block = alias_block(path.read_text(errors="replace"), self.connection)
+            except OSError:
+                continue
+            if block is not None:
+                source = path
+                break
+        if source is None or block is None:
+            self.check(
+                "V1.7",
+                "the alias %s is in a %s vscode connect wrote" % (self.connection, ALIAS_CONFIG),
+                False,
+                evidence="searched %s" % (", ".join(map(str, searched)) or "<no candidate>"),
+            )
+            return None
+        lines = ["Host %s" % self.connection]
+        for line in block:
+            key, _, value = line.partition(" ")
+            if key.lower() == "identityfile":
+                identity = pathlib.Path(drive_path(value, drive_root))
+                copy = self.work / "sftp_identity"
+                try:
+                    copy.write_bytes(identity.read_bytes())
+                except OSError as exc:
+                    self.check(
+                        "V1.7",
+                        "the alias's identity is readable",
+                        False,
+                        evidence="%s (from %s): %s" % (identity, source, exc),
+                    )
+                    return None
+                copy.chmod(0o600)
+                value = str(copy)
+            elif key.lower() == "userknownhostsfile":
+                value = drive_path(value, drive_root)
+                value = '"%s"' % value if " " in value else value
+            lines.append("  %s %s" % (key, value.strip()))
+        config = self.work / "ssh_config"
+        config.write_text("\n".join(lines) + "\n")
+        config.chmod(0o600)
+        self.check(
+            "V1.7",
+            "ssh config for %s built from %s" % (self.connection, source),
+            True,
+            evidence="%d directive(s)" % len(block),
+        )
+        return config
 
     # ------------------------------------------------------------------ T
 

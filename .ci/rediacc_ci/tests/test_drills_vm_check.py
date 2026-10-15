@@ -12,6 +12,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import signal
 import subprocess
@@ -21,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci import well_known
 from rediacc_ci import paths
 from rediacc_ci.core import run_verbs
 from rediacc_ci.drills import vm_check
@@ -36,6 +38,8 @@ HASH = "f" * 64
 DIGEST = "d" * 64
 TOKEN = "tok-PLANTED-7f3a9c2e1b5d4a60"
 NET = "192.168.111"
+# The CLI's redirect pattern (packages/cli/src/utils/repo-context-guard.ts FILE_WRITE_PATTERNS).
+FILE_WRITE = re.compile(r"\b(cat|echo|printf|base64)\b[^|;&]*>>?\s*(?!/dev/null\b)(?!&)\S")
 BRIDGE = NET + ".1"
 WORKER = NET + ".11"
 PROD_IP = "203.0.113.7"
@@ -67,6 +71,48 @@ MUTANTS = {
         "        self.dev_config = True\n",
         "        self.dev_config = False\n",
     ),
+    # The 2026-10-15 V-step harness defects, one mutant per rule.
+    "skip-write-guard-globally": (
+        '            env["RDC_DEV"] = "1"\n',
+        '            env["RDC_DEV"] = "1"\n        env[SKIP_FILE_WRITE_GUARD] = "1"\n',
+    ),
+    "write-guard-not-passed": (
+        "            self._positive(ref, desc, command, WRITE_ROW_ENV)\n",
+        "            self._positive(ref, desc, command)\n",
+    ),
+    "evidence-stdout-first": (
+        '        return self.check("V1.3", "A: %s" % desc, ok, res, "" if ok else self.remote_evidence(res))\n',
+        '        return self.check("V1.3", "A: %s" % desc, ok, res)\n',
+    ),
+    "no-compose-upload": (
+        "        if self._upload_compose(ref):\n",
+        "        if True:\n",
+    ),
+    "vi-assumed": (
+        "        if probe.rc == 0 and probe.out.strip():\n",
+        "        if True:\n",
+    ),
+    "link-expected-back": (
+        "        expected = {k: v for k, v in sent.items() if k not in SYNC_DROPPED}\n",
+        "        expected = dict(sent)\n",
+    ),
+    "sftp-alias-from-home": (
+        '                [*SFTP_BATCH, "-F", str(config), "-b", str(batch), self.connection],\n',
+        '                [*SFTP_BATCH, "-b", str(batch), self.connection],\n',
+    ),
+    "sftp-identity-not-copied": (
+        "                value = str(copy)\n",
+        "                value = str(identity)\n",
+    ),
+    "sftp-no-drive-translation": (
+        "                identity = pathlib.Path(drive_path(value, drive_root))\n",
+        "                identity = pathlib.Path(value)\n",
+    ),
+    "sftp-failure-not-denial": (
+        "    if not path:\n        return False\n",
+        "    if True:\n        return False\n",
+    ),
+    "file-write-refusal-unknown": ('    "File write detected",\n', ""),
 }
 
 
@@ -98,7 +144,20 @@ class World(vm_check.Host):
         self.undeletable_suffix = over.pop("undeletable_suffix", "")
         self.crash_on = over.pop("crash_on", "")
         self.signal_on = over.pop("signal_on", "")
-        self.sftp_refusal = over.pop("sftp_refusal", "remote open: Permission denied")
+        # None: sftp-server's real answer to a refused leg, the bare `Failure` status line naming the path (2026-10-15 live run); a string replaces it.
+        self.sftp_refusal = over.pop("sftp_refusal", None)
+        # The live ops VM image: the CLI's file-write guard refuses `echo x > f` through `term connect` unless REDIACC_SKIP_FILE_WRITE_GUARD=1 (False: a CLI that no longer honours the variable), vi is absent, and the grand holds no compose file.
+        self.write_guard_honours_skip = over.pop("write_guard_honours_skip", True)
+        self.vi = over.pop("vi", False)
+        # A planted remote failure for `chmod 600` in the mount: (stdout, stderr), stdout being the CLI's JSON envelope.
+        self.chmod_fail = over.pop("chmod_fail", None)
+        # "wsl": `vscode connect` writes the alias into the Windows home under the drive mounts with C:/ paths and a 0777 key, as getSSHHome() does on WSL; "linux": into $HOME with a 0600 key.
+        self.alias_home = over.pop("alias_home", "wsl")
+        # False: `vscode connect` printed its URI but wrote no alias block.
+        self.alias_written = over.pop("alias_written", True)
+        # True: a sync that carries symlinks across, the confinement property V1.5 asserts lost.
+        self.sync_keeps_links = over.pop("sync_keeps_links", False)
+        self.written: set[str] = set()
         self.minted_check_err = over.pop("minted_check_err", "")
         # The `repo create` answer: rc and the CLI's JSON error message when it fails.
         self.create_rc = over.pop("create_rc", 0)
@@ -118,6 +177,7 @@ class World(vm_check.Host):
         self.key_show = over.pop("key_show", "ok")
         assert not over, over
         self.store = root / "remote-store"
+        self.mnt = root / "mnt"
         self.calls: list[list[str]] = []
         self.forked: list[str] = []
         self.envs: list[dict[str, str]] = []
@@ -133,6 +193,9 @@ class World(vm_check.Host):
 
     def sha256(self, path: pathlib.Path) -> str | None:
         return HASH if path.name == "renet" else None
+
+    def drive_root(self) -> str:
+        return str(self.mnt)
 
     def now(self) -> float:
         return NOW
@@ -171,7 +234,7 @@ class World(vm_check.Host):
                 return vm_check.Result(0, self.os_release + "\n")
             return vm_check.Result(255, "", "unexpected probe")
         if argv[0] == "sftp":
-            return self._sftp(pathlib.Path(argv[-2]).read_text())
+            return self._sftp(argv)
         if argv[0] == self.rdc_path:
             return self._rdc(argv[1:], env or {})
         return vm_check.Result(127, "", "unknown command %s" % argv[0])
@@ -254,8 +317,8 @@ class World(vm_check.Host):
             if not self.datastore:
                 return self._json_error(
                     1,
-                    "Machine '%s' datastore at /mnt/rediacc is not BTRFS (found: ). Run 'rdc machine setup <name>' to initialize the BTRFS datastore."
-                    % WORKER,
+                    "Machine '%s' datastore at %s is not BTRFS (found: ). Run 'rdc machine setup <name>' to initialize the BTRFS datastore."
+                    % (WORKER, well_known.DATASTORE_PATH),
                 )
             if self.create_rc:
                 return self._json_error(self.create_rc, self.create_err)
@@ -306,16 +369,27 @@ class World(vm_check.Host):
             self.repos.pop(args[2], None)
             return ok
         if head == ("term", "connect"):
-            return self._shell(args[2], args[4])
+            return self._shell(args[2], args[4], env)
         if args[:3] == ["repo", "sync", "upload"]:
             local = pathlib.Path(args[args.index("--local") + 1])
-            target = self.store / args[args.index("--remote") + 1]
-            shutil.copytree(local, target, symlinks=True, dirs_exist_ok=True)
+            # A privileged sync passes --no-links and the renet gateway refuses symlinks, so none lands.
+            shutil.copytree(
+                local,
+                self._remote_dir(args[3], args),
+                symlinks=True,
+                ignore=lambda d, names: (
+                    []
+                    if self.sync_keeps_links
+                    else [n for n in names if os.path.islink(os.path.join(d, n))]
+                ),
+                dirs_exist_ok=True,
+            )
             return ok
         if args[:3] == ["repo", "sync", "download"]:
             local = pathlib.Path(args[args.index("--local") + 1])
-            source = self.store / args[args.index("--remote") + 1]
-            shutil.copytree(source, local, symlinks=True, dirs_exist_ok=True)
+            shutil.copytree(
+                self._remote_dir(args[3], args), local, symlinks=True, dirs_exist_ok=True
+            )
             return ok
         if head == ("vscode", "connect"):
             if not self.vscode:
@@ -325,6 +399,8 @@ class World(vm_check.Host):
                     "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/",
                 )
             alias = "rediacc-default-vm11-" + args[2].replace(":", "-")
+            if self.alias_written:
+                self._write_alias(alias, env)
             return vm_check.Result(0, "%s%s/mnt/rediacc/mounts/x\n" % (vm_check.URI_PREFIX, alias))
         return ok
 
@@ -351,12 +427,72 @@ class World(vm_check.Host):
         envelope = {"success": False, "errors": [{"code": "ERROR", "message": message}]}
         return vm_check.Result(rc, json.dumps(envelope), "Creating repository...\n")
 
-    def _shell(self, ref: str, command: str) -> vm_check.Result:
+    def _remote_dir(self, ref: str, args: list[str]) -> pathlib.Path:
+        """A repo's mount in the fake store; `--remote` absent is the mount root, as in buildSyncRemotePaths."""
+        sub = args[args.index("--remote") + 1] if "--remote" in args else ""
+        return self.store / ref.split(":", 1)[1] / sub
+
+    def _write_alias(self, alias: str, env: dict[str, str]) -> None:
+        if self.alias_home == "wsl":
+            ssh_dir = self.mnt / "c" / "Users" / "dev" / ".ssh"
+            spelled = "C:/Users/dev/.ssh"
+            mode = 0o777
+        else:
+            ssh_dir = pathlib.Path(env["HOME"]) / ".ssh"
+            spelled = str(ssh_dir)
+            mode = 0o600
+        ssh_dir.mkdir(parents=True, exist_ok=True)
+        key = ssh_dir / "rediacc_key"
+        key.write_text("PRIVATE KEY\n")
+        key.chmod(mode)
+        block = (
+            "Host %s\n  HostName %s\n  User rediacc\n  Port 22\n"
+            "  IdentityFile %s/rediacc_key\n  UserKnownHostsFile %s/known_hosts_rediacc\n"
+            "  IdentitiesOnly yes\n  SetEnv REDIACC_REPOSITORY=x\n\n"
+            % (alias, WORKER, spelled, spelled)
+        )
+        (ssh_dir / vm_check.ALIAS_CONFIG).write_text(block)
+
+    def _shell(self, ref: str, command: str, env: dict[str, str]) -> vm_check.Result:
         tag = ref.split(":", 1)[1]
         mine = self.guid(tag)
+        skip = env.get(vm_check.SKIP_FILE_WRITE_GUARD) == "1" and self.write_guard_honours_skip
+        if FILE_WRITE.search(command) and not skip:
+            return vm_check.Result(
+                1,
+                json.dumps({"success": False, "errors": [{"code": "VALIDATION", "message": "x"}]}),
+                "File write detected (redirect). Use rdc repo sync instead:\n"
+                "  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n",
+            )
         foreign = [g for n, g in self.repos.items() if g != mine and g in command]
         if command.startswith(("chmod 0777", "touch -m")) and foreign and not self.ro_breach:
             return vm_check.Result(1, "", "chmod: changing permissions: Read-only file system")
+        written = re.fullmatch(r"echo vmc > (\S+)", command)
+        if written:
+            self.written.add(written.group(1))
+            return vm_check.Result(0)
+        if command.startswith("chmod 600 "):
+            if self.chmod_fail:
+                return vm_check.Result(1, *self.chmod_fail)
+            path = command.split(" ", 2)[2]
+            if path not in self.written:
+                return vm_check.Result(
+                    1, "", "chmod: cannot access '%s': No such file or directory" % path
+                )
+            return vm_check.Result(0)
+        if command.endswith("renet compose -- ps"):
+            if not (self.store / tag / vm_check.COMPOSE_FILE).is_file():
+                return vm_check.Result(1, "", "Error: no compose file found")
+            return vm_check.Result(0, "NAME IMAGE COMMAND SERVICE CREATED STATUS PORTS\n")
+        if command == vm_check.VI_PROBE:
+            return vm_check.Result(0, "/usr/bin/vi\n") if self.vi else vm_check.Result(1)
+        if command == vm_check.VI_WRITE:
+            return vm_check.Result(0) if self.vi else vm_check.Result(127, "", "vi: not found")
+        if command.startswith("test ! -L "):
+            path = shlex.split(command)[3]
+            rel = path.split("%s/%s/" % (vm_check.MOUNTS, mine), 1)[1]
+            local = self.store / tag / rel
+            return vm_check.Result(1 if local.is_symlink() or local.exists() else 0)
         if command.startswith("stat "):
             return vm_check.Result(0, "644 1700000000\n")
         if command == "ls /dev/shm":
@@ -368,12 +504,33 @@ class World(vm_check.Host):
             return vm_check.Result(0, "Status: enforced\nABI: 6\n")
         return vm_check.Result(0)
 
-    def _sftp(self, batch: str) -> vm_check.Result:
+    def _sftp(self, argv: list[str]) -> vm_check.Result:
+        alias = argv[-1]
+        if "-F" not in argv:
+            # A plain `sftp <alias>` reads ~/.ssh/config, which never holds the alias.
+            return vm_check.Result(
+                255,
+                "",
+                "ssh: Could not resolve hostname %s: Name or service not known\r\nConnection closed"
+                % alias,
+            )
+        config = pathlib.Path(argv[argv.index("-F") + 1]).read_text()
+        block = vm_check.alias_block(config, alias) or []
+        identity = next((ln.split(" ", 1)[1] for ln in block if ln.startswith("IdentityFile ")), "")
+        key = pathlib.Path(identity)
+        if not identity or not key.is_file() or key.stat().st_mode & 0o077:
+            return vm_check.Result(
+                255, "", 'Load key "%s": bad permissions\nConnection closed' % identity
+            )
+        line = pathlib.Path(argv[argv.index("-b") + 1]).read_text().strip()
+        echo = "sftp> %s\n" % line
         a = "guid-" + next(t for t in self.forked if t.endswith("-a"))
-        line = batch.strip()
         if line.startswith("put") and "/%s/" % a in line:
-            return vm_check.Result(0)
-        return vm_check.Result(1, "", self.sftp_refusal)
+            return vm_check.Result(0, echo)
+        if self.sftp_refusal is not None:
+            return vm_check.Result(1, echo, self.sftp_refusal)
+        verb = "dest open" if line.startswith("put") else "remote setstat"
+        return vm_check.Result(1, echo, '%s "%s": Failure' % (verb, line.split()[-1]))
 
     # ------------------------------------------------------------------ views
 
@@ -547,7 +704,158 @@ def scenario_minted_token_runs_under_the_dev_config(
     assert receipt["status"] == receipt_mod.VERIFIED
 
 
+def _rows(receipt: dict[str, Any], step: str) -> list[dict[str, Any]]:
+    return [r for r in receipt["steps"] if r["id"] == step]
+
+
+def scenario_only_write_rows_skip_the_file_write_guard(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """2026-10-15: every `echo vmc > ...` row was refused "File write detected (redirect)". The override rides those rows' children alone."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    carried = []
+    for args, env in _rdc_envs(world):
+        has = env.get(vm_check.SKIP_FILE_WRITE_GUARD) == "1"
+        is_write = args[:2] == ["term", "connect"] and bool(FILE_WRITE.search(args[4]))
+        assert has == is_write, (args, has)
+        carried += [args[4]] if has else []
+    assert len(carried) == 5, carried
+    for desc in (
+        "write ~",
+        "write /tmp",
+        "write /dev/shm",
+        "write the mount",
+        "chmod 600 in the mount",
+    ):
+        assert [r["verdict"] for r in _rows(receipt, "V1.3") if r["desc"] == "A: " + desc] == ["ok"]
+
+
+def scenario_remote_stderr_reaches_the_evidence(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    envelope = json.dumps({"success": False, "errors": [{"code": "REMOTE", "message": "x" * 300}]})
+    world = make_world(
+        tmp_path,
+        chmod_fail=(
+            envelope,
+            "chmod: changing permissions of 'vmc-mount': Operation not permitted",
+        ),
+    )
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_FAILED, out
+    row = next(r for r in _rows(receipt, "V1.3") if r["desc"] == "A: chmod 600 in the mount")
+    assert row["verdict"] == "FAIL"
+    assert "Operation not permitted" in row["evidence"], row
+
+
+def scenario_compose_file_is_uploaded_into_fork_a_only(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """2026-10-15: the empty grand made `renet compose -- ps` say "no compose file found"."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    uploads = [
+        c for c in world.rdc_calls() if c[:3] == ["repo", "sync", "upload"] and "--remote" not in c
+    ]
+    assert len(uploads) == 1, uploads
+    assert uploads[0][3] == "%s:%s" % (PARENT, world.forked[0]), uploads
+    assert world.forked[0].endswith("-a")
+    assert not (world.store / PARENT).exists(), "the grand is never written"
+    rows = {r["desc"]: r["verdict"] for r in _rows(receipt, "V1.3")}
+    assert rows["A: renet compose -- ps"] == "ok", rows
+
+
+def scenario_vi_absent_writes_with_sed_and_says_so(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """2026-10-15: the ops VM image (Ubuntu 24.04) ships no vi."""
+    world = make_world(tmp_path, vi=False)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    commands = [c[4] for c in world.rdc_calls() if c[:2] == ["term", "connect"]]
+    assert vm_check.VI_WRITE not in commands
+    assert vm_check.SED_WRITE in commands
+    row = next(r for r in _rows(receipt, "V1.3") if "sed -i" in r["desc"])
+    assert row["verdict"] == "ok"
+    assert "vi absent on ubuntu-24.04" in row["evidence"], row
+
+
+def scenario_the_link_is_left_out_and_absent_on_the_remote(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """2026-10-15: `differ: link`; a privileged sync passes --no-links and the gateway refuses symlinks."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    rows = {r["desc"]: r["verdict"] for r in _rows(receipt, "V1.5")}
+    assert rows["round trip is byte-identical (3 entries; link left out, never synced)"] == "ok", (
+        rows
+    )
+    assert (
+        rows["the link is absent on the remote (a privileged sync carries no symlink)"] == "ok"
+    ), rows
+
+
+def scenario_sftp_runs_on_the_alias_config_vscode_wrote(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """2026-10-15: plain `sftp <alias>` never read config_rediacc, which on WSL sits in the Windows home with C:/ paths and a 0777 key."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    legs = [c for c in world.calls if c[0] == "sftp"]
+    assert len(legs) == 3, legs
+    for argv in legs:
+        assert "-q" not in argv
+        config = pathlib.Path(argv[argv.index("-F") + 1])
+        text = config.read_text()
+        assert "C:/" not in text, text
+        assert "UserKnownHostsFile %s/c/Users/dev/.ssh/known_hosts_rediacc" % world.mnt in text, (
+            text
+        )
+        assert "SetEnv REDIACC_REPOSITORY=x" in text, text
+        identity = text.split("IdentityFile ", 1)[1].split("\n", 1)[0]
+        assert oct(os.stat(identity).st_mode & 0o777) == oct(0o600), identity
+    assert all(r["verdict"] == "ok" for r in _rows(receipt, "V1.7")), _rows(receipt, "V1.7")
+
+
+def scenario_sftp_failure_status_on_b_is_a_refusal(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """2026-10-15: sftp-server answers a refused put with `dest open "...": Failure` and a refused chmod with `remote setstat "...": Failure`."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    refused = [r for r in _rows(receipt, "V1.7") if "refused" in r["desc"]]
+    assert [r["verdict"] for r in refused] == ["ok", "ok"], refused
+
+
+def scenario_an_unhonoured_write_override_is_agent_policy_refused(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    world = make_world(tmp_path, write_guard_honours_skip=False)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "agent-policy-refused", receipt["reason"]
+    assert "File write detected" in receipt["reason"]["detail"]
+    assert world.forks_left() == []
+
+
 SCENARIOS = {
+    "skip-write-guard-globally": scenario_only_write_rows_skip_the_file_write_guard,
+    "write-guard-not-passed": scenario_only_write_rows_skip_the_file_write_guard,
+    "evidence-stdout-first": scenario_remote_stderr_reaches_the_evidence,
+    "no-compose-upload": scenario_compose_file_is_uploaded_into_fork_a_only,
+    "vi-assumed": scenario_vi_absent_writes_with_sed_and_says_so,
+    "link-expected-back": scenario_the_link_is_left_out_and_absent_on_the_remote,
+    "sftp-alias-from-home": scenario_sftp_runs_on_the_alias_config_vscode_wrote,
+    "sftp-identity-not-copied": scenario_sftp_runs_on_the_alias_config_vscode_wrote,
+    "sftp-no-drive-translation": scenario_sftp_runs_on_the_alias_config_vscode_wrote,
+    "sftp-failure-not-denial": scenario_sftp_failure_status_on_b_is_a_refusal,
+    "file-write-refusal-unknown": scenario_an_unhonoured_write_override_is_agent_policy_refused,
     "create-on-any-worker": scenario_a_non_ops_worker_never_gets_a_grand_created,
     "mint-under-default-config": scenario_minted_token_runs_under_the_dev_config,
     "skip-teardown": scenario_crash_mid_v13,
@@ -1296,7 +1604,7 @@ def test_a_minted_token_sent_to_the_wrong_server_never_creates(tmp_path: pathlib
     """The 05:00Z failure, rebuilt: a dev-minted token without its gateway is no credential, and P4 says so before P5 tries a create."""
     world = make_world(tmp_path, grands=())
     rc, out, receipt = run_check(
-        tmp_path, world, account=FakeAccount(server="https://eu.rediacc.com")
+        tmp_path, world, account=FakeAccount(server=well_known.ACCOUNT_DEFAULT_ORIGIN)
     )
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert receipt["reason"]["class"] == "account-unavailable", receipt["reason"]
@@ -1368,3 +1676,90 @@ def test_an_unreadable_key_state_on_a_keyless_config_sets_nothing_and_p5_names_t
     assert world.key_set == [], "an unreadable key state must not set a key"
     assert "NOT VERIFIED (worker-ssh-key)" in out, out
     assert "config ssh set --key" in out, out
+
+
+# --------------------------------------------------------------------------- the 2026-10-15 V-step harness defects
+
+
+@pytest.mark.parametrize("name", sorted(set(SCENARIOS) - {"pass-on-zero-steps"}))
+def test_each_mutant_scenario_is_green_unmutated(tmp_path: pathlib.Path, name: str) -> None:
+    """A mutant scenario that fails for another reason proves nothing, so each one also passes on the real module."""
+    SCENARIOS[name](vm_check, tmp_path)
+
+
+def test_a_present_vi_is_used_and_sed_is_not(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, vi=True)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    commands = [c[4] for c in world.rdc_calls() if c[:2] == ["term", "connect"]]
+    assert vm_check.VI_WRITE in commands
+    assert vm_check.SED_WRITE not in commands
+    assert [r["verdict"] for r in _rows(receipt, "V1.3") if r["desc"] == "A: vi writes ~/v"] == [
+        "ok"
+    ]
+
+
+def test_a_symlink_that_reaches_the_remote_fails_v15(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, sync_keeps_links=True)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    failed = [r["desc"] for r in _rows(receipt, "V1.5") if r["verdict"] == "FAIL"]
+    assert "the link is absent on the remote (a privileged sync carries no symlink)" in failed, (
+        failed
+    )
+
+
+def test_a_linux_alias_in_home_is_found_too(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, alias_home="linux")
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    built = next(r for r in _rows(receipt, "V1.7") if r["desc"].startswith("ssh config for"))
+    assert str(tmp_path / "home" / ".ssh" / vm_check.ALIAS_CONFIG) in built["desc"], built
+
+
+def test_a_missing_alias_block_fails_v17_naming_where_it_looked(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, alias_written=False)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_FAILED, out
+    row = next(r for r in _rows(receipt, "V1.7") if r["verdict"] == "FAIL")
+    assert "is in a config_rediacc" in row["desc"], row
+    assert "searched" in row["evidence"], row
+    assert not [c for c in world.calls if c[0] == "sftp"]
+
+
+def test_sftp_refused_reads_failure_status_lines_only_for_the_named_path() -> None:
+    b = well_known.DATASTORE_PATH + "/mounts/guid-b"
+    assert vm_check.sftp_refused('dest open "%s/vmc-sftp": Failure' % b, b)
+    assert vm_check.sftp_refused('remote setstat "%s/.rediacc.json": Failure' % b, b)
+    assert vm_check.sftp_refused('sftp> put x\nremote setstat "%s": Failure\n' % b, b)
+    # Another path, a prefix look-alike, no path, and connection-level failures are not refusals.
+    a = well_known.DATASTORE_PATH + "/mounts/guid-a"
+    assert not vm_check.sftp_refused('dest open "%s/x": Failure' % a, b)
+    assert not vm_check.sftp_refused('dest open "%sx/y": Failure' % b, b)
+    assert not vm_check.sftp_refused('dest open "%s/x": Failure' % b)
+    assert not vm_check.sftp_refused("Connection closed", b)
+    assert not vm_check.sftp_refused(
+        "ssh: Could not resolve hostname rediacc-x: Name or service not known\r\nConnection closed",
+        b,
+    )
+    assert not vm_check.sftp_refused("u@h: Permission denied (publickey).\nConnection closed", b)
+
+
+@pytest.mark.parametrize(
+    ("value", "spelled"),
+    [
+        ("C:/Users/dev/.ssh/k", "/mnt/c/Users/dev/.ssh/k"),
+        ('"D:\\Users\\a b\\.ssh\\k"', "/mnt/d/Users/a b/.ssh/k"),
+        ("/home/dev/.ssh/k", "/home/dev/.ssh/k"),
+        ("~/.ssh/k", "~/.ssh/k"),
+    ],
+)
+def test_drive_path_spells_windows_drives_for_wsl(value: str, spelled: str) -> None:
+    assert vm_check.drive_path(value) == spelled
+
+
+def test_alias_block_reads_only_the_named_host() -> None:
+    text = "Host other\n  HostName 1\n\nHost want extra\n  HostName 2\n\n  # note\n  Port 22\nHost z\n  X 1\n"
+    assert vm_check.alias_block(text, "want") == ["HostName 2", "Port 22"]
+    assert vm_check.alias_block(text, "missing") is None
+    assert vm_check.alias_block(text, "z") == ["X 1"]
