@@ -96,7 +96,8 @@ EDGE_CASES = [
 
 # The programs that run a JavaScript file named on their command line. `program_parse` reads each with its own grammar (deno's subcommands, bun's `run`, tsx's own options).
 RUNNERS = ("node", "nodejs", *shellscan.RUNTIMES)
-# The bundle, judged on one path: a `cli-bundle*.js` file name, or anything under the CLI's build output.
+# The bundle, judged on one path: a `cli-bundle*.js` file name, or anything under the CLI's build output. The second arm is WIDER THAN THE BUNDLE ON PURPOSE (review 06ac1c92.3): `packages/cli/dist/` holds `cli-bundle.cjs` (the package's `bin.rdc`) and the tsc output whose `dist/index.js` is the package's `main` and `npm start`, so every program there is the CLI run around ./rdc.sh, and the typed pattern has refused `node packages/cli/dist/<any>` since the port (EDGE_CASES' `dist/cli.js`).
+# Another package's `dist/` and a sibling such as `packages/cli/dist-old/` are not the CLI's build output and stay allowed; the harness pins both directions.
 BUNDLE_PATH = re.compile(r"cli-bundle[^/]*\.[cm]?js$|(^|/)packages/cli/dist/")
 
 
@@ -167,8 +168,14 @@ def _runs_bundle(cmd, cwd, depth=0):
             if any(_is_bundle(c, directory) for c in candidates):
                 return True
         # A double-quoted `-c` payload is expanded by the OUTER shell before the inner one parses it: `B=...; bash -c "node $B"` runs `node <bundle>`, while shellscan walks the payload as typed. The expanded payload is walked again, in the run's directory.
+        # The shell's name is resolved as `_programs` resolves a runner's (review 06ac1c92.1): `N=bash; $N -c "node $B"` is a shell too. shellscan does not walk a payload under a variable name at all, so such a run is re-walked even when its words needed no expansion (`$N -c 'node <bundle>'`).
         xargv = run.xargv or []
-        if depth < 4 and run.name.rsplit("/", 1)[-1] in shellscan.SHELL_NAMES and xargv != run.argv:
+        shell_name = _value(run.name, run.vars)
+        if (
+            depth < 4
+            and shell_name.rsplit("/", 1)[-1] in shellscan.SHELL_NAMES
+            and (xargv != run.argv or shell_name != run.name)
+        ):
             how, payload = shellscan._shell_payload(xargv)
             if (
                 how == "c"

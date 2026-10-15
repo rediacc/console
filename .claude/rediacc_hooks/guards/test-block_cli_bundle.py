@@ -65,6 +65,24 @@ CASES = [
     # The outer shell expands a double-quoted payload before the inner shell parses it.
     ("bash -c with a double-quoted payload", SET + 'bash -c "node $B"', True),
     ("the runner's name from a variable", "N=node; " + SET + "$N $B", True),
+    # The shell's name from a variable is a shell too (review 06ac1c92.1).
+    (
+        "the shell's name from a variable, double-quoted payload",
+        "N=bash; " + SET + '$N -c "node $B"',
+        True,
+    ),
+    (
+        "the shell's name from a variable, typed payload",
+        "N=bash; $N -c 'node " + BUNDLE + "'",
+        True,
+    ),
+    # The whole build output is the CLI (review 06ac1c92.3): dist/index.js is the package's `main` and `npm start`.
+    ("the package main under dist", "node packages/cli/dist/index.js --version", True),
+    (
+        "a nested module under dist after cd",
+        "cd packages/cli && node dist/commands/config.js",
+        True,
+    ),
     # xargs appends what it reads when the runner names no program of its own.
     ("xargs node fed a here-string", SET + "xargs node <<< $B", True),
     ("xargs node fed by echo", "echo " + BUNDLE + " | xargs node", True),
@@ -105,6 +123,14 @@ CASES = [
     ),
     # A single-quoted payload is the inner shell's, where an unexported B is empty.
     ("bash -c with a single-quoted payload, B not exported", SET + "bash -c 'node $B'", False),
+    (
+        "the shell's name from a variable, payload echoes",
+        "N=bash; $N -c 'echo node " + BUNDLE + "'",
+        False,
+    ),
+    # Not the CLI's build output: another package's dist, and a sibling directory whose name only starts with `dist`.
+    ("another package's dist", "node packages/www/dist/server.js", False),
+    ("a sibling of the CLI's dist", "node packages/cli/dist-old/index.js", False),
     ("bun install", "bun install", False),
     ("deno fmt", "deno fmt", False),
 ]
@@ -135,6 +161,10 @@ MUTANTS = [
     (
         "the program read as typed (#e13fb555)",
         ("run.xargv if run.xargv is not None else run.argv", "run.argv"),
+    ),
+    (
+        "the shell's name read as typed (06ac1c92.1)",
+        ("shell_name = _value(run.name, run.vars)", "shell_name = run.name"),
     ),
 ]
 
