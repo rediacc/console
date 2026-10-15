@@ -12,6 +12,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 
 import ast
 import fnmatch
+import functools
 import itertools
 import os
 import re
@@ -211,11 +212,302 @@ def _reaches_reviews(cmd, cwd):
             words.extend(run.feed.split())
         if run.launch is not None:
             words.extend(run.launch.starts)
+        # Each value a `for` loop gives a word (#b53f586d): `for D in lnk; do echo x > $D/y.md; done` writes through the link.
+        words.extend(
+            form
+            for w in [*run.argv, *shellscan.redirect_targets(run)]
+            for form, definite in _readings(w, run, cmd)
+            if definite
+        )
         # A program's code is one argv word, so a link it names (`python3 -c "open('lnk/x.md','w')"`) is read as each string literal it holds (review 84fdeff8.1).
         words.extend(lit for w in run.argv for lit in _literals(w))
         if any(_lands_in_reviews(w, base) for w in words):
             return True
     return False
+
+
+# A WORD THE WALK CANNOT EXPAND IS READ BY WHERE ITS VALUE CAN COME FROM (#b53f586d). `for D in agent/reviews/x; do echo hi > $D/y.md; done` and `read D <<< agent/reviews/x; echo hi > $D/y.md` write the review file (bash 5.3), while the walk keeps `$D/y.md` as typed, since one value cannot stand for every
+# iteration of a loop and a `read` takes what its input holds: both were allowed (rc 0). Each expansion in such a word is read as one of four things. A `for`/`select` variable is each word of the list it walks (`shellscan._Run.loop_vars`), so the word is read once per value, and a value that names a review path is a write to it. A variable the walk knows is its value, and `$#`,
+# `$?`, `$$`, `$!` and `$((...))` are numbers. A value made ON THE LINE that the walk cannot know is read from the text it is made from: the value word of `NAME=$(...)`, the input of a `read`, `mapfile` or `readarray`, the words of a `printf -v`, of a `set` or of a call to a function the line defines for a positional parameter, the text of a substitution in the word itself (`_value_source`, `_positional_source`). When that text spells `reviews` as a path segment, or when no such text is readable (a `read` from a file, `getopts`, `${D:=x}`, every variable after `source`) and the line itself spells it, the value is read as a path into the review directory, and a write there is refused as unjudgeable.
+# A value from OUTSIDE the line (a variable the session's environment holds, a substitution whose text does not name `reviews`) is one unknown path segment: it may complete a directory the literal text half spells (`agent/$X`, `$X/reviews/y.md`, `$X/y.md` under `cd agent`), but two of them never spell `agent/reviews` alone, so `echo > "$OUT/$NAME"` stays allowed.
+_WORST = "agent/reviews/_"
+# Text that spells `reviews` as a path segment could: `agent/reviews/x`, `reviews` alone under `cd agent`; never inside a longer name (`push_with_unrecorded_reviews`, `reviews-only`, `reviews.txt`), which no value turns into the directory.
+_SPELLS_REVIEWS = re.compile(r"(?<![\w.-])reviews(?![\w.-])")
+_OUTSIDE = "\x01"
+_READINGS_CAP = 64
+
+
+def _expansions(word):
+    """`(start, end, kind, name)` for each outermost expansion in a quote-removed word: kind "var" (`$NAME`, `${NAME}`), "op" (`${NAME...}` with an operator), "positional" (`$1`, `$@`, `$*`), "number" (`$#`, `$?`, `$$`, `$!`, `$-`, `$0`, `$((...))`) or "subst" (`$(...)`, a backquoted span)."""
+    out = []
+    i = 0
+    while i < len(word):
+        ch = word[i]
+        if ch == "`":
+            end = word.find("`", i + 1)
+            end = len(word) if end < 0 else end + 1
+            out.append((i, end, "subst", ""))
+            i = end
+            continue
+        if ch != "$" or i + 1 >= len(word):
+            i += 1
+            continue
+        nxt = word[i + 1]
+        if nxt in "({":
+            close = ")" if nxt == "(" else "}"
+            depth, j = 0, i + 1
+            while j < len(word):
+                depth += word[j] == nxt
+                depth -= word[j] == close
+                j += 1
+                if depth == 0:
+                    break
+            body = word[i + 2 : j - 1]
+            if nxt == "(":
+                out.append((i, j, "number" if body.startswith("(") else "subst", ""))
+            else:
+                m = re.match(r"[A-Za-z_][A-Za-z0-9_]*|[0-9]+|[@*#?$!-]", body)
+                name = m.group(0) if m else ""
+                if not name or name in "#?$!-" or name == "0":
+                    kind = "number"
+                elif name[0].isdigit() or name in "@*":
+                    kind = "positional"
+                else:
+                    kind = "var" if body == name else "op"
+                out.append((i, j, kind, name))
+            i = j
+            continue
+        m = re.match(r"[A-Za-z_][A-Za-z0-9_]*", word[i + 1 :])
+        if m:
+            out.append((i, i + 1 + m.end(), "var", m.group(0)))
+            i += 1 + m.end()
+        elif nxt.isdigit() or nxt in "@*":
+            out.append((i, i + 2, "number" if nxt == "0" else "positional", nxt))
+            i += 2
+        elif nxt in "#?$!-":
+            out.append((i, i + 2, "number", nxt))
+            i += 2
+        else:
+            i += 1
+    return out
+
+
+def _span_choices(span, word, run, cmd):
+    """`(values, definite)` for one expansion of `word`: the texts it may stand for, and whether they are every value bash can give it."""
+    start, end, kind, name = span
+    text = word[start:end]
+    on_line = _WORST if _SPELLS_REVIEWS.search(cmd) else _OUTSIDE
+    loop = getattr(run, "loop_vars", None) or {}
+    state = getattr(run, "vars", None) or {}
+    if kind == "number":
+        return ["0"], True
+    if kind == "positional":
+        source = _positional_source(cmd)
+        if source is None:
+            return [on_line], False
+        return [_WORST if _SPELLS_REVIEWS.search(source) else _OUTSIDE], False
+    if kind == "subst":
+        return [_WORST if _SPELLS_REVIEWS.search(text) else _OUTSIDE], False
+    if kind == "op":
+        # `${D:?msg}` is D's value; `${D:-x}` and `${D:=x}` are D's or `x`; `${D:+x}` is `x` or nothing; `${f#p}`, `${f##p}`, `${f%p}` and `${f%%p}` trim a known value. Any other operator (`${D/a/b}`, `${D:1}`) derives a value this reading does not compute.
+        trim = re.match(r"[A-Za-z_][A-Za-z0-9_]*(##?|%%?)(.*)\Z", text[2:-1], re.DOTALL)
+        if trim is not None and "$" not in trim.group(2) and "`" not in trim.group(2):
+            own = _span_choices((start, end, "var", name), word, run, cmd)
+            if own[1]:
+                return [_trimmed(v, trim.group(1), trim.group(2)) for v in own[0]], True
+        m = re.match(r"[A-Za-z_][A-Za-z0-9_]*(:?[-=?+])(.*)\Z", text[2:-1], re.DOTALL)
+        if m is None:
+            return [on_line], False
+        op, alt = m.group(1).lstrip(":"), m.group(2)
+        alt_choice = (
+            ([alt], True)
+            if "$" not in alt and "`" not in alt
+            else (
+                [_WORST if _SPELLS_REVIEWS.search(alt) else _OUTSIDE],
+                False,
+            )
+        )
+        if op == "+":
+            return [*alt_choice[0], ""], alt_choice[1]
+        own = _span_choices((start, end, "var", name), word, run, cmd)
+        if op == "?":
+            return own
+        return own[0] + alt_choice[0], own[1] and alt_choice[1]
+    if kind == "var" and name in loop:
+        return list(loop[name]), True
+    if name in state:
+        value = state[name][0]
+        if isinstance(value, str) and shellscan._UNRESOLVED not in value and kind == "var":
+            return [value], True
+        source = _value_source(name, cmd, shellscan._CLOBBERED in str(value))
+        if source is None:
+            return [on_line], False
+        return [_WORST if _SPELLS_REVIEWS.search(source) else _OUTSIDE], False
+    if shellscan._OPAQUE_KEY in state:
+        return [on_line], False
+    return [_OUTSIDE], False
+
+
+@functools.lru_cache(maxsize=64)
+def _positional_source(cmd):
+    """The text the positional parameters take their values from: the words of every `set` and of every call to a function the command defines (`shellscan._FN_KEY`), or None after `source`, which may set them from anywhere. The hook's own shell runs the command with none, so a command that sets none gives the empty text."""
+    texts = []
+    try:
+        runs = list(shellscan.every_run(cmd))
+    except Exception:
+        return None
+    for run in runs:
+        base = run.name.rsplit("/", 1)[-1]
+        if base in ("source", "."):
+            return None
+        state = getattr(run, "vars", None) or {}
+        if base == "set" or shellscan._FN_KEY + run.name in state:
+            texts.append(" ".join(run.argv))
+    return "\n".join(texts)
+
+
+def _assignment_values(name, cmd):
+    """The text of every `NAME=value` (and `NAME+=`, `NAME:=`) the command spells, each value read to the first unquoted blank or control operator outside a substitution, as bash ends an assignment word."""
+    out = []
+    for m in re.finditer(r"(?<![\w$])%s:?\+?=" % re.escape(name), cmd):
+        i, depth, quote = m.end(), 0, ""
+        while i < len(cmd):
+            ch = cmd[i]
+            if quote:
+                if ch == quote:
+                    quote = ""
+                elif ch == "\\" and quote == '"':
+                    i += 1
+            elif ch in "'\"`":
+                quote = ch
+            elif ch == "\\":
+                i += 1
+            elif ch in "({":
+                depth += 1
+            elif ch in ")}":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif depth == 0 and (ch.isspace() or ch in ";&|<>"):
+                break
+            i += 1
+        out.append(cmd[m.end() : i])
+    return out
+
+
+@functools.lru_cache(maxsize=64)
+def _value_source(name, cmd, by_builtin):
+    """The text a variable the walk could not evaluate takes its value from, as near as the command spells it, or None where that is not readable: each `NAME=value` it spells, the input a `read`, `mapfile` or `readarray` of NAME reads (its here-string, heredoc or piped words) and the words of a `printf -v NAME`.
+
+    None, read as any text the line holds, for an assignment no spelling here reaches: a `read` from a file, `getopts`, a function call, an arithmetic or `${NAME:=x}` assignment with no `NAME=` word, and every variable after `source`. Without this, `T=$(mktemp); cat agent/reviews/a.md > $T` read `$T` as the review directory.
+    """
+    if not by_builtin:
+        # The walk keeps a builtin's assignment apart (`shellscan._CLOBBERED`), so a value it calls unresolved was last given by a `NAME=value` word.
+        texts = _assignment_values(name, cmd)
+        return "\n".join(texts) if texts else None
+    texts = []
+    try:
+        runs = list(shellscan.every_run(cmd))
+    except Exception:
+        return None
+    for run in runs:
+        base = run.name.rsplit("/", 1)[-1]
+        argv = list(run.argv)
+        if base in ("read", "mapfile", "readarray") and name in argv:
+            if run.feed is None:
+                return None
+            texts.append(run.feed)
+        elif base == "printf" and name in argv and "-v" in argv:
+            texts.append(" ".join(argv))
+    return "\n".join(texts) if texts else None
+
+
+def _trimmed(value, op, pattern):
+    """`${NAME#pattern}` and its siblings on a known `value`: `#` drops the shortest matching prefix, `##` the longest, `%` the shortest matching suffix, `%%` the longest, each matched as bash matches a pattern (`fnmatch`)."""
+    cuts = range(len(value) + 1)
+    if op.startswith("#"):
+        hits = [i for i in cuts if fnmatch.fnmatchcase(value[:i], pattern)]
+        if not hits:
+            return value
+        return value[max(hits) if op == "##" else min(hits) :]
+    hits = [i for i in cuts if fnmatch.fnmatchcase(value[i:], pattern)]
+    if not hits:
+        return value
+    return value[: min(hits) if op == "%%" else max(hits)]
+
+
+def _outside_forms(form):
+    """`form` with each value from outside the line read as an unknown segment (`*`), a whole-segment one only one at a time, so two such segments never stand for `agent` and `reviews` together."""
+    segments = form.split("/")
+    whole = [i for i, seg in enumerate(segments) if seg == _OUTSIDE]
+    if not whole:
+        return [form.replace(_OUTSIDE, "*")]
+    return [
+        "/".join(
+            ("*" if i == keep else "_") if i in whole else seg.replace(_OUTSIDE, "*")
+            for i, seg in enumerate(segments)
+        )
+        for keep in whole
+    ]
+
+
+def _readings(word, run, cmd, depth=0):
+    """`(form, definite)` for every path `word` may expand to that the walk did not expand (#b53f586d), [] for a word with no expansion. A definite form is one bash really produces (a loop value, a known variable); any other stands for a value this hook cannot know."""
+    if not word or ("$" not in word and "`" not in word):
+        return []
+    spans = _expansions(word)
+    if not spans:
+        return []
+    state = getattr(run, "vars", None) or {}
+    loop = getattr(run, "loop_vars", None) or {}
+    if all(
+        kind == "number"
+        or (
+            kind in ("var", "op")
+            and name not in loop
+            and name in state
+            and shellscan._UNRESOLVED not in str(state[name][0])
+        )
+        for _s, _e, kind, name in spans
+    ):
+        # Every value is one the walk knows, so a word it still left as typed is one bash splits, globs or drops (`D="a b"; echo > $D` is an ambiguous redirect), which the walk already judged.
+        return []
+    choices = [_span_choices(span, word, run, cmd) for span in spans]
+    combos = 1
+    for values, _definite in choices:
+        combos *= max(1, len(values))
+    if combos > _READINGS_CAP:
+        # Past the cap every expansion is read as the line's unknown, which names the review directory exactly when the line does.
+        worst = _WORST if _SPELLS_REVIEWS.search(cmd) else _OUTSIDE
+        choices = [(["0"], True) if s[2] == "number" else ([worst], False) for s in spans]
+    out: list[tuple[str, bool]] = []
+    for pick in itertools.product(*[values or [""] for values, _d in choices]):
+        form, last = [], 0
+        for (start, end, _k, _n), value in zip(spans, pick, strict=True):
+            form.append(word[last:start])
+            form.append(value)
+            last = end
+        form.append(word[last:])
+        text = "".join(form)
+        definite = all(d for _v, d in choices)
+        if depth == 0 and ("$" in text or "`" in text) and _OUTSIDE not in text:
+            # A loop word may itself hold an expansion (`for D in $X`): read it once more.
+            nested = _readings(text, run, cmd, depth + 1)
+            if nested:
+                out.extend((f, definite and d) for f, d in nested)
+                continue
+        out.extend((f, definite) for f in _outside_forms(text))
+    return out
+
+
+def _argv_readings(run, argv, cmd):
+    """`(argv, definite)` with one word at a time replaced by each of its `_readings`, the others as typed: every operand reading checks one word, so a product across words adds nothing."""
+    for at, word in enumerate(argv):
+        for form, definite in _readings(word, run, cmd):
+            yield [*argv[:at], form, *argv[at + 1 :]], definite
+
+
+_UNKNOWN_NOTE = ", through a word this hook cannot expand (read as %s); spell the path literally"
 
 
 _GLOB_OR_BRACE = frozenset("*?[{")
@@ -242,6 +534,13 @@ def _globs_reviews(cmd, cwd):
         if run.launch is not None:
             words.extend(run.launch.starts)
         if any(spells(w, where) for w in words):
+            return True
+        # A word the walk could not expand, read as the full check reads it (#b53f586d): a loop value, or an unknown segment that completes `agent/$X` or `$X/y.md` under `cd agent`.
+        if any(
+            _is_review(form, where)
+            for w in [*run.argv, *shellscan.redirect_targets(run)]
+            for form, _definite in _readings(w, run, cmd)
+        ):
             return True
     return False
 
@@ -435,24 +734,45 @@ def _offending(cmd, depth=0, cwd=None):
         for target in shellscan.redirect_targets(run):
             if _is_review(target, where, base):
                 return "redirect into %s" % target
+        # A target the walk could not expand (its expanded form is still the typed text) is read by where its value can come from (#b53f586d, `_readings`). One it expanded is already judged: a group's redirect is expanded before the body assigns (`D=plain; { D=x; } > $D/y.md`).
+        typed = list(getattr(run, "writes", ()))
+        expanded = list(getattr(run, "xwrites", ())) or typed
+        for target, value in zip(typed, expanded, strict=False):
+            if value != target:
+                continue
+            for form, definite in _readings(target, run, cmd):
+                if _is_review(form, where, base):
+                    return (
+                        "redirect into %s" % form
+                        if definite
+                        else ("redirect into %s" % target + _UNKNOWN_NOTE % form)
+                    )
         # THE WORDS ARE READ TWICE, as typed and as bash expands them (#f6334e52): `D=agent/reviews/x; tee $D/y.md`, `sudo tee $D/y.md` and `timeout 5 tee $D/y.md` write the review file while the typed operand reads `$D/y.md`, and each was allowed (rc 0). A word the walk cannot know stays unknown in the expanded form, so the typed form is still read beside it.
-        for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
+        variants = [(argv, "")]
+        if run.xargv is not None and run.xargv != argv:
+            variants.append((list(run.xargv), ""))
+        # Each word the walk could not expand, read by where its value can come from (#b53f586d): `for D in agent/reviews/x; do tee $D/y.md; done` tees the review file.
+        variants += [
+            (words, "" if definite else _UNKNOWN_NOTE % shlex.join(words))
+            for words, definite in _argv_readings(run, argv, cmd)
+        ]
+        for words, note in variants:
             what = _operand_write(run, name, list(words), where, base, cwd)
             if what:
-                return what
+                return what + note
         # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
         # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
-        for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
+        for words, note in variants:
             for word, how in shellscan.output_landings(run, _without_ref_operands(run, words), cwd):
                 if not _is_review(word, where, base):
                     continue
                 if how == "option":
-                    return "%s writing %s through its own output option" % (name, word)
+                    return "%s writing %s through its own output option%s" % (name, word, note)
                 return (
                     "%s naming %s, and %s is not a command this guard reads as a reader; "
                     "read a review file with cat, grep, head, sed -n, jq or git show, and call "
-                    "a command itself rather than through a shell function"
-                ) % (name, word, name)
+                    "a command itself rather than through a shell function%s"
+                ) % (name, word, name, note)
         # A script run DIRECTLY by its shebang is the interpreter it names (review 05c4df4d.2): no interpreter word stands in the command.
         shebang = shellscan.shebang_interpreter(run, cwd)
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
@@ -700,6 +1020,58 @@ def _python_writes_review(program, depth=0):
     )
 
 
+def _programs_name_reviews(cmd, cwd):
+    """The pre-filter's program question: does a script `cmd` runs by path name `reviews` in its text (#c4542b69), or does a program it runs have text this hook cannot read whose sources may (#b53f586d)?
+
+    AN UNJUDGEABLE PROGRAM IS JUDGED BY WHAT IT CAN BE MADE FROM. `mkdir -p "$(echo n)" && cp rv.py n && python3 n/rv.py` runs `rv.py`, which writes a review file, while the walk cannot say where the copy landed: the line names no review word, so the pre-filter allowed it (rc 0), and the same line with one was refused. Refusing every such program instead turns the planting loop this repository runs (`sed -i ... x.py && python3 x.py`: 522 of 158,263 distinct Bash commands in this repository's session transcripts on 2026-10-15 run an unjudgeable program, 518 of them naming no review word) into review-record refusals.
+    So the program is read through its possible sources: every file a word of the line names (each run's words, as typed and as expanded, joined to the run's directory), and the command goes to the full check, which refuses the program as unjudgeable, when one of those files is larger than a script read or holds code the full check reads as a write into the review directory (`_source_writes_review`), or when `curl`/`wget` fetches a URL, whose content no file on disk holds.
+    Testing a source for the bare word `reviews` instead sent 55 of those 518 to the refusal, on scripts that only mention the directory; the code reading sends 1, and changes the verdict on none of the 158,263. A program generated by a command whose own files never write there (`python3 gen.py > n.py` where `gen.py` imports what does), and one downloaded by a tool other than curl or wget, are the residue this reading cannot see.
+    """
+    if not shellscan.PROGRAM_PREFILTER.search(cmd):
+        return False
+    runs = list(shellscan.every_run(cmd))
+    unjudgeable = False
+    for run in runs:
+        text, kind = shellscan.interpreter_program(run, cmd, cwd)
+        if kind == "file" and "reviews" in (text or ""):
+            return True
+        unjudgeable = unjudgeable or kind == "unjudgeable"
+    if not unjudgeable:
+        return False
+    for run in runs:
+        words = {*run.argv, *(run.xargv or ())}
+        if run.name.rsplit("/", 1)[-1] in _FETCHERS and any("://" in w for w in words):
+            return True
+        base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
+        for word in words:
+            if base is None or not word or len(word) > _PATH_MAX or "\0" in word or "\n" in word:
+                continue
+            if _source_writes_review(os.path.join(base, word)):
+                return True
+    return False
+
+
+# Commands whose output is a download: a program written from one has no source on disk to read.
+_FETCHERS = frozenset(("curl", "wget"))
+
+
+def _source_writes_review(path):
+    """True when the file at `path` is larger than a script read, or holds code the full check reads as a write into the review directory (`_python_writes_review`, else the line-scoped `_code_writes_review`): a source an unjudgeable program may be made from."""
+    try:
+        if not os.path.isfile(path):
+            return False
+        if os.path.getsize(path) > shellscan._SCRIPT_MAX:
+            return True
+        with open(path, encoding="utf-8", errors="replace") as handle:
+            text = handle.read()
+    except (OSError, ValueError):
+        return False
+    if REVIEW_TEXT.rstrip("/") not in text:
+        return False
+    verdict = _python_writes_review(text)
+    return bool(_code_writes_review(text) if verdict is None else verdict)
+
+
 def run(ev):
     cmd = ev.field("tool_input", "command")
     try:
@@ -711,7 +1083,7 @@ def run(ev):
     if (
         "reviews" not in cmd
         and not _globs_reviews(cmd, cwd)
-        and not any("reviews" in text for text in shellscan.interpreter_scripts(cmd, cwd))
+        and not _programs_name_reviews(cmd, cwd)
         and not _reaches_reviews(cmd, cwd)
     ):
         return hookio.ALLOW
