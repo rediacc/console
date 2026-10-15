@@ -72,7 +72,15 @@ def planted(scratch, pairs):
         return None
     for old, new in pairs:
         src = src.replace(old, new)
-    sys.path.insert(0, str(HOOKS.parent))
+    # The canonical, idempotent hop (rediacc_hooks/syspath.py), as test-block_cli_bundle.py takes it; a bare insert run per mutant left one copy per call.
+    syspath_spec = importlib.util.spec_from_file_location(
+        "rediacc_hooks_syspath", HOOKS / "syspath.py"
+    )
+    if syspath_spec is None or syspath_spec.loader is None:
+        raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+    syspath = importlib.util.module_from_spec(syspath_spec)
+    syspath_spec.loader.exec_module(syspath)
+    syspath.on_sys_path(str(HOOKS.parent))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     copy = scratch / ("mutant_%s.py" % STEM)
     copy.write_text(src, encoding="utf-8")
