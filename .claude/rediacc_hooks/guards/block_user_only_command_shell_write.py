@@ -39,7 +39,7 @@ _PREFILTER = re.compile(
     r"%s|commands|skills|model-invocation-exceptions" % model_invocation.KEY_WORDS, re.IGNORECASE
 )
 WRITERS = ("echo", "printf", "cat")
-INTERPRETERS = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
+INTERPRETERS = shellscan.INTERPRETER_NAMES
 WRITE_CODE = re.compile(
     r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|\.write\(|writeFileSync"
     r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"

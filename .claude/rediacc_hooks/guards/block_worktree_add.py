@@ -16,13 +16,11 @@ create and easy to forget, and each one is a place uncommitted work can silently
 """
 
 import ast
-import base64
 import itertools
 import os
 import re
 import shlex
 import stat
-import urllib.parse
 import zipfile
 from typing import Any
 
@@ -154,7 +152,7 @@ def runs_port_create(cmd):
 #
 # THE EDGE, the same one shellscan draws: a string BUILT at run time (`"work" + "tree"`, base64, a file read and exec'd) is outside a static scanner's reach and is not claimed here.
 INTERPRETERS = ("node", "perl", "ruby", "deno", "bun", "tsx")
-# The flags that hand each non-Python interpreter its program text as the next word. deno takes its program as the operand of the `eval` subcommand (and `repl --eval`), and bun and tsx read node's spellings; `_runtime_program` holds the deno and bun grammar.
+# The flags that hand each non-Python interpreter its program text as the next word. deno takes its program as the operand of the `eval` subcommand (and `repl --eval`), and bun and tsx read node's spellings; `shellscan.program_parse` holds the deno, bun and tsx grammar.
 EVAL_FLAGS = {
     "node": ("-e", "--eval", "-p", "--print"),
     "perl": ("-e", "-E"),
@@ -234,11 +232,16 @@ def _bundle(family, word, following):
 
 
 # A SCRIPT OPERAND THAT IS THE PROCESS'S OWN STDIN IS A STDIN PROGRAM (review 0d227c80.2). `python3 /dev/stdin <<'EOF'` runs the heredoc exactly as `python3 - <<'EOF'` does, so it is judged by the program text the command line holds, not refused as a descriptor the hook cannot read. Only an absolute spelling counts: a relative word that resolves to /dev/stdin stays a descriptor `_unread_reason` refuses, so the two readers never disagree about which run reads stdin. /dev/fd/N for any other N is still a descriptor.
-STDIN_PATHS = ("/dev/stdin", "/dev/fd/0", "/proc/self/fd/0")
+# The spelling is resolved as `shellscan._script_path` resolves a script (review c5f0fd12.3): a `..` after a directory symlink is the kernel's step, so `<link>/../../dev/stdin`, which `os.path.normpath` turned into /dev/stdin, names the file the kernel opens and is read as a script (rc 0 at bd4ead963 with `git worktree add` in it).
+# The procfs spelling is a RECOGNISED path, never read (the pid-wait-anchor precedent in .ci/rediacc_ci/quality/hook_cross_os.py): the root is named once, from REDIACC_WORKTREE_STDIN_PROCFS, and STDIN_PATHS and both stdin-touch patterns below are built from it, so a machine whose procfs is not at /proc moves all three together.
+PROCFS_ENV = "REDIACC_WORKTREE_STDIN_PROCFS"
+PROCFS_ROOT = (os.environ.get(PROCFS_ENV) or "/proc").rstrip("/") or "/proc"
+PROC_STDIN = PROCFS_ROOT + "/self/fd/0"
+STDIN_PATHS = ("/dev/stdin", "/dev/fd/0", PROC_STDIN)
 
 
 def _stdin_path(word):
-    return word.startswith("/") and os.path.normpath(word) in STDIN_PATHS
+    return word.startswith("/") and shellscan._script_path(word, None, None) in STDIN_PATHS
 
 
 def _eval_program(family, args):
@@ -279,364 +282,6 @@ def _eval_program(family, args):
     return ("stdin", None)
 
 
-# DENO, BUN AND TSX HAD NO READER HERE (#80712245). Measured rc 0 at 4132c3f7e through dispatch.run_one: `deno eval "new Deno.Command('git',{args:['worktree','add','/tmp/x']}).outputSync()"`, `bun -e`/`--eval`/`-p`/`--print` with `Bun.spawnSync(['git','worktree','add','/tmp/x'])`, `bun exec "git worktree add /tmp/x"`, `deno run - < p.py`, `bun run - < p.py`, `git show HEAD:x.ts | deno run -`, `deno run -c deno.json x.ts` and `deno serve x.ts`.
-# `shellscan._program_parse` reads all three with node's table after a leading `run`, so it took `eval` and `serve` for a script path and `-c deno.json`'s value for the script. Neither deno nor bun is installed on the measuring host, so each grammar below is the official CLI reference's, not a measurement; tsx's is its own `tsx --help` (v4.23.15): node's options plus `--tsconfig <path>`, `--no-cache` and a leading `watch`.
-# FAIL CLOSED. An option the tables do not hold, before the operand, may take the next word as its value, so the operand cannot be told: the run is "unjudgeable", which `_script_verdict` refuses when the command line could spell the verb. A `--name=value` word never takes the next one, whatever the name.
-RUNTIMES = ("deno", "bun", "tsx")
-# deno: https://docs.deno.com/runtime/reference/cli/ (subcommands), https://docs.deno.com/runtime/reference/cli/run/ (`deno run [OPTIONS] <SCRIPT_ARG> [ARGS]...`, `-` reads stdin, and `deno <script>` is `deno run <script>`), https://docs.deno.com/runtime/reference/cli/eval/ (`deno eval [OPTIONS] <CODE>`, `-p/--print`), https://docs.deno.com/runtime/reference/cli/serve/ and https://docs.deno.com/runtime/reference/cli/repl/ (`--eval <code>`, `--eval-file=<files>`).
-# The permission, `--check`, `--reload`, `--inspect*`, `--watch*`, `--env-file`, `--v8-flags` and similar options are documented as `--name[=<VALUE>]`: a value only after `=`, so a bare one is a flag. `--lock` is listed with a value by some references and as `--lock[=<FILE>]` by others, so a bare `--lock` is left unknown, and unjudgeable.
-DENO_FLAGS_LONG = frozenset(
-    (
-        "allow-all",
-        "quiet",
-        "no-remote",
-        "no-npm",
-        "no-config",
-        "no-lock",
-        "no-prompt",
-        "cached-only",
-        "no-clear-screen",
-        "no-code-cache",
-        "unstable",
-        "check",
-        "no-check",
-        "reload",
-        "frozen",
-        "node-modules-dir",
-        "vendor",
-        "env-file",
-        "env",
-        "v8-flags",
-        "inspect",
-        "inspect-brk",
-        "inspect-wait",
-        "watch",
-        "watch-hmr",
-        "watch-exclude",
-        "unsafely-ignore-certificate-errors",
-        "strace-ops",
-        "print",
-        "help",
-        "version",
-    )
-)
-DENO_FLAG_PREFIXES = ("allow-", "deny-", "unstable-")
-DENO_VALUE_LONG = frozenset(
-    ("config", "import-map", "cert", "location", "seed", "ext", "log-level", "port", "host")
-)
-# `-A` allow-all, `-R`/`-W`/`-N`/`-E`/`-S`/`-I` the permission shorthands, `-P` a permission set, `-r` reload, `-q` quiet, `-p` print (eval), `-h`/`-V` help and version; `-c` config and `-L` log level take a value.
-DENO_FLAGS_SHORT = frozenset("ARWNESIPrqphV")
-DENO_VALUE_SHORT = frozenset("cL")
-DENO_SCRIPT_SUBCOMMANDS = ("run", "serve")
-# Subcommands that run test or benchmark files, several at once, which this reader does not model: unjudgeable.
-DENO_UNMODELLED = ("test", "bench", "jupyter")
-# Subcommands that run no program from the command line. `deno task <name>` runs a deno.json task and `deno x <pkg>` a package, both by NAME, the way `npm run` does; neither is a file this hook reads, and both are out of reach, stated.
-DENO_NO_PROGRAM = frozenset(
-    (
-        "fmt",
-        "lint",
-        "check",
-        "info",
-        "doc",
-        "types",
-        "upgrade",
-        "completions",
-        "cache",
-        "install",
-        "uninstall",
-        "outdated",
-        "add",
-        "remove",
-        "init",
-        "clean",
-        "coverage",
-        "help",
-        "lsp",
-        "publish",
-        "compile",
-        "task",
-        "x",
-        "bundle",
-        "update",
-        "approve-scripts",
-    )
-)
-# bun: https://bun.com/docs/cli/run (`bun [run] [flags] <file or script>`, `bun run -` reads stdin, the run flags), https://bun.com/docs/runtime (`-e/--eval <code>`, `-p/--print <code>`), and `bun --help`'s subcommand list, where `bun exec <script>` runs a shell command line through Bun's shell. A word that is no file is a package.json script NAME: it fails open as an absent file does, because its body is in package.json, read by nothing here (stated).
-BUN_FLAGS_LONG = frozenset(
-    (
-        "watch",
-        "hot",
-        "no-clear-screen",
-        "smol",
-        "bun",
-        "silent",
-        "if-present",
-        "no-install",
-        "prefer-offline",
-        "prefer-latest",
-        "no-macros",
-        "no-env-file",
-        "no-addons",
-        "expose-gc",
-        "no-deprecation",
-        "throw-deprecation",
-        "zero-fill-buffers",
-        "use-system-ca",
-        "use-openssl-ca",
-        "use-bundled-ca",
-        "revision",
-        "version",
-        "help",
-        "workspaces",
-        "parallel",
-        "sequential",
-        "inspect",
-        "inspect-wait",
-        "inspect-brk",
-    )
-)
-BUN_VALUE_LONG = frozenset(
-    (
-        "cwd",
-        "preload",
-        "require",
-        "env-file",
-        "config",
-        "tsconfig-override",
-        "define",
-        "drop",
-        "loader",
-        "main-fields",
-        "extension-order",
-        "jsx-factory",
-        "jsx-fragment",
-        "jsx-import-source",
-        "jsx-runtime",
-        "conditions",
-        "port",
-        "fetch-preconnect",
-        "max-http-header-size",
-        "dns-result-order",
-        "title",
-        "console-depth",
-        "user-agent",
-        "unhandled-rejections",
-        "filter",
-        "elide-lines",
-        "shell",
-    )
-)
-BUN_INLINE_LONG = ("eval", "print")
-# `-b` --bun, `-h` help, `-v` version; `-r` preload, `-c` config, `-d` define, `-l` loader and `-F` filter take a value; `-e`/`-p` take the program.
-BUN_FLAGS_SHORT = frozenset("bhv")
-BUN_VALUE_SHORT = frozenset("rcdlF")
-BUN_INLINE_SHORT = frozenset("ep")
-BUN_UNMODELLED = ("test",)
-# `bun x <pkg>` and `bun create <template>` run a PACKAGE, as `npx` does, out of reach here and stated; the rest run no program.
-BUN_NO_PROGRAM = frozenset(
-    (
-        "x",
-        "create",
-        "c",
-        "build",
-        "install",
-        "i",
-        "add",
-        "a",
-        "remove",
-        "rm",
-        "update",
-        "outdated",
-        "link",
-        "unlink",
-        "pm",
-        "init",
-        "upgrade",
-        "publish",
-        "patch",
-        "patch-commit",
-        "audit",
-        "info",
-        "why",
-        "completions",
-        "discord",
-        "help",
-        "feedback",
-    )
-)
-# tsx: `tsx --help` (v4.23.15) lists `--tsconfig <string>`, `--no-cache`, `-h`, `-v` and the `watch` command, then node's own options, which `_eval_program` and `shellscan._program_parse` read as node's.
-TSX_OWN = ("--tsconfig", "--no-cache")
-
-
-def _runtime_option(family, word, following):
-    """`(kind, value, consumed)` for one deno or bun option word before the operand: kind "inline" (value the program), "flag", "value" (`consumed` says whether it took the next word) or "unknown"."""
-    if word.startswith("--"):
-        name, eq, given = word[2:].partition("=")
-        if family == "bun" and name in BUN_INLINE_LONG:
-            return ("inline", given, False) if eq else ("inline", following, True)
-        if eq:
-            return "value", given, False
-        if family == "deno":
-            if name in DENO_FLAGS_LONG or name.startswith(DENO_FLAG_PREFIXES):
-                return "flag", None, False
-            return (
-                ("value", following, True) if name in DENO_VALUE_LONG else ("unknown", word, False)
-            )
-        if name in BUN_FLAGS_LONG:
-            return "flag", None, False
-        return ("value", following, True) if name in BUN_VALUE_LONG else ("unknown", word, False)
-    flags = DENO_FLAGS_SHORT if family == "deno" else BUN_FLAGS_SHORT
-    values = DENO_VALUE_SHORT if family == "deno" else BUN_VALUE_SHORT
-    inline = frozenset() if family == "deno" else BUN_INLINE_SHORT
-    letters = word[1:]
-    for at, letter in enumerate(letters):
-        rest = letters[at + 1 :]
-        if letter in inline:
-            if rest:
-                return "inline", rest.removeprefix("="), False
-            return "inline", following, True
-        if letter in values:
-            return ("value", rest, False) if rest else ("value", following, True)
-        if letter not in flags:
-            return "unknown", word, False
-        if rest.startswith("="):
-            return "flag", None, False
-    return "flag", None, False
-
-
-def _data_url(word):
-    """The program a `data:` module URL carries, or None when `word` is no data URL."""
-    if not word.startswith("data:") or "," not in word:
-        return None
-    head, body = word[5:].split(",", 1)
-    if head.endswith(";base64"):
-        try:
-            return base64.b64decode(urllib.parse.unquote(body), validate=False).decode(
-                "utf-8", "replace"
-            )
-        except ValueError:
-            return word
-    return urllib.parse.unquote(body)
-
-
-def _runtime_program(base, argv):
-    """`(kind, value)` for a deno, bun or tsx argv: "inline" (value the program text), "shell" (value a shell command line, `bun exec`), "stdin", "file" (value the script path), "remote" (a URL module deno fetches), "none" (no program from the command line) or "unjudgeable" (value the reason)."""
-    if base == "tsx":
-        args = argv[1:] if argv[:1] == ["watch"] else list(argv)
-        cut = args.index("--") if "--" in args else len(args)
-        kept: list[str] = []
-        k = 0
-        while k < cut:
-            if args[k] == "--tsconfig":
-                k += 2
-                continue
-            if not (args[k] in TSX_OWN or args[k].startswith("--tsconfig=")):
-                kept.append(args[k])
-            k += 1
-        kept.extend(args[cut:])
-        mode, code = _eval_program("node", kept)
-        if mode == "c":
-            return "inline", code
-        kind, value = shellscan._program_parse("node", kept)
-        return ("file", value) if kind == "file" else (kind, value)
-    family = base
-    sub = None
-    k = 0
-    while k < len(argv):
-        word = argv[k]
-        following = argv[k + 1] if k + 1 < len(argv) else None
-        if word == "--":
-            operand = following
-            break
-        if word == "-":
-            return "stdin", None
-        if word.startswith("-") and len(word) > 1:
-            if family == "deno" and sub == "repl" and word.split("=", 1)[0] == "--eval-file":
-                return "unjudgeable", "`deno repl --eval-file`"
-            if family == "deno" and sub == "repl" and word.split("=", 1)[0] == "--eval":
-                return "inline", word.split("=", 1)[1] if "=" in word else (following or "")
-            kind, value, consumed = _runtime_option(family, word, following)
-            if kind == "inline":
-                return "inline", value or ""
-            if kind == "unknown":
-                return "unjudgeable", "the option `%s`, which this hook does not know" % word
-            if family == "deno" and word in ("-h", "--help", "-V", "--version") and sub is None:
-                return "none", None
-            k += 2 if consumed else 1
-            continue
-        if sub is None:
-            if family == "deno":
-                if word in DENO_SCRIPT_SUBCOMMANDS or word in ("eval", "repl"):
-                    sub = word
-                    k += 1
-                    continue
-                if word in DENO_UNMODELLED:
-                    return "unjudgeable", "`deno %s`" % word
-                if word in DENO_NO_PROGRAM:
-                    return "none", None
-            else:
-                if word == "run":
-                    sub = word
-                    k += 1
-                    continue
-                if word == "exec":
-                    return "shell", " ".join(argv[k + 1 :])
-                if word == "repl":
-                    return "stdin", None
-                if word in BUN_UNMODELLED:
-                    return "unjudgeable", "`bun %s`" % word
-                if word in BUN_NO_PROGRAM:
-                    return "none", None
-        operand = word
-        break
-    else:
-        operand = None
-    if operand is None:
-        # A bare `deno` and `deno repl` are the REPL, which reads its program on stdin; a bare `bun` and `bun run` print help.
-        if family == "deno" and sub in (None, "repl"):
-            return "stdin", None
-        return "none", None
-    if family == "deno" and sub == "eval":
-        return "inline", operand
-    if operand == "-":
-        return "stdin", None
-    data = _data_url(operand) if family == "deno" else None
-    if data is not None:
-        return "inline", data
-    if family == "deno" and re.match(r"^https?://", operand):
-        return "remote", operand
-    if family == "deno" and re.match(r"^(?:npm|jsr|node):", operand):
-        return "none", None
-    return "file", operand
-
-
-def _parse(base, argv):
-    """`shellscan._program_parse`'s `(kind, value)`, with deno, bun and tsx read by `_runtime_program`: its "inline" is "inline", and "shell", "remote", "none" and "unjudgeable" name no script file."""
-    if base in RUNTIMES:
-        return _runtime_program(base, list(argv))
-    return shellscan._program_parse(base, list(argv))
-
-
-def _interpreter_program(run_, cmd, cwd):
-    """`shellscan.interpreter_program`, with a deno, bun or tsx script read where `_runtime_program` finds it, and an operand it cannot find "unjudgeable"."""
-    base = run_.name.rsplit("/", 1)[-1]
-    if base not in RUNTIMES:
-        return shellscan.interpreter_program(run_, cmd, cwd)
-    kind, value = _runtime_program(base, list(run_.argv))
-    if kind == "unjudgeable":
-        return None, "unjudgeable"
-    if kind != "file":
-        return None, None
-    written = shellscan._written_scripts(cmd, run_, cwd)
-    target = shellscan._script_path(value, run_.cwd, cwd)
-    if target in written:
-        return (written[target], "file") if written[target] is not None else (None, "unjudgeable")
-    text, state = shellscan._script_file_text(value, run_.cwd, cwd)
-    if state == "read":
-        return text, "file"
-    return (None, "unjudgeable") if state == "unjudgeable" else (None, None)
-
-
 def _program_of(name, args):
     """`(family, mode, code)` for an interpreter command, or None when `name` is no interpreter. `mode` is "c" (the code is in argv), "stdin" (the code arrives on stdin) or anything else (a file or module, which the arms above judge). `bun exec` hands a shell command line, which is family "shell" in mode "c"."""
     family = _interpreter_name(name)
@@ -646,8 +291,9 @@ def _program_of(name, args):
                 if PYTHON.match(word.rsplit("/", 1)[-1]):
                     return _program_of(word, args[k + 1 :])
         return None
-    if family in RUNTIMES:
-        kind, value = _runtime_program(family, list(args))
+    if family in shellscan.RUNTIMES:
+        # The walk every guard shares (`shellscan.program_parse`, #a2599946).
+        kind, value = shellscan.program_parse(family, args)
         if kind == "shell":
             return ("shell", "c", value)
         if kind == "file" and _stdin_path(value):
@@ -656,7 +302,7 @@ def _program_of(name, args):
         return (family, mode, value if mode == "c" else None)
     if family == "python":
         # The option parse `shellscan.interpreter_program` reads with (#78afdc0b): the private one this replaced stepped over `--check-hash-based-pycs` alone, read its value as the script and never saw the `-c` after it.
-        kind, code = shellscan._program_parse(name.rsplit("/", 1)[-1], args)
+        kind, code = shellscan.program_parse(name.rsplit("/", 1)[-1], args)
         if kind == "file" and _stdin_path(code):
             kind = "stdin"
         mode = {"inline": "c", "stdin": "stdin"}.get(kind, kind)
@@ -675,12 +321,20 @@ STDIN_REDIRECTS = ("<", "<>")
 STDIN_DEPTH = 16
 DUP_TARGET = re.compile(r"^(\d+)-?$")
 _JS_FAMILIES = ("node", "deno", "bun", "tsx")
+# A DESCRIPTOR HELD IN A NAME IS STDIN UNTIL SHOWN OTHERWISE (review db1e9409.1). `const fd=0; eval(require("fs").readFileSync(fd,"utf8"))` read the pipe and ran it with rc 0 at bd4ead963: the touch list held `fd` bound to 0 for python alone, and no list of names is complete. So a read that takes a descriptor or a path, called with a first argument that is not a literal (a name, an expression, `null` with `{fd: 0}`), counts as touching stdin, in both languages.
+# That over-reads on purpose: such a program is only judged when it also names an evaluator and is fed something, and then its stdin is read as a program, which refuses an unreadable producer. A read given a literal path (`readFileSync("x.json")`, `open('x')`) is not a touch.
 _STDIN_TOUCH = {
     "python": re.compile(
-        r"stdin|/dev/(?:stdin|fd/0)|/proc/self/fd/0|fileinput|\binput\s*\(|\(\s*(?:\w+\s*=\s*)?0\s*[,)]|\bfd\s*=\s*0\b"
+        r"stdin|/dev/(?:stdin|fd/0)|"
+        + re.escape(PROC_STDIN)
+        + r"|fileinput|\binput\s*\(|\(\s*(?:\w+\s*=\s*)?0\s*[,)]|\bfd\s*=\s*0\b"
+        r"""|\b(?:os\s*\.\s*read|fdopen|FileIO|open)\s*\(\s*(?![)\s'"]|[rRbBuUfF]{1,2}['"])"""
     ),
     "js": re.compile(
-        r"stdin|/dev/(?:stdin|fd/0)|/proc/self/fd/0|readline|\(\s*0\s*[,)]|\bconsole\b(?!\s*\.)"
+        r"stdin|/dev/(?:stdin|fd/0)|"
+        + re.escape(PROC_STDIN)
+        + r"|readline|\(\s*0\s*[,)]|\bfd\s*:\s*0\b"
+        r"""|\b(?:readFileSync|readFile|readSync|read|createReadStream|readTextFileSync|readTextFile|readAll|readAllSync|file|open|openSync)\s*\(\s*(?![)\s'"`])"""
     ),
 }
 _EVALUATOR = {
@@ -1045,7 +699,7 @@ def _script_operand(run_, cmd, cwd):
     """The path `run_` reads its program from: an interpreter's script operand, a shell's script (`_shell_script_path`), or the command word of a run by path. None for anything else."""
     base = run_.name.rsplit("/", 1)[-1]
     if base.startswith(shellscan.INTERPRETER_NAMES):
-        kind, value = _parse(base, run_.argv)
+        kind, value = shellscan.program_parse(base, run_.argv)
         return value if kind in ("file", "remote") else None
     if base in shellscan.SHELL_NAMES or base in SOURCE_WORDS:
         return _shell_script_path(run_, cmd, cwd)
@@ -1066,7 +720,11 @@ def _unread_reason(run_, cmd, cwd):
         return "a path holding a NUL byte"
     if path.startswith(("<(", ">(")):
         return "a process substitution"
-    if re.match(r"^https?://", path) and run_.name.rsplit("/", 1)[-1] in RUNTIMES:
+    base = run_.name.rsplit("/", 1)[-1]
+    if (
+        base.startswith(shellscan.INTERPRETER_NAMES)
+        and shellscan.program_parse(base, run_.argv)[0] == "remote"
+    ):
         # `deno run https://...` fetches its program at run time, so no text of it is here to read.
         return "a remote module"
     if _reads_stdin_operand(run_):
@@ -1116,7 +774,7 @@ def _reads_stdin_operand(run_):
     """Is `run_` an interpreter whose script operand is its own stdin (`_stdin_path`)? Its program is the text `interpreter_programs` hands `_program_verdict`, so the by-path readers skip it."""
     if not run_.name.rsplit("/", 1)[-1].startswith(shellscan.INTERPRETER_NAMES):
         return False
-    kind, value = _parse(run_.name.rsplit("/", 1)[-1], run_.argv)
+    kind, value = shellscan.program_parse(run_.name.rsplit("/", 1)[-1], run_.argv)
     if kind != "file" or not _stdin_path(value):
         return False
     # Both readers must agree: the operand is skipped only when `interpreter_programs` reads this run's stdin as its program.
@@ -1415,7 +1073,7 @@ def _script_verdict(cmd, depth, cwd):
         if _reads_stdin_operand(run_):
             # Judged by its stdin program (`_program_verdict`); opening /dev/stdin here would read the hook's own input.
             continue
-        text, kind = _interpreter_program(run_, cmd, cwd)
+        text, kind = shellscan.interpreter_program(run_, cmd, cwd)
         family = _interpreter_name(run_.name) or _interpreter_name(
             shellscan.shebang_interpreter(run_, cwd) or ""
         )
