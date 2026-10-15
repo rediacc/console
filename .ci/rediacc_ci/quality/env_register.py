@@ -3,7 +3,7 @@ r"""npm run env:register -- one environment name, registered everywhere it must 
     npm run env:register -- <module> <NAME> [<NAME>...] --class <shard>
                             [--kind <k> --default <spelling>... --why <text>]
 
-SEVERAL NAMES, ONE CALL. Every name given is read by the same <module> and takes the same `--class`; the manifest and registry are written once and ONE typed `--allow-new` carries every pair. This is not a convenience: the python-env gate refuses a write while any other new read is unnamed, so two new names registered one call at a time can never both succeed. `--kind`, `--default` and `--why` describe one WORKLIST_* name, so they are refused with more than one name.
+SEVERAL NAMES, ONE CALL. Every name in a group is read by that group's <module>, groups are separated by `+` (`<module> <NAME>... + <module> <NAME>...`), and a group with no `--class` takes the previous group's; the manifest and registry are written once and ONE typed `--allow-new` carries every pair. This is not a convenience: the python-env gate refuses a write while any other new read is unnamed, so two new names registered one call at a time can never both succeed. `--kind`, `--default` and `--why` describe one WORKLIST_* name, so they are refused with more than one name.
 
 THE FAN-OUT THIS REPLACES. Adding one environment read used to mean editing up to three files by hand, in an order nobody wrote down, and then running three gates to find out which one had been missed: one hook variable took three commits on 2026-10-04. Each name has exactly ONE authored home, and this verb writes it, then derives everything else:
 
@@ -60,7 +60,8 @@ from rediacc_ci.quality import worklist_env_registry as wer
 
 USAGE = (
     "usage: npm run env:register -- <module> <NAME> [<NAME>...] --class <shard> "
-    "[--kind <k> --default <spelling>... --why <text>]\n"
+    "[--kind <k> --default <spelling>... --why <text>] [+ <module> <NAME>... [--class <shard>] ...]\n"
+    "  +          starts another module's group; a group with no --class takes the previous one's\n"
     "  <module>   the tracked file that reads every NAME, relative to the repository root\n"
     "  <NAME>     one or more names; they share --class, and --kind/--default/--why need exactly one\n"
     "  --class    one of: %s (WORKLIST_* names: %s)\n"
@@ -95,8 +96,35 @@ class Request:
         self.why = why
 
 
+# Separates module groups in one call: two new reads in two modules can only be registered together, since the python-env gate refuses a write while any other new read is unnamed (2026-10-15: vm_check.py:HOME and block_worktree_add.py:REDIACC_WORKTREE_STDIN_PROCFS each refused the other, one call per module).
+GROUP_SEPARATOR = "+"
+
+
 def parse_args(argv):
-    """argv -> list of Request, one per name. Raises RefusalError on anything malformed; a flag is never silently dropped."""
+    """argv -> list of Request, one per name. Raises RefusalError on anything malformed; a flag is never silently dropped.
+
+    Groups separated by GROUP_SEPARATOR each name a module, its names and their options; a group that gives no `--class` takes the previous group's.
+    """
+    segments = [[]]
+    for arg in argv:
+        if arg == GROUP_SEPARATOR:
+            segments.append([])
+        else:
+            segments[-1].append(arg)
+    reqs = []
+    cls = None
+    for segment in segments:
+        group = _parse_group(segment, cls)
+        cls = group[0].cls
+        reqs.extend(group)
+    pairs = [(r.module, r.name) for r in reqs]
+    if len(set(pairs)) != len(pairs):
+        raise RefusalError("a name was given twice: %s" % " ".join("%s:%s" % p for p in pairs))
+    return reqs
+
+
+def _parse_group(argv, inherited_cls):
+    """One `<module> <NAME>... [--class ...]` group -> its Requests."""
     positional = []
     opts = {"--class": None, "--kind": None, "--why": None}
     defaults = []
@@ -120,23 +148,20 @@ def parse_args(argv):
         i += 1
     if len(positional) < 2:
         raise RefusalError(
-            "expected <module> <NAME>..., got %d positional argument(s)" % len(positional)
+            "expected <module> <NAME>... [%s <module> <NAME>...], got a group of %d positional "
+            "argument(s)" % (GROUP_SEPARATOR, len(positional))
         )
-    if opts["--class"] is None:
+    cls = opts["--class"] or inherited_cls
+    if cls is None:
         raise RefusalError("--class is required")
     names = positional[1:]
-    if len(set(names)) != len(names):
-        raise RefusalError("a name was given twice: %s" % " ".join(names))
     if len(names) > 1 and (opts["--kind"] or defaults or opts["--why"]):
         raise RefusalError(
             "--kind, --default and --why describe one WORKLIST_* name; with %d names, register "
-            "each of those on its own" % len(names)
+            "each of those in a group of its own" % len(names)
         )
     module = str(pathlib.PurePosixPath(positional[0]))
-    return [
-        Request(module, name, opts["--class"], opts["--kind"], defaults, opts["--why"])
-        for name in names
-    ]
+    return [Request(module, name, cls, opts["--kind"], defaults, opts["--why"]) for name in names]
 
 
 # ------------------------------------------------------------------ reading the tree
@@ -405,7 +430,7 @@ def _check_python_reads(root, reqs):
         raise RefusalError(
             "%d other new environment read(s) are pending and were not named, so the registry "
             "write would refuse them: %s. Name each in this call (`env:register <module> "
-            "<NAME>...`, one call per module), or remove the read, then re-run."
+            "<NAME>... + <other module> <NAME>...`), or remove the read, then re-run."
             % (len(others), ", ".join(others))
         )
 
@@ -432,13 +457,13 @@ def _verdict(out, err):
 
 
 def register(root, reqs, runner=default_runner):
-    """Run all six steps for one or several names of one module. Returns the exit code."""
+    """Run all six steps for one or several names of one or several modules. Returns the exit code."""
     root = pathlib.Path(root)
     if isinstance(reqs, Request):
         reqs = [reqs]
     registry_text, manifest_text = plan_all(root, reqs)
     first = reqs[0]
-    label = " ".join(r.name for r in reqs)
+    label = " ".join("%s:%s" % (r.module, r.name) for r in reqs)
 
     wrote = []
     if registry_text is not None and _write_if_changed(
@@ -447,14 +472,16 @@ def register(root, reqs, runner=default_runner):
         wrote.append(".ci/policy/%s" % wer.REGISTRY_NAME)
     if _write_if_changed(root / em.MANIFEST_REL, manifest_text):
         wrote.append(em.MANIFEST_REL)
-    print("env:register %s %s --class %s" % (first.module, label, first.cls))
+    print(
+        "env:register %s" % " ".join("%s:%s --class %s" % (r.module, r.name, r.cls) for r in reqs)
+    )
     print("  wrote: %s" % (", ".join(wrote) if wrote else "nothing (already registered so)"))
 
     quality = root / ".ci" / "scripts" / "quality"
     recorded = _recorded_pairs(root)
-    pairs = ["%s:%s" % (r.module, r.name) for r in reqs]
+    pairs = ["%s:%s" % (r.module, r.name) for r in reqs if r.module.endswith(".py")]
     fresh = [p for p in pairs if p not in recorded]
-    if not first.module.endswith(".py"):
+    if not pairs:
         print("  python-env: skipped, %s is not a Python module" % first.module)
     elif not fresh:
         print("  python-env: %s already recorded" % ", ".join(pairs))
@@ -491,8 +518,8 @@ def register(root, reqs, runner=default_runner):
         )
         return 1
     log.success(
-        "%s registered as %s; %d gate(s) green. NOT COMMITTED: commit %s with the read."
-        % (label, first.cls, len(GATES), ", ".join(wrote) or "the read")
+        "%s registered; %d gate(s) green. NOT COMMITTED: commit %s with the read."
+        % (label, len(GATES), ", ".join(wrote) or "the read")
     )
     return 0
 

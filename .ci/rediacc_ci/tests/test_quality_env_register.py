@@ -222,6 +222,43 @@ def test_a_foreign_read_needs_a_why_and_takes_no_kind(repo):
     assert _snapshot(repo) == before
 
 
+def test_two_modules_with_pending_reads_register_in_one_call(repo):
+    """Each module's read blocks the other's registration (the python-env gate refuses a write while any other new read is unnamed), so one call carries both, each group with its own class (2026-10-15)."""
+    rec = Recorder()
+    argv = [
+        "src/tool.py",
+        "NEW_SEAM",
+        "--class",
+        "gate-seam",
+        "+",
+        "src/hook.py",
+        "WORKLIST_NEW_FLAG",
+        "--class",
+        "gate-seam",
+        "--kind",
+        "flag",
+        "--default",
+        "'on'",
+        "--why",
+        FLAG_WHY,
+    ]
+    assert er.main(argv, runner=rec) == 0
+    allow = rec.calls[0]
+    assert "src/tool.py:NEW_SEAM" in allow
+    assert "src/hook.py:WORKLIST_NEW_FLAG" in allow
+    shards = _json(repo, em.MANIFEST_REL)["shards"]
+    assert "NEW_SEAM" in shards["gate-seam"]
+    assert "WORKLIST_NEW_FLAG" in shards["gate-seam"]
+
+
+def test_control_one_module_alone_is_still_refused_while_the_other_read_is_pending(repo):
+    before = _snapshot(repo)
+    rec = Recorder()
+    assert er.main(["src/tool.py", "NEW_SEAM", "--class", "gate-seam"], runner=rec) == 2
+    assert _snapshot(repo) == before
+    assert rec.calls == []
+
+
 def test_an_ordinary_name_goes_into_its_shard_and_is_recorded(repo):
     _bank(repo, "src/hook.py", "WORKLIST_NEW_FLAG")
     rec = Recorder()
@@ -349,6 +386,9 @@ def test_a_red_gate_after_registration_is_exit_1(repo):
         ["src/tool.py", "NEW_SEAM", "--class", "harness", "--class", "gate-seam"],
         ["src/missing.py", "NEW_SEAM", "--class", "harness"],
         ["src/tool.py", "not-a-name", "--class", "harness"],
+        ["src/tool.py", "NEW_SEAM", "--class", "harness", "+"],
+        ["+", "src/tool.py", "NEW_SEAM", "--class", "harness"],
+        ["src/tool.py", "NEW_SEAM", "--class", "harness", "+", "src/tool.py", "NEW_SEAM"],
     ],
 )
 def test_malformed_invocations_are_refused_and_write_nothing(repo, argv):

@@ -87,10 +87,7 @@ function* walk(dir: string): Generator<string> {
     const st = statSync(full);
     if (st.isDirectory()) {
       yield* walk(full);
-    } else if (
-      (/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) ||
-      isLocaleFile(full)
-    ) {
+    } else if ((/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) || isLocaleFile(full)) {
       yield full;
     }
   }
