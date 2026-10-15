@@ -13,6 +13,7 @@ export {
   type RsyncChanges,
   type RsyncExecutorOptions,
 } from './rsync.js';
+export { formatSkippedWarning, parseSkippedEntries } from './rsync-skipped.js';
 export type { SftpUploadSource } from './sftp-fallback.js';
 // SFTP fallback (for systems without rsync)
 export {

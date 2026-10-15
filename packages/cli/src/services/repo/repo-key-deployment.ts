@@ -119,6 +119,49 @@ export async function deployRepoKeyIfNeeded(repoName: string, machineName: strin
   }
 }
 
+const SAFE_KEY_REF = /^[A-Za-z0-9._:-]+$/;
+
+/**
+ * Build the authorized_keys removal script for one repo key line, matched by the exact "<repo> --guid <guid> " unit that buildKeyDeploymentScript writes, so a sibling fork or a longer name is never touched.
+ */
+export function buildKeyRemovalScript(repoName: string, repositoryGuid: string): string {
+  if (!SAFE_KEY_REF.test(repoName) || !SAFE_KEY_REF.test(repositoryGuid)) {
+    throw new Error(
+      `refusing to remove repo key for ${JSON.stringify(repoName)}: unsafe characters`
+    );
+  }
+  const marker = `sandbox-gateway ${repoName} --guid ${repositoryGuid} `;
+  return [
+    'set -e',
+    'AUTH_KEYS="$HOME/.ssh/authorized_keys"',
+    `if [ -f "$AUTH_KEYS" ] && grep -qF '${marker}' "$AUTH_KEYS"; then TEMP=$(mktemp) && (grep -vF '${marker}' "$AUTH_KEYS" > "$TEMP" || true) && cat "$TEMP" > "$AUTH_KEYS" && rm -f "$TEMP"; fi`,
+  ].join('; ');
+}
+
+/**
+ * Remove a repo's key line from a machine's authorized_keys. Best-effort: a failure is reported on stderr and never thrown, so a rollback keeps the error that triggered it.
+ */
+export async function removeRepoKeyIfDeployed(
+  repoName: string,
+  machineName: string,
+  repositoryGuid: string
+): Promise<void> {
+  try {
+    const lease = await machineConnections.acquire(machineName);
+    try {
+      const sftp = await lease.ensure();
+      await sftp.exec(buildKeyRemovalScript(repoName, repositoryGuid));
+    } finally {
+      lease.release();
+    }
+    debugLog(`Removed SSH key for ${repoName} from ${machineName}`);
+  } catch (error) {
+    writeStderr(
+      `Warning: failed to remove SSH key for ${repoName} from ${machineName}: ${error instanceof Error ? error.message : String(error)}\n`
+    );
+  }
+}
+
 /**
  * Deploy ALL repo keys to a machine over a single shared SSH session.
  * Used after setup-machine.

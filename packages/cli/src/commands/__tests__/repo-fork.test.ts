@@ -49,8 +49,10 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
 }));
 
 // Repo-key deployment, no-op
+const mockRemoveRepoKey = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn().mockResolvedValue(undefined),
+  removeRepoKeyIfDeployed: mockRemoveRepoKey,
 }));
 
 // Post-up tasks + early DNS, no-op
@@ -317,6 +319,63 @@ describe('repo fork — orchestration', () => {
     expect(mockRefreshIdentityFor).not.toHaveBeenCalled();
     expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
     expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it('fork failure after the key deploy removes the fork key by its GUID', async () => {
+    mockExecute.mockResolvedValue({
+      success: false,
+      exitCode: 1,
+      error: 'Subscription token required',
+      allSteps: [],
+    });
+
+    await handleForkAction('app', 'staging', { machine: 'hostinger' });
+
+    const guid = mockAddRepository.mock.calls[0][1].repositoryGuid;
+    expect(mockRemoveRepoKey).toHaveBeenCalledTimes(1);
+    expect(mockRemoveRepoKey).toHaveBeenCalledWith('app:staging', 'hostinger', guid);
+  });
+
+  it('a thrown error after the key deploy also removes the key', async () => {
+    mockExecute.mockRejectedValue(new Error('connection lost'));
+    // The fork row exists once registerFork has added it, so the rollback finds it.
+    mockGetRepository.mockImplementation((ref: string) =>
+      Promise.resolve(
+        ref === 'app' || (ref === 'app:staging' && mockAddRepository.mock.calls.length > 0)
+          ? PARENT
+          : undefined
+      )
+    );
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      'connection lost'
+    );
+
+    const guid = mockAddRepository.mock.calls[0][1].repositoryGuid;
+    expect(mockRemoveRepoKey).toHaveBeenCalledWith('app:staging', 'hostinger', guid);
+  });
+
+  it('a failure before the key deploy never touches the machine key', async () => {
+    mockAcquire.mockRejectedValue(new Error('ssh unreachable'));
+    mockGetRepository.mockImplementation((ref: string) =>
+      Promise.resolve(
+        ref === 'app' || (ref === 'app:staging' && mockAddRepository.mock.calls.length > 0)
+          ? PARENT
+          : undefined
+      )
+    );
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      'ssh unreachable'
+    );
+
+    expect(mockRemoveRepository).toHaveBeenCalledWith('app:staging');
+    expect(mockRemoveRepoKey).not.toHaveBeenCalled();
+  });
+
+  it('a successful fork leaves the key alone', async () => {
+    await handleForkAction('app', 'staging', { machine: 'hostinger' });
+    expect(mockRemoveRepoKey).not.toHaveBeenCalled();
   });
 });
 
