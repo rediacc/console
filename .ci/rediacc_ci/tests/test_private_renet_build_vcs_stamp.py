@@ -310,7 +310,7 @@ def _runs_build(line: str, i: int) -> bool:
         elif bare.startswith("-"):
             continue
         else:
-            # The verb word can carry the closer of an enclosing `$(...)`, subshell or backquote (`x=$(go build)`), so it matches as a word prefix, as the old `build\b` did.
+            # The verb word can carry the closer of an enclosing `$(...)`, subshell or backquote (`x=$(go build)`), so it matches as a prefix: `build` followed by the end of the word or any byte but a word character, `.` or `-`. That is narrower than the old `build\b`, which also took `build-cache-info` and `build.x`; those are other words, not the build verb.
             return re.match(r"build(?![\w.-])", bare) is not None
 
 
@@ -343,10 +343,28 @@ def _runs_build(line: str, i: int) -> bool:
         'go -C "$(echo \')\' "a b")" build ./cmd/renet',
         'go -C "$(printf \'%s\' "$(pwd)")" build ./cmd/renet',
         'go -C "$(a "$(b "$(c)")")" build ./cmd/renet',
+        "go -C /tmp/a\\ b build ./cmd/renet",
     ],
 )
 def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
     assert _bypassing_go_builds(line + "\n"), line
+
+
+def test_an_escaped_space_stays_in_the_word_as_bash_splits_it() -> None:
+    """Bash keeps a backslash-escaped space inside the word (`go -C /tmp/a\\ b build` runs `go -C '/tmp/a b' build`), so the reader must too; ending the word at the space would read `b` as the verb and miss the build."""
+    line = "go -C /tmp/a\\ b build ./cmd/renet"
+    words: list[str] = []
+    i = 0
+    while i < len(line):
+        if line[i].isspace():
+            i += 1
+            continue
+        word, i = _shell_word(line, i)
+        words.append(word.replace("\\ ", " "))
+    res = subprocess.run(
+        ["bash", "-c", "printf '%s\\n' " + line], capture_output=True, text=True, check=True
+    )
+    assert words == res.stdout.splitlines() == ["go", "-C", "/tmp/a b", "build", "./cmd/renet"]
 
 
 @pytest.mark.parametrize(

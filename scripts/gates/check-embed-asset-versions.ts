@@ -93,11 +93,13 @@ function versionNeedles(pin: string): string[] {
 }
 
 /**
- * True when `output` states `pin`. A substring, because a binary wraps its version in prose, but never one that is part of a longer number: `3.5.0` inside `3.5.01` or `13.5.0` is a different version. A following `-` or `+` stays allowed, because zot answers `--version` only with the git-describe form `v2.1.22-0-g6bbc7e5`, which names exactly the tag.
+ * True when `output` states `pin`. A substring, because a binary wraps its version in prose, but never one that is part of a longer number: `3.5.0` inside `3.5.01` or `13.5.0` is a different version. A following `-` stays allowed, because zot answers `--version` only with the git-describe form `v2.1.22-0-g6bbc7e5`, which names exactly the tag.
+ *
+ * A following `+` is a continuation, as in `bufferCarriesVersion`: the lockfile declares build metadata as part of a pin (k3s is pinned `1.37.1+k3s1`), so `+k3s1` names a distinct upstream release, and `v1.37.1+k3s1` is not a statement of the pin `1.37.1`.
  */
 function statesVersion(output: string, pin: string): boolean {
   return versionNeedles(pin).some((n) =>
-    new RegExp(`(?<![0-9])(?<![0-9]\\.)${escapeRegExp(n)}(?![0-9])(?!\\.[0-9])`).test(output)
+    new RegExp(`(?<![0-9])(?<![0-9]\\.)${escapeRegExp(n)}(?![0-9+])(?!\\.[0-9])`).test(output)
   );
 }
 
@@ -187,15 +189,13 @@ function isModulePathByte(b: number): boolean {
  * - right: any version continuation (`0-9 . + - _ /`).
  * - left: any version continuation; for the bare needle (no `v`) also a letter or `@`, because `go1.26.9` is a toolchain version and not a pin of 1.26.9, and the `v` form is its own needle.
  * - left `@` for the `v` needle when the byte before the `@` is a module path byte: `github.com/x/y@v8.7.0` is a dependency, as in a `-trimpath` source path.
- * - a neighbour inside a build info span counts as a boundary, so the two implementations agree at a span edge.
+ * - the neighbours are the RAW bytes, even when one opens or closes a build info span: the start sentinel begins with `0x30` (`0`), so `v8.7.0` right before it reads as `v8.7.00` in the byte stream and is not a stamp of 8.7.0. Spans only remove candidates (a needle overlapping one is a module version); they never supply a boundary.
  *
  * A needle shorter than 3 bytes never matches (strings(1)'s default minimum, kept from the old rule).
  */
 function bufferCarriesVersion(buf: Buffer, pin: string): boolean {
   const spans = goBuildInfoSpans(buf);
-  const spanAt = (i: number): Span | undefined => spans.find(([s, e]) => i >= s && i < e);
-  const byteAt = (i: number): number =>
-    i < 0 || i >= buf.length || spanAt(i) !== undefined ? -1 : buf[i];
+  const byteAt = (i: number): number => (i < 0 || i >= buf.length ? -1 : buf[i]);
   for (const needle of versionNeedles(pin)) {
     if (needle.length < 3 || ![...needle].every((c) => isPrintable(c.charCodeAt(0)))) continue;
     const pat = Buffer.from(needle, 'latin1');
@@ -216,18 +216,24 @@ function bufferCarriesVersion(buf: Buffer, pin: string): boolean {
   return false;
 }
 
-/** The regular expression form of `bufferCarriesVersion`, kept as the oracle its controls compare against: build info spans are blanked to NUL first, then one lookaround pattern per needle states the boundary rule. */
+/** The regular expression form of `bufferCarriesVersion`, kept as the oracle its controls compare against: one lookaround pattern per needle states the boundary rule over the raw bytes, and a match that overlaps a build info span is discarded. */
 function bufferCarriesVersionReference(buf: Buffer, pin: string): boolean {
-  const bytes = Buffer.from(buf);
-  for (const [s, e] of goBuildInfoSpans(buf)) bytes.fill(0, s, e);
-  const text = bytes.toString('latin1');
+  const spans = goBuildInfoSpans(buf);
+  const text = buf.toString('latin1');
   const cont = '0-9.+\\-_/';
   return versionNeedles(pin).some((needle) => {
     if (needle.length < 3 || !/^[\x20-\x7e]+$/.test(needle)) return false;
     const left = needle.startsWith('v')
       ? `(?<![${cont}])(?<![A-Za-z${cont}~]@)`
       : `(?<![${cont}A-Za-z@])`;
-    return new RegExp(`${left}${escapeRegExp(needle)}(?![${cont}])`).test(text);
+    const re = new RegExp(`${left}${escapeRegExp(needle)}(?![${cont}])`, 'g');
+    for (let m = re.exec(text); m !== null; m = re.exec(text)) {
+      const at = m.index;
+      const end = at + needle.length;
+      if (!spans.some(([s, e]) => at < e && end > s)) return true;
+      re.lastIndex = at + 1;
+    }
+    return false;
   });
 }
 
@@ -434,6 +440,12 @@ function runControls(): string[] {
       expected: true,
       label: 'git-describe of the tag (zot)',
     },
+    {
+      output: 'k3s version v1.37.1+k3s1 (5aed4d7b)',
+      pin: '1.37.1',
+      expected: false,
+      label: 'build metadata is part of the version, as the k3s pin declares it',
+    },
   ];
   for (const { output, pin, expected, label } of outputCases) {
     if (statesVersion(output, pin) !== expected) {
@@ -585,8 +597,27 @@ function runControls(): string[] {
     {
       text: `${nul}v8.7.0${depOnPin}`,
       pin: '8.7.0',
+      expected: false,
+      label:
+        'a version right before a start sentinel reads v8.7.00 in the raw bytes (the sentinel opens with 0x30)',
+    },
+    {
+      text: `${nul}v8.7.0\n${depOnPin}`,
+      pin: '8.7.0',
       expected: true,
-      label: 'a stamp right before a sentinel (its 0 is not a digit of the stamp)',
+      label: 'a stamp before a start sentinel with a non-digit gap',
+    },
+    {
+      text: `${nul}${depOnPin}v8.7.0${nul}`,
+      pin: '8.7.0',
+      expected: true,
+      label: 'a stamp right after an end sentinel (its last byte 0xf2 is a boundary)',
+    },
+    {
+      text: `${nul}${header('dep\tm\tv1')}8.7.0${nul}`,
+      pin: '8.7.0',
+      expected: false,
+      label: 'a version right after a header span ending in a digit reads v18.7.0 in the raw bytes',
     },
   ];
   for (const { text, pin, expected, label } of bufferCases) {
