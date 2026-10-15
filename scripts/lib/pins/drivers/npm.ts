@@ -484,7 +484,7 @@ export function lockDrift(
   type Pkgs = Record<string, { version?: string; link?: boolean } | undefined>;
   const lock = JSON.parse(lockText) as { packages?: Pkgs; lockfileVersion?: number };
   // A lockfile with no `packages` map (lockfileVersion 1) names no installed path, so every package would read as extraneous (review f56ddcde.1); it is one finding, not hundreds.
-  if (lock.packages === undefined)
+  if (lock.packages == null || typeof lock.packages !== 'object')
     return [
       `package-lock.json has no packages map (lockfileVersion ${lock.lockfileVersion ?? 'unknown'}); rewrite it with the pinned npm before comparing`,
     ];
