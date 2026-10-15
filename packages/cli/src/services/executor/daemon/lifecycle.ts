@@ -109,6 +109,10 @@ export function readToken(tokenPath: string = daemonTokenPath()): string | undef
  * constant `0.0.0-dev`, so its (mtime,size) is folded in.
  */
 export function processIdentity(): string {
+  return `${buildIdentity()}:env-${environmentIdentity()}`;
+}
+
+function buildIdentity(): string {
   if (isSEA()) return VERSION;
   const bundle = process.argv[1];
   if (!bundle) return VERSION;
@@ -118,6 +122,27 @@ export function processIdentity(): string {
   } catch {
     return VERSION;
   }
+}
+
+/** The daemon's own plumbing: set on the daemon process itself (`REDIACC_SSH_LINGER_MS` before its identity is taken, `REDIACC_VIA_DAEMON` after), or never set on a client that reaches a daemon (`REDIACC_NO_DAEMON`). */
+const DAEMON_LOCAL_ENV = new Set(['REDIACC_SSH_LINGER_MS', 'REDIACC_VIA_DAEMON', 'REDIACC_NO_DAEMON']);
+
+/**
+ * A digest of every `REDIACC_*` variable but the daemon's own plumbing. A daemon
+ * executes with the environment it was spawned under, so a client whose token,
+ * account server or agent-mode switches differ must not reuse it: a daemon
+ * spawned under one `REDIACC_TOKEN` kept sending it after the client had moved to
+ * another, and the server answered "Subscription not found" for a subscription
+ * that token's re-seed had deleted (vm:check, 2026-10-15). A daemon spawned
+ * without `REDIACC_AGENT` would likewise run an agent's command under the
+ * operator's guards. Only the digest is kept, never a value.
+ */
+export function environmentIdentity(env: NodeJS.ProcessEnv = process.env): string {
+  const lines = Object.keys(env)
+    .filter((k) => k.startsWith('REDIACC_') && !DAEMON_LOCAL_ENV.has(k))
+    .sort()
+    .map((k) => `${k}=${env[k] ?? ''}`);
+  return crypto.createHash('sha256').update(lines.join('\n')).digest('hex').slice(0, 16);
 }
 
 /**
