@@ -2238,3 +2238,238 @@ def test_a_pr_head_holding_a_nul_byte_is_refused_not_a_crash():
     # _pr_head reads the NUL ref as one this checkout cannot resolve, and the caller refuses None.
     assert rc == 2, (rc, err)
     assert "no local or origin/ ref" in err, err
+
+
+# THE DIRECTORY A `cd` SETS IS ITS EXPANDED OPERAND (#d0079b4e). At 9829a0b78 the walk read the operand of `cd` as typed, so after `D=lnk; cd $D` the run's directory was the literal `$D`, and `D=agent/revi; cd ${D}ews/x && tee x.md` was allowed by block_review_file_shell_write (rc 0) with no link at all.
+# The same sweep found the walk ignoring OLDPWD (`cd -`), the directory stack (`popd`, `pushd` with no operand or `+N`), CDPATH, and the expansion of `env -C`/`sudo -D`/`git -C`. Each row below runs through a real bash in a scratch tree and compares the directory bash ends in (`pwd -P`, the last line printed) with the walk's directory for the same command, resolved on disk by `shellscan.write_directory`.
+# `{P}` is the probe: `pwd -P` for bash, `true` for the walk, so the walk's last run sits exactly where bash prints.
+DIRECTORY_ROWS = (
+    ("D=a; cd $D && {P}", "a"),
+    ('D=a; cd "$D"/x && {P}', "a/x"),
+    ("O=-P; cd $O lnk/.. && {P}", "far"),
+    ("E=; cd $E b && {P}", "b"),
+    ("D=a; builtin cd $D && {P}", "a"),
+    ("D=a; command cd $D && {P}", "a"),
+    ("set -P; D=lnk/..; cd $D && {P}", "far"),
+    ('D=a; eval "cd \\$D"; {P}', "a"),
+    ("D=a; env -C $D {P}", "a"),
+    # OLDPWD: set by every change, exported to a child shell, unset or cleared means no change.
+    ("cd a; cd ../b; cd - && {P}", "a"),
+    ("cd a; cd ../b; cd -- - && {P}", "a"),
+    ("cd a; cd ../b; pushd - && {P}", "a"),
+    ('cd a; cd ../b; eval "cd -"; {P}', "a"),
+    ("cd a; (cd ../b); cd - && {P}", "."),
+    ("cd a; cd ../b | true; cd - && {P}", "."),
+    ("OLDPWD=b; cd - && {P}", "b"),
+    ("cd a; unset OLDPWD; cd -; {P}", "a"),
+    ('cd a; cd ..; bash -c "cd - && {P}"', "a"),
+    ('cd a; cd ..; env -i bash -c "cd -; {P}"', "."),
+    ("cd lnk; cd ..; cd -P - && cd .. && {P}", "far"),
+    ("cd -P lnk; cd ..; cd - && {P}", "far/inner"),
+    # The directory stack, from a fresh shell's.
+    ("pushd a; pushd ../b; popd && {P}", "a"),
+    ("pushd a; pushd ../b; pushd && {P}", "a"),
+    ("pushd a; pushd ../b; pushd +1 && {P}", "a"),
+    ("pushd a; pushd ../b; pushd +2 && {P}", "."),
+    ("pushd a; pushd ../b; pushd -0 && {P}", "."),
+    ("pushd a; pushd ../b; popd +1 && {P}", "b"),
+    ("pushd a; pushd ../b; popd -2 && {P}", "a"),
+    ("pushd a; pushd ../b; popd -n; popd && {P}", "."),
+    ("pushd -n a; popd && {P}", "a"),
+    ("pushd a; dirs -c; popd; {P}", "a"),
+    ("pushd a; (popd); {P}", "a"),
+    ("pushd a; eval popd; {P}", "."),
+    ("pushd a; cd ../b; popd && {P}", "."),
+    # CDPATH: the first entry holding the directory, then the directory itself.
+    ("CDPATH=a; cd x && {P}", "a/x"),
+    ("CDPATH=a cd x && {P}", "a/x"),
+    ("CDPATH=a; cd b && {P}", "b"),
+    ("CDPATH=cp1:a; cd x && {P}", "cp1/x"),
+    ("CDPATH=nosuch:a; cd x && {P}", "a/x"),
+    ("CDPATH=:a; cd x && {P}", "a/x"),
+    ("CDPATH=b; cd ./a && {P}", "a"),
+    ("CDPATH=a; pushd x && {P}", "a/x"),
+    ("CDPATH=a; pushd -n x; popd && {P}", "a/x"),
+    ("CDPATH=a; OLDPWD=x; cd - && {P}", "a/x"),
+    ("CDPATH=a; cd x; cd /; cd - && {P}", "a/x"),
+    ("CDPATH=a; cd x; cd .. && {P}", "a"),
+    ("CDPATH=a; cd b; cd .. && {P}", "."),
+)
+
+
+def _directory_tree(tmp_path):
+    root = tmp_path / "w"
+    for d in ("a/x", "b", "cp1/x", "far/inner", "home"):
+        (root / d).mkdir(parents=True)
+    (root / "lnk").symlink_to("far/inner", target_is_directory=True)
+    return pathlib.Path(os.path.realpath(root))
+
+
+def _bash_landing(bash, root, cmd):
+    done = subprocess.run(
+        [bash, "--norc", "--noprofile", "-c", cmd.replace("{P}", "pwd -P")],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(root / "home")},
+        timeout=30,
+    )
+    lines = done.stdout.splitlines()
+    assert lines, "%s printed nothing: %s" % (cmd, done.stderr)
+    return lines[-1]
+
+
+def _walk_landing(root, cmd):
+    run = shellscan.every_run(cmd.replace("{P}", "true"))[-1]
+    assert run.name == "true", (cmd, run.name)
+    if run.cwd is None:
+        return str(root)
+    return os.path.realpath(os.path.join(root, shellscan.write_directory(run.cwd, str(root))))
+
+
+@pytest.mark.parametrize(("cmd", "landing"), DIRECTORY_ROWS)
+def test_the_directory_a_change_sets_is_where_bash_lands_review_d0079b4e(
+    bash, tmp_path, cmd, landing
+):
+    root = _directory_tree(tmp_path)
+    want = os.path.normpath(os.path.join(root, landing))
+    assert _bash_landing(bash, root, cmd) == want, "the row's own landing is not bash's"
+    assert _walk_landing(root, cmd) == want
+
+
+# A NAME THE WALK CANNOT READ STAYS UNREAD (#d0079b4e sweep). A value it cannot expand keeps the typed operand, whose `$` every reader takes for an unread directory; a home directory or an unknown OLDPWD is never joined under the current directory (`cd sub && cd` read `sub/~`), and a `..` never pops such a name (`cd "$D" && cd ..` read the start).
+UNREAD_ROWS = {
+    "cd $D && true": "$D",
+    'D="a b"; cd $D && true': "$D",
+    "D=~; cd $D && true": "$D",
+    "cd sub && cd && true": "~",
+    "cd sub && cd ~/x && true": "~/x",
+    "cd sub && cd - && true": None,
+    "cd - && true": "-",
+    'cd "$D" && cd .. && true': "$D/..",
+    "cd ~ && cd .. && true": "~/..",
+    "cd $D/x && cd ../.. && true": "$D/..",
+    'cd sub && cd "~" && true': "sub/~",
+    "pushd +1 && true": "~",
+    "pushd && true": "~",
+    # Past the entries this command pushed lies the session's stack, read as before; bash in a fresh shell refuses the index and stays in b.
+    "pushd a; pushd ../b; pushd +3; true": "~",
+    "popd && true": None,
+    "pushd a; pushd -n +1; popd && true": "~",
+    "pushd a; popd -- +1; true": "~",
+    "pushd a; popd -n -- ; popd && true": "~",
+    "env -C $D true": "$D",
+}
+
+
+def test_a_directory_the_walk_cannot_read_stays_unread_review_d0079b4e():
+    got = {cmd: shellscan.every_run(cmd)[-1].cwd for cmd in UNREAD_ROWS}
+    assert got == UNREAD_ROWS, {c: (got[c], w) for c, w in UNREAD_ROWS.items() if got[c] != w}
+    # `git -C` reads its directory expanded too, and as typed when it cannot.
+    assert shellscan.every_run("D=sub; git -C $D status")[-1].git_dir == "sub"
+    assert shellscan.every_run("git -C $D status")[-1].git_dir == "$D"
+    # OLDPWD's text is unresolved wherever it is expanded: the walk cannot spell bash's absolute path.
+    assert shellscan.unresolved(shellscan.every_run("cd a; echo $OLDPWD")[-1].xargv[0])
+    assert "OLDPWD" not in shellscan.every_run("cd a; printenv")[-1].env
+
+
+def test_pushd_and_popd_read_their_words_as_bash_does_review_d0079b4e():
+    assert shellscan._pushd_op([]) == ("swap",)
+    assert shellscan._pushd_op(["-n"]) == ("error",)
+    assert shellscan._pushd_op(["a", "b"]) == ("error",)
+    assert shellscan._pushd_op(["+1x"]) == ("error",)
+    assert shellscan._pushd_op(["-n", "+1"]) == ("rotate", "+", 1, True)
+    assert shellscan._pushd_op(["-2"]) == ("rotate", "-", 2, False)
+    assert shellscan._pushd_op(["--", "-P"]) == ("dir", "-P", False)
+    assert shellscan._pushd_op(["-n", "x"]) == ("dir", "x", True)
+    assert shellscan._popd_op([]) == ("pop", "+", 0, False)
+    assert shellscan._popd_op(["-n"]) == ("pop", "+", 1, True)
+    assert shellscan._popd_op(["-1"]) == ("pop", "-", 1, False)
+    assert shellscan._popd_op(["x"]) == ("error",)
+    assert shellscan._popd_op(["-x"]) == ("error",)
+    assert shellscan._popd_op(["-n", "+1"]) == ("unknown", True)
+    assert shellscan._popd_op(["+1", "+1"]) == ("unknown", False)
+    assert shellscan._cdpath({}, []) is None
+    assert shellscan._cdpath({"CDPATH": ("a:b", None)}, []) == "a:b"
+    assert shellscan._cdpath({"CDPATH": ("a", None)}, [("unset", "CDPATH")]) is None
+    assert shellscan._cdpath({}, [("set", "CDPATH", "c", False)]) == "c"
+    assert shellscan._cdpath({"CDPATH": ("x" + shellscan._UNRESOLVED, None)}, []) is None
+
+
+# THE GUARDS READ THE EXPANDED DIRECTORY (#d0079b4e), through dispatch.run_one in a scratch tree with no link anywhere. At 9829a0b78 plus the #816a7c93 guard change every `2` row below was allowed (rc 0), and `pushd agent/reviews/x; popd && tee y.md` was refused (rc 2) although bash writes the root's y.md: the walk ignored `popd`.
+EXPANDED_DIRECTORY_GUARD_ROWS = (
+    ("block_review_file_shell_write", "D=agent/revi; cd ${D}ews/x && tee x.md", 2),
+    ("block_review_file_shell_write", "D=agent/revi; pushd ${D}ews/x && tee x.md", 2),
+    ("block_review_file_shell_write", "D=ews; builtin cd agent/revi$D/x && echo x > x.md", 2),
+    ("block_review_file_shell_write", "D=agent/revi; command cd ${D}ews/x && cp /tmp/a .", 2),
+    ("block_review_file_shell_write", "O=-P D=agent/revi; cd $O ${D}ews/x && tee x.md", 2),
+    ("block_review_file_shell_write", "cd agent/reviews/x; cd /tmp; cd - && tee y.md", 2),
+    ("block_review_file_shell_write", "cd agent/reviews/x; cd /tmp; cd -- - && tee y.md", 2),
+    ("block_review_file_shell_write", "pushd agent/reviews/x; pushd /tmp; popd && tee y.md", 2),
+    ("block_review_file_shell_write", "pushd agent/reviews/x; pushd /tmp; pushd && tee y.md", 2),
+    ("block_review_file_shell_write", "CDPATH=agent/reviews cd x && tee y.md", 2),
+    ("block_review_file_shell_write", "CDPATH=agent/reviews; cd x && tee y.md", 2),
+    ("block_review_file_shell_write", "D=agent/reviews/x; env -C $D tee y.md", 2),
+    ("block_review_file_shell_write", 'cd agent/reviews/x; cd /tmp; bash -c "cd - && tee y.md"', 2),
+    # CONTROLS: a read, a near miss, a plain directory, a step back out, a CDPATH entry that does not hold the directory, and an OLDPWD `env -i` cleared.
+    ("block_review_file_shell_write", "D=agent/revi; cd ${D}ews/x && cat x.md", 0),
+    ("block_review_file_shell_write", "D=agent/revi; cd ${D}ew && tee x.md", 0),
+    ("block_review_file_shell_write", "D=plain; cd $D && tee x.md", 0),
+    ("block_review_file_shell_write", "cd agent/reviews/x; cd /tmp; cd - && cat y.md", 0),
+    ("block_review_file_shell_write", "pushd agent/reviews/x; popd && tee y.md", 0),
+    ("block_review_file_shell_write", "CDPATH=agent/reviews cd plain && tee y.md", 0),
+    (
+        "block_review_file_shell_write",
+        'cd agent/reviews/x; cd /tmp; env -i bash -c "cd - && tee y.md"',
+        0,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        'D=.claude/comm; cd ${D}ands/sub && echo "disable-model-invocation: true" | tee x.md',
+        2,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        'cd .claude/commands/sub; cd /tmp; cd - && echo "disable-model-invocation: true" | tee x.md',
+        2,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        'CDPATH=.claude/commands cd sub && echo "disable-model-invocation: true" | tee x.md',
+        2,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        'D=.claude/comm; cd ${D}ands/sub && echo "description: x" | tee x.md',
+        0,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        'D=plain; cd $D && echo "disable-model-invocation: true" | tee x.md',
+        0,
+    ),
+)
+
+
+def test_the_write_guards_read_the_expanded_directory_review_d0079b4e(tmp_path):
+    root = os.path.realpath(tmp_path)
+    for d in ("agent/reviews/x", ".claude/commands/sub", "plain", ".ci/config"):
+        (tmp_path / d).mkdir(parents=True)
+    (tmp_path / ".ci" / "config" / "model-invocation-exceptions.json").write_text(
+        '{"exceptions": []}'
+    )
+    wrong = []
+    for stem, command, want in EXPANDED_DIRECTORY_GUARD_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    # Both directions, through both guards: neither table half is vacuous.
+    for stem in ("block_review_file_shell_write", "block_user_only_command_shell_write"):
+        verdicts = [w for s, _c, w in EXPANDED_DIRECTORY_GUARD_ROWS if s == stem]
+        assert 2 in verdicts, stem
+        assert 0 in verdicts, stem

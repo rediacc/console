@@ -2056,12 +2056,42 @@ def _physical(directory):
     return getattr(directory, "physical", directory)
 
 
+# A `cd` THROUGH CDPATH LANDS IN THE FIRST ENTRY HOLDING THE DIRECTORY (#d0079b4e sweep). With CDPATH set, bash's `cd x` tries `<entry>/x` for each entry in order (an empty entry is `.`) and falls back to `./x` only when none exists: measured on bash 5.3.9, `CDPATH=a; cd x` lands in `a/x` and `CDPATH=a; cd b` in `b`. Which one is a question for the disk, and the walk has no root, so the landing carries every choice in bash's order, the fallback last.
+# The text is the fallback, which is what every reader saw before (the walk ignored CDPATH), and `write_directory` picks the first choice the disk holds. A CDPATH this command does not assign (the session's) is read as unset, as it always was.
+# EACH CHOICE KEEPS THE PATH AS TYPED FOR THAT QUESTION. A later `cd ..` makes the choice `a/x` into `a`, a directory that exists whether or not `a/x` ever did, so the existence test asks the kernel about `a/x/..`, which fails where `a/x` is missing; `CDPATH=a; cd x; cd ..` lands in `a` exactly when `a/x` is there.
+_SEARCH_CAP = 16
+
+
+class _SearchedDir(str):
+    """A directory a `cd` reached through CDPATH: `choices` are `(directory, floor, witness)` in the order bash tries them, the fallback last, `witness` being the path a choice exists by (relative to the walk's root, never normalised); the text and `physical` are the fallback's."""
+
+    __slots__ = ("choices", "physical")
+    choices: tuple
+    physical: str
+
+    def __new__(cls, choices):
+        fallback = choices[-1][0]
+        landing = super().__new__(cls, "" if fallback is None else fallback)
+        landing.choices = tuple(choices)
+        landing.physical = _physical(fallback)
+        return landing
+
+
 def write_directory(run_cwd, cwd):
     """The directory a write by a run in `run_cwd` (a `_Run.cwd`) lands relative to: the text itself, or, for a `_PhysicalDir` with the hook's `cwd` known, the absolute path its kept `<name>/..` pair resolves to on disk.
 
     A WRITE LANDS WHERE THE KERNEL RESOLVES THE PAIR (review 2925782e.1). With `lnk` a link to `agent/reviews/sub`, `cd lnk && env -C .. tee x.md` writes `agent/reviews/x.md`, while the lexical text `.` read it as the root's `x.md`. Every write reader that prefixes or joins the run's directory (`copy_landings`, `_directory_of`, the review, suppression and user-only shell-write guards) reads this form instead.
+
+    A `_SearchedDir` (CDPATH) is the first of its choices that is a directory on disk, read the same way, and its fallback when none is.
     """
-    if cwd is None or not isinstance(run_cwd, _PhysicalDir):
+    if cwd is None:
+        return run_cwd
+    if isinstance(run_cwd, _SearchedDir):
+        for choice, _floor, witness in run_cwd.choices[:-1]:
+            if os.path.isdir(os.path.join(cwd, witness)):
+                return write_directory(choice, cwd)
+        return write_directory(run_cwd.choices[-1][0], cwd)
+    if not isinstance(run_cwd, _PhysicalDir):
         return run_cwd
     return os.path.realpath(os.path.join(cwd, run_cwd.physical))
 
@@ -2242,42 +2272,105 @@ def _shell_physical(argv):
     return physical
 
 
-def _cd_target(base, argv, physical):
-    """`(target, physical)` for `cd`/`pushd` with `argv`: the directory word it changes to, or None when the command leaves the directory where it is, and whether the change is physical, `physical` being the shell's `set -P` state.
+def _cd_target(argv, physical):
+    """`(target, physical)` for `cd` with `argv`: the directory word it changes to, or None when the command leaves the directory where it is, and whether the change is physical, `physical` being the shell's `set -P` state.
 
-    ONE SCAN FOR THE OPERAND AND THE OPTIONS (#91f1787a, measured on bash 5.3.9). A filter that dropped every dash word read `cd -- -P` as a bare `cd` and joined `sub` for `pushd -n sub`, `cd -x sub` and `cd -@ sub`, none of which change directory in bash.
-    `cd` takes `-L`, `-P` and `-e`, bundled, up to `--` or the first operand, and the last of `-L`/`-P` wins over `set -P`; any other letter (`-@` is invalid on Linux) is a usage error. `pushd` takes `[-n] [+N|-N|dir]` and `--`: `-n` adjusts the stack without a change, `+N`/`-N` rotate it to a directory this walk cannot name, and any other dash word is an error. Both refuse a second operand ("too many arguments"). No operand, `-` and `~` land somewhere this walk cannot name, and an unresolvable directory makes every caller keep judging its own root, the direction the guards fail safe in.
+    ONE SCAN FOR THE OPERAND AND THE OPTIONS (#91f1787a, measured on bash 5.3.9). A filter that dropped every dash word read `cd -- -P` as a bare `cd` and joined `sub` for `cd -x sub` and `cd -@ sub`, neither of which changes directory in bash.
+    `cd` takes `-L`, `-P` and `-e`, bundled, up to `--` or the first operand, and the last of `-L`/`-P` wins over `set -P`; any other letter (`-@` is invalid on Linux) is a usage error, and so is a second operand ("too many arguments"). No operand is the home directory, `~`, which this walk cannot name; `-` (also after `--`) is OLDPWD, which `_dir_builtin` resolves. `pushd`'s grammar is `_pushd_op`'s.
     """
     k = 0
-    nocd = False
     while k < len(argv):
         arg = argv[k]
         if arg == "--":
             k += 1
             break
-        if base == "pushd" and arg == "-n":
-            nocd = True
-        elif len(arg) < 2 or (arg[0] != "-" and (base == "cd" or arg[0] != "+")):
+        if len(arg) < 2 or arg[0] != "-":
             break
-        elif base == "cd":
-            if not set(arg[1:]) <= set("LPe"):
-                return None, physical
-            for ch in arg[1:]:
-                if ch in "LP":
-                    physical = ch == "P"
-        else:
-            if not arg[1:].isdigit():
-                return None, physical
-            return (None if nocd else "~"), physical
+        if not set(arg[1:]) <= set("LPe"):
+            return None, physical
+        for ch in arg[1:]:
+            if ch in "LP":
+                physical = ch == "P"
         k += 1
     operands = argv[k:]
-    if len(operands) > 1 or nocd:
+    if len(operands) > 1:
         return None, physical
     return (operands[0] if operands else "~"), physical
 
 
-def _change_dir(cwd, floor, target, physical):
-    """`(cwd, floor)` after the shell changes directory to `target`. `floor` counts the trailing names of `cwd` that a logical `..` may drop as text; None means every name may go, which holds until the shell's first physical change.
+def _unnamed_part(part, first):
+    """True for a path component this walk cannot name: one carrying an expansion it could not evaluate (`$D`, a backquote, `_UNRESOLVED`), or, first in the path, `~` (a home directory) or `-` (an OLDPWD it does not know)."""
+    if any(ch in part for ch in "$`") or _UNRESOLVED in part:
+        return True
+    return first and (part.startswith("~") or part == "-")
+
+
+def _change_dir(cwd, floor, target, physical, cdpath=None):
+    """`(cwd, floor)` after the shell changes directory to `target`, with `cdpath` the CDPATH value this command gave the `cd` (None when it gave none). A `_SearchedDir` `cwd` moves each of its choices.
+
+    A NAME THIS WALK CANNOT READ STAYS UNREAD (#d0079b4e sweep). A target opening with `~` or `-` (a home directory, an OLDPWD the walk does not know) lands there, never under the current directory: `cd sub && cd` read `sub/~`, a directory `_directory_of` took for a real one under `sub`. And a `..` never pops a name the walk cannot read: after `cd "$D"`, `cd ..` read the start (bash lands in the parent of whatever `$D` holds), and after `cd ~`, `cd ..` read it too, since `normpath("~/..")` is `.`.
+    """
+    landings = _landings(cwd, floor, None, target, physical, cdpath)
+    if len(landings) == 1:
+        return landings[0][:2]
+    # A directory tried twice is taken at its first try; the fallback stays last even when an earlier choice names it too, since that earlier try is where bash looks first.
+    fallback = landings[-1]
+    seen: set = set()
+    choices = []
+    for choice in landings[:-1]:
+        if choice[2] not in seen:
+            seen.add(choice[2])
+            choices.append(choice)
+    same = all(
+        (str(c[0]), _physical(c[0])) == (str(fallback[0]), _physical(fallback[0])) for c in choices
+    )
+    if same or len(choices) >= _SEARCH_CAP:
+        return fallback[:2]
+    return _SearchedDir([*choices, fallback]), fallback[1]
+
+
+def _landings(cwd, floor, witness, target, physical, cdpath):
+    """`[(directory, floor, witness)]` a change to `target` may land in, in the order bash tries them, the fallback last: one for a plain change, one per CDPATH entry and the fallback for a searched one, and each of those from every choice of a `_SearchedDir` `cwd`. `witness` is the path `cwd` exists by, None for its own text."""
+    if isinstance(cwd, _SearchedDir) and not target.startswith("/"):
+        out: list = []
+        for choice, choice_floor, choice_witness in cwd.choices:
+            out.extend(_landings(choice, choice_floor, choice_witness, target, physical, cdpath))
+        return out
+    paths = [target]
+    if cdpath and _cdpath_applies(target):
+        paths = [posixpath.join(entry or ".", target) for entry in cdpath.split(":")] + paths
+    if witness is None:
+        witness = "." if cwd is None else _physical(cwd)
+    out = []
+    for path in paths:
+        landing, landed_floor = _change_named(cwd, floor, path, physical)
+        out.append((landing, landed_floor, path if path.startswith("/") else witness + "/" + path))
+    return out
+
+
+def _change_named(cwd, floor, target, physical):
+    """`_change_dir` for one target, CDPATH aside."""
+    if _unnamed_part(target.split("/", 1)[0], True):
+        return target, None
+    if cwd is not None and not target.startswith("/"):
+        parts = str(cwd).split("/")
+        unread = [k for k, p in enumerate(parts) if _unnamed_part(p, k == 0)]
+        if unread:
+            head = parts[: unread[-1] + 1]
+            rest = posixpath.normpath("/".join([*parts[unread[-1] + 1 :], target]))
+            return "/".join(head if rest == "." else [*head, rest]), None
+    return _change_physical(cwd, floor, target, physical)
+
+
+def _cdpath_applies(target):
+    """Whether bash searches CDPATH for `target`: a relative name that does not open with `.` or `..` as a whole component (`./x`, `../x`, `.`, `..` are taken as they stand; `.hidden` is searched), and not one this walk cannot name."""
+    if target.startswith("/") or target == "" or _unnamed_part(target.split("/", 1)[0], True):
+        return False
+    return target.split("/", 1)[0] not in (".", "..")
+
+
+def _change_physical(cwd, floor, target, physical):
+    """`_change_dir` for a target and a directory the walk can name.
 
     A PHYSICAL CHANGE IS A FLOOR FOR EVERY LATER LOGICAL `..` (#97d3d908). After `cd -P lnk`, bash's $PWD is the resolved path, so a later plain `cd ..` steps up from where `lnk` points: `cd -P lnk && cd ..` lands in `far`, and `set -P; cd bin && cd -L ..` in `/usr` (bash 5.3.9). The walk read both as the start, popping the name the physical change had added. Each logical `..` with no logical name above the floor is joined physically here instead, so `_join_dir` keeps its pair for the disk to resolve; names a logical change adds sit above the floor and drop as text. An absolute logical change resets the floor to None.
     """
@@ -2314,6 +2407,252 @@ def _change_dir(cwd, floor, target, physical):
     if pending:
         cwd = _join_dir(cwd, "/".join(pending))
     return cwd, above
+
+
+# THE DIRECTORY A `cd` SETS IS ITS EXPANDED OPERAND (#d0079b4e). bash expands every word before `cd` sees it, and the walk read the operand as typed, so after `D=lnk; cd $D` the directory was the literal `$D` while the run's own expanded words (`xargv`) held `lnk`; `D=agent/revi; cd ${D}ews/x && tee x.md` passed block_review_file_shell_write with no link at all (rc 0). The operand and the options are now read from the expanded words (`O=-P; cd $O lnk/..` is physical, `E=; cd $E sub` has one operand), and from the typed ones, as before, whenever a word holds a value this walk cannot know: the `$` it keeps is what every reader takes for an unread directory.
+#
+# OLDPWD AND THE DIRECTORY STACK (measured on bash 5.3.9). Every change of directory sets OLDPWD to where the shell was, and exports it, so a child shell's `cd -` reaches it too; `cd -`, `cd -- -` and `pushd -` go there, an unset or empty OLDPWD leaves the directory where it is, and a value the command assigned is a directory like any other (CDPATH included).
+# The walk keeps OLDPWD in the variable map as a `_DirRef`, whose text is `_UNRESOLVED` (bash's value is an absolute path the walk cannot spell) and whose `entry` is the walk's own `(cwd, floor)`, never exported in `run.env`. The stack below the current directory is the fifth state slot, a tuple of entries: `("at", cwd, floor)` for a directory the shell was in, `("name", text)` for one `pushd -n` named, which `popd` reads from wherever the shell is by then.
+# The walk models a fresh shell, whose stack is the current directory alone, as it models `set -P` off; beyond the entries this command pushed, a `pushd` rotation or swap keeps its earlier reading (a directory the walk cannot name) and a `popd` its earlier one (no change). A stack this walk cannot follow (`pushd -n +N`, `popd -n +N`, `popd --`) is None, and a change taken from it is unnamed.
+class _DirRef(str):
+    """The value of OLDPWD after a change of directory this walk followed: `_UNRESOLVED` as text, and the `(cwd, floor)` the shell left as `entry`."""
+
+    __slots__ = ("entry",)
+    entry: tuple
+
+    def __new__(cls, entry):
+        ref = super().__new__(cls, _UNRESOLVED)
+        ref.entry = entry
+        return ref
+
+
+_UNNAMED_STACK = "~"
+
+
+def _builtin_argv(words, shell):
+    """The words a `cd`/`pushd`/`popd`/`dirs` reads (the command name excluded): expanded under `shell` when every one of them expands to a value this walk knows, the typed words otherwise. A leading `~` is a home directory only at the start of an unquoted word; quoted (`"~"`, `\\~`) it is a name under the current directory, spelled `./~`, and from a variable (`D=~` assigns the expanded home in bash) it is the typed reading again."""
+    out = []
+    for word in words:
+        value = _expand_word(word, shell)
+        if value is None:
+            continue
+        lead = word.parts[0] if word.parts else None
+        if value.startswith("~"):
+            if lead is None or not lead.value.startswith("~"):
+                return [_word_value(w) for w in words]
+            if lead.kind != "lit":
+                value = "./" + value
+        if _UNRESOLVED in value:
+            return [_word_value(w) for w in words]
+        out.append(value)
+    return out
+
+
+def _cdpath(shell, env_ops):
+    """The CDPATH a `cd` searches: the command's own prefix assignment, else the shell's value, and None when it is unset, empty, the session's or not a value this walk knows."""
+    value = shell.get("CDPATH", (_INHERITED, None))[0]
+    for op in env_ops:
+        if op[0] == "set" and op[1] == "CDPATH":
+            value = _append(value, op[2]) if op[3] else op[2]
+        elif op[0] == "unset" and op[1] == "CDPATH":
+            value = None
+    if not value or value == _INHERITED or isinstance(value, _DirRef) or _UNRESOLVED in value:
+        return None
+    return value
+
+
+def _pushd_op(argv):
+    """`pushd`'s reading of `argv`: `("dir", target, nocd)`, `("rotate", sign, n, nocd)`, `("swap",)` or `("error",)`. bash takes `[-n] [+N|-N|dir]` and `--`; `-n` alone, a second operand and any other dash word are errors that change nothing."""
+    k = 0
+    nocd = False
+    while k < len(argv):
+        arg = argv[k]
+        if arg == "--":
+            k += 1
+            break
+        if arg == "-n":
+            nocd = True
+            k += 1
+            continue
+        if len(arg) >= 2 and arg[0] in "+-":
+            if not arg[1:].isdigit() or k + 1 < len(argv):
+                return ("error",)
+            return ("rotate", arg[0], int(arg[1:]), nocd)
+        break
+    operands = argv[k:]
+    if len(operands) > 1 or (nocd and not operands):
+        return ("error",)
+    if not operands:
+        return ("swap",)
+    return ("dir", operands[0], nocd)
+
+
+def _popd_op(argv):
+    """`popd`'s reading of `argv`: `("pop", sign, n, nocd)`, `("unknown", nocd)` for a spelling whose effect on the stack is not modelled, or `("error",)`. `popd` removes entry +0 and changes to the next one, `popd -n` removes entry +1 and stays, `+N`/`-N` remove that entry and change only when it is the current one."""
+    nocd = False
+    index = None
+    unknown = False
+    for arg in argv:
+        if arg == "-n":
+            nocd = True
+        elif arg == "--":
+            unknown = True
+        elif len(arg) >= 2 and arg[0] in "+-" and arg[1:].isdigit():
+            unknown = unknown or index is not None
+            index = (arg[0], int(arg[1:]))
+        else:
+            return ("error",)
+    if unknown or (nocd and index is not None):
+        return ("unknown", nocd)
+    sign, n = index if index is not None else ("+", 1 if nocd else 0)
+    return ("pop", sign, n, nocd)
+
+
+def _land_on(state, entry, physical, cdpath):
+    """`(cwd, floor)` for a change to a stack `entry`: a directory the shell was in is taken as it stood (bash keeps it as an absolute path), with a floor of 0 when the change is physical; a named one is a `cd` from where the shell is now."""
+    if entry[0] == "at":
+        return entry[1], (0 if physical else entry[2])
+    return _change_dir(state[0], state[3], entry[1], physical, cdpath)
+
+
+def _oldpwd_landing(state, physical, cdpath):
+    """`(cwd, floor)` for `cd -`, or None when it leaves the directory where it is (an unset or empty OLDPWD)."""
+    # After `env -i` an absent name is absent, not the session's (`_apply_env`), so `env -i bash -c 'cd -'` finds OLDPWD unset.
+    absent = None if _CLEARED in state[1] else _INHERITED
+    value = state[1].get("OLDPWD", (absent, None))[0]
+    if isinstance(value, _DirRef):
+        return _land_on(state, ("at", *value.entry), physical, None)
+    if value is None or value == "":
+        return None
+    if value == _INHERITED or _UNRESOLVED in value:
+        return "-", None
+    return _change_dir(state[0], state[3], value, physical, cdpath)
+
+
+def _dir_builtin(base, argv, state, cdpath):
+    """Apply `cd`, `pushd`, `popd` or `dirs` with the expanded `argv` to the walk's `state` (`[cwd, shell, physical, floor, stack]`)."""
+    here = ("at", state[0], state[3])
+    stack = state[4]
+    landing = None
+    if base == "dirs":
+        for arg in argv:
+            if arg == "--" or len(arg) < 2 or arg[0] not in "+-":
+                break
+            if arg[0] == "-" and "c" in arg[1:] and set(arg[1:]) <= set("clpv"):
+                state[4] = ()
+        return
+    if base == "cd":
+        target, physical = _cd_target(argv, state[2])
+        if target is None:
+            return
+        landing = (
+            _oldpwd_landing(state, physical, cdpath)
+            if target == "-"
+            else _change_dir(state[0], state[3], target, physical, cdpath)
+        )
+    elif base == "pushd":
+        physical = state[2]
+        op = _pushd_op(argv)
+        if op[0] == "error":
+            return
+        if op[0] == "dir" and op[2]:
+            if stack is not None:
+                state[4] = (("name", op[1]), *stack)
+            return
+        if op[0] == "dir":
+            landing = (
+                _oldpwd_landing(state, physical, cdpath)
+                if op[1] == "-"
+                else _change_dir(state[0], state[3], op[1], physical, cdpath)
+            )
+            if landing is not None and stack is not None:
+                state[4] = (here, *stack)
+        elif op[0] == "rotate" and op[3]:
+            state[4] = None
+            return
+        else:
+            whole = None if stack is None else [here, *stack]
+            if op[0] == "swap":
+                at = 1
+            else:
+                at = op[2] if op[1] == "+" else (len(whole) - 1 - op[2] if whole else -1)
+            if whole is None or not 0 <= at < len(whole) or (op[0] == "swap" and len(whole) < 2):
+                landing = (_UNNAMED_STACK, None)
+            elif at == 0:
+                return
+            else:
+                order = (
+                    [whole[1], whole[0], *whole[2:]]
+                    if op[0] == "swap"
+                    else [*whole[at:], *whole[:at]]
+                )
+                landing = _land_on(state, order[0], physical, cdpath)
+                state[4] = tuple(order[1:])
+    else:
+        physical = state[2]
+        op = _popd_op(argv)
+        if op[0] == "error":
+            return
+        if op[0] == "unknown" or stack is None:
+            state[4] = None
+            # Only a removal of the current entry changes directory: `-n`, and `+N` past 0, never do.
+            if op[1] if op[0] == "unknown" else (op[3] or (op[1] == "+" and op[2] > 0)):
+                return
+            landing = (_UNNAMED_STACK, None)
+        else:
+            whole = [here, *stack]
+            at = op[2] if op[1] == "+" else len(whole) - 1 - op[2]
+            if len(whole) < 2 or not 0 <= at < len(whole):
+                return
+            rest = whole[:at] + whole[at + 1 :]
+            state[4] = tuple(rest[1:])
+            if at != 0 or op[3]:
+                return
+            landing = _land_on(state, rest[0], physical, cdpath)
+    if landing is None:
+        return
+    old = state[1].get("OLDPWD", (None, None))[1]
+    shell = dict(state[1])
+    shell["OLDPWD"] = (_DirRef((state[0], state[3])), old)
+    state[1] = shell
+    state[0], state[3] = landing
+
+
+class _Expanded:
+    """A word stand-in whose single part is an expanded value, so `_strip_prefixes` reads a prefix command's options as bash hands them over."""
+
+    __slots__ = ("parts",)
+
+    def __init__(self, value):
+        self.parts = (_Literal(value),)
+
+
+class _Literal:
+    __slots__ = ("value",)
+
+    def __init__(self, value):
+        self.value = value
+
+
+def _expanded_chdir(prefix_words, shell, typed):
+    """The directory `env -C`/`sudo -D` changes to, read from the expanded words (`D=sub; env -C $D x` runs `x` in `sub`, #d0079b4e sweep), or `typed` when a word holds a value this walk cannot know."""
+    if "$" not in typed:
+        return typed
+    values = [_expand_word(w, shell) for w in prefix_words]
+    if any(v is not None and _UNRESOLVED in v for v in values):
+        return typed
+    found: dict = {}
+    _strip_prefixes([_Expanded(v) for v in values if v is not None], found)
+    return found.get("chdir", typed)
+
+
+def _child_shell(run, shell):
+    """The variables a new shell started by `run` begins with: what `run.env` exports, and OLDPWD, which bash exports after every change of directory, unless the command unset or cleared it."""
+    child = {n: (v, v is not None) for n, v in run.env.items()}
+    oldpwd = shell.get("OLDPWD", (None, None))[0]
+    if isinstance(oldpwd, _DirRef) and "OLDPWD" not in child and _CLEARED not in child:
+        child["OLDPWD"] = (oldpwd, True)
+    return child
 
 
 def _strip_prefixes(words, found=None):
@@ -2749,23 +3088,23 @@ class _Walker:
         self.analysis = analysis
         self.depth = depth
 
-    def text(self, src, cwd, persist, shell=None, physical=False, floor=None):
-        """Walk a command string. `persist` says whether a `cd`, an `export` or a `set -P` in it outlives it (an `eval` does; a `sh -c` does not). Returns `(cwd, shell, physical, floor)` as they stand after it.
+    def text(self, src, cwd, persist, shell=None, physical=False, floor=None, stack=()):
+        """Walk a command string. `persist` says whether a `cd`, an `export` or a `set -P` in it outlives it (an `eval` does; a `sh -c` does not). Returns `(cwd, shell, physical, floor, stack)` as they stand after it.
 
-        The walk's state is a four-slot list, `[cwd, shell, physical, floor]`: the directory (`cd`), the shell variables (`_shell_builtin`), bash's `physical` option (`_set_physical`) and the physical floor under the directory (`_change_dir`), each of which a statement changes for the statements after it.
+        The walk's state is a five-slot list, `[cwd, shell, physical, floor, stack]`: the directory (`cd`), the shell variables (`_shell_builtin`, and OLDPWD), bash's `physical` option (`_set_physical`), the physical floor under the directory (`_change_dir`) and the directory stack below it (`_dir_builtin`), each of which a statement changes for the statements after it.
         """
         shell = shell if shell is not None else {}
         if self.depth >= _MAX_DEPTH or src == "":
-            return cwd, shell, physical, floor
+            return cwd, shell, physical, floor, stack
         lexer = _Lexer(src)
         toks = lexer.tokens()
         if self.depth == 0:
             self.analysis.root = lexer
         self.analysis.heredocs.extend(lexer.heredocs)
         inner = _Walker(self.analysis, self.depth + 1)
-        state = [cwd, shell, physical, floor]
+        state = [cwd, shell, physical, floor, stack]
         inner.items(_parse(toks), state, lexer)
-        return tuple(state) if persist else (cwd, shell, physical, floor)
+        return tuple(state) if persist else (cwd, shell, physical, floor, stack)
 
     def items(self, items, state, lexer, inherited=None):
         """Walk a parsed list. `inherited` is the text a group's stdin carries (`echo x | (xargs rm)`), handed to every command in it."""
@@ -2900,6 +3239,8 @@ class _Walker:
             return
         argv = [_word_value(w) for w in words[1:]]
         rendered = [r for r in (_word_render(w) for w in words[1:]) if r != ""]
+        if "chdir" in found:
+            found["chdir"] = _expanded_chdir(prefix_words, before, found["chdir"])
         run = _Run(
             name,
             argv,
@@ -2962,14 +3303,14 @@ class _Walker:
             run.launched.append(sub)
         if base == "ssh":
             run.remote = _ssh_remote(argv)
-        if base in ("cd", "pushd"):
-            target, physical = _cd_target(base, argv, state[2])
-            if target is not None:
-                state[0], state[3] = _change_dir(state[0], state[3], target, physical)
+        if base in ("cd", "pushd", "popd", "dirs"):
+            _dir_builtin(base, _builtin_argv(words[1:], before), state, _cdpath(before, env_ops))
         elif base == "set":
             state[2] = _set_physical(argv, state[2])
         elif base == "git":
-            run.git_sub, run.git_dir = _git_invocation(argv, run.cwd)
+            # `D=sub; git -C $D` changes into `sub`, as `cd $D` does (#d0079b4e sweep); a word this walk cannot expand keeps the typed reading.
+            known = run.xargv is not None and not any(_UNRESOLVED in x for x in run.xargv)
+            run.git_sub, run.git_dir = _git_invocation(run.xargv if known else argv, run.cwd)
         elif base == "eval":
             state[:] = self.nested(
                 " ".join(argv),
@@ -2978,10 +3319,11 @@ class _Walker:
                 shell=state[1],
                 physical=state[2],
                 floor=state[3],
+                stack=state[4],
             )
         elif base in SHELL_NAMES:
             # A child shell inherits the environment, never the parent's unexported variables; a KNOWN-unset name stays known unset there.
-            child = {n: (v, v is not None) for n, v in run.env.items()}
+            child = _child_shell(run, state[1])
             mode, payload = _shell_payload(argv)
             if mode == "c" and payload is not None:
                 self.nested(
@@ -3000,14 +3342,14 @@ class _Walker:
             # `bun exec "<command line>"` runs it through Bun's shell (#a2599946): walked as `sh -c` is, so every guard reads the commands inside. `bun exec 'echo y > <review file>'` was allowed (rc 0, 2026-10-15) where the same line through `sh -c` was refused.
             kind, payload = program_parse(base, argv)
             if kind == "shell" and payload:
-                child = {n: (v, v is not None) for n, v in run.env.items()}
+                child = _child_shell(run, state[1])
                 self.nested(payload, run.cwd, persist=False, shell=child)
         elif base in _DECLARING:
             declared = [_expand_word(w, before, split=False) or "" for w in words[1:]]
             state[1] = _shell_builtin(base, declared, state[1])
 
     def stdin(self, redirs, lexer, state, upstream):
-        """A shell reading its script from stdin runs whatever arrives there (A0 L4): a heredoc body, a here-string, or the output of `cat <<EOF`/`echo` upstream in the pipe. `state` is the child shell's `[cwd, shell, physical, floor]`."""
+        """A shell reading its script from stdin runs whatever arrives there (A0 L4): a heredoc body, a here-string, or the output of `cat <<EOF`/`echo` upstream in the pipe. `state` is the child shell's `[cwd, shell, physical, floor]`; its directory stack starts empty."""
 
         def walk(src):
             self.nested(src, state[0], False, state[1], state[2], state[3])
@@ -3038,9 +3380,9 @@ class _Walker:
                 args = args[1:]
             walk(" ".join(args))
 
-    def nested(self, src, cwd, persist, shell=None, physical=False, floor=None):
+    def nested(self, src, cwd, persist, shell=None, physical=False, floor=None, stack=()):
         return _Walker(self.analysis, self.depth + 1).text(
-            src, cwd, persist, shell, physical, floor
+            src, cwd, persist, shell, physical, floor, stack
         )
 
     def redirs(self, redirs, state, lexer):
