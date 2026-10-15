@@ -7614,7 +7614,12 @@ def _written_scripts(cmd, until, cwd):
         files, dirs = _tool_outputs(run)
         for target in files:
             record(target, run.cwd, None)
-        out.unpacked.extend(_script_path(d, run.cwd, cwd) for d in dirs)
+        new_dirs = [_script_path(d, run.cwd, cwd) for d in dirs]
+        out.unpacked.extend(new_dirs)
+        # An extraction REPLACES what an earlier run wrote under its directory (review 6c9f6fd8.1): `echo x > a.py && tar -xf w.tar && python3 a.py` runs the archive's a.py, so the earlier known text is dropped to unknown; a write AFTER the extraction records over it again.
+        for key in list(dict.keys(out)):
+            if any(key == d or key.startswith(d.rstrip("/") + "/") for d in new_dirs):
+                dict.__setitem__(out, key, None)
     return out
 
 

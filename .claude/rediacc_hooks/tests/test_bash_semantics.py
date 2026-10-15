@@ -3077,6 +3077,12 @@ TOOL_OUTPUT_ROWS = [
     ("cd {T}/o && curl -sO file://{T}/src.py && python3 src.py", "1\n", "unjudgeable"),
     ("mkdir -p {T}/x && tar -xf {T}/w.tar -C {T}/x && python3 {T}/x/a.py", "4\n", "unjudgeable"),
     ("cd {T}/o && tar -xf {T}/w.tar && python3 a.py", "4\n", "unjudgeable"),
+    # Review 6c9f6fd8.1: an extraction over a file an earlier run wrote replaces it, so the earlier echoed text is not what runs.
+    (
+        "cd {T}/o && echo 'print(1)' > a.py && tar -xf {T}/w.tar && python3 a.py",
+        "4\n",
+        "unjudgeable",
+    ),
     ("curl -s -o {T}/b.py file://{T}/src.py && python3 {T}/src.py", "1\n", "file"),
     ("tar -cf {T}/n.tar -C {T} src.py && python3 {T}/src.py", "1\n", "file"),
 ]
@@ -3160,8 +3166,13 @@ TOOL_OUTPUT_PLANTS = [
     ),
     (
         "an extraction's directory not recorded",
-        "        out.unpacked.extend(_script_path(d, run.cwd, cwd) for d in dirs)\n",
+        "        out.unpacked.extend(new_dirs)\n",
         "",
+    ),
+    (
+        "an extraction leaves an earlier write's text in place (review 6c9f6fd8.1)",
+        "                dict.__setitem__(out, key, None)\n",
+        "                pass\n",
     ),
 ]
 
