@@ -92,9 +92,13 @@ def run_chain(chain, payload, cwd=None, env=None):
 
 
 def main(argv):
-    if not argv or argv[0] in ("-h", "--help"):
+    # Asked-for help goes to stdout like `--list`, so `--help | less` reads it; a bare call is a usage error and says so on stderr.
+    if argv and argv[0] in ("-h", "--help"):
+        print(__doc__.strip())
+        return 0
+    if not argv:
         print(__doc__.strip(), file=sys.stderr)
-        return 0 if argv else 64
+        return 64
     # An unknown stem (or a misspelled flag) used to reach importlib and end in a traceback; name the real stems instead.
     if argv[0] == "--chain" and len(argv) < 2:
         print("dispatch.py: --chain needs a chain name", file=sys.stderr)

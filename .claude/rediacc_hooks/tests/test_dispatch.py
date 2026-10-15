@@ -222,15 +222,13 @@ def test_the_entry_point_runs_as_a_process():
 @pytest.mark.parametrize(
     ("argv", "rc", "says"),
     [
-        (["--help"], 0, "dispatch"),
-        (["-h"], 0, "dispatch"),
         (["no_such_guard"], 64, "no guard named 'no_such_guard'"),
         (["--bogus"], 64, "unknown option '--bogus'"),
         (["--chain"], 64, "--chain needs a chain name"),
     ],
 )
 def test_a_bad_argument_is_named_not_a_traceback(argv, rc, says):
-    """`dispatch.py --help` and an unknown stem reached importlib and ended in a traceback (2026-10-15); each now names the problem and exits."""
+    """`dispatch.py --help` and an unknown stem reached importlib and ended in a traceback (found 2026-10-14T23:5xZ); each now names the problem and exits."""
     proc = subprocess.run(
         [sys.executable, str(ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"), *argv],
         input=b"",
@@ -242,6 +240,22 @@ def test_a_bad_argument_is_named_not_a_traceback(argv, rc, says):
     assert proc.returncode == rc, err
     assert "Traceback" not in err, err
     assert says in err, err
+
+
+@pytest.mark.parametrize("flag", ["--help", "-h"])
+def test_help_prints_the_usage_on_stdout(flag):
+    """Asked-for help is the module docstring on stdout, rc 0, so it can be piped or redirected."""
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / ".claude" / "rediacc_hooks" / "dispatch.py"), flag],
+        input=b"",
+        capture_output=True,
+        check=False,
+        cwd=str(ROOT),
+    )
+    out = proc.stdout.decode("utf-8", "replace")
+    assert proc.returncode == 0, proc.stderr
+    assert out.strip() == dispatch.__doc__.strip(), out
+    assert proc.stderr == b"", proc.stderr
 
 
 def test_list_names_every_port():
