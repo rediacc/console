@@ -9,6 +9,7 @@ from rediacc_hooks import shellscan
 from rediacc_hooks.tests import test_shellscan_differential as differential
 
 HOSTED = "%s/%s.git" % (GH_ORIGIN, GH_REPO)
+GH_HOST = GH_ORIGIN.split("://", 1)[1]
 
 
 def _git(*args):
@@ -72,8 +73,8 @@ def test_origin_spellings_follow_git_on_posix(tmp_path):
         assert differential._local_origin(tmp_path, local) == want, local
     for hosted in (
         HOSTED,
-        "ssh://git@github.com/%s.git" % GH_REPO,
-        "git@github.com:%s.git" % GH_REPO,
+        "ssh://git@%s/%s.git" % (GH_HOST, GH_REPO),
+        "git@%s:%s.git" % (GH_HOST, GH_REPO),
         "C:/src/console",
         "C:\\src\\console",
         "",

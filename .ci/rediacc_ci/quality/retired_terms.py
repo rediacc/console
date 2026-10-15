@@ -359,15 +359,18 @@ def plan_subjects(root: pathlib.Path) -> tuple[list[Subject], int]:
     return out, len(rels)
 
 
+PLAN_REF_RE = re.compile(r"^agent/plans/(?:(?:_done|_removed)/)?(PLAN-[A-Za-z0-9._-]+\.md)$")
+
+
 def _resolves(root: pathlib.Path, ref: str) -> bool:
-    """A path ref resolves where it names a file, or, for a plan, where its file now sits under a terminal folder: a retirement plan that closes and moves to `_done/` (its stub at the old path may be pruned later) must not turn every run into a CannotRunError (review 44fdd3b7.1)."""
-    if (root / ref).is_file():
-        return True
-    parent, name = ref.rsplit("/", 1) if "/" in ref else ("", ref)
-    if parent.rstrip("/").endswith("agent/plans") or "/agent/plans/" in "/" + parent + "/":
-        base = parent.split("/_done")[0].split("/_removed")[0]
-        return any((root / base / sub / name).is_file() for sub in ("_done", "_removed"))
-    return False
+    """A path ref resolves where it names a file inside the tree; a PLAN ref (`agent/plans/[_done/|_removed/]PLAN-<slug>.md`, nothing deeper) also resolves where the same plan now sits in any of those three places, so a retirement plan that closes into `_done/` and loses its stub does not turn every run into a CannotRunError (reviews 44fdd3b7.1, e34c5d6f.1-.3). A `..` segment never resolves."""
+    if ".." in ref.split("/"):
+        return False
+    m = PLAN_REF_RE.match(ref)
+    if m:
+        plans = root / "agent" / "plans"
+        return any((plans / sub / m.group(1)).is_file() for sub in ("", "_done", "_removed"))
+    return (root / ref).is_file()
 
 
 def tracked_paths(root: pathlib.Path, refs: list[str]) -> set[str]:

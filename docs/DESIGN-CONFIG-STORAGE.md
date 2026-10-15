@@ -903,7 +903,7 @@ CLI                                          Server
  │                                             │
  ├─ DELETE /configs/:id { serverToken } ──────►│
  │                                             ├─ Validate token, verify elevated session
- │                                             ├─ Delete R2: s/{storeId}/{teamId}/{configId}/ (current + versions)
+ │                                             ├─ Delete R2: s/{storeId}/{teamId | _default}/{configId}/ (current + versions)
  │                                             ├─ Delete D1: config_versions rows
  │                                             ├─ Delete D1: config_entries row
  │                                             ├─ Log: config.delete (warning)
