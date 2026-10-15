@@ -1269,14 +1269,7 @@ def _program_could_name_log(code, family="python"):
     return bool(meeting) and not _program_inert(code, family)
 
 
-def _redirects(analysis):
-    """Every output redirect of `analysis` as `(operator, target)`, each as typed and then, where it differs, as bash expands it (`_Analysis.xwrites`, #7b3f34ae): `L=<log>; echo x > $L` truncates the log."""
-    out = []
-    for (op, target), (_op, expanded) in zip(analysis.writes, analysis.xwrites, strict=True):
-        out.append((op, target))
-        if expanded != target:
-            out.append((op, expanded))
-    return out
+_redirects = shellscan.analysis_redirects
 
 
 def _shell_words(cmd):

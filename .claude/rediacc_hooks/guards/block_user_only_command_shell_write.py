@@ -327,14 +327,7 @@ def _listed(target_abs):
     return (rel, exceptions) if rel in exceptions.entries else None
 
 
-def _redirects(analysis):
-    """Every output redirect of `analysis` as `(operator, target)`, each as typed and then, where it differs, as bash expands it (`_Analysis.xwrites`, #7b3f34ae): `F=zz.py; echo x >> $F` appends to `zz.py`."""
-    out = []
-    for (op, target), (_op, expanded) in zip(analysis.writes, analysis.xwrites, strict=True):
-        out.append((op, target))
-        if expanded != target:
-            out.append((op, expanded))
-    return out
+_redirects = shellscan.analysis_redirects
 
 
 def _list_write(runs, analysis, cmd, cwd):

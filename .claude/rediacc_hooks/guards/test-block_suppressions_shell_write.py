@@ -53,6 +53,17 @@ def _own_cases(shared):
             False,
         ),
         ("append through an unset variable (control)", "echo '%s' >> $UNSET_F" % marker, False),
+        # Review ff357dfa.1: text bash cannot expand, appended through an assigned source name, stays allowed as the typed form does (measured rc 0 for both), because no marker is spelled.
+        (
+            "append of unexpandable text through an assigned name (control)",
+            'F=%s; echo "$X" >> $F' % shared.KEPT,
+            False,
+        ),
+        (
+            "append of unexpandable text to the typed name (control)",
+            'echo "$X" >> %s' % shared.KEPT,
+            False,
+        ),
         (
             "redirect bash refuses as ambiguous (control)",
             "F=\"%s %s\"; echo '%s' >> $F" % (shared.KEPT, shared.KEPT, marker),
