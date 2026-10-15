@@ -26,8 +26,8 @@ def _tracked(pattern: str) -> list[str]:
     return sorted(rel for rel in out.split("\0") if rel)
 
 
-# The repository root's vitest.config.ts runs no test: it throws so a root-level run, which no workspace config isolates, stops (#61fb7bc3). It has no cache to name, and the test below proves it still refuses.
-ROOT_REFUSAL = "vitest.config.ts"
+# The repository root's vitest.config.mjs (plain JavaScript, so no typecheck project needs it) runs no test: it throws so a root-level run, which no workspace config isolates, stops (#61fb7bc3). It has no cache to name, and the test below proves it still refuses.
+ROOT_REFUSAL = "vitest.config.mjs"
 
 
 def test_the_root_vitest_config_only_refuses():
