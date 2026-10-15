@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""block_roundlog_truncate: a redirect onto a variable the command assigned is read as bash expands it (#7b3f34ae).
+
+The guard's broad differential is `hookcases.py`; this file pins the redirect-target rows only, in both directions through dispatch.py, then plants the typed-only read in-process and requires it to turn a row. Rows measured at 0600a4642: each refusal was allowed (rc 0), because the redirect target was read as typed (`$L`).
+
+    test-block_roundlog_truncate.py
+"""
+
+import importlib
+import importlib.util
+import json
+import pathlib
+import subprocess
+import sys
+import tempfile
+import typing
+
+HERE = pathlib.Path(__file__).resolve()
+HOOKS = HERE.parents[1]
+DISPATCH = str(HOOKS / "dispatch.py")
+STEM = "block_roundlog_truncate"
+LOG = "agent/pr-babysit-1008-1.md"
+
+CASES = [
+    ("truncate through an assigned name", "L=%s; echo x > $L" % LOG, True),
+    ("truncate through a braced name", "L=%s; echo x > ${L}" % LOG, True),
+    ("truncate through a directory and a name", "D=agent; echo x > $D/pr-babysit-1008-1.md", True),
+    (
+        "truncate through a name assigned in an if",
+        "L=/tmp/x.md; if true; then L=%s; fi; echo x > $L" % LOG,
+        True,
+    ),
+    ("append through an assigned name", "L=%s; echo x >> $L" % LOG, False),
+    ("truncate through a name holding another file", "L=/tmp/notes.md; echo x > $L", False),
+    ("truncate through an unset variable", "echo x > $UNSET_L", False),
+    ("redirect bash refuses as ambiguous", 'L="%s %s"; echo x > $L' % (LOG, LOG), False),
+]
+
+# The two readers overlap (each alone refuses the same rows), so the plant takes both.
+MUTANTS = [
+    (
+        "both redirect readers take the typed target",
+        [
+            (
+                "    words = [target for _op, target in _redirects(shellscan._analyse(cmd))]\n",
+                "    words = [target for _op, target in shellscan._analyse(cmd).writes]\n",
+            ),
+            (
+                "        for op, target in _redirects(shellscan._analyse(cmd))\n",
+                "        for op, target in shellscan._analyse(cmd).writes\n",
+            ),
+        ],
+    ),
+]
+
+
+def via_dispatch(command, cwd):
+    proc = subprocess.run(
+        [sys.executable, DISPATCH, STEM],
+        input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd}),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def planted(scratch, pairs):
+    """The guard with each `(old, new)` pair of `pairs` applied, imported in-process from a copy under `scratch`; None when an `old` is not in the guard."""
+    src = HERE.with_name(STEM + ".py").read_text(encoding="utf-8")
+    if any(old not in src for old, _new in pairs):
+        return None
+    for old, new in pairs:
+        src = src.replace(old, new)
+    sys.path.insert(0, str(HOOKS.parent))
+    hookio = importlib.import_module("rediacc_hooks.hookio")
+    copy = scratch / ("mutant_%s.py" % STEM)
+    copy.write_text(src, encoding="utf-8")
+    spec = importlib.util.spec_from_file_location("mutant_" + STEM, copy)
+    if spec is None or spec.loader is None:
+        raise SystemExit("cannot load the planted copy of %s" % STEM)
+    broken: typing.Any = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(broken)
+
+    def run(command, cwd):
+        event = hookio.Event(
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd})
+        )
+        rc = broken.run(event)
+        _rc, out, err = event.result(rc)
+        return rc, out + err
+
+    return run
+
+
+def main():
+    cwd = str(HOOKS.parents[1])
+    fails = 0
+    for name, command, refused in CASES:
+        rc, text = via_dispatch(command, cwd)
+        ok = (rc != 0) == refused
+        fails += not ok
+        print(
+            "%-48s want=%-8s %s"
+            % (
+                name,
+                "BLOCKED" if refused else "allowed",
+                "ok" if ok else "*** FAIL *** " + text[:200],
+            )
+        )
+    refusals = sum(1 for c in CASES if c[2])
+    if refusals < 3 or len(CASES) - refusals < 3:
+        print("FLOOR: at least 3 cases of each direction")
+        fails += 1
+    print("FAILURES: %d" % fails)
+    mutant_fails = 0
+    with tempfile.TemporaryDirectory(prefix="roundlog-mutants-") as tmp:
+        for label, pairs in MUTANTS:
+            run = planted(pathlib.Path(tmp), pairs)
+            if run is None:
+                mutant_fails += 1
+                print("plant %-52s *** FAIL *** it no longer applies to the guard" % label)
+                continue
+            turned = sum(1 for _n, c, refused in CASES if (run(c, cwd)[0] != 0) != refused)
+            mutant_fails += not turned
+            print(
+                "plant %-52s turns %d row(s) %s"
+                % (label, turned, "ok" if turned else "*** FAIL *** the harness cannot see it")
+            )
+    print("MUTANT FAILURES: %d" % mutant_fails)
+    return 1 if fails or mutant_fails else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

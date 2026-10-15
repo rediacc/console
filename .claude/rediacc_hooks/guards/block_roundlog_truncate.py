@@ -21,7 +21,7 @@ FAILS OPEN, WITH ONE EXCEPTION. This matches on a path shape plus a write verb; 
 
 THE EXCEPTION IS AN INTERPRETER PROGRAM WITH A LOG IN PLAY, and there the burden is the program's. A log is IN PLAY for a python, node, perl or ruby run when the command line hands it one (an argument, an environment value, its stdin) or when the program's own text could spell one (the `pr-babysit` stem, or a string literal glob that meets the round-log pattern in a program that is not provably inert, `_program_inert`). Such a program must be one this guard can FOLLOW: made only of reads, pure calls, and writes to literal paths that are not a log. A dynamic import or dispatch, a shell-out, a write whose target is not a literal, a method on a value the reader cannot type, or simply a call it does not know, and the program is refused. THE BOUNDARY: a program that is handed no log and whose text cannot spell one is not read at all, however it is written, which is what keeps this strictness off every ordinary script.
 
-NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime is partly invisible here. A verb's operand set by an earlier statement of the same command (`F=<log>; mv $F /tmp/`) is read as bash expands it; a REDIRECT onto such a variable (`> $F`), a value from the environment, and a shell glob that expands to the log are not, because the walk keeps a redirect target unexpanded. The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
+NAMED RESIDUAL, not pretended away: a write whose path is ASSEMBLED at runtime is partly invisible here. A verb's operand set by an earlier statement of the same command (`F=<log>; mv $F /tmp/`) is read as bash expands it; a value from the environment, and a shell glob that expands to the log are not, because the walk cannot know them. A REDIRECT onto a variable the command assigned (`L=<log>; echo x > $L`) is read as bash expands it too (#7b3f34ae). The verb's own success line is the backstop for that case: it reports the bytes kept above and below STATUS, so a session that used the verb can SEE
 the appendix survived, and a session that bypassed it has no such line to point at.
 
 =============================================================================
@@ -1269,9 +1269,19 @@ def _program_could_name_log(code, family="python"):
     return bool(meeting) and not _program_inert(code, family)
 
 
+def _redirects(analysis):
+    """Every output redirect of `analysis` as `(operator, target)`, each as typed and then, where it differs, as bash expands it (`_Analysis.xwrites`, #7b3f34ae): `L=<log>; echo x > $L` truncates the log."""
+    out = []
+    for (op, target), (_op, expanded) in zip(analysis.writes, analysis.xwrites, strict=True):
+        out.append((op, target))
+        if expanded != target:
+            out.append((op, expanded))
+    return out
+
+
 def _shell_words(cmd):
     """The shell words a truncating arm judges: every redirect target, and the words (with what xargs appends) of each `mv`, `truncate`, `cp`, `dd`, `tee` and in-place editor bash runs. For an interpreter run, its arguments other than the inline program, and its stdin feed. Interpreter PROGRAM TEXT is not among them."""
-    words = [target for _op, target in shellscan._analyse(cmd).writes]
+    words = [target for _op, target in _redirects(shellscan._analyse(cmd))]
     for run_ in shellscan.every_run(cmd):
         base = run_.name.rsplit("/", 1)[-1]
         # An interpreter's arguments are operands too (review 1d4e1754.1): `python3 -c "open(sys.argv[1], 'w')" agent/*.md`.
@@ -2578,7 +2588,7 @@ def run(ev):
     # A redirect target is expanded by bash too (`> agent/pr-babysit-*.md` truncates the one log it matches), and its run's directory is not on the write record, so a glob there is read by its shape.
     truncating = any(
         op in TRUNCATING_OPS and _names_log(target) and not re.fullmatch(r"\d+|-", target)
-        for op, target in shellscan._analyse(cmd).writes
+        for op, target in _redirects(shellscan._analyse(cmd))
     )
     # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
     cwd = ev.field("cwd") or str(hookio.repo_root())

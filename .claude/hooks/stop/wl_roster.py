@@ -1062,7 +1062,7 @@ def bash_write_paths(cmd, cwd, root):
 
     py_bodies = []
     for run in runs:
-        for target in run.writes or []:
+        for target in shellscan.redirect_targets(run):
             seen_writes.append(target)
             add(target, run.cwd)
         for operand in _run_operands(run, shellscan):

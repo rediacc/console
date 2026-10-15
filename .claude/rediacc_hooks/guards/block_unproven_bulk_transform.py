@@ -450,7 +450,8 @@ def _writers_in(runs, cmd, cwd, roots, inert_git=INERT_GIT):
             writer = run.git_sub is not None and run.git_sub not in inert_git
         else:
             writer = base not in INERT_TOOLS
-        for target in run.writes:
+        # Each target as typed and as bash expands it (#7b3f34ae): `D=other; if true; then D=src; fi; echo x > $D/a.md` names `other` through the top-level assignments and writes `src/a.md`.
+        for target in shellscan.redirect_targets(run):
             if writer or target in shellscan._NOT_A_FILE or target.startswith("/dev/fd/"):
                 continue
             text = PARAM.sub(lambda m: names.get(m.group(1) or m.group(2), m.group(0)), target)
