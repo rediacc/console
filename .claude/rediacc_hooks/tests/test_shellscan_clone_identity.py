@@ -4,9 +4,9 @@ import pathlib
 import subprocess
 
 from rediacc_ci.well_known import GH_ORIGIN, GH_REPO
+
 from rediacc_hooks import shellscan
 from rediacc_hooks.tests import test_shellscan_differential as differential
-
 
 HOSTED = "%s/%s.git" % (GH_ORIGIN, GH_REPO)
 
