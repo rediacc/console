@@ -2932,3 +2932,78 @@ def _deadlock_probe(block, tmp_path) -> None:
         "it now proves nothing",
     )
     shutil.rmtree(log.parent.parent, ignore_errors=True)
+
+
+# --- block_cli_bundle: the program is the word bash hands node, read in the directory it runs in ---------------- `B=packages/cli/dist/cli-bundle.cjs; node $B config field set ...` ran on 2026-10-15 because the guard matched the typed `$B` (#e13fb555). The rows that need a FIXTURE are the ones whose answer depends on the disk and the event's `cwd`: a relative path from inside the package and a symlink into the
+# bundle, neither of which names the bundle in the typed or the expanded word. Each refusal below was rc 0 before the fix; guards/test-block_cli_bundle.py carries the full sibling table.
+def _bundle_json(command: str, cwd) -> str:
+    return json.dumps(
+        {"tool_input": {"command": command}, "cwd": str(cwd)},
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+
+@pytest.mark.xdist_group("hooks-fixtures")
+def test_block_cli_bundle_reads_the_program_bash_runs(tmp_path):
+    block = hookblocks.Block("cli-bundle-expanded")
+    project = tmp_path / "project"
+    dist = project / "packages" / "cli" / "dist"
+    dist.mkdir(parents=True)
+    (dist / "index.js").write_text("", encoding="utf-8")
+    (project / "packages" / "cli" / "bundle.mjs").write_text("", encoding="utf-8")
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    (elsewhere / "entry.cjs").symlink_to(dist / "index.js")
+    (elsewhere / "tool.mjs").symlink_to(project / "packages" / "cli" / "bundle.mjs")
+    spec_refused = "check 2 guards/block_cli_bundle.py"
+    spec_allowed = "check 0 guards/block_cli_bundle.py"
+    block.check(
+        spec_refused,
+        _bundle_json("B=packages/cli/dist/index.js; node $B config field set x y", project),
+        "cli-bundle: the program from a variable is refused (the live 2026-10-15 run, was allowed)",
+        cwd=str(project),
+    )
+    block.check(
+        spec_refused,
+        _bundle_json("cd packages/cli && node dist/index.js", project),
+        "cli-bundle: a relative program after cd is refused (was allowed)",
+        cwd=str(project),
+    )
+    block.check(
+        spec_refused,
+        _bundle_json("node %s --version" % (elsewhere / "entry.cjs"), project),
+        "cli-bundle: a symlink that resolves into the bundle is refused (was allowed)",
+        cwd=str(project),
+    )
+    block.check(
+        spec_refused,
+        _bundle_json("cd %s && L=entry.cjs; bun $L" % elsewhere, project),
+        "cli-bundle: bun of a relative link through a variable is refused (was allowed)",
+        cwd=str(project),
+    )
+    block.check(
+        spec_allowed,
+        _bundle_json("node %s" % (elsewhere / "tool.mjs"), project),
+        "cli-bundle CONTROL: a symlink to the build entry is allowed",
+        cwd=str(project),
+    )
+    block.check(
+        spec_allowed,
+        _bundle_json("cd packages/cli && node bundle.mjs", project),
+        "cli-bundle CONTROL: the build entry after cd is allowed",
+        cwd=str(project),
+    )
+    block.check(
+        spec_allowed,
+        _bundle_json("./rdc.sh config field set x y", project),
+        "cli-bundle CONTROL: the wrapper is allowed",
+        cwd=str(project),
+    )
+    block.check(
+        spec_allowed,
+        _bundle_json("echo never run node packages/cli/dist/index.js, use ./rdc.sh", project),
+        "cli-bundle CONTROL: a sentence naming the bundle is allowed",
+        cwd=str(project),
+    )
+    block.done()
