@@ -3007,3 +3007,69 @@ def test_block_cli_bundle_reads_the_program_bash_runs(tmp_path):
         cwd=str(project),
     )
     block.done()
+
+
+# --- shellscan: the guards read what a launcher, a `-c` shell, eval and ssh are handed (#156caed2) ---------------- bash expands every word once before a launcher or a shell runs, and the walk used to build the inner command from the words as typed, so a guard reading the launched run saw the literal `$F`. Each `2` row below was rc 0 at b8058ec2c and is refused now ONLY through shellscan: none of these guards carries a re-walk of its own.
+# block_cli_bundle does carry one (its `_programs`/`_runs_bundle`), so its two rows are forms that workaround missed too: a `-c` payload under a launcher. The formatter rows stay refused because an unknowable word keeps its typed `$` inside the launched run; the `0` rows are the reads and prints beside each refusal.
+_SJ = ".claude/settings.json"
+_BUNDLE = "packages/cli/dist/" + "cli-bundle.cjs"
+LAUNCHED_GUARD_ROWS = (
+    ("block_protected_files", "F=%s; find . -maxdepth 0 -exec rm $F \\;" % _SJ, 2),
+    ("block_protected_files", 'F=%s; bash -c "rm $F"' % _SJ, 2),
+    ("block_protected_files", 'N=bash; $N -c "rm %s"' % _SJ, 2),
+    ("block_protected_files", 'B="x; rm %s"; eval "echo $B"' % _SJ, 2),
+    ("block_git_force_push", 'N=bash; $N -c "git push --force origin main"', 2),
+    ("block_git_force_push", 'F=--force; bash -c "git push $F origin main"', 2),
+    ("block_git_force_push", "F=--force; find . -maxdepth 0 -exec git push $F origin main \\;", 2),
+    ("block_git_force_push", "G=git; $G push --force origin main", 2),
+    (
+        "block_review_file_shell_write",
+        "D=agent/reviews/x; find . -maxdepth 0 -exec tee $D/y.md \\;",
+        2,
+    ),
+    ("block_review_file_shell_write", "D=agent/reviews/x; npx tee $D/y.md", 2),
+    ("block_review_file_shell_write", 'D=agent/reviews/x; bash -c "tee $D/y.md"', 2),
+    ("block_review_file_shell_write", "D=agent/reviews/x; echo $D/y.md | xargs tee", 2),
+    ("block_review_file_shell_write", "D=agent/reviews/x; xargs tee <<< $D/y.md", 2),
+    ("block_ssh_docker", "C=docker; ssh prod-1 $C ps", 2),
+    ("block_cli_bundle", 'B=%s; npx bash -c "node $B"' % _BUNDLE, 2),
+    ("block_cli_bundle", 'B=%s; find . -maxdepth 0 -exec bash -c "node $B" \\;' % _BUNDLE, 2),
+    # The typed `$` survives an unknowable word, and the formatter guard refuses on it.
+    ("block_unscoped_formatter_run", "npx prettier --write $files", 2),
+    ("block_unscoped_formatter_run", 'npx eslint --fix "$@"', 2),
+    ("block_unscoped_formatter_run", "F=; npx prettier --write $F", 2),
+    # CONTROLS: a read, a print, a value outside the protected set, a single-quoted payload in a child where the name is unexported, and a name the walk cannot know.
+    ("block_protected_files", 'F=%s; bash -c "cat $F"' % _SJ, 0),
+    ("block_protected_files", "F=%s; find . -maxdepth 0 -exec cat $F \\;" % _SJ, 0),
+    ("block_protected_files", "F=%s; bash -c 'rm $F'" % _SJ, 0),
+    ("block_git_force_push", 'M="git push --force"; bash -c "echo $M"', 0),
+    ("block_git_force_push", 'F=--dry-run; bash -c "git push $F origin main"', 0),
+    ("block_git_force_push", "\"$BASH\" -c 'git push --force origin main'", 0),
+    ("block_review_file_shell_write", "D=agent/reviews/x; npx cat $D/y.md", 0),
+    ("block_review_file_shell_write", "D=plain; find . -maxdepth 0 -exec tee $D/y.md \\;", 0),
+    ("block_ssh_docker", "C=uptime; ssh prod-1 $C", 0),
+    ("block_cli_bundle", "echo 'npx node $B'", 0),
+    ("block_cli_bundle", 'B=scripts/dev/x.mjs; npx bash -c "node $B"', 0),
+    ("block_unscoped_formatter_run", "F=.claude/rediacc_hooks; npx prettier --write $F", 0),
+)
+
+
+def test_guards_read_the_expanded_launched_command_156caed2(tmp_path):
+    root = os.path.realpath(tmp_path)
+    for d in ("agent/reviews/x", "plain", "packages/cli/dist"):
+        (tmp_path / d).mkdir(parents=True)
+    wrong = []
+    for stem, command, want in LAUNCHED_GUARD_ROWS:
+        # A push is judged only inside this checkout (commit_policy.foreign_only), so the push rows run from its root; nothing is executed either way.
+        where = str(ROOT) if stem == "block_git_force_push" else root
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": where}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    # Both directions per guard: neither half of the table is vacuous.
+    for stem in {s for s, _c, _w in LAUNCHED_GUARD_ROWS}:
+        verdicts = {w for s, _c, w in LAUNCHED_GUARD_ROWS if s == stem}
+        assert verdicts == {0, 2}, (stem, verdicts)

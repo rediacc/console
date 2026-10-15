@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import types
 import uuid
 from dataclasses import dataclass, field
 
@@ -2493,3 +2494,244 @@ def test_a_cdpath_chain_past_the_search_cap_takes_the_fallback_review_4a08d9e8()
     assert shellscan._SEARCH_CAP < 65 * 65
     assert not hasattr(runs[0].cwd, "choices"), "a product past the cap keeps a choice list"
     assert str(runs[0].cwd) == "x/y"
+
+
+# --------------------------------------------------------------------------- what a launcher, a `-c` shell, eval and ssh are handed (#156caed2) ---------------------------------------------------------------------------
+
+# THE INNER COMMAND IS READ FROM THE EXPANDED WORDS. bash expands every word once before the command runs, so in `B=q; npx node $B` node is handed `q`. Before #156caed2 the walk built a launched command from the words as typed (`_quote_argv(argv)`): the launched node run held the literal `$B`, a double-quoted `bash -c "node $B"` payload was read in the child shell where an unexported B is unknown, and `N=bash; $N -c ...` was never read as a shell.
+# A word whose value the walk cannot know keeps its TYPED text (`_launch_words`), which block_unscoped_formatter_run leans on: it refuses `npx prettier --write $files` because the literal `$` survives. Each row is `(command, the run's name, the field read, the value it must hold)`; a field of "names" reads every run's name, "spans" the command-position text `_Analysis.names` records.
+U = shellscan._UNRESOLVED
+LAUNCHED_SHAPE_ROWS = [
+    ("B=q; npx node $B", "node", "argv", ["q"]),
+    ("B=q; npx node $B", "node", "launcher", "npx"),
+    ("B=q; npm exec -- node $B", "node", "argv", ["q"]),
+    ("B=q; npx -y node ${B}", "node", "argv", ["q"]),
+    (r"B=q; find . -exec node $B {} \;", "node", "argv", ["q", "{}"]),
+    (r"B=q; find . -exec node $B {} \;", "node", "launcher", "find"),
+    (r"B=q; find . -execdir node $B \;", "node", "argv", ["q"]),
+    (r"B=q; find . -ok node $B \;", "node", "argv", ["q"]),
+    (r"D=x; find $D -exec rm {} \;", "rm", "starts", ("x",)),
+    (r"E=-exec; find . $E node q \;", "node", "argv", ["q"]),
+    ("B=; npx node $B z", "node", "argv", ["z"]),
+    ("B=; npx node $B z", None, "spans", ["npx node $B z", "node $B z"]),
+    ('B=q; bash -c "node $B"', "node", "xargv", ["q"]),
+    ('B=q; sh -ec "node $B"', "node", "xargv", ["q"]),
+    ("B=q; bash -c 'node $B'", "node", "xargv", [U]),
+    ("N=bash; $N -c 'node x'", None, "names", ["bash", "node"]),
+    ("N=/bin/bash; ${N} -c 'node x'", None, "names", ["/bin/bash", "node"]),
+    ("O=-c; bash $O 'node x'", None, "names", ["bash", "node"]),
+    ("\"$BASH\" -c 'node x'", None, "names", ["$BASH"]),
+    ("G=git; $G push --force origin main", "git", "argv", ["push", "--force", "origin", "main"]),
+    ("B=q; env -S node $B", "node", "argv", ["q"]),
+    ('C="node q"; env -S "$C"', "node", "argv", ["q"]),
+    ('B=q; npx -c "node $B"', "node", "xargv", ["q"]),
+    ('B=q; bun exec "node $B"', "node", "xargv", ["q"]),
+    ('B="x; rm f"; eval "echo $B"', "rm", "argv", ["f"]),
+    ("C=docker; ssh prod-1 $C ps", "ssh", "remote", ("prod-1", "docker ps")),
+    ("B=q; echo $B | xargs node", "node", "feed_words", ["q"]),
+    ('B=q; echo "$B" | xargs node', "node", "feed_words", ["q"]),
+    ("B=q; xargs node <<< $B", "node", "feed_words", ["q"]),
+    ("B=q; xargs node <<EOF\n$B\nEOF", "node", "feed_words", ["q"]),
+    ("B=q; echo $B | xargs node", "node", "feed", "echo $B q"),
+    # The prefix commands were already right: the command after them is the run, and its operands are in `xargv`. Pinned so a change to the launcher path cannot move them.
+    ("B=q; sudo node $B", "node", "xargv", ["q"]),
+    ("B=q; timeout 5 node $B", "node", "xargv", ["q"]),
+    ("B=q; nohup node $B", "node", "xargv", ["q"]),
+    ("B=q; env node $B", "node", "xargv", ["q"]),
+    # SOUND UNKNOWN: a value the walk cannot know stays as typed, never `_UNRESOLVED`, inside a launched command.
+    ("npx prettier --write $files", "prettier", "argv", ["--write", "$files"]),
+    ('npx eslint --fix "$@"', "eslint", "argv", ["--fix", "$@"]),
+    ('B="a b"; npx node $B', "node", "argv", ["$B"]),
+    ("B='*.js'; npx node $B", "node", "argv", ["$B"]),
+    ("npx node $(cat f)", "node", "argv", ["$(cat f)"]),
+    ("B=q; echo ~$B | xargs node", "node", "feed_words", None),
+    ("echo $UNSET_Q | xargs node", "node", "feed_words", None),
+]
+
+# A planted walk that raises on a row has turned that row.
+_PLANT_CRASHES = (AttributeError, IndexError, KeyError, TypeError, ValueError)
+
+
+def _launched_field(module, cmd, name, field):
+    module._ANALYSIS_CACHE.clear()
+    if field == "names":
+        return [r.name for r in module.every_run(cmd)]
+    if field == "spans":
+        return [cmd[start:end] for start, _first_end, end in module._analyse(cmd).names]
+    hits = [r for r in module.every_run(cmd) if r.name == name]
+    if not hits:
+        return "<no %s run>" % name
+    run = hits[0]
+    if field == "launcher":
+        return run.launch.launcher if run.launch is not None else None
+    if field == "starts":
+        return run.launch.starts if run.launch is not None else None
+    return getattr(run, field)
+
+
+def _launched_wrong(module):
+    wrong = []
+    for cmd, name, what, want in LAUNCHED_SHAPE_ROWS:
+        try:
+            got = _launched_field(module, cmd, name, what)
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != want:
+            wrong.append((cmd, what, got, want))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_launched_and_payload_runs_read_the_expanded_words_156caed2():
+    wrong = _launched_wrong(shellscan)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+# WHAT THE INNER PROGRAM RECEIVES, ASKED OF bash 5. Each script runs `zzargv` (prints `<a><b>...` per call) through a launcher, a `-c` shell, eval or xargs, and the walk's runs named zzargv must hand it the same words: `xargv` plus the exact fed words. `B='$Y'` is the pair that separates the two readings: a `-c` payload is parsed again by the inner shell (`<in>`), a `find -exec` argv is executed as it stands (`<$Y>`).
+LAUNCHED_BASH_ROWS = [
+    ('B=X; find "{T}" -maxdepth 0 -exec zzargv $B \\;', "<X>\n"),
+    ('B=; find "{T}" -maxdepth 0 -exec zzargv $B z \\;', "<z>\n"),
+    ('unset B; find "{T}" -maxdepth 0 -exec zzargv x $B y \\;', "<x><y>\n"),
+    ('E=-exec; find "{T}" -maxdepth 0 $E zzargv X \\;', "<X>\n"),
+    ("B='$Y'; export Y=in; find \"{T}\" -maxdepth 0 -exec zzargv $B \\;", "<$Y>\n"),
+    ("B='$Y'; export Y=in; bash -c \"zzargv $B\"", "<in>\n"),
+    ('B=X; bash -c "zzargv $B"', "<X>\n"),
+    ("B='x y'; bash -c \"zzargv $B\"", "<x><y>\n"),
+    ('B="a; zzargv Y"; bash -c "zzargv $B"', "<a>\n<Y>\n"),
+    ('B="a; zzargv Y"; eval "zzargv $B"', "<a>\n<Y>\n"),
+    ("N=bash; $N -c 'zzargv X'", "<X>\n"),
+    ("O=-c; bash $O 'zzargv X'", "<X>\n"),
+    ("B=X; env -S zzargv $B", "<X>\n"),
+    ("B=X; echo $B | xargs zzargv", "<X>\n"),
+    ('B=X; echo "$B" | xargs zzargv', "<X>\n"),
+    ("B=X; xargs zzargv <<< $B", "<X>\n"),
+]
+
+# Where the value is not knowable, bash's answer is not what the walk claims, and the walk must claim NO value: the word stays typed (`$...`) or `_UNRESOLVED`.
+LAUNCHED_BASH_UNKNOWN_ROWS = [
+    ("B=X; bash -c 'zzargv $B'", "\n"),
+    ("B='a b'; find \"{T}\" -maxdepth 0 -exec zzargv $B \\;", "<a><b>\n"),
+    ('set -- a \'b c\'; find "{T}" -maxdepth 0 -exec zzargv "$@" \\;', "<a><b c>\n"),
+]
+
+
+def _walk_hands_zzargv(module, script):
+    module._ANALYSIS_CACHE.clear()
+    lines = []
+    for run in module.every_run(script):
+        if run.name == "zzargv":
+            words = [*(run.xargv or ()), *(run.feed_words or ())]
+            lines.append("".join("<%s>" % w for w in words) + "\n")
+    module._ANALYSIS_CACHE.clear()
+    return "".join(lines)
+
+
+def _launched_bash_wrong(module, bash_path, tmp_path):
+    wrong = []
+    for k, (script, want) in enumerate(LAUNCHED_BASH_ROWS):
+        fact = Fact("L%d" % k, "launched argv", script, want)
+        tmp = tmp_path / ("e%d" % k)
+        tmp.mkdir()
+        rc, out = run_bash(bash_path, fact, tmp)
+        assert (rc, out) == (0, want), "bash no longer hands zzargv %r for %s (rc %d)" % (
+            out,
+            script,
+            rc,
+        )
+        try:
+            got = _walk_hands_zzargv(module, _subst(script, tmp))
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != out:
+            wrong.append((script, got, out))
+    return wrong
+
+
+def test_the_launched_program_gets_the_argv_bash_hands_it_156caed2(bash, tmp_path):
+    wrong = _launched_bash_wrong(shellscan, bash, tmp_path)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+def test_an_unknowable_launched_word_claims_no_value_156caed2(bash, tmp_path):
+    for k, (script, want) in enumerate(LAUNCHED_BASH_UNKNOWN_ROWS):
+        fact = Fact("LU%d" % k, "launched argv, unknown", script, want)
+        tmp = tmp_path / ("u%d" % k)
+        tmp.mkdir()
+        assert run_bash(bash, fact, tmp) == (0, want), script
+        shellscan._ANALYSIS_CACHE.clear()
+        zz = [r for r in shellscan.every_run(_subst(script, tmp)) if r.name == "zzargv"]
+        assert zz, script
+        for run in zz:
+            words = run.xargv or []
+            assert any("$" in w or shellscan.unresolved(w) for w in words), (script, words)
+
+
+# THE PLANTS. Each puts one piece of the #156caed2 reading back the way it was (or breaks it the way a careless version would) in a copy of shellscan loaded from source, and must turn at least one row of the tables above red. A plant that turns none means the tables cannot see that piece.
+LAUNCHED_PLANTS = [
+    ("the launcher parses the typed words", "_launches(base, mixed)", "_launches(base, argv)"),
+    ("the -c payload read as typed", "_shell_payload(mixed)", "_shell_payload(argv)"),
+    (
+        "the command name read as typed",
+        "name = _expanded_name(words[0], before) or _word_value(words[0])",
+        "name = _word_value(words[0])",
+    ),
+    (
+        "an unknown word fed as _UNRESOLVED",
+        "mixed.append(_word_value(word) if _UNRESOLVED in value else value)",
+        "mixed.append(value)",
+    ),
+    (
+        "a vanished word kept",
+        "        if value is None:\n            continue\n        mixed.append(",
+        "        if value is None:\n            value = ''\n        mixed.append(",
+    ),
+    (
+        "the -c payload re-quoted",
+        "                self.nested(\n                    payload,",
+        "                self.nested(\n                    _quote_argv([payload]),",
+    ),
+    (
+        "launched words not re-quoted",
+        'src = launched if how == "text" else _quote_argv(launched)',
+        'src = launched if how == "text" else " ".join(launched)',
+    ),
+    (
+        "the span not mapped back through keep",
+        "words[1 + keep[span[0]]], words[1 + keep[span[1]]]",
+        "words[1 + span[0]], words[1 + span[1]]",
+    ),
+    (
+        "eval reads the typed words",
+        '                " ".join(mixed),',
+        '                " ".join(argv),',
+    ),
+    ("ssh reads the typed words", "_ssh_remote(mixed)", "_ssh_remote(argv)"),
+    (
+        "env -S reads the typed words",
+        "rest = _quote_argv(_launch_words(words, before)[1])",
+        "rest = _quote_argv([_word_value(w) for w in words])",
+    ),
+    (
+        "a fed word holding a variable is unknown",
+        "got = _expanded_fed_word(word, shell, True)",
+        "got = None",
+    ),
+]
+
+
+def _planted_shellscan(old, new):
+    src = (HOOKS / "shellscan.py").read_text(encoding="utf-8")
+    assert src.count(old) == 1, "plant %r no longer applies to shellscan" % old
+    module = types.ModuleType("planted_shellscan")
+    module.__file__ = str(HOOKS / "shellscan.py")
+    exec(compile(src.replace(old, new), module.__file__, "exec"), module.__dict__)
+    return module
+
+
+@pytest.mark.parametrize(
+    ("label", "old", "new"), LAUNCHED_PLANTS, ids=[p[0] for p in LAUNCHED_PLANTS]
+)
+def test_each_launched_plant_turns_a_row_156caed2(bash, tmp_path, label, old, new):
+    module = _planted_shellscan(old, new)
+    turned = _launched_wrong(module) + _launched_bash_wrong(module, bash, tmp_path)
+    assert turned, "plant %r turns no row: the tables cannot see it" % label
