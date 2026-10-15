@@ -1840,6 +1840,7 @@
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
         "discoveringRegions": "Kullanılabilir bölgeler keşfediliyor...",
         "edgeSeparator": "Edge Kanalı",
+        "emptyToken": "API belirteci boş olamaz (stdin'den belirteç gelmedi).",
         "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
         "machines": "Makineler: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} makine slotu sınırın üzerinde.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "API belirteci (rdt_...)",
+    "apiToken": "API belirteci (rdt_...). stdin'den okumak için `-` geçin (belirteç süreç listesinde görünmez).",
     "artifactRef": "Yedek artefakt referansı (repo[:tag][@place])",
     "background": "Makinede ayrık bir görev olarak çalıştır: kimliğini yazdır ve çık",
     "cleanupAll": "Tüm rediacc SSH yapılandırmalarını kaldırın",

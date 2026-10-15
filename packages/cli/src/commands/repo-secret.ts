@@ -53,6 +53,7 @@ import {
   ValidationError,
 } from '../utils/errors.js';
 import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { readStdinValue } from '../utils/stdin.js';
 
 function emit(draft: AuditEventDraft): void {
   try {
@@ -79,16 +80,6 @@ interface SecretUnsetOptions {
   key: string;
   current?: string;
   rotateSecret?: boolean;
-}
-
-async function readValueFromStdin(): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk as Buffer);
-  }
-  // Strip a single trailing newline (common from `echo`/`cat`); preserve
-  // intentional internal newlines (multi-line PEMs etc.).
-  return Buffer.concat(chunks).toString('utf-8').replace(/\n$/, '');
 }
 
 function hashValue(s: string): string {
@@ -223,7 +214,7 @@ async function handleSecretSet(ref: string, options: SecretSetOptions): Promise<
 
   // Mutating verb: resolve through the addressing model without readOnly.
   const { repoKey } = await resolveSecretRepoKey(ref);
-  const value = options.value === '-' ? await readValueFromStdin() : options.value;
+  const value = options.value === '-' ? await readStdinValue() : options.value;
   if (value.length === 0) {
     throw new ValidationError(t('errors.repo.secret.emptyValue'));
   }

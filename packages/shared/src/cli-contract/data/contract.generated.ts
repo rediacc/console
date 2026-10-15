@@ -12412,7 +12412,7 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "sensitive": true,
           "descriptionKey": "options.apiToken",
-          "label": "API token (rdt_...)"
+          "label": "API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list)."
         },
         {
           "flags": "--server <url>",

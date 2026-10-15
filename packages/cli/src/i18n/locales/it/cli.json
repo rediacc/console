@@ -1840,6 +1840,7 @@
         "description": "Autentica tramite browser o token API",
         "discoveringRegions": "Rilevamento delle regioni disponibili in corso...",
         "edgeSeparator": "Canale Edge",
+        "emptyToken": "Il token API non può essere vuoto (stdin non ha fornito alcun token).",
         "expired": "Autorizzazione scaduta. Riprova.",
         "machines": "Macchine: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} slot macchina oltre il limite.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "Token API (rdt_...)",
+    "apiToken": "Token API (rdt_...). Passa `-` per leggerlo da stdin (resta fuori dall'elenco dei processi).",
     "artifactRef": "Riferimento all'artefatto di backup (repo[:tag][@luogo])",
     "background": "Esegui come job disconnesso sulla macchina: stampa il suo id ed esci",
     "cleanupAll": "Rimuovi tutte le configurazioni SSH di rediacc",

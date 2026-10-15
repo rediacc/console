@@ -1840,6 +1840,7 @@
         "description": "브라우저 또는 API 토큰으로 인증합니다",
         "discoveringRegions": "사용 가능한 지역 검색 중...",
         "edgeSeparator": "Edge 채널",
+        "emptyToken": "API 토큰은 비워 둘 수 없습니다 (stdin에서 토큰을 받지 못했습니다).",
         "expired": "인증 시간이 초과되었습니다. 다시 시도하세요.",
         "machines": "머신: {{active}}/{{max}}",
         "machinesOverLimit": "  머신 슬롯 {{count}}개가 한도를 초과했습니다.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "API 토큰 (rdt_...)",
+    "apiToken": "API 토큰 (rdt_...). 프로세스 목록에 노출되지 않도록 `-`를 전달하여 stdin에서 읽으십시오.",
     "artifactRef": "백업 아티팩트 참조 (repo[:tag][@place])",
     "background": "머신에서 분리된 작업으로 실행합니다: ID를 출력하고 종료합니다",
     "cleanupAll": "모든 rediacc SSH 구성 제거",

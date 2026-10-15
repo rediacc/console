@@ -21,6 +21,7 @@ import { telemetryService } from '../services/telemetry/telemetry.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { promptRegionSelection } from '../utils/region-prompt.js';
 import { withSpinner } from '../utils/spinner.js';
+import { readStdinValue } from '../utils/stdin.js';
 import {
   executeAccountRefresh,
   executeMachineRefresh,
@@ -181,6 +182,15 @@ function renderLoginSummary(
   }
 }
 
+/** The `--token` value, or, for `-`, the token read from stdin: that form keeps the token off argv and out of the process list. An empty token is refused. */
+export async function resolveLoginToken(option: string): Promise<string> {
+  const token = option === '-' ? (await readStdinValue()).trim() : option;
+  if (token.length === 0) {
+    throw new ValidationError(t('commands.subscription.login.emptyToken'));
+  }
+  return token;
+}
+
 export function registerSubscriptionCommands(program: Command): void {
   const sub = program
     .command('subscription')
@@ -205,7 +215,7 @@ export function registerSubscriptionCommands(program: Command): void {
 
         if (options.token) {
           // Direct token mode (fallback)
-          const token = options.token;
+          const token = await resolveLoginToken(options.token as string);
           const status = await withSpinner(
             t('commands.subscription.login.validating'),
             () =>

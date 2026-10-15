@@ -1840,6 +1840,7 @@
         "description": "WebポータルのAPIトークンで認証",
         "discoveringRegions": "利用可能なリージョンを検出中...",
         "edgeSeparator": "Edge チャンネル",
+        "emptyToken": "APIトークンを空にすることはできません（stdin からトークンが渡されませんでした）。",
         "expired": "認証がタイムアウトしました。もう一度お試しください。",
         "machines": "マシン: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} 件のマシンスロットが上限を超えています。",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "APIトークン (rdt_...)",
+    "apiToken": "APIトークン (rdt_...)。`-` を渡すと stdin から読み取ります（プロセス一覧に表示されません）。",
     "artifactRef": "バックアップアーティファクトの参照（repo[:tag][@place]）",
     "background": "マシン上でデタッチジョブとして実行する: ID を出力して終了する",
     "cleanupAll": "すべての rediacc SSH 設定を削除する",

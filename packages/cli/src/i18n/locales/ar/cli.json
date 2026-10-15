@@ -1840,6 +1840,7 @@
         "description": "المصادقة باستخدام رمز API من بوابة الويب",
         "discoveringRegions": "جارٍ اكتشاف المناطق المتاحة...",
         "edgeSeparator": "قناة Edge",
+        "emptyToken": "لا يمكن أن يكون رمز API فارغًا (لم يقدّم stdin أي رمز).",
         "expired": "انتهت مهلة التفويض. يرجى المحاولة مرة أخرى.",
         "machines": "الأجهزة: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} من حصص الأجهزة تتجاوز الحد.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "رمز API (rdt_...)",
+    "apiToken": "رمز API (rdt_...). مرر `-` لقراءته من stdin (يبقيه خارج قائمة العمليات).",
     "artifactRef": "مرجع عنصر النسخة الاحتياطية (repo[:tag][@place])",
     "background": "التشغيل كمهمة منفصلة على الجهاز: طباعة معرّفها ثم الخروج",
     "cleanupAll": "إزالة جميع إعدادات SSH الخاصة بـ rediacc",

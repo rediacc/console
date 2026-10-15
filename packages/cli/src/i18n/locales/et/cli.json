@@ -1840,6 +1840,7 @@
         "description": "Autentimine brauseri või API tokeni kaudu",
         "discoveringRegions": "Saadaolevaid piirkondi tuvastatakse...",
         "edgeSeparator": "Edge kanal",
+        "emptyToken": "API-token ei tohi olla tühi (stdin ei andnud tokenit).",
         "expired": "Autoriseerimine aegus. Palun proovi uuesti.",
         "machines": "Masinad: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} masinakoht(a) ületab limiiti.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "API-token (rdt_...)",
+    "apiToken": "API-token (rdt_...). Anna `-`, et lugeda see stdin-ist (nii ei satu see protsesside loendisse).",
     "artifactRef": "Varukoopia artefakti viide (repo[:tag][@place])",
     "background": "Käivita masinal eraldiseisva tööna: prindi selle ID ja välju",
     "cleanupAll": "Eemalda kõik Rediacc SSH-konfiguratsioonid",

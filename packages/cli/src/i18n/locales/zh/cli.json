@@ -1840,6 +1840,7 @@
         "description": "使用Web门户的API令牌进行认证",
         "discoveringRegions": "正在发现可用区域...",
         "edgeSeparator": "Edge 频道",
+        "emptyToken": "API令牌不能为空（stdin 未提供令牌）。",
         "expired": "授权已超时。请重试。",
         "machines": "机器: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} 个机器名额超出限制。",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "API令牌 (rdt_...)",
+    "apiToken": "API令牌 (rdt_...)。传递 `-` 以从 stdin 读取（令牌不会出现在进程列表中）。",
     "artifactRef": "备份产物引用（repo[:tag][@place]）",
     "background": "作为分离的任务在机器上运行：打印其 id 并退出",
     "cleanupAll": "移除所有 rediacc SSH 配置",
