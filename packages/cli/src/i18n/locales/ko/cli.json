@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "라이선스 발급에 실패했습니다. 구독이 활성 상태이고 머신 슬롯이 사용 가능한지 확인하세요.",
-      "notLoggedIn": "로그인되어 있지 않습니다. 일반 사용자는 `rdc subscription login`을 실행하세요. 자동화 환경에서는 `rdc subscription login --token <token>`을 실행하거나 `REDIACC_SUBSCRIPTION_TOKEN`을 설정하세요.",
-      "tokenRequired": "구독 토큰이 필요합니다. REDIACC_SUBSCRIPTION_TOKEN 환경 변수를 설정하거나, 터미널에서 `rdc subscription login`을 실행하세요.",
-      "tokenWarning": "구독 토큰을 찾을 수 없습니다. 라이선스가 필요한 명령(repo create, repo fork)이 실패할 수 있습니다. REDIACC_SUBSCRIPTION_TOKEN 환경 변수를 설정하거나 터미널에서 `rdc subscription login`을 실행하세요.",
+      "notLoggedIn": "로그인되어 있지 않습니다. 일반 사용자는 `rdc subscription login`을 실행하세요. 자동화 환경에서는 `rdc subscription login --token <token>`을 실행하거나 `REDIACC_TOKEN`을 설정하세요.",
+      "tokenRequired": "구독 토큰이 필요합니다. REDIACC_TOKEN 환경 변수를 설정하거나, 터미널에서 `rdc subscription login`을 실행하세요.",
+      "tokenWarning": "구독 토큰을 찾을 수 없습니다. 라이선스가 필요한 명령(repo create, repo fork)이 실패할 수 있습니다. REDIACC_TOKEN 환경 변수를 설정하거나 터미널에서 `rdc subscription login`을 실행하세요.",
       "ipRebind": {
         "prompt": "IP 주소가 바뀌었습니다. 이 로그인을 여기로 옮기려면 인증 앱에 표시된 6자리 코드를 입력하세요:",
         "moved": "이제 이 로그인은 {{ip}}에서 사용할 수 있습니다.",

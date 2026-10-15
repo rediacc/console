@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "Ошибка активации машины. Убедитесь, что ваша подписка активна и слот машины доступен.",
-      "notLoggedIn": "Вы не вошли в систему. Сначала выполните `rdc subscription login`.",
-      "tokenRequired": "Требуется токен подписки. Установите переменную окружения REDIACC_SUBSCRIPTION_TOKEN или выполните `rdc subscription login` в вашем терминале.",
-      "tokenWarning": "Токен подписки не найден. Команды, требующие лицензию (repo create, repo fork), завершатся ошибкой. Установите переменную окружения REDIACC_SUBSCRIPTION_TOKEN или выполните `rdc subscription login` в вашем терминале.",
+      "notLoggedIn": "Вы не вошли в систему. При работе вручную выполните `rdc subscription login`. В автоматизации выполните `rdc subscription login --token <token>` или задайте `REDIACC_TOKEN`.",
+      "tokenRequired": "Требуется токен подписки. Установите переменную окружения REDIACC_TOKEN или выполните `rdc subscription login` в вашем терминале.",
+      "tokenWarning": "Токен подписки не найден. Команды, требующие лицензию (repo create, repo fork), завершатся ошибкой. Установите переменную окружения REDIACC_TOKEN или выполните `rdc subscription login` в вашем терминале.",
       "ipRebind": {
         "prompt": "Ваш IP-адрес изменился. Введите 6-значный код из приложения-аутентификатора, чтобы перенести этот вход сюда:",
         "moved": "Теперь этот вход работает с адреса {{ip}}.",

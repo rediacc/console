@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1840,
-    "sourceCommit": "82e9d8bc2e77e4d1a047966aebb5ab00d3dfbe4c"
+    "sourceCommit": "d105deb15904d85c2e1e522e595c108e9af950f9"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1663,9 +1663,9 @@
     "errors.subscription.ipRebind.replayed": "23ee3fe6",
     "errors.subscription.ipRebind.stillMismatched": "3b98d649",
     "errors.subscription.ipRebind.wrongCode": "0c171665",
-    "errors.subscription.notLoggedIn": "227ab3be",
-    "errors.subscription.tokenRequired": "0aa58597",
-    "errors.subscription.tokenWarning": "bd7bbcd0",
+    "errors.subscription.notLoggedIn": "6b23daed",
+    "errors.subscription.tokenRequired": "74539d0c",
+    "errors.subscription.tokenWarning": "c348054c",
     "errors.sync.absolutePathBlocked": "0a961d95",
     "errors.sync.localPathNotFound": "714ed972",
     "errors.sync.mirrorWithFile": "cb78397d",

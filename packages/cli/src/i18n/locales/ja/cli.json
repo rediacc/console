@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "マシンの有効化に失敗しました。サブスクリプションがアクティブで、マシンスロットが利用可能であることを確認してください。",
-      "notLoggedIn": "ログインしていません。先に `rdc subscription login` を実行してください。",
-      "tokenRequired": "サブスクリプショントークンが必要です。環境変数 REDIACC_SUBSCRIPTION_TOKEN を設定するか、ターミナルで `rdc subscription login` を実行してください。",
-      "tokenWarning": "サブスクリプショントークンが見つかりません。ライセンスが必要なコマンド (repo create、repo fork) は失敗します。環境変数 REDIACC_SUBSCRIPTION_TOKEN を設定するか、ターミナルで `rdc subscription login` を実行してください。",
+      "notLoggedIn": "ログインしていません。手動で操作する場合は `rdc subscription login` を実行してください。自動化では `rdc subscription login --token <token>` を実行するか、`REDIACC_TOKEN` を設定してください。",
+      "tokenRequired": "サブスクリプショントークンが必要です。環境変数 REDIACC_TOKEN を設定するか、ターミナルで `rdc subscription login` を実行してください。",
+      "tokenWarning": "サブスクリプショントークンが見つかりません。ライセンスが必要なコマンド (repo create、repo fork) は失敗します。環境変数 REDIACC_TOKEN を設定するか、ターミナルで `rdc subscription login` を実行してください。",
       "ipRebind": {
         "prompt": "IP アドレスが変わりました。このログインをここへ移すには、認証アプリに表示される 6 桁のコードを入力してください:",
         "moved": "このログインは {{ip}} から使えるようになりました。",

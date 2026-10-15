@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "机器激活失败。请确保您的订阅处于活动状态且机器插槽可用。",
-      "notLoggedIn": "未登录。请先运行 `rdc subscription login`。",
-      "tokenRequired": "需要订阅令牌。请设置环境变量 REDIACC_SUBSCRIPTION_TOKEN，或在终端中运行 `rdc subscription login`。",
-      "tokenWarning": "未找到订阅令牌。需要许可证的命令 (repo create、repo fork) 将失败。请设置环境变量 REDIACC_SUBSCRIPTION_TOKEN 或在终端中运行 `rdc subscription login`。",
+      "notLoggedIn": "未登录。手动操作请运行 `rdc subscription login`。自动化场景请运行 `rdc subscription login --token <token>`，或设置 `REDIACC_TOKEN`。",
+      "tokenRequired": "需要订阅令牌。请设置环境变量 REDIACC_TOKEN，或在终端中运行 `rdc subscription login`。",
+      "tokenWarning": "未找到订阅令牌。需要许可证的命令 (repo create、repo fork) 将失败。请设置环境变量 REDIACC_TOKEN 或在终端中运行 `rdc subscription login`。",
       "ipRebind": {
         "prompt": "你的 IP 地址已变化。输入身份验证器应用中的 6 位验证码，即可把此登录迁移到这里：",
         "moved": "此登录现在可以从 {{ip}} 使用了。",

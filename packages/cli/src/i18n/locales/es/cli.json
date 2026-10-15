@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "Error en la activación de la máquina. Asegúrese de que su suscripción esté activa y que la ranura de máquina esté disponible.",
-      "notLoggedIn": "No ha iniciado sesión. Ejecute primero `rdc subscription login`.",
-      "tokenRequired": "Se requiere token de suscripción. Establezca la variable de entorno REDIACC_SUBSCRIPTION_TOKEN o ejecute `rdc subscription login` en su terminal.",
-      "tokenWarning": "No se encontró token de suscripción. Los comandos que requieren licencia (repo create, repo fork) fallarán. Establezca la variable de entorno REDIACC_SUBSCRIPTION_TOKEN o ejecute `rdc subscription login` en su terminal.",
+      "notLoggedIn": "No ha iniciado sesión. Si trabaja de forma manual, ejecute `rdc subscription login`. En automatización, ejecute `rdc subscription login --token <token>` o defina `REDIACC_TOKEN`.",
+      "tokenRequired": "Se requiere token de suscripción. Establezca la variable de entorno REDIACC_TOKEN o ejecute `rdc subscription login` en su terminal.",
+      "tokenWarning": "No se encontró token de suscripción. Los comandos que requieren licencia (repo create, repo fork) fallarán. Establezca la variable de entorno REDIACC_TOKEN o ejecute `rdc subscription login` en su terminal.",
       "ipRebind": {
         "prompt": "Tu dirección IP ha cambiado. Introduce el código de 6 dígitos de tu app de autenticación para trasladar este inicio de sesión aquí:",
         "moved": "Este inicio de sesión ya funciona desde {{ip}}.",

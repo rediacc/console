@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "Makine etkinleştirme başarısız. Aboneliğinizin aktif olduğundan ve makine yuvasının mevcut olduğundan emin olun.",
-      "notLoggedIn": "Giriş yapılmamış. Önce `rdc subscription login` komutunu çalıştırın.",
-      "tokenRequired": "Abonelik jetonu gerekli. REDIACC_SUBSCRIPTION_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın.",
-      "tokenWarning": "Abonelik jetonu bulunamadı. Lisans gerektiren komutlar (repo create, repo fork) başarısız olacak. REDIACC_SUBSCRIPTION_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın.",
+      "notLoggedIn": "Giriş yapılmamış. Elle çalışıyorsanız `rdc subscription login` komutunu çalıştırın. Otomasyonda `rdc subscription login --token <token>` komutunu çalıştırın veya `REDIACC_TOKEN` değişkenini ayarlayın.",
+      "tokenRequired": "Abonelik jetonu gerekli. REDIACC_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın.",
+      "tokenWarning": "Abonelik jetonu bulunamadı. Lisans gerektiren komutlar (repo create, repo fork) başarısız olacak. REDIACC_TOKEN ortam değişkenini ayarlayın veya terminalinizde `rdc subscription login` çalıştırın.",
       "ipRebind": {
         "prompt": "IP adresiniz değişti. Bu oturumu buraya taşımak için kimlik doğrulama uygulamanızdaki 6 haneli kodu girin:",
         "moved": "Bu oturum artık {{ip}} adresinden çalışıyor.",

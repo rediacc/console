@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "فشل تفعيل الجهاز. تأكد من أن اشتراكك نشط وأن فتحة الجهاز متاحة.",
-      "notLoggedIn": "لم يتم تسجيل الدخول. شغّل `rdc subscription login` أولاً.",
-      "tokenRequired": "رمز الاشتراك مطلوب. قم بتعيين متغير البيئة REDIACC_SUBSCRIPTION_TOKEN، أو شغّل `rdc subscription login` في طرفيتك.",
-      "tokenWarning": "لم يتم العثور على رمز اشتراك. ستفشل الأوامر التي تتطلب ترخيصًا (repo create، repo fork). قم بتعيين متغير البيئة REDIACC_SUBSCRIPTION_TOKEN أو شغّل `rdc subscription login` في طرفيتك.",
+      "notLoggedIn": "لم يتم تسجيل الدخول. إذا كنت تعمل يدويًا، شغّل `rdc subscription login`. وفي الأتمتة، شغّل `rdc subscription login --token <token>` أو عيّن `REDIACC_TOKEN`.",
+      "tokenRequired": "رمز الاشتراك مطلوب. قم بتعيين متغير البيئة REDIACC_TOKEN، أو شغّل `rdc subscription login` في طرفيتك.",
+      "tokenWarning": "لم يتم العثور على رمز اشتراك. ستفشل الأوامر التي تتطلب ترخيصًا (repo create، repo fork). قم بتعيين متغير البيئة REDIACC_TOKEN أو شغّل `rdc subscription login` في طرفيتك.",
       "ipRebind": {
         "prompt": "تغيّر عنوان IP الخاص بك. أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة لنقل تسجيل الدخول هذا إلى هنا:",
         "moved": "أصبح تسجيل الدخول هذا يعمل الآن من {{ip}}.",

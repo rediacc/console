@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "Falha na emissão da licença. Certifique-se de que a subscrição está ativa e existe um slot de máquina disponível.",
-      "notLoggedIn": "Sessão não iniciada. Utilizadores devem executar `rdc subscription login`. Automação deve executar `rdc subscription login --token <token>` ou definir `REDIACC_SUBSCRIPTION_TOKEN`.",
-      "tokenRequired": "Token de subscrição necessário. Defina a variável de ambiente REDIACC_SUBSCRIPTION_TOKEN ou execute `rdc subscription login` no terminal.",
-      "tokenWarning": "Nenhum token de subscrição encontrado. Comandos que requerem licença (repo create, repo fork) irão falhar. Defina a variável de ambiente REDIACC_SUBSCRIPTION_TOKEN ou execute `rdc subscription login` no terminal.",
+      "notLoggedIn": "Sessão não iniciada. Utilizadores devem executar `rdc subscription login`. Automação deve executar `rdc subscription login --token <token>` ou definir `REDIACC_TOKEN`.",
+      "tokenRequired": "Token de subscrição necessário. Defina a variável de ambiente REDIACC_TOKEN ou execute `rdc subscription login` no terminal.",
+      "tokenWarning": "Nenhum token de subscrição encontrado. Comandos que requerem licença (repo create, repo fork) irão falhar. Defina a variável de ambiente REDIACC_TOKEN ou execute `rdc subscription login` no terminal.",
       "ipRebind": {
         "prompt": "O seu endereço IP mudou. Introduza o código de 6 dígitos da sua app de autenticação para transferir esta sessão para aqui:",
         "moved": "Esta sessão já funciona a partir de {{ip}}.",
