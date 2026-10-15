@@ -45,7 +45,7 @@ It refuses rather than skips. With no store credentials it exits 1 saying so, be
 
 Proven in both directions on 2026-08-14: with `rediacc-releases` it reports the bucket exists and exits 0; with a nonexistent bucket name it reports `404` and exits 1.
 
-Once you have created a bucket:
+Once a test bucket exists (substitute it and the other `<...>` values):
 
 ```bash
 ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
@@ -84,7 +84,7 @@ The preflight fails if `ACCOUNT_BACKUP_R2_GRANT_PARENT_SECRET` is set, on the gr
 
 ### 2.3 The copy-paste block
 
-Substitute your account id and the key pair, then run from the repo root:
+Substitute the account id, the test bucket and the key pair (every `<...>` below), then run from the repo root:
 
 ```bash
 # 1. Confirm the bucket exists and the credentials are scoped to it (read-only).
