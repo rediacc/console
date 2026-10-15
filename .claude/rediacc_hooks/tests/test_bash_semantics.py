@@ -2556,6 +2556,14 @@ LAUNCHED_SHAPE_ROWS = [
     ('N=" "; $N node q', None, "names", ["node"]),
     ('N="env node"; $N q', "node", "argv", ["q"]),
     ("N=; $N node q", None, "spans", ["node q"]),
+    # A SPLIT NAME'S PREFIX COMMANDS ARE ITS `via` (review 2e50ca28.1, refuted at d73b26844 and pinned here): the slice is taken over the rewritten words, so `env` and `xargs` that came out of `$N` are named.
+    ('N="env node"; $N q', "node", "via", ("env",)),
+    ('N="xargs rm"; echo a | $N', "rm", "via", ("xargs",)),
+    ('N="sudo xargs rm"; echo a | $N', "rm", "via", ("sudo", "xargs")),
+    # ONE TYPED WORD, ONE SPAN (review 2e50ca28.3): the first field takes `$N`, a later one an empty span at its end, so the text reads `$N` once. At d73b26844 both runs of the first row read `$N q`, and the second row's `$N q`.
+    ('N="npx node"; $N q', None, "spans", ["$N q", " q"]),
+    ('N="env node"; $N q', None, "spans", [" q"]),
+    ('N="bash -e"; $N -c "node q"', None, "spans", ['$N -c "node q"']),
     # SOUND UNKNOWN: a glob, a field holding a `$`, a quoted name, an assigned IFS and a promoted word bash reads as a command name and not as an assignment all keep the typed name.
     ('N="a*"; $N -c "node q"', None, "names", ["$N"]),
     ("N='bash $X'; $N -c \"node q\"", None, "names", ["$N"]),
@@ -2632,6 +2640,7 @@ LAUNCHED_BASH_ROWS = [
     ("N=; M=; $N $M env zzargv X", "<X>\n"),
     ('N="env zzargv"; $N X', "<X>\n"),
     ("IFS=; B='a b'; find \"{T}\" -maxdepth 0 -exec zzargv $B \\;", "<a b>\n"),
+    ('N="xargs zzargv"; echo X | $N', "<X>\n"),
 ]
 
 # Where the value is not knowable, bash's answer is not what the walk claims, and the walk must claim NO value: the word stays typed (`$...`) or `_UNRESOLVED`.
@@ -2797,6 +2806,9 @@ NAME_GUARD_ROWS = (
     ("N=; M=; $N $M env rm .claude/settings.json", 2),
     ('N="env rm"; $N .claude/settings.json', 2),
     ("N=; sudo $N rm .claude/settings.json", 2),
+    # review 2e50ca28.1: xargs out of a split name feeds rm the protected path (refused at d73b26844 too; pinned).
+    ('N="xargs rm"; echo .claude/settings.json | $N', 2),
+    ('N="xargs cat"; echo .claude/settings.json | $N', 0),
     ('N=; $N bash -c "cat .claude/settings.json"', 0),
     ('N="bash -e"; $N -c "echo rm .claude/settings.json"', 0),
     ('N="env cat"; $N .claude/settings.json', 0),
@@ -2870,3 +2882,233 @@ def test_the_feed_rows_see_the_appended_values_read_as_stdin_a7b3a36f():
         "    if run.feed_values is not None:\n", "    if run.feed_values is not None and False:\n"
     )
     assert _feed_wrong(module), "the feed rows cannot see the expanded values read as stdin"
+
+
+# A REDIRECT TARGET IS READ AS BASH EXPANDS IT (#4deea064). Each row runs in a fresh scratch directory under real bash and names the one file bash creates there (None for none), then `write_targets` must name that file, beside the typed text, and nothing the row lists as not written. At d73b26844 every known row named the typed `$D...` alone. bash expands a redirect like an argument and then needs ONE field, so a value that splits, globs or vanishes is "ambiguous redirect" and the walk keeps the typed word; a group's redirect is opened before its body runs, a command's before its own prefix assignments, and a bare assignment's after them.
+REDIRECT_ROWS = [
+    ("D=a; echo hi > $D.out", "a.out", ["$D.out", "a.out"]),
+    ('mkdir a; D=a; echo hi >> "$D/y"', "a/y", ["$D/y", "a/y"]),
+    ("D=x; echo hi > ${D}y", "xy", ["${D}y", "xy"]),
+    ("D=a; { D=b; echo hi; } > $D.out", "a.out", ["$D.out", "a.out"]),
+    ("D=a; ( D=b; echo hi ) > $D.out", "a.out", ["$D.out", "a.out"]),
+    ("D=a; D=b echo hi > $D.out", "a.out", ["$D.out", "a.out"]),
+    ("D=a; D=b > $D.out", "b.out", ["$D.out", "b.out"]),
+    ('D="p q"; echo hi > $D', None, ["$D"]),
+    ("E=; echo hi > $E", None, ["$E"]),
+    ("IFS=:; D=p:q; echo hi > $D", None, ["$D"]),
+    ('touch ab; D="a*"; echo hi > $D', "ab", ["$D"]),
+    ("X=1; echo hi >&$X", None, []),
+]
+
+
+def _created(tmp):
+    """The files a row's script left in its scratch directory, relative, beside the stubs and the home the harness builds."""
+    return sorted(
+        str(p.relative_to(tmp))
+        for p in tmp.rglob("*")
+        if p.is_file() and p.relative_to(tmp).parts[0] not in ("bin", "home")
+    )
+
+
+def _redirect_wrong(module, bash_path, tmp_path):
+    wrong = []
+    for k, (script, written, want) in enumerate(REDIRECT_ROWS):
+        tmp = tmp_path / ("r%d" % k)
+        tmp.mkdir()
+        run_bash(bash_path, Fact("R%d" % k, "redirect target", script), tmp)
+        created = [f for f in _created(tmp) if f != "ab" or written == "ab"]
+        assert created == ([written] if written else []), "bash wrote %r for %s" % (created, script)
+        module._ANALYSIS_CACHE.clear()
+        try:
+            got = module.write_targets(script)
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != want:
+            wrong.append((script, got, want))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_a_redirect_target_is_read_as_bash_expands_it_4deea064(bash, tmp_path):
+    wrong = _redirect_wrong(shellscan, bash, tmp_path)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+def test_a_run_carries_its_expanded_redirects_4deea064():
+    shellscan._ANALYSIS_CACHE.clear()
+    run = next(r for r in shellscan.every_run("cd s && D=x; echo hi > $D/y") if r.name == "echo")
+    assert (run.writes, run.xwrites, shellscan.redirect_targets(run)) == (
+        ["$D/y"],
+        ["x/y"],
+        ["$D/y", "x/y"],
+    )
+    assert [
+        m.target
+        for m in shellscan.earlier_mutators("D=m; echo x > $D; git commit -F m", "git commit")
+    ] == ["$D", "m"]
+
+
+# AN IN-PLACE OPTION IS READ AS BASH EXPANDS IT (#4deea064). Each row edits `f` (holding `a`) under real bash; the run is in place exactly when bash changed the file, and then `f` is among the files it rewrites. At d73b26844 the first three read `$F` as the script and answered None.
+IN_PLACE_ROWS = [
+    ("printf 'a\\n' > f; F=-i; sed $F s/a/b/ f", "sed", True),
+    ("printf 'a\\n' > f; F=-i.bak; sed $F s/a/b/ f", "sed", True),
+    ("printf 'a\\n' > f; F=-pi; perl $F -e 's/a/b/' f", "perl", True),
+    ("printf 'a\\n' > f; sed -i s/a/b/ f", "sed", True),
+    ("printf 'a\\n' > f; F=-n; sed $F p f", "sed", False),
+    ("printf 'a\\n' > f; F=-p; perl $F -e 's/a/b/' f", "perl", False),
+]
+
+
+def _in_place_wrong(module, bash_path, tmp_path):
+    wrong = []
+    for k, (script, name, edits) in enumerate(IN_PLACE_ROWS):
+        tmp = tmp_path / ("i%d" % k)
+        tmp.mkdir()
+        run_bash(bash_path, Fact("I%d" % k, "in place", script), tmp)
+        changed = (tmp / "f").read_text(encoding="utf-8") != "a\n"
+        assert changed == edits, "bash %s f for %s" % ("edited" if changed else "left", script)
+        module._ANALYSIS_CACHE.clear()
+        try:
+            run = next(r for r in module.every_run(script) if r.name == name)
+            edit = module.in_place_edit(run)
+            got: object = edit is not None and "f" in edit[1]
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != edits:
+            wrong.append((script, got, edits))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_an_in_place_option_is_read_as_bash_expands_it_4deea064(bash, tmp_path):
+    wrong = _in_place_wrong(shellscan, bash, tmp_path)
+    assert not wrong, "\n".join(map(repr, wrong))
+    # A run a caller builds without `xargv` is read as typed, as before.
+    built = types.SimpleNamespace(name="sed", argv=["-i", "s/a/b/", "f"])
+    assert shellscan.in_place_edit(built) == (["s/a/b/"], ["f"])
+
+
+# A COPY CARRIES ITS SOURCE (#3ff3bb16). The scratch directory holds `src.py` (prints 1), `src2.py` and an empty `d/`; each row runs under real bash, which prints what the copied script prints, and `interpreter_program` must read the copy the interpreter runs as that text, or as unjudgeable where the copy's content is not knowable here. At d73b26844 the `file` rows were "unjudgeable" (the content of every copy was unknown) or, for a copy into a directory, `(None, None)`: the landing was never recorded, so the disk was read before the copy ran.
+COPY_ROWS = [
+    ("cp {T}/src.py {T}/dst.py && python3 {T}/dst.py", "1\n", "file"),
+    ("cp {T}/src.py {T}/d/ && python3 {T}/d/src.py", "1\n", "file"),
+    ("cp -t {T}/d {T}/src.py && python3 {T}/d/src.py", "1\n", "file"),
+    ("S={T}/src.py; cp $S {T}/dst.py && python3 {T}/dst.py", "1\n", "file"),
+    (
+        "printf 'print(2)\\n' > {T}/w.py && cp {T}/w.py {T}/dst.py && python3 {T}/dst.py",
+        "2\n",
+        "file",
+    ),
+    ("cp -n {T}/src.py {T}/dst.py && python3 {T}/dst.py", "1\n", "unjudgeable"),
+    ("cp {T}/src.py {T}/src2.py {T}/d/ && python3 {T}/d/src.py", "1\n", "unjudgeable"),
+    ("cp {T}/missing.py {T}/dst.py; python3 {T}/dst.py", "", "unjudgeable"),
+]
+
+
+def _copy_world(tmp):
+    (tmp / "d").mkdir()
+    (tmp / "src.py").write_text("print(1)\n", encoding="utf-8")
+    (tmp / "src2.py").write_text("print(3)\n", encoding="utf-8")
+
+
+def _copy_wrong(module, bash_path, tmp_path):
+    wrong = []
+    for k, (script, prints, kind) in enumerate(COPY_ROWS):
+        tmp = tmp_path / ("c%d" % k)
+        tmp.mkdir()
+        _copy_world(tmp)
+        command = _subst(script, tmp)
+        _rc, out = run_bash(bash_path, Fact("C%d" % k, "copy", script), tmp)
+        assert out == prints, "bash printed %r for %s" % (out, script)
+        # The walk reads the world as it was before the command ran.
+        for path in tmp.rglob("*"):
+            rel = path.relative_to(tmp)
+            if (
+                path.is_file()
+                and str(rel) not in ("src.py", "src2.py")
+                and rel.parts[0] not in ("bin", "home")
+            ):
+                path.unlink()
+        module._ANALYSIS_CACHE.clear()
+        try:
+            run = [r for r in module.every_run(command) if r.name == "python3"][-1]
+            text, got = module.interpreter_program(run, command, str(tmp))
+            if got == "file" and "print(%s)" % prints.strip() not in (text or ""):
+                got = "file holding %r" % text
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != kind:
+            wrong.append((script, got, kind))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_a_copy_carries_its_source_3ff3bb16(bash, tmp_path):
+    wrong = _copy_wrong(shellscan, bash, tmp_path)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+# THE PLANTS for #4deea064, #3ff3bb16 and review 2e50ca28.1/.3. Each puts one piece back the way it was at d73b26844 (or the way the review feared) in a copy of shellscan loaded from source and must turn at least one row of the tables above.
+EXPANDED_WRITE_PLANTS = [
+    (
+        "a redirect target kept as typed",
+        "    if value is None or _UNRESOLVED in value:\n        return typed\n    return value\n",
+        "    return typed\n",
+    ),
+    (
+        "a split redirect value claimed",
+        "    if value is None or _UNRESOLVED in value:\n        return typed\n",
+        "    if value is None:\n        return typed\n",
+    ),
+    (
+        "a group redirect read after its body",
+        "self.redirs(stage[2], state, lexer, outer)",
+        "self.redirs(stage[2], state, lexer)",
+    ),
+    (
+        "a bare assignment's redirect read before it",
+        "                self.analysis.xwrites[at] = (op, _redirect_value(target, shell))\n",
+        "                pass\n",
+    ),
+    (
+        "in place read as typed only",
+        "    if xargv is not None and list(xargv) != argv:\n        readings.append",
+        "    if False:\n        readings.append",
+    ),
+    (
+        "a copy writes unknown content",
+        "text = _copied_text(sources[0], run.cwd, cwd, written) if plain else None",
+        "text = None",
+    ),
+    (
+        "a copy into a directory recorded as the directory",
+        '        if into or dest.endswith("/") or os.path.isdir(_script_path(dest, run.cwd, cwd)):\n            out.extend(',
+        "        if False:\n            out.extend(",
+    ),
+    (
+        "via sliced from the typed words (2e50ca28.1)",
+        "        prefix_words = words\n",
+        "        prefix_words = [t for t in stage[1] if isinstance(t, _Word)]\n",
+    ),
+    (
+        "every field takes the typed span (2e50ca28.3)",
+        "_Word(head.start if k == 0 else head.end, head.end,",
+        "_Word(head.start, head.end,",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "old", "new"), EXPANDED_WRITE_PLANTS, ids=[p[0] for p in EXPANDED_WRITE_PLANTS]
+)
+def test_each_expanded_write_plant_turns_a_row(bash, tmp_path, label, old, new):
+    module = _planted_shellscan(old, new)
+    for part in ("r", "i", "c"):
+        (tmp_path / part).mkdir()
+    turned = (
+        _redirect_wrong(module, bash, tmp_path / "r")
+        + _in_place_wrong(module, bash, tmp_path / "i")
+        + _copy_wrong(module, bash, tmp_path / "c")
+        + _launched_wrong(module)
+    )
+    assert turned, "plant %r turns no row: the tables cannot see it" % label

@@ -3112,3 +3112,47 @@ def test_review_shell_write_reads_expanded_operands_and_real_globs(tmp_path):
             wrong.append((command, rc, want, err[:160]))
     assert not wrong, "\n".join(map(repr, wrong))
     assert {w for _c, w in REVIEW_OPERAND_ROWS} == {0, 2}
+
+
+# --- the expanded redirect target, the expanded in-place option and the copied script, through the guards (#4deea064, #3ff3bb16) ---------------- Run from a scratch root holding `agent/reviews/x`, an empty `d/`, `src.py` (prints 1) and `rv.py` (opens a review file for writing). Each `2` row marked "was 0" and each `0` row marked "was 2" had the other verdict at d73b26844; the rest are controls that keep theirs.
+_RV = "open('agent/reviews/x/y.md', 'w').write('x')\n"
+EXPANDED_WRITE_GUARD_ROWS = (
+    # #4deea064: the redirect target and the in-place option as bash expands them (was 0).
+    ("block_review_file_shell_write", "D=agent/reviews/x; echo hi > $D/y.md", 2),
+    ("block_review_file_shell_write", "cd agent && D=reviews/x; echo hi > $D/y.md", 2),
+    ("block_review_file_shell_write", "D=agent/reviews; { D=plain; echo hi; } > $D/y.md", 2),
+    ("block_review_file_shell_write", "F=-i; sed $F s/a/b/ agent/reviews/x/y.md", 2),
+    ("block_roundlog_truncate", "F=-i; sed $F s/a/b/ agent/pr-babysit-1008-1.md", 2),
+    # Controls: bash refuses the split target as ambiguous, the group's body assigns too late, and `-n` edits nothing.
+    ("block_review_file_shell_write", 'D="agent/reviews/x y"; echo hi > $D', 0),
+    ("block_review_file_shell_write", "D=plain; { D=agent/reviews/x; echo hi; } > $D/y.md", 0),
+    ("block_review_file_shell_write", "F=-n; sed $F p agent/reviews/x/y.md", 0),
+    ("block_roundlog_truncate", "F=-n; sed $F p agent/pr-babysit-1008-1.md", 0),
+    # #3ff3bb16: a copy carries its source. The first was 2 (a script written from a source the hook cannot read); the second and third were 0, the landing inside `d/` never recorded, and the copied review writer of the third never read, because the pre-filter skipped a script it could not read and the line names no review path.
+    ("block_review_file_shell_write", "cp src.py dst.py && python3 dst.py --out reviews.txt", 0),
+    ("block_review_file_shell_write", "cp rv.py d/ && python3 d/rv.py --out reviews.txt", 2),
+    ("block_review_file_shell_write", "cp rv.py dst.py && python3 dst.py", 2),
+    # Controls: the review writer run directly, a copy whose content is not knowable here, and the copied source run directly.
+    ("block_review_file_shell_write", "python3 rv.py", 2),
+    ("block_review_file_shell_write", "cp -n src.py dst.py && python3 dst.py --out reviews.txt", 2),
+    ("block_review_file_shell_write", "python3 src.py --out reviews.txt", 0),
+)
+
+
+def test_guards_read_expanded_writes_and_copied_scripts_4deea064_3ff3bb16(tmp_path):
+    root = os.path.realpath(tmp_path)
+    for d in ("agent/reviews/x", "plain", "d"):
+        (tmp_path / d).mkdir(parents=True)
+    (tmp_path / "src.py").write_text("print(1)\n", encoding="utf-8")
+    (tmp_path / "rv.py").write_text(_RV, encoding="utf-8")
+    wrong = []
+    for stem, command, want in EXPANDED_WRITE_GUARD_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    for stem in {s for s, _c, _w in EXPANDED_WRITE_GUARD_ROWS}:
+        assert {w for s, _c, w in EXPANDED_WRITE_GUARD_ROWS if s == stem} == {0, 2}, stem

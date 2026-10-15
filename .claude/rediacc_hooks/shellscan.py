@@ -1302,7 +1302,11 @@ def _bash_words(words, shell):
         if fields is None:
             break
         at = next(i for i, w in enumerate(out) if w is head)
-        new = [_Word(head.start, head.end, [_Part("lit", f, f)]) for f in fields]
+        # ONE TYPED WORD, ONE SPAN (review 2e50ca28.3). The fields have no text of their own: the first takes the typed word's span and each later one an empty span at its end, so a reader slicing the command by `_Analysis.names` reads `$N` once (`N="npx node"; $N q` recorded `$N` for both npx and node), and a span never claims a token the field is not.
+        new = [
+            _Word(head.start if k == 0 else head.end, head.end, [_Part("lit", f, f)])
+            for k, f in enumerate(fields)
+        ]
         promoted = (new or out[at + 1 :])[:1]
         if (
             at == _lexical_end(out)
@@ -2083,6 +2087,7 @@ class _Run:
         "writes",
         "xargs",
         "xargv",
+        "xwrites",
     )
 
     def __init__(self, name, argv, canonical, cwd, env=None):
@@ -2102,6 +2107,8 @@ class _Run:
         self.usage = set()
         # The files this command's own output redirects write, in order, quote-removed. `earlier_mutators` reads them: a `printf ... > msg` before a `git commit -F msg` changes what a guard judging the commit reads.
         self.writes = []
+        # THE SAME TARGETS AS BASH EXPANDS THEM (#4deea064), one per entry of `writes` and in its order: `D=agent/reviews/x; echo hi > $D/y.md` writes `agent/reviews/x/y.md`, while `writes` holds the typed `$D/y.md`. A target the walk cannot know keeps its typed text here too (`_redirect_value`), so a reader that wants every landing reads both lists.
+        self.xwrites = []
         # A LAUNCHER'S COMMANDS (#ec63ff8c): one `_Analysis` per command `npx` or `find -exec` starts (see `_launched`). Kept OFF `_Analysis.runs` so every guard walking the runs keeps reading `npx` as `npx`; `lifted_commands` and `every_run` descend into them.
         self.launched = []
         # WHERE A LAUNCHED COMMAND RUNS (#503f0ba8): a `Launch` when a launcher started this command (or one this command is nested under), else None.
@@ -2127,14 +2134,15 @@ class _Run:
 
 
 class _Analysis:
-    """What one walk found: `runs` in execution order, `heredocs` read, and `writes`, every output redirect bash performs as `(operator, target)` with the target quote-removed."""
+    """What one walk found: `runs` in execution order, `heredocs` read, and `writes`, every output redirect bash performs as `(operator, target)` with the target quote-removed; `xwrites` is the same list with each target as bash expands it (`_redirect_value`)."""
 
-    __slots__ = ("heredocs", "names", "root", "runs", "writes")
+    __slots__ = ("heredocs", "names", "root", "runs", "writes", "xwrites")
 
     def __init__(self):
         self.runs: list = []
         self.heredocs: list = []
         self.writes: list = []
+        self.xwrites: list = []
         # WHERE EACH RUN'S NAME SITS IN THE TEXT THAT WAS WALKED, for `_wrapper_payload` (#31ed6c5f): `(name start, name end, end of the run's last word)` for every command whose words the root lexer read (the top level and its substitutions), and for a command a launcher there starts. A run nested in a payload was lexed from another string, so it has no place in this one and is left out.
         self.names: list = []
         self.root = None
@@ -2148,13 +2156,33 @@ def write_targets(cmd):
     """Every file an output redirect in `cmd` writes, in order, as bash reads it: quote-removed, and only where bash really redirects.
 
     A0 L14: `x->f.sh` IS a redirect in bash (the word is `x-`, then `>` opens `f.sh`), while an arrow inside a quoted span never is. A regex over the raw text can only choose one of those; the lexer knows which is which. Descriptor duplications (`2>&1`, `>&-`) are not files and are left out; `/dev/null` and friends are left in, since whether they count is the caller's policy, not grammar.
+
+    EACH TARGET AS TYPED AND AS BASH EXPANDS IT (#4deea064): `D=x; echo hi > $D/y.md` yields `$D/y.md` and then `x/y.md`. The expanded form follows the typed one only where the two differ, and a target the walk cannot know is its typed text alone.
     """
     out: list[str] = []
-    for op, target in _analyse(cmd).writes:
-        if op == ">&" and re.match(r"^(\d+|-)$", target):
+    analysis = _analyse(cmd)
+    for (op, target), (_op, expanded) in zip(analysis.writes, analysis.xwrites, strict=True):
+        if _descriptor(op, target) or _descriptor(op, expanded):
             continue
         out.append(target)
+        if expanded != target:
+            out.append(expanded)
     return out
+
+
+def _descriptor(op, target):
+    """A `>&` whose target is a descriptor number or `-`: a duplication, not a file."""
+    return op == ">&" and re.match(r"^(\d+|-)$", target) is not None
+
+
+# A REDIRECT TARGET IS ONE WORD AFTER EXPANSION (#4deea064). bash expands it like an argument and then needs exactly one field: `D="a b"; echo > $D` and `E=; echo > $E` fail with "ambiguous redirect" (measured on bash 5.3), and `D=a; { D=b; } > $D.out` opens `a.out`, because a group's redirects are expanded before its body runs. So a target whose value the walk knows is that value, and one it cannot know, or one bash would split, glob or drop, keeps its typed text, the sound unknown it always was.
+def _redirect_value(word, shell):
+    """The file a redirect to `word` opens under the walk's shell state, or its typed text where that is unknowable."""
+    typed = _word_value(word)
+    value = _expand_word(word, shell)
+    if value is None or _UNRESOLVED in value:
+        return typed
+    return value
 
 
 class _PhysicalDir(str):
@@ -3310,6 +3338,8 @@ class _Walker:
     def element(self, stage, state, lexer, upstream, tested=False, producers=(), inherited=None):
         kind = stage[0]
         if kind in ("sub", "brace"):
+            # A group's redirects are expanded BEFORE its body runs (`D=a; { D=b; } > $D.out` opens `a.out`), so they read the state the body starts from.
+            outer = state[1]
             # A GROUP'S STDIN IS EVERY MEMBER'S (#31ed6c5f). `echo .claude/settings.json | (xargs rm)` and `| { xargs rm; }` delete the file exactly as `| xargs rm` does, and the feed used to stop at the group, so both were allowed (rc 0, 2026-10-09). The earlier stages' words and the group's own here-string or heredoc reach every command inside it, whatever its own pipeline puts in front, the over-reading direction (what a stage prints is not computed).
             fed = " ".join(
                 f
@@ -3319,7 +3349,7 @@ class _Walker:
                 if f
             )
             self.items(stage[1], list(state) if kind == "sub" else state, lexer, fed or None)
-            self.redirs(stage[2], state, lexer)
+            self.redirs(stage[2], state, lexer, outer)
             return
         words = [t for t in stage[1] if isinstance(t, _Word)]
         redirs = [t for t in stage[1] if isinstance(t, _Redir)]
@@ -3327,12 +3357,7 @@ class _Walker:
         for word in words:
             self.parts(word.parts, state, lexer)
         first_write = len(self.analysis.writes)
-        self.redirs(redirs, state, lexer)
-        own_writes = [
-            target
-            for op, target in self.analysis.writes[first_write:]
-            if not (op == ">&" and re.match(r"^(\d+|-)$", target))
-        ]
+        targets = self.redirs(redirs, state, lexer)
         # `if pgrep ...`, `while ! pgrep ...`: a leading condition keyword means this command's status decides something.
         lead = []
         for word in words:
@@ -3352,6 +3377,19 @@ class _Walker:
                 old, exp = shell.get(var, (_INHERITED, None))
                 shell[var] = (_append(old, value) if append else value, exp)
             state[1] = shell
+            # With no command name the assignments come FIRST: `D=a; D=b > $D.out` opens `b.out` (bash 5.3), where `D=b echo > $D.out` opens `a.out`.
+            for at, target in targets:
+                op = self.analysis.xwrites[at][0]
+                self.analysis.xwrites[at] = (op, _redirect_value(target, shell))
+        own = [
+            (target, expanded)
+            for (op, target), (_op, expanded) in zip(
+                self.analysis.writes[first_write:],
+                self.analysis.xwrites[first_write:],
+                strict=True,
+            )
+            if not (_descriptor(op, target) or _descriptor(op, expanded))
+        ]
         prefix_words = words
         found: dict = {}
         words, _prefixed = _strip_prefixes(words, found)
@@ -3392,7 +3430,8 @@ class _Walker:
         )
         run.xargv = [x for x in expanded if x is not None]
         run.vars = before
-        run.writes = own_writes
+        run.writes = [target for target, _expanded in own]
+        run.xwrites = [expanded for _target, expanded in own]
         if tested or any(w in ("if", "elif", "while", "until", "!") for w in lead):
             run.usage.add("status")
         base = name.rsplit("/", 1)[-1]
@@ -3538,15 +3577,21 @@ class _Walker:
             src, cwd, persist, shell, physical, floor, stack
         )
 
-    def redirs(self, redirs, state, lexer):
+    def redirs(self, redirs, state, lexer, shell=None):
+        """Walk each redirect's substitutions and record the file it writes, typed and expanded under `shell` (the state before the command's own prefix assignments, or a group's state before its body; `state[1]` when not given). Returns `(index into the writes, target word)` for each one recorded."""
+        shell = state[1] if shell is None else shell
+        targets = []
         for redir in redirs:
             if redir.target is not None:
                 self.parts(redir.target.parts, state, lexer)
                 # `> >(tee x)` writes into a command, not a file; that command is walked like any other.
                 if redir.op in _WRITE_OPS and _procsub(redir.target) is None:
+                    targets.append((len(self.analysis.writes), redir.target))
                     self.analysis.writes.append((redir.op, _word_value(redir.target)))
+                    self.analysis.xwrites.append((redir.op, _redirect_value(redir.target, shell)))
             if redir.heredoc is not None:
                 self.parts(redir.heredoc.substs, state, lexer)
+        return targets
 
     def parts(self, parts, state, lexer):
         """Every substitution inside a word runs, in a subshell of its own (so a `cd` inside it never persists).
@@ -4978,10 +5023,19 @@ def _verb_matches(run, verb):
     return run.argv[: len(words) - 1] == words[1:]
 
 
+def redirect_targets(run):
+    """Every file a walked run's own output redirects write, each as typed (`_Run.writes`) and, where it differs, as bash expands it (`_Run.xwrites`, #4deea064), in order. A run built any other way has only the typed form."""
+    out: list[str] = []
+    for target in [*run.writes, *getattr(run, "xwrites", ())]:
+        if target not in out:
+            out.append(target)
+    return out
+
+
 def _mutators_of(run):
     base = _base(run.name)
     out: list[Mutator] = []
-    for target in run.writes:
+    for target in redirect_targets(run):
         if target in _NOT_A_FILE or target.startswith("/dev/fd/"):
             continue
         out.append(Mutator("redirect", "%s > %s" % (base, target), target))
@@ -6845,14 +6899,15 @@ def _written_scripts(cmd, until, cwd):
         base = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
         text = writer_text(run, cmd)
-        for target in run.writes:
+        # Each redirect target as typed and as bash expands it (#4deea064): `S=/tmp/s.py; echo ... > $S; python3 /tmp/s.py` runs what the echo wrote.
+        for target in redirect_targets(run):
             record(target, run.cwd, text)
+        known = [w for w in run.xargv or () if _UNRESOLVED not in w]
         if base == "tee":
-            for target in [a for a in argv if not (a.startswith("-") and len(a) > 1)]:
+            for target in [a for a in [*argv, *known] if not (a.startswith("-") and len(a) > 1)]:
                 record(target, run.cwd, text)
-        copies = run_copies(run)
-        for dest in copies[1] if copies is not None else []:
-            record(dest, run.cwd, None)
+        for dest, copied in _copy_writes(run, cwd, out):
+            record(dest, run.cwd, copied)
         edit = in_place_edit(run)
         for target in edit[1] if edit is not None else []:
             record(target, run.cwd, None)
@@ -6861,6 +6916,61 @@ def _written_scripts(cmd, until, cwd):
                 if a.startswith("of="):
                     record(a[3:], run.cwd, None)
     return out
+
+
+# A COPY CARRIES ITS SOURCE (#3ff3bb16). Every copy used to write UNKNOWN content, so `cp a.py /tmp/b.py && python3 /tmp/b.py` ran an "unjudgeable" program that each guard refused once its pre-filter matched (block_review_file_shell_write, rc 2 at d73b26844 with a `reviews` word anywhere in the line), while the same two steps run apart read `/tmp/b.py` from the disk and passed. A plain `cp`, `mv` or `install` of ONE file now writes that file's text: what an earlier run of the same command wrote into it, else the source on disk under the size cap a script read has. A destination that is a directory (`-t`, a trailing slash, one on disk) receives the source under its own name, which the old record named as the directory itself, so `cp a.py /tmp/ && python3 /tmp/a.py` read a stale file.
+# Anything else stays unknown: several sources, an option outside `-f`/`-v`/`-p`/`-t` (`--parents`, `-n` and `-s` each change what lands where), a fed or launched copy, a source this walk cannot expand, read or find.
+_COPY_TEXT = ("cp", "mv", "install")
+_COPY_PLAIN_OPTION = re.compile(r"-[fvp]+|-t|--force|--verbose|--target-directory(=.+)?")
+
+
+def _copy_writes(run, cwd, written):
+    """`(destination, text or None)` for every file a copier run writes; `written` is `_written_scripts`' record so far, keyed by absolute path.
+
+    The words are the expanded ones when the walk knows every one of them (`S=a.py; cp $S b.py` copies `a.py`), else the typed ones, whose unknown words name no readable source and so write unknown content, as every copy did before.
+    """
+    base = run.name.rsplit("/", 1)[-1]
+    xargv = getattr(run, "xargv", None)
+    if xargv is not None and not any(_UNRESOLVED in w for w in xargv):
+        words = list(xargv)
+    else:
+        words = list(run.argv)
+    copies = run_copies(run, words)
+    if copies is None:
+        return []
+    sources, dests, into = copies
+    options = [w for w in words if w.startswith("-") and len(w) > 1 and w != "--"]
+    plain = (
+        base in _COPY_TEXT
+        and len(sources) == 1
+        and "xargs" not in run.via
+        and run.launch is None
+        and all(_COPY_PLAIN_OPTION.fullmatch(w) for w in options)
+    )
+    text = _copied_text(sources[0], run.cwd, cwd, written) if plain else None
+    out: list[tuple[str, object]] = []
+    for dest in dests:
+        if into or dest.endswith("/") or os.path.isdir(_script_path(dest, run.cwd, cwd)):
+            out.extend(
+                (os.path.join(dest, os.path.basename(src.rstrip("/"))), text) for src in sources
+            )
+        else:
+            out.append((dest, text))
+    return out
+
+
+def _copied_text(source, run_cwd, cwd, written):
+    """The text a copy of `source` writes: what an earlier run of the same command wrote there, else the regular file on disk no larger than `_SCRIPT_MAX`, else None."""
+    target = _script_path(source, run_cwd, cwd)
+    if target in written:
+        return written[target]
+    try:
+        if not os.path.isfile(target) or os.path.getsize(target) > _SCRIPT_MAX:
+            return None
+        with open(target, encoding="utf-8", errors="replace") as handle:
+            return handle.read()
+    except (OSError, ValueError):
+        return None
 
 
 def heredoc_bodies(cmd):
@@ -7098,13 +7208,28 @@ def _perl_in_place(argv):
 
 
 def in_place_edit(run):
-    """`(scripts, files)` for a sed or perl run that edits files IN PLACE, or None for any other run. `scripts` are the sed scripts or perl `-e` programs written on the command line; `files` the operands it rewrites."""
+    """`(scripts, files)` for a sed or perl run that edits files IN PLACE, or None for any other run. `scripts` are the sed scripts or perl `-e` programs written on the command line; `files` the operands it rewrites.
+
+    THE WORDS ARE READ AS TYPED AND AS BASH EXPANDS THEM (#4deea064): `F=-i; sed $F s/a/b/ x` edits `x` in place while the typed `$F` is a script, so the run is in place when either reading says so, and its scripts and files are those of each reading that is in place (an expanded word the walk cannot know is left out, its typed text being in the typed reading). A run with no `xargv` (one a caller builds) is read as typed.
+    """
     base = run.name.rsplit("/", 1)[-1]
-    argv = list(run.argv)
     if base in ("sed", "gsed"):
-        in_place, scripts, files = _sed_in_place(argv)
+        parse = _sed_in_place
     elif base.startswith("perl"):
-        in_place, scripts, files = _perl_in_place(argv)
+        parse = _perl_in_place
     else:
         return None
-    return (scripts, files) if in_place else None
+    argv = list(run.argv)
+    readings = [parse(argv)]
+    xargv = getattr(run, "xargv", None)
+    if xargv is not None and list(xargv) != argv:
+        readings.append(parse(list(xargv)))
+    readings = [r for r in readings if r[0]]
+    if not readings:
+        return None
+    scripts: list[str] = []
+    files: list[str] = []
+    for _in_place, found_scripts, found_files in readings:
+        scripts.extend(x for x in found_scripts if _UNRESOLVED not in x and x not in scripts)
+        files.extend(x for x in found_files if _UNRESOLVED not in x and x not in files)
+    return scripts, files
