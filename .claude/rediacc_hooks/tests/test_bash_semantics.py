@@ -2196,4 +2196,6 @@ def test_a_pr_head_holding_a_nul_byte_is_refused_not_a_crash():
     rc, _out, err = dispatch.run_one("block_unproven_bulk_transform", payload)
     assert "Traceback" not in err, err
     assert "embedded null byte" not in err, err
-    assert rc in (0, 2), (rc, err)
+    # _pr_head reads the NUL ref as one this checkout cannot resolve, and the caller refuses None.
+    assert rc == 2, (rc, err)
+    assert "no local or origin/ ref" in err, err

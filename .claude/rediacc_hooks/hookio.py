@@ -436,6 +436,8 @@ def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):
     and drops the status, which is the `x=$(cmd 2>/dev/null)` shape. Confusing
     the two is how a failing command becomes an empty string that reads as a real answer, so the caller has to choose.
     """
+    # Encoded before the try (review dd407156.2): UnicodeEncodeError is a ValueError, and a caller's undecodable stdin is a bug to surface, not a command that did not run.
+    data = stdin.encode("utf-8") if isinstance(stdin, str) else stdin
     try:
         proc = subprocess.run(
             list(argv),
@@ -443,7 +445,7 @@ def run_out(argv, cwd=None, env=None, want_rc=False, stdin=None):
             check=False,
             cwd=cwd,
             env=env,
-            input=stdin.encode("utf-8") if isinstance(stdin, str) else stdin,
+            input=data,
         )
     # ValueError is what subprocess raises for an argument or cwd holding a NUL byte, which bash itself cuts at. Uncaught, it crashed the guard, and a crashed guard is no decision, so the command ran (block_unproven_bulk_transform `gh pr create --head` with a NUL, 2026-10-15); a word that cannot be passed is a command that did not run.
     except (OSError, ValueError):
