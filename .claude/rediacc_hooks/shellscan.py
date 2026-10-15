@@ -1644,6 +1644,16 @@ class _Lexer:
                 i = self._redirect(m, limit, toks)
                 continue
             op = next((o for o in _OPERATORS if src.startswith(o, i) and i + len(o) <= limit), None)
+            if op == "(" and toks and isinstance(toks[-1], _Word) and toks[-1].end == i:
+                head = _word_value(toks[-1])
+                if head.endswith("=") and _ASSIGNMENT.match(head):
+                    # AN ARRAY ASSIGNMENT IS ONE WORD (#97ed76a7). `D=(a b)` assigns the array D, whose `$D` is `a`; read as `D=` and then a subshell, it assigned D the empty string and walked `a b` as a command. The elements are kept as one part the walk does not expand, and their substitutions are still walked (`parts`).
+                    inner, j = self._list(i + 1, limit, ")")
+                    pieces = [p for t in inner if isinstance(t, _Word) for p in t.parts]
+                    toks[-1].parts.append(_Part("array", src[i:j], src[i:j], None, pieces))
+                    toks[-1].end = j
+                    i = j
+                    continue
             if op is not None:
                 if op == "(":
                     parens += 1
@@ -1655,7 +1665,8 @@ class _Lexer:
                 continue
             word, i = self._word(i, limit)
             toks.append(word)
-            at_cmd = _word_value(word) in _RESERVED_PREFIX or _word_value(word) == "{"
+            # `for ((i=0; i<2; i++))` is an arithmetic loop, its `((` an expression as at a command position.
+            at_cmd = _word_value(word) in _RESERVED_PREFIX or _word_value(word) in ("{", "for")
         return toks, limit
 
     def _redirect(self, m, limit, toks):
@@ -2024,6 +2035,14 @@ def _parse(toks):
                 and opens_group
             ):
                 break
+            # `function f { ...; }` (#97ed76a7): the body is a group, which was read as more words of `function f`, so no command in it was walked.
+            if (
+                len(items) == 2
+                and opens_group
+                and isinstance(items[0], _Word)
+                and _word_value(items[0]) == "function"
+            ):
+                break
         return ("cmd", items)
 
     def parse_list(end):
@@ -2107,7 +2126,7 @@ class _Run:
         self.usage = set()
         # The files this command's own output redirects write, in order, quote-removed. `earlier_mutators` reads them: a `printf ... > msg` before a `git commit -F msg` changes what a guard judging the commit reads.
         self.writes = []
-        # THE SAME TARGETS AS BASH EXPANDS THEM (#4deea064), one per entry of `writes` and in its order: `D=agent/reviews/x; echo hi > $D/y.md` writes `agent/reviews/x/y.md`, while `writes` holds the typed `$D/y.md`. A target the walk cannot know keeps its typed text here too (`_redirect_value`), so a reader that wants every landing reads both lists.
+        # THE SAME TARGETS AS BASH EXPANDS THEM (#4deea064), one per entry of `writes` and in its order: `D=build/out; echo hi > $D/y.md` writes `build/out/y.md`, while `writes` holds the typed `$D/y.md`. A target the walk cannot know keeps its typed text here too (`_redirect_value`), so a reader that wants every landing reads both lists.
         self.xwrites = []
         # A LAUNCHER'S COMMANDS (#ec63ff8c): one `_Analysis` per command `npx` or `find -exec` starts (see `_launched`). Kept OFF `_Analysis.runs` so every guard walking the runs keeps reading `npx` as `npx`; `lifted_commands` and `every_run` descend into them.
         self.launched = []
@@ -2136,9 +2155,11 @@ class _Run:
 class _Analysis:
     """What one walk found: `runs` in execution order, `heredocs` read, and `writes`, every output redirect bash performs as `(operator, target)` with the target quote-removed; `xwrites` is the same list with each target as bash expands it (`_redirect_value`)."""
 
-    __slots__ = ("heredocs", "names", "root", "runs", "writes", "xwrites")
+    __slots__ = ("heredocs", "names", "rewalks", "root", "runs", "writes", "xwrites")
 
     def __init__(self):
+        # How many loop bodies this walk has walked a second time (`_Walker.items`), against `_REWALK_BUDGET`.
+        self.rewalks = 0
         self.runs: list = []
         self.heredocs: list = []
         self.writes: list = []
@@ -3157,6 +3178,250 @@ def _shell_builtin(base, argv, shell):
     return out
 
 
+# --------------------------------------------------------------------------- assignments that are not `NAME=value` (#97ed76a7) ---------------------------------------------------------------------------
+#
+# A VARIABLE IS ASSIGNED BY MORE THAN `NAME=value`, and a value the walk keeps past such an assignment is a value bash no longer holds. `D=other; for D in src; do echo x > $D/a.md; done` and `D=other; read D <<< src; echo x > $D/a.md` both write `src/a.md` (bash 5.3.9), and the walk expanded both targets to `other/a.md`, so every reader of `xwrites` judged a file bash never opened, the fail-open direction.
+# Each assignment below leaves its names `_CLOBBERED`, a value this walk does not know (it carries `_UNRESOLVED`, so every reader falls back to the typed word), from that point on: the `for`/`select` variable, `read`, `mapfile`/`readarray`, `printf -v`, `getopts` (its name, OPTARG and OPTIND), `let`, `wait -p`, `coproc`, a `{NAME}>` redirect, an arithmetic expression that assigns (`(( D = 3 ))`, `$((D=3))`, `$[D=3]`, `for ((...))`, a subscript, an operand of `[[ ... -eq ... ]]`), `${D:=x}` and `${D=x}` in a word, a redirect target or an unquoted heredoc (`${D:?}`, `${D:-x}` and `${D:+x}` assign nothing), and a call to a function the command defined, which assigns what its body assigns.
+# The `for` variable is unknown rather than the word it walks: the walk reads a loop body once, and one value cannot stand for every iteration (`loop_vars` keeps the word list for a reader that wants each one). `source`/`.`, a DEBUG/RETURN/ERR trap, a command whose name the walk cannot know, and an assignment through a nameref or to an integer-attribute name may assign any variable, so after one of them every variable is unknown (`_opaque`).
+_CLOBBERED = _UNRESOLVED + "assigned\x00"
+# Keys of the shell state that are not variables: they start with a NUL, which no variable name holds.
+_META = "\x00"
+# `_FN_KEY + NAME` -> `((names, opaque), False)`: what a call to the function NAME assigns.
+_FN_KEY = "\x00fn\x00"
+# -> `(frozenset of names, False)`: the namerefs and integer-attribute names, an assignment to any of which may assign another variable.
+_WATCHED_KEY = "\x00watched\x00"
+# -> `(generation, False)`: bumped by every `_opaque`, so a function body that made the state opaque is told apart from one that did not.
+_OPAQUE_KEY = "\x00opaque\x00"
+_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_ARITH_ASSIGN = re.compile(
+    r"(?:\+\+|--)\s*([A-Za-z_][A-Za-z0-9_]*)|([A-Za-z_][A-Za-z0-9_]*)\s*(?:\[[^\]]*\]\s*)?(?:\+\+|--|(?:[-+*/%&|^]|<<|>>)?=(?!=))"
+)
+_DEFAULT_ASSIGN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)(?:\[[^\]]*\])?:?=")
+_TEXT_ARITH = re.compile(r"\$\(\((.*?)\)\)|\$\[(.*?)\]", re.DOTALL)
+# The traps that run code before or between later commands of the same shell.
+_EARLY_TRAPS = frozenset(("DEBUG", "RETURN", "ERR"))
+
+
+def _arith_names(text):
+    """The variables an arithmetic expression assigns (`D=3`, `D+=1`, `D++`, `--D`, `a[i]=2`); a word that only reads names none."""
+    return {a or b for a, b in _ARITH_ASSIGN.findall(text)}
+
+
+def _opaque(shell):
+    """`shell` with every variable unknown, IFS included: what is left after a command that may assign any of them."""
+    out = {
+        name: entry if name.startswith(_META) else (_CLOBBERED, entry[1])
+        for name, entry in shell.items()
+    }
+    out["IFS"] = (_CLOBBERED, shell.get("IFS", (None, None))[1])
+    out[_OPAQUE_KEY] = (shell.get(_OPAQUE_KEY, (0, False))[0] + 1, False)
+    return out
+
+
+def _clobber(shell, names):
+    """`shell` with each of `names` unknown from here on, keeping its export state; every variable, when one of them is watched (a nameref or an integer name)."""
+    if not names:
+        return shell
+    if shell.get(_WATCHED_KEY, (frozenset(), False))[0] & set(names):
+        return _opaque(shell)
+    out = dict(shell)
+    for name in names:
+        out[name] = (_CLOBBERED, out.get(name, (None, None))[1])
+    return out
+
+
+def _changed(before, after):
+    """The variables (not the meta keys) whose entry differs between two shell states."""
+    return {
+        n
+        for n in set(before) | set(after)
+        if not n.startswith(_META) and before.get(n) != after.get(n)
+    }
+
+
+def _expansion_assigns(tokens):
+    """The variables expanding `tokens` (a simple command's words and redirects, or a group's redirects) assigns in the current shell: `${D:=x}`, `${D=x}`, an arithmetic expansion or command that assigns, a `{NAME}>` redirect, and the same inside an unquoted heredoc body. A substitution runs in a subshell of its own, so what it assigns is not read."""
+    names: set = set()
+
+    def parts(ps):
+        for p in ps:
+            if p.kind == "param":
+                m = _DEFAULT_ASSIGN.match(p.raw)
+                if m:
+                    names.add(m.group(1))
+                names.update(_arith_names(p.raw[2:-1]) if p.raw.startswith("${") else ())
+            elif p.kind == "arith":
+                names.update(_arith_names(p.raw))
+            elif p.kind == "lit" and "$[" in p.raw:
+                for m in _TEXT_ARITH.finditer(p.raw):
+                    names.update(_arith_names(m.group(1) or m.group(2) or ""))
+            if p.kind in ("dq", "param") and p.parts:
+                parts(p.parts)
+
+    words = [t for t in tokens if isinstance(t, _Word)]
+    for tok in tokens:
+        if isinstance(tok, _Word):
+            parts(tok.parts)
+        elif isinstance(tok, _Redir):
+            if tok.target is not None and tok.heredoc is None:
+                parts(tok.target.parts)
+            if tok.fd and tok.fd.startswith("{") and tok.fd.endswith("}"):
+                names.add(tok.fd[1:-1])
+            doc = tok.heredoc
+            if doc is not None and not doc.quoted and doc.body:
+                names.update(m.group(1) for m in _DEFAULT_ASSIGN.finditer(doc.body))
+                for m in _TEXT_ARITH.finditer(doc.body):
+                    names.update(_arith_names(m.group(1) or m.group(2) or ""))
+    # `[[ 1 -eq D=1 ]]` evaluates its operands arithmetically, so an assignment there assigns.
+    if words and _word_value(words[0]) == "[[":
+        for word in words[1:]:
+            names.update(_arith_names(_word_value(word)))
+    return names
+
+
+def _getopt_split(args, valued):
+    """`(operands, {letter: [value, ...]})` for a builtin's words read as bash's internal_getopt reads them: bundled letters, a valued letter taking the rest of its word or the next one, `--` or the first operand ending the options."""
+    values: dict = {}
+    k = 0
+    while k < len(args):
+        arg = args[k]
+        if arg == "--":
+            k += 1
+            break
+        if not arg.startswith("-") or arg == "-":
+            break
+        for j in range(1, len(arg)):
+            if arg[j] in valued:
+                if j + 1 < len(arg):
+                    values.setdefault(arg[j], []).append(arg[j + 1 :])
+                elif k + 1 < len(args):
+                    k += 1
+                    values.setdefault(arg[j], []).append(args[k])
+                break
+        k += 1
+    return args[k:], values
+
+
+def _builtin_assigns(words, shell):
+    """`(names, opaque, watched)` for what a simple command assigns besides its `NAME=value` words and a declaring builtin's values (`_shell_builtin`), `words` being the command as `_bash_words` hands it and `shell` the state its words expand under. `opaque` says it may assign anything; `watched` are names it declares a nameref or an integer."""
+    values = []
+    for word in words:
+        value = _expand_word(word, shell, split=False)
+        values.append("" if value is None else value)
+    k = 0
+    while k < len(values) and values[k] in _RESERVED_PREFIX and values[k] != "coproc":
+        k += 1
+    head = values[k] if k < len(values) else ""
+    if head == "coproc":
+        rest = values[k + 1 :]
+        coproc = {"COPROC", "COPROC_PID"}
+        if len(rest) == 1 and _IDENT.match(rest[0]):
+            coproc |= {rest[0], rest[0] + "_PID"}
+        return coproc, False, set()
+    if head in ("for", "select"):
+        name = values[k + 1] if k + 1 < len(values) else ""
+        return ({name} if _IDENT.match(name) else set()), False, set()
+    stripped, _ = _strip_prefixes(words)
+    if not stripped:
+        return set(), False, set()
+    at = len(words) - len(stripped)
+    name, args = values[at], values[at + 1 :]
+    if _UNRESOLVED in name:
+        return set(), True, set()
+    fn = shell.get(_FN_KEY + name)
+    if fn is not None:
+        assigned, opaque = fn[0]
+        return set(assigned), opaque, set()
+    base = _base(name)
+    operands: list = []
+    names: set = set()
+    if base in ("source", "."):
+        return set(), True, set()
+    if base == "trap":
+        rest = [a for a in args if a != "--"]
+        if (
+            rest
+            and rest[0] not in ("-p", "-l", "-P", "", "-")
+            and any(sig.upper().removeprefix("SIG") in _EARLY_TRAPS for sig in rest[1:])
+        ):
+            return set(), True, set()
+        return set(), False, set()
+    if base == "read":
+        operands, opts = _getopt_split(args, "adinNptu")
+        names |= set(opts.get("a", ()))
+        if not operands and "a" not in opts:
+            names.add("REPLY")
+    elif base in ("mapfile", "readarray"):
+        operands, _opts = _getopt_split(args, "dnOsuCc")
+        operands = operands[:1]
+        if not operands:
+            names.add("MAPFILE")
+    elif base == "printf":
+        _rest, opts = _getopt_split(args, "v")
+        operands = opts.get("v", [])
+    elif base == "getopts":
+        rest, _opts = _getopt_split(args, "")
+        operands = rest[1:2]
+        names |= {"OPTARG", "OPTIND"}
+    elif base == "wait":
+        _rest, opts = _getopt_split(args, "p")
+        operands = opts.get("p", [])
+    elif base == "let":
+        for arg in args:
+            names |= _arith_names(arg)
+    elif base in ("declare", "typeset", "local"):
+        _rest, _opts = _getopt_split(args, "")
+        letters = "".join(a[1:] for a in args[: len(args) - len(_rest)] if a.startswith("-"))
+        watched = set()
+        if "n" in letters or "i" in letters:
+            for arg in _rest:
+                hit = _assignment(arg)
+                watched.add(hit[0] if hit else arg)
+                if hit and "i" in letters:
+                    names |= _arith_names(hit[1])
+        return names, False, {w for w in watched if _IDENT.match(w)}
+    for operand in operands:
+        if _UNRESOLVED in operand:
+            return set(), True, set()
+        if _IDENT.match(operand):
+            names.add(operand)
+    return names, False, set()
+
+
+def _function_head(item):
+    """The function name when a parsed list item is the head of a definition (`f` before `()`, or `function f`), else None."""
+    if item[0] != "pipe" or len(item[1]) != 1 or item[1][0][0] != "cmd":
+        return None
+    toks = item[1][0][1]
+    if not all(isinstance(t, _Word) for t in toks):
+        return None
+    values = [_word_value(t) for t in toks]
+    if len(values) == 2 and values[0] == "function":
+        values = values[1:]
+    if len(values) != 1 or not re.match(r"^[^\s$`'\"=]+$", values[0]):
+        return None
+    return values[0]
+
+
+def _group_item(item):
+    return item[0] == "pipe" and len(item[1]) == 1 and item[1][0][0] in ("sub", "brace")
+
+
+def _function_body(items, idx):
+    """`(name, index of the body item)` when `items[idx]` opens a function definition, else None. `f() { ...; }` parses as `f`, an empty subshell and the body; `function f { ...; }` as `function f` and the body."""
+    name = _function_head(items[idx])
+    if name is None or idx + 1 >= len(items):
+        return None
+    nxt = items[idx + 1]
+    if _group_item(nxt) and nxt[1][0][0] == "sub" and not nxt[1][0][1] and not nxt[1][0][2]:
+        if idx + 2 < len(items) and _group_item(items[idx + 2]):
+            return name, idx + 2
+        return None
+    if _word_value(items[idx][1][0][1][0]) == "function" and _group_item(nxt):
+        return name, idx + 1
+    return None
+
+
 # git's global options that take the NEXT word as their value (`git --help`, git.c `handle_options`, git 2.53.0). `--attr-source <tree>` was missing from both copies of this list until 2026-10-07 (#d5d33bee): `git --attr-source HEAD commit` commits, and the walk read `HEAD` as the subcommand, so no commit guard saw the commit. `--exec-path` without `=` prints a path and exits, so the word after it never runs.
 GIT_GLOBAL_WITH_VALUE = frozenset(
     (
@@ -3205,27 +3470,38 @@ _LOOP_OPENERS = frozenset(("while", "until", "for", "select"))
 
 
 def _loop_word(stage):
-    """`[("open", binding) | ("close", None), ...]` for the loop keywords a pipeline stage starts with, in order. `binding` is `(name, [word, ...])` for `for NAME in WORDS`/`select NAME in WORDS`, else None."""
+    """`[("open", binding, family) | ("close", None, family), ...]` for the compound-command keywords a pipeline stage starts with, in order. `family` is "loop", "if" or "case"; `binding` is `(name, [word, ...])` for `for NAME in WORDS`/`select NAME in WORDS`, else None."""
     if stage[0] != "cmd":
         return []
     words = [t for t in stage[1] if isinstance(t, _Word)]
     out: list = []
     for k, word in enumerate(words):
         value = _word_value(word)
-        if value == "done":
-            out.append(("close", None))
+        if value in _CLOSERS:
+            out.append(("close", None, _CLOSERS[value]))
         elif value in ("for", "select"):
             rest = [_word_value(w) for w in words[k + 1 :]]
             binding = None
             if len(rest) >= 2 and rest[1] == "in":
                 binding = (rest[0], rest[2:])
-            out.append(("open", binding))
+            out.append(("open", binding, "loop"))
+            break
+        elif value == "case":
+            out.append(("open", None, "case"))
             break
         elif value in _LOOP_OPENERS:
-            out.append(("open", None))
+            out.append(("open", None, "loop"))
+        elif value == "if":
+            out.append(("open", None, "if"))
         elif value not in _RESERVED_PREFIX:
             break
     return out
+
+
+# How many loop bodies one walk may walk a second time before a re-walk starts from an opaque state (`_Walker.items`).
+_REWALK_BUDGET = 64
+# The word that closes each compound command, and its family.
+_CLOSERS = {"done": "loop", "fi": "if", "esac": "case"}
 
 
 def _runs_within(runs):
@@ -3252,6 +3528,10 @@ class _Walker:
     def __init__(self, analysis, depth):
         self.analysis = analysis
         self.depth = depth
+        # The redirects the last simple command recorded (`redirs`), which a compound command's closer hands its frame.
+        self.last_targets: list = []
+        # What the simple command being walked assigns besides its own `NAME=value` words (`_builtin_assigns`).
+        self.effects: tuple = (set(), False, set())
 
     def text(self, src, cwd, persist, shell=None, physical=False, floor=None, stack=()):
         """Walk a command string. `persist` says whether a `cd`, an `export` or a `set -P` in it outlives it (an `eval` does; a `sh -c` does not). Returns `(cwd, shell, physical, floor, stack)` as they stand after it.
@@ -3272,13 +3552,35 @@ class _Walker:
         return tuple(state) if persist else (cwd, shell, physical, floor, stack)
 
     def items(self, items, state, lexer, inherited=None):
-        """Walk a parsed list. `inherited` is the text a group's stdin carries (`echo x | (xargs rm)`), handed to every command in it."""
+        """Walk a parsed list. `inherited` is the text a group's stdin carries (`echo x | (xargs rm)`), handed to every command in it.
+
+        A COMPOUND COMMAND IS A FRAME (#97ed76a7). The parse keeps `while`/`for`/`if`/`case` and their closers as words in front of commands, so a frame opens at each opener and closes at its `done`/`fi`/`esac`. At the close: the closer's own redirects (`done > $D.out`, `fi > f`) are expanded under the state the frame opened with, as bash expands them before the body runs (`D=a; for x in 1; do D=b; done > $D.out` opens `a.out`, bash 5.3.9), and are added to every run inside the frame that runs where the frame opened, so `run.writes`/`run.xwrites` see them as `_Analysis.writes` always did; a loop's body is walked once more from its opener with every variable the body changed unknown, since a second iteration reads what the first assigned (`D=a; for i in 1 2; do echo > $D.l; D=b; done` writes `a.l` and `b.l`); and a frame that runs in a subshell (its opener or its closer in a pipeline, or sent to the background) leaves the state as it found it, while its body still sees what its condition assigned (`echo src | while read D; do echo > $D.out; done` writes `src.out`, and `$D` is the old value afterwards).
+        A FUNCTION BODY is walked where it is defined, as before, but under a state with every variable unknown, since it runs only when called and reads the values of that moment; the definition itself assigns nothing, and a call assigns what the body did (`_FN_KEY`).
+        """
         runs = self.analysis.runs
-        # The loops open at this level, innermost last: `[first run index, the feed in front of the opener, binding]`.
-        loops: list = []
-        for idx, item in enumerate(items):
+        analysis = self.analysis
+        # The compound commands open at this level, innermost last.
+        frames: list = []
+        # The loops already walked a second time, by the index of their opening item.
+        rewalked: set = set()
+        # The state each re-walked loop's item first started from: its redirects are expanded under it and a subshell frame restores it.
+        originals: dict = {}
+        # `(name, body item index, the shell before the body)` of a function definition whose body is walked next.
+        function = None
+        idx = 0
+        while idx < len(items):
+            item = items[idx]
             if item[0] == "sep":
+                idx += 1
                 continue
+            if function is None:
+                found = _function_body(items, idx)
+                if found is not None:
+                    function = (found[0], found[1], None)
+            if function is not None and function[1] == idx:
+                function = (function[0], idx, state[1])
+                state[1] = _opaque(state[1])
+            body_start = state[1]
             stages = item[1]
             background = idx + 1 < len(items) and items[idx + 1] == ("sep", "&")
             isolated = len(stages) > 1 or background
@@ -3289,15 +3591,44 @@ class _Walker:
             tested = follow in ("&&", "||") or (
                 follow in (";", "\n") and idx + 2 < len(items) and _reads_status(items[idx + 2])
             )
+            mark = (
+                (
+                    len(runs),
+                    len(analysis.heredocs),
+                    len(analysis.writes),
+                    len(analysis.xwrites),
+                    len(analysis.names),
+                ),
+                list(state),
+            )
             spans = []
+            jump = None
             for pos, stage in enumerate(stages):
-                own = list(state) if isolated else state
                 start = len(runs)
                 keywords = _loop_word(stage)
-                for kind, binding in keywords:
+                opens = False
+                for kind, binding, family in keywords:
                     if kind == "open":
                         before = [inherited or ""] + [_stage_feed(p, lexer) for p in stages[:pos]]
-                        loops.append([start, " ".join(f for f in before if f), binding])
+                        opens = opens or (isolated and family != "case")
+                        frames.append(
+                            {
+                                "first": start,
+                                "fed": " ".join(f for f in before if f),
+                                "binding": binding,
+                                "family": family,
+                                "item": idx,
+                                "mark": mark,
+                                "cwd": state[0],
+                                "shell": mark[1][1],
+                                "origin": originals.get(idx, mark[1]),
+                                # A `case` pattern `a|b)` parses as a pipeline, so only a loop or an `if` opener in one runs in a subshell.
+                                "subshell": isolated and family != "case",
+                            }
+                        )
+                # An opener in a pipeline runs in the same subshell as its body, so it walks in the frame's state, which the close restores.
+                own = list(state) if isolated and not opens else state
+                self.last_targets = []
                 self.element(
                     stage,
                     own,
@@ -3307,20 +3638,81 @@ class _Walker:
                     producers=stages[:pos],
                     inherited=inherited,
                 )
-                for kind, _binding in keywords:
-                    if kind == "close" and loops:
-                        first, fed, binding = loops.pop()
+                closer_targets = self.last_targets
+                for kind, _binding, _family in keywords:
+                    if kind != "close" or not frames:
+                        continue
+                    frame = frames.pop()
+                    first = frame["first"]
+                    if frame["family"] == "loop":
                         own_feed = [
                             _redir_feed(t, lexer) for t in stage[1] if isinstance(t, _Redir)
                         ]
-                        fed = " ".join(f for f in [fed, *own_feed] if f)
+                        fed = " ".join(f for f in [frame["fed"], *own_feed] if f)
                         for inner in _runs_within(runs[first:start]):
                             if fed and fed not in (inner.feed or ""):
                                 inner.feed = " ".join(f for f in (inner.feed, fed) if f)
                                 inner.feed_words = None
-                            if binding is not None:
-                                inner.loop_vars.setdefault(binding[0], binding[1])
+                            if frame["binding"] is not None:
+                                inner.loop_vars.setdefault(frame["binding"][0], frame["binding"][1])
+                    for at, word in closer_targets:
+                        analysis.xwrites[at] = (
+                            analysis.xwrites[at][0],
+                            _redirect_value(word, frame["origin"][1]),
+                        )
+                    self.attach(first, start, frame["cwd"], closer_targets)
+                    if frame["family"] == "loop" and frame["item"] not in rewalked:
+                        opened = frame["shell"]
+                        now = (own if isolated and not frame["subshell"] else state)[1]
+                        carried = _changed(opened, now)
+                        if carried or now.get(_OPAQUE_KEY) != opened.get(_OPAQUE_KEY):
+                            again = frame["item"]
+                            # Loops nested in a re-walked loop are walked twice again, which doubles per level; past the budget the second pass starts with every variable unknown instead, and nested loops are not walked again.
+                            analysis.rewalks += 1
+                            spent = analysis.rewalks > _REWALK_BUDGET
+                            if not spent:
+                                rewalked.difference_update({k for k in rewalked if k > again})
+                            rewalked.add(again)
+                            lengths, saved = frame["mark"]
+                            originals[again] = frame["origin"]
+                            for seq, n in zip(
+                                (
+                                    runs,
+                                    analysis.heredocs,
+                                    analysis.writes,
+                                    analysis.xwrites,
+                                    analysis.names,
+                                ),
+                                lengths,
+                                strict=True,
+                            ):
+                                del seq[n:]
+                            state[:] = saved
+                            state[1] = (
+                                _opaque(saved[1])
+                                if spent or now.get(_OPAQUE_KEY) != opened.get(_OPAQUE_KEY)
+                                else _clobber(saved[1], carried)
+                            )
+                            frames = [f for f in frames if f["item"] < again]
+                            jump = again
+                            break
+                    if frame["subshell"] or isolated:
+                        state[:] = frame["origin"]
+                if jump is not None:
+                    break
                 spans.append((start, len(runs)))
+            if jump is not None:
+                if function is not None and function[1] >= jump:
+                    function = None
+                idx = jump
+                continue
+            if function is not None and function[1] == idx and function[2] is not None:
+                name, _body, saved = function
+                assigned = _changed(body_start, state[1])
+                opaque = state[1].get(_OPAQUE_KEY) != body_start.get(_OPAQUE_KEY)
+                state[1] = dict(saved)
+                state[1][_FN_KEY + name] = ((frozenset(assigned), opaque), False)
+                function = None
             # The producer's directories reach every command of the stage it feeds, read where its globs are matched (`run_copies`).
             for pos in range(1, len(spans)):
                 producer = tuple(
@@ -3334,12 +3726,31 @@ class _Walker:
                 if any(_base(r.name) == "kill" for r in runs[spans[pos][0] : spans[pos][1]]):
                     for r in runs[spans[0][0] : spans[pos][0]]:
                         r.usage.add("kill")
+            idx += 1
+
+    def attach(self, first, end, cwd, targets):
+        """Add a compound command's own write redirects (`targets`, `(index into the writes, word)`) to every run from `first` to `end` that runs in `cwd`, the directory the compound command started in, where bash opened them. A run that changed directory first (`{ cd sub; echo x; } > f`) would join the target to the wrong directory, so it is left out; `write_targets` and `_Analysis.writes` hold the target either way."""
+        own = [self.analysis.writes[at] + (self.analysis.xwrites[at][1],) for at, _word in targets]
+        own = [
+            (target, expanded)
+            for op, target, expanded in own
+            if not (_descriptor(op, target) or _descriptor(op, expanded))
+        ]
+        if not own:
+            return
+        for run in self.analysis.runs[first:end]:
+            if run.cwd == cwd:
+                run.writes = [*run.writes, *(t for t, _x in own)]
+                run.xwrites = [*run.xwrites, *(x for _t, x in own)]
 
     def element(self, stage, state, lexer, upstream, tested=False, producers=(), inherited=None):
         kind = stage[0]
         if kind in ("sub", "brace"):
+            # `( ... ) > ${D:=x}` assigns D while its redirect is expanded (#97ed76a7).
+            state[1] = _clobber(state[1], _expansion_assigns(stage[2]))
             # A group's redirects are expanded BEFORE its body runs (`D=a; { D=b; } > $D.out` opens `a.out`), so they read the state the body starts from.
             outer = state[1]
+            first, entry = len(self.analysis.runs), state[0]
             # A GROUP'S STDIN IS EVERY MEMBER'S (#31ed6c5f). `echo .claude/settings.json | (xargs rm)` and `| { xargs rm; }` delete the file exactly as `| xargs rm` does, and the feed used to stop at the group, so both were allowed (rc 0, 2026-10-09). The earlier stages' words and the group's own here-string or heredoc reach every command inside it, whatever its own pipeline puts in front, the over-reading direction (what a stage prints is not computed).
             fed = " ".join(
                 f
@@ -3349,8 +3760,30 @@ class _Walker:
                 if f
             )
             self.items(stage[1], list(state) if kind == "sub" else state, lexer, fed or None)
-            self.redirs(stage[2], state, lexer, outer)
+            # The group's redirect is the output of every command inside it (#97ed76a7): `{ echo x; } > $D/a.md` is the echo's write as much as `echo x > $D/a.md` is.
+            self.attach(
+                first, len(self.analysis.runs), entry, self.redirs(stage[2], state, lexer, outer)
+            )
             return
+        # What expanding the words assigns is assigned before the command runs (`${D:=x}`, `$((D=3))`, `(( D = 3 ))`), and what the command itself assigns (`read D`, `printf -v D`, a function call) after it (#97ed76a7).
+        state[1] = _clobber(state[1], _expansion_assigns(stage[1]))
+        start = state[1]
+        self.effects = (set(), False, set())
+        self.simple(stage, state, lexer, upstream, tested, producers, inherited)
+        names, opaque, watch = self.effects
+        shell = _opaque(state[1]) if opaque else _clobber(state[1], names)
+        if watch:
+            shell = dict(shell)
+            old = shell.get(_WATCHED_KEY, (frozenset(), False))[0]
+            shell[_WATCHED_KEY] = (old | frozenset(watch), False)
+        # An assignment to a nameref or an integer name may assign another variable: `declare -n R=D; R=z` sets D.
+        watched = start.get(_WATCHED_KEY, (frozenset(), False))[0]
+        if watched and any(shell.get(n) != start.get(n) for n in watched - set(watch)):
+            shell = _opaque(shell)
+        state[1] = shell
+
+    def simple(self, stage, state, lexer, upstream, tested, producers, inherited):
+        """Walk one simple command (`element` for a `("cmd", ...)` stage)."""
         words = [t for t in stage[1] if isinstance(t, _Word)]
         redirs = [t for t in stage[1] if isinstance(t, _Redir)]
         first_inner = len(self.analysis.runs)
@@ -3358,6 +3791,7 @@ class _Walker:
             self.parts(word.parts, state, lexer)
         first_write = len(self.analysis.writes)
         targets = self.redirs(redirs, state, lexer)
+        self.last_targets = targets
         # `if pgrep ...`, `while ! pgrep ...`: a leading condition keyword means this command's status decides something.
         lead = []
         for word in words:
@@ -3369,6 +3803,7 @@ class _Walker:
         before = state[1]
         # The name bash runs is the first word left once every word is expanded (review a7b3a36f.1): `N=; $N bash -c ...` is a shell, `N="bash -x"; $N -c ...` is one too, and `G=git; $G push --force` a push. Every decision below keys on it.
         words = _bash_words(words, before)
+        self.effects = _builtin_assigns(words, before)
         statement, env_ops = _call_env(words, before)
         if statement:
             # A bare `NAME=value` sets a shell variable; it reaches a child's environment only when NAME is exported (or, export state unknown, when the session already exports it: `gh_named_repo`).
@@ -4235,18 +4670,36 @@ def copy_landings(run, cwd, names=COPIERS, argv=None):
     base = cwd if run.cwd is None else os.path.join(cwd, write_directory(run.cwd, cwd))
     # TWO CASES, ONE ANSWER (review 9ed30a8a.2). A `cd` to a directory that is not there fails and leaves the shell where it started (review a165575f.2); a `cd` whose target the walk cannot resolve (`cd "$D"`, `cd ~`) lands somewhere this walk cannot name. Either way the run's directory is not on disk here, and the starting directory is the one other place a relative destination can land, so both are candidates. `run.cwd` is None ONLY when no `cd` ran before this command, and then the starting directory is the one base; an unresolved `cd` leaves `run.cwd` as the unexpanded word (`$D`, `~`, `-`), which joins to a path that is not on disk and so takes this branch (review 1d4e1754.2, measured).
     bases = [base] if os.path.isdir(base) else [base, cwd]
+    # A directory an earlier run of the same command makes is one, whatever the disk says now (review 0600a464.1 sweep): `mkdir -p d && cp x d` lands `d/x`. Where that cannot be known, both landings are named.
+    earlier = _runs_before(run)
     out: list[tuple[str, bool]] = []
     for base in bases:
         for dest in dests:
             dest_abs = os.path.normpath(os.path.join(base, dest))
-            if into or dest.endswith("/") or os.path.isdir(dest_abs):
+            directory = True if into or dest.endswith("/") else None
+            if directory is None:
+                directory = _directory_answer(dest_abs, earlier, cwd)
+            if directory is not False:
                 out.extend(
                     (os.path.join(dest_abs, os.path.basename(src.rstrip("/"))), True)
                     for src in sources
                 )
-            elif (dest_abs, False) not in out:
+            if directory is not True and (dest_abs, False) not in out:
                 out.append((dest_abs, False))
     return out
+
+
+def _runs_before(run):
+    """The runs walked before `run` in the command it was walked from (`_Run.command`), or none when that is not known."""
+    cmd = getattr(run, "command", None)
+    if cmd is None:
+        return []
+    out: list = []
+    for other in every_run(cmd):
+        if other is run:
+            return out
+        out.append(other)
+    return []
 
 
 # --------------------------------------------------------------------------- where a tool's own output lands (worklist item ff3ab826) ---------------------------------------------------------------------------
@@ -5107,10 +5560,38 @@ def split_refusal(mutators, verb, judged):
 
 
 def assignments_before(cmd, verb):
-    """`{NAME: value}` for every plain `NAME=value` statement at the top level of `cmd` before its first `verb`, quote-removed, later assignments winning.
+    """`{NAME: value}` for every variable `cmd` gives a value before its first `verb`, read from the walk's own state at that command (`_Run.vars`).
 
-    ONLY A STATEMENT COUNTS. `P=x git commit -- $P` does not count: bash expands `$P` BEFORE that prefix assignment applies, so the old value is the one used, and this cannot know it. `export NAME=value` counts. A substitution inside the value is kept as its source text (`$(ls x/*.json)`), for the caller to expand or to refuse to.
+    ONLY A STATEMENT COUNTS. `P=x git commit -- $P` does not count: bash expands `$P` BEFORE that prefix assignment applies, so the old value is the one used, and this cannot know it. `export NAME=value` counts. A value the walk knows is that value; one holding a substitution is the source text of the last top-level `NAME=value` statement (`$(ls x/*.json)`), for the caller to expand or to refuse to.
+    A NAME ASSIGNED ANY OTHER WAY IS LEFT OUT (#97ed76a7): `P=a; for P in b; do :; done; git commit -- $P` and `P=a; read P; git commit -- $P` commit what bash assigned, not `a`, so `$P` stays unexpanded and the caller falls back as it does for any name it cannot read. With no walked `verb` the lexical reading stands alone.
     """
+    lexical = _lexical_assignments(cmd, verb)
+    words = verb.split()
+    run = next(
+        (
+            r
+            for r in _analyse(cmd).runs
+            if _base(r.name) == words[0] and all(w in r.argv for w in words[1:])
+        ),
+        None,
+    )
+    if run is None:
+        return lexical
+    out: dict[str, str] = {}
+    for name, (value, _exported) in run.vars.items():
+        if name.startswith(_META) or not isinstance(value, str) or isinstance(value, _DirRef):
+            continue
+        if _CLOBBERED in value:
+            continue
+        if _UNRESOLVED not in value and value != _INHERITED:
+            out[name] = value
+        elif name in lexical:
+            out[name] = lexical[name]
+    return out
+
+
+def _lexical_assignments(cmd, verb):
+    """`{NAME: value}` for every plain `NAME=value` statement at the top level of `cmd` before its first `verb`, quote-removed, later assignments winning (`assignments_before`'s reading of a value the walk cannot know)."""
     words = verb.split()
     out: dict[str, str] = {}
     cur: list = []
@@ -6903,9 +7384,11 @@ def _written_scripts(cmd, until, cwd):
         else:
             out[target] = (out.get(target) or "") + text + "\n"
 
+    seen: list = []
     for run in every_run(cmd):
         if run is until:
             break
+        seen.append(run)
         base = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
         text = writer_text(run, cmd)
@@ -6916,7 +7399,7 @@ def _written_scripts(cmd, until, cwd):
         if base == "tee":
             for target in [a for a in [*argv, *known] if not (a.startswith("-") and len(a) > 1)]:
                 record(target, run.cwd, text)
-        for dest, copied in _copy_writes(run, cwd, out):
+        for dest, copied in _copy_writes(run, cwd, out, seen[:-1]):
             record(dest, run.cwd, copied)
         edit = in_place_edit(run)
         for target in edit[1] if edit is not None else []:
@@ -6934,8 +7417,81 @@ _COPY_TEXT = ("cp", "mv", "install")
 _COPY_PLAIN_OPTION = re.compile(r"-[fvp]+|-t|--force|--verbose|--target-directory(=.+)?")
 
 
-def _copy_writes(run, cwd, written):
-    """`(destination, text or None)` for every file a copier run writes; `written` is `_written_scripts`' record so far, keyed by absolute path.
+# A DIRECTORY THE SAME COMMAND MAKES IS A DIRECTORY (review 0600a464.1). `mkdir -p d && cp rv.py d && python3 d/rv.py` runs the copy, and the directory test read the disk, where `d` was not yet there: the copy was recorded as a file named `d`, and `python3 d/rv.py` was judged from whatever the disk held at that path. A destination is a directory when the copy says so (`-t`, a trailing slash) or an earlier run of the same command makes it (`mkdir`, `mkdir -p` and every parent it makes, `install -d`).
+# The disk is read only where nothing earlier in the command can have changed the answer: when an earlier run that makes, moves, links or removes paths names the destination or a word the walk cannot expand, whether it is a directory cannot be known, and the copy lands at either place with content unknown, so a script run from either one is unjudgeable.
+_DIR_TOUCHERS = frozenset(
+    ("mkdir", "install", "cp", "mv", "ln", "rsync", "rm", "rmdir", "git", "tar", "unzip")
+)
+_MKDIR_VALUED = frozenset(("-m", "--mode", "-Z", "--context"))
+_INSTALL_VALUED = frozenset(
+    ("-m", "--mode", "-o", "--owner", "-g", "--group", "-S", "--suffix", "-t", "--target-directory")
+)
+
+
+def _made_directory(run):
+    """`(operands, known)` for a run that makes directories (`mkdir`, `install -d`), else None. `known` is False when an operand is one the walk cannot expand or arrives on a feed."""
+    base = _base(run.name)
+    words = list(run.xargv if run.xargv is not None else run.argv)
+    if base == "install":
+        if not any(
+            w in ("-d", "--directory") or re.fullmatch(r"-[A-Za-z]*d[A-Za-z]*", w) for w in words
+        ):
+            return None
+        valued = _INSTALL_VALUED
+    elif base == "mkdir":
+        valued = _MKDIR_VALUED
+    else:
+        return None
+    operands, k = [], 0
+    while k < len(words):
+        word = words[k]
+        if word == "--":
+            operands.extend(words[k + 1 :])
+            break
+        if word in valued:
+            k += 2
+            continue
+        if not (word.startswith("-") and len(word) > 1):
+            operands.append(word)
+        k += 1
+    known = (
+        "xargs" not in run.via
+        and run.launch is None
+        and not any(_UNRESOLVED in w for w in operands)
+    )
+    return operands, known
+
+
+def _directory_answer(dest_abs, earlier, cwd):
+    """True when `dest_abs` is a directory by the time a copy after `earlier` (the runs of the same command before it) runs, False when it is not, None when that cannot be known (see the comment above)."""
+    for run in earlier:
+        made = _made_directory(run)
+        if made is not None:
+            operands, known = made
+            if not known:
+                return None
+            for operand in operands:
+                path = _script_path(operand, run.cwd, cwd)
+                if dest_abs == path or path.startswith(dest_abs.rstrip("/") + "/"):
+                    return True
+            continue
+        if _base(run.name) not in _DIR_TOUCHERS:
+            continue
+        words = run.xargv
+        if words is None or any(_UNRESOLVED in w for w in words):
+            words = run.argv
+            if any("$" in w or "`" in w for w in words):
+                return None
+        if "xargs" in run.via or run.launch is not None:
+            return None
+        for word in words:
+            if word and not word.startswith("-") and _script_path(word, run.cwd, cwd) == dest_abs:
+                return None
+    return os.path.isdir(dest_abs)
+
+
+def _copy_writes(run, cwd, written, earlier=()):
+    """`(destination, text or None)` for every file a copier run writes; `written` is `_written_scripts`' record so far, keyed by absolute path, and `earlier` the runs of the same command before this one.
 
     The words are the expanded ones when the walk knows every one of them (`S=a.py; cp $S b.py` copies `a.py`), else the typed ones, whose unknown words name no readable source and so write unknown content, as every copy did before.
     """
@@ -6960,12 +7516,16 @@ def _copy_writes(run, cwd, written):
     text = _copied_text(sources[0], run.cwd, cwd, written) if plain else None
     out: list[tuple[str, object]] = []
     for dest in dests:
-        if into or dest.endswith("/") or os.path.isdir(_script_path(dest, run.cwd, cwd)):
+        directory = True if into or dest.endswith("/") else None
+        if directory is None:
+            directory = _directory_answer(_script_path(dest, run.cwd, cwd), earlier, cwd)
+        if directory is not False:
             out.extend(
-                (os.path.join(dest, os.path.basename(src.rstrip("/"))), text) for src in sources
+                (os.path.join(dest, os.path.basename(src.rstrip("/"))), text if directory else None)
+                for src in sources
             )
-        else:
-            out.append((dest, text))
+        if directory is not True:
+            out.append((dest, text if directory is False else None))
     return out
 
 

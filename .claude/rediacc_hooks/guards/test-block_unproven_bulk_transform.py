@@ -1184,6 +1184,27 @@ REDIRECT_ROWS = [
         "echo x > $UNSET_DIR/a.md; git commit -m x -- src",
         True,
     ),
+    # #97ed76a7: each was `[]` at 2672ed8f6, because the lexical `NAME=value` lookup read `other` where bash assigned `src` (`for`, `read`, `printf -v`); the walk leaves the value unknown, so the clause counts as a writer.
+    (
+        "a for loop assigns the variable",
+        "D=other; for D in src; do echo x > $D/a.md; done; git commit -m x -- src",
+        True,
+    ),
+    (
+        "read assigns the variable",
+        "D=other; read D <<< src; echo x > $D/a.md; git commit -m x -- src",
+        True,
+    ),
+    (
+        "printf -v assigns the variable",
+        "D=other; printf -v D src; echo x > $D/a.md; git commit -m x -- src",
+        True,
+    ),
+    (
+        "printf -v of another name keeps the value (control)",
+        "D=other; printf -v E src; echo x > $D/a.md; git commit -m x -- src",
+        False,
+    ),
 ]
 REDIRECT_CHILD = """
 import importlib.util, json, sys
@@ -1193,10 +1214,29 @@ G = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(G)
 print(json.dumps([bool(G._earlier_writers(c, repo, ["src"])) for c in json.loads(guard)]))
 """
-REDIRECT_OLD = "        for target in shellscan.redirect_targets(run):\n            if writer or target in shellscan._NOT_A_FILE"
-REDIRECT_NEW = (
-    "        for target in run.writes:\n            if writer or target in shellscan._NOT_A_FILE"
-)
+_EXPANDED_READ = "        for target in [x for _t, x in zip(run.writes, run.xwrites, strict=True)]:\n            if writer or target in shellscan._NOT_A_FILE"
+REDIRECT_MUTANTS = [
+    (
+        "typed only (#7b3f34ae)",
+        _EXPANDED_READ,
+        "        for target in run.writes:\n            if writer or target in shellscan._NOT_A_FILE",
+    ),
+    (
+        "the lexical NAME=value lookup (#97ed76a7)",
+        (
+            "        for target in [x for _t, x in zip(run.writes, run.xwrites, strict=True)]:\n"
+            '            if writer or target in shellscan._NOT_A_FILE or target.startswith("/dev/fd/"):\n'
+            "                continue\n            text = target\n"
+        ),
+        (
+            "        names = shellscan._lexical_assignments(run.command, 'git commit')\n"
+            "        for target in shellscan.redirect_targets(run):\n"
+            '            if writer or target in shellscan._NOT_A_FILE or target.startswith("/dev/fd/"):\n'
+            "                continue\n"
+            "            text = PARAM.sub(lambda m: names.get(m.group(1) or m.group(2), m.group(0)), target)\n"
+        ),
+    ),
+]
 
 
 def redirect_rows(path):
@@ -1227,14 +1267,18 @@ for (label, _command, want), got in zip(REDIRECT_ROWS, redirect_rows(GUARD_PATH)
     Tally.fails += got != want
     print("%-70s %s" % ("redirect: " + label, "ok" if got == want else "*** FAIL ***"))
 GUARD_SRC = pathlib.Path(GUARD_PATH).read_text(encoding="utf-8")
-if REDIRECT_OLD not in GUARD_SRC:
-    Tally.total += 1
-    Tally.fails += 1
-    print("%-70s *** FAIL *** it no longer applies to the guard" % "redirect mutant: typed only")
-else:
+for mutant_label, mutant_old, mutant_new in REDIRECT_MUTANTS:
+    if mutant_old not in GUARD_SRC:
+        Tally.total += 1
+        Tally.fails += 1
+        print(
+            "%-70s *** FAIL *** it no longer applies to the guard"
+            % ("redirect mutant: " + mutant_label)
+        )
+        continue
     planted_path = os.path.join(scratch_dir(), "planted_bulk.py")
     with open(planted_path, "w", encoding="utf-8") as fh:
-        fh.write(GUARD_SRC.replace(REDIRECT_OLD, REDIRECT_NEW))
+        fh.write(GUARD_SRC.replace(mutant_old, mutant_new))
     turned = sum(
         got != want
         for (_l, _c, want), got in zip(REDIRECT_ROWS, redirect_rows(planted_path), strict=True)
@@ -1244,7 +1288,7 @@ else:
     print(
         "%-70s %s"
         % (
-            "redirect mutant: typed only turns %d row(s)" % turned,
+            "redirect mutant: %s turns %d row(s)" % (mutant_label, turned),
             "ok" if turned else "*** FAIL *** the harness cannot see it",
         )
     )

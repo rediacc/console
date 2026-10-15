@@ -88,6 +88,39 @@ OWN_CASES = [
         "cp -n .claude/rediacc_hooks/__init__.py /tmp/r87c.py && python3 /tmp/r87c.py --out reviews.txt",
         True,
     ),
+    # Review 0600a464.1: a directory the same command makes is a directory (`/tmp/r92-made` is absent when the hook runs). The first two were allowed (rc 0) at 2672ed8f6: the copy was recorded as a file named `/tmp/r92-made` and `python3 /tmp/r92-made/r87s.py` read the disk, where nothing was; the third, a directory whose name the walk cannot expand, is unjudgeable and refused.
+    (
+        "a script copied into a directory the command makes, then run",
+        "%s && mkdir -p /tmp/r92-made && cp /tmp/r87s.py /tmp/r92-made && python3 /tmp/r92-made/r87s.py"
+        % _REVIEW_WRITER,
+        True,
+    ),
+    (
+        "a script copied into a directory install -d makes, then run",
+        "%s && install -d /tmp/r92-made && cp /tmp/r87s.py /tmp/r92-made && python3 /tmp/r92-made/r87s.py"
+        % _REVIEW_WRITER,
+        True,
+    ),
+    (
+        "a script copied where an unexpanded mkdir may make a directory",
+        '%s && mkdir -p "$(echo /tmp/r92-made)" && cp /tmp/r87s.py /tmp/r92-made && python3 /tmp/r92-made/r87s.py'
+        % _REVIEW_WRITER,
+        True,
+    ),
+    # #97ed76a7: a group's redirect is on the runs inside it, joined to the `cd` in force (allowed, rc 0, at 2672ed8f6); a variable `for` or `read` assigned is not the stale value (refused, rc 2, at 2672ed8f6, while bash writes `plain/y.md`).
+    ("a group redirect under a cd", "cd agent/reviews/x && { echo hi; } > y.md", True),
+    ("an if redirect under a cd", "cd agent/reviews/x && if true; then echo hi; fi > y.md", True),
+    ("a function body is walked", "function f { tee agent/reviews/x/y.md; }", True),
+    (
+        "a for loop reassigns the variable",
+        "D=agent/reviews/x; for D in plain; do echo hi > $D/y.md; done",
+        False,
+    ),
+    (
+        "read reassigns the variable",
+        "D=agent/reviews/x; read D <<< plain; echo hi > $D/y.md",
+        False,
+    ),
 ]
 
 MUTANTS = [
