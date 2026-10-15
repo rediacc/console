@@ -1,16 +1,16 @@
-## SESSION d778be9d 2026-10-15T09:18:57Z
+## SESSION d778be9d 2026-10-15T10:00:12Z
 
-# STATE d778be9d (2026-10-15T10:25Z)
+# STATE d778be9d (2026-10-15T10:55Z)
 
-Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. The operator returned at about 08:00Z ("You can continue for the rest.") <!-- style-ok -->, lifting the pause. The standing orders cover the push and merge: /pr-babysit (2026-10-09, #6361fc5b) pushes and drives CI, and /pr-merge is authorized at the babysit finish line; each push still needs the hooks' receipts (ci:quick, a VERIFIED vm:check).
+Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. The operator returned at about 08:00Z ("You can continue for the rest.") <!-- style-ok -->; /pr-babysit (#6361fc5b) pushes and drives CI, /pr-merge is authorized at the babysit finish line; each push needs the hooks' receipts.
 
 ## Next action
-1) Four writers in flight (leases): r65 #78df53cf (five code review findings: subscription-actions.ts, vm_check.py, hookio.py, backup.ts), r66 #e13fb555 (block_cli_bundle reads expanded words), r67 #59082342 (config lost-update in config-file-storage.ts/config.ts/rdc.sh), r68 #8d8ba5a2 (prune misses an orphan). Apply each patch, verify, commit, answer its review.
-2) Then: rerun npm run vm:check -- --changed live (the trigger paths moved: vm_check.py, repo-key-deployment.ts), npm run ci:quick on a still tree (closes #809a3054 and #c275adc4), push renet, account, console, sync_epic_block, /pr-babysit, /pr-merge.
-3) After the merge: PLAN-account-vm-check (QUEUE ## Promoted 17); wave-1 patches av1/av2/av3 sit in the session scratch dir and land with AV4/AV5.
+1) A live `npm run vm:check -- --changed` runs in the background (log .../vmcheck-final2.log). The run before it passed 32/32 assertions and failed only teardown (fixed in a6e93fb9e to name the delete error). Need VERIFIED.
+2) Then `npm run ci:quick` on a still tree (closes #809a3054, #c275adc4), push renet (1008-1: 7faf6718, 63435604, 14801965), account, console; `PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 600 1008-1`; /pr-babysit; /pr-merge. The console still points private/renet at 63435604; bump it to 14801965 before the push.
+3) After the merge: PLAN-account-vm-check (QUEUE ## Promoted 17): held AV1-AV5 in /home/developer/.d778be9d-held/ (av4 needs a rebase on vm_check.py), then AV6 docs and AV7 live.
 
-## Landed today (highlights)
-vm:check VERIFIED live 32/32 (5a9861e82 harness, 5ebcf6e99 daemon stdout, b3e076992/a442abccd daemon env scope, fd222f136 datastore, a01473956 dev config); BWS token deletion root cause and guards (1f969addb, f434e6dcb, bf6289c71, af20ae8bb); shell-write guards through links (84fdeff8e, f25b13600, b53a6fad1, defafc4e8), shellscan cd/CDPATH (5dbdf5670, 4a08d9e8b, a00d2c430); env:register multi-module (8bcd8e5ed); gate debt (5e1158c34, e704b070d); CLI sync symlink warning and fork-key rollback (ef6dbb539, 589a76af7, 33b9ed1e1) with translations (abca87430).
+## Operator ask done
+Renet upgrade regression (operator, ~10:4xZ): commit 7faf6718 (setup repairs old 0600 state records, fork mirror written 0644), follow-ups 63435604 and 14801965 for review findings. Reported to the operator.
 
 ## Rules learned
-Spell commit paths literally (no $FILES); a 20+ file commit quotes shape_cluster_diff.py output. Never run vitest from the repo root (it now refuses). Keep scratch clones under /home/developer when /tmp is tight. Check each writer's patch against HEAD before applying; rerun lint before committing a test edit.
+Spell commit paths literally; a 20+ file commit quotes shape_cluster_diff.py output. vitest from the repo root refuses now. Keep scratch clones under /home/developer. A writer's tick names its own commit, not the last one.
