@@ -68,7 +68,7 @@ def _local_origin(checkout, url):
         return None
     if url.startswith("file://"):
         return pathlib.Path(urllib.parse.unquote(url[len("file://") :]))
-    if "://" in url:
+    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", url):
         return None
     colon, slash = url.find(":"), url.find("/")
     if colon != -1 and (slash == -1 or colon < slash):

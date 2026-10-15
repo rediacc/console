@@ -63,6 +63,7 @@ def test_origin_spellings_follow_git_on_posix(tmp_path):
         ("/abs/console", pathlib.Path("/abs/console")),
         ("file:///abs/my%20console", pathlib.Path("/abs/my console")),
         ("dir/with:colon", tmp_path / "dir/with:colon"),
+        ("dir/x://y", tmp_path / "dir/x://y"),
     ):
         assert differential._local_origin(tmp_path, local) == want, local
     for hosted in (
@@ -76,16 +77,19 @@ def test_origin_spellings_follow_git_on_posix(tmp_path):
         assert differential._local_origin(tmp_path, hosted) is None, hosted
 
 
-def test_a_bare_relative_origin_resolves_to_the_hosted_identity(tmp_path):
+def test_a_bare_relative_origin_resolves_to_the_hosted_identity(tmp_path, monkeypatch):
     upstream = tmp_path / "upstream"
     clone = tmp_path / "clone"
     _git("init", "-q", str(upstream))
     _git("-C", str(upstream), "remote", "add", "origin", "https://github.com/rediacc/console.git")
     _git("init", "-q", str(clone))
     _git("-C", str(clone), "remote", "add", "origin", "../upstream")
-    sub = clone / "upstream"
+    # The relative origin resolves against the checkout, not the process's cwd (review 75657b08.3): run from a directory holding a decoy `../upstream` that is not the real one.
+    elsewhere = tmp_path / "a" / "b"
+    elsewhere.mkdir(parents=True)
+    _git("init", "-q", str(tmp_path / "a" / "upstream"))
+    monkeypatch.chdir(elsewhere)
     assert differential.identity_root(clone).resolve() == upstream.resolve()
-    assert not sub.exists()
 
 
 def test_ci_never_takes_the_submodule_exemption(monkeypatch):

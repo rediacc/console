@@ -1707,8 +1707,16 @@ class VmCheck:
             res, entries = self.repo_list()
             names = {str(e.get("name", "")) for e in entries}
             if res.rc != 0:
+                # The delete's own error rides along when the list cannot confirm it (review a6e93fb9.1): an unreadable list must not hide why a delete failed.
                 leftovers.extend(
-                    "fork %s (repo list unreadable)" % self.ref(f["tag"]) for f in self.forks
+                    "fork %s (repo list unreadable%s)"
+                    % (
+                        self.ref(f["tag"]),
+                        "; " + delete_errors[self.ref(f["tag"])]
+                        if self.ref(f["tag"]) in delete_errors
+                        else "",
+                    )
+                    for f in self.forks
                 )
             for fork in self.forks:
                 if self.ref(fork["tag"]) in names:
