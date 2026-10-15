@@ -1676,10 +1676,19 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_worktree_add.py",
         bash_json(
-            "printf '%s\\n' 'print(\"never run git worktree add here\")' > /tmp/wt-78afdc0b.py; "
+            "printf '%s\\n' 'print(\"never run git worktree list here\")' > /tmp/wt-78afdc0b.py; "
             "python3 /tmp/wt-78afdc0b.py"
         ),
         "worktree-add CONTROL: a written script printing a sentence (#78afdc0b)",
+    ),
+    # c02612863 refuses an untracked script naming the phrase whatever it does with the words, so the sentence that names `worktree add` is no longer a control.
+    case(
+        "check 2 guards/block_worktree_add.py",
+        bash_json(
+            "printf '%s\\n' 'print(\"never run git worktree add here\")' > /tmp/wt-78afdc0b.py; "
+            "python3 /tmp/wt-78afdc0b.py"
+        ),
+        "worktree-add: a written script naming the phrase is refused for its text (c02612863)",
     ),
     case(
         "check 2 guards/block_worktree_add.py",
