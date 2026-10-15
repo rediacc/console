@@ -1077,8 +1077,10 @@ class Backup:
         server = d.server_url()
         d.setup_run([self.rdc, "config", "init", CONFIG_NAME, "--server", server])
         d.setup_run([self.rdc, "config", "current", "-o", "json"])
+        # `--token -` reads the token from stdin, so it never enters argv (worklist #773eccc5).
         d.setup_run(
-            [self.rdc, "subscription", "login", "--token", self.api_token, "--server", server]
+            [self.rdc, "subscription", "login", "--token", "-", "--server", server],
+            stdin_text=self.api_token,
         )
 
     def leg_f_cli_reads(self) -> None:

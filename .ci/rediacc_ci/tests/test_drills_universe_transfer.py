@@ -306,6 +306,35 @@ def test_universe_phase_failures_are_reported_the_same(world: World) -> None:
     assert "41 passed, 1 failed" in p[1]
 
 
+ARGV_LOG_HEAD = """argv = sys.argv[1:]
+_stdin = sys.stdin.read() if "-" in argv else ""
+with open(os.environ["FAKE_RDC_ARGV_LOG"], "a") as _log:
+    _log.write(json.dumps({{"argv": argv, "stdin": _stdin}}) + "\\n")
+"""
+
+
+def test_universe_logs_in_without_the_token_on_any_argv(
+    world: World, tmp_path: pathlib.Path
+) -> None:
+    """Worklist #773eccc5. The whole live run against a fake `rdc.sh` that records every argv and, for `-`, its stdin: the gateway's minted token reaches `subscription login --token -` on stdin and appears in no argv."""
+    token = "rdt_faketoken123456"
+    rdc = world.root / "rdc.sh"
+    rdc.write_text(
+        FAKE_RDC.replace("argv = sys.argv[1:]\n", ARGV_LOG_HEAD, 1).format(py=sys.executable)
+    )
+    log_path = tmp_path / "argv.jsonl"
+    p = _port("universe", ["--no-restart"], _env(world, FAKE_RDC_ARGV_LOG=str(log_path)), world)
+    assert p[0] == 0, p[2][-400:]
+    calls = [json.loads(line) for line in log_path.read_text().splitlines()]
+    leaked = [c["argv"] for c in calls if any(token in arg for arg in c["argv"])]
+    assert not leaked, "the token reached a child argv: %r" % leaked
+    logins = [c for c in calls if c["argv"][:2] == ["subscription", "login"]]
+    assert logins, "the run never logged in"
+    for call in logins:
+        assert call["argv"][call["argv"].index("--token") + 1] == "-"
+        assert call["stdin"] == token
+
+
 @pytest.mark.parametrize("drill", ["universe", "transfer"])
 def test_selftest_matches_bash(world: World, drill: str) -> None:
     env = _env(world)
