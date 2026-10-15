@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "Litsentsi väljastamine ebaõnnestus. Veendu, et su tellimus on aktiivne ja masina slot on saadaval.",
-      "notLoggedIn": "Pole sisse logitud. Inimesed peaksid käivitama `rdc subscription login`. Automatiseerimine peaks käivitama `rdc subscription login --token <token>` või seadistama `REDIACC_SUBSCRIPTION_TOKEN`.",
-      "tokenRequired": "Tellimuse token on nõutud. Kas seadista REDIACC_SUBSCRIPTION_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis.",
-      "tokenWarning": "Tellimuse tokenit ei leitud. Litsentsi nõudvad käsud (repo create, repo fork) ebaõnnestuvad. Seadista REDIACC_SUBSCRIPTION_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis.",
+      "notLoggedIn": "Pole sisse logitud. Inimesed peaksid käivitama `rdc subscription login`. Automatiseerimine peaks käivitama `rdc subscription login --token <token>` või seadistama `REDIACC_TOKEN`.",
+      "tokenRequired": "Tellimuse token on nõutud. Kas seadista REDIACC_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis.",
+      "tokenWarning": "Tellimuse tokenit ei leitud. Litsentsi nõudvad käsud (repo create, repo fork) ebaõnnestuvad. Seadista REDIACC_TOKEN keskkonna muutuja või käivita `rdc subscription login` oma terminalis.",
       "ipRebind": {
         "prompt": "Sinu IP-aadress muutus. Selle sisselogimise siia tõstmiseks sisesta autentimisrakenduse 6-kohaline kood:",
         "moved": "See sisselogimine töötab nüüd aadressilt {{ip}}.",

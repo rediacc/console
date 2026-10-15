@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "Échec de l'activation de la machine. Assurez-vous que votre abonnement est actif et que l'emplacement machine est disponible.",
-      "notLoggedIn": "Non connecté. Exécutez d’abord `rdc subscription login`.",
-      "tokenRequired": "Jeton d'abonnement requis. Définissez la variable d'environnement REDIACC_SUBSCRIPTION_TOKEN ou exécutez `rdc subscription login` dans votre terminal.",
-      "tokenWarning": "Aucun jeton d'abonnement trouvé. Les commandes nécessitant une licence (repo create, repo fork) échoueront. Définissez la variable d'environnement REDIACC_SUBSCRIPTION_TOKEN ou exécutez `rdc subscription login` dans votre terminal.",
+      "notLoggedIn": "Non connecté. En usage manuel, exécutez `rdc subscription login`. En automatisation, exécutez `rdc subscription login --token <token>` ou définissez `REDIACC_TOKEN`.",
+      "tokenRequired": "Jeton d'abonnement requis. Définissez la variable d'environnement REDIACC_TOKEN ou exécutez `rdc subscription login` dans votre terminal.",
+      "tokenWarning": "Aucun jeton d'abonnement trouvé. Les commandes nécessitant une licence (repo create, repo fork) échoueront. Définissez la variable d'environnement REDIACC_TOKEN ou exécutez `rdc subscription login` dans votre terminal.",
       "ipRebind": {
         "prompt": "Votre adresse IP a changé. Saisissez le code à 6 chiffres de votre application d'authentification pour transférer cette connexion ici :",
         "moved": "Cette connexion fonctionne désormais depuis {{ip}}.",

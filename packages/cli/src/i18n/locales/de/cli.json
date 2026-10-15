@@ -2281,9 +2281,9 @@
     },
     "subscription": {
       "activationFailed": "Maschinenaktivierung fehlgeschlagen. Stellen Sie sicher, dass Ihr Abonnement aktiv ist und der Maschinenplatz verfügbar ist.",
-      "notLoggedIn": "Nicht angemeldet. Führen Sie zuerst `rdc subscription login` aus.",
-      "tokenRequired": "Abonnement-Token erforderlich. Setzen Sie die Umgebungsvariable REDIACC_SUBSCRIPTION_TOKEN oder führen Sie `rdc subscription login` in Ihrem Terminal aus.",
-      "tokenWarning": "Kein Abonnement-Token gefunden. Lizenzbedürftige Befehle (repo create, repo fork) werden fehlschlagen. Setzen Sie die Umgebungsvariable REDIACC_SUBSCRIPTION_TOKEN oder führen Sie `rdc subscription login` in Ihrem Terminal aus.",
+      "notLoggedIn": "Nicht angemeldet. Interaktiv führen Sie `rdc subscription login` aus. In der Automatisierung führen Sie `rdc subscription login --token <token>` aus oder setzen `REDIACC_TOKEN`.",
+      "tokenRequired": "Abonnement-Token erforderlich. Setzen Sie die Umgebungsvariable REDIACC_TOKEN oder führen Sie `rdc subscription login` in Ihrem Terminal aus.",
+      "tokenWarning": "Kein Abonnement-Token gefunden. Lizenzbedürftige Befehle (repo create, repo fork) werden fehlschlagen. Setzen Sie die Umgebungsvariable REDIACC_TOKEN oder führen Sie `rdc subscription login` in Ihrem Terminal aus.",
       "ipRebind": {
         "prompt": "Ihre IP-Adresse hat sich geändert. Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein, um diese Anmeldung hierher zu übertragen:",
         "moved": "Diese Anmeldung funktioniert jetzt von {{ip}} aus.",

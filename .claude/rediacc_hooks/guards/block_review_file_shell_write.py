@@ -13,6 +13,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 import ast
 import fnmatch
 import itertools
+import os
 import re
 import shlex
 
@@ -160,13 +161,57 @@ EDGE_CASES = [
 ]
 
 
-def _is_review(word, cwd=None):
+def _is_review(word, cwd=None, base=None):
     if not word:
         return False
     return any(
         REVIEW_WORD.search(form) or (cwd and REVIEW_WORD.search(str(cwd).rstrip("/") + "/" + form))
         for form in _review_forms(word)
-    )
+    ) or _lands_in_reviews(word, base)
+
+
+# A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93). With `lnk` a link to `agent/reviews/sub`, `cd lnk && tee x.md`, `echo x > lnk/x.md` and `cp /tmp/a lnk/` write review files while no word, and no directory text the walk keeps, spells the review directory: the lexical reading allowed all three (rc 0), logical `cd` or physical. `base` is the absolute directory the run executes in, and the word is resolved against it on disk.
+# Read only for a word short enough to be a path: a heredoc body or a commit message is not one, and resolving it would only spend system calls.
+_PATH_MAX = 4096
+
+
+def _base(where, cwd):
+    """The absolute directory a run in `where` (`shellscan.write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
+    if not cwd or not os.path.isabs(str(cwd)):
+        return None
+    return os.path.join(str(cwd), str(where)) if where else str(cwd)
+
+
+def _lands_in_reviews(word, base):
+    """True when `word`, resolved on disk from the absolute directory `base`, is inside the review directory: a symlink anywhere on the way is followed, and so is one the walk's text cannot see (the hook's own directory, a `..` after a link)."""
+    if not base or not word or len(word) > _PATH_MAX or "\n" in word or "\0" in word:
+        return False
+    try:
+        landed = os.path.realpath(os.path.join(base, word))
+    except (OSError, ValueError):
+        return False
+    return REVIEW_WORD.search(landed.replace("\\", "/")) is not None
+
+
+def _reaches_reviews(cmd, cwd):
+    """The pre-filter's second question, for a command whose text names no review directory: does any directory it runs in, or any word or redirect target it names, resolve on disk into one (#816a7c93)? Each run's words, redirects, fed words and launch starts are read against the directory the run executes in, so a link reached by `cd`, `pushd`, `env -C` or inside a path word sends the command to the full check, and a command that touches no such link stays on the cheap path.
+
+    SOUND FOR THE FULL CHECK'S DISK READING: every word `_offending` resolves on disk is one of a run's words, redirects or fed words joined to that run's directory, so a command answered no here holds nothing `_lands_in_reviews` would refuse.
+    """
+    if not cwd or not os.path.isabs(str(cwd)):
+        return False
+    if any(_lands_in_reviews(t, str(cwd)) for t in shellscan.write_targets(cmd)):
+        return True
+    for run in shellscan.every_run(cmd):
+        base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
+        words = [".", *run.argv, *run.writes, *(run.xargv or ()), *(run.feed_words or ())]
+        if run.feed:
+            words.extend(run.feed.split())
+        if run.launch is not None:
+            words.extend(run.launch.starts)
+        if any(_lands_in_reviews(w, base) for w in words):
+            return True
+    return False
 
 
 _GLOB = frozenset("*?[")
@@ -282,7 +327,7 @@ def _offending(cmd, depth=0, cwd=None):
             "a command nested more than %d programs deep that names the review directory"
             % MAX_DEPTH
         )
-    hits = [t for t in shellscan.write_targets(cmd) if _is_review(t, cwd)]
+    hits = [t for t in shellscan.write_targets(cmd) if _is_review(t, cwd, _base(None, cwd))]
     if hits:
         return "redirect into %s" % hits[0]
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i`, `cp` or interpreter that `find -exec` or `npx -c` starts writes the same review file, so the runs are `shellscan.every_run`.
@@ -291,32 +336,36 @@ def _offending(cmd, depth=0, cwd=None):
         argv = list(run.argv)
         # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1): `cd lnk && env -C .. tee x.md` writes into the parent of the directory `lnk` points to.
         where = shellscan.write_directory(run.cwd, cwd)
+        # The absolute directory the run executes in, so each word is also read where the disk resolves it (#816a7c93).
+        base = _base(where, cwd)
         if any(a.rsplit("/", 1)[-1] in SANCTIONED for a in [run.name, *argv[:2]]):
             continue
         for target in run.writes:
-            if _is_review(target, where):
+            if _is_review(target, where, base):
                 return "redirect into %s" % target
         operands = _run_operands(run, argv)
-        if name == "tee" and any(_is_review(a, where) for a in operands):
+        if name == "tee" and any(_is_review(a, where, base) for a in operands):
             return "tee into the review directory"
         # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
         in_place = shellscan.in_place_edit(run) is not None
-        if in_place and any(_is_review(a, where) for a in operands):
+        if in_place and any(_is_review(a, where, base) for a in operands):
             return "%s -i on a review file" % name
         # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
         # `cwd` places a relative fed glob in the run's own directory (#e5b0540a). Two kinds of run get the shape reading instead: a command a PROGRAM hands down (the recursion below passes no `cwd`, since it runs wherever that program does), and one a launcher starts (`find -exec`, `npx`: `shellscan._feed_directories`, review 9ed30a8a.1).
         copies = shellscan.run_copies(run, None, cwd)
-        if copies is not None and any(_is_review(d, where) for d in copies[1]):
+        if copies is not None and any(_is_review(d, where, base) for d in copies[1]):
             return "%s onto the review directory" % name
-        if name == "truncate" and any(_is_review(a, where) for a in operands):
+        if name == "truncate" and any(_is_review(a, where, base) for a in operands):
             return "truncate of a review file"
-        if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], where) for a in argv):
+        if name == "dd" and any(
+            a.startswith("of=") and _is_review(a[3:], where, base) for a in argv
+        ):
             return "dd of= a review file"
         # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
         # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
         for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
             for word, how in shellscan.output_landings(run, _without_ref_operands(run, words), cwd):
-                if not _is_review(word, where):
+                if not _is_review(word, where, base):
                     continue
                 if how == "option":
                     return "%s writing %s through its own output option" % (name, word)
@@ -338,6 +387,9 @@ def _offending(cmd, depth=0, cwd=None):
             code = " ".join(argv)
             if kind in ("stdin", "file"):
                 code += "\n" + text
+            # A PROGRAM RUN INSIDE THE REVIEW DIRECTORY writes there by any relative path (#816a7c93, as block_user_only_command_shell_write reads a command directory): `cd agent/reviews/b && python3 -c "open('a.md','w')"` named no review path in its code and was allowed (rc 0), through a link or not. Any write in its code is refused there.
+            if _lands_in_reviews(".", base) and WRITE_CODE.search(code):
+                return "%s code that writes inside the review directory" % name
             program = text if kind is not None and re.match(r"^python[0-9.]*$", name) else None
             verdict = _python_writes_review(program, depth) if program is not None else None
             if verdict is None:
@@ -574,10 +626,12 @@ def run(ev):
     except RuntimeError:
         cwd = ev.cwd
     # A script run by path names the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named. A glob or brace can spell the directory without the word (`echo revi*s/... | xargs cp ...` under `cd agent`, #7094b75e), so a command holding one is read too.
+    # A LINK SPELLS THE DIRECTORY WITHOUT THE WORD (#816a7c93): with `lnk` a link into `agent/reviews`, `cd lnk && tee x.md` names neither, so a command the text test passes is read once more against the disk, and only one whose directories and words stay outside the review directory takes the cheap path.
     if (
         "reviews" not in cmd
         and not any(ch in cmd for ch in "*?[{")
         and not any("reviews" in text for text in shellscan.interpreter_scripts(cmd, cwd))
+        and not _reaches_reviews(cmd, cwd)
     ):
         return hookio.ALLOW
     what = _offending(cmd, cwd=cwd)

@@ -2260,10 +2260,10 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault"
     },
     "subscription": {
-      "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_SUBSCRIPTION_TOKEN`.",
-      "tokenRequired": "Subscription token required. Either set REDIACC_SUBSCRIPTION_TOKEN env var, or run `rdc subscription login` in your terminal.",
+      "notLoggedIn": "Not logged in. Humans should run `rdc subscription login`. Automation should run `rdc subscription login --token <token>` or set `REDIACC_TOKEN`.",
+      "tokenRequired": "Subscription token required. Either set REDIACC_TOKEN env var, or run `rdc subscription login` in your terminal.",
       "activationFailed": "License issuance failed. Ensure your subscription is active and a machine slot is available.",
-      "tokenWarning": "No subscription token found. License-required commands (repo create, repo fork) will fail. Set REDIACC_SUBSCRIPTION_TOKEN env var or run `rdc subscription login` in your terminal.",
+      "tokenWarning": "No subscription token found. License-required commands (repo create, repo fork) will fail. Set REDIACC_TOKEN env var or run `rdc subscription login` in your terminal.",
       "ipRebind": {
         "prompt": "Your IP address changed. Enter the 6-digit code from your authenticator app to move this login here:",
         "moved": "This login now works from {{ip}}.",

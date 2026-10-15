@@ -9,6 +9,12 @@ import { describe, expect, it } from 'vitest';
  * the CLI and shared source trees and fails if any retired name reappears, so a
  * later change cannot silently resurrect `server.json`, `RDC_UPDATE_CHANNEL`,
  * `loadServerConfig`, etc.
+ *
+ * LOCALE JSON IS SOURCE TOO (#816a7c93). The walk read `.ts` alone, so the CLI's own messages
+ * told users to set the retired `REDIACC_SUBSCRIPTION_TOKEN` (`subscription.notLoggedIn`,
+ * `tokenRequired`, `tokenWarning`) while the code reads `REDIACC_TOKEN`
+ * (`services/account/subscription-auth.ts`). A message is where a user meets a variable's name,
+ * so every `cli.json` under `i18n/locales/` is scanned with the same list.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url)); // packages/cli/src/__tests__
@@ -67,6 +73,11 @@ const BANNED: Banned[] = [
   { token: "'server.json'", allow: ['adapters/config-file-storage.ts'] },
 ];
 
+/** A locale message file: a `.json` anywhere under an `i18n/locales/` directory. */
+function isLocaleFile(file: string): boolean {
+  return /[\\/]i18n[\\/]locales[\\/].+\.json$/.test(file);
+}
+
 function* walk(dir: string): Generator<string> {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
@@ -76,7 +87,10 @@ function* walk(dir: string): Generator<string> {
     const st = statSync(full);
     if (st.isDirectory()) {
       yield* walk(full);
-    } else if (/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) {
+    } else if (
+      (/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) ||
+      isLocaleFile(full)
+    ) {
       yield full;
     }
   }
@@ -139,6 +153,19 @@ describe('env-var / API tombstones', () => {
 
   it('control: the scanner is silent on clean content', () => {
     expect(scanContent('/synthetic/clean.ts', 'const t = process.env.REDIACC_TOKEN;')).toEqual([]);
+  });
+
+  it('control: the scanner fires on a retired name inside a locale message', () => {
+    const fixture = JSON.stringify({ hint: 'Set `REDIACC_SUBSCRIPTION_TOKEN` and retry.' });
+    const hits = scanContent('/synthetic/i18n/locales/en/cli.json', fixture);
+    expect(hits.map((h) => h.token)).toEqual(['REDIACC_SUBSCRIPTION_TOKEN']);
+  });
+
+  it('control: the walk reaches the locale files (a scan that reads none proves nothing)', () => {
+    const locales = [...walk(CLI_SRC)].filter(isLocaleFile);
+    expect(locales.some((f) => f.replaceAll('\\', '/').endsWith('locales/en/cli.json'))).toBe(true);
+    expect(isLocaleFile('/x/src/i18n/locales/en/cli.json')).toBe(true);
+    expect(isLocaleFile('/x/src/config/settings.json')).toBe(false);
   });
 
   it('no retired names survive in cli/src or shared/src', () => {

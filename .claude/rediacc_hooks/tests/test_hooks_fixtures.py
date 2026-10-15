@@ -2329,6 +2329,88 @@ def test_a_write_through_a_kept_pair_is_judged_where_it_lands_review_2925782e(tm
     assert shellscan._run_directory(landed, root) == os.path.join(root, "agent", "reviews")
 
 
+# A LINK SPELLS A PROTECTED DIRECTORY WITHOUT THE WORD (#816a7c93). With `lnk` a link to `agent/reviews/sub` and `clink` one to `.claude/commands/sub`, every `2` row below was allowed at 8bf140905 (rc 0): the text pre-filters skip a command that spells neither "reviews" nor a command directory, and the full check joined only the lexical directory text, so even a row the pre-filter passed (`ag/reviews/x.md`, `ag` a link to `agent`) was judged as a path outside the tree. The links here are named so no pre-filter word appears in a row, unlike the 2925782e rows above.
+LINK_INTO_TREE_ROWS = (
+    ("block_review_file_shell_write", "cd lnk && tee x.md", 2),
+    ("block_review_file_shell_write", "cd lnk && echo x > x.md", 2),
+    ("block_review_file_shell_write", "echo x > lnk/x.md", 2),
+    ("block_review_file_shell_write", "echo x | tee ag/reviews/x.md", 2),
+    ("block_review_file_shell_write", "cd -P lnk && sed -i s/a/b/ x.md", 2),
+    ("block_review_file_shell_write", "cp /tmp/a lnk/", 2),
+    ("block_review_file_shell_write", "pushd lnk && tee x.md", 2),
+    ("block_review_file_shell_write", "env -C lnk tee x.md", 2),
+    ("block_review_file_shell_write", "echo lnk/x.md | xargs tee", 2),
+    ("block_review_file_shell_write", "cd lnk && python3 -c \"open('x.md','w').write('x')\"", 2),
+    # The same program inside the plain review directory: it names no review path, so it was allowed too.
+    (
+        "block_review_file_shell_write",
+        "cd agent/reviews/sub && python3 -c \"open('a.md','w').write('x')\"",
+        2,
+    ),
+    # CONTROLS: a read through the link, a write beside it, a logical step back out, and commands that touch no link.
+    ("block_review_file_shell_write", "cd lnk && cat x.md", 0),
+    ("block_review_file_shell_write", "cd lnk && grep -rn high .", 0),
+    ("block_review_file_shell_write", "cd lnk && python3 -c \"print(open('x.md').read())\"", 0),
+    ("block_review_file_shell_write", "cd plain && tee x.md", 0),
+    ("block_review_file_shell_write", "cd plain && python3 -c \"open('a.md','w').write('x')\"", 0),
+    ("block_review_file_shell_write", "echo x > plain/x.md", 0),
+    ("block_review_file_shell_write", "cd lnk && cd .. && tee x.md", 0),
+    ("block_review_file_shell_write", "git status", 0),
+    ("block_review_file_shell_write", "ls -la", 0),
+    (
+        "block_user_only_command_shell_write",
+        "cd clink && echo 'disable-model-invocation: true' | tee x.md",
+        2,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        "echo 'disable-model-invocation: true' > clink/x.md",
+        2,
+    ),
+    ("block_user_only_command_shell_write", "cp flag.md clink/", 2),
+    ("block_user_only_command_shell_write", "cd clink && cp ../../../flag.md .", 2),
+    ("block_user_only_command_shell_write", "echo '{}' > el", 2),
+    ("block_user_only_command_shell_write", "cd clink && echo 'description: x' > x.md", 0),
+    (
+        "block_user_only_command_shell_write",
+        "cd plain && echo 'disable-model-invocation: true' | tee x.md",
+        0,
+    ),
+    ("block_user_only_command_shell_write", "printf 'description: x' > clink/x.md", 0),
+    ("block_user_only_command_shell_write", "cd clink && cat x.md", 0),
+    ("block_user_only_command_shell_write", "cat el", 0),
+    ("block_user_only_command_shell_write", "cp flag.md plain/", 0),
+)
+
+
+def test_a_write_through_a_link_into_a_protected_tree_is_judged_review_816a7c93(tmp_path):
+    root = os.path.realpath(tmp_path)
+    (tmp_path / "agent" / "reviews" / "sub").mkdir(parents=True)
+    (tmp_path / ".claude" / "commands" / "sub").mkdir(parents=True)
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / ".ci" / "config" / "model-invocation-exceptions.json").write_text(
+        '{"exceptions": []}'
+    )
+    (tmp_path / "flag.md").write_text("---\ndisable-model-invocation: true\n---\n")
+    (tmp_path / "plain").mkdir()
+    (tmp_path / "lnk").symlink_to("agent/reviews/sub", target_is_directory=True)
+    (tmp_path / "ag").symlink_to("agent", target_is_directory=True)
+    (tmp_path / "clink").symlink_to(".claude/commands/sub", target_is_directory=True)
+    (tmp_path / "el").symlink_to(".ci/config/model-invocation-exceptions.json")
+    wrong = []
+    for stem, command, want in LINK_INTO_TREE_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    # Both directions on 4 rows each: neither table is vacuous.
+    assert sum(r[2] == 2 for r in LINK_INTO_TREE_ROWS) >= 4
+    assert sum(r[2] == 0 for r in LINK_INTO_TREE_ROWS) >= 4
+
+
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The

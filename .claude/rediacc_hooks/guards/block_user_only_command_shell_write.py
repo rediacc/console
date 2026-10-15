@@ -132,13 +132,78 @@ EDGE_CASES = [
 ]
 
 
-def _is_target(word, cwd=None):
+def _is_target(word, cwd=None, base=None):
     if not word:
         return False
     if model_invocation.names_scope_dir(word):
         return True
-    if cwd and not os.path.isabs(word):
-        return model_invocation.names_scope_dir(str(cwd).rstrip("/") + "/" + word)
+    if (
+        cwd
+        and not os.path.isabs(word)
+        and model_invocation.names_scope_dir(str(cwd).rstrip("/") + "/" + word)
+    ):
+        return True
+    landed = _on_disk(word, base)
+    return landed is not None and model_invocation.names_scope_dir(landed)
+
+
+def _is_list(word, prefix="", base=None):
+    """True for the exception list, as typed, under the run's directory text `prefix`, or where the disk resolves it from `base`."""
+    if model_invocation.is_exception_list(word) or (
+        prefix and model_invocation.is_exception_list(prefix + word)
+    ):
+        return True
+    landed = _on_disk(word, base)
+    return landed is not None and model_invocation.is_exception_list(landed)
+
+
+# A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93, as block_review_file_shell_write reads it). With `clink` a link to `.claude/commands/sub`, `cd clink && ... | tee x.md` and `echo ... > clink/x.md` wrote the key into a command file while no word, and no directory text the walk keeps, spells a command directory: the lexical reading allowed both (rc 0). `base` is the absolute directory the run executes in.
+# Read only for a word short enough to be a path: a heredoc body is not one, and resolving it would only spend system calls.
+_PATH_MAX = 4096
+
+
+def _base(here, cwd):
+    """The absolute directory a run in `here` (`shellscan.write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
+    if not cwd or not os.path.isabs(str(cwd)):
+        return None
+    return os.path.join(str(cwd), str(here)) if here else str(cwd)
+
+
+def _on_disk(word, base):
+    """The path `word` resolves to on disk from the absolute directory `base`, every symlink on the way followed, or None when there is no such path to read."""
+    if not base or not word or len(word) > _PATH_MAX or "\n" in word or "\0" in word:
+        return None
+    try:
+        return os.path.realpath(os.path.join(base, word)).replace("\\", "/")
+    except (OSError, ValueError):
+        return None
+
+
+def _in_scope_on_disk(word, base):
+    landed = _on_disk(word, base)
+    return landed is not None and (
+        model_invocation.names_scope_dir(landed) or model_invocation.is_exception_list(landed)
+    )
+
+
+def _reaches_scope(cmd, cwd):
+    """The pre-filter's second question, for a command whose text names neither the key nor a command or skill directory nor the exception list: does any directory it runs in, or any word or redirect target it names, resolve on disk into one (#816a7c93)? A command that touches no such link stays on the cheap path.
+
+    SOUND FOR THE FULL CHECK'S DISK READING: every word `_offending` resolves on disk is one of a run's words, redirects or fed words joined to that run's directory, so a command answered no here holds nothing the disk reading would refuse.
+    """
+    if not cwd or not os.path.isabs(str(cwd)):
+        return False
+    if any(_in_scope_on_disk(t, str(cwd)) for t in shellscan.write_targets(cmd)):
+        return True
+    for run in shellscan.every_run(cmd):
+        base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
+        words = [".", *run.argv, *run.writes, *(run.xargv or ()), *(run.feed_words or ())]
+        if run.feed:
+            words.extend(run.feed.split())
+        if run.launch is not None:
+            words.extend(run.launch.starts)
+        if any(_in_scope_on_disk(w, base) for w in words):
+            return True
     return False
 
 
@@ -168,8 +233,9 @@ def _lands(source, dest, into):
 
 
 def _abs(path, run_cwd, cwd):
+    """`path` made absolute against the run's directory, resolved where the disk puts it (#816a7c93): a link into a command directory lands on the file the exception list names."""
     base = cwd if run_cwd is None else os.path.join(cwd, run_cwd)
-    return path if os.path.isabs(path) else os.path.normpath(os.path.join(base, path))
+    return os.path.realpath(path if os.path.isabs(path) else os.path.join(base, path))
 
 
 def _landing(source, dest_abs, dest_word, into=False):
@@ -218,25 +284,19 @@ def _listed(target_abs):
 def _list_write(runs, analysis, cmd, cwd):
     """A short description of the first write to the exception list itself, or ""."""
     for _op, target in analysis.writes:
-        if model_invocation.is_exception_list(target):
+        if _is_list(target, base=_base(None, cwd)):
             return "a redirect into %s" % target
     for run in runs:
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
         # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), as block_review_file_shell_write reads it.
         here = shellscan.write_directory(run.cwd, cwd)
+        base = _base(here, cwd)
         operands = _run_operands(run, argv)
         prefix = str(here).rstrip("/") + "/" if here else ""
-        on_list = [
-            a
-            for a in operands
-            if model_invocation.is_exception_list(a)
-            or model_invocation.is_exception_list(prefix + a)
-        ]
+        on_list = [a for a in operands if _is_list(a, prefix, base)]
         for target in run.writes:
-            if model_invocation.is_exception_list(target) or (
-                here and model_invocation.is_exception_list(str(here).rstrip("/") + "/" + target)
-            ):
+            if _is_list(target, prefix, base):
                 return "a redirect into %s" % target
         # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` are in place.
         in_place = shellscan.in_place_edit(run) is not None
@@ -247,12 +307,10 @@ def _list_write(runs, analysis, cmd, cwd):
             sources, dests, into = copies
             for dest in dests:
                 for landed in [dest] + [_lands(src, dest, into) for src in sources]:
-                    if any(
-                        model_invocation.is_exception_list(p) for p in (landed, prefix + landed)
-                    ):
+                    if _is_list(landed, prefix, base):
                         return "%s onto %s" % (name, landed)
         if name == "dd" and any(
-            a.startswith("of=") and model_invocation.is_exception_list(a[3:]) for a in argv
+            a.startswith("of=") and _is_list(a[3:], prefix, base) for a in argv
         ):
             return "dd of= the exception list"
         # A script run DIRECTLY by its shebang is the interpreter it names (#7ab88f34, as in block_review_file_shell_write): no interpreter word stands in the command, and the program would otherwise run unread.
@@ -304,9 +362,9 @@ def _offending(cmd, cwd):
     flagged = model_invocation.flag_in_text(written)
     appends = {target for op, target in analysis.writes if op in (">>", "&>>")}
 
-    def redirect_refusal(target, run_cwd, appending):
+    def redirect_refusal(target, run_cwd, appending, base=None):
         """A refusal for a write of `written` into `target`, or "". A LISTED file overwritten whole is judged by `verdict` on the text written; any other write carrying the key is refused."""
-        if not _is_target(target, run_cwd):
+        if not _is_target(target, run_cwd, base):
             return ""
         listed = None if appending else _listed(_abs(target, run_cwd, cwd))
         if listed is not None:
@@ -319,22 +377,25 @@ def _offending(cmd, cwd):
         argv = list(run.argv)
         # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), as block_review_file_shell_write reads it.
         here = shellscan.write_directory(run.cwd, cwd)
+        base = _base(here, cwd)
         operands = _run_operands(run, argv)
         for target in run.writes:
-            why = redirect_refusal(target, here, target in appends)
+            why = redirect_refusal(target, here, target in appends, base)
             if why:
                 return "flag", why
         if name == "tee":
             appending = "-a" in argv or "--append" in argv
             for target in operands:
-                why = redirect_refusal(target, here, appending)
+                why = redirect_refusal(target, here, appending, base)
                 if why:
                     return "flag", why
         # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` rewrote the key into a command file unrefused. Its scripts join the non-option words, so the scripts read can only grow.
         edit = shellscan.in_place_edit(run)
-        hits = [a for a in operands if _is_target(a, here)]
+        hits = [a for a in operands if _is_target(a, here, base)]
         if edit is not None and hits:
-            exprs = edit[0] + [a for a in argv if not a.startswith("-") and not _is_target(a, here)]
+            exprs = edit[0] + [
+                a for a in argv if not a.startswith("-") and not _is_target(a, here, base)
+            ]
             for expr in exprs:
                 added = "\n".join(m.group("rep") for m in _SED_SUB.finditer(expr))
                 if not _SED_SUB.search(expr):
@@ -355,7 +416,7 @@ def _offending(cmd, cwd):
         # `cwd` places a relative fed glob in the run's own directory (#e5b0540a).
         copies = shellscan.run_copies(run, None, cwd)
         for dest in copies[1] if copies is not None else []:
-            if not _is_target(dest, here):
+            if not _is_target(dest, here, base):
                 continue
             dest_abs = _abs(dest, here, cwd)
             for source in copies[0]:
@@ -375,7 +436,7 @@ def _offending(cmd, cwd):
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
             name = shebang
         if name.startswith(INTERPRETERS):
-            in_dir = _is_target(".", here)
+            in_dir = _is_target(".", here, base)
             code, verdict, kind = _program(run, cmd, cwd, _names_dir)
             # A program this hook cannot read (review b922f15c.1, .4): the same command wrote the script from an unknown source, or it is too large to read. The pre-filter already matched, so it is refused rather than run unread.
             if kind == "unjudgeable":
@@ -405,9 +466,11 @@ def run(ev):
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
-    # A script run by path names the key or the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too; the lexer starts only when an interpreter is named.
-    if not _PREFILTER.search(cmd) and not any(
-        _PREFILTER.search(text) for text in shellscan.interpreter_scripts(cmd, cwd)
+    # A script run by path names the key or the directory in its own text, not the command's (#c4542b69), so the pre-filter reads those scripts too. A link spells a command directory or the exception list without the word (#816a7c93), so a command the text test passes is read once more against the disk, and only one whose directories and words stay outside them takes the cheap path.
+    if (
+        not _PREFILTER.search(cmd)
+        and not any(_PREFILTER.search(text) for text in shellscan.interpreter_scripts(cmd, cwd))
+        and not _reaches_scope(cmd, cwd)
     ):
         return hookio.ALLOW
     found = _offending(cmd, cwd)
