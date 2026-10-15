@@ -258,7 +258,7 @@ same-namespace only, same VolumeMode; restore size ≥ snapshot size — with ou
 snapshot-controller (§15 source 10; the k3s issue asking for bundling is open since 2021). Renet installs at CLUSTER INSTALL:
   1. the three v1 CRDs (`volumesnapshots`, `volumesnapshotclasses`,
      `volumesnapshotcontents`) — embedded YAML pinned from external-snapshotter
-     v8.6.0 `client/config/crd`, applied via the existing `applyClusterScoped`
+     v8.7.0 `client/config/crd`, applied via the existing `applyClusterScoped`
      seam;
   2. the `rediacc-csi-snapshot-controller.service` unit (CP node,
      `--enable-distributed-snapshotting` — required for the sidecar's
