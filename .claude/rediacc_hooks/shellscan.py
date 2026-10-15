@@ -7410,7 +7410,6 @@ _CURL_LONG_OUT = {
     "--output-dir": "dir",
 }
 _WGET_VALUED = frozenset("OoaPeitTwQUlARDIXB")
-_URL = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://\S+")
 
 
 def _url_name(url):
@@ -7432,6 +7431,8 @@ def _tool_outputs(run):
     dirs: list[str] = []
     if base == "curl":
         remote, header, out_dir, k = False, False, "", 0
+        outputs: list[str] = []
+        positional: list[str] = []
         while k < len(words):
             word = words[k]
             k += 1
@@ -7443,6 +7444,8 @@ def _tool_outputs(run):
                         k += 1
                     if _CURL_LONG_OUT[key] == "dir":
                         out_dir = value
+                    elif key == "--output":
+                        outputs.append(value)
                     else:
                         files.append(value)
                 remote |= key in ("--remote-name", "--remote-name-all")
@@ -7457,10 +7460,18 @@ def _tool_outputs(run):
                         if not value and k < len(words):
                             value = words[k]
                             k += 1
-                        if letter in "oDc":
+                        if letter == "o":
+                            outputs.append(value)
+                        elif letter in "Dc":
                             files.append(value)
                         break
-        urls = [w for w in words if _URL.fullmatch(w)]
+                continue
+            positional.append(word)
+        # `--output-dir` applies to `-o` as well as `-O` (review 6c9f6fd8.2), and a URL needs no scheme: curl fetches `example.com/a.py` as http (review 6c9f6fd8.3), so every operand is a URL.
+        files.extend(
+            os.path.join(out_dir, o) if out_dir and not os.path.isabs(o) else o for o in outputs
+        )
+        urls = [w for w in positional if w and not any(ch.isspace() for ch in w)]
         if remote:
             files.extend(
                 os.path.join(out_dir, _url_name(u)) if out_dir else _url_name(u) for u in urls
@@ -7470,6 +7481,7 @@ def _tool_outputs(run):
         return [f for f in files if f and f != "-"], dirs
     if base == "wget":
         document, prefix, recursive, k = None, "", False, 0
+        wpositional: list[str] = []
         while k < len(words):
             word = words[k]
             k += 1
@@ -7509,10 +7521,13 @@ def _tool_outputs(run):
                         elif letter in "oa":
                             files.append(value)
                         break
+                continue
+            wpositional.append(word)
         if document is not None:
             files.append(document)
         else:
-            urls = [w for w in words if _URL.fullmatch(w)]
+            # wget fetches a schemeless operand as http too (review 6c9f6fd8.3).
+            urls = [w for w in wpositional if w and not any(ch.isspace() for ch in w)]
             files.extend(
                 os.path.join(prefix, _url_name(u)) if prefix else _url_name(u) for u in urls
             )
@@ -7710,12 +7725,11 @@ _GIT_TREE_KEEPERS = frozenset(
         "diff-files",
         "diff-index",
         "add",
-        "commit",
-        "push",
         "version",
         "var",
     )
 )
+_GIT_PROGRAM_KEY = re.compile(r"(?i)\bcore\.(?:fsmonitor|hookspath)\b")
 _RM_DIR_OPTION = re.compile(r"-[A-Za-z]*[rRd][A-Za-z]*|--recursive|--dir")
 
 
@@ -7725,6 +7739,10 @@ def _may_touch_directories(run):
     if base not in _DIR_TOUCHERS:
         return False
     if base == "git":
+        # `commit` and `push` run `.git/hooks` programs, and a run that points `core.fsmonitor` or `core.hooksPath` at a program (through `-c` or `git config`) lets any later index read run it, so none of them keeps the tree (review 6c9f6fd8.4).
+        words = run.xargv if run.xargv is not None else run.argv
+        if any(_GIT_PROGRAM_KEY.search(w) for w in words):
+            return True
         return run.git_sub not in _GIT_TREE_KEEPERS
     if base == "rm" and "xargs" not in run.via and run.launch is None:
         for word in run.xargv if run.xargv is not None else run.argv:

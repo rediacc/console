@@ -3142,6 +3142,9 @@ def test_a_tool_output_option_writes_its_file_63109cf2(bash, tmp_path):
             "unzip -l x.zip",
             "tar -czf x.tgz d",
             "curl -o - https://x.invalid/y",
+            "curl --output-dir d -o a.py https://x.invalid/y",
+            "curl -O example.invalid/s/a.py",
+            "wget example.invalid/s/a.py",
         )
     }
     assert outputs == {
@@ -3155,6 +3158,10 @@ def test_a_tool_output_option_writes_its_file_63109cf2(bash, tmp_path):
         "unzip -l x.zip": ([], []),
         "tar -czf x.tgz d": ([], []),
         "curl -o - https://x.invalid/y": ([], []),
+        # Reviews 6c9f6fd8.2, .3: --output-dir applies to -o, and a schemeless operand is a URL to curl and wget.
+        "curl --output-dir d -o a.py https://x.invalid/y": (["d/a.py"], []),
+        "curl -O example.invalid/s/a.py": (["a.py"], []),
+        "wget example.invalid/s/a.py": (["a.py"], []),
     }
 
 
@@ -3479,3 +3486,18 @@ def test_each_assignment_plant_turns_a_row_97ed76a7(bash, tmp_path, label, old, 
     module = _planted_shellscan(old, new)
     turned = _assign_wrong(module, bash, tmp_path) + _compound_wrong(module)
     assert turned, "plant %r turns no row: the tables cannot see it" % label
+
+
+def test_git_runs_that_can_run_programs_touch_directories_6c9f6fd8():
+    """Review 6c9f6fd8.4: commit and push run hooks, and a run pointing core.fsmonitor or core.hooksPath at a program lets later index reads run it; a plain status still keeps the tree."""
+    shellscan._ANALYSIS_CACHE.clear()
+
+    def touches(cmd):
+        return shellscan._may_touch_directories(next(iter(shellscan.every_run(cmd))))
+
+    assert touches("git commit -m x")
+    assert touches("git push origin main")
+    assert touches("git config core.fsmonitor ./mon")
+    assert touches("git -c core.hooksPath=h status")
+    assert not touches("git status")
+    assert not touches('git -C "$X" log')
