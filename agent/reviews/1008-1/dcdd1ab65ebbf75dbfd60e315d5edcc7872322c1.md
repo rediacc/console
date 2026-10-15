@@ -21,9 +21,9 @@ Body-Sig: d97a89bda3d940b5
 ### dcdd1ab6.1 [medium] .ci/rediacc_ci/ops/push_backup_credentials.py:360
 Anchor: in-diff
 Claim: main() returns 2 when plan() raises PushError, and plan() also raises for a regions.json vs wrangler-config mismatch, which is a refusal; the module docstring says 1 means any refusal and 2 means usage only, so this refusal exits 2 and a caller that branches on 1 misreads it.
-Resolution: open
+Resolution: fixed 9b69d3d6c214c076d2a9fdc1d7ac78a4f88800ad | d778be9d 2026-10-15T17:19:13Z
 
 ### dcdd1ab6.2 [low] .ci/rediacc_ci/ops/push_backup_credentials.py:191
 Anchor: in-diff
 Claim: secret_names() slices from the first '[' to the last ']' of wrangler's stdout, so any bracketed text printed before the JSON (e.g. a '[WARNING]' line on stdout) makes json.loads fail and the run refuses, contrary to the docstring's claim that text printed around the array is ignored.
-Resolution: open
+Resolution: fixed 9b69d3d6c214c076d2a9fdc1d7ac78a4f88800ad | d778be9d 2026-10-15T17:19:14Z
