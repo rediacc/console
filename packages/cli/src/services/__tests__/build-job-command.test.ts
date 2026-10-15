@@ -5,11 +5,12 @@
  * snapshots its own environment into the job's spool so that `job run`, which
  * systemd spawns with a CLEAN environment, can re-inject it. renet captures
  * exactly five things (REDIACC_SECRET_*, REDIACC_OTLP_*, REDIACC_ENVIRONMENT,
- * REDIACC_TELEMETRY_DISABLED, KUBECONFIG), so anything missing from the prefix
+ * REDIACC_TELEMETRY_DISABLED, KUBECONFIG), so anything missing from the launch
  * is silently absent from every detached deployment: a repo's secrets would just
  * vanish, and the failure would look like a broken app rather than a broken CLI.
+ * The secret ones ride stdin ahead of the vault, the rest the command's prefix.
  *
- * The prefix is composed by buildRenetEnvPrefix, the SAME function the
+ * The environment is composed by buildRenetEnv, the SAME function the
  * synchronous path uses, and these tests build it that way rather than hand-
  * writing a string, so they exercise the real composition and inherit its
  * telemetry rules (renet#51): an opt-out must never ship OTLP credentials.
@@ -26,22 +27,36 @@ import {
   buildJobStatusCommand,
   InvalidJobIdError,
 } from '../executor/job-client.js';
-import { buildRenetEnvPrefix } from '../executor/local-executor.js';
+import { buildRenetEnv } from '../executor/local-executor.js';
 
 const RENET = '/usr/bin/renet';
 const JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
 const CREDS = { user: 'otlp-eu-abc123', pass: 'base64url-pass_-_' };
 
-/** Compose the start command the way production does. */
-function startCommand(
-  env: Parameters<typeof buildRenetEnvPrefix>[0],
+/** Compose the start launch the way production does. */
+function startLaunch(
+  env: Parameters<typeof buildRenetEnv>[0],
   extra: { timeoutMs?: number; debug?: boolean } = {}
-): string {
+): { command: string; stdinPrefix: string } {
   return buildJobStartCommand({
     remoteRenetPath: RENET,
-    envPrefix: buildRenetEnvPrefix(env),
+    env: buildRenetEnv(env),
     ...extra,
   });
+}
+
+/** The start command alone. */
+function startCommand(
+  env: Parameters<typeof buildRenetEnv>[0],
+  extra: { timeoutMs?: number; debug?: boolean } = {}
+): string {
+  return startLaunch(env, extra).command;
+}
+
+/** The secret-carrying form: root bash reads the stdin records, then execs renet. */
+function stdinLaunch(invocation: string): string {
+  const script = `while IFS= read -r -d '' kv && [ -n "$kv" ]; do export "$kv"; done; exec ${invocation}`;
+  return `sudo bash -c '${script.replaceAll("'", "'\\''")}'`;
 }
 
 describe('buildJobStartCommand', () => {
@@ -51,10 +66,13 @@ describe('buildJobStartCommand', () => {
     );
   });
 
-  it('carries OTLP credentials so the job can emit telemetry', () => {
-    expect(startCommand({ isDevelopment: false, telemetryDisabled: false, otlpCreds: CREDS })).toBe(
-      `sudo env REDIACC_OTLP_USER='otlp-eu-abc123' REDIACC_OTLP_PASS='base64url-pass_-_' /usr/bin/renet job start --executor local --json`
-    );
+  it('carries OTLP credentials on stdin so the job can emit telemetry', () => {
+    expect(
+      startLaunch({ isDevelopment: false, telemetryDisabled: false, otlpCreds: CREDS })
+    ).toEqual({
+      command: stdinLaunch('/usr/bin/renet job start --executor local --json'),
+      stdinPrefix: 'REDIACC_OTLP_USER=otlp-eu-abc123\0REDIACC_OTLP_PASS=base64url-pass_-_\0\0',
+    });
   });
 
   it('telemetry opt-out: propagates the disable and ships NO credentials', () => {
@@ -66,16 +84,19 @@ describe('buildJobStartCommand', () => {
     expect(cmd).not.toContain('REDIACC_OTLP_PASS');
   });
 
-  it('carries per-repo env secrets into the job environment', () => {
-    const cmd = startCommand({
+  it('carries per-repo env secrets into the job environment, on stdin', () => {
+    const launch = startLaunch({
       isDevelopment: false,
       telemetryDisabled: false,
       envSecrets: { REDIACC_SECRET_DB_PASSWORD: "p'wd", REDIACC_SECRET_API_KEY: 'k1' },
     });
 
-    // Quoted, so a secret containing a quote cannot break out of the command.
-    expect(cmd).toContain(`REDIACC_SECRET_DB_PASSWORD='p'\\''wd'`);
-    expect(cmd).toContain(`REDIACC_SECRET_API_KEY='k1'`);
+    // Verbatim on stdin, absent from the command: a quote cannot break out of anything.
+    expect(launch.stdinPrefix).toBe(
+      "REDIACC_SECRET_DB_PASSWORD=p'wd\0REDIACC_SECRET_API_KEY=k1\0\0"
+    );
+    expect(launch.command).not.toContain("p'wd");
+    expect(launch.command).not.toContain('k1');
   });
 
   it('carries KUBECONFIG for a cluster target', () => {
@@ -122,22 +143,26 @@ describe('buildJobStartCommand', () => {
 
     expect(cmd).not.toContain('--vault');
     expect(cmd).not.toContain('--master-password');
+    expect(cmd).not.toContain(CREDS.pass);
+    expect(cmd).not.toContain('REDIACC_SECRET_X');
   });
 
   it('all env vars together, in a stable order', () => {
     expect(
-      startCommand({
+      startLaunch({
         isDevelopment: true,
         telemetryDisabled: false,
         otlpCreds: CREDS,
         envSecrets: { REDIACC_SECRET_A: 'a' },
         kubeconfig: '/k',
       })
-    ).toBe(
-      `sudo env REDIACC_ENVIRONMENT=development KUBECONFIG='/k' ` +
-        `REDIACC_OTLP_USER='otlp-eu-abc123' REDIACC_OTLP_PASS='base64url-pass_-_' ` +
-        `REDIACC_SECRET_A='a' /usr/bin/renet job start --executor local --json`
-    );
+    ).toEqual({
+      command: stdinLaunch(
+        `env REDIACC_ENVIRONMENT=development KUBECONFIG='/k' /usr/bin/renet job start --executor local --json`
+      ),
+      stdinPrefix:
+        'REDIACC_OTLP_USER=otlp-eu-abc123\0REDIACC_OTLP_PASS=base64url-pass_-_\0REDIACC_SECRET_A=a\0\0',
+    });
   });
 });
 

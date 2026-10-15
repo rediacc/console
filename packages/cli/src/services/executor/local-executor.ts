@@ -50,6 +50,7 @@ import {
 import { createQuietStderrPump, shouldEchoRelayLive } from './output-lines.js';
 import { buildRemoteRenetCommand, detectEnvironment, resolveEnvSecrets } from './renet-command.js';
 import { renetAccessFor } from './renet-function-access.js';
+import type { RenetLaunch } from './renet-launch.js';
 import {
   buildRenetExitError,
   createStdoutHandler,
@@ -62,7 +63,7 @@ import { loadContextRepositories, loadContextStorages, resolveKnownHosts } from 
 
 // The pieces split out of this module stay importable from it, so no caller had to move.
 export { needsLicenseRecovery } from './license-recovery.js';
-export { buildRemoteRenetCommand, buildRenetEnvPrefix } from './renet-command.js';
+export { buildRemoteRenetCommand, buildRenetEnv } from './renet-command.js';
 export { parseCapturedJson } from './renet-output.js';
 // ExecuteResult only. The other seam types are consumed from executor-factory, which is the entry point to this layer; re-exporting them here as well just gave callers two doors to the same room.
 export type { ExecuteResult } from './types.js';
@@ -209,7 +210,7 @@ class LocalExecutorService {
     otlpCreds?: { user: string; pass: string } | null,
     envSecrets?: Record<string, string>,
     kubeconfig?: string
-  ): string {
+  ): RenetLaunch {
     return buildRemoteRenetCommand({
       remoteRenetPath,
       eventsMode,
@@ -236,7 +237,7 @@ class LocalExecutorService {
     const kubeconfig = options.kubeCluster
       ? clusterKubeconfigRemotePath(options.kubeCluster)
       : undefined;
-    const command = this.buildRemoteCommand(
+    const { command, stdinPrefix } = this.buildRemoteCommand(
       remoteRenetPath,
       options.eventsMode,
       otlpCreds,
@@ -258,7 +259,7 @@ class LocalExecutorService {
     const stderrPump = createQuietStderrPump({ echoAll: shouldEchoRelayLive(options) });
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
-      stdin: vault,
+      stdin: stdinPrefix + vault,
       onStdout: (data) => {
         // Events mode reconstructs stdout from the parsed events (below), so the raw NDJSON is only fed to the handler, never accumulated as text.
         if (!collector) stdout += data;

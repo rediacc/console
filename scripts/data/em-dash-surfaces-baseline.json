@@ -34,7 +34,6 @@
   "packages/cli/src/services/__tests__/config-resources-archive-scrub.test.ts:78a6bda93005",
   "packages/cli/src/services/__tests__/config-resources.test.ts:b3d800659ff0",
   "packages/cli/src/services/__tests__/local-executor-env-secrets.test.ts:372cfdf08246",
-  "packages/cli/src/services/__tests__/local-executor-env-secrets.test.ts:6968d8e80a2d",
   "packages/cli/src/services/__tests__/mutation-gate.test.ts:149b74c514cb",
   "packages/cli/src/services/__tests__/mutation-gate.test.ts:40f086edfed7",
   "packages/cli/src/services/__tests__/mutation-gate.test.ts:f8dbba07aad7",

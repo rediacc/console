@@ -1,11 +1,12 @@
 /**
  * Tests for `buildRemoteRenetCommand`, the function that builds the SSH
- * command string for spawning `renet execute` on a target machine.
+ * command (and its stdin prefix) for spawning `renet execute` on a target
+ * machine.
  *
  * The goal is to verify every combination of inputs produces the exact
- * expected command string. Any regression that changes env var ordering,
- * quoting, or leaks OTLP credentials when telemetry is disabled will
- * fail this test.
+ * expected launch. Any regression that changes env var ordering, puts a
+ * credential on the command line, or leaks OTLP credentials when telemetry is
+ * disabled will fail this test.
  *
  * Covers the two bug classes from renet#51 follow-up:
  *   1. Credential-leak-despite-disable: when the user sets
@@ -22,138 +23,138 @@ import { buildRemoteRenetCommand } from '../executor/local-executor.js';
 
 const RENET = '/usr/bin/renet';
 const CREDS = { user: 'otlp-eu-abc123', pass: 'base64url-pass_-_' };
+const CREDS_STDIN = 'REDIACC_OTLP_USER=otlp-eu-abc123\0REDIACC_OTLP_PASS=base64url-pass_-_\0\0';
+
+/** The secret-carrying form: root bash reads the stdin records, then execs renet. */
+function stdinLaunch(invocation: string): string {
+  const script = `while IFS= read -r -d '' kv && [ -n "$kv" ]; do export "$kv"; done; exec ${invocation}`;
+  return `sudo bash -c '${script.replaceAll("'", "'\\''")}'`;
+}
 
 describe('buildRemoteRenetCommand', () => {
   describe('telemetry enabled', () => {
-    it('with creds: injects REDIACC_OTLP_USER/PASS', () => {
-      const cmd = buildRemoteRenetCommand({
+    it('with creds: REDIACC_OTLP_USER/PASS ride stdin, never the command', () => {
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         isDevelopment: false,
         telemetryDisabled: false,
         otlpCreds: CREDS,
       });
-      expect(cmd).toBe(
-        `sudo env REDIACC_OTLP_USER='otlp-eu-abc123' REDIACC_OTLP_PASS='base64url-pass_-_' /usr/bin/renet execute --executor local`
-      );
+      expect(launch.command).toBe(stdinLaunch('/usr/bin/renet execute --executor local'));
+      expect(launch.stdinPrefix).toBe(CREDS_STDIN);
+      expect(launch.command).not.toContain('otlp-eu-abc123');
+      expect(launch.command).not.toContain('base64url-pass');
     });
 
     it('without creds: no OTLP env vars, no REDIACC_TELEMETRY_DISABLED', () => {
-      const cmd = buildRemoteRenetCommand({
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         isDevelopment: false,
         telemetryDisabled: false,
         otlpCreds: null,
       });
-      expect(cmd).toBe(`sudo /usr/bin/renet execute --executor local`);
-      expect(cmd).not.toContain('REDIACC_OTLP');
-      expect(cmd).not.toContain('REDIACC_TELEMETRY_DISABLED');
+      expect(launch.command).toBe(`sudo /usr/bin/renet execute --executor local`);
+      expect(launch.stdinPrefix).toBe('');
+      expect(launch.command).not.toContain('REDIACC_TELEMETRY_DISABLED');
     });
 
-    it('with creds + dev mode: both REDIACC_ENVIRONMENT and OTLP vars', () => {
-      const cmd = buildRemoteRenetCommand({
+    it('with creds + dev mode: REDIACC_ENVIRONMENT on the command, creds on stdin', () => {
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         isDevelopment: true,
         telemetryDisabled: false,
         otlpCreds: CREDS,
       });
-      expect(cmd).toBe(
-        `sudo env REDIACC_ENVIRONMENT=development REDIACC_OTLP_USER='otlp-eu-abc123' REDIACC_OTLP_PASS='base64url-pass_-_' /usr/bin/renet execute --executor local`
+      expect(launch.command).toBe(
+        stdinLaunch('env REDIACC_ENVIRONMENT=development /usr/bin/renet execute --executor local')
       );
+      expect(launch.stdinPrefix).toBe(CREDS_STDIN);
     });
   });
 
   describe('telemetry disabled', () => {
     it('with creds: injects REDIACC_TELEMETRY_DISABLED=1 and IGNORES creds', () => {
-      const cmd = buildRemoteRenetCommand({
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         isDevelopment: false,
         telemetryDisabled: true,
         otlpCreds: CREDS,
       });
-      expect(cmd).toBe(
+      expect(launch.command).toBe(
         `sudo env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`
       );
-      // Critical: no OTLP credentials leak into the remote env
-      expect(cmd).not.toContain('REDIACC_OTLP_USER');
-      expect(cmd).not.toContain('REDIACC_OTLP_PASS');
-      expect(cmd).not.toContain('otlp-eu-abc123');
-      expect(cmd).not.toContain('base64url-pass');
+      // Critical: no OTLP credentials leak into the remote env, by either channel
+      expect(launch.stdinPrefix).toBe('');
+      expect(launch.command).not.toContain('REDIACC_OTLP');
+      expect(launch.command).not.toContain('otlp-eu-abc123');
+      expect(launch.command).not.toContain('base64url-pass');
     });
 
     it('without creds: injects REDIACC_TELEMETRY_DISABLED=1', () => {
-      const cmd = buildRemoteRenetCommand({
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         isDevelopment: false,
         telemetryDisabled: true,
         otlpCreds: null,
       });
-      expect(cmd).toBe(
+      expect(launch.command).toBe(
         `sudo env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`
       );
     });
 
     it('dev mode: REDIACC_ENVIRONMENT stays, telemetry disabled still wins', () => {
-      const cmd = buildRemoteRenetCommand({
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         isDevelopment: true,
         telemetryDisabled: true,
         otlpCreds: CREDS,
       });
-      expect(cmd).toBe(
+      expect(launch.command).toBe(
         `sudo env REDIACC_ENVIRONMENT=development REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`
       );
-      expect(cmd).not.toContain('REDIACC_OTLP');
+      expect(launch.stdinPrefix).toBe('');
     });
   });
 
   describe('events mode', () => {
     it('appends --events flag after executor local', () => {
-      const cmd = buildRemoteRenetCommand({
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         eventsMode: true,
         isDevelopment: false,
         telemetryDisabled: false,
         otlpCreds: null,
       });
-      expect(cmd).toBe(`sudo /usr/bin/renet execute --executor local --events`);
+      expect(launch.command).toBe(`sudo /usr/bin/renet execute --executor local --events`);
     });
 
     it('combines with other flags correctly', () => {
-      const cmd = buildRemoteRenetCommand({
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         eventsMode: true,
         isDevelopment: true,
         telemetryDisabled: true,
         otlpCreds: CREDS,
       });
-      expect(cmd).toBe(
+      expect(launch.command).toBe(
         `sudo env REDIACC_ENVIRONMENT=development REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local --events`
       );
     });
   });
 
-  describe('shell escaping', () => {
-    it('escapes single quotes in user/pass', () => {
-      const cmd = buildRemoteRenetCommand({
+  describe('credential bytes', () => {
+    it('carries quotes and shell metacharacters verbatim on stdin, none on the command', () => {
+      const launch = buildRemoteRenetCommand({
         remoteRenetPath: RENET,
         isDevelopment: false,
         telemetryDisabled: false,
-        otlpCreds: { user: "has'quote", pass: "also'quote" },
+        otlpCreds: { user: "has'quote", pass: 'p$ss&word;rm -rf' },
       });
-      // POSIX-safe: `'has'\''quote'`
-      expect(cmd).toContain(`REDIACC_OTLP_USER='has'\\''quote'`);
-      expect(cmd).toContain(`REDIACC_OTLP_PASS='also'\\''quote'`);
-    });
-
-    it('handles passwords with shell metacharacters', () => {
-      const cmd = buildRemoteRenetCommand({
-        remoteRenetPath: RENET,
-        isDevelopment: false,
-        telemetryDisabled: false,
-        otlpCreds: { user: 'u', pass: 'p$ss&word;rm -rf' },
-      });
-      // The single quotes protect all shell metacharacters except '
-      expect(cmd).toContain(`REDIACC_OTLP_PASS='p$ss&word;rm -rf'`);
+      expect(launch.stdinPrefix).toBe(
+        "REDIACC_OTLP_USER=has'quote\0REDIACC_OTLP_PASS=p$ss&word;rm -rf\0\0"
+      );
+      expect(launch.command).not.toContain('quote');
+      expect(launch.command).not.toContain('p$ss');
     });
   });
 });

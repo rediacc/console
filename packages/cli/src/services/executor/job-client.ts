@@ -27,6 +27,7 @@
 
 import { z } from 'zod';
 import { writeStdout } from '../core/request-context.js';
+import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
 
 /**
@@ -66,6 +67,7 @@ const JobHandleSchema = z.object({
 });
 
 type JobHandle = z.infer<typeof JobHandleSchema>;
+
 export type { JobHandle };
 
 /** What `renet job status --json` prints (renet pkg/jobs Status). */
@@ -87,6 +89,7 @@ const JobStatusSchema = z.object({
 });
 
 type JobStatus = z.infer<typeof JobStatusSchema>;
+
 export type { JobStatus };
 
 /** renet's `job run` exit codes, which mirror the terminal state. */
@@ -276,30 +279,34 @@ export function isTerminalState(state: JobStatus['state']): boolean {
 // id the machine made up (`j1-deadbeef; rm -rf /`) must never reach a shell.
 
 /**
- * Build the `renet job start` command for a DETACHED execution.
+ * Build the `renet job start` launch for a DETACHED execution.
  *
- * `envPrefix` is passed in rather than computed here, both to keep this module
+ * `env` is passed in rather than computed here, both to keep this module
  * free of the executor's environment plumbing and because it is load-bearing:
  * `job start` snapshots the environment it is handed into the job's spool so
  * that `job run` can re-inject it later, since systemd spawns the real body
- * with a clean environment. Drift between that prefix and renet's capture list
- * would silently strip a repo's secrets from every detached deployment.
+ * with a clean environment. Drift between that environment and renet's capture
+ * list would silently strip a repo's secrets from every detached deployment.
  *
- * The vault does NOT ride the environment or the argv: it goes over stdin,
- * exactly as `renet execute` takes it.
+ * Neither the vault nor a secret rides the argv: the secrets go over stdin
+ * as the launch's `stdinPrefix`, followed by the vault, exactly as
+ * `renet execute` takes them.
  */
 export function buildJobStartCommand(params: {
   remoteRenetPath: string;
-  /** From buildRenetEnvPrefix: `env K=V ... ` (trailing space) or ''. */
-  envPrefix: string;
+  /** From buildRenetEnv. */
+  env: RenetEnv;
   /** Job ceiling in milliseconds. Rendered as a Go duration ("600000ms"). */
   timeoutMs?: number;
   debug?: boolean;
-}): string {
-  const { remoteRenetPath, envPrefix, timeoutMs, debug } = params;
+}): RenetLaunch {
+  const { remoteRenetPath, env, timeoutMs, debug } = params;
   const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : '';
   const debugFlag = debug ? ' --debug' : '';
-  return `sudo ${envPrefix}${remoteRenetPath} job start --executor local --json${timeoutFlag}${debugFlag}`;
+  return sudoRenet(
+    env,
+    `${remoteRenetPath} job start --executor local --json${timeoutFlag}${debugFlag}`
+  );
 }
 
 /**

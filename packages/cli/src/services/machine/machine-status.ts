@@ -16,7 +16,8 @@ import {
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr } from '../core/request-context.js';
-import { buildRenetEnvPrefix } from '../executor/local-executor.js';
+import { buildRenetEnv } from '../executor/local-executor.js';
+import { type RenetEnv, type RenetLaunch, sudoRenet } from '../executor/renet-launch.js';
 import { acquireRemoteRenet } from '../renet/renet-execution.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
 import { isTelemetryDisabled } from '../telemetry/telemetry.js';
@@ -33,14 +34,17 @@ interface FetchStatusOptions {
  * caller-provided sections filter must propagate into `--sections`.
  */
 export function buildListCommand(params: {
-  envPrefix: string;
+  env: RenetEnv;
   remoteRenetPath: string;
   datastore: string;
   sections?: string[];
-}): string {
+}): RenetLaunch {
   const sectionsFlag =
     params.sections && params.sections.length > 0 ? ` --sections ${params.sections.join(',')}` : '';
-  return `sudo ${params.envPrefix}${params.remoteRenetPath} list all --datastore ${params.datastore} --json${sectionsFlag}`;
+  return sudoRenet(
+    params.env,
+    `${params.remoteRenetPath} list all --datastore ${params.datastore} --json${sectionsFlag}`
+  );
 }
 
 /**
@@ -87,13 +91,13 @@ export async function fetchMachineStatus(
       otlpCredsPromise,
     ]);
 
-    const envPrefix = buildRenetEnvPrefix({
+    const env = buildRenetEnv({
       isDevelopment: isDevBuild(),
       telemetryDisabled: telemetryOff,
       otlpCreds,
     });
-    const cmd = buildListCommand({
-      envPrefix,
+    const { command: cmd, stdinPrefix } = buildListCommand({
+      env,
       remoteRenetPath,
       datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
       sections: options.sections,
@@ -110,6 +114,7 @@ export async function fetchMachineStatus(
     let stderr = '';
 
     const exitCode = await sftp.execStreaming(cmd, {
+      ...(stdinPrefix && { stdin: stdinPrefix }),
       onStdout: (data) => {
         stdout += data.toString();
       },

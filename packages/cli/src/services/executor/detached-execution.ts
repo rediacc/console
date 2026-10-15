@@ -25,7 +25,7 @@ import {
   versionSkewWarning,
 } from './job-client.js';
 import { followJobLogs, readJobStatus, renderJobEvent } from './job-remote.js';
-import { buildRenetEnvPrefix, detectEnvironment, resolveEnvSecrets } from './renet-command.js';
+import { buildRenetEnv, detectEnvironment, resolveEnvSecrets } from './renet-command.js';
 import { capReason } from './renet-output.js';
 import type { ExecuteOptions, ExecuteResult } from './types.js';
 
@@ -138,10 +138,10 @@ async function startJob(
     ? clusterKubeconfigRemotePath(options.kubeCluster)
     : undefined;
 
-  // The env prefix is load-bearing: `job start` snapshots the environment it is handed into the job's spool, so `job run` (which systemd spawns with a clean environment) can re-inject the repo's secrets and the OTLP creds.
-  const command = buildJobStartCommand({
+  // The environment is load-bearing: `job start` snapshots the environment it is handed into the job's spool, so `job run` (which systemd spawns with a clean environment) can re-inject the repo's secrets and the OTLP creds. The secrets ride stdin ahead of the vault.
+  const { command, stdinPrefix } = buildJobStartCommand({
     remoteRenetPath,
-    envPrefix: buildRenetEnvPrefix({
+    env: buildRenetEnv({
       isDevelopment: detectEnvironment() === 'development',
       telemetryDisabled: isTelemetryDisabled(),
       otlpCreds,
@@ -155,7 +155,7 @@ async function startJob(
   let stdout = '';
   let stderr = '';
   const exitCode = await sftp.execStreaming(command, {
-    stdin: vault,
+    stdin: stdinPrefix + vault,
     onStdout: (data) => {
       stdout += data;
     },
