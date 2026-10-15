@@ -19,7 +19,7 @@ THE STEPS, IN ORDER, AND EACH REFUSAL STOPS THE RUN BEFORE THE NEXT STEP:
 
 NO VALUE IS PRINTED, EVER. The output carries names, the Worker, the bucket, the host, URLs and statuses. The wrangler children receive the Cloudflare token through the environment as every wrangler call here does, and do NOT receive the backup values in theirs: the bulk document on stdin is the only place the values travel.
 
-Exit 0 on success, 1 on any refusal or failure, 2 on a usage error.
+Exit 0 on success, 1 on any refusal or failure (a regions.json entry the Worker's own wrangler config contradicts included), 2 on a usage error: an argument argparse refuses, `--region` with bench, no `--region` for stable or edge, or a region regions.json does not name.
 """
 
 from __future__ import annotations
@@ -71,6 +71,10 @@ class PushError(Exception):
     """A refusal or failure; each line of the message is printed and the run exits 1."""
 
 
+class UsageError(PushError):
+    """An argument combination the tool cannot run with; printed, and the run exits 2."""
+
+
 @dataclass(frozen=True)
 class Plan:
     target: str
@@ -97,12 +101,12 @@ def _config_binding(config_path) -> tuple[str, str, str]:
 
 
 def plan(target: str, region: str | None, root=None) -> Plan:
-    """The Worker, bucket, jurisdiction, host and config for one push. PushError on a mismatch between regions.json and the Worker's own wrangler config."""
+    """The Worker, bucket, jurisdiction, host and config for one push. UsageError on an argument combination that names no Worker; PushError on a mismatch between regions.json and the Worker's own wrangler config, which is a refusal."""
     root = paths.repo_root() if root is None else root
     worker_dir = root.joinpath(*WORKER_DIR)
     if target == "bench":
         if region:
-            raise PushError("bench has one Worker and no regions; drop --region")
+            raise UsageError("bench has one Worker and no regions; drop --region")
         config = BENCH_CONFIG
         worker, bucket, jurisdiction = _config_binding(worker_dir / config)
         host = portal_health.hosts("bench", None)[0]
@@ -110,11 +114,11 @@ def plan(target: str, region: str | None, root=None) -> Plan:
             raise PushError("%s names no Worker or no backup bucket" % config)
         return Plan(target, "", worker, bucket, jurisdiction, host, config)
     if not region:
-        raise PushError("--target %s needs --region (one Worker per run)" % target)
+        raise UsageError("--target %s needs --region (one Worker per run)" % target)
     with open(root / "regions.json", encoding="utf-8") as fh:
         regions = {r["id"]: r for r in json.load(fh)["regions"]}
     if region not in regions:
-        raise PushError("unknown region %r (regions.json has %s)" % (region, ", ".join(regions)))
+        raise UsageError("unknown region %r (regions.json has %s)" % (region, ", ".join(regions)))
     entry = regions[region]
     if target == "stable":
         worker, bucket, host = entry["workerName"], entry["backupR2"]["name"], entry["domain"]
@@ -187,20 +191,31 @@ def bulk_argv(worker: str) -> list[str]:
     return set_account_worker_secrets.wrangler_argv(worker)
 
 
+def _rows(stdout: str) -> list | None:
+    """The first non-empty JSON array of objects in `stdout`, decoded from the first `[` at which one parses; an empty array only when no other is printed. A bracketed log line (`[WARNING] ...`) before it, or text after it, does not parse as one and is skipped."""
+    decoder = json.JSONDecoder()
+    empty: list | None = None
+    start = stdout.find("[")
+    while start >= 0:
+        try:
+            rows, end = decoder.raw_decode(stdout, start)
+        except ValueError:
+            start = stdout.find("[", start + 1)
+            continue
+        if isinstance(rows, list) and all(isinstance(row, dict) for row in rows):
+            if rows:
+                return rows
+            empty = rows
+        start = stdout.find("[", end)
+    return empty
+
+
 def secret_names(stdout: str) -> list[str]:
-    """The names in `wrangler secret list --format json` output: a JSON array of {name, type}. Anything printed around the array is ignored; no array is a PushError."""
-    start, end = stdout.find("["), stdout.rfind("]")
-    if start < 0 or end < start:
-        raise PushError("wrangler secret list printed no JSON array")
-    try:
-        rows = json.loads(stdout[start : end + 1])
-    except ValueError as exc:
-        raise PushError(
-            "wrangler secret list printed unparseable JSON (%s)" % type(exc).__name__
-        ) from None
-    if not isinstance(rows, list):
-        raise PushError("wrangler secret list did not print a list")
-    return sorted(str(row.get("name")) for row in rows if isinstance(row, dict) and row.get("name"))
+    """The names in `wrangler secret list --format json` output: a JSON array of {name, type}. Anything printed around the array is ignored, bracketed log lines included; no array is a PushError."""
+    rows = _rows(stdout)
+    if rows is None:
+        raise PushError("wrangler secret list printed no JSON array of secrets")
+    return sorted(str(row.get("name")) for row in rows if row.get("name"))
 
 
 def _mask(text: str, values: list[str]) -> str:
@@ -280,7 +295,7 @@ def push(
         )
         print("  %s" % " ".join(list_argv(p.worker)), file=out)
         print(
-            "  python3 -m rediacc_ci.ops.portal_health --target %s%s"
+            "  PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_health --target %s%s"
             % (p.target, (" --region %s" % p.region) if p.region else ""),
             file=out,
         )
@@ -356,9 +371,13 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         resolved = plan(args.target, args.region)
-    except PushError as exc:
+    except UsageError as exc:
         print("push backup credentials: %s" % exc, file=sys.stderr)
         return 2
+    except PushError as exc:
+        for line in str(exc).splitlines():
+            print("push backup credentials: %s" % line, file=sys.stderr)
+        return 1
     rebound = _reexec_under_profile(args.target, argv)
     if rebound is not None:
         return rebound

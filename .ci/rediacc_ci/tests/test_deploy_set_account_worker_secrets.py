@@ -14,6 +14,7 @@ THE BASH SIDE OF EVERY CASE IS ANSWERED FROM ITS FROZEN GOLDEN (`goldens/twins/d
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -645,13 +646,15 @@ def test_pure_helpers() -> None:
     assert caught.value.lines == ["OBS_OTLP_CREDENTIALS_U-S: invalid variable name"]
     assert caught.value.code == 1
 
-    argv = port.jq_argv({"seller_city": "Delft"})
-    assert argv[:2] == ["jq", "-n"]
-    assert argv.count("--arg") == 29
-    assert "Delft" in argv
-    assert argv[2:5] == ["--arg", "ed25519_priv", ""], "an absent value is the empty string"
-    assert argv[-1].startswith("{ACCOUNT_ED25519_PRIVATE_KEY: $ed25519_priv")
-    assert argv[-1].endswith("SELLER_EMAIL: $seller_email}")
+    argv = port.jq_argv()
+    assert argv[0] == "jq"
+    assert len(argv) == 2, "the program only; the values travel on stdin"
+    assert argv[-1].startswith("{ACCOUNT_ED25519_PRIVATE_KEY: .ed25519_priv")
+    assert argv[-1].endswith("SELLER_EMAIL: .seller_email}")
+    document = json.loads(port.jq_input({"seller_city": "Delft"}))
+    assert list(document) == [var for _key, var, _source in port.KEYS]
+    assert document["seller_city"] == "Delft"
+    assert document["ed25519_priv"] == "", "an absent value is the empty string"
 
     assert port.wrangler_argv("rediacc-account-us") == [
         "npx",
@@ -749,7 +752,7 @@ def test_the_otlp_shape_guard_runs_after_the_empty_guards(tmp_path: pathlib.Path
 
 def test_the_otlp_shape_filter_is_the_argv_tail() -> None:
     """The jq program the port runs is the one `JSON_SHAPE_FILTER` names; the bad-shape cases above prove it agrees with the frozen twin."""
-    assert port.json_shape_argv("v")[-1] == port.JSON_SHAPE_FILTER
+    assert port.json_shape_argv() == ["jq", "-e", "-R", "-s", port.JSON_SHAPE_FILTER]
 
 
 def test_planted_otlp_shape_defect_is_caught(tmp_path: pathlib.Path) -> None:
@@ -867,3 +870,46 @@ def test_backup_pair_helper() -> None:
     assert port.backup_pair(EDGE_PAIR, "edge") == ("bk-edge", "bs-edge")
     with pytest.raises(port.ScriptRefusalError):
         port.backup_pair({**STABLE_PAIR, **EDGE_PAIR}, "stable")
+
+
+# ---------------------------------------------------------------- no value on any child's argv (worklist #a2d19f74)
+
+
+def test_no_secret_value_reaches_any_child_argv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`argv` is visible in `ps` for the length of the call. The twin, and this port until #a2d19f74, passed all twenty-nine values to `jq --arg` and the OTLP value to the shape probe the same way. Every child this module starts is recorded here: jq runs for real, wrangler is answered by the recorder, and no sentinel value may appear in any argv while every one of them must reach wrangler's stdin."""
+    sentinels = {
+        name: "SENTINEL-%s-4b1d" % name.lower()
+        for name in _as_port_env(FIXTURE_ENV)
+        if name not in ("WORKER_NAME", "TARGET", "SUFFIX", "R2_JURISDICTION")
+        and not name.startswith("BACKUP_BUCKET_")
+    }
+    sentinels["OBS_OTLP_CREDENTIALS_EU"] = (
+        '{"user":"SENTINEL-otlp-user","pass":"SENTINEL-otlp-pass"}'
+    )
+    for name in (*RETIRED_PAIR, *port.BACKUP_PAIR_EDGE):
+        monkeypatch.delenv(name, raising=False)
+    for name, value in {**_as_port_env(FIXTURE_ENV), **sentinels}.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(port.common, "require_cmd", lambda *_a, **_k: "/bin/true")
+
+    real_run = subprocess.run
+    calls: list[tuple[list[str], object]] = []
+
+    def recording_run(argv, **kw):
+        calls.append((list(argv), kw.get("input")))
+        if argv[0] == "npx":
+            return subprocess.CompletedProcess(argv, 0)
+        return real_run(argv, **kw)
+
+    monkeypatch.setattr(port.subprocess, "run", recording_run)
+    assert port.main([]) == 0
+    assert [argv[0] for argv, _stdin in calls] == ["jq", "jq", "npx"], calls
+    values = [*sentinels.values(), "SENTINEL-otlp-user", "SENTINEL-otlp-pass"]
+    for argv, _stdin in calls:
+        for value in values:
+            assert not any(value in arg for arg in argv), "a secret value is on argv: %r" % argv[0]
+    wrangler_stdin = str(calls[-1][1])
+    for name, value in sentinels.items():
+        if name != "OBS_OTLP_CREDENTIALS_EU":
+            assert value in wrangler_stdin, "%s never reached wrangler's stdin" % name
+    assert "SENTINEL-otlp-pass" in wrangler_stdin

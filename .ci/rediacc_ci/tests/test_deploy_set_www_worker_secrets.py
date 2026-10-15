@@ -11,6 +11,7 @@ A test asserts the two SIBLING scripts really are different where they look the 
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -26,6 +27,8 @@ from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
     import pathlib
+
+    import pytest
 
 ROOT = paths.repo_root()
 TWIN = ROOT / ".ci" / "scripts" / "deploy" / "set-www-worker-secrets.sh"
@@ -376,14 +379,15 @@ def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
 def test_pure_helpers() -> None:
     assert port.SELF == "rediacc_ci.deploy.set_www_worker_secrets"
 
-    argv = port.jq_argv({"SELLER_CITY": "Delft"})
-    assert argv[:2] == ["jq", "-n"]
-    assert argv.count("--arg") == 24
-    assert "Delft" in argv
-    assert argv[2:5] == ["--arg", "ed25519_priv", ""], "an absent value is the empty string"
-    assert argv[-1].startswith("{ACCOUNT_ED25519_PRIVATE_KEY: $ed25519_priv")
-    assert argv[-1].endswith("SELLER_EMAIL: $seller_email}")
-    assert "seller_city" in argv
+    argv = port.jq_argv()
+    assert argv[0] == "jq"
+    assert len(argv) == 2, "the program only; the values travel on stdin"
+    assert argv[-1].startswith("{ACCOUNT_ED25519_PRIVATE_KEY: .ed25519_priv")
+    assert argv[-1].endswith("SELLER_EMAIL: .seller_email}")
+    document = json.loads(port.jq_input({"SELLER_CITY": "Delft"}))
+    assert list(document) == [var for _key, var in port.KEYS]
+    assert document["seller_city"] == "Delft"
+    assert document["ed25519_priv"] == "", "an absent value is the empty string"
 
     assert port.wrangler_argv("www-edge") == [
         "npx",
@@ -427,3 +431,34 @@ def test_planted_defect_is_caught(tmp_path: pathlib.Path) -> None:
     assert PORT.read_text(encoding="utf-8") == original, (
         "port source must be restored byte-identical"
     )
+
+
+# ---------------------------------------------------------------- no value on any child's argv (worklist #a2d19f74)
+
+
+def test_no_secret_value_reaches_any_child_argv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`argv` is visible in `ps` for the length of the call, and the twin, like this port until #a2d19f74, passed every value to `jq --arg`. Every child this module starts is recorded: jq runs for real, wrangler is answered by the recorder, and no sentinel value may appear in any argv while every one of them must reach wrangler's stdin."""
+    sentinels = {
+        name: "SENTINEL-%s-4b1d" % name.lower() for name in FIXTURE_ENV if name != "WORKER_NAME"
+    }
+    for name, value in {**FIXTURE_ENV, **sentinels}.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(port.common, "require_cmd", lambda *_a, **_k: "/bin/true")
+
+    real_run = subprocess.run
+    calls: list[tuple[list[str], object]] = []
+
+    def recording_run(argv, **kw):
+        calls.append((list(argv), kw.get("input")))
+        if argv[0] == "npx":
+            return subprocess.CompletedProcess(argv, 0)
+        return real_run(argv, **kw)
+
+    monkeypatch.setattr(port.subprocess, "run", recording_run)
+    assert port.main([]) == 0
+    assert [argv[0] for argv, _stdin in calls] == ["jq", "npx"], calls
+    for argv, _stdin in calls:
+        for value in sentinels.values():
+            assert not any(value in arg for arg in argv), "a secret value is on argv: %r" % argv[0]
+    for name, value in sentinels.items():
+        assert value in str(calls[-1][1]), "%s never reached wrangler's stdin" % name

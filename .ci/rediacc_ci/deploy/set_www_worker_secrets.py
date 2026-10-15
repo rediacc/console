@@ -5,7 +5,7 @@ Pushes twenty-four runtime secrets into the www Worker (stable or edge) in ONE `
 
 THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (sandbox on edge, live EU on stable), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
 
-SECRETS ARRIVE AS ENVIRONMENT VARIABLES, NEVER AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces; a value travels env -> `jq --arg` -> the pipe into `wrangler` and nowhere else.
+SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN. The twin passed each value as a `jq --arg` pair, on jq's argv; the port does not (worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` is the only external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_set_www_worker_secrets.py`) puts a RECORDING FAKE `npx` on a scratch PATH that logs its exact argv AND THE BYTES ON ITS STDIN. The stdin log is the main evidence here, and on this script it is the ONLY evidence on the happy
 path: unlike its preview sibling, this twin prints NOTHING of its own when it succeeds (there is no closing `log_info` at :141), so a port that sent an empty document would produce byte-identical streams. What distinguishes success from doing nothing is entirely the document.
@@ -35,6 +35,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-set-www-worker-secrets.observations.jsonl`.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -143,29 +144,30 @@ def jq_filter() -> str:
 
     Whitespace inside a jq program does not reach the output, so this is the twin's filter in meaning rather than in indentation. What MUST match is the key list and its order, and that is `KEYS`.
     """
-    body = ", ".join("%s: $%s" % (key, var) for key, var in KEYS)
+    body = ", ".join("%s: .%s" % (key, var) for key, var in KEYS)
     return "{%s}" % body
 
 
-def jq_argv(env: dict[str, str]) -> list[str]:
-    """`jq -n --arg ... '{...}'` (:91-141), as an argv a test can pin.
+def jq_argv() -> list[str]:
+    """`jq '{...}'`, as an argv a test can pin. It carries the program only; the values are on stdin (`jq_input`)."""
+    return ["jq", jq_filter()]
+
+
+def jq_input(env: dict[str, str]) -> str:
+    """The values as one JSON object keyed by jq variable, in `KEYS` order, for jq's stdin. ASCII only (`ensure_ascii`), so a value the environment decoded with surrogate escapes still reaches jq, which re-encodes each string exactly as it encoded the twin's `--arg`.
 
     Every value is read as `"${NAME:-}"`, so an absent variable becomes the
     empty string rather than an error: the thirteen guards have already refused the ones that must not be empty, and the eleven remaining (the two SES presentation fields and the nine SELLER_* ones) are legitimately absent on a Worker that issues no invoices.
     """
-    argv = ["jq", "-n"]
-    for key, var in KEYS:
-        argv += ["--arg", var, env.get(key, "")]
-    argv.append(jq_filter())
-    return argv
+    return json.dumps({var: env.get(key, "") for key, var in KEYS})
 
 
-def _jq(argv: list[str]) -> tuple[int, str]:
-    """The left half of the pipe: stdout captured, stderr INHERITED.
+def _jq(argv: list[str], document: str) -> tuple[int, str]:
+    """The left half of the pipe: the values on stdin, stdout captured, stderr INHERITED.
 
     jq's diagnostics are the only explanation a workflow log would get if the document could not be built, and the header at :44-46 exists because that status used to be swallowed. Not captured here either.
     """
-    proc = subprocess.run(argv, stdout=subprocess.PIPE, text=True, check=False)
+    proc = subprocess.run(argv, input=document, stdout=subprocess.PIPE, text=True, check=False)
     return proc.returncode, proc.stdout
 
 
@@ -206,7 +208,7 @@ def main(argv: list[str]) -> int:
             print(line, file=sys.stderr)
         return 1
 
-    jq_status, payload = _jq(jq_argv(env))
+    jq_status, payload = _jq(jq_argv(), jq_input(env))
     wrangler_status = _wrangler(wrangler_argv(worker_name), payload)
 
     # `set -o pipefail`: the rightmost non-zero status wins.
