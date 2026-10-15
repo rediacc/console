@@ -434,14 +434,13 @@ def _earlier_writers(cmd, cwd, paths):
     allowed. A tool outside `INERT_TOOLS` counts as a writer, and so does an inert tool's redirect that lands under a pathspec path or cannot be expanded.
     """
     roots = [os.path.normpath(os.path.join(cwd, p)) for p in paths]
-    return _writers_in(_runs_before_commit(cmd), cmd, cwd, roots)
+    return _writers_in(_runs_before_commit(cmd), cwd, roots)
 
 
-def _writers_in(runs, cmd, cwd, roots, inert_git=INERT_GIT):
+def _writers_in(runs, cwd, roots, inert_git=INERT_GIT):
     """Labels of the clauses in `runs` that can write under any of the absolute `roots`, in order."""
     if not runs:
         return []
-    names = shellscan.assignments_before(cmd, "git commit")
     out = []
     for run in runs:
         base = run.name.rsplit("/", 1)[-1]
@@ -450,11 +449,11 @@ def _writers_in(runs, cmd, cwd, roots, inert_git=INERT_GIT):
             writer = run.git_sub is not None and run.git_sub not in inert_git
         else:
             writer = base not in INERT_TOOLS
-        # Each target as typed and as bash expands it (#7b3f34ae): `D=other; if true; then D=src; fi; echo x > $D/a.md` names `other` through the top-level assignments and writes `src/a.md`.
-        for target in shellscan.redirect_targets(run):
+        # Each target as bash expands it, the walk's own answer (#7b3f34ae, #97ed76a7): `D=other; if true; then D=src; fi; echo x > $D/a.md` writes `src/a.md`, and after `for D in src`, `read D` or any other assignment the walk cannot follow the target keeps its typed `$D`, which is unexpanded and so counts as a writer. A lexical lookup of `NAME=value` statements read `other` in all three.
+        for target in [x for _t, x in zip(run.writes, run.xwrites, strict=True)]:
             if writer or target in shellscan._NOT_A_FILE or target.startswith("/dev/fd/"):
                 continue
-            text = PARAM.sub(lambda m: names.get(m.group(1) or m.group(2), m.group(0)), target)
+            text = target
             if UNEXPANDED.search(text):
                 writer = True
                 continue
@@ -571,7 +570,7 @@ def _staged_by_command(cmd, cwd):
         roots = [os.path.normpath(os.path.join(where, s)) for s in specs or ["."]]
         if specs is None or (not specs and top):
             roots = [os.path.normpath(top or cwd)]
-        writers = _writers_in(runs[:i], cmd, cwd, roots, INERT_GIT | {"add", "rm"})
+        writers = _writers_in(runs[:i], cwd, roots, INERT_GIT | {"add", "rm"})
         # `git rm` deletes clean tracked files too, which no status line shows yet: every tracked path under its pathspec is what it stages.
         ceiling = bool(writers) or run.git_sub == "rm"
         writer_labels.extend(label for label in writers if label not in writer_labels)
@@ -583,7 +582,7 @@ def _staged_by_command(cmd, cwd):
         files.extend(got)
         labels.append(" ".join(["git", *run.argv]))
     if commit is not None and _commit_all(commit):
-        writers = _writers_in(runs, cmd, cwd, [os.path.normpath(top or cwd)])
+        writers = _writers_in(runs, cwd, [os.path.normpath(top or cwd)])
         writer_labels.extend(label for label in writers if label not in writer_labels)
         files.extend(_stage_files(cwd, "update", [":/"], bool(writers)) or [])
         labels.append("git commit -a")

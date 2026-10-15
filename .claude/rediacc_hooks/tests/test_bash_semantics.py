@@ -3002,6 +3002,15 @@ COPY_ROWS = [
     ("cp -n {T}/src.py {T}/dst.py && python3 {T}/dst.py", "1\n", "unjudgeable"),
     ("cp {T}/src.py {T}/src2.py {T}/d/ && python3 {T}/d/src.py", "1\n", "unjudgeable"),
     ("cp {T}/missing.py {T}/dst.py; python3 {T}/dst.py", "", "unjudgeable"),
+    # Review 0600a464.1: a directory the same command makes is a directory. The first, third and fourth read `n/src.py` from the disk at 2672ed8f6 (`(None, None)`, the copy recorded as a file named `n`), while bash ran the copied script; the second is the control, a destination nothing makes, which is the file.
+    ("mkdir -p {T}/n && cp {T}/src.py {T}/n && python3 {T}/n/src.py", "1\n", "file"),
+    ("cp {T}/src.py {T}/n && python3 {T}/n", "1\n", "file"),
+    ("install -d {T}/n && cp {T}/src.py {T}/n && python3 {T}/n/src.py", "1\n", "file"),
+    (
+        'mkdir -p "$(echo {T}/n)" && cp {T}/src.py {T}/n && python3 {T}/n/src.py',
+        "1\n",
+        "unjudgeable",
+    ),
 ]
 
 
@@ -3029,6 +3038,10 @@ def _copy_wrong(module, bash_path, tmp_path):
                 and rel.parts[0] not in ("bin", "home")
             ):
                 path.unlink()
+        # A directory the command made is gone too, so the walk cannot read the answer off the disk.
+        for path in tmp.iterdir():
+            if path.is_dir() and path.name not in ("d", "bin", "home"):
+                shutil.rmtree(path)
         module._ANALYSIS_CACHE.clear()
         try:
             run = [r for r in module.every_run(command) if r.name == "python3"][-1]
@@ -3082,8 +3095,13 @@ EXPANDED_WRITE_PLANTS = [
     ),
     (
         "a copy into a directory recorded as the directory",
-        '        if into or dest.endswith("/") or os.path.isdir(_script_path(dest, run.cwd, cwd)):\n            out.extend(',
-        "        if False:\n            out.extend(",
+        '        directory = True if into or dest.endswith("/") else None\n        if directory is None:\n            directory = _directory_answer(_script_path(dest, run.cwd, cwd), earlier, cwd)\n',
+        "        directory = False\n",
+    ),
+    (
+        "a copy's directory read off the disk (0600a464.1)",
+        "            directory = _directory_answer(_script_path(dest, run.cwd, cwd), earlier, cwd)\n",
+        "            directory = os.path.isdir(_script_path(dest, run.cwd, cwd))\n",
     ),
     (
         "via sliced from the typed words (2e50ca28.1)",
@@ -3111,4 +3129,203 @@ def test_each_expanded_write_plant_turns_a_row(bash, tmp_path, label, old, new):
         + _copy_wrong(module, bash, tmp_path / "c")
         + _launched_wrong(module)
     )
+    assert turned, "plant %r turns no row: the tables cannot see it" % label
+
+
+# A VARIABLE ASSIGNED ANY OTHER WAY THAN `NAME=value` IS NOT THE OLD VALUE (#97ed76a7). Each row runs under real bash in a fresh scratch directory and names the files bash creates there; `write_targets` must then name each of them, or the typed word alone where the walk cannot know the value, and never a file bash did not write. The fourth column is what 2672ed8f6 answered, measured: a stale value for most rows (`other.md` after a `for`, a `read` or a `printf -v` that had assigned `src`, `.md` after a `${D:=src}`), and `a.in` for the body of a piped loop whose `read` had assigned `src`.
+ASSIGN_ROWS = [
+    # (script, the files bash writes, write_targets, what 2672ed8f6 answered where it differs)
+    (
+        "D=other; for D in src; do echo x > $D.md; done",
+        ["src.md"],
+        ["$D.md"],
+        ["$D.md", "other.md"],
+    ),
+    ("D=other; read D <<< src; echo x > $D.md", ["src.md"], ["$D.md"], ["$D.md", "other.md"]),
+    ("D=other; printf -v D src; echo x > $D.md", ["src.md"], ["$D.md"], ["$D.md", "other.md"]),
+    ("D=other; mapfile -t D <<< src; echo x > $D.md", ["src.md"], ["$D.md"], ["$D.md", "other.md"]),
+    ("O=other; getopts a O -a; echo x > $O.md", ["a.md"], ["$O.md"], ["$O.md", "other.md"]),
+    ("D=1; let D=2; echo x > $D.md", ["2.md"], ["$D.md"], ["$D.md", "1.md"]),
+    ("D=1; (( D = 2 )); echo x > $D.md", ["2.md"], ["$D.md"], ["$D.md", "1.md"]),
+    ("D=1; : $((D=2)); echo x > $D.md", ["2.md"], ["$D.md"], ["$D.md", "1.md"]),
+    ("unset D; : ${D:=src}; echo x > $D.md", ["src.md"], ["$D.md"], ["$D.md", ".md"]),
+    # A builtin's heredoc is expanded in the shell itself (an external command's in its child, where the assignment stays).
+    ("unset D; : <<EOF\n${D:=src}\nEOF\necho x > $D.md", ["src.md"], ["$D.md"], ["$D.md", ".md"]),
+    ("D=other; f() { D=src; }; f; echo x > $D.md", ["src.md"], ["$D.md"], ["$D.md", "src.md"]),
+    ("D=other; f() { echo x > $D.md; }; D=src; f", ["src.md"], ["$D.md"], ["$D.md", "other.md"]),
+    (
+        "D=other; declare -n R=D; R=src; echo x > $D.md",
+        ["src.md"],
+        ["$D.md"],
+        ["$D.md", "other.md"],
+    ),
+    ("D=(src b); echo x > $D.md", ["src.md"], ["$D.md"], ["$D.md", ".md"]),
+    (
+        "echo D=src > e.sh; D=other; . ./e.sh; echo x > $D.md",
+        ["e.sh", "src.md"],
+        ["e.sh", "$D.md"],
+        ["e.sh", "$D.md", "other.md"],
+    ),
+    # A loop body is walked again with what its first pass assigned unknown: the second iteration writes `b.l`.
+    ("D=a; for i in 1 2; do echo x > $D.l; D=b; done", ["a.l", "b.l"], ["$D.l"], ["$D.l", "a.l"]),
+    # A compound command's redirect is expanded before its body runs.
+    ("D=a; for x in 1; do D=b; done > $D.out", ["a.out"], ["$D.out", "a.out"], ["$D.out", "b.out"]),
+    ("D=a; if true; then D=b; fi > $D.out", ["a.out"], ["$D.out", "a.out"], ["$D.out", "b.out"]),
+    # A loop in a pipeline runs in a subshell: its condition's `read` reaches its body, and nothing reaches the line after it.
+    (
+        "D=a; echo src | while read D; do echo x > $D.in; done; echo x > $D.md",
+        ["a.md", "src.in"],
+        ["$D.in", "$D.md", "a.md"],
+        ["$D.in", "a.in", "$D.md", "a.md"],
+    ),
+    # Controls: an expansion or a builtin that assigns nothing keeps the value.
+    ("D=1; : ${D:-2} $((D+1)); echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
+    ("D=1; read -r E <<< x; printf -v F y; echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
+    ("D=1; f() { E=2; }; f; echo x > $D.md", ["1.md"], ["$D.md", "1.md"], None),
+]
+
+
+def _assign_wrong(module, bash_path, tmp_path):
+    wrong = []
+    for k, (script, written, want, _was) in enumerate(ASSIGN_ROWS):
+        tmp = tmp_path / ("a%d" % k)
+        tmp.mkdir()
+        run_bash(bash_path, Fact("A%d" % k, "assignment", script), tmp)
+        assert _created(tmp) == written, "bash wrote %r for %s" % (_created(tmp), script)
+        module._ANALYSIS_CACHE.clear()
+        try:
+            got = module.write_targets(script)
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != want:
+            wrong.append((script, got, want))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_a_variable_assigned_without_name_equals_value_97ed76a7(bash, tmp_path):
+    wrong = _assign_wrong(shellscan, bash, tmp_path)
+    assert not wrong, "\n".join(map(repr, wrong))
+    # Every concrete target the walk names is one bash wrote.
+    for script, written, want, _was in ASSIGN_ROWS:
+        assert all("$" in t or t in written for t in want), script
+
+
+# A COMPOUND COMMAND'S REDIRECT IS ON THE RUNS INSIDE IT (#97ed76a7). At 2672ed8f6 `{ ...; } > f`, `( ... ) > f`, `done > f`, `fi > f` and `esac > f` were in `write_targets` and on no run, so a reader of `run.writes`/`redirect_targets` (earlier_mutators, `_written_scripts`, wl_roster.bash_write_paths, every guard walking runs) never saw them. A run that changed directory first is left out: bash opened the file where the group started.
+COMPOUND_ROWS = [
+    ("{ echo x; } > g.md", {"echo": ["g.md"]}),
+    ("( echo x ) > g.md", {"echo": ["g.md"]}),
+    ("while false; do echo x; done > w.md", {"false": ["w.md"], "echo": ["w.md"]}),
+    ("if true; then echo x; fi > i.md", {"true": ["i.md"], "echo": ["i.md"]}),
+    ("case a in a) echo x;; esac > c.md", {"echo": ["c.md"]}),
+    ("D=g; { echo x; } > $D.md", {"echo": ["$D.md", "g.md"]}),
+    ("mkdir -p s; { cd s; echo x; } > g.md", {"mkdir": [], "cd": ["g.md"], "echo": []}),
+    ("{ echo x; } 2>&1", {"echo": []}),
+]
+
+
+def _compound_wrong(module):
+    wrong = []
+    for script, want in COMPOUND_ROWS:
+        module._ANALYSIS_CACHE.clear()
+        got: object
+        try:
+            got = {r.name: module.redirect_targets(r) for r in module.every_run(script)}
+        except _PLANT_CRASHES as exc:
+            got = "<raised %s>" % type(exc).__name__
+        if got != want:
+            wrong.append((script, got, want))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_a_compound_redirect_is_on_the_runs_inside_it_97ed76a7():
+    wrong = _compound_wrong(shellscan)
+    assert not wrong, "\n".join(map(repr, wrong))
+    # `earlier_mutators` reads it: a message file a group writes before the commit changes what the commit reads.
+    assert [
+        m.target
+        for m in shellscan.earlier_mutators("{ printf x; } > m; git commit -F m", "git commit")
+    ] == ["m"]
+
+
+def test_assignments_before_reads_the_walk_97ed76a7():
+    reads = shellscan.assignments_before
+    assert reads("P=a; git commit -- $P", "git commit") == {"P": "a"}
+    assert reads("P=a; for P in b; do :; done; git commit -- $P", "git commit") == {}
+    assert reads("P=a; read P <<< b; git commit -- $P", "git commit") == {}
+    assert reads('P="$(ls x/*.json)"; git commit -- $P', "git commit") == {"P": "$(ls x/*.json)"}
+    assert reads("P=a; if true; then P=b; fi; git commit -- $P", "git commit") == {"P": "b"}
+
+
+def test_function_bodies_and_loops_are_still_walked_97ed76a7():
+    # `function f { ...; }` was read as words of `function f`, so the commands in its body were never walked.
+    shellscan._ANALYSIS_CACHE.clear()
+    assert [r.name for r in shellscan.every_run("function f { rm x; }")] == ["rm"]
+    # An array's elements are not a command, and a substitution inside them still runs.
+    assert [r.name for r in shellscan.every_run("D=(a b)")] == []
+    assert [r.name for r in shellscan.every_run("D=( $(rm y) )")] == ["rm"]
+    # A loop walked twice still reports each of its runs once.
+    assert [r.name for r in shellscan.every_run("D=a; for i in 1 2; do rm $D; D=b; done")] == ["rm"]
+
+
+# THE PLANTS for #97ed76a7. Each puts one piece back the way it was at 2672ed8f6 in a copy of shellscan and must turn at least one row above.
+ASSIGN_PLANTS = [
+    (
+        "a builtin's assignment ignored",
+        "        self.effects = _builtin_assigns(words, before)\n",
+        "        self.effects = (set(), False, set())\n",
+    ),
+    (
+        "an expansion's assignment ignored",
+        "        state[1] = _clobber(state[1], _expansion_assigns(stage[1]))\n",
+        "        pass\n",
+    ),
+    (
+        "a loop body walked once",
+        '                    if frame["family"] == "loop" and frame["item"] not in rewalked:\n',
+        "                    if False:\n",
+    ),
+    (
+        "a function body read under the definition's state",
+        "                function = (function[0], idx, state[1])\n                state[1] = _opaque(state[1])\n",
+        "                function = (function[0], idx, state[1])\n",
+    ),
+    (
+        "a closer's redirect read after the body",
+        '                            _redirect_value(word, frame["origin"][1]),\n',
+        "                            analysis.xwrites[at][1],\n",
+    ),
+    (
+        "a subshell loop's state kept",
+        '                        state[:] = frame["origin"]\n',
+        "                        pass\n",
+    ),
+    (
+        "an array assignment read as a subshell",
+        '                if head.endswith("=") and _ASSIGNMENT.match(head):\n',
+        "                if False:\n",
+    ),
+    (
+        "an assignment through a nameref ignored",
+        "        if watched and any(shell.get(n) != start.get(n) for n in watched - set(watch)):\n",
+        "        if False:\n",
+    ),
+    (
+        "a compound redirect on no run",
+        "        for run in self.analysis.runs[first:end]:\n            if run.cwd == cwd:\n",
+        "        for run in ():\n            if run.cwd == cwd:\n",
+    ),
+    (
+        "a compound redirect on a run that changed directory",
+        "        for run in self.analysis.runs[first:end]:\n            if run.cwd == cwd:\n",
+        "        for run in self.analysis.runs[first:end]:\n            if True:\n",
+    ),
+]
+
+
+@pytest.mark.parametrize(("label", "old", "new"), ASSIGN_PLANTS, ids=[p[0] for p in ASSIGN_PLANTS])
+def test_each_assignment_plant_turns_a_row_97ed76a7(bash, tmp_path, label, old, new):
+    module = _planted_shellscan(old, new)
+    turned = _assign_wrong(module, bash, tmp_path) + _compound_wrong(module)
     assert turned, "plant %r turns no row: the tables cannot see it" % label

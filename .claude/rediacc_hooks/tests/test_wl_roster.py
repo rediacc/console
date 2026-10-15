@@ -1675,6 +1675,29 @@ def test_r11_an_in_place_edit_is_read_by_the_guards_parse(tmp_path, cmd, want):
     assert json.loads(proc.stdout) == want, cmd
 
 
+# #97ed76a7: a redirect target is read as bash expands it (`shellscan`'s `xwrites`), joined to the directory its run executes in. Each row names a path that must be among the answer and one that must not. The second and third answered `["other/a.md"]` at 2672ed8f6, a file bash never writes (`for` and `read` assign `src`), and the last `["g.md"]`: a group's redirect sat on no run, so its `cd` was lost.
+EXPANDED_REDIRECT_CASES = [
+    ("cd agent && D=plans; echo x > $D/a.md", "agent/plans/a.md", "plans/a.md"),
+    ("D=other; for D in src; do echo x > $D/a.md; done", None, "other/a.md"),
+    ("D=other; read D <<< src; echo x > $D/a.md", None, "other/a.md"),
+    ("cd docs && { echo x; } > g.md", "docs/g.md", "g.md"),
+]
+
+
+@pytest.mark.parametrize(("cmd", "landing", "not_landing"), EXPANDED_REDIRECT_CASES)
+def test_97ed76a7_a_redirect_lands_where_bash_writes_it(tmp_path, cmd, landing, not_landing):
+    proc = subprocess.run(
+        [sys.executable, "-c", WRITE_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    got = json.loads(proc.stdout)
+    assert landing is None or landing in got, (cmd, got)
+    assert not_landing not in got, (cmd, got)
+
+
 # #78afdc0b: a Python run's program is `shellscan.interpreter_program`'s reading, the one the guards share. The private reader took a bare `-c` only and added every heredoc in the command to every Python run: a script run BY PATH was never read, `-Ic` was missed, and a heredoc written to a notes file counted as the program of an unrelated script. Each row marked `was` answered that at c5c3036c3.
 PROGRAM_CASES = [
     # (command, the paths written, what the private reader answered)

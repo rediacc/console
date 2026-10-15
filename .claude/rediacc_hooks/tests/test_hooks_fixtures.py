@@ -3156,3 +3156,63 @@ def test_guards_read_expanded_writes_and_copied_scripts_4deea064_3ff3bb16(tmp_pa
     assert not wrong, "\n".join(map(repr, wrong))
     for stem in {s for s, _c, _w in EXPANDED_WRITE_GUARD_ROWS}:
         assert {w for s, _c, w in EXPANDED_WRITE_GUARD_ROWS if s == stem} == {0, 2}, stem
+
+
+# A DIRECTORY THE COMMAND MAKES, AND A VARIABLE IT ASSIGNS WITHOUT `NAME=value` (review 0600a464.1, #97ed76a7). In a scratch tree holding `rv.py` (a review writer) and `src.py`, with `n` absent: every `2` row was allowed (rc 0) at 2672ed8f6, where the copy into `n` was recorded as a file named `n`, a group's or an `if`'s redirect sat on no run, and `function f { ...; }` walked none of its body; every `0` row with a `D=agent/reviews/x` was refused (rc 2) there, the stale value read after `for`/`read` assigned `plain`.
+MADE_DIRECTORY_GUARD_ROWS = (
+    ("block_review_file_shell_write", "mkdir -p n && cp rv.py n && python3 n/rv.py", 2),
+    ("block_review_file_shell_write", "install -d n && cp rv.py n && python3 n/rv.py", 2),
+    (
+        "block_review_file_shell_write",
+        'mkdir -p "$(echo n)" && cp rv.py n && python3 n/rv.py --out reviews.txt',
+        2,
+    ),
+    ("block_review_file_shell_write", "cd agent/reviews/x && { echo hi; } > y.md", 2),
+    ("block_review_file_shell_write", "cd agent/reviews/x && if true; then echo hi; fi > y.md", 2),
+    ("block_review_file_shell_write", "function f { tee agent/reviews/x/y.md; }", 2),
+    # Controls: a copied script that writes nothing protected, a destination nothing makes, and the values bash really assigns.
+    (
+        "block_review_file_shell_write",
+        "mkdir -p n && cp src.py n && python3 n/src.py --out reviews.txt",
+        0,
+    ),
+    ("block_review_file_shell_write", "cp src.py n && python3 n --out reviews.txt", 0),
+    (
+        "block_review_file_shell_write",
+        "D=agent/reviews/x; for D in plain; do echo hi > $D/y.md; done",
+        0,
+    ),
+    ("block_review_file_shell_write", "D=agent/reviews/x; read D <<< plain; echo hi > $D/y.md", 0),
+)
+
+
+def test_made_directories_and_builtin_assignments_0600a464_97ed76a7(tmp_path):
+    root = os.path.realpath(tmp_path)
+    for d in ("agent/reviews/x", "plain"):
+        (tmp_path / d).mkdir(parents=True)
+    (tmp_path / "src.py").write_text("print(1)\n", encoding="utf-8")
+    (tmp_path / "rv.py").write_text(_RV, encoding="utf-8")
+    wrong = []
+    for stem, command, want in MADE_DIRECTORY_GUARD_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    # The copy's landing, as `copy_landings` hands it to block_bash_write_to_running_script, block_roundlog_truncate and block_binary_deploy: inside a directory the command makes, at either place where that cannot be known, and the file itself where nothing makes one.
+    landings = {
+        cmd: shellscan.copy_landings(
+            next(r for r in shellscan.every_run(cmd) if r.name == "cp"), root
+        )
+        for cmd in ("mkdir -p n && cp a n", 'mkdir -p "$X" && cp a n', "cp a n")
+    }
+    assert landings == {
+        "mkdir -p n && cp a n": [(os.path.join(root, "n", "a"), True)],
+        'mkdir -p "$X" && cp a n': [
+            (os.path.join(root, "n", "a"), True),
+            (os.path.join(root, "n"), False),
+        ],
+        "cp a n": [(os.path.join(root, "n"), False)],
+    }
