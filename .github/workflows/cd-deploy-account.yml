@@ -23,12 +23,11 @@ on:
       # them fixed that; fetching them from Bitwarden 2026-09-05 fixed it again,
       # because the org secret the callers passed had been deleted and the whole
       # chain was carrying "" a second time.
-      # Chunk-store backup plane. `required: true` deliberately, and every
-      # caller updated in the same change: these are optional in the Worker's
-      # env schema, so an empty value does NOT fail the deploy -- it ships a
-      # Worker whose backup endpoints answer 503 at runtime. That is the exact
-      # shape of the OTLP bug above, and `required` is what turns it into a
-      # loud workflow error instead of a silent production regression.
+      # The chunk-store backup plane's key pair is no input: the job fetches its
+      # own channel's pair from Bitwarden (see "Fetch the stable/edge backup key
+      # pair"), and set_account_worker_secrets refuses an empty value, so a
+      # missing pair is a loud deploy error, not a Worker whose backup endpoints
+      # answer 503 (the shape of the OTLP bug above).
 # Every job below declares its own permissions, so this workflow-level default
 # is deliberately empty: a job added without a block gets nothing and fails
 # loudly, rather than silently inheriting a scope nobody audited it for.
@@ -181,9 +180,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID
             ACCOUNT_BACKUP_S3_ENDPOINT > BWS_ACCOUNT_BACKUP_S3_ENDPOINT
-            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY
             ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
@@ -222,6 +219,30 @@ jobs:
             SELLER_REGISTRATION_NUMBER > BWS_SELLER_REGISTRATION_NUMBER
             SELLER_VAT_NUMBER > BWS_SELLER_VAT_NUMBER
             TURNSTILE_SITE_KEY > BWS_TURNSTILE_SITE_KEY
+
+      # The backup key pair is per CHANNEL: two bucket-scoped tokens, each limited
+      # to object read and write on its own channel's three backup buckets
+      # (agent/plans/PLAN-backup-credential-isolation.md). A run fetches ONLY its
+      # own channel's pair, so a stable deploy never holds edge's key and the
+      # other way round; set_account_worker_secrets refuses the other pair if it
+      # is ever set. check:ci-backup-credential-isolation pins both conditions.
+      - name: Fetch the stable backup key pair from Bitwarden
+        if: inputs.target == 'stable'
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE
+            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE
+
+      - name: Fetch the edge backup key pair from Bitwarden
+        if: inputs.target != 'stable'
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE
+            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -324,11 +345,17 @@ jobs:
           # used by the "Verify Stripe prices" step above.
           SUFFIX: ${{ matrix.secretSuffix }}
           TARGET: ${{ inputs.target }}
-          # Chunk-store backup plane. Not region-suffixed on purpose: one
-          # bucket-scoped R2 credential serves every region.
+          # Chunk-store backup plane. The ENDPOINT is shared (it is not a
+          # credential; the script splices the region's jurisdiction label into
+          # it). The KEY PAIR is per channel and not per region: one token per
+          # channel, scoped to object read and write on that channel's three
+          # buckets. Only this run's channel was fetched above, so the other
+          # channel's two names arrive empty, which the script requires.
           ACCOUNT_BACKUP_S3_ENDPOINT: ${{ env.BWS_ACCOUNT_BACKUP_S3_ENDPOINT }}
-          ACCOUNT_BACKUP_S3_ACCESS_KEY_ID: ${{ env.BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID }}
-          ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY: ${{ env.BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY }}
+          ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE }}
+          ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE: ${{ env.BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE }}
+          ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE }}
+          ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE: ${{ env.BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE }}
           WORKER_NAME: ${{ steps.config.outputs.worker }}
           # Restored 2026-09-02 from the Bitwarden map, which is the naming
           # authority: every name below that the store holds is exported under

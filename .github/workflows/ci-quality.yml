@@ -2275,6 +2275,9 @@ jobs:
       - name: Account env files retired
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_account_env_retired.py
+      - name: Backup credential isolation
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_backup_credential_isolation.py
       - name: Bitwarden secret map
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_bws_map.py

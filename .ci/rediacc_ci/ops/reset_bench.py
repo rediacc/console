@@ -8,7 +8,7 @@ Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out wh
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_reset_bench.py` that fails on the bash behaviour).
 
-  1. THE R2 WIPE USES THE S3 API, AND A FAILED LISTING IS A FAILURE. The listing was `curl -sS <CF REST .../r2/buckets/<b>/objects> 2>/dev/null || echo '{"result":[]}'` with jq errors discarded. Run live on 2026-10-01 that endpoint answers `Authentication error` to the minted management token (it carries no R2 permission group, and the REST API serves no object listing), so the bash read EVERY run as "Bucket is already empty (or listing API not available -- continuing)" and ended "bench has been reset" with the bucket untouched. The port lists and deletes through the S3-compatible endpoint (ListObjectsV2 with continuation tokens, then DELETE per key) signed with `CLOUDFLARE_R2_ENDPOINT` / `CLOUDFLARE_R2_ACCESS_KEY_ID` / `CLOUDFLARE_R2_SECRET_ACCESS_KEY` (bound by the deploy-bench profile), which are checked before anything is wiped; the credentials travel on curl's stdin, not argv. Any non-200 page stops the run.
+  1. THE R2 WIPE USES THE S3 API, AND A FAILED LISTING IS A FAILURE. The listing was `curl -sS <CF REST .../r2/buckets/<b>/objects> 2>/dev/null || echo '{"result":[]}'` with jq errors discarded. Run live on 2026-10-01 that endpoint answers `Authentication error` to the minted management token (it carries no R2 permission group, and the REST API serves no object listing), so the bash read EVERY run as "Bucket is already empty (or listing API not available -- continuing)" and ended "bench has been reset" with the bucket untouched. The port lists and deletes through the S3-compatible endpoint (ListObjectsV2 with continuation tokens, then DELETE per key) signed with `CLOUDFLARE_R2_ENDPOINT` / `CLOUDFLARE_R2_ACCESS_KEY_ID` / `CLOUDFLARE_R2_SECRET_ACCESS_KEY` (bound by the reset-bench profile, which the run re-executes under when it is not already bound), which are checked before anything is wiped; the credentials travel on curl's stdin, not argv. Any non-200 page stops the run.
   2. TABLE NAMES ARE QUOTED AS DATA. `DROP TABLE IF EXISTS "$t"` interpolated the name unescaped; an embedded double quote now doubles, as SQLite requires.
   8. THE DROP RUNS CHILDREN BEFORE PARENTS. Live against bench on 2026-10-01 the bash failed the drop every time (`no such table: main.organizations: SQLITE_ERROR`, 75 tables, nothing dropped): D1 enforces foreign keys, ignores `PRAGMA foreign_keys = OFF`, and the tables were dropped in name order. The port orders the drops by the `REFERENCES` in each table's `CREATE` text (`drop_order`) and uses `PRAGMA defer_foreign_keys = on`, D1's supported switch.
   3. A FAILED OBJECT DELETE IS NAMED, with the count already deleted (the bash loop ran `npx wrangler r2 object delete ... >/dev/null` under `set -e` and stopped with only wrangler's text).
@@ -37,6 +37,8 @@ DB_UUID = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"
 DB_NAME = "account-db-bench"
 BUCKET = "rediacc-configs-bench"
 CONFIRMATION = "wipe bench"
+# The Bitwarden profile this re-executes under (.ci/config/secret-supply.json): the R2 S3-API trio the wipe signs with, and the Cloudflare global key that `cf_auth` mints a management token from. The trio left the deploy-bench profile (agent/plans/PLAN-backup-credential-isolation.md B2), so a deploy no longer carries a key that reaches every bucket.
+PROFILE = "reset-bench"
 TABLE_QUERY = (
     "SELECT name, sql FROM sqlite_master WHERE type='table' "
     "AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'"
@@ -57,6 +59,33 @@ DNS are not touched; rediacc_ci.ops.deploy_bench redeploys them.
 
 class ResetError(Exception):
     """A step failed; the message is printed and the run exits 1."""
+
+
+def _reexec_under_profile(argv: list[str]) -> int | None:
+    """Run the same entry point under the reset-bench Bitwarden profile and return its exit status; None when already bound."""
+    profiles = (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
+    if PROFILE in profiles:
+        return None
+    env = dict(os.environ)
+    ci = str(paths.repo_root() / ".ci")
+    env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    return subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "rediacc_ci.core.bws_env",
+            "exec",
+            "--profile",
+            PROFILE,
+            "--",
+            sys.executable,
+            "-m",
+            "rediacc_ci.ops.reset_bench",
+            *argv,
+        ],
+        env=env,
+        check=False,
+    ).returncode
 
 
 def _query(auth: cf_auth.Auth, sql: str) -> dict:
@@ -168,7 +197,7 @@ XML_NEXT_TOKEN = re.compile(r"<NextContinuationToken>([^<]*)</NextContinuationTo
 
 
 class R2Credentials:
-    """The R2 S3-API credentials, read by name from the environment (the deploy-bench Bitwarden profile binds them)."""
+    """The R2 S3-API credentials, read by name from the environment (the reset-bench Bitwarden profile binds them)."""
 
     def __init__(self) -> None:
         self.endpoint = (os.environ.get("CLOUDFLARE_R2_ENDPOINT") or "").rstrip("/")
@@ -274,6 +303,9 @@ def main(argv: list[str]) -> int:
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
             return 1
+    rebound = _reexec_under_profile(argv)
+    if rebound is not None:
+        return rebound
 
     r2 = R2Credentials()
     if do_r2 and r2.missing():

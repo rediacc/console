@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-15T14:24:09.552Z",
+  "generatedAt": "2026-10-15T15:32:30.639Z",
   "legs": [
     {
       "index": 1,
@@ -180,6 +180,7 @@
       "ids": [
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_actions_vars.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_backfill_commit_resolve.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_backup_credential_isolation.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_bws_map_live.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py",
@@ -452,6 +453,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",
         "pytest:.ci/rediacc_ci/tests/test_named_paths.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_portal_health.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py",
         "pytest:.ci/rediacc_ci/tests/test_paths.py",
         "pytest:.ci/rediacc_ci/tests/test_pr_sync_epic_block.py",
@@ -612,6 +614,7 @@
         "pytest:.ci/rediacc_ci/tests/test_native.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_push_backup_credentials.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_csi_sanity.py",
