@@ -189,7 +189,7 @@ function writeDrafts(
       '',
       ...res.commands.map((cm) => `Ran: ${cmdLine(cm)}`),
       ...(c.repo === '.' && subs.length > 0
-        ? ['', `Pointer: ${subs.join(', ')} moves to the pins commit drafted beside this one.`]
+        ? ['', `Pointer: ${subs.join(', ')} moves to its own pins commit, committed in that repository first (submodule-first) and pushed before this one.`]
         : []),
       ...(task ? ['', `PR-TASK: ${task}`] : []),
     ]
