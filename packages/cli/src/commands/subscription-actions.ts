@@ -21,6 +21,7 @@ import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
+  type SubscriptionTokenState,
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -46,17 +47,32 @@ interface SubscriptionCommandContext {
   remoteRenetPath: string;
 }
 
-function handleSubscriptionTokenState(
-  tokenState: ReturnType<typeof getSubscriptionTokenState>
-): boolean {
-  if (tokenState.kind === 'missing') {
-    outputService.info(t('errors.subscription.notLoggedIn'));
+type UnreadyTokenState = Exclude<SubscriptionTokenState, { kind: 'ready' }>;
+
+/**
+ * Each non-ready token kind's diagnostic: prints the kind's context line and returns the kind's message. The Record is keyed by every non-ready kind, so a new SubscriptionTokenState kind fails tsc here until it has its own entry.
+ */
+const UNREADY_TOKEN_DIAGNOSTICS: Record<UnreadyTokenState['kind'], () => string> = {
+  missing: () => {
     outputService.info(
       t('commands.subscription.status.serverWouldUse', { server: getSubscriptionServerUrl() })
     );
-    return true;
+    return t('errors.subscription.notLoggedIn');
+  },
+};
+
+/**
+ * The one diagnostic for a token that is not ready, which a failing verb throws and the best-effort activation section prints (review 8b3374e0.1: the status verb had bypassed it, so every non-ready kind read as "not logged in").
+ * A kind with no entry is a programming error, never reported as "not logged in".
+ */
+function unreadyTokenDiagnostic(tokenState: UnreadyTokenState): string {
+  const diagnostic = Object.hasOwn(UNREADY_TOKEN_DIAGNOSTICS, tokenState.kind)
+    ? UNREADY_TOKEN_DIAGNOSTICS[tokenState.kind]
+    : undefined;
+  if (!diagnostic) {
+    throw new Error(`Unhandled subscription token state: ${JSON.stringify(tokenState)}`);
   }
-  return false;
+  return diagnostic();
 }
 
 async function assertSubscriptionScopeMatchesConfig(tokenState: {
@@ -99,8 +115,7 @@ async function resolveSubscriptionCommandContext(
 ): Promise<SubscriptionCommandContext> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
-    handleSubscriptionTokenState(tokenState);
-    throw new ValidationError(t('errors.subscription.notLoggedIn'));
+    throw new ValidationError(unreadyTokenDiagnostic(tokenState));
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
   // Refresh writes licenses on the machine, so it may bring renet up to date first.
@@ -115,10 +130,7 @@ async function resolveSubscriptionCommandContext(
 export async function executeSubscriptionStatus(): Promise<void> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
-    outputService.info(
-      t('commands.subscription.status.serverWouldUse', { server: getSubscriptionServerUrl() })
-    );
-    throw new ValidationError(t('errors.subscription.notLoggedIn'));
+    throw new ValidationError(unreadyTokenDiagnostic(tokenState));
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
 
@@ -318,7 +330,7 @@ async function renderActivationSection(
 ): Promise<void> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
-    handleSubscriptionTokenState(tokenState);
+    outputService.info(unreadyTokenDiagnostic(tokenState));
     return;
   }
 
@@ -357,8 +369,7 @@ function runRepoBatchRefresh(context: SubscriptionCommandContext): Promise<RepoB
 export async function executeAccountRefresh(): Promise<void> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
-    handleSubscriptionTokenState(tokenState);
-    throw new ValidationError(t('errors.subscription.notLoggedIn'));
+    throw new ValidationError(unreadyTokenDiagnostic(tokenState));
   }
   await assertSubscriptionScopeMatchesConfig(tokenState.token);
 

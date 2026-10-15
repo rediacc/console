@@ -174,7 +174,7 @@ class World(vm_check.Host):
         # The config each `config ssh set` and `machine add` wrote, in call order.
         self.written_in: list[str] = []
         self.add_rc = over.pop("add_rc", 0)
-        # "ok", "fail" (show exits non-zero) or "nodata" (show exits 0 with no data.embedded).
+        # "ok", "fail" (show exits non-zero), "nodata" (show exits 0 with no data.embedded), "notjson", or the JSON of the wrong shape "array" ([]) and "datastr" ({"data": "x"}).
         self.key_show = over.pop("key_show", "ok")
         assert not over, over
         self.store = root / "remote-store"
@@ -332,6 +332,10 @@ class World(vm_check.Host):
                 return vm_check.Result(0, json.dumps({"success": True, "data": {}}))
             if self.key_show == "notjson":
                 return vm_check.Result(0, "config ssh: ok\n")
+            if self.key_show == "array":
+                return vm_check.Result(0, "[]")
+            if self.key_show == "datastr":
+                return vm_check.Result(0, json.dumps({"success": True, "data": "x"}))
             embedded = "no" if self._key(env) == "no" else "yes"
             return vm_check.Result(0, json.dumps({"success": True, "data": {"embedded": embedded}}))
         if head == ("config", "ssh") and args[2:3] == ["set"]:
@@ -1576,6 +1580,46 @@ def test_a_missing_grand_on_the_ops_worker_is_created_and_the_run_is_verified(
     assert TOKEN not in json.dumps(receipt)
 
 
+STALE_FORK = "%s:vmc-10141500-abcdef-a" % PARENT
+FRESH_FORK = "%s:vmc-10141750-abcdef-b" % PARENT
+
+
+def test_stale_forks_beside_a_missing_grand_are_swept_when_it_is_created(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review 8b3374e0.2: the create path returned before the sweep, so a stale fork beside a missing grand survived the run."""
+    world = make_world(tmp_path, grands=(), extra_repos=(STALE_FORK, FRESH_FORK))
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert len(_creates(world)) == 1
+    deleted = [c[2] for c in world.rdc_calls() if c[:2] == ["repo", "delete"]]
+    assert deleted[0] == STALE_FORK, deleted
+    assert STALE_FORK not in world.repos
+    assert FRESH_FORK in world.repos
+    rows = [r for r in receipt["steps"] if r["id"] == "P5"]
+    assert len(rows) == 1, rows
+    assert "created on" in rows[0]["desc"], rows[0]
+    assert "1 stale fork(s) swept" in rows[0]["desc"], rows[0]
+    assert "stale forks: swept %s" % STALE_FORK in out, out
+
+
+def test_stale_forks_beside_a_missing_grand_are_swept_when_its_create_fails(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(
+        tmp_path,
+        grands=(),
+        extra_repos=(STALE_FORK, FRESH_FORK),
+        create_rc=1,
+        create_err="Machine slot limit reached for this plan",
+    )
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "parent-grand-missing"
+    assert STALE_FORK not in world.repos
+    assert FRESH_FORK in world.repos
+
+
 def test_a_cold_ops_run_creates_the_grand_and_still_downs_its_fleet(tmp_path: pathlib.Path) -> None:
     world = make_world(tmp_path, running=(), grands=())
     rc, out, _receipt = run_check(tmp_path, world)
@@ -1679,6 +1723,8 @@ def test_is_ops_vm_ip(ip: str, ok: bool) -> None:
         ("fail", "config ssh show gave no key state (rc=1: config is locked)"),
         ("nodata", "config ssh show gave no key state (its JSON has no data.embedded)"),
         ("notjson", "config ssh show gave no key state (its output is not JSON)"),
+        ("array", "config ssh show gave no key state (its JSON is a list, not an object)"),
+        ("datastr", "config ssh show gave no key state (its JSON data is a str, not an object)"),
     ],
 )
 def test_an_unreadable_key_state_changes_nothing_and_p5_judges(
@@ -1689,6 +1735,28 @@ def test_an_unreadable_key_state_changes_nothing_and_p5_judges(
     assert rc == vm_check.EXIT_VERIFIED, out
     assert world.key_set == [], "an unreadable key state must not set a key"
     assert says in out, out
+
+
+@pytest.mark.parametrize(
+    ("raw", "state"),
+    [
+        ('{"data": {"embedded": "no"}}', ("no", "")),
+        ('{"data": {}}', (None, "its JSON has no data.embedded")),
+        ('{"data": null}', (None, "its JSON has no data.embedded")),
+        ("{}", (None, "its JSON has no data.embedded")),
+        ("[]", (None, "its JSON is a list, not an object")),
+        ('"x"', (None, "its JSON is a str, not an object")),
+        ('{"data": "x"}', (None, "its JSON data is a str, not an object")),
+        ('{"data": []}', (None, "its JSON data is a list, not an object")),
+        ("config ssh: ok", (None, "its output is not JSON")),
+        ("", (None, "its output is not JSON")),
+    ],
+)
+def test_key_state_tells_not_json_from_json_of_the_wrong_shape(
+    raw: str, state: tuple[Any, str]
+) -> None:
+    """Review e9309c59.1: `[]` and `{"data": "x"}` are JSON, and were reported as not JSON."""
+    assert vm_check.key_state(raw) == state
 
 
 def test_an_unreadable_key_state_on_a_keyless_config_sets_nothing_and_p5_names_the_key(

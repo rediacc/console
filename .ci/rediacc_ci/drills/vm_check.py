@@ -10,7 +10,7 @@ Design 2 of agent/plans/PLAN-vm-check.md is the specification; each step below c
   P4  runs right after P1, because it chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command; a dev config that cannot be listed ("Decryption failed") is `account-unavailable`.
   P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
-  P5  the parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted, nothing else is touched.
+  P5  the parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted on every path once `repo list` answers, before the grand is judged (a missing grand that is then created included), nothing else is touched.
   V1.1-V1.7  two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
   T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, `ops down` only for a fleet this run started, then the lock. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them.
 
@@ -499,6 +499,21 @@ def stamp_age_s(stamp: str, now: float) -> float | None:
         if when.timestamp() <= now + 60:
             return now - when.timestamp()
     return None
+
+
+def key_state(raw: str) -> tuple[Any, str]:
+    """`data.embedded` of a `config ssh show -o json` envelope, or None with what the output was instead: not JSON, JSON that is not an object, a `data` that is not an object (review e9309c59.1: those two JSON shapes were reported as not JSON), or no `data.embedded`."""
+    try:
+        doc = json.loads(raw)
+    except ValueError:
+        return None, "its output is not JSON"
+    if not isinstance(doc, dict):
+        return None, "its JSON is a %s, not an object" % type(doc).__name__
+    data = doc.get("data")
+    if data is not None and not isinstance(data, dict):
+        return None, "its JSON data is a %s, not an object" % type(data).__name__
+    embedded = (data or {}).get("embedded")
+    return embedded, "" if embedded is not None else "its JSON has no data.embedded"
 
 
 def is_ops_vm_ip(ip: str) -> bool:
@@ -996,17 +1011,9 @@ class VmCheck:
     def _ensure_cli_key(self) -> None:
         """Give a config with no SSH key the key the ops VMs authorize (2026-10-15: an empty `credentials` made the CLI offer ~/.ssh/id_ed25519, and `repo list` failed `All configured authentication methods failed`). An unreadable `config ssh show` changes nothing and is said; P5's repo list then judges the key."""
         show = self.rdc("config", "ssh", "show", "-o", "json")
-        parsed = True
-        try:
-            embedded = (json.loads(show.out).get("data") or {}).get("embedded")
-        except (ValueError, AttributeError):
-            embedded, parsed = None, False
+        embedded, shape = key_state(show.out)
         if show.rc != 0 or embedded is None:
-            why = (
-                ("its JSON has no data.embedded" if parsed else "its output is not JSON")
-                if show.rc == 0
-                else "rc=%d: %s" % (show.rc, rdc_failure(show))
-            )
+            why = shape if show.rc == 0 else "rc=%d: %s" % (show.rc, rdc_failure(show))
             self.say(
                 "        config ssh show gave no key state (%s); the config is left as it is" % why
             )
@@ -1114,6 +1121,8 @@ class VmCheck:
                 ),
             )
         names = [str(e.get("name", "")) for e in entries]
+        # The sweep runs before the grand is judged, so stale forks beside a missing grand go too (review 8b3374e0.2: the create path returned before it).
+        swept, sweep = self._sweep_stale_forks(names)
         if self.opts.parent not in names:
             grands = sorted(n for n in names if n and ":" not in n)
             ip = self._machine_ip()
@@ -1138,8 +1147,17 @@ class VmCheck:
                         else "",
                     ),
                 )
-            self._create_grand(ip, grands)
+            self._create_grand(ip, grands, swept, sweep)
             return
+        self.record(
+            "P5",
+            "parent grand %s present; %d stale fork(s) swept" % (self.opts.parent, len(swept)),
+            True,
+            evidence=sweep,
+        )
+
+    def _sweep_stale_forks(self, names: Sequence[str]) -> tuple[list[str], str]:
+        """Delete the parent's `vmc-` forks older than STALE_FORK_S, nothing else; returns the deleted names and the evidence line, which is also said when it is not empty."""
         swept: list[str] = []
         kept: list[str] = []
         for name in names:
@@ -1155,12 +1173,10 @@ class VmCheck:
         evidence = "swept %s" % ", ".join(swept) if swept else ""
         if kept:
             evidence += "; could not delete %s" % ", ".join(kept)
-        self.record(
-            "P5",
-            "parent grand %s present; %d stale fork(s) swept" % (self.opts.parent, len(swept)),
-            True,
-            evidence=evidence.strip("; "),
-        )
+        evidence = evidence.strip("; ")
+        if evidence:
+            self.say("        stale forks: %s" % evidence)
+        return swept, evidence
 
     def _machine_ip(self) -> str:
         """The worker's configured address: known from P2 when the worker was found by its ip, read from `machine list` when `--machine` named it."""
@@ -1170,7 +1186,9 @@ class VmCheck:
             self.machine_ip = ips[0] if ips else ""
         return self.machine_ip
 
-    def _create_grand(self, ip: str, grands: Sequence[str]) -> None:
+    def _create_grand(
+        self, ip: str, grands: Sequence[str], swept: Sequence[str], sweep: str
+    ) -> None:
         """Create the missing parent grand on an ops VM worker, under P4's credential; the ops VMs are development-only (operator ruling 2026-10-15), so this is never an operator's step."""
         args = ("repo", "create", self.opts.parent, "-m", self.machine, "--size", GRAND_SIZE)
         credential = "the minted token" if self.token else "the config's stored token"
@@ -1216,11 +1234,15 @@ class VmCheck:
         self.grand_created = True
         self.record(
             "P5",
-            "parent grand %s created on %s (ops VM %s) under %s"
-            % (self.opts.parent, self.machine, ip, credential),
+            "parent grand %s created on %s (ops VM %s) under %s; %d stale fork(s) swept"
+            % (self.opts.parent, self.machine, ip, credential, len(swept)),
             True,
             res,
-            evidence="./rdc.sh %s rc=0 in %d s" % (" ".join(args), res.ms // 1000),
+            evidence="; ".join(
+                e
+                for e in ("./rdc.sh %s rc=0 in %d s" % (" ".join(args), res.ms // 1000), sweep)
+                if e
+            ),
         )
 
     # ------------------------------------------------------------------ V

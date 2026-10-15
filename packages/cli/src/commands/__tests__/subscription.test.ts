@@ -284,6 +284,45 @@ describe('subscription command helpers', () => {
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
   });
 
+  // Review 8b3374e0.1: the status verb had bypassed the per-kind diagnostic, so every non-ready kind read as "not logged in". Each entry point now goes through one exhaustive diagnostic.
+  it.each([
+    ['status', () => executeSubscriptionStatus()],
+    ['refresh', () => executeAccountRefresh()],
+    ['refresh -m', () => executeMachineRefresh('hostinger')],
+  ])('%s fails on a missing token with its own diagnostic', async (_verb, run) => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
+
+    await expect(run()).rejects.toThrow('errors.subscription.notLoggedIn');
+
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      `commands.subscription.status.serverWouldUse:http://localhost:${WK_ACCOUNT_DEV_PORT}`
+    );
+    expect(mockOutputInfo).not.toHaveBeenCalledWith('errors.subscription.notLoggedIn');
+    expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('status -m prints the missing-token diagnostic and still renders the repo table', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
+
+    await executeMachineStatus('hostinger');
+
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      `commands.subscription.status.serverWouldUse:http://localhost:${WK_ACCOUNT_DEV_PORT}`
+    );
+    expect(mockOutputInfo).toHaveBeenCalledWith('errors.subscription.notLoggedIn');
+    expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
+    expect(mockReadRuntimeRepoLicenseStatuses).toHaveBeenCalled();
+  });
+
+  it('status never reports a token kind it has no diagnostic for as "not logged in"', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'expired' });
+
+    await expect(executeSubscriptionStatus()).rejects.toThrow(
+      'Unhandled subscription token state: {"kind":"expired"}'
+    );
+    expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+  });
+
   it('status fails hard when token team and current config team differ', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({
       kind: 'ready',
