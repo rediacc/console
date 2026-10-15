@@ -12,9 +12,9 @@ import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { getConfigDir } from '@rediacc/shared/paths';
-import { configService } from '../../config/config-resources.js';
 import { isSEA } from '../../../utils/platform.js';
 import { VERSION } from '../../../version.js';
+import { configService } from '../../config/config-resources.js';
 
 /** The daemon runs only where a unix-domain socket is the natural transport. */
 export function isDaemonPlatform(): boolean {
@@ -37,6 +37,12 @@ const SOCKET_NAME = 'executor-daemon.sock';
  * Scoping the socket per (dir, name) gives each context its own daemon; the
  * client and server each derive the suffix from their own environment, so a
  * mismatch is structurally impossible rather than a checked error.
+ *
+ * The `REDIACC_*` environment is part of the context too (`environmentIdentity`):
+ * a daemon executes with the environment it was spawned under, so a client with
+ * another token, account server or agent-mode switch gets a daemon of its own
+ * rather than one that acts as somebody else, and two such clients running at
+ * once each keep theirs instead of evicting each other's (review b3e07699.1).
  */
 function configScopeSuffix(): string {
   // Defensive: unit tests mock config-resources with partial shapes, and path derivation must never crash a caller that will route direct anyway.
@@ -44,7 +50,7 @@ function configScopeSuffix(): string {
     typeof configService.getEffectiveConfigName === 'function'
       ? configService.getEffectiveConfigName()
       : 'rediacc';
-  const scope = `${getConfigDir()}:${name}`;
+  const scope = `${getConfigDir()}:${name}:${environmentIdentity()}`;
   return crypto.createHash('sha256').update(scope).digest('hex').slice(0, 12);
 }
 
@@ -109,10 +115,6 @@ export function readToken(tokenPath: string = daemonTokenPath()): string | undef
  * constant `0.0.0-dev`, so its (mtime,size) is folded in.
  */
 export function processIdentity(): string {
-  return `${buildIdentity()}:env-${environmentIdentity()}`;
-}
-
-function buildIdentity(): string {
   if (isSEA()) return VERSION;
   const bundle = process.argv[1];
   if (!bundle) return VERSION;
@@ -124,13 +126,18 @@ function buildIdentity(): string {
   }
 }
 
-/** The daemon's own plumbing: set on the daemon process itself (`REDIACC_SSH_LINGER_MS` before its identity is taken, `REDIACC_VIA_DAEMON` after), or never set on a client that reaches a daemon (`REDIACC_NO_DAEMON`). */
-const DAEMON_LOCAL_ENV = new Set(['REDIACC_SSH_LINGER_MS', 'REDIACC_VIA_DAEMON', 'REDIACC_NO_DAEMON']);
+/** The daemon's own plumbing, never part of the context: set on the daemon process itself (`REDIACC_SSH_LINGER_MS` before it derives its socket, `REDIACC_VIA_DAEMON` after), or a switch that decides only whether a client uses a daemon at all (`REDIACC_NO_DAEMON`). */
+const DAEMON_LOCAL_ENV = new Set([
+  'REDIACC_SSH_LINGER_MS',
+  'REDIACC_VIA_DAEMON',
+  'REDIACC_NO_DAEMON',
+]);
 
 /**
- * A digest of every `REDIACC_*` variable but the daemon's own plumbing. A daemon
- * executes with the environment it was spawned under, so a client whose token,
- * account server or agent-mode switches differ must not reuse it: a daemon
+ * A digest of every `REDIACC_*` variable but the daemon's own plumbing, folded
+ * into the socket scope. A daemon executes with the environment it was spawned
+ * under, so a client whose token, account server or agent-mode switches differ
+ * must not reach it: a daemon
  * spawned under one `REDIACC_TOKEN` kept sending it after the client had moved to
  * another, and the server answered "Subscription not found" for a subscription
  * that token's re-seed had deleted (vm:check, 2026-10-15). A daemon spawned
