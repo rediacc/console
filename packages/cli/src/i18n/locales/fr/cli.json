@@ -1840,6 +1840,7 @@
         "description": "S’authentifier avec un jeton API du portail web",
         "discoveringRegions": "Recherche des régions disponibles...",
         "edgeSeparator": "Canal Edge",
+        "emptyToken": "Le jeton API ne peut pas être vide (stdin n'a fourni aucun jeton).",
         "expired": "L’autorisation a expiré. Veuillez réessayer.",
         "machines": "Machines : {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} emplacement(s) de machine dépassent la limite.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "Jeton API (rdt_...)",
+    "apiToken": "Jeton API (rdt_...). Passez `-` pour le lire depuis stdin (il reste alors hors de la liste des processus).",
     "artifactRef": "Référence d'artefact de sauvegarde (repo[:tag][@place])",
     "background": "Exécuter en tant que job détaché sur la machine : afficher son id et quitter",
     "cleanupAll": "Supprimer toutes les configurations SSH rediacc",

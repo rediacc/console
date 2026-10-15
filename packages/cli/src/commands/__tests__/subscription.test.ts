@@ -31,6 +31,7 @@ const {
   mockReadAccountPointer,
   mockDiscoverRegions,
   mockPromptRegionSelection,
+  mockReadStdinValue,
 } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(),
   mockFetchLicenseReportOrThrow: vi.fn(),
@@ -65,6 +66,7 @@ const {
   })),
   mockDiscoverRegions: vi.fn(),
   mockPromptRegionSelection: vi.fn(),
+  mockReadStdinValue: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -136,12 +138,17 @@ vi.mock('../../utils/spinner.js', () => ({
   withSpinner: mockWithSpinner,
 }));
 
+vi.mock('../../utils/stdin.js', () => ({
+  readStdinValue: mockReadStdinValue,
+}));
+
 const {
   executeSubscriptionStatus,
   executeMachineStatus,
   executeAccountRefresh,
   executeMachineRefresh,
   executeRepoLicenseRefresh,
+  resolveLoginToken,
 } = await import('../subscription.js');
 
 const { renderRepoBatchRefreshSummary } = await import('../subscription-output.js');
@@ -658,6 +665,28 @@ describe('subscription command helpers', () => {
       expect(pointer.accountServer).toBeTruthy();
       expect(mockDiscoverRegions).not.toHaveBeenCalled();
       expect(mockPromptRegionSelection).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── login --token - ─────────────────────────────────────────────────
+
+  describe('login token source', () => {
+    it('takes a literal --token value as given and never reads stdin', async () => {
+      await expect(resolveLoginToken('rdt_literal')).resolves.toBe('rdt_literal');
+      expect(mockReadStdinValue).not.toHaveBeenCalled();
+    });
+
+    it('reads the token from stdin for `-`, so it never reaches argv', async () => {
+      mockReadStdinValue.mockResolvedValue('  rdt_from_stdin\r');
+      await expect(resolveLoginToken('-')).resolves.toBe('rdt_from_stdin');
+      expect(mockReadStdinValue).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses an empty stdin rather than logging in with no token', async () => {
+      mockReadStdinValue.mockResolvedValue('\n');
+      await expect(resolveLoginToken('-')).rejects.toThrow(
+        'commands.subscription.login.emptyToken'
+      );
     });
   });
 });

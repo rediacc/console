@@ -1840,6 +1840,7 @@
         "description": "Autenticarse con un token API del portal web",
         "discoveringRegions": "Descubriendo regiones disponibles...",
         "edgeSeparator": "Canal Edge",
+        "emptyToken": "El token API no puede estar vacío (stdin no proporcionó ningún token).",
         "expired": "La autorización ha expirado. Por favor, inténtelo de nuevo.",
         "machines": "Máquinas: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} puesto(s) de máquina superan el límite.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "Token API (rdt_...)",
+    "apiToken": "Token API (rdt_...). Pasa `-` para leerlo desde stdin (lo mantiene fuera de la lista de procesos).",
     "artifactRef": "Referencia de artefacto de copia de seguridad (repo[:tag][@lugar])",
     "background": "Ejecutar como trabajo desacoplado en la máquina: imprime su id y termina",
     "cleanupAll": "Eliminar todas las configuraciones SSH de rediacc",

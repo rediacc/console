@@ -1840,6 +1840,7 @@
         "description": "Mit einem API-Token aus dem Webportal authentifizieren",
         "discoveringRegions": "Verfügbare Regionen werden ermittelt...",
         "edgeSeparator": "Edge-Kanal",
+        "emptyToken": "Der API-Token darf nicht leer sein (stdin lieferte keinen Token).",
         "expired": "Autorisierung abgelaufen. Bitte versuchen Sie es erneut.",
         "machines": "Maschinen: {{active}}/{{max}}",
         "machinesOverLimit": "  {{count}} Maschinen-Slot(s) sind über dem Limit.",
@@ -2391,7 +2392,7 @@
     }
   },
   "options": {
-    "apiToken": "API-Token (rdt_...)",
+    "apiToken": "API-Token (rdt_...). `-` übergeben, um ihn von stdin zu lesen (hält ihn aus der Prozessliste heraus).",
     "artifactRef": "Referenz auf ein Backup-Artefakt (repo[:tag][@place])",
     "background": "Als entkoppelten Job auf der Maschine ausführen: dessen ID ausgeben und beenden",
     "cleanupAll": "Alle rediacc-SSH-Konfigurationen entfernen",

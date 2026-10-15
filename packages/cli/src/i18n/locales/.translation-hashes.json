@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1842,
+    "keyCount": 1843,
     "sourceCommit": "589a76af749691c118cc025ec3367c22bbaf4e27"
   },
   "hashes": {
@@ -1332,6 +1332,7 @@
     "commands.subscription.login.description": "7ce10966",
     "commands.subscription.login.discoveringRegions": "e205214f",
     "commands.subscription.login.edgeSeparator": "1f893224",
+    "commands.subscription.login.emptyToken": "116393f9",
     "commands.subscription.login.expired": "0a38444c",
     "commands.subscription.login.machines": "a9c86ee4",
     "commands.subscription.login.machinesOverLimit": "6f9db8e8",
@@ -1735,7 +1736,7 @@
     "help.vscode.fork": "d194f96a",
     "help.vscode.machine": "3448f8c4",
     "help.vscode.repo": "9bed1387",
-    "options.apiToken": "0480bce2",
+    "options.apiToken": "4dd97801",
     "options.artifactRef": "0964c582",
     "options.background": "6ff6b311",
     "options.cleanupAll": "0ab6ea5b",
