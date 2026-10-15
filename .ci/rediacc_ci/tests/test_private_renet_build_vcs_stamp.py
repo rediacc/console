@@ -252,15 +252,68 @@ def _bypassing_go_builds(text: str) -> list[str]:
     code = "\n".join(ln for ln in outside.splitlines() if not ln.lstrip().startswith("#"))
     joined = re.sub(r"\\\n\s*", " ", code)
     # `go`, `/usr/local/go/bin/go`, `"go"`, `'go'`, `$(go ...)`, `` `go ...` ``, then `build`.
-    # Global flags may sit between `go` and the verb: `-C <dir>` with any value spelling (`"$(pwd)"`, `"$(dirname "$0")/.."`, `$(dirname "$0")`, `=/x`), or a bare flag. `-C` is the only go flag that takes a separate value before the command (`go help`: `go [-C dir] <command>`), so a `-flag value` pair is not stepped over and a verb's own value (`go -C "$d" test -tags build`) never reads as the verb.
-    cmd_sub = r"""\$\((?:[^()]|\([^()]*\))*\)"""
-    go_build = re.compile(
-        r"""(?:^|[\s;&|(`])["']?(?:[^\s;&|()`"']*/)?go["']?"""
-        r"""(?:\s+(?:-C(?:=|\s+)(?:"(?:%s|[^"])*"|'[^']*'|(?:%s|[^\s;&|()])+)|-[A-Za-z][^\s;&|()`"']*))*"""
-        % (cmd_sub, cmd_sub)
-        + r"""\s+["']?build\b"""
-    )
-    return [ln for ln in joined.splitlines() if go_build.search(ln)]
+    go_word = re.compile(r"""(?:^|[\s;&|(`])["']?(?:[^\s;&|()`"']*/)?go["']?(?=\s)""")
+    return [
+        ln
+        for ln in joined.splitlines()
+        if any(_runs_build(ln, m.end()) for m in go_word.finditer(ln))
+    ]
+
+
+def _shell_word(line: str, i: int) -> tuple[str, int]:
+    """The shell word starting at `line[i]` and the index after it, read through quotes and `$(...)` / backquotes at any depth in one linear pass (no regex backtracking)."""
+    out, quote, depth = [], "", 0
+    while i < len(line):
+        ch = line[i]
+        if quote:
+            if ch == quote:
+                quote = ""
+            elif ch == "\\" and quote == '"' and i + 1 < len(line):
+                out.append(ch)
+                i += 1
+                ch = line[i]
+            elif quote == '"' and line.startswith("$(", i):
+                depth += 1
+                out.append("$(")
+                i += 2
+                continue
+            elif quote == '"' and ch == ")" and depth:
+                depth -= 1
+        elif ch in "'\"`":
+            quote = ch
+        elif line.startswith("$(", i):
+            depth += 1
+            out.append("$(")
+            i += 2
+            continue
+        elif ch == ")" and depth:
+            depth -= 1
+        elif not depth and (ch.isspace() or ch in ";&|"):
+            break
+        out.append(ch)
+        i += 1
+    return "".join(out), i
+
+
+def _runs_build(line: str, i: int) -> bool:
+    """True when the words after a `go` word at `line[i]` reach `build` across global flags only. `-C dir` is the only go flag that takes a separate value before the command (`go [-C dir] <command>`), so no other `-flag value` pair is stepped over and a verb's own value (`go -C "$d" test -tags build`) never reads as the verb."""
+    expect_value = False
+    while True:
+        while i < len(line) and line[i].isspace():
+            i += 1
+        if i >= len(line) or line[i] in ";&|":
+            return False
+        word, i = _shell_word(line, i)
+        if expect_value:
+            expect_value = False
+            continue
+        bare = word.strip("\"'")
+        if bare == "-C":
+            expect_value = True
+        elif bare.startswith("-"):
+            continue
+        else:
+            return bare == "build"
 
 
 @pytest.mark.parametrize(
@@ -284,6 +337,8 @@ def _bypassing_go_builds(text: str) -> list[str]:
         "go -C $(pwd) build ./cmd/renet",
         'go -C "$(dirname "$0")/.." build ./cmd/renet',
         'go -C $(dirname "$0") build ./cmd/renet',
+        'go -C "$(dirname "$(dirname "$0")")/.." build ./cmd/renet',
+        'go -C "$(a "$(b "$(c)")")" build ./cmd/renet',
     ],
 )
 def test_the_bypass_scan_catches_every_spelling(line: str) -> None:
