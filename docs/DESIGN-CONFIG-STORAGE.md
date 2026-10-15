@@ -267,16 +267,18 @@ Metadata lives in D1 (lightweight, queryable for conflict detection and listing)
 
 ### R2 Bucket Structure
 
-One bucket per deployment and region (`rediacc-configs-{eu,us,asia}`, `edge-rediacc-configs-{eu,us,asia}`), keyed by team and config:
+One bucket per deployment and region (`rediacc-configs-{eu,us,asia}`, `edge-rediacc-configs-{eu,us,asia}`), keyed by store, team and config:
 
 ```
-  {teamId | _default}/{configId}/
+  s/{storeId}/{teamId | _default}/{configId}/
     v/42-<uuid>.enc                ← current: orgEnc(clientEnc_CEK(sdk_derived(document)))
     v/41-<uuid>.enc                ← archived versions (newest 50 kept)
     v/40-<uuid>.enc
 ```
 
-Every push writes a key of its own, so a push never overwrites a blob a row points at. The current row and each archive row name their blob key in D1.
+Every push writes a key of its own, so a push never overwrites a blob a row points at. The current row and each archive row name their blob key in D1, and every read uses the key the row recorded rather than rebuilding it.
+
+The store id leads because `configId` is unique per store only, and the CLI reuses a local config's own UUID as its `configId`, so two stores can hold the same one. Every prefix delete is checked against the deleting store's own `s/{storeId}/` (`private/account/src/services/config-blob-keys.ts`), and the object-store implementations refuse any `deletePrefix` outside `s/<id>/`, which also keeps the invoice objects sharing the bucket out of reach. `private/account/scripts/migrate-config-blob-keys.ts` moves the keys written under the earlier unscoped layout.
 
 ### Plaintext envelope (D1 `envelope_json`)
 
@@ -317,7 +319,7 @@ D1 stores only lightweight metadata — no encrypted blobs:
   "version": 42,
   "teamId": "team-uuid",
   "sdkEpoch": 5913166,
-  "r2Key": "team_xyz/550e8400-.../v/42-<uuid>.enc",
+  "r2Key": "s/store-uuid/team-uuid/550e8400-.../v/42-<uuid>.enc",
   "hmac": null,
   "signature": null,
   "lastModified": "2026-03-19T20:00:00Z"
@@ -789,7 +791,7 @@ CREATE TABLE config_entries (
   version INTEGER NOT NULL,            -- plaintext for conflict detection
   lastModified INTEGER NOT NULL,
 
-  r2Key TEXT NOT NULL,                 -- R2 object key: "{teamId}/{configId}/current.enc"
+  r2Key TEXT NOT NULL,                 -- R2 object key: "s/{storeId}/{teamId}/{configId}/v/{version}-{uuid}.enc"
   sdkEpoch INTEGER NOT NULL,           -- floor(push_time / windowSeconds) — for SDK re-derivation on pull
   hmac TEXT,                           -- envelope v2 blob HMAC; null for every v3 write
   signature TEXT,                      -- unused, always null
@@ -797,12 +799,12 @@ CREATE TABLE config_entries (
   UNIQUE(configStoreId, teamId, configId)
 );
 
--- Version history (D1 metadata — snapshots in R2 at versions/{version}.enc)
+-- Version history (D1 metadata; each row takes over the key its version was written under)
 CREATE TABLE config_versions (
   id TEXT PRIMARY KEY,
   configEntryId TEXT NOT NULL REFERENCES config_entries(id),
   version INTEGER NOT NULL,
-  r2Key TEXT NOT NULL,                  -- R2 object key: "{teamId}/{configId}/versions/{version}.enc"
+  r2Key TEXT NOT NULL,                  -- R2 object key: "s/{storeId}/{teamId}/{configId}/v/{version}-{uuid}.enc"
   sdkEpoch INTEGER NOT NULL,            -- epoch at time of this version's push
   createdAt INTEGER NOT NULL,
   createdByUserId TEXT REFERENCES users(id)
@@ -901,17 +903,14 @@ CLI                                          Server
  │                                             │
  ├─ DELETE /configs/:id { serverToken } ──────►│
  │                                             ├─ Validate token, verify elevated session
- │                                             ├─ Read r2Key from D1
- │                                             ├─ Delete R2: current.enc
- │                                             ├─ Delete R2: all versions/*.enc
- │                                             ├─ Delete R2: meta.json
+ │                                             ├─ Delete R2: s/{storeId}/{teamId}/{configId}/ (current + versions)
  │                                             ├─ Delete D1: config_versions rows
  │                                             ├─ Delete D1: config_entries row
  │                                             ├─ Log: config.delete (warning)
  │◄──── { success, newServerToken } ───────────┤
 ```
 
-All R2 objects under `{teamId}/{configId}/` are removed. D1 metadata is deleted. Hard delete — no soft-delete / trash bin (blobs are triple-encrypted, no recovery value without keys).
+All R2 objects under `s/{storeId}/{teamId}/{configId}/` are removed; the prefix is checked against the deleting store's own `s/{storeId}/` first. D1 metadata is deleted. Hard delete — no soft-delete / trash bin (blobs are triple-encrypted, no recovery value without keys).
 
 ### Config Store Deletion (Org-Level)
 
@@ -922,7 +921,7 @@ CLI                                          Server
  │                                             │
  ├─ DELETE /configs/store { serverToken } ────►│
  │                                             ├─ Validate token, verify org owner + elevated
- │                                             ├─ Delete ALL R2 objects in bucket
+ │                                             ├─ Delete R2: s/{storeId}/ (this store only)
  │                                             ├─ Delete D1: all config_versions
  │                                             ├─ Delete D1: all config_entries
  │                                             ├─ Delete D1: all config_cek_handoffs
