@@ -289,32 +289,34 @@ def _offending(cmd, depth=0, cwd=None):
     for run in shellscan.every_run(cmd):
         name = run.name.rsplit("/", 1)[-1]
         argv = list(run.argv)
+        # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1): `cd lnk && env -C .. tee x.md` writes into the parent of the directory `lnk` points to.
+        where = shellscan.write_directory(run.cwd, cwd)
         if any(a.rsplit("/", 1)[-1] in SANCTIONED for a in [run.name, *argv[:2]]):
             continue
         for target in run.writes:
-            if _is_review(target, run.cwd):
+            if _is_review(target, where):
                 return "redirect into %s" % target
         operands = _run_operands(run, argv)
-        if name == "tee" and any(_is_review(a, run.cwd) for a in operands):
+        if name == "tee" and any(_is_review(a, where) for a in operands):
             return "tee into the review directory"
         # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
         in_place = shellscan.in_place_edit(run) is not None
-        if in_place and any(_is_review(a, run.cwd) for a in operands):
+        if in_place and any(_is_review(a, where) for a in operands):
             return "%s -i on a review file" % name
         # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
         # `cwd` places a relative fed glob in the run's own directory (#e5b0540a). Two kinds of run get the shape reading instead: a command a PROGRAM hands down (the recursion below passes no `cwd`, since it runs wherever that program does), and one a launcher starts (`find -exec`, `npx`: `shellscan._feed_directories`, review 9ed30a8a.1).
         copies = shellscan.run_copies(run, None, cwd)
-        if copies is not None and any(_is_review(d, run.cwd) for d in copies[1]):
+        if copies is not None and any(_is_review(d, where) for d in copies[1]):
             return "%s onto the review directory" % name
-        if name == "truncate" and any(_is_review(a, run.cwd) for a in operands):
+        if name == "truncate" and any(_is_review(a, where) for a in operands):
             return "truncate of a review file"
-        if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], run.cwd) for a in argv):
+        if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], where) for a in argv):
             return "dd of= a review file"
         # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
         # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
         for words in (argv, run.xargv) if run.xargv is not None and run.xargv != argv else (argv,):
             for word, how in shellscan.output_landings(run, _without_ref_operands(run, words), cwd):
-                if not _is_review(word, run.cwd):
+                if not _is_review(word, where):
                     continue
                 if how == "option":
                     return "%s writing %s through its own output option" % (name, word)
