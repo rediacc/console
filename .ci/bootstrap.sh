@@ -429,7 +429,13 @@ fi
 if [ -n "\${CI_CORE_LEASE_HELD:-}" ]; then
     exec "\$real" "\$@"
 fi
-exec $python $lease pytest --real "\$real" -- "\$@"
+# The lease module comes from the checkout the run is launched in (the cwd's git
+# toplevel), not from the one this wrapper was installed for: a scratch clone
+# shares .ci/cache/toolchain by symlink, and its own core_lease.py is the one
+# its tests describe. The installed path is the fallback outside any checkout.
+lease=$lease
+top=\$(git rev-parse --show-toplevel 2>/dev/null) && [ -f "\$top/.ci/rediacc_ci/core_lease.py" ] && lease="\$top/.ci/rediacc_ci/core_lease.py"
+exec $python "\$lease" pytest --real "\$real" -- "\$@"
 EOF
 }
 
