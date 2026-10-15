@@ -12,6 +12,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 
 interface Recorded {
@@ -64,7 +65,7 @@ describe('ensureVSCodeEnvSetup secret delivery', () => {
       envVars: { REDIACC_REPOSITORY: 'app', REDIACC_SECRET_API_KEY: SECRET },
       universalUser: 'rediacc',
       sshUser: 'root',
-      serverInstallPath: '/mnt/rediacc/mounts/x',
+      serverInstallPath: `${WK_DATASTORE_PATH}/mounts/x`,
     });
 
     expect(result.success).toBe(true);

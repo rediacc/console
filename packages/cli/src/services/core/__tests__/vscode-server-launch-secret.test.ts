@@ -9,6 +9,7 @@
 import { execFileSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getServerProvider } from '../../../remote/vscode-server/index.js';
 import type { ConnectionDetails } from '../../machine/ssh-connection.js';
@@ -63,10 +64,10 @@ const details: ConnectionDetails = {
   port: 22,
   privateKey: 'k',
   known_hosts: 'kh',
-  datastore: '/mnt/rediacc',
+  datastore: WK_DATASTORE_PATH,
   universalUser: 'u',
   repositoryGuid: '11111111-2222-3333-4444-555555555555',
-  workingDirectory: '/mnt/rediacc/mounts/x',
+  workingDirectory: `${WK_DATASTORE_PATH}/mounts/x`,
 };
 
 describe('launchServer', () => {
