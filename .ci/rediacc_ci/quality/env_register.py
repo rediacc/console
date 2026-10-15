@@ -105,7 +105,7 @@ def parse_args(argv):
 
     Groups separated by GROUP_SEPARATOR each name a module, its names and their options; a group that gives no `--class` takes the previous group's.
     """
-    segments = [[]]
+    segments: list[list[str]] = [[]]
     for arg in argv:
         if arg == GROUP_SEPARATOR:
             segments.append([])
