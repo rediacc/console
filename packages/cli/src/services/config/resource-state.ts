@@ -191,6 +191,14 @@ interface LocalState {
   sshContent: SSHContent | null;
 }
 
+const LOCAL_STATE_BUCKETS: readonly (keyof LocalState)[] = [
+  'machines',
+  'storages',
+  'repositories',
+  'deletedRepositories',
+  'sshContent',
+];
+
 function loadLocalState(source: RdcConfig): LocalState {
   // A COPY, never the caller's object: configFileStorage.load() hands out its in-process cache, so a state that aliased it made `delete machines[name]` delete from the cache too, and pushOnce then read that cache as the push base. The base no longer held the machine, no tombstone was built, and the server refused every remote machine removal as anti-downgrade (eu live test, 2026-09-26).
   const config = structuredClone(source);
@@ -240,11 +248,14 @@ function persistPatch(state: LocalState, cfg: RdcConfig): RdcConfig {
 
 export class LocalResourceState implements ResourceState {
   private readonly configName: string;
-  private readonly state: LocalState;
+  private state: LocalState;
+  /** The on-disk view `state` was last loaded from or written as: what a persist diffs this process's edits against. */
+  private base: LocalState;
 
   private constructor(configName: string, state: LocalState) {
     this.configName = configName;
     this.state = state;
+    this.base = structuredClone(state);
   }
 
   /**
@@ -302,13 +313,23 @@ export class LocalResourceState implements ResourceState {
   }
 
   /**
-   * Single persist path (R2-F3). Writes the whole state view through
-   * `configFileStorage.update`, spreading the loaded config so sibling buckets
-   * (clusters, cloudProviders, backupStrategies, datastores, and other
-   * `state.*`) survive untouched. The storage layer re-encrypts per field.
+   * Single persist path (R2-F3). Writes through `configFileStorage.update`, spreading the loaded config so sibling buckets (clusters, cloudProviders, backupStrategies, datastores, and other `state.*`) survive untouched. The storage layer re-encrypts per field.
+   *
+   * The view was loaded when the command started, and another process may have written the file since. Writing the view whole put that stale copy back and deleted every record the other process added in between (a `repo create` that exited 0 lost its entry to a longer command that persisted later, 2026-10-15). Inside the lock, this process's edits are rebased onto the file as it is now, key by key, as RemoteResourceState rebases onto a fresh server copy.
    */
   private async persist(): Promise<void> {
-    await configFileStorage.update(this.configName, (cfg) => persistPatch(this.state, cfg));
+    await configFileStorage.update(this.configName, (cfg) => {
+      const fresh = loadLocalState(cfg);
+      let merged = fresh;
+      for (const bucket of LOCAL_STATE_BUCKETS) {
+        merged = rebaseBucket(bucket, merged, this.base, this.state);
+      }
+      const next = persistPatch(merged, cfg);
+      // Re-seat on what is written, in its on-disk keys (a bare `name` is stored as `name:<default tag>`), so the next persist diffs like against like.
+      this.state = loadLocalState(next);
+      return next;
+    });
+    this.base = structuredClone(this.state);
   }
 }
 

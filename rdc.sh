@@ -127,27 +127,33 @@ if [[ "${RDC_DEV:-0}" == "1" ]]; then
     # An empty key list yields "", and the seeder below then leaves e2ePublicKey alone.
     dev_e2e_key=$(node -e 'let k="";try{k=JSON.parse(process.argv[1])?.e2e?.keys?.[0]?.publicKeySpki??""}catch{}process.stdout.write(String(k))' "$server_info")
 
-    # Seed/patch the "dev" named config. node is guaranteed present (we exec it
-    # below); jq is not. The seeder writes a minimal v3 config when the file is
-    # absent and merges only the account fields when it exists, leaving every
-    # other key intact. `rdc config set` cannot reach account fields, so this
-    # small node snippet is the mechanism.
+    # Seed/patch the "dev" config (`rdc config set` cannot reach account fields). It writes the CLI's file by the CLI's rules: the config dir of packages/shared/src/paths/dirs.ts, 'wx' creation, the CLI's proper-lockfile lock (the `<file>.lock` directory), temp+rename, no write when the fields already match, and a file it cannot parse is an error, never replaced.
     node -e '
-      const fs = require("fs"), path = require("path"), p = process.argv[1];
-      let c;
-      try {
-        c = JSON.parse(fs.readFileSync(p, "utf8"));
-      } catch {
-        c = { schemaVersion: 3, id: require("crypto").randomUUID(), version: 1, encryption: { mode: "plaintext" } };
+      const fs = require("fs"), path = require("path"), { randomUUID } = require("crypto"), env = process.env, home = require("os").homedir();
+      const [server, key] = process.argv.slice(1), win = process.platform === "win32", mac = process.platform === "darwin";
+      const dir = win ? path.join(env.APPDATA ?? path.join(home, "AppData", "Roaming"), "rediacc") : mac ? path.join(home, "Library", "Application Support", "rediacc") : path.join(env.XDG_CONFIG_HOME || path.join(home, ".config"), "rediacc");
+      const p = path.join(dir, "dev.json"), seed = { schemaVersion: 3, id: randomUUID(), version: 1, encryption: { mode: "plaintext" } };
+      fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+      try { fs.writeFileSync(p, JSON.stringify(seed, null, 2) + "\n", { mode: 0o600, flag: "wx" }); } catch (e) { if (e.code !== "EEXIST") throw e; }
+      const lock = `${fs.realpathSync(p)}.lock`, deadline = Date.now() + 45000;
+      for (;;) {
+        try { fs.mkdirSync(lock); break; } catch (e) { if (e.code !== "EEXIST") throw e; }
+        if (Date.now() - (fs.statSync(lock, { throwIfNoEntry: false })?.mtimeMs ?? Date.now()) > 45000) fs.rmSync(lock, { recursive: true, force: true });
+        else if (Date.now() > deadline) throw new Error(`${lock} is still held after 45s`);
+        else Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
       }
-      c.account = {
-        ...(c.account ?? {}),
-        accountServer: process.argv[2],
-        ...(process.argv[3] ? { e2ePublicKey: process.argv[3] } : {}),
-      };
-      fs.mkdirSync(path.dirname(p), { recursive: true, mode: 0o700 });
-      fs.writeFileSync(p, JSON.stringify(c, null, 2) + "\n", { mode: 0o600 });
-    ' "$HOME/.config/rediacc/dev.json" "$dev_server" "$dev_e2e_key"
+      try {
+        const c = JSON.parse(fs.readFileSync(p, "utf8"));
+        const account = { ...(c.account ?? {}), accountServer: server, ...(key ? { e2ePublicKey: key } : {}) };
+        if (JSON.stringify(account) !== JSON.stringify(c.account ?? {})) {
+          const tmp = `${p}.tmp.${process.pid}.${randomUUID()}`;
+          fs.writeFileSync(tmp, JSON.stringify({ ...c, account }, null, 2) + "\n", { mode: 0o600 });
+          fs.renameSync(tmp, p);
+        }
+      } finally {
+        fs.rmdirSync(lock);
+      }
+    ' "$dev_server" "$dev_e2e_key"
 
     # The only export the dev path adds: select the "dev" config. Everything
     # else (server URL, E2E key) now lives inside that config file.

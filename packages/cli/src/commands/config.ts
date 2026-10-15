@@ -385,9 +385,7 @@ ${t('help.examples')}
           throw new ValidationError(t('commands.config.init.alreadyExists', { name: configName }));
         }
 
-        const newConfig = exists
-          ? await configFileStorage.load(configName)
-          : await configService.init(configName);
+        if (!exists) await configService.init(configName);
 
         const sshContent = options.sshKey ? await readSshKeyForInit(options.sshKey) : undefined;
 
@@ -402,8 +400,8 @@ ${t('help.examples')}
           // Re-initializing a remote config edits the store, not only this host's cache of it.
           await updateSyncedConfig(configName, (cfg) => mergeInitUpdates(cfg, parts));
         } else {
-          const merged: RdcConfig = mergeInitUpdates(newConfig, parts);
-          await configFileStorage.save(merged, configName);
+          // A read-modify-write inside the lock: a `load` here and a `save` later wrote the earlier read back over anything another process stored in between.
+          await configFileStorage.update(configName, (cfg) => mergeInitUpdates(cfg, parts));
         }
         outputService.success(t('commands.config.init.success', { name: configName }));
       } catch (error) {

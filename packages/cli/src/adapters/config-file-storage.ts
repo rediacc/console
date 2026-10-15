@@ -244,21 +244,43 @@ export class ConfigFileStorage {
       throw error;
     }
 
-    const raw = JSON.parse(content) as unknown;
-    const migration = await runMigrations(raw, this.migrationContext());
-    // Hydrate encrypted leaves with type-valid stubs so the strict parse of the at-rest form succeeds without prompting for the master password. Sensitive values are decrypted lazily (loadDecrypted / update), never at load.
-    const hydrated = injectEncryptedStubs(migration.config as RdcConfig);
-    const config = parseConfig(RdcConfigSchema, hydrated, `config "${name}"`);
+    const { config, migrated } = await this.parseAtRest(content, name);
 
     // Persist the upgraded shape so future loads skip the migration step. Best-effort: a read-only filesystem or lock failure must not break load.
-    if (migration.migrated) {
+    if (migrated) {
       try {
-        await this.withLock(name, () => this.saveUnlocked(config, name));
+        await this.withLock(name, () => this.persistMigration(name));
       } catch {
         // Ignore, caller still gets the in-memory upgraded config.
       }
     }
     return config;
+  }
+
+  /** Migrate and strictly parse the at-rest text of a config file. */
+  private async parseAtRest(
+    content: string,
+    name: string
+  ): Promise<{ config: RdcConfig; migrated: boolean }> {
+    const raw = JSON.parse(content) as unknown;
+    const migration = await runMigrations(raw, this.migrationContext());
+    // Hydrate encrypted leaves with type-valid stubs so the strict parse of the at-rest form succeeds without prompting for the master password. Sensitive values are decrypted lazily (loadDecrypted / update), never at load.
+    const hydrated = injectEncryptedStubs(migration.config as RdcConfig);
+    return {
+      config: parseConfig(RdcConfigSchema, hydrated, `config "${name}"`),
+      migrated: migration.migrated,
+    };
+  }
+
+  /**
+   * Write the migrated shape of a config, under the lock. The file is read again HERE, not reused from the unlocked load that noticed the old schema: another process may have written it in between, and saving the earlier read would put its stale content back.
+   */
+  private async persistMigration(name: string): Promise<void> {
+    const { config, migrated } = await this.parseAtRest(
+      await fs.readFile(this.getPath(name), 'utf-8'),
+      name
+    );
+    if (migrated) await this.saveUnlocked(config, name);
   }
 
   /**
@@ -427,17 +449,17 @@ export class ConfigFileStorage {
     await this.ensureDirectory();
     const configPath = this.getPath(name);
 
-    try {
-      await fs.access(configPath);
-      throw new Error(`Config "${name}" already exists`);
-    } catch (error) {
-      if ((error as Error).message.includes('already exists')) throw error;
-      // File doesn't exist, good, create it
-    }
-
     const config = createEmptyRdcConfig();
     const content = stringifyConfig(config);
-    await fs.writeFile(configPath, content, { mode: 0o600 });
+    try {
+      // 'wx' makes the existence check and the create one step: a check-then-write truncated a config another process created (and wrote to) in between.
+      await fs.writeFile(configPath, content, { mode: 0o600, flag: 'wx' });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+        throw new Error(`Config "${name}" already exists`);
+      }
+      throw error;
+    }
     this.cache.set(name, config);
     return config;
   }
