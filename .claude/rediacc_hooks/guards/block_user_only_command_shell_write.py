@@ -218,17 +218,36 @@ def _literals(text):
         yield next(g for g in m.groups() if g is not None)
 
 
-def _code_writes_through_disk(code, base):
-    """Interpreter code with a write on a line whose string literal resolves on disk, from the run's directory, into a command or skill directory or the exception list: `open('clink/x.md','w')` with `clink` a link into one spells none of them (review 84fdeff8.2)."""
-    for line in code.splitlines():
-        if WRITE_CODE.search(line) and any(
-            # A literal that spells the directory or the list is the precise readings' to judge; this one is for a path that reaches it only on disk.
-            _in_scope_on_disk(lit, base)
+def _code_writes_through_disk(code, base, program=None):
+    """Interpreter code that writes, through a link, into a command or skill directory or the exception list while its text spells none of them: `open('clink/x.md','w')` with `clink` a link into one (review 84fdeff8.2).
+
+    A literal that spells the directory or the list is the precise readings' to judge; this reading is for a path that reaches it only on disk. A Python `program` that parses is judged by its write TARGETS through `shellscan.python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.2). Other code is read line by line, with a name assigned from such a literal standing for it on a later line.
+    """
+
+    def through_link(value):
+        return (
+            isinstance(value, str)
             and not (
-                model_invocation.names_scope_dir(lit) or model_invocation.is_exception_list(lit)
+                model_invocation.names_scope_dir(value) or model_invocation.is_exception_list(value)
             )
-            for lit in _literals(line)
-        ):
+            and _in_scope_on_disk(value, base)
+        )
+
+    if program is not None:
+        verdict = shellscan.python_writes_to(program, through_link)
+        if verdict is not None:
+            return verdict
+    names = {
+        m.group(1)
+        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
+        if any(through_link(lit) for lit in _literals(m.group(2)))
+    }
+    for line in code.splitlines():
+        if not WRITE_CODE.search(line):
+            continue
+        if any(through_link(lit) for lit in _literals(line)):
+            return True
+        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
             return True
     return False
 
@@ -473,7 +492,11 @@ def _offending(cmd, cwd):
             if in_dir:
                 verdict = None
             # A write through a link spells no protected path, so neither the parsed program's verdict nor the named-path test sees it (review 84fdeff8.2).
-            if _code_writes_through_disk(code, base):
+            text, program_kind = shellscan.interpreter_program(run, cmd, cwd)
+            python = program_kind in ("inline", "stdin", "file") and re.match(
+                r"^python[0-9.]*$", run.name.rsplit("/", 1)[-1]
+            )
+            if _code_writes_through_disk(code, base, text if python else None):
                 verdict = True
             if verdict is None:
                 names_dir = _NAMED_PATH.search(code) is not None or in_dir

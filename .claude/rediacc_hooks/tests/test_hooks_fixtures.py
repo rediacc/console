@@ -2350,6 +2350,19 @@ LINK_INTO_TREE_ROWS = (
     # Review 84fdeff8.1: a program run from the root that names the link only inside its code, one argv word.
     ("block_review_file_shell_write", "python3 -c \"open('lnk/x.md','w').write('x')\"", 2),
     ("block_review_file_shell_write", "node -e \"require('fs').writeFileSync('lnk/x.md','x')\"", 2),
+    # Review f25b1360.1: the link literal bound to a name on one line and written on the next, in one program word.
+    ("block_review_file_shell_write", "python3 -c \"p = 'lnk/x.md'\nopen(p, 'w').write('x')\"", 2),
+    (
+        "block_review_file_shell_write",
+        "node -e \"const p = 'lnk/x.md'\nrequire('fs').writeFileSync(p, 'x')\"",
+        2,
+    ),
+    # Review f25b1360.3 CONTROL: the link is only read, and the write lands elsewhere.
+    (
+        "block_review_file_shell_write",
+        "python3 -c \"s = open('lnk/x.md').read(); open('plain/y.md', 'w').write(s)\"",
+        0,
+    ),
     # CONTROLS: a read through the link, a write beside it, a logical step back out, and commands that touch no link.
     ("block_review_file_shell_write", "python3 -c \"print(open('lnk/x.md').read())\"", 0),
     ("block_review_file_shell_write", "python3 -c \"open('plain/x.md','w').write('x')\"", 0),
@@ -2383,6 +2396,12 @@ LINK_INTO_TREE_ROWS = (
         "block_user_only_command_shell_write",
         "python3 -c \"open('plain/x.md','w').write('disable-model-invocation: true')\"",
         0,
+    ),
+    # Review f25b1360.2: the same split across two lines of one program.
+    (
+        "block_user_only_command_shell_write",
+        "python3 -c \"p = 'clink/x.md'\nopen(p, 'w').write('disable-model-invocation: true')\"",
+        2,
     ),
     ("block_user_only_command_shell_write", "cd clink && cp ../../../flag.md .", 2),
     ("block_user_only_command_shell_write", "echo '{}' > el", 2),

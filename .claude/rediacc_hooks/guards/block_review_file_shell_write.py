@@ -222,14 +222,34 @@ def _literals(text):
         yield next(g for g in m.groups() if g is not None)
 
 
-def _code_writes_through_disk(code, base):
-    """Interpreter code with a write on a line whose string literal resolves on disk, from the run's directory, into the review directory: `open('lnk/x.md','w')` with `lnk` a link into it spells no review path (review 84fdeff8.1)."""
+def _code_writes_through_disk(code, base, program=None):
+    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1).
+
+    A literal that spells the directory is the precise readings' to judge (a read-only `os.open`, a URL); this reading is for a path that reaches it only on disk. A Python `program` that parses is judged by its write TARGETS through `shellscan.python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.1, .3). Other code is read line by line, with a name assigned from such a literal standing for it on a later line.
+    """
+
+    def through_link(value):
+        return (
+            isinstance(value, str)
+            and not REVIEW_WORD.search(value)
+            and _lands_in_reviews(value, base)
+        )
+
+    if program is not None:
+        verdict = shellscan.python_writes_to(program, through_link)
+        if verdict is not None:
+            return verdict
+    names = {
+        m.group(1)
+        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
+        if any(through_link(lit) for lit in _literals(m.group(2)))
+    }
     for line in code.splitlines():
-        if WRITE_CODE.search(line) and any(
-            # A literal that spells the directory is the precise readings' to judge (a read-only os.open, a URL); this one is for a path that reaches it only on disk.
-            _lands_in_reviews(lit, base) and not REVIEW_WORD.search(lit)
-            for lit in _literals(line)
-        ):
+        if not WRITE_CODE.search(line):
+            continue
+        if any(through_link(lit) for lit in _literals(line)):
+            return True
+        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
             return True
     return False
 
@@ -410,9 +430,9 @@ def _offending(cmd, depth=0, cwd=None):
             # A PROGRAM RUN INSIDE THE REVIEW DIRECTORY writes there by any relative path (#816a7c93, as block_user_only_command_shell_write reads a command directory): `cd agent/reviews/b && python3 -c "open('a.md','w')"` named no review path in its code and was allowed (rc 0), through a link or not. Any write in its code is refused there.
             if _lands_in_reviews(".", base) and WRITE_CODE.search(code):
                 return "%s code that writes inside the review directory" % name
-            if _code_writes_through_disk(code, base):
-                return "%s code that writes through a link into the review directory" % name
             program = text if kind is not None and re.match(r"^python[0-9.]*$", name) else None
+            if _code_writes_through_disk(code, base, program):
+                return "%s code that writes through a link into the review directory" % name
             verdict = _python_writes_review(program, depth) if program is not None else None
             if verdict is None:
                 verdict = _code_writes_review(code, depth)
