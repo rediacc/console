@@ -101,6 +101,9 @@ class World(vm_check.Host):
         # The `repo create` answer: rc and the CLI's JSON error message when it fails.
         self.create_rc = over.pop("create_rc", 0)
         self.create_err = over.pop("create_err", "")
+        # False: the worker has no BTRFS datastore until `machine setup` runs; `setup_rc` is that command's answer.
+        self.datastore = over.pop("datastore", True)
+        self.setup_rc = over.pop("setup_rc", 0)
         self.gateway = over.pop("gateway", GATEWAY)
         # "yes" (the config holds a key the VMs authorize), "no" (empty credentials) or "wrong" (a key they reject).
         self.cli_key = over.pop("cli_key", "yes")
@@ -227,6 +230,11 @@ class World(vm_check.Host):
             if args[2] not in [m["name"] for m in self._machines(env)]:
                 return vm_check.Result(1, "", 'Machine "%s" not found' % args[2])
             return ok
+        if head == ("machine", "setup"):
+            if self.setup_rc:
+                return self._json_error(self.setup_rc, "renet install failed")
+            self.datastore = True
+            return ok
         if head == ("subscription", "status"):
             if self._undecryptable(env):
                 return vm_check.Result(1, "", "Decryption failed")
@@ -239,6 +247,12 @@ class World(vm_check.Host):
                 return self._json_error(1, "Decryption failed")
             if not (self.stored_ok or self._minted(env)):
                 return self._json_error(2, TOKEN_REQUIRED)
+            if not self.datastore:
+                return self._json_error(
+                    1,
+                    "Machine '%s' datastore at /mnt/rediacc is not BTRFS (found: ). Run 'rdc machine setup <name>' to initialize the BTRFS datastore."
+                    % WORKER,
+                )
             if self.create_rc:
                 return self._json_error(self.create_rc, self.create_err)
             self.repos[args[2]] = "guid-" + args[2]
@@ -1226,6 +1240,29 @@ def test_a_failed_grand_create_is_not_verified_and_names_the_cli_error(
     assert "Creating repository..." not in detail, detail
     assert world.forks_left() == []
     assert not [c for c in world.rdc_calls() if c[:2] == ["repo", "fork"]]
+
+
+def test_a_worker_without_a_datastore_is_set_up_then_the_grand_is_created(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The 2026-10-15 live run: repo create refused 'datastore at /mnt/rediacc is not BTRFS' on a fresh ops VM."""
+    world = make_world(tmp_path, grands=(), datastore=False)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    worker = vm_check.OPS_WORKER_NAME
+    setups = [c for c in world.rdc_calls() if c[:2] == ["machine", "setup"]]
+    assert setups == [["machine", "setup", worker]], setups
+    assert len(_creates(world)) == 2
+    assert PARENT in world.repos
+
+
+def test_a_failed_datastore_setup_is_not_verified_and_names_it(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, grands=(), datastore=False, setup_rc=1)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "parent-grand-missing"
+    assert "machine setup %s failed rc=1" % vm_check.OPS_WORKER_NAME in receipt["reason"]["detail"]
+    assert len(_creates(world)) == 1
 
 
 def test_a_minted_token_sent_to_the_wrong_server_never_creates(tmp_path: pathlib.Path) -> None:

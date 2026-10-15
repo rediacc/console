@@ -84,6 +84,8 @@ TOKEN_SCOPES = ("license:read", "license:activate", "subscription:read")
 # The development-only ops VM network, the /24 packages/cli/src/utils/ops-vm.ts exempts from the agent-mode grand guards (VM_NETWORK.BRIDGE_IP in @rediacc/shared). Like that predicate it ignores VM_NET_BASE: an environment variable cannot widen what counts as disposable.
 OPS_VM_NETWORK = "192.168.111"
 GRAND_SIZE = "2G"
+# The CLI's refusal when the worker's datastore was never prepared ("Machine '<ip>' datastore at /mnt/rediacc is not BTRFS").
+NO_DATASTORE = "is not BTRFS"
 
 TAG_PREFIX = "vmc"
 STALE_FORK_S = 3600
@@ -1090,6 +1092,20 @@ class VmCheck:
             )
         )
         res = self.rdc(*args, timeout=1800)
+        if res.rc != 0 and NO_DATASTORE in rdc_failure(res):
+            # A fresh ops VM has renet but no BTRFS datastore (2026-10-15 live run); preparing it is the same development-only step as the grand.
+            self.say(
+                "        %s has no datastore; preparing it with ./rdc.sh machine setup %s"
+                % (self.machine, self.machine)
+            )
+            setup = self.rdc("machine", "setup", self.machine, timeout=1800)
+            if setup.rc != 0:
+                raise NotVerifiedError(
+                    "parent-grand-missing",
+                    "no grand %s on %s, its datastore is missing, and ./rdc.sh machine setup %s failed rc=%d: %s"
+                    % (self.opts.parent, self.machine, self.machine, setup.rc, rdc_failure(setup)),
+                )
+            res = self.rdc(*args, timeout=1800)
         if res.rc != 0:
             raise NotVerifiedError(
                 "parent-grand-missing",
