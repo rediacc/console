@@ -2347,7 +2347,12 @@ LINK_INTO_TREE_ROWS = (
         "cd agent/reviews/sub && python3 -c \"open('a.md','w').write('x')\"",
         2,
     ),
+    # Review 84fdeff8.1: a program run from the root that names the link only inside its code, one argv word.
+    ("block_review_file_shell_write", "python3 -c \"open('lnk/x.md','w').write('x')\"", 2),
+    ("block_review_file_shell_write", "node -e \"require('fs').writeFileSync('lnk/x.md','x')\"", 2),
     # CONTROLS: a read through the link, a write beside it, a logical step back out, and commands that touch no link.
+    ("block_review_file_shell_write", "python3 -c \"print(open('lnk/x.md').read())\"", 0),
+    ("block_review_file_shell_write", "python3 -c \"open('plain/x.md','w').write('x')\"", 0),
     ("block_review_file_shell_write", "cd lnk && cat x.md", 0),
     ("block_review_file_shell_write", "cd lnk && grep -rn high .", 0),
     ("block_review_file_shell_write", "cd lnk && python3 -c \"print(open('x.md').read())\"", 0),
@@ -2368,6 +2373,17 @@ LINK_INTO_TREE_ROWS = (
         2,
     ),
     ("block_user_only_command_shell_write", "cp flag.md clink/", 2),
+    # Review 84fdeff8.2: the same program shape against a command directory reached through a link.
+    (
+        "block_user_only_command_shell_write",
+        "python3 -c \"open('clink/x.md','w').write('disable-model-invocation: true')\"",
+        2,
+    ),
+    (
+        "block_user_only_command_shell_write",
+        "python3 -c \"open('plain/x.md','w').write('disable-model-invocation: true')\"",
+        0,
+    ),
     ("block_user_only_command_shell_write", "cd clink && cp ../../../flag.md .", 2),
     ("block_user_only_command_shell_write", "echo '{}' > el", 2),
     ("block_user_only_command_shell_write", "cd clink && echo 'description: x' > x.md", 0),

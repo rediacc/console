@@ -202,7 +202,33 @@ def _reaches_scope(cmd, cwd):
             words.extend(run.feed.split())
         if run.launch is not None:
             words.extend(run.launch.starts)
+        # A program's code is one argv word, so a link it names (`python3 -c "open('clink/x.md','w')"`) is read as each string literal it holds (review 84fdeff8.2).
+        words.extend(lit for w in run.argv for lit in _literals(w))
         if any(_in_scope_on_disk(w, base) for w in words):
+            return True
+    return False
+
+
+_LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*)`")
+
+
+def _literals(text):
+    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
+    for m in _LITERAL.finditer(text):
+        yield next(g for g in m.groups() if g is not None)
+
+
+def _code_writes_through_disk(code, base):
+    """Interpreter code with a write on a line whose string literal resolves on disk, from the run's directory, into a command or skill directory or the exception list: `open('clink/x.md','w')` with `clink` a link into one spells none of them (review 84fdeff8.2)."""
+    for line in code.splitlines():
+        if WRITE_CODE.search(line) and any(
+            # A literal that spells the directory or the list is the precise readings' to judge; this one is for a path that reaches it only on disk.
+            _in_scope_on_disk(lit, base)
+            and not (
+                model_invocation.names_scope_dir(lit) or model_invocation.is_exception_list(lit)
+            )
+            for lit in _literals(line)
+        ):
             return True
     return False
 
@@ -446,6 +472,9 @@ def _offending(cmd, cwd):
                 )
             if in_dir:
                 verdict = None
+            # A write through a link spells no protected path, so neither the parsed program's verdict nor the named-path test sees it (review 84fdeff8.2).
+            if _code_writes_through_disk(code, base):
+                verdict = True
             if verdict is None:
                 names_dir = _NAMED_PATH.search(code) is not None or in_dir
                 verdict = bool(names_dir and WRITE_CODE.search(code))
