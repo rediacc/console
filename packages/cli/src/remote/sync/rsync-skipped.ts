@@ -17,9 +17,10 @@ export function parseSkippedEntries(stderr: string): string[] {
   return names;
 }
 
-/** Code points that reorder or break a terminal line without drawing: the bidi embeddings, overrides and isolates, and the line and paragraph separators (review 589a76af.1). */
+/** Code points that reorder or break a terminal line without drawing: the directional marks (ALM, LRM, RLM), the bidi embeddings, overrides and isolates, and the line and paragraph separators (review 589a76af.1, af20ae8b.1). */
 const INVISIBLE_LAYOUT = new Set([
-  0x2028, 0x2029, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069,
+  0x061c, 0x200e, 0x200f, 0x2028, 0x2029, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067,
+  0x2068, 0x2069,
 ]);
 
 /**
