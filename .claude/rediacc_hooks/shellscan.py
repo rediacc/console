@@ -1253,12 +1253,69 @@ def _launch_words(words, shell):
     return expanded, mixed, keep
 
 
-def _expanded_name(word, shell):
-    """The command name bash runs for `word`, the first word of a simple command, when it is held in a variable whose value the walk knows (`N=bash; $N -c ...` runs bash), else None. A name that vanishes, splits or cannot be known stays as typed, as before (#156caed2)."""
-    value = _expand_word(word, shell)
-    if value is None or value == "" or _UNRESOLVED in value or any(ch in value for ch in " \t\n"):
+# A NAME WORD THAT VANISHES OR SPLITS IS NOT THE NAME BASH RUNS (review a7b3a36f.1). bash expands every word of a simple command, drops a word that vanishes and splits an unquoted value into fields, and only THEN takes the first remaining word as the command: `N=; $N bash -c "..."` runs bash, and `N="bash -x"; $N -c "..."` runs bash with `-x -c ...`. The walk read the name as typed, so both ran under the name `$N` and their payloads were never walked.
+# `_bash_words` rewrites the command-name position before anything reads it: a vanished name is dropped and the next word promoted, a known value replaces the name with its field or fields, and the prefix commands (`env`, `sudo`, ...) are stripped again in front of what is left. A value is used only where its split is certain: no glob character, no `IFS` assignment in the walk, and every field `_PLAIN_WORD` (so no field carries a `$`, a quote or a glob the walk would read again). Anything else keeps the typed word, the sound unknown it always was.
+def _name_fields(word, shell):
+    """The fields bash makes of `word` at the command-name position: `[]` when it vanishes, the field list when the walk knows it for certain, None when it must stay as typed (it holds no expansion, or its value is unknowable)."""
+    if not any(p.kind == "param" or (p.kind in ("lit", "dq") and "$" in p.raw) for p in word.parts):
         return None
-    return value if value != _word_value(word) else None
+    value = _expand_word(word, shell)
+    if value is None:
+        return []
+    if _UNRESOLVED not in value:
+        fields = [value]
+    elif "IFS" in shell or any(p.kind not in ("lit", "param") for p in word.parts):
+        return None
+    else:
+        text = _expand_word(word, shell, split=False)
+        if text is None or _UNRESOLVED in text or any(ch in text for ch in "*?["):
+            return None
+        fields = re.split(r"[ \t\n]+", text.strip(" \t\n")) if text.strip(" \t\n") else []
+    if not all(_PLAIN_WORD.fullmatch(f) for f in fields):
+        return None
+    return fields
+
+
+def _lexical_end(words):
+    """The index of the first word bash does not read as a reserved word, `time` (with its flags) or an assignment: the command-name position before any prefix command."""
+    k = 0
+    while k < len(words) and _word_value(words[k]) in _RESERVED_PREFIX:
+        k += 1
+    if k < len(words) and _word_value(words[k]) == "time":
+        k += 1
+        while k < len(words) and _word_value(words[k]) in ("-p", "--"):
+            k += 1
+    while k < len(words) and _ASSIGNMENT.match(_word_value(words[k])):
+        k += 1
+    return k
+
+
+def _bash_words(words, shell):
+    """`words` with the command-name position as bash fills it (see the comment above): each name word that vanishes is dropped, each the walk knows is replaced by its fields, until the name is a typed word or one this walk cannot know. A promoted word bash would NOT read as an assignment or a reserved word, because those are recognised before expansion, so a rewrite that would put one at the lexical name position is not made."""
+    out = list(words)
+    for _ in range(len(words)):
+        rest, _prefixed = _strip_prefixes(out)
+        if not rest:
+            break
+        head = rest[0]
+        fields = _name_fields(head, shell)
+        if fields is None:
+            break
+        at = next(i for i, w in enumerate(out) if w is head)
+        new = [_Word(head.start, head.end, [_Part("lit", f, f)]) for f in fields]
+        promoted = (new or out[at + 1 :])[:1]
+        if (
+            at == _lexical_end(out)
+            and promoted
+            and (
+                _word_value(promoted[0]) in _RESERVED_PREFIX
+                or _word_value(promoted[0]) == "time"
+                or _ASSIGNMENT.match(_word_value(promoted[0]))
+            )
+        ):
+            break
+        out[at : at + 1] = new
+    return out
 
 
 def _stage_feed(stage, lexer):
@@ -2011,6 +2068,7 @@ class _Run:
         "env",
         "feed",
         "feed_cwds",
+        "feed_values",
         "feed_words",
         "git_dir",
         "git_sub",
@@ -2054,6 +2112,8 @@ class _Run:
         self.feed = None
         # THE WORDS xargs WOULD READ, EXACTLY, or None when they are not known (#5077391c). Only a literal producer is exact: the pipeline stage in front is an `echo` whose words carry no expansion, or the command reads its own here-string or heredoc with none. Any other producer (`find`, `git`, a group, a loop's feed) prints what this walk cannot compute, so its words are in `feed` alone, read in the fail-safe direction. Words holding a quote or a backslash are not exact either, because xargs reads quotes itself.
         self.feed_words = None
+        # WHERE IN `feed` THE EXPANDED FED WORDS SIT, `(start, end)`, or None (test_landing feed regression from a7b3a36f6). `feed` is a word bag the over-reading guards split, so the values the walk expanded (`B=q; echo $B | xargs node` feeds `q`) are appended to it; they are not more text on stdin, and `stdin_text` cuts this span back out. Every later change to `feed` appends after it, so the offsets hold.
+        self.feed_values = None
         # WHERE THE PIPE'S PRODUCER RAN (review a165575f.1): the `cwd` of every command in the stage right in front, as `cwd` reads (None for the starting directory), or None when the feed came from no such stage. `(cd src; echo f*) | xargs ...` matches `f*` in `src`, which the consumer's own `cwd` does not say.
         self.feed_cwds = None
         # The option words an `xargs` in front of this command was given, in order (`("-r",)`, `("-n", "1")`), or None when no xargs ran it. `-n`, `-L`, `-I`, `-d`, `-0` and the like change which words reach which invocation, so a reader placing the feed (`run_copies`) needs them.
@@ -2800,6 +2860,19 @@ _BRACED_NAME = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")
 _SPLITS = " \t\n*?["
 
 
+# THE SPLIT IS IFS's, NOT A FIXED SET (review a7b3a36f.1 sweep). `IFS=:; B=a:b; npx node $B` hands node `a` and `b` (bash 5.3), and the walk read the one word `a:b` because `_SPLITS` held the default IFS whatever the command line assigned. An IFS the walk knows splits on its own characters (an empty one splits nothing); an IFS it cannot know (`IFS=$X`, an inherited one marked by `export IFS`) splits on anything, so every unquoted expansion is unknowable. Absent is the session's IFS, the default this walk has always assumed.
+def _splits(shell):
+    """The characters that make an unquoted expansion split or glob under the walk's shell state."""
+    if "IFS" not in shell:
+        return _SPLITS
+    ifs = shell["IFS"][0]
+    if ifs is None:
+        return _SPLITS
+    if not isinstance(ifs, str) or ifs == _INHERITED or _UNRESOLVED in ifs:
+        return None
+    return ifs + "*?["
+
+
 def unresolved(value):
     """Whether an expanded value carries something the walk could not evaluate."""
     return value is not None and _UNRESOLVED in value
@@ -2874,8 +2947,13 @@ def _expand_word(word, shell, split=True):
         else:
             out.append(_UNRESOLVED)
     text = "".join(out)
-    if split and any(ch in piece for piece in pieces for ch in _SPLITS):
-        return _UNRESOLVED
+    if split:
+        splits = _splits(shell)
+        if any(
+            (piece != "" if splits is None else any(ch in piece for ch in splits))
+            for piece in pieces
+        ):
+            return _UNRESOLVED
     if split and text == "" and not quoted and pieces:
         return None
     return text
@@ -3264,6 +3342,8 @@ class _Walker:
             lead.append(value)
         # The state the words EXPAND under: a command's arguments are expanded before its own prefix assignments apply.
         before = state[1]
+        # The name bash runs is the first word left once every word is expanded (review a7b3a36f.1): `N=; $N bash -c ...` is a shell, `N="bash -x"; $N -c ...` is one too, and `G=git; $G push --force` a push. Every decision below keys on it.
+        words = _bash_words(words, before)
         statement, env_ops = _call_env(words, before)
         if statement:
             # A bare `NAME=value` sets a shell variable; it reaches a child's environment only when NAME is exported (or, export state unknown, when the session already exports it: `gh_named_repo`).
@@ -3294,8 +3374,7 @@ class _Walker:
             for w in prefix_words[: len(prefix_words) - len(words)]
             if _base(_word_value(w)) in _PREFIX_COMMANDS
         )
-        # A NAME HELD IN A VARIABLE IS THE COMMAND BASH RUNS (#156caed2): `N=bash; $N -c ...` is a shell and `G=git; $G push --force` a push, and every decision below keys on the name.
-        name = _expanded_name(words[0], before) or _word_value(words[0])
+        name = _word_value(words[0])
         if name == "" or any(ch in name for ch in " \t\n"):
             return
         argv = [_word_value(w) for w in words[1:]]
@@ -3335,11 +3414,13 @@ class _Walker:
             run.feed = " ".join(feed)
             if not inherited:
                 run.feed_words = _literal_feed(producers, redirs, lexer, before)
-                # A fed word the walk expanded is in the feed text too, for the readers that over-read it (`xargs_fed_operands`).
+                # A fed word the walk expanded is in the feed text too, for the readers that over-read it (`xargs_fed_operands`), at a span `stdin_text` leaves out: the bytes on stdin are the typed feed, expanded once.
                 typed = run.feed.split()
                 extra = [w for w in run.feed_words or () if w not in typed]
                 if extra:
+                    start = len(run.feed)
                     run.feed = " ".join([run.feed, *extra])
+                    run.feed_values = (start, len(run.feed))
         if "xargs" in found:
             run.xargs = tuple(found["xargs"])
         self.analysis.runs.append(run)
@@ -5913,11 +5994,23 @@ def gh_repo_name(value):
 
 
 def gh_runs(cmd, command):
-    """Every walked `gh` call in `cmd` whose `gh_args(...).command` is `command` (`("pr", "create")`, `("api",)`), in execution order, a `sh -c` payload and an `eval` included."""
+    """Every walked `gh` call in `cmd` whose `gh_args(...).command` is `command` (`("pr", "create")`, `("api",)`), in execution order, a `sh -c` payload and an `eval` included.
+
+    The command is read from the typed words and from the expanded ones when every expanded word is known (review a7b3a36f.2 sweep): `X=pr; gh $X merge 42 --admin` is a merge, and block_admin_merge allowed it (rc 0, 2026-10-15) because the typed `$X` named no `gh pr` command.
+    """
+    want = tuple(command)
     return [
         r
         for r in _analyse(cmd).runs
-        if _base(r.name) == "gh" and gh_args(r.argv).command == tuple(command)
+        if _base(r.name) == "gh"
+        and (
+            gh_args(r.argv).command == want
+            or (
+                r.xargv is not None
+                and not any(unresolved(x) for x in r.xargv)
+                and gh_args(r.xargv).command == want
+            )
+        )
     ]
 
 
@@ -6683,6 +6776,10 @@ def stdin_text(run, cmd):
     THE STAGE IN FRONT IS READ AS ITS WORDS, NOT ITS OUTPUT (`_Run.feed`): what a producer prints is not computed. One thing its words say about its output is read all the same: EVERY backslash escape outside a heredoc is turned into the character it names (`printed_escapes`, review 13505e0b.1), since `printf '\\x23 ...' | prog` hands over a `#` that the typed words never held. That is every one, not only a `printf`'s or an `echo -e`'s (648366c8.2): the feed is text with no record of which command typed which word, and any producer may print its escapes (`python3 -c 'print("\\x23 ...")' | prog`), so an `echo` without `-e` and a here-string are decoded as well. For those two the decoded character is one the command would not print, which can refuse a feed that is marker-free as printed and can never allow one that is not. A heredoc's backslashes are bash's own and are left as `_expand_heredoc` gives them.
     """
     feed = run.feed or ""
+    if run.feed_values is not None:
+        # The expanded fed words appended for the over-readers are not stdin: a heredoc's `$M` is expanded below, once.
+        start, end = run.feed_values
+        feed = feed[:start] + feed[end:]
     if "$" not in feed and "`" not in feed and "\\" not in feed:
         return feed
     kept: list[str] = []

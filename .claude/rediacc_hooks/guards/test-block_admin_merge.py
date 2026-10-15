@@ -7,6 +7,8 @@ reads at `origin/<head>`.
 WHAT A CASE ASSERTS. Only the plan gate's own verdict: `plan` means the refusal is the plan gate's (its message carries PLAN_MARK), `past` means the merge got past the plan gate. A `past` case is still refused further down in this fixture (the per-commit review arm walks commits this fixture does not review), and that refusal is not this suite's subject; the review arm has its own suite in
 `tests/test_wl_review_check.py`.
 
+THE --admin BAN THROUGH EXPANSION (review a7b3a36f.2). `ADMIN_CASES` asks a second question of the same world, a green console PR whose plan is ticked: is the refusal the outright ban's (`admin`, its message carries ADMIN_MARK), a refusal further down that only this fixture's unreviewed commits cause (`judged`), or no refusal at all (`allowed`)? Each `admin` row spells `--admin` only through expansion or a command name held in a variable, and each was `judged` or `allowed` before the guard read the walked merge's expanded words and the walk resolved the name: the ban never fired. A control is `judged`, so it proves the walk saw a merge there, not merely that the ban stayed quiet.
+
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER, as every guard suite here does.
 """
 
@@ -44,6 +46,7 @@ _RUNTMP.loader.exec_module(runtmp)
 RUN_TMP = runtmp.run_dir("guard-admin-merge-")
 
 PLAN_MARK = "fails the plan gate"
+ADMIN_MARK = "'gh pr merge --admin' is banned"
 BRANCH = "0914-1"
 PLAN_DONE = "agent/plans/PLAN-fx-done.md"
 PLAN_OPEN = "agent/plans/PLAN-fx-open.md"
@@ -177,6 +180,33 @@ CASES = [
 ]
 
 
+_TICKED = "Plan: %s" % PLAN_DONE
+
+ADMIN_CASES = [
+    # (name, command, expected verdict); every row runs against the ticked, green PR above.
+    ("eval of a split flag", 'X=-; eval "gh pr merge 7 --repo %s $X-admin"' % GH_REPO, "admin"),
+    ("a flag spelled by expansion", "A=--adm; gh pr merge 7 --repo %s ${A}in" % GH_REPO, "admin"),
+    ("a bash -c payload", 'X=-; bash -c "gh pr merge 7 --repo %s $X-admin"' % GH_REPO, "admin"),
+    ("the verb held in a variable", "X=pr; gh $X merge 7 --repo %s --admin" % GH_REPO, "admin"),
+    ("a vanished command name", "N=; $N gh pr merge 7 --repo %s --admin" % GH_REPO, "admin"),
+    ("a command name that splits", 'N="gh pr"; $N merge 7 --repo %s --admin' % GH_REPO, "admin"),
+    ("the eval form the golden records", 'X=--admin; eval "gh pr merge 7 $X"', "admin"),
+    # CONTROLS: the same spellings with a flag that is not --admin are judged as merges and get past the ban.
+    (
+        "eval of a split ordinary flag",
+        'X=-; eval "gh pr merge 7 --repo %s $X-auto"' % GH_REPO,
+        "judged",
+    ),
+    ("a vanished name, no --admin", "N=; $N gh pr merge 7 --repo %s --auto" % GH_REPO, "judged"),
+    ("a split name, no --admin", 'N="gh pr"; $N merge 7 --repo %s --auto' % GH_REPO, "judged"),
+    (
+        "the verb held in a variable, no --admin",
+        "X=pr; gh $X merge 7 --repo %s --auto" % GH_REPO,
+        "judged",
+    ),
+]
+
+
 def run(command, body):
     env = dict(
         os.environ,
@@ -213,13 +243,26 @@ for name, command, body, want in CASES:
     if not ok:
         print("    rc=%d stderr: %s" % (rc, err.strip().splitlines()[:3]))
 
+admin_verdicts = set()
+for name, command, want in ADMIN_CASES:
+    rc, err = run(command, _TICKED)
+    got = "admin" if (rc != 0 and ADMIN_MARK in err) else ("judged" if rc != 0 else "allowed")
+    admin_verdicts.add(got)
+    ok = got == want
+    fails += not ok
+    print("%-60s want=%-6s got=%-7s %s" % (name, want, got, "ok" if ok else "*** FAIL ***"))
+    if not ok:
+        print("    rc=%d stderr: %s" % (rc, err.strip().splitlines()[:3]))
+
 print()
 # ANTI-VACUITY: a gate that answered one way on every input compared against a constant.
-if len(verdicts) < 2:
-    print(
-        "*** FAIL *** every case got %s: the suite compared the guard against a constant" % verdicts
-    )
-    fails += 1
-print("%d case(s)" % len(CASES))
+for label, seen in (("plan-gate", verdicts), ("admin-ban", admin_verdicts)):
+    if len(seen) < 2:
+        print(
+            "*** FAIL *** every %s case got %s: the suite compared the guard against a constant"
+            % (label, seen)
+        )
+        fails += 1
+print("%d case(s)" % (len(CASES) + len(ADMIN_CASES)))
 print("FAILURES: %d" % fails)
 sys.exit(1 if fails else 0)

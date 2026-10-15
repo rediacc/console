@@ -2523,6 +2523,7 @@ LAUNCHED_SHAPE_ROWS = [
     ("\"$BASH\" -c 'node x'", None, "names", ["$BASH"]),
     ("G=git; $G push --force origin main", "git", "argv", ["push", "--force", "origin", "main"]),
     ("B=q; env -S node $B", "node", "argv", ["q"]),
+    ("B=q; env -S node p $B", "node", "argv", ["p", "q"]),
     ('C="node q"; env -S "$C"', "node", "argv", ["q"]),
     ('B=q; npx -c "node $B"', "node", "xargv", ["q"]),
     ('B=q; bun exec "node $B"', "node", "xargv", ["q"]),
@@ -2546,6 +2547,25 @@ LAUNCHED_SHAPE_ROWS = [
     ("npx node $(cat f)", "node", "argv", ["$(cat f)"]),
     ("B=q; echo ~$B | xargs node", "node", "feed_words", None),
     ("echo $UNSET_Q | xargs node", "node", "feed_words", None),
+    # THE NAME IS THE FIRST WORD LEFT AFTER EXPANSION (review a7b3a36f.1): a vanished name promotes the next word, a split one becomes the name plus leading arguments, and the prefix commands are stripped again in front of what is left.
+    ('N=; $N bash -c "node q"', None, "names", ["bash", "node"]),
+    ('N="bash -e"; $N -c "node q"', "bash", "argv", ["-e", "-c", "node q"]),
+    ('N="bash -e"; $N -c "node q"', None, "names", ["bash", "node"]),
+    ("N=; M=; $N $M env node q", None, "names", ["node"]),
+    ("N=; sudo $N node q", None, "names", ["node"]),
+    ('N=" "; $N node q', None, "names", ["node"]),
+    ('N="env node"; $N q', "node", "argv", ["q"]),
+    ("N=; $N node q", None, "spans", ["node q"]),
+    # SOUND UNKNOWN: a glob, a field holding a `$`, a quoted name, an assigned IFS and a promoted word bash reads as a command name and not as an assignment all keep the typed name.
+    ('N="a*"; $N -c "node q"', None, "names", ["$N"]),
+    ("N='bash $X'; $N -c \"node q\"", None, "names", ["$N"]),
+    ('N="bash -e"; "$N" -c "node q"', None, "names", ["$N"]),
+    ('IFS=:; N="bash:-c"; $N "node q"', None, "names", ["$N"]),
+    ("N=; $N X=1 node q", None, "names", ["$N"]),
+    # THE SPLIT IS THE WALK'S IFS: an assigned IFS splits on its own characters (an empty one on none), an unset one is the default.
+    ("IFS=:; B=a:b; npx node $B", "node", "argv", ["$B"]),
+    ("IFS=; B='a b'; npx node $B", "node", "argv", ["a b"]),
+    ("unset IFS; B=q; npx node $B", "node", "argv", ["q"]),
 ]
 
 # A planted walk that raises on a row has turned that row.
@@ -2602,9 +2622,16 @@ LAUNCHED_BASH_ROWS = [
     ("N=bash; $N -c 'zzargv X'", "<X>\n"),
     ("O=-c; bash $O 'zzargv X'", "<X>\n"),
     ("B=X; env -S zzargv $B", "<X>\n"),
+    # The first word after the `-S` string sits where `_bash_words` resolves a name, so a later one is what pins the `env -S` trailing words themselves.
+    ("B=X; env -S zzargv Y $B", "<Y><X>\n"),
     ("B=X; echo $B | xargs zzargv", "<X>\n"),
     ('B=X; echo "$B" | xargs zzargv', "<X>\n"),
     ("B=X; xargs zzargv <<< $B", "<X>\n"),
+    ("N=; $N zzargv X", "<X>\n"),
+    ('N="bash -e"; $N -c "zzargv X"', "<X>\n"),
+    ("N=; M=; $N $M env zzargv X", "<X>\n"),
+    ('N="env zzargv"; $N X', "<X>\n"),
+    ("IFS=; B='a b'; find \"{T}\" -maxdepth 0 -exec zzargv $B \\;", "<a b>\n"),
 ]
 
 # Where the value is not knowable, bash's answer is not what the walk claims, and the walk must claim NO value: the word stays typed (`$...`) or `_UNRESOLVED`.
@@ -2612,6 +2639,7 @@ LAUNCHED_BASH_UNKNOWN_ROWS = [
     ("B=X; bash -c 'zzargv $B'", "\n"),
     ("B='a b'; find \"{T}\" -maxdepth 0 -exec zzargv $B \\;", "<a><b>\n"),
     ('set -- a \'b c\'; find "{T}" -maxdepth 0 -exec zzargv "$@" \\;', "<a><b c>\n"),
+    ('IFS=:; B=a:b; find "{T}" -maxdepth 0 -exec zzargv $B \\;', "<a><b>\n"),
 ]
 
 
@@ -2672,8 +2700,33 @@ LAUNCHED_PLANTS = [
     ("the -c payload read as typed", "_shell_payload(mixed)", "_shell_payload(argv)"),
     (
         "the command name read as typed",
-        "name = _expanded_name(words[0], before) or _word_value(words[0])",
-        "name = _word_value(words[0])",
+        "        words = _bash_words(words, before)\n",
+        "",
+    ),
+    (
+        "a vanished name kept as typed",
+        "    if value is None:\n        return []\n    if _UNRESOLVED not in value:",
+        "    if value is None:\n        return None\n    if _UNRESOLVED not in value:",
+    ),
+    (
+        "a split name kept as typed",
+        'elif "IFS" in shell or any(p.kind not in ("lit", "param") for p in word.parts):',
+        "elif True:",
+    ),
+    (
+        "prefixes not stripped in front of a resolved name",
+        "        rest, _prefixed = _strip_prefixes(out)\n",
+        "        rest = out[_lexical_end(out) :]\n",
+    ),
+    (
+        "a promoted assignment read as an assignment",
+        "            at == _lexical_end(out)\n",
+        "            False\n",
+    ),
+    (
+        "an assigned IFS ignored",
+        '    if "IFS" not in shell:\n        return _SPLITS',
+        "    if True:\n        return _SPLITS",
     ),
     (
         "an unknown word fed as _UNRESOLVED",
@@ -2735,3 +2788,85 @@ def test_each_launched_plant_turns_a_row_156caed2(bash, tmp_path, label, old, ne
     module = _planted_shellscan(old, new)
     turned = _launched_wrong(module) + _launched_bash_wrong(module, bash, tmp_path)
     assert turned, "plant %r turns no row: the tables cannot see it" % label
+
+
+# THE GUARDS READ THE NAME BASH RUNS (review a7b3a36f.1). Through dispatch.run_one in a scratch tree; each `2` row was allowed (rc 0) at a7b3a36f6, where the walk ran each command under the typed name `$N` and never walked the payload or the command behind it. The `0` rows are a read and a print through the same spellings.
+NAME_GUARD_ROWS = (
+    ('N=; $N bash -c "rm .claude/settings.json"', 2),
+    ('N="bash -e"; $N -c "rm .claude/settings.json"', 2),
+    ("N=; M=; $N $M env rm .claude/settings.json", 2),
+    ('N="env rm"; $N .claude/settings.json', 2),
+    ("N=; sudo $N rm .claude/settings.json", 2),
+    ('N=; $N bash -c "cat .claude/settings.json"', 0),
+    ('N="bash -e"; $N -c "echo rm .claude/settings.json"', 0),
+    ('N="env cat"; $N .claude/settings.json', 0),
+)
+
+
+def test_block_protected_files_reads_the_name_bash_runs_a7b3a36f(tmp_path):
+    root = os.path.realpath(tmp_path)
+    wrong = []
+    for command, want in NAME_GUARD_ROWS:
+        rc, _out, err = dispatch.run_one(
+            "block_protected_files",
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    assert {w for _c, w in NAME_GUARD_ROWS} == {0, 2}
+
+
+# A gh COMMAND SPELLED BY EXPANSION IS THAT COMMAND (review a7b3a36f.2 sweep): `gh_runs` reads the expanded words when every one is known, so `X=pr; gh $X merge` is a merge every gh guard judges, while a value it cannot know stays out.
+GH_RUN_ROWS = (
+    ("gh pr merge 42", 1),
+    ("X=pr; gh $X merge 42", 1),
+    ("V=merge; gh pr $V 42", 1),
+    ("N=; $N gh pr merge 42", 1),
+    ('X="pr merge"; gh $X 42', 0),
+    ("gh $X merge 42", 0),
+    ("X=pr; gh $X view 42", 0),
+)
+
+
+def test_gh_runs_read_the_expanded_command_a7b3a36f():
+    shellscan._ANALYSIS_CACHE.clear()
+    got = [(cmd, len(shellscan.gh_pr_runs(cmd, "merge"))) for cmd, _want in GH_RUN_ROWS]
+    shellscan._ANALYSIS_CACHE.clear()
+    assert got == [(cmd, want) for cmd, want in GH_RUN_ROWS]
+
+
+# THE FEED IS EXPANDED ONCE (test_landing feed regression from a7b3a36f6). The expanded fed words appended to `feed` for the over-reading guards were read by `stdin_text` as more stdin, so `M=x; cat <<EOF` with a body `a $M ${M}b` handed over `a x xb\n x xb` where bash prints `a x xb\n`. Each row: (command, run, stdin_text, feed_words, feed). A `$` outside a heredoc leaves stdin_text unknown, as test_landing pins; a quoted heredoc stays literal.
+FEED_ROWS = (
+    ("M=x; cat <<EOF\na $M ${M}b\nEOF", "cat", "a x xb\n", ["a", "x", "xb"], "a $M ${M}b\n x xb"),
+    ("B=q; xargs node <<EOF\n$B\nEOF", "node", "q\n", ["q"], "$B\n q"),
+    ("B=q; xargs node <<'EOF'\n$B\nEOF", "node", "$B\n", None, "$B\n"),
+    ("B=q; xargs node <<< $B", "node", None, ["q"], "$B q"),
+    ("B=q; echo $B | xargs node", "node", None, ["q"], "echo $B q"),
+    ('B=q; echo "$B" | xargs node', "node", None, ["q"], "echo $B q"),
+    ("echo plain | xargs node", "node", "echo plain", ["plain"], "echo plain"),
+)
+
+
+def _feed_wrong(module):
+    wrong = []
+    for cmd, name, text, words, feed in FEED_ROWS:
+        module._ANALYSIS_CACHE.clear()
+        run = next(r for r in module.every_run(cmd) if r.name == name)
+        got = (module.stdin_text(run, cmd), run.feed_words, run.feed)
+        if got != (text, words, feed):
+            wrong.append((cmd, got, (text, words, feed)))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_the_feed_is_expanded_once_a7b3a36f():
+    wrong = _feed_wrong(shellscan)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+def test_the_feed_rows_see_the_appended_values_read_as_stdin_a7b3a36f():
+    module = _planted_shellscan(
+        "    if run.feed_values is not None:\n", "    if run.feed_values is not None and False:\n"
+    )
+    assert _feed_wrong(module), "the feed rows cannot see the expanded values read as stdin"
