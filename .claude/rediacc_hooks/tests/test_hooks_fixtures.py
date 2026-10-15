@@ -3010,7 +3010,7 @@ def test_block_cli_bundle_reads_the_program_bash_runs(tmp_path):
 
 
 # --- shellscan: the guards read what a launcher, a `-c` shell, eval and ssh are handed (#156caed2) ---------------- bash expands every word once before a launcher or a shell runs, and the walk used to build the inner command from the words as typed, so a guard reading the launched run saw the literal `$F`. Each `2` row below was rc 0 at b8058ec2c and is refused now ONLY through shellscan: none of these guards carries a re-walk of its own.
-# block_cli_bundle does carry one (its `_programs`/`_runs_bundle`), so its two rows are forms that workaround missed too: a `-c` payload under a launcher. The formatter rows stay refused because an unknowable word keeps its typed `$` inside the launched run; the `0` rows are the reads and prints beside each refusal.
+# block_cli_bundle carried one until #d6d000ad removed it, and its two rows are forms that workaround missed too: a `-c` payload under a launcher. The formatter rows stay refused because an unknowable word keeps its typed `$` inside the launched run; the `0` rows are the reads and prints beside each refusal.
 _SJ = ".claude/settings.json"
 _BUNDLE = "packages/cli/dist/" + "cli-bundle.cjs"
 LAUNCHED_GUARD_ROWS = (
@@ -3073,3 +3073,42 @@ def test_guards_read_the_expanded_launched_command_156caed2(tmp_path):
     for stem in {s for s, _c, _w in LAUNCHED_GUARD_ROWS}:
         verdicts = {w for s, _c, w in LAUNCHED_GUARD_ROWS if s == stem}
         assert verdicts == {0, 2}, (stem, verdicts)
+
+
+# --- block_review_file_shell_write: the operand arms read the expanded words, and the glob pre-filter reads only a glob that can spell the directory (#f6334e52, #a1852a9e) ---------------- Each `2` row of the first group and the `0` rows of the second were the other verdict at a7b3a36f6, run from a scratch root holding `agent/reviews/x`.
+REVIEW_OPERAND_ROWS = (
+    # #f6334e52: tee, truncate, sed -i and cp read their operands as typed, so `$D/y.md` named no review file.
+    ("D=agent/reviews/x; tee $D/y.md", 2),
+    ("D=agent/reviews/x; sudo tee $D/y.md", 2),
+    ("D=agent/reviews/x; timeout 5 tee $D/y.md", 2),
+    ("D=agent/reviews/x; truncate -s 0 $D/y.md", 2),
+    ("D=agent/reviews/x; sed -i s/a/b/ $D/y.md", 2),
+    ("D=agent/reviews/x; cp /tmp/a.md $D/", 2),
+    ("D=plain; tee $D/y.md", 0),
+    ("D=agent/reviews/x; sudo cat $D/y.md", 0),
+    ("tee $UNSET_REVIEW_DIR/y.md", 0),
+    # #a1852a9e: the `.*` inside a sed or perl expression is program text, not a path.
+    ("sed -i 's/a.*b/c/' x.py && python3 x.py", 0),
+    ("perl -pi -e 's/a.*b/c/' x.py && python3 x.py", 0),
+    ("cp x agent/revi*s/", 2),
+    ("sed -i 's/a.*b/c/' agent/revi*s/x/y.md", 2),
+    ("cd agent && tee revi*s/y.md", 2),
+    # A glob in the directory the run executes in (rc 0 at a7b3a36f6).
+    ("cd agen? && tee revi*s/x.md", 2),
+)
+
+
+def test_review_shell_write_reads_expanded_operands_and_real_globs(tmp_path):
+    root = os.path.realpath(tmp_path)
+    for d in ("agent/reviews/x", "plain"):
+        (tmp_path / d).mkdir(parents=True)
+    wrong = []
+    for command, want in REVIEW_OPERAND_ROWS:
+        rc, _out, err = dispatch.run_one(
+            "block_review_file_shell_write",
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+    assert {w for _c, w in REVIEW_OPERAND_ROWS} == {0, 2}
