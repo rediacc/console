@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "Ühendusteavet laaditakse...",
   "commands.sync.noChanges": "Muudatusi sünkroonimiseks pole.",
   "commands.sync.previewingChanges": "\nMuudatuste eelvaade...\n",
+  "commands.sync.skippedMore": "{{names}} ja veel {{count}}",
+  "commands.sync.skippedNonRegular": "Hoiatus: sümboolseid linke ja erifaile ei edastatud, kokku: {{count}} (privilegeeritud sünkroonimine edastab ainult tavafaile): {{names}}",
   "commands.sync.status.description": "Kohalike ja kaugfailide proovijooks (näitab, mida kantaks üle, ilma tegelikult üle kandmata)",
   "commands.sync.status.descriptionShort": "Võrdleb kohalikke ja kaugfaile (proovijooks)",
   "commands.sync.totalSize": "Kogumaht: {{size}}",

@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "A obter detalhes de ligação...",
   "commands.sync.noChanges": "Sem alterações a sincronizar.",
   "commands.sync.previewingChanges": "\nA pré-visualizar alterações...\n",
+  "commands.sync.skippedMore": "{{names}} e mais {{count}}",
+  "commands.sync.skippedNonRegular": "Aviso: links simbólicos e arquivos especiais não transferidos, total: {{count}} (uma sincronização privilegiada transfere apenas arquivos regulares): {{names}}",
   "commands.sync.status.description": "Comparação em modo de simulação de ficheiros locais e remotos (mostra o que seria transferido sem efetuar a transferência)",
   "commands.sync.status.descriptionShort": "Comparar ficheiros locais e remotos (simulação)",
   "commands.sync.totalSize": "Tamanho total: {{size}}",

@@ -1927,6 +1927,8 @@
       "fetchingDetails": "接続詳細を取得中です...",
       "noChanges": "同期する変更がありません。",
       "previewingChanges": "\n変更をプレビュー中です...\n",
+      "skippedMore": "{{names}}、ほか {{count}} 件",
+      "skippedNonRegular": "警告: シンボリックリンクと特殊ファイルは転送されませんでした（合計: {{count}}）。特権同期では通常ファイルのみ転送されます: {{names}}",
       "status": {
         "description": "同期ステータスを確認して、ローカル/リモートファイルを比較する",
         "descriptionShort": "ローカルとリモートのファイルを比較する（ドライラン）"

@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "Obteniendo detalles de conexión...",
   "commands.sync.noChanges": "No hay cambios para sincronizar.",
   "commands.sync.previewingChanges": "\nVista previa de cambios...\n",
+  "commands.sync.skippedMore": "{{names}} y {{count}} más",
+  "commands.sync.skippedNonRegular": "Advertencia: enlaces simbólicos y archivos especiales sin transferir, en total: {{count}} (una sincronización con privilegios solo transfiere archivos regulares): {{names}}",
   "commands.sync.status.description": "Verificar estado de sincronización y comparar archivos locales/remotos",
   "commands.sync.status.descriptionShort": "Comparar archivos locales y remotos (ejecución en seco)",
   "commands.sync.totalSize": "Tamaño total: {{size}}",

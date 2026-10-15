@@ -1927,6 +1927,8 @@
       "fetchingDetails": "Obteniendo detalles de conexión...",
       "noChanges": "No hay cambios para sincronizar.",
       "previewingChanges": "\nVista previa de cambios...\n",
+      "skippedMore": "{{names}} y {{count}} más",
+      "skippedNonRegular": "Advertencia: enlaces simbólicos y archivos especiales sin transferir, en total: {{count}} (una sincronización con privilegios solo transfiere archivos regulares): {{names}}",
       "status": {
         "description": "Verificar estado de sincronización y comparar archivos locales/remotos",
         "descriptionShort": "Comparar archivos locales y remotos (ejecución en seco)"

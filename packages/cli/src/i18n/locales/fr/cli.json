@@ -1927,6 +1927,8 @@
       "fetchingDetails": "Récupération des détails de connexion...",
       "noChanges": "Aucune modification à synchroniser.",
       "previewingChanges": "\nAperçu des modifications...\n",
+      "skippedMore": "{{names}} et {{count}} de plus",
+      "skippedNonRegular": "Avertissement : liens symboliques et fichiers spéciaux non transférés, total : {{count}} (une synchronisation privilégiée ne transfère que les fichiers ordinaires) : {{names}}",
       "status": {
         "description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants",
         "descriptionShort": "Comparer les fichiers locaux et distants (à blanc)"

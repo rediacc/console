@@ -1927,6 +1927,8 @@
       "fetchingDetails": "A obter detalhes de ligação...",
       "noChanges": "Sem alterações a sincronizar.",
       "previewingChanges": "\nA pré-visualizar alterações...\n",
+      "skippedMore": "{{names}} e mais {{count}}",
+      "skippedNonRegular": "Aviso: links simbólicos e arquivos especiais não transferidos, total: {{count}} (uma sincronização privilegiada transfere apenas arquivos regulares): {{names}}",
       "status": {
         "description": "Comparação em modo de simulação de ficheiros locais e remotos (mostra o que seria transferido sem efetuar a transferência)",
         "descriptionShort": "Comparar ficheiros locais e remotos (simulação)"

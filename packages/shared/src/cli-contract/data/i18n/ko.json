@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "연결 세부 정보 가져오는 중...",
   "commands.sync.noChanges": "동기화할 변경 사항이 없습니다.",
   "commands.sync.previewingChanges": "\n변경 사항 미리 보는 중...\n",
+  "commands.sync.skippedMore": "{{names}} 외 {{count}}개",
+  "commands.sync.skippedNonRegular": "경고: 심볼릭 링크와 특수 파일은 전송되지 않았습니다(총 {{count}}건). 권한 상승 동기화는 일반 파일만 전송합니다: {{names}}",
   "commands.sync.status.description": "로컬 및 원격 파일의 드라이 런 비교 (실제 전송 없이 전송될 항목 표시)",
   "commands.sync.status.descriptionShort": "로컬 및 원격 파일 비교 (드라이 런)",
   "commands.sync.totalSize": "전체 크기: {{size}}",

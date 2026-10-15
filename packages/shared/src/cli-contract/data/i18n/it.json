@@ -1390,6 +1390,8 @@
   "commands.sync.fetchingDetails": "Recupero dettagli di connessione in corso...",
   "commands.sync.noChanges": "Nessuna modifica da sincronizzare.",
   "commands.sync.previewingChanges": "\nAnteprima modifiche...\n",
+  "commands.sync.skippedMore": "{{names}} e altri {{count}}",
+  "commands.sync.skippedNonRegular": "Avviso: collegamenti simbolici e file speciali non trasferiti, totale: {{count}} (una sincronizzazione con privilegi trasferisce solo file regolari): {{names}}",
   "commands.sync.status.description": "Confronto dry-run di file locali e remoti (mostra cosa verrebbe trasferito senza trasferire effettivamente)",
   "commands.sync.status.descriptionShort": "Confronta file locali e remoti (dry-run)",
   "commands.sync.totalSize": "Dimensione totale: {{size}}",
