@@ -192,6 +192,22 @@ SCOPES = (
             "dead independently."
         ),
     ),
+    Scope(
+        name="worktree-stdin-anchor",
+        files=(".claude/rediacc_hooks/guards/block_worktree_add.py",),
+        classes=("procfs",),
+        env="REDIACC_WORKTREE_STDIN_PROCFS",
+        why=(
+            "A RECOGNISED path, as in pid-wait-anchor: this guard matches "
+            "`/proc/self/fd/0` in somebody else's command line and program text as one "
+            "spelling of the process's own stdin, and never opens it. On a machine "
+            "with no procfs at /proc a hard-coded spelling would stop recognising the "
+            "local one and judge that program as an unreadable descriptor instead, so "
+            "the root is named once from the environment and STDIN_PATHS and both "
+            "stdin-touch patterns are built from it. Its own scope, so it can go dead "
+            "independently of the pid-wait anchor."
+        ),
+    ),
 )
 
 

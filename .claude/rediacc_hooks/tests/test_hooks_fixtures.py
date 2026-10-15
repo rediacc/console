@@ -1728,6 +1728,242 @@ def test_a_pipe_through_dev_stdin_or_into_an_evaluator_is_a_program(tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
+# REVIEW c5f0fd12.1-.3 AND db1e9409.1-.2 ON THE STDIN READERS. .1 and .2 were closed by db1e94091 before this test existed and are pinned here; .3 (a `..` after a directory symlink read lexically) and db1e9409.1 (a descriptor held in a name) ran `git worktree add` with rc 0 at bd4ead963. db1e9409.2: `eval(console)` reads no stdin, so its pipe is data.
+def test_stdin_spellings_review_c5f0fd12_and_db1e9409(tmp_path):
+    assert "worktree" not in str(tmp_path).lower(), tmp_path
+    (tmp_path / "p.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    (tmp_path / "ok.py").write_text("print(1)\n", encoding="utf-8")
+    deep = tmp_path / "a" / "b" / "c" / "d" / "e" / "f" / "g"
+    deep.mkdir(parents=True)
+    (tmp_path / "lnk").symlink_to(deep, target_is_directory=True)
+    (tmp_path / "a" / "b" / "c" / "d" / "e" / "f" / "q.py").write_text(WT_ARGV_PY, encoding="utf-8")
+    # As many `..` as `lnk` is deep reach / by the text and `a/` by the kernel.
+    spelled = str(tmp_path / "lnk") + "/.." * len(tmp_path.parts) + "/dev/stdin"
+    assert os.path.normpath(spelled) == "/dev/stdin", spelled
+    landed = pathlib.Path(os.path.realpath(os.path.dirname(spelled)))
+    assert landed.is_relative_to(tmp_path), landed
+    landed.mkdir(parents=True, exist_ok=True)
+    (landed / "stdin").write_text(WT_ARGV_PY, encoding="utf-8")
+    unread = "reads on stdin from"
+    script = "names `worktree`"
+    wrong = []
+    for command, needle in (
+        ("git show HEAD:p.py | python3 /dev/stdin", unread),
+        ("git show HEAD:p.py | python3 /dev/fd/0", unread),
+        ("cat p.py | python3 /dev/stdin", script),
+        ("cat p.py | cat | python3 -", script),
+        ("{ cat p.py; } | python3 -", "subshell or brace group"),
+        ("( cat p.py ) | python3 -", "subshell or brace group"),
+        ("echo 'print(1)' | python3 %s" % spelled, script),
+        ("python3 %s" % spelled, script),
+        ("python3 lnk/../q.py", script),
+        (
+            'git show HEAD:p.py | node -e \'const fd=0; eval(require("fs").readFileSync(fd,"utf8"))\'',
+            unread,
+        ),
+        ("git show HEAD:p.py | node -e 'let d = 0; eval(require(\"fs\").readFileSync(d))'", unread),
+        (
+            (
+                'git show HEAD:p.py | node -e \'require("fs").createReadStream(null,{fd:0})'
+                '.on("data",c=>eval(String(c)))\''
+            ),
+            unread,
+        ),
+        ("git show HEAD:p.py | python3 -c 'import os; d=0; exec(os.read(d, 1 << 20))'", unread),
+    ):
+        rc, err = _worktree_rc(command, tmp_path)
+        if rc != 2 or needle not in err:
+            wrong.append((command, rc, err[:160]))
+    # CONTROLS: the same spellings over a benign program, a plain `..` through a real directory, a descriptor that is not stdin, and a program that names `console` and reads no stdin.
+    for command in (
+        "echo 'print(1)' | python3 /dev/stdin",
+        "echo 'print(1)' | cat | python3 -",
+        "python3 a/../ok.py",
+        'git log | node -e \'const fd=1; require("fs").writeSync(fd, "x")\'',
+        "git show HEAD:p.py | node -e 'eval(console)'",
+        "git log | node -e 'console.log(eval(\"1+1\"))'",
+        "git log | python3 -c 'import json; print(json.load(open(\"ok.json\")))'",
+    ):
+        rc, err = _worktree_rc(command, tmp_path)
+        if rc != 0:
+            wrong.append((command, rc, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+# ONE PROGRAM PARSE FOR EVERY GUARD (#a2599946). At bd4ead963 `shellscan._program_parse` read deno, bun and tsx with node's table after a leading `run`, so the words in the `was` column are what every shell-write guard and block_long_sleep took for the program; and it returned the FIRST inline program, where node runs the last and perl and ruby join them all (measured on node v24.21.0 and perl 5.40.1).
+PROGRAM_PARSE_ROWS = [
+    # (base, argv, now, was)
+    ("deno", ["eval", "x"], ("inline", "x"), ("file", "eval")),
+    ("deno", ["run", "-c", "cfg.json", "x.ts"], ("file", "x.ts"), ("file", "cfg.json")),
+    ("deno", ["serve", "x.ts"], ("file", "x.ts"), ("file", "serve")),
+    ("deno", ["run", "https://e.invalid/x.ts"], ("remote", "https://e.invalid/x.ts"), None),
+    ("deno", ["fmt"], ("none", None), None),
+    ("deno", ["--version"], ("none", None), None),
+    ("deno", ["run", "npm:cowsay"], ("none", None), None),
+    ("deno", ["test"], ("unjudgeable", "`deno test`"), None),
+    ("deno", ["run", "-"], ("stdin", None), None),
+    ("bun", ["exec", "echo hi"], ("shell", "echo hi"), ("file", "exec")),
+    ("bun", ["build"], ("none", None), None),
+    ("bun", ["x", "cowsay"], ("none", None), None),
+    ("bun", ["test"], ("unjudgeable", "`bun test`"), None),
+    ("bun", ["-e", "A", "-e", "B"], ("inline", "A\nB"), ("inline", "A")),
+    ("bunx", ["cowsay"], ("none", None), ("file", "cowsay")),
+    ("tsx", ["watch", "x.ts"], ("file", "x.ts"), ("file", "watch")),
+    ("tsx", ["--tsconfig", "t.json", "x.ts"], ("file", "x.ts"), ("file", "t.json")),
+    ("tsx", ["-e", "A", "-e", "B"], ("inline", "B"), ("inline", "A")),
+    ("tsx", ["scripts/foo.ts"], ("file", "scripts/foo.ts"), None),
+    ("node", ["-e", "A", "-r", "fs", "-e", "B"], ("inline", "B"), ("inline", "A")),
+    ("node", ["-e", "A", "foo", "-e", "B"], ("inline", "A"), None),
+    ("node", ["-pe", "P"], ("inline", "P"), ("inline", "e")),
+    ("perl", ["-e", "A", "-e", "B"], ("inline", "A\nB"), ("inline", "A")),
+    ("perl", ["-le", "A", "-e", "B"], ("inline", "A\nB"), ("inline", "A")),
+    ("ruby", ["-e", "A", "-e", "B"], ("inline", "A\nB"), ("inline", "A")),
+    # Unchanged: python's `-c` ends its options, and the rest of the table.
+    ("python3", ["-c", "A", "-c", "B"], ("inline", "A"), None),
+    ("python3", ["-W", "ignore", "-"], ("stdin", None), None),
+    ("python3", ["-m", "json.tool"], ("module", None), None),
+    ("python3", ["-E", "s.py"], ("file", "s.py"), None),
+    ("node", ["x.js"], ("file", "x.js"), None),
+    ("node", [], ("stdin", None), None),
+    ("perl", ["-I", "lib", "-e", "A"], ("inline", "A"), None),
+]
+
+
+def test_program_parse_reads_each_interpreter_as_it_does():
+    wrong = [
+        (base, argv, shellscan.program_parse(base, argv), now)
+        for base, argv, now, _was in PROGRAM_PARSE_ROWS
+        if shellscan.program_parse(base, argv) != now
+    ]
+    assert not wrong, "\n".join(map(repr, wrong))
+    # The rows that moved must have read differently before, or they pin nothing.
+    assert sum(1 for row in PROGRAM_PARSE_ROWS if row[3] is not None) >= 10
+
+
+def test_interpreter_program_maps_runtime_kinds(tmp_path):
+    """`interpreter_program` hands a guard no reason text: a remote module and an option the walk does not know are `(None, "unjudgeable")`; a `bun exec` line and a line with no program are `(None, None)`."""
+    (tmp_path / "x.ts").write_text("console.log(1)\n", encoding="utf-8")
+    for command, want in (
+        ("deno run https://e.invalid/x.ts", (None, "unjudgeable")),
+        ("deno run --frobnicate x.ts", (None, "unjudgeable")),
+        ("deno test", (None, "unjudgeable")),
+        ("deno fmt", (None, None)),
+        ("bunx cowsay", (None, None)),
+        ("deno eval 'console.log(2)'", ("console.log(2)", "inline")),
+        ("deno run -c cfg.json x.ts", ("console.log(1)\n", "file")),
+    ):
+        run = shellscan.every_run(command)[0]
+        assert shellscan.interpreter_program(run, command, str(tmp_path)) == want, command
+    # A `bun exec` line is walked as runs of its own, so the command inside it is a run every guard sees.
+    command = "bun exec 'echo y > out.md'"
+    assert shellscan.interpreter_program(shellscan.every_run(command)[0], command) == (None, None)
+    assert [r.name for r in shellscan.every_run(command)] == ["bun", "echo"]
+    assert shellscan.every_run(command)[1].writes == ["out.md"]
+
+
+# THE RUNTIME LINES EVERY GUARD READS (#a2599946). Each `deny` row was allowed (rc 0) at bd4ead963: the shell-write guards and block_long_sleep read `cfg.json`, `serve`, `watch` or `t.json` as the script, block_review_file_shell_write named no deno, bun or tsx at all, block_suppressions_shell_write missed a `-` after an option's value, and nothing walked the line inside `bun exec`.
+_NQ = "no" + "qa"
+_RUNTIME_W = 'require("fs").writeFileSync("a.py","x = 1  # %s\\n")' % _NQ
+_RUNTIME_R = 'require("fs").writeFileSync("agent/reviews/x.md","x\\n")'
+_RUNTIME_U = 'require("fs").writeFileSync(".ci/config/model-invocation-exceptions.json","x\\n")'
+_RUNTIME_S = 'Deno.Command("sh",{args:["-c","sleep 900"]}).outputSync()'
+_LOG = "agent/pr-babysit-1008-1.md"
+RUNTIME_GUARD_ROWS = [
+    ("block_long_sleep", 2, "deno eval 'x(\"sleep 900\")'"),
+    ("block_long_sleep", 2, "deno run -c cfg.json s.ts"),
+    ("block_long_sleep", 2, "deno serve s.ts"),
+    ("block_long_sleep", 2, "tsx watch s.ts"),
+    ("block_long_sleep", 2, "tsx --tsconfig t.json s.ts"),
+    ("block_long_sleep", 2, 'bun exec "sleep 900"'),
+    ("block_long_sleep", 2, "bun -e 'x(\"sleep 900\")'"),
+    ("block_long_sleep", 2, "node -e 'console.log(1)' -e 'x(\"sleep 900\")'"),
+    ("block_long_sleep", 2, "node -pe 'x(\"sleep 900\")'"),
+    ("block_long_sleep", 2, "perl -e 'print 1;' -e 'system(\"sleep 900\")'"),
+    ("block_long_sleep", 2, "tsx -e 'console.log(1)' -e 'x(\"sleep 900\")'"),
+    ("block_long_sleep", 0, "deno run -c cfg.json ok.ts"),
+    ("block_long_sleep", 0, 'bun exec "sleep 5"'),
+    ("block_long_sleep", 0, "node -e 'x(\"sleep 5\")' -e 'console.log(1)'"),
+    # An option the walk does not know is unjudgeable, which this guard leaves alone by design (`_program_texts`).
+    ("block_long_sleep", 0, "deno run --frobnicate s.ts"),
+    ("block_suppressions_shell_write", 2, "deno run -c cfg.json w.ts"),
+    ("block_suppressions_shell_write", 2, "deno serve w.ts"),
+    ("block_suppressions_shell_write", 2, "tsx watch w.ts"),
+    ("block_suppressions_shell_write", 2, "tsx --tsconfig t.json w.ts"),
+    ("block_suppressions_shell_write", 2, "deno run - <<'EOF'\n%s\nEOF" % _RUNTIME_W),
+    (
+        "block_suppressions_shell_write",
+        2,
+        "python3 -W ignore - <<'EOF'\nopen('a.py','w').write('x = 1  # %s')\nEOF" % _NQ,
+    ),
+    ("block_suppressions_shell_write", 2, "bun exec 'echo \"x = 1  # %s\" > a.py'" % _NQ),
+    ("block_suppressions_shell_write", 2, "deno run --frobnicate w.ts --tag=%s" % _NQ),
+    ("block_suppressions_shell_write", 2, "deno eval '%s'" % _RUNTIME_W),
+    ("block_suppressions_shell_write", 0, "deno run -c cfg.json ok.ts"),
+    ("block_suppressions_shell_write", 0, "bun exec ls"),
+    ("block_review_file_shell_write", 2, "deno eval '%s'" % _RUNTIME_R),
+    ("block_review_file_shell_write", 2, "bun -e '%s'" % _RUNTIME_R),
+    ("block_review_file_shell_write", 2, "tsx -e '%s'" % _RUNTIME_R),
+    ("block_review_file_shell_write", 2, "deno run - <<'EOF'\n%s\nEOF" % _RUNTIME_R),
+    ("block_review_file_shell_write", 2, "bun exec 'echo y > agent/reviews/x.md'"),
+    ("block_review_file_shell_write", 2, "deno run -c cfg.json r.ts"),
+    ("block_review_file_shell_write", 2, "deno serve r.ts"),
+    ("block_review_file_shell_write", 2, "tsx watch r.ts"),
+    ("block_review_file_shell_write", 2, "tsx --tsconfig t.json r.ts"),
+    (
+        "block_review_file_shell_write",
+        0,
+        "deno eval 'console.log(Deno.readTextFileSync(\"agent/reviews/x.md\"))'",
+    ),
+    ("block_review_file_shell_write", 0, "deno run -c cfg.json ok.ts"),
+    (
+        "block_user_only_command_shell_write",
+        2,
+        "bun exec 'echo x > .ci/config/model-invocation-exceptions.json'",
+    ),
+    ("block_user_only_command_shell_write", 2, "deno run -c cfg.json u.ts"),
+    ("block_user_only_command_shell_write", 2, "deno serve u.ts"),
+    ("block_user_only_command_shell_write", 2, "tsx watch u.ts"),
+    ("block_user_only_command_shell_write", 2, "tsx --tsconfig t.json u.ts"),
+    ("block_user_only_command_shell_write", 2, "deno eval '%s'" % _RUNTIME_U),
+    (
+        "block_user_only_command_shell_write",
+        0,
+        "bun exec 'cat .ci/config/model-invocation-exceptions.json'",
+    ),
+    ("block_roundlog_truncate", 2, "tsx --tsconfig t.json l.js %s" % _LOG),
+    ("block_roundlog_truncate", 2, "deno run -c cfg.json l.js %s" % _LOG),
+    ("block_roundlog_truncate", 2, "bun exec 'echo > %s'" % _LOG),
+    ("block_roundlog_truncate", 0, "tsx --tsconfig t.json ok.ts %s" % _LOG),
+]
+
+
+def test_runtime_lines_are_read_by_every_guard(tmp_path):
+    files = {
+        "cfg.json": "{}\n",
+        "t.json": "{}\n",
+        "ok.ts": "console.log(1)\n",
+        "s.ts": _RUNTIME_S + "\n",
+        "w.ts": _RUNTIME_W + "\n",
+        "r.ts": _RUNTIME_R + "\n",
+        "u.ts": _RUNTIME_U + "\n",
+        "l.js": 'require("fs").writeFileSync(process.argv[2],"")\n',
+    }
+    for name, text in files.items():
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    wrong = []
+    for stem, want, command in RUNTIME_GUARD_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps(
+                {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(tmp_path)}
+            ),
+        )
+        if rc != want:
+            wrong.append((stem, want, rc, command, err[:160]))
+    assert len(RUNTIME_GUARD_ROWS) >= 40
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
 # --- block_untagged_commit: the id cases need a REAL epic to judge against ----- THE EPIC ID IS RESOLVED, NEVER FROZEN. An earlier read of this block hardcoded the id that happened to be in the tree the day it was written, which is the same class of defect as the branch resolution below: it passes on one machine and asserts something else everywhere else.
 #
 # AND RESOLVE THE BRANCH THE WAY CI ACTUALLY PRESENTS IT. `git rev-parse --abbrev-ref HEAD` prints the literal string "HEAD" in a detached checkout, which is EVERY pull_request run -- actions/checkout lands on refs/pull/N/merge. Measured 2026-08-27: this block looked for `agent/pr/HEAD.md`, did not find it, and failed the suite in CI while passing on every developer machine. The

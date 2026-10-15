@@ -44,7 +44,7 @@ _PREFILTER = re.compile(
     r"|nolin[t]|lint:ignor[e]|shellcheck|hadolint",
     re.IGNORECASE,
 )
-INTERPRETERS = ("python", "node", "perl", "ruby", "deno", "bun", "tsx")
+INTERPRETERS = shellscan.INTERPRETER_NAMES
 WRITERS = ("echo", "printf", "cat")
 WRITE_CODE = re.compile(
     r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|\.write\(|writeFileSync"
@@ -265,12 +265,12 @@ def _offending(engine, cmd, cwd):
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
             name = shebang
         if name.startswith(INTERPRETERS):
-            ops = _operands(argv)
-            code = " ".join(argv)
-            if not ops or ops[0] == "-":
-                code += "\n" + "\n".join(bodies)
             # A script by path is read like the heredoc above, under `shellscan.interpreter_program`'s rules (tracked exempt, unreadable fails open).
             script, kind = shellscan.interpreter_program(run, cmd, cwd)
+            code = " ".join(argv)
+            # Whether the program arrives on stdin is the interpreter's own option parse (#a2599946). This guard asked it of the first word not starting with `-`, so an option's value hid the `-`: `python3 -W ignore - <<EOF` and `deno run - <<EOF` with a marker in the body were allowed (rc 0, 2026-10-15 at bd4ead963).
+            if kind == "stdin":
+                code += "\n" + script
             # A program this hook cannot read (review b922f15c.1, .4) is refused rather than run unread; the pre-filter already matched.
             if kind == "unjudgeable":
                 return "a %s program this hook cannot read (%s)" % (
