@@ -63,6 +63,10 @@ MUTANTS = {
         "            if not is_ops_vm_ip(ip):\n",
         "            if False:\n",
     ),
+    "mint-under-default-config": (
+        "        self.dev_config = True\n",
+        "        self.dev_config = False\n",
+    ),
 }
 
 
@@ -78,7 +82,9 @@ class World(vm_check.Host):
         self.modified = over.pop("modified", False)
         self.rebuild_fixes = over.pop("rebuild_fixes", True)
         self.ops_up_rc = over.pop("ops_up_rc", 0)
+        # Two configs, as on the host: the operator's default one and the dev one `./rdc.sh` selects under RDC_DEV=1. `machines` and `cli_key` describe the default config; the dev config starts as a freshly seeded dev.json (no machine, no key) unless `dev_machines` and `dev_key` say otherwise.
         self.machines = over.pop("machines", [{"name": "vm11", "ip": WORKER}])
+        self.dev_machines = list(over.pop("dev_machines", ()))
         self.os_release = over.pop("os_release", "ubuntu 24.04")
         self.stored_ok = over.pop("stored_ok", False)
         self.repos: dict[str, str] = {g: "guid-" + g for g in over.pop("grands", (PARENT,))}
@@ -98,7 +104,11 @@ class World(vm_check.Host):
         self.gateway = over.pop("gateway", GATEWAY)
         # "yes" (the config holds a key the VMs authorize), "no" (empty credentials) or "wrong" (a key they reject).
         self.cli_key = over.pop("cli_key", "yes")
+        self.dev_key = over.pop("dev_key", "no")
         self.key_set: list[str] = []
+        # The config each `config ssh set` and `machine add` wrote, in call order.
+        self.written_in: list[str] = []
+        self.add_rc = over.pop("add_rc", 0)
         # "ok", "fail" (show exits non-zero) or "nodata" (show exits 0 with no data.embedded).
         self.key_show = over.pop("key_show", "ok")
         assert not over, over
@@ -174,6 +184,17 @@ class World(vm_check.Host):
     def guid(self, tag: str) -> str:
         return self.repos.get("%s:%s" % (PARENT, tag), "")
 
+    @staticmethod
+    def config_of(env: dict[str, str]) -> str:
+        """The config `./rdc.sh` selects: RDC_DEV=1 is the dev one, anything else the default."""
+        return "dev" if env.get("RDC_DEV") == "1" else "default"
+
+    def _machines(self, env: dict[str, str]) -> list[dict[str, str]]:
+        return self.dev_machines if self.config_of(env) == "dev" else self.machines
+
+    def _key(self, env: dict[str, str]) -> str:
+        return self.dev_key if self.config_of(env) == "dev" else self.cli_key
+
     def _rdc(self, args: list[str], env: dict[str, str]) -> vm_check.Result:
         ok = vm_check.Result(0)
         head = tuple(args[:2])
@@ -195,13 +216,27 @@ class World(vm_check.Host):
             self.running = []
             return ok
         if head == ("machine", "list"):
-            return vm_check.Result(0, json.dumps({"success": True, "data": self.machines}))
+            return vm_check.Result(0, json.dumps({"success": True, "data": self._machines(env)}))
+        if head == ("machine", "add"):
+            if self.add_rc:
+                return self._json_error(self.add_rc, "config is locked")
+            self.written_in.append(self.config_of(env))
+            self._machines(env).append({"name": args[2], "ip": args[args.index("--ip") + 1]})
+            return ok
+        if head == ("machine", "scan-keys"):
+            if args[2] not in [m["name"] for m in self._machines(env)]:
+                return vm_check.Result(1, "", 'Machine "%s" not found' % args[2])
+            return ok
         if head == ("subscription", "status"):
+            if self._undecryptable(env):
+                return vm_check.Result(1, "", "Decryption failed")
             if self.stored_ok or (self._minted(env) and not self.minted_check_err):
                 return vm_check.Result(0, '{"success":true}')
             return vm_check.Result(1, "", self.minted_check_err or "Unauthorized")
         if head == ("repo", "create"):
             # The CLI's provisioning pre-flight: a token from the env or the config, checked on the server it names.
+            if self._undecryptable(env):
+                return self._json_error(1, "Decryption failed")
             if not (self.stored_ok or self._minted(env)):
                 return self._json_error(2, TOKEN_REQUIRED)
             if self.create_rc:
@@ -215,13 +250,17 @@ class World(vm_check.Host):
                 return vm_check.Result(0, json.dumps({"success": True, "data": {}}))
             if self.key_show == "notjson":
                 return vm_check.Result(0, "config ssh: ok\n")
-            embedded = "no" if self.cli_key == "no" else "yes"
+            embedded = "no" if self._key(env) == "no" else "yes"
             return vm_check.Result(0, json.dumps({"success": True, "data": {"embedded": embedded}}))
         if head == ("config", "ssh") and args[2:3] == ["set"]:
             self.key_set.append(args[args.index("--key") + 1])
-            self.cli_key = "yes"
+            self.written_in.append(self.config_of(env))
+            if self.config_of(env) == "dev":
+                self.dev_key = "yes"
+            else:
+                self.cli_key = "yes"
             return ok
-        if head == ("repo", "list") and self.cli_key != "yes":
+        if head == ("repo", "list") and self._key(env) != "yes":
             envelope = {
                 "success": False,
                 "errors": [
@@ -233,11 +272,7 @@ class World(vm_check.Host):
             }
             return vm_check.Result(1, json.dumps(envelope), "Listing repositories...\n")
         if head == ("repo", "list"):
-            data = [
-                {"name": n, "guid": g, "networkId": "29%02d" % i}
-                for i, (n, g) in enumerate(sorted(self.repos.items()))
-            ]
-            return vm_check.Result(0, json.dumps({"success": True, "data": data}))
+            return vm_check.Result(0, json.dumps({"success": True, "data": self._repo_data()}))
         if head == ("repo", "fork"):
             if self.refuse_fork:
                 return vm_check.Result(
@@ -275,11 +310,23 @@ class World(vm_check.Host):
             return vm_check.Result(0, "%s%s/mnt/rediacc/mounts/x\n" % (vm_check.URI_PREFIX, alias))
         return ok
 
+    def _repo_data(self) -> list[dict[str, str]]:
+        return [
+            {"name": n, "guid": g, "networkId": "29%02d" % i}
+            for i, (n, g) in enumerate(sorted(self.repos.items()))
+        ]
+
     def _minted(self, env: dict[str, str]) -> bool:
-        """The minted token counts only on the gateway that minted it; the config's production server refuses it."""
+        """The minted token counts only on the gateway that minted it, read under the dev config that carries that gateway's E2E key."""
         return (
-            env.get("REDIACC_TOKEN") == TOKEN and env.get("REDIACC_ACCOUNT_SERVER") == self.gateway
+            env.get("REDIACC_TOKEN") == TOKEN
+            and env.get("REDIACC_ACCOUNT_SERVER") == self.gateway
+            and self.config_of(env) == "dev"
         )
+
+    def _undecryptable(self, env: dict[str, str]) -> bool:
+        """The live 05:4xZ failure: a dev-gateway response read under the default config, whose E2E key is the production server's."""
+        return env.get("REDIACC_ACCOUNT_SERVER") == self.gateway and self.config_of(env) != "dev"
 
     @staticmethod
     def _json_error(rc: int, message: str) -> vm_check.Result:
@@ -297,8 +344,7 @@ class World(vm_check.Host):
         if command == "ls /dev/shm":
             return vm_check.Result(0, "\n")
         if command == "cat /proc/self/cgroup":
-            nid = json.loads(self._rdc(["repo", "list"], {}).out)["data"]
-            mine_nid = next(e["networkId"] for e in nid if e["name"] == ref)
+            mine_nid = next(e["networkId"] for e in self._repo_data() if e["name"] == ref)
             return vm_check.Result(0, "0::/renet-exec-%s.scope\n" % mine_nid)
         if command == "renet sandbox-exec --detect":
             return vm_check.Result(0, "Status: enforced\nABI: 6\n")
@@ -464,7 +510,7 @@ NON_OPS_MACHINES = [{"name": "vm11", "ip": WORKER}, {"name": "prod-1", "ip": PRO
 def scenario_a_non_ops_worker_never_gets_a_grand_created(
     m: types.ModuleType, tmp_path: pathlib.Path
 ) -> None:
-    world = make_world(tmp_path, grands=("other-grand",), machines=NON_OPS_MACHINES)
+    world = make_world(tmp_path, grands=("other-grand",), machines=NON_OPS_MACHINES, stored_ok=True)
     rc, out, receipt = run_check(tmp_path, world, "--machine", "prod-1", m=m)
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert receipt["reason"]["class"] == "parent-grand-missing", receipt["reason"]
@@ -473,8 +519,19 @@ def scenario_a_non_ops_worker_never_gets_a_grand_created(
     assert PROD_IP in receipt["reason"]["detail"]
 
 
+def scenario_minted_token_runs_under_the_dev_config(
+    m: types.ModuleType, tmp_path: pathlib.Path
+) -> None:
+    """The 05:4xZ failure, rebuilt: a token minted on the dev gateway is checked under the default config, whose E2E key is production's, and `subscription status` fails "Decryption failed"."""
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, m=m)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert receipt["status"] == receipt_mod.VERIFIED
+
+
 SCENARIOS = {
     "create-on-any-worker": scenario_a_non_ops_worker_never_gets_a_grand_created,
+    "mint-under-default-config": scenario_minted_token_runs_under_the_dev_config,
     "skip-teardown": scenario_crash_mid_v13,
     "pass-on-zero-steps": scenario_zero_assertions_is_not_verified,
     "print-token": scenario_token_never_written,
@@ -717,13 +774,100 @@ def test_sftp_refused_tells_a_server_refusal_from_an_ssh_login_failure() -> None
     )
 
 
-def test_a_valid_stored_token_mints_nothing(tmp_path: pathlib.Path) -> None:
+def test_a_valid_stored_token_mints_nothing_and_keeps_the_default_config(
+    tmp_path: pathlib.Path,
+) -> None:
     world = make_world(tmp_path, stored_ok=True)
     account = FakeAccount()
     rc, out, _ = run_check(tmp_path, world, account=account)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert account.minted == 0
     assert all("REDIACC_TOKEN" not in e for e in world.envs)
+    assert all("RDC_DEV" not in e for e in world.envs), (
+        "a stored token never selects the dev config"
+    )
+    assert world.dev_machines == []
+    assert "dev" not in world.written_in
+    assert ["machine", "scan-keys", "vm11"] in world.rdc_calls()
+
+
+def _rdc_envs(world: World) -> list[tuple[list[str], dict[str, str]]]:
+    return [
+        (c[1:], e) for c, e in zip(world.calls, world.envs, strict=True) if c[0] == world.rdc_path
+    ]
+
+
+def test_a_minted_token_runs_every_later_cli_call_under_the_dev_config(
+    tmp_path: pathlib.Path,
+) -> None:
+    """2026-10-15T05:4xZ: the token minted on the dev gateway met the default config's production E2E key and `subscription status` failed "Decryption failed"."""
+    world = make_world(tmp_path)
+    default_machines = [dict(m) for m in world.machines]
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    calls = _rdc_envs(world)
+    first_status = next(i for i, (a, _e) in enumerate(calls) if a[:2] == ["subscription", "status"])
+    # The stored-token probe reads the default config; everything after it reads the dev one.
+    assert "RDC_DEV" not in calls[first_status][1]
+    later = calls[first_status + 1 :]
+    assert later
+    assert all(e.get("RDC_DEV") == "1" for _a, e in later), [
+        a for a, e in later if e.get("RDC_DEV") != "1"
+    ]
+    # The dev config got the worker and the key the ops VMs authorize; the default config is untouched.
+    assert [
+        "machine",
+        "add",
+        vm_check.OPS_WORKER_NAME,
+        "--ip",
+        WORKER,
+        "--user",
+        vm_check.vm_ssh.default_user({"HOME": str(tmp_path / "home")}),
+    ] in [a for a, _e in later]
+    assert ["machine", "scan-keys", vm_check.OPS_WORKER_NAME] in [a for a, _e in later]
+    assert world.written_in == ["dev", "dev"], world.written_in
+    assert world.dev_key == "yes"
+    assert world.cli_key == "yes"
+    assert world.machines == default_machines
+    assert "registered it as %s" % vm_check.OPS_WORKER_NAME in out, out
+
+
+def test_a_dev_config_already_holding_the_worker_registers_nothing(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, dev_machines=[{"name": "vm11", "ip": WORKER}], dev_key="yes")
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert not [c for c in world.rdc_calls() if c[:2] == ["machine", "add"]]
+    assert world.key_set == []
+    assert ["machine", "scan-keys", "vm11"] in world.rdc_calls()
+
+
+def test_a_failed_dev_registration_is_worker_not_in_config(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, add_rc=1)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "worker-not-in-config", receipt["reason"]
+    detail = receipt["reason"]["detail"]
+    assert "./rdc.sh --dev machine add %s" % vm_check.OPS_WORKER_NAME in detail, detail
+    assert "rc=1: config is locked" in detail, detail
+    assert TOKEN not in out
+
+
+def test_a_machine_named_but_absent_from_the_dev_config_names_the_command(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path)
+    rc, out, receipt = run_check(tmp_path, world, "--machine", "vm11")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "worker-not-in-config", receipt["reason"]
+    assert "./rdc.sh --dev machine add vm11 --ip %s" % WORKER in receipt["reason"]["detail"]
+    assert not [c for c in world.rdc_calls() if c[:2] == ["machine", "add"]]
+
+
+def test_the_non_ops_scenario_is_green_unmutated(tmp_path: pathlib.Path) -> None:
+    """A mutant scenario that fails for another reason proves nothing, so each one also passes on the real module."""
+    scenario_a_non_ops_worker_never_gets_a_grand_created(vm_check, tmp_path)
 
 
 def test_a_cold_fleet_is_started_with_the_image_and_brought_down(tmp_path: pathlib.Path) -> None:
@@ -753,9 +897,13 @@ NOT_VERIFIED_CASES: dict[str, dict[str, Any]] = {
     "no-kvm": {"kvm": False},
     "fleet-unavailable": {"running": (BRIDGE,)},
     "fleet-os-mismatch": {"os_release": "ubuntu 22.04"},
-    "worker-not-in-config": {"machines": []},
+    "worker-not-in-config": {"machines": [], "stored_ok": True},
     "account-unavailable": {},
-    "parent-grand-missing": {"grands": ("other-grand",), "machines": NON_OPS_MACHINES},
+    "parent-grand-missing": {
+        "grands": ("other-grand",),
+        "machines": NON_OPS_MACHINES,
+        "stored_ok": True,
+    },
     "agent-policy-refused": {"refuse_fork": True},
     "vscode-absent": {"vscode": False},
     "teardown-failed": {"undeletable_suffix": "-b"},
@@ -978,10 +1126,11 @@ def test_an_rdc_failure_is_named_by_its_json_error_not_its_progress_lines() -> N
 
 def test_a_config_with_no_ssh_key_gets_the_key_the_vms_authorize(tmp_path: pathlib.Path) -> None:
     """Empty credentials made the CLI offer ~/.ssh/id_ed25519 and repo list fail auth (2026-10-15)."""
-    world = make_world(tmp_path, cli_key="no")
+    world = make_world(tmp_path, cli_key="no", stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert len(world.key_set) == 1, world.key_set
+    assert world.written_in == ["default"], world.written_in
     assert world.key_set[0].endswith("/.renet/staging/.ssh/id_rsa"), world.key_set
     assert "the config had no SSH key; set %s," % world.key_set[0] in out, out
 
@@ -989,7 +1138,7 @@ def test_a_config_with_no_ssh_key_gets_the_key_the_vms_authorize(tmp_path: pathl
 def test_a_config_holding_another_key_is_not_overwritten_and_names_the_fix(
     tmp_path: pathlib.Path,
 ) -> None:
-    world = make_world(tmp_path, cli_key="wrong")
+    world = make_world(tmp_path, cli_key="wrong", stored_ok=True)
     rc, out, receipt = run_check(tmp_path, world)
     assert rc != vm_check.EXIT_VERIFIED, out
     assert world.key_set == [], "a config with a key of its own is never overwritten"
@@ -1003,14 +1152,14 @@ def test_a_cold_run_missing_the_grand_on_another_worker_says_to_leave_a_warm_fle
     tmp_path: pathlib.Path,
 ) -> None:
     """A cold run's fresh VMs never hold the grand, and `ops down` removes them (2026-10-15T00:27Z); off the ops network the step stays the operator's."""
-    world = make_world(tmp_path, running=(), grands=(), machines=NON_OPS_MACHINES)
+    world = make_world(tmp_path, running=(), grands=(), machines=NON_OPS_MACHINES, stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world, "--machine", "prod-1")
     assert rc != vm_check.EXIT_VERIFIED, out
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up for vm:check to reuse" in out, out
     assert "ops up --basic, then ./rdc.sh repo create" in out, out
     (tmp_path / "warm").mkdir(exist_ok=True)
-    warm = make_world(tmp_path / "warm", grands=(), machines=NON_OPS_MACHINES)
+    warm = make_world(tmp_path / "warm", grands=(), machines=NON_OPS_MACHINES, stored_ok=True)
     rc, out, _receipt = run_check(tmp_path / "warm", warm, "--machine", "prod-1")
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up" not in out, out
@@ -1029,14 +1178,17 @@ def test_a_missing_grand_on_the_ops_worker_is_created_and_the_run_is_verified(
     account = FakeAccount()
     rc, out, receipt = run_check(tmp_path, world, account=account)
     assert rc == vm_check.EXIT_VERIFIED, out
-    assert _creates(world) == [["repo", "create", PARENT, "-m", "vm11", "--size", "2G"]]
+    # A minted token runs under the dev config, where the worker is registered as ops-worker.
+    worker = "vm11" if stored_ok else vm_check.OPS_WORKER_NAME
+    assert _creates(world) == [["repo", "create", PARENT, "-m", worker, "--size", "2G"]]
     assert PARENT in world.repos
     assert account.minted == (0 if stored_ok else 1)
     credential = "the config's stored token" if stored_ok else "the minted token"
     assert (
-        "creating it with ./rdc.sh repo create %s -m vm11 --size 2G under %s"
+        "creating it with ./rdc.sh repo create %s -m %s --size 2G under %s"
         % (
             PARENT,
+            worker,
             credential,
         )
         in out
@@ -1044,7 +1196,7 @@ def test_a_missing_grand_on_the_ops_worker_is_created_and_the_run_is_verified(
     rows = [r for r in receipt["steps"] if r["id"] == "P5"]
     assert len(rows) == 1, rows
     assert rows[0]["verdict"] == "ok"
-    assert "created on vm11 (ops VM %s)" % WORKER in rows[0]["desc"], rows[0]
+    assert "created on %s (ops VM %s)" % (worker, WORKER) in rows[0]["desc"], rows[0]
     assert "operator" not in out
     assert TOKEN not in out
     assert TOKEN not in json.dumps(receipt)
@@ -1135,7 +1287,7 @@ def test_is_ops_vm_ip(ip: str, ok: bool) -> None:
 def test_an_unreadable_key_state_changes_nothing_and_p5_judges(
     tmp_path: pathlib.Path, key_show: str, says: str
 ) -> None:
-    world = make_world(tmp_path, key_show=key_show)
+    world = make_world(tmp_path, key_show=key_show, stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert world.key_set == [], "an unreadable key state must not set a key"
@@ -1146,7 +1298,7 @@ def test_an_unreadable_key_state_on_a_keyless_config_sets_nothing_and_p5_names_t
     tmp_path: pathlib.Path,
 ) -> None:
     """Review edb5f14e.2: with a config that really has no key, the early return must set nothing, so the run reaches P5 and stops at the ssh refusal with the fix named."""
-    world = make_world(tmp_path, key_show="fail", cli_key="no")
+    world = make_world(tmp_path, key_show="fail", cli_key="no", stored_ok=True)
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc != vm_check.EXIT_VERIFIED, out
     assert world.key_set == [], "an unreadable key state must not set a key"

@@ -7,9 +7,9 @@ Design 2 of agent/plans/PLAN-vm-check.md is the specification; each step below c
 
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`).
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
-  P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`).
+  P4  runs right after P1, because it chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it.
+  P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command.
   P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
-  P4  the stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it (a dev token checked against the config's production server is refused): never on argv, never in the config, never printed, never in the receipt.
   P5  the parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted, nothing else is touched.
   V1.1-V1.7  two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
   T   in `finally`, also after SIGINT and SIGTERM (a handler raises `RunInterruptedError`): `vscode cleanup`, `repo delete` of this run's forks, a `repo list` proving neither tag remains, `ops down` only for a fleet this run started, then the lock. Leftovers turn a VERIFIED run into NOT_VERIFIED `teardown-failed`; a FAILED run stays FAILED and its detail lists them.
@@ -77,6 +77,8 @@ COLD = "cold"
 ACCOUNT_LOGIN = "vm-check@rediacc.dev"
 ACCOUNT_PLAN = "PROFESSIONAL"
 MINT_LABEL = "vm-check"
+# The name the worker is registered under in the dev config when that config does not hold it yet.
+OPS_WORKER_NAME = "ops-worker"
 TOKEN_SCOPES = ("license:read", "license:activate", "subscription:read")
 
 # The development-only ops VM network, the /24 packages/cli/src/utils/ops-vm.ts exempts from the agent-mode grand guards (VM_NETWORK.BRIDGE_IP in @rediacc/shared). Like that predicate it ignores VM_NET_BASE: an environment variable cannot widen what counts as disposable.
@@ -538,6 +540,8 @@ class VmCheck:
         # Run state
         self.token: str | None = None
         self.account_server = ""
+        # True once P4 minted on the dev gateway: every later `./rdc.sh` call then runs with RDC_DEV=1.
+        self.dev_config = False
         self.password: str | None = None
         self.machine_ip = ""
         self.grand_created = False
@@ -627,6 +631,8 @@ class VmCheck:
         if self.token:
             env["REDIACC_TOKEN"] = self.token
             env["REDIACC_ACCOUNT_SERVER"] = self.account_server
+        if self.dev_config:
+            env["RDC_DEV"] = "1"
         return env
 
     def git(self, *args: str, cwd: pathlib.Path | None = None) -> str:
@@ -734,9 +740,10 @@ class VmCheck:
     def _steps(self) -> None:
         self.p0_lock()
         self.p1_renet()
+        # P4 before P2: the account decides which config the fleet, machine and key steps read and write.
+        self.p4_account()
         self.p2_fleet()
         self.p3_keys()
-        self.p4_account()
         self.p5_parent()
         if not self.v1_1_forks():
             return
@@ -814,7 +821,9 @@ class VmCheck:
                 % (" ".join(running) or "<none>", self.bridge_ip, self.worker_ip),
             )
         self.ips = running
-        if not self.machine:
+        if self.dev_config:
+            self._ensure_dev_machine()
+        elif not self.machine:
             machines = _data_list(self.rdc("machine", "list", "-o", "json").out)
             names = [str(m.get("name")) for m in machines if str(m.get("ip")) == self.worker_ip]
             if not names:
@@ -829,6 +838,45 @@ class VmCheck:
             "P2",
             "fleet %s (%s), worker %s" % (self.fleet_mode, " ".join(running), self.machine),
             True,
+        )
+
+    def _ensure_dev_machine(self) -> None:
+        """Find the worker in the dev config, registering it as OPS_WORKER_NAME when the config does not hold it; the operator's default config is never read or written here."""
+        listed = self.rdc("machine", "list", "-o", "json")
+        if listed.rc != 0:
+            raise NotVerifiedError(
+                "worker-not-in-config",
+                "machine list in the dev config rc=%d: %s" % (listed.rc, rdc_failure(listed)),
+            )
+        machines = _data_list(listed.out)
+        if self.machine:
+            ips = [str(m.get("ip", "")) for m in machines if str(m.get("name")) == self.machine]
+            if not ips:
+                raise NotVerifiedError(
+                    "worker-not-in-config",
+                    "--machine %s is not in the dev config; register it once: ./rdc.sh --dev machine add %s --ip %s --user %s"
+                    % (self.machine, self.machine, self.worker_ip, self.ssh_user),
+                )
+            self.machine_ip = ips[0]
+            return
+        names = [str(m.get("name")) for m in machines if str(m.get("ip")) == self.worker_ip]
+        if names:
+            self.machine = names[0]
+            self.machine_ip = self.worker_ip
+            return
+        args = ("machine", "add", OPS_WORKER_NAME, "--ip", self.worker_ip, "--user", self.ssh_user)
+        res = self.rdc(*args)
+        if res.rc != 0:
+            raise NotVerifiedError(
+                "worker-not-in-config",
+                "the dev config has no machine at %s, and ./rdc.sh --dev %s failed rc=%d: %s"
+                % (self.worker_ip, " ".join(args), res.rc, rdc_failure(res)),
+            )
+        self.machine = OPS_WORKER_NAME
+        self.machine_ip = self.worker_ip
+        self.say(
+            "        the dev config had no machine at %s; registered it as %s"
+            % (self.worker_ip, OPS_WORKER_NAME)
         )
 
     def _cold_start(self) -> None:
@@ -934,6 +982,7 @@ class VmCheck:
             )
         self.token = token
         self.account_server = server
+        self.dev_config = True
         self.say(
             "        "
             + "minted a token for %s (scopes %s)" % (ACCOUNT_LOGIN, ",".join(TOKEN_SCOPES))
@@ -946,7 +995,8 @@ class VmCheck:
             )
         self.record(
             "P4",
-            "token minted for %s on %s, passed as REDIACC_TOKEN only" % (ACCOUNT_LOGIN, server),
+            "token minted for %s on %s, passed as REDIACC_TOKEN only; later CLI calls run under the dev config"
+            % (ACCOUNT_LOGIN, server),
             True,
         )
 
