@@ -26,12 +26,12 @@
       "kind": "embedded-binary",
       "asset": "csisnapshotter",
       "name": "csi-snapshotter (kubernetes-csi/external-snapshotter)",
-      "version": "8.6.0",
+      "version": "8.7.0",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process in --node-deployment mode (spec 09 §1/§6), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.6.0/external-snapshotter-8.6.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.6.0.tar.gz",
-      "notes": "One upstream source archive (external-snapshotter) builds BOTH csi-snapshotter and snapshot-controller; the embedded VolumeSnapshot v1 CRDs (pkg/kube/csidriver/crds) are vendored verbatim from the same v8.6.0 tag."
+      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.7.0/external-snapshotter-8.7.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.7.0.tar.gz",
+      "notes": "One upstream source archive (external-snapshotter) builds BOTH csi-snapshotter and snapshot-controller; the embedded VolumeSnapshot v1 CRDs (pkg/kube/csidriver/crds) are vendored verbatim from the same v8.7.0 tag."
     },
     {
       "kind": "embedded-binary",
@@ -59,11 +59,11 @@
       "kind": "embedded-binary",
       "asset": "csisnapshotcontroller",
       "name": "snapshot-controller (kubernetes-csi/external-snapshotter)",
-      "version": "8.6.0",
+      "version": "8.7.0",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as the CP-node cluster singleton with --enable-distributed-snapshotting (spec 09 §6), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.6.0/external-snapshotter-8.6.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.6.0.tar.gz"
+      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.7.0/external-snapshotter-8.7.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.7.0.tar.gz"
     },
     {
       "kind": "embedded-binary",
