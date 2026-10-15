@@ -1,0 +1,84 @@
+# PLAN: four packages nothing typechecks
+
+Status: done -- 2026-10-15, every box ticked (5 of 5); closed when check:ci-plan-record RF refused the open Status (operator order 2026-10-15, #1201d7b9). Was: ready to run, AFTER #583 merges
+Depends-On: no-dep -- cites no other plan
+First-Seen: 2026-09-17
+Origin: session f88f9be7, 2026-09-01. Found by sweeping the class behind `6ba6a0c4c`,
+which wired `packages/cli`'s 185 test files into a typecheck project and fixed the 111 errors hiding there. These four are the siblings. All counts below were MEASURED on the tree at `6ba6a0c4c`, not estimated.
+Priority: P2 -- seed: Status ready, 0 open box(es)
+Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
+Owns: packages/cli, packages/shared, packages/provisioning, packages/e2e-tests, workers/www, packages/www, scripts/tsconfig.json, packages/www/tsconfig.json, workers/mta-sts, workers/proxy, workers/account, packages/cli/src/remote/sync/__tests__/sftp-fallback.test.ts
+
+## Tasks
+
+- [x] Wire `packages/e2e-tests` (0 errors) into both `check:types` and `typecheck` in the root `package.json` -- acceptance: `npx tsc --noEmit -p packages/e2e-tests/tsconfig.json` exits 0, and `npm run check:ci-parity` and `npm run check:ci-gate-manifest` both agree
+    (ticked) 2026-10-03T10:08:02Z by d778be9d: c044d6099; 2026-10-03 tsc -p packages/e2e-tests rc=0, wired in check:types + typecheck, check:ci-parity rc=0, check:ci-gate-manifest rc=0
+- [x] Put the `packages/provisioning` test into a project (a `tsconfig.test.json` beside the build config), fix its 2 errors, and wire it into both scripts -- acceptance: `npx tsc --noEmit -p packages/provisioning/tsconfig.test.json` exits 0
+    (ticked) 2026-10-03T10:08:03Z by d778be9d: c044d6099; 2026-10-03 tsc -p packages/provisioning/tsconfig.test.json rc=0, wired in both scripts
+- [x] Declare `Window.plausible` and `Window.openRegionPicker` once in a `.d.ts` for `packages/www`, clearing its 32 TS2339 errors, and wire its typecheck into both scripts -- acceptance: `npm run typecheck --workspace packages/www` exits 0
+    (ticked) 2026-10-03T10:08:05Z by d778be9d: c044d6099: packages/www/src/types/globals.d.ts; 2026-10-03 npm run typecheck --workspace packages/www rc=0
+- [x] Fix the `workers/www` module setting behind the 13 TS2823 errors from `private/account` i18n, then the worker's own errors, and wire its typecheck -- acceptance: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers` exits 0 over `workers/www`
+    (ticked) 2026-10-03T10:08:06Z by d778be9d: c044d6099; 2026-10-03 typecheck_workers rc=0 over workers/www
+- [x] Give `workers/mta-sts` and `workers/proxy` a tsconfig and typecheck them with the other workers -- acceptance: the same `typecheck_workers` run discovers both and exits 0
+    (ticked) 2026-10-03T10:08:07Z by d778be9d: c044d6099; 2026-10-03 typecheck_workers discovers workers/mta-sts + workers/proxy, rc=0
+
+## The two shapes, which need different fixes
+
+`packages/cli` and `packages/shared` are covered. The rest split in two:
+
+| package | tests | in a tsconfig | anything RUNS it | errors |
+|---|---|---|---|---|
+| `packages/provisioning` | 1 | **no** — `exclude: ['src/**/*.test.ts']` | — | **2** |
+| `packages/e2e-tests` | 41 | yes | **nothing** | **0** |
+| `workers/www` | 3 | yes | **nothing** | **18** |
+| `packages/www` | 5 | yes | **nothing** | **32** |
+
+- `provisioning` is the exact shape `6ba6a0c4c` fixed: the config deliberately excludes
+its own tests.
+- The other three have configs that DO include their tests, but no `typecheck` script and
+nothing in CI that runs one. That is the orphan-config shape `scripts/tsconfig.json` had until 2026-08-05: coverage that looks real and never executes.
+
+## What the errors actually are, per package
+
+Read this before assuming the counts imply the work. They do not.
+
+**`packages/e2e-tests` — 0 errors.** Type-clean the whole time and never once checked. Pure wiring, no fixes. Do this one first; it is free and it proves the harness.
+
+**`packages/provisioning` — 2 errors.** Drop `src/**/*.test.ts` from `exclude`, or add a `tsconfig.test.json` beside it the way `packages/cli` and `packages/shared` now have. Two errors to read.
+
+**`packages/www` — 32 errors, and ZERO of them are in test files.** All 32 are `TS2339`, and they are one missing ambient declaration repeated:
+
+    AccountCta.tsx(48,12): Property 'openRegionPicker' does not exist on type 'Window & typeof globalThis'
+    ContactForm.tsx(103,14): Property 'plausible' does not exist on type 'Window & typeof globalThis'
+
+So www is not a "tests excluded" case at all: it is a package nothing typechecks, whose production code reads two undeclared globals. The likely fix is ONE `.d.ts` declaring `Window.plausible` and `Window.openRegionPicker`, not 32 edits. Verify that before budgeting for more. Note `packages/www/tsconfig.json` includes `**/*`, so turning this on covers the whole site, which is a
+bigger win than the count suggests.
+
+**`workers/www` — 18 errors, but only ~5 are the worker's.** 13 are `TS2823` in `../../private/account/src/i18n/index.ts`, pulled in transitively:
+
+    Import attributes are only supported when the '--module' option is set to 'esnext'…
+
+That is a module-setting mismatch, not a defect. Fix the config first and re-measure; the worker's own errors are `src/smart-redirect.ts` (2), `src/index.ts` (1) and one test.
+
+Also: `workers/mta-sts` and `workers/proxy` have NO tsconfig at all. `workers/account` and
+`workers/www` have one plus a `"typecheck": "tsc --noEmit"` script that nothing invokes.
+
+## How to wire it, once each package is clean
+
+Mirror what `6ba6a0c4c` did, which is itself a mirror of `packages/shared`:
+
+1. a `tsconfig.test.json` (or a dropped exclude) so the tests are in a project;
+2. chain `tsc --noEmit -p <project>` into BOTH `check:types` and `typecheck` in the root
+`package.json` — they are separate strings and both must be edited;
+3. `npm run check:ci-parity` and `npm run check:ci-gate-manifest` must both agree
+afterwards.
+
+## Traps this cost the session that found it
+
+- **A green `ci:quick` is NOT a claim about types.** `check:types` is `slow: true` and the
+quick lane defers it, and `check:lint`/`check:format` are biome, which does not typecheck. Two type errors reached CI that way. Run `npx tsc --noEmit -p <project>` before every push.
+- **`check:lint` is eslint, not biome.** Sub-agents reported "biome clean" and left 10
+eslint errors, 7 of them `@typescript-eslint/require-await` from making a sync mock body `async` to satisfy a `Promise<T>` signature. The repo's adaptation pattern is at `packages/cli/src/remote/sync/__tests__/sftp-fallback.test.ts:31`: keep the body sync, wrap at the boundary.
+- **`as unknown as X` hides everything and TS cannot flag it.** Replacing one with
+`satisfies` exposed 8 missing required fields and a fixture expressing "unmounted" by OMITTING a required field. Grep for `as unknown as` in the package before starting.
+- Fix the TYPE. No `@ts-expect-error`, no `as any`, no widening to `unknown`.
