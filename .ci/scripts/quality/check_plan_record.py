@@ -285,24 +285,37 @@ RF_REMEDY = (
 )
 
 
-def main_plan_text(rel):
-    """`rel` at the main ref: its text, "" when main has no such file, None when no main ref resolves (RF then refuses)."""
+def _git_rc(*args):
+    got = subprocess.run(
+        ["git", "-C", str(ROOT), *args], capture_output=True, text=True, check=False
+    )
+    return got.returncode, got.stdout
+
+
+def main_view(rel):
+    """How main sees `rel`: ("self", "") when HEAD IS the main ref (the main branch's own CI), ("base", text) for a branch, text "" when main has no such file, and None when no main ref resolves or git fails (review f15c2fcc.2: a failing read never passes for an absent file)."""
     ref = PL.main_ref(ROOT)
     if not ref:
         return None
-    got = subprocess.run(
-        ["git", "-C", str(ROOT), "show", "%s:%s" % (ref, rel)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return got.stdout if got.returncode == 0 else ""
+    rc_head, head = _git_rc("rev-parse", "HEAD")
+    rc_main, main = _git_rc("rev-parse", ref + "^{commit}")
+    if rc_head or rc_main:
+        return None
+    if head.strip() == main.strip():
+        return ("self", "")
+    rc_ls, listed = _git_rc("ls-tree", "--name-only", ref, "--", rel)
+    if rc_ls:
+        return None
+    if not listed.strip():
+        return ("base", "")
+    rc_show, text = _git_rc("show", "%s:%s" % (ref, rel))
+    return ("base", text) if rc_show == 0 else None
 
 
-def finished_verdict(rel, text, main_text=None):
-    """("refuse" | "warn" | "", message) for one plan. Pure: no filesystem, no git.
+def finished_verdict(rel, text, main=lambda: None):
+    """("refuse" | "warn" | "", message) for one plan. `main` is called only for a fully ticked plan (review f15c2fcc.3: no git launch per plan), and returns what `main_view` returns.
 
-    `main_text` is the plan at the main ref, "" when the plan is not there, None when no main ref resolves. A plan whose last box was ticked on THIS branch only warns: its tick commits are not on main yet, so `check_plan_folders.py --move` cannot remap their citations and refuses the move, and F2 refuses a done Status left outside _done/ (measured 2026-10-15 on six plans). It closes on the branch after the merge, where main already reads it as finished and RF refuses. Without a main ref RF refuses, so a checkout that cannot tell never goes quiet."""
+    A plan whose last box was ticked on THIS branch only warns: its tick commits are not on main yet, so `check_plan_folders.py --move` cannot remap their citations and refuses the move, and F2 refuses a done Status left outside _done/ (measured 2026-10-15 on six plans). On the main branch's own commit RF warns too (review f15c2fcc.1): the merge that lands such a plan must not turn main red, and the next PR branch, where main reads it finished and `--move` can remap, refuses until it is closed. Without a main ref, or when git fails, RF refuses, so a checkout that cannot tell never goes quiet."""
     if PL.folder_of(rel) in PL.TERMINAL_DIRS:
         return "", ""
     plan = PL.parse_plan(rel, text or "")
@@ -313,7 +326,14 @@ def finished_verdict(rel, text, main_text=None):
     if open_t or not done_t:
         return "", ""
     status = plan.status or "(none)"
-    if main_text is not None:
+    view = main()
+    if view is not None:
+        where, main_text = view
+        if where == "self":
+            return "warn", (
+                f"{rel}: RF every box is ticked ({len(done_t)} of {len(done_t)}) on main; the next "
+                f"PR branch refuses it until it is closed. Then: {RF_REMEDY}."
+            )
         main_open, main_done = PF.plan_boxes(main_text)
         if main_open or not main_done:
             return "warn", (
@@ -2159,18 +2179,42 @@ def selftest():
         ck(label, (got[0] == "refuse") == want, f"got {got!r}")
     # Main decides refuse against warn: finished on main already is refused, finished on this branch only warns, no main ref refuses.
     rf_text = "# t\nStatus: executing\n\n" + done_box
-    for label, main_text, want in (
-        ("RF: all ticked on main too is REFUSED", rf_text, "refuse"),
+    calls = []
+
+    def counted(view):
+        def call():
+            calls.append(1)
+            return view
+
+        return call
+
+    main_rows: list[tuple[str, tuple[str, str] | None, str]] = [
+        ("RF: all ticked on main too is REFUSED", ("base", rf_text), "refuse"),
         (
             "RF: an open box on main WARNS (finished on this branch, closes after the merge)",
-            rf_text + open_box,
+            ("base", rf_text + open_box),
             "warn",
         ),
-        ("RF: a plan new on this branch WARNS", "", "warn"),
-        ("RF: no main ref REFUSES (fail closed)", None, "refuse"),
-    ):
-        got = finished_verdict(rf_live, rf_text, main_text)
-        ck(label, got[0] == want, f"got {got!r}")
+        ("RF: a plan new on this branch WARNS", ("base", ""), "warn"),
+        (
+            "RF: on the main branch's own commit it WARNS, so a merge never turns main red",
+            ("self", ""),
+            "warn",
+        ),
+        ("RF: no main ref or a failing git REFUSES (fail closed)", None, "refuse"),
+    ]
+    for mlabel, view, mwant in main_rows:
+        mgot = finished_verdict(rf_live, rf_text, counted(view))
+        ck(mlabel, mgot[0] == mwant, f"got {mgot!r}")
+    calls.clear()
+    finished_verdict(
+        rf_live, "# t\nStatus: executing\n\n" + done_box + open_box, counted(("base", ""))
+    )
+    ck(
+        "RF CONTROL: a plan with an open box never asks git about main",
+        not calls,
+        f"{len(calls)} call(s)",
+    )
 
     # -- RB: a started plan carries boxes. Pure over (rel, text), so every direction is a planted string. --
     live = "agent/plans/PLAN-rb-fixture.md"
@@ -2434,7 +2478,7 @@ def main(argv):
             problems.append(rb_msg)
         elif rb_kind == "warn":
             rb_warnings.append(rb_msg)
-        rf_kind, rf_msg = finished_verdict(rel, text, main_plan_text(rel))
+        rf_kind, rf_msg = finished_verdict(rel, text, lambda rel=rel: main_view(rel))
         if rf_kind == "refuse":
             problems.append(rf_msg)
         elif rf_kind == "warn":
