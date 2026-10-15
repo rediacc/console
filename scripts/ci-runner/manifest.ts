@@ -1687,6 +1687,33 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // The LIVE half that check:ci-bws-map declines by design: every name in .ci/config/bws-secret-map.json (and every stored-kind exemption in bws-unrequested.json) must still be a secret in the live `ci-shared` project, at its mapped UUID. Names and ids only; the listing is scripts/ops/bws-map-refresh.py's own `list_live`, which projects away the value before returning.
+    // NO `paths:` DELIBERATELY. A secret is deleted in the Bitwarden web vault, never in a diff, so the one change this gate exists to catch touches no file; an entry without paths is always selected.
+    id: 'check:ci-bws-map-live',
+    run: 'npm run check:ci-bws-map-live',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_bws_map_live.py'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: no CI job has the bws CLI. The quality-security job holds the BWS token, but bitwarden/sm-action fetches by UUID through its own client and nothing installs the CLI, so a step would print SKIP on every run and could never fail. Locally the token file and the CLI exist, and the gate exits 77 (blocked, counted in the receipt) where they do not.',
+    },
+  },
+  {
+    // An OPEN worklist item or a LIVE plan naming a term .ci/config/retired-terms.json retires (rclone, the pre-rename BACKUP_S3_* worker secrets, R2_TOKEN_AUTH_API, two deleted R2 buckets) must cite the plan or item doing the retiring. Plans refuse against a shrink-only (plan, term) baseline; items ADVISE here, because the store is shared and a session may not close another's item, and refuse only under `--owner <prefix>`.
+    // NO `paths:` DELIBERATELY. Its subjects are the worklist store (a record path, committed in record-only pushes) and every live plan, and a retirement lands in the config, so a path table would have to name all three and would drop the gate on the record-only commit that queues stale work.
+    id: 'check:ci-retired-terms',
+    run: 'npm run check:ci-retired-terms',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_retired_terms.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Retired terms',
+    },
+  },
+  {
     id: 'check:ci-actions-allowlist',
     run: 'npm run check:ci-actions-allowlist',
     gate: true,

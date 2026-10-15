@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-14T23:19:41.376Z",
+  "generatedAt": "2026-10-15T14:24:09.552Z",
   "legs": [
     {
       "index": 1,
@@ -146,6 +146,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_output_landings.py",
         "pytest:.claude/rediacc_hooks/tests/test_post_bash_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_proc.py",
+        "pytest:.claude/rediacc_hooks/tests/test_shellscan_clone_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_stop_hook_edit_check.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cap_wait.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py",
@@ -180,6 +181,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_actions_vars.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_backfill_commit_resolve.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_blocker_golden_corpus.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_bws_map_live.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_bws_rotate.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_ci_complete_tiers.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_ci_parity.py",
@@ -381,6 +383,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_cd_retry_assert.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_closure_untagged.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_retired_terms.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_review_resolutions.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_run_sh.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_runner_advice.py",
@@ -558,6 +561,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_env_shell_vars.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_worklist_env_registry.py",
+        "pytest:.ci/rediacc_ci/tests/test_bootstrap_pytest_wrapper.py",
         "pytest:.ci/rediacc_ci/tests/test_build_build_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_build_build_www.py",
         "pytest:.ci/rediacc_ci/tests/test_build_extract_renet_from_image.py",

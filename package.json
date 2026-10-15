@@ -168,6 +168,8 @@
     "check:ci-python-types": ".ci/scripts/quality/check_python_types.py",
     "check:ci-python-control-plants": ".ci/scripts/quality/check_python_control_plants.py",
     "check:ci-bws-map": ".ci/scripts/quality/check_bws_map.py",
+    "check:ci-bws-map-live": ".ci/scripts/quality/check_bws_map_live.py",
+    "check:ci-retired-terms": ".ci/scripts/quality/check_retired_terms.py",
     "check:ci-actions-vars": ".ci/scripts/quality/check_actions_vars.py",
     "check:ci-literal-sources": ".ci/scripts/quality/check_literal_sources.py",
     "check:ci-record-paths": ".ci/scripts/quality/check_record_paths.py",

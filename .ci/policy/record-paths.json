@@ -269,6 +269,10 @@
           "evidence": ".ci/scripts/quality/check_resprofile.py:236 (root) agent/"
         },
         {
+          "id": "check:ci-retired-terms",
+          "evidence": ".ci/rediacc_ci/quality/retired_terms.py:65 (cite) agent/worklist"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/scripts/quality/check_tree_shape.py:71 (cite) agent/worklist/abcd1234.jsonl"
         },

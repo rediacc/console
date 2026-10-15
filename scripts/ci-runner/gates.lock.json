@@ -1766,6 +1766,32 @@
     }
   },
   {
+    "id": "check:ci-bws-map-live",
+    "run": "npm run check:ci-bws-map-live",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_bws_map_live.py"
+    ],
+    "ci": {
+      "kind": "local-only",
+      "blocker": "BLOCKER: no CI job has the bws CLI. The quality-security job holds the BWS token, but bitwarden/sm-action fetches by UUID through its own client and nothing installs the CLI, so a step would print SKIP on every run and could never fail. Locally the token file and the CLI exist, and the gate exits 77 (blocked, counted in the receipt) where they do not."
+    }
+  },
+  {
+    "id": "check:ci-retired-terms",
+    "run": "npm run check:ci-retired-terms",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_retired_terms.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Retired terms"
+    }
+  },
+  {
     "id": "check:ci-actions-allowlist",
     "run": "npm run check:ci-actions-allowlist",
     "gate": true,
