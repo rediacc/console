@@ -197,7 +197,8 @@ def _reaches_scope(cmd, cwd):
         return True
     for run in shellscan.every_run(cmd):
         base = _base(shellscan.write_directory(run.cwd, cwd), cwd)
-        words = [".", *run.argv, *run.writes, *(run.xargv or ()), *(run.feed_words or ())]
+        words = [".", *run.argv, *shellscan.redirect_targets(run), *(run.xargv or ())]
+        words.extend(run.feed_words or ())
         if run.feed:
             words.extend(run.feed.split())
         if run.launch is not None:
@@ -326,9 +327,19 @@ def _listed(target_abs):
     return (rel, exceptions) if rel in exceptions.entries else None
 
 
+def _redirects(analysis):
+    """Every output redirect of `analysis` as `(operator, target)`, each as typed and then, where it differs, as bash expands it (`_Analysis.xwrites`, #7b3f34ae): `F=zz.py; echo x >> $F` appends to `zz.py`."""
+    out = []
+    for (op, target), (_op, expanded) in zip(analysis.writes, analysis.xwrites, strict=True):
+        out.append((op, target))
+        if expanded != target:
+            out.append((op, expanded))
+    return out
+
+
 def _list_write(runs, analysis, cmd, cwd):
     """A short description of the first write to the exception list itself, or ""."""
-    for _op, target in analysis.writes:
+    for _op, target in _redirects(analysis):
         if _is_list(target, base=_base(None, cwd)):
             return "a redirect into %s" % target
     for run in runs:
@@ -340,7 +351,7 @@ def _list_write(runs, analysis, cmd, cwd):
         operands = _run_operands(run, argv)
         prefix = str(here).rstrip("/") + "/" if here else ""
         on_list = [a for a in operands if _is_list(a, prefix, base)]
-        for target in run.writes:
+        for target in shellscan.redirect_targets(run):
             if _is_list(target, prefix, base):
                 return "a redirect into %s" % target
         # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` are in place.
@@ -405,7 +416,7 @@ def _offending(cmd, cwd):
         bodies + [a for r in runs if r.name.rsplit("/", 1)[-1] in WRITERS for a in r.argv]
     )
     flagged = model_invocation.flag_in_text(written)
-    appends = {target for op, target in analysis.writes if op in (">>", "&>>")}
+    appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}
 
     def redirect_refusal(target, run_cwd, appending, base=None):
         """A refusal for a write of `written` into `target`, or "". A LISTED file overwritten whole is judged by `verdict` on the text written; any other write carrying the key is refused."""
@@ -424,7 +435,7 @@ def _offending(cmd, cwd):
         here = shellscan.write_directory(run.cwd, cwd)
         base = _base(here, cwd)
         operands = _run_operands(run, argv)
-        for target in run.writes:
+        for target in shellscan.redirect_targets(run):
             why = redirect_refusal(target, here, target in appends, base)
             if why:
                 return "flag", why

@@ -1161,6 +1161,94 @@ for (message, want), got in zip(PROOF_CASES, json.loads(proof_proc.stdout), stri
         )
     )
 
+# ---- A REDIRECT TARGET IS READ AS TYPED AND AS BASH EXPANDS IT (#7b3f34ae) --
+# `names` (the top-level assignments before the commit) expands a typed target, and `if true; then D=src; fi` is not top-level: `D=other` stayed the value there, `echo x > $D/a.md` read as `other/a.md`, and the clause that writes `src/a.md` under the pathspec was not named (`[]` at 0600a4642). The expanded form (`shellscan.redirect_targets`) names it. Each ROW is (label, command, writers wanted); the MUTANT plants the typed-only read and must turn the first row.
+REDIRECT_ROWS = [
+    (
+        "an assignment inside an if, redirect through the variable",
+        "D=other; if true; then D=src; fi; echo x > $D/a.md; git commit -m x -- src",
+        True,
+    ),
+    (
+        "a top-level assignment, redirect into the pathspec",
+        "D=src; echo x > $D/a.md; git commit -m x -- src",
+        True,
+    ),
+    (
+        "a variable holding another directory (control)",
+        "D=other; echo x > $D/a.md; git commit -m x -- src",
+        False,
+    ),
+    (
+        "a variable the walk cannot know stays a writer",
+        "echo x > $UNSET_DIR/a.md; git commit -m x -- src",
+        True,
+    ),
+]
+REDIRECT_CHILD = """
+import importlib.util, json, sys
+guard, repo, path = sys.argv[1:4]
+spec = importlib.util.spec_from_file_location("planted_bulk", path)
+G = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(G)
+print(json.dumps([bool(G._earlier_writers(c, repo, ["src"])) for c in json.loads(guard)]))
+"""
+REDIRECT_OLD = "        for target in shellscan.redirect_targets(run):\n            if writer or target in shellscan._NOT_A_FILE"
+REDIRECT_NEW = (
+    "        for target in run.writes:\n            if writer or target in shellscan._NOT_A_FILE"
+)
+
+
+def redirect_rows(path):
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(pathlib.Path(__file__).resolve().parents[2])
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            REDIRECT_CHILD,
+            json.dumps([c for _l, c, _w in REDIRECT_ROWS]),
+            pure_repo,
+            path,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    if proc.returncode != 0:
+        raise SystemExit("redirect-row child failed: %s" % proc.stderr)
+    return json.loads(proc.stdout)
+
+
+GUARD_PATH = str(pathlib.Path(__file__).resolve().with_name("block_unproven_bulk_transform.py"))
+for (label, _command, want), got in zip(REDIRECT_ROWS, redirect_rows(GUARD_PATH), strict=True):
+    Tally.total += 1
+    Tally.fails += got != want
+    print("%-70s %s" % ("redirect: " + label, "ok" if got == want else "*** FAIL ***"))
+GUARD_SRC = pathlib.Path(GUARD_PATH).read_text(encoding="utf-8")
+if REDIRECT_OLD not in GUARD_SRC:
+    Tally.total += 1
+    Tally.fails += 1
+    print("%-70s *** FAIL *** it no longer applies to the guard" % "redirect mutant: typed only")
+else:
+    planted_path = os.path.join(scratch_dir(), "planted_bulk.py")
+    with open(planted_path, "w", encoding="utf-8") as fh:
+        fh.write(GUARD_SRC.replace(REDIRECT_OLD, REDIRECT_NEW))
+    turned = sum(
+        got != want
+        for (_l, _c, want), got in zip(REDIRECT_ROWS, redirect_rows(planted_path), strict=True)
+    )
+    Tally.total += 1
+    Tally.fails += turned == 0
+    print(
+        "%-70s %s"
+        % (
+            "redirect mutant: typed only turns %d row(s)" % turned,
+            "ok" if turned else "*** FAIL *** the harness cannot see it",
+        )
+    )
+
 print()
 # COUNTED, NOT TYPED. This used to be the literal 16 while 26 cases ran, so the summary misreported the suite and the constant-answer check below compared against a number the suite had outgrown.
 TOTAL_CASES = Tally.total

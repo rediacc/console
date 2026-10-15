@@ -208,12 +208,22 @@ def _render(engine, grew):
     return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
 
 
+def _redirects(analysis):
+    """Every output redirect of `analysis` as `(operator, target)`, each as typed and then, where it differs, as bash expands it (`_Analysis.xwrites`, #7b3f34ae): `F=zz.py; echo x >> $F` appends to `zz.py`."""
+    out = []
+    for (op, target), (_op, expanded) in zip(analysis.writes, analysis.xwrites, strict=True):
+        out.append((op, target))
+        if expanded != target:
+            out.append((op, expanded))
+    return out
+
+
 def _offending(engine, cmd, cwd):
     """A one-line description of the first marker-adding write in `cmd`, or ""."""
     analysis = shellscan._analyse(cmd)
     # A nested heredoc's offsets index its payload, not `cmd` (#78afdc0b): the body is read from its own text.
     bodies = shellscan.heredoc_bodies(cmd)
-    appends = {target for op, target in analysis.writes if op in (">>", "&>>")}
+    appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}
     # What a `tee` writes is its UPSTREAM stage's output; read as every writer's arguments in the command, plus the heredocs.
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i` or an interpreter that `find -exec` or `npx -c` starts writes the same files, so the runs are `shellscan.every_run`.
     runs = shellscan.every_run(cmd)
@@ -227,7 +237,7 @@ def _offending(engine, cmd, cwd):
         written = shellscan.writer_text(run, cmd) if pure else ""
         # A pure writer's text carries its own heredoc or feed; any other redirect (`python3 gen.py > a.py`) is read with every heredoc in the command, as before.
         content = (written or "") if pure else "\n".join(bodies)
-        targets = list(run.writes) + (_operands(argv) if name == "tee" else [])
+        targets = shellscan.redirect_targets(run) + (_operands(argv) if name == "tee" else [])
         for target in targets:
             language = _language(engine, target, content)
             if language is not None and pure and written is None:
