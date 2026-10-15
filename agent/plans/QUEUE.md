@@ -69,16 +69,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (1 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 880 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a9713a5214788872a, worker:a0c7b5db897568c99.
-- Leased items: 10: #101f3f61 (worker:a9713a5214788872a, d778be9d), #4e518739 (worker:a782e279edba81f85, d778be9d), #50cb9316 (worker:a782e279edba81f85, d778be9d), #6361fc5b (worker:a782e279edba81f85, d778be9d), #66e2e0ef (worker:a782e279edba81f85, d778be9d), #809a3054 (worker:a782e279edba81f85, d778be9d), #97a7ced2 (worker:a9713a5214788872a, d778be9d), #9b2100de (worker:a0c7b5db897568c99, d778be9d), #c275adc4 (worker:a782e279edba81f85, d778be9d), #fe2d3ad2 (worker:a782e279edba81f85, d778be9d).
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 976 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+- Writers: 2 live of writer_cap 15 (session d778be9d): worker:a7557bdd8898fe3eb, worker:aa5c148acb07ba119.
+- Leased items: 3: #248e6207 (worker:a7557bdd8898fe3eb, d778be9d), #a2599946 (worker:aa5c148acb07ba119, d778be9d), #b03180f7 (worker:aa5c148acb07ba119, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 13 of 16 plans done, 193 of 197 boxes done (97%).
+Promoted: 13 of 16 plans done, 194 of 197 boxes done (98%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -97,7 +97,7 @@ Promoted: 13 of 16 plans done, 193 of 197 boxes done (97%).
 | 13 | PLAN-inline-suppressions.md | 11/11 | done |
 | 14 | PLAN-stop-hook-effort.md | 7/7 | done |
 | 15 | PLAN-stop-hook-effort-tuning.md | 7/7 | done |
-| 16 | PLAN-pins-command.md | 11/13 | 2 open |
+| 16 | PLAN-pins-command.md | 12/13 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-retire-bash-oracles.md -- operator 2026-10-08 ("move them to the head of promoted and complete"): this PR's plan; done, 15 of 15 boxes; leaves this list when PR #600 merges
