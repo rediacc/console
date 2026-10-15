@@ -106,6 +106,8 @@ Budget note: the suites themselves take ~61 seconds. Everything else is bootstra
 `REDIACC_ALLOW_CLUSTER_OPS` (cluster/datastore create, destroy, scale, fork, migrate) and `REDIACC_ALLOW_GRAND_REPO` (writes to grand repos; machine-level term connect needs `*`) must be set in the OPERATOR's terminal BEFORE the agent session starts. An export from inside the session is rejected by design. Do not fight it: structure work so the operator runs those steps, or fail
 early with a message naming the override. `rdc run` stays blocked in agent mode regardless. Fork-then-takeover is the sanctioned path for grand-repo changes.
 
+THE OPS VMs ARE DEVELOPMENT-ONLY (operator ruling 2026-10-15). Every machine of the local fleet (192.168.111.*, e.g. `ops-worker`) is disposable: creating a grand, forking, writing to a grand or tearing down there is never an operator decision, so never ask the operator to run such a step or to approve an escape for it. When an agent-mode guard refuses one of those operations on an ops VM (vm:check's P5 `parent-grand-missing` was the case: `assertAgentRepoCreate` in packages/cli/src/utils/agent-guard.ts refused `repo create vmcheck-base -m ops-worker`), the guard is the defect to fix, not a question to park. Production and every other machine keep the full protections above.
+
 ## Recovery layers on the VMs
 
 - Boot: rediacc-autostart.service mounts + ups every autostart repo once.
