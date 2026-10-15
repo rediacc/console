@@ -1033,10 +1033,41 @@ def _norm_under(path, base, root):
     return full  # outside the repo: kept absolute, which matches no `git status` line
 
 
+_LOOP_REF = re.compile(r"\$(?:\{([A-Za-z_][A-Za-z0-9_]*)\}|([A-Za-z_][A-Za-z0-9_]*))")
+_LOOP_CAP = 64
+
+
+def _loop_values(word, run):
+    """`word` once per combination of the values its `for`/`select` variables take (`shellscan._Run.loop_vars`), each `$NAME` or `${NAME}` replaced by one word of the list its loop walks (#b53f586d); [] when the word names no loop variable, or past `_LOOP_CAP` combinations, where the literal directory stands in as it does for any unknowable word.
+
+    The walk keeps a loop variable unknown, since one value cannot stand for every iteration, so `D=other; for D in src; do echo x > $D/a.md; done` reached the fix-set as `$D/a.md`, whose literal directory is the root, and wrote nothing (`[]`) while bash writes `src/a.md`.
+    """
+    import itertools
+
+    loop = getattr(run, "loop_vars", None) or {}
+    refs = [m for m in _LOOP_REF.finditer(str(word)) if (m.group(1) or m.group(2)) in loop]
+    if not refs:
+        return []
+    names = sorted({m.group(1) or m.group(2) for m in refs})
+    combos = 1
+    for name in names:
+        combos *= max(1, len(loop[name]))
+    if combos > _LOOP_CAP:
+        return []
+
+    def substituted(value):
+        return _LOOP_REF.sub(lambda m: value.get(m.group(1) or m.group(2), m.group(0)), str(word))
+
+    return [
+        substituted(dict(zip(names, pick, strict=True)))
+        for pick in itertools.product(*[loop[name] or [""] for name in names])
+    ]
+
+
 def bash_write_paths(cmd, cwd, root):
     """Every repo-relative path a Bash command writes, deletes or moves, read from what bash would RUN (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1).
 
-    Three routes: an output redirect (the lexer's per-run writes, the same answer `shellscan.write_targets` gives, with the run's own directory), the path operands of `BASH_WRITE_VERBS` and `git rm|mv`, and the repo-path string literals of a Python program (its `-c` value, the heredoc it reads as stdin, or a script it runs by path, `_python_text`) that writes, unlinks or moves a file. Every path is joined to the `cd` in force for its clause and then to `cwd`, the directory the call ran in. A directory operand is returned as the directory and covers its subtree (`wl_reggate._covers`). An unknowable operand (`"$f"`, `*.json`) is cut back to its literal directory. Never raises: an unlexable command writes nothing it can prove.
+    Three routes: an output redirect (the lexer's per-run writes, the same answer `shellscan.write_targets` gives, with the run's own directory), the path operands of `BASH_WRITE_VERBS` and `git rm|mv`, and the repo-path string literals of a Python program (its `-c` value, the heredoc it reads as stdin, or a script it runs by path, `_python_text`) that writes, unlinks or moves a file. Every path is joined to the `cd` in force for its clause and then to `cwd`, the directory the call ran in. A directory operand is returned as the directory and covers its subtree (`wl_reggate._covers`). A word holding the variable of an enclosing `for` loop is also read once per word the loop walks (`_loop_values`), so `for D in src; do echo x > $D/a.md; done` writes `src/a.md`. Any other unknowable operand (`"$f"` that `read` assigned, `*.json`) is cut back to its literal directory, and to nothing when that directory is the repository root, which would cover every path the lead changed (`_norm_under`). Never raises: an unlexable command writes nothing it can prove.
     """
     import posixpath
 
@@ -1065,8 +1096,12 @@ def bash_write_paths(cmd, cwd, root):
         for target in shellscan.redirect_targets(run):
             seen_writes.append(target)
             add(target, run.cwd)
+            for value in _loop_values(target, run):
+                add(value, run.cwd)
         for operand in _run_operands(run, shellscan):
             add(operand, run.cwd)
+            for value in _loop_values(operand, run):
+                add(value, run.cwd)
         if posixpath.basename(str(run.name or "")).startswith("python"):
             py_bodies.append((_python_text(shellscan, run, cmd, base_cwd), run.cwd))
     for target in loose:

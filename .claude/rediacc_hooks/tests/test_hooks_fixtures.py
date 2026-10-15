@@ -3216,3 +3216,36 @@ def test_made_directories_and_builtin_assignments_0600a464_97ed76a7(tmp_path):
         ],
         "cp a n": [(os.path.join(root, "n"), False)],
     }
+
+
+# A WORD THE WALK CANNOT EXPAND, AND A PROGRAM IT CANNOT READ (#b53f586d). In a scratch tree holding `rv.py` (a review writer), `src.py`, and `lnk` a link to `agent/reviews/x`: every `2` row was allowed (rc 0) at 6238f04a6. A `for` variable is each word its loop walks, a `read` takes its here-string, and a program the walk cannot read is judged through the files the line names, so the copy whose destination is unknowable and the in-place edit of a review writer reach the full check without a review word on the line.
+UNEXPANDED_GUARD_ROWS = (
+    ("block_review_file_shell_write", 'mkdir -p "$(echo n)" && cp rv.py n && python3 n/rv.py', 2),
+    ("block_review_file_shell_write", "sed -i 's/a.*b/c/' rv.py && python3 rv.py", 2),
+    ("block_review_file_shell_write", "for D in lnk; do echo x > $D/y.md; done", 2),
+    ("block_review_file_shell_write", "for D in agent/reviews/x; do echo hi > $D/y.md; done", 2),
+    ("block_review_file_shell_write", "read D <<< agent/reviews/x; echo hi > $D/y.md", 2),
+    # Controls: the same shapes over a source that writes nothing protected, a loop elsewhere, and an unknown target outside agent/.
+    ("block_review_file_shell_write", 'mkdir -p "$(echo n)" && cp src.py n && python3 n/src.py', 0),
+    ("block_review_file_shell_write", "sed -i 's/a.*b/c/' src.py && python3 src.py", 0),
+    ("block_review_file_shell_write", "for D in plain; do echo x > $D/y.md; done", 0),
+    ("block_review_file_shell_write", "echo hi > $D/y.md", 0),
+)
+
+
+def test_unexpanded_words_and_unreadable_programs_b53f586d(tmp_path):
+    root = os.path.realpath(tmp_path)
+    for d in ("agent/reviews/x", "plain"):
+        (tmp_path / d).mkdir(parents=True)
+    (tmp_path / "lnk").symlink_to(tmp_path / "agent" / "reviews" / "x")
+    (tmp_path / "src.py").write_text("print(1)\n", encoding="utf-8")
+    (tmp_path / "rv.py").write_text(_RV, encoding="utf-8")
+    wrong = []
+    for stem, command, want in UNEXPANDED_GUARD_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
