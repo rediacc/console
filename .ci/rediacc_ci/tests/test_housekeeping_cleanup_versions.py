@@ -85,6 +85,12 @@ import sys
 
 NAME = os.path.basename(sys.argv[0])
 ARGV = sys.argv[1:]
+if NAME == "curl" and "-K" in ARGV:
+    # The port hands the token header to curl as a `-K -` config on stdin (rediacc_ci.core.curl_stdin); record the request curl acts on.
+    sys.path.insert(0, "@CI_DIR@")
+    from rediacc_ci.core.curl_stdin import argv_with_config
+
+    ARGV = argv_with_config(ARGV, sys.stdin.read())
 
 with open(os.environ["FAKE_LOG"], "a", encoding="utf-8") as fh:
     fh.write(NAME + "\\t" + "\\t".join(ARGV) + "\\n")
@@ -137,7 +143,7 @@ def emit(rule):
     sys.stdout.flush()
     sys.stderr.write(rule.get("stderr", ""))
     sys.exit(rc)
-'''
+'''.replace("@CI_DIR@", str(ROOT / ".ci"))
 
 FAKE_GH = (
     _FAKE_HEAD

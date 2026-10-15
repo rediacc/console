@@ -34,6 +34,7 @@ import sys
 import tempfile
 
 from rediacc_ci import paths
+from rediacc_ci.core import curl_stdin
 
 PHASES = ("preflight", "plan", "provision", "verify", "destroy", "idempotency")
 API = "https://api.linode.com/v4"
@@ -92,8 +93,13 @@ class Validation:
         self.token = str(token)
 
     def _api_page(self, path: str) -> dict:
+        # The token goes on curl's stdin (`curl_stdin`), never on its argv.
+        argv, config = curl_stdin.stdin_headers(
+            ["curl", "-fsS", "-H", "Authorization: Bearer %s" % self.token, "%s%s" % (API, path)]
+        )
         proc = subprocess.run(
-            ["curl", "-fsS", "-H", "Authorization: Bearer %s" % self.token, "%s%s" % (API, path)],
+            argv,
+            input=config,
             capture_output=True,
             text=True,
             check=False,

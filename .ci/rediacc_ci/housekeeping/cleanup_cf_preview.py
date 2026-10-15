@@ -66,7 +66,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import common, curl_stdin
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_cf_preview --branch <branch_name> [--dry-run]"
@@ -136,11 +136,17 @@ def curl_argv(method: str, endpoint: str, token: str) -> list[str]:
 def _substitution(argv: list[str], fallback: str) -> str:
     """`$(cmd 2>/dev/null || echo <fallback>)`.
 
-    Both halves write to the same captured stdout, so a command that printed something AND failed contributes both, exactly as bash concatenates them, and command substitution then strips every trailing newline.
+    Both halves write to the same captured stdout, so a command that printed something AND failed contributes both, exactly as bash concatenates them, and command substitution then strips every trailing newline. The credential header goes on curl's stdin (`curl_stdin`), never on its argv.
     """
+    argv, config = curl_stdin.stdin_headers(argv)
     try:
         proc = subprocess.run(
-            argv, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=False
+            argv,
+            input=config,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
         )
     except FileNotFoundError:
         # `require_cmd curl` ran first, so this is unreachable; a traceback here would read as a crash rather than as the failed request it is.

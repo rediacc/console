@@ -145,15 +145,23 @@ import json
 import os
 import sys
 
+argv = sys.argv[1:]
+if "-K" in argv:
+    # cf_purge_urls hands the credential headers to curl as a `-K -` config on stdin (rediacc_ci.core.curl_stdin); record the request curl acts on.
+    sys.path.insert(0, "@CI_DIR@")
+    from rediacc_ci.core.curl_stdin import argv_with_config
+
+    argv = argv_with_config(argv, sys.stdin.read())
+
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
-    fh.write("curl\\t" + "\\t".join(sys.argv[1:]) + "\\n")
+    fh.write("curl\\t" + "\\t".join(argv) + "\\n")
 
 rc = int(os.environ.get("FAKE_CURL_RC", "0"))
 if rc:
     sys.stderr.write("curl: (6) Could not resolve host: api.cloudflare.com\\n")
     sys.exit(rc)
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
-"""
+""".replace("@CI_DIR@", str(ROOT / ".ci"))
 
 # Every real binary either side reaches for. `find`, `sed` and `mktemp` are called by BOTH implementations (the port shells out to the same three, for the reasons in its docstring); `jq` and `python3` (the registry loader, env_file_load) belong to cf-purge-urls.sh; `uname`, `dirname`, `basename`, `rm` and `wc` are what the twin and common.sh need. Nothing else is on the scratch PATH, so a tool leaking in would show up as a
 # behaviour change.

@@ -196,11 +196,19 @@ import json
 import os
 import sys
 
+argv = sys.argv[1:]
+if "-K" in argv:
+    # cf_purge_urls hands the credential headers to curl as a `-K -` config on stdin (rediacc_ci.core.curl_stdin); record the request curl acts on.
+    sys.path.insert(0, "@CI_DIR@")
+    from rediacc_ci.core.curl_stdin import argv_with_config
+
+    argv = argv_with_config(argv, sys.stdin.read())
+
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
-    fh.write("call: curl " + " ".join(sys.argv[1:]) + "\\n")
+    fh.write("call: curl " + " ".join(argv) + "\\n")
 
 sys.stdout.write(json.dumps({"success": True, "errors": []}) + "\\n")
-"""
+""".replace("@CI_DIR@", str(ROOT / ".ci"))
 
 # `sleep` RECORDS AND RETURNS IMMEDIATELY. See the module docstring: this is what turns the retry schedule into evidence rather than into a slow test.
 FAKE_SLEEP = """#!/usr/bin/python3

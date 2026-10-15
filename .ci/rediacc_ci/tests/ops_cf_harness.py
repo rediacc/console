@@ -49,11 +49,18 @@ if "-X" in argv:
 url = next((a for a in argv if a.startswith("http")), "")
 body = argv[argv.index("-d") + 1] if "-d" in argv else None
 stdin_has_user = None
+stdin_headers = []
 if "-K" in argv:
-    stdin_has_user = sys.stdin.read().startswith('user = "')
+    config = sys.stdin.read()
+    # None, not False, for a config with no `user` line: a header-only config is not a credential pair, and the bash never sent one.
+    stdin_has_user = config.startswith('user = "') or None
+    # A `header = "..."` line is a header curl sends (rediacc_ci.core.curl_stdin): recorded with the argv ones, so the request reads as the twin's.
+    import ast
+    stdin_headers = [ast.literal_eval(line.split("=", 1)[1].strip()) for line in config.splitlines()
+                     if line.split("=", 1)[0].strip() == "header"]
 with open(os.environ["FAKE_LOG"], "a") as fh:
     fh.write(json.dumps({{"tool": "curl", "method": method, "url": url, "body": body,
-                          "headers": sorted(argv[i + 1] for i, a in enumerate(argv) if a == "-H"),
+                          "headers": sorted([*(argv[i + 1] for i, a in enumerate(argv) if a == "-H"), *stdin_headers]),
                           "sigv4": "--aws-sigv4" in argv, "creds_on_stdin": stdin_has_user,
                           "creds_on_argv": any(a in ("-u", "--user") for a in argv)}}) + "\\n")
 if argv[:2] == ["--help", "all"]:
