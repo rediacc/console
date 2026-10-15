@@ -54,9 +54,6 @@ RENAMES: list[tuple[str, str]] = [
     ("R2_MEDIA_ACCESS_KEY_ID", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
     ("R2_MEDIA_SECRET_ACCESS_KEY", "CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY"),
     ("R2_MEDIA_ENDPOINT", "CLOUDFLARE_R2_MEDIA_ENDPOINT"),
-    ("BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"),
-    ("BACKUP_S3_SECRET_ACCESS_KEY", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"),
-    ("BACKUP_S3_ENDPOINT", "ACCOUNT_BACKUP_S3_ENDPOINT"),
     ("TURNSTILE_SECRET_KEY", "CLOUDFLARE_TURNSTILE_SECRET_KEY"),
     ("BREAKPOINT_TUNNEL_TOKEN", "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN"),
     ("SES_AK_ID", "AWS_IAM_ADMIN_ACCESS_KEY_ID"),
@@ -217,9 +214,9 @@ def main() -> int:
 
     rs = Rules()
     # Control: the boundaries must hold before any verdict is printed.
-    probe = "R2_ENDPOINT CONFIG_R2_ENDPOINT BACKUP_S3_ENDPOINT ACCOUNT_BACKUP_S3_ENDPOINT GH_APP_PRIVATE_KEY CD_APP_PRIVATE_KEY STRIPE_SECRET_KEY_EU CLOUDFLARE_R2_ENDPOINT"
+    probe = "R2_ENDPOINT CONFIG_R2_ENDPOINT GH_APP_PRIVATE_KEY CD_APP_PRIVATE_KEY STRIPE_SECRET_KEY_EU CLOUDFLARE_R2_ENDPOINT"
     got, _, _, _ = rewrite(probe, rs)
-    want = "CLOUDFLARE_R2_ENDPOINT CONFIG_R2_ENDPOINT ACCOUNT_BACKUP_S3_ENDPOINT ACCOUNT_BACKUP_S3_ENDPOINT GH_GITHUB_APP_PRIVATE_KEY CD_APP_PRIVATE_KEY STRIPE_SECRET_KEY CLOUDFLARE_R2_ENDPOINT"
+    want = "CLOUDFLARE_R2_ENDPOINT CONFIG_R2_ENDPOINT GH_GITHUB_APP_PRIVATE_KEY CD_APP_PRIVATE_KEY STRIPE_SECRET_KEY CLOUDFLARE_R2_ENDPOINT"
     if got != want:
         print(f"✗ instrument control failed:\n  got  {got}\n  want {want}", file=sys.stderr)
         return 1
@@ -230,15 +227,15 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    # Control, both directions: a `vars.` reference must survive untouched and be REPORTED, while the same name used as a secret must still be rewritten. One direction alone would pass on a script that rewrote nothing at all.
-    vprobe = "vars.AUTOPILOT_APP_ID and secrets.AUTOPILOT_APP_ID"
+    # Control, both directions: a `vars.` or `secrets.` reference must survive untouched and be REPORTED (SECRETS_CTX: a GitHub-side name this tool cannot rename), while the same name used bare in the tree must still be rewritten. One direction alone would pass on a script that rewrote nothing at all. The expectation predated SECRETS_CTX and still wanted `secrets.` rewritten, so the control failed on every run until 2026-10-15.
+    vprobe = "vars.AUTOPILOT_APP_ID and secrets.AUTOPILOT_APP_ID and AUTOPILOT_APP_ID"
     vgot, vcounts, _, vhits = rewrite(vprobe, rs)
-    if vgot != "vars.AUTOPILOT_APP_ID and secrets.GITHUB_AUTOPILOT_APP_ID":
+    if vgot != "vars.AUTOPILOT_APP_ID and secrets.AUTOPILOT_APP_ID and GITHUB_AUTOPILOT_APP_ID":
         print(f"✗ instrument control failed: vars./secrets. split\n  got  {vgot}", file=sys.stderr)
         return 1
-    if len(vhits) != 1 or sum(vcounts.values()) != 1:
+    if len(vhits) != 2 or sum(vcounts.values()) != 1:
         print(
-            f"✗ instrument control failed: expected 1 reported variable and 1 rewrite, "
+            f"✗ instrument control failed: expected 2 reported references and 1 rewrite, "
             f"got {len(vhits)} and {sum(vcounts.values())}",
             file=sys.stderr,
         )
