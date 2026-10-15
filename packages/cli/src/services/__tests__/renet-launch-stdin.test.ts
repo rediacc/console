@@ -17,6 +17,7 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildJobStartCommand } from '../executor/job-client.js';
 import { buildRemoteRenetCommand, buildRenetEnv } from '../executor/local-executor.js';
@@ -40,7 +41,7 @@ describe('every renet launch keeps secrets off the command', () => {
     'list all': () =>
       buildListCommand({
         remoteRenetPath: '/usr/bin/renet',
-        datastore: '/mnt/rediacc',
+        datastore: WK_DATASTORE_PATH,
         env: buildRenetEnv(PARAMS),
       }),
   };

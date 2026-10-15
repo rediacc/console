@@ -6,6 +6,7 @@
  * readable in `ps` on both hosts.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
 import { buildEnvPrefix, sshSessionOptions } from '../term.js';
@@ -18,14 +19,14 @@ const details: ConnectionDetails = {
   port: 22,
   privateKey: 'k',
   known_hosts: 'kh',
-  datastore: '/mnt/rediacc',
+  datastore: WK_DATASTORE_PATH,
   universalUser: 'u',
   environment: {
     REDIACC_REPOSITORY: 'app',
     DOCKER_HOST: 'unix:///run/docker-1.sock',
     REDIACC_SECRET_DB_PASSWORD: SECRET,
   },
-  workingDirectory: '/mnt/rediacc/mounts/x',
+  workingDirectory: `${WK_DATASTORE_PATH}/mounts/x`,
 };
 
 describe('term connect secret delivery', () => {
