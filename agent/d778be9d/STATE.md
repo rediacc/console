@@ -1,16 +1,16 @@
-## SESSION d778be9d 2026-10-15T05:06:46Z
+## SESSION d778be9d 2026-10-15T09:18:57Z
 
-# STATE d778be9d (2026-10-15T05:02Z)
+# STATE d778be9d (2026-10-15T10:25Z)
 
-Branch 1008-1, PR rediacc/console#600, PR-TASK 8ed364fe; submodules account (2dcfcd9) and renet (e1d06c5) on 1008-1. NOTHING pushed since eced71537. Merge authorized by the operator at the babysit finish line.
+Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. The operator returned at ~08:0xZ ("You can continue for the rest."), lifting the pause; the merge is authorized at the babysit finish line. Pushes follow the hooks (ci:quick receipt, VERIFIED vm:check receipt), never an extra approval step.
 
 ## Next action
-1) #017ba930: make vm:check P5 create the grand vmcheck-base on the dev-only ops VMs itself (operator ruling 2026-10-15: ops VMs are dev-only, never ask; agent-mode exemption landed ec46d8352). A manual `./rdc.sh repo create vmcheck-base -m ops-worker --size 2G` now fails "Subscription token required (REDIACC_SUBSCRIPTION_TOKEN or rdc subscription login)" while P4 finds the stored token valid; find the credential repo create needs and supply it as P4 does. Fleet is up and keys pinned (05:00Z). Then vm:check -- --changed for VERIFIED, then push renet/account/console, sync_epic_block 600 1008-1, /pr-babysit, /pr-merge.
-2) When writer r32 (a7f0d13601e9ee696) delivers r32-shellscan.patch/.msg/r32-review.tsv into /tmp/claude-1000/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/: three-way apply over 2925782e4, verify (pytest -n 6 test_bash_semantics test_hooks_fixtures test_dispatch test_guards_differential test_hooks_static; hook-integrity, python-lint, hook-cross-os, python-types; drive_accept.py accept and r27-scripts/drive.py), commit, mark 2925782e.1-.2, tick #91f1787a #97d3d908 #d1800b1b #7cde2697.
-3) ci:quick on a STILL tree; clean closes #809a3054, #c275adc4.
+1) Four writers in flight (leases): r65 #78df53cf (five code review findings: subscription-actions.ts, vm_check.py, hookio.py, backup.ts), r66 #e13fb555 (block_cli_bundle reads expanded words), r67 #59082342 (config lost-update in config-file-storage.ts/config.ts/rdc.sh), r68 #8d8ba5a2 (prune misses an orphan). Apply each patch, verify, commit, answer its review.
+2) Then: rerun npm run vm:check -- --changed live (the trigger paths moved: vm_check.py, repo-key-deployment.ts), npm run ci:quick on a still tree (closes #809a3054 and #c275adc4), push renet, account, console, sync_epic_block, /pr-babysit, /pr-merge.
+3) After the merge: PLAN-account-vm-check (QUEUE ## Promoted 17); wave-1 patches av1/av2/av3 sit in the session scratch dir and land with AV4/AV5.
 
-## Rulings (operator /ask 2026-10-15T04:1xZ, round log DECISIONS)
-Ops VMs dev-only (ops-vms.md + memory ops-vms-dev-only); keep 66acd27d8 config key write; keep oxc-parser 0.154.
+## Landed today (highlights)
+vm:check VERIFIED live 32/32 (5a9861e82 harness, 5ebcf6e99 daemon stdout, b3e076992/a442abccd daemon env scope, fd222f136 datastore, a01473956 dev config); BWS token deletion root cause and guards (1f969addb, f434e6dcb, bf6289c71, af20ae8bb); shell-write guards through links (84fdeff8e, f25b13600, b53a6fad1, defafc4e8), shellscan cd/CDPATH (5dbdf5670, 4a08d9e8b, a00d2c430); env:register multi-module (8bcd8e5ed); gate debt (5e1158c34, e704b070d); CLI sync symlink warning and fork-key rollback (ef6dbb539, 589a76af7, 33b9ed1e1) with translations (abca87430).
 
 ## Rules learned
-Read every gate rc before committing; never background wl_wake.py with &; no backquotes in an unquoted heredoc; parse --add output for "added #id"; scan-keys before any CLI ssh to a rebuilt fleet.
+Spell commit paths literally (no $FILES); a 20+ file commit quotes shape_cluster_diff.py output. Never run vitest from the repo root (it now refuses). Keep scratch clones under /home/developer when /tmp is tight. Check each writer's patch against HEAD before applying; rerun lint before committing a test edit.
