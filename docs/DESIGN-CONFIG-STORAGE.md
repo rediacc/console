@@ -910,7 +910,7 @@ CLI                                          Server
  │◄──── { success, newServerToken } ───────────┤
 ```
 
-All R2 objects under `s/{storeId}/{teamId}/{configId}/` are removed; the prefix is checked against the deleting store's own `s/{storeId}/` first. D1 metadata is deleted. Hard delete — no soft-delete / trash bin (blobs are triple-encrypted, no recovery value without keys).
+All R2 objects under `s/{storeId}/{teamId | _default}/{configId}/` are removed; the prefix is checked against the deleting store's own `s/{storeId}/` first. D1 metadata is deleted. Hard delete — no soft-delete / trash bin (blobs are triple-encrypted, no recovery value without keys).
 
 ### Config Store Deletion (Org-Level)
 
