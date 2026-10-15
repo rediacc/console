@@ -357,8 +357,8 @@ def test_gateway_port_takes_the_last_line_as_rdc_sh_does(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("REDIACC_CI_ROOT", str(tmp_path))
-    (tmp_path / ".account-state").write_text("gateway_port=4800\nstarted=1\ngateway_port=4811\n")
-    assert lib.Drill("t").gateway_port() == "4811"
+    (tmp_path / ".account-state").write_text("gateway_port=4833\nstarted=1\ngateway_port=4834\n")
+    assert lib.Drill("t").gateway_port() == "4834"
 
 
 def test_gateway_port_alive_and_wait_started_read_the_state_file(

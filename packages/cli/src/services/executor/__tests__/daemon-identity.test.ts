@@ -7,7 +7,7 @@ import { daemonSocketPath, environmentIdentity } from '../daemon/lifecycle.js';
 
 const base = {
   REDIACC_TOKEN: 'token-a',
-  REDIACC_ACCOUNT_SERVER: 'http://localhost:4800',
+  REDIACC_ACCOUNT_SERVER: 'http://localhost:4999',
   HOME: '/home/x',
 };
 
@@ -21,7 +21,7 @@ describe('daemon environment identity', () => {
   it('differs when the account server or an agent-mode switch differs', () => {
     const id = environmentIdentity(base);
     expect(
-      environmentIdentity({ ...base, REDIACC_ACCOUNT_SERVER: 'https://eu.rediacc.com' })
+      environmentIdentity({ ...base, REDIACC_ACCOUNT_SERVER: 'https://other.example' })
     ).not.toBe(id);
     expect(environmentIdentity({ ...base, REDIACC_AGENT: '1' })).not.toBe(id);
     expect(environmentIdentity({ ...base, REDIACC_ALLOW_GRAND_REPO: '1' })).not.toBe(id);
