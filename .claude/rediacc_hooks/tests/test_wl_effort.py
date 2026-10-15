@@ -117,7 +117,8 @@ def test_e3_one_world_through_all_five_levels(world):
     watched = ("open-items", *REPORT_KEYS)
     for level in LEVELS:
         want = {key for key in watched if E.verdict(key, level) == "block"}
-        assert seen[level][1] & set(watched) == want, (level, want, seen[level])
+        # The whole blocked set, not its watched slice (review 2e50ca28.2): this world trips nothing else, so a check that starts blocking here at any level, quiet included, fails the row.
+        assert seen[level][1] == want, (level, want, seen[level])
         assert seen[level][0] == ("block" if want else "allow"), (level, seen[level])
     # NOT VACUOUS: the table blocks at least one watched check at some level and leaves at least one level unblocked, so the loop above judges both directions.
     assert any(seen[lv][1] for lv in LEVELS), seen
