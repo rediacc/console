@@ -73,6 +73,7 @@ describe('displayName', () => {
   it('escapes bidi overrides and line separators, and doubles a literal backslash (review 589a76af)', () => {
     expect(displayName('a\u202eb')).toBe('a\\u202eb');
     expect(displayName('a\u2028b\u2069')).toBe('a\\u2028b\\u2069');
+    expect(displayName('a\u200fb\u061c')).toBe('a\\u200fb\\u061c');
     // The text \x1b typed in a name is not the escaped ESC byte.
     expect(displayName('a\\x1b')).toBe('a\\\\x1b');
     expect(displayName('a\u001b')).not.toBe(displayName('a\\x1b'));
