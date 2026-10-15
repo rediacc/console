@@ -328,13 +328,12 @@ async function renderActivationSection(
   machineName: string,
   context: SubscriptionCommandContext
 ): Promise<void> {
-  const tokenState = getSubscriptionTokenState();
-  if (tokenState.kind !== 'ready') {
-    outputService.info(unreadyTokenDiagnostic(tokenState));
-    return;
-  }
-
   try {
+    const tokenState = getSubscriptionTokenState();
+    if (tokenState.kind !== 'ready') {
+      outputService.info(unreadyTokenDiagnostic(tokenState));
+      return;
+    }
     await assertSubscriptionScopeMatchesConfig(tokenState.token);
     const activation = await readMachineActivationStatus(
       context.machine,

@@ -362,18 +362,18 @@ async function pruneOrphanedRepos(
 }
 
 /** Fold the phases into exactly one document for json/yaml; a failed phase already printed its own error envelope. */
-export function printPruneOutcome(outcome: PruneOutcome): void {
+export function printPruneOutcome(outcome: PruneOutcome, dryRun: boolean): void {
   const format = getOutputFormat();
   if (format === 'table' || outcome.failed) return;
-  outputService.print(buildPruneData(outcome), format);
+  outputService.print(buildPruneData(outcome, dryRun), format);
 }
 
-/** The `data` payload of the single document: datastore, units and the orphaned-repos report. */
-export function buildPruneData(outcome: PruneOutcome): Record<string, unknown> {
+/** The `data` payload of the single document: datastore, units and the orphaned-repos report; the report keys are always present (empty when that phase did not run). */
+export function buildPruneData(outcome: PruneOutcome, dryRun: boolean): Record<string, unknown> {
   return {
     datastore: outcome.datastore ?? null,
     units: outcome.units ?? null,
-    ...(outcome.report ?? {}),
+    ...(outcome.report ?? { dry_run: dryRun, orphaned_repos: [], protected_repos: [] }),
   };
 }
 
@@ -406,7 +406,7 @@ export function registerPruneCommand(machine: Command): void {
         }
 
         outputService.success(t('commands.machine.prune.completed'));
-        printPruneOutcome(outcome);
+        printPruneOutcome(outcome, Boolean(options.dryRun));
       } catch (error) {
         handleError(error);
       }

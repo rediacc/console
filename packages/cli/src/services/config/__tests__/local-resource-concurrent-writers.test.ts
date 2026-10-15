@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import { getConfigDir } from '@rediacc/shared/paths';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
-import type { RdcConfig, RepositoryConfig } from '../../../types/index.js';
+import type { ArchivedRepository, RdcConfig, RepositoryConfig } from '../../../types/index.js';
 import { LocalResourceState } from '../resource-state.js';
 
 const NAME = 'concurrent-writers';
@@ -27,6 +27,15 @@ function repo(n: number): RepositoryConfig {
     repositoryGuid: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`,
     credential: `credential-${n}`,
   } as RepositoryConfig;
+}
+
+function archived(n: number): ArchivedRepository {
+  return {
+    ...repo(n),
+    name: `gone-${n}`,
+    tag: 'latest',
+    deletedAt: '2026-10-01T00:00:00.000Z',
+  } as ArchivedRepository;
 }
 
 /** A writer as a command runs one: load the view once, edit it later, persist. */
@@ -122,5 +131,61 @@ describe('concurrent writers of one config keep every record', () => {
     await view.setRepositories(second);
 
     expect(Object.keys(onDisk().resources?.repositories ?? {}).sort()).toEqual(['seed', 'theirs']);
+  });
+
+  it('archive records appended by two stale views both land', async () => {
+    const first = await openView();
+    const second = await openView();
+
+    await first.setDeletedRepositories([...first.getDeletedRepositories(), archived(5)]);
+    await second.setDeletedRepositories([...second.getDeletedRepositories(), archived(6)]);
+
+    expect(
+      (onDisk().resources?.deletedRepositories ?? []).map((r) => r.repositoryGuid).sort()
+    ).toEqual([archived(5).repositoryGuid, archived(6).repositoryGuid]);
+  });
+
+  it('an archive purged by one stale view keeps the record another view appended', async () => {
+    const seeded = await openView();
+    await seeded.setDeletedRepositories([archived(7)]);
+
+    const purger = await openView();
+    const appender = await openView();
+    await appender.setDeletedRepositories([...appender.getDeletedRepositories(), archived(8)]);
+    await purger.setDeletedRepositories([]);
+
+    expect((onDisk().resources?.deletedRepositories ?? []).map((r) => r.repositoryGuid)).toEqual([
+      archived(8).repositoryGuid,
+    ]);
+  });
+
+  it('the ssh pair another view stored survives a view that never touched it', async () => {
+    const writer = await openView();
+    const bystander = await openView();
+
+    await writer.setSSH({ privateKey: 'priv', publicKey: 'pub', knownHosts: 'hosts' });
+    const machines = bystander.getMachines();
+    machines.m2 = { ip: '192.0.2.2', user: 'root' };
+    await bystander.setMachines(machines);
+
+    expect(onDisk().credentials?.ssh).toEqual({
+      privateKey: 'priv',
+      publicKey: 'pub',
+      knownHosts: 'hosts',
+    });
+  });
+
+  it('two views that both set the ssh pair leave the later whole pair, never a mix', async () => {
+    const first = await openView();
+    const second = await openView();
+
+    await first.setSSH({ privateKey: 'priv-1', publicKey: 'pub-1', knownHosts: 'hosts-1' });
+    await second.setSSH({ privateKey: 'priv-2', publicKey: 'pub-2', knownHosts: 'hosts-2' });
+
+    expect(onDisk().credentials?.ssh).toEqual({
+      privateKey: 'priv-2',
+      publicKey: 'pub-2',
+      knownHosts: 'hosts-2',
+    });
   });
 });
