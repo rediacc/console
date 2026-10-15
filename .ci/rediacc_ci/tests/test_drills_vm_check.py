@@ -85,6 +85,8 @@ class World(vm_check.Host):
         # "yes" (the config holds a key the VMs authorize), "no" (empty credentials) or "wrong" (a key they reject).
         self.cli_key = over.pop("cli_key", "yes")
         self.key_set: list[str] = []
+        # "ok", "fail" (show exits non-zero) or "nodata" (show exits 0 with no data.embedded).
+        self.key_show = over.pop("key_show", "ok")
         assert not over, over
         self.store = root / "remote-store"
         self.calls: list[list[str]] = []
@@ -185,6 +187,10 @@ class World(vm_check.Host):
                 return vm_check.Result(0, '{"success":true}')
             return vm_check.Result(1, "", self.minted_check_err or "Unauthorized")
         if head == ("config", "ssh") and args[2:3] == ["show"]:
+            if self.key_show == "fail":
+                return vm_check.Result(1, "", "config is locked")
+            if self.key_show == "nodata":
+                return vm_check.Result(0, json.dumps({"success": True, "data": {}}))
             embedded = "no" if self.cli_key == "no" else "yes"
             return vm_check.Result(0, json.dumps({"success": True, "data": {"embedded": embedded}}))
         if head == ("config", "ssh") and args[2:3] == ["set"]:
@@ -908,7 +914,7 @@ def test_an_rdc_failure_is_named_by_its_json_error_not_its_progress_lines() -> N
 
 
 def test_a_config_with_no_ssh_key_gets_the_key_the_vms_authorize(tmp_path: pathlib.Path) -> None:
-    """Empty credentials made the CLI offer ~/.ssh/id_ed25519 and repo list fail auth (2026-10-15T00:0xZ)."""
+    """Empty credentials made the CLI offer ~/.ssh/id_ed25519 and repo list fail auth (2026-10-15)."""
     world = make_world(tmp_path, cli_key="no")
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
@@ -937,9 +943,26 @@ def test_a_cold_run_missing_the_grand_says_to_leave_a_warm_fleet(tmp_path: pathl
     assert rc != vm_check.EXIT_VERIFIED, out
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up for vm:check to reuse" in out, out
-    assert out.index("ops up --basic, then ./rdc.sh repo create") >= 0, out
+    assert "ops up --basic, then ./rdc.sh repo create" in out, out
     (tmp_path / "warm").mkdir(exist_ok=True)
     warm = make_world(tmp_path / "warm", grands=())
     rc, out, _receipt = run_check(tmp_path / "warm", warm)
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up" not in out, out
+
+
+@pytest.mark.parametrize(
+    ("key_show", "says"),
+    [
+        ("fail", "config ssh show gave no key state (rc=1: config is locked)"),
+        ("nodata", "config ssh show gave no key state (its JSON has no data.embedded)"),
+    ],
+)
+def test_an_unreadable_key_state_changes_nothing_and_p5_judges(
+    tmp_path: pathlib.Path, key_show: str, says: str
+) -> None:
+    world = make_world(tmp_path, key_show=key_show)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert world.key_set == [], "an unreadable key state must not set a key"
+    assert says in out, out

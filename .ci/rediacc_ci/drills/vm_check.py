@@ -833,9 +833,13 @@ class VmCheck:
         except (ValueError, AttributeError):
             embedded = None
         if show.rc != 0 or embedded is None:
+            why = (
+                "its JSON has no data.embedded"
+                if show.rc == 0
+                else "rc=%d: %s" % (show.rc, rdc_failure(show))
+            )
             self.say(
-                "        config ssh show rc=%d gave no key state (%s); the config is left as it is"
-                % (show.rc, rdc_failure(show))
+                "        config ssh show gave no key state (%s); the config is left as it is" % why
             )
             return
         if embedded != "no":
