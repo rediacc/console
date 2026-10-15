@@ -6,6 +6,7 @@ import type { SyncProgress, SyncResult } from '../types/index.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
 import { prepareRsyncPaths } from './pathConverter.js';
 import { newRsyncCountState, updateRsyncCount } from './rsync-count.js';
+import { parseSkippedEntries } from './rsync-skipped.js';
 
 /**
  * Gets the rsync command/path for the current platform
@@ -270,7 +271,9 @@ export interface RsyncExecutorOptions {
  * @param options - Rsync execution options
  * @returns Promise resolving to sync result
  */
-export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncResult> {
+export async function executeRsync(
+  options: RsyncExecutorOptions
+): Promise<SyncResult & { skipped: string[] }> {
   const startTime = Date.now();
   const errors: string[] = [];
 
@@ -317,6 +320,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
 
     let filesTransferred = 0;
     let bytesTransferred = 0;
+    let stderrText = '';
     const countState = newRsyncCountState();
 
     rsync.stdout.on('data', (data: Buffer) => {
@@ -347,6 +351,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
       const error = data.toString();
       options.onStderr?.(error);
       errors.push(error);
+      stderrText += error;
     });
 
     rsync.on('close', (code) => {
@@ -386,6 +391,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
         bytesTransferred,
         errors: success ? [] : errors,
         duration: Date.now() - startTime,
+        skipped: parseSkippedEntries(stderrText),
       });
     });
 
@@ -397,6 +403,7 @@ export async function executeRsync(options: RsyncExecutorOptions): Promise<SyncR
         bytesTransferred: 0,
         errors,
         duration: Date.now() - startTime,
+        skipped: [],
       });
     });
   });

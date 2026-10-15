@@ -29,7 +29,10 @@ import {
   type MachineConnectionLease,
   machineConnections,
 } from '../services/machine/machine-connection.js';
-import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import {
+  deployRepoKeyIfNeeded,
+  removeRepoKeyIfDeployed,
+} from '../services/repo/repo-key-deployment.js';
 import { debugEnabled } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -147,13 +150,26 @@ function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetEvent) =
   };
 }
 
-/** Rollback a fork registration if it exists. */
-async function rollbackFork(forkKey: string): Promise<void> {
+/** Where a fork's repo key was put, recorded BEFORE the deploy so a failure in the deploy itself is cleaned up too. */
+interface ForkKeyState {
+  machine?: string;
+  guid?: string;
+}
+
+/** Remove the fork's authorized_keys line when this invocation attempted to deploy it; best-effort. */
+async function removeDeployedForkKey(forkKey: string, keyState: ForkKeyState): Promise<void> {
+  if (keyState.machine === undefined || keyState.guid === undefined) return;
+  await removeRepoKeyIfDeployed(forkKey, keyState.machine, keyState.guid);
+}
+
+/** Rollback a fork registration if it exists, and the repo key it deployed. */
+async function rollbackFork(forkKey: string, keyState: ForkKeyState): Promise<void> {
   const exists = await configService.getRepository(forkKey);
   if (exists) {
     await configService.removeRepository(forkKey);
     outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
   }
+  await removeDeployedForkKey(forkKey, keyState);
 }
 
 /** Validate and register a new fork in the config. Returns the new GUID and networkId. */
@@ -217,6 +233,8 @@ interface ForkPlan {
   startedAt: number;
   options: ForkActionOptions;
   lease: MachineConnectionLease;
+  /** Filled when the repo key deploy starts; read by the rollback paths. */
+  keyState: ForkKeyState;
   /**
    * Mount path of the datastore the PARENT is recorded on (#74), undefined for a
    * repo on a machine's implicit default.
@@ -422,6 +440,7 @@ async function handleForkLegFailure(
   } else {
     await configService.removeRepository(forkKey);
     outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
+    await removeDeployedForkKey(forkKey, plan.keyState);
   }
   renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
   finishTimeline(plan, orchestrated, renetSteps, [result]);
@@ -440,6 +459,8 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
       })
     : undefined;
 
+  plan.keyState.machine = options.machine;
+  plan.keyState.guid = plan.repositoryGuid;
   await recordTimelineStep(orchestrated, 'key_deploy', () =>
     deployRepoKeyIfNeeded(forkKey, options.machine)
   );
@@ -490,6 +511,7 @@ export async function handleForkAction(
   let forkKey = '';
   // Rollback must only ever remove the row THIS invocation registered, a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
   let registered = false;
+  const keyState: ForkKeyState = {};
   try {
     // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag label grammar before any config mutation; `latest` stays reserved as the grand pointer that a fork must not clobber (#495).
     validateTag(tagName);
@@ -528,6 +550,7 @@ export async function handleForkAction(
         startedAt,
         options,
         lease,
+        keyState,
         ...(datastoreMount !== undefined && { datastoreMount }),
       });
     } finally {
@@ -535,7 +558,7 @@ export async function handleForkAction(
     }
   } catch (error) {
     if (registered) {
-      await rollbackFork(forkKey);
+      await rollbackFork(forkKey, keyState);
     }
     handleError(error);
   }

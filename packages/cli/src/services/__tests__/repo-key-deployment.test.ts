@@ -1,12 +1,18 @@
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import { REMOTE_RENET_PATH } from '../renet/renet-provisioner.js';
 import {
   buildKeyDeploymentScript,
+  buildKeyRemovalScript,
   deployAllRepoKeys,
   deployRepoKey,
   deployRepoKeyIfNeeded,
+  removeRepoKeyIfDeployed,
 } from '../repo/repo-key-deployment.js';
 
 const { mockExec, mockRelease, mockAcquire, mockConfigService, mockRecordedMount } = vi.hoisted(
@@ -248,6 +254,60 @@ describe('deployAllRepoKeys', () => {
     const deployed = await deployAllRepoKeys('m1');
 
     expect(deployed).toBe(1);
+    expect(mockRelease).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('buildKeyRemovalScript', () => {
+  const GUID = '11111111-1111-1111-1111-111111111111';
+
+  it('removes only the exact repo and guid line, in a real shell', () => {
+    const home = mkdtempSync(join(tmpdir(), 'keyrm-'));
+    try {
+      mkdirSync(join(home, '.ssh'));
+      const keys = join(home, '.ssh', 'authorized_keys');
+      const line = (repo: string, guid: string) =>
+        `command="renet sandbox-gateway ${repo} --guid ${guid} --datastore /mnt/x" ssh-ed25519 AAAA-${repo}`;
+      const other = line('app:stage2', '22222222-2222-2222-2222-222222222222');
+      const sibling = line('app:stage', '33333333-3333-3333-3333-333333333333');
+      writeFileSync(keys, `${line('app:stage', GUID)}\n${other}\n${sibling}\nssh-rsa team\n`);
+
+      execFileSync('bash', ['-c', buildKeyRemovalScript('app:stage', GUID)], {
+        env: { ...process.env, HOME: home },
+      });
+
+      expect(readFileSync(keys, 'utf8')).toBe(`${other}\n${sibling}\nssh-rsa team\n`);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses unsafe names', () => {
+    expect(() => buildKeyRemovalScript("a'; rm -rf ~; '", GUID)).toThrow(/unsafe/);
+  });
+});
+
+describe('removeRepoKeyIfDeployed', () => {
+  beforeEach(() => {
+    mockExec.mockClear();
+    mockRelease.mockClear();
+  });
+
+  it('runs the removal script over the machine lease and releases it', async () => {
+    await removeRepoKeyIfDeployed('app:stage', 'm1', 'guid-1');
+    expect(mockExec).toHaveBeenCalledWith(buildKeyRemovalScript('app:stage', 'guid-1'));
+    expect(mockRelease).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports a failed removal on stderr without throwing', async () => {
+    mockExec.mockRejectedValueOnce(new Error('ssh down'));
+    const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      await expect(removeRepoKeyIfDeployed('app:stage', 'm1', 'guid-1')).resolves.toBeUndefined();
+      expect(spy.mock.calls.map((c) => String(c[0])).join('')).toContain('ssh down');
+    } finally {
+      spy.mockRestore();
+    }
     expect(mockRelease).toHaveBeenCalledTimes(1);
   });
 });

@@ -11,6 +11,7 @@ import {
 } from '../remote/ssh/index.js';
 import {
   executeRsync,
+  formatSkippedWarning,
   type RsyncExecutorOptions,
   type SftpUploadSource,
   sftpDownloadDirectory,
@@ -60,6 +61,12 @@ async function ensureRenetProvisioned(machineName: string, access: RenetAccess):
   }
 }
 
+/** Warn (stderr, exit code untouched) about entries rsync skipped by design. */
+function warnSkippedEntries(skipped: string[]): void {
+  const warning = formatSkippedWarning(skipped, t);
+  if (warning !== undefined) writeStderr(`${warning}\n`);
+}
+
 function displaySyncResult(
   result: {
     success: boolean;
@@ -67,6 +74,7 @@ function displaySyncResult(
     bytesTransferred: number;
     duration: number;
     errors: string[];
+    skipped?: string[];
   },
   spinner: ReturnType<typeof ora>,
   mode: 'upload' | 'download'
@@ -81,6 +89,7 @@ function displaySyncResult(
     writeStdout(
       `${t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) })}\n`
     );
+    warnSkippedEntries(result.skipped ?? []);
   } else {
     spinner.fail(t(`commands.sync.${mode}.failed`));
     if (result.errors.length > 0) {

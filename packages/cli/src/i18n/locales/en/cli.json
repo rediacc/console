@@ -1767,6 +1767,8 @@
       "totalSize": "Total size: {{size}}",
       "duration": "Duration: {{seconds}}s",
       "errors": "Errors:",
+      "skippedNonRegular": "Warning: {{count}} symlinks or special files were not transferred (a privileged sync carries regular files only): {{names}}",
+      "skippedMore": "{{names}}, and {{count}} more",
       "upload": {
         "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
         "descriptionShort": "Upload files to a repository via rsync",
