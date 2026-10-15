@@ -2485,10 +2485,15 @@ const CASES: Record<string, Case> = {
         const v1 = lockDrift(JSON.stringify({ lockfileVersion: 1, dependencies: {} }), same, [
           'node_modules/a',
         ]);
+        const nul = lockDrift(JSON.stringify({ lockfileVersion: 3, packages: null }), same);
         return {
-          name: 'drift: a lockfile with no packages map is one finding naming the rewrite, not one per installed package',
-          ok: v1.length === 1 && v1[0].includes('no packages map (lockfileVersion 1)'),
-          detail: JSON.stringify(v1),
+          name: 'drift: a lockfile with no packages map (absent or null) is one finding naming the rewrite, not one per installed package',
+          ok:
+            v1.length === 1 &&
+            v1[0].includes('no packages map (lockfileVersion 1)') &&
+            nul.length === 1 &&
+            nul[0].includes('no packages map'),
+          detail: `${JSON.stringify(v1)} ${JSON.stringify(nul)}`,
         };
       })(),
       {
@@ -2667,9 +2672,7 @@ const CASES: Record<string, Case> = {
       },
       {
         name: 'drafts: a repository with changed paths and no site of its own names no other repository pin in its subject',
-        ok:
-          m === 'shared-message' ||
-          subj(orphan) === 'chore(pins): bump in private/elite: 1 file(s)',
+        ok: subj(orphan) === 'chore(pins): bump in private/elite: 1 file(s)',
         detail: subj(orphan),
       },
       {
