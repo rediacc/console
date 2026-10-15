@@ -6,8 +6,10 @@ WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. The controls exercise the pure co
 import json
 import pathlib
 import sys
+import tempfile
 
 from rediacc_ci import paths
+from rediacc_ci.quality import retired_terms as RT
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_retired_terms.py")
@@ -180,8 +182,26 @@ def test_a_retired_by_plan_moved_to_done_still_resolves(tmp_path):
     root, config = _tree(tmp_path, term=term)
     _write(root, "agent/plans/_done/PLAN-closed-retirement.md", _plan("done", "finished"))
     result = _gate(root, config)
-    assert result.rc != 2, result.combined
-    assert "is no file in the tree" not in result.err
+    # The run reaches a verdict (the fixture's live plan names the term without citing the moved plan, rc 1) instead of stopping at path resolution (CannotRunError, rc 2).
+    assert result.rc == 1, result.combined
+    assert "is no file in the tree" not in result.combined
+    assert "NEW plan agent/plans/PLAN-retire-zorp.md" in result.combined
+
+
+def test_retired_by_resolution_is_exact():
+    """Review e34c5d6f.1-.3: only a top-level plan ref follows a move, nested folders and non-plan names do not, and `..` never resolves."""
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        (root / "agent/plans/_done").mkdir(parents=True)
+        (root / "agent/plans/sub/_done").mkdir(parents=True)
+        (root / "agent/plans/_done/PLAN-a.md").write_text("x")
+        (root / "agent/plans/sub/_done/PLAN-b.md").write_text("x")
+        (root / "agent/plans/_done/notes.txt").write_text("x")
+        assert RT._resolves(root, "agent/plans/PLAN-a.md")
+        assert RT._resolves(root, "agent/plans/_removed/PLAN-a.md")
+        assert not RT._resolves(root, "agent/plans/sub/PLAN-b.md")
+        assert not RT._resolves(root, "agent/plans/notes.txt")
+        assert not RT._resolves(root, "agent/plans/../../PLAN-a.md")
 
 
 def test_a_pattern_failing_its_own_texts_cannot_run(tmp_path):
