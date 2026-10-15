@@ -22,8 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from rediacc_ci import well_known
-from rediacc_ci import paths
+from rediacc_ci import paths, well_known
 from rediacc_ci.core import run_verbs
 from rediacc_ci.drills import vm_check
 from rediacc_ci.drills import vm_check_receipt as receipt_mod

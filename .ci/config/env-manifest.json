@@ -827,6 +827,7 @@
       "PATH",
       "PROGRAMFILES",
       "REDIACC_GATE_LEDGER_DIR",
+      "REDIACC_WORKTREE_STDIN_PROCFS",
       "SUDO_USER",
       "TMPDIR",
       "TZ",
