@@ -2174,3 +2174,26 @@ def test_an_unresolved_cd_lands_under_both_bases(tmp_path, cmd, bases):
     landed = [p for p, _into in shellscan.copy_landings(copier, str(tmp_path))]
     assert len(landed) == bases, landed
     assert str(tmp_path / "b") in landed
+
+
+def test_a_nul_byte_in_an_argument_is_a_command_that_did_not_run(tmp_path):
+    """subprocess raises ValueError for a NUL in argv or cwd; uncaught, it crashed the guard, and a crashed guard admits the command (2026-10-15)."""
+    assert hookio.run_out(["git", "rev-parse", "--verify", "-q", "a\0b"], want_rc=True) is None
+    assert hookio.run_out(["git", "rev-parse", "a\0b"]) == ""
+    assert hookio.run_rc(["true", "a\0b"]) == 127
+    assert hookio.git_out(["rev-parse", "HEAD"], cwd=str(tmp_path) + "\0x", want_rc=True) is None
+
+
+def test_a_pr_head_holding_a_nul_byte_is_refused_not_a_crash():
+    """`gh pr create --head` with a NUL reached `git rev-parse` in block_unproven_bulk_transform._pr_head and crashed it, which admitted the create."""
+    payload = json.dumps(
+        {
+            "tool_name": "Bash",
+            "tool_input": {"command": "gh pr create --head $'feat\\x00x' --title t --body b"},
+            "cwd": str(hookio.repo_root()),
+        }
+    )
+    rc, _out, err = dispatch.run_one("block_unproven_bulk_transform", payload)
+    assert "Traceback" not in err, err
+    assert "embedded null byte" not in err, err
+    assert rc in (0, 2), (rc, err)
