@@ -903,6 +903,8 @@ def test_an_rdc_failure_is_named_by_its_json_error_not_its_progress_lines() -> N
     assert vm_check.rdc_failure(res) == "SSH connection error"
     assert vm_check.rdc_failure(vm_check.Result(1, "", "a\nb\nboom\n")) == "a | b | boom"
     assert vm_check.rdc_failure(vm_check.Result(1, "plain failure\n", "")) == "plain failure"
+    empty = vm_check.Result(3, json.dumps({"success": False, "data": {"x": 1}}), "")
+    assert vm_check.rdc_failure(empty) == "rc=3 with no error in the CLI's JSON envelope"
 
 
 def test_a_config_with_no_ssh_key_gets_the_key_the_vms_authorize(tmp_path: pathlib.Path) -> None:
@@ -911,7 +913,8 @@ def test_a_config_with_no_ssh_key_gets_the_key_the_vms_authorize(tmp_path: pathl
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
     assert len(world.key_set) == 1, world.key_set
-    assert "the config had no SSH key; set " in out
+    assert world.key_set[0].endswith("/.renet/staging/.ssh/id_rsa"), world.key_set
+    assert "the config had no SSH key; set %s," % world.key_set[0] in out, out
 
 
 def test_a_config_holding_another_key_is_not_overwritten_and_names_the_fix(
@@ -934,6 +937,7 @@ def test_a_cold_run_missing_the_grand_says_to_leave_a_warm_fleet(tmp_path: pathl
     assert rc != vm_check.EXIT_VERIFIED, out
     assert "NOT VERIFIED (parent-grand-missing)" in out, out
     assert "leave the fleet up for vm:check to reuse" in out, out
+    assert out.index("ops up --basic, then ./rdc.sh repo create") >= 0, out
     (tmp_path / "warm").mkdir(exist_ok=True)
     warm = make_world(tmp_path / "warm", grands=())
     rc, out, _receipt = run_check(tmp_path / "warm", warm)
