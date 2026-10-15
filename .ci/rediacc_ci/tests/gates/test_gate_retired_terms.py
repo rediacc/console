@@ -202,9 +202,20 @@ def test_retired_by_resolution_is_exact(tmp_path):
     assert RT._resolves(root, "agent/plans/_removed/PLAN-a.md")
     assert not RT._resolves(root, "agent/plans/sub/PLAN-b.md")
     assert not RT._resolves(root, "agent/plans/notes.txt")
-    assert not RT._resolves(root, "agent/plans/../../PLAN-a.md")
+    # `..` that leaves the tree to a file that EXISTS outside it (review bf93555d.4: a missing in-tree target proved nothing).
+    assert not RT._resolves(root, "agent/plans/../../../PLAN-out.md")
     assert not RT._resolves(root, "../PLAN-out.md")
     assert RT._resolves(root, "docs/../README.md")
+    # A symlink inside the tree pointing out of it never resolves, the moved-plan copies included (reviews bf93555d.1, .2).
+    (root / "docs/out.md").symlink_to(tmp_path / "PLAN-out.md")
+    assert not RT._resolves(root, "docs/out.md")
+    (root / "agent/plans/_removed").mkdir()
+    (root / "agent/plans/_removed/PLAN-out.md").symlink_to(tmp_path / "PLAN-out.md")
+    assert not RT._resolves(root, "agent/plans/PLAN-out.md")
+    # A symlink loop inside the tree is no file, never a crash (review bf93555d.3).
+    (root / "docs/loop-a").symlink_to(root / "docs/loop-b")
+    (root / "docs/loop-b").symlink_to(root / "docs/loop-a")
+    assert not RT._resolves(root, "docs/loop-a")
 
 
 def test_a_pattern_failing_its_own_texts_cannot_run(tmp_path):
