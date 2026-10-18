@@ -12,7 +12,7 @@ Worklist: #077d85c1
 ## Why (2026-10-04, branch 1004-1)
 
 - A 1004-1 commit, rewritten by its rebase-merge, deleted the "Rules learned this session" block from `agent/d778be9d/STATE.md`. The block held the wake timer, the ci:quick drop, shard legs, env registries and pathsOrigin.
-- The review finding was closed as not-a-bug with the claim "each dropped lesson lives durably" in CLAUDE.md, a plan and gates (`agent/reviews/1004-1/d501bce7f29fec14f746197abb8ca0287c85f393.md:24`).
+- The review finding was closed as not-a-bug with the claim "each dropped lesson lives durably" in CLAUDE.md, a plan and gates (the per-commit review record of d501bce7, its line 24, readable after the review-directory prune in commit 0d7650854).
 - Nothing checks that claim. If any of those places loses its sentence, the lesson is gone and every gate stays green.
 
 ## What exists (investigated 2026-10-08)
