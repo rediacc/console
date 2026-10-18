@@ -21,9 +21,9 @@ Body-Sig: af514006c19c078c
 ### 0afaa8e1.1 [medium] .ci/rediacc_ci/drills/backup.py:1082
 Anchor: in-diff
 Claim: Applied without the CLI half (part B), `rdc subscription login --token -` treats `-` as the literal token, so login fails and `setup_run` aborts the backup drill with exit 2. The message says the commit 'applies on its own', which contradicts this; the dependency is only stated in the message, not enforced.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/drills/backup.py:1082 the CLI half (fbc499c77, subscription login --token - reads stdin) is on the same branch, so no state carries the drill change without it | d778be9d 2026-10-18T20:11:07Z
 
 ### 0afaa8e1.2 [low] .ci/rediacc_ci/tests/test_drills_argv_secrets.py:133
 Anchor: in-diff
 Claim: `assert "abc" not in d.last_cmd` cannot fail: `last_cmd` is built only from argv, and the argv here does not contain "abc", so the test does not check that stdin_text is kept out of `last_cmd`, despite its name saying it does.
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/drills/lib.py:275 last_cmd joins argv only; the child argv holds no "abc", so a regression putting stdin_text into last_cmd fails the assertion at test_drills_argv_secrets.py:133 | d778be9d 2026-10-18T20:11:07Z
