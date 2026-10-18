@@ -28,9 +28,9 @@ if _SYSPATH is None or _SYSPATH.loader is None:
 _syspath = importlib.util.module_from_spec(_SYSPATH)
 _SYSPATH.loader.exec_module(_syspath)
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
-R = "agent/reviews/0930-1/" + "a" * 40 + ".md"
+R = "agent/reviews/1231-9/" + "a" * 40 + ".md"
 # The clean ledger (PLAN-clean-review-ledger): a clean verdict is a line of this file, protected exactly as a `.md` record is.
-L = "agent/reviews/0930-1/clean.jsonl"
+L = "agent/reviews/1231-9/clean.jsonl"
 # Scripts run BY PATH (#c4542b69), untracked in the system temp directory: one writes a review record, one only reads it. Written before any case runs and removed at exit.
 _SCRIPTS = pathlib.Path(tempfile.mkdtemp(prefix="test-review-file-scripts-"))
 atexit.register(shutil.rmtree, str(_SCRIPTS), True)
@@ -45,15 +45,15 @@ DIRECT_WRITER.chmod(0o755)
 READER = _SCRIPTS / "reader.py"
 READER.write_text("import pathlib\nprint(pathlib.Path(%r).read_text())\n" % R, encoding="utf-8")
 # A directory symlink whose target is a review directory (review 3f53e99e.1 sweep).
-(_SCRIPTS / "agent" / "reviews" / "0930-1").mkdir(parents=True)
-(_SCRIPTS / "rl").symlink_to(_SCRIPTS / "agent" / "reviews" / "0930-1", target_is_directory=True)
+(_SCRIPTS / "agent" / "reviews" / "1231-9").mkdir(parents=True)
+(_SCRIPTS / "rl").symlink_to(_SCRIPTS / "agent" / "reviews" / "1231-9", target_is_directory=True)
 # A link then `..` (review 9c6817f3.1-.4 sweep): `out/l` points INTO the review directory, `esc` points OUT of it.
-(_SCRIPTS / "agent" / "reviews" / "0930-1" / "sub").mkdir()
+(_SCRIPTS / "agent" / "reviews" / "1231-9" / "sub").mkdir()
 (_SCRIPTS / "out").mkdir()
 (_SCRIPTS / "out" / "l").symlink_to(
-    _SCRIPTS / "agent" / "reviews" / "0930-1" / "sub", target_is_directory=True
+    _SCRIPTS / "agent" / "reviews" / "1231-9" / "sub", target_is_directory=True
 )
-(_SCRIPTS / "agent" / "reviews" / "0930-1" / "esc").symlink_to(
+(_SCRIPTS / "agent" / "reviews" / "1231-9" / "esc").symlink_to(
     _SCRIPTS / "out", target_is_directory=True
 )
 # Review b922f15c.3: a TRACKED script is exempt only while it matches HEAD. Both scripts are committed writing a review file; one is then edited after the commit.
@@ -134,7 +134,7 @@ EDIT_CASES = [
     # Judged where the write LANDS (review 3f53e99e.1 sweep): each refusal was allowed (rc 0) before, and the control was refused.
     (
         "a .. detour into the directory",
-        {"tool_name": "Write", "tool_input": {"file_path": "agent/x/../reviews/0930-1/a.md"}},
+        {"tool_name": "Write", "tool_input": {"file_path": "agent/x/../reviews/1231-9/a.md"}},
         True,
     ),
     (
@@ -155,7 +155,7 @@ EDIT_CASES = [
         {
             "tool_name": "Write",
             "tool_input": {
-                "file_path": str(_SCRIPTS / "agent" / "reviews" / "0930-1" / "esc") + "/../a.md"
+                "file_path": str(_SCRIPTS / "agent" / "reviews" / "1231-9" / "esc") + "/../a.md"
             },
         },
         False,
@@ -181,7 +181,7 @@ SHELL_CASES = [
     ("sed -Ei", "sed -Ei 's/high/low/' %s" % R, True),
     ("perl -pi -e", "perl -pi -e 's/high/low/' %s" % R, True),
     ("sed -E without -i prints, never writes", "sed -E 's/high/low/' %s" % R, False),
-    ("cp onto the directory", "cp /tmp/x.md agent/reviews/0930-1/", True),
+    ("cp onto the directory", "cp /tmp/x.md agent/reviews/1231-9/", True),
     ("mv onto a file", "mv /tmp/x.md %s" % R, True),
     ("truncate", "truncate -s 0 %s" % R, True),
     ("python -c write", "python3 -c \"open('%s','w').write('x')\"" % R, True),
@@ -201,19 +201,19 @@ SHELL_CASES = [
         "sh -c \"python3 - <<'E'\nimport pathlib\npathlib.Path('%s').write_text('x')\nE\"" % R,
         True,
     ),
-    ("after cd", "cd agent/reviews/0930-1 && echo x > a.md", True),
+    ("after cd", "cd agent/reviews/1231-9 && echo x > a.md", True),
     ("inside sh -c", "sh -c 'echo x > %s'" % R, True),
     ("cat reads one", "cat %s" % R, False),
     ("grep the directory", "grep -rn high agent/reviews/", False),
-    ("echo the path", "echo 'agent/reviews/0930-1/'", False),
-    ("commit carrying them", "git commit -F /tmp/m.txt -- agent/reviews/0930-1/", False),
+    ("echo the path", "echo 'agent/reviews/1231-9/'", False),
+    ("commit carrying them", "git commit -F /tmp/m.txt -- agent/reviews/1231-9/", False),
     ("git add", "git add -- %s" % R, False),
     (
         "the mark verb",
         ".claude/hooks/stop/worklist.py --review-mark abcd1234 aaaaaaaa.1 fixed %s" % ("b" * 40),
         False,
     ),
-    ("the reviewer", "python3 .claude/hooks/stop/wl_review.py --run abc --branch 0930-1", False),
+    ("the reviewer", "python3 .claude/hooks/stop/wl_review.py --run abc --branch 1231-9", False),
     ("copy out of the directory", "cp %s /tmp/x.md" % R, False),
     ("python read", "python3 -c \"print(open('%s').read())\"" % R, False),
     # The false positive found on this guard's first live run: a python heredoc patching another module whose new text only MENTIONS the directory.
@@ -243,17 +243,17 @@ SHELL_CASES = [
     ),
     ("unrelated redirect", "echo x > /tmp/out.txt", False),
     # A copy's destination is getopt's answer (review cac47d16.1 sweep): each refusal was allowed (rc 0) before.
-    ("cp -t into the directory", "cp -t agent/reviews/0930-1 /tmp/x.md", True),
-    ("mv --target-directory=", "mv --target-directory=agent/reviews/0930-1 /tmp/x.md", True),
+    ("cp -t into the directory", "cp -t agent/reviews/1231-9 /tmp/x.md", True),
+    ("mv --target-directory=", "mv --target-directory=agent/reviews/1231-9 /tmp/x.md", True),
     ("a value option after the operands", "cp /tmp/x.md %s -S .bak" % R, True),
-    ("xargs appends the destination", "echo agent/reviews/0930-1/ | xargs cp /tmp/x.md", True),
+    ("xargs appends the destination", "echo agent/reviews/1231-9/ | xargs cp /tmp/x.md", True),
     ("cp -t out of the directory", "cp -t /tmp %s" % R, False),
     # A glob or brace spells the directory without the word (#7094b75e): each refusal was allowed (rc 0) before, the first two by the text prefilter.
-    ("a fed glob under cd", "cd agent && echo revi*s/0930-1/x.md | xargs cp /tmp/a.md", True),
-    ("a ? glob under cd", "cd agent && cp /tmp/a.md revi?ws/0930-1/", True),
-    ("a bracket glob", "cp /tmp/a.md agent/revie[w]s/0930-1/", True),
-    ("a brace", "cp /tmp/a.md agent/{reviews,x}/0930-1/", True),
-    ("a redirect through two globs", "echo x > ag*/rev*/0930-1/new.md", True),
+    ("a fed glob under cd", "cd agent && echo revi*s/1231-9/x.md | xargs cp /tmp/a.md", True),
+    ("a ? glob under cd", "cd agent && cp /tmp/a.md revi?ws/1231-9/", True),
+    ("a bracket glob", "cp /tmp/a.md agent/revie[w]s/1231-9/", True),
+    ("a brace", "cp /tmp/a.md agent/{reviews,x}/1231-9/", True),
+    ("a redirect through two globs", "echo x > ag*/rev*/1231-9/new.md", True),
     # The reading of a deep glob is not lost to a cap on combinations (review c6dc18ec.1): five `a*t` segments read as `agent` or as themselves, so 2^7 combinations precede the one where `ag*` and `revi*s` spell the directory, and a cap of 64 never reached it.
     (
         "a deep glob past the old combination cap",
@@ -267,7 +267,7 @@ SHELL_CASES = [
         "echo x > docs/ab*/cd*/ef*/gh*/ij*/kl*/f.md",
         False,
     ),
-    ("a glob read out", "cat agent/revi*s/0930-1/clean.jsonl > /tmp/x", False),
+    ("a glob read out", "cat agent/revi*s/1231-9/clean.jsonl > /tmp/x", False),
     ("a glob in arithmetic text", "echo 3*4 > /tmp/x", False),
     ("a brace elsewhere", "cp /tmp/a.md /tmp/{a,b}/c.md", False),
     # Every way Python fills a template (review 6dcf79c7.1-.2): each refusal was allowed (rc 0) before.
@@ -399,10 +399,10 @@ SHELL_CASES = [
     ("curl -o", "curl -o %s https://e.x/a" % R, True),
     ("wget -O", "wget -O %s https://e.x/a" % R, True),
     ("tar -cf", "tar -cf %s /tmp/a" % R, True),
-    ("tar -C into the directory", "tar -xf /tmp/a.tar -C agent/reviews/0930-1", True),
+    ("tar -C into the directory", "tar -xf /tmp/a.tar -C agent/reviews/1231-9", True),
     ("openssl -out", "openssl enc -in /tmp/a -out %s" % R, True),
     ("git diff --output=", "git diff --output=%s HEAD~1" % R, True),
-    ("git format-patch -o", "git format-patch -o agent/reviews/0930-1 -1", True),
+    ("git format-patch -o", "git format-patch -o agent/reviews/1231-9 -1", True),
     ("pandoc -o", "pandoc /tmp/a.md -o %s" % R, True),
     ("xargs appends the value of sort -o", "echo %s | xargs sort /tmp/a -o" % R, True),
     (
@@ -522,7 +522,7 @@ SHELL_CASES = [
     ("log over a glob pathspec", "git log -- '*/*/x'", False),
     ("push under -C of a glob refspec", "git -C /tmp push . 'refs/*/*:refs/*/*'", False),
     # The other direction: an option of the same verb, a path remote, and a verb that writes a path it names stay refused.
-    ("push whose remote is the directory", "git push agent/reviews/0930-1 main", True),
+    ("push whose remote is the directory", "git push agent/reviews/1231-9 main", True),
     ("push --receive-pack naming the directory", "git push --receive-pack=%s o" % R, True),
     ("push --receive-pack value after the remote", "git push origin --receive-pack %s" % R, True),
     ("fetch --upload-pack value after the remote", "git fetch origin --upload-pack %s" % R, True),

@@ -59,19 +59,19 @@ MESSAGE = (
     "  record them:      .claude/hooks/stop/worklist.py --review-commit <me>\n"
 )
 
-R = "agent/reviews/0930-1/" + "a" * 40 + ".md"
+R = "agent/reviews/1231-9/" + "a" * 40 + ".md"
 
 EDGE_CASES = [
     ("a redirect", "printf 'Resolution: fixed' > %s" % R),
     ("an append", "echo x >> %s" % R),
-    ("an append to the clean ledger", "echo '{}' >> agent/reviews/0930-1/clean.jsonl"),
+    ("an append to the clean ledger", "echo '{}' >> agent/reviews/1231-9/clean.jsonl"),
     ("a cat heredoc", "cat > %s <<'EOF'\n# Review\nEOF" % R),
     ("tee", "echo x | tee %s" % R),
     ("tee -a", "echo x | tee -a %s >/dev/null" % R),
     ("sed -i", "sed -i 's/\\[high\\]/[low]/' %s" % R),
-    ("cp onto the directory", "cp /tmp/x.md agent/reviews/0930-1/"),
+    ("cp onto the directory", "cp /tmp/x.md agent/reviews/1231-9/"),
     ("mv onto a review file", "mv /tmp/x.md %s" % R),
-    ("cp -t names the directory", "cp -t agent/reviews/0930-1 /tmp/x.md"),
+    ("cp -t names the directory", "cp -t agent/reviews/1231-9 /tmp/x.md"),
     # #5077391c: xargs appends its feed, so under `-t` a fed word is a source and without it the last one is the destination.
     # The fed word as the file an in-place editor, tee or truncate writes. Each was allowed before: the editor's own words named no review file.
     ("xargs feeds a review file to sed -i", "echo %s | xargs sed -i s/a/b/" % R),
@@ -80,14 +80,14 @@ EDGE_CASES = [
     ("xargs feeds a review file to truncate", "echo %s | xargs truncate -s 0" % R),
     (
         "xargs -I feeds a review directory to truncate",
-        "echo agent/reviews/0930-1 | xargs -I{} truncate -s 0 {}/x.md",
+        "echo agent/reviews/1231-9 | xargs -I{} truncate -s 0 {}/x.md",
     ),
     ("xargs feeds a review file to a reader", "echo %s | xargs cat" % R),
     ("xargs feeds another file to sed -i", "echo /tmp/x.md | xargs sed -i s/a/b/"),
     ("xargs feeds a review file to cp -t elsewhere", "echo %s | xargs cp -t /tmp" % R),
     (
         "xargs feeds cp -t the review directory a source",
-        "echo /tmp/x.md | xargs cp -t agent/reviews/0930-1",
+        "echo /tmp/x.md | xargs cp -t agent/reviews/1231-9",
     ),
     ("xargs feeds cp a review file as its destination", "echo %s | xargs cp /tmp/x.md" % R),
     (
@@ -101,19 +101,19 @@ EDGE_CASES = [
         "python heredoc write_text",
         "python3 - <<'EOF'\nimport pathlib\npathlib.Path('%s').write_text('x')\nEOF" % R,
     ),
-    ("after cd", "cd agent/reviews/0930-1 && echo x > a.md"),
+    ("after cd", "cd agent/reviews/1231-9 && echo x > a.md"),
     ("inside sh -c", "sh -c 'echo x > %s'" % R),
     # allowed
     ("reading one", "cat %s" % R),
     ("grep over the directory", "grep -rn high agent/reviews/"),
-    ("echo naming the path", "echo 'see agent/reviews/0930-1/'"),
-    ("a commit that carries them", "git commit -F /tmp/m.txt -- agent/reviews/0930-1/"),
-    ("git add", "git add -- agent/reviews/0930-1/%s.md" % ("a" * 40)),
+    ("echo naming the path", "echo 'see agent/reviews/1231-9/'"),
+    ("a commit that carries them", "git commit -F /tmp/m.txt -- agent/reviews/1231-9/"),
+    ("git add", "git add -- agent/reviews/1231-9/%s.md" % ("a" * 40)),
     (
         "the mark verb",
         ".claude/hooks/stop/worklist.py --review-mark abcd1234 aaaaaaaa.1 fixed %s" % ("b" * 40),
     ),
-    ("the reviewer", "python3 .claude/hooks/stop/wl_review.py --run abc --branch 0930-1"),
+    ("the reviewer", "python3 .claude/hooks/stop/wl_review.py --run abc --branch 1231-9"),
     ("a copy OUT of the directory", "cp %s /tmp/x.md" % R),
     ("a python read", "python3 -c \"print(open('%s').read())\"" % R),
     (

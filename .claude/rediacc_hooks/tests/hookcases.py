@@ -1496,17 +1496,17 @@ STATIC: list[Case] = [
     # The cac47d16.1 sweep: a copy's destination is getopt's answer. Both refusals were allowed (rc 0) before, and the control was refused.
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("cp -t agent/reviews/0930-1 /tmp/x.md"),
+        bash_json("cp -t agent/reviews/1231-9 /tmp/x.md"),
         "review-file-shell-write: cp -t into the review directory",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/0930-1/ | xargs cp /tmp/x.md"),
+        bash_json("echo agent/reviews/1231-9/ | xargs cp /tmp/x.md"),
         "review-file-shell-write: xargs appends the review directory as the destination",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("cp -t /tmp agent/reviews/0930-1/a.md"),
+        bash_json("cp -t /tmp agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: cp -t copies a review file OUT",
     ),
     # Review 6dcf79c7.1-.2: a Python template filled by keyword, by a star width's extra argument, or from a mapping. Each was allowed (rc 0) before.
@@ -1535,14 +1535,14 @@ STATIC: list[Case] = [
     case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json(
-            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('agent/reviews/0930-1/a.md')\nprint(p.read_text())\nEOF"
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('agent/reviews/1231-9/a.md')\nprint(p.read_text())\nEOF"
         ),
         "review-file-shell-write CONTROL: a heredoc that only reads a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
         bash_json(
-            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('agent/reviews/0930-1/a.md')\np.write_text('x')\nEOF"
+            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('agent/reviews/1231-9/a.md')\np.write_text('x')\nEOF"
         ),
         "review-file-shell-write: a heredoc writing a review file through Path",
     ),
@@ -2138,77 +2138,77 @@ STATIC: list[Case] = [
     # Worklist item ff3ab826: a tool's own output option is a write, and a command `shellscan.output_landings` does not list as a reader is read as writing any word it names. Every deny row was allowed (rc 0) on the base; the controls name the same paths through a reader, or the same option elsewhere.
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("sort -o agent/reviews/0930-1/a.md /tmp/a"),
+        bash_json("sort -o agent/reviews/1231-9/a.md /tmp/a"),
         "review-file-shell-write: sort -o names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("sort --output=agent/reviews/0930-1/a.md /tmp/a"),
+        bash_json("sort --output=agent/reviews/1231-9/a.md /tmp/a"),
         "review-file-shell-write: sort --output= names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("sort -uoagent/reviews/0930-1/a.md /tmp/a"),
+        bash_json("sort -uoagent/reviews/1231-9/a.md /tmp/a"),
         "review-file-shell-write: sort carries the review file in a short bundle",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("sort --out agent/reviews/0930-1/a.md /tmp/a"),
+        bash_json("sort --out agent/reviews/1231-9/a.md /tmp/a"),
         "review-file-shell-write: sort --out is a unique prefix of --output",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("sort /tmp/a -o agent/reviews/0930-1/a.md"),
+        bash_json("sort /tmp/a -o agent/reviews/1231-9/a.md"),
         "review-file-shell-write: sort -o after the operands",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("curl -o agent/reviews/0930-1/a.md https://e.x/a"),
+        bash_json("curl -o agent/reviews/1231-9/a.md https://e.x/a"),
         "review-file-shell-write: curl -o names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("wget -O agent/reviews/0930-1/a.md https://e.x/a"),
+        bash_json("wget -O agent/reviews/1231-9/a.md https://e.x/a"),
         "review-file-shell-write: wget -O names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("tar -cf agent/reviews/0930-1/a.md /tmp/a"),
+        bash_json("tar -cf agent/reviews/1231-9/a.md /tmp/a"),
         "review-file-shell-write: tar -cf names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("tar -xf /tmp/a.tar -C agent/reviews/0930-1"),
+        bash_json("tar -xf /tmp/a.tar -C agent/reviews/1231-9"),
         "review-file-shell-write: tar -C unpacks into the review directory",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("openssl enc -in /tmp/a -out agent/reviews/0930-1/a.md"),
+        bash_json("openssl enc -in /tmp/a -out agent/reviews/1231-9/a.md"),
         "review-file-shell-write: openssl -out names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("git diff --output=agent/reviews/0930-1/a.md HEAD~1"),
+        bash_json("git diff --output=agent/reviews/1231-9/a.md HEAD~1"),
         "review-file-shell-write: git diff --output= names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("git format-patch -o agent/reviews/0930-1 -1"),
+        bash_json("git format-patch -o agent/reviews/1231-9 -1"),
         "review-file-shell-write: git format-patch -o names the review directory",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("pandoc /tmp/a.md -o agent/reviews/0930-1/a.md"),
+        bash_json("pandoc /tmp/a.md -o agent/reviews/1231-9/a.md"),
         "review-file-shell-write: pandoc -o names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/0930-1/a.md | xargs sort /tmp/a -o"),
+        bash_json("echo agent/reviews/1231-9/a.md | xargs sort /tmp/a -o"),
         "review-file-shell-write: xargs appends the review file as the value of sort -o",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/0930-1/a.md | xargs -I{} sort --output={} /tmp/a"),
+        bash_json("echo agent/reviews/1231-9/a.md | xargs -I{} sort --output={} /tmp/a"),
         "review-file-shell-write: xargs -I puts the review file in sort --output=",
     ),
     case(
@@ -2218,52 +2218,52 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("find /tmp -name a -fprint agent/reviews/0930-1/a.md"),
+        bash_json("find /tmp -name a -fprint agent/reviews/1231-9/a.md"),
         "review-file-shell-write: find -fprint names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("sed -n 'w agent/reviews/0930-1/a.md' /tmp/a"),
+        bash_json("sed -n 'w agent/reviews/1231-9/a.md' /tmp/a"),
         "review-file-shell-write: a sed w command names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        bash_json("awk '{print > \"agent/reviews/1231-9/a.md\"}' /tmp/a"),
         "review-file-shell-write: an awk program redirects into a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("uniq /tmp/a agent/reviews/0930-1/a.md"),
+        bash_json("uniq /tmp/a agent/reviews/1231-9/a.md"),
         "review-file-shell-write: uniq's second operand is its output",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("touch agent/reviews/0930-1/a.md"),
+        bash_json("touch agent/reviews/1231-9/a.md"),
         "review-file-shell-write: touch names a review file",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("prettier --write agent/reviews/0930-1/a.md"),
+        bash_json("prettier --write agent/reviews/1231-9/a.md"),
         "review-file-shell-write: prettier --write names a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("sort agent/reviews/0930-1/a.md"),
+        bash_json("sort agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: sort reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("sort -o /tmp/out agent/reviews/0930-1/a.md"),
+        bash_json("sort -o /tmp/out agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: sort -o elsewhere reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("wc -l agent/reviews/0930-1/a.md"),
+        bash_json("wc -l agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: wc reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("head -5 agent/reviews/0930-1/a.md"),
+        bash_json("head -5 agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: head reads a review file",
     ),
     case(
@@ -2283,12 +2283,12 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("diff agent/reviews/0930-1/a.md /tmp/b"),
+        bash_json("diff agent/reviews/1231-9/a.md /tmp/b"),
         "review-file-shell-write CONTROL: diff reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("jq . agent/reviews/0930-1/clean.jsonl"),
+        bash_json("jq . agent/reviews/1231-9/clean.jsonl"),
         "review-file-shell-write CONTROL: jq reads the clean ledger",
     ),
     case(
@@ -2298,12 +2298,12 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("echo agent/reviews/0930-1/a.md | xargs sort"),
+        bash_json("echo agent/reviews/1231-9/a.md | xargs sort"),
         "review-file-shell-write CONTROL: xargs feeds a review file to sort as its input",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("echo sort -o agent/reviews/0930-1/a.md /tmp/a"),
+        bash_json("echo sort -o agent/reviews/1231-9/a.md /tmp/a"),
         "review-file-shell-write CONTROL: prose naming a sort -o",
     ),
     case(
@@ -2313,12 +2313,12 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("rm agent/reviews/0930-1/a.md"),
+        bash_json("rm agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: rm keeps the verdict it had",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("git checkout -- agent/reviews/0930-1/a.md"),
+        bash_json("git checkout -- agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: git checkout keeps the verdict it had",
     ),
     case(
@@ -2328,7 +2328,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("sed -n 1,20p agent/reviews/0930-1/a.md"),
+        bash_json("sed -n 1,20p agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: sed -n prints a range of a review file",
     ),
     case(
@@ -2348,7 +2348,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("tail -1 agent/reviews/0930-1/clean.jsonl"),
+        bash_json("tail -1 agent/reviews/1231-9/clean.jsonl"),
         "review-file-shell-write CONTROL: tail of the clean ledger",
     ),
     case(
@@ -2361,72 +2361,72 @@ STATIC: list[Case] = [
     # Review 906a4d56.1 and .2: gawk's -o, -p and -d take a value only attached, and -W takes a separate word, so the option parse put the program in the wrong word and its redirect was never read. Every deny row was allowed (rc 0) on the base.
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("gawk -p '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        bash_json("gawk -p '{print > \"agent/reviews/1231-9/a.md\"}' /tmp/a"),
         "review-file-shell-write: gawk -p takes no separate value, the next word is the program (906a4d56.1)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("gawk -d '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        bash_json("gawk -d '{print > \"agent/reviews/1231-9/a.md\"}' /tmp/a"),
         "review-file-shell-write: gawk -d takes no separate value, the next word is the program (906a4d56.1)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("gawk -o '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        bash_json("gawk -o '{print > \"agent/reviews/1231-9/a.md\"}' /tmp/a"),
         "review-file-shell-write: gawk -o with a program that redirects into a review file (906a4d56.1)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("gawk --profile '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        bash_json("gawk --profile '{print > \"agent/reviews/1231-9/a.md\"}' /tmp/a"),
         "review-file-shell-write: gawk --profile takes its file only after = (906a4d56.1 sweep)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("gawk -W lint '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        bash_json("gawk -W lint '{print > \"agent/reviews/1231-9/a.md\"}' /tmp/a"),
         "review-file-shell-write: gawk -W takes a separate word, the word after it is the program (906a4d56.2)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("mawk -W interactive '{print > \"agent/reviews/0930-1/a.md\"}' /tmp/a"),
+        bash_json("mawk -W interactive '{print > \"agent/reviews/1231-9/a.md\"}' /tmp/a"),
         "review-file-shell-write: mawk -W takes a separate word (906a4d56.2)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("gawk -W dump-variables=agent/reviews/0930-1/a.md '{print}' /tmp/a"),
+        bash_json("gawk -W dump-variables=agent/reviews/1231-9/a.md '{print}' /tmp/a"),
         "review-file-shell-write: gawk -W hands over a long write option (906a4d56.2 sweep)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("xxd -ps /tmp/in agent/reviews/0930-1/a.md"),
+        bash_json("xxd -ps /tmp/in agent/reviews/1231-9/a.md"),
         "review-file-shell-write: xxd -ps is one flag, the second operand is its output (906a4d56 sweep)",
     ),
     case(
         "check 2 guards/block_review_file_shell_write.py",
-        bash_json("awk '{print > (FILENAME \".bak\")}' agent/reviews/0930-1/a.md"),
+        bash_json("awk '{print > (FILENAME \".bak\")}' agent/reviews/1231-9/a.md"),
         "review-file-shell-write: an awk program writes beside its input through FILENAME (906a4d56 sweep)",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("gawk '{print $1}' agent/reviews/0930-1/a.md"),
+        bash_json("gawk '{print $1}' agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: gawk reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("gawk -W lint '{print $1}' agent/reviews/0930-1/a.md"),
+        bash_json("gawk -W lint '{print $1}' agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: gawk -W lint reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("gawk -d '{print $1}' agent/reviews/0930-1/a.md"),
+        bash_json("gawk -d '{print $1}' agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: gawk -d reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("awk -F'|' '{print $2}' agent/reviews/0930-1/a.md"),
+        bash_json("awk -F'|' '{print $2}' agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: awk splitting on a pipe reads a review file",
     ),
     case(
         "check 0 guards/block_review_file_shell_write.py",
-        bash_json("xxd -ps agent/reviews/0930-1/a.md"),
+        bash_json("xxd -ps agent/reviews/1231-9/a.md"),
         "review-file-shell-write CONTROL: xxd -ps reads a review file",
     ),
     case(
