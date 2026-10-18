@@ -126,14 +126,26 @@ def run_port(root: pathlib.Path, prefix: str = "") -> tuple[int, str, str]:
         % (prefix, MODULE),
         cwd=str(root),
     )
-    return returncode, frozen.mask_root(stdout, root), frozen.mask_root(stderr, root)
+    return (
+        returncode,
+        mask_pin(frozen.mask_root(stdout, root)),
+        mask_pin(frozen.mask_root(stderr, root)),
+    )
+
+
+# The ruff pin, wherever a render names it (`with ruff X`, `ruff@X`, `ruff==X`, `/ruff/X/`). A golden is frozen at the pin of its recording and the gate prints the pins file's current one, so both sides are masked: a pin bump must not mean hand-editing frozen bytes.
+_RUFF_PIN = re.compile(r"(ruff[ @=/]=?)\d+\.\d+\.\d+")
+
+
+def mask_pin(text: str) -> str:
+    return _RUFF_PIN.sub(r"\1<RUFF_PIN>", text)
 
 
 def split_golden(text: str) -> tuple[int, str, str]:
-    """A recorded twin render, back into its three parts."""
+    """A recorded twin render, back into its three parts, with the ruff pin masked."""
     exit_line, rest = text.split("\n", 1)
     stdout, stderr = rest.split("--- stdout ---\n", 1)[1].split("--- stderr ---\n", 1)
-    return int(exit_line.removeprefix("exit: ")), stdout, stderr
+    return int(exit_line.removeprefix("exit: ")), mask_pin(stdout), mask_pin(stderr)
 
 
 def slug(case_id: str) -> str:
@@ -343,12 +355,7 @@ def test_colour_is_decided_by_ci_not_by_a_terminal(monkeypatch):
 
 
 def test_the_pin_the_twin_compares_against_matches_the_pins_file():
-    """The twin assigns RUFF_VERSION twice and the literal wins.
-
-    `toolchain_load` exports the pins-file value and the next line overwrites it
-    with `RUFF_VERSION="0.17.0"`, which is what `toolchain_pin_for ruff` then
-    reads. The two agree today; this asserts that, so the day they diverge the divergence is a red test rather than a gate silently demanding an old version.
-    """
+    """The gate's ruff pin is the pins file's: the twin's overriding literal kept the gate on 0.17.0 after the pins file moved to 0.17.1, so the port reads `.devcontainer/toolchain.env` and this pins that the two cannot diverge again."""
     pins = (pathlib.Path(diff.repo()) / ".devcontainer" / "toolchain.env").read_text(
         encoding="utf-8"
     )
