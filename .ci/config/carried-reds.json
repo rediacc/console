@@ -28,24 +28,5 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": [
-    {
-      "gate": "check:ci-pytest",
-      "findings": [
-        "pytest-skip:.ci.rediacc_ci.tests.test_quality_python_lint::test_port_matches_the_twins_recorded_output#a#shebang#with#git#mode#100644#is#EXE001#",
-        "pytest-skip:.ci.rediacc_ci.tests.test_quality_python_lint::test_port_matches_the_twins_recorded_output#no#shebang#with#git#mode#100755#is#EXE002#"
-      ],
-      "reason": "On this WSL host check:ci-pytest skips test_quality_python_lint's two EXE001/EXE002 cases, because WSL disables those ruff rules natively. CI runs on Linux and passes both. Since 2026-10-05 the gate keys each failure and each skip outside the CANNOT RUN contract, so these two are carried by name and any other red is refused. test_core_account no longer skips on a running account-config-rustfs container: its real-run case puts a failing docker first on PATH."
-    },
-    {
-      "gate": "check:ci-plan-implementation",
-      "findings": [
-        "P-A1:agent/plans/PLAN-inline-suppressions.md",
-        "P-A1:agent/plans/PLAN-remove-cross-session-messaging.md",
-        "P-A1:agent/plans/PLAN-stop-hook-rulings-campaign.md",
-        "P-A1:agent/plans/PLAN-tooling-transformation.md"
-      ],
-      "reason": "P-A1 lists plans with open boxes that close only after this PR's own steps or belong to another campaign: PLAN-inline-suppressions (8 boxes; their patches are delivered and not yet landed), PLAN-remove-cross-session-messaging (Steps 9, 10, 13 and one Step 12 box), PLAN-tooling-transformation W7P5-a/W7P5-c (PLAN-w7p5a-real-run-dispatch, worklist #dccf10ab) and PLAN-stop-hook-rulings-campaign (a queued campaign of its own, on the clock since 2026-10-13 only because this branch ticked its two abandoned poll boxes). Each key names its plan, so a plan that closes drops out of this list. The PR body carries Operational-Reason: for CI."
-    }
-  ]
+  "carried": []
 }
