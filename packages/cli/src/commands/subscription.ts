@@ -191,6 +191,51 @@ export async function resolveLoginToken(option: string): Promise<string> {
   return token;
 }
 
+/** `subscription login --token`: validate the token against the server, check its scope against the current team, store it and report the plan. */
+async function loginWithToken(token: string, serverUrl: string): Promise<void> {
+  const status = await withSpinner(
+    t('commands.subscription.login.validating'),
+    () =>
+      accountServerFetch<{
+        subscriptionId?: string;
+        orgId?: string;
+        orgName?: string;
+        planCode?: string;
+        status?: string;
+        activeMachineCount?: number;
+        maxMachines?: number;
+        overLimitCount?: number;
+        teamId?: string;
+        teamName?: string;
+      }>('/account/api/v1/licenses/status', { token, serverUrl }),
+    t('commands.subscription.login.validated')
+  );
+  const currentTeamName = await configService.getTeam();
+  const storedToken = {
+    token,
+    serverUrl,
+    subscriptionId: status.subscriptionId,
+    orgId: status.orgId,
+    orgName: status.orgName,
+    teamId: status.teamId,
+    teamName: status.teamName ?? currentTeamName,
+  };
+  const mismatch = getSubscriptionScopeMismatch(storedToken, currentTeamName);
+  if (mismatch) {
+    throw new ValidationError(mismatch);
+  }
+
+  saveStoredSubscriptionToken(storedToken);
+
+  setSubscriptionTelemetryContext({
+    subscriptionId: status.subscriptionId,
+    planCode: status.planCode,
+    status: status.status,
+    source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
+  });
+  renderLoginSummary(status, status.teamName ?? currentTeamName, serverUrl);
+}
+
 export function registerSubscriptionCommands(program: Command): void {
   const sub = program
     .command('subscription')
@@ -217,51 +262,7 @@ export function registerSubscriptionCommands(program: Command): void {
 
         const serverUrl = await resolveAndSyncServer(options);
 
-        if (token !== undefined) {
-          // Direct token mode (fallback)
-          const status = await withSpinner(
-            t('commands.subscription.login.validating'),
-            () =>
-              accountServerFetch<{
-                subscriptionId?: string;
-                orgId?: string;
-                orgName?: string;
-                planCode?: string;
-                status?: string;
-                activeMachineCount?: number;
-                maxMachines?: number;
-                overLimitCount?: number;
-                teamId?: string;
-                teamName?: string;
-              }>('/account/api/v1/licenses/status', { token, serverUrl }),
-            t('commands.subscription.login.validated')
-          );
-          const currentTeamName = await configService.getTeam();
-          const storedToken = {
-            token,
-            serverUrl,
-            subscriptionId: status.subscriptionId,
-            orgId: status.orgId,
-            orgName: status.orgName,
-            teamId: status.teamId,
-            teamName: status.teamName ?? currentTeamName,
-          };
-          const mismatch = getSubscriptionScopeMismatch(storedToken, currentTeamName);
-          if (mismatch) {
-            throw new ValidationError(mismatch);
-          }
-
-          saveStoredSubscriptionToken(storedToken);
-
-          const s = status;
-          setSubscriptionTelemetryContext({
-            subscriptionId: s.subscriptionId,
-            planCode: s.planCode,
-            status: s.status,
-            source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
-          });
-          renderLoginSummary(s, s.teamName ?? currentTeamName, serverUrl);
-        } else {
+        if (token === undefined) {
           const { status } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
             interactive: true,
             teamName: await configService.getTeam(),
@@ -272,6 +273,8 @@ export function registerSubscriptionCommands(program: Command): void {
             source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
           });
           renderLoginSummary(status, status.teamName, serverUrl);
+        } else {
+          await loginWithToken(token, serverUrl);
         }
       } catch (error) {
         handleError(error);

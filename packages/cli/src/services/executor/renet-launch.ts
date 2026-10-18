@@ -32,7 +32,7 @@ export interface RenetLaunch {
  * Anything else (PATH, LD_PRELOAD, BASH_ENV, IFS) would be exported by a root
  * bash before renet starts, so it is refused here and again by the reader.
  */
-export const RENET_SECRET_NAME = /^(REDIACC_SECRET_|REDIACC_OTLP_)[A-Za-z0-9_]+$/;
+const RENET_SECRET_NAME = /^(REDIACC_SECRET_|REDIACC_OTLP_)[A-Za-z0-9_]+$/;
 
 /**
  * The launcher a secret-carrying renet runs under: root bash reads

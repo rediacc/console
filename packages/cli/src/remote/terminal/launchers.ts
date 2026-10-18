@@ -119,7 +119,7 @@ export function buildBashExports(env?: Record<string, string>): string {
  * cmd.exe, wt.exe and wsl.exe is then only this path, which needs no quoting
  * on any of them, and no command text rides their argv.
  */
-export function writeWslLaunchScript(options: TerminalLaunchOptions): string {
+function writeWslLaunchScript(options: TerminalLaunchOptions): string {
   const dir = mkdtempSync(join(tmpdir(), 'rdc-term-'));
   const path = join(dir, 'launch.sh');
   const lines = [
