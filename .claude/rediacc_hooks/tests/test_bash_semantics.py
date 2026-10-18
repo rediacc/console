@@ -23,6 +23,7 @@ import sys
 import tarfile
 import types
 import uuid
+import zipfile
 from dataclasses import dataclass, field
 
 import pytest
@@ -3071,7 +3072,12 @@ def test_a_copy_carries_its_source_3ff3bb16(bash, tmp_path):
     assert not wrong, "\n".join(map(repr, wrong))
 
 
-# A FILE A TOOL WRITES THROUGH ITS OWN OUTPUT OPTION IS WRITTEN (#63109cf2). The scratch directory holds `src.py` (prints 1), `w.tar` holding `a.py` (prints 4) and an empty `o/`; each row runs under real bash, then the files and directories it made are removed, so the walk reads the world as it was before the command ran. The first four were `(None, None)` at 8ef785864, the script read as absent, while bash ran it; the last two are controls whose script nothing in the line writes.
+# A FILE A TOOL WRITES THROUGH ITS OWN OUTPUT OPTION IS WRITTEN (#63109cf2). The scratch directory holds `src.py` (prints 1), `w.tar` holding `a.py` (prints 4) and an empty `o/`; each row runs under real bash, then the files and directories it made are removed and `w.tar` is rebuilt, so the walk reads the world as it was before the command ran. Every row names the kind the walk must give the script the last `python3` runs:
+# - the first four, a `curl -o`, a `curl -O` and two extractions of w.tar, were `(None, None)` at 8ef785864, the script read as absent while bash ran it, and are "unjudgeable" now;
+# - the fifth (review 6c9f6fd8.1) extracts a.py over an echoed a.py, which bash replaces, so the echoed text is not what runs;
+# - the next two (review c988ab31.1) echo b.py beside an extraction of w.tar, which holds only a.py: bash runs the echoed b.py, and the walk lists w.tar and reads the echoed text, where c988ab31's drop of the whole directory read "unjudgeable";
+# - the next four are extractions whose archive the walk does not list (fed on stdin twice, appended to by an earlier run, written by an earlier copy), so the whole directory is still dropped: bash runs the extracted a.py in the eighth, and in the ninth, tenth and eleventh an echoed or appended b.py, which the walk reads as "unjudgeable" by design;
+# - the last two are controls whose script nothing in the line writes.
 TOOL_OUTPUT_ROWS = [
     ("curl -s -o {T}/a.py file://{T}/src.py && python3 {T}/a.py", "1\n", "unjudgeable"),
     ("cd {T}/o && curl -sO file://{T}/src.py && python3 src.py", "1\n", "unjudgeable"),
@@ -3083,9 +3089,39 @@ TOOL_OUTPUT_ROWS = [
         "4\n",
         "unjudgeable",
     ),
+    ("cd {T}/o && echo 'print(1)' > b.py && tar -xf {T}/w.tar && python3 b.py", "1\n", "file"),
+    (
+        "echo 'print(1)' > {T}/o/b.py && tar -xf {T}/w.tar -C {T}/o && python3 {T}/o/b.py",
+        "1\n",
+        "file",
+    ),
+    ("cd {T}/o && tar -xf - < {T}/w.tar && python3 a.py", "4\n", "unjudgeable"),
+    (
+        "cd {T}/o && echo 'print(1)' > b.py && tar -xf - < {T}/w.tar && python3 b.py",
+        "1\n",
+        "unjudgeable",
+    ),
+    (
+        "cd {T}/o && echo 'print(5)' > b.py && tar -rf {T}/w.tar b.py && echo 'print(2)' > b.py && tar -xf {T}/w.tar && python3 b.py",
+        "5\n",
+        "unjudgeable",
+    ),
+    (
+        "cp {T}/w.tar {T}/m.tar && cd {T}/o && echo 'print(1)' > b.py && tar -xf {T}/m.tar && python3 b.py",
+        "1\n",
+        "unjudgeable",
+    ),
     ("curl -s -o {T}/b.py file://{T}/src.py && python3 {T}/src.py", "1\n", "file"),
     ("tar -cf {T}/n.tar -C {T} src.py && python3 {T}/src.py", "1\n", "file"),
 ]
+
+
+def _write_w_tar(tmp):
+    """`w.tar` in `tmp`, holding only `a.py` (prints 4)."""
+    (tmp / "a.py").write_text("print(4)\n", encoding="utf-8")
+    with tarfile.open(tmp / "w.tar", "w") as archive:
+        archive.add(tmp / "a.py", arcname="a.py")
+    (tmp / "a.py").unlink()
 
 
 def _tool_output_wrong(module, bash_path, tmp_path):
@@ -3094,21 +3130,15 @@ def _tool_output_wrong(module, bash_path, tmp_path):
         tmp = tmp_path / ("t%d" % k)
         (tmp / "o").mkdir(parents=True)
         (tmp / "src.py").write_text("print(1)\n", encoding="utf-8")
-        (tmp / "a.py").write_text("print(4)\n", encoding="utf-8")
-        with tarfile.open(tmp / "w.tar", "w") as archive:
-            archive.add(tmp / "a.py", arcname="a.py")
-        (tmp / "a.py").unlink()
+        _write_w_tar(tmp)
         command = _subst(script, tmp)
         _rc, out = run_bash(bash_path, Fact("O%d" % k, "tool output", script), tmp)
         assert out == prints, "bash printed %r for %s" % (out, script)
         for path in list(tmp.rglob("*")):
             rel = path.relative_to(tmp)
-            if (
-                path.is_file()
-                and str(rel) not in ("src.py", "w.tar")
-                and rel.parts[0] not in ("bin", "home")
-            ):
+            if path.is_file() and str(rel) != "src.py" and rel.parts[0] not in ("bin", "home"):
                 path.unlink()
+        _write_w_tar(tmp)
         for path in tmp.iterdir():
             if path.is_dir() and path.name not in ("o", "bin", "home"):
                 shutil.rmtree(path)
@@ -3181,6 +3211,21 @@ TOOL_OUTPUT_PLANTS = [
         "                dict.__setitem__(out, key, None)\n",
         "                pass\n",
     ),
+    (
+        "every extraction drops its whole directory (review c988ab31.1)",
+        "        listed = _archive_members(run, cwd, out, seen[:-1]) if dirs else None\n",
+        "        listed = None\n",
+    ),
+    (
+        "an archive an earlier run names is listed off the disk (review c988ab31.1)",
+        "            if name in word or _unexpanded_word(word):\n",
+        "            if False:\n",
+    ),
+    (
+        "a listed member keeps an earlier write's text (review c988ab31.1)",
+        "                record(os.path.join(listed[0], member), run.cwd, None)\n",
+        "                pass\n",
+    ),
 ]
 
 
@@ -3191,6 +3236,109 @@ def test_each_tool_output_plant_turns_a_row_63109cf2(bash, tmp_path, label, old,
     assert _tool_output_wrong(_planted_shellscan(old, new), bash, tmp_path), (
         "plant %r turns no row: the table cannot see it" % label
     )
+
+
+# A LONG OPTION'S VALUE IS NOT A URL (review ff2ccadb.1). Each curl row runs under real bash and curl 8.18.0 against `file://` in an empty scratch directory, and the files curl made there must be exactly the files `_tool_outputs` names. At the base the `--user bob`, `--header`, `--referer`, `--cookie` and `--stderr` rows read the option's value as a URL and named an `index.html` download curl never made (and missed the `--stderr` file); `--user=bob`, `--url`, a boolean with a dot in it, `--silent` and `--` are controls that were right there.
+# The table below is read without running a tool (wget has no `file://`, and an option curl does not know makes it refuse). At the base the unknown curl option, the wget `--header` value, the unique prefixes `--output-doc` and `--directory-pre`, the ambiguous `--re` and `--save-cookies` each named a download that is not one; `--no-silent`, `--user-agent=ua`, `--quiet`, `--no-recursive` and `--` are controls.
+CURL_OPTION_ROWS = [
+    "curl -sO --user bob file://{T}/src.py",
+    "curl -sO --user=bob file://{T}/src.py",
+    "curl -sO --header X-A:b file://{T}/src.py",
+    "curl -sO --referer r file://{T}/src.py",
+    "curl -sO --cookie c file://{T}/src.py",
+    "curl -s --stderr e.log -O file://{T}/src.py",
+    "curl -s --url file://{T}/src.py -O",
+    "curl -s --http1.1 -O file://{T}/src.py",
+    "curl -O --silent file://{T}/src.py",
+    "curl -sO -- file://{T}/src.py",
+]
+LONG_OPTION_ROWS: dict[str, tuple[list[str], list[str]]] = {
+    "curl -O --frobnicate bob https://x.invalid/a.py": (["a.py"], []),
+    "curl --no-silent -O https://x.invalid/a.py": (["a.py"], []),
+    "wget --header X https://x.invalid/a.py": (["a.py"], []),
+    "wget --user-agent=ua https://x.invalid/a.py": (["a.py"], []),
+    "wget --output-doc a.py https://x.invalid/y": (["a.py"], []),
+    "wget --directory-pre d https://x.invalid/s/a.py": (["d/a.py"], []),
+    "wget --re x https://x.invalid/a.py": (["a.py"], []),
+    "wget --save-cookies c.txt https://x.invalid/a.py": (["c.txt", "a.py"], []),
+    "wget --quiet https://x.invalid/a.py": (["a.py"], []),
+    "wget --no-recursive https://x.invalid/a.py": (["a.py"], []),
+    "wget -- https://x.invalid/a.py": (["a.py"], []),
+}
+
+
+def _long_option_wrong(module, bash_path, tmp_path):
+    wrong: list[tuple] = []
+    for k, script in enumerate(CURL_OPTION_ROWS):
+        tmp = tmp_path / ("c%d" % k)
+        (tmp / "o").mkdir(parents=True)
+        (tmp / "src.py").write_text("print(1)\n", encoding="utf-8")
+        _rc, _out = run_bash(
+            bash_path, Fact("L%d" % k, "long option", "cd {T}/o && " + script), tmp
+        )
+        made = sorted(p.name for p in (tmp / "o").iterdir())
+        module._ANALYSIS_CACHE.clear()
+        got = sorted(module._tool_outputs(next(iter(module.every_run(_subst(script, tmp)))))[0])
+        if got != made:
+            wrong.append((script, got, made))
+    for cmd, want in LONG_OPTION_ROWS.items():
+        module._ANALYSIS_CACHE.clear()
+        got = module._tool_outputs(next(iter(module.every_run(cmd))))
+        if got != want:
+            wrong.append((cmd, got, want))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_a_long_option_value_is_not_a_url_ff2ccadb(bash, tmp_path):
+    wrong = _long_option_wrong(shellscan, bash, tmp_path)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+LONG_OPTION_PLANTS = [
+    (
+        "a curl long option's value read as a URL",
+        "key, takes = _long_option(key, _CURL_LONG_VALUED, _CURL_LONG_FLAGS, False)",
+        "takes = False",
+    ),
+    (
+        "a wget long option's value read as a URL",
+        "key, takes = _long_option(key, _WGET_LONG_VALUED, _WGET_LONG_FLAGS, True)",
+        "takes = False",
+    ),
+    ("an unknown long option takes no value", "    return key, None\n", "    return key, False\n"),
+    ("a wget prefix left unresolved", "    if prefixes:\n", "    if False:\n"),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "old", "new"), LONG_OPTION_PLANTS, ids=[p[0] for p in LONG_OPTION_PLANTS]
+)
+def test_each_long_option_plant_turns_a_row_ff2ccadb(bash, tmp_path, label, old, new):
+    assert _long_option_wrong(_planted_shellscan(old, new), bash, tmp_path), (
+        "plant %r turns no row: the table cannot see it" % label
+    )
+
+
+def test_a_listable_zip_replaces_only_its_members_c988ab31(tmp_path):
+    """Review c988ab31.1 for `unzip`, which this machine does not carry, so the walk alone is read: w.zip holds only a.py, so an echoed b.py beside it keeps its text and an echoed a.py is replaced; a zip the walk cannot list (missing) still drops the directory."""
+    with zipfile.ZipFile(tmp_path / "w.zip", "w") as archive:
+        archive.writestr("a.py", "print(4)\n")
+    cwd = str(tmp_path)
+    rows = {
+        "echo 'print(1)' > b.py && unzip -q w.zip && python3 b.py": "file",
+        "echo 'print(1)' > a.py && unzip -o w.zip && python3 a.py": "unjudgeable",
+        "echo 'print(1)' > b.py && unzip -q gone.zip && python3 b.py": "unjudgeable",
+        "echo 'print(1)' > d/b.py && unzip w.zip -d d && python3 d/b.py": "file",
+        "echo 'print(1)' > d/a.py && unzip w.zip -d d && python3 d/a.py": "unjudgeable",
+    }
+    got = {}
+    for cmd in rows:
+        shellscan._ANALYSIS_CACHE.clear()
+        run = [r for r in shellscan.every_run(cmd) if r.name == "python3"][-1]
+        got[cmd] = shellscan.interpreter_program(run, cmd, cwd)[1]
+    shellscan._ANALYSIS_CACHE.clear()
+    assert got == rows
 
 
 # THE PLANTS for #4deea064, #3ff3bb16 and review 2e50ca28.1/.3. Each puts one piece back the way it was at d73b26844 (or the way the review feared) in a copy of shellscan loaded from source and must turn at least one row of the tables above.
@@ -3501,3 +3649,72 @@ def test_git_runs_that_can_run_programs_touch_directories_6c9f6fd8():
     assert touches("git -c core.hooksPath=h status")
     assert not touches("git status")
     assert not touches('git -C "$X" log')
+
+
+# A RUN TOUCHES ONLY WHEN IT SETS A PROGRAM KEY (review ff2ccadb.2). Every False row but `--list --show-origin` was True at the base, a word naming the key enough; that row and every True row (a run that points a key at a value that can name a program) are controls the base already answered.
+GIT_PROGRAM_ROWS = {
+    "git -c core.fsmonitor=false status": False,
+    "git -c core.hooksPath= status": False,
+    "git -c core.fsmonitor=off status": False,
+    "git config --get core.hooksPath": False,
+    "git config --unset core.fsmonitor": False,
+    "git config --get core.hooksPath h": False,
+    "git config --unset core.fsmonitor ./mon": False,
+    "git config --local --unset-all core.hooksPath": False,
+    "git config get core.hooksPath": False,
+    "git config core.hooksPath": False,
+    "git config core.fsmonitor 0": False,
+    "git config --list --show-origin": False,
+    "git -c core.fsmonitor=./mon status": True,
+    "git -c core.hooksPath status": True,
+    "git config core.fsmonitor ./mon": True,
+    "git config --global core.hooksPath /x/hooks": True,
+    "git config set core.hooksPath h": True,
+    "git config --file f core.hooksPath h": True,
+    'git config core.hooksPath "$H"': True,
+    "git --config-env=core.hooksPath=H status": True,
+}
+
+
+def _git_program_wrong(module):
+    wrong = []
+    for cmd, want in GIT_PROGRAM_ROWS.items():
+        module._ANALYSIS_CACHE.clear()
+        got = module._may_touch_directories(next(iter(module.every_run(cmd))))
+        if got != want:
+            wrong.append((cmd, got, want))
+    module._ANALYSIS_CACHE.clear()
+    return wrong
+
+
+def test_only_a_program_key_set_touches_directories_ff2ccadb():
+    wrong = _git_program_wrong(shellscan)
+    assert not wrong, "\n".join(map(repr, wrong))
+
+
+GIT_PROGRAM_PLANTS = [
+    (
+        "any word naming a program key counts",
+        "        if _git_sets_program_key(list(words)):\n",
+        '        if any(re.search(r"(?i)\\bcore\\.(?:fsmonitor|hookspath)\\b", w) for w in words):\n',
+    ),
+    (
+        "an off value counts",
+        "or value.strip().lower() not in _GIT_OFF_VALUES",
+        "or True",
+    ),
+    (
+        "a reading git config counts",
+        '        if word in _GIT_CONFIG_READERS and (word.startswith("-") or not operands):\n            return False\n',
+        "",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "old", "new"), GIT_PROGRAM_PLANTS, ids=[p[0] for p in GIT_PROGRAM_PLANTS]
+)
+def test_each_git_program_plant_turns_a_row_ff2ccadb(label, old, new):
+    assert _git_program_wrong(_planted_shellscan(old, new)), (
+        "plant %r turns no row: the table cannot see it" % label
+    )

@@ -66,12 +66,16 @@ import base64
 import glob
 import itertools
 import json
+import lzma
 import os
 import posixpath
 import re
 import subprocess
+import tarfile
 import typing
 import urllib.parse
+import zipfile
+import zlib
 
 from rediacc_hooks.wellknown import GH_REPO
 
@@ -7401,15 +7405,479 @@ def writer_text(run, cmd):
 
 
 # A FILE A TOOL WRITES THROUGH ITS OWN OUTPUT OPTION IS WRITTEN (#63109cf2). `curl -o a.py URL && python3 a.py`, `wget -O a.py URL && python3 a.py` and `tar -xf x.tar && python3 a.py` run a program that is not on disk when the hook reads it, so the script was absent, `(None, None)`, and every guard judged the line as running nothing, while `curl URL > a.py` already made it unjudgeable. A downloader's output file
-# (`curl -o`/`--output`, `-O` and `--remote-name` naming the URL's last segment, `-D`/`-c` and their long forms; `wget -O`/`--output-document`, `-o`/`-a`, and with no `-O` the URL's last segment under `-P`) is a write of unknown content; an archive extraction (`tar`/`bsdtar` with `x`, `--extract` or `--get`, `unzip` short of `-l`/`-t`/`-p`/`-v`/`-Z`), a recursive `wget` and a `curl -J` leave every file under the directory they write into unknown, since which files they make cannot be read here.
+# (`curl -o`/`--output`, `-O` and `--remote-name` naming the URL's last segment, `-D`/`-c` and their long forms; `wget -O`/`--output-document`, `-o`/`-a`, and with no `-O` the URL's last segment under `-P`) is a write of unknown content; an archive extraction (`tar`/`bsdtar` with `x`, `--extract` or `--get`, `unzip` short of `-l`/`-t`/`-p`/`-v`/`-Z`), a recursive `wget` and a `curl -J` leave every file under the directory they write into unknown, since which files they make cannot be read here (an extraction whose archive can be listed is narrowed to its members, `_archive_members` below).
 _CURL_VALUED = frozenset("AbcCdDeEFHKmoPQrtTuUwxXyYz")
 _CURL_LONG_OUT = {
     "--output": "file",
     "--dump-header": "file",
     "--cookie-jar": "file",
     "--output-dir": "dir",
+    "--stderr": "file",
+    "--trace": "file",
+    "--trace-ascii": "file",
+    "--libcurl": "file",
+    "--etag-save": "file",
 }
 _WGET_VALUED = frozenset("OoaPeitTwQUlARDIXB")
+# A LONG OPTION'S VALUE IS NOT A URL (review ff2ccadb.1). `curl -O --user bob https://x.invalid/a.py` recorded `bob` as a download, since only the output options above skipped their value. The two sets below are every long option curl 8.18.0 (`curl --help all`) and GNU Wget 1.25.0 (`wget --help`, plus `--max-redirect`, `--hsts-file`, `--method` and `--secure-protocol`, which take a value the help text does not show) takes a value for, and every one it does not; `_long_option` reads a word against them.
+# curl takes no abbreviation and accepts `--no-` before a boolean; wget, through getopt_long, takes any unambiguous prefix and accepts `--no-` before every boolean. A long option in neither set (a newer tool, a typo, an ambiguous prefix) may take the next word, so that word is read as a possible value and never as a URL: a missed download stays the old miss, while a false one would name a file nothing wrote.
+_CURL_LONG_VALUED = frozenset(
+    [
+        "abstract-unix-socket",
+        "alt-svc",
+        "aws-sigv4",
+        "cacert",
+        "capath",
+        "cert",
+        "cert-type",
+        "ciphers",
+        "config",
+        "connect-timeout",
+        "connect-to",
+        "continue-at",
+        "cookie",
+        "cookie-jar",
+        "create-file-mode",
+        "crlfile",
+        "curves",
+        "data",
+        "data-ascii",
+        "data-binary",
+        "data-raw",
+        "data-urlencode",
+        "delegation",
+        "dns-interface",
+        "dns-ipv4-addr",
+        "dns-ipv6-addr",
+        "dns-servers",
+        "doh-url",
+        "dump-header",
+        "ech",
+        "egd-file",
+        "engine",
+        "etag-compare",
+        "etag-save",
+        "expect100-timeout",
+        "form",
+        "form-string",
+        "ftp-account",
+        "ftp-alternative-to-user",
+        "ftp-method",
+        "ftp-port",
+        "ftp-ssl-ccc-mode",
+        "happy-eyeballs-timeout-ms",
+        "haproxy-clientip",
+        "header",
+        "help",
+        "hostpubmd5",
+        "hostpubsha256",
+        "hsts",
+        "interface",
+        "ip-tos",
+        "ipfs-gateway",
+        "json",
+        "keepalive-cnt",
+        "keepalive-time",
+        "key",
+        "key-type",
+        "knownhosts",
+        "krb",
+        "libcurl",
+        "limit-rate",
+        "local-port",
+        "login-options",
+        "mail-auth",
+        "mail-from",
+        "mail-rcpt",
+        "max-filesize",
+        "max-redirs",
+        "max-time",
+        "netrc-file",
+        "noproxy",
+        "oauth2-bearer",
+        "output",
+        "output-dir",
+        "parallel-max",
+        "parallel-max-host",
+        "pass",
+        "pinnedpubkey",
+        "preproxy",
+        "proto",
+        "proto-default",
+        "proto-redir",
+        "proxy",
+        "proxy-cacert",
+        "proxy-capath",
+        "proxy-cert",
+        "proxy-cert-type",
+        "proxy-ciphers",
+        "proxy-crlfile",
+        "proxy-header",
+        "proxy-key",
+        "proxy-key-type",
+        "proxy-pass",
+        "proxy-pinnedpubkey",
+        "proxy-service-name",
+        "proxy-tls13-ciphers",
+        "proxy-tlsauthtype",
+        "proxy-tlspassword",
+        "proxy-tlsuser",
+        "proxy-user",
+        "proxy1.0",
+        "pubkey",
+        "quote",
+        "random-file",
+        "range",
+        "rate",
+        "referer",
+        "request",
+        "request-target",
+        "resolve",
+        "retry",
+        "retry-delay",
+        "retry-max-time",
+        "sasl-authzid",
+        "service-name",
+        "sigalgs",
+        "socks4",
+        "socks4a",
+        "socks5",
+        "socks5-gssapi-service",
+        "socks5-hostname",
+        "speed-limit",
+        "speed-time",
+        "ssl-sessions",
+        "stderr",
+        "telnet-option",
+        "tftp-blksize",
+        "time-cond",
+        "tls-max",
+        "tls13-ciphers",
+        "tlsauthtype",
+        "tlspassword",
+        "tlsuser",
+        "trace",
+        "trace-ascii",
+        "trace-config",
+        "unix-socket",
+        "upload-file",
+        "upload-flags",
+        "url",
+        "url-query",
+        "user",
+        "user-agent",
+        "variable",
+        "vlan-priority",
+        "write-out",
+    ]
+)
+_CURL_LONG_FLAGS = frozenset(
+    [
+        "anyauth",
+        "append",
+        "basic",
+        "ca-native",
+        "cert-status",
+        "compressed",
+        "compressed-ssh",
+        "create-dirs",
+        "crlf",
+        "digest",
+        "disable",
+        "disable-eprt",
+        "disable-epsv",
+        "disallow-username-in-url",
+        "doh-cert-status",
+        "doh-insecure",
+        "dump-ca-embed",
+        "fail",
+        "fail-early",
+        "fail-with-body",
+        "false-start",
+        "follow",
+        "form-escape",
+        "ftp-create-dirs",
+        "ftp-pasv",
+        "ftp-pret",
+        "ftp-skip-pasv-ip",
+        "ftp-ssl-ccc",
+        "ftp-ssl-control",
+        "get",
+        "globoff",
+        "haproxy-protocol",
+        "head",
+        "http0.9",
+        "http1.0",
+        "http1.1",
+        "http2",
+        "http2-prior-knowledge",
+        "http3",
+        "http3-only",
+        "ignore-content-length",
+        "insecure",
+        "ipv4",
+        "ipv6",
+        "junk-session-cookies",
+        "list-only",
+        "location",
+        "location-trusted",
+        "mail-rcpt-allowfails",
+        "manual",
+        "metalink",
+        "mptcp",
+        "negotiate",
+        "netrc",
+        "netrc-optional",
+        "next",
+        "no-alpn",
+        "no-buffer",
+        "no-clobber",
+        "no-keepalive",
+        "no-npn",
+        "no-progress-meter",
+        "no-sessionid",
+        "ntlm",
+        "ntlm-wb",
+        "out-null",
+        "parallel",
+        "parallel-immediate",
+        "path-as-is",
+        "post301",
+        "post302",
+        "post303",
+        "progress-bar",
+        "proxy-anyauth",
+        "proxy-basic",
+        "proxy-ca-native",
+        "proxy-digest",
+        "proxy-http2",
+        "proxy-insecure",
+        "proxy-negotiate",
+        "proxy-ntlm",
+        "proxy-ssl-allow-beast",
+        "proxy-ssl-auto-client-cert",
+        "proxy-tlsv1",
+        "proxytunnel",
+        "raw",
+        "remote-header-name",
+        "remote-name",
+        "remote-name-all",
+        "remote-time",
+        "remove-on-error",
+        "retry-all-errors",
+        "retry-connrefused",
+        "sasl-ir",
+        "show-error",
+        "show-headers",
+        "silent",
+        "skip-existing",
+        "socks5-basic",
+        "socks5-gssapi",
+        "socks5-gssapi-nec",
+        "ssl",
+        "ssl-allow-beast",
+        "ssl-auto-client-cert",
+        "ssl-no-revoke",
+        "ssl-reqd",
+        "ssl-revoke-best-effort",
+        "sslv2",
+        "sslv3",
+        "styled-output",
+        "suppress-connect-headers",
+        "tcp-fastopen",
+        "tcp-nodelay",
+        "tftp-no-options",
+        "tls-earlydata",
+        "tlsv1",
+        "tlsv1.0",
+        "tlsv1.1",
+        "tlsv1.2",
+        "tlsv1.3",
+        "tr-encoding",
+        "trace-ids",
+        "trace-time",
+        "use-ascii",
+        "verbose",
+        "version",
+        "xattr",
+    ]
+)
+_WGET_LONG_VALUED = frozenset(
+    [
+        "accept",
+        "accept-regex",
+        "append-output",
+        "backups",
+        "base",
+        "bind-address",
+        "body-data",
+        "body-file",
+        "ca-certificate",
+        "ca-directory",
+        "certificate",
+        "certificate-type",
+        "ciphers",
+        "compression",
+        "config",
+        "connect-timeout",
+        "crl-file",
+        "cut-dirs",
+        "default-page",
+        "directory-prefix",
+        "dns-timeout",
+        "domains",
+        "exclude-directories",
+        "exclude-domains",
+        "execute",
+        "follow-tags",
+        "ftp-password",
+        "ftp-user",
+        "header",
+        "hsts-file",
+        "http-password",
+        "http-user",
+        "ignore-tags",
+        "include-directories",
+        "input-file",
+        "level",
+        "limit-rate",
+        "load-cookies",
+        "local-encoding",
+        "max-redirect",
+        "method",
+        "output-document",
+        "output-file",
+        "password",
+        "pinnedpubkey",
+        "post-data",
+        "post-file",
+        "prefer-family",
+        "private-key",
+        "private-key-type",
+        "progress",
+        "proxy-password",
+        "proxy-user",
+        "quota",
+        "read-timeout",
+        "referer",
+        "regex-type",
+        "reject",
+        "reject-regex",
+        "rejected-log",
+        "remote-encoding",
+        "report-speed",
+        "restrict-file-names",
+        "retry-on-http-error",
+        "save-cookies",
+        "secure-protocol",
+        "start-pos",
+        "timeout",
+        "tries",
+        "use-askpass",
+        "user",
+        "user-agent",
+        "wait",
+        "waitretry",
+        "warc-dedup",
+        "warc-file",
+        "warc-header",
+        "warc-max-size",
+        "warc-tempdir",
+    ]
+)
+_WGET_LONG_FLAGS = frozenset(
+    [
+        "adjust-extension",
+        "ask-password",
+        "auth-no-challenge",
+        "background",
+        "backup-converted",
+        "content-disposition",
+        "content-on-error",
+        "continue",
+        "convert-file-only",
+        "convert-links",
+        "debug",
+        "delete-after",
+        "follow-ftp",
+        "force-directories",
+        "force-html",
+        "ftps-clear-data-connection",
+        "ftps-fallback-to-ftp",
+        "ftps-implicit",
+        "ftps-resume-ssl",
+        "help",
+        "https-only",
+        "ignore-case",
+        "ignore-length",
+        "inet4-only",
+        "inet6-only",
+        "keep-session-cookies",
+        "mirror",
+        "no-cache",
+        "no-check-certificate",
+        "no-clobber",
+        "no-config",
+        "no-cookies",
+        "no-directories",
+        "no-dns-cache",
+        "no-glob",
+        "no-host-directories",
+        "no-hsts",
+        "no-http-keep-alive",
+        "no-if-modified-since",
+        "no-iri",
+        "no-netrc",
+        "no-parent",
+        "no-passive-ftp",
+        "no-proxy",
+        "no-remove-listing",
+        "no-use-server-timestamps",
+        "no-verbose",
+        "no-warc-compression",
+        "no-warc-digests",
+        "no-warc-keep-log",
+        "page-requisites",
+        "preserve-permissions",
+        "protocol-directories",
+        "quiet",
+        "random-wait",
+        "recursive",
+        "relative",
+        "retr-symlinks",
+        "retry-connrefused",
+        "retry-on-host-error",
+        "save-headers",
+        "server-response",
+        "show-progress",
+        "span-hosts",
+        "spider",
+        "strict-comments",
+        "timestamping",
+        "trust-server-names",
+        "unlink",
+        "verbose",
+        "version",
+        "warc-cdx",
+        "xattr",
+    ]
+)
+
+
+def _long_option(key, valued, flags, prefixes):
+    """`(name, takes)` for a long option `key` (`--name`, no `=value`): `name` is the option it spells, its unique prefix resolved when `prefixes` (wget), and `takes` is True for one that takes a value, False for one that does not, None for one in neither set (the comment above)."""
+    name = key[2:]
+    if name in valued:
+        return "--" + name, True
+    if name in flags or (name.startswith("no-") and name[3:] in flags):
+        return "--" + name, False
+    if prefixes:
+        hits = {o for o in valued | flags if o.startswith(name)}
+        hits |= {"no-" + o for o in flags if ("no-" + o).startswith(name)}
+        if len(hits) == 1:
+            (only,) = hits
+            return "--" + only, only in valued
+    return key, None
 
 
 def _url_name(url):
@@ -7436,18 +7904,24 @@ def _tool_outputs(run):
         while k < len(words):
             word = words[k]
             k += 1
+            if word == "--":
+                positional.extend(words[k:])
+                break
             if word.startswith("--"):
                 key, eq, value = word.partition("=")
+                key, takes = _long_option(key, _CURL_LONG_VALUED, _CURL_LONG_FLAGS, False)
+                if takes is not False and not eq and k < len(words):
+                    value = words[k]
+                    k += 1
                 if key in _CURL_LONG_OUT:
-                    if not eq and k < len(words):
-                        value = words[k]
-                        k += 1
                     if _CURL_LONG_OUT[key] == "dir":
                         out_dir = value
                     elif key == "--output":
                         outputs.append(value)
                     else:
                         files.append(value)
+                elif key == "--url":
+                    positional.append(value)
                 remote |= key in ("--remote-name", "--remote-name-all")
                 header |= key == "--remote-header-name"
                 continue
@@ -7485,17 +7959,23 @@ def _tool_outputs(run):
         while k < len(words):
             word = words[k]
             k += 1
+            if word == "--":
+                wpositional.extend(words[k:])
+                break
             if word.startswith("--"):
                 key, eq, value = word.partition("=")
+                key, takes = _long_option(key, _WGET_LONG_VALUED, _WGET_LONG_FLAGS, True)
+                if takes is not False and not eq and k < len(words):
+                    value = words[k]
+                    k += 1
                 if key in (
                     "--output-document",
                     "--output-file",
                     "--append-output",
                     "--directory-prefix",
+                    "--save-cookies",
+                    "--rejected-log",
                 ):
-                    if not eq and k < len(words):
-                        value = words[k]
-                        k += 1
                     if key == "--output-document":
                         document = value
                     elif key == "--directory-prefix":
@@ -7560,6 +8040,161 @@ def _tool_outputs(run):
                 target = words[k + 1]
         return [], [target]
     return [], []
+
+
+# AN ARCHIVE WHOSE MEMBERS CAN BE LISTED REPLACES ONLY THOSE MEMBERS (review c988ab31.1). Every recorded path under an extraction's directory was dropped to unknown, so `echo 'print(1)' > o/b.py && tar -xf w.tar -C o && python3 o/b.py` read b.py as unknown while bash ran the echoed b.py, since w.tar holds only a.py. When the archive is a regular file on disk that no earlier run of the command writes or names, no larger than `_ARCHIVE_MAX`, and the run is a plain extraction of all of it
+# (only the options below, no member operands, at most one directory), `tarfile` or `zipfile` lists it without extracting: each regular-file member is recorded as a write of unknown content and nothing else under the directory changes. Anything else (a missing archive, a pipe or `-f -`, a remote `host:file`, a link, absolute or `..` member, more than `_SEARCH_CAP` members or `_ARCHIVE_UNPACKED_MAX` bytes of them, an option that renames or selects members) keeps the drop of the whole directory.
+_ARCHIVE_MAX = 4 << 20
+_ARCHIVE_UNPACKED_MAX = 64 << 20
+_TAR_PLAIN_LETTERS = frozenset("xvzjJapo")
+_TAR_PLAIN_LONG = frozenset(
+    (
+        "--extract",
+        "--get",
+        "--verbose",
+        "--gzip",
+        "--gunzip",
+        "--ungzip",
+        "--bzip2",
+        "--xz",
+        "--lzma",
+        "--auto-compress",
+        "--preserve-permissions",
+        "--same-permissions",
+        "--no-same-owner",
+    )
+)
+_UNZIP_PLAIN = re.compile(r"-[qon]+")
+_ARCHIVE_READ_ERRORS = (
+    OSError,
+    EOFError,
+    ValueError,
+    tarfile.TarError,
+    zipfile.BadZipFile,
+    zlib.error,
+    lzma.LZMAError,
+)
+
+
+def _tar_operands(words):
+    """`(archive, directory, extracting)` for a plain `tar`/`bsdtar` argv, None for one that uses any other option or names a member (the comment above)."""
+    archive, dirs, extracting, k = None, [], False, 0
+    while k < len(words):
+        word = words[k]
+        k += 1
+        if word in ("-C", "--directory", "--file"):
+            if k >= len(words):
+                return None
+            if word == "--file":
+                archive = words[k]
+            else:
+                dirs.append(words[k])
+            k += 1
+        elif word.startswith(("--directory=", "--file=")):
+            key, _eq, value = word.partition("=")
+            if key == "--file":
+                archive = value
+            else:
+                dirs.append(value)
+        elif word.startswith("-C"):
+            dirs.append(word[2:])
+        elif word in _TAR_PLAIN_LONG:
+            extracting |= word in ("--extract", "--get")
+        elif (k == 1 and not word.startswith("-")) or (
+            word.startswith("-") and not word.startswith("--") and len(word) > 1
+        ):
+            letters = word.lstrip("-")
+            at = letters.find("f")
+            flags = letters if at < 0 else letters[:at]
+            if set(flags) - _TAR_PLAIN_LETTERS:
+                return None
+            extracting |= "x" in flags
+            if at >= 0:
+                if word.startswith("-") and letters[at + 1 :]:
+                    archive = letters[at + 1 :]
+                elif (
+                    word.startswith("-") or not set(letters[at + 1 :]) - _TAR_PLAIN_LETTERS
+                ) and k < len(words):
+                    extracting |= "x" in letters[at + 1 :]
+                    archive = words[k]
+                    k += 1
+                else:
+                    return None
+        else:
+            return None
+    if len(dirs) > 1 or archive is None:
+        return None
+    return archive, dirs[0] if dirs else ".", extracting
+
+
+def _archive_members(run, cwd, written, earlier):
+    """`(directory word, [member, ...])` for a `tar`/`bsdtar` extraction or an `unzip` whose archive this walk can list, None when it cannot (the comment above). `written` is `_written_scripts`' record so far and `earlier` the runs of the same command before `run`."""
+    base = _base(run.name)
+    if base not in ("tar", "bsdtar", "unzip") or "xargs" in run.via or run.launch is not None:
+        return None
+    words = list(run.xargv if run.xargv is not None else run.argv)
+    if any(_unexpanded_word(w) for w in words):
+        return None
+    if base == "unzip":
+        operands, target, k = [], ".", 0
+        while k < len(words):
+            word = words[k]
+            k += 1
+            if word == "-d" and k < len(words):
+                target = words[k]
+                k += 1
+            elif not _UNZIP_PLAIN.fullmatch(word):
+                if word.startswith("-"):
+                    return None
+                operands.append(word)
+        if len(operands) != 1:
+            return None
+        archive = operands[0]
+    else:
+        parsed = _tar_operands(words)
+        if parsed is None or not parsed[2]:
+            return None
+        archive, target, _x = parsed
+    if archive in ("", "-") or ":" in archive.split("/", 1)[0]:
+        return None
+    path = _script_path(archive, run.cwd, cwd)
+    if path in written or not os.path.isfile(path) or os.path.getsize(path) > _ARCHIVE_MAX:
+        return None
+    # A run before it may write the archive in a way the record does not keep (`tar -rf`, `zip`, `gzip`): one naming the archive's file name, or a word this walk cannot expand, leaves the disk's copy unread.
+    name = os.path.basename(path)
+    for prior in earlier:
+        for word in [*prior.argv, *(prior.xargv or ())]:
+            if name in word or _unexpanded_word(word):
+                return None
+    members: list[str] = []
+    try:
+        if base == "unzip" or (base == "bsdtar" and zipfile.is_zipfile(path)):
+            with zipfile.ZipFile(path) as archive_file:
+                infos = archive_file.infolist()
+                if len(infos) > _SEARCH_CAP:
+                    return None
+                for zinfo in infos:
+                    if (zinfo.external_attr >> 16) & 0o170000 == 0o120000:
+                        return None
+                    if not zinfo.is_dir():
+                        members.append(zinfo.filename)
+        else:
+            unpacked = 0
+            with tarfile.open(path, "r:*") as archive_file:
+                for count, tinfo in enumerate(archive_file):
+                    unpacked += tinfo.size
+                    if count >= _SEARCH_CAP or unpacked > _ARCHIVE_UNPACKED_MAX:
+                        return None
+                    if tinfo.isdir():
+                        continue
+                    if not tinfo.isfile():
+                        return None
+                    members.append(tinfo.name)
+    except _ARCHIVE_READ_ERRORS:
+        return None
+    if any(os.path.isabs(m) or ".." in m.split("/") for m in members):
+        return None
+    return target, members
 
 
 class _Written(dict):
@@ -7629,6 +8264,11 @@ def _written_scripts(cmd, until, cwd):
         files, dirs = _tool_outputs(run)
         for target in files:
             record(target, run.cwd, None)
+        listed = _archive_members(run, cwd, out, seen[:-1]) if dirs else None
+        if listed is not None:
+            for member in listed[1]:
+                record(os.path.join(listed[0], member), run.cwd, None)
+            continue
         new_dirs = [_script_path(d, run.cwd, cwd) for d in dirs]
         out.unpacked.extend(new_dirs)
         # An extraction REPLACES what an earlier run wrote under its directory (review 6c9f6fd8.1): `echo x > a.py && tar -xf w.tar && python3 a.py` runs the archive's a.py, so the earlier known text is dropped to unknown; a write AFTER the extraction records over it again.
@@ -7729,7 +8369,92 @@ _GIT_TREE_KEEPERS = frozenset(
         "var",
     )
 )
-_GIT_PROGRAM_KEY = re.compile(r"(?i)\bcore\.(?:fsmonitor|hookspath)\b")
+# A RUN TOUCHES ONLY WHEN IT SETS A PROGRAM KEY (review ff2ccadb.2). Any word naming `core.fsmonitor` or `core.hooksPath` counted, so `git -c core.fsmonitor=false status`, `git config --get core.hooksPath` and `git config --unset core.fsmonitor` lost the disk's answer for a later copy though none of them can name a program. A run counts only when it SETS one of those keys to a value that can name one: `-c <key>=<v>` (a bare `-c <key>` is true) or `--config-env`, and `git config [<option>...] [set] <key> <v>` short of `--get*`, `--unset*`, `--list` and the other reading or removing forms, where `<v>` is not false/0/no/off/empty or cannot be expanded here.
+_GIT_PROGRAM_KEYS = frozenset(("core.fsmonitor", "core.hookspath"))
+_GIT_OFF_VALUES = frozenset(("false", "0", "no", "off", ""))
+_GIT_CONFIG_VALUED = frozenset(
+    ("-f", "--file", "--blob", "--type", "--default", "--comment", "--value", "--fixed-value")
+)
+_GIT_CONFIG_READERS = frozenset(
+    (
+        "--get",
+        "--get-all",
+        "--get-regexp",
+        "--get-urlmatch",
+        "--get-color",
+        "--get-colorbool",
+        "--unset",
+        "--unset-all",
+        "--list",
+        "-l",
+        "--remove-section",
+        "--rename-section",
+        "--edit",
+        "-e",
+        "get",
+        "list",
+        "unset",
+        "edit",
+        "remove-section",
+        "rename-section",
+    )
+)
+
+
+def _unexpanded_word(word):
+    return _UNRESOLVED in word or "$" in word or "`" in word
+
+
+def _git_program_value(key, value):
+    """True when setting `key` to `value` may point git at a program (the comment above)."""
+    if not (_unexpanded_word(key) or key.lower() in _GIT_PROGRAM_KEYS):
+        return False
+    return value is None or _unexpanded_word(value) or value.strip().lower() not in _GIT_OFF_VALUES
+
+
+def _git_sets_program_key(words):
+    """True when a `git` argv (`words`, the command name left out) sets `core.fsmonitor` or `core.hooksPath` to a value that can name a program."""
+    k = 0
+    while k < len(words):
+        word = words[k]
+        if word == "-c" and k + 1 < len(words):
+            key, eq, value = words[k + 1].partition("=")
+            if _git_program_value(key, value if eq else "true"):
+                return True
+            k += 2
+            continue
+        if word == "--config-env" or word.startswith("--config-env="):
+            spec = word.partition("=")[2] or (words[k + 1] if k + 1 < len(words) else "")
+            if _git_program_value(spec.partition("=")[0], None):
+                return True
+            k += 1 if "=" in word else 2
+            continue
+        if word in GIT_GLOBAL_WITH_VALUE:
+            k += 2
+            continue
+        if word.startswith("-"):
+            k += 1
+            continue
+        break
+    if k >= len(words) or words[k] != "config":
+        return False
+    operands: list[str] = []
+    rest = words[k + 1 :]
+    j = 0
+    while j < len(rest):
+        word = rest[j]
+        j += 1
+        if word in _GIT_CONFIG_READERS and (word.startswith("-") or not operands):
+            return False
+        if word in _GIT_CONFIG_VALUED:
+            j += 1
+        elif not (word.startswith("-") and len(word) > 1):
+            operands.append(word)
+    if operands[:1] == ["set"]:
+        operands = operands[1:]
+    return len(operands) >= 2 and _git_program_value(operands[0], operands[1])
+
+
 _RM_DIR_OPTION = re.compile(r"-[A-Za-z]*[rRd][A-Za-z]*|--recursive|--dir")
 
 
@@ -7741,7 +8466,7 @@ def _may_touch_directories(run):
     if base == "git":
         # `commit` and `push` run `.git/hooks` programs, and a run that points `core.fsmonitor` or `core.hooksPath` at a program (through `-c` or `git config`) lets any later index read run it, so none of them keeps the tree (review 6c9f6fd8.4).
         words = run.xargv if run.xargv is not None else run.argv
-        if any(_GIT_PROGRAM_KEY.search(w) for w in words):
+        if _git_sets_program_key(list(words)):
             return True
         return run.git_sub not in _GIT_TREE_KEEPERS
     if base == "rm" and "xargs" not in run.via and run.launch is None:
