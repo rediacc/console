@@ -354,7 +354,7 @@ USER vscode
 # /^ARG\s+([A-Z0-9]+)_VERSION=/ -- the base carries no underscore, so a
 # GOLANGCI_LINT_VERSION would not match at all and the freshness gate would
 # silently watch nothing. Renaming it means widening the shared parser first.
-ARG GOPLS_VERSION=0.23.0
+ARG GOPLS_VERSION=0.24.0
 ARG DLV_VERSION=1.27.2
 # staticcheck ships TWO names for one build: the GitHub release is tagged
 # with a calendar version while the Go module version is STATICCHECK_VERSION below (written without the
@@ -366,7 +366,7 @@ ARG STATICCHECK_VERSION=0.8.2
 # golangci-lint v2 moved to the /v2 module path. Installing the old
 # `github.com/golangci/golangci-lint/cmd/golangci-lint` at a v2 version fails
 # outright, so the path below is not interchangeable with the pre-v2 one.
-ARG GOLANGCILINT_VERSION=2.14.0
+ARG GOLANGCILINT_VERSION=2.15.0
 ARG GOIMPORTS_VERSION=0.52.0
 # The `: "${X_VERSION:?...}"` guards are not decoration: without them an empty
 # build arg silently resolves to `@v`, which Go treats as a floating reference,
@@ -563,9 +563,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 # scripts/gates/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
 # three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
 # the `cli-v` prefix rather than trusting /releases/latest.
-ARG BW_VERSION=2026.9.1
-ARG BW_SHA256_AMD64=84289eaf59d691f04242605112f21b00e8dba65acdedbc60dde001a2860f2097
-ARG BW_SHA256_ARM64=c451c773378a6f1f041ea26568a897b285a8656bee16a16e4914ce9e40fb7c79
+ARG BW_VERSION=2026.10.0
+ARG BW_SHA256_AMD64=269b67559caab860d1737f7554b32bdb8be9285d5689fee55193c137a0df9973
+ARG BW_SHA256_ARM64=2fe9d8a18dc4c35ea2f9e3e42a4021f14f129ef47e80b6cea1e3b34176f1583a
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
