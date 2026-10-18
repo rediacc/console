@@ -2482,7 +2482,7 @@ const CASES: Record<string, Case> = {
         detail: `rc=${r.rc} failure=${rep.failure} failed=${JSON.stringify(rep.gates?.failed)}`,
       },
       {
-        // Red when siblingHint is dropped, or reads gate output instead of the registry.
+        // Red when siblingHint is dropped, reads gate output instead of the registry, or loses its --to / --major --reason guidance.
         name: 'bump: a red gate shared with a pin the run did not move names that sibling and the joint command shape',
         ok:
           rs.rc === 1 &&
