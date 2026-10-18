@@ -106,4 +106,16 @@ describe('LAUNCH_FROM_STDIN, run for real', () => {
     const out = execFileSync('sh', ['-c', LAUNCH_FROM_STDIN], { input: script }).toString();
     expect(out).toBe('out=--port 9305 leftover=[]\n');
   });
+
+  // The sandbox gateway hands a repo key's command to `bash -c` with the ssh session's stdin: it replaces itself with sudo (syscall.Exec, fd 0 inherited, private/renet/cmd/renet/sandbox_gateway.go:103), sudo runs `renet sandbox-exec ... -- bash -c <command>` (sandbox_gateway.go:151), whose overlay re-exec copies os.Stdin (sandbox_overlay_linux.go:103) and which replaces itself with that bash (syscall.Exec, sandbox_exec.go:193).
+  // A machine key's command takes the same `bash -c` (sandbox_gateway.go:442).
+  it('runs the script from stdin as the sandbox gateway execs it: bash -c, stdin a pipe', () => {
+    const script = ['read -r first', 'echo "script ran, first=[$first]"'].join('\n');
+    const out = execFileSync('bash', ['-c', LAUNCH_FROM_STDIN], {
+      input: `${script}\n`,
+      env: { PATH: process.env.PATH },
+    }).toString();
+    // `read` finds stdin drained by the launcher's `cat`, so first is empty.
+    expect(out).toBe('script ran, first=[]\n');
+  });
 });

@@ -26,16 +26,28 @@ export interface RenetLaunch {
   stdinPrefix: string;
 }
 
-const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+/**
+ * The only names a secret may carry: the prefixes buildRenetEnv emits
+ * (REDIACC_OTLP_USER / REDIACC_OTLP_PASS and the per-repo REDIACC_SECRET_*).
+ * Anything else (PATH, LD_PRELOAD, BASH_ENV, IFS) would be exported by a root
+ * bash before renet starts, so it is refused here and again by the reader.
+ */
+export const RENET_SECRET_NAME = /^(REDIACC_SECRET_|REDIACC_OTLP_)[A-Za-z0-9_]+$/;
 
 /**
  * The launcher a secret-carrying renet runs under: root bash reads
  * NUL-terminated `NAME=value` records from stdin until an empty record,
  * exports each, then execs the renet invocation, which inherits the rest of
  * stdin (the vault) untouched, because bash reads a pipe one byte at a time.
- * Values may hold any byte but NUL, which no environment value can hold.
+ * Values may hold any byte but NUL, which no environment value can hold. A
+ * record whose name falls outside RENET_SECRET_NAME stops the launch before
+ * anything is exported from it.
  */
-const STDIN_ENV_READER = `while IFS= read -r -d '' kv && [ -n "$kv" ]; do export "$kv"; done; exec `;
+export const STDIN_ENV_READER =
+  `while IFS= read -r -d '' kv && [ -n "$kv" ]; do ` +
+  `case "$kv" in REDIACC_SECRET_?*=*|REDIACC_OTLP_?*=*) ;; *) echo 'renet launch: refused secret name' >&2; exit 97;; esac; ` +
+  `n=\${kv%%=*}; case "$n" in *[!A-Za-z0-9_]*) echo 'renet launch: refused secret name' >&2; exit 97;; esac; ` +
+  `export "$kv"; done; exec `;
 
 /**
  * Wrap a renet invocation (`<path> <subcommand> ...`) in sudo with its
@@ -50,7 +62,9 @@ export function sudoRenet(env: RenetEnv, invocation: string): RenetLaunch {
     return { command: `sudo ${env.prefix}${invocation}`, stdinPrefix: '' };
   }
   for (const [name, value] of entries) {
-    if (!ENV_NAME.test(name)) throw new Error(`Invalid environment variable name: ${name}`);
+    if (!RENET_SECRET_NAME.test(name)) {
+      throw new Error(`Refused secret name for a renet launch: ${name}`);
+    }
     if (value.includes('\0')) throw new Error(`Environment value for ${name} contains a NUL byte`);
   }
   const stdinPrefix = `${entries.map(([name, value]) => `${name}=${value}\0`).join('')}\0`;

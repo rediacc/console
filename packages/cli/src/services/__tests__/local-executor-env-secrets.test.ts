@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-
+import { shellQuote } from '../../utils/shell-quote.js';
 import { buildRemoteRenetCommand, buildRenetEnv } from '../executor/local-executor.js';
+import { STDIN_ENV_READER } from '../executor/renet-launch.js';
 
 describe('buildRenetEnv: envSecrets', () => {
   it('emits no prefix and no secrets when nothing is needed', () => {
@@ -78,7 +79,7 @@ describe('buildRemoteRenetCommand — envSecrets', () => {
       envSecrets: { REDIACC_SECRET_FOO: 'bar' },
     });
     expect(launch.command).toBe(
-      `sudo bash -c 'while IFS= read -r -d '\\'''\\'' kv && [ -n "$kv" ]; do export "$kv"; done; exec env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local'`
+      `sudo bash -c ${shellQuote(`${STDIN_ENV_READER}env REDIACC_TELEMETRY_DISABLED=1 /usr/bin/renet execute --executor local`)}`
     );
     expect(launch.stdinPrefix).toBe('REDIACC_SECRET_FOO=bar\0\0');
   });
@@ -103,6 +104,6 @@ describe('buildRemoteRenetCommand — envSecrets', () => {
         telemetryDisabled: true,
         envSecrets: { 'BAD NAME': 'x' },
       })
-    ).toThrow(/Invalid environment variable name/);
+    ).toThrow(/Refused secret name/);
   });
 });

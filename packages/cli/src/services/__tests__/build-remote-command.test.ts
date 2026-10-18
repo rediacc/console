@@ -20,6 +20,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { buildRemoteRenetCommand } from '../executor/local-executor.js';
+import { STDIN_ENV_READER } from '../executor/renet-launch.js';
 
 const RENET = '/usr/bin/renet';
 const CREDS = { user: 'otlp-eu-abc123', pass: 'base64url-pass_-_' };
@@ -27,7 +28,7 @@ const CREDS_STDIN = 'REDIACC_OTLP_USER=otlp-eu-abc123\0REDIACC_OTLP_PASS=base64u
 
 /** The secret-carrying form: root bash reads the stdin records, then execs renet. */
 function stdinLaunch(invocation: string): string {
-  const script = `while IFS= read -r -d '' kv && [ -n "$kv" ]; do export "$kv"; done; exec ${invocation}`;
+  const script = `${STDIN_ENV_READER}${invocation}`;
   return `sudo bash -c '${script.replaceAll("'", "'\\''")}'`;
 }
 
