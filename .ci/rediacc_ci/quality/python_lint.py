@@ -670,7 +670,7 @@ def selftest() -> int:
     # THE FLOOR AND THE STATUSES ARE THE TWIN'S.
     ctl.check("the file floor is 10, not 1", MIN_PY_FILES, 10)
     ctl.check("cannot-run is 77, never 1", EXIT_CANNOT_RUN, 77)
-    # Held against bash sourcing the same file, an independent parse with the semantics every shell consumer of the pins has (review ccfcf35d.1: comparing with _pinned_ruff() itself could not fail).
+    # Held against bash sourcing the same file, an independent parse with the semantics of the bash consumers that source it, such as .ci/scripts/lib/toolchain.sh (review ccfcf35d.1: comparing with _pinned_ruff() itself could not fail).
     sourced = _run(
         [
             "bash",

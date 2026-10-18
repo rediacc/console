@@ -422,3 +422,17 @@ def test_a_planted_defect_is_caught_by_the_goldens(tmp_path) -> None:
     assert returncode == 1, "the planted F821 passed, so the goldens above prove nothing"
     assert stdout != green[1], "the mutant printed the green recording's stdout"
     assert stderr.strip() != "", "the mutant reported no finding"
+
+
+@pytest.mark.parametrize(
+    "line", ["RUFF_VERSION=9.8.7", 'RUFF_VERSION="9.8.7"', "RUFF_VERSION='9.8.7'"]
+)
+def test_a_quoted_or_bare_pin_reads_as_the_version(tmp_path, monkeypatch, line):
+    """Bash sources all three spellings to 9.8.7, so the gate reads them so too (review 532f08c2.1); a second RUFF_VERSION line is refused as no single pin."""
+    pins = tmp_path / ".devcontainer" / "toolchain.env"
+    pins.parent.mkdir()
+    pins.write_text("NODE_VERSION=24\n%s\n" % line, encoding="utf-8")
+    monkeypatch.setattr(gate.paths, "repo_root", lambda: tmp_path)
+    assert gate._pinned_ruff() == "9.8.7"
+    pins.write_text("%s\nRUFF_VERSION=1.2.3\n" % line, encoding="utf-8")
+    assert gate._pinned_ruff() == ""
