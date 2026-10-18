@@ -209,8 +209,9 @@ def test_port_matches_the_twins_recorded_output(tmp_path, case_id, extra, want_e
     """Byte equality on BOTH streams against the twin's recording, plus the exit code."""
     if case_id in EXE_MODE_CASES and plat.detect_wsl().is_wsl:
         pytest.skip(
-            "ruff disables its native EXE001/EXE002 under WSL (see EXE_MODE_CASES), so "
-            "this host's ruff cannot reproduce either the recorded stdout or CI's own"
+            "CANNOT RUN (1 of 1 requirement(s) missing): a non-WSL host. ruff disables its "
+            "native EXE001/EXE002 under WSL (see EXE_MODE_CASES), so this host's ruff cannot "
+            "reproduce either the recorded stdout or CI's own; CI's Linux runners run the case"
         )
     root = build(tmp_path, extra)
     want_exit_recorded, want_out, want_err = split_golden(frozen.read(SLUG, slug(case_id)))

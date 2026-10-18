@@ -174,8 +174,11 @@ MIN_PY_FILES = 10
 # The pin, read from `.devcontainer/toolchain.env` like every other tool's. The twin overwrote it with a literal (port notes), which kept this gate demanding ruff 0.17.0 after the pins file moved to 0.17.1; with the twin deleted, the pins file is the one source.
 #
 # Read here rather than through `rediacc_ci.core.toolchain`: this module's differential specimen carries a fixed file set whose count is part of its frozen goldens, and importing another package module would change it.
+PINS_REL = ".devcontainer/toolchain.env"
+
+
 def _pinned_ruff() -> str:
-    pins = paths.from_root(".devcontainer", "toolchain.env")
+    pins = paths.from_root(*PINS_REL.split("/"))
     try:
         text = pins.read_text(encoding="utf-8")
     except OSError:
@@ -677,7 +680,7 @@ def selftest() -> int:
             "-c",
             '. "$1" && printf %s "$RUFF_VERSION"',
             "bash",
-            str(paths.from_root(".devcontainer", "toolchain.env")),
+            str(paths.from_root(*PINS_REL.split("/"))),
         ]
     ).stdout
     ctl.check(
