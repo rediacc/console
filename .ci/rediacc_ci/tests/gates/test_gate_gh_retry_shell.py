@@ -24,7 +24,8 @@ SHAPE_RE = re.compile(
     r"(\d+) GitHub call\(s\): (\d+) curl, (\d+) gh; .*?(\d+) debt, (\d+) new"
 )
 REAPER = sh.REAPER_REL
-REAPER_CURL = 'resp="$(curl -sS -w'
+# The reaper's GitHub read: since its token moved to a `-K -` config on stdin, curl starts its own line after the auth pipe.
+REAPER_CURL = "curl -sS -w $'\\n%{http_code}' -K -"
 # A synthetic dead twin, planted into each copy: the real tree's dead twins are being retired (PLAN-retire-bash-oracles B3), so a test that named one of them would break with the deletion it is meant to survive.
 TWIN = ".ci/scripts/release/synthetic-dead-twin.sh"
 TWIN_BODY = (
