@@ -1171,13 +1171,20 @@ def _commit_facts(repo, sha):
     return paths, gitlink_only, subject, message, parent
 
 
+def _is_review_record_chunk(chunk):
+    """True for a `diff --git` section of a file under `agent/reviews/`."""
+    m = re.match(r"diff --git a/(.*?) b/(.*)", chunk)
+    return bool(m) and m.group(2).startswith(REVIEWS_REL + "/")
+
+
 def capped_diff(repo, sha, cap):
     """(diff_text, total_bytes, file_count, unreviewed_files). Whole per-file sections are kept until `cap`; the rest are listed, never cut mid-file."""
     rc, diff = git(repo, "show", "-U%d" % ANCHOR_SLACK, "--no-color", "--format=", "-M", sha)
     if rc != 0:
         return "", 0, 0, []
     chunks = re.split(r"(?m)^(?=diff --git )", diff)
-    chunks = [c for c in chunks if c.strip()]
+    # The review records that ride a commit (CLAUDE.md rule 1, Cadence) are the reviewer's own output, never its input: a commit of only those is not reviewed at all, and in a mixed commit they are left out, or every record would draw a finding about itself.
+    chunks = [c for c in chunks if c.strip() and not _is_review_record_chunk(c)]
     kept, cut, used = [], [], 0
     for chunk in chunks:
         m = re.match(r"diff --git a/(.*?) b/(.*)", chunk)
@@ -2192,7 +2199,7 @@ def run_review(
             diff_text, total, nfiles, cut = capped_diff(repo, full, int(cfg["diff_cap_bytes"]))
             review.diff_bytes, review.diff_files = total, nfiles
             review.truncated, review.unreviewed = bool(cut), cut
-            stat = git_out(repo, "show", "--stat", "--format=", full)
+            stat = git_out(repo, "show", "--stat", "--format=", full, "--", ".", ":(exclude)%s" % REVIEWS_REL)
             prompt = PROMPT % {
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",
