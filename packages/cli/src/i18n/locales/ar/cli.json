@@ -2325,7 +2325,8 @@
       "sshCode127": "الأمر غير موجود على الآلة البعيدة",
       "sshCode130": "تم إنهاء الاتصال بواسطة المستخدم (Ctrl+C)",
       "sshCode255": "فشل اتصال SSH - الأسباب المحتملة:\n    - فشلت المصادقة (تحقق من أذونات مفتاح SSH)\n    - فشل التحقق من مفتاح المضيف\n    - تم قطع الاتصال بالشبكة\n    - خدمة SSH البعيدة غير مشغلة",
-      "sshExitCode": "خرج SSH برمز {{code}}"
+      "sshExitCode": "خرج SSH برمز {{code}}",
+      "secretStagingFailed": "تعذّر تجهيز أسرار المستودع على الجهاز (رمز خروج ssh هو {{code}})."
     },
     "unknownCommand": "أمر غير معروف \"{{command}}\". الأوامر المتاحة: {{available}}.",
     "unknownRegion": "منطقة غير معروفة: {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "تم تحديث {{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet",
-    "licenseSignatureRefreshFailed": "{{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet. قم بتشغيل: rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "{{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet. قم بتشغيل: rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "اسم السر {{name}} ليس اسم متغير بيئة صالحًا؛ تبدأ الجلسة من دونه."
   }
 }

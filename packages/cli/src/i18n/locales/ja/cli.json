@@ -2325,7 +2325,8 @@
       "sshCode127": "リモートマシンにコマンドが見つかりません",
       "sshCode130": "接続がユーザーによって終了されました (Ctrl+C)",
       "sshCode255": "SSH 接続に失敗しました - 考えられる原因:\n    - 認証に失敗しました (SSH キーの権限を確認してください)\n    - ホストキーの検証に失敗しました\n    - ネットワーク接続が切断されました\n    - リモート SSH サービスが実行されていません",
-      "sshExitCode": "SSH が終了コード {{code}} で終了しました"
+      "sshExitCode": "SSH が終了コード {{code}} で終了しました",
+      "secretStagingFailed": "マシン上にリポジトリのシークレットを準備できませんでした（ssh の終了コード {{code}}）。"
     },
     "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
     "unknownRegion": "不明なリージョン: {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "renet更新後、無効な署名を持つ{{count}}個のリポジトリライセンスを更新しました",
-    "licenseSignatureRefreshFailed": "renet更新後、{{count}}個のリポジトリライセンスの署名が無効です。実行してください: rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "renet更新後、{{count}}個のリポジトリライセンスの署名が無効です。実行してください: rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "シークレット {{name}} は環境変数名として無効なため、このシークレットなしでセッションを開始します。"
   }
 }

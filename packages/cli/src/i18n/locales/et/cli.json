@@ -2325,7 +2325,8 @@
       "sshCode127": "Käsku ei leitud kaugmasinas",
       "sshCode130": "Ühenduse lõpetas kasutaja (Ctrl+C)",
       "sshCode255": "SSH-ühendus ebaõnnestus - võimalikud põhjused:\n    - Autentimine ebaõnnestus (kontrolli SSH-võtme õigusi)\n    - Hosti võtme kontrollimine ebaõnnestus\n    - Võrguühendus katkes\n    - Kaugmasinas ei tööta SSH-teenus",
-      "sshExitCode": "SSH lõpetas koodiga {{code}}"
+      "sshExitCode": "SSH lõpetas koodiga {{code}}",
+      "secretStagingFailed": "Hoidla saladusi ei õnnestunud masinasse ette valmistada (ssh väljumiskood {{code}})."
     },
     "unknownCommand": "Tundmatu käsk \"{{command}}\". Saadaval olevad käsud: {{available}}.",
     "unknownRegion": "Tundmatu regioon: {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "Uuendati {{count}} hoidla litsentsi(de) kehtetud allkirjad pärast reneti uuendamist",
-    "licenseSignatureRefreshFailed": "{{count}} hoidla litsentsil(-itsentsidel) on pärast reneti uuendamist kehtetud allkirjad. Käivita: rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "{{count}} hoidla litsentsil(-itsentsidel) on pärast reneti uuendamist kehtetud allkirjad. Käivita: rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "Saladuse {{name}} nimi ei ole kehtiv keskkonnamuutuja nimi; seanss algab ilma selleta."
   }
 }

@@ -2325,7 +2325,8 @@
       "sshCode127": "Comando não encontrado na máquina remota",
       "sshCode130": "Ligação terminada pelo utilizador (Ctrl+C)",
       "sshCode255": "Falha na ligação SSH - possíveis causas:\n    - Falha na autenticação (verifique as permissões da chave SSH)\n    - Falha na verificação da chave de anfitrião\n    - Ligação de rede interrompida\n    - Serviço SSH remoto não está em execução",
-      "sshExitCode": "SSH terminou com o código {{code}}"
+      "sshExitCode": "SSH terminou com o código {{code}}",
+      "secretStagingFailed": "Não foi possível preparar os segredos do repositório na máquina (código de saída do ssh {{code}})."
     },
     "unknownCommand": "Comando desconhecido \"{{command}}\". Comandos disponíveis: {{available}}.",
     "unknownRegion": "Região desconhecida: {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "{{count}} licença(s) de repositório com assinaturas inválidas renovadas após atualização do renet",
-    "licenseSignatureRefreshFailed": "{{count}} licença(s) de repositório têm assinaturas inválidas após atualização do renet. Execute: rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "{{count}} licença(s) de repositório têm assinaturas inválidas após atualização do renet. Execute: rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "O segredo {{name}} não tem um nome de variável de ambiente válido; a sessão inicia sem ele."
   }
 }

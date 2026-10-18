@@ -30,7 +30,14 @@ import {
   detectRepoContextCommand,
 } from '../utils/repo-context-guard.js';
 import { type ConnectTarget, resolveConnectTarget } from '../utils/repo-target.js';
-import { sendEnvOptions, splitSecretEnv } from '../utils/secret-env.js';
+import {
+  consumeStagedSecrets,
+  parseStagedSecretsDir,
+  STAGE_SECRETS_COMMAND,
+  secretExportScript,
+  splitSecretEnv,
+} from '../utils/secret-env.js';
+import { shellQuote } from '../utils/shell-quote.js';
 import { withSpinner } from '../utils/spinner.js';
 
 /**
@@ -49,60 +56,115 @@ export interface TermConnectOptions {
   resetHome?: boolean;
 }
 
+/** `export K='v'; ` for each non-secret variable of the connection environment. */
+function buildExports(environment?: Record<string, string>): string {
+  const { plain } = splitSecretEnv(environment);
+  return Object.entries(plain)
+    .map(([key, value]) => `export ${key}=${shellQuote(String(value))}; `)
+    .join('');
+}
+
 /**
  * The shell prefix that sets up a remote session: the non-secret environment,
  * the kube namespace pin and the working directory. Secret values
- * (`REDIACC_SECRET_*`) are left out; they reach the session through the SSH
- * environment (`SendEnv`, see sshSessionOptions), never through this text,
- * which lands in the local ssh argv and the remote `ps`.
+ * (`REDIACC_SECRET_*`) are left out; they are staged on the machine
+ * (stageSessionSecrets) and loaded by the session, never carried in this text,
+ * which lands in the local ssh argv, an external terminal's argv and the
+ * remote `ps`.
  */
 export function buildEnvPrefix(connectionDetails?: ConnectionDetails): string {
   const parts: string[] = [];
 
-  if (connectionDetails?.environment) {
-    const { plain } = splitSecretEnv(connectionDetails.environment);
-    for (const [key, value] of Object.entries(plain)) {
-      const escaped = String(value).replaceAll("'", "'\\''");
-      parts.push(`export ${key}='${escaped}'`);
-    }
-  }
+  const exports = buildExports(connectionDetails?.environment);
+  if (exports) parts.push(exports.slice(0, -2));
 
   // Pin the kubectl current-context to the repo's namespace for a cluster-placed repo session (the k8s analog of the repo `cd` below). KUBECONFIG is already
   // exported by the loop, so this runs against the cluster's kubeconfig; the
   // `|| true` keeps a shell open even if kubectl is momentarily unavailable.
   if (connectionDetails?.kubeNamespace) {
-    const ns = connectionDetails.kubeNamespace.replaceAll("'", "'\\''");
-    parts.push(`kubectl config set-context --current --namespace='${ns}' >/dev/null 2>&1 || true`);
+    parts.push(
+      `kubectl config set-context --current --namespace=${shellQuote(connectionDetails.kubeNamespace)} >/dev/null 2>&1 || true`
+    );
   }
 
   if (connectionDetails?.workingDirectory) {
-    parts.push(`cd '${connectionDetails.workingDirectory}' 2>/dev/null`);
+    parts.push(`cd ${shellQuote(connectionDetails.workingDirectory)} 2>/dev/null`);
   }
 
   return parts.length > 0 ? `${parts.join('; ')}; ` : '';
 }
 
+/** Runs one non-interactive remote command with `input` on its stdin; resolves its exit code and stdout. */
+export type StagingRunner = (
+  remoteCommand: string,
+  input: string
+) => Promise<{ code: number | null; stdout: string }>;
+
 /**
- * The ssh options for a term session: the connection's own, plus a `SendEnv`
- * for each secret in the connection environment. The ssh process is spawned
- * with that environment, so the values travel in the SSH protocol's env
- * requests and never on a command line.
+ * Stage the session's secrets on the machine (see utils/secret-env.ts) and
+ * return the shell prefix that loads them, or '' when there are none. The
+ * staging call carries the session's non-secret exports too, so the sandbox
+ * gateway resolves the same repo sandbox for both connections. A secret whose
+ * name cannot be exported is skipped with a warning naming it.
  */
-export function sshSessionOptions(
-  sshConnection: Pick<SSHConnection, 'sshOptions'>,
-  connectionDetails: ConnectionDetails
-): string[] {
-  const { secretNames } = splitSecretEnv(connectionDetails.environment);
-  return [...sshConnection.sshOptions, ...sendEnvOptions(secretNames)];
+export async function stageSessionSecrets(
+  connectionDetails: ConnectionDetails,
+  run: StagingRunner,
+  warn: (message: string) => void
+): Promise<string> {
+  const { secrets } = splitSecretEnv(connectionDetails.environment);
+  const script = secretExportScript(secrets, (name) =>
+    warn(t('warnings.secretNameSkipped', { name }))
+  );
+  if (!script) return '';
+  const result = await run(
+    `${buildExports(connectionDetails.environment)}${STAGE_SECRETS_COMMAND}`,
+    script
+  );
+  const dir = result.code === 0 ? parseStagedSecretsDir(result.stdout) : undefined;
+  if (!dir) {
+    throw new Error(t('errors.term.secretStagingFailed', { code: String(result.code) }));
+  }
+  return consumeStagedSecrets(dir);
+}
+
+/**
+ * The staging runner over a term session's SSH connection: the same options
+ * without a TTY (a remote pty would echo and rewrite the bytes on stdin).
+ */
+function sshStagingRunner(sshConnection: SSHConnection, destination: string): StagingRunner {
+  const options = [...sshConnection.sshOptions.filter((opt) => opt !== '-tt'), '-T'];
+  return (remoteCommand, input) =>
+    new Promise((resolve, reject) => {
+      const child = spawnSSH(destination, options, remoteCommand, {
+        env: process.env,
+        stdio: 'pipe',
+        agentSocketPath: sshConnection.agentSocketPath,
+      });
+      let stdout = '';
+      child.stdout?.on('data', (d: Buffer) => {
+        stdout += d.toString();
+      });
+      child.stderr?.on('data', (d: Buffer) => {
+        debugLog(`secret staging: ${d.toString().trim()}`);
+      });
+      child.stdin?.on('error', () => {
+        // An early exit closes the pipe; the exit code reports the failure.
+      });
+      child.stdin?.end(input);
+      child.on('close', (code: number | null) => resolve({ code, stdout }));
+      child.on('error', reject);
+    });
 }
 
 // Sandbox is enforced server-side via ForceCommand in authorized_keys. The CLI just sends the raw command, sandbox-gateway on the remote reads REDIACC_REPOSITORY from env and applies Landlock + OverlayFS.
 
-function buildRemoteCommand(
+export function buildRemoteCommand(
   options: TermConnectOptions,
-  connectionDetails: ConnectionDetails
+  connectionDetails: ConnectionDetails,
+  secretsPrefix = ''
 ): string {
-  const envPrefix = buildEnvPrefix(connectionDetails);
+  const envPrefix = `${secretsPrefix}${buildEnvPrefix(connectionDetails)}`;
   const ensureBashSetup = generateSetupCommand();
   const sourceCmd = generateSourceCommand();
   const userCmd = options.command;
@@ -338,7 +400,12 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       : `Rediacc - ${target.label}`;
 
     const destination = `${connectionDetails.user}@${connectionDetails.host}`;
-    const remoteCommand = buildRemoteCommand(options, connectionDetails);
+    const secretsPrefix = await stageSessionSecrets(
+      connectionDetails,
+      sshStagingRunner(sshConnection, destination),
+      (message) => writeStderr(`\x1b[33mWarning:\x1b[0m ${message}\n`)
+    );
+    const remoteCommand = buildRemoteCommand(options, connectionDetails, secretsPrefix);
 
     await executeSSH(
       sshConnection,
@@ -374,20 +441,19 @@ async function launchExternalTerminal(
   title: string,
   connectionDetails: ConnectionDetails
 ): Promise<void> {
-  const sshArgs = [...sshSessionOptions(sshConnection, connectionDetails), destination];
+  const argv = ['ssh', ...sshConnection.sshOptions, destination];
   if (remoteCommand) {
-    sshArgs.push(remoteCommand);
+    argv.push(remoteCommand);
   }
-  const sshCommand = `ssh ${sshArgs.join(' ')}`;
   const terminalType = getDefaultTerminalType();
 
   outputService.info(t('commands.term.launchingTerminal', { type: terminalType }));
 
   const result = launchTerminal(terminalType, {
-    command: sshCommand,
+    argv,
     title,
     keepOpen: true,
-    environmentVariables: connectionDetails.environment,
+    environmentVariables: splitSecretEnv(connectionDetails.environment).plain,
     workingDirectory: connectionDetails.workingDirectory,
   });
 
@@ -439,16 +505,11 @@ async function runInlineSSH(
     writeStderr(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
-  const child = spawnSSH(
-    destination,
-    sshSessionOptions(sshConnection, connectionDetails),
-    remoteCommand,
-    {
-      env: { ...process.env, ...connectionDetails.environment },
-      stdio: 'inherit',
-      agentSocketPath: sshConnection.agentSocketPath,
-    }
-  );
+  const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {
+    env: { ...process.env, ...splitSecretEnv(connectionDetails.environment).plain },
+    stdio: 'inherit',
+    agentSocketPath: sshConnection.agentSocketPath,
+  });
 
   await new Promise<void>((resolve, reject) => {
     child.on('exit', (code: number | null) => {

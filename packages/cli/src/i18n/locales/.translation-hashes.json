@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1843,
-    "sourceCommit": "589a76af749691c118cc025ec3367c22bbaf4e27"
+    "keyCount": 1845,
+    "sourceCommit": "fbc499c7782489b993932859036c9c435ef535c8"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1685,6 +1685,7 @@
     "errors.term.noIpAddress": "a4d64fb1",
     "errors.term.noPrivateKey": "5ac83b14",
     "errors.term.repoContextRequired": "b65d3bcf",
+    "errors.term.secretStagingFailed": "d2febcb9",
     "errors.term.sshCode1": "d5250939",
     "errors.term.sshCode126": "d8f6160c",
     "errors.term.sshCode127": "39635f91",
@@ -1848,6 +1849,7 @@
     "timing.step.renetProvisioned": "4b3aca91",
     "timing.step.verifying": "aa28f3f9",
     "warnings.licenseSignatureRefreshed": "11180a3e",
-    "warnings.licenseSignatureRefreshFailed": "4a53cb5d"
+    "warnings.licenseSignatureRefreshFailed": "4a53cb5d",
+    "warnings.secretNameSkipped": "ab4b64ef"
   }
 }
