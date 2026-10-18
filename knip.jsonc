@@ -263,7 +263,6 @@
     "dscl",
     "getent",
     "keyctl",
-    "osascript",
     "qemu-img",
     "wsl.exe",
 
@@ -271,14 +270,6 @@
     // packages/www/scripts/lib/scenes/card-fonts.ts to resolve a family name to a file for
     // card rendering. A host binary like the rest of this list, never npm-managed
     "fc-match",
-
-    // BLOCKER: terminal emulators probed by the CLI terminal launcher (the remote/ terminal detector tries each candidate); presence is optional per host
-    "gnome-terminal",
-    "konsole",
-    "mate-terminal",
-    "terminator",
-    "xfce4-terminal",
-    "xterm",
 
     // BLOCKER: ssh-agent tooling spawned for key management in the CLI ssh stack; provided by the host OpenSSH installation
     "ssh-add",
