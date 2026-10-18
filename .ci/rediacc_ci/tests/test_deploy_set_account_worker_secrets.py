@@ -155,8 +155,8 @@ def _run(
     )
 
 
-# THE ONE PLACE THE TWO SIDES ARE HANDED DIFFERENT ENVIRONMENTS, and it is a rename, not a value change. The twin read one unsuffixed backup key pair for every Worker; the port reads the run's own channel's pair (`ACCOUNT_BACKUP_S3_*_STABLE` on stable, `_EDGE` otherwise) and REFUSES the unsuffixed one (agent/plans/PLAN-backup-credential-isolation.md B2). So the port side receives the twin's values under its channel's names, after `drop_env`, and every golden key, which is built from the twin's arguments, is unchanged. The port-only cases below drive the raw names with `translate=False`.
-RETIRED_PAIR = port.BACKUP_PAIR_RETIRED
+# THE ONE PLACE THE TWO SIDES ARE HANDED DIFFERENT ENVIRONMENTS, and it is a rename, not a value change. The twin read one unsuffixed backup key pair for every Worker; the port reads the run's own channel's pair (`ACCOUNT_BACKUP_S3_*_STABLE` on stable, `_EDGE` otherwise) and never reads the unsuffixed one (agent/plans/PLAN-backup-credential-isolation.md B2). So the port side receives the twin's values under its channel's names, after `drop_env`, and every golden key, which is built from the twin's arguments, is unchanged. The port-only cases below drive the raw names with `translate=False`.
+RETIRED_PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
 
 
 def _as_port_env(env: dict[str, str]) -> dict[str, str]:
@@ -824,11 +824,9 @@ def test_stable_takes_the_stable_pair_and_edge_takes_the_edge_pair(tmp_path: pat
         ("stable", STABLE_PAIR, {"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": "bs-edge"}),
         ("edge", EDGE_PAIR, {"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE": "bk-stable"}),
         ("edge", EDGE_PAIR, {"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE": "bs-stable"}),
-        ("stable", STABLE_PAIR, {"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "bk-shared"}),
-        ("edge", EDGE_PAIR, {"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "bs-shared"}),
     ],
 )
-def test_the_other_channels_pair_or_the_retired_pair_is_refused(
+def test_the_other_channels_pair_is_refused(
     tmp_path: pathlib.Path, target: str, pair: dict[str, str], stray: dict[str, str]
 ) -> None:
     """A second credential in the environment is refused by NAME before anything is pushed, and no value is echoed."""
@@ -844,14 +842,12 @@ def test_the_other_channels_pair_or_the_retired_pair_is_refused(
         assert value not in proc.stdout
 
 
-def test_the_retired_pair_alone_is_refused_not_used(tmp_path: pathlib.Path) -> None:
-    """The fixture's unsuffixed pair, untranslated and with no channel pair: the twin's own input is refused by the port, naming both retired names."""
+def test_the_unsuffixed_pair_is_never_read(tmp_path: pathlib.Path) -> None:
+    """The fixture's unsuffixed pair, untranslated and with no channel pair: the port does not read it, so the run stops at the empty-key guard and pushes nothing."""
     proc, calls = _run_env(PORT, tmp_path, "", (), {}, translate=False)
     assert proc.returncode == 1
     assert calls == ""
-    assert proc.stderr.splitlines()[0].endswith(
-        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID, ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY are also set."
-    )
+    assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID is EMPTY for" in proc.stderr
 
 
 def test_an_empty_own_pair_is_the_ordinary_guard(tmp_path: pathlib.Path) -> None:

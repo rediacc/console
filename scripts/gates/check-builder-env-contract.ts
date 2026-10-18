@@ -254,7 +254,8 @@ export function builderFanIns(text: string): {
  * The names in the `REQUIRED_NONEMPTY` and `REQUIRED_NONEMPTY_STABLE` guard
  * tuples, with the line. `varName` is the name itself when the port reads it from
  * the environment, `null` for a fan-in prefix (its value comes from the constructed
- * name, so the label is the Worker key rather than an env name), and `(unread)` for
+ * name, so the label is the Worker key rather than an env name) and for a channel
+ * fan-in (`<NAME>_STABLE` and `<NAME>_EDGE` both read), and `(unread)` for
  * a guard on a name the port never reads: that guard could only ever fire, or never.
  */
 export function guardLabels(
@@ -268,7 +269,10 @@ export function guardLabels(
       const m = NAME_ENTRY.exec(row);
       if (!m) continue;
       const name = m[1];
-      const varName = fanInPrefixes.has(name) ? null : reads.has(name) ? name : '(unread)';
+      // A channel fan-in reads `<NAME>_STABLE` and `<NAME>_EDGE` and guards the chosen value under the Worker key, as a region fan-in does.
+      const channelFanIn = reads.has(`${name}_STABLE`) && reads.has(`${name}_EDGE`);
+      const varName =
+        fanInPrefixes.has(name) || channelFanIn ? null : reads.has(name) ? name : '(unread)';
       out.push({ label: name, varName, line: line + 1 });
     }
   }
@@ -463,6 +467,29 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
   ) {
     console.error(
       `x instrument control: guardLabels() read ${JSON.stringify(guards)}; expected a direct guard on ACCOUNT_JWT_SECRET, a fan-in guard with varName null, and a guard on a name nothing reads flagged (unread).`
+    );
+    process.exit(1);
+  }
+
+  // A channel fan-in counts only with BOTH channel names read; one alone leaves the guard (unread).
+  const channelText = 'REQUIRED_NONEMPTY: tuple[str, ...] = (\n    "BACKUP_KEY",\n)\n';
+  const both = guardLabels(
+    channelText,
+    new Map([
+      ['BACKUP_KEY_STABLE', 1],
+      ['BACKUP_KEY_EDGE', 2],
+    ]),
+    new Set()
+  );
+  const one = guardLabels(channelText, new Map([['BACKUP_KEY_STABLE', 1]]), new Set());
+  if (
+    both.length !== 1 ||
+    both[0].varName !== null ||
+    one.length !== 1 ||
+    one[0].varName !== '(unread)'
+  ) {
+    console.error(
+      `x instrument control: guardLabels() read ${JSON.stringify({ both, one })}; expected a channel fan-in (varName null) with both _STABLE and _EDGE read, and (unread) with only one.`
     );
     process.exit(1);
   }
