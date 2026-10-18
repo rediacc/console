@@ -3341,6 +3341,35 @@ def test_a_listable_zip_replaces_only_its_members_c988ab31(tmp_path):
     assert got == rows
 
 
+def test_a_zip_past_the_unpacked_cap_drops_the_directory_57688c33(tmp_path):
+    """Review 57688c33.3: a zip under the file-size cap whose members unpack past _ARCHIVE_UNPACKED_MAX is not listed, so the whole directory drops as for tar."""
+    with zipfile.ZipFile(tmp_path / "big.zip", "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("a.py", "print(4)\n")
+        archive.writestr("pad.bin", b"\0" * (shellscan._ARCHIVE_UNPACKED_MAX + 1))
+    assert (tmp_path / "big.zip").stat().st_size < 4 << 20
+    cmd = "echo 'print(1)' > b.py && unzip -q big.zip && python3 b.py"
+    shellscan._ANALYSIS_CACHE.clear()
+    run = [r for r in shellscan.every_run(cmd) if r.name == "python3"][-1]
+    kind = shellscan.interpreter_program(run, cmd, str(tmp_path))[1]
+    shellscan._ANALYSIS_CACHE.clear()
+    assert kind == "unjudgeable"
+
+
+def test_a_scheme_url_after_an_unknown_long_option_is_a_download_57688c33():
+    """Reviews 57688c33.1, .2: an option in neither set does not swallow a scheme URL that follows it; a bare word after it stays a possible value."""
+    rows: dict[str, tuple[list[str], list[str]]] = {
+        "curl -O --frobnicate https://x.invalid/a.py": (["a.py"], []),
+        "wget --unknown-flag https://x.invalid/a.py": (["a.py"], []),
+        "curl -O --frobnicate bob https://x.invalid/a.py": (["a.py"], []),
+    }
+    got = {}
+    for cmd in rows:
+        shellscan._ANALYSIS_CACHE.clear()
+        got[cmd] = shellscan._tool_outputs(next(iter(shellscan.every_run(cmd))))
+    shellscan._ANALYSIS_CACHE.clear()
+    assert got == rows
+
+
 # THE PLANTS for #4deea064, #3ff3bb16 and review 2e50ca28.1/.3. Each puts one piece back the way it was at d73b26844 (or the way the review feared) in a copy of shellscan loaded from source and must turn at least one row of the tables above.
 EXPANDED_WRITE_PLANTS = [
     (
