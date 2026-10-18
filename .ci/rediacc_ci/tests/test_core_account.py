@@ -949,7 +949,8 @@ _LIFECYCLE_CACHE: dict[tuple[str, str], tuple[int, str, str]] = {}
 LIFECYCLE_DELTA_CASES = {
     "credentials": {"seed-null", "seed-not-json", "hostname-fails"},
     "dev": {"state-missing-key"},
-    "e2e": {"install-fails"},
+    # state-file: the fixture state carries a gateway port and no lockfile hash, which the port now refuses as a gateway it cannot show fresh (worklist #c9037d2f); test_e2e_refuses_* below pin the refusal and the pass.
+    "e2e": {"install-fails", "state-file"},
     "helpers": {"state-port-equals"},
     "seed": {"state-without-port", "curl-fails"},
     "stripe": {"sync-fails"},
@@ -968,12 +969,18 @@ def _argv_delta_3a8d1f46(line: str) -> str:
     return _DOCKER_ENV_VALUE.sub(lambda m: m.group(1), line)
 
 
+# The port records the lockfile hashes in the state file (the stale-Vite guard); the twin has no such lines, so both spellings are dropped on both sides.
+_LOCK_SHA_LINE = re.compile(r"\| state (web_lock_sha|lock_sha)=")
+
+
 def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
     skip = LIFECYCLE_DELTA_CASES.get(scenario, set())
     kept = []
     for line in lines:
         parts = line.split(" ", 2)
         if len(parts) > 1 and parts[0] == "obs" and parts[1] in skip:
+            continue
+        if _LOCK_SHA_LINE.search(line):
             continue
         delta = _argv_delta_3a8d1f46(line)
         kept.append(_PIDS_LINE.sub(lambda m: m.group(1) + m.group(2).replace(",", " "), delta))
@@ -1644,3 +1651,77 @@ def test_the_database_browser_child_gets_the_environment_its_bind_was_read_from(
     env = {"PATH": os.environ.get("PATH", ""), "REDIACC_DEV_BIND": "10.9.8.7"}
     seen = _launch_sqlite_web(monkeypatch, env)
     assert seen["env"] == env
+
+
+def _e2e_tree(monkeypatch, tmp_path, *, state_extra: str):
+    """A tmp console root with both lockfiles and a state file; every step before the lock check is stubbed."""
+    web = tmp_path / "private" / "account" / "web"
+    web.mkdir(parents=True)
+    (web / "package-lock.json").write_text("web-lock-v2")
+    (tmp_path / "private" / "account" / "package-lock.json").write_text("lock-v2")
+    (tmp_path / ".account-state").write_text("gateway_port=4999\n" + state_extra)
+    monkeypatch.setenv("CONSOLE_ROOT_DIR", str(tmp_path))
+    monkeypatch.setenv("GATEWAY_PORT", "4999")
+    monkeypatch.setattr(account.proc, "exec_replace", lambda *_a, **_k: None, raising=False)
+    monkeypatch.setattr(account, "bws_exec", lambda *_a, **_k: None)
+    monkeypatch.setattr(account_lifecycle, "_check_node", lambda: None)
+    monkeypatch.setattr(account_lifecycle, "load_defaults", lambda: 0)
+    monkeypatch.setattr(account_lifecycle.ports, "is_port_in_use", lambda _p: True)
+    reached = []
+
+    def next_step():
+        reached.append(True)
+        raise _LaunchedError
+
+    monkeypatch.setattr(account_lifecycle.local_common, "ensure_packages_built", next_step)
+    return reached
+
+
+def _sha(text: str) -> str:
+    return account_lifecycle.hashlib.sha256(text.encode()).hexdigest()
+
+
+def test_e2e_refuses_when_a_recorded_lockfile_hash_moved(monkeypatch, tmp_path, capsys):
+    reached = _e2e_tree(
+        monkeypatch,
+        tmp_path,
+        state_extra="web_lock_sha=%s\nlock_sha=%s\n" % (_sha("web-lock-v1"), _sha("lock-v2")),
+    )
+    with pytest.raises(account_lifecycle.ErrexitError) as exc:
+        account_lifecycle.test_e2e([])
+    assert exc.value.code == 1
+    assert not reached
+    err = capsys.readouterr()
+    text = err.out + err.err
+    assert "web/package-lock.json" in text
+    assert "./run.sh account stop && ./run.sh account dev" in text
+
+
+def test_e2e_refuses_a_state_file_with_no_recorded_hash(monkeypatch, tmp_path, capsys):
+    reached = _e2e_tree(monkeypatch, tmp_path, state_extra="")
+    with pytest.raises(account_lifecycle.ErrexitError) as exc:
+        account_lifecycle.test_e2e([])
+    assert exc.value.code == 1
+    assert not reached
+    err = capsys.readouterr()
+    assert "./run.sh account stop && ./run.sh account dev" in err.out + err.err
+
+
+def test_e2e_proceeds_when_the_recorded_hashes_match(monkeypatch, tmp_path):
+    reached = _e2e_tree(
+        monkeypatch,
+        tmp_path,
+        state_extra="web_lock_sha=%s\nlock_sha=%s\n" % (_sha("web-lock-v2"), _sha("lock-v2")),
+    )
+    with pytest.raises(_LaunchedError):
+        account_lifecycle.test_e2e([])
+    assert reached
+
+
+def test_e2e_proceeds_without_a_state_file(monkeypatch, tmp_path):
+    """No state file: this checkout started no gateway (GATEWAY_PORT names another one), so there is nothing to compare and the run proceeds."""
+    reached = _e2e_tree(monkeypatch, tmp_path, state_extra="")
+    (tmp_path / ".account-state").unlink()
+    with pytest.raises(_LaunchedError):
+        account_lifecycle.test_e2e([])
+    assert reached

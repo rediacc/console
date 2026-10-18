@@ -43,6 +43,7 @@ WHAT THE DIFFERENTIAL DOES NOT REACH, SAID HERE RATHER THAN LEFT TO A READER
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import os
 import pathlib
@@ -775,6 +776,49 @@ def pids_line(pids: list[int]) -> str:
     return "pids=%s" % ",".join(str(p) for p in pids)
 
 
+def _lock_sha(path: str) -> str:
+    """sha256 of a lockfile, or the empty string when it is absent."""
+    try:
+        return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
+def _lock_paths() -> dict[str, str]:
+    """State-file key -> lockfile whose rewrite leaves the running Vite serving stale optimized deps."""
+    directory = account.account_dir()
+    return {
+        "web_lock_sha": os.path.join(directory, "web", "package-lock.json"),
+        "lock_sha": os.path.join(directory, "package-lock.json"),
+    }
+
+
+def _refuse_stale_dev_server() -> None:
+    """Refuse when a lockfile moved (or its hash was never recorded) since `dev()` started Vite. No state file means this checkout started no gateway (GATEWAY_PORT names another one), so there is nothing to compare."""
+    path = account.state_file()
+    if not os.path.isfile(path):
+        return
+    text = pathlib.Path(path).read_text(encoding="utf-8", errors="surrogateescape")
+    moved = []
+    unknown = []
+    for key, lock in _lock_paths().items():
+        recorded = grep_cut(text, key)
+        if not recorded:
+            unknown.append(lock)
+        elif recorded != _lock_sha(lock):
+            moved.append(lock)
+    if not moved and not unknown:
+        return
+    if moved:
+        log.error("Lockfile changed since the dev gateway started: %s" % ", ".join(moved))
+        log.error("The running Vite serves stale optimized deps (504 Outdated Optimize Dep).")
+    if unknown:
+        log.error("No lockfile hash recorded for: %s" % ", ".join(unknown))
+        log.error("The dev gateway predates the hash record, so its freshness cannot be shown.")
+    log.error("Restart it: ./run.sh account stop && ./run.sh account dev")
+    raise ErrexitError(1, "dev gateway is stale")
+
+
 def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
     """`.ci/lib/account.sh:446-499`: everything after the trap is armed. Returns the gateway's status, or dies."""
     os.makedirs(account.log_directory(), exist_ok=True)
@@ -809,6 +853,7 @@ def _serve(gateway_port: int, vite_port: int, astro_port: int) -> int:
         "writer=%s" % account.writer_stamp(),
         "worktree=%s" % root,
         "started=%s" % started,
+        *("%s=%s" % (key, _lock_sha(lock)) for key, lock in _lock_paths().items()),
     ]
     pathlib.Path(account.state_file()).write_text(
         "".join(x + "\n" for x in lines), encoding="utf-8"
@@ -943,6 +988,7 @@ def test_e2e(args: list[str]) -> int:
         log.error("Dev gateway not running on port %s" % gateway_port)
         log.info("Start it first: ./run.sh account dev")
         raise ErrexitError(1, "gateway not running")
+    _refuse_stale_dev_server()
 
     os.environ["E2E_PORT"] = gateway_port
     os.environ["E2E_BASE_URL"] = "http://localhost:%s/account/" % gateway_port
