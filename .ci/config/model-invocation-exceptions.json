@@ -13,6 +13,14 @@
         "date": "2026-10-09",
         "quote": "it seems that we need an exceptionlist. I forgot about handoff command. let's include it into the exception list for CI & hook(s)"
       }
+    },
+    {
+      "path": ".claude/commands/hibernate.md",
+      "value": "true",
+      "ruling": {
+        "date": "2026-10-18",
+        "quote": "It would be great if you can make a custom /hibernate command for future use. I liked it. Be sure that it's invokable only from user, so AI agents should not be able to invoke it."
+      }
     }
   ]
 }
