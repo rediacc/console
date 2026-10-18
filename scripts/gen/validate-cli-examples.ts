@@ -161,8 +161,9 @@ const EXCLUDED_FILES = new Set<string>([
  * class as the P4 gate review: a machine-written verdict that quotes the commit subject
  * and diff it judges, so a subject such as "the token reaches rdc subscription login on
  * stdin" lands in its title verbatim. The record is never edited after it is written, and
- * the commit it quotes cannot be reworded without amending, so the only reachable outcome
- * of scanning it is a permanent red on a file nobody may fix.
+ * the commit it quotes cannot be reworded once pushed (amending rewrites published
+ * history, and this repo never amends), so scanning it leaves a permanent red on a file
+ * nobody may fix.
  */
 const EXCLUDED_PREFIXES = ['agent/reviews/'];
 

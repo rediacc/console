@@ -2,11 +2,11 @@
 
 Every argument of every process on a host is readable through `ps` and `/proc/<pid>/cmdline` for as long as the process lives. A `curl -H "Authorization: Bearer <token>"` therefore publishes the token for the length of the request, and the twins these ports came from built every Cloudflare call that way (worklist #a2d19f74).
 
-`stdin_headers` takes the argv a port already builds, and pins in its tests, and returns the argv curl is really started with: each header whose NAME is in `CREDENTIAL_HEADERS` is removed in every spelling curl reads (`-H v`, `--header v`, `-Hv`, `--header=v`, and a cluster of no-argument flags ending in `H`), and an argv still holding credential text in any other spelling is refused, one `-K -` takes the place of the first of them, and the removed headers come back as curl config text for the child's stdin. A call that carries no such header is returned unchanged with no config, so it keeps whatever stdin it had.
+`stdin_headers` takes the argv a port already builds, and pins in its tests, and returns the argv curl is really started with: each header whose NAME is in `CREDENTIAL_HEADERS` is removed in every spelling curl reads (`-H v`, `--header v`, `-Hv`, `--header=v`, and a cluster of no-argument flags followed by `H`, with the value attached or in the next word), and an argv still holding credential text in any other spelling is refused, one `-K -` takes the place of the first of them, and the removed headers come back as curl config text for the child's stdin. A call that carries no such header is returned unchanged with no config, so it keeps whatever stdin it had.
 
 `argv_with_config` is the inverse, the argv curl acts on once it has read the config. The recording fake `curl` of each differential applies it, so the recorded request is the twin's request and the frozen goldens keep their meaning.
 
-A caller that already feeds curl's stdin (`--data @-`, `-T -`) AND carries a credential header cannot use this: there is one stdin. `stdin_headers` refuses such an argv rather than letting the body and the config collide; one without a credential header is returned as it is.
+A caller that already feeds curl's stdin (`--data @-`, `-T -`) AND carries a credential header cannot use this: there is one stdin. `stdin_headers` refuses such an argv rather than letting the body and the config collide; one with neither a credential header nor credential text is returned as it is.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def _quoted(value: str) -> str:
 
 
 def stdin_headers(argv: list[str]) -> tuple[list[str], str | None]:
-    """(argv without credential headers, the curl config carrying them), or (argv, None) when it carries none, stdin untouched. ValueError when the argv carries a credential header AND already reads curl's stdin (review 6d354ee8.1: an argv with no credential needs no config, so its stdin use is no conflict). Every spelling curl takes a header in is read: `-H v`, `--header v`, `-Hv` and `--header=v` (review 6d354ee8.2)."""
+    """(argv without credential headers, the curl config carrying them), or (argv, None) when it carries none, stdin untouched. ValueError when the argv carries a credential header AND already reads curl's stdin (review 6d354ee8.1: an argv with no credential needs no config, so its stdin use is no conflict). Every spelling curl takes a header in is read: `-H v`, `--header v`, `-Hv` and `--header=v` (review 6d354ee8.2). ValueError also when credential text (`CREDENTIAL_TEXT`) remains on argv in a spelling the walk does not read (`-oH...`, `--proxy-header`, a body or URL), so nothing reaches argv unread."""
     out: list[str] = []
     lines: list[str] = []
 

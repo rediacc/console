@@ -50,8 +50,8 @@ Once a test bucket exists (substitute it and the other `<...>` values):
 ```bash
 ACCOUNT_BACKUP_S3_ENDPOINT="https://<account>.r2.cloudflarestorage.com" \
 ACCOUNT_BACKUP_S3_BUCKET="<test bucket>" \
-ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="..." \
-ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="..." \
+ACCOUNT_BACKUP_S3_ACCESS_KEY_ID="<access key id>" \
+ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="<secret access key>" \
   PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_cutover_preflight
 ```
 
