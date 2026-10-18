@@ -38,7 +38,12 @@ export type TerminalType =
   | 'wsl';
 
 export interface TerminalLaunchOptions {
-  command: string;
+  /**
+   * The program to run in the terminal and its arguments, one element each.
+   * Each launcher quotes them for the shell or script language it hands them
+   * to, so an argument holding quotes, spaces or backslashes arrives intact.
+   */
+  argv: string[];
   title?: string;
   workingDirectory?: string;
   environmentVariables?: Record<string, string>;

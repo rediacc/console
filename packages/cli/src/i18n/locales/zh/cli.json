@@ -2325,7 +2325,8 @@
       "sshCode127": "在远程机器上找不到命令",
       "sshCode130": "连接被用户终止（Ctrl+C）",
       "sshCode255": "SSH 连接失败 - 可能的原因：\n    - 身份验证失败（检查 SSH 密钥权限）\n    - 主机密钥验证失败\n    - 网络连接断开\n    - 远程 SSH 服务未运行",
-      "sshExitCode": "SSH 退出代码 {{code}}"
+      "sshExitCode": "SSH 退出代码 {{code}}",
+      "secretStagingFailed": "无法在机器上准备仓库密钥（ssh 退出码 {{code}}）。"
     },
     "unknownCommand": "未知命令 \"{{command}}\"。可用命令：{{available}}。",
     "unknownRegion": "未知区域: {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "renet 更新后，已刷新 {{count}} 个签名无效的仓库许可证",
-    "licenseSignatureRefreshFailed": "renet 更新后，{{count}} 个仓库许可证签名无效。请运行：rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "renet 更新后，{{count}} 个仓库许可证签名无效。请运行：rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "密钥 {{name}} 不是有效的环境变量名，会话将在没有它的情况下启动。"
   }
 }

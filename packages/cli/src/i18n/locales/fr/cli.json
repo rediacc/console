@@ -2325,7 +2325,8 @@
       "sshCode127": "Commande non trouvée sur la machine distante",
       "sshCode130": "Connexion terminée par l'utilisateur (Ctrl+C)",
       "sshCode255": "Échec de la connexion SSH - causes possibles :\n    - Authentification échouée (vérifiez les permissions de la clé SSH)\n    - Vérification de la clé d'hôte échouée\n    - Connexion réseau interrompue\n    - Service SSH distant non en cours d'exécution",
-      "sshExitCode": "SSH s'est terminé avec le code {{code}}"
+      "sshExitCode": "SSH s'est terminé avec le code {{code}}",
+      "secretStagingFailed": "Impossible de déposer les secrets du dépôt sur la machine (code de sortie ssh {{code}})."
     },
     "unknownCommand": "Commande inconnue \"{{command}}\". Commandes disponibles : {{available}}.",
     "unknownRegion": "Région inconnue : {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "{{count}} licence(s) de dépôt avec des signatures invalides actualisée(s) après la mise à jour de renet",
-    "licenseSignatureRefreshFailed": "{{count}} licence(s) de dépôt ont des signatures invalides après la mise à jour de renet. Exécutez : rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "{{count}} licence(s) de dépôt ont des signatures invalides après la mise à jour de renet. Exécutez : rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "Le secret {{name}} n'a pas un nom de variable d'environnement valide ; la session démarre sans lui."
   }
 }

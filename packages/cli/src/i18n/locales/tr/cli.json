@@ -2325,7 +2325,8 @@
       "sshCode127": "Komut uzak makinede bulunamadı",
       "sshCode130": "Bağlantı kullanıcı tarafından sonlandırıldı (Ctrl+C)",
       "sshCode255": "SSH bağlantısı başarısız - olası nedenler:\n    - Kimlik doğrulama başarısız (SSH anahtar izinlerini kontrol edin)\n    - Ana bilgisayar anahtarı doğrulaması başarısız\n    - Ağ bağlantısı kesildi\n    - Uzak SSH hizmeti çalışmıyor",
-      "sshExitCode": "SSH {{code}} koduyla çıktı"
+      "sshExitCode": "SSH {{code}} koduyla çıktı",
+      "secretStagingFailed": "Depo gizli değerleri makineye hazırlanamadı (ssh çıkış kodu {{code}})."
     },
     "unknownCommand": "Bilinmeyen komut \"{{command}}\". Kullanılabilir komutlar: {{available}}.",
     "unknownRegion": "Bilinmeyen bölge: {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "renet güncellemesinden sonra geçersiz imzalı {{count}} depo lisansı yenilendi",
-    "licenseSignatureRefreshFailed": "renet güncellemesinden sonra {{count}} depo lisansının imzası geçersiz. Çalıştırın: rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "renet güncellemesinden sonra {{count}} depo lisansının imzası geçersiz. Çalıştırın: rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "{{name}} gizli değerinin adı geçerli bir ortam değişkeni adı değil; oturum onsuz başlıyor."
   }
 }

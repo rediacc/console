@@ -2325,7 +2325,8 @@
       "sshCode127": "Befehl auf Remote-Machine nicht gefunden",
       "sshCode130": "Verbindung vom Benutzer beendet (Strg+C)",
       "sshCode255": "SSH-Verbindung fehlgeschlagen - mögliche Ursachen:\n    - Authentifizierung fehlgeschlagen (SSH-Schlüssel-Berechtigungen überprüfen)\n    - Host-Schlüssel-Überprüfung fehlgeschlagen\n    - Netzwerkverbindung unterbrochen\n    - Remote-SSH-Service läuft nicht",
-      "sshExitCode": "SSH mit Code {{code}} beendet"
+      "sshExitCode": "SSH mit Code {{code}} beendet",
+      "secretStagingFailed": "Die Repository-Secrets konnten nicht auf der Maschine bereitgestellt werden (SSH-Exitcode {{code}})."
     },
     "unknownCommand": "Unbekannter Befehl \"{{command}}\". Verfügbare Befehle: {{available}}.",
     "unknownRegion": "Unbekannte Region: {{region}}",
@@ -2518,6 +2519,7 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "{{count}} Repo-Lizenz(en) mit ungültigen Signaturen nach renet-Update aktualisiert",
-    "licenseSignatureRefreshFailed": "{{count}} Repo-Lizenz(en) haben ungültige Signaturen nach renet-Update. Ausführen: rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "{{count}} Repo-Lizenz(en) haben ungültige Signaturen nach renet-Update. Ausführen: rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "Das Secret {{name}} hat keinen gültigen Namen für eine Umgebungsvariable; die Sitzung startet ohne es."
   }
 }

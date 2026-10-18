@@ -18,7 +18,8 @@
   },
   "warnings": {
     "licenseSignatureRefreshed": "Refreshed {{count}} repo license(s) with invalid signatures after renet update",
-    "licenseSignatureRefreshFailed": "{{count}} repo license(s) have invalid signatures after renet update. Run: rdc subscription refresh -m <machine>"
+    "licenseSignatureRefreshFailed": "{{count}} repo license(s) have invalid signatures after renet update. Run: rdc subscription refresh -m <machine>",
+    "secretNameSkipped": "Secret {{name}} is not a valid environment variable name; the session starts without it."
   },
   "commands": {
     "cluster": {
@@ -2305,7 +2306,8 @@
       "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when the target is a repository.\n\nInstead of:\n  rdc term connect {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term connect <repo-ref> -c \"{{command}}\"",
       "dockerComposeForbidden": "\"docker compose\" is not permitted in repository context.\n\nUse \"renet compose -- <args>\" instead so per-repo loopback IPs, host network injection, CRIU capabilities, and compose validation are applied. Running \"docker compose\" directly bypasses all of this and silently corrupts the deployment.\n\nFor orchestrated deploys, prefer: rdc repo up <repo-ref>",
       "fileWriteDetected": "File write detected ({{detected}}). Use rdc repo sync instead:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync transfers files with delta compression, checksums, and proper permissions.",
-      "sshExitCode": "SSH exited with code {{code}}"
+      "sshExitCode": "SSH exited with code {{code}}",
+      "secretStagingFailed": "Could not stage the repository secrets on the machine (ssh exit code {{code}})."
     },
     "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
     "unknownRegion": "Unknown region: {{region}}",
