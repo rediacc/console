@@ -213,6 +213,8 @@ describe('term connect secret delivery', () => {
         ])
           .toString()
           .trim();
+      // The liveness check can fail (review 4127bcb0.1): this process is alive, so a missing or broken `ps` turns this red.
+      expect(alive(String(process.pid))).toBe('up');
       for (let i = 0; i < 50 && children() === ''; i += 1) execFileSync('sleep', ['0.05']);
       const sleeper = children();
       expect(sleeper).not.toBe('');
