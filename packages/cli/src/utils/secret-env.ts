@@ -24,9 +24,10 @@ const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
  * Seconds a staged secrets directory survives when no session consumes it.
  * The session deletes it itself on start, so this only reaps a session that
  * never began; it is long enough for an interactive passphrase or host-key
- * prompt between staging and the session (review 67e482c0.2), and the session
- * kills the reaper when it consumes the file; the reaper traps that kill and stops its own sleep, so no sleeper outlives a started
- * session (review 2e951e55.4).
+ * prompt between staging and the session (review 67e482c0.2). The session
+ * kills the reaper when it consumes the file, and the reaper traps that kill
+ * and stops its own sleep, so no sleeper outlives a started session
+ * (reviews 2e951e55.4, 73f53020.1).
  */
 export const STAGED_SECRETS_TTL_SECONDS = 600;
 
