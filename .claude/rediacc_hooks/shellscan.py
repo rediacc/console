@@ -7421,6 +7421,7 @@ _CURL_LONG_OUT = {
 _WGET_VALUED = frozenset("OoaPeitTwQUlARDIXB")
 # A LONG OPTION'S VALUE IS NOT A URL (review ff2ccadb.1). `curl -O --user bob https://x.invalid/a.py` recorded `bob` as a download, since only the output options above skipped their value. The two sets below are every long option curl 8.18.0 (`curl --help all`) and GNU Wget 1.25.0 (`wget --help`, plus `--max-redirect`, `--hsts-file`, `--method` and `--secure-protocol`, which take a value the help text does not show) takes a value for, and every one it does not; `_long_option` reads a word against them.
 # curl takes no abbreviation and accepts `--no-` before a boolean; wget, through getopt_long, takes any unambiguous prefix and accepts `--no-` before every boolean. A long option in neither set (a newer tool, a typo, an ambiguous prefix) may take the next word, so that word is read as a possible value and never as a URL: a missed download stays the old miss, while a false one would name a file nothing wrote.
+_SCHEME_URL = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 _CURL_LONG_VALUED = frozenset(
     [
         "abstract-unix-socket",
@@ -7910,7 +7911,12 @@ def _tool_outputs(run):
             if word.startswith("--"):
                 key, eq, value = word.partition("=")
                 key, takes = _long_option(key, _CURL_LONG_VALUED, _CURL_LONG_FLAGS, False)
-                if takes is not False and not eq and k < len(words):
+                # An option in neither set takes the next word only when it is not a scheme URL (reviews 57688c33.1, .2): `--frobnicate https://x/a.py` still downloads a.py, while a bare word stays a possible value.
+                if (
+                    takes is True or (takes is None and not _SCHEME_URL.match(words[k]))
+                    if not eq and k < len(words)
+                    else False
+                ):
                     value = words[k]
                     k += 1
                 if key in _CURL_LONG_OUT:
@@ -7965,7 +7971,12 @@ def _tool_outputs(run):
             if word.startswith("--"):
                 key, eq, value = word.partition("=")
                 key, takes = _long_option(key, _WGET_LONG_VALUED, _WGET_LONG_FLAGS, True)
-                if takes is not False and not eq and k < len(words):
+                # An option in neither set takes the next word only when it is not a scheme URL (reviews 57688c33.1, .2): `--frobnicate https://x/a.py` still downloads a.py, while a bare word stays a possible value.
+                if (
+                    takes is True or (takes is None and not _SCHEME_URL.match(words[k]))
+                    if not eq and k < len(words)
+                    else False
+                ):
                     value = words[k]
                     k += 1
                 if key in (
@@ -8171,7 +8182,11 @@ def _archive_members(run, cwd, written, earlier):
         if base == "unzip" or (base == "bsdtar" and zipfile.is_zipfile(path)):
             with zipfile.ZipFile(path) as archive_file:
                 infos = archive_file.infolist()
-                if len(infos) > _SEARCH_CAP:
+                # The unpacked-size cap holds for zip as for tar (review 57688c33.3).
+                if (
+                    len(infos) > _SEARCH_CAP
+                    or sum(z.file_size for z in infos) > _ARCHIVE_UNPACKED_MAX
+                ):
                     return None
                 for zinfo in infos:
                     if (zinfo.external_attr >> 16) & 0o170000 == 0o120000:
