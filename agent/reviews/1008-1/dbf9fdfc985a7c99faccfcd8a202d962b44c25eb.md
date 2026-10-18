@@ -21,4 +21,4 @@ Body-Sig: 9067585baa0686a2
 ### dbf9fdfc.1 [low] scripts/pins/pins.ts:2485
 Anchor: in-diff
 Claim: The new comment says the control goes red when its --to guidance is lost, but the case's visible assertions (rs.rc, the 'check:fixture-tool also judges embed:zed' line, the 'npm run pins -- bump embed:tool <each behind sibling>' line, and the '--major --reason when a move is a major' line) contain no --to check, so dropping only the --to text would leave the case green unless that unseen-to-this-diff joint command string happens to carry it.
-Resolution: open
+Resolution: fixed d4b016dcf98be3416b7c7fcf4266ff9ea62c67a6 | d778be9d 2026-10-18T20:21:07Z
