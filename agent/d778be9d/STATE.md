@@ -1,14 +1,13 @@
-## SESSION d778be9d 2026-10-15T18:57:42Z
+## SESSION d778be9d 2026-10-18T16:02:51Z
 
-# STATE d778be9d (2026-10-15T19:00Z, before the host hibernate)
+# STATE d778be9d (2026-10-18T16:20Z)
 
-Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. Operator 18:55Z: hibernate after sub-agents finish; no new sub-agents until resumed. /ask answers (round log DECISIONS): deploy config fix to stable us+asia now (#1c6632c2); fix 74ff821e.1/.2 in PLAN-backup-program.md (#ee4620ae); W7P5-c D1 whole tree minus private/, D2 delete scripts/pre-commit-check.sh, D3/D4 defaults (#dccf10ab).
+Branch 1008-1, PR #600, PR-TASK 8ed364fe. Nothing pushed since eced71537. Effort smart. Today: CLI secret delivery and staging fixes, shellscan fixes, migration sweep guard (account 7ed6dfe), PLAN-backup-program fix, stable us+asia deployed (0 rows), user-only /hibernate (aaac25704, operator's exception entry). wl_review --check clean; 35 advisory findings in /tmp/claude-1000/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/open-findings.md (plus 4 on aaac2570).
 
-Patches in /tmp/claude-1000/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/: r103a (6 files: e7db03fb.1, e5514df8.5) and r103b (19 files: staged-file term secrets, launcher quoting, e5514df8.1-.4, #015164bc), writer-verified; r104 (shellscan ff2ccadb.1/.2, c988ab31.1/.2, #02409a1f) from the writer still running at 19:00Z. Writer finding to track: term.ts connectTerminal finally runs sshConnection.cleanup() ~500 ms after launching an external terminal.
+ci:quick at 15:40Z was invalid (tree changed); the failed gates rerun on a still tree: 14 really red, logs in /tmp/claude-1000/g-<gate>.log: check:deps, check:lint, lint:unused, check:ci-budget-freshness (gate-costs.json), check:ci-plan-citations (2 unresolvable pointers in added plan/INDEX lines), check:ci-agent-session-archival (4 directories overdue), check:ci-builder-env-contract, check:ci-devcontainer-pins (3 behind), check:ci-real-provider-pins (1 behind), check:ci-search-index (14 stale), check:cli-examples (agent/reviews/1008-1/0afaa8e1...md), check:ci-pin-freshness (4 behind), check:ci-source-rules (1), check:ci-pytest.
 
 ## Next action
-1) Apply r103a, r103b, r104 (git apply --check first), rerun tsc + packages/cli npm test + cli-contract/literal-sources/prose/i18n gates for r103 and the hook suites + harnesses for r104, commit by literal paths, review-mark the findings, tick #015164bc and #02409a1f.
-2) #ee4620ae: fix the two lines in agent/plans/PLAN-backup-program.md; review-mark 74ff821e.1/.2.
-3) #1c6632c2: deploy_account us and asia (clean tree, portal_health before/after, rollback version + D1 bookmark), then the config-migration dry run per region.
-4) ci:quick on a still tree (#e03d83cc), vm:check -- --changed, push renet/account/console, /pr-babysit, /pr-merge.
-5) After merge: #24017fa4 edge dry runs, B8, the six branch-finished plans, W7P5-c waves, account plan AV1-AV7.
+1) Triage and fix each of the 14 reds (read each /tmp/claude-1000/g-<gate>.log; pins via npm run pins -- bump <id>; search index via its own regenerate command; archival via its verb); several are time-driven (pins, budget, archival) and were green on 10-15.
+2) Full ci:quick on a still tree (#e03d83cc), then vm:check -- --changed, push renet/account/console, sync_epic_block 600 1008-1, /pr-babysit, /pr-merge.
+3) The 35 advisory review findings, then #32e82a74 (term.ts external-terminal cleanup).
+4) After merge: #24017fa4 edge dry runs, B8 narrow rediacc-r2-, six branch-finished plans close, W7P5-c (D1 whole tree minus private/, D2 delete pre-commit-check.sh), account plan AV1-AV7.
