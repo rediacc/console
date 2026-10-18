@@ -171,12 +171,13 @@ from rediacc_ci.controls import Controls
 MIN_PY_FILES = 10
 
 
-# The pin, read from `.devcontainer/toolchain.env` like every other tool's. The twin overwrote it with a literal (port notes), which kept this gate demanding ruff 0.17.0 after the pins file moved to 0.17.1; with the twin deleted, the pins file is the one source.
-#
-# Read here rather than through `rediacc_ci.core.toolchain`: this module's differential specimen carries a fixed file set whose count is part of its frozen goldens, and importing another package module would change it.
+# The pins file the ruff pin is read from (named here so check:ci-checkout-cone can see the dependency).
 PINS_REL = ".devcontainer/toolchain.env"
 
 
+# The pin, read from `.devcontainer/toolchain.env` like every other tool's. The twin overwrote it with a literal (port notes), which kept this gate demanding ruff 0.17.0 after the pins file moved to 0.17.1; with the twin deleted, the pins file is the one source.
+#
+# Read here rather than through `rediacc_ci.core.toolchain`: this module's differential specimen carries a fixed file set whose count is part of its frozen goldens, and importing another package module would change it.
 def _pinned_ruff() -> str:
     pins = paths.from_root(*PINS_REL.split("/"))
     try:
