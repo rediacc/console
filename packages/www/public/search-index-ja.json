@@ -5235,7 +5235,7 @@
   {
     "id": "search-11738",
     "content": "13.1 login",
-    "body": "WebポータルのAPIトークンで認証 rdc subscription login [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -t, --token <token> | APIトークン (rdt_...) | いいえ | - | | --server <url> | アカウントサーバーURL | いいえ | - | <a id=\"cli-local-subscription-logout\"></a>",
+    "body": "WebポータルのAPIトークンで認証 rdc subscription login [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -t, --token <token> | APIトークン (rdt_...)。- を渡すと stdin から読み取ります（プロセス一覧に表示されません）。 | いいえ | - | | --server <url> | アカウントサーバーURL | いいえ | - | <a id=\"cli-local-subscription-logout\"></a>",
     "excerpt": "WebポータルのAPIトークンで認証 rdc subscription login [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -t, --token <token> | APIト...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
@@ -14222,7 +14222,7 @@
   {
     "id": "search-12516",
     "content": "ライセンス管理の仕組み",
-    "body": "account はプラン、契約上書き、マシンスロット状態、月次リポジトリライセンス発行の信頼できる情報源です。 rdc はワークステーション上で実行されます。アカウントサーバーにログインし、必要なライセンスを要求し、SSH経由でリモートマシンにインストールします。リポジトリコマンドを実行すると、rdc は必要なライセンスが正しく配置されていることを確認し、実行時にマシン上でそれらを検証します。 通常のフローは次のようになります： rdc subscription login で認証します rdc repo create、rdc repo up、rdc repo down などのリポジトリコマンドを実行します 必要なライセンスが見つからないか期限切れの場合、rdc は account にそれを要求します rdc は署名されたライセンスをマシンに書き込みます ライセンスはマシン上でローカルに検証され、操作が続行されます ワークステーションとサーバーの分担については rdc vs renet を、リポジトリのライフサイクル自体については リポジトリ を参照してください。 自動化およびAIエージェントには、ブラウザログインの代わりにスコープ付きサブスクリプショントークンを使用してください： rdc subscription login --token \"$REDIACC_TOKEN\" 環境を通じてトークンを直接注入することで、CLIが対話的なログインステップなしにリポジトリライセンスを発行・更新できるようにすることもできます：",
+    "body": "account はプラン、契約上書き、マシンスロット状態、月次リポジトリライセンス発行の信頼できる情報源です。 rdc はワークステーション上で実行されます。アカウントサーバーにログインし、必要なライセンスを要求し、SSH経由でリモートマシンにインストールします。リポジトリコマンドを実行すると、rdc は必要なライセンスが正しく配置されていることを確認し、実行時にマシン上でそれらを検証します。 通常のフローは次のようになります： rdc subscription login で認証します rdc repo create、rdc repo up、rdc repo down などのリポジトリコマンドを実行します 必要なライセンスが見つからないか期限切れの場合、rdc は account にそれを要求します rdc は署名されたライセンスをマシンに書き込みます ライセンスはマシン上でローカルに検証され、操作が続行されます ワークステーションとサーバーの分担については rdc vs renet を、リポジトリのライフサイクル自体については リポジトリ を参照してください。 自動化およびAIエージェントには、ブラウザログインの代わりにスコープ付きサブスクリプショントークンを使用してください： printf '%s' \"$REDIACC_TOKEN\" | rdc subscription login --token - 環境を通じてトークンを直接注入することで、CLIが対話的なログインステップなしにリポジトリライセンスを発行・更新できるようにすることもできます：",
     "excerpt": "account はプラン、契約上書き、マシンスロット状態、月次リポジトリライセンス発行の信頼できる情報源です。 rdc はワークステーション上で実行されます。アカウントサーバーにログインし、必要なライセンスを要求し、SSH経由でリモートマシンにインストールします。リポジトリコマンドを実行すると、rd...",
     "category": "Documentation",
     "page": "/ja/docs/subscription-licensing",
@@ -14390,8 +14390,8 @@
   {
     "id": "search-12530",
     "content": "ステータスの確認とライセンスの更新",
-    "body": "人間によるログイン： rdc subscription login 自動化またはAIエージェントによるログイン： rdc subscription login --token \"$REDIACC_TOKEN\" 非対話型環境では、REDIACC_TOKEN を設定するのが最もシンプルな選択肢です。トークンはエージェントが必要とするサブスクリプションとリポジトリライセンス操作のみにスコープを限定する必要があります。 アカウントバックアップされたサブスクリプションステータスを表示： rdc subscription status 1台のマシンのマシンアクティベーション詳細を表示： rdc subscription status -m hostinger 1台のマシンにインストールされたリポジトリライセンス詳細を表示： rdc subscription status -m hostinger マシン上のリポジトリのライセンスを更新： rdc subscription refresh -m hostinger --repo my-app --repo の ref はローカルの rdc 設定で解決できる必要があります。マシン上で発見されたがローカル設定にないリポジトリは拒否されます。失敗として報告され、自動分類はされません。 初回使用時、使用可能なリポジトリライセンスが見つからないライセンス済みリポジトリまたはバックアップ操作は、アカウント認可ハンドオフを自動的にトリガーする場合があります。CLIは認可URLを表示し、対話型ターミナルではブラウザを開こうとし、認可と発行が成功した後に一度操作を再試行します。 非対話型環境では、CLIはブラウザの承認を待ちません。代わりに、rdc subscription login --token ... または REDIACC_TOKEN でスコープ付きトークンを提供するよう指示します。 マシンの初回セットアップについては、マシンセットアップ を参照してください。",
-    "excerpt": "人間によるログイン： rdc subscription login 自動化またはAIエージェントによるログイン： rdc subscription login --token \"$REDIACC_TOKEN\" 非対話型環境では、REDIACC_TOKEN を設定するのが最もシンプルな選択肢です。トー...",
+    "body": "人間によるログイン： rdc subscription login 自動化またはAIエージェントによるログイン： printf '%s' \"$REDIACC_TOKEN\" | rdc subscription login --token - 非対話型環境では、REDIACC_TOKEN を設定するのが最もシンプルな選択肢です。トークンはエージェントが必要とするサブスクリプションとリポジトリライセンス操作のみにスコープを限定する必要があります。 アカウントバックアップされたサブスクリプションステータスを表示： rdc subscription status 1台のマシンのマシンアクティベーション詳細を表示： rdc subscription status -m hostinger 1台のマシンにインストールされたリポジトリライセンス詳細を表示： rdc subscription status -m hostinger マシン上のリポジトリのライセンスを更新： rdc subscription refresh -m hostinger --repo my-app --repo の ref はローカルの rdc 設定で解決できる必要があります。マシン上で発見されたがローカル設定にないリポジトリは拒否されます。失敗として報告され、自動分類はされません。 初回使用時、使用可能なリポジトリライセンスが見つからないライセンス済みリポジトリまたはバックアップ操作は、アカウント認可ハンドオフを自動的にトリガーする場合があります。CLIは認可URLを表示し、対話型ターミナルではブラウザを開こうとし、認可と発行が成功した後に一度操作を再試行します。 非対話型環境では、CLIはブラウザの承認を待ちません。代わりに、rdc subscription login --token ... または REDIACC_TOKEN でスコープ付きトークンを提供するよう指示します。 マシンの初回セットアップについては、マシンセットアップ を参照してください。",
+    "excerpt": "人間によるログイン： rdc subscription login 自動化またはAIエージェントによるログイン： printf '%s' \"$REDIACC_TOKEN\" | rdc subscription login --token - 非対話型環境では、REDIACC_TOKEN を設定するの...",
     "category": "Documentation",
     "page": "/ja/docs/subscription-licensing",
     "fragment": "checking-status-and-refreshing-licenses",

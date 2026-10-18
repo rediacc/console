@@ -5235,7 +5235,7 @@
   {
     "id": "search-18913",
     "content": "13.1 login",
-    "body": "使用Web门户的API令牌进行认证 rdc subscription login [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -t, --token <token> | API令牌 (rdt_...) | 否 | - | | --server <url> | 账户服务器URL | 否 | - | <a id=\"cli-local-subscription-logout\"></a>",
+    "body": "使用Web门户的API令牌进行认证 rdc subscription login [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -t, --token <token> | API令牌 (rdt_...)。传递 - 以从 stdin 读取（令牌不会出现在进程列表中）。 | 否 | - | | --server <url> | 账户服务器URL | 否 | - | <a id=\"cli-local-subscription-logout\"></a>",
     "excerpt": "使用Web门户的API令牌进行认证 rdc subscription login [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -t, --token <token> | API令牌 (r...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
@@ -14222,7 +14222,7 @@
   {
     "id": "search-19691",
     "content": "许可证的工作原理",
-    "body": "account 是计划、合同覆盖、机器槽位状态和每月仓库许可证发放的真实来源。 rdc 在您的工作站上运行。它将您登录到账户服务器，请求所需的许可证，并通过 SSH 将其安装到远程机器上。当您运行仓库命令时，rdc 确保所需许可证已就位，并在机器上的运行时验证它们。 正常流程如下： 您使用 rdc subscription login 进行身份验证 您运行仓库命令，例如 rdc repo create、rdc repo up 或 rdc repo down 如果所需许可证缺失或已过期，rdc 向 account 请求 rdc 将签名的许可证写入机器 许可证在机器上本地验证，操作继续进行 有关工作站与服务器的分工，请参阅 rdc vs renet；有关仓库生命周期本身，请参阅 仓库。 对于自动化和 AI 代理，请使用范围受限的订阅令牌而非浏览器登录： rdc subscription login --token \"$REDIACC_TOKEN\" 您也可以直接通过环境注入令牌，使 CLI 无需任何交互式登录步骤即可发放和刷新仓库许可证：",
+    "body": "account 是计划、合同覆盖、机器槽位状态和每月仓库许可证发放的真实来源。 rdc 在您的工作站上运行。它将您登录到账户服务器，请求所需的许可证，并通过 SSH 将其安装到远程机器上。当您运行仓库命令时，rdc 确保所需许可证已就位，并在机器上的运行时验证它们。 正常流程如下： 您使用 rdc subscription login 进行身份验证 您运行仓库命令，例如 rdc repo create、rdc repo up 或 rdc repo down 如果所需许可证缺失或已过期，rdc 向 account 请求 rdc 将签名的许可证写入机器 许可证在机器上本地验证，操作继续进行 有关工作站与服务器的分工，请参阅 rdc vs renet；有关仓库生命周期本身，请参阅 仓库。 对于自动化和 AI 代理，请使用范围受限的订阅令牌而非浏览器登录： printf '%s' \"$REDIACC_TOKEN\" | rdc subscription login --token - 您也可以直接通过环境注入令牌，使 CLI 无需任何交互式登录步骤即可发放和刷新仓库许可证：",
     "excerpt": "account 是计划、合同覆盖、机器槽位状态和每月仓库许可证发放的真实来源。 rdc 在您的工作站上运行。它将您登录到账户服务器，请求所需的许可证，并通过 SSH 将其安装到远程机器上。当您运行仓库命令时，rdc 确保所需许可证已就位，并在机器上的运行时验证它们。 正常流程如下： 您使用 rdc...",
     "category": "Documentation",
     "page": "/zh/docs/subscription-licensing",
@@ -14390,8 +14390,8 @@
   {
     "id": "search-19705",
     "content": "检查状态和刷新许可证",
-    "body": "人工登录： rdc subscription login 自动化或 AI 代理登录： rdc subscription login --token \"$REDIACC_TOKEN\" 对于非交互式环境，设置 REDIACC_TOKEN 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。 显示账户支持的订阅状态： rdc subscription status 显示一台机器的机器激活详情： rdc subscription status -m hostinger 显示一台机器上已安装的仓库许可证详情： rdc subscription status -m hostinger 刷新机器上某个仓库的许可证： rdc subscription refresh -m hostinger --repo my-app --repo ref 必须能在本地 rdc 配置中解析。在机器上发现但本地配置中缺少的仓库将被拒绝：它会被报告为失败，且不会自动分类。 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，在交互式终端中尝试打开浏览器，并在授权和发放成功后重试一次操作。 在非交互式环境中，CLI 不等待浏览器批准。相反，它告诉您使用 rdc subscription login --token ... 或 REDIACC_TOKEN 提供范围受限的令牌。 有关机器首次设置，请参阅 机器设置。",
-    "excerpt": "人工登录： rdc subscription login 自动化或 AI 代理登录： rdc subscription login --token \"$REDIACC_TOKEN\" 对于非交互式环境，设置 REDIACC_TOKEN 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。 显示...",
+    "body": "人工登录： rdc subscription login 自动化或 AI 代理登录： printf '%s' \"$REDIACC_TOKEN\" | rdc subscription login --token - 对于非交互式环境，设置 REDIACC_TOKEN 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。 显示账户支持的订阅状态： rdc subscription status 显示一台机器的机器激活详情： rdc subscription status -m hostinger 显示一台机器上已安装的仓库许可证详情： rdc subscription status -m hostinger 刷新机器上某个仓库的许可证： rdc subscription refresh -m hostinger --repo my-app --repo ref 必须能在本地 rdc 配置中解析。在机器上发现但本地配置中缺少的仓库将被拒绝：它会被报告为失败，且不会自动分类。 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，在交互式终端中尝试打开浏览器，并在授权和发放成功后重试一次操作。 在非交互式环境中，CLI 不等待浏览器批准。相反，它告诉您使用 rdc subscription login --token ... 或 REDIACC_TOKEN 提供范围受限的令牌。 有关机器首次设置，请参阅 机器设置。",
+    "excerpt": "人工登录： rdc subscription login 自动化或 AI 代理登录： printf '%s' \"$REDIACC_TOKEN\" | rdc subscription login --token - 对于非交互式环境，设置 REDIACC_TOKEN 是最简单的选项。令牌应仅限于代理所...",
     "category": "Documentation",
     "page": "/zh/docs/subscription-licensing",
     "fragment": "checking-status-and-refreshing-licenses",
