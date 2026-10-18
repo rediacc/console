@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: low -- operator 2026-10-15: "switch effort: smart to effort: low", agent/plans/PLAN-stop-hook-effort.md
+effort: smart -- operator 2026-10-18: "let's make effort mode smart", agent/plans/PLAN-stop-hook-effort.md
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,10 +54,10 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort low; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: build.
 - Branch: 1008-1, PR #600 open.
-- Plans on the PR (10):
+- Plans on the PR (8):
   - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo batch claim on the `Plan:` line
@@ -66,13 +66,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
-  - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (2 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1128 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1162 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
   - epic 4e9f05b6, plan agent/plans/PLAN-backup-program.md, outside the set, 6 commit(s) on the branch, 0 open item(s): backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover
-- Writers: 2 live of writer_cap 15 (session d778be9d): worker:aa46610e2534ebb94, worker:a8d7578b45a9d04d2.
-- Leased items: 2: #b53f586d (worker:a8d7578b45a9d04d2, d778be9d), #f70e2876 (worker:aa46610e2534ebb94, d778be9d).
+- Writers: 0 live of writer_cap 15 (session d778be9d).
+- Leased items: 0.
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
