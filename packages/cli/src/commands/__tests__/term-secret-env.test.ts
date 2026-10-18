@@ -15,6 +15,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readdirSync,
+  readFileSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -186,6 +187,35 @@ describe('term connect secret delivery', () => {
     expect(parseStagedSecretsDir('   RDC_STAGED_SECRETS=/tmp/rdc-env.Ab12Cd34Ef\r\n')).toBe(
       '/tmp/rdc-env.Ab12Cd34Ef'
     );
+  });
+
+  it('kills a live reaper and its sleep when the session consumes the file', () => {
+    // Review 73f53020.1/.3: the pid in "$d/reaper" is the reaper subshell; its trap stops the sleep it started.
+    const base = mkdtempSync(join(tmpdir(), 'rdc-reaper-'));
+    const stdout = execFileSync('sh', ['-c', STAGE_SECRETS_COMMAND], {
+      input: "export REDIACC_SECRET_A='v'\n",
+      env: { PATH: process.env.PATH ?? '', TMPDIR: base },
+    });
+    const dir = parseStagedSecretsDir(stdout.toString());
+    expect(dir).toBeDefined();
+    const reaper = readFileSync(join(dir as string, 'reaper'), 'utf8').trim();
+    const children = () =>
+      execFileSync('sh', ['-c', `pgrep -P ${reaper} || true`])
+        .toString()
+        .trim();
+    const alive = (pid: string) =>
+      execFileSync('sh', ['-c', `kill -0 ${pid} 2>/dev/null && echo up || echo gone`])
+        .toString()
+        .trim();
+    for (let i = 0; i < 50 && children() === ''; i += 1) execFileSync('sleep', ['0.05']);
+    const sleeper = children();
+    expect(sleeper).not.toBe('');
+    execFileSync('sh', ['-c', `${consumeStagedSecrets(dir as string)}true`]);
+    for (let i = 0; i < 50 && (alive(reaper) === 'up' || alive(sleeper) === 'up'); i += 1)
+      execFileSync('sleep', ['0.05']);
+    expect(alive(reaper)).toBe('gone');
+    expect(alive(sleeper)).toBe('gone');
+    rmSync(base, { recursive: true, force: true });
   });
 
   it('loads and deletes a staged directory whose path holds shell metacharacters', () => {
