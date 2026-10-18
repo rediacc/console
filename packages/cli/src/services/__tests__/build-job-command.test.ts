@@ -28,6 +28,7 @@ import {
   InvalidJobIdError,
 } from '../executor/job-client.js';
 import { buildRenetEnv } from '../executor/local-executor.js';
+import { STDIN_ENV_READER } from '../executor/renet-launch.js';
 
 const RENET = '/usr/bin/renet';
 const JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
@@ -55,7 +56,7 @@ function startCommand(
 
 /** The secret-carrying form: root bash reads the stdin records, then execs renet. */
 function stdinLaunch(invocation: string): string {
-  const script = `while IFS= read -r -d '' kv && [ -n "$kv" ]; do export "$kv"; done; exec ${invocation}`;
+  const script = `${STDIN_ENV_READER}${invocation}`;
   return `sudo bash -c '${script.replaceAll("'", "'\\''")}'`;
 }
 
