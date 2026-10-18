@@ -53,7 +53,7 @@ const ENV = { REDIACC_REPOSITORY: 'app', REDIACC_SECRET_TOKEN: SECRET };
 const TRICKY = `echo "it's a \\ test" && cd '/a b'`;
 const ARGV = ['ssh', '-p', '22', 'repo@h', TRICKY];
 
-const ALL: TerminalType[] = [
+const ALL = [
   'gnome-terminal',
   'konsole',
   'xfce4-terminal',
@@ -67,7 +67,7 @@ const ALL: TerminalType[] = [
   'cmd',
   'mintty',
   'wsl',
-];
+] as const satisfies readonly TerminalType[];
 
 /** Runs a POSIX command line with `printf` standing in for ssh; returns the argv it saw. */
 function argvSeenBy(commandLine: string): string[] {
