@@ -24,9 +24,11 @@ const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
  * Seconds a staged secrets directory survives when no session consumes it.
  * The session deletes it itself on start, so this only reaps a session that
  * never began; it is long enough for an interactive passphrase or host-key
- * prompt between staging and the session (review 67e482c0.2).
+ * prompt between staging and the session (review 67e482c0.2), and the session
+ * kills the reaper when it consumes the file, so no sleeper outlives a started
+ * session (review 2e951e55.4).
  */
-export const STAGED_SECRETS_TTL_SECONDS = 900;
+export const STAGED_SECRETS_TTL_SECONDS = 600;
 
 const STAGED_DIR_MARKER = 'RDC_STAGED_SECRETS=';
 
@@ -90,14 +92,15 @@ export const STAGE_SECRETS_COMMAND = [
   `d=$(mktemp -d "\${XDG_RUNTIME_DIR:-/nonexistent}/rdc-env.XXXXXXXXXX" 2>/dev/null || mktemp -d "\${TMPDIR:-/tmp}/rdc-env.XXXXXXXXXX") || exit 1`,
   `cat > "$d/env" || { rm -rf "$d"; exit 1; }`,
   `(sleep ${STAGED_SECRETS_TTL_SECONDS}; rm -rf "$d") </dev/null >/dev/null 2>&1 &`,
+  `echo $! > "$d/reaper"`,
   `printf '${STAGED_DIR_MARKER}%s\\n' "$d"`,
 ].join('\n');
 
 /** The staged directory from the staging call's stdout, or undefined when it printed none. */
 export function parseStagedSecretsDir(stdout: string): string | undefined {
   for (const line of stdout.split('\n')) {
-    // Only a carriage return is stripped: a parent directory may end in a space.
-    const trimmed = line.replace(/\r$/, '');
+    // Leading blanks and a carriage return are stripped (review 2e951e55.1); a trailing space belongs to the path.
+    const trimmed = line.replace(/^[ \t]+/, '').replace(/\r$/, '');
     if (!trimmed.startsWith(STAGED_DIR_MARKER)) continue;
     const dir = trimmed.slice(STAGED_DIR_MARKER.length);
     const safe = STAGED_DIR.test(dir) && !dir.split('/').includes('..');
@@ -115,5 +118,6 @@ export function parseStagedSecretsDir(stdout: string): string | undefined {
 export function consumeStagedSecrets(dir: string): string {
   const quotedDir = shellQuote(dir);
   const file = shellQuote(`${dir}/env`);
-  return `if [ -r ${file} ]; then . ${file}; else echo 'rdc: the repository secrets did not reach this session' >&2; fi; rm -rf -- ${quotedDir}; `;
+  const reaper = shellQuote(`${dir}/reaper`);
+  return `if [ -r ${file} ]; then . ${file}; else echo 'rdc: the repository secrets did not reach this session' >&2; fi; [ -r ${reaper} ] && kill "$(cat ${reaper})" 2>/dev/null; rm -rf -- ${quotedDir}; `;
 }
