@@ -1725,3 +1725,25 @@ def test_e2e_proceeds_without_a_state_file(monkeypatch, tmp_path):
     with pytest.raises(_LaunchedError):
         account_lifecycle.test_e2e([])
     assert reached
+
+
+def test_e2e_proceeds_when_the_state_names_another_port(monkeypatch, tmp_path):
+    """The state file is this checkout's, but GATEWAY_PORT targets another gateway: its lockfile record says nothing about that one (review 6c9aee6a.1)."""
+    reached = _e2e_tree(monkeypatch, tmp_path, state_extra="")
+    (tmp_path / ".account-state").write_text("gateway_port=4888\n")
+    with pytest.raises(_LaunchedError):
+        account_lifecycle.test_e2e([])
+    assert reached
+
+
+def test_an_absent_lockfile_is_a_recorded_state(monkeypatch, tmp_path):
+    """A lockfile absent at `dev()` is recorded as `absent`, and an e2e run with it still absent proceeds (review 6c9aee6a.2)."""
+    reached = _e2e_tree(
+        monkeypatch,
+        tmp_path,
+        state_extra="web_lock_sha=%s\nlock_sha=absent\n" % _sha("web-lock-v2"),
+    )
+    (tmp_path / "private" / "account" / "package-lock.json").unlink()
+    with pytest.raises(_LaunchedError):
+        account_lifecycle.test_e2e([])
+    assert reached

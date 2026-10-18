@@ -226,7 +226,7 @@ def unresolved_refs(
 ) -> tuple[list[str], list[str]]:
     """(paths that name no file, item ids that name no item in the store).
 
-    THE TWO ARE JUDGED DIFFERENTLY ON PURPOSE. A path is committed with the config, so one that resolves nowhere is a config defect and refuses. An item id is written into the store by the session that tracks the retirement, and the store is a record path that can be committed after the config: refusing on it would turn CI red for the ordering of two commits, so an unresolved id is reported and the run continues. An eight-hex id cannot be repeated by accident, so the excuse it grants stays narrow either way.
+    THE TWO ARE JUDGED DIFFERENTLY ON PURPOSE. A path is committed with the config, so one that resolves nowhere is a config defect and refuses. An item id is written into the store by the session that tracks the retirement, and the store is a record path that can be committed after the config: refusing on it would turn CI red for the ordering of two commits, so an unresolved id is reported and the run continues. A hex id of six to sixteen digits (ID_REF_RE) is unlikely to recur by accident, so the excuse it grants stays narrow either way.
     """
     missing_paths, missing_ids = [], []
     for term in terms:

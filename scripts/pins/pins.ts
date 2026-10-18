@@ -1975,7 +1975,7 @@ const CASES: Record<string, Case> = {
       },
       {
         // Red when an unknown trailing id is skipped.
-        name: 'bump: an unknown id among several is refused by name and nothing is written',
+        name: 'bump: an unknown id among several is refused by name',
         ok: unk.rc !== 0 && unk.err.includes('no pin embed:nope'),
         detail: `rc=${unk.rc} ${unk.err}`,
       },
