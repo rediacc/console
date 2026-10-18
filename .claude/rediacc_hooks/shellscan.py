@@ -7420,7 +7420,7 @@ _CURL_LONG_OUT = {
 }
 _WGET_VALUED = frozenset("OoaPeitTwQUlARDIXB")
 # A LONG OPTION'S VALUE IS NOT A URL (review ff2ccadb.1). `curl -O --user bob https://x.invalid/a.py` recorded `bob` as a download, since only the output options above skipped their value. The two sets below are every long option curl 8.18.0 (`curl --help all`) and GNU Wget 1.25.0 (`wget --help`, plus `--max-redirect`, `--hsts-file`, `--method` and `--secure-protocol`, which take a value the help text does not show) takes a value for, and every one it does not; `_long_option` reads a word against them.
-# curl takes no abbreviation and accepts `--no-` before a boolean; wget, through getopt_long, takes any unambiguous prefix and accepts `--no-` before every boolean. A long option in neither set (a newer tool, a typo, an ambiguous prefix) may take the next word, so that word is read as a possible value and never as a URL: a missed download stays the old miss, while a false one would name a file nothing wrote.
+# curl takes no abbreviation and accepts `--no-` before a boolean; wget, through getopt_long, takes any unambiguous prefix and accepts `--no-` before every boolean. A long option in neither set (a newer tool, a typo, an ambiguous prefix) may take the next word, so that word is read as a possible value, unless it is a scheme URL, which is read as a download (review 57688c33.1). The direction is chosen for a guard: a download recorded that nothing wrote marks that file UNKNOWN, so a later run of it is refused as unjudgeable (fail closed), while a missed one leaves the walk reading whatever the disk holds (fail open; review e266f509.1).
 _SCHEME_URL = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*://")
 _CURL_LONG_VALUED = frozenset(
     [
