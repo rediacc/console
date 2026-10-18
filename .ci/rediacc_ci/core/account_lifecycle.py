@@ -777,11 +777,11 @@ def pids_line(pids: list[int]) -> str:
 
 
 def _lock_sha(path: str) -> str:
-    """sha256 of a lockfile, or the empty string when it is absent."""
+    """sha256 of a lockfile, or `absent` when there is none, so an absent lockfile is a recorded state rather than a missing record."""
     try:
         return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
     except OSError:
-        return ""
+        return "absent"
 
 
 def _lock_paths() -> dict[str, str]:
@@ -793,12 +793,14 @@ def _lock_paths() -> dict[str, str]:
     }
 
 
-def _refuse_stale_dev_server() -> None:
-    """Refuse when a lockfile moved (or its hash was never recorded) since `dev()` started Vite. No state file means this checkout started no gateway (GATEWAY_PORT names another one), so there is nothing to compare."""
+def _refuse_stale_dev_server(port: int | str) -> None:
+    """Refuse when a lockfile moved (or its hash was never recorded) since `dev()` started Vite. No state file, or one whose `gateway_port` is not `port`, means the gateway under test is not the one this checkout started, so there is nothing to compare."""
     path = account.state_file()
     if not os.path.isfile(path):
         return
     text = pathlib.Path(path).read_text(encoding="utf-8", errors="surrogateescape")
+    if grep_cut(text, "gateway_port") != str(port):
+        return
     moved = []
     unknown = []
     for key, lock in _lock_paths().items():
@@ -988,7 +990,7 @@ def test_e2e(args: list[str]) -> int:
         log.error("Dev gateway not running on port %s" % gateway_port)
         log.info("Start it first: ./run.sh account dev")
         raise ErrexitError(1, "gateway not running")
-    _refuse_stale_dev_server()
+    _refuse_stale_dev_server(gateway_port)
 
     os.environ["E2E_PORT"] = gateway_port
     os.environ["E2E_BASE_URL"] = "http://localhost:%s/account/" % gateway_port

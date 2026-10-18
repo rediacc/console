@@ -356,7 +356,7 @@ export function siblingHint(
   const siblings = others.filter((e) => e.gates.some((g) => red.includes(g))).map((e) => e.id);
   if (siblings.length === 0) return '';
   const shared = red.filter((g) => others.some((e) => e.gates.includes(g)));
-  return `${shared.join(', ')} also judge${shared.length === 1 ? 's' : ''} ${siblings.join(', ')}, which this run did not move; the gate's output names the ones that are behind, and they move with this run in one transaction: npm run pins -- bump ${moved.join(' ')} <each behind sibling>`;
+  return `${shared.join(', ')} also judge${shared.length === 1 ? 's' : ''} ${siblings.join(', ')}, which this run did not move; the gate's output names the ones that are behind, and they move with this run in one transaction: npm run pins -- bump ${moved.join(' ')} <each behind sibling> (with the run's --to, and --major --reason when a move is a major)`;
 }
 
 /** NPM_VERSION as .devcontainer/toolchain.env declares it right now; null when the file or the line is absent. */
