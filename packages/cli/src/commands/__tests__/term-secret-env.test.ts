@@ -10,7 +10,15 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
@@ -174,11 +182,32 @@ describe('term connect secret delivery', () => {
       parseStagedSecretsDir('RDC_STAGED_SECRETS=/tmp/../etc/rdc-env.Ab12Cd34Ef\n')
     ).toBeUndefined();
     expect(parseStagedSecretsDir('RDC_STAGED_SECRETS=relative/rdc-env.Ab12\n')).toBeUndefined();
+    // Review 2e951e55.1: an indented marker line still counts.
+    expect(parseStagedSecretsDir('   RDC_STAGED_SECRETS=/tmp/rdc-env.Ab12Cd34Ef\r\n')).toBe(
+      '/tmp/rdc-env.Ab12Cd34Ef'
+    );
+  });
+
+  it('loads and deletes a staged directory whose path holds shell metacharacters', () => {
+    // Review 2e951e55.3: the path reaches the consumer quoted, so a quote, a dollar and a backtick stay literal.
+    const parent = mkdtempSync(join(tmpdir(), "rdc q'$x`y "));
+    const dir = join(parent, 'rdc-env.Ab12Cd34Ef');
+    mkdirSync(dir, { mode: 0o700 });
+    writeFileSync(join(dir, 'env'), "export REDIACC_SECRET_A='v'\n", { mode: 0o600 });
+    const out = execFileSync('sh', [
+      '-c',
+      `${consumeStagedSecrets(dir)}printf '%s' "$REDIACC_SECRET_A"`,
+    ]);
+    expect(out.toString()).toBe('v');
+    expect(existsSync(dir)).toBe(false);
+    rmSync(parent, { recursive: true, force: true });
   });
 
   it('keeps the staged file long enough for an interactive prompt before the session', () => {
     // Review 67e482c0.2: the reaper only removes a session that never began.
-    expect(STAGED_SECRETS_TTL_SECONDS).toBeGreaterThanOrEqual(600);
+    // An exact value (review 2e951e55.2): a later increase keeps plaintext on the remote longer and must be a visible change here.
+    expect(STAGED_SECRETS_TTL_SECONDS).toBe(600);
+    expect(STAGE_SECRETS_COMMAND).toContain('echo $! > "$d/reaper"');
     expect(STAGE_SECRETS_COMMAND).toContain(`sleep ${STAGED_SECRETS_TTL_SECONDS}`);
   });
 
