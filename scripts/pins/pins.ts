@@ -2487,7 +2487,8 @@ const CASES: Record<string, Case> = {
         ok:
           rs.rc === 1 &&
           rs.err.includes('check:fixture-tool also judges embed:zed') &&
-          rs.err.includes('npm run pins -- bump embed:tool <each behind sibling>'),
+          rs.err.includes('npm run pins -- bump embed:tool <each behind sibling>') &&
+          rs.err.includes('--major --reason when a move is a major'),
         detail: rs.err,
       },
       {
