@@ -11,7 +11,7 @@ import pytest
 
 from rediacc_hooks import shellscan
 
-R = "agent/reviews/0930-1/a.md"
+R = "agent/reviews/1231-9/a.md"
 # The input operand of the awk rows below. A program that may redirect (`shellscan._awk_may_redirect`) makes every word that is neither an option nor a program a landing, so each such row ends with it, and each row is the reader's WHOLE answer, in its order (review fd4eda1a.2).
 A = ("/tmp/a", "option")
 
@@ -263,8 +263,8 @@ def test_a_git_verb_is_parsed_after_its_global_options():
     assert _landings("git diff --output=%s HEAD~1" % R, "git") == [(R, "option")]
     assert _landings("git --no-pager -c a.b=c log --output %s -1" % R, "git") == [(R, "option")]
     # The global option's own value is not a landing, and a -C directory is where a relative output lands.
-    assert _landings("git -C agent/reviews/0930-1 diff --output=a.md", "git") == [(R, "option")]
-    assert _landings("git -C agent/reviews/0930-1 diff --stat", "git") == []
+    assert _landings("git -C agent/reviews/1231-9 diff --output=a.md", "git") == [(R, "option")]
+    assert _landings("git -C agent/reviews/1231-9 diff --stat", "git") == []
     assert _landings("git diff --output=/tmp/d -- agent/reviews/", "git") == [("/tmp/d", "option")]
     assert _landings("git log --oneline -- agent/reviews/", "git") == []
     assert _landings("git add -- %s" % R, "git") == []
@@ -272,8 +272,8 @@ def test_a_git_verb_is_parsed_after_its_global_options():
 
 
 def test_an_unlisted_git_verb_is_unread():
-    found = _landings("git format-patch -o agent/reviews/0930-1 -1", "git")
-    assert ("agent/reviews/0930-1", "unread") in found
+    found = _landings("git format-patch -o agent/reviews/1231-9 -1", "git")
+    assert ("agent/reviews/1231-9", "unread") in found
     assert all(how == "unread" for _word, how in found)
 
 
@@ -291,8 +291,8 @@ def test_a_fed_word_takes_its_marker_place():
     assert _landings(cmd, "sort") == [("{}", "option"), (R, "option")]
     assert _landings("echo %s | xargs -I{} sort {}" % R, "sort") == []
     # Another marker, and a marker inside a longer word.
-    cmd = "echo 0930-1 | xargs -I @ sort -o agent/reviews/@/a.md /tmp/a"
-    assert ("agent/reviews/0930-1/a.md", "option") in _landings(cmd, "sort")
+    cmd = "echo 1231-9 | xargs -I @ sort -o agent/reviews/@/a.md /tmp/a"
+    assert ("agent/reviews/1231-9/a.md", "option") in _landings(cmd, "sort")
 
 
 def test_an_inexact_feed_lands_only_where_the_argv_leaves_room():
@@ -311,8 +311,8 @@ def test_an_inexact_feed_lands_only_where_the_argv_leaves_room():
 
 def test_an_unlisted_command_is_fed_every_word():
     assert (R, "unread") in _landings("echo %s | xargs touch" % R, "touch")
-    assert ("agent/reviews/0930-1/x.md", "unread") in _landings(
-        "echo 0930-1 | xargs -I{} touch agent/reviews/{}/x.md", "touch"
+    assert ("agent/reviews/1231-9/x.md", "unread") in _landings(
+        "echo 1231-9 | xargs -I{} touch agent/reviews/{}/x.md", "touch"
     )
 
 

@@ -39,7 +39,7 @@ EDGE_CASES = [
         {
             "tool_name": "Write",
             "tool_input": {
-                "file_path": "/r/agent/reviews/0930-1/%s.md" % ("a" * 40),
+                "file_path": "/r/agent/reviews/1231-9/%s.md" % ("a" * 40),
                 "content": "x",
             },
         },
@@ -49,7 +49,7 @@ EDGE_CASES = [
         {
             "tool_name": "Edit",
             "tool_input": {
-                "file_path": "agent/reviews/0930-1/x.md",
+                "file_path": "agent/reviews/1231-9/x.md",
                 "old_string": "[high]",
                 "new_string": "[low]",
             },
@@ -60,7 +60,7 @@ EDGE_CASES = [
         {
             "tool_name": "Edit",
             "tool_input": {
-                "file_path": "agent/reviews/0930-1/clean.jsonl",
+                "file_path": "agent/reviews/1231-9/clean.jsonl",
                 "old_string": "x",
                 "new_string": "y",
             },
