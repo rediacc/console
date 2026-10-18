@@ -23,7 +23,7 @@ describe('sudoRenet secret names', () => {
     'REDIACC_SECRET_',
     'REDIACC_TOKEN',
   ]) {
-    it(`refuses ${name || '(empty)'}`, () => {
+    it(`refuses ${name}`, () => {
       expect(() =>
         sudoRenet(
           { prefix: '', secrets: { REDIACC_SECRET_OK: 'v', [name]: '/tmp/x.so' } },

@@ -20,13 +20,23 @@ const SECRET_ENV_PREFIX = 'REDIACC_SECRET_';
 
 const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
-/** Seconds a staged secrets directory survives when no session consumes it. */
-export const STAGED_SECRETS_TTL_SECONDS = 120;
+/**
+ * Seconds a staged secrets directory survives when no session consumes it.
+ * The session deletes it itself on start, so this only reaps a session that
+ * never began; it is long enough for an interactive passphrase or host-key
+ * prompt between staging and the session (review 67e482c0.2).
+ */
+export const STAGED_SECRETS_TTL_SECONDS = 900;
 
 const STAGED_DIR_MARKER = 'RDC_STAGED_SECRETS=';
 
-/** A staged directory as STAGE_SECRETS_COMMAND prints it: absolute, `rdc-env.` plus mktemp's suffix. */
-const STAGED_DIR = /^\/[A-Za-z0-9._/-]*\/rdc-env\.[A-Za-z0-9]+$/;
+/**
+ * A staged directory as STAGE_SECRETS_COMMAND prints it: absolute, ending in
+ * `rdc-env.` plus mktemp's suffix. Any character but a newline or NUL may sit
+ * in the parent ($TMPDIR or $XDG_RUNTIME_DIR can hold a space), since every use
+ * shell-quotes the path (review 67e482c0.1); a `..` segment is refused.
+ */
+const STAGED_DIR = /^\/[^\n\0]*\/rdc-env\.[A-Za-z0-9]+$/;
 
 function isSecretEnvName(name: string): boolean {
   return name.startsWith(SECRET_ENV_PREFIX);
@@ -86,10 +96,12 @@ export const STAGE_SECRETS_COMMAND = [
 /** The staged directory from the staging call's stdout, or undefined when it printed none. */
 export function parseStagedSecretsDir(stdout: string): string | undefined {
   for (const line of stdout.split('\n')) {
-    const trimmed = line.trim();
+    // Only a carriage return is stripped: a parent directory may end in a space.
+    const trimmed = line.replace(/\r$/, '');
     if (!trimmed.startsWith(STAGED_DIR_MARKER)) continue;
     const dir = trimmed.slice(STAGED_DIR_MARKER.length);
-    return STAGED_DIR.test(dir) ? dir : undefined;
+    const safe = STAGED_DIR.test(dir) && !dir.split('/').includes('..');
+    return safe ? dir : undefined;
   }
   return undefined;
 }
