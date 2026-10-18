@@ -20,6 +20,7 @@ import {
   consumeStagedSecrets,
   parseStagedSecretsDir,
   STAGE_SECRETS_COMMAND,
+  STAGED_SECRETS_TTL_SECONDS,
   secretExportScript,
 } from '../../utils/secret-env.js';
 import {
@@ -162,6 +163,23 @@ describe('term connect secret delivery', () => {
     expect(warnings[0]).not.toContain('bad-value-9X');
     expect(inputs[0]).not.toContain('bad-value-9X');
     expect(inputs[0]).toContain("export REDIACC_SECRET_GOOD='good'");
+  });
+
+  it('reads a staged directory whose parent holds a space, and refuses one with a .. segment', () => {
+    // Review 67e482c0.1: $TMPDIR or $XDG_RUNTIME_DIR may hold any character but a newline; every use quotes the path.
+    expect(parseStagedSecretsDir('RDC_STAGED_SECRETS=/tmp/my dir /rdc-env.Ab12Cd34Ef\n')).toBe(
+      '/tmp/my dir /rdc-env.Ab12Cd34Ef'
+    );
+    expect(
+      parseStagedSecretsDir('RDC_STAGED_SECRETS=/tmp/../etc/rdc-env.Ab12Cd34Ef\n')
+    ).toBeUndefined();
+    expect(parseStagedSecretsDir('RDC_STAGED_SECRETS=relative/rdc-env.Ab12\n')).toBeUndefined();
+  });
+
+  it('keeps the staged file long enough for an interactive prompt before the session', () => {
+    // Review 67e482c0.2: the reaper only removes a session that never began.
+    expect(STAGED_SECRETS_TTL_SECONDS).toBeGreaterThanOrEqual(600);
+    expect(STAGE_SECRETS_COMMAND).toContain(`sleep ${STAGED_SECRETS_TTL_SECONDS}`);
   });
 
   it('makes no staging call for a session without secrets', async () => {
