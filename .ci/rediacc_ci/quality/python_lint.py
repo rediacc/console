@@ -140,8 +140,7 @@ PORT NOTES.
 THE PIN IS ASSIGNED TWICE IN THE TWIN AND THE SECOND ONE WINS. It sources `.ci/scripts/lib/toolchain.sh`, calls `toolchain_load` (which exports `RUFF_VERSION` from `.devcontainer/toolchain.env`), and then immediately writes
 `RUFF_VERSION="0.17.0"` over it. Because `toolchain_pin_for ruff` reads the
 CURRENT value of that variable, the literal is what `toolchain_check` compares against, not the pins file. The two agree today (`.devcontainer/toolchain.env:32`
-says `RUFF_VERSION=0.17.0`), so the redundancy is invisible; the day someone bumps
-the pins file and not this line, the gate keeps demanding the old version and says nothing about why. Reproduced, and reported as a defect rather than repaired.
+said `RUFF_VERSION=0.17.0`), so the redundancy was invisible until the pins file moved to 0.17.1 and the gate kept demanding 0.17.0. With the twin deleted the port reads the pins file alone (RUFF_VERSION below).
 
 `enumerate_py` IS ONE FUNCTION FOR A REASON, carried verbatim: "It is a function specifically so the control cannot drift from the thing it guards: an earlier draft of control 3 ran its own copy of this query, which meant editing the real enumeration left the control green -- a check that cannot fail, introduced by the very commit that was fixing one."
 
@@ -171,8 +170,21 @@ from rediacc_ci.controls import Controls
 # "The floor is a real number, not 1. The interesting failure is a glob that half-breaks and still returns something. Raise it when the tree grows; a deliberate REMOVAL of Python from this repo should have to edit this line."
 MIN_PY_FILES = 10
 
-# The literal that overwrites the pins-file value. See the port notes.
-RUFF_VERSION = "0.17.0"
+
+# The pin, read from `.devcontainer/toolchain.env` like every other tool's. The twin overwrote it with a literal (port notes), which kept this gate demanding ruff 0.17.0 after the pins file moved to 0.17.1; with the twin deleted, the pins file is the one source.
+#
+# Read here rather than through `rediacc_ci.core.toolchain`: this module's differential specimen carries a fixed file set whose count is part of its frozen goldens, and importing another package module would change it.
+def _pinned_ruff() -> str:
+    pins = paths.from_root(".devcontainer", "toolchain.env")
+    try:
+        text = pins.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    found = re.findall(r"(?m)^RUFF_VERSION=([^\s#]+)", text)
+    return found[0] if len(found) == 1 else ""
+
+
+RUFF_VERSION = _pinned_ruff()
 
 # The twin's exit statuses. 77 is CANNOT RUN and is never a verdict.
 EXIT_CANNOT_RUN = 77
@@ -420,7 +432,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # `toolchain_load || exit 1`, which the twin runs at check-python-lint.sh:137 -- AFTER the two vacuity refusals above and BEFORE the resolver below, so the order here is the twin's order and not a convenient one.
     #
-    # WHY THE PORT NEEDED THIS AT ALL. The module notes above explain that the pins file's RUFF_VERSION is immediately overwritten by the literal, so the port skips reading the file for the VERSION and is right to. What it also skipped was `toolchain_load`'s REFUSAL: with the pins file gone the twin exits 1 having printed nothing else, and this port went on to lint with whatever
+    # WHY THE PORT NEEDED THIS AT ALL. The twin overwrote the pins file's RUFF_VERSION with a literal, so the port once skipped reading the file for the VERSION (it reads it now, RUFF_VERSION above). What it also skipped was `toolchain_load`'s REFUSAL: with the pins file gone the twin exits 1 having printed nothing else, and this port went on to lint with whatever
     # resolver it could find. That is an anti-vacuity refusal quietly dropped in a port, which is the shape this whole programme exists to catch. Found by the W7 P4 batch 8a cutover differential on a fixture tree that had no `.devcontainer/`: twin exit 1 with one line of stderr, port exit 0 with a full green report over 12 files.
     #
     # The early return on REDIACC_TOOLCHAIN_LOADED is `toolchain.sh:28`, kept because a caller that has already sourced the pins legitimately has no file to re-read.
@@ -429,6 +441,11 @@ def main(argv: list[str] | None = None) -> int:
         if not os.access(pins, os.R_OK):
             print("toolchain: pins file missing or unreadable: %s" % pins, file=sys.stderr)
             return 1
+    if not RUFF_VERSION:
+        print(
+            "toolchain: no single RUFF_VERSION pin in .devcontainer/toolchain.env", file=sys.stderr
+        )
+        return 1
 
     ruff = resolve_ruff()
     if ruff is None:
@@ -653,7 +670,11 @@ def selftest() -> int:
     # THE FLOOR AND THE STATUSES ARE THE TWIN'S.
     ctl.check("the file floor is 10, not 1", MIN_PY_FILES, 10)
     ctl.check("cannot-run is 77, never 1", EXIT_CANNOT_RUN, 77)
-    ctl.check("the pin the twin actually compares against", RUFF_VERSION, "0.17.0")
+    ctl.check(
+        "the ruff pin is the pins file's, and a version",
+        (_pinned_ruff() == RUFF_VERSION, bool(re.fullmatch(r"\d+\.\d+\.\d+", RUFF_VERSION))),
+        (True, True),
+    )
 
     # COLOUR IS DECIDED BY CI, NOT BY isatty. Both directions, because a port that used the logger would be byte-identical only when attached to a terminal.
     saved = os.environ.get("CI")

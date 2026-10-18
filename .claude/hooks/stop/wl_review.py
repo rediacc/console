@@ -1174,7 +1174,7 @@ def _commit_facts(repo, sha):
 def _is_review_record_chunk(chunk):
     """True for a `diff --git` section of a file under `agent/reviews/`."""
     m = re.match(r"diff --git a/(.*?) b/(.*)", chunk)
-    return bool(m) and m.group(2).startswith(REVIEWS_REL + "/")
+    return m is not None and m.group(2).startswith(REVIEWS_REL + "/")
 
 
 def capped_diff(repo, sha, cap):
@@ -2199,7 +2199,9 @@ def run_review(
             diff_text, total, nfiles, cut = capped_diff(repo, full, int(cfg["diff_cap_bytes"]))
             review.diff_bytes, review.diff_files = total, nfiles
             review.truncated, review.unreviewed = bool(cut), cut
-            stat = git_out(repo, "show", "--stat", "--format=", full, "--", ".", ":(exclude)%s" % REVIEWS_REL)
+            stat = git_out(
+                repo, "show", "--stat", "--format=", full, "--", ".", ":(exclude)%s" % REVIEWS_REL
+            )
             prompt = PROMPT % {
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",

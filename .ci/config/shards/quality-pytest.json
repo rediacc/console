@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 4,
-  "generatedAt": "2026-10-15T17:58:50.881Z",
+  "generatedAt": "2026-10-18T20:56:00.580Z",
   "legs": [
     {
       "index": 1,
@@ -517,6 +517,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_prscope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_progress.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_deferrals.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_review_diff.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py"
       ]
     },
