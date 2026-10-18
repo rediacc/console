@@ -30,7 +30,7 @@ THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the o
      the channel too (`ACCOUNT_BACKUP_S3_{ACCESS_KEY_ID,SECRET_ACCESS_KEY}_STABLE`
      / `..._EDGE`), each a token scoped to object read and write on that
      channel's three buckets, and a run refuses when the other channel's pair
-     or the retired unsuffixed pair is also set (a divergence from the twin,
+     is also set; the unsuffixed pair is never read (a divergence from the twin,
      which read one unsuffixed pair for every Worker:
      agent/plans/PLAN-backup-credential-isolation.md B2).
 
@@ -150,11 +150,6 @@ BACKUP_PAIR_STABLE = (
 BACKUP_PAIR_EDGE = (
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
-)
-# The one shared pair every Worker took before the split. Set at all, it is refused: it is the account-wide-reach credential the split retires.
-BACKUP_PAIR_RETIRED = (
-    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
-    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
 )
 
 # The lines under a backup-pair refusal; the first is dynamic. Names only, never a value.
@@ -321,11 +316,7 @@ def read_env() -> dict[str, str]:
         "AWS_SES_CONFIGURATION_SET": os.environ.get("AWS_SES_CONFIGURATION_SET", ""),
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY", ""),
         "ACCOUNT_BACKUP_S3_ENDPOINT": os.environ.get("ACCOUNT_BACKUP_S3_ENDPOINT", ""),
-        # Read so that `resolve` can REFUSE them: the retired shared pair, and both channels' pairs (only the run's own channel may be set).
-        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": os.environ.get("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", ""),
-        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": os.environ.get(
-            "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", ""
-        ),
+        # Both channels' pairs, so that `resolve` can REFUSE the other one (only the run's own channel may be set).
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE": os.environ.get(
             "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE", ""
         ),
@@ -385,14 +376,14 @@ def apply_jurisdiction(endpoint: str, jurisdiction: str) -> str:
 def backup_pair(env: dict[str, str], target: str) -> tuple[str, str]:
     """The (key id, secret) for TARGET's channel: the `_STABLE` pair on stable, the `_EDGE` pair on every other TARGET, as the bucket chooses.
 
-    Raises `ScriptRefusalError` when the other channel's pair or the retired unsuffixed pair carries a value. An EMPTY own pair is not refused here: `check_nonempty` names it as the Worker key, in its turn, as before.
+    Raises `ScriptRefusalError` when the other channel's pair carries a value. An EMPTY own pair is not refused here: `check_nonempty` names it as the Worker key, in its turn, as before.
     """
     own, other = (
         (BACKUP_PAIR_STABLE, BACKUP_PAIR_EDGE)
         if target == STABLE
         else (BACKUP_PAIR_EDGE, BACKUP_PAIR_STABLE)
     )
-    stray = [name for name in (*other, *BACKUP_PAIR_RETIRED) if env.get(name, "")]
+    stray = [name for name in other if env.get(name, "")]
     if stray:
         raise ScriptRefusalError(
             "%s: TARGET=%s takes its backup key pair from %s / %s only, and %s %s also set."
