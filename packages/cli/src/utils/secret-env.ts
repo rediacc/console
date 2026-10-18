@@ -25,7 +25,7 @@ const ENV_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
  * The session deletes it itself on start, so this only reaps a session that
  * never began; it is long enough for an interactive passphrase or host-key
  * prompt between staging and the session (review 67e482c0.2), and the session
- * kills the reaper when it consumes the file, so no sleeper outlives a started
+ * kills the reaper when it consumes the file; the reaper traps that kill and stops its own sleep, so no sleeper outlives a started
  * session (review 2e951e55.4).
  */
 export const STAGED_SECRETS_TTL_SECONDS = 600;
@@ -91,7 +91,8 @@ export const STAGE_SECRETS_COMMAND = [
   'umask 077',
   `d=$(mktemp -d "\${XDG_RUNTIME_DIR:-/nonexistent}/rdc-env.XXXXXXXXXX" 2>/dev/null || mktemp -d "\${TMPDIR:-/tmp}/rdc-env.XXXXXXXXXX") || exit 1`,
   `cat > "$d/env" || { rm -rf "$d"; exit 1; }`,
-  `(sleep ${STAGED_SECRETS_TTL_SECONDS}; rm -rf "$d") </dev/null >/dev/null 2>&1 &`,
+  // The reaper traps the session's kill and stops its own sleep first, so killing the pid in "$d/reaper" ends both (review 73f53020.1).
+  `(trap 'kill "$s" 2>/dev/null; exit 0' TERM; sleep ${STAGED_SECRETS_TTL_SECONDS} & s=$!; wait "$s"; rm -rf "$d") </dev/null >/dev/null 2>&1 &`,
   `echo $! > "$d/reaper"`,
   `printf '${STAGED_DIR_MARKER}%s\\n' "$d"`,
 ].join('\n');
