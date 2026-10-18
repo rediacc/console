@@ -264,6 +264,8 @@ export interface TxnOptions {
   npmVersion: string | null;
   /** Scanned submodule paths, whose gitlink entries are not changes of the console's own. */
   submodules: string[];
+  /** Every registry entry's id and gates, so a red gate shared with pins this run did not move can name them. */
+  registry?: ReadonlyArray<{ id: string; gates: readonly string[] }>;
 }
 
 export interface RepoChange {
@@ -342,6 +344,19 @@ export function gateFailure(
   if (by('red').length === 0)
     return `gates failed (rc=${rc}): no gate reported red; see commands.log${tail}`;
   return `gates failed (rc=${rc}): ${by('red').join(', ')}${tail}`;
+}
+
+/** The FAILED message's extra line: the registry pins this run did not move whose gates include a gate that went red, and the command shape that moves the behind ones with this run (an already-current pin named explicitly is refused, so the line does not name them all as arguments). Derived from the registry entries' gates, never from gate output. Empty when no red gate is shared. Pure. */
+export function siblingHint(
+  red: readonly string[],
+  moved: readonly string[],
+  registry: ReadonlyArray<{ id: string; gates: readonly string[] }>
+): string {
+  const others = registry.filter((e) => !moved.includes(e.id));
+  const siblings = others.filter((e) => e.gates.some((g) => red.includes(g))).map((e) => e.id);
+  if (siblings.length === 0) return '';
+  const shared = red.filter((g) => others.some((e) => e.gates.includes(g)));
+  return `${shared.join(', ')} also judge${shared.length === 1 ? 's' : ''} ${siblings.join(', ')}, which this run did not move; the gate's output names the ones that are behind, and they move with this run in one transaction: npm run pins -- bump ${moved.join(' ')} <each behind sibling>`;
 }
 
 /** NPM_VERSION as .devcontainer/toolchain.env declares it right now; null when the file or the line is absent. */
@@ -546,7 +561,16 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
         ids
       );
       res.gates = { ids, rc: g.rc, failed: ids.filter((id) => v.get(id) === 'red') };
-      if (g.rc !== 0) throw new Error(gateFailure(g.rc, ids, v, o.mutant === 'all-gates'));
+      if (g.rc !== 0) {
+        const hint = siblingHint(
+          res.gates.failed,
+          plans.map((p) => p.entry.id),
+          o.registry ?? []
+        );
+        throw new Error(
+          `${gateFailure(g.rc, ids, v, o.mutant === 'all-gates')}${hint === '' ? '' : `\n${hint}`}`
+        );
+      }
     }
   } catch (err) {
     res.failure = (err as Error).message;

@@ -7,11 +7,13 @@
  *   when <id> [--json]                     when the newest too-new release clears the window,
  *                                          with a ready worklist DEFAULT line
  *   plan <id>|--all [--json]               the rewrite a bump would make; writes nothing
- *   bump <id> [--to <v>]... [--major --reason "<why>"] [--task <id>] [--json] [--out <dir>]
+ *   bump <id> [<id>...] [--to <v>]... [--major --reason "<why>"] [--task <id>] [--json] [--out <dir>]
  *                                          one --reason covers every major the run's --to names,
  *                                          since the run is one transaction with one commit subject
  *                                          `bump npm --major` with no --to takes every pending held
  *                                          major with the in-range set, since check:deps judges all
+ *                                          several ids plan into ONE transaction: one gate run, one commit draft;
+ *                                          a duplicate or unknown id is refused by name
  *   bump --all [--task <id>] [--json] [--out <dir>]
  *   apply-soaked [--task <id>] [--json] [--out <dir>]
  *                                          bump --all limited to patches and in-range minors
@@ -138,6 +140,17 @@ function pick(w: World, idOrAll: string | undefined, all: boolean): PinEntry[] {
   const e = w.reg.entries.find((x) => x.id === idOrAll);
   if (!e) throw new Usage(`no pin ${idOrAll} in .ci/config/pins.json`);
   return [e];
+}
+
+/** The pins a verb names, in order: one transaction's selection. A duplicate or unknown id is refused by name, before any plan. */
+function pickMany(w: World, ids: readonly string[], all: boolean): PinEntry[] {
+  if (all) return w.reg.entries;
+  if (ids.length === 0) throw new Usage('name a pin id, or pass --all');
+  const dup = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))];
+  if (dup.length > 0) throw new Usage(`pin id named twice: ${dup.join(', ')}`);
+  const unknown = ids.filter((id) => !w.reg.entries.some((x) => x.id === id));
+  if (unknown.length > 0) throw new Usage(`no pin ${unknown.join(', ')} in .ci/config/pins.json`);
+  return ids.map((id) => w.reg.entries.find((x) => x.id === id) as PinEntry);
 }
 
 // ---- drafts ---------------------------------------------------------------------------------
@@ -737,6 +750,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
       mutant: w.mutant,
       npmVersion: w.npmVersion,
       submodules: w.reg.submodules.scanned,
+      registry: w.reg.entries,
     });
   } finally {
     release();
@@ -841,7 +855,7 @@ async function cmdBump(w: World, f: Flags, soakedOnly: boolean): Promise<number>
   const all = soakedOnly || f.all;
   if (all && f.to.length > 0)
     throw new Usage('--to names releases of one pin; it does not combine with --all');
-  const entries = pick(w, f.pos[0], all);
+  const entries = pickMany(w, f.pos, all);
   if (f.major)
     for (const e of entries)
       if (e.safety.major === 'refuse')
@@ -1933,6 +1947,45 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async multi(m) {
+    const fx = fixtureTree();
+    const r = await runCli(['bump', 'embed:tool', 'embed:zed', '--json'], withMutant(fx, m));
+    const rep =
+      r.rc === 0
+        ? (JSON.parse(r.out) as { pins: Array<{ id: string }>; commands: CommandRecord[] })
+        : null;
+    const dup = await runCli(['bump', 'embed:tool', 'embed:tool'], withMutant(fixtureTree(), m));
+    const unk = await runCli(['bump', 'embed:tool', 'embed:nope'], withMutant(fixtureTree(), m));
+    const one = await runCli(['bump', 'embed:tool', '--json'], withMutant(fixtureTree(), m));
+    return [
+      {
+        // Red when only the first positional id is read.
+        name: 'bump <id> <id>: both pins plan into one transaction, one gate run',
+        ok:
+          rep !== null &&
+          rep.pins.length === 2 &&
+          rep.commands.filter((c) => c.cmd.startsWith('npm run ci -- --only ')).length === 1,
+        detail: `rc=${r.rc} ${r.err}`,
+      },
+      {
+        // Red when duplicates collapse silently.
+        name: 'bump: a duplicate id is refused by name',
+        ok: dup.rc !== 0 && dup.err.includes('embed:tool'),
+        detail: `rc=${dup.rc} ${dup.err}`,
+      },
+      {
+        // Red when an unknown trailing id is skipped.
+        name: 'bump: an unknown id among several is refused by name and nothing is written',
+        ok: unk.rc !== 0 && unk.err.includes('no pin embed:nope'),
+        detail: `rc=${unk.rc} ${unk.err}`,
+      },
+      {
+        name: 'bump: the single-id form still plans exactly one pin',
+        ok: one.rc === 0 && (JSON.parse(one.out) as { pins: unknown[] }).pins.length === 1,
+        detail: `rc=${one.rc} ${one.err}`,
+      },
+    ];
+  },
   async soaked(m) {
     const fx = fixtureTree((f) => {
       f.releases['embed:tool'].unshift({
@@ -2391,6 +2444,23 @@ const CASES: Record<string, Case> = {
       };
     });
     const r = await runCli(['bump', '--all', '--json'], withMutant(fx, m));
+    // zed's registry entry also names check:fixture-tool, so a single-id bump of tool that turns it red names zed and the joint command.
+    const shared = fixtureTree((f) => {
+      f.commands[0] = {
+        match: '^npm run ci -- --only ',
+        rc: 1,
+        out: runnerOut,
+        events: [JSON.stringify({ ev: 'run-start' }), red('check:fixture-tool')],
+      };
+    });
+    const regFile = path.join(shared.root, '.ci/config/pins.json');
+    const regJson = JSON.parse(fs.readFileSync(regFile, 'utf8')) as {
+      entries: Array<{ id: string; gates: string[] }>;
+    };
+    regJson.entries.find((e) => e.id === 'embed:zed')?.gates.push('check:fixture-tool');
+    fs.writeFileSync(regFile, `${JSON.stringify(regJson, null, 2)}\n`);
+    const rs = await runCli(['bump', 'embed:tool'], withMutant(shared, m));
+    const rjoint = await runCli(['bump', '--all'], withMutant(shared, m));
     const rep = JSON.parse(r.out) as {
       failure: string;
       gates: { failed: string[] };
@@ -2410,6 +2480,21 @@ const CASES: Record<string, Case> = {
           JSON.stringify(rep.gates.failed) === '["check:fixture-tool"]' &&
           rep.commands.some((c) => / --events \/\S+\/gates\.jsonl$/.test(c.cmd)),
         detail: `rc=${r.rc} failure=${rep.failure} failed=${JSON.stringify(rep.gates?.failed)}`,
+      },
+      {
+        // Red when siblingHint is dropped, or reads gate output instead of the registry.
+        name: 'bump: a red gate shared with a pin the run did not move names that sibling and the joint command shape',
+        ok:
+          rs.rc === 1 &&
+          rs.err.includes('check:fixture-tool also judges embed:zed') &&
+          rs.err.includes('npm run pins -- bump embed:tool <each behind sibling>'),
+        detail: rs.err,
+      },
+      {
+        // Red when the hint ignores which pins were moved (names pins the run already moved).
+        name: 'CONTROL: when the run moved every pin sharing the red gate, no sibling line is added',
+        ok: rjoint.rc === 1 && !/also judge/.test(rjoint.err),
+        detail: rjoint.err,
       },
       {
         name: 'CONTROL: a red run with no gate-red row says no gate reported red, and names none as failed',
