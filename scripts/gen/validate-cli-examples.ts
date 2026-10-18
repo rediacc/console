@@ -157,6 +157,20 @@ const EXCLUDED_FILES = new Set<string>([
 ]);
 
 /**
+ * BLOCKER: a per-commit review record (`agent/reviews/<branch>/<sha>.md`) is the same
+ * class as the P4 gate review: a machine-written verdict that quotes the commit subject
+ * and diff it judges, so a subject such as "the token reaches rdc subscription login on
+ * stdin" lands in its title verbatim. The record is never edited after it is written, and
+ * the commit it quotes cannot be reworded without amending, so the only reachable outcome
+ * of scanning it is a permanent red on a file nobody may fix.
+ */
+const EXCLUDED_PREFIXES = ['agent/reviews/'];
+
+function isExcluded(relPath: string): boolean {
+  return EXCLUDED_FILES.has(relPath) || EXCLUDED_PREFIXES.some((p) => relPath.startsWith(p));
+}
+
+/**
  * Files that legitimately contain AGENTS.md-style copy-paste templates
  * inside ```markdown fences. Shell-fence-only scanning misses these. The
  * scanner enters the markdown fence for files matching these path hints.
@@ -646,7 +660,7 @@ async function scanForStaleCommandPaths(violations: Violation[]): Promise<void> 
     files.push(...(await glob(pattern, { cwd: ROOT, absolute: false })));
   }
   const unique = [...new Set(files)]
-    .filter((f) => !EXCLUDED_FILES.has(f) && !COMMAND_PATH_IGNORE.test(f))
+    .filter((f) => !isExcluded(f) && !COMMAND_PATH_IGNORE.test(f))
     .sort();
 
   for (const relPath of unique) {
@@ -721,7 +735,7 @@ async function main(): Promise<void> {
   }
 
   // Deduplicate, minus the evidence documents (see EXCLUDED_FILES)
-  const uniqueFiles = [...new Set(files)].filter((f) => !EXCLUDED_FILES.has(f)).sort();
+  const uniqueFiles = [...new Set(files)].filter((f) => !isExcluded(f)).sort();
 
   console.log(colors.dim(`Scanning ${uniqueFiles.length} files...`));
 
