@@ -486,7 +486,8 @@ def run_jobs(fetch, run_id, attempt=None):
     )
     jobs: list[dict] = []
     page = 1
-    while page <= 10:
+    # 20 pages of 50 keep the 1000-job reach the old 10 pages of 100 had (review a3aea1df.1).
+    while page <= 20:
         # 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (budget_report._JOBS_PAGE_SIZE, measured 2026-10-19).
         data, err = fetch.json("%s?per_page=%d&page=%d" % (base, JOBS_PAGE_SIZE, page))
         if not isinstance(data, dict):

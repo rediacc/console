@@ -41,7 +41,7 @@ SESSION_START_STALE_S = 6 * 3600
 MAX_JOBS_SHOWN = 6
 # 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (measured 2026-10-19 on Console CI runs of 141 and 179 jobs), and one page also dropped every job past it.
 PAGE = 50
-MAX_PAGES = 10
+MAX_PAGES = 20
 WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
 
 # The tracking vocabulary. A display name counts only beside one of these words, so "fix Console CI lint" (a PR red) never reads as tracking the nightly.
@@ -231,8 +231,13 @@ def _failed_jobs(root, owner, name, run_id):
                 out.append(str(job.get("name") or "?"))
         total = data.get("total_count")
         if len(batch) < PAGE or (isinstance(total, int) and seen >= total):
-            break
-    return out, ""
+            return out, ""
+    # The walk ran out of pages before the list did: a partial answer is an error, not a verdict (review a3aea1df.2).
+    return [], "more than %d jobs in run %s; the walk stopped at %d pages" % (
+        PAGE * MAX_PAGES,
+        run_id,
+        MAX_PAGES,
+    )
 
 
 def _fetch(root, owner, name, workflows, jobs_cache):

@@ -432,10 +432,16 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
             % (repo, run_id, _JOBS_PAGE_SIZE, page),
             attempts=GH_ATTEMPTS,
         )
-        if not isinstance(data, dict):
-            break
-        page_jobs = data.get("jobs")
-        if not isinstance(page_jobs, list) or not page_jobs:
+        # A page that is not a jobs document is an error, never the end of the list: at 50 a page more pages are walked, and a short read must not pass for a complete one (review 5c11d902.4).
+        if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
+            raise ghx.GhBadOutputError(
+                [],
+                0,
+                "jobs page %d of run %s is not a jobs document" % (page, run_id),
+                ghx.FAILURE_FAILED,
+            )
+        page_jobs = data["jobs"]
+        if not page_jobs:
             break
         jobs.extend(page_jobs)
         total_count = data.get("total_count")

@@ -237,7 +237,7 @@ def main(argv: list[str]) -> int:
                     [
                         "gh",
                         "api",
-                        # 50: a 100-job page of a large run is answered HTTP 502 (budget_report._PAGE_SIZE).
+                        # 50: a 100-job page of a large run is answered HTTP 502 (budget_report._JOBS_PAGE_SIZE).
                         f"repos/{repository}/actions/runs/{run_id}/jobs?per_page=50",
                         "--paginate",
                         "--slurp",
