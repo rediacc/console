@@ -251,6 +251,7 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     fake.write_text(
         "#!" + sys.executable + "\n"
         "import json, os, sys, time\n"
+        f"open({str(seen)!r} + '.argv', 'w').write(json.dumps(sys.argv[1:]))\n"
         f"open({str(seen)!r}, 'w').write(json.dumps({{**{{k: os.environ.get(k) for k in ('GIT_TERMINAL_PROMPT', 'GIT_SSH_COMMAND', 'SSH_ASKPASS_REQUIRE', 'DISPLAY')}}, 'leader': os.getsid(0) == os.getpid(), 'stdin': sys.stdin.read()}}))\n"
         "time.sleep(float(os.environ.get('FAKE_GIT_SLEEP', '0')))\n"
         "sys.exit(2)\n"
@@ -266,6 +267,8 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     assert env["GIT_SSH_COMMAND"] == "plink -batch"
     assert env["SSH_ASKPASS_REQUIRE"] == "never"
     assert env["DISPLAY"] is None
+    argv = json.loads((tmp_path / "env.json.argv").read_text())
+    assert argv[argv.index("-c") + 1] == "credential.helper="
     assert env["leader"] is True
     assert env["stdin"] == ""
     monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 0.5)
