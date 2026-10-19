@@ -3,7 +3,7 @@
 // the exact structs the renet binary under test verifies with.
 module github.com/rediacc/console/ci/license-mint
 
-go 1.26.9
+go 1.27.2
 
 require github.com/rediacc/renet v0.0.0
 
