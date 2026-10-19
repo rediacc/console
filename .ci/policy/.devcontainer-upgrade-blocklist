@@ -19,3 +19,5 @@
 #   <base>
 #
 # Empty by default — nothing is held; every pin tracks upstream.
+
+gopls  # BLOCKER: gopls 0.24.0 requires go >= 1.27.0 (its go.mod), and toolchain:go stays on the 1.26 line until the operator moves it (npm run pins -- when toolchain:go); 0.24.0 failed the devcontainer build on run 39177571049. Lift with the Go 1.27 move (expires 2026-11-18)
