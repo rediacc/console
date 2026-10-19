@@ -60,6 +60,7 @@ import {
   splitFamilySet,
 } from '../driver.js';
 import type { PinEntry, RepoPath } from '../registry.js';
+import { lockfileOf, predictManifests, sourceManifests } from './pin-manifests.js';
 
 // ---- the plan check-deps answers ------------------------------------------------------------
 
@@ -282,13 +283,35 @@ function stepsOf(
   }
   const moved = steps.filter((s) => s.packages.length > 0);
   const rc = path.join(ctx.root, '.syncpackrc.json');
-  if (moved.length > 0 && fs.existsSync(rc))
+  if (moved.length > 0 && fs.existsSync(rc)) {
+    // The manifests whose declared ranges a moved pin group may rewrite (worklist #3fc8b8cb), declared up front, then the lockfile pass over each one's project, so the lockfile's workspace entry carries the rewritten range even when no npm step touched that lockfile.
+    const rcText = fs.readFileSync(rc, 'utf8');
+    const manifests = predictManifests(
+      rcText,
+      new Set(names(moved)),
+      sourceManifests(ctx.root, rcText).flatMap((file) => {
+        const text = ctx.read(repoPathOf(ctx, path.join(ctx.root, file)));
+        return text === null ? [] : [{ file, text }];
+      })
+    );
     out.push({
       label: 'syncpack pin groups',
       run: helperLine('sync', moved),
       cwd: '.',
-      writes: [{ repo: '.', file: '.syncpackrc.json' }],
+      writes: [
+        { repo: '.', file: '.syncpackrc.json' },
+        ...manifests.map((f) => repoPathOf(ctx, path.join(ctx.root, f))),
+      ],
     });
+    const locks = [...new Set(manifests.flatMap((f) => lockfileOf(ctx.root, f) ?? []))].sort();
+    for (const lock of locks)
+      out.push({
+        label: `lockfile pass after the pin-group ranges: ${lock}`,
+        run: npmLine(version, ['install', '--package-lock-only', '--ignore-scripts']),
+        cwd: path.posix.dirname(lock),
+        writes: [repoPathOf(ctx, path.join(ctx.root, lock))],
+      });
+  }
   return { writes, steps: out, notes };
 }
 

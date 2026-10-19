@@ -119,6 +119,10 @@ export interface PinDriver {
  *                  diff shows, not only the files the generator reports writing
  *   shared-message every repository's draft carries the whole run's subject, release lines,
  *                  sites and commands, not only its own
+ *   no-manifest-pin a moved syncpack pin group leaves the manifests it covers on the old range
+ *                  (the sync before 2026-10-19, 394935a1f)
+ *   no-version-gate a plan that writes a manifest or .syncpackrc.json runs only its entry's own
+ *                  gates, without check:version (the gate list before 2026-10-19)
  */
 export const MUTANTS = [
   'skip-site',
@@ -134,8 +138,29 @@ export const MUTANTS = [
   'silent-ungated',
   'tree-diff-attribution',
   'shared-message',
+  'no-manifest-pin',
+  'no-version-gate',
 ] as const;
 export type Mutant = (typeof MUTANTS)[number];
+
+/** True for a path syncpack judges: a package.json or the .syncpackrc.json itself. */
+const syncpackJudged = (p: RepoPath): boolean =>
+  path.posix.basename(p.file) === 'package.json' ||
+  (p.repo === '.' && p.file === '.syncpackrc.json');
+
+/**
+ * A plan that writes a manifest or .syncpackrc.json, by a planned write or a step's declared
+ * write, runs `check:version` beside its entry's gates (worklist #3fc8b8cb): on 2026-10-19 a
+ * `bump npm` moved a syncpack pin and its gates (check:deps, check:ci-lockfile) passed, and the
+ * DiffersToPin it left surfaced only in the next ci:quick. `no-version-gate` is the mutant that
+ * leaves the gate list alone.
+ */
+export function withManifestGates(plan: PinPlan, mutant: Mutant | null = null): PinPlan {
+  if (mutant === 'no-version-gate' || plan.entry.gates.includes('check:version')) return plan;
+  const touched = [...plan.writes, ...plan.steps.flatMap((s) => s.writes)];
+  if (!touched.some(syncpackJudged)) return plan;
+  return { ...plan, entry: { ...plan.entry, gates: [...plan.entry.gates, 'check:version'] } };
+}
 
 // ---- the shared leaf planner ----------------------------------------------------------------
 

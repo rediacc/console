@@ -66,10 +66,17 @@ import {
   PlanRefused,
   readFixture,
   registerDrivers,
+  withManifestGates,
 } from '../lib/pins/driver.js';
 import { lockDrift, planLockfiles, planRemove } from '../lib/pins/drivers/npm.js';
+import {
+  movedPinGroups,
+  planManifestPins,
+  predictManifests,
+  sourceManifests,
+} from '../lib/pins/drivers/pin-manifests.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
-import { loadRegistry, type PinEntry, siteMatches } from '../lib/pins/registry.js';
+import { loadRegistry, type PinEntry, type RepoPath, siteMatches } from '../lib/pins/registry.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import {
   contextOf,
@@ -644,7 +651,7 @@ async function selectAndPlan(
         continue;
       }
       for (const wr of plan.writes) ctx.overlay.set(keyOf(wr), wr.after);
-      out.plans.push(plan);
+      out.plans.push(withManifestGates(plan, ctx.mutant));
     } catch (err) {
       if (!(err instanceof PlanRefused)) throw err;
       out.refused.push({ id: entry.id, why: err.message });
@@ -935,7 +942,10 @@ function cmdNpmPlan(w: World, f: Flags, verb: 'remove' | 'lockfiles'): number {
   const ctx = contextOf(w);
   let plan: PinPlan;
   try {
-    plan = verb === 'remove' ? planRemove(entry, ctx, arg) : planLockfiles(entry, ctx, arg);
+    plan = withManifestGates(
+      verb === 'remove' ? planRemove(entry, ctx, arg) : planLockfiles(entry, ctx, arg),
+      ctx.mutant
+    );
   } catch (err) {
     if (!(err instanceof PlanRefused)) throw err;
     w.err.push(`REFUSED ${verb}: ${err.message}`);
@@ -2869,6 +2879,165 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+
+  /**
+   * Worklist #3fc8b8cb, the 394935a1f shape: a bump moves i18next 26.4.4 -> 26.5.2, the sync step moves the "Pin i18next" group's pinVersion, and every manifest the group covers must declare the new pin too (npm update never rewrites a range); the plan that declares those writes must run check:version. Mutants: `no-manifest-pin` (the sync leaves the manifests on ^26.4.4, so the "ranges follow" control goes red) and `no-version-gate` (the plan keeps check:deps alone, so the gate-list control goes red).
+   */
+  async pinmanifests(m) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));
+    FIXTURE_ROOTS.push(root);
+    const json = (o: unknown): string => `${JSON.stringify(o, null, 2)}\n`;
+    const rcBefore = json({
+      source: ['package.json', 'packages/*/package.json'],
+      versionGroups: [
+        {
+          label: 'Pin i18next for CLI',
+          packages: ['**'],
+          dependencies: ['i18next'],
+          pinVersion: '^26.4.4',
+        },
+        {
+          label: 'Pin vite-tsconfig-paths',
+          packages: ['**'],
+          dependencies: ['vite-tsconfig-paths'],
+          pinVersion: '^6.0.3',
+        },
+      ],
+    });
+    const files: Record<string, string> = {
+      '.syncpackrc.json': rcBefore,
+      'package.json': json({
+        name: 'root',
+        private: true,
+        devDependencies: { 'vite-tsconfig-paths': '^6.0.3' },
+      }),
+      'package-lock.json': '{ "lockfileVersion": 3 }\n',
+      'packages/cli/package.json': json({ name: '@fx/cli', dependencies: { i18next: '^26.4.4' } }),
+      'packages/web/package.json': json({
+        name: '@fx/web',
+        devDependencies: { i18next: '^26.4.4' },
+      }),
+      'packages/plain/package.json': json({ name: '@fx/plain', dependencies: { other: '^1.0.0' } }),
+    };
+    for (const [rel, text] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+      fs.writeFileSync(path.join(root, rel), text);
+    }
+    const step = {
+      cwd: root,
+      args: ['update', '-w=packages/cli', 'i18next'],
+      label: 'root (update)',
+      packages: [{ name: 'i18next', current: '26.4.4', latest: '26.5.2', wanted: '26.5.2' }],
+      checks: [],
+    };
+    const r = spawnSync(
+      process.execPath,
+      [
+        ...process.execArgv,
+        path.join(REPO_ROOT, 'scripts/lib/pins/drivers/npm-steps.ts'),
+        'sync',
+        Buffer.from(JSON.stringify([step])).toString('base64'),
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          CHECK_DEPS_ROOT: root,
+          CHECK_DEPS_MUTANT: '',
+          PINS_MUTANT: m === 'no-manifest-pin' ? m : '',
+        },
+      }
+    );
+    const read = (rel: string): string => fs.readFileSync(path.join(root, rel), 'utf8');
+    const range = (rel: string, field: string): unknown =>
+      (JSON.parse(read(rel)) as Record<string, Record<string, unknown>>)[field]?.i18next;
+    const rcAfter = read('.syncpackrc.json');
+    const manifests = sourceManifests(root, rcBefore).map((file) => ({
+      file,
+      text: files[file],
+    }));
+    const predicted = predictManifests(rcBefore, new Set(['i18next']), manifests);
+
+    // The gate list of a plan shaped like the npm driver's: its sync step declares the rc file and the predicted manifests.
+    const npmEntry: PinEntry = {
+      id: 'npm',
+      kind: 'family',
+      name: 'npm trees',
+      driver: 'npm',
+      source: { type: 'npm-registry', package: '*' },
+      safety: { mode: 'release-age', major: 'allow-file' },
+      holds: [],
+      gates: ['check:deps', 'check:ci-lockfile'],
+      sites: [],
+      derive: [],
+      literals: [],
+    } as unknown as PinEntry;
+    const planOf = (writes: RepoPath[]): PinPlan => ({
+      entry: npmEntry,
+      from: '1.0',
+      to: { version: '1 package(s)', publishedMs: null },
+      writes: [],
+      steps: [{ label: 'syncpack pin groups', run: 'true', cwd: '.', writes }],
+      changes: [],
+    });
+    const synced = withManifestGates(
+      planOf([
+        { repo: '.', file: '.syncpackrc.json' },
+        ...predicted.map((file) => ({ repo: '.', file })),
+      ]),
+      m === 'no-version-gate' ? m : null
+    );
+    const dockerOnly = withManifestGates(planOf([{ repo: '.', file: 'Dockerfile' }]), null);
+    // The bad-range control: a covered manifest whose range is not plain is refused by name and nothing is written.
+    const refused = planManifestPins(
+      movedPinGroups(rcBefore, rcBefore.replace('^26.4.4', '^26.5.2')),
+      [
+        {
+          file: 'packages/odd/package.json',
+          text: json({ name: '@fx/odd', dependencies: { i18next: 'file:../vendored' } }),
+        },
+      ]
+    );
+    return [
+      {
+        name: 'pin manifests: the sync moves the group pin and every covered manifest range to it (dependencies and devDependencies), and leaves an uncovered manifest byte-identical',
+        ok:
+          r.status === 0 &&
+          JSON.parse(rcAfter).versionGroups[0].pinVersion === '^26.5.2' &&
+          range('packages/cli/package.json', 'dependencies') === '^26.5.2' &&
+          range('packages/web/package.json', 'devDependencies') === '^26.5.2' &&
+          read('packages/plain/package.json') === files['packages/plain/package.json'] &&
+          read('package.json') === files['package.json'],
+        detail: `rc=${r.status}\n${r.stdout}\n${r.stderr}\n${rcAfter}`,
+      },
+      {
+        name: 'pin manifests: the plan declares exactly the manifests that declare a member of a group holding a moved package',
+        ok: predicted.join(',') === 'packages/cli/package.json,packages/web/package.json',
+        detail: predicted.join(','),
+      },
+      {
+        name: 'pin manifests: a plan whose step writes a manifest or .syncpackrc.json runs check:version beside its entry gates',
+        ok:
+          synced.entry.gates.join(',') === 'check:deps,check:ci-lockfile,check:version' &&
+          npmEntry.gates.length === 2,
+        detail: synced.entry.gates.join(','),
+      },
+      {
+        name: 'pin manifests: CONTROL: a plan that touches no manifest keeps its own gates (check:version is not added unconditionally)',
+        ok: dockerOnly.entry.gates.join(',') === 'check:deps,check:ci-lockfile',
+        detail: dockerOnly.entry.gates.join(','),
+      },
+      {
+        name: 'pin manifests: a covered range that is not plain is refused by name and nothing is written',
+        ok:
+          refused.writes.length === 0 &&
+          refused.errors.length === 1 &&
+          refused.errors[0].includes('packages/odd/package.json') &&
+          refused.errors[0].includes('not a plain range'),
+        detail: JSON.stringify(refused),
+      },
+    ];
+  },
 };
 
 /** Which case each mutant must turn red: the safety property it disables. */
@@ -2886,6 +3055,8 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'silent-ungated': 'ungated',
   'tree-diff-attribution': 'regen',
   'shared-message': 'drafts',
+  'no-manifest-pin': 'pinmanifests',
+  'no-version-gate': 'pinmanifests',
 };
 
 async function selftest(env: NodeJS.ProcessEnv): Promise<number> {

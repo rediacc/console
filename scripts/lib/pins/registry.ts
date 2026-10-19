@@ -158,6 +158,13 @@ export interface PinEntry {
   sites: PinSite[];
   derive: PinDerive[];
   literals: PinLiteral[];
+  /**
+   * The Go module whose go.mod a devcontainer pin installed with `go install` is built from
+   * (`golang.org/x/tools/gopls`). A release whose `go` directive is newer than the image's
+   * GO_VERSION (.devcontainer/toolchain.env, built with GOTOOLCHAIN=local) cannot build there, so
+   * the devcontainer driver and the freshness gate do not offer it (worklist #e023eb0d).
+   */
+  goModule?: string;
 }
 
 export interface PinIgnore {
@@ -335,6 +342,18 @@ export function registryProblems(raw: unknown): string[] {
           bad(`${at}.safety.mode`, `must be one of ${SAFETY_MODES.join(', ')}`);
         if (!(MAJOR_MODES as readonly unknown[]).includes(safety.major))
           bad(`${at}.safety.major`, `must be one of ${MAJOR_MODES.join(', ')}`);
+      }
+      if (e.goModule !== undefined) {
+        if (
+          typeof e.goModule !== 'string' ||
+          !/^[a-z0-9.-]+\.[a-z]+(?:\/[A-Za-z0-9._~-]+)+$/.test(e.goModule)
+        )
+          bad(`${at}.goModule`, 'must be a Go module path, e.g. golang.org/x/tools/gopls');
+        else if (e.driver !== 'devcontainer')
+          bad(
+            `${at}.goModule`,
+            'only a devcontainer pin installed with `go install` names a goModule'
+          );
       }
       for (const k of ['holds', 'gates'] as const) {
         const v = e[k];
@@ -610,6 +629,12 @@ export function selftestCases(): ControlCase[] {
     ['safety.mode', (r) => ((leaf(r).safety as Obj).mode = 'yolo'), '.safety.mode:'],
     ['safety.major', (r) => ((leaf(r).safety as Obj).major = 'yes'), '.safety.major:'],
     ['gates', (r) => (leaf(r).gates = [1]), '.gates:'],
+    ['goModule not a module path', (r) => (leaf(r).goModule = 'gopls'), '.goModule:'],
+    [
+      'goModule on a non-devcontainer pin',
+      (r) => (leaf(r).goModule = 'golang.org/x/tools/gopls'),
+      'only a devcontainer pin',
+    ],
     ['leaf with no site', (r) => (leaf(r).sites = []), 'a leaf needs a site'],
     ['leaf with a scope', (r) => (leaf(r).scope = []), 'only a family has a scope'],
     ['family with no scope', (r) => delete (r.entries as Obj[])[1].scope, 'a family needs'],

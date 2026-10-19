@@ -906,6 +906,7 @@
         "repo": "golang/tools",
         "tagPrefix": "gopls/v"
       },
+      "goModule": "golang.org/x/tools/gopls",
       "safety": {
         "mode": "release-age",
         "major": "assisted"
@@ -938,6 +939,7 @@
         "repo": "go-delve/delve",
         "tagPrefix": "v"
       },
+      "goModule": "github.com/go-delve/delve",
       "safety": {
         "mode": "release-age",
         "major": "assisted"
@@ -970,6 +972,7 @@
         "repo": "golangci/golangci-lint",
         "tagPrefix": "v"
       },
+      "goModule": "github.com/golangci/golangci-lint/v2",
       "safety": {
         "mode": "release-age",
         "major": "assisted"
@@ -1009,6 +1012,7 @@
         "type": "go-list",
         "module": "honnef.co/go/tools"
       },
+      "goModule": "honnef.co/go/tools",
       "safety": {
         "mode": "release-age",
         "major": "assisted"
@@ -1038,6 +1042,7 @@
         "type": "go-list",
         "module": "golang.org/x/tools"
       },
+      "goModule": "golang.org/x/tools",
       "safety": {
         "mode": "release-age",
         "major": "assisted"

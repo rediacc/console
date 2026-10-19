@@ -10,9 +10,12 @@
  *                                      (scripts/lib/deps/execute.ts updateMismatches). Reads
  *                                      the lockfile and writes nothing.
  *   npm-steps.ts sync <base64 json>    move the .syncpackrc.json pin groups that hold a
- *                                      package the run moved (scripts/lib/deps/pin-sync.ts).
- *                                      Writes only .syncpackrc.json, and only when every group
- *                                      can move; otherwise it names each laggard and exits 1.
+ *                                      package the run moved (scripts/lib/deps/pin-sync.ts),
+ *                                      and the declared range of every member in every
+ *                                      manifest a moved group covers (pin-manifests.ts,
+ *                                      worklist #3fc8b8cb). Writes .syncpackrc.json and those
+ *                                      manifests, and only when every group and every range
+ *                                      can move; otherwise it names each one and exits 1.
  *
  * Both read the tree named by CHECK_DEPS_ROOT, else the repository this file sits in, the
  * same seam check-deps uses, so a fixture run and a real run take the same code.
@@ -23,7 +26,13 @@ import process from 'node:process';
 import { updateMismatches } from '../../deps/execute.js';
 import { planPinGroupSync, SYNCPACK_RC_PATH } from '../../deps/pin-sync.js';
 import type { InstallStep } from '../../deps/plan.js';
-import { MAJOR_ALLOW_REL, readLockPackages } from '../../deps/shared.js';
+import {
+  CONSOLE_ROOT,
+  FIXTURE_ROOT,
+  MAJOR_ALLOW_REL,
+  readLockPackages,
+} from '../../deps/shared.js';
+import { movedPinGroups, planManifestPins, sourceManifests } from './pin-manifests.js';
 
 const decode = (b64: string): InstallStep[] =>
   JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as InstallStep[];
@@ -77,8 +86,29 @@ function sync(steps: InstallStep[]): number {
     for (const e of plan.errors) console.error(`  ${e}`);
     return 1;
   }
-  // The only write of this module: the rc file the plan rewrote, inside the pins transaction (declared in its step, journaled, restored on failure).
-  if (plan.text !== null) fs.writeFileSync(SYNCPACK_RC_PATH, plan.text);
+  if (plan.text === null) return 0;
+  // The declared ranges follow the moved pins: `npm update` never rewrites a range, so a manifest the group covers would keep the old one and syncpack would answer DiffersToPin (394935a1f). The no-manifest-pin mutant (honoured only under CHECK_DEPS_ROOT) skips this, the behaviour before 2026-10-19.
+  const before = fs.readFileSync(SYNCPACK_RC_PATH, 'utf8');
+  const manifests = sourceManifests(CONSOLE_ROOT, before).map((file) => ({
+    file,
+    text: fs.readFileSync(path.join(CONSOLE_ROOT, file), 'utf8'),
+  }));
+  const ranges = planManifestPins(
+    movedPinGroups(before, plan.text),
+    manifests,
+    !!FIXTURE_ROOT && process.env.PINS_MUTANT === 'no-manifest-pin'
+  );
+  for (const r of ranges.rewrites) console.log(`  ${r}`);
+  if (ranges.errors.length > 0) {
+    console.error(
+      `${ranges.errors.length} declared range(s) not moved to their group's new pin (check:version would stay red until each is):`
+    );
+    for (const e of ranges.errors) console.error(`  ${e}`);
+    return 1;
+  }
+  // The only writes of this module: the rc file and the manifests the plans rewrote, inside the pins transaction (declared in its step, journaled, restored on failure).
+  fs.writeFileSync(SYNCPACK_RC_PATH, plan.text);
+  for (const w of ranges.writes) fs.writeFileSync(path.join(CONSOLE_ROOT, w.file), w.text);
   return 0;
 }
 
