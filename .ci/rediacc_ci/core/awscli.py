@@ -50,7 +50,7 @@ INSTALL_HINT = "bash .ci/bootstrap.sh install aws"
 VERSION_RE = re.compile(r"^aws-cli/([0-9]+(?:\.[0-9]+)*)")
 
 # One probe per cached binary per process, keyed by path and mtime: a promote runs thousands of copies, and `aws --version` costs a third of a second on v2.
-_PROBED: dict[tuple[str, int], str | None] = {}
+_PROBED: dict[tuple[str, int, int, int], str | None] = {}
 
 
 # The refusal every caller prints. Byte-identical to `common.require_cmd("aws")`, because the frozen goldens of twelve ported twins (tests/goldens/twins/*.jsonl) pin that exact stderr line; the detail rides in `hint`.
@@ -99,7 +99,9 @@ def probe_version(binary: str, *, timeout: int = 60) -> str | None:
 
 def _cached_version(binary: pathlib.Path) -> str | None:
     try:
-        key = (str(binary), binary.stat().st_mtime_ns)
+        st = binary.stat()
+        # A reinstall replaces the file (new inode) even inside one mtime tick, so the inode and size join the key (review 73e2c821.2).
+        key = (str(binary), st.st_mtime_ns, st.st_ino, st.st_size)
     except OSError:
         return None
     if key not in _PROBED:
