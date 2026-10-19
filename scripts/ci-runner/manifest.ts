@@ -2659,7 +2659,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-lint-rule-liveness',
     run: 'npm run check:ci-lint-rule-liveness',
-    slow: true, // 30.6s measured
     gate: true,
     leaves: ['.ci/scripts/quality/check_lint_rule_liveness.py'],
     ci: {
@@ -3213,7 +3212,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-command-tree',
     run: 'npm run check:ci-command-tree',
-    slow: true, // 10.7s measured
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
@@ -3609,7 +3607,6 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-account-layer-isolation',
     run: 'npm run check:ci-account-layer-isolation',
-    slow: true, // 10.8s measured
     gate: true,
     leaves: ['biome'],
     ci: {
@@ -4845,6 +4842,7 @@ export const GATES: readonly GateSpec[] = [
     // Source-authored lint rules on the oxc/momoa host (PLAN-biome-only-lint): the custom/* and i18n/* rule modules under eslint-rules/, run without ESLint. Also refuses any eslint-disable token left in scope, since nothing honours one any more.
     id: 'check:ci-source-rules',
     run: 'npm run check:ci-source-rules',
+    slow: true, // 31.0s CI step p90 (lane-durations refresh 2026-10-19)
     gate: true,
     leaves: ['scripts/gates/check-source-rules.ts'],
     ci: {

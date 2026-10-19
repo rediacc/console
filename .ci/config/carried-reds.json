@@ -28,24 +28,5 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": [
-    {
-      "gate": "check:ci-budget-freshness",
-      "findings": [
-        "lane-durations:drift:job:test-account-e2e",
-        "lane-durations:drift:job:test-renet-go",
-        "lane-durations:drift:leg-sum:ops-tutorials",
-        "lane-durations:drift:unit:account-e2e:12-stripe-e2e/12-04-plan-upgrade.test.ts",
-        "lane-durations:drift:unit:tutorial:add-server",
-        "lane-durations:drift:unit:tutorial:backup-restore",
-        "lane-durations:drift:unit:tutorial:branching",
-        "lane-durations:drift:unit:tutorial:delta-transfer",
-        "lane-durations:drift:unit:tutorial:forking",
-        "lane-durations:drift:unit:tutorial:managing-secrets",
-        "lane-durations:drift:unit:tutorial:networking",
-        "lane-durations:unpriced-unit:pytest:.claude/rediacc_hooks/tests/test_githook_generated_artifacts.py"
-      ],
-      "reason": "lane-durations.json drifts from the measured runs, and the one writer (budget_report --refresh) also folds this branch's legitimate cold renet builds into the job p90s, putting Build (Renet) 14.2>12, Renet embed assets 12.4>12 and E2E Ceph oracle-10 17.5>16 over operator caps (rulings #2847e1b3, #fc4f34f8). Raising a cap is the operator's call, parked as worklist #23e93715 (DEFAULT: hold the refresh). Carried so the jobs-endpoint 502 fix and the pins driver fixes reach CI; CI still fails this gate until #23e93715 is answered or warm runs age the cold samples out."
-    }
-  ]
+  "carried": []
 }
