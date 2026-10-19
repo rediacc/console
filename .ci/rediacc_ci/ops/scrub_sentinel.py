@@ -102,12 +102,10 @@ def _tag_exists(repo_root, version: str) -> bool | None:
             ],
             capture_output=True,
             check=False,
-            # Never a prompt mid-plan, and never a TCP-timeout stall: GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt, BatchMode stops ssh's passphrase and host-key prompts, and an origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
-            env={
-                **os.environ,
-                "GIT_TERMINAL_PROMPT": "0",
-                "GIT_SSH_COMMAND": os.environ.get("GIT_SSH_COMMAND", "ssh") + " -o BatchMode=yes",
-            },
+            # Never a prompt mid-plan, and never a TCP-timeout stall: GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt, and a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on, whatever core.sshCommand or GIT_SSH names. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
             timeout=ORIGIN_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired:
