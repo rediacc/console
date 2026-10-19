@@ -18,6 +18,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import pathmask
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -128,6 +129,8 @@ def _env(scratch: pathlib.Path, extra: dict[str, str], drop: tuple[str, ...], hi
         **CREDS,
         **extra,
     }
+    if hide_aws:
+        env.update(pathmask.no_aws(scratch))
     for name in drop:
         env.pop(name, None)
     return env, log

@@ -143,6 +143,7 @@ TOOL_KEYS = {
     "npm": "NPM_VERSION",
     "uv": "UV_VERSION",
     "pytest": "PYTEST_VERSION",
+    "aws": "AWSCLI_VERSION",
 }
 
 # The two Node keys, named because they are different KINDS of number and the difference is the one this file's history is made of. NODE_VERSION is the major CI installs; NODE_VERSION_MIN is the oldest release the repo agrees to run on, and nothing installs it -- every consumer only compares against it.
@@ -566,7 +567,7 @@ def _probe_argv(tool: str, binary: str) -> list[str]:
     """
     if tool in ("ruff", "uv", "pytest"):
         words = shlex.split(binary)
-    elif tool in ("shfmt", "shellcheck", "actionlint", "go", "node"):
+    elif tool in ("shfmt", "shellcheck", "actionlint", "go", "node", "aws"):
         words = [binary]
     else:
         raise ToolError("toolchain: no version probe for %r" % tool)
@@ -586,6 +587,7 @@ def _probe_extract(tool: str, out: str) -> str:
         node        the whole thing          v22.23.2
         uv          `awk '{print $2}'`       uv 0.12.10
         pytest      `head -1 | awk '{print $2}'`   pytest 9.1.1
+        aws         `head -1 | awk '{print $1}'`, `${out#aws-cli/}`   aws-cli/2.38.1 Python/3.13.7 ...
 
     `awk` prints ONE LINE PER MATCHING INPUT LINE, so these can legitimately
     return several lines; the numeric-run step below is per-line too, which is
@@ -619,6 +621,10 @@ def _probe_extract(tool: str, out: str) -> str:
         first = lines[0] if lines else ""
         fields = first.split()
         return fields[1] if len(fields) > 1 else ""
+    if tool == "aws":
+        # `head -1 | awk '{print $1}'`, then `${out#aws-cli/}`: `aws-cli/2.38.1 Python/3.13.7 Linux/6.8.0 exe/x86_64.ubuntu.24` yields `2.38.1`.
+        fields = (lines[0] if lines else "").split()
+        return fields[0].removeprefix("aws-cli/") if fields else ""
     raise ToolError("toolchain: no version probe for %r" % tool)
 
 

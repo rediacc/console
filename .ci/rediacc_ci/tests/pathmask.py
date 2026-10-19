@@ -72,3 +72,11 @@ def assert_absent(tool: str, path: str) -> None:
     if found is not None:
         # RAISED, not asserted: this module is not a test file, so `python -O` would strip an `assert` and turn the one check that makes the mask trustworthy into nothing at all.
         raise AssertionError("%s is still reachable at %s on the masked PATH" % (tool, found))
+
+
+def no_aws(scratch: pathlib.Path) -> dict[str, str]:
+    """The environment that makes `aws` unreachable for a subject that resolves it through `rediacc_ci.core.awscli`.
+
+    Masking PATH is not enough there: the resolver's third rung is the repo's own pinned install under `.ci/cache/toolchain/aws-cli/`, which a host that ran `bash .ci/bootstrap.sh install aws` has, so a case that drops aws from PATH would run the REAL CLI against its fixture endpoint. `AWS_BIN` is the first rung, and one that names a path that does not exist is a refusal with the same "Required command 'aws' is not available" line, never a fall-through to the cache. Merge this into the subject's environment whenever aws is dropped.
+    """
+    return {"AWS_BIN": str(scratch / "absent-aws")}

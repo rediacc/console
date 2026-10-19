@@ -16,6 +16,10 @@
  *   python tools    PyPI (ruff, mypy, pytest, pytest-xdist, PyYAML) for the version, GitHub
  *                   releases (uv, shfmt, shellcheck, actionlint, nfpm) for the version and every
  *                   per-platform sha256 by the asset filename the registry names.
+ *   toolchain:awscli  the aws/aws-cli tags for the version (no release is cut, so the tags are
+ *                   read and dated by commit), and each versioned installer named by a full URL
+ *                   in the site's `asset`, downloaded from awscli.amazonaws.com and hashed, since
+ *                   AWS publishes no sha256 beside them.
  *   wrangler        the npm registry for the version in constants.sh.
  *
  * `toolchain:node` has a `none` source (the Node major is the operator's), and answers "not compared".
@@ -232,7 +236,16 @@ export function createToolchainDriver(
       const hashed = hashSites(entry);
       if (hashed.length > 0) {
         const hit = (await foundFor(entry, current)).find((r) => r.version === to.version);
-        const digests = hit?.digests ?? new Map<string, string>();
+        const digests = new Map(hit?.digests ?? []);
+        // An asset named by a full URL (AWS's versioned aws CLI installers) has no published
+        // digest anywhere, so it is downloaded and hashed; a release asset keeps the API digest.
+        for (const site of hashed) {
+          const url = site.asset?.replaceAll('{version}', to.version);
+          if (url?.startsWith('https://') && !digests.has(url)) {
+            if (!up.sha256) throw new PlanRefused(`${entry.id}: this upstream cannot hash ${url}`);
+            digests.set(url, await up.sha256(url, entry.name));
+          }
+        }
         for (const site of hashed) {
           try {
             values[site.role] = digestFor(site, to.version, digests);

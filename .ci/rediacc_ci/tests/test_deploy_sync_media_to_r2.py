@@ -11,7 +11,7 @@ output and exit 0 while publishing objects that expire in an hour instead of a y
 followed by a stray `max-age=31536000`, and those are different calls.
 
 EVERY RUN HAPPENS IN A COPIED TREE UNDER `tmp_path`, NEVER IN THE CHECKOUT. Both implementations derive `REPO_ROOT` from their OWN location (`<file>/../../..`), and the behaviour under test is precisely what happens when `packages/www/public/assets/...` is present, absent, or a file. None of those three states can be arranged in a shared checkout other sessions are working in.
-Copying the eight files each side needs into `tmp_path` makes `REPO_ROOT` the fixture and removes any need for a machine-wide lock: `tmp_path` is unique per test, so two concurrent runs of this file in one checkout cannot collide.
+Copying the files each side needs into `tmp_path` makes `REPO_ROOT` the fixture and removes any need for a machine-wide lock: `tmp_path` is unique per test, so two concurrent runs of this file in one checkout cannot collide.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ TWIN_REL = ".ci/scripts/deploy/sync-media-to-r2.sh"
 PORT_REL = ".ci/rediacc_ci/deploy/sync_media_to_r2.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The eight files a fixture tree needs: the twin, the bash library it sources, and the Python package the port imports. Listed explicitly rather than copytree'd, so a new dependency shows up here as an edit instead of being dragged in silently by a wildcard.
+# The files a fixture tree needs: the twin, the bash library it sources, and the Python package the port imports. Listed explicitly rather than copytree'd, so a new dependency shows up here as an edit instead of being dragged in silently by a wildcard.
 TREE_FILES = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
@@ -46,7 +46,9 @@ TREE_FILES = (
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
     ".ci/rediacc_ci/core/__init__.py",
+    ".ci/rediacc_ci/core/awscli.py",
     ".ci/rediacc_ci/core/common.py",
+    ".ci/rediacc_ci/core/toolchain.py",
     ".ci/rediacc_ci/deploy/__init__.py",
     PORT_REL,
 )

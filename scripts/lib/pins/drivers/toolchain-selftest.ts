@@ -337,6 +337,39 @@ async function build(mutant: ToolchainMutant | null): Promise<ControlCase[]> {
       u.refused
     );
 
+    // toolchain:awscli: no release is cut, so the tags are read; AWS publishes no digest, so each
+    // versioned installer named by URL in the registry is downloaded and hashed.
+    const aw = envVal(env, 'AWSCLI_VERSION');
+    const awn = patchOf(aw);
+    const awsAnswers = (withDarwin: boolean): Record<string, string | object> => ({
+      [`${GH}/repos/aws/aws-cli/releases?per_page=100`]: [],
+      [`${GH}/repos/aws/aws-cli/tags?per_page=100`]: [{ name: awn }, { name: aw }],
+      [`${GH}/repos/aws/aws-cli/commits/${awn}`]: {
+        commit: { committer: { date: '2026-10-01T00:00:00Z' } },
+      },
+      [`sha256:https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${awn}.zip`]: hex('a'),
+      [`sha256:https://awscli.amazonaws.com/awscli-exe-linux-aarch64-${awn}.zip`]: hex('b'),
+      ...(withDarwin
+        ? { [`sha256:https://awscli.amazonaws.com/AWSCLIV2-${awn}.pkg`]: hex('c') }
+        : {}),
+    });
+    const a = await plan('toolchain:awscli', awn, awsAnswers(true));
+    const ae = textOf(a.plan, ENV) ?? '';
+    add(
+      'awscli: the version and the three installer hashes move, each hashed from its versioned URL',
+      envVal(ae, 'AWSCLI_VERSION') === awn &&
+        envVal(ae, 'AWSCLI_SHA256_LINUX_X86_64') === hex('a') &&
+        envVal(ae, 'AWSCLI_SHA256_LINUX_AARCH64') === hex('b') &&
+        envVal(ae, 'AWSCLI_SHA256_DARWIN') === hex('c'),
+      a.refused
+    );
+    const an = await plan('toolchain:awscli', awn, awsAnswers(false));
+    add(
+      'awscli: an installer that cannot be hashed refuses the pin rather than moving it with an old hash',
+      an.plan === undefined && typeof an.refused === 'string',
+      an.refused
+    );
+
     const sf = envVal(env, 'SHFMT_VERSION');
     const sfn = patchOf(sf);
     const shfmt = (n: string, h: string) => ({

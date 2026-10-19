@@ -33,7 +33,7 @@ import os
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
 from rediacc_ci.core import release_state_validator as rsv
 
 # `:33`. The only two channels that write `cli/v<version>/` at all; anything else is skipped rather than failed.
@@ -92,7 +92,7 @@ def main(argv: list[str]) -> int:
         log.error(VERSION_REQUIRED)
         return EXIT_USAGE
 
-    if _require(common.require_cmd, "aws") is None:
+    if _require(awscli.require) is None:
         return 1
     for name in REQUIRED_VARS:
         if _require(common.require_var, name) is None:

@@ -58,9 +58,14 @@ const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
  * linter data, `PIPE_HEADS_REGEX='(aws s3 ls|...)'`. Blind spot accepted in
  * exchange: a real `( aws s3 cp ... )` subshell would be missed. `$(` is kept
  * explicitly, which is the form the actual defect used.
+ *
+ * THE RESOLVED SPELLINGS COUNT TOO. Since 2026-10-19 a shell caller runs the aws CLI
+ * as `"${AWS_BIN:-aws}"` or through a variable holding it (`"$AWS"`), the form
+ * check:ci-aws-resolver requires, so the pinned CLI CI exports wins. Matching only a
+ * bare `aws` would have made this gate blind to every caller that gate fixed.
  */
 const INVOKES_AWS =
-  /(^|[;&|!]|\$\(|\b(if|elif|while|until|then|do|else)\b|&&|\|\|)\s*aws\s+(s3|s3api|ses|iam|sts|configure)\b/m;
+  /(^|[;&|!]|\$\(|\b(if|elif|while|until|then|do|else)\b|&&|\|\|)\s*(aws|"\$\{AWS_BIN:-aws\}"|"\$AWS")\s+(s3|s3api|ses|iam|sts|configure)\b/m;
 
 /** Bridges the R2 name onto the AWS one itself. */
 const BRIDGES = /^\s*export\s+AWS_(ACCESS_KEY_ID|SECRET_ACCESS_KEY)=/m;
@@ -137,6 +142,13 @@ let CONTROL_ARMS = 0;
     ["#!/bin/bash\nPIPE_HEADS_REGEX='(aws s3 ls|find [^|])'\n", 'not-a-caller'],
     // ...while a genuine pipe INTO aws, outside quotes, must still be seen.
     ['#!/bin/bash\necho "$c" | aws s3 cp - s3://b/k\n', 'MISSING'],
+    // The resolved spellings check:ci-aws-resolver requires are invocations too.
+    ['#!/bin/bash\n"${AWS_BIN:-aws}" s3 rm s3://b/p --recursive\n', 'MISSING'],
+    ['#!/bin/bash\nAWS="${AWS_BIN:-aws}"\n"$AWS" s3 cp a s3://b/a\n', 'MISSING'],
+    [
+      '#!/bin/bash\nexport AWS_ACCESS_KEY_ID="$CLOUDFLARE_R2_ACCESS_KEY_ID"\n"$AWS" s3api head-object\n',
+      'ok-bridges',
+    ],
   ];
   CONTROL_ARMS = cases.length;
   for (const [text, want] of cases) {

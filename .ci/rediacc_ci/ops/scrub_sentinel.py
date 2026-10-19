@@ -23,12 +23,12 @@ import contextlib
 import io
 import os
 import re
-import shutil
 import signal
 import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import awscli
 from rediacc_ci.core import release_state_validator as rsv
 from rediacc_ci.well_known import RELEASES_BUCKET
 
@@ -51,7 +51,7 @@ CLOUDFLARE_R2_ENDPOINT. RELEASES_BUCKET is optional (default """
 
 
 def _aws(argv: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(["aws", *argv], capture_output=True, text=True, check=False)
+    return awscli.run([awscli.AWS, *argv], capture_output=True, text=True)
 
 
 def object_count(prefix: str, endpoint: str) -> int | None:
@@ -175,8 +175,10 @@ def main(argv: list[str]) -> int:
         log.error("invalid version '%s' (expected strict semver, e.g. v1.0.5)" % version)
         return 2
 
-    if shutil.which("aws") is None:
-        log.error("Required command 'aws' is not available")
+    try:
+        awscli.require()
+    except awscli.AwsCliMissingError as exc:
+        log.error(str(exc))
         return 1
     key_id = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID")
     secret = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY")
@@ -234,9 +236,9 @@ def main(argv: list[str]) -> int:
         return 1
 
     log.step("deleting s3://%s/%s" % (rsv.bucket(), prefix))
-    removed = subprocess.run(
+    removed = awscli.run(
         [
-            "aws",
+            awscli.AWS,
             "s3",
             "rm",
             "s3://%s/%s" % (rsv.bucket(), prefix),
@@ -244,7 +246,6 @@ def main(argv: list[str]) -> int:
             endpoint or "",
             "--recursive",
         ],
-        check=False,
     )
     if removed.returncode != 0:
         log.error("aws s3 rm failed (exit %d)" % removed.returncode)

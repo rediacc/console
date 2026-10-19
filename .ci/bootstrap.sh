@@ -75,6 +75,8 @@
 #   .ci/bootstrap.sh            install what is missing (idempotent)
 #   .ci/bootstrap.sh --check    report what is missing, change NOTHING
 #   .ci/bootstrap.sh doctor     print the resolved versions
+#   .ci/bootstrap.sh install aws   install the pinned aws CLI (optional, not in the bare install)
+#   .ci/bootstrap.sh which aws [--pin]   the aws binary a call would exec (--pin: the cache rung alone)
 #
 # NOT readlink -f ANYWHERE: it is a GNU coreutils extension and macOS does not
 # have it. `CDPATH='' cd -- ... && pwd -P` is the portable spelling, and CDPATH
@@ -109,11 +111,15 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${CI:-}" != "true" ]; then
 fi
 
 # Everything this script installs lives here. .ci/cache/ is gitignored and
-# per-worktree, so two worktrees never fight over one binary and `git status`
+# per-checkout, so two checkouts never fight over one binary and `git status`
 # stays clean.
 UV_DIR="$ROOT/.ci/cache/toolchain/uv-${UV_VERSION}"
 TOOL_DIR="$ROOT/.ci/cache/toolchain/uv-tools"
 TOOL_BIN_DIR="$TOOL_DIR/bin"
+# The pinned aws CLI, one directory per version, so a bump never runs a half-replaced
+# install: `bin/aws` is what the resolvers' cache rung asks for.
+AWS_DIR="$ROOT/.ci/cache/toolchain/aws-cli/${AWSCLI_VERSION}"
+AWS_CACHE_BIN="$AWS_DIR/bin/aws"
 
 # The wrapper's inputs: uv's real pytest and the interpreter of the same tool
 # environment (the pinned Python, so core_lease.py runs on what pytest runs on),
@@ -276,6 +282,142 @@ resolve_xdist() {
     return 0
 }
 
+# THE aws RUNGS, mirrored by .ci/rediacc_ci/core/awscli.py resolve(), and NOT the
+# at-the-pin rule the other tools follow: AWS_BIN (set but not executable is a
+# refusal), then a PATH aws TAKEN AS FOUND with no version probe (about 36 test files
+# put a recording fake `aws` on PATH, and a probe would add a call to every ledger),
+# then this repo's cache at the pin. The doctor row shows a PATH aws beside the pin.
+resolve_aws() {
+    if [ -n "${AWS_BIN:-}" ]; then
+        [ -f "$AWS_BIN" ] && [ -x "$AWS_BIN" ] || {
+            echo "bootstrap: AWS_BIN=$AWS_BIN is not an executable file" >&2
+            return 1
+        }
+        printf '%s' "$AWS_BIN"
+        return 0
+    fi
+    local on_path
+    if on_path="$(command -v aws 2>/dev/null)" && [ -n "$on_path" ]; then
+        printf '%s' "$on_path"
+        return 0
+    fi
+    resolve_aws_pinned
+}
+
+# The cache rung alone: the install this script makes, at the pin. `install aws` asks
+# this rather than resolve_aws, because a runner's own aws on PATH is not the pin.
+resolve_aws_pinned() {
+    if [ -x "$AWS_CACHE_BIN" ] &&
+        [ "$(toolchain_probe_version aws "$AWS_CACHE_BIN" 2>/dev/null)" = "$AWSCLI_VERSION" ]; then
+        printf '%s' "$AWS_CACHE_BIN"
+        return 0
+    fi
+    return 1
+}
+
+# Unpack a zip with its file modes, because the installer and the binaries it carries
+# must stay executable. unzip when present; otherwise Python's zipfile, which does not
+# restore modes by itself, so they are applied from each entry's external attributes.
+unzip_with_modes() {
+    if command -v unzip >/dev/null 2>&1; then
+        unzip -q "$1" -d "$2"
+        return $?
+    fi
+    python3 -I -c '
+import os, sys, zipfile
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    for entry in archive.infolist():
+        target = archive.extract(entry, sys.argv[2])
+        mode = (entry.external_attr >> 16) & 0o777
+        if mode:
+            os.chmod(target, mode)
+' "$1" "$2"
+}
+
+# AWS's VERSIONED installer for this platform, verified against its sha256 in
+# toolchain.env BEFORE it is unpacked, installed under $AWS_DIR with no root and no
+# system path touched. Linux runs the bundled `aws/install` with both directories
+# pointed into the cache; macOS expands the .pkg with pkgutil and links its payload.
+install_aws() {
+    local os_sfx arch_sfx sha_var want url asset tmp got
+    case "$(uname -s)" in
+        Linux)
+            case "$(uname -m)" in
+                x86_64 | amd64) arch_sfx=x86_64 ;;
+                aarch64 | arm64) arch_sfx=aarch64 ;;
+                *)
+                    echo "bootstrap: unsupported architecture '$(uname -m)' for the aws CLI" >&2
+                    return 1
+                    ;;
+            esac
+            os_sfx="LINUX_$(printf '%s' "$arch_sfx" | tr '[:lower:]' '[:upper:]')"
+            asset="awscli-exe-linux-${arch_sfx}-${AWSCLI_VERSION}.zip"
+            ;;
+        Darwin)
+            os_sfx=DARWIN
+            asset="AWSCLIV2-${AWSCLI_VERSION}.pkg"
+            ;;
+        *)
+            echo "bootstrap: unsupported OS '$(uname -s)' -- AWS publishes no pinned aws CLI this repo records for it" >&2
+            return 1
+            ;;
+    esac
+    sha_var="AWSCLI_SHA256_${os_sfx}"
+    want="${!sha_var:-}"
+    [ -n "$want" ] || {
+        echo "bootstrap: no checksum for this platform -- define ${sha_var} in .devcontainer/toolchain.env rather than downloading unverified" >&2
+        return 1
+    }
+    url="https://awscli.amazonaws.com/${asset}"
+    tmp="$(mktemp -d)" || return 1
+    trap 'rm -rf -- "$tmp"; trap - RETURN' RETURN
+    echo "bootstrap: downloading the aws CLI ${AWSCLI_VERSION} ($asset)" >&2
+    curl -fsSL --max-time 600 --retry 3 --retry-delay 5 -o "$tmp/$asset" "$url" || {
+        echo "${RED}bootstrap${NC}: could not download the aws CLI from $url" >&2
+        return 1
+    }
+    got="$(sha256_of "$tmp/$asset")" || return 1
+    [ "$got" = "$want" ] || {
+        echo "${RED}bootstrap${NC}: aws CLI checksum MISMATCH -- refusing to install" >&2
+        echo "  expected $want" >&2
+        echo "  actual   $got" >&2
+        return 1
+    }
+    # A half-finished earlier install is removed first: the Linux installer writes
+    # absolute symlinks into its install directory, so the install cannot be staged
+    # elsewhere and renamed into place.
+    rm -rf -- "$AWS_DIR" || return 1
+    mkdir -p "$AWS_DIR/bin" || return 1
+    if [ "$os_sfx" = DARWIN ]; then
+        pkgutil --expand-full "$tmp/$asset" "$tmp/pkg" >/dev/null || {
+            echo "${RED}bootstrap${NC}: pkgutil could not expand $asset" >&2
+            return 1
+        }
+        [ -x "$tmp/pkg/aws-cli.pkg/Payload/aws-cli/aws" ] || {
+            echo "${RED}bootstrap${NC}: $asset expanded without aws-cli.pkg/Payload/aws-cli/aws" >&2
+            return 1
+        }
+        mv "$tmp/pkg/aws-cli.pkg/Payload/aws-cli" "$AWS_DIR/lib" &&
+            ln -s ../lib/aws "$AWS_DIR/bin/aws" || return 1
+    else
+        unzip_with_modes "$tmp/$asset" "$tmp/x" || {
+            echo "${RED}bootstrap${NC}: could not unpack $asset" >&2
+            return 1
+        }
+        "$tmp/x/aws/install" --install-dir "$AWS_DIR/lib" --bin-dir "$AWS_DIR/bin" >/dev/null || {
+            echo "${RED}bootstrap${NC}: the aws CLI installer failed" >&2
+            return 1
+        }
+    fi
+    # Verified by asking the binary, not by trusting the installer's exit code.
+    got="$(toolchain_probe_version aws "$AWS_CACHE_BIN" 2>/dev/null)"
+    [ "$got" = "$AWSCLI_VERSION" ] || {
+        echo "${RED}bootstrap${NC}: the installer finished but $AWS_CACHE_BIN reports '${got:-none}'" >&2
+        return 1
+    }
+    printf '%s' "$AWS_CACHE_BIN"
+}
+
 install_uv() {
     local triple sfx sha_var want url tmp got
     read -r triple sfx < <(uv_target) || return 1
@@ -330,7 +472,7 @@ install_pytest() {
     echo "bootstrap: installing pytest ${PYTEST_VERSION} via uv" >&2
     # UV_TOOL_DIR/UV_TOOL_BIN_DIR keep this out of ~/.local: a bootstrap that
     # edits the developer's home directory is one that cannot be undone by
-    # deleting the worktree.
+    # deleting the checkout.
     unwrap_pytest || return 1
     UV_TOOL_DIR="$TOOL_DIR" UV_TOOL_BIN_DIR="$TOOL_BIN_DIR" \
         "$uv" tool install --quiet "pytest==${PYTEST_VERSION}" || {
@@ -517,6 +659,20 @@ report() {
             rc=1
         fi
     fi
+    # OPTIONAL: only the R2 tools need aws, so an absent one is yellow and never the
+    # report's rc. The resolved binary is printed with the version it reports, so a
+    # PATH aws off the pin shows as drift beside the pinned column.
+    local aws aws_have
+    if aws="$(resolve_aws 2>/dev/null)"; then
+        aws_have="$(toolchain_probe_version aws "$aws" 2>/dev/null || true)"
+        if [ "$aws_have" = "$AWSCLI_VERSION" ]; then
+            report_row aws "$AWSCLI_VERSION" "$aws"
+        else
+            report_row aws "$AWSCLI_VERSION" "$aws ${YELLOW}(reports ${aws_have:-no version}; run '.ci/bootstrap.sh install aws' for the pin)${NC}"
+        fi
+    else
+        report_row aws "$AWSCLI_VERSION" "${YELLOW}ABSENT${NC} (optional; '.ci/bootstrap.sh install aws')"
+    fi
     report_row python3 "-" "$(command -v python3 || echo "${YELLOW}ABSENT${NC}")"
     return "$rc"
 }
@@ -538,7 +694,37 @@ case "${1:-install}" in
         report
         exit $?
         ;;
+    which)
+        # The binary a caller would exec. `which aws` follows every rung; `which aws
+        # --pin` answers the cache rung alone, which is what CI exports as AWS_BIN.
+        case "${2:-}:${3:-}" in
+            aws:) resolve_aws || exit 1 ;;
+            aws:--pin) resolve_aws_pinned || exit 1 ;;
+            *)
+                echo "usage: bootstrap.sh which aws [--pin]" >&2
+                exit 2
+                ;;
+        esac
+        echo
+        exit 0
+        ;;
     install)
+        # `install aws` installs the pinned aws CLI and nothing else: it is optional on a
+        # developer host and tens of megabytes, so the bare install never fetches it.
+        # IDEMPOTENT BY THE CACHE RUNG, not by resolve_aws: a runner's own aws on PATH
+        # answers resolve_aws, and it is not the pin.
+        if [ "${2:-}" = aws ]; then
+            if aws_bin="$(resolve_aws_pinned)"; then
+                echo "${GREEN}ok${NC}   aws ${AWSCLI_VERSION} already at $aws_bin"
+            else
+                aws_bin="$(install_aws)" || exit 1
+                echo "${GREEN}ok${NC}   aws ${AWSCLI_VERSION} installed at $aws_bin"
+            fi
+            exit 0
+        elif [ -n "${2:-}" ]; then
+            echo "usage: bootstrap.sh install [aws]" >&2
+            exit 2
+        fi
         # No `| ""` arm: ${1:-install} substitutes the default for an EMPTY
         # first argument as well as an unset one, so an empty-string arm here
         # would be unreachable -- the shape check-dead-case-arms.sh exists for.
@@ -578,7 +764,7 @@ case "${1:-install}" in
         exit 0
         ;;
     *)
-        echo "usage: bootstrap.sh [install|--check|doctor]" >&2
+        echo "usage: bootstrap.sh [install [aws]|which aws [--pin]|--check|doctor]" >&2
         exit 2
         ;;
 esac

@@ -122,6 +122,7 @@ files actually execute, which is why the ledger is not a synthetic per-function 
 
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import platform as _stdlib_platform
@@ -585,14 +586,16 @@ def r2_count_objects(
             "r2_count_objects: AWS_ACCESS_KEY_ID must be exported (map it from CLOUDFLARE_R2_ACCESS_KEY_ID)",
         )
     endpoint = endpoint or environ.get("CLOUDFLARE_R2_ENDPOINT") or ""
-    argv = ["aws", "s3api", "list-objects-v2", "--bucket", bucket, "--prefix", prefix]
+    # Imported here and not at the top: `core.awscli` imports this module for RefusalError, and a dozen tests copy this file alone into a fixture package, which must stay importable without the resolver and the pins reader behind it.
+    awscli = importlib.import_module("rediacc_ci.core.awscli")
+    argv = [awscli.AWS, "s3api", "list-objects-v2", "--bucket", bucket, "--prefix", prefix]
     if endpoint:
         argv += ["--endpoint-url", endpoint]
     argv += ["--query", "length(Contents || `[]`)", "--output", "text"]
     sys.stdout.flush()
     sys.stderr.flush()
     try:
-        proc = subprocess.run(argv, capture_output=True, check=False)
+        proc = awscli.run(argv, capture_output=True)
         status, out, err = proc.returncode, proc.stdout, proc.stderr
     except FileNotFoundError:
         status, out, err = 127, b"", b"aws: command not found\n"

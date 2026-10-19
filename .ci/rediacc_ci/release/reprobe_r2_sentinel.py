@@ -23,7 +23,7 @@ import os
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli
 from rediacc_ci.core import release_state_validator as rsv
 
 SELF = "rediacc_ci.release.reprobe_r2_sentinel"
@@ -33,16 +33,6 @@ PRODUCTS = ("cli",)
 
 PRESENT = "✓ %s/%s/%s present in R2"
 ABSENT = "::error::%s/%s/%s NOT present after write"
-
-
-def _require_cmd(name: str) -> int | None:
-    """`require_cmd` (common.sh:141-147): log and exit 1, message byte-identical."""
-    try:
-        common.require_cmd(name)
-    except common.RefusalError as exc:
-        log.error(str(exc))
-        return 1
-    return None
 
 
 def _require_var(name: str) -> str:
@@ -56,9 +46,11 @@ def _require_var(name: str) -> str:
 
 def main(argv: list[str]) -> int:
     del argv
-    refusal = _require_cmd("aws")
-    if refusal is not None:
-        return refusal
+    try:
+        awscli.require()
+    except awscli.AwsCliMissingError as exc:
+        log.error(str(exc))
+        return 1
     version = _require_var("VERSION")
     access_key = _require_var("CLOUDFLARE_R2_ACCESS_KEY_ID")
     secret_key = _require_var("CLOUDFLARE_R2_SECRET_ACCESS_KEY")

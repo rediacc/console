@@ -36,7 +36,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
 
 # `for dir in cli npm apt rpm apk archlinux` (:37). ORDER MATTERS to the call log, which is how this port is proved equivalent.
 FORMATS = ("cli", "npm", "apt", "rpm", "apk", "archlinux")
@@ -99,7 +99,7 @@ def prefixes(bucket: str, channel: str) -> list[str]:
 
 def aws_argv(prefix: str, endpoint: str) -> list[str]:
     """One `aws s3 rm ... --recursive --endpoint-url ...` (:38-39)."""
-    return ["aws", "s3", "rm", prefix, "--recursive", "--endpoint-url", endpoint]
+    return [awscli.AWS, "s3", "rm", prefix, "--recursive", "--endpoint-url", endpoint]
 
 
 def _rm(argv: list[str]) -> tuple[int, str]:
@@ -107,7 +107,7 @@ def _rm(argv: list[str]) -> tuple[int, str]:
 
     STDOUT IS INHERITED, exactly as the twin leaves it: the `delete: s3://...` lines reach the workflow log. Stderr is captured instead of discarded, because it is the only explanation a refused delete has; a call that succeeded has its stderr dropped, as the twin dropped all of it.
     """
-    proc = subprocess.run(argv, stderr=subprocess.PIPE, check=False)
+    proc = awscli.run(argv, stderr=subprocess.PIPE)
     return proc.returncode, proc.stderr.decode("utf-8", errors="replace")
 
 
@@ -115,7 +115,7 @@ def main(argv: list[str]) -> int:
     del argv  # the twin parses nothing; extra arguments are ignored by both
 
     try:
-        common.require_cmd("aws")
+        awscli.require()
     except common.RefusalError as exc:
         exc.report()
         return exc.code

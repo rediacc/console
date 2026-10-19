@@ -1714,6 +1714,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // Every aws call goes through rediacc_ci.core.awscli (agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md): no literal "aws" argv head and no require_cmd/which of "aws" in .ci/rediacc_ci, every module naming awscli.AWS calls the resolver, and no bare `aws s3|s3api|iam` in a workflow or a .ci shell script. Refuses below 20 awscli modules.
+    // NO `paths:` DELIBERATELY. Its subjects are every module under .ci/rediacc_ci, every workflow and every .ci shell script, which is most of what a CI change touches; an entry without paths is always selected.
+    id: 'check:ci-aws-resolver',
+    run: 'npm run check:ci-aws-resolver',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_aws_resolver.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'aws resolver',
+    },
+  },
+  {
     // Each environment's account Workers hold only their own bucket-scoped backup key pair (agent/plans/PLAN-backup-credential-isolation.md): no CLOUDFLARE_R2_* fallback in deploy_bench, one environment's pair per secret-supply profile, the stable pair fetched only under `inputs.target == 'stable'` and the edge pair only under the negation, nothing account-wide feeding an ACCOUNT_BACKUP_S3_* name, and disjoint, bucket-equal rotation scopes. Names only.
     // NO `paths:` DELIBERATELY. Its inputs span .ci/config, .ci/rediacc_ci/ops, every workflow file, regions.json, the bench wrangler config and a file in the account submodule; an entry without paths is always selected.
     id: 'check:ci-backup-credential-isolation',

@@ -1932,7 +1932,7 @@ jobs:
           PROMOTED="${CHANNEL}-promoted"
           BUCKET="$WK_RELEASES_BUCKET"
           for dir in apt rpm apk archlinux; do
-            aws s3 rm "s3://${BUCKET}/${dir}/${PROMOTED}/" --recursive \
+            "${AWS_BIN:-aws}" s3 rm "s3://${BUCKET}/${dir}/${PROMOTED}/" --recursive \
               --endpoint-url "$CLOUDFLARE_R2_ENDPOINT" --quiet 2>/dev/null || true
           done
           echo "Cleaned up promoted channel: ${PROMOTED}"

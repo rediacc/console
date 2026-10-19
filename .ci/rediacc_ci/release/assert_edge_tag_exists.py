@@ -70,7 +70,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import gh_retry
+from rediacc_ci.core import awscli, gh_retry
 from rediacc_ci.well_known import GH_REPO, RELEASES_BUCKET
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). The differential rewrites it back to the twin's `.sh` name (`rediacc_ci.tests.twin_names.as_twin`) before comparing, so one name serves both.
@@ -133,9 +133,7 @@ def _capture_merged(argv: list[str]) -> tuple[int, str]:
     A missing binary cannot happen after `require_cmd`, but a traceback here would read as a crash rather than a probe result, so it is folded into the shell's own 127.
     """
     try:
-        proc = subprocess.run(
-            argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False
-        )
+        proc = awscli.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     except FileNotFoundError:
         return 127, "%s: command not found" % argv[0]
     return proc.returncode, proc.stdout.rstrip("\n")
@@ -177,7 +175,7 @@ def probe_r2_sentinel(key: str, bucket: str, endpoint: str) -> str:
     """
     rc, out = _capture_merged(
         [
-            "aws",
+            awscli.AWS,
             "s3api",
             "head-object",
             "--bucket",
@@ -247,6 +245,16 @@ def _require_cmd(cmd: str) -> bool:
     return False
 
 
+def _require_aws() -> bool:
+    """`require_cmd aws`, resolved through `core.awscli`, with the same one-line refusal."""
+    try:
+        awscli.require()
+    except awscli.AwsCliMissingError as exc:
+        log.error(str(exc))
+        return False
+    return True
+
+
 def parse_argv(argv: list[str]) -> tuple[str | None, int | None, str | None]:
     """The twin's `while [[ $# -gt 0 ]]` loop (:47-66).
 
@@ -313,7 +321,7 @@ def main(argv: list[str]) -> int:
 
     if not _require_cmd("gh"):
         return 1
-    if not _require_cmd("aws"):
+    if not _require_aws():
         return 1
 
     for name in REQUIRED_ENV:

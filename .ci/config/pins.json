@@ -1729,6 +1729,75 @@
       "literals": []
     },
     {
+      "id": "toolchain:awscli",
+      "kind": "leaf",
+      "name": "aws CLI v2",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "aws/aws-cli",
+        "tagPrefix": ""
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync",
+        "check:ci-aws-resolver"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "AWSCLI_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-x86-64",
+          "env": "AWSCLI_SHA256_LINUX_X86_64",
+          "asset": "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{version}.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-aarch64",
+          "env": "AWSCLI_SHA256_LINUX_AARCH64",
+          "asset": "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{version}.zip",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:darwin",
+          "env": "AWSCLI_SHA256_DARWIN",
+          "asset": "https://awscli.amazonaws.com/AWSCLIV2-{version}.pkg",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/gen-docs.ts --write",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": ".",
+              "file": "scripts/data/doc-registry.md"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
       "id": "toolchain:shfmt",
       "kind": "leaf",
       "name": "shfmt",

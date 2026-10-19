@@ -61,6 +61,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.core import awscli
 from rediacc_ci.core import release_state_validator as rsv
 
 SELF = "rediacc_ci.release.advance_contract_floor"
@@ -156,6 +157,16 @@ def _require_cmd(cmd: str) -> bool:
     return False
 
 
+def _require_aws() -> bool:
+    """`require_cmd aws`, resolved through `core.awscli`, with the same one-line refusal."""
+    try:
+        awscli.require()
+    except awscli.AwsCliMissingError as exc:
+        log.error(str(exc))
+        return False
+    return True
+
+
 def _git(root: pathlib.Path, args: list[str]) -> int:
     """One `git` call with NEITHER stream redirected, like the twin.
 
@@ -167,7 +178,7 @@ def _git(root: pathlib.Path, args: list[str]) -> int:
 def main(argv: list[str]) -> int:
     del argv  # the twin takes no arguments and ignores anything it is given
 
-    if not _require_cmd("aws"):
+    if not _require_aws():
         return 1
     if not _require_cmd("git"):
         return 1

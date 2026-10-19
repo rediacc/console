@@ -44,13 +44,13 @@ gate.
 import os
 import pathlib
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
+from rediacc_ci.core import awscli
 from rediacc_ci.version import resolve_version
 from rediacc_ci.well_known import RELEASES_BUCKET
 
@@ -112,13 +112,13 @@ def _records(text: str) -> list[str]:
 
 
 def _aws(args: list[str]) -> subprocess.CompletedProcess:
-    """Run the `aws` CLI. Never raises for a missing binary; see `require_cmd`.
+    """Run the `aws` CLI through `core.awscli`. Never raises for a missing binary; see `require_aws`.
 
-    The binary is checked once, up front, by `require_cmd`, exactly as the twin does. A FileNotFoundError here would therefore mean `aws` vanished mid-run, which is reported as a failed probe rather than as a crash: an unanswered question is not a `no`, and the library says so in three separate places.
+    The binary is checked once, up front, by `require_aws`, exactly as the twin's `require_cmd aws` did. A FileNotFoundError here would therefore mean `aws` vanished mid-run, which is reported as a failed probe rather than as a crash: an unanswered question is not a `no`, and the library says so in three separate places.
     """
     try:
-        return subprocess.run(args, capture_output=True, text=True, check=False)
-    except FileNotFoundError:
+        return awscli.run(args, capture_output=True, text=True)
+    except (FileNotFoundError, awscli.AwsCliMissingError):
         return subprocess.CompletedProcess(args, 127, "", "aws: command not found\n")
 
 
@@ -139,7 +139,7 @@ def list_sentinels(product: str, endpoint: str) -> list[str]:
         raise SystemExit(1)
     proc = _aws(
         [
-            "aws",
+            awscli.AWS,
             "s3api",
             "list-objects-v2",
             "--bucket",
@@ -371,11 +371,13 @@ def pointer_version(payload: str) -> str:
     return ""
 
 
-def require_cmd(name: str) -> None:
-    """`require_cmd` from `.ci/scripts/lib/common.sh`. Exits 1 when absent."""
-    if shutil.which(name) is None:
-        log.error("Required command '%s' is not available" % name)
-        raise SystemExit(1)
+def require_aws() -> None:
+    """`require_cmd aws` from `.ci/scripts/lib/common.sh`, resolved through `core.awscli`. Exits 1 when absent."""
+    try:
+        awscli.require()
+    except awscli.AwsCliMissingError as exc:
+        log.error(str(exc))
+        raise SystemExit(1) from exc
 
 
 def require_var(name: str) -> None:
@@ -409,7 +411,7 @@ def _read_pointer(channel: str, name: str, endpoint: str) -> str:
     """One pointer file's advertised version, or "" when it could not be read."""
     proc = _aws(
         [
-            "aws",
+            awscli.AWS,
             "s3",
             "cp",
             "s3://%s/cli/%s/%s" % (bucket(), channel, name),
@@ -436,7 +438,7 @@ def main(argv: list[str] | None = None) -> int:
 
     root = paths.repo_root()
 
-    require_cmd("aws")
+    require_aws()
     require_var("CLOUDFLARE_R2_ACCESS_KEY_ID")
     require_var("CLOUDFLARE_R2_SECRET_ACCESS_KEY")
     require_var("CLOUDFLARE_R2_ENDPOINT")

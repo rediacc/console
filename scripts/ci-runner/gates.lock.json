@@ -1792,6 +1792,20 @@
     }
   },
   {
+    "id": "check:ci-aws-resolver",
+    "run": "npm run check:ci-aws-resolver",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_aws_resolver.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "aws resolver"
+    }
+  },
+  {
     "id": "check:ci-backup-credential-isolation",
     "run": "npm run check:ci-backup-credential-isolation",
     "gate": true,

@@ -20,6 +20,7 @@ import typing
 from rediacc_ci import paths
 from rediacc_ci.deploy import delete_r2_channel as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import pathmask
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -132,6 +133,8 @@ def _run_live(
         "AWS_ACCESS_KEY_ID": "akid-fixture",
         "AWS_SECRET_ACCESS_KEY": "secret-fixture",
     }
+    if drop == "aws":
+        env.update(pathmask.no_aws(tmp_path))
     env.update(extra)
     for name in drop_env:
         env.pop(name, None)

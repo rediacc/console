@@ -162,7 +162,11 @@ fi
 require_var KEY LANG FIELD FILE
 require_file "$FILE"
 require_var CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY CLOUDFLARE_R2_MEDIA_ENDPOINT
-require_cmd aws
+# The aws CLI: AWS_BIN when set (CI exports the pinned install, .ci/bootstrap.sh
+# which aws --pin), else the one on PATH -- the first two rungs of
+# .ci/rediacc_ci/core/awscli.py.
+AWS="${AWS_BIN:-aws}"
+require_cmd "$AWS"
 require_cmd npx
 # sha256sum and stat are NOT required by name any more: media_file_size and
 # "${MEDIA_SHA256[@]}" pick whichever spelling this host has and refuse, loudly and by
@@ -185,13 +189,13 @@ else
 fi
 
 log_step "Uploading $FILE -> s3://$BUCKET/$REMOTE_KEY"
-aws s3 cp "$FILE" "s3://${BUCKET}/${REMOTE_KEY}" \
+"$AWS" s3 cp "$FILE" "s3://${BUCKET}/${REMOTE_KEY}" \
     --endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" \
     --cache-control "$CACHE_CONTROL" \
     --no-progress
 
 log_step "Verifying upload (HEAD readback)"
-aws s3api head-object --bucket "$BUCKET" --key "$REMOTE_KEY" --endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" >/dev/null
+"$AWS" s3api head-object --bucket "$BUCKET" --key "$REMOTE_KEY" --endpoint-url "$CLOUDFLARE_R2_MEDIA_ENDPOINT" >/dev/null
 
 SIZE="$(media_file_size "$FILE")"
 SHA256="$("${MEDIA_SHA256[@]}" "$FILE" | cut -d' ' -f1)"

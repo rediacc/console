@@ -39,6 +39,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
+from rediacc_ci.core import awscli
 from rediacc_ci.deploy import channel_stamp, transfer_retry
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
@@ -120,7 +121,7 @@ def pointers(dir_name: str) -> tuple[str, ...]:
 def list_argv(prefix: str, endpoint: str) -> list[str]:
     """`aws s3api list-objects-v2`: exact keys (no whitespace re-splitting), sizes and LastModified; aws-cli follows the pagination itself."""
     return [
-        "aws",
+        awscli.AWS,
         "s3api",
         "list-objects-v2",
         "--bucket",
@@ -136,7 +137,7 @@ def list_argv(prefix: str, endpoint: str) -> list[str]:
 def copy_argv(src_key: str, dst_key: str, endpoint: str) -> list[str]:
     """One server-side `aws s3api copy-object`. No `--tagging-directive`: see the module docstring."""
     argv = [
-        "aws",
+        awscli.AWS,
         "s3api",
         "copy-object",
         "--bucket",
@@ -159,7 +160,7 @@ def copy_argv(src_key: str, dst_key: str, endpoint: str) -> list[str]:
 def get_argv(key: str, target: str, endpoint: str) -> list[str]:
     """Fetch ONE object to the runner. Used for the channel pointers only."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         "s3://%s/%s" % (BUCKET, key),
@@ -172,7 +173,7 @@ def get_argv(key: str, target: str, endpoint: str) -> list[str]:
 def put_argv(source: str, key: str, endpoint: str) -> list[str]:
     """Upload ONE stamped pointer, `no-cache` like everything under a channel path."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         source,
@@ -188,7 +189,7 @@ def delete_argv(keys: list[str], endpoint: str) -> list[str]:
     """One `aws s3api delete-objects` for up to `DELETE_BATCH` keys, `Quiet` so the reply names only the keys that failed."""
     payload = json.dumps({"Objects": [{"Key": key} for key in keys], "Quiet": True})
     return [
-        "aws",
+        awscli.AWS,
         "s3api",
         "delete-objects",
         "--bucket",
@@ -245,7 +246,7 @@ def parse_listing(text: str, prefix: str) -> list[Obj]:
 
 def _run_quiet(argv: list[str]) -> tuple[int, str]:
     """Run `argv` with stdout DISCARDED (copy-object prints a JSON receipt per object) and stderr captured and forwarded."""
-    proc = subprocess.run(argv, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    proc = awscli.run(argv, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     if proc.stderr:
         sys.stderr.buffer.write(proc.stderr)
         sys.stderr.flush()
@@ -270,9 +271,7 @@ class Transfers:
         out: list[bytes] = []
 
         def run() -> tuple[int, str]:
-            proc = subprocess.run(
-                list_argv(prefix, self.endpoint), check=False, capture_output=True
-            )
+            proc = awscli.run(list_argv(prefix, self.endpoint), capture_output=True)
             if proc.stderr:
                 sys.stderr.buffer.write(proc.stderr)
                 sys.stderr.flush()
@@ -305,9 +304,7 @@ class Transfers:
         out: list[bytes] = []
 
         def run() -> tuple[int, str]:
-            proc = subprocess.run(
-                delete_argv(batch, self.endpoint), check=False, capture_output=True
-            )
+            proc = awscli.run(delete_argv(batch, self.endpoint), capture_output=True)
             if proc.stderr:
                 sys.stderr.buffer.write(proc.stderr)
                 sys.stderr.flush()

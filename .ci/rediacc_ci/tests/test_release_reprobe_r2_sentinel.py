@@ -106,6 +106,9 @@ def _run(
     for key, value in list(env.items()):
         if value is None:
             del env[key]
+    # A PATH without aws means no aws for the port too: its resolver's last rung is the repo's pinned install, which this host may have.
+    if side == "new" and shutil.which("aws", path=env["PATH"]) is None:
+        env.update(pathmask.no_aws(tmp_path))
 
     subject = TWIN if side == "old" else PORT
     runner = [BASH] if side == "old" else [sys.executable]

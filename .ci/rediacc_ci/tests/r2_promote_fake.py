@@ -19,6 +19,7 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.tests import pathmask
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
@@ -315,6 +316,8 @@ def run_port(
     if plant_port:
         env["FAKE_PLANT_PORT"] = plant_port
     env.update(extra or {})
+    if drop == "aws":
+        env.update(pathmask.no_aws(root))
     for name in drop_env:
         env.pop(name, None)
     proc = subprocess.run(

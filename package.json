@@ -171,6 +171,7 @@
     "check:ci-bws-map-live": ".ci/scripts/quality/check_bws_map_live.py",
     "check:ci-retired-terms": ".ci/scripts/quality/check_retired_terms.py",
     "check:ci-backup-credential-isolation": ".ci/scripts/quality/check_backup_credential_isolation.py",
+    "check:ci-aws-resolver": ".ci/scripts/quality/check_aws_resolver.py",
     "check:ci-actions-vars": ".ci/scripts/quality/check_actions_vars.py",
     "check:ci-literal-sources": ".ci/scripts/quality/check_literal_sources.py",
     "check:ci-record-paths": ".ci/scripts/quality/check_record_paths.py",

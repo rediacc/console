@@ -45,7 +45,10 @@ PACKAGE_FILES = (
     "paths.py",
     "well_known.py",
     "core/__init__.py",
+    "core/awscli.py",
+    "core/common.py",
     "core/release_state_validator.py",
+    "core/toolchain.py",
     "release/__init__.py",
     "release/advance_contract_floor.py",
 )

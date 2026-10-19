@@ -34,6 +34,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import simulate_promotion as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import pathmask
 from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
@@ -361,6 +362,8 @@ def _run_live(
         **BASE_ENV,
     }
     env.update(extra)
+    if drop == "aws":
+        env.update(pathmask.no_aws(root))
     for name in drop_env:
         env.pop(name, None)
 

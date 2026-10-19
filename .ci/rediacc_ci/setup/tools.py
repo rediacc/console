@@ -100,7 +100,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
 
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls
-from rediacc_ci.core import toolchain
+from rediacc_ci.core import awscli, toolchain
 
 # The twin's exit statuses. 77 is CANNOT RUN and is never a verdict; see the module docstring for the single condition that returns it.
 EXIT_OK = 0
@@ -579,6 +579,35 @@ TOOLS: tuple[Tool, ...] = (
         ),
     ),
     Tool(
+        name="aws",
+        purpose=(
+            "the aws CLI every R2 read and write goes through (the promotes, the release "
+            "sentinel, cleanup_versions, ops/scrub_sentinel), resolved by "
+            "rediacc_ci.core.awscli"
+        ),
+        pin_key="AWSCLI_VERSION",
+        install={
+            "apt": ".ci/bootstrap.sh install aws",
+            "dnf": ".ci/bootstrap.sh install aws",
+            "pacman": ".ci/bootstrap.sh install aws",
+            "apk": ".ci/bootstrap.sh install aws",
+            "brew": ".ci/bootstrap.sh install aws",
+            "repo": ".ci/bootstrap.sh install aws   # AWS's versioned installer, sha256-checked, into .ci/cache/toolchain/aws-cli/<pin>",
+        },
+        provenance=(
+            ".ci/bootstrap.sh install_aws, .ci/rediacc_ci/core/awscli.py, and "
+            ".devcontainer/toolchain.env AWSCLI_VERSION"
+        ),
+        probe=(awscli.AWS, "--version"),
+        note=(
+            "OPTIONAL ON A DEVELOPER HOST: only the R2 tools need it, so the bootstrap "
+            "doctor prints an absent aws in yellow and never fails on it. The repo arm "
+            "installs v2 from AWS's versioned installer with no root and no system path "
+            "touched; the resolver then takes AWS_BIN, a PATH aws as found, or that "
+            "cache at the pin, in that order."
+        ),
+    ),
+    Tool(
         name="gitleaks",
         purpose="the tracked-credentials scan",
         pin_key=None,
@@ -684,6 +713,12 @@ def present(tool: Tool) -> str | None:
     """
     if tool.python_dist:
         return "(importable)" if _python_dist_present(tool.python_dist) else None
+    if tool.name == awscli.AWS:
+        # The resolver's answer, so the pinned cache install counts as present.
+        try:
+            return awscli.resolve()
+        except awscli.AwsCliMissingError:
+            return None
     found = shutil.which(tool.name)
     if found:
         return found
@@ -701,11 +736,16 @@ def probe_version(tool: Tool) -> str | None:
     """
     if tool.probe is None:
         return None
-    if shutil.which(tool.probe[0]) is None:
+    # An `aws` probe resolves through core.awscli (AWS_BIN, PATH, then the pinned cache); every other argv passes through unchanged.
+    try:
+        argv = awscli.argv(list(tool.probe))
+    except awscli.AwsCliMissingError:
+        return None
+    if shutil.which(argv[0]) is None:
         return None
     try:
         completed = subprocess.run(
-            list(tool.probe),
+            argv,
             capture_output=True,
             check=False,
             text=True,

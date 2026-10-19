@@ -36,6 +36,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import write_release_sentinel as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import pathmask
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
@@ -417,7 +418,7 @@ def test_a_missing_aws_refuses_identically(tmp_path: pathlib.Path) -> None:
         lambda: diff.bash_streams("bash %s %s" % (TWIN, quoted), env=env, timeout=30),
         work=(tmp_path,),
     )
-    env_new = dict(env)
+    env_new = {**env, **pathmask.no_aws(tmp_path)}
     env_new["PYTHONPATH"] = str(ROOT / ".ci")
     env_new["PYTHONDONTWRITEBYTECODE"] = "1"
     new = diff.bash_streams("python3 -m %s %s" % (MODULE, quoted), env=env_new, timeout=30)
