@@ -508,7 +508,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_roundlog.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_rules.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
 | .claude/hooks/stop/wl_schedred.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_scratch.py | (none) | via .claude/hooks/stop/worklist.py | py |
+| .claude/hooks/stop/wl_scratch.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_shapedup.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_soakedpins.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_standdown.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
@@ -804,7 +804,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.cli-i18n-orphan-allowlist | 6 | inline |
 | .ci/policy/.dead-bash-allowlist | 5 | # comment |
 | .ci/policy/.deps-upgrade-blocklist | 2 | inline |
-| .ci/policy/.devcontainer-upgrade-blocklist | 2 | inline |
+| .ci/policy/.devcontainer-upgrade-blocklist | 3 | inline |
 | .ci/policy/.e2e-coverage-allowlist | 3 | # comment |
 | .ci/policy/.embed-assets-upgrade-blocklist | 1 | prose only (no live entry) |
 | .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |

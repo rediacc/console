@@ -168,6 +168,9 @@ def build(td):
     sh(root, "git", "init", "-q", "-b", "main")
     sh(root, "git", "config", "user.email", "t@example.invalid")
     sh(root, "git", "config", "user.name", "t")
+    # No detached maintenance after a commit: maintenance.auto=false and gc.auto=0: the detached `git maintenance` child holds .git/objects/maintenance.lock past `commit` and races the fixture's removal (see .claude/rediacc_hooks/tests/test_wl_scratch.py).
+    sh(root, "git", "config", "maintenance.auto", "false")
+    sh(root, "git", "config", "gc.auto", "0")
 
     (root / REL).write_text(PLAN, encoding="utf-8")
     # A TRACKED file the citation controls (14c2) cite as `scripts/ci-runner/run.ts:352`. It is committed here because the gate's resolver reads the tracked set ONCE per process and treats an untracked file as gitignored.

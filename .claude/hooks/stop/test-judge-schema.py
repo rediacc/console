@@ -3035,6 +3035,9 @@ with tempfile.TemporaryDirectory() as _fxroot:
         ["git", "-C", str(_fxroot), "config", "user.email", "p@example.invalid"], check=True
     )
     subprocess.run(["git", "-C", str(_fxroot), "config", "user.name", "p"], check=True)
+    # No detached maintenance after a commit (the temp dir is removed when this block exits): maintenance.auto=false and gc.auto=0: the detached `git maintenance` child holds .git/objects/maintenance.lock past `commit` and races the fixture's removal (see .claude/rediacc_hooks/tests/test_wl_scratch.py).
+    subprocess.run(["git", "-C", str(_fxroot), "config", "maintenance.auto", "false"], check=True)
+    subprocess.run(["git", "-C", str(_fxroot), "config", "gc.auto", "0"], check=True)
     (_fxroot / "a.py").write_text("x = 1\n")
     subprocess.run(["git", "-C", str(_fxroot), "add", "-A"], check=True)
     subprocess.run(["git", "-C", str(_fxroot), "commit", "-qm", "root commit"], check=True)

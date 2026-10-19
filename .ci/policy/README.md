@@ -85,7 +85,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.cli-i18n-orphan-allowlist` | name per line | 5 | 6 | both |
 | `.dead-bash-allowlist` | name per line | 4 | 5 | both |
 | `.deps-upgrade-blocklist` | name per line | 1 | 2 | both |
-| `.devcontainer-upgrade-blocklist` | name per line | 1 | 2 | both |
+| `.devcontainer-upgrade-blocklist` | name per line | 1 | 3 | both |
 | `.e2e-coverage-allowlist` | name per line | 21 | 3 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |

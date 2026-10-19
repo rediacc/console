@@ -145,6 +145,9 @@ class World:
         self._git("config", "user.email", "gate-test@example.invalid")
         self._git("config", "user.name", "Gate Test")
         self._git("config", "commit.gpgsign", "false")
+        # No detached maintenance after a commit: setup() rmtree's and rebuilds this repo, and the child holds .git/objects/maintenance.lock past `commit` (see .claude/rediacc_hooks/tests/test_wl_scratch.py).
+        self._git("config", "maintenance.auto", "false")
+        self._git("config", "gc.auto", "0")
 
     @property
     def repo(self) -> pathlib.Path:
