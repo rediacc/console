@@ -12,18 +12,18 @@ Concurrency: exclusive -- B5 rewrites every aws call site against B2's API, so B
 
 Measured 2026-10-19 while scrubbing the v1.3.2 sentinel (operator ruling ASKED:2026-10-19T10:52Z): `bws_env exec --profile r2-artifacts -- python3 -m rediacc_ci.ops.scrub_sentinel v1.3.2` printed `✗ Required command 'aws' is not available`. A shim running `.ci/cache/toolchain/uv-0.12.10/uvx --from awscli==1.36.0 aws` on the host's Python 3.14 failed `badly formed help string` (exit 255) on `s3api list-objects-v2`; it worked only with `uvx --python 3.12`.
 
-- 23 non-test modules call `aws` (`git grep -lE '"aws"' -- .ci/rediacc_ci ':!.ci/rediacc_ci/tests'`), among them promote_r2_to_stable(_hotfix), write_once_guard_check, cleanup_versions, cf_auth (`aws iam`, cf_auth.py:351) and release/{advance_contract_floor, assert_edge_tag_exists, assert_r2_sentinel, cd_preflight, reprobe_r2_sentinel}. Bash call sites: ci.yml:1935 (inline `aws s3 rm`) and .ci/media/tools/upload-r2.sh.
-- Three presence checks: `common.require_cmd` (shutil.which, common.py:302-314) in 9 modules, `shutil.which("aws")` (scrub_sentinel.py:151), and a local `_require_cmd` (advance_contract_floor.py:170, reprobe_r2_sentinel.py:59). All exec a bare `"aws"` argv[0] (common.py:588, scrub_sentinel.py:52).
-- CI works only because the jobs run on `ubuntu-latest` "for the aws CLI" (ci.yml:1067-1069, ci-quality.yml:1873-1881): an unpinned aws at /usr/local/bin/aws (pathmask.py:11).
-- No install-table row names aws: setup/tools.py A2 (:787-810) covers only `toolchain.TOOL_KEYS` (core/toolchain.py:136-146), so the gap is invisible by construction.
+- 23 non-test modules call `aws` (`git grep -lE '"aws"' -- .ci/rediacc_ci ':!.ci/rediacc_ci/tests'`), among them promote_r2_to_stable(_hotfix), write_once_guard_check, cleanup_versions, cf_auth (`aws iam`, .ci/rediacc_ci/ops/cf_auth.py:351) and release/{advance_contract_floor, assert_edge_tag_exists, assert_r2_sentinel, cd_preflight, reprobe_r2_sentinel}. Bash call sites: .github/workflows/ci.yml:1935 (inline `aws s3 rm`) and .ci/media/tools/upload-r2.sh.
+- Three presence checks: `common.require_cmd` (shutil.which, .ci/rediacc_ci/core/common.py:302-314) in 9 modules, `shutil.which("aws")` (.ci/rediacc_ci/ops/scrub_sentinel.py:163), and a local `_require_cmd` (.ci/rediacc_ci/release/advance_contract_floor.py:170, .ci/rediacc_ci/release/reprobe_r2_sentinel.py:59). All exec a bare `"aws"` argv[0] (.ci/rediacc_ci/core/common.py:588, .ci/rediacc_ci/ops/scrub_sentinel.py:51-52).
+- CI works only because the jobs run on `ubuntu-latest` "for the aws CLI" (.github/workflows/ci.yml:1067-1069, .github/workflows/ci-quality.yml:1873-1881): an unpinned aws at /usr/local/bin/aws (.ci/rediacc_ci/tests/pathmask.py:11).
+- No install-table row names aws: setup/tools.py A2 (:787-810) covers only `toolchain.TOOL_KEYS` (.ci/rediacc_ci/core/toolchain.py:136-146), so the gap is invisible by construction.
 
 ## Conventions followed
 
 - Pins: one `KEY=value` per pin in `.devcontainer/toolchain.env`; Python tools carry a bare version and no sha, because uv verifies them from the index (toolchain.env:32-33, :105-124).
 - pins.json: pypi-sourced Python tools are `toolchain:<name>` leaves with `source.type: "pypi"` and `safety.mode: "release-age"` (`toolchain:ruff` :1474, `toolchain:mypy` :1506, `toolchain:pytest-xdist` :1613 with a gen-docs `derive`). An operator-chosen line uses `source.type: "none"` with a `BLOCKER:` reason (`toolchain:node` :1435).
-- Bootstrap rungs: explicit `*_BIN`, then a PATH binary at the pin, then the repo cache (bootstrap.sh:49-56, resolvers :178-237); installs are uv tools under `.ci/cache/toolchain/uv-tools` (:111-116, `install_ruff` :374-390); the doctor prints one row per tool (:470-522); no version literal in .ci/**/*.sh (:58-61).
-- `toolchain_probe_version` and `toolchain_pin_for` (toolchain.sh:72-120) mirror `TOOL_KEYS` arm for arm.
-- Docs: `bootstrapPins` (scripts/lib/doc-providers.ts:1084-1110) renders doc-registry.md:1041.
+- Bootstrap rungs: explicit `*_BIN`, then a PATH binary at the pin, then the repo cache (.ci/bootstrap.sh:49-56, resolvers :178-237); installs are uv tools under `.ci/cache/toolchain/uv-tools` (:111-116, `install_ruff` :374-390); the doctor prints one row per tool (:470-522); no version literal in .ci/**/*.sh (:58-61).
+- `toolchain_probe_version` and `toolchain_pin_for` (.ci/scripts/lib/toolchain.sh:72-120) mirror `TOOL_KEYS` arm for arm.
+- Docs: `bootstrapPins` (scripts/lib/doc-providers.ts:1084-1110) renders scripts/data/doc-registry.md:1041.
 
 ## Decisions
 
