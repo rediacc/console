@@ -102,8 +102,12 @@ def _tag_exists(repo_root, version: str) -> bool | None:
             ],
             capture_output=True,
             check=False,
-            # Never a prompt mid-plan, and never a TCP-timeout stall: GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt, and a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on, SSH_ASKPASS_REQUIRE=never stops its graphical askpass fallback, whatever core.sshCommand or GIT_SSH names. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
-            env={**os.environ, "GIT_TERMINAL_PROMPT": "0", "SSH_ASKPASS_REQUIRE": "never"},
+            # Never a prompt mid-plan, and never a TCP-timeout stall. GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt; a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on; for the graphical askpass fallback, SSH_ASKPASS_REQUIRE=never covers OpenSSH 8.4 and later, and DISPLAY is dropped because older OpenSSH opens askpass only with one. A wrapper outside OpenSSH (core.sshCommand, GIT_SSH) keeps its own settings, and the 30 s bound still ends it. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
+            env={
+                **{k: v for k, v in os.environ.items() if k != "DISPLAY"},
+                "GIT_TERMINAL_PROMPT": "0",
+                "SSH_ASKPASS_REQUIRE": "never",
+            },
             stdin=subprocess.DEVNULL,
             start_new_session=True,
             timeout=ORIGIN_TIMEOUT_S,
