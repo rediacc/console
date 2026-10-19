@@ -23,6 +23,7 @@ import signal
 import socket
 import subprocess
 import tarfile
+import urllib.error
 from typing import Any
 
 import pytest
@@ -563,6 +564,25 @@ def test_serve_returns_a_live_pid_that_serves_the_tree(tmp_path: pathlib.Path) -
         assert om.http_get("http://127.0.0.1:%d/repodata/repomd.xml" % port) == b"<repomd/>"
     finally:
         os.kill(pid, signal.SIGTERM)
+
+
+def test_serve_with_its_default_probe_reads_the_mirror_on_the_runners_own_address(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The default probe and the default hosts, as CI runs them: loopback AND the primary IPv4 (Console CI run 39177571049 refused the second in the https funnel and never read the mirror as up)."""
+    port = _free_port()
+    pid = om.serve(_mirror_tree(tmp_path), port)
+    try:
+        url = "http://%s:%d/repodata/repomd.xml" % (om.primary_ipv4(), port)
+        assert om.mirror_probe(url) == b"<repomd/>"
+    finally:
+        os.kill(pid, signal.SIGTERM)
+
+
+def test_the_fetch_path_still_refuses_plain_http_off_loopback() -> None:
+    """Only serve's probe widens the funnel: an OBS fetch through http_get still refuses a non-loopback http URL."""
+    with pytest.raises(urllib.error.URLError, match="refusing a URL"):
+        om.http_get("http://10.9.8.7:1/repodata/repomd.xml")
 
 
 def test_serve_probes_every_host_and_names_the_one_that_never_answers(
