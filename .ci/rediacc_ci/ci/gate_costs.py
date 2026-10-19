@@ -203,11 +203,8 @@ def collect_captures(
             repo, CAPTURE_WORKFLOW, event, budget_report.DEFAULT_BRANCH, "completed", RUNS_LISTED
         ):
             runs.setdefault(run.get("id"), run)
-    # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture
-    # outlived its 12m bound for three nights and the fix, 5d5d88247, sat on the PR that this very
-    # check kept red). A capture DISPATCHED on the PR head comes from the workflow and gate code
-    # that branch ships, which is no new trust: this check itself runs from the PR tree, so the PR
-    # could already rewrite it. It is read beside main's, never instead of it.
+    # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture outlived its 12m bound for three nights and the fix, 5d5d88247, sat on the PR that this very check kept red).
+    # A capture DISPATCHED on the PR head comes from the workflow and gate code that branch ships, which is no new trust: this check itself runs from the PR tree, so the PR could already rewrite it. It is read beside main's, never instead of it.
     head = os.environ.get("GITHUB_HEAD_REF", "").strip()
     if head and head != budget_report.DEFAULT_BRANCH:
         for run in list_runs(

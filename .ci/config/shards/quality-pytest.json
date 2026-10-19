@@ -142,6 +142,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_bash_semantics.py",
         "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
         "pytest:.claude/rediacc_hooks/tests/test_goldenio_idempotent_mark.py",
+        "pytest:.claude/rediacc_hooks/tests/test_hookio_world_symlink.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_delegates.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_static.py",
         "pytest:.claude/rediacc_hooks/tests/test_output_landings.py",

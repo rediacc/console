@@ -781,26 +781,31 @@ def test_collect_captures_reads_a_capture_dispatched_on_the_pr_head(monkeypatch)
         return []
 
     blob = _zip("gate-costs.json", json.dumps(capture([gate("h", 1, 1)])))
-    kwargs = {
-        "list_runs": list_runs,
-        "list_artifacts": lambda _repo, _rid: [{"id": 70, "name": "gate-costs-h"}],
-        "download": lambda _repo, _aid: blob,
-    }
+
+    def collect():
+        return gc.collect_captures(
+            "o/r",
+            limit=3,
+            list_runs=list_runs,
+            list_artifacts=lambda _repo, _rid: [{"id": 70, "name": "gate-costs-h"}],
+            download=lambda _repo, _aid: blob,
+        )
+
     monkeypatch.setenv("GITHUB_HEAD_REF", "1008-1")
-    caps, sources, _w = gc.collect_captures("o/r", limit=3, **kwargs)
+    caps, sources, _w = collect()
     assert [s["id"] for s in sources] == [7]
     assert caps[0]["gates"][0]["id"] == "h"
     assert ("workflow_dispatch", "1008-1") in calls
     assert ("schedule", "1008-1") not in calls
     calls.clear()
     monkeypatch.delenv("GITHUB_HEAD_REF")
-    caps, sources, _w = gc.collect_captures("o/r", limit=3, **kwargs)
+    caps, sources, _w = collect()
     assert sources == []
     assert all(branch != "1008-1" for _e, branch in calls)
     for head in ("", "  ", "main"):
         calls.clear()
         monkeypatch.setenv("GITHUB_HEAD_REF", head)
-        caps, sources, _w = gc.collect_captures("o/r", limit=3, **kwargs)
+        caps, sources, _w = collect()
         assert caps == []
         assert sources == []
         assert ("workflow_dispatch", "main") in calls
