@@ -49,7 +49,7 @@ INSTALL_HINT = "bash .ci/bootstrap.sh install aws"
 # `aws --version` prints `aws-cli/2.38.1 Python/3.13.7 Linux/6.8.0 exe/x86_64.ubuntu.24`; v1 prints the same head.
 VERSION_RE = re.compile(r"^aws-cli/([0-9]+(?:\.[0-9]+)*)")
 
-# One probe per cached binary per process, keyed by path, mtime, inode and size (a reinstall replaces the file, so the inode changes even inside one mtime tick): a promote runs thousands of copies, and `aws --version` costs a third of a second on v2.
+# One probe per cached binary per process, keyed by path, mtime, inode and size (a reinstall usually brings a new inode even inside one mtime tick; a reused inode number still has to match the size and the nanosecond mtime): a promote runs thousands of copies, and `aws --version` costs a third of a second on v2.
 _PROBED: dict[tuple[str, int, int, int], str | None] = {}
 
 
