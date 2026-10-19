@@ -1,0 +1,64 @@
+name: Setup the pinned aws CLI
+description: >
+  The aws CLI v2 at the AWSCLI_VERSION pinned in .devcontainer/toolchain.env, installed
+  through `.ci/bootstrap.sh install aws` (the versioned installer, verified against the
+  matching AWSCLI_SHA256_* pin before it is unpacked) and exported as AWS_BIN, so the
+  resolver's first rung (rediacc_ci.core.awscli) beats the runner image's own aws, which
+  changes with each image refresh. Every job that reaches R2 uses this and nothing else
+  to get an aws binary. The checkout must contain .ci and .devcontainer/toolchain.env.
+
+inputs:
+  export-env:
+    description: >
+      'true' appends AWS_BIN to $GITHUB_ENV for every later step of the job. 'false'
+      leaves the env alone and only sets the `aws-bin` output, for a job whose other
+      steps put a recording fake `aws` on PATH and must not see AWS_BIN.
+    required: false
+    default: 'true'
+
+outputs:
+  aws-bin:
+    description: Absolute path of the pinned aws binary.
+    value: ${{ steps.install.outputs.aws-bin }}
+
+runs:
+  using: composite
+  steps:
+    # The pin and its sha256 for THIS runner's platform key the cache, so a version bump
+    # or an installer swap can never restore the previous install.
+    - id: pin
+      shell: bash
+      run: |
+        version="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin aws)"
+        [[ -n "$version" ]] || { echo "::error::AWSCLI_VERSION is not pinned in .devcontainer/toolchain.env"; exit 1; }
+        case "${RUNNER_OS}-${RUNNER_ARCH}" in
+          Linux-X64) sha_key=AWSCLI_SHA256_LINUX_X86_64 ;;
+          Linux-ARM64) sha_key=AWSCLI_SHA256_LINUX_AARCH64 ;;
+          macOS-*) sha_key=AWSCLI_SHA256_DARWIN ;;
+          *) echo "::error::no pinned aws CLI installer for ${RUNNER_OS}-${RUNNER_ARCH}"; exit 1 ;;
+        esac
+        sha="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain value "$sha_key")"
+        [[ -n "$sha" ]] || { echo "::error::${sha_key} is not pinned in .devcontainer/toolchain.env"; exit 1; }
+        echo "version=${version}" >> "$GITHUB_OUTPUT"
+        echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+
+    - id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .ci/cache/toolchain/aws-cli
+        key: awscli-${{ runner.os }}-${{ runner.arch }}-${{ steps.pin.outputs.version }}-${{ steps.pin.outputs.sha }}
+
+    # Idempotent on a cache hit (it finds the pinned binary and downloads nothing); on a
+    # miss it downloads, verifies the sha256 and installs under .ci/cache/toolchain.
+    - id: install
+      shell: bash
+      env:
+        EXPORT_ENV: ${{ inputs.export-env }}
+      run: |
+        bash .ci/bootstrap.sh install aws
+        aws_bin="$(bash .ci/bootstrap.sh which aws --pin)"
+        [[ -x "$aws_bin" ]] || { echo "::error::the pinned aws CLI is not executable at ${aws_bin}"; exit 1; }
+        echo "aws-bin=${aws_bin}" >> "$GITHUB_OUTPUT"
+        if [[ "$EXPORT_ENV" == "true" ]]; then
+          echo "AWS_BIN=${aws_bin}" >> "$GITHUB_ENV"
+        fi

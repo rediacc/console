@@ -69,10 +69,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
   - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (2 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1304 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1306 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
   - epic 4e9f05b6, plan agent/plans/PLAN-backup-program.md, outside the set, 6 commit(s) on the branch, 0 open item(s): backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover
-- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a1ee9389aef244234.
-- Leased items: 3: #1f230501 (worker:1969578, d778be9d), #6361fc5b (worker:bfzggqa0u, d778be9d), #f6fe02a8 (worker:a1ee9389aef244234, d778be9d).
+- Writers: 1 live of writer_cap 15 (session d778be9d): worker:ace69aa1110c3f16c.
+- Leased items: 3: #1f230501 (worker:1969578, d778be9d), #6361fc5b (worker:bfzggqa0u, d778be9d), #f6fe02a8 (worker:ace69aa1110c3f16c, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 

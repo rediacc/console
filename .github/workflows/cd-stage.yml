@@ -98,6 +98,9 @@ jobs:
       # Step 1: Download all build artifacts
       # -----------------------------------------------------------------------
 
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
       - name: Fetch secrets from Bitwarden
         # LIVE: the BWS_ values below are read by this job's steps, flipped from
         # secrets.* by the cutover. The secrets.* reads that remain are the
