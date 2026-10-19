@@ -121,6 +121,9 @@ def build(spec):
         p.write_text(text, encoding="utf-8")
 
     git("init", "-q", "--initial-branch=1008-1")
+    # No detached maintenance after a commit: it holds .git/objects/maintenance.lock past `commit`'s return, and the next build()'s rmtree raced it on CI run 39177571049 (FileNotFoundError: 'maintenance.lock'); the same switch test_wl_scratch.py documents.
+    git("config", "maintenance.auto", "false")
+    git("config", "gc.auto", "0")
     for rel, text in spec["head"].items():
         put(rel, text)
     git("add", "-A")
