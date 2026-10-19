@@ -55,9 +55,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 
 <!-- queue:inflight:begin -->
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
-- Phase: build.
+- Phase: babysit on PR #600 (branch 1008-1, session d778be9d, since 2026-10-18T23:42:01Z).
 - Branch: 1008-1, PR #600 open.
-- Plans on the PR (8):
+- Plans on the PR (10):
   - agent/plans/PLAN-retire-bash-oracles.md -- 15 of 15 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-gate-scheduling-learned.md -- 12 of 12 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-locale-techdiff-resync.md -- 5 of 5 boxes ticked, a turbo batch claim on the `Plan:` line
@@ -66,11 +66,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-plan-per-pr-loop.md -- 15 of 16 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-lessons-registry.md -- 9 of 9 boxes ticked, a turbo batch claim on the `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20260924.md -- 23 of 23 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-remove-cross-session-messaging.md -- 12 of 13 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- 0 of 11 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (2 epic(s)):
-  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1162 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
+  - epic 8ed364fe, plan agent/plans/PLAN-ci-consolidation.md, outside the set, 1280 commit(s) on the branch, 0 open item(s): One registration verb, one freshness registry, one hook gh layer (PLAN-ci-consolidation)
   - epic 4e9f05b6, plan agent/plans/PLAN-backup-program.md, outside the set, 6 commit(s) on the branch, 0 open item(s): backup program: chunk store only, safe restore and retention, GUID identity, renet daemons, offline plane, gates, hostinger cutover
 - Writers: 0 live of writer_cap 15 (session d778be9d).
-- Leased items: 0.
+- Leased items: 3: #1f230501 (worker:3577184, d778be9d), #6361fc5b (worker:bia4s1yih, d778be9d), #6bc7c240 (worker:ad50020017dd9b70a, d778be9d).
 - Next plan: agent/plans/PLAN-remove-cross-session-messaging.md, Promoted entry 6; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
@@ -142,12 +144,13 @@ Promoted: 13 of 17 plans done, 194 of 204 boxes done (95%).
 19. agent/plans/PLAN-config-networkid-sync.md -- P1, draft, not started, dep-blocked
 20. agent/plans/PLAN-plan-compaction-bindings.md -- P1, approved, not started
 21. agent/plans/PLAN-plan-preflight.md -- P1, approved, not started
-22. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
-23. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
-24. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
-25. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
-26. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
-27. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-28. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
-29. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
+22. agent/plans/PLAN-pin-awscli-toolchain-python-compatible.md -- P2, draft, not started
+23. agent/plans/PLAN-retire-bash-oracles.A0.md -- P2, executing, not started
+24. agent/plans/PLAN-chunk-store-browse-toc-and-remote.md -- P3, proposed, not started
+25. agent/plans/PLAN-ci-watch-enforcement.md -- P3, draft, not started
+26. agent/plans/PLAN-cloudflare-proxy.md -- P3, proposed, not started
+27. agent/plans/PLAN-lessons-registry-followups.md -- P3, draft, not started
+28. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+29. agent/plans/PLAN-renet-fetch-hardening.md -- P3, draft, not started
+30. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, not started
 <!-- queue:generated:end -->
