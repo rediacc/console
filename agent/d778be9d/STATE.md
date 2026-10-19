@@ -1,18 +1,16 @@
-## SESSION d778be9d 2026-10-19T03:50:50Z
+## SESSION d778be9d 2026-10-19T08:05:22Z
 
-# STATE d778be9d, 2026-10-19T03:40Z
+# STATE d778be9d, 2026-10-19T08:25Z
 
 Branch 1008-1, PR #600 (draft), renet #117, account #96. Babysit phase on; round log ~/.claude/projects/-home-developer-console/reports/pr-babysit-1008-1.md; hourly heartbeat cron bd2e4323.
 
-Pushed: console 91ec7ba70, renet 993403a, account 3f23a09. CI run 39188334570: all green except Quality / Security budget freshness (GitHub 502 on a 100-job jobs page) and CI Complete.
+Pushed: console 27849014b (run 39215455203: red on budget freshness drift + Pytest 3/4 symlink race), renet 993403a, account 3f23a09.
 
-Local unpushed, reviewed: dcd54c446 (pins go-directive + syncpack ranges), a7a3072db, 5c11d902c and a3aea1df7 (jobs endpoint paged at 50 everywhere).
+Local, unpushed, all reviewed: 51d8c613a caps ruling (build-renet 15, embed assets 13, ceph rpm 18; lane-durations refreshed; carry dropped); 0279aff2f hookio.ensure_world_symlink; 2c69f85e7 Go line = major in pins; 6799d5015 Go 1.27.2 (renet 7f14299, lint 00b9e90 + 42a2777); 6a7c58d1c gopls hold lifted; 0ab26bba4 gopls 0.24.0.
 
-Open decision #23e93715 [?]: a lane-durations refresh fixes 12 budget drift findings but puts Build (Renet) 14.2>12, embed assets 12.4>12, Ceph oracle-10 17.5>16 over operator caps (legit cold renet builds on this branch). DEFAULT: hold the refresh, raise no cap. The refreshed .ci/config/lane-durations.json must not ride a commit unless ruled.
+Operator /ask answers 2026-10-19 (ASKED:2026-10-19T06:57Z): raise caps (done), keep the carry until refresh (done, removed), keep the epic line, move to Go 1.27 (done).
 
 ## Next action
-1. Put .ci/config/lane-durations.json back to its committed bytes (my own regenerated output, uncommitted) so the receipt judges HEAD's tree.
-2. Settle a3aea1df's 3 review findings; review-commit.
-3. ci:quick, then the 3 dropped slow gates, no commit between; push with TURBO_PUSH_REASON='red-fix: ...'.
-4. Watch CI with ci-trace --wait --until-final in the background; budget freshness will show drift until #23e93715 resolves.
-5. On CI Complete green: gh pr ready 600, wl_review --check, wl_prreview --wait and --answer, then /pr-merge.
+1. Read bg task bgz9cfqa0 (ci:quick, 3 dropped slow gates, vm:check --changed). If all pass, push renet then console with TURBO_PUSH_REASON='red-fix: ...'; sync the PR body (PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 600 1008-1).
+2. Arm ci-trace.py --wait --until-final --ref 1008-1 in the background; fix any red per the round log.
+3. On CI Complete green: gh pr ready 600, wl_review.py --check, wl_prreview.py --wait then --answer, then /pr-merge.
