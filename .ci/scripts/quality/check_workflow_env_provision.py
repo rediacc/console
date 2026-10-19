@@ -103,14 +103,14 @@ def module_names(root: pathlib.Path, run: str) -> set[str]:
 
 
 def action_names(root: pathlib.Path, uses: object) -> set[str]:
-    """$GITHUB_ENV names a LOCAL composite action writes (`uses: ./.github/actions/<x>`): one hop into the `>> $GITHUB_ENV` lines of its action.yml run steps; unlike a run block, an action's run text is not followed further into scripts or modules. A malformed action.yml (a scalar document, a scalar `runs`, a non-list `steps`) provides nothing rather than crashing the gate. Added 2026-10-19 when every R2 job gained `./.github/actions/setup-aws`, which exports AWS_BIN, and this gate reported ci.yml validate-promote as using AWS_BIN with no provider."""
+    """$GITHUB_ENV names a LOCAL composite action writes (`uses: ./.github/actions/<x>`): one hop into the `>> $GITHUB_ENV` lines of its action.yml run steps; unlike a run block, an action's run text is not followed further into scripts or modules. A malformed action.yml (bytes that are not UTF-8, a scalar document, a scalar `runs`, a non-list `steps`) provides nothing rather than crashing the gate. Added 2026-10-19 when every R2 job gained `./.github/actions/setup-aws`, which exports AWS_BIN, and this gate reported ci.yml validate-promote as using AWS_BIN with no provider."""
     if not isinstance(uses, str) or not uses.startswith("./"):
         return set()
     base = root / uses.removeprefix("./")
     for name in ("action.yml", "action.yaml"):
         try:
             doc = yaml.safe_load((base / name).read_text(encoding="utf-8"))
-        except (OSError, yaml.YAMLError):
+        except (OSError, UnicodeDecodeError, yaml.YAMLError):
             continue
         runs = doc.get("runs") if isinstance(doc, dict) else None
         steps = runs.get("steps") if isinstance(runs, dict) else None
@@ -311,11 +311,18 @@ def selftest() -> int:
     with tempfile.TemporaryDirectory() as td:
         malformed = pathlib.Path(td) / ".github" / "actions" / "bad"
         malformed.mkdir(parents=True)
-        (malformed / "action.yml").write_text("just a scalar\n", encoding="utf-8")
-        check(
-            "PLANT: a malformed local action.yml provides nothing and does not crash",
-            action_names(pathlib.Path(td), "./.github/actions/bad") == set(),
-        )
+        for label, body in (
+            ("a scalar document", b"just a scalar\n"),
+            ("a scalar runs", b"runs: composite\n"),
+            ("a non-list steps", b"runs:\n  using: composite\n  steps: echo\n"),
+            ("bytes that are not UTF-8", b"runs: \xff\xfe\n"),
+        ):
+            (malformed / "action.yml").write_bytes(body)
+            check(
+                "PLANT: a malformed local action.yml (%s) provides nothing and does not crash"
+                % label,
+                action_names(pathlib.Path(td), "./.github/actions/bad") == set(),
+            )
     # CONTROL on the MODULE half, which is the one the nine jobs now go through: the path form above survives only because the `.sh` file is still on disk, unreferenced, so it would keep passing after the module resolver had gone quiet.
     check(
         "CONTROL: the module hop finds $RENET_BINARY through the cut-over spelling",
