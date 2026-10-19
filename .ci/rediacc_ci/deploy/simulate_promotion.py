@@ -98,7 +98,7 @@ import sys
 import tempfile
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
 from rediacc_ci.deploy import cf_purge_urls
 from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 
@@ -193,13 +193,13 @@ def endpoint_args(endpoint: str) -> list[str]:
 
 def configure_argv(key: str, value: str) -> list[str]:
     """`aws configure set <key> <value>` (twin :62-64)."""
-    return ["aws", "configure", "set", key, value]
+    return [awscli.AWS, "configure", "set", key, value]
 
 
 def list_argv(prefix: str, endpoint: str) -> list[str]:
     """`aws s3 ls "s3://<bucket>/<prefix>" --recursive "${EP[@]}"` (twin :186)."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "ls",
         "s3://%s/%s" % (BUCKET, prefix),
@@ -216,7 +216,7 @@ def copy_object_argv(dst_key: str, src_key: str, endpoint: str) -> list[str]:
     `--metadata-directive REPLACE` is required because a new Cache-Control is being set.
     """
     return [
-        "aws",
+        awscli.AWS,
         "s3api",
         "copy-object",
         "--bucket",
@@ -237,7 +237,7 @@ def copy_object_argv(dst_key: str, src_key: str, endpoint: str) -> list[str]:
 def download_argv(key: str, endpoint: str) -> list[str]:
     """`aws s3 cp "s3://<bucket>/<file>" /tmp/config "${EP[@]}"` (twin :209)."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         "s3://%s/%s" % (BUCKET, key),
@@ -252,7 +252,7 @@ def upload_argv(key: str, endpoint: str) -> list[str]:
     `aws_s3_cp_retry` prepends `s3 cp --cli-read-timeout 0` (twin :81), so the flag lands BEFORE the two paths rather than at the end.
     """
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         "--cli-read-timeout",
@@ -296,7 +296,7 @@ def _flush() -> None:
 def _run(argv: list[str], **kwargs) -> int:
     """One child with BOTH streams inherited unless a caller says otherwise."""
     _flush()
-    return subprocess.run(argv, check=False, **kwargs).returncode
+    return awscli.run(argv, **kwargs).returncode
 
 
 def _sleep(seconds: int) -> None:
@@ -315,11 +315,7 @@ def list_keys(prefix: str, endpoint: str) -> list[str]:
     THE TEMPORARY FILE IS REAL, because the twin reads it twice (once for the copies, once for the purge URLs) and `[[ -s ]]` asks about the FILE. Its name is `mktemp`'s and appears nowhere observable.
     """
     _flush()
-    listing = subprocess.run(
-        list_argv(prefix, endpoint),
-        capture_output=True,
-        check=False,
-    )
+    listing = awscli.run(list_argv(prefix, endpoint), capture_output=True)
     if listing.returncode and (
         listing.returncode != EMPTY_LISTING_EXIT or listing.stdout or listing.stderr.strip()
     ):
@@ -479,7 +475,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     try:
-        common.require_cmd("aws")
+        awscli.require()
     except common.RefusalError as exc:
         exc.report()
         return exc.code

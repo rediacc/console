@@ -294,6 +294,9 @@ jobs:
       - name: Allowlist key matching
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_allowlist_key_matching.py
+      - name: aws resolver
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_aws_resolver.py
       - name: Bash-lib port completeness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_bash_lib_ported.py

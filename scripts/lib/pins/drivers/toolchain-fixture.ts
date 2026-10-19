@@ -139,6 +139,13 @@ export function stubUpstream(answers: Record<string, Answer>): Upstream & { aske
       const a = get(url);
       return Promise.resolve(typeof a === 'string' ? a : JSON.stringify(a));
     },
+    sha256(url) {
+      // Answered from the key `sha256:<url>`, so a digest is never mistaken for a listing body.
+      const a = get(`sha256:${url}`);
+      return typeof a === 'string'
+        ? Promise.resolve(a)
+        : Promise.reject(new UnreadableListing('not a digest'));
+    },
     lastModified(url) {
       const a = answers[url];
       asked.push(url);

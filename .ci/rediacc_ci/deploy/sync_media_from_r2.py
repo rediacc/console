@@ -75,11 +75,10 @@ K=5 LEDGER: `.ci/shadow/w7p6-sync-media-from-r2.observations.jsonl`.
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
 
 # `BUCKET="rediacc-www-media"` (twin :48). Hard-coded there, hard-coded here.
 BUCKET = "rediacc-www-media"
@@ -260,7 +259,7 @@ def sync_args(endpoint: str, *, dry_run: bool) -> list[str]:
 
 def download_argv(remote_prefix: str, local_dir: str, args: list[str]) -> list[str]:
     """`aws s3 sync "s3://$BUCKET/$remote_prefix" "$local_dir" "${SYNC_ARGS[@]}"` (twin :107)."""
-    return ["aws", "s3", "sync", "s3://%s/%s" % (BUCKET, remote_prefix), local_dir, *args]
+    return [awscli.AWS, "s3", "sync", "s3://%s/%s" % (BUCKET, remote_prefix), local_dir, *args]
 
 
 def _run(argv: list[str], env: dict[str, str]) -> None:
@@ -268,7 +267,7 @@ def _run(argv: list[str], env: dict[str, str]) -> None:
 
     stdout and stderr are INHERITED, not captured: the twin does not capture them either, and `aws --no-progress` still writes a `download: ...` line per object that a caller reads as the record of what moved.
     """
-    proc = subprocess.run(argv, env=env, check=False)
+    proc = awscli.run(argv, env=env)
     if proc.returncode != 0:
         raise BashExitError(proc.returncode)
 
@@ -311,7 +310,7 @@ def main(argv: list[str]) -> int:
         return exc.code
 
     try:
-        common.require_cmd("aws")
+        awscli.require()
     except common.RefusalError as exc:
         exc.report()
         return exc.code

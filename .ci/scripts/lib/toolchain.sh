@@ -65,6 +65,7 @@ toolchain_keys() {
 #   - npm         11.20.0
 #   - uv          uv 0.12.10
 #   - pytest      pytest 9.1.1
+#   - aws         aws-cli/2.38.1 Python/3.13.7 Linux/6.8.0 exe/x86_64.ubuntu.24
 #
 # (the leading dashes matter: a comment whose first word is the name of a linter
 # is parsed by that linter as a DIRECTIVE, and this table broke its own gate)
@@ -85,6 +86,12 @@ toolchain_probe_version() {
         # pytest exists at all on a host with no pip.
         uv) out="$($bin --version 2>/dev/null | awk '{print $2}')" ;;
         pytest) out="$($bin --version 2>/dev/null | head -1 | awk '{print $2}')" ;;
+        # The aws CLI prints `aws-cli/2.38.1 Python/3.13.7 Linux/6.8.0 ...`: the first
+        # word, with its `aws-cli/` prefix stripped.
+        aws)
+            out="$("$bin" --version 2>/dev/null | head -1 | awk '{print $1}')"
+            out="${out#aws-cli/}"
+            ;;
         *) return 2 ;;
     esac
     # Strip a leading v or go, then keep the leading dotted-numeric run.
@@ -116,6 +123,7 @@ toolchain_pin_for() {
         npm) key=NPM_VERSION ;;
         uv) key=UV_VERSION ;;
         pytest) key=PYTEST_VERSION ;;
+        aws) key=AWSCLI_VERSION ;;
         *) return 2 ;;
     esac
     printf '%s' "${!key:-}"

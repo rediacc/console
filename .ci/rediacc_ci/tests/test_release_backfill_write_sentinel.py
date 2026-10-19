@@ -49,8 +49,13 @@ def test_the_subject_cannot_reach_aws() -> None:
 
 
 def run_port(env_extra: dict[str, str]) -> tuple[int, str, str]:
+    path = masked_path()
     env = diff.env_for(
-        **env_extra, PATH=masked_path(), PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"
+        **env_extra,
+        **pathmask.no_aws(pathlib.Path(os.devnull)),
+        PATH=path,
+        PYTHONPATH=".ci",
+        PYTHONDONTWRITEBYTECODE="1",
     )
     return diff.bash_streams("python3 -m rediacc_ci.release.%s" % MODULE, env=env, timeout=30)
 

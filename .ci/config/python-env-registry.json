@@ -235,6 +235,10 @@
     ".ci/rediacc_ci/core/advisory.py": [
       "CI"
     ],
+    ".ci/rediacc_ci/core/awscli.py": [
+      "AWS_BIN",
+      "PATH"
+    ],
     ".ci/rediacc_ci/core/bws_env.py": [
       "*local",
       "*s[1]",
@@ -1414,6 +1418,9 @@
     ],
     ".ci/rediacc_ci/tests/test_bench_preflight.py": [
       "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_bootstrap_aws_resolver.py": [
+      "HOME"
     ],
     ".ci/rediacc_ci/tests/test_build_build_json.py": [
       "HOME"

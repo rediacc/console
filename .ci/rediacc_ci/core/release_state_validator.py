@@ -132,6 +132,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import awscli
 from rediacc_ci.well_known import RELEASES_BUCKET
 
 # `RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"` (release-state-validator.sh:72).
@@ -223,9 +224,11 @@ def _run(argv: list[str], *, cwd: str | None = None) -> subprocess.CompletedProc
     The twin's callers run `require_cmd aws` up front, so `aws` vanishing mid-run is not a case any of them handle. Returning 127 with the message on stderr keeps that in the "could not tell" bucket, which is the direction this whole library errs in.
     """
     try:
-        return subprocess.run(argv, capture_output=True, text=True, check=False, cwd=cwd)
+        return awscli.run(argv, capture_output=True, text=True, cwd=cwd)
     except FileNotFoundError:
         return subprocess.CompletedProcess(argv, 127, "", "%s: command not found\n" % argv[0])
+    except awscli.AwsCliMissingError as exc:
+        return subprocess.CompletedProcess(argv, 127, "", "%s\n" % exc)
 
 
 # --------------------------------------------------------------------------- Live probes (AWS + git) ---------------------------------------------------------------------------
@@ -249,7 +252,7 @@ def list_sentinels(product: str, endpoint: str | None = None) -> list[str]:
         )
     proc = _run(
         [
-            "aws",
+            awscli.AWS,
             "s3api",
             "list-objects-v2",
             "--bucket",
@@ -292,7 +295,7 @@ def prefix_nonempty(prefix: str, endpoint: str | None = None) -> Probe:
     """
     proc = _run(
         [
-            "aws",
+            awscli.AWS,
             "s3api",
             "list-objects-v2",
             "--bucket",
@@ -331,7 +334,7 @@ def binary_count(prefix: str, endpoint: str | None = None) -> int | None:
     """
     proc = _run(
         [
-            "aws",
+            awscli.AWS,
             "s3api",
             "list-objects-v2",
             "--bucket",
@@ -375,7 +378,7 @@ def sentinel_exists(product: str, version: str, endpoint: str | None = None) -> 
     """
     proc = _run(
         [
-            "aws",
+            awscli.AWS,
             "s3api",
             "head-object",
             "--bucket",
@@ -407,7 +410,7 @@ def get_sentinel_payload(product: str, version: str, endpoint: str | None = None
     """
     proc = _run(
         [
-            "aws",
+            awscli.AWS,
             "s3",
             "cp",
             "s3://%s/%s/%s/%s" % (bucket(), product, version, SENTINEL_KEY),

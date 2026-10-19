@@ -510,17 +510,26 @@ RUN : "${NPM_BEFORE:?NPM_BEFORE is empty; build with --build-arg NPM_BEFORE set 
 # The bundled installer, not pip: the host has no pip at all (python3 carries no
 # pip module), so a pip-based install would reproduce the same "works in CI,
 # not here" gap one layer down.
-RUN ARCH=$(dpkg --print-architecture) \
-    && case "$ARCH" in \
-    amd64) AWS_ARCH=x86_64 ;; \
-    arm64) AWS_ARCH=aarch64 ;; \
-    *) echo "unsupported arch for awscli: $ARCH" >&2; exit 1 ;; \
+#
+# AT THE PIN since 2026-10-19: AWS's VERSIONED installer for AWSCLI_VERSION, never
+# the unversioned latest URL, checked against the sha256 toolchain.env records for
+# this arch BEFORE it is unpacked (the same asset and hash .ci/bootstrap.sh
+# install_aws uses). Installed to /usr/local so the R2 tools resolve it on PATH
+# (rediacc_ci.core.awscli, rung 2), and verified by the version it reports.
+RUN . /etc/rediacc/toolchain.env \
+    && : "${AWSCLI_VERSION:?toolchain.env did not define AWSCLI_VERSION}" \
+    && case "$(dpkg --print-architecture)" in \
+    amd64) AWS_ARCH=x86_64 AWS_SHA="${AWSCLI_SHA256_LINUX_X86_64:?}" ;; \
+    arm64) AWS_ARCH=aarch64 AWS_SHA="${AWSCLI_SHA256_LINUX_AARCH64:?}" ;; \
+    *) echo "unsupported arch for awscli: $(dpkg --print-architecture)" >&2; exit 1 ;; \
     esac \
-    && curl -fsSL $CURL_RETRY -o /tmp/awscliv2.zip "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}.zip" \
+    && curl -fsSL $CURL_RETRY -o /tmp/awscliv2.zip \
+        "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_ARCH}-${AWSCLI_VERSION}.zip" \
+    && echo "${AWS_SHA}  /tmp/awscliv2.zip" | sha256sum -c - \
     && unzip -q /tmp/awscliv2.zip -d /tmp \
     && /tmp/aws/install \
     && rm -rf /tmp/aws /tmp/awscliv2.zip \
-    && aws --version
+    && aws --version | grep -q "^aws-cli/${AWSCLI_VERSION} "
 
 # glab — GitLab CLI (https://gitlab.com/gitlab-org/cli)
 ARG GLAB_VERSION=1.90.0

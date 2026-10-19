@@ -32,6 +32,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import channel_snapshot, r2_promote
 from rediacc_ci.deploy import upload_repos_to_r2 as port
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import pathmask
 from rediacc_ci.tests.twin_names import as_twin
 from rediacc_ci.tests.wkloader import copy_loader
 from rediacc_ci.well_known import CF_API_BASE, RELEASES_BUCKET, RELEASES_ORIGIN
@@ -355,6 +356,8 @@ def _run_live(
         "FAKE_CALL_LOG": str(call_log),
         **BASE_ENV,
     }
+    if drop == "aws":
+        env.update(pathmask.no_aws(root))
     env.update(extra)
     for name in drop_env:
         env.pop(name, None)

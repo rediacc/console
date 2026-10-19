@@ -41,11 +41,10 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
 from rediacc_ci.deploy import cf_purge_urls, channel_stamp, promote_r2_to_stable, r2_promote
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
@@ -161,7 +160,7 @@ def _flush() -> None:
 def _run(argv: list[str], **kwargs) -> int:
     """One unguarded command with BOTH streams inherited, as the twin leaves them."""
     _flush()
-    return subprocess.run(argv, check=False, **kwargs).returncode
+    return awscli.run(argv, **kwargs).returncode
 
 
 def _promote_dirs(endpoint: str) -> list[str]:
@@ -201,7 +200,7 @@ def main(argv: list[str]) -> int:
     del argv  # the twin takes no argv, and says so at :22-23
 
     try:
-        common.require_cmd("aws")
+        awscli.require()
     except common.RefusalError as exc:
         exc.report()
         return exc.code

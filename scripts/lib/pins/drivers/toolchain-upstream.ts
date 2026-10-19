@@ -12,9 +12,16 @@
  * that was not answered throws NotCompared, and an answer that cannot be used throws
  * UnreadableListing; the driver turns either into a refusal or an "uncompared" view.
  */
+import crypto from 'node:crypto';
 import { WK_GH_API_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { githubApiHeaders } from '../../github-token.js';
-import { askUpstream, NotCompared, UnreadableListing } from '../../upstream.js';
+import {
+  askUpstream,
+  type Failure,
+  NotCompared,
+  retryUpstream,
+  UnreadableListing,
+} from '../../upstream.js';
 
 const USER_AGENT = 'rediacc-pins';
 
@@ -24,6 +31,39 @@ export interface Upstream {
   text(url: string, who: string): Promise<string>;
   /** The Last-Modified instant of a resource (HEAD), or null when the host sends none or the request fails. */
   lastModified(url: string, who: string): Promise<number | null>;
+  /**
+   * The sha256 of the bytes at `url`, for an upstream that publishes no digest beside its
+   * assets (AWS's versioned aws CLI installers): the driver downloads the asset and hashes it.
+   * Optional, so a fixture that never names such an asset needs no answer for it.
+   */
+  sha256?(url: string, who: string): Promise<string>;
+}
+
+/** A whole installer is tens of megabytes, so its download gets far more than the 15 s listing budget. */
+const ASSET_TIMEOUT_MS = 300_000;
+
+/** One GET of a binary asset, hashed as it arrives; a non-2xx or a dropped connection is a failed attempt. */
+async function hashOnce(url: string, who: string): Promise<{ value: string } | Failure> {
+  try {
+    const res = await fetch(url, {
+      headers: headersFor(url),
+      signal: AbortSignal.timeout(ASSET_TIMEOUT_MS),
+    });
+    if (!res.ok || res.body === null)
+      return {
+        what: `HTTP ${res.status} for ${who}`,
+        retry: res.status >= 500 || res.status === 429,
+        status: res.status,
+        retryAfterS: null,
+        unreachable: false,
+      };
+    const hash = crypto.createHash('sha256');
+    for await (const chunk of res.body) hash.update(chunk);
+    return { value: hash.digest('hex') };
+  } catch (err) {
+    const what = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    return { what, retry: true, status: null, retryAfterS: null, unreachable: true };
+  }
 }
 
 const headersFor = (url: string): Record<string, string> =>
@@ -67,6 +107,13 @@ export function networkUpstream(): Upstream {
           if (err instanceof NotCompared) return null;
           throw err;
         }
+      }),
+    sha256: (url, who) =>
+      memo(bodies, `sha256:${url}`, () => {
+        const u = new URL(url);
+        return retryUpstream({ asked: `GET ${u.host}${u.pathname}`, host: u.host, who }, () =>
+          hashOnce(url, who)
+        );
       }),
   };
 }

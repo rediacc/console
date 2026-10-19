@@ -282,6 +282,9 @@ def _mode(strict: bool) -> str:
 # `.claude/rediacc_hooks/tests/test_project_dir_containment.py` is the control: it runs a nested suite with the variable aimed at a sentinel tree and requires the tree to come back byte-identical.
 HARNESS_ROOT_ENV = ("CLAUDE_PROJECT_DIR",)
 
+# The explicit aws binary, dropped for the same reason and at the same point. CI exports `AWS_BIN` at the pinned aws CLI (`rediacc_ci.core.awscli`, whose first rung it is), and every test that puts a recording fake `aws` on PATH expects the PATH rung to answer; an inherited `AWS_BIN` would send those calls to the real CLI instead. A test that wants the rung sets it itself.
+AWS_BIN_ENV = ("AWS_BIN",)
+
 
 # --------------------------------------------------------------------------- The temp filesystem's capacity, refused up front (worklist #edd646a8).
 #
@@ -323,8 +326,8 @@ def _named_paths_or_exit(config: pytest.Config) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Drop the harness's project root, refuse a temp filesystem below its floor and a named path that does not exist, then install the write record once per process, rooted at the rootdir."""
-    for name in HARNESS_ROOT_ENV:
+    """Drop the harness's project root and AWS_BIN, refuse a temp filesystem below its floor and a named path that does not exist, then install the write record once per process, rooted at the rootdir."""
+    for name in (*HARNESS_ROOT_ENV, *AWS_BIN_ENV):
         os.environ.pop(name, None)
     _tmp_capacity_or_exit(config)
     _named_paths_or_exit(config)

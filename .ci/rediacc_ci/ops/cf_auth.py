@@ -28,7 +28,7 @@ import time
 import typing
 
 from rediacc_ci import log
-from rediacc_ci.core import curl_stdin
+from rediacc_ci.core import awscli, curl_stdin
 from rediacc_ci.well_known import CF_API_BASE as WK_CF_API_BASE
 
 CF_API_BASE = WK_CF_API_BASE
@@ -347,13 +347,18 @@ def self_destruct(auth: Auth | None, delete_aws: bool = False) -> None:
     aws_key = os.environ.get("AWS_SES_ADMIN_KEY_ID")
     if delete_aws and aws_key:
         log.step("Deleting AWS admin key: %s" % aws_key)
-        proc = subprocess.run(
-            ["aws", "iam", "delete-access-key", "--access-key-id", aws_key],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.returncode != 0:
+        try:
+            proc = awscli.run(
+                [awscli.AWS, "iam", "delete-access-key", "--access-key-id", aws_key],
+                capture_output=True,
+                text=True,
+            )
+            status = proc.returncode
+        except (OSError, awscli.AwsCliMissingError) as exc:
+            # No aws CLI at all used to escape this function as FileNotFoundError, against its "never raises" contract.
+            log.warn("aws CLI unavailable: %s" % exc)
+            status = 127
+        if status != 0:
             log.warn("Failed to delete AWS admin key: %s" % aws_key)
             log.warn(
                 "Manually delete it from: https://us-east-1.console.aws.amazon.com/iam/home#/security_credentials"

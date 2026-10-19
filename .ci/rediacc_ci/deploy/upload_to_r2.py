@@ -112,6 +112,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
+from rediacc_ci.core import awscli
 from rediacc_ci.deploy import channel_snapshot, write_once_guard
 from rediacc_ci.release import check_stable_manifest, retention_contract
 from rediacc_ci.well_known import RELEASES_BUCKET
@@ -229,7 +230,7 @@ def skip_banner(version: str, channel: str) -> list[str]:
 def cp_argv(src: str, full_dest: str, endpoint: str, cache_control: str) -> list[str]:
     """`r2_cp` (:193-196). Flag ORDER is the twin's and is part of the call log."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         src,
@@ -245,7 +246,7 @@ def cp_argv(src: str, full_dest: str, endpoint: str, cache_control: str) -> list
 def put_argv(full_dest: str, endpoint: str, content_type: str) -> list[str]:
     """`r2_put` (:213-217). Always the MUTABLE policy: its only callers are the three channel pointers (`latest.json`, `manifest.json`, `versions.json`)."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         "-",
@@ -262,12 +263,12 @@ def put_argv(full_dest: str, endpoint: str, content_type: str) -> list[str]:
 
 def rm_argv(full_path: str, endpoint: str) -> list[str]:
     """`r2_rm` (:227-228)."""
-    return ["aws", "s3", "rm", full_path, "--recursive", "--endpoint-url", endpoint]
+    return [awscli.AWS, "s3", "rm", full_path, "--recursive", "--endpoint-url", endpoint]
 
 
 def get_argv(full_path: str, endpoint: str) -> list[str]:
     """`r2_get` (:301-302)."""
-    return ["aws", "s3", "cp", full_path, "-", "--endpoint-url", endpoint]
+    return [awscli.AWS, "s3", "cp", full_path, "-", "--endpoint-url", endpoint]
 
 
 def r2_path(kind: str, channel: str, rest: str) -> str:
@@ -312,9 +313,7 @@ class Uploader:
             )
             return
         _flush()
-        status = subprocess.run(
-            cp_argv(src, full_dest, self.endpoint, cache_control), check=False
-        ).returncode
+        status = awscli.run(cp_argv(src, full_dest, self.endpoint, cache_control)).returncode
         if status:
             raise BashExitError(status)
 
@@ -339,12 +338,11 @@ class Uploader:
             )
             return
         _flush()
-        status = subprocess.run(
+        status = awscli.run(
             put_argv(full_dest, self.endpoint, content_type),
             input=content + "\n",
             stdout=subprocess.DEVNULL if quiet else None,
             text=True,
-            check=False,
         ).returncode
         if status:
             # Under `pipefail` the pipeline's status is aws's; `echo` cannot fail.
@@ -359,10 +357,9 @@ class Uploader:
             log.info("[DRY-RUN] Would delete: s3://%s/%s" % (self.bucket, path))
             return
         _flush()
-        subprocess.run(
+        awscli.run(
             rm_argv("s3://%s/%s" % (self.bucket, path), self.endpoint),
             stderr=subprocess.DEVNULL,
-            check=False,
         )
 
     def r2_get(self, path: str) -> str:
@@ -371,12 +368,11 @@ class Uploader:
         The `|| echo ""` appends a newline on failure, and `$( )` then strips every trailing newline, so a FAILED read is indistinguishable from an absent object. A partial read followed by a failure keeps the partial bytes, which is reproduced rather than tidied.
         """
         _flush()
-        proc = subprocess.run(
+        proc = awscli.run(
             get_argv("s3://%s/%s" % (self.bucket, path), self.endpoint),
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
             text=True,
-            check=False,
         )
         out = proc.stdout
         if proc.returncode:

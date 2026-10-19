@@ -9,7 +9,7 @@ or pointed one at the wrong prefix would print identical output and exit 0. `tes
 
 EVERY RUN HAPPENS IN A COPIED TREE UNDER `tmp_path`, NEVER IN THE CHECKOUT, and that is a correctness requirement rather than tidiness. Both implementations derive `REPO_ROOT` from their OWN location (`<file>/../../..`), and the script's one on-disk side effect is `mkdir -p` under `packages/www/public/assets/`. Run
 from the real checkout it would create directories in a tree several other
-sessions are working in, and the skip/no-skip behaviour of the upload twin could not be exercised at all. Copying the eight files each side needs into `tmp_path` makes `REPO_ROOT` the fixture, gives every test its own filesystem state, and removes any need for a machine-wide lock: `tmp_path` is unique per test, so two concurrent runs of this file in one checkout cannot collide.
+sessions are working in, and the skip/no-skip behaviour of the upload twin could not be exercised at all. Copying the files each side needs into `tmp_path` makes `REPO_ROOT` the fixture, gives every test its own filesystem state, and removes any need for a machine-wide lock: `tmp_path` is unique per test, so two concurrent runs of this file in one checkout cannot collide.
 
 BOTH SIDES ARE RE-RUN FROM THE SAME STARTING STATE. `restore_dir` creates directories, so the second side would otherwise see a tree the first side built. `run_both` rebuilds `packages/` before each side.
 """
@@ -37,7 +37,7 @@ TWIN_REL = ".ci/scripts/deploy/sync-media-from-r2.sh"
 PORT_REL = ".ci/rediacc_ci/deploy/sync_media_from_r2.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The eight files a fixture tree needs: the twin, the bash library it sources, and the Python package the port imports. Listed explicitly rather than copytree'd, so a new dependency shows up here as an edit instead of being dragged in silently by a wildcard.
+# The files a fixture tree needs: the twin, the bash library it sources, and the Python package the port imports. Listed explicitly rather than copytree'd, so a new dependency shows up here as an edit instead of being dragged in silently by a wildcard.
 TREE_FILES = (
     ".ci/rediacc_ci/__init__.py",
     ".ci/rediacc_ci/log.py",
@@ -45,7 +45,9 @@ TREE_FILES = (
     ".ci/rediacc_ci/well_known.py",
     ".ci/config/well-known.env",
     ".ci/rediacc_ci/core/__init__.py",
+    ".ci/rediacc_ci/core/awscli.py",
     ".ci/rediacc_ci/core/common.py",
+    ".ci/rediacc_ci/core/toolchain.py",
     ".ci/rediacc_ci/deploy/__init__.py",
     PORT_REL,
 )

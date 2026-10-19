@@ -108,7 +108,7 @@ import subprocess
 import sys
 import tempfile
 
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
 from rediacc_ci.deploy import cf_purge_urls, channel_snapshot, r2_promote, transfer_retry
 from rediacc_ci.deploy.promote_r2_to_stable import META_EXCLUDES
 from rediacc_ci.release import check_soak_period, check_stable_manifest
@@ -243,7 +243,7 @@ def skip_banner(channel: str) -> list[str]:
 def sync_argv(fmt: str, channel: str, endpoint: str) -> list[str]:
     """One `aws s3 sync dist/repos/<fmt> s3://.../<fmt>/<channel>/` (:116-118)."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "sync",
         "dist/repos/%s" % fmt,
@@ -259,7 +259,7 @@ def sync_argv(fmt: str, channel: str, endpoint: str) -> list[str]:
 def cp_argv(source: str, channel: str, name: str, endpoint: str) -> list[str]:
     """One `aws s3 cp <tmp> s3://.../cli/<channel>/<name>` (:148-150)."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         source,
@@ -292,7 +292,7 @@ def sed_argv(channel: str, source: str) -> list[str]:
 def snapshot_sync_argv(fmt: str, version: str, endpoint: str) -> list[str]:
     """Delta step 1: `aws s3 sync dist/repos/<fmt> s3://.../snapshots/v<V>/<fmt>/` restricted to the metadata files."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "sync",
         "dist/repos/%s" % fmt,
@@ -309,7 +309,7 @@ def snapshot_sync_argv(fmt: str, version: str, endpoint: str) -> list[str]:
 def snapshot_cp_argv(source: str, key: str, endpoint: str) -> list[str]:
     """One `aws s3 cp <file> s3://.../<key>` into a snapshot."""
     return [
-        "aws",
+        awscli.AWS,
         "s3",
         "cp",
         source,
@@ -357,9 +357,7 @@ def _seal_snapshot(version: str, endpoint: str) -> None:
     """Delta step 3: verify the snapshot by listing it, then write the marker LAST."""
     root = channel_snapshot.prefix(version)
     _flush()
-    proc = subprocess.run(
-        r2_promote.list_argv(root, endpoint), check=False, capture_output=True, text=True
-    )
+    proc = awscli.run(r2_promote.list_argv(root, endpoint), capture_output=True, text=True)
     if proc.returncode:
         sys.stderr.write(proc.stderr)
         print("%s: listing %s failed (exit %d)" % (SELF, root, proc.returncode), file=sys.stderr)
@@ -456,7 +454,7 @@ def _flush() -> None:
 def _run(argv: list[str], **kwargs) -> int:
     """One unguarded command with BOTH streams inherited, as the twin leaves them."""
     _flush()
-    return subprocess.run(argv, check=False, **kwargs).returncode
+    return awscli.run(argv, **kwargs).returncode
 
 
 def _transfer(argv: list[str], what: str) -> int:
@@ -470,7 +468,7 @@ def _transfer(argv: list[str], what: str) -> int:
     def attempt() -> tuple[int, str]:
         attempts[0] += 1
         _flush()
-        proc = subprocess.run(argv, check=False, stderr=subprocess.PIPE)
+        proc = awscli.run(argv, stderr=subprocess.PIPE)
         sys.stderr.buffer.write(proc.stderr)
         sys.stderr.flush()
         last_error[0] = proc.stderr.decode("utf-8", "replace")
@@ -575,13 +573,13 @@ def _purge(urls: list[str], zone: str) -> None:
 
 def get_argv(key: str, endpoint: str) -> list[str]:
     """`aws s3 cp s3://<bucket>/<key> -`: one small object to stdout."""
-    return ["aws", "s3", "cp", "s3://%s/%s" % (BUCKET, key), "-", "--endpoint-url", endpoint]
+    return [awscli.AWS, "s3", "cp", "s3://%s/%s" % (BUCKET, key), "-", "--endpoint-url", endpoint]
 
 
 def _read_object(key: str, endpoint: str) -> str | None:
     """One small object's text, or None when it cannot be read. aws's stderr is captured, not shown: the caller decides what an unreadable object means."""
     _flush()
-    proc = subprocess.run(get_argv(key, endpoint), check=False, capture_output=True)
+    proc = awscli.run(get_argv(key, endpoint), capture_output=True)
     if proc.returncode:
         return None
     return proc.stdout.decode("utf-8", "replace")
@@ -679,7 +677,7 @@ def main(argv: list[str]) -> int:
     del argv  # the twin takes no argv, and says so at :62
 
     try:
-        common.require_cmd("aws")
+        awscli.require()
     except common.RefusalError as exc:
         exc.report()
         return exc.code

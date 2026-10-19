@@ -38,7 +38,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
 from rediacc_ci.core import release_state_validator as rsv
 
 PRODUCT = "cli"
@@ -177,9 +177,9 @@ def write_sentinel(product: str, version_tag: str, channel: str, commit_sha: str
 
     log.step("writing sentinel: s3://%s/%s" % (bucket, key))
     # `printf '%s' "$payload" | aws s3 cp - s3://...` under `set -euo pipefail`: this script, unlike its two verify- siblings, keeps pipefail ON, so a failing aws aborts the run.
-    proc = subprocess.run(
+    proc = awscli.run(
         [
-            "aws",
+            awscli.AWS,
             "s3",
             "cp",
             "-",
@@ -195,7 +195,6 @@ def write_sentinel(product: str, version_tag: str, channel: str, commit_sha: str
         stdout=None,
         stderr=None,
         text=True,
-        check=False,
     )
     if proc.returncode != 0:
         raise _UploadFailedError(proc.returncode)
@@ -255,7 +254,7 @@ def main(argv: list[str]) -> int:
         return 2
 
     try:
-        common.require_cmd("aws")
+        awscli.require()
         common.require_cmd("jq")
         access_key = common.require_var("CLOUDFLARE_R2_ACCESS_KEY_ID")
         secret_key = common.require_var("CLOUDFLARE_R2_SECRET_ACCESS_KEY")

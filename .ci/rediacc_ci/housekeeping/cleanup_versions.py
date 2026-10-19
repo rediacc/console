@@ -116,7 +116,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common, curl_stdin, gh_retry
+from rediacc_ci.core import awscli, common, curl_stdin, gh_retry
 from rediacc_ci.core import release_state_validator as rsv
 from rediacc_ci.housekeeping.cleanup_pr_environments import PrStateReader
 from rediacc_ci.release import check_stable_manifest, retention_contract
@@ -321,7 +321,7 @@ def _capture(argv: list[str], *, stderr: int | None, stdin: str | None = None) -
     sys.stdout.flush()
     sys.stderr.flush()
     try:
-        proc = subprocess.run(
+        proc = awscli.run(
             argv,
             input=None if stdin is None else stdin.encode("utf-8"),
             stdout=subprocess.PIPE,
@@ -441,7 +441,7 @@ def capture_merged(argv: list[str]) -> tuple[int, str]:
     sys.stdout.flush()
     sys.stderr.flush()
     try:
-        proc = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
+        proc = awscli.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False)
     except FileNotFoundError:
         return 127, "%s: command not found" % argv[0]
     return proc.returncode, proc.stdout.decode("utf-8", "replace").rstrip("\n")
@@ -453,7 +453,7 @@ def run_silent(argv: list[str]) -> int:
     sys.stderr.flush()
     with open(os.devnull, "wb") as null:
         try:
-            return subprocess.run(argv, stdout=null, stderr=null, check=False).returncode
+            return awscli.run(argv, stdout=null, stderr=null, check=False).returncode
         except FileNotFoundError:
             return 127
 
@@ -467,7 +467,7 @@ def run_quiet_err(argv: list[str]) -> int:
     sys.stderr.flush()
     with open(os.devnull, "wb") as null:
         try:
-            return subprocess.run(argv, stderr=null, check=False).returncode
+            return awscli.run(argv, stderr=null, check=False).returncode
         except FileNotFoundError:
             return 127
 
@@ -477,7 +477,7 @@ def run_plain(argv: list[str]) -> int:
     sys.stdout.flush()
     sys.stderr.flush()
     try:
-        return subprocess.run(argv, check=False).returncode
+        return awscli.run(argv, check=False).returncode
     except FileNotFoundError:
         sys.stderr.write("%s: command not found\n" % argv[0])
         sys.stderr.flush()
@@ -856,7 +856,7 @@ def _capture_raw(argv: list[str]) -> tuple[int, str]:
     sys.stderr.flush()
     with open(os.devnull, "wb") as null:
         try:
-            proc = subprocess.run(argv, stdout=subprocess.PIPE, stderr=null, check=False)
+            proc = awscli.run(argv, stdout=subprocess.PIPE, stderr=null, check=False)
         except FileNotFoundError:
             return 127, ""
     return proc.returncode, proc.stdout.decode("utf-8", "replace")
@@ -871,7 +871,7 @@ def _capture_stderr(argv: list[str]) -> tuple[int, str]:
     sys.stderr.flush()
     with open(os.devnull, "wb") as null:
         try:
-            proc = subprocess.run(argv, stdout=null, stderr=subprocess.PIPE, check=False)
+            proc = awscli.run(argv, stdout=null, stderr=subprocess.PIPE, check=False)
         except FileNotFoundError:
             return 127, "%s: command not found" % argv[0]
     return proc.returncode, proc.stderr.decode("utf-8", "replace").rstrip("\n")
@@ -1156,7 +1156,7 @@ class Housekeeping:
         common.require_cmd("gh")
         common.require_cmd("jq")
         common.require_cmd("curl")
-        common.require_cmd("aws")
+        awscli.require()
         common.require_var("GH_TOKEN")
 
         # :142 and :147.
@@ -1292,7 +1292,7 @@ class Housekeeping:
         if self.r2_credentials_exported():
             code, text = capture_quiet(
                 [
-                    "aws",
+                    awscli.AWS,
                     "s3",
                     "cp",
                     "s3://%s/%s/stable/manifest.json" % (rsv.bucket(), SENTINEL_PRODUCT),
@@ -2499,7 +2499,7 @@ class Housekeeping:
         """
         _code, out = _capture_raw(
             [
-                "aws",
+                awscli.AWS,
                 "s3",
                 "ls",
                 "s3://%s/%s" % (self.r2_bucket, prefix),
@@ -2517,7 +2517,7 @@ class Housekeeping:
         """
         code, stamp = capture_quiet(
             [
-                "aws",
+                awscli.AWS,
                 "s3api",
                 "list-objects-v2",
                 "--bucket",
@@ -2551,7 +2551,7 @@ class Housekeeping:
             return
         run_quiet_err(
             [
-                "aws",
+                awscli.AWS,
                 "s3",
                 "rm",
                 "s3://%s/%s" % (self.r2_bucket, prefix),
@@ -2808,7 +2808,7 @@ class Housekeeping:
                 continue
             code, raw = _capture_raw(
                 [
-                    "aws",
+                    awscli.AWS,
                     "s3",
                     "ls",
                     "s3://%s/%s" % (self.r2_bucket, channel_root),
@@ -2859,7 +2859,7 @@ class Housekeeping:
         log.step("  8e: abort multipart uploads older than 24h")
         code, uploads = capture_quiet(
             [
-                "aws",
+                awscli.AWS,
                 "s3api",
                 "list-multipart-uploads",
                 "--bucket",
@@ -2909,7 +2909,7 @@ class Housekeeping:
                 if (
                     run_quiet_err(
                         [
-                            "aws",
+                            awscli.AWS,
                             "s3api",
                             "abort-multipart-upload",
                             "--bucket",
@@ -2942,7 +2942,7 @@ class Housekeeping:
             return
         run_quiet_err(
             [
-                "aws",
+                awscli.AWS,
                 "s3",
                 "rm",
                 "s3://%s/%s" % (self.r2_bucket, key),

@@ -42,6 +42,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from rediacc_ci import paths
+from rediacc_ci.core import awscli
 from rediacc_ci.deploy.simulate_promotion import CHANNEL_DIRS
 from rediacc_ci.quality import release_state
 from rediacc_ci.release import retention_contract, update_homebrew_tap
@@ -230,11 +231,13 @@ Runner = Callable[[list[str], "dict[str, str] | None"], subprocess.CompletedProc
 
 
 def run_process(argv: list[str], env: dict[str, str] | None) -> subprocess.CompletedProcess:
-    """`subprocess.run`, with a missing binary as exit 127 rather than an exception."""
+    """`subprocess.run` (an `aws` argv through `core.awscli`), with a missing binary as exit 127 rather than an exception."""
     try:
-        return subprocess.run(argv, capture_output=True, text=True, check=False, env=env)
+        return awscli.run(argv, capture_output=True, text=True, env=env)
     except FileNotFoundError:
         return subprocess.CompletedProcess(argv, 127, "", "%s: command not found\n" % argv[0])
+    except awscli.AwsCliMissingError as exc:
+        return subprocess.CompletedProcess(argv, 127, "", "%s\n" % exc)
 
 
 def _tail(text: str) -> str:
@@ -283,12 +286,11 @@ class LiveReaders:
 
     def _aws(self, reader: str, args: list[str]) -> subprocess.CompletedProcess:
         env, endpoint = self._aws_env(reader)
-        proc = self.runner(["aws", *args, "--endpoint-url", endpoint], env)
+        proc = self.runner([awscli.AWS, *args, "--endpoint-url", endpoint], env)
         if proc.returncode == 127:
             raise UnreadableError(
                 reader,
-                "the aws CLI is not installed (install it: "
-                "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)",
+                "the aws CLI is not installed (install the pin: %s)" % awscli.INSTALL_HINT,
             )
         return proc
 
