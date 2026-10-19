@@ -233,3 +233,20 @@ def test_a_call_to_aws_itself_keeps_the_callers_config(monkeypatch) -> None:
     monkeypatch.setattr(awscli.subprocess, "run", fake_run)
     awscli.run([awscli.AWS, "iam", "delete-access-key", "--access-key-id", "AKIA"])
     assert seen == [None]
+
+
+def test_a_single_token_endpoint_flag_is_an_r2_call_too(monkeypatch) -> None:
+    """`--endpoint-url=https://...` as one token takes the R2 settings exactly as the two-token form does (review 40d005b0.1)."""
+    seen: list[dict[str, str]] = []
+
+    def fake_run(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        env = kwargs.get("env")
+        if cmd[1:3] == ["s3", "ls"] and isinstance(env, dict):
+            seen.append(env)
+        return subprocess.CompletedProcess(cmd, 0, "aws-cli/2.0.0 Python/3", "")
+
+    monkeypatch.setattr(awscli.subprocess, "run", fake_run)
+    monkeypatch.delenv("AWS_CONFIG_FILE", raising=False)
+    awscli.run([awscli.AWS, "s3", "ls", "--endpoint-url=https://r2.example.invalid"])
+    assert seen
+    assert seen[-1]["AWS_CONFIG_FILE"] == str(awscli.CONFIG_FILE)
