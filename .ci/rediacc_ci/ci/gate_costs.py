@@ -34,6 +34,7 @@ import io
 import json
 import os
 import statistics
+import subprocess
 import sys
 import zipfile
 from datetime import UTC, datetime
@@ -188,6 +189,26 @@ def _is_not_found(exc: ghx.GhError) -> bool:
     return "HTTP 404" in (exc.stderr or "") or "HTTP 404" in str(exc)
 
 
+def _local_branch() -> str:
+    """The checkout's branch name, or "" when HEAD is detached or git cannot answer."""
+    proc = subprocess.run(
+        ["git", "-C", str(paths.repo_root()), "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    name = proc.stdout.strip() if proc.returncode == 0 else ""
+    return "" if name == "HEAD" else name
+
+
+def _head_branch() -> str:
+    """The branch whose dispatched captures are read beside main's: GITHUB_HEAD_REF on a pull_request run, nothing on any other Actions run, and the checkout's own branch locally, so a pre-push run judges the same window the PR's CI will (2026-10-19: the local ci:quick read main's window alone and reddened on gates only the PR-head capture measured, while CI was green on them)."""
+    head = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if head or os.environ.get("GITHUB_ACTIONS"):
+        return head
+    return _local_branch()
+
+
 def collect_captures(
     repo: str,
     *,
@@ -205,7 +226,7 @@ def collect_captures(
             runs.setdefault(run.get("id"), run)
     # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture outlived its 12m bound for three nights and the fix, 5d5d88247, sat on the PR that this very check kept red).
     # A capture DISPATCHED on the PR head comes from the workflow and gate code that branch ships, which is no new trust: this check itself runs from the PR tree, so the PR could already rewrite it. It is read beside main's, never instead of it.
-    head = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    head = _head_branch()
     if head and head != budget_report.DEFAULT_BRANCH:
         for run in list_runs(
             repo, CAPTURE_WORKFLOW, "workflow_dispatch", head, "completed", RUNS_LISTED

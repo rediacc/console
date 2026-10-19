@@ -136,6 +136,7 @@
       "GITHUB_REPOSITORY"
     ],
     ".ci/rediacc_ci/ci/gate_costs.py": [
+      "GITHUB_ACTIONS",
       "GITHUB_HEAD_REF"
     ],
     ".ci/rediacc_ci/ci/gate_ledger.py": [

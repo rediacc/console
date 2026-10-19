@@ -799,9 +799,18 @@ def test_collect_captures_reads_a_capture_dispatched_on_the_pr_head(monkeypatch)
     assert ("schedule", "1008-1") not in calls
     calls.clear()
     monkeypatch.delenv("GITHUB_HEAD_REF")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
     caps, sources, _w = collect()
     assert sources == []
     assert all(branch != "1008-1" for _e, branch in calls)
+    # Locally (no GITHUB_ACTIONS) the checkout's own branch stands in for GITHUB_HEAD_REF, so a pre-push run reads the window the PR's CI reads.
+    calls.clear()
+    monkeypatch.delenv("GITHUB_ACTIONS")
+    monkeypatch.setattr(gc, "_local_branch", lambda: "1008-1")
+    caps, sources, _w = collect()
+    assert [s["id"] for s in sources] == [7]
+    monkeypatch.setattr(gc, "_local_branch", lambda: "")
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
     for head in ("", "  ", "main"):
         calls.clear()
         monkeypatch.setenv("GITHUB_HEAD_REF", head)
