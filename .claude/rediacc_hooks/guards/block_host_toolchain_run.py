@@ -9,6 +9,8 @@ go-version-file on private/renet/go.mod) both report none of them. So the findin
 
 WHAT THIS DOES NOT DO. It does not route every `npm run`. Most gates are node and TypeScript and run identically on the host, where they are faster and their output lands directly in the transcript. It fires only when the command names a gate whose toolchain THIS host lacks and the container has -- that is the whole condition, and it is checked against the host, not assumed.
 
+FOR `aws` THE HOST IS ASKED THE RESOLVER'S QUESTION. Every aws call site execs through `.ci/rediacc_ci/core/awscli.py`, which takes `AWS_BIN`, then `aws` on PATH, then the pinned repo cache `.ci/cache/toolchain/aws-cli/<AWSCLI_VERSION>/bin/aws` (`bash .ci/bootstrap.sh install aws`). `_have_aws` asks the same three rungs, so a host carrying only the cache is not routed; a set `AWS_BIN` that is not an executable file counts as absent, matching the resolver's refusal. `bw` and `bws` keep the PATH-only test.
+
 =============================================================================
 PORT NOTES
 =============================================================================
@@ -261,8 +263,51 @@ def _command_v(tool):
     return hookio.command_v(tool)
 
 
+# THE aws RUNGS, as `.ci/rediacc_ci/core/awscli.py` resolves them. Every aws call site execs through that resolver since 73e2c8217, so a host with no `aws` on PATH but an `AWS_BIN` or the pinned repo cache RUNS the command; refusing it there would route a working command into the devbox, the inverse of this guard's job.
+AWS_BIN_KEY = "AWS_BIN"
+AWSCLI_PIN_KEY = "AWSCLI_VERSION"
+TOOLCHAIN_ENV = ".devcontainer/toolchain.env"
+AWSCLI_CACHE = ".ci/cache/toolchain/aws-cli"
+
+
+def _is_executable_file(path):
+    return os.path.isfile(path) and os.access(path, os.X_OK)
+
+
+def _awscli_pin(root):
+    """`AWSCLI_VERSION` from `<root>/.devcontainer/toolchain.env`, or "" when the file or the key is absent."""
+    try:
+        text = pathlib.Path(root, TOOLCHAIN_ENV).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    for line in text.splitlines():
+        key, sep, value = line.strip().partition("=")
+        if sep and key == AWSCLI_PIN_KEY:
+            return value.strip().strip("\"'")
+    return ""
+
+
+def _have_aws(root, environ):
+    """Whether the resolver would find an aws on this host: `AWS_BIN`, then PATH, then the pinned cache under `root`.
+
+    A set `AWS_BIN` decides alone, as it does in the resolver: one that is not an executable file is the resolver's refusal, so here it is absent, and neither PATH nor the cache is consulted behind it. The cache rung accepts the binary at the pinned path without the resolver's `aws --version` probe, which costs a third of a second per hook call; the path already carries the pinned version, and a binary there that reports another version fails at the resolver with its own message.
+    """
+    explicit = environ.get(AWS_BIN_KEY, "")
+    if explicit:
+        return _is_executable_file(explicit)
+    path = _command_v("aws")
+    if path != "" and os.access(path, os.X_OK):
+        return True
+    version = _awscli_pin(root)
+    if version == "":
+        return False
+    return _is_executable_file(os.path.join(str(root), AWSCLI_CACHE, version, "bin", "aws"))
+
+
 def _have_executable(tool):
-    """`test -x "$(command -v "$tool" 2>/dev/null)" 2>/dev/null`."""
+    """`test -x "$(command -v "$tool" 2>/dev/null)" 2>/dev/null`, and the resolver's rungs for `aws` (`_have_aws`)."""
+    if tool == "aws":
+        return _have_aws(hookio.repo_root(), os.environ)
     path = _command_v(tool)
     return path != "" and os.access(path, os.X_OK)
 

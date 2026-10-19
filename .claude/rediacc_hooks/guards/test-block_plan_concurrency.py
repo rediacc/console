@@ -356,7 +356,8 @@ def f1_unimportable():
         capture_output=True,
         text=True,
         check=False,
-        env=env_for(BASE / "proj"),
+        # PYTHONPATH is dropped: a caller that puts the stop directory on it (pytest run with PYTHONPATH=.:hooks/stop) makes wl_core importable from the fake tree, the guard takes its normal path, and the case reads silence as a defect it is not testing.
+        env={k: v for k, v in env_for(BASE / "proj").items() if k != "PYTHONPATH"},
     )
     return proc.stdout.strip(), proc.stderr.strip()
 
