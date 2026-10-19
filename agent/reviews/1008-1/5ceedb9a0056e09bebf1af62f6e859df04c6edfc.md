@@ -21,9 +21,9 @@ Body-Sig: 4d8d771a6ffa51bb
 ### 5ceedb9a.1 [medium] .ci/rediacc_ci/ci/gate_costs.py:194
 Anchor: in-diff
 Claim: _local_branch() calls subprocess.run without catching OSError, so on a machine where git is not on PATH, collect_captures raises FileNotFoundError instead of returning "" as the docstring promises for 'git cannot answer' (check=False only covers a non-zero exit).
-Resolution: open
+Resolution: fixed e94f58c29708003622f3ca00e4cc59fe0c71d28b | d778be9d 2026-10-19T12:15:11Z
 
 ### 5ceedb9a.2 [medium] .ci/rediacc_ci/tests/test_ci_gate_costs.py:812
 Anchor: in-diff
 Claim: The detached/no-branch case is never exercised on the local path: the stub returning "" is installed while GITHUB_ACTIONS is still true, so _head_branch returns early and never reaches _local_branch's "" result; _local_branch itself is never run against real git or a non-zero git exit, though the commit message says 'detached reads as none'.
-Resolution: open
+Resolution: fixed e94f58c29708003622f3ca00e4cc59fe0c71d28b | d778be9d 2026-10-19T12:15:11Z

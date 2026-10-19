@@ -94,6 +94,8 @@ def _tag_exists(repo_root, version: str) -> bool | None:
                 "git",
                 "-C",
                 str(repo_root),
+                "-c",
+                "credential.helper=",
                 "ls-remote",
                 "--exit-code",
                 "--tags",
@@ -102,7 +104,7 @@ def _tag_exists(repo_root, version: str) -> bool | None:
             ],
             capture_output=True,
             check=False,
-            # Never a prompt mid-plan, and never a TCP-timeout stall. GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt; a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on; for the graphical askpass fallback, SSH_ASKPASS_REQUIRE=never covers OpenSSH 8.4 and later, and DISPLAY is dropped because older OpenSSH opens askpass only with one (which also keeps any graphical HTTPS credential helper git might start from opening a window; this probe wants no dialog of any kind). A wrapper outside OpenSSH (core.sshCommand, GIT_SSH) keeps its own settings, and the 30 s bound still ends it. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
+            # Never a prompt mid-plan, and never a TCP-timeout stall. GIT_TERMINAL_PROMPT=0 stops git's HTTPS credential prompt; a new session with stdin closed leaves ssh no terminal to ask a passphrase or host key on; for the graphical askpass fallback, SSH_ASKPASS_REQUIRE=never covers OpenSSH 8.4 and later, and DISPLAY is dropped because older OpenSSH opens askpass only with one ; `-c credential.helper=` turns every git credential helper off, so no helper on any platform (X11, Wayland, macOS, Windows) can open a dialog either. A wrapper outside OpenSSH (core.sshCommand, GIT_SSH) keeps its own settings, and the 30 s bound still ends it. An origin that cannot answer within ORIGIN_TIMEOUT_S is "cannot tell".
             env={
                 **{k: v for k, v in os.environ.items() if k != "DISPLAY"},
                 "GIT_TERMINAL_PROMPT": "0",
