@@ -5621,7 +5621,6 @@
   {
     "id": "check:ci-proxy-rdc-update",
     "run": "npm run check:ci-proxy-rdc-update",
-    "slow": true,
     "gate": true,
     "needs": [
       "build:cli"

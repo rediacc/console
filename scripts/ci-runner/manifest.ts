@@ -5307,7 +5307,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-proxy-rdc-update',
     run: 'npm run check:ci-proxy-rdc-update',
-    slow: true, // 21.4s-23.4s measured (5-run ewma, both checkouts, 2026-10-03): its selftest plus the bundle runs
+    // NOT SLOW SINCE 2026-10-19: 21.4s-23.4s on 2026-10-03 (its selftest plus the bundle runs), 4.4 s ewma over the last five local runs (2.3-5.4 s) when check:ci-gate-manifest flagged the tier.
     gate: true,
     needs: ['build:cli'],
     leaves: ['.ci/rediacc_ci/proxies/rdc_update.py'],
