@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import ast
 import fnmatch
+import functools
 import json
 import os
 import pathlib
@@ -21,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 import types
 import uuid
 import zipfile
@@ -2338,10 +2340,29 @@ def _walk_landing(root, cmd):
     return os.path.realpath(os.path.join(root, shellscan.write_directory(run.cwd, str(root))))
 
 
+@functools.cache
+def _bash_cd_dash_searches_cdpath(bash_path) -> bool:
+    """Whether this bash's `cd -` resolves OLDPWD through CDPATH (5.3 does; 5.2 fails `cd: x: No such file or directory`)."""
+    with tempfile.TemporaryDirectory() as d:
+        os.makedirs(os.path.join(d, "a", "x"))
+        done = subprocess.run(
+            [str(bash_path), "-c", "CDPATH=a; OLDPWD=x; cd - >/dev/null 2>&1"],
+            cwd=d,
+            capture_output=True,
+            check=False,
+        )
+    return done.returncode == 0
+
+
 @pytest.mark.parametrize(("cmd", "landing"), DIRECTORY_ROWS)
 def test_the_directory_a_change_sets_is_where_bash_lands_review_d0079b4e(
     bash, tmp_path, cmd, landing
 ):
+    if "CDPATH=" in cmd and "cd -" in cmd and not _bash_cd_dash_searches_cdpath(bash):
+        pytest.skip(
+            "CANNOT RUN (1 of 1 requirement(s) missing): a bash whose `cd -` searches CDPATH "
+            "(bash 5.3 does, 5.2 on ubuntu-24.04 does not); the walk models the newer bash"
+        )
     root = _directory_tree(tmp_path)
     want = os.path.normpath(os.path.join(root, landing))
     assert _bash_landing(bash, root, cmd) == want, "the row's own landing is not bash's"
@@ -3242,7 +3263,6 @@ def test_each_tool_output_plant_turns_a_row_63109cf2(bash, tmp_path, label, old,
 # The table below is read without running a tool (wget has no `file://`, and an option curl does not know makes it refuse). At the base the unknown curl option, the wget `--header` value, the unique prefixes `--output-doc` and `--directory-pre`, the ambiguous `--re` and `--save-cookies` each named a download that is not one; `--no-silent`, `--user-agent=ua`, `--quiet`, `--no-recursive` and `--` are controls.
 CURL_OPTION_ROWS = [
     "curl -sO --user bob file://{T}/src.py",
-    "curl -sO --user=bob file://{T}/src.py",
     "curl -sO --header X-A:b file://{T}/src.py",
     "curl -sO --referer r file://{T}/src.py",
     "curl -sO --cookie c file://{T}/src.py",
@@ -3253,6 +3273,8 @@ CURL_OPTION_ROWS = [
     "curl -sO -- file://{T}/src.py",
 ]
 LONG_OPTION_ROWS: dict[str, tuple[list[str], list[str]]] = {
+    # The `--long=value` spelling, pinned statically: curl 8.5 (ubuntu-24.04, CI) refuses it as an unknown option, so real curl decides it only where test_a_curl_long_equals_value_matches_real_curl can run.
+    "curl -sO --user=bob https://x.invalid/a.py": (["a.py"], []),
     "curl -O --frobnicate bob https://x.invalid/a.py": (["a.py"], []),
     "curl --no-silent -O https://x.invalid/a.py": (["a.py"], []),
     "wget --header X https://x.invalid/a.py": (["a.py"], []),
@@ -3293,6 +3315,38 @@ def _long_option_wrong(module, bash_path, tmp_path):
 def test_a_long_option_value_is_not_a_url_ff2ccadb(bash, tmp_path):
     wrong = _long_option_wrong(shellscan, bash, tmp_path)
     assert not wrong, "\n".join(map(repr, wrong))
+
+
+@functools.cache
+def _curl_takes_long_equals() -> bool:
+    """Whether this host's curl reads `--long=value` (curl 8.5 on ubuntu-24.04 refuses it as an unknown option)."""
+    try:
+        done = subprocess.run(
+            ["curl", "--user-agent=probe", "--version"], capture_output=True, check=False
+        )
+    except OSError:
+        return False
+    return done.returncode == 0
+
+
+def test_a_curl_long_equals_value_matches_real_curl(bash, tmp_path):
+    """Real curl decides `--user=bob`: the value is not a URL, so the one download is src.py."""
+    if not _curl_takes_long_equals():
+        pytest.skip(
+            "CANNOT RUN (1 of 1 requirement(s) missing): a curl that reads --long=value "
+            "(this host's curl refuses it as an unknown option); LONG_OPTION_ROWS pins the walk"
+        )
+    script = "curl -sO --user=bob file://{T}/src.py"
+    (tmp_path / "o").mkdir()
+    (tmp_path / "src.py").write_text("print(1)\n", encoding="utf-8")
+    run_bash(bash, Fact("LE", "long equals", "cd {T}/o && " + script), tmp_path)
+    made = sorted(p.name for p in (tmp_path / "o").iterdir())
+    shellscan._ANALYSIS_CACHE.clear()
+    got = sorted(
+        shellscan._tool_outputs(next(iter(shellscan.every_run(_subst(script, tmp_path)))))[0]
+    )
+    assert made == ["src.py"], "real curl did not download: %r" % made
+    assert got == made
 
 
 LONG_OPTION_PLANTS = [

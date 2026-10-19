@@ -14,6 +14,7 @@ import sys
 
 from rediacc_ci import paths
 from rediacc_ci.quality import plan_lifecycle as PL
+from rediacc_ci.shacite import citable_token
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_folders.py")
@@ -534,7 +535,9 @@ def _closing_plan(root: pathlib.Path, body: str) -> None:
 
 def test_move_remaps_a_rebased_branch_commit_and_keeps_one_already_on_main(gate, tmp_path):
     root, shas = _rebased_history(tmp_path)
-    landed, copy, onmain = _cite(shas["landed"]), _cite(shas["copy"]), _cite(shas["onmain"])
+    landed, onmain = _cite(shas["landed"]), _cite(shas["onmain"])
+    # The move writes the copy at the CITED width (plan_lifecycle.plan_remap): when the landed sha's 9-character prefix is all digits, _cite lengthens it, and the copy is spelled to match, not at its own _cite width (the CI flake of run 39177571049, about 1 in 68).
+    copy = citable_token(shas["copy"], shas["copy"][: max(len(landed), 7)])
     _closing_plan(
         root,
         "- [x] T1 the landed change\n    (ticked) commit:%s and again %s\n"
