@@ -279,7 +279,13 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     monkeypatch.setenv("FAKE_GIT_SLEEP", "5")
     assert port._tag_exists(tmp_path, "v1.0.5") is None
     # The timeout ends the helper git started too, not only git (review ed6787c8.1).
-    helper = int((tmp_path / "env.json.helper").read_text())
+    marker = tmp_path / "env.json.helper"
+    if not marker.exists():
+        # The bound fired before the fake git's interpreter started its helper, so no helper exists and the group kill has nothing of its own to prove here (review edca7a05.1).
+        pytest.skip(
+            "the fake git was killed before it started a helper; the runner is slower than the 2 s bound"
+        )
+    helper = int(marker.read_text())
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
         if _dead(helper):
@@ -290,7 +296,7 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
 
 
 def _dead(pid: int) -> bool:
-    """Gone, or a zombie nobody has reaped yet (an init that does not reap, as in some containers): either way it runs no more (review 371ac8ec.3)."""
+    """Gone, or a zombie nobody has reaped yet (an init that does not reap, as in some containers): either way it runs no more (review 371ac8ec.3). The zombie reading needs Linux /proc; elsewhere an unreaped zombie reads as alive (review edca7a05.2), and the suite runs on Linux hosts and runners."""
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
