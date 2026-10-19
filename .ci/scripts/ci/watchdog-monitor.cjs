@@ -93,6 +93,8 @@ const JOB_BUDGET_CAPS = [
   { job: 'E2E Ceph Workers', budgetMin: 20 },
   // Keyed by the full segment: "Renet (Full)" must not reduce to "Renet", which other Renet jobs share.
   { job: 'Renet (Full)', budgetMin: 20 },
+  // Ruling #23e93715 (2026-10-19): Renet embed assets p90 13 / timeout 15, its timeout-minutes in ct-tests.yml and ci-ops-test.yml.
+  { job: 'Renet embed assets', budgetMin: 15 },
   // #641f4f0e (2026-10-06, deferral DEFAULT executed): main-only, it promotes the whole edge channel (1,123 objects and growing) where a PR promotes its own (69); main measured 11.2-14.6 min for a month, then cancelled twice at 15.7 (run 37394654719).
   { job: 'Validate Promotion', budgetMin: 20 },
 ];
