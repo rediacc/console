@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import time
+import types
 
 import pytest
 
@@ -256,7 +257,8 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
         "if os.environ.get('FAKE_GIT_SLEEP'):\n"
         "    import subprocess\n"
         "    helper = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
-        f"    open({str(seen)!r} + '.helper', 'w').write(str(helper.pid))\n"
+        f"    open({str(seen)!r} + '.helper.tmp', 'w').write(str(helper.pid))\n"
+        f"    os.replace({str(seen)!r} + '.helper.tmp', {str(seen)!r} + '.helper')\n"
         "time.sleep(float(os.environ.get('FAKE_GIT_SLEEP', '0')))\n"
         "sys.exit(2)\n"
     )
@@ -278,7 +280,7 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     marker = tmp_path / "env.json.helper"
 
     class HelperFirstPopen(subprocess.Popen):
-        """Starts the probe's bound only once the fake git has recorded its helper, so a slow runner cannot fire the bound first (reviews 371ac8ec.4, edca7a05.1, 491107ff.1); a fake that never records one is a failure, not a skip."""
+        """Starts the probe's bound only once the fake git has recorded its helper, so a slow runner cannot fire the bound first (reviews 371ac8ec.4, edca7a05.1, 491107ff.1); the fake writes the pid to a temporary name and renames it, so the marker never exists empty (review e7b86ad4.2); a fake that never records one is a failure, not a skip."""
 
         def wait(self, timeout=None):
             ready = time.monotonic() + 30
@@ -288,7 +290,10 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
                 time.sleep(0.02)
             return super().wait(timeout)
 
-    monkeypatch.setattr(port.subprocess, "Popen", HelperFirstPopen)
+    # Only the probe module sees the gated Popen: a namespace standing in for `subprocess` inside port, never the stdlib module the rest of the test process shares (review e7b86ad4.1).
+    monkeypatch.setattr(
+        port, "subprocess", types.SimpleNamespace(**{**vars(subprocess), "Popen": HelperFirstPopen})
+    )
     monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 0.5)
     monkeypatch.setenv("FAKE_GIT_SLEEP", "5")
     assert port._tag_exists(tmp_path, "v1.0.5") is None

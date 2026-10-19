@@ -1081,9 +1081,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # .ci/config holds release-contract-floor.txt (the ratchet) and the
-          # constants the release modules read; .github/actions the two local
-          # actions below. Driven in a cone of exactly these three on
-          # 2026-10-08: same verdict as a full checkout.
+          # constants the release modules read; .github/actions the local
+          # actions below. Driven in a cone of exactly those three on
+          # 2026-10-08: same verdict as a full checkout. .ci/scripts and
+          # .devcontainer joined on 2026-10-19 for the pinned aws CLI
+          # (setup-aws runs .ci/bootstrap.sh, which reads toolchain.env).
           sparse-checkout: |
             .ci/rediacc_ci
             .ci/config
