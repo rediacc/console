@@ -2205,6 +2205,7 @@
     "id": "check:ci-plan-folders",
     "run": "npm run check:ci-plan-folders",
     "gate": true,
+    "slow": true,
     "paths": [
       "agent/plans/**",
       "agent/INDEX.md",
