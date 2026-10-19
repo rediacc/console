@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import shutil
+import subprocess
 import sys
 import time
 
@@ -274,17 +275,24 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     assert argv[argv.index("-c") + 1] == "credential.helper="
     assert env["leader"] is True
     assert env["stdin"] == ""
-    # Long enough for the fake git's interpreter to start and record its helper on a slow runner (review 371ac8ec.4), short of its 5 s sleep.
-    monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 2)
+    marker = tmp_path / "env.json.helper"
+
+    class HelperFirstPopen(subprocess.Popen):
+        """Starts the probe's bound only once the fake git has recorded its helper, so a slow runner cannot fire the bound first (reviews 371ac8ec.4, edca7a05.1, 491107ff.1); a fake that never records one is a failure, not a skip."""
+
+        def wait(self, timeout=None):
+            ready = time.monotonic() + 30
+            while not marker.exists():
+                if time.monotonic() > ready:
+                    raise AssertionError("the fake git never started its helper within 30 s")
+                time.sleep(0.02)
+            return super().wait(timeout)
+
+    monkeypatch.setattr(port.subprocess, "Popen", HelperFirstPopen)
+    monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 0.5)
     monkeypatch.setenv("FAKE_GIT_SLEEP", "5")
     assert port._tag_exists(tmp_path, "v1.0.5") is None
     # The timeout ends the helper git started too, not only git (review ed6787c8.1).
-    marker = tmp_path / "env.json.helper"
-    if not marker.exists():
-        # The bound fired before the fake git's interpreter started its helper, so no helper exists and the group kill has nothing of its own to prove here (review edca7a05.1).
-        pytest.skip(
-            "the fake git was killed before it started a helper; the runner is slower than the 2 s bound"
-        )
     helper = int(marker.read_text())
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
