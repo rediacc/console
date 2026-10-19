@@ -1516,17 +1516,20 @@ def test_artifact_download_still_raises_after_the_last_attempt(monkeypatch):
 
 
 def test_fetch_jobs_paginates_beyond_the_first_page(monkeypatch):
-    """FIRES-if-unfixed: MEASURED live, run 36358238015 -- 158 jobs across two Actions API pages; a single `per_page=100` call used to silently drop the last 58."""
-    page1 = [{"id": i} for i in range(100)]
-    page2 = [{"id": i} for i in range(100, 158)]
+    """FIRES-if-unfixed: MEASURED live, run 36358238015 -- 158 jobs across Actions API pages; a single `per_page=100` call used to silently drop the last 58. Paged at _JOBS_PAGE_SIZE (50), since GitHub answers a 100-job page of a large run with HTTP 502."""
+    size = br._JOBS_PAGE_SIZE
+    assert size == 50, (
+        "a 100-job page of a large run is answered HTTP 502 (runs 39188334570, 39177571049)"
+    )
+    ids = list(range(158))
 
     def fake_api_json(path, **_kw):
-        assert "per_page=100" in path
-        if path.endswith("&page=1"):
-            return {"total_count": 158, "jobs": page1}
-        if path.endswith("&page=2"):
-            return {"total_count": 158, "jobs": page2}
-        raise AssertionError("unexpected page in %r" % path)
+        assert "per_page=%d" % size in path
+        page = int(path.rsplit("page=", 1)[1])
+        chunk = ids[(page - 1) * size : page * size]
+        if not chunk:
+            raise AssertionError("unexpected page in %r" % path)
+        return {"total_count": 158, "jobs": [{"id": i} for i in chunk]}
 
     monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     jobs = br.fetch_jobs("o/r", 1)
@@ -1554,12 +1557,13 @@ def test_fetch_jobs_stops_once_total_count_is_reached(monkeypatch):
         calls.append(path)
         page = int(path.rsplit("page=", 1)[1])
         if page == 1:
-            return {"total_count": 100, "jobs": [{"id": i} for i in range(100)]}
+            size = br._JOBS_PAGE_SIZE
+            return {"total_count": size, "jobs": [{"id": i} for i in range(size)]}
         raise AssertionError("should not fetch a second page once total_count is met")
 
     monkeypatch.setattr(br.gh_retry, "api_json", fake_api_json)
     jobs = br.fetch_jobs("o/r", 1)
-    assert len(jobs) == 100
+    assert len(jobs) == br._JOBS_PAGE_SIZE
     assert len(calls) == 1
 
 

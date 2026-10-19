@@ -157,6 +157,8 @@ SAMPLE_MAX_AGE_DAYS = 14
 
 # Actions API pagination: one page at a time, `per_page` capped at the API's own 100 maximum. `fetch_jobs`/`fetch_artifacts` walk pages explicitly with this cap rather than `gh_retry.api_json(..., paginate=True)`: `--paginate` without `--jq` only auto-merges a response whose BODY IS a bare top-level JSON array (MEASURED: `repos/.../labels` does); `.../runs/{id}/jobs` and `.../runs/{id}/artifacts` are both a JSON OBJECT with one array field inside (`{"total_count", "jobs": [...]}`), and gh's own `--paginate` help text says a multi-page object response is printed as one JSON document PER PAGE, not merged -- MEASURED live (run 36358238015, 158 jobs, two pages): `gh api --paginate` printed two back-to-back `{"total_count":158,"jobs":[...]}` objects, and `ghx.api_json`'s `.json()` (a plain `json.loads`) raised `GhBadOutputError` ("Extra data") on the concatenation. `--slurp` would wrap those into an array of page-objects, still needing this module to merge their `jobs` arrays itself, so a manual `page=` loop is no more code and stays inside `ghx.api_json`'s existing, already-tested single-document contract.
 _PAGE_SIZE = 100
+# The JOBS endpoint pages at 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (MEASURED 2026-10-19 on runs 39188334570 and 39177571049, 141 and 179 jobs: per_page=100 failed on every attempt, 50 answered in 6-9 s), which failed CI's budget freshness step twice. The runs and artifacts listings stay at _PAGE_SIZE.
+_JOBS_PAGE_SIZE = 50
 
 # One entry per run class this report covers (plan section 1's four samples collapse to three LIVE classes: sample A is main-push, B/B1 is pr-full, and the schedule runs inside B become their own class here rather than being folded into pr-full, since D-W5 treats the nightly as a separate ceiling).
 RUN_CLASS_EVENTS = {"pr-full": "pull_request", "main-push": "push", "schedule": "schedule"}
@@ -426,7 +428,8 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
     page = 1
     while True:
         data = gh_retry.api_json(
-            "repos/%s/actions/runs/%s/jobs?per_page=%d&page=%d" % (repo, run_id, _PAGE_SIZE, page),
+            "repos/%s/actions/runs/%s/jobs?per_page=%d&page=%d"
+            % (repo, run_id, _JOBS_PAGE_SIZE, page),
             attempts=GH_ATTEMPTS,
         )
         if not isinstance(data, dict):
@@ -438,7 +441,7 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
         total_count = data.get("total_count")
         if isinstance(total_count, int) and len(jobs) >= total_count:
             break
-        if len(page_jobs) < _PAGE_SIZE:
+        if len(page_jobs) < _JOBS_PAGE_SIZE:
             break
         page += 1
     return jobs

@@ -275,3 +275,25 @@ def test_the_release_gate_fails_open_on_an_unreadable_api(tmp_path, capsys):
     rc, *_ = drive("release-gate", FakeApi(None), FIRST, tmp_path)
     assert rc == 0
     assert "fail-open" in capsys.readouterr().err
+
+
+def test_latest_jobs_walks_every_page_of_a_large_run(monkeypatch):
+    """A 141-job run lists every job: one 100-job page dropped all past the hundredth, and GitHub answers a 100-job page of a large run with HTTP 502, so the walk pages at JOBS_PAGE_SIZE."""
+    api = sr.Api(REPO, "ci.yml", runner=lambda *_a, **_k: None, sleep=lambda _s: None)
+    size = sr.JOBS_PAGE_SIZE
+    assert size == 50
+    ids = list(range(141))
+    seen: list[str] = []
+
+    def fake_get(path: str):
+        seen.append(path)
+        assert "per_page=%d" % size in path
+        page = int(path.rsplit("page=", 1)[1])
+        return {
+            "total_count": 141,
+            "jobs": [{"id": i} for i in ids[(page - 1) * size : page * size]],
+        }
+
+    monkeypatch.setattr(api, "_get", fake_get)
+    assert [j["id"] for j in api.latest_jobs(7)] == ids
+    assert len(seen) == 3

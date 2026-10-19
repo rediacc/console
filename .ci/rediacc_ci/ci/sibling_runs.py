@@ -38,6 +38,9 @@ ACTIVE_STATUSES = frozenset({"queued", "in_progress", "waiting", "requested", "p
 FAILED_CONCLUSIONS = frozenset({"failure", "timed_out", "startup_failure"})
 UNCLEAN_JOB_CONCLUSIONS = FAILED_CONCLUSIONS | {"cancelled"}
 
+# The jobs endpoint's page size; see latest_jobs.
+JOBS_PAGE_SIZE = 50
+
 
 @dataclasses.dataclass(frozen=True)
 class Run:
@@ -99,20 +102,28 @@ class Api:
         return [Run.from_api(r) for r in rows if isinstance(r, dict)]
 
     def latest_jobs(self, run_id: int) -> list[dict[str, Any]]:
-        """Every job of that run's latest attempt."""
-        data = self._get(
-            "repos/%s/actions/runs/%d/jobs?filter=latest&per_page=100" % (self.repo, run_id)
-        )
-        jobs = data.get("jobs") if isinstance(data, dict) else None
-        return [j for j in jobs if isinstance(j, dict)] if isinstance(jobs, list) else []
+        """Every job of that run's latest attempt, across every page.
+
+        Paged at 50: a single 100-job page dropped every job past the hundredth of a 141-job run, and GitHub answers a 100-job page of a large run with HTTP 502 (budget_report._PAGE_SIZE).
+        """
+        jobs: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            data = self._get(
+                "repos/%s/actions/runs/%d/jobs?filter=latest&per_page=%d&page=%d"
+                % (self.repo, run_id, JOBS_PAGE_SIZE, page)
+            )
+            rows = data.get("jobs") if isinstance(data, dict) else None
+            batch = [j for j in rows if isinstance(j, dict)] if isinstance(rows, list) else []
+            jobs.extend(batch)
+            total = data.get("total_count") if isinstance(data, dict) else None
+            if len(batch) < JOBS_PAGE_SIZE or (isinstance(total, int) and len(jobs) >= total):
+                return jobs
+            page += 1
 
     def initialize_conclusion(self, run_id: int) -> str:
         """The Initialize job's conclusion in that run's latest attempt, its status when it has none yet, or "" when the job is not listed."""
-        data = self._get(
-            "repos/%s/actions/runs/%d/jobs?filter=latest&per_page=100" % (self.repo, run_id)
-        )
-        jobs = data.get("jobs") if isinstance(data, dict) else None
-        for job in jobs if isinstance(jobs, list) else []:
+        for job in self.latest_jobs(run_id):
             if isinstance(job, dict) and job.get("name") == INITIALIZE_JOB:
                 return str(job.get("conclusion") or job.get("status") or "")
         return ""
