@@ -1964,7 +1964,7 @@ jobs:
       # costs a little time and removes one more way for the label to change
       # what the job does beyond the three gates it is allowed to hold.
       - name: Restore tutorial-narration audio cache from R2
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.aws.outcome == 'success' }}
         env:
           AWS_BIN: ${{ steps.aws.outputs.aws-bin }}
           CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID }}

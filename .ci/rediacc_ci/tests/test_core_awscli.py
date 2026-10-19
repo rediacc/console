@@ -166,3 +166,27 @@ def test_the_cli_names_the_binary_and_the_pin(world: dict[str, pathlib.Path]) ->
     assert pin.returncode == 0, pin.stderr
     assert pin.stdout.split()[0] == PIN
     assert pin.stdout.split()[1].endswith("/.ci/cache/toolchain/aws-cli/%s/bin/aws" % PIN)
+
+
+def test_a_reinstall_at_the_same_mtime_is_probed_again(tmp_path, monkeypatch) -> None:
+    """The probe cache keys on inode and size as well as mtime, so a binary replaced inside one mtime tick is probed afresh (review 092a91ac.2)."""
+    calls: list[str] = []
+
+    def probe(binary: str, **_kw: object) -> str:
+        calls.append(binary)
+        return "2.0.0"
+
+    monkeypatch.setattr(awscli, "probe_version", probe)
+    binary = tmp_path / "aws"
+    binary.write_text("one")
+    stamp = binary.stat().st_mtime_ns
+    assert awscli._cached_version(binary) == "2.0.0"
+    assert awscli._cached_version(binary) == "2.0.0"
+    assert len(calls) == 1
+    fresh = tmp_path / "aws.new"
+    fresh.write_text("a longer second build")
+    os.utime(fresh, ns=(stamp, stamp))
+    os.replace(fresh, binary)
+    assert binary.stat().st_mtime_ns == stamp
+    assert awscli._cached_version(binary) == "2.0.0"
+    assert len(calls) == 2
