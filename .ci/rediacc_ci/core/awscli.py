@@ -17,6 +17,7 @@ THE LOGICAL argv[0] STAYS `"aws"`. Call sites build their argv with `AWS` at the
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -28,7 +29,6 @@ from rediacc_ci.core import toolchain
 from rediacc_ci.core.common import RefusalError
 
 if TYPE_CHECKING:
-    import pathlib
     from collections.abc import Mapping
 
 # The logical argv[0] every call site writes, and the name the PATH rung looks up.
@@ -167,7 +167,28 @@ def argv(args: list[str], env: Mapping[str, str] | None = None) -> list[str]:
 def run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[Any]:
     """`subprocess.run(argv(args), **kwargs)`, with `check=False` unless the caller says otherwise."""
     check = bool(kwargs.pop("check", False))
-    return subprocess.run(argv(args, env=kwargs.get("env")), check=check, **kwargs)
+    kwargs["env"] = r2_env(kwargs.get("env"))
+    return subprocess.run(argv(args, env=kwargs["env"]), check=check, **kwargs)
+
+
+# R2 rejects the flexible checksums aws CLI v2 sends by default on multipart uploads: the first live CI run on the pinned 2.38.1 (run 39311676492, Stage Artifacts, 2026-10-19) failed `CompleteMultipartUpload` with InvalidPart on one attempt and AWS_ERROR_HTTP_RESPONSE_FIRST_BYTE_TIMEOUT on the other. Checksums are requested and validated only where an operation requires them; a caller's own value still wins.
+R2_CHECKSUM_ENV = {
+    "AWS_REQUEST_CHECKSUM_CALCULATION": "when_required",
+    "AWS_RESPONSE_CHECKSUM_VALIDATION": "when_required",
+}
+
+
+# The repo's aws CLI configuration: the classic S3 transfer client, which the runner image's aws used while R2 syncs passed (see the file's own header).
+CONFIG_FILE = pathlib.Path(__file__).resolve().parents[2] / "config" / "aws-cli.cfg"
+
+
+def r2_env(env: Mapping[str, str] | None = None) -> dict[str, str]:
+    """The environment an aws call runs under: `env` (or the process environment) with R2_CHECKSUM_ENV and AWS_CONFIG_FILE (the repo's aws-cli.cfg) filled in where unset."""
+    out = dict(os.environ if env is None else env)
+    for key, value in R2_CHECKSUM_ENV.items():
+        out.setdefault(key, value)
+    out.setdefault("AWS_CONFIG_FILE", str(CONFIG_FILE))
+    return out
 
 
 def main(arguments: list[str]) -> int:
