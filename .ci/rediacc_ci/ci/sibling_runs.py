@@ -104,7 +104,7 @@ class Api:
     def latest_jobs(self, run_id: int) -> list[dict[str, Any]]:
         """Every job of that run's latest attempt, across every page.
 
-        Paged at 50: a single 100-job page dropped every job past the hundredth of a 141-job run, and GitHub answers a 100-job page of a large run with HTTP 502 (budget_report._PAGE_SIZE).
+        Paged at 50: a single 100-job page dropped every job past the hundredth of a 141-job run, and GitHub answers a 100-job page of a large run with HTTP 502 (budget_report._JOBS_PAGE_SIZE).
         """
         jobs: list[dict[str, Any]] = []
         page = 1
@@ -114,7 +114,15 @@ class Api:
                 % (self.repo, run_id, JOBS_PAGE_SIZE, page)
             )
             rows = data.get("jobs") if isinstance(data, dict) else None
-            batch = [j for j in rows if isinstance(j, dict)] if isinstance(rows, list) else []
+            if not isinstance(rows, list):
+                # Not a jobs document: an error, never the end of the list (review 5c11d902.1).
+                raise ghx.GhBadOutputError(
+                    ["gh", "api", "jobs"],
+                    0,
+                    "jobs page %d of run %d is not a jobs document" % (page, run_id),
+                    ghx.FAILURE_FAILED,
+                )
+            batch = [j for j in rows if isinstance(j, dict)]
             jobs.extend(batch)
             total = data.get("total_count") if isinstance(data, dict) else None
             if len(batch) < JOBS_PAGE_SIZE or (isinstance(total, int) and len(jobs) >= total):

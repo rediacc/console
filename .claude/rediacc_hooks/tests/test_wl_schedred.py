@@ -1006,3 +1006,44 @@ def test_a_green_noop_duplicate_never_masks_the_original_on_the_same_sha(repo, t
     doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
     assert doc["push"]["in_flight"] is True
     assert doc["push"]["run_id"] != MAIN_RUN + 1, "the no-op's green is not main's verdict"
+
+
+def _paged_gh(total, failed_ids, *, error_on_page=None):
+    """A wl_gh.call stand-in serving `total` jobs PAGE at a time; ids in `failed_ids` concluded failure."""
+    calls = []
+
+    def call(argv, **_kw):
+        calls.append(argv[1])
+        page = int(argv[1].rsplit("page=", 1)[1])
+        if page == error_on_page:
+            return None, "HTTP 502"
+        lo, hi = (page - 1) * SR.PAGE, min(page * SR.PAGE, total)
+        jobs = [
+            {"name": "job-%d" % i, "conclusion": "failure" if i in failed_ids else "success"}
+            for i in range(lo, hi)
+        ]
+        return {"total_count": total, "jobs": jobs}, ""
+
+    return call, calls
+
+
+def test_failed_jobs_walks_every_page_of_a_large_scheduled_run(monkeypatch):
+    """A 141-job run: a failure past the hundredth job is named, over three pages of PAGE (50), the size GitHub can build."""
+    assert SR.PAGE == 50
+    call, calls = _paged_gh(141, {3, 120})
+    monkeypatch.setattr(SR.wl_gh, "call", call)
+    assert SR._failed_jobs(".", "o", "r", 7) == (["job-3", "job-120"], "")
+    assert len(calls) == 3
+
+
+def test_failed_jobs_refuses_a_partial_walk(monkeypatch):
+    """A page that fails mid-walk discards what was read, and a run larger than the page cap is an error, never a short verdict."""
+    call, _calls = _paged_gh(141, {120}, error_on_page=2)
+    monkeypatch.setattr(SR.wl_gh, "call", call)
+    assert SR._failed_jobs(".", "o", "r", 7) == ([], "HTTP 502")
+    monkeypatch.setattr(SR, "MAX_PAGES", 2)
+    call, _calls = _paged_gh(141, {120})
+    monkeypatch.setattr(SR.wl_gh, "call", call)
+    names, err = SR._failed_jobs(".", "o", "r", 7)
+    assert names == []
+    assert "more than 100 jobs" in err
