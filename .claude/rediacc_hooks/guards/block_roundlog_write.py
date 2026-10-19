@@ -81,8 +81,7 @@ def _round_log_world(_unused):
         )
     # A directory symlink into the guarded tree (#bc7d998c): a write through it lands in the tree.
     link = os.path.join(WORLD, "linked")
-    if not os.path.islink(link):
-        os.symlink(os.path.join(WORLD, "reports"), link)
+    hookio.ensure_world_symlink(os.path.join(WORLD, "reports"), link)
     return WORLD
 
 
