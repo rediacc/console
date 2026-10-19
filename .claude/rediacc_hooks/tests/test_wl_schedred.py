@@ -1047,3 +1047,18 @@ def test_failed_jobs_refuses_a_partial_walk(monkeypatch):
     names, err = SR._failed_jobs(".", "o", "r", 7)
     assert names == []
     assert "more than 100 jobs" in err
+
+
+def test_failed_jobs_refuses_a_short_page_below_the_total(monkeypatch):
+    """A short page while total_count names more jobs is an error, never a green verdict over a partial list (review 4cfc4023.1)."""
+    monkeypatch.setattr(
+        SR.wl_gh,
+        "call",
+        lambda _argv, **_kw: (
+            {"total_count": 141, "jobs": [{"name": "a", "conclusion": "success"}]},
+            "",
+        ),
+    )
+    names, err = SR._failed_jobs(".", "o", "r", 7)
+    assert names == []
+    assert "short at 1 of 141" in err

@@ -297,3 +297,14 @@ def test_latest_jobs_walks_every_page_of_a_large_run(monkeypatch):
     monkeypatch.setattr(api, "_get", fake_get)
     assert [j["id"] for j in api.latest_jobs(7)] == ids
     assert len(seen) == 3
+
+
+def test_latest_jobs_refuses_a_broken_or_short_page(monkeypatch):
+    """A page that is not a jobs document, or is short while total_count names more jobs, raises instead of returning a partial list (reviews 5c11d902.1, 4cfc4023.4/.5)."""
+    api = sr.Api(REPO, "ci.yml", runner=lambda *_a, **_k: None, sleep=lambda _s: None)
+    monkeypatch.setattr(api, "_get", lambda _path: ["not", "a", "document"])
+    with pytest.raises(ghx.GhBadOutputError, match="not a jobs document"):
+        api.latest_jobs(7)
+    monkeypatch.setattr(api, "_get", lambda _path: {"total_count": 141, "jobs": [{"id": 1}]})
+    with pytest.raises(ghx.GhBadOutputError, match="short at 1 of 141"):
+        api.latest_jobs(7)

@@ -3196,3 +3196,15 @@ def test_prune_gate_steps_to_lock_keeps_the_table_when_the_lock_is_not_utf8(tmp_
     gate_steps = {"check:a": 5.0, "check:b": 9.5}
     assert br.prune_gate_steps_to_lock(gate_steps, tmp_path) == gate_steps
     assert "kept unpruned (2 entries)" in capsys.readouterr().err
+
+
+def test_fetch_jobs_refuses_a_broken_or_short_page(monkeypatch):
+    """A page that is not a jobs document, or is short while total_count names more jobs, is an error and never a complete list (reviews 5c11d902.4, 4cfc4023.2/.3/.5)."""
+    monkeypatch.setattr(br.gh_retry, "api_json", lambda _path, **_kw: ["not", "a", "document"])
+    with pytest.raises(br.ghx.GhBadOutputError, match="not a jobs document"):
+        br.fetch_jobs("o/r", 1)
+    monkeypatch.setattr(
+        br.gh_retry, "api_json", lambda _path, **_kw: {"total_count": 141, "jobs": [{"id": 1}]}
+    )
+    with pytest.raises(br.ghx.GhBadOutputError, match="short at 1 of 141"):
+        br.fetch_jobs("o/r", 1)
