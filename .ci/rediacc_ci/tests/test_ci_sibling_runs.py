@@ -279,7 +279,7 @@ def test_the_release_gate_fails_open_on_an_unreadable_api(tmp_path, capsys):
 
 def test_latest_jobs_walks_every_page_of_a_large_run(monkeypatch):
     """A 141-job run lists every job: one 100-job page dropped all past the hundredth, and GitHub answers a 100-job page of a large run with HTTP 502, so the walk pages at JOBS_PAGE_SIZE."""
-    api = sr.Api(REPO, "ci.yml", runner=lambda *_a, **_k: None, sleep=lambda _s: None)
+    api = sr.Api(REPO, "ci.yml", sleep=lambda _s: None)
     size = sr.JOBS_PAGE_SIZE
     assert size == 50
     ids = list(range(141))
@@ -301,7 +301,7 @@ def test_latest_jobs_walks_every_page_of_a_large_run(monkeypatch):
 
 def test_latest_jobs_refuses_a_broken_or_short_page(monkeypatch):
     """A page that is not a jobs document, or is short while total_count names more jobs, raises instead of returning a partial list (reviews 5c11d902.1, 4cfc4023.4/.5)."""
-    api = sr.Api(REPO, "ci.yml", runner=lambda *_a, **_k: None, sleep=lambda _s: None)
+    api = sr.Api(REPO, "ci.yml", sleep=lambda _s: None)
     monkeypatch.setattr(api, "_get", lambda _path: ["not", "a", "document"])
     with pytest.raises(ghx.GhBadOutputError, match="not a jobs document"):
         api.latest_jobs(7)
@@ -312,7 +312,7 @@ def test_latest_jobs_refuses_a_broken_or_short_page(monkeypatch):
 
 def test_a_full_page_with_a_stray_row_still_walks_on(monkeypatch):
     """A full page is judged by its raw row count: one non-dict row among 50 does not make it short, so the walk reads the next page (review ac7616ac.1)."""
-    api = sr.Api(REPO, "ci.yml", runner=lambda *_a, **_k: None, sleep=lambda _s: None)
+    api = sr.Api(REPO, "ci.yml", sleep=lambda _s: None)
     size = sr.JOBS_PAGE_SIZE
 
     def fake_get(path: str):

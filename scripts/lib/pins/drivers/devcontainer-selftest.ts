@@ -267,7 +267,7 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
     );
   }
 
-  // -- a `go install`ed pin takes only a release whose go.mod builds on the image's Go (worklist #e023eb0d: gopls 0.24.0 says `go 1.27.0`, the image builds 1.26.9 with GOTOOLCHAIN=local). Mutant `ignore-go` offers every release whatever its go.mod needs, which turns the first, second and fourth controls red; with it the driver never reads a go.mod, so the third (a proxy failure refuses) goes red too.
+  // -- a `go install`ed pin takes only a release whose go.mod builds on the image's Go (worklist #e023eb0d: gopls 0.24.0 says `go 1.27.0`, the image builds a 1.26.x Go with GOTOOLCHAIN=local). Mutant `ignore-go` offers every release whatever its go.mod needs, which turns the first, second and fourth controls red; with it the driver never reads a go.mod, so the third (a proxy failure refuses) goes red too.
   {
     const cur = arg(df, 'GOPLS_VERSION');
     const fits = patchOf(cur);
@@ -338,11 +338,11 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
   // -- Go's own version order, as GOTOOLCHAIN=local applies it: the patch counts, and a prerelease sorts before its release.
   {
     const pairs: [string, string, boolean][] = [
-      ['1.27.0', '1.26.9', true],
-      ['1.26.0', '1.26.9', false],
-      ['1.26.10', '1.26.9', true],
-      ['1.26.9', '1.26.9', false],
-      ['1.27rc1', '1.26.9', true],
+      ['1.27.0', '1.26.5', true],
+      ['1.26.0', '1.26.5', false],
+      ['1.26.10', '1.26.5', true],
+      ['1.26.5', '1.26.5', false],
+      ['1.27rc1', '1.26.5', true],
       ['1.27rc1', '1.27.0', false],
       ['1.27', '1.27.0', false],
     ];

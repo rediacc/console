@@ -46,7 +46,7 @@
  *    tool installed with `go install` (its pins.json entry names a `goModule`)
  *    builds under the image's Go, GO_VERSION in .devcontainer/toolchain.env with
  *    GOTOOLCHAIN=local, so a release whose go.mod `go` directive is newer cannot
- *    be taken: gopls 0.24.0 (`go 1.27.0`) failed the image build on Go 1.26.9 on
+ *    be taken: gopls 0.24.0 (`go 1.27.0`) failed the image build on Go 1.26.x on
  *    2026-10-18. Each such release is printed as deferred, naming the Go it
  *    needs, and the pin is judged against the newest release that builds. The
  *    go.mod is read from proxy.golang.org (`/<module>/@v/v<version>.mod`), and
