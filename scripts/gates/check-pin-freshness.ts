@@ -26,7 +26,7 @@
  *   not-compared  red. The upstream did not answer, answered unusably, or no driver serves
  *                 the leaf. Unknown is unchecked, never fine (operator answer: fail closed).
  *   deferred      reported. The newest release is inside the window, or the driver's own
- *                 rule holds it (a Go minor line is the operator's call); `pins when <id>`
+ *                 rule holds it; `pins when <id>`
  *                 names the instant.
  *   major-only    reported, with its `--major --reason` line, unless the major is past its
  *                 grace (below).
