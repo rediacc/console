@@ -21,9 +21,9 @@ Body-Sig: dbd74756d1f570f8
 ### cc80defa.1 [medium] .ci/rediacc_ci/ops/scrub_sentinel.py:105
 Anchor: in-diff
 Claim: The comment says SSH_ASKPASS_REQUIRE=never stops ssh's askpass fallback 'whatever core.sshCommand or GIT_SSH names', but the variable is honoured only by OpenSSH 8.4 and later; plink or an older OpenSSH with DISPLAY set can still open a graphical askpass dialog mid-plan. The test only shows the variable reaches the child env, using a fake git and GIT_SSH_COMMAND='plink -batch'.
-Resolution: open
+Resolution: fixed c63382fd6b541a8beec3ef9f9093ac3546b469e9 | d778be9d 2026-10-19T11:54:55Z
 
 ### cc80defa.2 [low] .ci/rediacc_ci/tests/test_ops_scrub_sentinel.py:265
 Anchor: in-diff
 Claim: The new assertion checks only the default case where the caller does not set SSH_ASKPASS_REQUIRE; nothing checks that a caller's SSH_ASKPASS_REQUIRE=force is overridden to 'never', which is the scenario named in the commit message.
-Resolution: open
+Resolution: fixed c63382fd6b541a8beec3ef9f9093ac3546b469e9 | d778be9d 2026-10-19T11:54:55Z
