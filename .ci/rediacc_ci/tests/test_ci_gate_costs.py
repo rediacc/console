@@ -797,3 +797,10 @@ def test_collect_captures_reads_a_capture_dispatched_on_the_pr_head(monkeypatch)
     caps, sources, _w = gc.collect_captures("o/r", limit=3, **kwargs)
     assert sources == []
     assert all(branch != "1008-1" for _e, branch in calls)
+    for head in ("", "  ", "main"):
+        calls.clear()
+        monkeypatch.setenv("GITHUB_HEAD_REF", head)
+        caps, sources, _w = gc.collect_captures("o/r", limit=3, **kwargs)
+        assert sources == []
+        assert ("workflow_dispatch", "main") in calls
+        assert len(calls) == len(gc.CAPTURE_EVENTS)
