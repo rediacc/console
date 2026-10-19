@@ -2,9 +2,9 @@
 # .devcontainer/Dockerfile at its current `ARG <BASE>_VERSION` pin instead of
 # tracking upstream latest.
 #
-# Base names match the Dockerfile ARG <BASE>_VERSION, lowercased, and must be one
-# the gate actually watches (scripts/lib/devcontainer-pin-sources.ts):
-#   bw
+# Base names match the Dockerfile ARG <BASE>_VERSION, lowercased: the part after the
+# colon of a devcontainer:<base> id in .ci/config/pins.json (bw, bws, gopls, dlv,
+# golangcilint, ...).
 #
 # NOTE: do NOT add an entry for a release that is merely too fresh.
 # scripts/gates/check-devcontainer-pin-freshness.ts reads the freshness window from
@@ -13,11 +13,13 @@
 # for a real reason (a breaking change, a broken asset, an upstream regression).
 #
 # Each entry needs a substantive BLOCKER reason (>=30 chars, no banned phrases),
-# exactly like every other suppression list in this repo. Format:
+# exactly like every other suppression list in this repo. Write entries with
+# `npm run pins -- hold devcontainer:<base> --reason "<why>" --expires YYYY-MM-DD`,
+# never by hand; it writes the inline form, and the expiry in it is read by
+# scripts/lib/pins/status.ts (an expired hold stops excusing the pin):
 #
-#   # BLOCKER: <why this tool is pinned back and when to revisit>
-#   <base>
+#   <base>  # BLOCKER: <why this tool is pinned back and when to revisit> (expires YYYY-MM-DD)
 #
-# Empty by default — nothing is held; every pin tracks upstream.
+# The comment-above form (`# BLOCKER: ...` on the line before `<base>`) is read too.
 
 gopls  # BLOCKER: gopls 0.24.0 requires go >= 1.27.0 (its go.mod), and toolchain:go stays on the 1.26 line until the operator moves it (npm run pins -- when toolchain:go); 0.24.0 failed the devcontainer build on run 39177571049. Lift with the Go 1.27 move (expires 2026-11-18)

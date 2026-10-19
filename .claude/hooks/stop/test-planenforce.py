@@ -164,6 +164,9 @@ def make_tree(tmp):
     git(root, "init", "-q")
     git(root, "config", "user.email", "fixture@example.invalid")
     git(root, "config", "user.name", "fixture")
+    # No detached maintenance after a commit (the temp dir is removed right after): maintenance.auto=false and gc.auto=0: the detached `git maintenance` child holds .git/objects/maintenance.lock past `commit` and races the fixture's removal (see .claude/rediacc_hooks/tests/test_wl_scratch.py).
+    git(root, "config", "maintenance.auto", "false")
+    git(root, "config", "gc.auto", "0")
     # `ci` reaches ONE key by `npm run`, so the other is a gate that exists and that nothing runs -- which is exactly the shape C7 plants.
     (root / "package.json").write_text(
         json.dumps(

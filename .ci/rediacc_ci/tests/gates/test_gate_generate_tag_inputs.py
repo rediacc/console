@@ -62,6 +62,9 @@ def build_fixture_tree(gate, root: pathlib.Path) -> None:
     # A real git repo at the submodule path: the module rev-parses it, and a fixed commit keeps the SUBMODULE_COMMIT half of the tag constant so every difference below is attributable to the build-config half.
     sub = root / "private" / "renet"
     harness.run([git, "-C", os.fspath(sub), "init", "-q", "."])
+    # No detached maintenance after the commit: build_fixture_tree rmtree's this root and rebuilds it in a loop, and the child holds .git/objects/maintenance.lock past `commit` (see .claude/rediacc_hooks/tests/test_wl_scratch.py).
+    harness.run([git, "-C", os.fspath(sub), "config", "maintenance.auto", "false"])
+    harness.run([git, "-C", os.fspath(sub), "config", "gc.auto", "0"])
     harness.run([git, "-C", os.fspath(sub), "add", "-A"])
     result = harness.run(
         [git, "-C", os.fspath(sub), *GIT_IDENTITY, "commit", "-qm", "fixture"],

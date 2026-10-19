@@ -82,6 +82,9 @@ def world(root: pathlib.Path) -> None:
     if not (repo / ".git").is_dir():
         repo.mkdir(exist_ok=True)
         subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        # No detached maintenance after a commit (the world is removed at exit): maintenance.auto=false and gc.auto=0: the detached `git maintenance` child holds .git/objects/maintenance.lock past `commit` and races the fixture's removal (see .claude/rediacc_hooks/tests/test_wl_scratch.py).
+        for key, val in (("maintenance.auto", "false"), ("gc.auto", "0")):
+            subprocess.run(["git", "-C", str(repo), "config", key, val], check=True)
         (repo / "unchanged.py").write_text(key_writer, encoding="utf-8")
         (repo / "edited.py").write_text("print('reviewed')\n", encoding="utf-8")
         subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
