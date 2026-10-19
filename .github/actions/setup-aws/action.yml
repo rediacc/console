@@ -61,4 +61,10 @@ runs:
         echo "aws-bin=${aws_bin}" >> "$GITHUB_OUTPUT"
         if [[ "$EXPORT_ENV" == "true" ]]; then
           echo "AWS_BIN=${aws_bin}" >> "$GITHUB_ENV"
+          # R2 rejects aws CLI v2's default flexible checksums on multipart uploads (InvalidPart), so every later step asks for them only where required; rediacc_ci.core.awscli.R2_CHECKSUM_ENV sets the same pair for Python callers.
+          echo "AWS_REQUEST_CHECKSUM_CALCULATION=when_required" >> "$GITHUB_ENV"
+          echo "AWS_RESPONSE_CHECKSUM_VALIDATION=when_required" >> "$GITHUB_ENV"
+          # The classic S3 transfer client (.ci/config/aws-cli.cfg header says why), written outside the checkout so a sparse cone without .ci/config still gets it.
+          printf '[default]\ns3 =\n  preferred_transfer_client = classic\n' > "${RUNNER_TEMP}/aws-cli.cfg"
+          echo "AWS_CONFIG_FILE=${RUNNER_TEMP}/aws-cli.cfg" >> "$GITHUB_ENV"
         fi

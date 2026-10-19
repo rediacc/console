@@ -190,3 +190,31 @@ def test_a_reinstall_at_the_same_mtime_is_probed_again(tmp_path, monkeypatch) ->
     assert binary.stat().st_mtime_ns == stamp
     assert awscli._cached_version(binary) == "2.0.0"
     assert len(calls) == 2
+
+
+def test_run_asks_for_r2_checksums_only_where_required_unless_the_caller_says_otherwise(
+    monkeypatch,
+) -> None:
+    """R2 rejects aws CLI v2's default multipart checksums (InvalidPart, run 39311676492), so run() fills in when_required for both settings; a caller's own value wins."""
+    seen: list[dict[str, str]] = []
+
+    def fake_run(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        env = kwargs.get("env")
+        if cmd[1:3] == ["s3", "ls"] and isinstance(env, dict):
+            seen.append(env)
+        return subprocess.CompletedProcess(cmd, 0, "aws-cli/2.0.0 Python/3", "")
+
+    monkeypatch.setattr(awscli.subprocess, "run", fake_run)
+    monkeypatch.delenv("AWS_REQUEST_CHECKSUM_CALCULATION", raising=False)
+    monkeypatch.delenv("AWS_RESPONSE_CHECKSUM_VALIDATION", raising=False)
+    awscli.run([awscli.AWS, "s3", "ls"])
+    assert seen[-1]["AWS_REQUEST_CHECKSUM_CALCULATION"] == "when_required"
+    assert seen[-1]["AWS_RESPONSE_CHECKSUM_VALIDATION"] == "when_required"
+    awscli.run(
+        [awscli.AWS, "s3", "ls"],
+        env={"AWS_REQUEST_CHECKSUM_CALCULATION": "when_supported", "PATH": "/usr/bin"},
+    )
+    assert seen[-1]["AWS_REQUEST_CHECKSUM_CALCULATION"] == "when_supported"
+    assert seen[-1]["AWS_RESPONSE_CHECKSUM_VALIDATION"] == "when_required"
+    assert seen[-1]["AWS_CONFIG_FILE"] == str(awscli.CONFIG_FILE)
+    assert "preferred_transfer_client = classic" in awscli.CONFIG_FILE.read_text()
