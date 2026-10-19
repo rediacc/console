@@ -7,19 +7,16 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import shutil
 import sys
 import time
-import typing
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ops import scrub_sentinel as port
 from rediacc_ci.tests import ops_cf_harness as h
-
-if typing.TYPE_CHECKING:
-    import pathlib
 
 FAKE_AWS = """#!{py}
 import json, os, sys
@@ -277,17 +274,35 @@ def test_the_origin_probe_cannot_prompt_and_gives_up_at_its_bound(tmp_path, monk
     assert argv[argv.index("-c") + 1] == "credential.helper="
     assert env["leader"] is True
     assert env["stdin"] == ""
-    monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 0.5)
+    # Long enough for the fake git's interpreter to start and record its helper on a slow runner (review 371ac8ec.4), short of its 5 s sleep.
+    monkeypatch.setattr(port, "ORIGIN_TIMEOUT_S", 2)
     monkeypatch.setenv("FAKE_GIT_SLEEP", "5")
     assert port._tag_exists(tmp_path, "v1.0.5") is None
     # The timeout ends the helper git started too, not only git (review ed6787c8.1).
     helper = int((tmp_path / "env.json.helper").read_text())
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
-        try:
-            os.kill(helper, 0)
-        except ProcessLookupError:
+        if _dead(helper):
             break
         time.sleep(0.05)
     else:
         raise AssertionError(f"helper {helper} outlived the probe's timeout")
+
+
+def _dead(pid: int) -> bool:
+    """Gone, or a zombie nobody has reaped yet (an init that does not reap, as in some containers): either way it runs no more (review 371ac8ec.3)."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    try:
+        stat = pathlib.Path(f"/proc/{pid}/stat").read_text()
+    except OSError:
+        return False
+    return stat.rsplit(")", 1)[1].split()[0] == "Z"
+
+
+def test_a_git_that_cannot_start_reads_as_cannot_tell(tmp_path, monkeypatch) -> None:
+    """With no git on PATH the probe answers None (cannot tell, treated as live) instead of raising (review 371ac8ec.2)."""
+    monkeypatch.setenv("PATH", str(tmp_path / "nothing"))
+    assert port._tag_exists(tmp_path, "v1.0.5") is None

@@ -120,7 +120,7 @@ def _tag_exists(repo_root, version: str) -> bool | None:
     try:
         rc = proc.wait(timeout=ORIGIN_TIMEOUT_S)
     except subprocess.TimeoutExpired:
-        # git leads its own session, so the group holds every helper and ssh it started: kill them all, not only git.
+        # git leads its own session, so the group holds the helpers and ssh it started unless one of them left it (setsid, setpgid, a daemonizing ssh): kill the group, not only git.
         with contextlib.suppress(ProcessLookupError):
             os.killpg(proc.pid, signal.SIGKILL)
         proc.wait()
