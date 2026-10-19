@@ -596,3 +596,21 @@ def write_world_file(path, text):
     tmp = path.with_name(".%s.%d.tmp" % (path.name, os.getpid()))
     tmp.write_text(text, encoding="utf-8")
     os.replace(tmp, path)
+
+
+def ensure_world_symlink(target, link):
+    """Create a differential fixture's directory symlink at a FIXED path, race-free.
+
+    The same shared-path hazard as write_world_file: two xdist workers both saw no link, both called os.symlink, and the loser raised FileExistsError (Pytest 3/4, Console CI run 39215455203, block_plan_without_tasks). The link is created once; a concurrent creator's identical link is accepted, and a link to anything else is replaced whole through os.replace.
+    """
+    target, link = str(target), str(link)
+    try:
+        os.symlink(target, link)
+        return
+    except FileExistsError:
+        pass
+    if os.path.islink(link) and os.readlink(link) == target:
+        return
+    tmp = "%s.%d.tmp" % (link, os.getpid())
+    os.symlink(target, tmp)
+    os.replace(tmp, link)

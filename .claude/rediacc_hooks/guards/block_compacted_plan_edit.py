@@ -171,8 +171,7 @@ def _record_world(_unused):
         hookio.write_world_file(path, text)
     # A directory symlink into the guarded tree (#bc7d998c): a write through it lands in the tree.
     link = os.path.join(WORLD, "linked")
-    if not os.path.islink(link):
-        os.symlink(os.path.join(WORLD, "agent"), link)
+    hookio.ensure_world_symlink(os.path.join(WORLD, "agent"), link)
     return WORLD
 
 
