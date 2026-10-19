@@ -69,5 +69,7 @@ runs:
           if [[ -z "${AWS_CONFIG_FILE:-}" ]]; then
             printf '[default]\ns3 =\n  preferred_transfer_client = classic\n' > "${RUNNER_TEMP}/aws-cli.cfg"
             echo "AWS_CONFIG_FILE=${RUNNER_TEMP}/aws-cli.cfg" >> "$GITHUB_ENV"
+          else
+            echo "::notice::AWS_CONFIG_FILE is already set (${AWS_CONFIG_FILE}); kept as is, so its preferred_transfer_client decides and the classic client is not enforced"
           fi
         fi

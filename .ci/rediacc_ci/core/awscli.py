@@ -168,7 +168,7 @@ def run(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[Any]:
     """`subprocess.run(argv(args), **kwargs)`, with `check=False` unless the caller says otherwise."""
     check = bool(kwargs.pop("check", False))
     # Only an R2 call (every one names --endpoint-url) takes the R2 settings; a call to AWS itself (cf_auth's `aws iam delete-access-key`) keeps the caller's own config and profile (review c06b2082.1).
-    if "--endpoint-url" in args:
+    if any(a == "--endpoint-url" or str(a).startswith("--endpoint-url=") for a in args):
         kwargs["env"] = r2_env(kwargs.get("env"))
     return subprocess.run(argv(args, env=kwargs.get("env")), check=check, **kwargs)
 
