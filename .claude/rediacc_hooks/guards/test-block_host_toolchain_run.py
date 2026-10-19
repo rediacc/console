@@ -55,10 +55,19 @@ def fake(name):
     os.chmod(p, 0o700)
 
 
-def run(cmd, path=None):
+# EVERY CASE STARTS WITHOUT `AWS_BIN`. The guard asks the aws resolver's rungs (`AWS_BIN`, PATH, then the pinned repo cache), so an ambient `AWS_BIN` from a CI job or an operator's shell would decide the aws cases instead of the PATH each case constructs. A case that needs it passes it in `extra`.
+def _case_env(path, extra):
     env = dict(os.environ)
+    env.pop("AWS_BIN", None)
     if path is not None:
         env["PATH"] = path
+    if extra:
+        env.update(extra)
+    return env
+
+
+def run(cmd, path=None, extra=None):
+    env = _case_env(path, extra)
     return subprocess.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
@@ -69,10 +78,8 @@ def run(cmd, path=None):
     ).returncode
 
 
-def run_full(cmd, path=None):
-    env = dict(os.environ)
-    if path is not None:
-        env["PATH"] = path
+def run_full(cmd, path=None, extra=None):
+    env = _case_env(path, extra)
     return subprocess.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
@@ -439,6 +446,8 @@ for tool in ALL_TOOLS:
 # `aws` IS THE ONE THAT ROUTES HERE AND `bw`/`bws` ARE THE ONES THAT MUST NOT. Measured on this host: no aws, but `bw` and `bws` are both at /home/developer/.local/bin.
 # So the same three-entry addition exercises both directions of "THE HOST IS ASKED, NOT ASSUMED" without a single constructed absence, and the loop below constructs the absence anyway, for the same reason the ALL_TOOLS loop does: whether this host happens to carry a tool must never decide which branch a case exercises.
 AWS_ABSENT = _path_without("aws", REAL)
+# PATH ALONE NO LONGER MAKES aws ABSENT. A host carrying the pinned cache `.ci/cache/toolchain/aws-cli/<AWSCLI_VERSION>/bin/aws` has aws as far as the resolver (and so the guard) is concerned, and this checkout may carry one. A set `AWS_BIN` that is not an executable file is the resolver's refusal and the guard's absence, and it is consulted before the cache, so it is what makes "host lacks aws" true here.
+AWS_GONE = {"AWS_BIN": os.path.join(RUN_TMP, "no-such-aws")}
 
 
 def _in_box(tool):
@@ -462,7 +471,7 @@ if aws_in_box:
     cases.append(
         (
             2,
-            run("npm run check:ci-release-state", AWS_ABSENT),
+            run("npm run check:ci-release-state", AWS_ABSENT, AWS_GONE),
             "gate key: check:ci-release-state needs aws, host lacks it -> REFUSED",
         )
     )
@@ -472,6 +481,7 @@ if aws_in_box:
     r = run_full(
         "PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists --version 1.3.0",
         AWS_ABSENT,
+        AWS_GONE,
     )
     cases.append((2, r.returncode, "NEEDS_SCRIPT: the incident command itself is REFUSED"))
     cases.append(
@@ -494,7 +504,7 @@ if aws_in_box:
     cases.extend(
         (
             0,
-            run(reader, AWS_ABSENT),
+            run(reader, AWS_ABSENT, AWS_GONE),
             f"CONTROL: reading a NEEDS_SCRIPT path is not running it -- {reader.split()[0]}",
         )
         for reader in (
@@ -512,8 +522,22 @@ if aws_in_box:
             run(
                 "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=x PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2",
                 AWS_ABSENT,
+                AWS_GONE,
             ),
             "two-stage: NEEDS_ENV satisfied, NEEDS_SCRIPT still catches the missing aws",
+        )
+    )
+
+    # AWS_BIN NAMING AN EXECUTABLE IS aws ON THIS HOST, with PATH still stripped: the resolver execs it, so the guard must not route.
+    exec_aws = os.path.join(tempfile.mkdtemp(dir=RUN_TMP), "aws")
+    with open(exec_aws, "w", encoding="utf-8") as fh:
+        fh.write("#!/bin/sh\nexit 0\n")
+    os.chmod(exec_aws, 0o700)
+    cases.append(
+        (
+            0,
+            run("npm run check:ci-release-state", AWS_ABSENT, {"AWS_BIN": exec_aws}),
+            "CONTROL: AWS_BIN names an executable aws, so the gate is left alone",
         )
     )
 
@@ -539,7 +563,7 @@ else:
     cases.append(
         (
             0,
-            run("npm run check:ci-release-state", AWS_ABSENT),
+            run("npm run check:ci-release-state", AWS_ABSENT, AWS_GONE),
             "CONTROL: no devbox with aws, so the guard notes rather than blocks",
         )
     )
@@ -554,7 +578,7 @@ for tool in ("aws", "bw", "bws"):
     cases.append(
         (
             want,
-            run(f"{tool} --version", without),
+            run(f"{tool} --version", without, AWS_GONE if tool == "aws" else None),
             f"bare-tool: {tool} routed when constructed-absent from PATH"
             if tool_in_box
             else f"bare-tool: {tool} absent from host AND devbox -> notes, does not route",
@@ -623,12 +647,17 @@ cases.append(
 )
 
 # THE OTHER DIRECTION (review 276a69db.1): every runnable module under .ci/rediacc_ci that puts `aws` at the head of an argv has its row, so a new aws-calling port cannot ship without the routing. A module counts as runnable when it carries `if __name__ == "__main__"`. The exemptions are named, each with its reason.
-_AWS_ARGV = re.compile(r"""[\[(]\s*["']aws["']\s*[,\]]""")
+# TWO ARGV HEADS COUNT. Since 73e2c8217 every aws call site writes `awscli.AWS` (which is "aws") as argv[0] and execs through `rediacc_ci.core.awscli`, and check:ci-aws-resolver refuses a literal "aws" head, so a scan for the literal alone found 2 modules and neither was a port. No module imports `AWS` from awscli by name, so the attribute spelling is the whole new form.
+_AWS_ARGV = re.compile(r"""[\[(]\s*(?:["']aws["']|awscli\.AWS)\s*[,\]]""")
 _AWS_EXEMPT = {
     # A multi-verb library CLI: aws is one verb (s3api list-objects-v2) of many, so a module row would refuse every other verb on a host without aws.
     "rediacc_ci.core.common",
     # A shadow-run driver for tests; it replays the bash common.sh, it is not run against R2.
     "rediacc_ci.core.common_stub_shadow_driver",
+    # The check:ci-aws-resolver gate, which refuses a literal "aws" argv head; its selftest plants carry one, and it never runs aws.
+    "rediacc_ci.quality.aws_resolver",
+    # The toolchain doctor: `aws --version` is one probe among every pinned tool, and a row would refuse the doctor on exactly the host that lacks aws and needs it told so.
+    "rediacc_ci.setup.tools",
 }
 _MODULE_ROWS = {
     key for key, tool in GUARD.NEEDS_SCRIPT if tool == "aws" and key.startswith("rediacc_ci.")
@@ -647,7 +676,7 @@ for rel in _TRACKED:
 cases.append(
     (
         True,
-        len(_AWS_MODULES) >= 5,
+        len(_AWS_MODULES) >= 12,
         "coverage: the aws-argv scan found the ports (%d)" % len(_AWS_MODULES),
     )
 )
@@ -656,11 +685,76 @@ cases.extend(
     for mod in sorted(_AWS_MODULES - _AWS_EXEMPT)
 )
 
+# THE aws RUNGS, function-level, because the cache rung is read under the repository root and a process-level case could only plant a binary into the real `.ci/cache`. `_have_aws(root, environ)` takes both, and PATH is set to the constructed absence for the duration, since `hookio.command_v` reads PATH at call time.
+AWS_PIN = GUARD._awscli_pin(REPO)
+cases.append((True, AWS_PIN != "", "aws rungs: the pin is read from .devcontainer/toolchain.env"))
+scratch_root = tempfile.mkdtemp(dir=RUN_TMP)
+os.makedirs(os.path.join(scratch_root, ".devcontainer"))
+with open(
+    os.path.join(scratch_root, ".devcontainer", "toolchain.env"), "w", encoding="utf-8"
+) as fh:
+    fh.write("# pins\nAWSCLI_VERSION=%s\n" % AWS_PIN)
+cached_aws = os.path.join(
+    scratch_root, ".ci", "cache", "toolchain", "aws-cli", AWS_PIN, "bin", "aws"
+)
+saved_path = os.environ.get("PATH", "")
+os.environ["PATH"] = AWS_ABSENT
+try:
+    cases.append(
+        (False, GUARD._have_aws(scratch_root, {}), "aws rungs: no AWS_BIN, no PATH aws, no cache")
+    )
+    os.makedirs(os.path.dirname(cached_aws))
+    with open(cached_aws, "w", encoding="utf-8") as fh:
+        fh.write("#!/bin/sh\nexit 0\n")
+    os.chmod(cached_aws, 0o600)
+    cases.append(
+        (False, GUARD._have_aws(scratch_root, {}), "aws rungs: a cache file that is not executable")
+    )
+    os.chmod(cached_aws, 0o700)
+    cases.append(
+        (True, GUARD._have_aws(scratch_root, {}), "CONTROL aws rungs: the pinned cache binary")
+    )
+    cases.append(
+        (
+            False,
+            GUARD._have_aws(scratch_root, AWS_GONE),
+            "aws rungs: an absent AWS_BIN is absent, and the cache behind it is not consulted",
+        )
+    )
+    cases.append(
+        (
+            True,
+            GUARD._have_aws(scratch_root, {"AWS_BIN": cached_aws}),
+            "CONTROL aws rungs: AWS_BIN naming an executable",
+        )
+    )
+    path_aws = tempfile.mkdtemp(dir=RUN_TMP)
+    shutil.copy(cached_aws, os.path.join(path_aws, "aws"))
+    os.environ["PATH"] = f"{path_aws}:{AWS_ABSENT}"
+    cases.append(
+        (True, GUARD._have_aws(tempfile.mkdtemp(dir=RUN_TMP), {}), "CONTROL aws rungs: aws on PATH")
+    )
+    with open(
+        os.path.join(scratch_root, ".devcontainer", "toolchain.env"), "w", encoding="utf-8"
+    ) as fh:
+        fh.write("AWSCLI_VERSION=0.0.0\n")
+    os.environ["PATH"] = AWS_ABSENT
+    cases.append(
+        (
+            False,
+            GUARD._have_aws(scratch_root, {}),
+            "aws rungs: a cache at another version is not the pin",
+        )
+    )
+finally:
+    os.environ["PATH"] = saved_path
+
 if aws_in_box:
     # The python -m spelling of the incident command, end to end. The module key is not what the shipped exception list names, so this case holds whatever that list says.
     r = run_full(
         "PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists --version 1.3.0",
         AWS_ABSENT,
+        AWS_GONE,
     )
     cases.append(
         (2, r.returncode, "NEEDS_SCRIPT: the python -m port of the incident command is REFUSED")
@@ -714,7 +808,7 @@ cases.extend(
 if aws_in_box:
     # End to end, with aws off the host and in the devbox, so the toolchain arm is what would refuse.
     cases.extend(
-        (want, run(cmd, AWS_ABSENT), f"parse-only end-to-end: {label}")
+        (want, run(cmd, AWS_ABSENT, AWS_GONE), f"parse-only end-to-end: {label}")
         for want, cmd, label in (
             (0, "bash -n .ci/media/tools/%s" % PROMOTE, "the 2026-10-02 syntax check"),
             (
@@ -845,7 +939,7 @@ if aws_in_box:
     try:
         with open(real_list, "w", encoding="utf-8") as fh:
             fh.write(f"{saved}\n# BLOCKER: {LEGIT}\ncheck:ci-release-state@aws\n")
-        e2e = run_full("npm run check:ci-release-state", AWS_ABSENT)
+        e2e = run_full("npm run check:ci-release-state", AWS_ABSENT, AWS_GONE)
     finally:
         with open(real_list, "w", encoding="utf-8") as fh:
             fh.write(saved)
