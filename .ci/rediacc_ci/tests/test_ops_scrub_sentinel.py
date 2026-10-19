@@ -45,6 +45,9 @@ sys.exit(0)
 
 FAKE_GIT = """#!{py}
 import os, sys
+if "ls-remote" in sys.argv:
+    remote = os.environ.get("FAKE_GIT_REMOTE_TAG", os.environ.get("FAKE_GIT_TAG", ""))
+    sys.exit(int(os.environ.get("FAKE_GIT_REMOTE_RC", "0" if remote else "2")))
 sys.exit(0 if os.environ.get("FAKE_GIT_TAG") else 1)
 """
 
@@ -217,3 +220,23 @@ def test_delta_a_failed_delete_exits_with_awss_status(world: h.World) -> None:
     assert b[0] == p[0] == 3
     assert "aws s3 rm failed (exit 3)" in p[2]
     assert json.dumps(b[2]) is not None
+
+
+def _port(world: h.World, args: list[str], **env: str):
+    return world.port(MODULE, args, world.env(**{**CREDS, **env}))
+
+
+def test_delta_a_tag_only_the_local_clone_holds_is_not_live(world: h.World) -> None:
+    """Rule T 5: the bash warned from the local tag list; the port asks origin, so a tag origin deleted draws no live-tag warning, while the same tag on origin still does (the control)."""
+    p = _port(world, ["v1.0.5"], FAKE_GIT_TAG="1", FAKE_GIT_REMOTE_TAG="")
+    assert p[0] == 0
+    assert "git tag v1.0.5 exists" not in p[2]
+    control = _port(world, ["v1.0.5"], FAKE_GIT_TAG="1", FAKE_GIT_REMOTE_TAG="1")
+    assert "git tag v1.0.5 exists" in control[2]
+
+
+def test_delta_an_origin_that_cannot_answer_counts_as_a_live_tag(world: h.World) -> None:
+    """Rule T 5: an unanswered ls-remote is not a no; the port names it and warns as for a live tag."""
+    p = _port(world, ["v1.0.5"], FAKE_GIT_REMOTE_RC="128")
+    assert "could not ask origin" in p[2]
+    assert "git tag v1.0.5 exists" in p[2]
