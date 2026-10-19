@@ -4,8 +4,8 @@
  *
  * On 2026-10-18 `npm run pins -- bump devcontainer:gopls` moved gopls 0.23.0 -> 0.24.0 and its
  * gate passed, but gopls 0.24.0's go.mod says `go 1.27.0` while the devcontainer builds Go
- * GO_VERSION=1.26.9 (.devcontainer/toolchain.env) with GOTOOLCHAIN=local, so the image build
- * failed (`gopls@v0.24.0 requires go >= 1.27.0 (running go 1.26.9; GOTOOLCHAIN=local)`). A
+ * the image's GO_VERSION (.devcontainer/toolchain.env, then on the 1.26 line) with GOTOOLCHAIN=local, so the image build
+ * failed (`gopls@v0.24.0 requires go >= 1.27.0 (running go 1.26.x; GOTOOLCHAIN=local)`). A
  * release like that is not a candidate: the devcontainer driver marks it ineligible (so a bump
  * takes the newest release that builds) and the freshness gate prints it as deferred, naming the
  * Go it needs, instead of calling the pin behind.
@@ -14,7 +14,7 @@
  * eligible: the caller refuses the pin (driver) or reds it (gate) with the reason.
  *
  * The comparison is Go's own: GOTOOLCHAIN=local refuses a module whose `go` directive is newer
- * than the running toolchain, patch included (`go 1.26.10` does not build on 1.26.9), so the
+ * than the running toolchain, patch included (`go 1.26.10` does not build on 1.26.5), so the
  * whole version is compared, not only major.minor.
  */
 import { UnreadableListing } from '../upstream.js';

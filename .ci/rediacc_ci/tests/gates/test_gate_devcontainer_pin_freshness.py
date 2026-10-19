@@ -532,7 +532,7 @@ def test_pins_driver_selftest_holds_the_version_and_hash_properties_upgrade_prov
 GOPLS_MODULE = "golang.org/x/tools/gopls"
 
 
-def run_gate_gomod(gate, directory, dockerfile, upstream: dict, gomods: dict, go: str = "1.26.9"):
+def run_gate_gomod(gate, directory, dockerfile, upstream: dict, gomods: dict, go: str = "1.26.5"):
     """The gate over an upstream map and a go.mod map (`DEVCONTAINER_GOMOD_FIXTURE`), for the `go install`ed pins (worklist #e023eb0d).
 
     Under a release fixture the gate reads go.mod files from this map only, never the network, so a key it lacks is a go.mod that was not obtained.
@@ -594,7 +594,7 @@ def test_a_release_needing_a_newer_go_defers_to_the_buildable_one(gate, tmp_path
 
 
 def test_every_newer_release_needing_a_newer_go_is_not_behind(gate, tmp_path):
-    """The 2026-10-18 shape: the only newer gopls needs a newer Go than the image (0.24.0, go 1.27.0, on Go 1.26.9). The pin is deferred, not behind, so the gate is green. This is the control that goes red without the go.mod judgement: the gate would call gopls behind 999.0.0 and exit 1."""
+    """The 2026-10-18 shape: the only newer gopls needs a newer Go than the image (0.24.0, go 1.27.0, on a 1.26.x Go). The pin is deferred, not behind, so the gate is green. This is the control that goes red without the go.mod judgement: the gate would call gopls behind 999.0.0 and exit 1."""
     dockerfile = build_fixtures(gate, tmp_path)
     result = run_gate_gomod(
         gate,

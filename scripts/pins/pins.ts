@@ -2913,11 +2913,11 @@ const CASES: Record<string, Case> = {
       }),
       'package-lock.json': '{ "lockfileVersion": 3 }\n',
       'packages/cli/package.json': json({ name: '@fx/cli', dependencies: { i18next: '^26.4.4' } }),
-      'packages/web/package.json': json({
+      'packages/www/package.json': json({
         name: '@fx/web',
         devDependencies: { i18next: '^26.4.4' },
       }),
-      'packages/plain/package.json': json({ name: '@fx/plain', dependencies: { other: '^1.0.0' } }),
+      'packages/shared/package.json': json({ name: '@fx/plain', dependencies: { other: '^1.0.0' } }),
     };
     for (const [rel, text] of Object.entries(files)) {
       fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
@@ -2993,7 +2993,7 @@ const CASES: Record<string, Case> = {
       movedPinGroups(rcBefore, rcBefore.replace('^26.4.4', '^26.5.2')),
       [
         {
-          file: 'packages/odd/package.json',
+          file: 'packages/cli/package.json',
           text: json({ name: '@fx/odd', dependencies: { i18next: 'file:../vendored' } }),
         },
       ]
@@ -3005,14 +3005,14 @@ const CASES: Record<string, Case> = {
           r.status === 0 &&
           JSON.parse(rcAfter).versionGroups[0].pinVersion === '^26.5.2' &&
           range('packages/cli/package.json', 'dependencies') === '^26.5.2' &&
-          range('packages/web/package.json', 'devDependencies') === '^26.5.2' &&
-          read('packages/plain/package.json') === files['packages/plain/package.json'] &&
+          range('packages/www/package.json', 'devDependencies') === '^26.5.2' &&
+          read('packages/shared/package.json') === files['packages/shared/package.json'] &&
           read('package.json') === files['package.json'],
         detail: `rc=${r.status}\n${r.stdout}\n${r.stderr}\n${rcAfter}`,
       },
       {
         name: 'pin manifests: the plan declares exactly the manifests that declare a member of a group holding a moved package',
-        ok: predicted.join(',') === 'packages/cli/package.json,packages/web/package.json',
+        ok: predicted.join(',') === 'packages/cli/package.json,packages/www/package.json',
         detail: predicted.join(','),
       },
       {
@@ -3032,7 +3032,7 @@ const CASES: Record<string, Case> = {
         ok:
           refused.writes.length === 0 &&
           refused.errors.length === 1 &&
-          refused.errors[0].includes('packages/odd/package.json') &&
+          refused.errors[0].includes('packages/cli/package.json') &&
           refused.errors[0].includes('not a plain range'),
         detail: JSON.stringify(refused),
       },
