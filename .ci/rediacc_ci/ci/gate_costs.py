@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import os
 import statistics
 import sys
 import zipfile
@@ -200,6 +201,16 @@ def collect_captures(
     for event in CAPTURE_EVENTS:
         for run in list_runs(
             repo, CAPTURE_WORKFLOW, event, budget_report.DEFAULT_BRANCH, "completed", RUNS_LISTED
+        ):
+            runs.setdefault(run.get("id"), run)
+    # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture
+    # outlived its 12m bound for three nights and the fix, 5d5d88247, sat on the PR that this very
+    # check kept red). A capture DISPATCHED on the PR head is the same measurement from the
+    # workflow that branch ships, so it is read beside main's, never instead of it.
+    head = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    if head and head != budget_report.DEFAULT_BRANCH:
+        for run in list_runs(
+            repo, CAPTURE_WORKFLOW, "workflow_dispatch", head, "completed", RUNS_LISTED
         ):
             runs.setdefault(run.get("id"), run)
     ordered = sorted(runs.values(), key=lambda r: r.get("created_at") or "", reverse=True)
