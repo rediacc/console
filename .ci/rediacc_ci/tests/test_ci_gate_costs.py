@@ -768,3 +768,32 @@ def test_control_an_unkeyed_gate_cost_finding_class_is_refused(tmp_path: Path, m
     )
     with pytest.raises(TypeError, match="unkeyed finding"):
         gc.check(target, "o/r", tmp_path, collect=_collect([capture([gate("g", 10000, 10000)])]))
+
+
+def test_collect_captures_reads_a_capture_dispatched_on_the_pr_head(monkeypatch):
+    """Main has no capture; the PR head branch has a dispatched one: it is read (2026-10-19, the capture fix sat on the PR this check kept red). Without GITHUB_HEAD_REF the head branch is not listed at all."""
+    calls: list[tuple[str, str]] = []
+
+    def list_runs(_repo, wf, event, branch, *_a):
+        calls.append((event, branch))
+        if wf == gc.CAPTURE_WORKFLOW and branch == "1008-1" and event == "workflow_dispatch":
+            return [{"id": 7, "head_sha": "h", "created_at": "2026-10-19"}]
+        return []
+
+    blob = _zip("gate-costs.json", json.dumps(capture([gate("h", 1, 1)])))
+    kwargs = {
+        "list_runs": list_runs,
+        "list_artifacts": lambda _repo, _rid: [{"id": 70, "name": "gate-costs-h"}],
+        "download": lambda _repo, _aid: blob,
+    }
+    monkeypatch.setenv("GITHUB_HEAD_REF", "1008-1")
+    caps, sources, _w = gc.collect_captures("o/r", limit=3, **kwargs)
+    assert [s["id"] for s in sources] == [7]
+    assert caps[0]["gates"][0]["id"] == "h"
+    assert ("workflow_dispatch", "1008-1") in calls
+    assert ("schedule", "1008-1") not in calls
+    calls.clear()
+    monkeypatch.delenv("GITHUB_HEAD_REF")
+    caps, sources, _w = gc.collect_captures("o/r", limit=3, **kwargs)
+    assert sources == []
+    assert all(branch != "1008-1" for _e, branch in calls)
