@@ -240,6 +240,9 @@ SECRET_RES = (
     re.compile(r"(?<=://)[^/\s:@]+:[^/\s@]+(?=@)"),
 )
 
+# The Actions jobs endpoint's page size: a 100-job page of a large run is answered HTTP 502.
+JOBS_PAGE_SIZE = 50
+
 
 def sanitize(text):
     """`text` with token- and key-shaped substrings replaced by [REDACTED].
@@ -484,13 +487,14 @@ def run_jobs(fetch, run_id, attempt=None):
     jobs: list[dict] = []
     page = 1
     while page <= 10:
-        data, err = fetch.json("%s?per_page=100&page=%d" % (base, page))
+        # 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (budget_report._JOBS_PAGE_SIZE, measured 2026-10-19).
+        data, err = fetch.json("%s?per_page=%d&page=%d" % (base, JOBS_PAGE_SIZE, page))
         if not isinstance(data, dict):
             return jobs, err or "jobs page %d unreadable" % page
         batch = data.get("jobs") or []
         jobs.extend(batch)
         total = data.get("total_count") or 0
-        if len(batch) < 100 or len(jobs) >= total:
+        if len(batch) < JOBS_PAGE_SIZE or len(jobs) >= total:
             break
         page += 1
     return jobs, ""

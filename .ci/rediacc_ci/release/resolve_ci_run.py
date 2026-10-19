@@ -67,7 +67,8 @@ def _gh_api(url: str, *, jq_filter: str | None = None, paginate: bool = False) -
 def _staged(repo: str, run_id: str) -> bool:
     """True when the run's Stage Artifacts job concluded `success`. "No such job" and a non-transient failure are "not staged"; a read that could not be made raises UnreadableError."""
     result = _gh_api(
-        f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=100",
+        # 50: a 100-job page of a large run is answered HTTP 502 (budget_report._JOBS_PAGE_SIZE).
+        f"repos/{repo}/actions/runs/{run_id}/jobs?per_page=50",
         jq_filter=f'.jobs[] | select(.name == "{STAGE_JOB_NAME}") | .conclusion',
         paginate=True,
     )

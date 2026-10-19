@@ -39,7 +39,9 @@ ERROR_TTL_S = 300
 # SessionStart marks a cache older than this as stale rather than presenting a six-hour-old verdict as current.
 SESSION_START_STALE_S = 6 * 3600
 MAX_JOBS_SHOWN = 6
-PAGE = 100
+# 50, not 100: GitHub answers HTTP 502 after about 11 s when it builds a 100-job page of a large run (measured 2026-10-19 on Console CI runs of 141 and 179 jobs), and one page also dropped every job past it.
+PAGE = 50
+MAX_PAGES = 10
 WORKFLOW_DIR = pathlib.Path(".github") / "workflows"
 
 # The tracking vocabulary. A display name counts only beside one of these words, so "fix Console CI lint" (a PR red) never reads as tracking the nightly.
@@ -207,18 +209,29 @@ def _newest(runs):
 
 
 def _failed_jobs(root, owner, name, run_id):
-    """([failed job name, ...], error). One call; a job is failed when it completed with anything but success, skipped or neutral."""
-    data, err = wl_gh.call(
-        ["api", "repos/%s/%s/actions/runs/%s/jobs?per_page=%d" % (owner, name, run_id, PAGE)],
-        cwd=root,
-    )
-    if err or not isinstance(data, dict):
-        return [], err or "no jobs document"
+    """([failed job name, ...], error), across every page; a job is failed when it completed with anything but success, skipped or neutral."""
     out = []
-    for job in data.get("jobs") or []:
-        c = job.get("conclusion")
-        if c and c not in ("success", "skipped", "neutral"):
-            out.append(str(job.get("name") or "?"))
+    seen = 0
+    for page in range(1, MAX_PAGES + 1):
+        data, err = wl_gh.call(
+            [
+                "api",
+                "repos/%s/%s/actions/runs/%s/jobs?per_page=%d&page=%d"
+                % (owner, name, run_id, PAGE, page),
+            ],
+            cwd=root,
+        )
+        if err or not isinstance(data, dict):
+            return [], err or "no jobs document"
+        batch = data.get("jobs") or []
+        seen += len(batch)
+        for job in batch:
+            c = job.get("conclusion")
+            if c and c not in ("success", "skipped", "neutral"):
+                out.append(str(job.get("name") or "?"))
+        total = data.get("total_count")
+        if len(batch) < PAGE or (isinstance(total, int) and seen >= total):
+            break
     return out, ""
 
 
