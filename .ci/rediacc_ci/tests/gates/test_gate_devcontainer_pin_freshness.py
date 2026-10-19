@@ -155,11 +155,15 @@ def run_gate(gate, directory, dockerfile, fixture: str, *args: str) -> harness.R
     npx = harness.require_tool(
         "npx", "install node; the subject is a TypeScript program driven through tsx"
     )
+    # The cases do not read live policy: without this the gate reads the tracked blocklist, and a real hold (gopls, cddf1b670) turned "5 of 5 compared" into "4 of 5, 1 held".
+    holds = directory / "blocklist-none"
+    holds.write_text("# no holds; the cases do not read live policy\n", encoding="utf-8")
     return harness.run(
         [npx, "tsx", str(VALIDATOR), *args],
         cwd=paths.repo_root(),
         env={
             "DEVCONTAINER_FRESHNESS_FIXTURE": str(directory / fixture),
+            "DEVCONTAINER_BLOCKLIST_FILE": str(holds),
             "DEVCONTAINER_DOCKERFILE": str(dockerfile),
         },
     )
